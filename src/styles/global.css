@@ -1,0 +1,187 @@
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --font-family: Arial, Helvetica, sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-family);
+  min-height: 100vh;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  margin: 0;
+}
+
+/* MAIN PAGE WRAPPER */
+.homePage {
+  background-color: white;
+  min-height: 100vh;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  overflow: hidden;
+}
+
+/* CORNER IMAGES */
+.cornerImage {
+  position: absolute;
+  max-width: 20vw;
+  height: auto;
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.topLeft {
+  top: 0;
+  left: 0;
+}
+
+.bottomRight {
+  bottom: 0;
+  right: 0;
+}
+
+/* BACKGROUND (if needed) */
+.homeBackground {
+  background-image: url('/images/background-home.jpg');
+  background-size: cover;
+  background-position: center;
+  min-height: 100vh;
+  background-repeat: no-repeat;
+  position: relative;
+  z-index: 0;
+}
+
+/* CENTERED CONTENT */
+.container {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+/* TEXT STYLING */
+
+@media (max-width: 600px) {
+  .journal {
+    font-size: 4rem;
+  }
+  .myText {
+    font-size: 2rem;
+    left: 2rem;
+    top: -2rem;
+  }
+  .author {
+    font-size: 1.5rem;
+    top: 5rem;
+  }
+}
+.textBlock {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 'Journal' stays centered */
+.journal {
+  font-size: 6rem;
+  font-weight: bold;
+  line-height: 1;
+}
+/* 'My' placed above and to the right of Journal */
+.myText {
+  font-size: 3rem;
+  font-weight: bold;
+  font-style: italic;
+  margin-left: 3.5rem; /* pushes it just right of the "J" */
+  margin-bottom: -1rem; /* nudges it closer to "Journal" */
+}
+
+/* Author aligned under the ending 'l' */
+.author {
+  font-size: 2rem;
+  font-family: 'Ink Free', cursive;
+  align-self: flex-end;
+  margin-top: 0.1rem;
+}
+/* RESPONSIVENESS */
+@media (max-width: 768px) {
+  .myText {
+    font-size: 2rem;
+  }
+  .journal {
+    font-size: 3.5rem;
+  }
+  .author {
+    font-size: 1rem;
+  }
+}
+/* INTRODUCTION STYLES */
+.introduction-section {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.intro-heading {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.intro-columns {
+  display: flex;
+  flex-direction: row;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.intro-text {
+  flex: 1;
+  min-width: 300px;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.intro-callout {
+  background-color: #f0f0f0;
+  padding: 1.5rem;
+  margin: 2rem 0;
+  font-style: italic;
+  border-left: 4px solid #999;
+}
+/* RESPONSIVE ADJUSTMENTS */
+@media (max-width: 768px) {
+  .intro-heading {
+    font-size: 2rem;
+  }
+
+  .intro-text {
+    font-size: 0.95rem;
+  }
+}

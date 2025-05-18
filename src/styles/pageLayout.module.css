@@ -1,0 +1,28 @@
+/* pageLayout.module.css */
+.bookPage {
+  display: flex;
+  gap: 40px; /* Spacing between the left and right "pages" */
+  margin-bottom: 40px; /* Spacing between book "spreads" if you have multiple */
+}
+
+.leftPage,
+.rightPage {
+  flex: 1; /* Each "page" takes equal width */
+  display: flex;
+  flex-direction: column; /* Stack title and columns vertically */
+  gap: 20px; /* Spacing between title and columns */
+}
+
+.pageTitle {
+  text-align: left;
+  margin-bottom: 20px; /* Spacing below the title */
+}
+
+.columns {
+  display: flex;
+  gap: 20px; /* Spacing between the two columns within a "page" */
+}
+
+.column {
+  flex: 1; /* Each column within a "page" takes equal width */
+}
