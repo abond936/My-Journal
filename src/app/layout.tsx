@@ -1,4 +1,5 @@
 import '../styles/global.css';
+import Pagination from '../components/Pagination';
 
 export const metadata = {
   title: 'My Journal',
@@ -10,6 +11,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         {children}
+        <Pagination />
       </body>
     </html>
   );

@@ -6,7 +6,7 @@ export default function Home() {
 
       <div className="textBlock">
         <div className="myText">My</div>
-        <div className="journal">Journal</div>
+        <div className="journal">Stories</div>
         <div className="author">Michael Alan Bond</div>
       </div>
     </div>

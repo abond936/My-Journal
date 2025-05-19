@@ -4,6 +4,11 @@
   --font-family: Arial, Helvetica, sans-serif;
 }
 
+@font-face {
+  font-family: 'Ink Free';
+ src: url('../../fonts/InkFree.ttf') format('truetype');
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -17,15 +22,18 @@ html, body {
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-family);
+  font-family: 'Ink Free', sans-serif;
   min-height: 100vh;
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center;
   margin: 0;
 }
+h1, h2, h3, h4, h5, h6 {
+  font-family: Helvetica, sans-serif;
+}
 
-/* MAIN PAGE WRAPPER */
+/* HOME PAGE WRAPPER */
 .homePage {
   background-color: white;
   min-height: 100vh;
@@ -37,10 +45,10 @@ body {
   overflow: hidden;
 }
 
-/* CORNER IMAGES */
+/* IMAGES */
 .cornerImage {
   position: absolute;
-  max-width: 20vw;
+  max-width: 30vw;
   height: auto;
   z-index: 0;
   pointer-events: none;
@@ -57,17 +65,6 @@ body {
   right: 0;
 }
 
-/* BACKGROUND (if needed) */
-.homeBackground {
-  background-image: url('/images/background-home.jpg');
-  background-size: cover;
-  background-position: center;
-  min-height: 100vh;
-  background-repeat: no-repeat;
-  position: relative;
-  z-index: 0;
-}
-
 /* CENTERED CONTENT */
 .container {
   position: relative;
@@ -80,22 +77,8 @@ body {
   padding: 1rem;
 }
 
-/* TEXT STYLING */
+/* HOME TEXT STYLING */
 
-@media (max-width: 600px) {
-  .journal {
-    font-size: 4rem;
-  }
-  .myText {
-    font-size: 2rem;
-    left: 2rem;
-    top: -2rem;
-  }
-  .author {
-    font-size: 1.5rem;
-    top: 5rem;
-  }
-}
 .textBlock {
   position: absolute;
   top: 50%;
@@ -108,64 +91,177 @@ body {
 
 /* 'Journal' stays centered */
 .journal {
-  font-size: 6rem;
+  font-size: clamp(10rem, 5vw + 10rem, 18rem);
   font-weight: bold;
   line-height: 1;
+   margin-bottom: -3rem;
 }
-/* 'My' placed above and to the right of Journal */
+/* 'My' placed above, right and into */
 .myText {
-  font-size: 3rem;
+  font-size: clamp(6rem, 2vw + 4rem, 8rem);
   font-weight: bold;
   font-style: italic;
-  margin-left: 3.5rem; /* pushes it just right of the "J" */
-  margin-bottom: -1rem; /* nudges it closer to "Journal" */
+  margin-left: clamp( 7rem, 2vw + 5rem, 11rem); /* pushes it just right of the "J" */
+  margin-bottom: clamp(-4rem, -2vw - 2rem, -6rem); /* nudges it closer to "Journal" */
 }
 
-/* Author aligned under the ending 'l' */
+/* Author right-aligned under */
 .author {
-  font-size: 2rem;
   font-family: 'Ink Free', cursive;
+  font-size: clamp(1.5rem, 2vw + 2rem, 5rem);
   align-self: flex-end;
-  margin-top: 0.1rem;
-}
-/* RESPONSIVENESS */
-@media (max-width: 768px) {
-  .myText {
-    font-size: 2rem;
-  }
-  .journal {
-    font-size: 3.5rem;
-  }
-  .author {
-    font-size: 1rem;
-  }
-}
-/* INTRODUCTION STYLES */
-.introduction-section {
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
+  margin-top: 0rem;
 }
 
-.intro-heading {
-  font-size: 2.5rem;
+/* INTRODUCTION STYLES */
+.layout-container {
+  max-width: 100%;
+  margin: 0 auto;
+  position: relative;
+  --min-font-size: 16px;
+  --preferred-font-size: calc(14px + 0.5vw);
+  --max-font-size: 20px;
+  font-size: clamp(var(--min-font-size), var(--preferred-font-size), var(--max-font-size));
+  
+  /* Start with single column layout for mobile */
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(2rem, 4vw, 3rem);
+  padding: clamp(1rem, 3vw, 3rem);
+}
+.page {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1);
+  padding: clamp(1rem, 3vw, 2rem);
+  }
+
+ .page-header {
+  /* Set a consistent height for all header areas */
+  min-height: 3rem; /* Adjust based on your actual heading height */
+  margin-bottom: 1rem;
+}
+
+.page-heading {
+  font-size: 3rem;
   font-weight: bold;
   margin-bottom: 2rem;
-  text-align: center;
+  text-align: left;
 }
 
-.intro-columns {
+.page-content {
+  /* Default for small screens: single column */
+  column-count: 2;
+  column-gap: clamp(1rem, 3vw, 2rem);
+  column-rule: 1px solid #ddd;
+  height: calc(11in - 2rem);
+  column-fill: auto;
+  break-after: page;
+}
+/* Small screens */
+@media (max-width: 768px) {
+  .page-content {
+    height: auto;     /* Remove fixed height */
+    column-count: 1;  /* Single column */
+  }
+}
+/* Medium screens */
+@media (min-width: 768px) {
+  .layout-container {
+    max-width: 8.5in; /* Single page width */
+  }
+  .page-content {
+    column-count: 2;
+  }
+   .page {
+    max-width: 8.5in;
+    margin: 0 auto;
+  }
+}
+/* Large screens: two pages with two columns each */
+@media (min-width: 1400px) {
+  .layout-container {
+    display: flex;
+    flex-wrap: wrap;
+    max-width: calc(2 * 8.5in + 3rem); /* Two pages plus gap */
+    justify-content: center;
+  }
+   .page {
+    flex: 0 0 cal(50% - 1rem);
+    background: white;
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1);
+    padding: clamp(1rem, 3vw, 2rem);
+    height: 11in;
+    max-width: 8.5in;
+    margin: 0;
+    overflow: hidden;
+  }
+} 
+
+@media (min-width: 1400px) {
+  .layout-container {
+    display: flex;
+    flex-direction: column;
+    max-width: calc(2 * 8.5in + 3rem);
+    margin: 0 auto;
+  }
+  
+  .page-heading {
+    text-align: left;
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+  
+  .pages-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(2rem, 4vw, 3rem);
+  }
+}
+/* Prevent awkward breaks and improve readability */
+img, h1, h2, h3, h4, h5, h6 {
+  break-inside: avoid;
+}
+
+h1, h2, h3 {
+  break-after: avoid;
+}
+
+.page:nth-child(odd) {
+  order: 0;
+}
+
+.page:nth-child(even) {
+  order: 1;
+}
+
+.pagination-controls {
   display: flex;
-  flex-direction: row;
-  gap: 2rem;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  margin: 2rem 0;
+  padding: 1rem;
+  background: #f5f5f5;
+  border-radius: 0.5rem;
 }
 
-.intro-text {
-  flex: 1;
-  min-width: 300px;
-  font-size: 1rem;
-  line-height: 1.6;
+.pagination-controls button {
+  padding: 0.5rem 1rem;
+  background: #333;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.pagination-controls button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.page-indicator {
+  font-weight: bold;
 }
 
 .intro-callout {
@@ -183,5 +279,168 @@ body {
 
   .intro-text {
     font-size: 0.95rem;
+  }
+}
+
+/* SPREAD CONTAINER */
+.spread-container {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  max-width: calc(17in + 1rem); /* ~8.5in per page */
+  margin: 0 auto;
+  gap: 1rem;
+}
+
+
+.spread-page {
+  width: 8.5in;
+  height: 11in;
+  margin: 0.5in;
+  padding: 1in;
+  background-color: white;
+  border: 1px solid #ccc;
+  box-shadow: 0 0 5px rgba(0,0,0,0.1);
+}
+
+
+/* === TYPOGRAPHY === */
+.heading-title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.heading-question {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #333;
+  margin: 1.5rem 0 0.5rem 0;
+}
+
+.heading-story {
+  font-family: 'Ink Free', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-style: italic;
+  color: #555;
+  margin: 1.5rem 0 0.5rem 0;
+}
+
+.paragraph {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #222;
+  margin-bottom: 1rem;
+}
+
+.paragraph.dropcap::first-letter {
+  float: left;
+  font-size: 3rem;
+  line-height: 1;
+  padding-right: 0.2rem;
+  font-weight: bold;
+}
+
+/* === TWO-COLUMN LAYOUT === */
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+}
+
+/* === CALLOUTS === */
+.callout-cent {
+  background: #fef6c2;
+  border-left: 4px solid #f5c518;
+  padding: 1rem;
+  margin: 2rem auto;
+  max-width: 80%;
+  text-align: center;
+  font-style: italic;
+}
+
+.callout-intra {
+  background: #eef;
+  padding: 1rem;
+  margin: 1rem 0;
+  border-left: 3px solid #88a;
+  font-style: italic;
+}
+
+/* === POST-IT NOTES === */
+.post-it {
+  background: #fcf7bb;
+  padding: 1rem;
+  border: 1px solid #e0d98c;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+  font-family: 'Ink Free', sans-serif;
+  font-size: 0.95rem;
+  font-style: italic;
+  margin: 1rem 0;
+}
+
+.post-it h4 {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.post-it ul {
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+
+/* === IMAGES === */
+.img-float-left {
+  float: left;
+  margin: 0 1rem 1rem 0;
+  max-width: 45%;
+}
+
+.img-float-right {
+  float: right;
+  margin: 0 0 1rem 1rem;
+  max-width: 45%;
+}
+
+.img-column-full {
+  width: 100%;
+  height: auto;
+  margin: 1rem 0;
+}
+
+.img-spread-wide {
+  width: 100%;
+  height: auto;
+  grid-column: span 2;
+}
+
+/* === RESPONSIVE BEHAVIOR === */
+@media (max-width: 1024px) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+
+  .img-float-left,
+  .img-float-right {
+    float: none;
+    display: block;
+    margin: 1rem auto;
+    max-width: 100%;
+  }
+
+  .callout-cent {
+    max-width: 100%;
+  }
+}
+@media (max-width: 1360px) {
+  .spread-container {
+    flex-direction: column;
+    align-items: center;
   }
 }
