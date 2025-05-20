@@ -1,0 +1,227 @@
+/* components/PhotoGallery.module.css */
+
+.galleryContainer {
+  margin-bottom: 2rem;
+}
+
+.photoGrid {
+  display: grid;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+/* Grid layouts based on number of photos */
+.gridFive {
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: auto auto;
+}
+
+.gridFive .thumbnail:first-child {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.gridMany {
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: auto auto;
+}
+
+.gridMany .thumbnail:first-child {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.thumbnail {
+  position: relative;
+  overflow: hidden;
+  border-radius: 4px;
+  aspect-ratio: 4/3;
+}
+
+.thumbnailImage {
+  transition: transform 0.3s ease;
+}
+
+.thumbnail:hover .thumbnailImage {
+  transform: scale(1.05);
+}
+
+.moreOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.moreCount {
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+/* Modal styles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.9);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modalContent {
+  position: relative;
+  width: 90%;
+  height: 90%;
+  max-width: 1200px;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.closeButton {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10;
+  font-size: 2rem;
+}
+
+.currentImageContainer {
+  flex-grow: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.currentImage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.caption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 1rem;
+  text-align: center;
+}
+
+.navButton {
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.5rem;
+  transition: background-color 0.2s;
+}
+
+.navButton:hover {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+.prevButton {
+  position: absolute;
+  left: 1rem;
+}
+
+.nextButton {
+  position: absolute;
+  right: 1rem;
+}
+
+.galleryCounter {
+  text-align: center;
+  color: white;
+  padding: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.thumbnailStrip {
+  display: flex;
+  overflow-x: auto;
+  padding: 0.5rem;
+  gap: 0.5rem;
+  background-color: rgba(0, 0, 0, 0.4);
+  border-radius: 4px;
+}
+
+.stripThumbnail {
+  width: 60px;
+  height: 60px;
+  flex-shrink: 0;
+  border-radius: 2px;
+  overflow: hidden;
+  opacity: 0.6;
+  transition: opacity 0.2s, transform 0.2s;
+  cursor: pointer;
+}
+
+.stripThumbnail.active {
+  opacity: 1;
+  transform: scale(1.05);
+  box-shadow: 0 0 0 2px white;
+}
+
+.stripThumbnail:hover {
+  opacity: 0.9;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .gridFive,
+  .gridMany {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .gridFive .thumbnail:first-child,
+  .gridMany .thumbnail:first-child {
+    grid-column: span 2;
+    grid-row: span 1;
+  }
+  
+  .navButton {
+    width: 36px;
+    height: 36px;
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .modalContent {
+    width: 95%;
+    height: 95%;
+  }
+  
+  .thumbnailStrip {
+    gap: 0.25rem;
+  }
+  
+  .stripThumbnail {
+    width: 40px;
+    height: 40px;
+  }
+}

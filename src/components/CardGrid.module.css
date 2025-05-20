@@ -1,0 +1,156 @@
+/* components/CardGrid.module.css */
+
+.gridContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+  padding: 1rem;
+}
+
+/* Card variations based on importance */
+.card {
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Size variations based on importance */
+.importance-high {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.importance-medium {
+  grid-column: span 1;
+  grid-row: span 1;
+}
+
+.importance-low {
+  grid-column: span 1;
+  grid-row: span 1;
+}
+
+/* Card content styling */
+.cardContent {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.cardTitle {
+  font-size: 1.25rem;
+  margin-bottom: 0.75rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.cardMedia {
+  width: 100%;
+  margin-bottom: 1rem;
+  position: relative;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.cardExcerpt {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #555;
+  margin-bottom: 1rem;
+  flex-grow: 1;
+}
+
+.cardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  font-size: 0.85rem;
+}
+
+.cardDate {
+  color: #777;
+}
+
+.cardTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tag {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.personTag {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.personTag:hover {
+  background-color: #bbdefb;
+}
+
+.placeTag {
+  background-color: #e8f5e9;
+  color: #388e3c;
+}
+
+.placeTag:hover {
+  background-color: #c8e6c9;
+}
+
+.cardLink {
+  display: inline-block;
+  margin-top: 1rem;
+  font-weight: 500;
+  color: #1976d2;
+  text-decoration: none;
+}
+
+.cardLink:hover {
+  text-decoration: underline;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .importance-high {
+    grid-column: span 2;
+    grid-row: span 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .gridContainer {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+  }
+  
+  .importance-high {
+    grid-column: span 1;
+    grid-row: span 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .gridContainer {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
