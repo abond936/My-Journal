@@ -1,0 +1,57 @@
+
+Complete Category Hierarchy:
+
+Introduction
+    Level: 1
+    Display Level: 1
+    Order: 0
+    ID: 
+    Parent ID: None
+
+Childhood
+    Level: 1
+    Display Level: 1
+    Order: 1
+    ID: 
+    Parent ID: None
+
+Preschool
+    Level: 1
+    Display Level: 1
+    Order: 2
+    ID: 
+    Parent ID: None
+
+Adulthood
+    Level: 1
+    Display Level: 1
+    Order: 3
+    ID: 
+    Parent ID: None
+
+THEMES
+    Level: 1
+    Display Level: 1
+    Order: 4
+    ID: 
+    Parent ID: None
+
+The Decades
+    Level: 1
+    Display Level: 1
+    Order: 5
+    ID: 
+    Parent ID: None
+
+
+Summary:
+Total Categories: 1174
+Root Categories: 6
+Max Category Level: 4
+Max Display Level: 4
+
+Categories by Level:
+Level 1: 6 categories
+Level 2: 61 categories
+Level 3: 687 categories
+Level 4: 420 categories

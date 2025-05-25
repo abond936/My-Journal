@@ -1,0 +1,13 @@
+.albumsPage {
+  padding: var(--spacing-xl);
+  text-align: center;
+}
+
+.albumsPage h1 {
+  margin-bottom: var(--spacing-xl);
+}
+
+.albumsPage p {
+  color: var(--text-color);
+  font-size: var(--font-size-lg);
+} 

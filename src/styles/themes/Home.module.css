@@ -1,0 +1,114 @@
+/* src/styles/Home.module.css */
+.pageWrapper {
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+}
+
+/* Top corner styling */
+.topCorner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  width: clamp(200px, 30vw, 400px);
+  pointer-events: none;
+}
+
+.topCorner img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Content wrapper */
+.contentWrapper {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding-top: clamp(100px, 15vh, 200px);
+  padding-bottom: clamp(150px, 25vh, 300px);
+}
+
+/* Title section */
+.titleSection {
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.titleImage {
+  width: 100%;
+  max-width: 800px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+/* Welcome section */
+.welcomeSection {
+  max-width: 800px;
+  margin: -4rem auto 0;
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.welcomeText {
+  font-size: 1.4rem;
+  line-height: 1.6;
+  color: var(--color-text);
+}
+
+/* Bottom corner styling */
+.bottomCorner {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  z-index: 0;
+  width: clamp(200px, 30vw, 400px);
+  pointer-events: none;
+}
+
+.bottomCorner img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .contentWrapper {
+    padding: 1rem;
+  }
+
+  .titleImage {
+    max-width: 90%;
+  }
+}
+
+@media (max-width: 480px) {
+  .contentWrapper {
+    padding-top: 8vh;
+    padding-bottom: 20vh;
+  }
+
+  .bottomCorner {
+    transform: translateY(10%);
+  }
+
+  .titleImage {
+    max-width: 95%;
+  }
+}

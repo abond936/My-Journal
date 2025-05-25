@@ -1,0 +1,134 @@
+.magazineContainer {
+  max-width: 102rem;
+  margin: 0 auto;
+  padding: 2rem;
+  background: #fff;
+}
+
+.spread {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: minmax(200px, auto);
+  gap: 2rem;
+  margin-bottom: 2rem;
+  min-height: 66rem;
+  background: #fafafa;
+  padding: 2rem;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.storyBlock {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+}
+
+.storyBlock:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.storyContent {
+  padding: 1.5rem;
+}
+
+.storyTitle {
+  font-size: 1.5rem;
+  margin: 0 0 1rem 0;
+  color: #333;
+}
+
+.storyImage {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+}
+
+.storyText {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.storyMetadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.tag {
+  background: #f0f0f0;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  color: #666;
+}
+
+.date {
+  color: #999;
+  font-style: italic;
+}
+
+/* Story block sizes */
+.small {
+  grid-column: span 1;
+  grid-row: span 1;
+}
+
+.medium {
+  grid-column: span 1;
+  grid-row: span 2;
+}
+
+.large {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.navigation {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.navButton {
+  padding: 0.5rem 1rem;
+  background: #0070f3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.navButton:hover:not(:disabled) {
+  background: #0051a2;
+}
+
+.navButton:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.spreadNumber {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .spread {
+    grid-template-columns: 1fr;
+  }
+
+  .large {
+    grid-column: span 1;
+  }
+} 
