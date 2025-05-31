@@ -1,0 +1,52 @@
+name: Codebase Backup
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * *'  # Run at midnight every day
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # Fetch all history for proper versioning
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Create backup
+      run: |
+        mkdir -p temp/backup
+        npx ts-node src/lib/scripts/backup-codebase.ts
+    
+    - name: Upload backup artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: codebase-backup
+        path: |
+          temp/backup/codebase-backup-output.txt
+          temp/backup/codebase-backup.zip
+        retention-days: 7
+    
+    - name: Notify on failure
+      if: failure()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: 'Backup failed',
+            body: 'The automated backup process failed. Please check the workflow run for details.'
+          }) 
