@@ -182,7 +182,7 @@ interface Tag {
    - 📅 `tagHelpers.ts` - Helper functions
 
 2. **Feature-Specific Components**
-   - `components/features/tags/`
+   - `components/features/tag/`
      - ✅ `TagList.tsx` - List view
      - ✅ `TagTree.tsx` - Hierarchical view
      - ✅ `TagForm.tsx` - Creation/editing

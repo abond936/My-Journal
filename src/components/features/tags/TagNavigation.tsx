@@ -1,8 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import styles from '@/styles/components/navigation/TagNavigation.module.css';
-import { Tag } from '@/lib/data/tags';
+import styles from '@/lib/styles/components/features/tag/TagNavigation.module.css';
+import { Tag } from '@/lib/types/tag';
 
 interface TagNavigationProps {
   tags: Tag[];

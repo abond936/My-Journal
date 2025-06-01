@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import styles from '@/styles/themes/Home.module.css';
+import styles from '@/lib/styles/themes/Home.module.css';
 
 const Home: React.FC = () => {
   const router = useRouter();
@@ -17,7 +17,7 @@ const Home: React.FC = () => {
     <div className={styles.pageWrapper}>
       {/* Top corner graphic */}
       <div className={styles.topCorner}>
-        <img src="/images/top-corner.png" alt="" />
+        <img src="/images/uploads/top-corner.png" alt="" />
       </div>
 
       {/* Main content area */}
@@ -25,7 +25,7 @@ const Home: React.FC = () => {
         {/* Title section */}
         <div className={styles.titleSection}>
           <img 
-            src="/images/Title.jpg" 
+            src="/images/uploads/Title.jpg" 
             alt="My Stories - Michael Alan Bond" 
             className={styles.titleImage}
           />
@@ -48,7 +48,7 @@ const Home: React.FC = () => {
 
       {/* Bottom corner graphic */}
       <div className={styles.bottomCorner}>
-        <img src="/images/bottom-corner.png" alt="" />
+        <img src="/images/uploads/bottom-corner.png" alt="" />
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/config/firebase';
-import { Entry } from '@/types/entry';
-import { Tag } from '@/lib/data/tags';
+import { Entry } from '@/lib/types/entry';
+import { Tag } from '@/lib/types/tag';
 import CardLayout from '@/components/layouts/CardLayout';
 import TimelineLayout from '@/components/layouts/TimelineLayout';
 import AccordionLayout from '@/components/layouts/AccordionLayout';
@@ -11,6 +11,10 @@ interface PageProps {
   params: {
     id: string;
   };
+}
+
+interface TagWithLayout extends Tag {
+  layout?: 'timeline' | 'accordion' | 'blog';
 }
 
 async function getTag(tagId: string): Promise<Tag | null> {
@@ -44,7 +48,7 @@ async function getEntries(tagId: string): Promise<Entry[]> {
 }
 
 export default async function TagPage({ params }: PageProps) {
-  const tag = await getTag(params.id);
+  const tag = await getTag(params.id) as TagWithLayout;
   
   if (!tag) {
     return (
@@ -73,7 +77,7 @@ export default async function TagPage({ params }: PageProps) {
       {tag.description && (
         <p className="text-gray-600 mb-8">{tag.description}</p>
       )}
-      <LayoutComponent entries={entries} />
+      <LayoutComponent stories={entries.map(entry => ({ ...entry, categoryId: entry.id }))} />
     </div>
   );
 } 

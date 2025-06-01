@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { db } from '@/lib/config/firebase';
 import { collection, getDocs, query, orderBy, onSnapshot, where } from 'firebase/firestore';
-import styles from '@/styles/components/navigation/LifeStagesSidebar.module.css';
-import { Tag } from '@/lib/data/tags';
+import styles from '@/lib/styles/components/deprecated/LifeStagesSidebar.module.css';
+import { Tag } from '@/lib/types/tag';
 import { useTag } from '@/lib/contexts/TagContext';
 
 interface LifeStagesSidebarProps {

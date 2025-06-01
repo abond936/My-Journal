@@ -7,7 +7,7 @@ console.log('\nDotenv config result:', result);
 console.log('Current working directory:', process.cwd());
 console.log('Looking for .env file in:', resolve(process.cwd(), '.env'));
 
-import { adminDb } from '@/lib/config/firebaseAdmin';
+import { adminDb } from '@/lib/config/firebase/admin';
 
 // Debug logging for all Firebase environment variables
 console.log('\nClient-side Firebase variables:');

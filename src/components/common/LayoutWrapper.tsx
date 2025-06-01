@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation';
 import Navigation from '@/components/navigation/Navigation';
 import LifeStagesSidebar from '@/components/navigation/LifeStagesSidebar';
-import styles from '@/styles/components/common/LayoutWrapper.module.css';
+import styles from '@/lib/styles/components/common/LayoutWrapper.module.css';
 
 interface LayoutWrapperProps {
   children: React.ReactNode;

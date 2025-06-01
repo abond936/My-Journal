@@ -8,7 +8,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
-import styles from '@/styles/components/navigation/Navigation.module.css';
+import styles from '@/lib/styles/components/navigation/Navigation.module.css';
 
 interface NavigationProps {
   className?: string;

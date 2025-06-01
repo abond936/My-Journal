@@ -42,6 +42,14 @@ src/
 │   └── layouts/      # Layout components
 ├── lib/              # Core utilities and services
 │   ├── config/       # Configuration files
+│   │   ├── firebase/
+│   │   │   ├── admin.ts           # Firebase Admin configuration
+│   │   │   ├── firebase.json      # Firebase configuration
+│   │   │   ├── firestore.rules    # Firestore rules
+│   │   │   └── firestore.indexes.json # Firestore indexes
+│   │   ├── .firebaserc           # Firebase project configuration
+│   │   ├── manifest.json         # PWA manifest
+│   │   └── eslint.config.mjs     # ESLint configuration
 │   ├── services/     # Service integrations
 │   ├── data/         # Data management
 │   ├── hooks/        # React hooks

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Tag } from '@/lib/types/tag';
-import styles from '@/styles/components/navigation/TagBox.module.css';
+import styles from '@/lib/styles/components/features/tag/TagBox.module.css';
 
 interface TagBoxProps {
   tag: Tag;

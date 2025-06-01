@@ -56,9 +56,9 @@ alwaysApply: false
 - Logs MUST include timestamps and clear status messages
 
 ## 6. Firebase Integration
-- Firebase Admin imports MUST use the `@/lib/config/firebaseAdmin` path:
+- Firebase Admin imports MUST use the `@/lib/config/firebase/admin` path:
   ```typescript
-  import { adminDb } from '@/lib/config/firebaseAdmin';
+  import { adminDb } from '@/lib/config/firebase/admin';
   ```
 - Firebase Admin MUST be imported AFTER environment variables are loaded
 - Required Firebase environment variables:
@@ -160,5 +160,6 @@ When updating scripts:
 3. Update Firebase Admin imports
 4. Test the script with the new configuration
 5. Update this section of the documentation
+
 
 

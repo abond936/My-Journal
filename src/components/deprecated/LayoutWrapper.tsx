@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Navigation from './Navigation';
-import LifeStagesSidebar from './LifeStagesSidebar';
+import LifeStagesSidebar from '@/components/deprecated/LifeStagesSidebar';
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

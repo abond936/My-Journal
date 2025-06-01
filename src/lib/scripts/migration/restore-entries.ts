@@ -2,7 +2,8 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { parse } from 'csv-parse/sync';
 import { db } from '@/lib/config/firebase';
-import { Tag, createTag, updateTag } from '@/lib/data/tags';
+import { Tag } from '@/lib/types/tag';
+import { createTag, updateTag } from '@/lib/data/tags';
 
 const MIGRATION_DATA_PATH = join(process.cwd(), 'src', 'data', 'migration');
 

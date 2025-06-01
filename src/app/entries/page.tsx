@@ -5,11 +5,11 @@ import { getEntries } from '@/lib/services/entryService';
 import { Entry } from '@/lib/types/entry';
 import { UIEntry } from '@/lib/types/ui';
 import Link from 'next/link';
-import CardGrid from '@/components/layouts/CardGrid';
+import CardGrid from '@/components/common/CardGrid';
 import AccordionLayout from '@/components/layouts/AccordionLayout';
 import BlogLayout from '@/components/layouts/BlogLayout';
 import { useTag } from '@/lib/contexts/TagContext';
-import styles from '@/styles/pages/entries.module.css';
+import styles from '@/lib/styles/app/entries.module.css';
 
 type LayoutType = 'grid' | 'accordion' | 'blog';
 

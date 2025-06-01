@@ -8,7 +8,7 @@ console.log('Current working directory:', process.cwd());
 console.log('Looking for .env file in:', resolve(process.cwd(), '.env'));
 
 // Now import Firebase admin after environment variables are loaded
-import { adminDb } from '../config/firebaseAdmin';
+import { adminDb } from '../config/firebase/admin';
 
 // Debug logging for Firebase environment variables
 console.log('\nAdmin Firebase variables:');

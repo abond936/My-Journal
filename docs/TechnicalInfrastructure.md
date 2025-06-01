@@ -264,4 +264,88 @@ CRITICAL: These issues MUST be avoided.
 - Enhanced security rules
 - Improved caching
 - Added monitoring
-- Optimized queries 
+- Optimized queries
+
+## 7. Configuration and Testing Infrastructure
+CRITICAL: These rules MUST be followed for all configuration and testing setup.
+
+### 7.1 Root Directory Configuration Files
+The following files MUST be in the project root directory:
+- `package.json`: Project dependencies and scripts
+- `tsconfig.json`: TypeScript configuration
+- `next.config.js`: Next.js configuration
+- `jest.config.js`: Jest testing configuration
+- `.env`: Environment variables (gitignored)
+- `.gitignore`: Git ignore rules
+- `README.md`: Project documentation
+
+### 7.2 Testing Infrastructure
+Location: `src/__tests__/`
+
+#### Directory Structure
+```
+src/__tests__/
+├── unit/           # Unit tests
+│   ├── components/ # Component tests
+│   ├── services/   # Service tests
+│   └── utils/      # Utility tests
+├── integration/    # Integration tests
+│   ├── api/        # API integration tests
+│   └── flows/      # User flow tests
+└── e2e/           # End-to-end tests
+    └── flows/      # Complete user flows
+```
+
+#### Test File Naming
+- Unit tests: `*.test.ts` or `*.test.tsx`
+- Integration tests: `*.integration.test.ts`
+- E2E tests: `*.e2e.test.ts`
+
+#### Test Configuration
+- Jest config: `jest.config.js` in project root
+- Test setup: `src/__tests__/config/jest.setup.js`
+- Test utilities: `src/__tests__/utils/`
+
+#### Testing Rules
+1. ALL new features MUST have corresponding tests
+2. Tests MUST be placed in the appropriate directory based on type
+3. Tests MUST follow the naming convention
+4. Tests MUST be independent and isolated
+5. Tests MUST clean up after themselves
+6. Tests MUST use proper mocking for external dependencies
+
+#### Test Coverage Requirements
+- Unit tests: 80% minimum coverage
+- Integration tests: 60% minimum coverage
+- E2E tests: Critical paths only
+
+### 7.3 Configuration Management
+CRITICAL: These rules MUST be followed for all configuration changes.
+
+#### Environment Variables
+- MUST be defined in `.env`
+- MUST be documented in `.env.example`
+- MUST be validated at startup
+- MUST use proper typing
+
+#### TypeScript Configuration
+- MUST use strict mode
+- MUST include proper path aliases
+- MUST include test configuration
+- MUST exclude test files from build
+
+#### Jest Configuration
+- MUST be in project root
+- MUST include proper path mappings
+- MUST include setup file
+- MUST include coverage settings
+
+### 7.4 Common Configuration Mistakes
+❌ DO NOT:
+- Place config files in wrong locations
+- Skip environment variable validation
+- Use hardcoded values
+- Skip test configuration
+- Mix different testing approaches
+- Skip proper mocking
+- Ignore test coverage requirements 
