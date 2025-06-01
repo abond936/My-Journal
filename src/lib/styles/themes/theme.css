@@ -1,0 +1,190 @@
+/* Theme variables for light and dark modes */
+
+:root {
+  /* Base Colors - More muted and professional */
+  --color-primary: #4f46e5;      /* Muted Indigo */
+  --color-primary-light: #818cf8;
+  --color-primary-dark: #3730a3;
+  
+  --color-secondary: #059669;    /* Muted Emerald */
+  --color-secondary-light: #34d399;
+  --color-secondary-dark: #065f46;
+  
+  --color-accent: #d97706;       /* Muted Amber */
+  --color-accent-light: #fbbf24;
+  --color-accent-dark: #b45309;
+  
+  --color-info: #2563eb;         /* Muted Blue */
+  --color-info-light: #60a5fa;
+  --color-info-dark: #1d4ed8;
+  
+  --color-warning: #ea580c;      /* Muted Orange */
+  --color-warning-light: #fb923c;
+  --color-warning-dark: #c2410c;
+
+  /* Neutral Colors - More subtle grays */
+  --color-neutral-50: #f8fafc;
+  --color-neutral-100: #f1f5f9;
+  --color-neutral-200: #e2e8f0;
+  --color-neutral-300: #cbd5e1;
+  --color-neutral-400: #94a3b8;
+  --color-neutral-500: #64748b;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1e293b;
+  --color-neutral-900: #0f172a;
+
+  /* Semantic Colors - More muted versions */
+  --color-success: #059669;
+  --color-success-light: #34d399;
+  --color-success-dark: #065f46;
+  
+  --color-error: #dc2626;
+  --color-error-light: #f87171;
+  --color-error-dark: #b91c1c;
+  
+  --color-warning: #d97706;
+  --color-warning-light: #fbbf24;
+  --color-warning-dark: #b45309;
+  
+  --color-info: #2563eb;
+  --color-info-light: #60a5fa;
+  --color-info-dark: #1d4ed8;
+
+  /* Background Colors - More subtle */
+  --color-background: var(--color-neutral-50);
+  --color-background-alt: var(--color-neutral-100);
+  --color-background-hover: var(--color-neutral-200);
+  
+  /* Text Colors - Better contrast */
+  --color-text: var(--color-neutral-900);
+  --color-text-light: var(--color-neutral-700);
+  --color-text-lighter: var(--color-neutral-500);
+  
+  /* Border Colors - More subtle */
+  --color-border: var(--color-neutral-200);
+  --color-border-hover: var(--color-neutral-300);
+  
+  /* Shadow Colors - More natural */
+  --shadow-color: 220 13% 91%;
+  --shadow-strength: 1%;
+  
+  /* Light theme (default) */
+  --background-primary: var(--color-neutral-50);
+  --background-secondary: var(--color-neutral-100);
+  --background-tertiary: var(--color-neutral-200);
+  
+  --text-primary: var(--color-neutral-900);
+  --text-secondary: var(--color-neutral-700);
+  --text-tertiary: var(--color-neutral-500);
+  
+  --border-color: var(--color-neutral-200);
+  --border-color-hover: var(--color-neutral-300);
+  
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  
+  /* Component specific */
+  --card-background: white;
+  --card-border: var(--color-neutral-200);
+  --card-shadow: var(--shadow-sm);
+  
+  --input-background: white;
+  --input-border: var(--color-neutral-300);
+  --input-border-focus: var(--color-primary);
+  
+  --button-primary-bg: var(--color-primary);
+  --button-primary-text: white;
+  --button-primary-hover: var(--color-primary-dark);
+  
+  --button-secondary-bg: var(--color-neutral-200);
+  --button-secondary-text: var(--color-neutral-700);
+  --button-secondary-hover: var(--color-neutral-300);
+}
+
+/* Dark theme */
+[data-theme="dark"] {
+  /* Dark theme colors - More muted and easier on the eyes */
+  --color-primary: #6366f1;      /* Slightly brighter for dark mode */
+  --color-primary-light: #818cf8;
+  --color-primary-dark: #4f46e5;
+  
+  --color-secondary: #10b981;    /* Slightly brighter for dark mode */
+  --color-secondary-light: #34d399;
+  --color-secondary-dark: #059669;
+  
+  --color-accent: #f59e0b;       /* Slightly brighter for dark mode */
+  --color-accent-light: #fbbf24;
+  --color-accent-dark: #d97706;
+  
+  --color-info: #3b82f6;         /* Slightly brighter for dark mode */
+  --color-info-light: #60a5fa;
+  --color-info-dark: #2563eb;
+  
+  --color-warning: #f97316;      /* Slightly brighter for dark mode */
+  --color-warning-light: #fb923c;
+  --color-warning-dark: #ea580c;
+
+  /* Dark theme neutral colors - More blue-tinted for better contrast */
+  --color-neutral-50: #0f172a;
+  --color-neutral-100: #1e293b;
+  --color-neutral-200: #334155;
+  --color-neutral-300: #475569;
+  --color-neutral-400: #64748b;
+  --color-neutral-500: #94a3b8;
+  --color-neutral-600: #cbd5e1;
+  --color-neutral-700: #e2e8f0;
+  --color-neutral-800: #f1f5f9;
+  --color-neutral-900: #f8fafc;
+
+  /* Dark theme background colors */
+  --color-background: var(--color-neutral-50);
+  --color-background-alt: var(--color-neutral-100);
+  --color-background-hover: var(--color-neutral-200);
+  
+  /* Dark theme text colors */
+  --color-text: var(--color-neutral-100);
+  --color-text-light: var(--color-neutral-300);
+  --color-text-lighter: var(--color-neutral-500);
+  
+  /* Dark theme border colors */
+  --color-border: var(--color-neutral-700);
+  --color-border-hover: var(--color-neutral-600);
+  
+  /* Dark theme shadow colors */
+  --shadow-color: 220 13% 91%;
+  --shadow-strength: 1%;
+  
+  --background-primary: var(--color-neutral-900);
+  --background-secondary: var(--color-neutral-800);
+  --background-tertiary: var(--color-neutral-700);
+  
+  --text-primary: var(--color-neutral-50);
+  --text-secondary: var(--color-neutral-300);
+  --text-tertiary: var(--color-neutral-400);
+  
+  --border-color: var(--color-neutral-700);
+  --border-color-hover: var(--color-neutral-600);
+  
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4);
+  
+  /* Component specific */
+  --card-background: var(--color-neutral-800);
+  --card-border: var(--color-neutral-700);
+  --card-shadow: var(--shadow-sm);
+  
+  --input-background: var(--color-neutral-800);
+  --input-border: var(--color-neutral-600);
+  --input-border-focus: var(--color-primary-light);
+  
+  --button-primary-bg: var(--color-primary-dark);
+  --button-primary-text: white;
+  --button-primary-hover: var(--color-primary);
+  
+  --button-secondary-bg: var(--color-neutral-700);
+  --button-secondary-text: var(--color-neutral-200);
+  --button-secondary-hover: var(--color-neutral-600);
+} 

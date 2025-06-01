@@ -1,0 +1,13 @@
+---
+description: Encourage awareness of cross-module dependencies and holistic system behavior.
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Holistic Development Considerations
+
+- **Frontend-Backend Integration:** When working on frontend features that interact with the backend, always consult the API documentation (@./docs/api_design.md) to ensure proper data exchange and error handling.
+- **Database Interactions:** Be mindful of the database schema (@./docs/database_schema.md) when implementing backend logic that reads or writes data. Avoid introducing schema changes without proper review.
+- **Shared Components:** Prioritize the use of existing shared UI components (located in `@./components/shared`) to maintain a consistent user interface across the application.
+- **Impact Analysis:** Before making significant changes to core modules or architectural components, consider the potential impact on other parts of the system. If unsure, consult with the team.
+- **Logging and Monitoring:** Ensure that new features and modules include appropriate logging and monitoring mechanisms to facilitate debugging and performance analysis across the system. Refer to @./docs/logging_guidelines.md.

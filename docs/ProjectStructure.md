@@ -1,0 +1,224 @@
+# Project Structure Rules
+Status: 🚧 In Progress
+Last Updated: 2024-03-19
+Priority: HIGH
+
+## 1. Directory Structure
+
+### 1.1 Root Level
+```
+/
+├── app/                    # Next.js app router pages
+├── components/            # Reusable UI components
+├── lib/                   # Shared utilities and services
+├── public/               # Static assets
+├── docs/                 # Project documentation
+├── tests/                # Test files
+└── config/               # Configuration files
+```
+
+### 1.2 App Directory (`app/`)
+```
+app/
+├── entries/             # Entry management and display
+├── albums/              # Album management and display
+├── tags/                # Tag management and display
+├── admin/              # Administrative interface
+├── api/                # API routes
+└── layout.tsx          # Root layout
+```
+
+### 1.3 Components Directory (`components/`)
+```
+components/
+├── common/             # Small, reusable UI elements
+│   ├── buttons/
+│   ├── inputs/
+│   ├── cards/
+│   └── icons/
+├── features/           # Domain-specific components
+│   ├── entries/
+│   ├── albums/
+│   └── tags/
+├── layouts/            # Layout components
+└── ui/                # Basic UI components
+```
+
+### 1.4 Library Directory (`lib/`)
+```
+lib/
+├── services/          # API and data services
+├── utils/            # Helper functions
+├── hooks/            # Custom React hooks
+├── constants/        # Shared constants
+├── types/            # TypeScript types
+├── styles/           # Shared styles
+├── config/           # Application configuration
+└── scripts/          # Utility scripts
+```
+
+### 1.5 Public Directory (`public/`)
+```
+public/
+├── images/
+│   ├── icons/        # Application icons
+│   └── assets/       # Other images
+└── fonts/            # Font files
+```
+
+## 2. Naming Conventions
+
+### 2.1 Files
+- React Components: PascalCase (e.g., `EntryCard.tsx`)
+- Utilities: camelCase (e.g., `formatDate.ts`)
+- Styles: kebab-case (e.g., `entry-card.css`)
+- Tests: `[name].test.ts` or `[name].spec.ts`
+- Types: `[name].types.ts`
+
+### 2.2 Directories
+- Feature directories: kebab-case
+- Component directories: kebab-case
+- Utility directories: kebab-case
+
+## 3. Component Organization
+
+### 3.1 Common Components
+- Small, reusable UI elements
+- No business logic
+- Highly generic
+- Examples: buttons, inputs, cards, icons
+
+### 3.2 Feature Components
+- Domain-specific components
+- May contain business logic
+- Specific to entries, albums, or tags
+- Examples: entry cards, album viewers, tag selectors
+
+### 3.3 Layout Components
+- Define page structure
+- Handle responsive design
+- Manage common UI elements
+- Examples: main layout, admin layout
+
+## 4. Code Organization
+
+### 4.1 Component Structure
+```typescript
+// Imports
+import { ... } from '...'
+
+// Types
+interface Props {
+  // ...
+}
+
+// Component
+export const ComponentName: React.FC<Props> = ({ ... }) => {
+  // ...
+}
+
+// Styles
+const styles = {
+  // ...
+}
+```
+
+### 4.2 File Organization
+- Imports at top
+- Types/interfaces next
+- Component definition
+- Helper functions
+- Styles
+- Exports
+
+## 5. Asset Management
+
+### 5.1 Images
+- Icons in `public/images/icons/`
+- Other images in `public/images/assets/`
+- Use descriptive names
+- Optimize for web
+
+### 5.2 Styles
+- All styles centralized in `lib/styles/`
+  - `lib/styles/global/` - Global styles and resets
+  - `lib/styles/themes/` - Theme variables and configurations
+  - `lib/styles/components/` - Component-specific styles
+    - `lib/styles/components/common/` - Styles for common components
+    - `lib/styles/components/features/` - Styles for feature components
+    - `lib/styles/components/layouts/` - Styles for layout components
+- No component-specific style files
+- Use CSS modules or styled-components for component-specific variations
+- Maintain consistent naming conventions across style files
+- Follow BEM methodology for class naming
+
+## 6. Testing Structure
+
+### 6.1 Test Organization
+- Unit tests with components
+- Integration tests in `tests/integration/`
+- E2E tests in `tests/e2e/`
+
+### 6.2 Test Naming
+- `[component].test.ts` for unit tests
+- `[feature].spec.ts` for integration tests
+- `[flow].e2e.ts` for E2E tests
+
+## 7. Documentation
+
+### 7.1 Code Documentation
+- JSDoc for functions and components
+- README.md in each major directory
+- Type definitions for all interfaces
+
+### 7.2 Project Documentation
+- All docs in `docs/` directory
+- Markdown format
+- Include status and last updated
+- Link to related documentation
+
+## 8. Configuration
+
+### 8.1 Environment Variables
+- `.env` for local development
+- `.env.example` for documentation
+- No secrets in version control
+
+### 8.2 Build Configuration
+- Next.js config in root
+- TypeScript config in root
+- Other configs in `lib/config/`
+
+## 9. Version Control
+
+### 9.1 Git Structure
+- Feature branches from main
+- Pull requests for all changes
+- Semantic commit messages
+- No direct commits to main
+
+### 9.2 Ignored Files
+- Build artifacts
+- Dependencies
+- Environment files
+- IDE files
+
+## 10. Best Practices
+
+### 10.1 Code Quality
+- ESLint for linting
+- Prettier for formatting
+- TypeScript for type safety
+- No any types
+
+### 10.2 Performance
+- Code splitting
+- Image optimization
+- Lazy loading
+- Bundle analysis
+
+### 10.3 Security
+- No secrets in code
+- Input validation
+- XSS prevention
+- CSRF protection 

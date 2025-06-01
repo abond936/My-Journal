@@ -43,3 +43,19 @@ next-env.d.ts
 # firebase
 service-account.json
 *-firebase-adminsdk-*.json
+
+# temporary directories
+/temp
+/exports
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# backup files
+*.bak
+*.backup
+*_backup

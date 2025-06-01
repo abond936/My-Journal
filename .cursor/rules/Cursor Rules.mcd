@@ -1,0 +1,182 @@
+--- 
+description: General Project Rules 
+globs: ["**/*"] 
+alwaysApply: true
+---
+
+# Cursor Development Rules
+
+## 1. Problem-Solving Protocol
+- Consider all coding recommendation 
+- Check existing codebase before proposing solutions
+- Review current architecture before making changes
+- Consider long-term implications
+- Obtain explicit approval before writing new code
+
+## 2. Communication Rules
+- Present plans before making changes
+- Document issues when they arise
+- Keep track of important decisions
+- Maintain clear problem statements
+
+## 3. Development Process
+- Focus on one issue at a time
+- Document decisions and learnings
+- Follow established patterns
+- Test as you go
+
+## 4. Code Creation Rules
+- Check existing solutions first
+- Document proposed changes
+- Get approval before implementation
+- Follow established patterns
+
+## 5. Documentation Requirements
+- Maintain a detailed Executive Summary of the Project
+- Maintain a detailed Vision of the Project
+- Maintain a detailed Architecture Plan
+- Maintain a detailed Development Plan
+- Update all documentation as decisions and coding is made.
+
+
+## 6. Interaction Patterns
+- Listen before acting
+- Ask clarifying questions
+- Present plans for approval
+- Document important information
+
+## 7. File Management
+- Keep track of file changes
+- Document file purposes
+- Maintain clear organization
+- Follow naming conventions
+
+## 8. Session Management
+- Review current state at start
+- Document important decisions
+- Track progress
+- Maintain context
+
+## 9. Emergency Protocol
+- Document issues clearly
+- Propose solutions
+- Get approval before changes
+- Maintain clear communication
+
+## 10. Learning and Adaptation
+- Document learnings
+- Track patterns
+- Share knowledge
+- Improve processes
+
+## 11. Next.js Routing Standards
+- Use consistent parameter names across routes
+- Follow the pattern: `[id]` for single-item routes
+- Document route parameters in architecture
+- Check for existing routes before creating new ones
+- Use server components by default
+- Document any client components with clear reasoning
+
+## 12. Parameter Naming Conventions
+- Use `id` for single-item identifiers
+- Use `categoryId` only in data models, not routes
+- Document parameter names in architecture
+- Maintain consistency with database field names
+- Review parameter usage across components
+
+## 13. Component Development
+- Start with server components by default
+- Document reasons for client components
+- Follow established patterns
+- Include proper TypeScript interfaces
+- Implement proper error handling
+
+## 14. Code Style and Organization
+
+### Naming Conventions
+- Use camelCase for JavaScript variables and function names
+- Use PascalCase for React component names
+- Use kebab-case for CSS class names
+- Use descriptive and meaningful names for all entities
+- Be consistent with naming throughout the project
+
+### Code Formatting
+- Maintain consistent indentation (2 spaces)
+- Keep lines of code reasonably short (80-120 characters)
+- Use blank lines to separate logical blocks of code
+- Be consistent with the use of semicolons
+- Format code according to project's ESLint configuration
+
+### Comments and Documentation
+- Add comments to explain complex logic or non-obvious code
+- Use JSDoc-style comments for functions and components
+- Keep comments up-to-date with code changes
+- Document important decisions and their rationale
+- Include usage examples for complex components
+
+### File Structure
+- Adhere to Next.js directory structure
+- Organize components by feature or shared utility
+- Keep page-specific components within pages directory
+- Maintain clear separation of concerns
+- Follow consistent file organization patterns
+
+### CSS Organization
+- Use logical CSS file organization
+- Follow BEM methodology for class names
+- Keep specificity as low as possible
+- Avoid excessive selector nesting
+- Use media queries for responsiveness
+- Document complex CSS rules
+
+### Data Management
+- Use appropriate Next.js data fetching methods
+- Centralize data fetching logic
+- Implement proper error handling
+- Follow consistent patterns for data access
+- Document data flow and transformations
+
+### API Design
+- Keep API route handlers focused and concise
+- Implement proper error handling and validation
+- Follow RESTful conventions
+- Document endpoints and request/response formats
+- Use consistent authentication patterns
+
+### Testing Strategy
+- Write tests for critical functionality
+- Follow consistent testing patterns
+- Include unit, integration, and E2E tests
+- Document test coverage requirements
+- Maintain test data and fixtures
+
+### Environment and Configuration
+- Use .env files for configuration
+- Never commit sensitive information
+- Document required environment variables
+- Follow consistent configuration patterns
+- Validate environment setup
+
+## 15. Documentation Rules
+
+### Location
+- All project documentation must be stored in the `/docs` directory
+- No documentation files should be placed in the root directory
+- Documentation should be organized by type and purpose
+- Each document should have a clear, descriptive name
+
+### Naming Conventions
+- Use PascalCase for document names
+- Include the document type in the name (e.g., `ARCHITECTURE.md`, `VISION.md`)
+- Use descriptive names that indicate the document's purpose
+
+### Content Organization
+- Each document should have a clear structure with sections and subsections
+- Use markdown formatting consistently
+- Include a table of contents for longer documents
+- Keep related information together in the same document
+
+### Version Control
+- Document changes should be committed with clear, descriptive messages
+- Major changes should be noted in the document's history
+- Keep documentation in sync with code changes 

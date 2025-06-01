@@ -1,0 +1,164 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Scripting Rules
+
+## 1. Script Location and Organization
+- All scripts MUST be located in `src/lib/scripts/`
+- Scripts MUST be organized by purpose:
+  - `firebase/` - Firebase-related scripts
+  - `backup/` - Backup and restore scripts
+  - `migration/` - Database migration scripts
+  - `utility/` - General utility scripts
+
+## 2. Script Execution
+- Scripts MUST be executed using:
+  ```bash
+  npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/<script-name>
+  ```
+- NEVER execute scripts directly with `node` or `ts-node` without proper configuration
+- ALWAYS use the correct TypeScript configuration for scripts
+
+## 3. Environment Variables
+- Scripts MUST load environment variables at the top:
+  ```typescript
+  import * as dotenv from 'dotenv';
+  import { resolve } from 'path';
+
+  // Debug dotenv loading
+  const result = dotenv.config();
+  console.log('\nDotenv config result:', result);
+  console.log('Current working directory:', process.cwd());
+  console.log('Looking for .env file in:', resolve(process.cwd(), '.env'));
+  ```
+- Required environment variables MUST be documented in the script's header
+- Scripts MUST validate required environment variables before execution
+
+## 4. Error Handling
+- Scripts MUST have top-level error handling:
+  ```typescript
+  try {
+    // Script logic
+  } catch (error) {
+    console.error('Error:', error);
+    process.exit(1);
+  }
+  ```
+- Error messages MUST be clear and actionable
+- Scripts MUST exit with appropriate status codes
+
+## 5. Logging and Output
+- Scripts MUST log their progress
+- Output MUST be written to appropriate files in `temp/` directory
+- Log files MUST be named consistently with the script name
+- Logs MUST include timestamps and clear status messages
+
+## 6. Firebase Integration
+- Firebase Admin imports MUST use the `@/lib/config/firebaseAdmin` path:
+  ```typescript
+  import { adminDb } from '@/lib/config/firebaseAdmin';
+  ```
+- Firebase Admin MUST be imported AFTER environment variables are loaded
+- Required Firebase environment variables:
+  - `FIREBASE_SERVICE_ACCOUNT_PROJECT_ID`
+  - `FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY`
+  - `FIREBASE_SERVICE_ACCOUNT_CLIENT_EMAIL`
+
+## 7. TypeScript Configuration
+- Scripts MUST use `tsconfig.scripts.json` which includes:
+  ```json
+  {
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+      "module": "commonjs",
+      "target": "es2020",
+      "esModuleInterop": true,
+      "moduleResolution": "node",
+      "resolveJsonModule": true,
+      "allowSyntheticDefaultImports": true,
+      "skipLibCheck": true,
+      "strict": false,
+      "noEmit": true,
+      "baseUrl": ".",
+      "paths": {
+        "@/*": ["src/*"]
+      }
+    },
+    "include": [
+      "src/scripts/**/*.ts",
+      "src/lib/scripts/**/*.ts"
+    ],
+    "exclude": [
+      "node_modules"
+    ]
+  }
+  ```
+
+## 8. Dependencies
+- Required dependencies MUST be installed:
+  ```bash
+  npm install --save-dev ts-node tsconfig-paths dotenv @types/dotenv
+  ```
+- Additional dependencies as needed (e.g., `archiver` for backup scripts)
+
+## 9. Script Documentation
+- Every script MUST have a header comment block:
+  ```typescript
+  /**
+   * Script Name
+   * 
+   * Purpose: Brief description of what the script does
+   * 
+   * Required Environment Variables:
+   * - VAR1: Description of variable 1
+   * - VAR2: Description of variable 2
+   * 
+   * Output:
+   * - Description of output 1
+   * - Description of output 2
+   */
+  ```
+
+## 10. Testing
+- Scripts SHOULD include debug logging for environment variables
+- Scripts SHOULD validate their configuration before execution
+- Scripts SHOULD provide clear feedback about their progress
+
+## 11. Script Migration Status
+
+### Working Scripts (Following Current Standards)
+- `src/lib/scripts/firebase/test-firebase-config.ts`
+- `src/lib/scripts/firebase/backup-firestore.ts`
+- `src/lib/scripts/backup-codebase.ts`
+
+### Scripts Needing Updates
+The following scripts need to be updated to follow the current standards:
+
+1. Using relative imports:
+   - `src/lib/scripts/sample-entries.ts`
+   - `src/lib/scripts/test-firebase-config.ts`
+
+2. Using service account JSON:
+   - `src/lib/scripts/importCategories2.ts`
+   - `src/lib/scripts/import-categories.ts`
+   - `src/lib/scripts/test-firestore2.ts`
+
+3. Using direct Firebase Admin initialization:
+   - `src/lib/scripts/firebase/list-collections.ts`
+   - `src/lib/scripts/firebase/migrate-collections.ts`
+   - `src/lib/scripts/firebase/migrate-entries.ts`
+   - `src/lib/scripts/list-categories.ts`
+   - `src/lib/scripts/cleanup-orphaned-tags.ts`
+   - `src/lib/scripts/cleanup-tags.ts`
+
+### Migration Process
+When updating scripts:
+1. Copy the working pattern from `test-firebase-config.ts`
+2. Update environment variable loading
+3. Update Firebase Admin imports
+4. Test the script with the new configuration
+5. Update this section of the documentation
+
+

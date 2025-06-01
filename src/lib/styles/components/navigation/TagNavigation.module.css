@@ -1,0 +1,125 @@
+.navigation {
+  width: 100%;
+  height: 100%;
+  background-color: var(--background-secondary);
+  border-right: 1px solid var(--border-color);
+  overflow-y: auto;
+}
+
+.categories {
+  padding: 1rem 0;
+}
+
+.categoryItem {
+  margin: 0;
+}
+
+.categoryHeader {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.categoryHeader:hover {
+  background-color: var(--background-tertiary);
+}
+
+.categoryHeader.selected {
+  background-color: var(--color-primary-light);
+}
+
+.expandButton {
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: color 0.2s ease;
+}
+
+.expandButton:hover {
+  color: var(--text-primary);
+}
+
+.expandButton:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.expandIcon {
+  font-size: 1rem;
+  line-height: 1;
+  width: 1rem;
+  height: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.categoryButton {
+  background: none;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  text-align: left;
+  flex: 1;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.categoryButton:hover {
+  color: var(--text-primary);
+}
+
+.storyCount {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-left: 0.5rem;
+}
+
+.children {
+  margin-left: 1rem;
+}
+
+.loading {
+  padding: 1rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.error {
+  padding: 1rem;
+  text-align: center;
+  color: var(--color-error);
+  background-color: var(--color-error-light);
+  border: 1px solid var(--color-error-border);
+  margin: 1rem;
+  border-radius: 4px;
+}
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .navigation {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 80%;
+    max-width: 300px;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .navigation.open {
+    transform: translateX(0);
+  }
+} 

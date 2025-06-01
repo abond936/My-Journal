@@ -1,0 +1,148 @@
+﻿ID,Tag Name,parent_ID,sort_order
+0,About,NULL,0
+1,WHO,NULL,1
+2,Self,1,1
+3,Family,1,2
+4,Parents,3,1
+5,Father,4,1
+6,Mother,4,2
+7,GrandParents,3,2
+8,Paternal Grand Father,7,1
+9,Paternal Grand Mother,7,2
+10,Maternal Grand Father,7,3
+11,Maternal Grand Mother,7,4
+12,Maternal Step Grand Mother,7,5
+13,Siblings,3,3
+14,Cousins,3,4
+15,Spouse,3,5
+16,Children,3,6
+17,William,16,1
+18,Elizabeth,16,2
+19,Caroline,16,3
+20,Grandchildren,3,7
+21,In-Laws,3,8
+22,Pets,3,9
+23,Friends,1,3
+24,Boy/Girlfriend,23,1
+25,Neighborhood,23,2
+26,Work,23,3
+27,School,23,4
+28,WHAT - Themes/Domains,NULL,2
+29,Personal,1,1
+30,Physical,29,1
+31,Ancestry,28,1
+32,Family Names,31,1
+33,Bond,32,1
+34,Davis,32,2
+35,Health,29,2
+36,Mental,29,2
+37,Values,36,1
+38,Education,28,2
+39,Preschool,38,1
+40,Kindergarten,38,2
+41,Elementary,38,3
+42,Middle School,38,4
+43,High School,38,5
+44,Graduation,43,1
+45,Prom,43,2
+46,Spring Break,43,3
+47,College,38,6
+48,Graduate School,38,7
+49,Birthdays,28,3
+50,Marriage,28,4
+51,Ceremony,50,1
+52,Reception,50,2
+53,Honeymoon,50,3
+54,Financial,28,5
+55,Income & Career,54,1
+56,USC,55,1
+57,NCR,55,2
+58,H/3M,55,3
+59,SQL,55,4
+60,Caribiner,55,5
+61,McKesson,55,6
+62,Given,55,7
+63,Dune,55,8
+64,Worth &Investing,54,2
+65,Experiential,0,6
+66,Travel,65,1
+67,Sports,65,2
+68,Cars,65,3
+69,Vacations,65,4
+70,Adventures,65,5
+71,Homes & Moves,65,6
+72,Holidays,65,7
+73,Christmas,72,1
+74,Easter,72,2
+75,Thanksgiving,72,3
+76,World & Politics,65,8
+77,Science & Technology,65,9
+78,Economy & Business,65,10
+79,Society & Culture,65,11
+80,Music,79,1
+81,Books,79,2
+82,Styles,79,3
+83,Movies,79,4
+84,Television,79,5
+85,Miscellaneous,79,6
+86,WHEN,NULL,3
+87,Past,86,1
+88,Decade,87,1
+89,The 1960s,88,1
+90,The 1970s,88,2
+91,The 1980s,88,3
+92,The 1990s,88,4
+93,The 2000s,88,5
+94,The 2010s,88,6
+95,The 2020s,88,7
+96,Year,88,2
+97,Month,96,3
+98,Future,86,2
+99,WHERE,NULL,4
+100,World,99,1
+101,International,100,1
+102,Country,101,1
+103,State,102,1
+104,City,103,1
+105,Place,104,1
+106,Domestic,100,2
+107,Country,106,1
+108,State,107,1
+109,City,108,1
+110,Place,109,1
+111,Greenhill Rd.,110,1
+112,Creighton St.,110,2
+113,Cleveland St.,110,3
+114,Parkins Mill Rd.,110,4
+115,Woodrow,110,5
+116,Maple St.,110,6
+117,Spanish Villas,110,7
+118,Springbrook,110,8
+119,Linbrook Dr.,110,9
+120,Amberglen Ln.,110,10
+121,Ave des Abeilles,110,11
+122,Woodbrook Dr.,110,12
+123,Andellle Ave.,110,13
+124,Capitol View,110,14
+125,McEwen Northside,110,15
+126,Success,NULL,1
+127,Failure,NULL,2
+128,Right-Call,NULL,3
+129,Mistake,NULL,4
+130,Advice,NULL,5
+131,Surprises,NULL,6
+132,Disappointment,NULL,7
+133,Regrets,NULL,8
+134,Alternative,NULL,9
+135,Favorites,NULL,10
+136,Lesson,NULL,11
+137,Wisdom,NULL,12
+138,Evolution,NULL,13
+139,Motivation,NULL,14
+140,Inspiration,NULL,15
+141,Best,NULL,16
+142,Worst,NULL,17
+143,Most,NULL,18
+144,Least,NULL,19
+145,Favorite,NULL,20
+146,Least-Favorite,NULL,21

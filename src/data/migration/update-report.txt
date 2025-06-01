@@ -1,0 +1,8 @@
+Story Update Report
+===================
+Total stories in database: 1029
+Stories updated with new codes: 1029
+New stories added: 0
+Stories with Who-code: 625
+Stories with What-code: 710
+Stories with When-code: 110

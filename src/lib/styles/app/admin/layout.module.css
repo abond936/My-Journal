@@ -1,0 +1,64 @@
+.adminLayout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 250px;
+  background: var(--background-secondary);
+  padding: 2rem 1rem;
+  border-right: 1px solid var(--border-color);
+}
+
+.section h3 {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+.section ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.section li {
+  margin-bottom: 0.5rem;
+}
+
+.section a {
+  display: block;
+  padding: 0.5rem 1rem;
+  color: var(--text-primary);
+  text-decoration: none;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.section a:hover {
+  background: var(--background-tertiary);
+}
+
+.section a.active {
+  background: var(--background-tertiary);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.main {
+  flex: 1;
+  padding: 2rem;
+  background: var(--background-primary);
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.5rem;
+} 

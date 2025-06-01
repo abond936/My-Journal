@@ -1,0 +1,81 @@
+/* Font declarations */
+@font-face {
+  font-family: 'Ink Free';
+  src: local('Ink Free');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* Font slant variations */
+.ink-normal {
+  font-family: 'Ink Free', cursive;
+  font-style: normal;
+}
+
+.ink-italic {
+  font-family: 'Ink Free', cursive;
+  font-style: italic;
+}
+
+.ink-slant-10 {
+  font-family: 'Ink Free', cursive;
+  font-style: normal;
+  transform: skewX(-10deg);
+  display: inline-block;
+}
+
+.ink-slant-12 {
+  font-family: 'Ink Free', cursive;
+  font-style: normal;
+  transform: skewX(-12deg);
+  display: inline-block;
+}
+
+.ink-slant-14 {
+  font-family: 'Ink Free', cursive;
+  font-style: normal;
+  transform: skewX(-14deg);
+  display: inline-block;
+}
+
+.ink-slant-16 {
+  font-family: 'Ink Free', cursive;
+  font-style: normal;
+  transform: skewX(-16deg);
+  display: inline-block;
+}
+
+.ink-slant-18 {
+  font-family: 'Ink Free', cursive;
+  font-style: normal;
+  transform: skewX(-18deg);
+  display: inline-block;
+}
+
+.ink-slant-20 {
+  font-family: 'Ink Free', cursive;
+  font-style: normal;
+  transform: skewX(-20deg);
+  display: inline-block;
+}
+
+.ink-slant-30 {
+  font-family: 'Ink Free', cursive;
+  font-style: normal;
+  transform: skewX(-30deg);
+  display: inline-block;
+}
+
+.ink-slant-40 {
+  font-family: 'Ink Free', cursive;
+  font-style: normal;
+  transform: skewX(-40deg);
+  display: inline-block;
+}
+
+.ink-slant-50 {
+  font-family: 'Ink Free', cursive;
+  font-style: normal;
+  transform: skewX(-50deg);
+  display: inline-block;
+} 

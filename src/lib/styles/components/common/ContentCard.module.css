@@ -1,0 +1,177 @@
+.card {
+  display: block;
+  background-color: var(--background-secondary);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.2s ease-in-out;
+  text-decoration: none;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: var(--accent-color);
+}
+
+/* Type-specific styles */
+.card.tag {
+  background-color: var(--background-primary);
+  border-color: var(--accent-color);
+}
+
+.card.entry {
+  background-color: var(--background-secondary);
+}
+
+.card.album {
+  background-color: var(--background-tertiary);
+}
+
+/* Size variations */
+.large {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.medium {
+  grid-column: span 2;
+  grid-row: span 1;
+}
+
+.small {
+  grid-column: span 1;
+  grid-row: span 1;
+}
+
+/* Image styles */
+.imageContainer {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%; /* 16:9 aspect ratio */
+  overflow: hidden;
+}
+
+.image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Content styles */
+.content {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.large .title {
+  font-size: 1.5rem;
+}
+
+.small .title {
+  font-size: 1rem;
+}
+
+.description {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.large .description {
+  font-size: 1rem;
+  -webkit-line-clamp: 3;
+}
+
+.small .description {
+  display: none;
+}
+
+/* Tag-specific styles */
+.dimension {
+  font-size: 0.8rem;
+  color: var(--accent-color);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.backButton {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.9rem;
+}
+
+.backButton:hover {
+  color: var(--text-primary);
+}
+
+/* Common styles for tags and counts */
+.tags {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tag {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  background-color: var(--background-tertiary);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.counts {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.count {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.date {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .large {
+    grid-column: span 2;
+    grid-row: span 1;
+  }
+  
+  .medium, .small {
+    grid-column: span 1;
+  }
+} 

@@ -1,0 +1,303 @@
+---
+description: Enforce the standard project directory structure.
+globs: ["**/*"]
+alwaysApply: true
+---
+# Project Directory Structure
+
+## Root Directory Structure
+```
+/
+├── .cursor/              # Cursor IDE configuration and rules
+├── .github/             # GitHub workflows and templates
+├── docs/                # Project documentation
+├── node_modules/        # Dependencies
+├── public/             # Static assets
+├── src/                # Source code
+├── temp/               # Temporary files for migrations and data conversion
+└── tests/              # Test files
+```
+
+## Documentation Structure (`/docs`)
+```
+docs/
+├── ProjectGuide.md     # Project setup and guidelines
+├── Development Plan.md # Development roadmap and processes
+├── Implementation Plan.md # Technical implementation details
+├── Vision.md          # Project vision and goals
+└── README.md          # Project overview
+```
+
+## Source Code Structure (`/src`)
+```
+src/
+├── app/               # Next.js app router pages and layouts
+│   ├── api/          # API routes
+│   ├── edit/         # Entry editing routes
+│   ├── stories/      # Story viewing routes
+│   └── tags/         # Tag management routes
+├── components/        # React components
+│   ├── common/       # Shared components
+│   ├── features/     # Feature-specific components
+│   └── layouts/      # Layout components
+├── lib/              # Core utilities and services
+│   ├── config/       # Configuration files
+│   ├── services/     # Service integrations
+│   ├── data/         # Data management
+│   ├── hooks/        # React hooks
+│   └── scripts/      # Utility scripts
+├── styles/           # CSS modules and global styles
+├── types/            # TypeScript type definitions
+└── scripts/          # Migration and utility scripts
+```
+
+## Import Path Rules
+
+### Rule 1: Use Absolute Imports with `@/` Alias
+- All imports MUST use the `@/` alias pointing to `src/`
+- Example: `import { Entry } from '@/types/entry'`
+- This makes imports more maintainable and less brittle to file moves
+
+### Rule 2: Import Order
+1. External dependencies first
+2. Internal absolute imports (with `@/`) second
+3. Relative imports last (if absolutely necessary)
+
+### Rule 3: Service Imports
+- All service imports MUST come from `@/lib/services/`
+- Example: `import { db } from '@/lib/services/firebase'`
+- No direct imports from external services (e.g., Firebase) in components
+
+### Rule 4: Configuration Imports
+- All configuration imports MUST come from `@/lib/config/`
+- Example: `import { firebaseConfig } from '@/lib/config/firebase'`
+
+### Rule 5: Data Management Imports
+- All data management imports MUST come from `@/lib/data/`
+- Example: `import { getEntry } from '@/lib/data/entryService'`
+
+## Hook Rules
+
+### Rule 1: Centralized Hook Location
+- All hooks MUST be in `src/lib/hooks/`
+- No hooks should exist outside this directory
+- This makes hooks easily discoverable and maintainable
+
+### Rule 2: Hook Naming Convention
+- All hooks MUST be prefixed with `use`
+- Example: `useEntry`, `useStories`, `useAuth`
+- The filename MUST match the hook name
+- Example: `useEntry.ts` for the `useEntry` hook
+
+### Rule 3: Hook Organization
+- Group related hooks in the same file
+- Keep hooks focused on a single responsibility
+- Export hooks individually for better tree-shaking
+- Example: `export const useEntry = () => { ... }`
+
+### Rule 4: Hook Dependencies
+- Hooks MUST import from services, not directly from Firebase or other external sources
+- Example: `import { getEntry } from '@/lib/data/entryService'` instead of direct Firebase imports
+- This ensures proper abstraction and maintainability
+
+## Component Organization (`/src/components`)
+```
+components/
+├── common/           # Shared components
+│   ├── Layout.tsx    # Main layout component
+│   ├── Navigation.tsx # Navigation components
+│   └── ViewSelector.tsx # View selection component
+├── features/         # Feature-specific components
+│   ├── entry/        # Entry-related components
+│   ├── media/        # Media-related components
+│   └── album/        # Album-related components
+└── layouts/          # Layout components
+    ├── BlogLayout.tsx
+    ├── CardLayout.tsx
+    ├── MagazineLayout.tsx
+    └── TimelineLayout.tsx
+```
+
+## Library Organization (`/src/lib`)
+```
+lib/
+├── config/           # Configuration files
+│   ├── firebase.ts   # Firebase configuration
+│   └── firebaseAdmin.ts # Firebase Admin configuration
+├── services/         # Service integrations
+│   ├── firebase.ts   # Firebase service
+│   ├── entryService.ts # Entry management service
+│   └── tagService.ts # Tag management service
+├── data/            # Data management
+│   ├── entryService.ts # Entry data operations
+│   └── tags.ts      # Tag data operations
+├── hooks/           # React hooks
+│   ├── useEntry.ts  # Entry data hook
+│   ├── useTag.ts    # Tag data hook
+│   └── useAuth.ts   # Authentication hook
+└── scripts/         # Utility scripts
+    └── migration/   # Migration scripts
+```
+
+## Rules and Guidelines
+
+### 1. Directory Naming
+- Use lowercase with hyphens for directory names
+- Keep names short but descriptive
+- Follow established patterns for similar directories
+- Avoid special characters in directory names
+
+### 2. File Organization
+- Group related files together
+- Keep file paths reasonably short
+- Use consistent naming patterns
+- Avoid deep nesting (max 4 levels recommended)
+
+### 3. Documentation
+- Keep all documentation in `/docs`
+- Use PascalCase for documentation file names
+- Include document type in the name (e.g., `ProjectGuide.md`, `Vision.md`)
+- Use descriptive names that indicate the document's purpose
+- Maintain consistent formatting
+- Include README files in key directories
+
+### 4. Source Code
+- Follow Next.js 14 conventions
+- Organize by feature when possible
+- Keep components focused and modular
+- Maintain clear separation of concerns
+
+### 5. Testing
+- Keep tests close to the code they test
+- Use consistent test file naming
+- Maintain test directory structure
+- Include test utilities and fixtures
+
+### 6. Assets
+- Organize static assets logically
+- Use appropriate subdirectories
+- Follow consistent naming patterns
+- Document asset requirements
+
+### 7. Configuration
+- Keep configuration files in `src/lib/config/`
+- Use appropriate file extensions
+- Document configuration options
+- Maintain environment-specific configs
+
+### 8. Build Output
+- Keep build artifacts in designated directories
+- Clean up temporary files
+- Document build process
+- Maintain clear output structure
+
+### Temporary Files
+- The `temp/` directory is used for storing migration scripts and data conversion files
+- These files are used for one-time operations like converting stories and categories
+- The directory is git-ignored as these files are not part of the production codebase
+- Files in this directory should be documented with their purpose and usage
+
+# Directory Structure Consistency
+
+- **App Router Structure:**
+  - All routes MUST be created within the `app/` directory
+  - Route groups MUST use `(group)` syntax for organization
+  - Dynamic routes MUST use `[param]` syntax
+  - Layout files MUST be named `layout.tsx`
+  - Page files MUST be named `page.tsx`
+  - Loading states MUST be in `loading.tsx`
+  - Error boundaries MUST be in `error.tsx`
+  - Not found pages MUST be in `not-found.tsx`
+
+- **Component Organization:**
+  - Shared components MUST be in `src/components/`
+  - Feature components MUST be in `src/components/features/`
+  - Layout components MUST be in `src/components/layouts/`
+  - UI components MUST be in `src/components/ui/`
+  - Private components MUST use `_` prefix (e.g., `_components/`)
+  - Component files MUST be PascalCase
+  - Component styles MUST be in `src/styles/components/`
+  - No co-location of styles is permitted
+
+- **API and Services:**
+  - API routes MUST be in `app/api/`
+  - API handlers MUST be in `route.ts` files
+  - Service modules MUST be in `src/lib/api/`
+  - Firebase services MUST be in `src/lib/api/firebase/`
+  - External API integrations MUST be in `src/lib/api/[service]/`
+
+- **Data Management:**
+  - Database models MUST be in `src/types/models/`
+  - Database queries MUST be in `src/lib/db/queries/`
+  - Data hooks MUST be in `src/lib/hooks/`
+  - State management MUST be in `src/lib/state/`
+
+- **Media and Assets:**
+  - App Assets:
+    - App images MUST be in `public/images/app/`
+    - App icons MUST be in `public/images/icons/`
+    - App logos MUST be in `public/images/logos/`
+    - App fonts MUST be in `public/fonts/`
+  - User Content:
+    - Primary storage: Google Photos API
+    - Secondary storage: Local/Cloud drives
+    - App storage:
+      - Thumbnails MUST be in `public/images/cache/thumbnails/`
+      - Optimized previews MUST be in `public/images/cache/previews/`
+      - Metadata MUST be in `src/lib/media/metadata/`
+    - No duplication of original images in app directory
+  - Media Processing:
+    - Media utilities MUST be in `src/utils/media/`
+    - Image components MUST be in `src/components/ui/images/`
+    - Media processing MUST be in `src/lib/media/`
+    - Image optimization MUST be in `src/lib/media/optimization/`
+    - Cache management MUST be in `src/lib/media/cache/`
+
+- **Authentication:**
+  - Auth components MUST be in `src/components/features/auth/`
+  - Auth utilities MUST be in `src/lib/auth/`
+  - Auth hooks MUST be in `src/lib/hooks/auth/`
+  - Protected routes MUST be in `app/(auth)/`
+
+- **Documentation:**
+  - Project docs MUST be in `docs/`
+  - API docs MUST be in `docs/api/`
+  - Component docs MUST be in `docs/components/`
+  - README files MUST be in all major directories
+  - Documentation MUST be in Markdown format
+
+- **Testing:**
+  - Unit Tests:
+    - Test files SHOULD be in `src/__tests__/` organized by feature
+    - Test utilities MUST be in `src/utils/testing/`
+    - Test fixtures MUST be in `src/utils/testing/fixtures/`
+  - Integration Tests:
+    - Integration tests MUST be in `tests/integration/`
+    - API tests MUST be in `tests/integration/api/`
+    - Component tests MUST be in `tests/integration/components/`
+  - E2E Tests:
+    - E2E tests MUST be in `tests/e2e/`
+    - Test scenarios MUST be in `tests/e2e/scenarios/`
+    - Test data MUST be in `tests/e2e/data/`
+
+- **Configuration:**
+  - Environment files MUST be in root directory
+  - Build config MUST be in root directory
+  - TypeScript config MUST be in root directory
+  - ESLint config MUST be in root directory
+  - Style config MUST be in root directory
+  - Firebase config MUST be in `src/lib/config/`
+
+- **Code Organization:**
+  - Utility functions MUST be in `src/utils/`
+  - Custom hooks MUST be in `src/lib/hooks/`
+  - Constants MUST be in `src/lib/constants/`
+  - Types MUST be in `src/types/`
+  - Styles MUST be in `src/styles/`
+
+- **File Naming:**
+  - React components MUST be PascalCase
+  - Utility files MUST be camelCase
+  - Test files MUST end with `.test.ts` or `.test.tsx`
+  - Style files MUST be `[name].module.css`
+  - Type files MUST be `[name].types.ts`

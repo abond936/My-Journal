@@ -1,0 +1,84 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.section {
+  margin-bottom: 3rem;
+  padding: 2rem;
+  background-color: var(--card-background);
+  border: 1px solid var(--card-border);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+}
+
+.section h2 {
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+}
+
+.sizeGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+}
+
+.sizeItem {
+  padding: 1rem;
+  background-color: var(--background-secondary);
+  border-radius: var(--border-radius);
+}
+
+.sizeItem h3 {
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.sizeItem p {
+  line-height: 1.6;
+}
+
+.slantGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.slantItem {
+  padding: 1rem;
+  background-color: var(--background-secondary);
+  border-radius: var(--border-radius);
+}
+
+.slantItem h3 {
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.slantItem p {
+  line-height: 1.6;
+}
+
+.sampleText {
+  line-height: 1.8;
+}
+
+.sampleText p {
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .section {
+    padding: 1rem;
+  }
+
+  .sizeGrid,
+  .slantGrid {
+    grid-template-columns: 1fr;
+  }
+} 

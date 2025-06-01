@@ -1,0 +1,107 @@
+.container {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  background-color: white;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+}
+
+.button {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.25rem;
+  background-color: white;
+  color: #475569;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.button:hover {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.button.active {
+  background-color: #e2e8f0;
+  border-color: #94a3b8;
+  color: #1e293b;
+}
+
+.content {
+  padding: 1rem;
+  min-height: 200px;
+}
+
+.editor {
+  outline: none;
+}
+
+.editor p {
+  margin: 0 0 1rem;
+  line-height: 1.6;
+}
+
+.editor h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 1.5rem 0 1rem;
+}
+
+.editor h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 1.25rem 0 0.75rem;
+}
+
+.editor ul,
+.editor ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.editor li {
+  margin: 0.25rem 0;
+}
+
+.editor blockquote {
+  margin: 1rem 0;
+  padding: 0.5rem 1rem;
+  border-left: 4px solid #e2e8f0;
+  color: #64748b;
+  font-style: italic;
+}
+
+.link {
+  color: #2563eb;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link:hover {
+  color: #1d4ed8;
+}
+
+.image {
+  max-width: 100%;
+  height: auto;
+  margin: 1rem 0;
+  border-radius: 0.375rem;
+}
+
+.loading {
+  padding: 1rem;
+  color: #64748b;
+  font-size: 0.875rem;
+  text-align: center;
+  background-color: #f8fafc;
+  border-radius: 0.25rem;
+  margin: 0.5rem;
+} 

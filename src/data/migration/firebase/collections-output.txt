@@ -1,0 +1,4 @@
+=== Firestore Collections ===
+
+tags: 1321 documents
+entries: 698 documents

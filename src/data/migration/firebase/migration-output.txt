@@ -1,0 +1,24 @@
+
+=== Initial State ===
+Pages collection: 1 documents
+Categories collection: 1321 documents
+Stories collection: 698 documents
+
+=== Migrating categories to tags ===
+Migrated 1321 documents to tags collection
+Verification: 1321 documents in tags collection
+Tags migration verified successfully
+
+=== Migrating stories to entries ===
+Migrated 698 documents to entries collection
+Verification: 698 documents in entries collection
+Entries migration verified successfully
+
+=== Cleaning up old collections ===
+Deleted 1 documents from pages collection
+Deleted 1321 documents from categories collection
+Deleted 698 documents from stories collection
+
+=== Final State ===
+Tags collection: 1321 documents
+Entries collection: 698 documents
