@@ -1,0 +1,74 @@
+/* src/components/layouts/AppLayout.module.css */
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.mainNav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.contentWrapper {
+  display: flex;
+  flex: 1;
+  position: relative;
+}
+
+.menuToggle {
+  position: fixed;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.menuToggle:hover {
+  background: var(--background-hover);
+}
+
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 300px;
+  background: var(--background);
+  border-right: 1px solid var(--border);
+  transition: transform 0.3s ease;
+  z-index: 90;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.sidebar.closed {
+  transform: translateX(-100%);
+}
+
+.sidebar.open {
+  transform: translateX(0);
+}
+
+.mainContent {
+  flex: 1;
+  padding: 2rem;
+  margin-left: 300px;
+  transition: margin-left 0.3s ease;
+}
+
+.sidebar.closed + .mainContent {
+  margin-left: 0;
+} 

@@ -6,7 +6,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import styles from '../styles/components/navigation/Navigation.module.css';
+import styles from '@/lib/styles/components/navigation/Navigation.module.css';
 
 interface NavigationProps {
   className?: string;

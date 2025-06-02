@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import styles from '../styles/components/content/StoryCard.module.css';
+import styles from '@/lib/styles/components/content/StoryCard.module.css';
 
 interface StoryCardProps {
   id: string;

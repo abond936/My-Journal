@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Entry } from '@/lib/types/entry';
 import { deleteEntry } from '@/lib/services/entryService';
-import styles from '@/styles/components/features/entry/EntryTemplate.module.css';
+import styles from '@/lib/styles/components/features/entry/EntryTemplate.module.css';
 
 interface EntryTemplateProps {
   entry: Entry;

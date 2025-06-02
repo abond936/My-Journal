@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/config/firebase';
 import { Tag } from '@/lib/types/tag';
-import styles from '@/styles/components/features/entry/TagSelector.module.css';
+import styles from '@/lib/styles/components/features/entry/TagSelector.module.css';
 
 interface TagSelectorProps {
   selectedTags: string[];

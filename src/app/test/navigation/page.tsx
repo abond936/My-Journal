@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import CardGrid from '@/components/layouts/CardGrid';
+import CardGrid from '@/components/cards/CardGrid';
 import SlideOutNavigation from '@/components/navigation/SlideOutNavigation';
 import { Tag } from '@/lib/types/tag';
 
@@ -165,7 +165,7 @@ export default function NavigationTestPage() {
       case 'root':
         return (
           <CardGrid
-            items={mockTags.map(tag => ({
+            entries={mockTags.map(tag => ({
               id: tag.id,
               type: 'tag' as const,
               title: tag.name,
@@ -182,7 +182,7 @@ export default function NavigationTestPage() {
       case 'who':
         return (
           <CardGrid
-            items={whoContent}
+            entries={whoContent}
             title="Who"
             description="People and relationships"
             onBack={handleBack}
@@ -191,7 +191,7 @@ export default function NavigationTestPage() {
       case 'family':
         return (
           <CardGrid
-            items={familyContent}
+            entries={familyContent}
             title="Family"
             description="Family members and relationships"
             onBack={handleBack}

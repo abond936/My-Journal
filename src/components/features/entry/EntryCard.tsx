@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import styles from '@/styles/components/features/entry/EntryCard.module.css';
+import styles from '@/lib/styles/components/features/entry/EntryCard.module.css';
 
 interface EntryCardProps {
   id: string;

@@ -5,7 +5,7 @@ import { getAllAlbums, deleteAlbum, updateAlbum } from '@/lib/services/albumServ
 import { getTags } from '@/lib/services/tagService';
 import { Album } from '@/lib/types/album';
 import { Tag } from '@/lib/types/tag';
-import styles from '@/styles/pages/admin/albums.module.css';
+import styles from '@/lib/styles/app/admin/albums.module.css';
 
 interface AlbumWithStats extends Album {
   tagNames: string[];

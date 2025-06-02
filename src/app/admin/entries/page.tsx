@@ -5,7 +5,7 @@ import { getAllEntries, deleteEntry, updateEntry } from '@/lib/services/entrySer
 import { getTags } from '@/lib/services/tagService';
 import { Entry } from '@/lib/types/entry';
 import { Tag } from '@/lib/types/tag';
-import styles from '@/styles/pages/admin/entries.module.css';
+import styles from '@/lib/styles/app/admin/entries.module.css';
 
 interface EntryWithStats extends Entry {
   tagNames: string[];

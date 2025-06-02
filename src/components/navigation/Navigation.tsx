@@ -40,7 +40,7 @@ const Navigation: React.FC<NavigationProps> = ({ className }) => {
         {/* Logo/Home link */}
         <Link href="/" className={styles.logo}>
           <img 
-            src="/images/Title.jpg" 
+            src="/images/uploads/Title.jpg" 
             alt="My Stories - Michael Alan Bond" 
             className={styles.logoImage}
           />

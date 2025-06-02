@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import '@/lib/styles/globals.css';
 import { AuthProvider } from '@/lib/services/auth';
-import LayoutWrapper from '@/components/common/LayoutWrapper';
+import AppWrapper from '@/components/layouts/AppWrapper';
+import { TagProvider } from '@/lib/contexts/TagContext';
+import { ThemeProvider } from '@/components/common/ThemeProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -20,9 +22,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={inter.className}>
         <AuthProvider>
-          <LayoutWrapper>
-            {children}
-          </LayoutWrapper>
+          <ThemeProvider>
+            <TagProvider>
+              <AppWrapper>
+                {children}
+              </AppWrapper>
+            </TagProvider>
+          </ThemeProvider>
         </AuthProvider>
       </body>
     </html>

@@ -1,0 +1,22 @@
+/* src/components/layouts/AppFrame.module.css */
+
+.frame {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.content {
+  display: flex;
+  flex: 1;
+  position: relative;
+}
+
+.editPage {
+  padding: 0;
+}
+
+.main {
+  flex: 1;
+  padding: 2rem;
+} 

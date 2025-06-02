@@ -1,0 +1,148 @@
+---
+description: Core architectural decisions and implementation rules for the journal application
+globs: 
+alwaysApply: true
+---
+## Project Context
+This project is a personal journaling application that helps users document and share their life stories, reflections, photos, and media with others.
+
+### Scope
+  - Story and reflection creation and management
+  - Photo and media integration
+  - Tag-based organization
+  - Family sharing and interaction
+  - AI-assisted content creation and organization
+
+### Technical Stack
+  - Frontend: Next.js 14, React, Native CSS
+  - Backend: Firebase (Firestore, Authentication, Storage)
+  - AI: OpenAI integration for content assistance
+  - Media: Google Photos API (primary), with future support for Apple Photos
+  - Hosting: Netlify (primary), with Vercel as backup
+  - Version Control: GitHub
+
+## Deployment Model
+  - Netlify for hosting and CI/CD
+  - GitHub for source control and collaboration
+  - Firebase for backend services
+ 
+
+## Operational Summary
+Most have many photos, but they remain hidden with limited ways for them to be enjoyed.
+
+This application allows the author to integrate with the storage of those photos and write entries in a digital journal about those photos and explore both in an immersive flexible or curated manner.
+
+#### Elements
+The primary elements of the app are Entries and ALbums categorized by heirarchical Tags .
+    - An entry is a primarily textual, but also visual unit that describes a story.
+        - 2 types
+            - Story - Historial narrative.
+            - Reflection - Personal insight
+    - An album is a primarily visual, but also textual unit. that depicts a story.
+    - Entries can be linked to albums and albums can be linked to entries.
+    - Both Entries and Albums are categorized into 5 dimesions:
+        - who, what, when, where, reflection. 
+        - User selects tag and Entry/Album inherits ancestor tags
+
+#### Navigation
+    - A central feature of the app is to fluidly navigate through the albums and entries as interest dictates in a virtual swim through the stories and images of one's life. 
+
+#### User Interface
+    - Because of the prominence of cellphones for consumption of digital media, the UI is mobile-first focused, but also tablet.
+    
+    - Home Page - Cover page with logo, welcome, navigation.
+    
+    - Layouts
+        -2 primary layouts.
+    
+        Consumption
+        - Universal Header
+            - Logo - Click on logo for home.
+            - Home - Admin
+            - New Entry
+            - New Album
+            - About
+        - SlideOutLeft Sidebar
+            - This sidebar that has three tabs, one for tags, entries and albums. 
+            - 3 tabs
+                - Tags
+                    - By dimension and heirarchy
+                    - Multi-select filtering
+                - Entries
+                    - Order by choice
+                - Albums
+                    - Order by choice
+        - Content Area
+            - Title
+            - CardGrid
+                - Cards dynamic by Tag, Entry, Album
+                - Multiple styles.
+            - Navigation
+                - The first unfiltered version of the presentation is 5 cards labeled by those dimensions.
+                - Clicking on who opens up a set of cards that make up the next heirarchical level of tags, such as me, parents, grandparents, etc. these cards can be clicked until they drill into cards that contain entries or albums. The entries and or albums can be explored by clicking on them and then they in turn contain related items that can then be clicked and literally swimm through the content. However, on the click of who, the what, when, where and reflection cards remain visible, and they can be drilled into similarly and endlessly.
+                - And one can move into and out of each navigatiion method fluidly--randoly or structuredly. 
+            Views
+                - Entry 
+                    - 'Blog' style
+                    - Album link
+                    - Related entries and albums
+                - Album 
+                    - Dynamic grid layout based on photos, 
+                    - Photo Captioning
+                    - Bulk tagging, captioning
+                    - Entry link
+                    - Related albums and entries
+    ##### Administration
+       The backend admin of tags, entries and albums.
+        - Entries
+            - Bulk editing
+            - Inline editing
+            - click to edit
+            - Draft/Published
+            - Story/Reflection
+            - Choose fields?
+        - Albums
+            - Bulk editing
+            - Inline editing
+            - Choose fields?
+        - Tags
+            - Drag & Drop Heirarchy
+            - Inline editing
+            - Bulk editing
+       
+    ##### Content Creation
+        - Entry - Title, Text, Rich Text Editor with photo embed and tagging 
+        - Album- Title, Caption, Photo selector.,
+
+
+### Tag System
+- Multi-dimensional tagging system
+- Dimensions:
+  - Who: People and relationships
+  - What: Activities and events
+  - When: Time periods and life stages
+  - Where: Locations and places
+  - Reflection: Insight
+- User selects tag and inheritance is populated
+- Special Cases:
+  - About entry is excluded from tagging system
+  - Filters must ignore About entry in normal listings
+
+### Media
+- Photo and video management
+
+
+### User
+- Authentication and authorization
+    - Not implemented until deployment
+    - Enter button until then
+- Properties:
+  - Authentication status
+  - Role (Author/Family)
+  - Preferences
+  - View history
+  - Life stage settings
+  - Entry type preferences
+  - Tag preferences
+
+

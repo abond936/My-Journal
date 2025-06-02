@@ -1,0 +1,975 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+## ADHERENCE TO RULES
+To keep the project organized and facilitate our efficient and effective interaction, it is critical to adhere to our defined rules. There is not excuse for not following out established rules. Failure to follow the standards and rules will be met with quick disapproval.
+
+- ALWAYS Adhere to project standards and rules.
+- ALWAYS check for existing files, directories, and documentation BEFORE creating new ones
+- ALWAYS follow directory and pathing rules
+- ALWAYS update documentation
+
+
+### I. Interaction Protocol Rules
+- ALWAYS Review and internalize:
+    - all project documentation at session start for context.
+    - all project codebase at session start for context.
+    - all project rules at session start for context.
+- ALWAYS Understand the request/question.
+- ALWAYS Ask questions if anything about the request/question is ambiguous 
+- ALWAYS Check existing codebase before proposing solutions
+- ALWAYS Present an explanation of the issue and recommendation for approval before doing anything.
+- ALWAYS Obtain explicit approval before doing anything.
+- ALWAYS Focus on one issue at a time
+- ALWAYS Update the documentation as decisions and coding is made.
+# Interaction Rules
+
+## 1. Clarify First
+- When asked about appropriateness or correctness, first confirm what aspect is being asked about
+- Never assume understanding of the full context of a question
+- Ask for clarification if the request is ambiguous
+
+## 2. Preserve by Default
+- Never suggest removing content without explicit request
+- If something should be changed, explain why and wait for confirmation
+- Treat existing content as intentional unless clearly stated otherwise
+
+## 3. Small Steps
+- Make one change at a time
+- Wait for approval before proceeding
+- Never make sweeping changes without explicit direction
+- Break down complex changes into manageable steps
+
+## 4. Be Explicit
+- State what is being planned
+- Explain reasoning behind suggestions
+- Ask for confirmation before acting
+- Be clear about potential implications
+
+## 5. Ask Questions
+- Ask for clarification when unsure about a request
+- Bring up potential issues before acting
+- Request additional context when needed
+- Confirm understanding before proceeding 
+
+
+## II. Development Rules
+- Study and understand the project
+    - Vision
+    - Functionality
+    - Technology Platform
+    - Development Rules
+
+### Directory Rules
+- ALWAYS Adhere to defined directory structure/organization rules
+- NEVER Deviate from defined drectory structure rules.
+- No devation from directory rules will be tolerated.
+
+### Coding Rules
+- Implement proper error handling and logging in all code
+- Format code according to project's ESLint configuration
+- Comment complex logic or non-obvious code
+- Use camelCase for JavaScript variables and function names
+- Use PascalCase for React component names
+- Use kebab-case for CSS class names
+- Use descriptive and meaningful names for all entities
+- Be consistent with naming throughout the project
+
+### API Design Rules
+- Keep API route handlers focused and concise
+- Implement proper error handling and validation
+- Follow RESTful conventions
+- Document endpoints and request/response formats
+- Use consistent authentication patterns
+
+### Environment and Configuration Rules
+- Use .env files for configuration
+- Never commit sensitive information
+- Document required environment variables
+- Follow consistent configuration patterns
+- Validate environment setup
+
+### Documentation Rules
+- ALWAYS store documentation in the `/docs` directory
+- NEVER place documentation files in the root directory
+- ALWAYS organize documentation by type and purpose
+- ALWAYS use PascalCase for document names
+- Always give document a clear, descriptive name
+- Always use `.md` for docs, `.mdc` for rules 
+- ALWAYS use consistent markdown formatting 
+- ALWAYS keep documentation in sync with code changes 
+
+# CSS Rules
+
+## File Organization
+- Styles MUST go in `src/styles/`
+- Global styles MUST be in `src/styles/globals.css`
+- Component styles MUST be in `src/styles/components/`
+- Theme styles MUST be in `src/styles/themes/`
+- Utility styles MUST be in `src/styles/utils/`
+
+## Naming Conventions
+- Global CSS files MUST use `.css` extension
+- CSS Module files MUST use `.module.css` extension
+- Theme files MUST use `[name].theme.css`
+- Utility files MUST use `[name].utils.css`
+
+## Class Naming
+- Use kebab-case for class names
+- Use BEM methodology for component classes
+
+## CSS Module Usage
+- MUST use CSS Modules for component styles
+- MUST use camelCase for imported class names
+- MUST use meaningful class names
+- MUST avoid global class names in modules
+
+## Variables and Theming
+- MUST document all global variables in `globals.css`
+- MUST avoid local variable definitions unless absolutely necessary
+- MUST use CSS variables for theming
+- MUST define variables in `:root`
+- MUST use semantic variable names
+- MUST provide fallback values
+- MUST use global variables for:
+  - Colors
+  - Spacing
+  - Typography
+  - Breakpoints
+  - Z-indices
+  - Transitions
+  - Shadows
+  - Border radiuses
+
+## Media Queries
+- MUST use fluid/gradient responsiveness instead of breakpoints
+- MUST use CSS calc() for fluid typography
+- MUST use viewport units (vw, vh) for fluid layouts
+- MUST use clamp() for responsive values
+- MUST use min(), max() for responsive constraints
+- MUST avoid fixed breakpoints except for:
+  - Mobile menu toggles
+  - Layout shifts
+  - Component stacking
+
+## Style Overrides
+- MUST avoid style overrides
+- MUST use CSS custom properties for dynamic values
+- MUST use data attributes for state-based styling
+- MUST use CSS cascade instead of specificity
+- MUST use composition over inheritance
+- MUST use utility classes for one-off styles
+- MUST document any necessary overrides
+
+## Performance
+- MUST minimize selector specificity
+- MUST avoid !important
+- MUST use efficient selectors
+- MUST minimize style duplication
+
+## Accessibility
+- MUST maintain minimum color contrast
+- MUST provide focus states
+- MUST support reduced motion
+- MUST use relative units
+
+## Documentation
+- MUST document complex styles
+- MUST explain non-obvious solutions
+- MUST document breakpoints
+- MUST maintain style guide
+
+## Best Practices
+- MUST use flexbox/grid for layouts
+- MUST use CSS variables for repeated values
+- MUST use logical properties
+- MUST support RTL layouts
+- MUST use modern CSS features
+- MUST provide fallbacks for older browsers 
+
+
+## 1. Directory Structure Rules
+
+### 1.1 Component Locations
+IF creating a new component THEN:
+- Place in `src/components/` for shared components
+- Place in `src/app/[feature]/` for feature-specific components
+- Place in `src/app/admin/` for admin components
+- Place in `src/lib/hooks/` for shared hooks
+- Place in `src/lib/services/` for services
+- Place in `src/lib/types/` for TypeScript types
+
+### 1.2 File Naming
+IF creating a new file THEN:
+- Use PascalCase for component files (e.g., `UserProfile.tsx`)
+- Use camelCase for utility files (e.g., `userService.ts`)
+- Use kebab-case for CSS modules (e.g., `user-profile.module.css`)
+- Append `.test.ts` for test files
+- Append `.types.ts` for type definition files
+
+### 1.3 Import Structure
+IF importing files THEN:
+- Use absolute imports from `src/` using alias `@/`
+- Group imports in order: React, External, Internal, Types, Styles
+- Use named imports for components
+- Use default imports for utilities
+
+## 2. Code Structure Rules
+CRITICAL: These rules MUST be followed for all new code--new and existing.
+
+### 2.1 Component Structure
+IF creating a new component THEN:
+```typescript
+// 1. Imports
+import React from 'react';
+import { ExternalComponent } from 'external-library';
+import { InternalComponent } from '@/components';
+import { ComponentType } from '@/lib/types';
+import styles from '@/lib/styles/<directory>/<directory>./ComponentName.module.css';
+
+// 2. Types
+interface Props {
+  // Props definition
+}
+
+// 3. Component
+export const ComponentName: React.FC<Props> = ({ prop1, prop2 }) => {
+  // Component logic
+  return (
+    // JSX
+  );
+};
+```
+
+### 2.2 Service Structure
+IF creating a new service THEN:
+```typescript
+// 1. Imports
+import { ServiceType } from '@/lib/types';
+import { firebase } from '@/lib/firebase';
+
+// 2. Service
+export const serviceName = {
+  // Service methods
+};
+```
+
+## 3. Data Model Rules
+
+### 3.1 Type Definitions
+IF creating new types THEN:
+- Place in `src/lib/types/`
+- Use TypeScript interfaces
+- Include all required fields
+- Document optional fields
+- Include validation rules
+
+### 3.2 Data Validation
+IF handling data THEN:
+- Validate all inputs
+- Use TypeScript type guards
+- Handle null/undefined cases
+- Include error handling
+- Log validation failures
+
+## 4. Common Mistakes
+CRITICAL: These patterns MUST be avoided.
+
+### 4.1 Directory Structure
+❌ DO NOT:
+- Place components in wrong directories
+- Use inconsistent file naming
+- Mix different import styles
+- Create circular dependencies
+
+### 4.2 Code Structure
+❌ DO NOT:
+- Skip type definitions
+- Use any type
+- Mix different styling approaches
+- Create deeply nested components
+
+### 4.3 Data Handling
+❌ DO NOT:
+- Skip data validation
+- Use untyped data
+- Mix different data patterns
+- Create inconsistent models
+
+## 5. Validation Checklist
+CRITICAL: Use this checklist for all new code.
+
+### 5.1 Before Creating Code
+- [ ] Correct directory structure
+- [ ] Proper file naming
+- [ ] Type definitions ready
+- [ ] Data model defined
+
+### 5.2 After Creating Code
+- [ ] All types defined
+- [ ] No any types used
+- [ ] Proper error handling
+- [ ] Consistent styling
+- [ ] No circular dependencies
+- [ ] Proper documentation
+
+# Project Directory Structure
+
+## Root Directory Structure
+```
+/
+├── .cursor/              # Cursor IDE configuration and rules
+├── .github/              # GitHub workflows and templates
+├── docs/                 # Project documentation
+├── node_modules/         # Dependencies
+├── out/                  # 404/html
+├── public/               # Static assets
+├── src/                  # Source code
+└── tests/                # Test files
+```
+
+## Source Code Structure (`/src`)
+## Component Organization (`/src/components`)
+```
+components/
+├── common/           # Shared components
+│   ├── Layout.tsx    # Main layout component
+│   ├── Navigation.tsx # Navigation components
+│   └── ViewSelector.tsx # View selection component
+├── features/         # Feature-specific components
+│   ├── entry/        # Entry-related components
+│   ├── media/        # Media-related components
+│   └── album/        # Album-related components
+└── layouts/          # Layout components
+    ├── BlogLayout.tsx
+    ├── CardLayout.tsx
+    ├── MagazineLayout.tsx
+    └── TimelineLayout.tsx
+```
+
+## Library Organization (`/src/lib`)
+```
+lib/
+├── config/                     # All Configuration files, unless root required
+├── services/                   # All Service integrations
+├── data/                       # All Data management                  ?????
+├── hooks/                      # All React hooks
+└── scripts/                    # All Utility scripts
+    styles/
+
+```
+
+- ALWAYS Use lowercase with hyphens for directory names
+
+# Directory Structure Consistency
+
+- **App Router Structure:**
+  - All routes MUST be created within the `app/` directory
+  - Route groups MUST use `(group)` syntax for organization
+  - Dynamic routes MUST use `[param]` syntax
+  - Layout files MUST be named `layout.tsx`
+  - Page files MUST be named `page.tsx`
+  - Loading states MUST be in `loading.tsx`         ?????
+  - Error boundaries MUST be in `error.tsx`         ?????
+  - Not found pages MUST be in `not-found.tsx`      ?????
+  - Page styles must be in `src/lib/styles/app/`
+
+- **Component Organization:**
+  - Component files MUST be PascalCase
+  - Shared components MUST be in `src/components/`
+  - Feature components MUST be in `src/components/features/`
+  - Layout components MUST be in `src/components/layouts/`
+  - UI components MUST be in `src/components/ui/`
+  - Private components MUST use `_` prefix (e.g., `_components/`)
+  - Component styles MUST be in `src/lib/styles/components/`
+  - No co-location of styles is permitted
+
+- **API and Services:**
+  - API routes MUST be in `app/api/`
+  - API handlers MUST be in `route.ts` files
+  - Service modules MUST be in `src/lib/api/`
+  - Firebase services MUST be in `src/lib/api/firebase/`
+  - External API integrations MUST be in `src/lib/api/[service]/`
+
+- **Data Management:**
+  - Database models MUST be in `src/lib/types/`
+  - Database queries MUST be in `src/lib/db/queries/`   ?????
+  - Data hooks MUST be in `src/lib/hooks/`
+  - State management MUST be in `src/lib/state/`        ?????
+
+- **Media and Assets:**
+  - App Assets:
+    - App images MUST be in `public/images/uploads/`
+    - App icons MUST be in `public/images/icons/`
+    - App logos MUST be in `public/images/logos/`
+    - App fonts MUST be in `public/fonts/`
+  - User Content:
+    - Primary storage: Google Photos API
+    - Secondary storage: Local/Cloud drives
+  - Media Processing:
+    - Media utilities MUST be in `src/utils/media/`
+    - Image components MUST be in `src/components/ui/images/`   ?????
+    - Media processing MUST be in `src/lib/media/`
+    - Image optimization MUST be in `src/lib/media/optimization/`
+    - Cache management MUST be in `src/lib/media/cache/`
+
+- **Authentication:**
+  - Auth components MUST be in `src/components/features/auth/`
+  - Auth utilities MUST be in `src/lib/auth/`
+  - Auth hooks MUST be in `src/lib/hooks/auth/`
+  - Protected routes MUST be in `app/(auth)/`
+
+- **Documentation:**
+  - Documentation MUST be in Markdown format
+  - Project docs MUST be in `docs/`
+  - API docs MUST be in `docs/api/`
+  - Component docs MUST be in `docs/components/`
+  - README files MUST be in all major directories       ?????
+  
+- **Testing:**
+  - Unit Tests:
+    - Test files SHOULD be in `src/__tests__/` organized by feature
+    - Test utilities MUST be in `src/utils/testing/`
+    - Test fixtures MUST be in `src/utils/testing/fixtures/`
+  - Integration Tests:
+    - Integration tests MUST be in `tests/integration/`
+    - API tests MUST be in `tests/integration/api/`
+    - Component tests MUST be in `tests/integration/components/`
+  - E2E Tests:
+    - E2E tests MUST be in `tests/e2e/`
+    - Test scenarios MUST be in `tests/e2e/scenarios/`
+    - Test data MUST be in `tests/e2e/data/`
+
+- **Configuration:**
+  - Environment files MUST be in root directory
+  - Build config MUST be in root directory
+  - TypeScript config MUST be in root directory
+  - ESLint config MUST be in root directory
+  - Style config MUST be in root directory
+  - Firebase config MUST be in `src/lib/config/firebase/`
+
+- **Code Organization:**
+  - Utility functions MUST be in `src/utils/`
+  - Custom hooks MUST be in `src/lib/lib/hooks/`
+  - Constants MUST be in `src/lib/constants/`
+  - Types MUST be in `src/lib/types/`
+  - Styles MUST be in `src/lib/styles/`
+
+- **File Naming:**
+  - React components MUST be PascalCase
+  - Utility files MUST be camelCase
+  - Test files MUST end with `.test.ts` or `.test.tsx`
+  - Style files MUST be `[name].module.css`
+  - Type files MUST be `[name].types.ts`
+
+  DO NOT CREATE ANY FILE  WITHOUT ASKING PERMISSIONN--EVER!
+
+# File Operations Rules
+
+## File Creation
+- NEVER create new files without explicit user permission
+- ALWAYS ask before creating any new file
+
+## File Modification
+- ALWAYS show proposed changes for review
+- Provide context for why changes are needed
+
+
+## Hook Rules
+
+### Centralized Hook Location
+- All hooks MUST be in `src/lib/hooks/`
+- No hooks should exist outside this directory
+- This makes hooks easily discoverable and maintainable
+
+### Hook Naming Convention
+- All hooks MUST be prefixed with `use`
+- Example: `useEntry`, `useStories`, `useAuth`
+- The filename MUST match the hook name
+- Example: `useEntry.ts` for the `useEntry` hook
+
+### Hook Organization
+- Group related hooks in the same file
+- Keep hooks focused on a single responsibility
+- Export hooks individually for better tree-shaking
+- Example: `export const useEntry = () => { ... }`
+
+### Hook Dependencies
+- Hooks MUST import from services, not directly from Firebase or other external sources
+- Example: `import { getEntry } from '@/lib/data/entryService'` instead of direct Firebase imports
+- This ensures proper abstraction and maintainability
+
+## Import Rules
+
+### Use Absolute Imports with `@/` Alias
+- All imports MUST use the `@/` alias pointing to `src/`
+- Example: `import { Entry } from '@/lib/types/entry'`
+- This makes imports more maintainable and less brittle to file moves
+
+### Import Order
+1. External dependencies first
+2. Internal absolute imports (with `@/`) second
+3. Relative imports last (if absolutely necessary)
+
+### Service Imports
+- All service imports MUST come from `@/lib/services/`
+- Example: `import { db } from '@/lib/services/firebase'`
+- No direct imports from external services (e.g., Firebase) in components
+
+### Configuration Imports
+- All configuration imports MUST come from `@/lib/config/`
+- Example: `import { firebaseConfig } from '@/lib/config/firebase'`
+
+### Data Management Imports                                 ????
+- All data management imports MUST come from `@/lib/data/`
+- Example: `import { getEntry } from '@/lib/data/entryService'`
+
+
+
+### Scripting Rules
+
+## Script Location and Organization
+- All scripts MUST be located in `src/lib/scripts/`
+- Scripts MUST be organized by purpose:
+  - `firebase/` - Firebase-related scripts
+  - `backup/` - Backup and restore scripts
+  - `migration/` - Database migration scripts
+  - `utility/` - General utility scripts
+
+## Script Execution
+- Scripts MUST be executed using:
+  ```bash
+  npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/<script-name>
+  ```
+- NEVER execute scripts directly with `node` or `ts-node` without proper configuration
+- ALWAYS use the correct TypeScript configuration for scripts
+
+## Environment Variables
+- Scripts MUST load environment variables at the top:
+  ```typescript
+  import * as dotenv from 'dotenv';
+  import { resolve } from 'path';
+
+  // Debug dotenv loading
+  const result = dotenv.config();
+  console.log('\nDotenv config result:', result);
+  console.log('Current working directory:', process.cwd());
+  console.log('Looking for .env file in:', resolve(process.cwd(), '.env'));
+  ```
+- Required environment variables MUST be documented in the script's header
+- Scripts MUST validate required environment variables before execution
+
+## Error Handling
+- Scripts MUST have top-level error handling:
+  ```typescript
+  try {
+    // Script logic
+  } catch (error) {
+    console.error('Error:', error);
+    process.exit(1);
+  }
+  ```
+- Error messages MUST be clear and actionable
+- Scripts MUST exit with appropriate status codes
+
+## Logging and Output
+- Scripts MUST log their progress
+- Output MUST be written to appropriate files in `temp/` directory   ?????
+- Log files MUST be named consistently with the script name
+- Logs MUST include timestamps and clear status messages
+
+## Firebase Integration
+- Firebase Admin imports MUST use the `@/lib/config/firebase/admin` path:
+  ```typescript
+  import { adminDb } from '@/lib/config/firebase/admin';
+  ```
+- Firebase Admin MUST be imported AFTER environment variables are loaded
+- Required Firebase environment variables:
+  - `FIREBASE_SERVICE_ACCOUNT_PROJECT_ID`
+  - `FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY`
+  - `FIREBASE_SERVICE_ACCOUNT_CLIENT_EMAIL`
+
+## TypeScript Configuration
+- Scripts MUST use `tsconfig.scripts.json` which includes:
+  ```json
+  {
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+      "module": "commonjs",
+      "target": "es2020",
+      "esModuleInterop": true,
+      "moduleResolution": "node",
+      "resolveJsonModule": true,
+      "allowSyntheticDefaultImports": true,
+      "skipLibCheck": true,
+      "strict": false,
+      "noEmit": true,
+      "baseUrl": ".",
+      "paths": {
+        "@/*": ["src/*"]
+      }
+    },
+    "include": [
+      "src/scripts/**/*.ts",
+      "src/lib/scripts/**/*.ts"
+    ],
+    "exclude": [
+      "node_modules"
+    ]
+  }
+  ```
+
+## Dependencies
+- Required dependencies MUST be installed:
+  ```bash
+  npm install --save-dev ts-node tsconfig-paths dotenv @types/dotenv
+  ```
+- Additional dependencies as needed (e.g., `archiver` for backup scripts)
+
+## Script Documentation
+- Every script MUST have a header comment block:
+  ```typescript
+  /**
+   * Script Name
+   * 
+   * Purpose: Brief description of what the script does
+   * 
+   * Required Environment Variables:
+   * - VAR1: Description of variable 1
+   * - VAR2: Description of variable 2
+   * 
+   * Output:
+   * - Description of output 1
+   * - Description of output 2
+   */
+  ```
+
+## Script Testing
+- Scripts SHOULD include debug logging for environment variables
+- Scripts SHOULD validate their configuration before execution
+- Scripts SHOULD provide clear feedback about their progress
+
+## 11. Script Migration Status
+
+### Working Scripts (Following Current Standards)
+- `src/lib/scripts/firebase/test-firebase-config.ts`
+- `src/lib/scripts/firebase/backup-firestore.ts`
+- `src/lib/scripts/backup-codebase.ts`
+
+### Scripts Needing Updates
+The following scripts need to be updated to follow the current standards:
+
+1. Using relative imports:
+   - `src/lib/scripts/sample-entries.ts`
+   - `src/lib/scripts/test-firebase-config.ts`
+
+2. Using service account JSON:
+   - `src/lib/scripts/importCategories2.ts`
+   - `src/lib/scripts/import-categories.ts`
+   - `src/lib/scripts/test-firestore2.ts`
+
+3. Using direct Firebase Admin initialization:
+   - `src/lib/scripts/firebase/list-collections.ts`
+   - `src/lib/scripts/firebase/migrate-collections.ts`
+   - `src/lib/scripts/firebase/migrate-entries.ts`
+   - `src/lib/scripts/list-categories.ts`
+   - `src/lib/scripts/cleanup-orphaned-tags.ts`
+   - `src/lib/scripts/cleanup-tags.ts`
+
+### Migration Process
+When updating scripts:
+1. Copy the working pattern from `test-firebase-config.ts`
+2. Update environment variable loading
+3. Update Firebase Admin imports
+4. Test the script with the new configuration
+5. Update this section of the documentation
+
+
+This document organizes all project rules and standards into practical categories for implementation.
+
+## Table of Contents
+1. Core Interaction Rules
+2. Architecture and Development Rules
+3. Project Structure Rules
+4. Documentation and Configuration Rules
+
+# 1. Core Interaction Rules
+
+## 1.1 Understanding and Agreement
+- ALWAYS start by summarizing the current task and its context
+- ALWAYS ask for clarification if any aspect is unclear or incomplete
+- ALWAYS confirm mutual understanding before proceeding
+- ALWAYS treat existing content as intentional unless explicitly directed otherwise
+
+## 1.2 Planning and Execution
+- ALWAYS present a step-by-step plan for any proposed changes
+- ALWAYS break down complex tasks into discrete, reviewable steps
+- ALWAYS get explicit approval before implementing each step
+- ALWAYS verify each step against requirements before proceeding
+- ALWAYS test changes before moving to the next step
+
+## 1.3 Communication and Documentation
+- ALWAYS state the specific action and its expected outcome
+- ALWAYS explain the reasoning behind proposed changes
+- ALWAYS summarize changes made and next steps after each action
+- ALWAYS document in our conversation:
+  * Significant decisions and their rationale
+  * Issues encountered and their resolutions
+  * Changes that affect architecture or core functionality
+- ALWAYS update the UnifiedDocument when we make decisions about:
+  * Vision: Changes to project goals, scope, or direction
+  * Architecture: Modifications to system design or structure
+  * Data Models: Updates to data structures or relationships
+  * Code Components: New components or significant changes to existing ones
+  * Rules: Changes to development or interaction rules
+  * Features: New features or significant modifications to existing ones
+- ALWAYS maintain a clear record of the current task and its status in our conversation
+
+## 1.4 Emergency Protocol
+- ALWAYS document the specific issue, including:
+  * What was attempted
+  * What went wrong
+  * Current state
+  * Proposed solution
+- ALWAYS get approval before implementing any fix
+- ALWAYS verify the fix resolves the original issue
+- ALWAYS document the solution and its implementation
+- ALWAYS update relevant documentation with the fix
+
+## 1.5 Preservation Rules
+- NEVER remove or modify existing content without explicit request
+- ALWAYS explain why a change is being proposed
+- ALWAYS make one change at a time and get approval
+- ALWAYS preserve existing functionality unless specifically directed to change it
+- ALWAYS verify changes don't impact other parts of the system
+
+# 2. Architecture and Development Rules
+
+## 2.1 Architecture-Driven Development
+- ALWAYS check UnifiedDocument.mdc before making any changes
+- ALWAYS define new components, types, or services in UnifiedDocument.mdc first
+- ALWAYS update UnifiedDocument.mdc when making significant changes
+- ALWAYS ensure changes align with the defined architecture
+- ALWAYS document architectural decisions and their rationale
+
+## 2.2 Code Organization and Structure
+- ALWAYS organize code by feature and responsibility
+- ALWAYS keep components focused and modular
+- ALWAYS maintain clear separation of concerns
+- ALWAYS follow established patterns in the codebase
+- ALWAYS use consistent naming conventions:
+  * PascalCase for components
+  * camelCase for utilities
+  * kebab-case for directories
+  * BEM for CSS classes
+
+## 2.3 Import and Dependency Management
+- ALWAYS use `@/` alias for imports from `src/`
+- ALWAYS follow import order:
+  1. External dependencies
+  2. Internal absolute imports (`@/`)
+  3. Relative imports (if necessary)
+- ALWAYS import from appropriate directories:
+  * Services: `@/lib/services/`
+  * Config: `@/lib/config/`
+  * Data: `@/lib/data/`
+- NEVER import directly from external services in components
+
+## 2.4 Hook Management
+- ALWAYS place hooks in `src/lib/hooks/`
+- ALWAYS prefix hooks with `use`
+- ALWAYS match hook filename to hook name
+- ALWAYS import from services, not external sources
+- ALWAYS keep hooks focused on single responsibilities
+
+## 2.5 Resource Management
+- ALWAYS check for existing implementations before creating new ones
+- ALWAYS verify file/directory existence before creating new ones
+- ALWAYS search for similar patterns in the codebase
+- ALWAYS check UnifiedDocument.mdc for existing definitions
+- NEVER create duplicate implementations
+
+# 3. Project Structure Rules
+
+## 3.1 Next.js App Structure
+- ALWAYS create routes within the `app/` directory
+- ALWAYS use `(group)` syntax for route organization
+- ALWAYS use `[param]` syntax for dynamic routes
+- ALWAYS name files according to Next.js conventions:
+  * `layout.tsx` for layouts
+  * `page.tsx` for pages
+  * `loading.tsx` for loading states
+  * `error.tsx` for error boundaries
+  * `not-found.tsx` for 404 pages
+- ALWAYS place protected routes in `app/(auth)/`
+
+## 3.2 Source Code Organization
+- ALWAYS organize code by feature and responsibility
+- ALWAYS place components in `src/components/`:
+  * Feature components in `features/`
+  * Shared components in `common/`
+  * Layout components in `layouts/`
+  * UI components in `ui/`
+- ALWAYS place hooks in `src/lib/hooks/`
+- ALWAYS place services in `src/lib/services/`
+- ALWAYS place utilities in `src/lib/utils/`
+- ALWAYS place types in `src/types/`
+- ALWAYS place constants in `src/lib/constants/`
+
+## 3.3 Testing Structure
+- ALWAYS place unit tests in `src/__tests__/` organized by feature
+- ALWAYS place test utilities in `src/utils/testing/`
+- ALWAYS place test fixtures in `src/utils/testing/fixtures/`
+- ALWAYS place integration tests in `tests/integration/`:
+  * API tests in `api/`
+  * Component tests in `components/`
+- ALWAYS place E2E tests in `tests/e2e/`:
+  * Scenarios in `scenarios/`
+  * Test data in `data/`
+
+## 3.4 Style Organization
+- ALWAYS place all styles in `src/styles/`:
+  * Component styles in `components/`
+  * Global styles in `globals.css`
+  * Theme styles in `themes/`
+  * Utility styles in `utils/`
+- ALWAYS use CSS Modules for component styles
+- ALWAYS use BEM methodology for class names
+- ALWAYS use semantic variable names in `:root`
+- ALWAYS use modern CSS features with fallbacks
+- ALWAYS implement fluid/gradient responsiveness:
+  * Use `clamp()` for responsive values
+  * Use `calc()` for fluid typography
+  * Use viewport units (vw, vh) for fluid layouts
+  * Avoid fixed breakpoints except for:
+    - Mobile menu toggles
+    - Layout shifts
+    - Component stacking
+  * Document any necessary breakpoints
+
+## 3.5 Architectural Preferences
+- ALWAYS use server components by default in Next.js:
+  * Only use client components when necessary
+  * Document reasons for client components
+  * Keep client-side JavaScript minimal
+- ALWAYS implement progressive enhancement:
+  * Core functionality works without JavaScript
+  * Enhance with JavaScript when available
+  * Graceful degradation for older browsers
+- ALWAYS follow mobile-first design:
+  * Design for mobile first
+  * Scale up for larger screens
+  * Test on multiple devices
+- ALWAYS implement proper error boundaries:
+  * Catch and handle errors gracefully
+  * Provide meaningful error messages
+  * Maintain application stability
+- ALWAYS use proper data fetching patterns:
+  * Server-side data fetching by default
+  * Client-side fetching only when necessary
+  * Implement proper loading states
+  * Handle errors appropriately
+- ALWAYS implement proper caching strategies:
+  * Use Next.js built-in caching
+  * Implement stale-while-revalidate
+  * Cache at appropriate levels
+- ALWAYS maintain performance standards:
+  * Sub-2 second initial page load
+  * Optimize for Core Web Vitals
+  * Implement proper code splitting
+  * Use proper image optimization
+
+## 3.6 File Naming and Operations
+- ALWAYS use PascalCase for React components
+- ALWAYS use camelCase for utilities and hooks
+- ALWAYS use kebab-case for directories
+- ALWAYS use descriptive file extensions:
+  * `.test.ts` or `.test.tsx` for tests
+  * `.module.css` for CSS modules
+  * `.types.ts` for type definitions
+  * `.theme.css` for theme files
+  * `.utils.css` for utility styles
+- ALWAYS get explicit permission before:
+  * Creating new files
+  * Modifying existing files
+  * Moving files
+  * Deleting files
+- ALWAYS document the purpose of any file changes
+- ALWAYS preserve file history when possible
+
+## 3.7 Code Style Standards
+- ALWAYS use 2 spaces for indentation
+- ALWAYS keep lines under 120 characters
+- ALWAYS use blank lines for logical separation
+- ALWAYS follow ESLint configuration
+- ALWAYS use JSDoc for documentation
+- ALWAYS keep comments up-to-date
+- ALWAYS document complex logic
+- ALWAYS include usage examples for complex components
+
+# 4. Documentation and Configuration Rules
+
+## 4.1 Documentation Structure
+- ALWAYS use UnifiedDocument.mdc in `/rules` as the single source of truth for:
+  * Project overview and vision
+  * Technical architecture
+  * Development guidelines
+  * Project rules and standards
+  * Implementation decisions
+  * Known limitations
+  * Future considerations
+- ALWAYS maintain a clear structure in UnifiedDocument.mdc:
+  * Table of contents
+  * Clear sections and subsections
+  * Consistent markdown formatting
+  * Related information grouped together
+- ALWAYS be open to restructuring UnifiedDocument.mdc for better efficiency
+
+## 4.2 Documentation Updates
+- ALWAYS update UnifiedDocument.mdc when:
+  * Making architectural decisions
+  * Adding new features
+  * Changing existing functionality
+  * Modifying project rules
+- ALWAYS document in UnifiedDocument.mdc:
+  * Decision rationale
+  * Implementation details
+  * Known limitations
+  * Future considerations
+- ALWAYS keep documentation in sync with code
+- ALWAYS commit documentation changes with clear messages
+
+## 4.3 Configuration Management
+- ALWAYS place configuration files in root directory:
+  * Environment files (`.env`)
+  * Build config
+  * TypeScript config
+  * ESLint config
+  * Style config
+- ALWAYS place service configs in `src/lib/config/`:
+  * Firebase config
+  * API configs
+  * Service-specific settings
+- ALWAYS follow security practices:
+  * Never commit sensitive information
+  * Use environment variables
+  * Document required variables
+  * Validate environment setup
+
+## 4.4 Shell and Command Standards
+- ALWAYS use PowerShell as primary shell for Windows
+- ALWAYS use Command Prompt as fallback if needed
+- ALWAYS follow path conventions:
+  * Use backslashes (`\`) for paths
+  * Use semicolons (`;`) to separate commands
+  * Use proper quoting for paths with spaces
+- ALWAYS include error handling:
+  * Use `-ErrorAction SilentlyContinue` for operations that might fail
+  * Use `-Force` for operations that might need to overwrite
+  * Use `-Recurse` for directory operations
+- ALWAYS use TypeScript config for scripts:
+  * Use correct `tsconfig.scripts.json`
+  * Ensure path aliases work
+  * Maintain type checking 

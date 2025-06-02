@@ -24,7 +24,14 @@
   transition: color 0.2s ease;
   flex-shrink: 0;
   position: absolute;
-  left: 2rem;
+  left: 1rem;
+}
+
+.logoImage {
+  height: 150px;
+  width: auto;
+  padding-top: 1rem;
+  object-fit: contain;
 }
 
 .logo:hover {

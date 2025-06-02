@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { db } from '@/lib/config/firebase';
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
-import styles from '../styles/components/navigation/CategoryNavigation.module.css';
+import styles from '@/lib/styles/components/navigation/CategoryNavigation.module.css';
 
 interface Category {
   id: string;

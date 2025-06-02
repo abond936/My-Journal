@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import CardGrid from '@/components/layouts/CardGrid';
+import CardGrid from '@/components/cards/CardGrid';
 import styles from '@/styles/themes/Home.module.css';
 
 interface EntryCardData {
@@ -102,7 +102,20 @@ export default function HomeTestPage() {
 
       <section className={styles.featuredSection}>
         <h2>Recent Entries</h2>
-        <CardGrid entries={recentEntries} />
+        <CardGrid
+          entries={recentEntries.map(entry => ({
+            id: entry.id,
+            type: 'entry',
+            title: entry.title,
+            description: entry.excerpt,
+            date: entry.date,
+            tags: entry.tags,
+            href: entry.href,
+            imageUrl: entry.imageUrl
+          }))}
+          title="Recent Entries"
+          description="Here are some of the latest entries in your journal"
+        />
       </section>
       
       <section className={styles.browsePrompt}>

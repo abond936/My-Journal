@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import { usePathname } from 'next/navigation';
-import CardGrid from '@/components/layouts/CardGrid';
-import styles from '@/styles/components/navigation/SlideOutNavigation.module.css';
+import CardGrid from '@/components/cards/CardGrid';
+import styles from '@/lib/styles/components/navigation/SlideOutNavigation.module.css';
 
 interface SlideOutNavigationProps {
   isOpen: boolean;

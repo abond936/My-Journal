@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import styles from '../styles/components/story/StoryPage.module.css';
+import styles from '@/lib/styles/components/entry/StoryPage.module.css';
 
 interface AlbumLink {
   id: string;

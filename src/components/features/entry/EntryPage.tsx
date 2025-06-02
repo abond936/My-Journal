@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Entry } from '@/types/entry';
-import styles from '@/styles/components/features/entry/EntryPage.module.css';
+import styles from '@/lib/styles/components/features/entry/EntryPage.module.css';
 
 interface EntryPageProps {
   entry: Entry;

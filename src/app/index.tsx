@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { JournalPage } from '@/lib/journal';
 import { getAllJournalPages } from '@/lib/journal';
-import CardGrid from '@/components/CardGrid';
+import CardGrid from '@/components/cards/CardGrid';
 import StoryCard from '@/components/StoryCard';
 import styles from '@/styles/themes/Home.module.css';
 
@@ -69,7 +69,20 @@ export default function Home() {
         {loading ? (
           <div className={styles.loading}>Loading stories...</div>
         ) : (
-          <CardGrid stories={recentStories} columns={3} />
+          <CardGrid
+            entries={recentStories.map(story => ({
+              id: story.id,
+              type: 'entry',
+              title: story.title,
+              description: story.excerpt,
+              date: story.date,
+              tags: story.tags,
+              href: story.href,
+              imageUrl: story.imageUrl
+            }))}
+            title="Recent Stories"
+            description="Here are some of your recent stories"
+          />
         )}
       </section>
       

@@ -5,7 +5,7 @@ import { Entry } from '@/lib/types/entry';
 import { createEntry, updateEntry } from '@/lib/services/entryService';
 import TagSelector from './TagSelector';
 import RichTextEditor from '@/components/common/editor/RichTextEditor';
-import styles from '@/styles/components/features/entry/EntryForm.module.css';
+import styles from '@/lib/styles/components/features/entry/EntryForm.module.css';
 
 interface EntryFormProps {
   initialEntry?: Entry;

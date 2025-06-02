@@ -1,5 +1,7 @@
+// One of two primary content unit 
+
 export interface Entry {
-  // Core Properties
+
   id: string;
   title: string;
   content: string;
@@ -11,7 +13,8 @@ export interface Entry {
   status: 'draft' | 'published';
   date?: Date;  // Optional date field for when the entry was written/occurred
 
-  // Future Properties (📅)
+ 
+  //author: string;               If multiple authors allowed
   media?: string[];               // For photo/video attachments
   visibility?: 'private' | 'family' | 'public';  // For access control
 

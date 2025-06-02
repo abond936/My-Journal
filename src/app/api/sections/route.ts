@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAllJournalPages } from '@/lib/journal';
+import { getAllJournalPages } from '@/lib/services/journalService';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;

@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import styles from '@/styles/components/common/editor/ImageUploadDialog.module.css';
+import styles from '@/lib/styles/components/common/editor/ImageUploadDialog.module.css';
 
 interface ImageUploadDialogProps {
   onUploadComplete: (url: string) => void;

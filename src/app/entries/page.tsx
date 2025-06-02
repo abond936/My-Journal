@@ -5,7 +5,7 @@ import { getEntries } from '@/lib/services/entryService';
 import { Entry } from '@/lib/types/entry';
 import { UIEntry } from '@/lib/types/ui';
 import Link from 'next/link';
-import CardGrid from '@/components/common/CardGrid';
+import CardGrid from '@/components/cards/CardGrid';
 import AccordionLayout from '@/components/layouts/AccordionLayout';
 import BlogLayout from '@/components/layouts/BlogLayout';
 import { useTag } from '@/lib/contexts/TagContext';

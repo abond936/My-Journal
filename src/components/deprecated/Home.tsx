@@ -5,7 +5,7 @@
 // It will eventually display featured stories and navigation options
 
 import React from 'react';
-import styles from '../styles/themes/Home.module.css';
+import styles from '@/lib/styles/themes/Home.module.css';
 
 const Home: React.FC = () => {
   return (

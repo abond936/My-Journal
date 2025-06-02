@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from '@/styles/components/common/ViewSelector.module.css';
+import styles from '@/lib/styles/components/common/ViewSelector.module.css';
 
 export type ViewType = 'long-form' | 'accordion' | 'card' | 'timeline' | 'magazine';
 

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import styles from '../styles/components/navigation/LifeStagesSidebar.module.css';
+import styles from '@/lib/styles/components/deprecated/LifeStagesSidebar.module.css';
 
 interface Section {
   id: string;

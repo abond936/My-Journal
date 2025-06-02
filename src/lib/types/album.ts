@@ -1,3 +1,5 @@
+// One of two primary content unit 
+
 export interface Album {
   id: string;
   title: string;
@@ -8,4 +10,7 @@ export interface Album {
   createdAt: Date;
   updatedAt: Date;
   status: 'draft' | 'published';
+
+  // image collection? 
+  // album reference?
 } 
