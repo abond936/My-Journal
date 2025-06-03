@@ -252,7 +252,7 @@ src/                                            * All Source code
     ├── mocks/
     ├── scripts/
     ├── services/
-    └── styles/                                   * Structure mirrors app/ and components/
+    └── styles/                                  * Structure mirrors app/ and components/
         ├── globals.css
         ├── fonts.css
         ├── app/           
@@ -262,7 +262,7 @@ src/                                            * All Source code
         │   ├── entries.module.css
         │   ├── entries.css
         │   └── albums.css
-        ├── components/    # Component-level styles (mirrors components/ structure)
+        ├── components/                 # Component-level styles (mirrors components/)
         │   ├── layout/
         │   │   └── MainLayout.module.css
         │   ├── navigation/

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import ContentCard from '@/components/common/ContentCard';
-import styles from '@/lib/styles/components/cards/CardGrid.module.css';
+import styles from './CardGrid.module.css';
 
 interface BaseContent {
   id: string;
@@ -52,26 +52,26 @@ const CardGrid: React.FC<CardGridProps> = ({
 }) => {
   if (!entries || entries.length === 0) {
     return (
-      <section className={styles.section}>
+      <div className={styles.gridContainer}>
         {(title || description || onBack) && (
-          <div className={styles.header}>
+          <div className={styles.cardContent}>
             {onBack && (
               <button 
                 onClick={onBack}
-                className={styles.backButton}
+                className={styles.cardLink}
                 aria-label="Go back"
               >
                 ← Back
               </button>
             )}
-            {title && <h2 className={styles.title}>{title}</h2>}
-            {description && <p className={styles.description}>{description}</p>}
+            {title && <h2 className={styles.cardTitle}>{title}</h2>}
+            {description && <p className={styles.cardExcerpt}>{description}</p>}
           </div>
         )}
-        <div className={styles.empty}>
+        <div className={styles.cardContent}>
           No entries to display.
         </div>
-      </section>
+      </div>
     );
   }
 
@@ -82,32 +82,30 @@ const CardGrid: React.FC<CardGridProps> = ({
   }));
 
   return (
-    <section className={styles.section}>
+    <div className={styles.gridContainer}>
       {(title || description || onBack) && (
-        <div className={styles.header}>
+        <div className={styles.cardContent}>
           {onBack && (
             <button 
               onClick={onBack}
-              className={styles.backButton}
+              className={styles.cardLink}
               aria-label="Go back"
             >
               ← Back
             </button>
           )}
-          {title && <h2 className={styles.title}>{title}</h2>}
-          {description && <p className={styles.description}>{description}</p>}
+          {title && <h2 className={styles.cardTitle}>{title}</h2>}
+          {description && <p className={styles.cardExcerpt}>{description}</p>}
         </div>
       )}
       
-      <div className={styles.grid}>
-        {entriesWithSizes.map(entry => (
-          <ContentCard
-            key={entry.id}
-            {...entry}
-          />
-        ))}
-      </div>
-    </section>
+      {entriesWithSizes.map(entry => (
+        <ContentCard
+          key={entry.id}
+          {...entry}
+        />
+      ))}
+    </div>
   );
 };
 

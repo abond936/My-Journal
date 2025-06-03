@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation';
 import Navigation from '@/components/navigation/Navigation';
 import LifeStagesSidebar from '@/components/navigation/LifeStagesSidebar';
-import styles from '@/lib/styles/components/layouts/AppFrame.module.css';
+import styles from './AppFrame.module.css';
 
 interface AppFrameProps {
   children: React.ReactNode;

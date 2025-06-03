@@ -10,7 +10,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "generate-migration-plan": "ts-node src/lib/scripts/migration-plan-generator.ts"
+    "generate-migration-plan": "ts-node src/lib/scripts/migration-plan-generator.ts",
+    "backup-codebase": "ts-node src/lib/scripts/utils/backup-codebase.ts"
   },
   "dependencies": {
     "@tiptap/extension-image": "^2.12.0",

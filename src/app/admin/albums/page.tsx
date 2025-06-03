@@ -1,20 +1,66 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getAllAlbums, deleteAlbum, updateAlbum } from '@/lib/services/albumService';
 import { getTags } from '@/lib/services/tagService';
 import { Album } from '@/lib/types/album';
 import { Tag } from '@/lib/types/tag';
-import styles from '@/lib/styles/app/admin/albums.module.css';
+import styles from '@/app/admin/albums/albums.module.css';
 
 interface AlbumWithStats extends Album {
-  tagNames: string[];
+  tagNames: { id: string; name: string }[];
 }
 
 interface EditingField {
   id: string;
   field: 'title' | 'status';
 }
+
+const dimensions: Tag['dimension'][] = ['who', 'what', 'when', 'where', 'reflection'];
+
+interface TagWithChildren extends Tag {
+  children: TagWithChildren[];
+}
+
+const buildTagTree = (tags: Tag[]): TagWithChildren[] => {
+  const tagMap = new Map<string, TagWithChildren>();
+  const rootTags: TagWithChildren[] = [];
+
+  // First pass: create all tag objects with empty children arrays
+  tags.forEach(tag => {
+    tagMap.set(tag.id, { ...tag, children: [] });
+  });
+
+  // Second pass: build the tree structure
+  tags.forEach(tag => {
+    const tagWithChildren = tagMap.get(tag.id)!;
+    if (tag.parentId) {
+      const parent = tagMap.get(tag.parentId);
+      if (parent) {
+        parent.children.push(tagWithChildren);
+      }
+    } else {
+      rootTags.push(tagWithChildren);
+    }
+  });
+
+  return rootTags;
+};
+
+const renderTagOption = (tag: TagWithChildren, level: number = 0) => {
+  const padding = level * 10;
+  return (
+    <>
+      <option 
+        value={tag.id}
+        style={{ paddingLeft: `${padding}px` }}
+      >
+        {'—'.repeat(level)} {tag.name}
+      </option>
+      {tag.children.map(child => renderTagOption(child, level + 1))}
+    </>
+  );
+};
 
 export default function AdminAlbumsPage() {
   const [albums, setAlbums] = useState<AlbumWithStats[]>([]);
@@ -26,6 +72,23 @@ export default function AdminAlbumsPage() {
   const [status, setStatus] = useState<'all' | 'draft' | 'published'>('all');
   const [editingField, setEditingField] = useState<EditingField | null>(null);
   const [editValue, setEditValue] = useState('');
+
+  const tagTrees = useMemo(() => {
+    const trees: Record<Tag['dimension'], TagWithChildren[]> = {
+      who: [],
+      what: [],
+      when: [],
+      where: [],
+      reflection: []
+    };
+
+    dimensions.forEach(dimension => {
+      const dimensionTags = tags.filter(tag => tag.dimension === dimension);
+      trees[dimension] = buildTagTree(dimensionTags);
+    });
+
+    return trees;
+  }, [tags]);
 
   useEffect(() => {
     loadData();
@@ -42,9 +105,19 @@ export default function AdminAlbumsPage() {
       // Add tag names to albums
       const albumsWithStats = allAlbums.map(album => ({
         ...album,
-        tagNames: album.tags.map(tagId => 
-          allTags.find(tag => tag.id === tagId)?.name || 'Unknown Tag'
-        )
+        tagNames: album.tags
+          .map(tagId => {
+            const tag = allTags.find(t => t.id === tagId);
+            if (!tag) {
+              console.warn(`Tag with ID ${tagId} not found for album ${album.id}`);
+              return null;
+            }
+            return {
+              id: tag.id,
+              name: tag.name
+            };
+          })
+          .filter((tag): tag is { id: string; name: string } => tag !== null)
       }));
 
       setAlbums(albumsWithStats);
@@ -157,66 +230,148 @@ export default function AdminAlbumsPage() {
     totalMedia: albums.reduce((sum, album) => sum + album.mediaCount, 0)
   };
 
+  const handleBulkStatusUpdate = async (newStatus: 'draft' | 'published') => {
+    if (!confirm(`Are you sure you want to update ${selectedAlbums.size} albums to ${newStatus}?`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await Promise.all(
+        Array.from(selectedAlbums).map(albumId => 
+          updateAlbum(albumId, { status: newStatus })
+        )
+      );
+      await loadData();
+    } catch (error) {
+      console.error('Error updating albums:', error);
+      setError(error instanceof Error ? error.message : 'Failed to update albums');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkTagUpdate = async (dimension: Tag['dimension'], tagId: string | null) => {
+    if (!confirm(`Are you sure you want to update tags for ${selectedAlbums.size} albums?`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await Promise.all(
+        Array.from(selectedAlbums).map(async albumId => {
+          const album = albums.find(a => a.id === albumId);
+          if (!album) return;
+
+          // Remove any existing tags from this dimension
+          const existingTags = album.tags.filter(tagId => {
+            const tag = tags.find(t => t.id === tagId);
+            return tag?.dimension !== dimension;
+          });
+
+          // Add the new tag if one is selected
+          const newTags = tagId ? [...existingTags, tagId] : existingTags;
+
+          await updateAlbum(albumId, { tags: newTags });
+        })
+      );
+      await loadData();
+    } catch (error) {
+      console.error('Error updating tags:', error);
+      setError(error instanceof Error ? error.message : 'Failed to update tags');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) return <div className={styles.loading}>Loading albums...</div>;
   if (error) return <div className={styles.error}>{error}</div>;
 
   return (
-    <div className={styles.albumsPage}>
+    <div className={styles.container}>
       <div className={styles.header}>
-        <h1>Albums Management</h1>
-        <div className={styles.stats}>
-          <div className={styles.statItem}>
-            <span className={styles.statLabel}>Total Albums</span>
-            <span className={styles.statValue}>{stats.total}</span>
-          </div>
-          <div className={styles.statItem}>
-            <span className={styles.statLabel}>Published</span>
-            <span className={styles.statValue}>{stats.published}</span>
-          </div>
-          <div className={styles.statItem}>
-            <span className={styles.statLabel}>Drafts</span>
-            <span className={styles.statValue}>{stats.drafts}</span>
-          </div>
-          <div className={styles.statItem}>
-            <span className={styles.statLabel}>Total Media</span>
-            <span className={styles.statValue}>{stats.totalMedia}</span>
+        <div className={styles.headerContent}>
+          <h1 className={styles.title}>Albums Management</h1>
+          <div className={styles.stats}>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>Total:</span>
+              <span className={styles.statValue}>{stats.total}</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>Published:</span>
+              <span className={styles.statValue}>{stats.published}</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>Drafts:</span>
+              <span className={styles.statValue}>{stats.drafts}</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>Media:</span>
+              <span className={styles.statValue}>{stats.totalMedia}</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className={styles.filters}>
-        <div className={styles.searchBox}>
+      <div className={styles.filterSection}>
+        <div className={styles.topFilters}>
           <input
             type="text"
             placeholder="Search albums..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className={styles.searchInput}
+            className={styles.searchBox}
           />
-        </div>
-
-        <div className={styles.filterGroup}>
-          <select
-            value={status}
-            onChange={e => setStatus(e.target.value as typeof status)}
-            className={styles.filterSelect}
-          >
-            <option value="all">All Status</option>
-            <option value="draft">Drafts</option>
-            <option value="published">Published</option>
-          </select>
+          <div className={styles.filterControls}>
+            <select
+              value={status}
+              onChange={e => setStatus(e.target.value as typeof status)}
+              className={styles.filterSelect}
+            >
+              <option value="all">All Status</option>
+              <option value="draft">Drafts</option>
+              <option value="published">Published</option>
+            </select>
+          </div>
         </div>
       </div>
 
       {selectedAlbums.size > 0 && (
         <div className={styles.bulkActions}>
           <span>{selectedAlbums.size} albums selected</span>
-          <button
-            onClick={handleBulkDelete}
-            className={styles.deleteButton}
-          >
-            Delete Selected
-          </button>
+          <div className={styles.actions}>
+            <select
+              onChange={e => handleBulkStatusUpdate(e.target.value as 'draft' | 'published')}
+              className={styles.filterSelect}
+            >
+              <option value="">Update Status</option>
+              <option value="draft">Set to Draft</option>
+              <option value="published">Set to Published</option>
+            </select>
+            <button
+              onClick={handleBulkDelete}
+              className={styles.deleteButton}
+            >
+              Delete Selected
+            </button>
+          </div>
+        </div>
+      )}
+
+      {selectedAlbums.size > 0 && (
+        <div className={styles.bulkTagActions}>
+          <div className={styles.dimensionFilters}>
+            {dimensions.map(dimension => (
+              <select
+                key={dimension}
+                onChange={e => handleBulkTagUpdate(dimension, e.target.value || null)}
+                className={styles.dimensionSelect}
+              >
+                <option value="">Update {dimension}</option>
+                {tagTrees[dimension].map(tag => renderTagOption(tag))}
+              </select>
+            ))}
+          </div>
         </div>
       )}
 
@@ -250,25 +405,24 @@ export default function AdminAlbumsPage() {
                   />
                 </td>
                 <td>
-                  <div className={styles.coverImage}>
-                    {album.coverImage ? (
-                      <img src={album.coverImage} alt={album.title} />
-                    ) : (
-                      <div className={styles.placeholderImage}>No Image</div>
-                    )}
-                  </div>
+                  {album.coverImage && (
+                    <img
+                      src={album.coverImage}
+                      alt={album.title}
+                      className={styles.coverImage}
+                    />
+                  )}
                 </td>
                 <td>
                   {editingField?.id === album.id && editingField.field === 'title' ? (
-                    <form onSubmit={handleEditSubmit} className={styles.editField}>
+                    <form onSubmit={handleEditSubmit} className={styles.editingField}>
                       <input
                         type="text"
                         value={editValue}
                         onChange={e => setEditValue(e.target.value)}
-                        className={styles.editInput}
                         autoFocus
                       />
-                      <div className={styles.editActions}>
+                      <div className={styles.editButtons}>
                         <button type="submit" className={styles.saveButton}>Save</button>
                         <button type="button" onClick={handleEditCancel} className={styles.cancelButton}>Cancel</button>
                       </div>
@@ -285,24 +439,23 @@ export default function AdminAlbumsPage() {
                 <td>{album.mediaCount}</td>
                 <td>
                   {editingField?.id === album.id && editingField.field === 'status' ? (
-                    <form onSubmit={handleEditSubmit} className={styles.editField}>
+                    <form onSubmit={handleEditSubmit} className={styles.editingField}>
                       <select
                         value={editValue}
                         onChange={e => setEditValue(e.target.value)}
-                        className={styles.editSelect}
                         autoFocus
                       >
                         <option value="draft">Draft</option>
                         <option value="published">Published</option>
                       </select>
-                      <div className={styles.editActions}>
+                      <div className={styles.editButtons}>
                         <button type="submit" className={styles.saveButton}>Save</button>
                         <button type="button" onClick={handleEditCancel} className={styles.cancelButton}>Cancel</button>
                       </div>
                     </form>
                   ) : (
                     <div 
-                      className={`${styles.editableField} ${styles[album.status]}`}
+                      className={styles.editableField}
                       onClick={() => startEditing(album.id, 'status', album.status)}
                     >
                       {album.status}
@@ -311,31 +464,20 @@ export default function AdminAlbumsPage() {
                 </td>
                 <td>
                   <div className={styles.tags}>
-                    {album.tagNames.map((tagName, index) => (
-                      <span key={index} className={styles.tag}>
-                        {tagName}
+                    {album.tagNames.map((tag, index) => (
+                      <span 
+                        key={`${album.id}-${tag.id}-${index}`} 
+                        className={styles.tag}
+                      >
+                        {tag.name}
                       </span>
                     ))}
                   </div>
                 </td>
                 <td>
                   <div className={styles.actions}>
-                    <a
-                      href={`/albums/${album.id}/edit`}
-                      className={styles.editButton}
-                    >
-                      Edit
-                    </a>
-                    <button
-                      onClick={() => {
-                        if (confirm(`Are you sure you want to delete "${album.title}"?`)) {
-                          deleteAlbum(album.id).then(loadData);
-                        }
-                      }}
-                      className={styles.deleteButton}
-                    >
-                      Delete
-                    </button>
+                    <button className={styles.editButton}>Edit</button>
+                    <button className={styles.deleteButton}>Delete</button>
                   </div>
                 </td>
               </tr>

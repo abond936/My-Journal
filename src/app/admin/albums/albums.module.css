@@ -1,0 +1,269 @@
+.container {
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.headerContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.stats {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.statLabel {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.statValue {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.filterSection {
+  margin-bottom: 2rem;
+}
+
+.topFilters {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.searchBox {
+  width: 400px;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.filterControls {
+  display: flex;
+  gap: 1rem;
+  margin-left: auto;
+}
+
+.filterSelect {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  min-width: 120px;
+}
+
+.tableContainer {
+  overflow-x: auto;
+}
+
+.albumsTable {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.albumsTable th,
+.albumsTable td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.albumsTable th {
+  background: #f5f5f5;
+  font-weight: 600;
+  color: #333;
+}
+
+.albumsTable tr:hover {
+  background: #f9f9f9;
+}
+
+.editingField {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.editingField input,
+.editingField select {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #0070f3;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.editButtons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.saveButton,
+.cancelButton {
+  padding: 0.25rem 0.5rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.saveButton {
+  background: #0070f3;
+  color: white;
+}
+
+.cancelButton {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tag {
+  padding: 0.25rem 0.5rem;
+  background: #f0f0f0;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.editButton,
+.deleteButton {
+  padding: 0.25rem 0.5rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.editButton {
+  background: #0070f3;
+  color: white;
+}
+
+.deleteButton {
+  background: #ff4444;
+  color: white;
+}
+
+.bulkActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: #f5f5f5;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.loading,
+.error,
+.empty {
+  padding: 2rem;
+  text-align: center;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.error {
+  color: #ff4444;
+}
+
+.empty {
+  color: #666;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 768px) {
+  .topFilters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .searchBox {
+    width: 100%;
+  }
+
+  .filterControls {
+    margin-left: 0;
+  }
+
+  .albumsTable {
+    width: 100%;
+  }
+}
+
+.bulkTagActions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--surface-2);
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.bulkTagActions .dimensionFilters {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+  flex: 1;
+}
+
+.bulkTagActions .dimensionSelect {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.25rem;
+  background: var(--surface-1);
+  color: var(--text-1);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bulkTagActions .dimensionSelect option {
+  padding: 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+} 

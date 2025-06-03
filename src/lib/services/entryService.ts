@@ -3,8 +3,16 @@ import { db } from '@/lib/config/firebase';
 import { Entry, GetEntriesOptions } from '@/lib/types/entry';
 import { entryCache } from './cacheService';
 import CacheService from './cacheService';
+import { mockEntries } from './mockData';
 
 export async function getAllEntries(options: GetEntriesOptions = {}): Promise<Entry[]> {
+  // Use mock data in development
+  if (process.env.NODE_ENV === 'development') {
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return [...mockEntries];
+  }
+
   const { page = 1, limit: pageSize = 10, tag, tags, type, status, dateRange } = options;
   const entriesRef = collection(db, 'entries');
   

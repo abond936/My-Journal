@@ -13,7 +13,6 @@ Priority: CRITICAL
 ----------------------------------------------------------------
 ### 2.1 Entry Management
 Status: ✅ Operational
-Location: `src/app/admin/entries/page.tsx`  `***Update***`
 
 #### Current Features
 - Entry listing
@@ -30,7 +29,6 @@ Location: `src/app/admin/entries/page.tsx`  `***Update***`
 ----------------------------------------------------------------
 ### 2.2 Tag Management
 Status: ✅ Operational
-Location: `src/app/admin/tags/page.tsx`     `***Update***`
 
 #### Current Features
 - Tag hierarchy management
@@ -48,7 +46,7 @@ Location: `src/app/admin/tags/page.tsx`     `***Update***`
 ----------------------------------------------------------------
 ### 2.3 Album Management
 Status: ✅ Operational
-Location: `src/app/admin/albums/page.tsx`   `***Update***`
+
 
 #### Current Features
 - Album Listing
@@ -67,7 +65,10 @@ Location: `src/app/admin/albums/page.tsx`   `***Update***`
 ----------------------------------------------------------------
 ### 2.4 Question Management
 Status: 🚧 In Progress
-Location: `src/app/admin/questions/page.tsx`
+
+- Questions are prompts to ignite a story or a reflection.
+- Questions are tagged to organize them as entries and albums are.
+
 
 #### Current Features
 
@@ -81,33 +82,9 @@ Location: `src/app/admin/questions/page.tsx`
 - Question templates
 - Answer validation
 - User feedback
+
+Open Questions
+- Do we want to track answers.
 ----------------------------------------------------------------
-## 4. Directory Structure
-CRITICAL: All admin components MUST follow this structure.
 
-```
-src/app/admin/
-├── entries/
-│   └── page.tsx
-├── tags/
-│   ├── page.tsx
-│   └── SortableTag.tsx
-├── albums/
-│   └── page.tsx
-├── questions/
-│   └── page.tsx
-└── layout.tsx
-
-src/lib/services/admin/
-├── entryService.ts
-├── tagService.ts
-├── albumService.ts
-└── questionService.ts
-
-src/lib/hooks/admin/
-├── useAdminEntry.ts
-├── useAdminTag.ts
-├── useAdminAlbum.ts
-└── useAdminQuestion.ts
-```
 

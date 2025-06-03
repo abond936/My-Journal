@@ -3,11 +3,8 @@
  * 
  * Purpose: Creates a compressed backup of the codebase to OneDrive
  * 
- * Required Environment Variables:
- * - ONEDRIVE_PATH: Path to OneDrive root directory
- * 
  * Output:
- * - Creates a timestamped backup directory in OneDrive/Codebase Backups/
+ * - Creates a timestamped backup directory in C:\Users\alanb\CodeBase Backups\
  * - Saves backup as ZIP file
  * - Includes metadata with git information
  * - Maintains last 5 backups
@@ -21,43 +18,31 @@
  * - Added component organization
  */
 
-import * as dotenv from 'dotenv';
-import { resolve } from 'path';
-
-// Debug dotenv loading
-const result = dotenv.config();
-console.log('\nDotenv config result:', result);
-console.log('Current working directory:', process.cwd());
-console.log('Looking for .env file in:', resolve(process.cwd(), '.env'));
-
 import path from 'path';
 import fs from 'fs';
 import archiver from 'archiver';
 import { execSync } from 'child_process';
 
-// Load environment variables
-dotenv.config();
-
-// Debug: Log environment variables
-console.log('Environment variables loaded:');
-console.log('ONEDRIVE_PATH:', process.env.ONEDRIVE_PATH);
-
-// Validate required environment variables
-const requiredEnvVars = ['ONEDRIVE_PATH'];
-const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
-if (missingEnvVars.length > 0) {
-  console.error('Error: Missing required environment variables:');
-  missingEnvVars.forEach(varName => console.error(`- ${varName}`));
-  process.exit(1);
-}
-
 async function backupCodebase() {
   let output = '';
   let success = true;
+  let files: string[] = [];
+  const excludeDirs = [
+    'node_modules',
+    '.next',
+    'out',
+    'dist',
+    'build',
+    '.git',
+    'temp',
+    '.cursor',
+    'coverage',
+    'exports'
+  ];
   
   try {
     // Create backup directory if it doesn't exist
-    const backupDir = path.join(process.env.ONEDRIVE_PATH || '', 'Codebase Backups');
+    const backupDir = 'C:\\Users\\alanb\\CodeBase Backups';
     if (!fs.existsSync(backupDir)) {
       fs.mkdirSync(backupDir, { recursive: true });
     }
@@ -65,22 +50,17 @@ async function backupCodebase() {
     // Create backup file with timestamp
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const backupPath = path.join(backupDir, `backup-${timestamp}`);
-
-    // Create backup directory
-    if (!fs.existsSync(backupPath)) {
-      fs.mkdirSync(backupPath, { recursive: true });
-    }
+    const zipPath = path.join(backupDir, `backup-${timestamp}.zip`);
 
     output += `\n=== Starting Codebase Backup ===\n`;
     output += `Timestamp: ${new Date().toISOString()}\n`;
-    output += `Backup path: ${backupPath}\n`;
+    output += `Backup path: ${zipPath}\n`;
 
-    // Create a zip archive
+    // Create a zip archive with standard compression
     const archive = archiver('zip', {
-      zlib: { level: 9 } // Maximum compression
+      zlib: { level: 6 } // Standard compression
     });
 
-    const zipPath = path.join(backupPath, 'codebase-backup.zip');
     const outputStream = fs.createWriteStream(zipPath);
 
     // Handle archive events
@@ -96,35 +76,37 @@ async function backupCodebase() {
       throw err;
     });
 
-    // Pipe archive data to the file
-    archive.pipe(outputStream);
+    // Wait for the write stream to finish
+    await new Promise((resolve, reject) => {
+      outputStream.on('close', () => {
+        output += `\nArchive finalized. Total bytes: ${archive.pointer()}\n`;
+        resolve(true);
+      });
 
-    // Add files to the archive, excluding unnecessary directories
-    const excludeDirs = [
-      'node_modules',
-      '.next',
-      'out',
-      'dist',
-      'build',
-      '.git',
-      'temp',
-      '.cursor',
-      'coverage',
-      'exports'
-    ];
+      outputStream.on('end', () => {
+        output += 'Data has been drained\n';
+      });
 
-    // Get all files in the project directory
-    const projectRoot = process.cwd();
-    const files = getAllFiles(projectRoot, excludeDirs);
+      outputStream.on('error', (err) => {
+        reject(err);
+      });
 
-    // Add each file to the archive
-    for (const file of files) {
-      const relativePath = path.relative(projectRoot, file);
-      archive.file(file, { name: relativePath });
-    }
+      // Pipe archive data to the file
+      archive.pipe(outputStream);
 
-    // Finalize the archive
-    await archive.finalize();
+      // Get all files in the project directory
+      const projectRoot = process.cwd();
+      files = getAllFiles(projectRoot, excludeDirs);
+
+      // Add each file to the archive
+      for (const file of files) {
+        const relativePath = path.relative(projectRoot, file);
+        archive.file(file, { name: relativePath });
+      }
+
+      // Finalize the archive
+      archive.finalize();
+    });
 
     // Get git commit hash for reference
     const commitHash = execSync('git rev-parse HEAD').toString().trim();
@@ -147,10 +129,9 @@ async function backupCodebase() {
       ]
     };
 
-    fs.writeFileSync(
-      path.join(backupPath, 'metadata.json'),
-      JSON.stringify(metadata, null, 2)
-    );
+    // Write metadata to a separate file
+    const metadataPath = path.join(backupDir, `backup-${timestamp}-metadata.json`);
+    fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
 
     output += `\nBackup completed successfully\n`;
     output += `Total files: ${files.length}\n`;
@@ -159,7 +140,7 @@ async function backupCodebase() {
 
     // Clean up old backups (keep last 5)
     const backups = fs.readdirSync(backupDir)
-      .filter(file => file.startsWith('backup-'))
+      .filter(file => file.startsWith('backup-') && file.endsWith('.zip'))
       .sort()
       .reverse();
 
@@ -167,13 +148,17 @@ async function backupCodebase() {
       output += `\n=== Cleaning up old backups ===\n`;
       for (const oldBackup of backups.slice(5)) {
         const oldBackupPath = path.join(backupDir, oldBackup);
-        fs.rmSync(oldBackupPath, { recursive: true, force: true });
+        const oldMetadataPath = path.join(backupDir, oldBackup.replace('.zip', '-metadata.json'));
+        fs.rmSync(oldBackupPath, { force: true });
+        if (fs.existsSync(oldMetadataPath)) {
+          fs.rmSync(oldMetadataPath, { force: true });
+        }
         output += `Deleted old backup: ${oldBackup}\n`;
       }
     }
 
     // Write backup output to file
-    const outputFile = path.join(backupPath, 'backup-output.txt');
+    const outputFile = path.join(backupDir, `backup-${timestamp}-output.txt`);
     fs.writeFileSync(outputFile, output);
     console.log(`Backup output written to ${outputFile}`);
 
@@ -198,7 +183,6 @@ function getAllFiles(dirPath: string, excludeDirs: string[], arrayOfFiles: strin
   files.forEach(file => {
     const fullPath = path.join(dirPath, file);
     
-    // Skip excluded directories
     if (fs.statSync(fullPath).isDirectory()) {
       if (!excludeDirs.includes(file)) {
         arrayOfFiles = getAllFiles(fullPath, excludeDirs, arrayOfFiles);
@@ -211,4 +195,5 @@ function getAllFiles(dirPath: string, excludeDirs: string[], arrayOfFiles: strin
   return arrayOfFiles;
 }
 
+// Run the backup
 backupCodebase(); 

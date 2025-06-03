@@ -3,21 +3,23 @@
 import { useState, useEffect } from 'react';
 import { getEntries } from '@/lib/services/entryService';
 import { Entry } from '@/lib/types/entry';
-import { UIEntry } from '@/lib/types/ui';
 import Link from 'next/link';
 import CardGrid from '@/components/cards/CardGrid';
-import AccordionLayout from '@/components/layouts/AccordionLayout';
-import BlogLayout from '@/components/layouts/BlogLayout';
 import { useTag } from '@/lib/contexts/TagContext';
 import styles from '@/lib/styles/app/entries.module.css';
 
-type LayoutType = 'grid' | 'accordion' | 'blog';
+// Function to get a placeholder image based on entry ID
+const getPlaceholderImage = (id: string) => {
+  // Using picsum.photos for random images, but seeded with the entry ID
+  // This ensures the same entry always gets the same image
+  const seed = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return `https://picsum.photos/seed/${seed}/800/600`;
+};
 
 export default function EntriesPage() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [layout, setLayout] = useState<LayoutType>('grid');
   const [hasMore, setHasMore] = useState(true);
   const [lastDoc, setLastDoc] = useState<any>(null);
   const { selectedTag } = useTag();
@@ -60,7 +62,7 @@ export default function EntriesPage() {
     }
   };
 
-  const renderLayout = () => {
+  const renderContent = () => {
     if (loading && entries.length === 0) {
       return <div className={styles.loading}>Loading entries...</div>;
     }
@@ -73,18 +75,6 @@ export default function EntriesPage() {
       return <div className={styles.empty}>No entries found.</div>;
     }
 
-    // Transform entries for layouts
-    const uiEntries = entries.map(entry => ({
-      id: entry.id,
-      title: entry.title,
-      excerpt: entry.content.substring(0, 150) + '...',
-      date: entry.date?.toLocaleDateString(),
-      tags: entry.tags,
-      imageUrl: entry.media?.[0],
-      href: `/entries/${entry.id}`,
-      type: entry.type || 'story'
-    }));
-
     // Transform entries for CardGrid
     const gridEntries = entries.map(entry => ({
       id: entry.id,
@@ -92,7 +82,7 @@ export default function EntriesPage() {
       description: entry.content.substring(0, 150) + '...',
       date: entry.date?.toLocaleDateString(),
       tags: entry.tags,
-      imageUrl: entry.media?.[0],
+      imageUrl: entry.media?.[0] || getPlaceholderImage(entry.id),
       href: `/entries/${entry.id}`,
       type: 'entry' as const,
       size: 'medium' as const
@@ -100,9 +90,7 @@ export default function EntriesPage() {
 
     return (
       <>
-        {layout === 'accordion' && <AccordionLayout entries={uiEntries} />}
-        {layout === 'blog' && <BlogLayout entries={uiEntries} />}
-        {layout === 'grid' && <CardGrid entries={gridEntries} />}
+        <CardGrid entries={gridEntries} />
         
         {hasMore && (
           <div className={styles.loadMoreContainer}>
@@ -131,37 +119,11 @@ export default function EntriesPage() {
             >
               New Entry
             </Link>
-            <div className={styles.layoutControls}>
-              <button
-                className={`${styles.layoutButton} ${layout === 'grid' ? styles.active : ''}`}
-                onClick={() => setLayout('grid')}
-                aria-label="Grid layout"
-                title="Grid layout"
-              >
-                Grid
-              </button>
-              <button
-                className={`${styles.layoutButton} ${layout === 'accordion' ? styles.active : ''}`}
-                onClick={() => setLayout('accordion')}
-                aria-label="Accordion layout"
-                title="Accordion layout"
-              >
-                Accordion
-              </button>
-              <button
-                className={`${styles.layoutButton} ${layout === 'blog' ? styles.active : ''}`}
-                onClick={() => setLayout('blog')}
-                aria-label="Blog layout"
-                title="Blog layout"
-              >
-                Blog
-              </button>
-            </div>
           </div>
         </div>
       </div>
 
-      {renderLayout()}
+      {renderContent()}
     </div>
   );
 } 

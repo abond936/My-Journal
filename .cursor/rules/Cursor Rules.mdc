@@ -8,13 +8,18 @@ alwaysApply: true
 - There is no excuse for not following out established rules. 
 - Failure to follow the standards and rules will be met with quick disapproval.
 
-# Interaction and Development Rules
 
 ## Core Principles
 1. Always check for existence anywhere in the codebase before creating
 2. Always show planned changes before execution
 3. Always ask and wait for permission before modifying or creating any file or directory
 4. Always work within and maintain the established directory structure standards
+5. A question is not a request to do anything. It seeks information only.
+4. Offer to remove un-needed files and directories 
+
+## File Management
+- ALWAYS get explicit permission before creating, modifying, moving, deleting files or directories
+
 
 ## Coding Standards
 1. Routing and Structure
@@ -33,21 +38,10 @@ alwaysApply: true
    - Document code and business logic
    - Keep comments up-to-date with code changes
 
-4. Remove un-needed files and directories
-
-5. Type Safety
-   - Use TypeScript types for all components and functions
-   - Avoid any type
-   - Define interfaces for all data structures
-   - Maintain type consistency across the application
-
 
 ## CSS Core Principles
 1. Use Global Variables for all Theming and Styling
-   - No hardcoded values in component CSS
-   - MUST document all global variables in `globals.css`
-   - Variables for:
-     - Colors
+     - Colors (light/dark)
      - Typography (size, weight, line-height)
      - Spacing
      - Breakpoints
@@ -57,59 +51,9 @@ alwaysApply: true
      - Border radiuses
      - Avoid style overrides
 
-2. USe Fluid Responsiveness
+2. Use Fluid Responsiveness
    - Use fluid/gradient responsiveness instead of breakpoints
-   - Use CSS calc() for fluid typography
-   - Use viewport units (vw, vh) for fluid layouts
-   - Use clamp() for responsive values
-   - Use min(), max() for responsive constraints
-   - Avoid fixed breakpoints except for:
-     - Mobile menu toggles
-     - Layout shifts
-     - Component stacking
 
-## Media and Assets
-  - App Assets:
-    - App images MUST be in `public/images/uploads/`
-    - App icons MUST be in `public/images/icons/`
-    - App logos MUST be in `public/images/logos/`
-    - App fonts MUST be in `public/fonts/`
-  - User Content:
-    - Primary storage: Google Photos API
-    - Secondary storage: Local/Cloud drives
-  - Media Processing:
-    - Media utilities MUST be in `src/utils/media/`
-    - Image components MUST be in `src/components/ui/images/`   ?????
-    - Media processing MUST be in `src/lib/media/`
-    - Image optimization MUST be in `src/lib/media/optimization/`
-    - Cache management MUST be in `src/lib/media/cache/`
-
-## Authentication
-  - Auth components MUST be in `src/components/features/auth/`
-  - Auth utilities MUST be in `src/lib/auth/`
-  - Auth hooks MUST be in `src/lib/hooks/auth/`
-  - Protected routes MUST be in `app/(auth)/`
-
-## Documentation
-  - Documentation MUST be in Markdown format
-  - Project docs MUST be in `docs/`
-  - API docs MUST be in `docs/api/`
-  - Component docs MUST be in `docs/components/`
-  - README files MUST be in all major directories       ?????
-  
-## Testing
-  - Unit Tests:
-    - Test files SHOULD be in `src/__tests__/` organized by feature
-    - Test utilities MUST be in `src/utils/testing/`
-    - Test fixtures MUST be in `src/utils/testing/fixtures/`
-  - Integration Tests:
-    - Integration tests MUST be in `tests/integration/`
-    - API tests MUST be in `tests/integration/api/`
-    - Component tests MUST be in `tests/integration/components/`
-  - E2E Tests:
-    - E2E tests MUST be in `tests/e2e/`
-    - Test scenarios MUST be in `tests/e2e/scenarios/`
-    - Test data MUST be in `tests/e2e/data/`
 
 ## Configuration
   - Environment files MUST be in root directory
@@ -127,68 +71,11 @@ alwaysApply: true
       - NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
       - NEXT_PUBLIC_FIREBASE_APP_ID
 
-## Code Organization
-  - Utility functions MUST be in `src/utils/`
-  - Custom hooks MUST be in `src/lib/lib/hooks/`
-  - Constants MUST be in `src/lib/constants/`
-  - Types MUST be in `src/lib/types/`
-  - Styles MUST be in `src/lib/styles/`
-
-##File Naming
-  - React components MUST be PascalCase
-  - Utility files MUST be camelCase
-  - Test files MUST end with `.test.ts` or `.test.tsx`
-  - Style files MUST be `[name].module.css`
-  - Type files MUST be `[name].types.ts`
-
-
-## File Creation, Modicfication, Deletion
-- ALWAYS Ask permission before creating modifying or deleting any file
-
-## Hook Rules
-
-- All hooks MUST be in `src/lib/hooks/`
-- No hooks should exist outside this directory
-- This makes hooks easily discoverable and maintainable
-- All hooks MUST be prefixed with `use`
-- Example: `useEntry`, `useStories`, `useAuth`
-- The filename MUST match the hook name
-- Example: `useEntry.ts` for the `useEntry` hook
-- Export hooks individually for better tree-shaking
-- Example: `export const useEntry = () => { ... }`
-- Hooks MUST import from services, not directly from Firebase or other external sources
-- Example: `import { getEntry } from '@/lib/data/entryService'` instead of direct Firebase imports
-- This ensures proper abstraction and maintainability
-
-## Import Rules
-
-- All imports MUST use the `@/` alias pointing to `src/`
-- Example: `import { Entry } from '@/lib/types/entry'`
-- External dependencies first
-- Internal absolute imports (with `@/`) second
-- Relative imports last (if absolutely necessary)
-- All service imports MUST come from `@/lib/services/`
-- Example: `import { db } from '@/lib/services/firebase'`
-- No direct imports from external services (e.g., Firebase) in components
-- All configuration imports MUST come from `@/lib/config/`
-- Example: `import { firebaseConfig } from '@/lib/config/firebase'`
-- All data management imports MUST come from `@/lib/data/`
-- Example: `import { getEntry } from '@/lib/data/entryService'`
-
-
-## Scripting Rules
-
-- All scripts MUST be located in `src/lib/scripts/`
-- Scripts MUST be organized by purpose:
-  - `firebase/` - Firebase-related scripts
-  - `backup/` - Backup and restore scripts
-  - `migration/` - Database migration scripts
-  - `utility/` - General utility scripts
 
 ## Script Execution
 - Scripts MUST be executed using:
   ```bash
-  npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/<script-name>
+  `npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/<script-name>
   ```
 - NEVER execute scripts directly with `node` or `ts-node` without proper configuration
 - ALWAYS use the correct TypeScript configuration for scripts
@@ -208,30 +95,8 @@ alwaysApply: true
 - Required environment variables MUST be documented in the script's header
 - Scripts MUST validate required environment variables before execution
 
-## Error Handling
-- Scripts MUST have top-level error handling:
-  ```typescript
-  try {
-    // Script logic
-  } catch (error) {
-    console.error('Error:', error);
-    process.exit(1);
-  }
-  ```
-- Error messages MUST be clear and actionable
-- Scripts MUST exit with appropriate status codes
-
-## Logging and Output
-- Scripts MUST log their progress
-- Output MUST be written to appropriate files in `temp/` directory   ?????
-- Log files MUST be named consistently with the script name
-- Logs MUST include timestamps and clear status messages
-
 ## Firebase Integration
 - Firebase Admin imports MUST use the `@/lib/config/firebase/admin` path:
-  ```typescript
-  import { adminDb } from '@/lib/config/firebase/admin';
-  ```
 - Firebase Admin MUST be imported AFTER environment variables are loaded
 - Required Firebase environment variables:
   - `FIREBASE_SERVICE_ACCOUNT_PROJECT_ID`
@@ -240,265 +105,21 @@ alwaysApply: true
 
 ## TypeScript Configuration
 - Scripts MUST use `tsconfig.scripts.json` which includes:
-  ```json
-  {
-    "extends": "./tsconfig.json",
-    "compilerOptions": {
-      "module": "commonjs",
-      "target": "es2020",
-      "esModuleInterop": true,
-      "moduleResolution": "node",
-      "resolveJsonModule": true,
-      "allowSyntheticDefaultImports": true,
-      "skipLibCheck": true,
-      "strict": false,
-      "noEmit": true,
-      "baseUrl": ".",
-      "paths": {
-        "@/*": ["src/*"]
-      }
-    },
-    "include": [
-      "src/scripts/**/*.ts",
-      "src/lib/scripts/**/*.ts"
-    ],
-    "exclude": [
-      "node_modules"
-    ]
-  }
-  ```
+ 
 
 ## Dependencies
 - Required dependencies MUST be installed:
   ```bash
-  npm install --save-dev ts-node tsconfig-paths dotenv @types/dotenv
+  `npm install --save-dev ts-node tsconfig-paths dotenv @types/dotenv
   ```
 - Additional dependencies as needed (e.g., `archiver` for backup scripts)
 
-## Script Documentation
-- Every script MUST have a header comment block:
-  ```typescript
-  /**
-   * Script Name
-   * 
-   * Purpose: Brief description of what the script does
-   * 
-   * Required Environment Variables:
-   * - VAR1: Description of variable 1
-   * - VAR2: Description of variable 2
-   * 
-   * Output:
-   * - Description of output 1
-   * - Description of output 2
-   */
-  ```
-
-## Script Testing
-- Scripts SHOULD include debug logging for environment variables
-- Scripts SHOULD validate their configuration before execution
-- Scripts SHOULD provide clear feedback about their progress
-
-## 11. Script Migration Status
-
-### Working Scripts (Following Current Standards)
-- `src/lib/scripts/firebase/test-firebase-config.ts`
-- `src/lib/scripts/firebase/backup-firestore.ts`
-- `src/lib/scripts/backup-codebase.ts`
-
-### Scripts Needing Updates
-The following scripts need to be updated to follow the current standards:
-
-1. Using relative imports:
-   - `src/lib/scripts/sample-entries.ts`
-   - `src/lib/scripts/test-firebase-config.ts`
-
-2. Using service account JSON:
-   - `src/lib/scripts/importCategories2.ts`
-   - `src/lib/scripts/import-categories.ts`
-   - `src/lib/scripts/test-firestore2.ts`
-
-3. Using direct Firebase Admin initialization:
-   - `src/lib/scripts/firebase/list-collections.ts`
-   - `src/lib/scripts/firebase/migrate-collections.ts`
-   - `src/lib/scripts/firebase/migrate-entries.ts`
-   - `src/lib/scripts/list-categories.ts`
-   - `src/lib/scripts/cleanup-orphaned-tags.ts`
-   - `src/lib/scripts/cleanup-tags.ts`
-
-### Migration Process
-When updating scripts:
-1. Copy the working pattern from `test-firebase-config.ts`
-2. Update environment variable loading
-3. Update Firebase Admin imports
-4. Test the script with the new configuration
-5. Update this section of the documentation
 
 
 
 
 
-## 2.3 Import and Dependency Management
-- ALWAYS use `@/` alias for imports from `src/`
-- ALWAYS follow import order:
-  1. External dependencies
-  2. Internal absolute imports (`@/`)
-  3. Relative imports (if necessary)
-- ALWAYS import from appropriate directories:
-  * Services: `@/lib/services/`
-  * Config: `@/lib/config/`
-  * Data: `@/lib/data/`
-- NEVER import directly from external services in components
-
-## 2.5 Resource Management
-- ALWAYS check for existing implementations before creating new ones
-- ALWAYS verify file/directory existence before creating new ones
-- ALWAYS search for similar patterns in the codebase
-- ALWAYS check UnifiedDocument.mdc for existing definitions
-- NEVER create duplicate implementations
-
-# 3. Project Structure Rules
-
-## 3.1 Next.js App Structure
-- ALWAYS create routes within the `app/` directory
-- ALWAYS use `(group)` syntax for route organization
-- ALWAYS use `[param]` syntax for dynamic routes
-- ALWAYS name files according to Next.js conventions:
-  * `layout.tsx` for layouts
-  * `page.tsx` for pages
-  * `loading.tsx` for loading states
-  * `error.tsx` for error boundaries
-  * `not-found.tsx` for 404 pages
-- ALWAYS place protected routes in `app/(auth)/`
-
-## 3.2 Source Code Organization
-- ALWAYS organize code by feature and responsibility
-- ALWAYS place components in `src/components/`:
-  * Feature components in `features/`
-  * Shared components in `common/`
-  * Layout components in `layouts/`
-  * UI components in `ui/`
-- ALWAYS place hooks in `src/lib/hooks/`
-- ALWAYS place services in `src/lib/services/`
-- ALWAYS place utilities in `src/lib/utils/`
-- ALWAYS place types in `src/types/`
-- ALWAYS place constants in `src/lib/constants/`
-
-## 3.3 Testing Structure
-- ALWAYS place unit tests in `src/__tests__/` organized by feature
-- ALWAYS place test utilities in `src/utils/testing/`
-- ALWAYS place test fixtures in `src/utils/testing/fixtures/`
-- ALWAYS place integration tests in `tests/integration/`:
-  * API tests in `api/`
-  * Component tests in `components/`
-- ALWAYS place E2E tests in `tests/e2e/`:
-  * Scenarios in `scenarios/`
-  * Test data in `data/`
-
-## 3.4 Style Organization
-- ALWAYS place all styles in `src/styles/`:
-  * Component styles in `components/`
-  * Global styles in `globals.css`
-  * Theme styles in `themes/`
-  * Utility styles in `utils/`
-- ALWAYS use CSS Modules for component styles
-- ALWAYS use BEM methodology for class names
-- ALWAYS use semantic variable names in `:root`
-- ALWAYS use modern CSS features with fallbacks
-- ALWAYS implement fluid/gradient responsiveness:
-  * Use `clamp()` for responsive values
-  * Use `calc()` for fluid typography
-  * Use viewport units (vw, vh) for fluid layouts
-  * Avoid fixed breakpoints except for:
-    - Mobile menu toggles
-    - Layout shifts
-    - Component stacking
-  * Document any necessary breakpoints
-
-## 3.5 Architectural Preferences
-- ALWAYS use server components by default in Next.js:
-  * Only use client components when necessary
-  * Document reasons for client components
-  * Keep client-side JavaScript minimal
-- ALWAYS implement progressive enhancement:
-  * Core functionality works without JavaScript
-  * Enhance with JavaScript when available
-  * Graceful degradation for older browsers
-- ALWAYS follow mobile-first design:
-  * Design for mobile first
-  * Scale up for larger screens
-  * Test on multiple devices
-- ALWAYS implement proper error boundaries:
-  * Catch and handle errors gracefully
-  * Provide meaningful error messages
-  * Maintain application stability
-- ALWAYS use proper data fetching patterns:
-  * Server-side data fetching by default
-  * Client-side fetching only when necessary
-  * Implement proper loading states
-  * Handle errors appropriately
-- ALWAYS implement proper caching strategies:
-  * Use Next.js built-in caching
-  * Implement stale-while-revalidate
-  * Cache at appropriate levels
-- ALWAYS maintain performance standards:
-  * Sub-2 second initial page load
-  * Optimize for Core Web Vitals
-  * Implement proper code splitting
-  * Use proper image optimization
 
 
-## File Management
-- ALWAYS get explicit permission before:
-  * Creating new files
-  * Modifying existing files
-  * Moving files
-  * Deleting files
+ 
 
-## 3.7 Code Style Standards
-- ALWAYS use 2 spaces for indentation
-- ALWAYS keep lines under 120 characters
-- ALWAYS use blank lines for logical separation
-- ALWAYS follow ESLint configuration
-- ALWAYS use JSDoc for documentation
-- ALWAYS keep comments up-to-date
-- ALWAYS document complex logic
-
-# 4. Documentation 
-
-## 4.1 Rules
-- ALWAYS Maintain CursorRules.mdc in `/rules` as the single source of truth for:
-  * Vision
-  * Architecture
-  * Rules 
-  * Implementation Plan
-
-## 4.3 Configuration Management
-- ALWAYS place configuration files in root directory:
-  * Environment files (`.env`)
-  * Build config
-  * TypeScript config
-  * ESLint config
-  * Style config
-- ALWAYS place service configs in `src/lib/config/`:
-  * Firebase config
-  * API configs
-  * Service-specific settings
-- ALWAYS protect sensitive information
-  * Use environment variables
-  * Update .gitignore
-
-## 4.4 Shell and Command Standards
-- ALWAYS use PowerShell as primary shell for Windows
-- ALWAYS use Command Prompt as fallback if needed
-- ALWAYS follow path conventions:
-  * Use backslashes (`\`) for paths
-  * Use semicolons (`;`) to separate commands
-  * Use proper quoting for paths with spaces
-- ALWAYS include error handling:
-  * Use `-ErrorAction SilentlyContinue` for operations that might fail
-  * Use `-Force` for operations that might need to overwrite
-  * Use `-Recurse` for directory operations
-- ALWAYS use TypeScript config for scripts:
-  * Use correct `tsconfig.scripts.json`
-  * Ensure path aliases work
-  * Maintain type checking 

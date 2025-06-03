@@ -5,7 +5,7 @@ import { getAllEntries, deleteEntry, updateEntry } from '@/lib/services/entrySer
 import { getTags } from '@/lib/services/tagService';
 import { Entry } from '@/lib/types/entry';
 import { Tag } from '@/lib/types/tag';
-import styles from '@/lib/styles/app/admin/entries.module.css';
+import styles from '@/app/admin/entries/entries.module.css';
 
 interface EntryWithStats extends Entry {
   tagNames: string[];
@@ -13,7 +13,7 @@ interface EntryWithStats extends Entry {
 
 interface EditingField {
   id: string;
-  field: 'title' | 'type' | 'status';
+  field: 'title' | 'type' | 'status' | 'date';
 }
 
 const dimensions: Tag['dimension'][] = ['who', 'what', 'when', 'where', 'reflection'];
@@ -48,7 +48,7 @@ const buildTagTree = (tags: Tag[]): TagWithChildren[] => {
 };
 
 const renderTagOption = (tag: TagWithChildren, level: number = 0) => {
-  const padding = level * 20; // 20px per level
+  const padding = level * 10; // Reduced from 20px to 10px per level
   return (
     <>
       <option 
@@ -209,6 +209,60 @@ export default function AdminEntriesPage() {
     }
   };
 
+  const handleBulkDateUpdate = async (newDate: string) => {
+    if (!confirm(`Are you sure you want to update ${selectedEntries.size} entries to this date?`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await Promise.all(
+        Array.from(selectedEntries).map(entryId => 
+          updateEntry(entryId, { date: new Date(newDate) })
+        )
+      );
+      await loadData();
+    } catch (error) {
+      console.error('Error updating entries:', error);
+      setError(error instanceof Error ? error.message : 'Failed to update entries');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkTagUpdate = async (dimension: Tag['dimension'], tagId: string | null) => {
+    if (!confirm(`Are you sure you want to update tags for ${selectedEntries.size} entries?`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await Promise.all(
+        Array.from(selectedEntries).map(async entryId => {
+          const entry = entries.find(e => e.id === entryId);
+          if (!entry) return;
+
+          // Remove any existing tags from this dimension
+          const existingTags = entry.tags.filter(tagId => {
+            const tag = tags.find(t => t.id === tagId);
+            return tag?.dimension !== dimension;
+          });
+
+          // Add the new tag if one is selected
+          const newTags = tagId ? [...existingTags, tagId] : existingTags;
+
+          await updateEntry(entryId, { tags: newTags });
+        })
+      );
+      await loadData();
+    } catch (error) {
+      console.error('Error updating tags:', error);
+      setError(error instanceof Error ? error.message : 'Failed to update tags');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     handleEditSave();
@@ -228,6 +282,8 @@ export default function AdminEntriesPage() {
         updates.type = editValue as 'story' | 'reflection';
       } else if (editingField.field === 'status') {
         updates.status = editValue as 'draft' | 'published';
+      } else if (editingField.field === 'date') {
+        updates.date = new Date(editValue);
       }
 
       await updateEntry(editingField.id, updates);
@@ -254,9 +310,9 @@ export default function AdminEntriesPage() {
     setEditValue('');
   };
 
-  const startEditing = (entryId: string, field: EditingField['field'], value: string) => {
+  const startEditing = (entryId: string, field: EditingField['field'], value: string | Date) => {
     setEditingField({ id: entryId, field });
-    setEditValue(value);
+    setEditValue(value instanceof Date ? value.toISOString().split('T')[0] : value);
   };
 
   const filteredEntries = entries.filter(entry => {
@@ -286,10 +342,10 @@ export default function AdminEntriesPage() {
   if (error) return <div className={styles.error}>{error}</div>;
 
   return (
-    <div className={styles.entriesPage}>
+    <div className={styles.container}>
       <div className={styles.header}>
         <div className={styles.headerContent}>
-          <h1>Entries Management</h1>
+          <h1 className={styles.title}>Entries Management</h1>
           <div className={styles.stats}>
             <div className={styles.statItem}>
               <span className={styles.statLabel}>Total:</span>
@@ -315,19 +371,16 @@ export default function AdminEntriesPage() {
         </div>
       </div>
 
-      <div className={styles.filters}>
-        <div className={`${styles.filterRow} ${styles.top}`}>
-          <div className={styles.searchBox}>
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className={styles.searchInput}
-            />
-          </div>
-
-          <div className={styles.typeStatusGroup}>
+      <div className={styles.filterSection}>
+        <div className={styles.topFilters}>
+          <input
+            type="text"
+            placeholder="Search entries..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className={styles.searchBox}
+          />
+          <div className={styles.filterControls}>
             <select
               value={entryType}
               onChange={e => setEntryType(e.target.value as typeof entryType)}
@@ -350,45 +403,48 @@ export default function AdminEntriesPage() {
           </div>
         </div>
 
-        <div className={`${styles.filterRow} ${styles.bottom}`}>
-          <div className={styles.tagFilters}>
-            {dimensions.map(dimension => (
-              <div key={dimension} className={styles.tagFilter}>
-                <select
-                  value={selectedTagByDimension[dimension] || ''}
-                  onChange={e => setSelectedTagByDimension(prev => ({
-                    ...prev,
-                    [dimension]: e.target.value || null
-                  }))}
-                >
-                  <option value="">All {dimension}</option>
-                  {tagTrees[dimension].map(tag => renderTagOption(tag))}
-                </select>
-              </div>
-            ))}
-          </div>
+        <div className={styles.dimensionFilters}>
+          {dimensions.map(dimension => (
+            <select
+              key={dimension}
+              value={selectedTagByDimension[dimension] || ''}
+              onChange={e => setSelectedTagByDimension(prev => ({
+                ...prev,
+                [dimension]: e.target.value || null
+              }))}
+              className={styles.dimensionSelect}
+            >
+              <option value="">All {dimension}</option>
+              {tagTrees[dimension].map(tag => renderTagOption(tag))}
+            </select>
+          ))}
         </div>
       </div>
 
       {selectedEntries.size > 0 && (
         <div className={styles.bulkActions}>
           <span>{selectedEntries.size} entries selected</span>
-          <div className={styles.bulkButtons}>
-            <select
-              onChange={e => handleBulkStatusUpdate(e.target.value as 'draft' | 'published')}
-              className={styles.bulkSelect}
-            >
-              <option value="">Update Status</option>
-              <option value="draft">Set to Draft</option>
-              <option value="published">Set to Published</option>
-            </select>
+          <div className={styles.actions}>
+            <input
+              type="date"
+              onChange={e => handleBulkDateUpdate(e.target.value)}
+              className={styles.filterSelect}
+            />
             <select
               onChange={e => handleBulkTypeUpdate(e.target.value as 'story' | 'reflection')}
-              className={styles.bulkSelect}
+              className={styles.filterSelect}
             >
               <option value="">Update Type</option>
               <option value="story">Set to Story</option>
               <option value="reflection">Set to Reflection</option>
+            </select>
+            <select
+              onChange={e => handleBulkStatusUpdate(e.target.value as 'draft' | 'published')}
+              className={styles.filterSelect}
+            >
+              <option value="">Update Status</option>
+              <option value="draft">Set to Draft</option>
+              <option value="published">Set to Published</option>
             </select>
             <button
               onClick={handleBulkDelete}
@@ -396,6 +452,23 @@ export default function AdminEntriesPage() {
             >
               Delete Selected
             </button>
+          </div>
+        </div>
+      )}
+
+      {selectedEntries.size > 0 && (
+        <div className={styles.bulkTagActions}>
+          <div className={styles.dimensionFilters}>
+            {dimensions.map(dimension => (
+              <select
+                key={dimension}
+                onChange={e => handleBulkTagUpdate(dimension, e.target.value || null)}
+                className={styles.dimensionSelect}
+              >
+                <option value="">Update {dimension}</option>
+                {tagTrees[dimension].map(tag => renderTagOption(tag))}
+              </select>
+            ))}
           </div>
         </div>
       )}
@@ -431,15 +504,14 @@ export default function AdminEntriesPage() {
                 </td>
                 <td>
                   {editingField?.id === entry.id && editingField.field === 'title' ? (
-                    <form onSubmit={handleEditSubmit} className={styles.editField}>
+                    <form onSubmit={handleEditSubmit} className={styles.editingField}>
                       <input
                         type="text"
                         value={editValue}
                         onChange={e => setEditValue(e.target.value)}
-                        className={styles.editInput}
                         autoFocus
                       />
-                      <div className={styles.editActions}>
+                      <div className={styles.editButtons}>
                         <button type="submit" className={styles.saveButton}>Save</button>
                         <button type="button" onClick={handleEditCancel} className={styles.cancelButton}>Cancel</button>
                       </div>
@@ -453,20 +525,41 @@ export default function AdminEntriesPage() {
                     </div>
                   )}
                 </td>
-                <td>{new Date(entry.date).toLocaleDateString()}</td>
+                <td>
+                  {editingField?.id === entry.id && editingField.field === 'date' ? (
+                    <form onSubmit={handleEditSubmit} className={styles.editingField}>
+                      <input
+                        type="date"
+                        value={editValue}
+                        onChange={e => setEditValue(e.target.value)}
+                        autoFocus
+                      />
+                      <div className={styles.editButtons}>
+                        <button type="submit" className={styles.saveButton}>Save</button>
+                        <button type="button" onClick={handleEditCancel} className={styles.cancelButton}>Cancel</button>
+                      </div>
+                    </form>
+                  ) : (
+                    <div 
+                      className={styles.editableField}
+                      onClick={() => startEditing(entry.id, 'date', entry.date)}
+                    >
+                      {new Date(entry.date).toLocaleDateString()}
+                    </div>
+                  )}
+                </td>
                 <td>
                   {editingField?.id === entry.id && editingField.field === 'type' ? (
-                    <form onSubmit={handleEditSubmit} className={styles.editField}>
+                    <form onSubmit={handleEditSubmit} className={styles.editingField}>
                       <select
                         value={editValue}
                         onChange={e => setEditValue(e.target.value)}
-                        className={styles.editSelect}
                         autoFocus
                       >
                         <option value="story">Story</option>
                         <option value="reflection">Reflection</option>
                       </select>
-                      <div className={styles.editActions}>
+                      <div className={styles.editButtons}>
                         <button type="submit" className={styles.saveButton}>Save</button>
                         <button type="button" onClick={handleEditCancel} className={styles.cancelButton}>Cancel</button>
                       </div>
@@ -482,24 +575,23 @@ export default function AdminEntriesPage() {
                 </td>
                 <td>
                   {editingField?.id === entry.id && editingField.field === 'status' ? (
-                    <form onSubmit={handleEditSubmit} className={styles.editField}>
+                    <form onSubmit={handleEditSubmit} className={styles.editingField}>
                       <select
                         value={editValue}
                         onChange={e => setEditValue(e.target.value)}
-                        className={styles.editSelect}
                         autoFocus
                       >
                         <option value="draft">Draft</option>
                         <option value="published">Published</option>
                       </select>
-                      <div className={styles.editActions}>
+                      <div className={styles.editButtons}>
                         <button type="submit" className={styles.saveButton}>Save</button>
                         <button type="button" onClick={handleEditCancel} className={styles.cancelButton}>Cancel</button>
                       </div>
                     </form>
                   ) : (
                     <div 
-                      className={`${styles.editableField} ${styles[entry.status]}`}
+                      className={styles.editableField}
                       onClick={() => startEditing(entry.id, 'status', entry.status)}
                     >
                       {entry.status}
@@ -508,31 +600,15 @@ export default function AdminEntriesPage() {
                 </td>
                 <td>
                   <div className={styles.tags}>
-                    {entry.tagNames.map((tagName, index) => (
-                      <span key={index} className={styles.tag}>
-                        {tagName}
-                      </span>
+                    {entry.tagNames.map(tagName => (
+                      <span key={tagName} className={styles.tag}>{tagName}</span>
                     ))}
                   </div>
                 </td>
                 <td>
                   <div className={styles.actions}>
-                    <a
-                      href={`/entries/${entry.id}/edit`}
-                      className={styles.editButton}
-                    >
-                      Edit
-                    </a>
-                    <button
-                      onClick={() => {
-                        if (confirm(`Are you sure you want to delete "${entry.title}"?`)) {
-                          deleteEntry(entry.id).then(loadData);
-                        }
-                      }}
-                      className={styles.deleteButton}
-                    >
-                      Delete
-                    </button>
+                    <button className={styles.editButton}>Edit</button>
+                    <button className={styles.deleteButton}>Delete</button>
                   </div>
                 </td>
               </tr>

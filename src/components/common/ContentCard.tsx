@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Tag } from '@/lib/types/tag';
-import styles from '@/lib/styles/components/common/ContentCard.module.css';
+import styles from '@/components/common/ContentCard.module.css';
 
 interface BaseCardProps {
   id: string;

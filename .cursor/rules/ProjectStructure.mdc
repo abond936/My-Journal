@@ -1,3 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
 # Project Structure Rules
 Status: 🚧 In Progress
 Last Updated: 2024-03-19
@@ -139,18 +144,7 @@ const styles = {
 - Use descriptive names
 - Optimize for web
 
-### 5.2 Styles
-- All styles centralized in `lib/styles/`
-  - `lib/styles/global/` - Global styles and resets
-  - `lib/styles/themes/` - Theme variables and configurations
-  - `lib/styles/components/` - Component-specific styles
-    - `lib/styles/components/common/` - Styles for common components
-    - `lib/styles/components/features/` - Styles for feature components
-    - `lib/styles/components/layouts/` - Styles for layout components
-- No component-specific style files
-- Use CSS modules or styled-components for component-specific variations
-- Maintain consistent naming conventions across style files
-- Follow BEM methodology for class naming
+
 
 ## 6. Testing Structure
 

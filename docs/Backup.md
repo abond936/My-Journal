@@ -86,8 +86,7 @@ Location: `src/lib/backup/recovery/`
 
 
 ## 5. Backup Models
-CRITICAL: All backup components MUST follow these models.
-----------------------------------------------------------
+
 ### 5.1 Backup Config
 ```typescript
 interface BackupConfig {

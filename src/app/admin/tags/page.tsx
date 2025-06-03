@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getTags, updateTag, deleteTag, createTag } from '@/lib/services/tagService';
 import { Tag } from '@/lib/types/tag';
-import styles from '@/lib/styles/app/admin/tags.module.css';
+import styles from '@/app/admin/tags/tags.module.css';
 
 interface TagWithChildren extends Tag {
   children: TagWithChildren[];

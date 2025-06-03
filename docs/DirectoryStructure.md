@@ -2,72 +2,78 @@
 
 ```
 src/
-├── __tests__/          # Test files
+├── __tests__/          
 │   ├── components/
-│   │   ├── admin/         # Admin interface components
+│   │   ├── admin/         
 │   │   │   ├── AlbumManager.tsx
 │   │   │   ├── EntryManager.tsx
 │   │   │   └── TagManager.tsx
 │   │   │
-│   │   ├── cards/         # Card components
+│   │   ├── cards/         
 │   │   │   ├── AlbumCard.tsx
 │   │   │   ├── CardGrid.tsx
 │   │   │   ├── DimensionCard.tsx
 │   │   │   ├── EntryCard.tsx
 │   │   │   └── TagCard.tsx
 │   │   │
-│   │   ├── content/       # Content viewing components
+│   │   ├── content/       
 │   │   │   ├── AlbumView.tsx
 │   │   │   ├── EntryEditor.tsx
 │   │   │   ├── EntryView.tsx
 │   │   │   └── PhotoView.tsx
 │   │   │
-│   │   ├── layouts/       # Layout components
+│   │   ├── layouts/       
 │   │   │   ├── AdminLayout.tsx
 │   │   │   ├── ContentLayout.tsx
 │   │   │   └── MainLayout.tsx
 │   │   │
-│   │   ├── navigation/    # Navigation components
+│   │   ├── navigation/    
 │   │   │   ├── FilterTab.tsx
 │   │   │   ├── HeaderNav.tsx
 │   │   │   ├── SearchTab.tsx
 │   │   │   ├── SidebarTabs.tsx
 │   │   │   └── TimelineTab.tsx
 │   │   │
-│   │   └── shared/        # Truly reusable components
+│   │   └── shared/        
 │   │       ├── ErrorBoundary.tsx
 │   │       ├── LoadingSpinner.tsx
 │   │       └── ThemeProvider.tsx
 │   │
 │   └── lib/
-│       ├── config/        # Configuration files
+│       ├── config/        
 │       │   ├── constants.ts
 │       │   └── settings.ts
 │       │
-│       ├── contexts/      # React contexts
+│       ├── contexts/      
 │       │   ├── AuthContext.tsx
 │       │   └── ThemeContext.tsx
 │       │
-│       ├── data/          # Static data and mocks
+│       ├── data/          
 │       │   ├── fixtures/
 │       │   └── mocks/
 │       │
-│       ├── firebase/      # Firebase configuration and utilities
+│       ├── firebase/      
 │       │   ├── config.ts
 │       │   ├── auth.ts
 │       │   └── storage.ts
 │       │
-│       ├── hooks/         # Custom React hooks
+│       ├── hooks/         
 │       │   ├── useAlbums.ts
 │       │   ├── useAuth.ts
 │       │   └── useEntries.ts
 │       │
-│       ├── services/      # Service layer
+│       ├── services/      
 │       │   ├── api.ts
 │       │   ├── firebase.ts
 │       │   └── storage.ts
 │       │
-│       ├── styles/        # Global styles and CSS modules
+│       ├── styles/        
+│       │   ├── app/       
+│       │   │   ├── admin/
+│       │   │   ├── albums/
+│       │   │   ├── entries/
+│       │   │   └── tags/
+│       │   │
 │       │   ├── components/
 │       │   │   ├── admin/
 │       │   │   ├── cards/
@@ -76,36 +82,30 @@ src/
 │       │   │   ├── navigation/
 │       │   │   └── shared/
 │       │   │
-│       │   ├── app/       # App-specific styles
-│       │   │   ├── admin/
-│       │   │   ├── albums/
-│       │   │   ├── entries/
-│       │   │   └── tags/
-│       │   │
 │       │   ├── globals.css
 │       │   └── variables.css
 │       │
-│       ├── types/         # TypeScript type definitions
+│       ├── types/         
 │       │   ├── album.ts
 │       │   ├── entry.ts
 │       │   ├── tag.ts
 │       │   └── ui.ts
 │       │
-│       └── utils/         # Utility functions
+│       └── utils/         
 │           ├── date.ts
 │           ├── formatting.ts
 │           └── validation.ts
 │
-└── app/                # Next.js app directory
-    ├── admin/         # Admin routes
-    ├── albums/        # Album routes
-    ├── api/           # API routes
-    ├── entries/       # Entry routes
-    ├── tags/          # Tag routes
-    ├── test/          # Test routes
-    ├── index.tsx      # Home page
-    ├── layout.tsx     # Root layout
-    └── page.tsx       # Root page
+└── app/               
+    ├── admin/         
+    ├── albums/        
+    ├── api/           
+    ├── entries/       
+    ├── tags/          
+    ├── test/          
+    ├── index.tsx      
+    ├── layout.tsx     
+    └── page.tsx       
 ```
 
 ## Directory Structure Notes

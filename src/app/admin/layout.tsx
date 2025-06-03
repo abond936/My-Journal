@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import styles from '@/lib/styles/app/admin/layout.module.css';
+import styles from '@/app/admin/layout.module.css';
 
 export default function AdminLayout({
   children,
