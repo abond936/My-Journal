@@ -28,15 +28,13 @@ jobs:
     - name: Create backup
       run: |
         mkdir -p temp/backup
-        npx ts-node src/lib/scripts/backup-codebase.ts
+        npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/utils/backup-codebase.ts
     
     - name: Upload backup artifact
       uses: actions/upload-artifact@v4
       with:
         name: codebase-backup
-        path: |
-          temp/backup/codebase-backup-output.txt
-          temp/backup/codebase-backup.zip
+        path: temp/backup/*
         retention-days: 7
         compression-level: 9
     
