@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import ViewLayout from '@/components/layouts/ViewLayout';
-import AdminFAB from '@/components/navigation/AdminFAB';
+import ViewLayout from '@/components/view/ViewLayout';
+import AdminFAB from '@/components/admin/AdminFAB';
 
 export default function AdminLayout({
   children,

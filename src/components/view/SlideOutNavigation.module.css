@@ -1,0 +1,124 @@
+.slideOut {
+  position: fixed;
+  top: 0;
+  right: -100%;
+  width: 100%;
+  max-width: 600px;
+  height: 100vh;
+  background: var(--background-primary);
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+  transition: right 0.3s ease-in-out;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.open {
+  right: 0;
+}
+
+.header {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.closeButton {
+  align-self: flex-end;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+  line-height: 1;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.closeButton:hover {
+  background-color: var(--background-secondary);
+}
+
+.tabs {
+  display: flex;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.5rem;
+}
+
+.tab {
+  background: none;
+  border: none;
+  padding: 0.5rem 1rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1rem;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.tab:hover {
+  color: var(--text-primary);
+}
+
+.tab.active {
+  color: var(--text-primary);
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -0.5rem;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--accent-primary);
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+/* CardGrid specific styles */
+.content :global(.cardGrid) {
+  padding: 0;
+}
+
+.content :global(.cardGridHeader) {
+  padding: 0 0 1rem 0;
+}
+
+.content :global(.cardGridTitle) {
+  font-size: 1.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.content :global(.cardGridDescription) {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.content :global(.cardGridContent) {
+  gap: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .slideOut {
+    max-width: 100%;
+  }
+
+  .tabs {
+    gap: 0.5rem;
+  }
+
+  .tab {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+} 

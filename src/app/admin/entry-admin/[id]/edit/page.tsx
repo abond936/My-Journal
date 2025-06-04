@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import EntryForm from '@/components/features/entry/EntryForm';
+import EntryForm from '@/components/admin/entry-admin/EntryForm';
 import { Entry } from '@/lib/types/entry';
 import { useEntry } from '@/lib/hooks/useEntry';
 import styles from './page.module.css';

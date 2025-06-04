@@ -1,0 +1,91 @@
+/* src/components/layouts/ViewLayout.module.css */
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--color-background);
+}
+
+.contentWrapper {
+  display: flex;
+  flex: 1;
+  position: relative;
+  margin-top: 54px; /* Account for navigation height */
+}
+
+.menuToggle {
+  position: fixed;
+  left: 1rem;
+  top: calc(50% + 27px); /* Adjust for navigation height */
+  transform: translateY(-50%);
+  z-index: 100;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.menuToggle:hover {
+  background: var(--color-hover);
+}
+
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 54px; /* Start below navigation */
+  bottom: 0;
+  width: 250px;
+  background: var(--color-background);
+  border-right: 1px solid var(--color-border);
+  transition: transform 0.3s ease;
+  z-index: 90;
+  overflow-y: auto;
+}
+
+.sidebar.closed {
+  transform: translateX(-100%);
+}
+
+.sidebar.open {
+  transform: translateX(0);
+}
+
+.mainContent {
+  flex: 1;
+  padding: 2rem;
+  margin-left: 250px;
+  transition: margin-left 0.3s ease;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .mainContent {
+    margin-left: 0;
+    padding: 1rem;
+  }
+
+  .sidebar.open + .mainContent {
+    margin-left: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar {
+    width: 100%;
+  }
+
+  .sidebar.open + .mainContent {
+    margin-left: 0;
+  }
+
+  .menuToggle {
+    left: 0.5rem;
+  }
+} 

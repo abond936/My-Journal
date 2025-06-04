@@ -2,7 +2,7 @@
 // This is the entry point for our application
 // We're using the Home component as our landing page
 
-import Home from '@/components/common/Home';
+import Home from '@/components/view/Home';
 
 export default function Page() {
   return <Home />;

@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import CardGrid from '@/components/cards/CardGrid';
+import CardGrid from '@/components/view/CardGrid';
 import { useEntries } from '@/lib/hooks/useEntries';
-import styles from '@/components/cards/CardGrid.module.css';
+import styles from '@/components/view/CardGrid.module.css';
 import Link from 'next/link';
 
 export default function EntryViewPage() {

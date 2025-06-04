@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createEntry } from '@/lib/services/entryService';
 import { Entry } from '@/lib/types/entry';
-import EntryForm from '@/components/features/entry/EntryForm';
+import EntryForm from '@/components/admin/entry-admin/EntryForm';
 import styles from '@/app/admin/entry-admin/entry-admin.module.css';
 
 export default function NewEntryPage() {
