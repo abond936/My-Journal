@@ -20,7 +20,7 @@ export function transformToUIEntry(entry: DbEntry): UIEntry {
     excerpt: null,  // Placeholder until we implement excerpts
     date: entry.date?.toLocaleDateString() || null,  // Use date if available, otherwise null
     tags: entry.tags,
-    href: `/entries/${entry.id}`,
+    href: `/view/entry-view/${entry.id}`,
     type: entry.type
   };
 } 

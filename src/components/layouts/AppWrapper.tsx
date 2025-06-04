@@ -1,15 +1,15 @@
 'use client';
 
-import AppFrame from '@/components/layouts/AppFrame';
+import ViewLayout from '@/components/layouts/ViewLayout';
 import { useTag } from '@/lib/contexts/TagContext';
 
 function LayoutWithTagSelection({ children }: { children: React.ReactNode }) {
   const { selectedTag, setSelectedTag } = useTag();
 
   return (
-    <AppFrame onTagSelect={setSelectedTag}>
+    <ViewLayout onTagSelect={setSelectedTag}>
       {children}
-    </AppFrame>
+    </ViewLayout>
   );
 }
 

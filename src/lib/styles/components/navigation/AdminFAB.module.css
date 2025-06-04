@@ -1,0 +1,111 @@
+.fabContainer {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 1000;
+}
+
+.fab {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background: var(--color-primary, #0070f3);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.fab:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.fab.expanded {
+  background: var(--color-error, #ff4444);
+  transform: rotate(45deg);
+}
+
+.fabOptions {
+  position: absolute;
+  bottom: 4rem;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  animation: slideUp 0.3s ease;
+}
+
+.fabOption {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: white;
+  border-radius: 2rem;
+  text-decoration: none;
+  color: var(--color-text, #333);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.fabOption:hover {
+  background: var(--color-background-hover, #f5f5f5);
+  transform: translateX(-0.25rem);
+}
+
+.optionIcon {
+  font-size: 1.25rem;
+}
+
+.optionLabel {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .fabContainer {
+    bottom: 1.5rem;
+    right: 1.5rem;
+  }
+
+  .fab {
+    width: 3rem;
+    height: 3rem;
+    font-size: 1.25rem;
+  }
+
+  .fabOptions {
+    bottom: 3.5rem;
+  }
+
+  .fabOption {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .optionIcon {
+    font-size: 1rem;
+  }
+
+  .optionLabel {
+    font-size: 0.8rem;
+  }
+} 

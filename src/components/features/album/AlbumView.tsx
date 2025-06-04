@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import styles from '@/lib/styles/components/features/album/AlbumView.module.css';
+import styles from '@/app/view/album-view/AlbumView.module.css';
 
 interface Photo {
   src: string;

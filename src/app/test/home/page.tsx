@@ -26,7 +26,7 @@ export default function HomeTestPage() {
       date: '2024-03-15',
       tags: ['family', 'vacation', 'summer'],
       imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e',
-      href: '/entries/1',
+      href: '/view/entry-view/1',
       type: 'story',
       size: 'large',
       overlay: true
@@ -38,7 +38,7 @@ export default function HomeTestPage() {
       date: '2024-03-10',
       tags: ['hobby', 'learning'],
       imageUrl: 'https://images.unsplash.com/photo-1495521821757-a1efb6729352',
-      href: '/entries/2',
+      href: '/view/entry-view/2',
       type: 'reflection',
       size: 'medium',
       overlay: true
@@ -50,7 +50,7 @@ export default function HomeTestPage() {
       date: '2024-03-08',
       tags: ['wellness', 'daily'],
       imageUrl: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773',
-      href: '/entries/3',
+      href: '/view/entry-view/3',
       type: 'reflection',
       size: 'small',
       overlay: false
@@ -62,7 +62,7 @@ export default function HomeTestPage() {
       date: '2024-03-05',
       tags: ['project', 'outdoors'],
       imageUrl: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b',
-      href: '/entries/4',
+      href: '/view/entry-view/4',
       type: 'story',
       size: 'medium',
       overlay: false
@@ -74,7 +74,7 @@ export default function HomeTestPage() {
       date: '2024-03-01',
       tags: ['books', 'social'],
       imageUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794',
-      href: '/entries/5',
+      href: '/view/entry-view/5',
       type: 'reflection',
       size: 'small',
       overlay: false
@@ -86,7 +86,7 @@ export default function HomeTestPage() {
       date: '2024-02-28',
       tags: ['adventure', 'outdoors'],
       imageUrl: 'https://images.unsplash.com/photo-1501554728187-ce583db33af7',
-      href: '/entries/6',
+      href: '/view/entry-view/6',
       type: 'story',
       size: 'large',
       overlay: true

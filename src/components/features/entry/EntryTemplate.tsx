@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Entry } from '@/lib/types/entry';
 import { deleteEntry } from '@/lib/services/entryService';
-import styles from '@/lib/styles/components/features/entry/EntryTemplate.module.css';
+import styles from '@/app/view/entry-view/EntryTemplate.module.css';
 
 interface EntryTemplateProps {
   entry: Entry;
@@ -16,7 +16,7 @@ const EntryTemplate: React.FC<EntryTemplateProps> = ({ entry, children }) => {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleEdit = () => {
-    router.push(`/entries/${entry.id}/edit`);
+    router.push(`/admin/entry-admin/${entry.id}/edit`);
   };
 
   const handleDelete = async () => {
@@ -27,7 +27,7 @@ const EntryTemplate: React.FC<EntryTemplateProps> = ({ entry, children }) => {
     try {
       setIsDeleting(true);
       await deleteEntry(entry.id);
-      router.push('/entries');
+      router.push('/view/entry-view');
     } catch (error) {
       console.error('Error deleting entry:', error);
       alert('Failed to delete entry. Please try again.');

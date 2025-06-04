@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tag } from '@/lib/types/tag';
 import TagBox from './TagBox';
-import styles from '@/lib/styles/components/features/tag/TagBoxGrid.module.css';
+import styles from '@/app/view/tag-view/TagBoxGrid.module.css';
 
 interface TagBoxGridProps {
   tags: Tag[];

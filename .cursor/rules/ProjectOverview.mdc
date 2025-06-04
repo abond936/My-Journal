@@ -3,17 +3,17 @@ description: Core architectural decisions and implementation rules for the journ
 globs: 
 alwaysApply: true
 ---
-## Project Context
+# Project Context
 This project is a personal journaling application that helps users document and share their life stories, reflections, photos, and media with others.
 
-### Scope
+## Scope
   - Story and reflection creation and management
   - Photo and media integration
   - Tag-based organization
   - Family sharing and interaction
   - AI-assisted content creation and organization
 
-### Technical Stack
+## Technical Stack
   - Frontend: Next.js 14, React, Native CSS
   - Backend: Firebase (Firestore, Authentication, Storage)
   - AI: OpenAI integration for content assistance
@@ -32,88 +32,99 @@ Most have many photos, but they remain hidden with limited ways for them to be e
 
 This application allows the author to integrate with the storage of those photos and write entries in a digital journal about those photos and explore both in an immersive flexible or curated manner.
 
-#### Elements
-The primary elements of the app are Entries and ALbums categorized by heirarchical Tags .
-    - An entry is a primarily textual, but also visual unit that describes a story.
-        - 2 types
-            - Story - Historial narrative.
-            - Reflection - Personal insight
+### Elements
+The primary elements of the app are Entries and ALbums categorized by heirarchical Tags.
+    - An entry is a primarily textual, but also visual unit that describes a story of 2 types:
+        -Story - Historial narrative.
+        - Reflection - Personal insight
     - An album is a primarily visual, but also textual unit. that depicts a story.
     - Entries can be linked to albums and albums can be linked to entries.
     - Both Entries and Albums are categorized into 5 dimesions:
-        - who, what, when, where, reflection. 
-        - User selects tag and Entry/Album inherits ancestor tags
+        - who, what, when, where, and reflection. 
+        - User selects tag and the Entry or Album inherits the defined ancestor tags
+    - Albums are collections of photos 
+        - linked to an album of photos
+        - collected individually.
+    - Album Title and Caption
+    - Photos with entries have link
+    - Photos with captions
+        - Overlaid, Separate, Random
+    - Image management key to speed and minimal cost
 
-#### Navigation
-    - A central feature of the app is to fluidly navigate through the albums and entries as interest dictates in a virtual swim through the stories and images of one's life. 
+### Navigation
+A central feature of the app is to fluidly navigate through the albums and entries as interest dictates in a virtual 'swim' through the stories and images of one's life. 
 
-#### User Interface
-    - Because of the prominence of cellphones for consumption of digital media, the UI is mobile-first focused, but also tablet.
+### User Interface
+Because of the prominence of cellphones for consumption of digital media, the UI is mobile-first focused, but also tablet.
     
-    - Home Page - Cover page with logo, welcome, navigation.
+- Home Page - Cover page with logo, welcome, navigation.
+    - Currently click through with Enter button
+    - Eventually, login with user credentials
+    - Upper and Lower background image
+    - Title of "My Stories" or "My Journal"
+    - My name
+    - Intro phrase
+
+- Layouts
+  - 2 primary layouts
     
-    - Layouts
-        -2 primary layouts.
-    
-        Consumption
-        - Universal Header
-            - Logo - Click on logo for home.
-            - Home - Admin
-            - New Entry
-            - New Album
-            - About
-        - SlideOutLeft Sidebar
-            - This sidebar that has three tabs, one for tags, entries and albums. 
-            - 3 tabs
-                - Tags
-                    - By dimension and heirarchy
-                    - Multi-select filtering
-                - Entries
-                    - Order by choice
-                - Albums
-                    - Order by choice
-        - Content Area
-            - Title
-            - CardGrid
-                - Cards dynamic by Tag, Entry, Album
-                - Multiple styles.
-            - Navigation
-                - The first unfiltered version of the presentation is 5 cards labeled by those dimensions.
-                - Clicking on who opens up a set of cards that make up the next heirarchical level of tags, such as me, parents, grandparents, etc. these cards can be clicked until they drill into cards that contain entries or albums. The entries and or albums can be explored by clicking on them and then they in turn contain related items that can then be clicked and literally swimm through the content. However, on the click of who, the what, when, where and reflection cards remain visible, and they can be drilled into similarly and endlessly.
-                - And one can move into and out of each navigatiion method fluidly--randoly or structuredly. 
-            Views
-                - Entry 
-                    - 'Blog' style
-                    - Album link
-                    - Related entries and albums
-                - Album 
-                    - Dynamic grid layout based on photos, 
-                    - Photo Captioning
-                    - Bulk tagging, captioning
-                    - Entry link
-                    - Related albums and entries
-    ##### Administration
-       The backend admin of tags, entries and albums.
-        - Entries
+    1. Consumption Layout - This layout frames the content consumption layer
+    - Universal Header
+        - Logo - Click on logo for home.
+        - Home
+        - New Entry
+        - New Album
+        - About
+        - Admin (Author only)
+    - SlideOutLeft Sidebar
+        - Three tabs
+           - Tags
+                - By dimension and heirarchy
+                - Multi-select filtering
+            - Entries
+                - Order by choice
+            - Albums
+                - Order by choice
+    - Content Area
+        - Title
+        - CardGrid
+            - Photo, Title, Excerpt?, Date, Base Tags
+            Cards dynamic by Tag, Entry, Album
+            - Multiple styles.
+        - Navigation
+            - The first unfiltered version of the presentation is 5 cards labeled by those dimensions.
+            - Clicking on who opens up a set of cards that make up the next heirarchical level of tags, such as me, parents, grandparents, etc. these cards can be clicked until they drill into cards that contain entries or albums. The entries and or albums can be explored by clicking on them and then they in turn contain related items that can then be clicked and literally swimm through the content. However, on the click of who, the what, when, where and reflection cards remain visible, and they can be drilled into similarly and endlessly.
+            - And one can move into and out of each navigatiion method fluidly--randoly or structuredly. 
+        - Views
+            - Entry 
+                - 'Blog' style
+                - Album link
+                - Related entries and albums
+            - Album 
+                - Dynamic grid layout based on photos, 
+                - Photo Captioning
+                - Bulk tagging, captioning
+                - Entry link
+                - Related albums and entries
+            - Content Creation
+                - Entry - Title, Text, Rich Text Editor with photo embed and tagging 
+                - Album- Title, Caption, Photo selector.,
+    2. Administration Layout - This layout frames the adminstrative backend for tags, entries and albums.
+        - Settings
+        - Entry Management
             - Bulk editing
             - Inline editing
-            - click to edit
+            - lick to edit
             - Draft/Published
             - Story/Reflection
-            - Choose fields?
-        - Albums
+        - Album Management
             - Bulk editing
             - Inline editing
-            - Choose fields?
-        - Tags
+        - Tag Management
             - Drag & Drop Heirarchy
             - Inline editing
             - Bulk editing
-       
-    ##### Content Creation
-        - Entry - Title, Text, Rich Text Editor with photo embed and tagging 
-        - Album- Title, Caption, Photo selector.,
-
+            
 
 ### Tag System
 - Multi-dimensional tagging system
@@ -124,13 +135,10 @@ The primary elements of the app are Entries and ALbums categorized by heirarchic
   - Where: Locations and places
   - Reflection: Insight
 - User selects tag and inheritance is populated
-- Special Cases:
-  - About entry is excluded from tagging system
-  - Filters must ignore About entry in normal listings
-
-### Media
-- Photo and video management
-
+- Add tags on the fly, but must be assigned to heirarchy.
+- Update tags doesn't affect assignment, but must make heirarchical sense.
+- Delete tags - offer reassignment or removal creating 'orphans'.
+- If parent deleted does grandparent absorb or delete rest of tree?
 
 ### User
 - Authentication and authorization
@@ -145,57 +153,8 @@ The primary elements of the app are Entries and ALbums categorized by heirarchic
   - Entry type preferences
   - Tag preferences
 
-Home Page
-- Cover page with a login button.
-- Upper and Lower background image
-- Title of "My Stories" or "My Journal"
-- My name
-- Intro phrase
 
-Main Page
-- Top Left Logo
-- Top Right Navigation Menu
-- Left Sidebar
-    - Search
-    - Navigation Menu
-        - Top Filter Summary
-        Who, What, When, Where
-    - Tag Tree
-    - Edit button
-    - Collapsable
-    - Multi-select
-
--Main Content
-    - Card Layout
-        - Photo
-        - Title
-    -Blog Layout
-        - Photo Banner?
-        - Title
-        - Content
-        - Embed Photos
-        - Album Links
-    - Timeline Layout
-        - Can do with tags?
-        - What would it look like?
-    - Map Layout
-        - Useful?
-        - Map with pins
-        - Countries/States/Cities
-        - Can do with tags?
-    - Magazine Layout?
-        - Needed?
-        - Same as Card Layout with "Relateds"
-    - Accordion Layout
-        - Replacement for list?
-        - Used on mobile?
-
-
-        - Check on deleted tags.
-    - 
-
-Navigation
-Navigation is a core feature of the project.
+Navigation - a core feature of the project.
 The vision is a visually and textually immerisive experience of vaigating or swimming through to content as interest dictate.
 There are 3 macro navigation systems, 2 for content and 1 for administration.
 Visual - Card-based
@@ -220,32 +179,12 @@ Textual - Tree-based
         - Each of these trees filters the grid-based card system.
         - Or provides direct access to a titled story or album.
 
-Administration
-    Settings
-    Entry Management
-    Album Management
-    Tag Management
-        - Add tags on the fly, but must be assigned to heirarchy.
-        - Update tags doesn't affect assignment, but must make heirarchical sense.
-        - Delete tags removes from entries and albums, creating orphans.
-            - If parent deleted does grandparent absorb or delete rest of tree?
+
+
             
-Top Navigation
-    - Home
-    - Entries
-    - Albums
-    - Tags ??
-    - About
 
 
 
-Albums
-    - Albums are collections of photos 
-        - linked to an album of photos
-        - collected individually.
-    - Album Title and Caption
-    - Photos with entries have link
-    - Photos with captions
-        - Overlaid, Separate, Random
-    - Image management key to speed and minimal cost
+
+
 

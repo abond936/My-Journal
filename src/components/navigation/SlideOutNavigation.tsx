@@ -21,7 +21,7 @@ const mockEntries = [
     description: 'A memorable dinner with the family',
     date: '2024-03-15',
     tags: ['Family', 'Food'],
-    href: '/entries/entry1',
+    href: '/view/entry-view/entry1',
     imageUrl: 'https://source.unsplash.com/random/800x600?family'
   },
   {
@@ -31,7 +31,7 @@ const mockEntries = [
     description: 'Family brunch at the new cafe',
     date: '2024-03-17',
     tags: ['Family', 'Food'],
-    href: '/entries/entry2',
+    href: '/view/entry-view/entry2',
     imageUrl: 'https://source.unsplash.com/random/800x600?brunch'
   }
 ];
@@ -45,7 +45,7 @@ const mockAlbums = [
     entryCount: 8,
     date: '2024-03-10',
     tags: ['Family'],
-    href: '/albums/album1',
+    href: '/view/album-view/album1',
     imageUrl: 'https://source.unsplash.com/random/800x600?family-album'
   },
   {
@@ -56,7 +56,7 @@ const mockAlbums = [
     entryCount: 12,
     date: '2024-01-15',
     tags: ['Family'],
-    href: '/albums/album2',
+    href: '/view/album-view/album2',
     imageUrl: 'https://source.unsplash.com/random/800x600?reunion'
   }
 ];
@@ -70,7 +70,7 @@ const mockTags = [
     description: 'People and relationships',
     entryCount: 45,
     albumCount: 12,
-    href: '/tags/who'
+    href: '/view/tag-view/who'
   },
   {
     id: 'what',
@@ -80,7 +80,7 @@ const mockTags = [
     description: 'Activities and experiences',
     entryCount: 78,
     albumCount: 23,
-    href: '/tags/what'
+    href: '/view/tag-view/what'
   }
 ];
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import styles from '@/lib/styles/components/features/tag/TagNavigation.module.css';
+import styles from '@/app/view/tag-view/TagNavigation.module.css';
 import { Tag } from '@/lib/types/tag';
 
 interface TagNavigationProps {
@@ -17,8 +17,8 @@ const TagNavigation: React.FC<TagNavigationProps> = ({ tags }) => {
         {tags.map((tag) => (
           <li key={tag.id}>
             <Link 
-              href={`/tags/${tag.id}`}
-              className={pathname === `/tags/${tag.id}` ? styles.active : ''}
+              href={`/view/tag-view/${tag.id}`}
+              className={pathname === `/view/tag-view/${tag.id}` ? styles.active : ''}
             >
               {tag.name}
             </Link>

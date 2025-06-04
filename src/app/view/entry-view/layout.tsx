@@ -1,10 +1,8 @@
 'use client';
 
-import React from 'react';
 import ViewLayout from '@/components/layouts/ViewLayout';
-import AdminFAB from '@/components/navigation/AdminFAB';
 
-export default function AdminLayout({
+export default function EntriesLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -12,7 +10,6 @@ export default function AdminLayout({
   return (
     <ViewLayout>
       {children}
-      <AdminFAB />
     </ViewLayout>
   );
 } 

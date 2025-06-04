@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Entry } from '@/lib/types/entry';
 import { createEntry, updateEntry } from '@/lib/services/entryService';
+import { organizeEntryTags } from '@/lib/services/tagService';
 import TagSelector from './TagSelector';
 import RichTextEditor from '@/components/common/editor/RichTextEditor';
-import styles from '@/lib/styles/components/features/entry/EntryForm.module.css';
+import styles from '@/components/features/entry/EntryForm.module.css';
 
 interface EntryFormProps {
   initialEntry?: Entry;
@@ -30,8 +31,21 @@ const EntryForm: React.FC<EntryFormProps> = ({
     when: [],
     where: [],
     reflection: [],
-    inheritedTags: []
+    inheritedTags: [],
+    media: []
   });
+
+  // Organize tags when initialEntry changes
+  useEffect(() => {
+    if (initialEntry?.tags) {
+      organizeEntryTags(initialEntry.tags).then(organizedTags => {
+        setFormData(prev => ({
+          ...prev,
+          ...organizedTags
+        }));
+      });
+    }
+  }, [initialEntry]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +81,11 @@ const EntryForm: React.FC<EntryFormProps> = ({
     try {
       let result: Entry;
       if (initialEntry?.id) {
-        result = await updateEntry(initialEntry.id, formData);
+        const updateData = {
+          ...formData,
+          media: initialEntry.media
+        };
+        result = await updateEntry(initialEntry.id, updateData);
       } else {
         result = await createEntry(formData as Omit<Entry, 'id'>);
       }

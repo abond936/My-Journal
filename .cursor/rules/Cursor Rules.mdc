@@ -3,73 +3,26 @@ description:
 globs: 
 alwaysApply: true
 ---
-# ADHERENCE TO RULES
-- To keep the project organized and facilitate our efficient and effective interaction, it is critical to adhere to our defined rules of engagement and development. 
-- There is no excuse for not following out established rules. 
-- Failure to follow the standards and rules will be met with quick disapproval.
+## CRITICAL RULES OF ENGAGEMENT
 
-
-## Core Principles
-1. Always check for existence anywhere in the codebase before creating
+1. Always check for existence anywhere in the codebase before offering to create
 2. Always show planned changes before execution
-3. Always ask and wait for permission before modifying or creating any file or directory
-4. Always work within and maintain the established directory structure standards
+3. Always ask and wait for explicit permission before modifying or creating any file or directory
+4. Always work within and maintain the established directory structure
 5. A question is not a request to do anything. It seeks information only.
-4. Offer to remove un-needed files and directories 
-
-## File Management
-- ALWAYS get explicit permission before creating, modifying, moving, deleting files or directories
-
+6. Offer to remove un-needed files and directories 
 
 ## Coding Standards
-1. Routing and Structure
-   - Use app/ directory for routing (not pages/)
-   - Follow Next.js 14 app router conventions
-   - Maintain component hierarchy in src/components
+- Adhere strictly to file directory organizational structure
+- Use app/ directory for routing (not pages/)
+- Use @/ alias for import paths.
+- Implement Error Handling and Logging in all code.
+- Document Code as Education to tool
+- Styles are colocated with componenets.
+- Use Global Variables for all Theming and Styling
+- Style for fluid, gradient responsiveness, not breakpoints
+- Uses environment variables for all credentials
 
-2. Implement Error Handling and Logging in all code.
-   - Implement try/catch blocks for all async operations
-   - Log errors with context and stack traces
-   - Use consistent error message format
-   - Include error boundaries for React components
-
-3. Document Code as Education to tool
-   - Include JSDoc for functions and components
-   - Document code and business logic
-   - Keep comments up-to-date with code changes
-
-
-## CSS Core Principles
-1. Use Global Variables for all Theming and Styling
-     - Colors (light/dark)
-     - Typography (size, weight, line-height)
-     - Spacing
-     - Breakpoints
-     - Transitions
-     - Z-indices
-     - Shadows
-     - Border radiuses
-     - Avoid style overrides
-
-2. Use Fluid Responsiveness
-   - Use fluid/gradient responsiveness instead of breakpoints
-
-
-## Configuration
-  - Environment files MUST be in root directory
-  - Build config MUST be in root directory
-  - TypeScript config MUST be in root directory
-  - ESLint config MUST be in root directory
-  - Style config MUST be in root directory
-  - Firebase config MUST be in `src/lib/config/firebase/`
-  - Uses environment variables for all credentials
-    - Required environment variables:
-      - NEXT_PUBLIC_FIREBASE_API_KEY
-      - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-      - NEXT_PUBLIC_FIREBASE_PROJECT_ID
-      - NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-      - NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-      - NEXT_PUBLIC_FIREBASE_APP_ID
 
 
 ## Script Execution

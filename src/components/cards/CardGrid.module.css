@@ -8,34 +8,18 @@
   padding: 1rem;
 }
 
-/* Card variations based on importance */
-.card {
-  display: flex;
-  flex-direction: column;
-  background-color: #ffffff;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-}
-
-.card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
-}
-
-/* Size variations based on importance */
-.importance-high {
+/* Card variations based on size */
+.large {
   grid-column: span 2;
   grid-row: span 2;
 }
 
-.importance-medium {
-  grid-column: span 1;
+.medium {
+  grid-column: span 2;
   grid-row: span 1;
 }
 
-.importance-low {
+.small {
   grid-column: span 1;
   grid-row: span 1;
 }
@@ -51,7 +35,7 @@
 .cardTitle {
   font-size: 1.25rem;
   margin-bottom: 0.75rem;
-  color: #333;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
@@ -66,7 +50,7 @@
 .cardExcerpt {
   font-size: 0.95rem;
   line-height: 1.5;
-  color: #555;
+  color: var(--text-secondary);
   margin-bottom: 1rem;
   flex-grow: 1;
 }
@@ -81,7 +65,7 @@
 }
 
 .cardDate {
-  color: #777;
+  color: var(--text-secondary);
 }
 
 .cardTags {
@@ -96,6 +80,8 @@
   font-size: 0.75rem;
   cursor: pointer;
   transition: background-color 0.2s;
+  background-color: var(--background-tertiary);
+  color: var(--text-secondary);
 }
 
 .personTag {
@@ -120,7 +106,7 @@
   display: inline-block;
   margin-top: 1rem;
   font-weight: 500;
-  color: #1976d2;
+  color: var(--accent-color);
   text-decoration: none;
 }
 
@@ -130,7 +116,7 @@
 
 /* Responsive adjustments */
 @media (max-width: 1024px) {
-  .importance-high {
+  .large {
     grid-column: span 2;
     grid-row: span 1;
   }
@@ -142,7 +128,7 @@
     gap: 1rem;
   }
   
-  .importance-high {
+  .large {
     grid-column: span 1;
     grid-row: span 1;
   }

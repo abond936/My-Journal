@@ -80,7 +80,7 @@ const whoContent = [
     description: 'A memorable dinner with the family',
     date: '2024-03-15',
     tags: ['Family', 'Food'],
-    href: '/entries/entry1',
+    href: '/view/entry-view/entry1',
     imageUrl: 'https://source.unsplash.com/random/800x600?family'
   },
   {
@@ -91,7 +91,7 @@ const whoContent = [
     entryCount: 8,
     date: '2024-03-10',
     tags: ['Family'],
-    href: '/albums/album1',
+    href: '/view/album-view/album1',
     imageUrl: 'https://source.unsplash.com/random/800x600?family-album'
   }
 ];
@@ -105,7 +105,7 @@ const familyContent = [
     description: 'Family brunch at the new cafe',
     date: '2024-03-17',
     tags: ['Family', 'Food'],
-    href: '/entries/entry2',
+    href: '/view/entry-view/entry2',
     imageUrl: 'https://source.unsplash.com/random/800x600?brunch'
   },
   {
@@ -115,7 +115,7 @@ const familyContent = [
     description: 'Our trip to the mountains',
     date: '2024-02-20',
     tags: ['Family', 'Travel'],
-    href: '/entries/entry3',
+    href: '/view/entry-view/entry3',
     imageUrl: 'https://source.unsplash.com/random/800x600?vacation'
   },
   {
@@ -126,7 +126,7 @@ const familyContent = [
     entryCount: 12,
     date: '2024-01-15',
     tags: ['Family'],
-    href: '/albums/album2',
+    href: '/view/album-view/album2',
     imageUrl: 'https://source.unsplash.com/random/800x600?reunion'
   }
 ];

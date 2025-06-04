@@ -107,8 +107,10 @@ export async function updateTag(id: string, tagData: Partial<Tag>): Promise<Tag>
     throw new Error('Tag not found');
   }
   
+  const existingData = tagDoc.data();
   const updateData = {
-    ...tagData,
+    ...existingData,  // Preserve existing data
+    ...tagData,       // Apply updates
     updatedAt: Timestamp.now()
   };
   
@@ -116,7 +118,7 @@ export async function updateTag(id: string, tagData: Partial<Tag>): Promise<Tag>
   
   const updatedTag = {
     id,
-    ...tagDoc.data(),
+    ...existingData,
     ...tagData
   } as Tag;
 
@@ -174,4 +176,49 @@ export async function deleteTag(id: string): Promise<void> {
     console.error('Error deleting tags:', error);
     throw error;
   }
+}
+
+export async function getTagsByDimension(): Promise<Record<Tag['dimension'], Tag[]>> {
+  const tags = await getTags();
+  const tagsByDimension: Record<Tag['dimension'], Tag[]> = {
+    who: [],
+    what: [],
+    when: [],
+    where: [],
+    reflection: []
+  };
+
+  tags.forEach(tag => {
+    if (tag.dimension in tagsByDimension) {
+      tagsByDimension[tag.dimension].push(tag);
+    }
+  });
+
+  return tagsByDimension;
+}
+
+export async function organizeEntryTags(entryTags: string[]): Promise<{
+  who: string[];
+  what: string[];
+  when: string[];
+  where: string[];
+  reflection: string[];
+}> {
+  const tags = await getTags();
+  const organizedTags = {
+    who: [] as string[],
+    what: [] as string[],
+    when: [] as string[],
+    where: [] as string[],
+    reflection: [] as string[]
+  };
+
+  entryTags.forEach(tagId => {
+    const tag = tags.find(t => t.id === tagId);
+    if (tag && tag.dimension in organizedTags) {
+      organizedTags[tag.dimension].push(tagId);
+    }
+  });
+
+  return organizedTags;
 } 

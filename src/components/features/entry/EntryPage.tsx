@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Entry } from '@/types/entry';
-import styles from '@/lib/styles/components/features/entry/EntryPage.module.css';
+import { Entry } from '@/lib/types/entry';
+import styles from '@/app/view/entry-view/EntryPage.module.css';
 
 interface EntryPageProps {
   entry: Entry;
@@ -13,20 +13,22 @@ export default function EntryPage({ entry }: EntryPageProps) {
     <article className={styles.entryPage}>
       <header className={styles.header}>
         <h1 className={styles.title}>{entry.title}</h1>
-        <time className={styles.date}>{entry.date}</time>
+        {entry.date && (
+          <time className={styles.date}>{entry.date.toLocaleDateString()}</time>
+        )}
       </header>
 
       <div className={styles.content}>
         {entry.content}
       </div>
 
-      {entry.photos && entry.photos.length > 0 && (
+      {entry.media && entry.media.length > 0 && (
         <div className={styles.gallery}>
-          {entry.photos.map((photo, index) => (
+          {entry.media.map((mediaUrl, index) => (
             <img
               key={index}
-              src={photo.url}
-              alt={photo.alt || `Photo ${index + 1}`}
+              src={mediaUrl}
+              alt={`Media ${index + 1}`}
               className={styles.photo}
             />
           ))}
@@ -40,23 +42,6 @@ export default function EntryPage({ entry }: EntryPageProps) {
               {tag}
             </span>
           ))}
-        </div>
-      )}
-
-      {entry.relatedEntries && entry.relatedEntries.length > 0 && (
-        <div className={styles.relatedEntries}>
-          <h2 className={styles.relatedTitle}>Related Entries</h2>
-          <div className={styles.relatedList}>
-            {entry.relatedEntries.map((relatedEntry) => (
-              <a
-                key={relatedEntry.id}
-                href={`/entries/${relatedEntry.id}`}
-                className={styles.relatedLink}
-              >
-                {relatedEntry.title}
-              </a>
-            ))}
-          </div>
         </div>
       )}
     </article>

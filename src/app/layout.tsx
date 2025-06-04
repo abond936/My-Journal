@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import '@/lib/styles/globals.css';
 import { AuthProvider } from '@/lib/services/auth';
-import AppWrapper from '@/components/layouts/AppWrapper';
 import { TagProvider } from '@/lib/contexts/TagContext';
 import { ThemeProvider } from '@/components/common/ThemeProvider';
 
@@ -24,9 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <ThemeProvider>
             <TagProvider>
-              <AppWrapper>
-                {children}
-              </AppWrapper>
+              {children}
             </TagProvider>
           </ThemeProvider>
         </AuthProvider>

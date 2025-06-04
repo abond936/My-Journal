@@ -59,9 +59,19 @@ const Navigation: React.FC<NavigationProps> = ({ className }) => {
         {/* Navigation links */}
         <div className={`${styles.navLinks} ${isMenuOpen ? styles.open : ''}`}>
           <Link
-            href="/entries"
+            href="/view/entry-view"
             className={`${styles.navLink} ${
-              pathname?.startsWith('/entries')
+              pathname?.startsWith('/view/entry-view')
+                ? styles.active
+                : ''
+            }`}
+          >
+            Content
+          </Link>
+          <Link
+            href="/view/entry-view"
+            className={`${styles.navLink} ${
+              pathname?.startsWith('/view/entry-view')
                 ? styles.active
                 : ''
             }`}
@@ -69,7 +79,7 @@ const Navigation: React.FC<NavigationProps> = ({ className }) => {
             Entries
           </Link>
           <Link
-            href="/tags"
+            href="/view/tag-view"
             className={`${styles.navLink} ${
               pathname?.startsWith('/tags')
                 ? styles.active
@@ -79,7 +89,7 @@ const Navigation: React.FC<NavigationProps> = ({ className }) => {
             Tags
           </Link>
           <Link
-            href="/albums"
+            href="/view/album-view"
             className={`${styles.navLink} ${
               pathname?.startsWith('/albums')
                 ? styles.active
@@ -89,13 +99,13 @@ const Navigation: React.FC<NavigationProps> = ({ className }) => {
             Albums
           </Link>
           <Link
-            href="/entries/new"
+            href="/admin/entry-admin/new"
             className={styles.navLink}
           >
             New Entry
           </Link>
           <Link
-            href="/admin/entries"
+            href="/admin/entry-admin"
             className={`${styles.navLink} ${
               pathname?.startsWith('/admin')
                 ? styles.active

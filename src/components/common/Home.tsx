@@ -10,7 +10,7 @@ const Home: React.FC = () => {
   const router = useRouter();
 
   const handleEnter = () => {
-    router.push('/entries');
+    router.push('/view/entry-view');
   };
 
   return (
