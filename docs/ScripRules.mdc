@@ -1,0 +1,48 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+## Script Execution
+- Scripts MUST be executed using:
+  ```bash
+  `npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/<script-name>
+  ```
+- NEVER execute scripts directly with `node` or `ts-node` without proper configuration
+- ALWAYS use the correct TypeScript configuration for scripts
+
+## Environment Variables
+- Scripts MUST load environment variables at the top:
+  ```typescript
+  import * as dotenv from 'dotenv';
+  import { resolve } from 'path';
+
+  // Debug dotenv loading
+  const result = dotenv.config();
+  console.log('\nDotenv config result:', result);
+  console.log('Current working directory:', process.cwd());
+  console.log('Looking for .env file in:', resolve(process.cwd(), '.env'));
+  ```
+- Required environment variables MUST be documented in the script's header
+- Scripts MUST validate required environment variables before execution
+
+## Firebase Integration
+- Firebase Admin imports MUST use the `@/lib/config/firebase/admin` path:
+- Firebase Admin MUST be imported AFTER environment variables are loaded
+- Required Firebase environment variables:
+  - `FIREBASE_SERVICE_ACCOUNT_PROJECT_ID`
+  - `FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY`
+  - `FIREBASE_SERVICE_ACCOUNT_CLIENT_EMAIL`
+
+## TypeScript Configuration
+- Scripts MUST use `tsconfig.scripts.json` which includes:
+ 
+
+## Dependencies
+- Required dependencies MUST be installed:
+  ```bash
+  `npm install --save-dev ts-node tsconfig-paths dotenv @types/dotenv
+  ```
+- Additional dependencies as needed (e.g., `archiver` for backup scripts)
+

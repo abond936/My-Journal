@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import styles from '@/lib/styles/themes/Home.module.css';
+import styles from '@/components/view/Home.module.css';
 
 const Home: React.FC = () => {
   const router = useRouter();

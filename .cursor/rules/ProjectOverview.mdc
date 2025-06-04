@@ -14,12 +14,26 @@ This project is a personal journaling application that helps users document and 
   - AI-assisted content creation and organization
 
 ## Technical Stack
-  - Frontend: Next.js 14, React, Native CSS
-  - Backend: Firebase (Firestore, Authentication, Storage)
+  - Frontend: 
+    - Next.js 15.3.2
+    - React 19
+    - TypeScript
+    - Native CSS
+    - TipTap for rich text editing
+    - Framer Motion for animations
+  - Backend: 
+    - Firebase (Firestore, Authentication, Storage)
+    - Firebase Admin SDK for server-side operations
   - AI: OpenAI integration for content assistance
   - Media: Google Photos API (primary), with future support for Apple Photos
   - Hosting: Netlify (primary), with Vercel as backup
   - Version Control: GitHub
+  - Testing: Jest, React Testing Library
+  - Development Tools:
+    - ESLint for code quality
+    - TypeScript for type safety
+    - Jest for testing
+    - Custom scripts for migration and backup
 
 ## Deployment Model
   - Netlify for hosting and CI/CD
@@ -91,12 +105,14 @@ Because of the prominence of cellphones for consumption of digital media, the UI
             - Photo, Title, Excerpt?, Date, Base Tags
             Cards dynamic by Tag, Entry, Album
             - Multiple styles.
+            - Animated transitions using Framer Motion
         - Navigation
             - The first unfiltered version of the presentation is 5 cards labeled by those dimensions.
             - Clicking on who opens up a set of cards that make up the next heirarchical level of tags, such as me, parents, grandparents, etc. these cards can be clicked until they drill into cards that contain entries or albums. The entries and or albums can be explored by clicking on them and then they in turn contain related items that can then be clicked and literally swimm through the content. However, on the click of who, the what, when, where and reflection cards remain visible, and they can be drilled into similarly and endlessly.
             - And one can move into and out of each navigatiion method fluidly--randoly or structuredly. 
         - Views
             - Entry 
+                - Rich text editor with TipTap
                 - 'Blog' style
                 - Album link
                 - Related entries and albums
@@ -142,8 +158,9 @@ Because of the prominence of cellphones for consumption of digital media, the UI
 
 ### User
 - Authentication and authorization
-    - Not implemented until deployment
-    - Enter button until then
+    - Firebase Authentication integration
+    - Role-based access control (Author/Family)
+    - Enter button as temporary access method
 - Properties:
   - Authentication status
   - Role (Author/Family)
@@ -152,6 +169,7 @@ Because of the prominence of cellphones for consumption of digital media, the UI
   - Life stage settings
   - Entry type preferences
   - Tag preferences
+  - Firebase user profile integration
 
 
 Navigation - a core feature of the project.

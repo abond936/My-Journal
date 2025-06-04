@@ -1,36 +1,59 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
 # Project Structure
 
+##Naming
+- Use kebab-case for all folders
+- Use PascalCase for React components
+- Use camelCase for hooks, utilities, types, srvices, scripts
+
+- Use camelCase
+## Usage
+- Use app/routing, not pages/
+- Styles colocated with components
+
 ```
-src/app/
+src/app/                                # Use app/ routing not pages/
 ├── admin/                              # Admin area
-│   ├── album-management/               # Album management
-│   │   ├── album-management.module.css
+│   ├── album-admin/                    # Album management
+│   │   ├── album-admin.module.css
 │   │   └── page.tsx                    # List albums
 │   │   ├── new/                        # Create new album
-│   │   │   └── page.tsx
+│   │   │   ├── page.tsx *
+│   │       └── AlbumAdminNew.module.css *
+
 │   │   └── [id]/                       # Edit specific album
-│   │       └── edit/
-│   │           └── page.tsx
+│   │       └── edit/ *
+│   │           └── page.tsx *
+│   │           └── AlbumAdminEdit.module.css *
 │   │
-│   ├── entry-management/               # Entry management
-│   │   ├── entry-management.module.css
+│   ├── entry-admin/                    # Entry management
+│   │   ├── entry-admin.module.css
 │   │   └── page.tsx                    # List entries
 │   │   ├── new/                        # Create new entry
-│   │   │   └── page.tsx
+│   │   │   ├── page.tsx                    # List entries
+│   │   │   └── page.module.css # EntryAdminNew.module.css
 │   │   └── [id]/                       # Edit specific entry
 │   │       └── edit/
-│   │           └── page.tsx
+│   │           ├── page.tsx
+│   │           └── page.module.css # EntryAdminEdit.module.css
 │   │
-│   ├── tag-management/                 # Tag management
-│   │   ├── tag-management.module.css
+│   ├── tag-admin/                      # Tag management
+│   │   ├── tag-admin.module.css
 │   │   └── page.tsx                    # List tags
 │   │   ├── new/                        # Create new tag
-│   │   │   └── page.tsx
+│   │   │   └── page.tsx *
+│   │       └── TagAdminNew.module.css *
 │   │   └── [id]/                       # Edit specific tag
 │   │       └── edit/
-│   │           └── page.tsx
+│   │           └── page.tsx *
+│   │           └── TgAdminEdit.module.css *
 │   │
 │   └── layout.tsx                      # Admin layout
+│   └── AdminLayout.module.css 
 │
 ├── view/                               # Public viewing area
 │   ├── album-view/                     # Album viewing
@@ -98,7 +121,7 @@ src/app/
 │           ├── TagView.module.css
 │           └── TagView.tsx
 │
-├── lib/
+├── lib/                                    All shared resources and utilities
 │   ├── config/
 │   ├── contexts/
 │   ├── firebase/
@@ -108,13 +131,28 @@ src/app/
 │   │   ├── albumService.ts
 │   │   ├── entryService.ts
 │   │   └── tagService.ts
-│   ├── types/
+│   ├── types/                              All types 
 │   │   ├── album.ts
 │   │   ├── entry.ts
 │   │   └── tag.ts
-│   └── utils/
+│   └── utils/                              Utilities
 │       ├── albumUtils.ts
 │       ├── entryUtils.ts
 │       └── tagUtils.ts
 ```
 
+## Directory Structure Notes
+
+### App Directory
+- Contains all Next.js routes and pages
+- Organized by function(admin, view) and feature (album, entry, tag)
+
+### Components Directory
+- Organized by function rather than feature
+    - admin, view, common, layouts, navigation
+- Clear separation between different types of components
+
+### Lib/ Directory
+- Contains 
+- Organized by type (config, contexts, firebase, hook, scripts, service, types, utils)
+- Types are centralized for better type safety and reuse

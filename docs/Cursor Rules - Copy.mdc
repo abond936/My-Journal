@@ -330,39 +330,6 @@ CRITICAL: Use this checklist for all new code.
 └── tests/                # Test files
 ```
 
-## Source Code Structure (`/src`)
-## Component Organization (`/src/components`)
-```
-components/
-├── common/           # Shared components
-│   ├── Layout.tsx    # Main layout component
-│   ├── Navigation.tsx # Navigation components
-│   └── ViewSelector.tsx # View selection component
-├── features/         # Feature-specific components
-│   ├── entry/        # Entry-related components
-│   ├── media/        # Media-related components
-│   └── album/        # Album-related components
-└── layouts/          # Layout components
-    ├── BlogLayout.tsx
-    ├── CardLayout.tsx
-    ├── MagazineLayout.tsx
-    └── TimelineLayout.tsx
-```
-
-## Library Organization (`/src/lib`)
-```
-lib/
-├── config/                     # All Configuration files, unless root required
-├── services/                   # All Service integrations
-├── data/                       # All Data management                  ?????
-├── hooks/                      # All React hooks
-└── scripts/                    # All Utility scripts
-    styles/
-
-```
-
-- ALWAYS Use lowercase with hyphens for directory names
-
 # Directory Structure Consistency
 
 - **App Router Structure:**
@@ -374,17 +341,7 @@ lib/
   - Loading states MUST be in `loading.tsx`         ?????
   - Error boundaries MUST be in `error.tsx`         ?????
   - Not found pages MUST be in `not-found.tsx`      ?????
-  - Page styles must be in `src/lib/styles/app/`
-
-- **Component Organization:**
-  - Component files MUST be PascalCase
-  - Shared components MUST be in `src/components/`
-  - Feature components MUST be in `src/components/features/`
-  - Layout components MUST be in `src/components/layouts/`
-  - UI components MUST be in `src/components/ui/`
-  - Private components MUST use `_` prefix (e.g., `_components/`)
-  - Component styles MUST be in `src/lib/styles/components/`
-  - No co-location of styles is permitted
+  - Page styles must be co-located with page or layout.
 
 - **API and Services:**
   - API routes MUST be in `app/api/`
@@ -464,19 +421,6 @@ lib/
   - Style files MUST be `[name].module.css`
   - Type files MUST be `[name].types.ts`
 
-  DO NOT CREATE ANY FILE  WITHOUT ASKING PERMISSIONN--EVER!
-
-# File Operations Rules
-
-## File Creation
-- NEVER create new files without explicit user permission
-- ALWAYS ask before creating any new file
-
-## File Modification
-- ALWAYS show proposed changes for review
-- Provide context for why changes are needed
-
-
 ## Hook Rules
 
 ### Centralized Hook Location
@@ -525,7 +469,6 @@ lib/
 ### Data Management Imports                                 ????
 - All data management imports MUST come from `@/lib/data/`
 - Example: `import { getEntry } from '@/lib/data/entryService'`
-
 
 
 ### Scripting Rules
@@ -695,48 +638,6 @@ This document organizes all project rules and standards into practical categorie
 3. Project Structure Rules
 4. Documentation and Configuration Rules
 
-# 1. Core Interaction Rules
-
-## 1.1 Understanding and Agreement
-- ALWAYS start by summarizing the current task and its context
-- ALWAYS ask for clarification if any aspect is unclear or incomplete
-- ALWAYS confirm mutual understanding before proceeding
-- ALWAYS treat existing content as intentional unless explicitly directed otherwise
-
-## 1.2 Planning and Execution
-- ALWAYS present a step-by-step plan for any proposed changes
-- ALWAYS break down complex tasks into discrete, reviewable steps
-- ALWAYS get explicit approval before implementing each step
-- ALWAYS verify each step against requirements before proceeding
-- ALWAYS test changes before moving to the next step
-
-## 1.3 Communication and Documentation
-- ALWAYS state the specific action and its expected outcome
-- ALWAYS explain the reasoning behind proposed changes
-- ALWAYS summarize changes made and next steps after each action
-- ALWAYS document in our conversation:
-  * Significant decisions and their rationale
-  * Issues encountered and their resolutions
-  * Changes that affect architecture or core functionality
-- ALWAYS update the UnifiedDocument when we make decisions about:
-  * Vision: Changes to project goals, scope, or direction
-  * Architecture: Modifications to system design or structure
-  * Data Models: Updates to data structures or relationships
-  * Code Components: New components or significant changes to existing ones
-  * Rules: Changes to development or interaction rules
-  * Features: New features or significant modifications to existing ones
-- ALWAYS maintain a clear record of the current task and its status in our conversation
-
-## 1.4 Emergency Protocol
-- ALWAYS document the specific issue, including:
-  * What was attempted
-  * What went wrong
-  * Current state
-  * Proposed solution
-- ALWAYS get approval before implementing any fix
-- ALWAYS verify the fix resolves the original issue
-- ALWAYS document the solution and its implementation
-- ALWAYS update relevant documentation with the fix
 
 ## 1.5 Preservation Rules
 - NEVER remove or modify existing content without explicit request
