@@ -1,14 +1,14 @@
 /**
  * Codebase Backup Script
  * 
- * Purpose: Creates a compressed backup of the codebase to OneDrive
+ * Purpose: Creates a compressed backup of the codebase
  * 
  * Output:
- * - Creates a timestamped backup directory in C:\Users\alanb\CodeBase Backups\
+ * - For OneDrive: Creates a timestamped backup in C:\Users\alanb\CodeBase Backups\
+ * - For GitHub: Creates a backup in temp/backup/
  * - Saves backup as ZIP file
  * - Includes metadata with git information
- * - Maintains last 5 backups
- * - Logs operations to temp/backup/codebase-backup-output.txt
+ * - Logs operations to output file
  * 
  * Recent Changes:
  * - Added Firebase configuration backup
@@ -41,8 +41,14 @@ async function backupCodebase() {
   ];
   
   try {
-    // Create backup directory if it doesn't exist
-    const backupDir = 'C:\\Users\\alanb\\CodeBase Backups';
+    // Determine if we're running in GitHub Actions
+    const isGitHubActions = process.env.GITHUB_ACTIONS === 'true';
+    
+    // Set backup directory based on environment
+    const backupDir = isGitHubActions 
+      ? path.join(process.cwd(), 'temp', 'backup')
+      : 'C:\\Users\\alanb\\CodeBase Backups';
+
     if (!fs.existsSync(backupDir)) {
       fs.mkdirSync(backupDir, { recursive: true });
     }
@@ -55,10 +61,11 @@ async function backupCodebase() {
     output += `\n=== Starting Codebase Backup ===\n`;
     output += `Timestamp: ${new Date().toISOString()}\n`;
     output += `Backup path: ${zipPath}\n`;
+    output += `Environment: ${isGitHubActions ? 'GitHub Actions' : 'Local'}\n`;
 
-    // Create a zip archive with standard compression
+    // Create a zip archive with maximum compression
     const archive = archiver('zip', {
-      zlib: { level: 6 } // Standard compression
+      zlib: { level: 9 } // Maximum compression
     });
 
     const outputStream = fs.createWriteStream(zipPath);
@@ -120,6 +127,7 @@ async function backupCodebase() {
       fileCount: files.length,
       backupSize: fs.statSync(zipPath).size,
       excludedDirs: excludeDirs,
+      environment: isGitHubActions ? 'GitHub Actions' : 'Local',
       recentChanges: [
         'Added Firebase configuration backup',
         'Added migration data backup',
@@ -138,27 +146,31 @@ async function backupCodebase() {
     output += `Backup size: ${(metadata.backupSize / 1024 / 1024).toFixed(2)} MB\n`;
     output += `Latest commit: ${commitHash}\n`;
 
-    // Clean up old backups (keep last 5)
-    const backups = fs.readdirSync(backupDir)
-      .filter(file => file.startsWith('backup-') && file.endsWith('.zip'))
-      .sort()
-      .reverse();
+    // Clean up old backups (only for local backups)
+    if (!isGitHubActions) {
+      const backups = fs.readdirSync(backupDir)
+        .filter(file => file.startsWith('backup-') && file.endsWith('.zip'))
+        .sort()
+        .reverse();
 
-    if (backups.length > 5) {
-      output += `\n=== Cleaning up old backups ===\n`;
-      for (const oldBackup of backups.slice(5)) {
-        const oldBackupPath = path.join(backupDir, oldBackup);
-        const oldMetadataPath = path.join(backupDir, oldBackup.replace('.zip', '-metadata.json'));
-        fs.rmSync(oldBackupPath, { force: true });
-        if (fs.existsSync(oldMetadataPath)) {
-          fs.rmSync(oldMetadataPath, { force: true });
+      if (backups.length > 5) {
+        output += `\n=== Cleaning up old backups ===\n`;
+        for (const oldBackup of backups.slice(5)) {
+          const oldBackupPath = path.join(backupDir, oldBackup);
+          const oldMetadataPath = path.join(backupDir, oldBackup.replace('.zip', '-metadata.json'));
+          fs.rmSync(oldBackupPath, { force: true });
+          if (fs.existsSync(oldMetadataPath)) {
+            fs.rmSync(oldMetadataPath, { force: true });
+          }
+          output += `Deleted old backup: ${oldBackup}\n`;
         }
-        output += `Deleted old backup: ${oldBackup}\n`;
       }
     }
 
     // Write backup output to file
-    const outputFile = path.join(backupDir, `backup-${timestamp}-output.txt`);
+    const outputFile = isGitHubActions
+      ? path.join(backupDir, 'codebase-backup-output.txt')
+      : path.join(backupDir, `backup-${timestamp}-output.txt`);
     fs.writeFileSync(outputFile, output);
     console.log(`Backup output written to ${outputFile}`);
 
