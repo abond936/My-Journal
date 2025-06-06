@@ -38,7 +38,8 @@ export async function getEntry(id: string): Promise<Entry | null> {
     updatedAt: data.updatedAt?.toDate(),
     media: data.media || [],
     visibility: data.visibility || 'private',
-    inheritedTags: data.inheritedTags || data.tags || []
+    inheritedTags: data.inheritedTags || data.tags || [],
+    coverPhoto: data.coverPhoto || undefined
   } as Entry;
 
   // Cache the entry
@@ -58,7 +59,8 @@ export async function createEntry(entry: Omit<Entry, 'id'>): Promise<Entry> {
     type: entry.type || 'story',
     status: entry.status || 'draft',
     media: entry.media || [],
-    visibility: entry.visibility || 'private'
+    visibility: entry.visibility || 'private',
+    coverPhoto: entry.coverPhoto || undefined
   };
 
   const docRef = await addDoc(entriesRef, entryData);
@@ -72,7 +74,8 @@ export async function createEntry(entry: Omit<Entry, 'id'>): Promise<Entry> {
     type: entry.type || 'story',
     status: entry.status || 'draft',
     media: entry.media || [],
-    visibility: entry.visibility || 'private'
+    visibility: entry.visibility || 'private',
+    coverPhoto: entry.coverPhoto || undefined
   } as Entry;
 
   // Invalidate entries cache
@@ -100,6 +103,11 @@ export async function updateEntry(id: string, entry: Partial<Entry>): Promise<En
 
   if (entry.date) {
     updateData.date = Timestamp.fromDate(entry.date);
+  }
+
+  // Ensure coverPhoto is included in the update
+  if (entry.coverPhoto !== undefined) {
+    updateData.coverPhoto = entry.coverPhoto;
   }
 
   await updateDoc(entryRef, updateData);
@@ -204,7 +212,8 @@ export async function getEntries(
       updatedAt: doc.data().updatedAt?.toDate(),
       media: doc.data().media || [],
       visibility: doc.data().visibility || 'private',
-      inheritedTags: doc.data().inheritedTags || doc.data().tags || []
+      inheritedTags: doc.data().inheritedTags || doc.data().tags || [],
+      coverPhoto: doc.data().coverPhoto || undefined
     })) as Entry[];
 
   const result = {

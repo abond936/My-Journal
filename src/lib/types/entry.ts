@@ -1,7 +1,8 @@
 // One of two primary content unit 
 
-export interface Entry {
+import { PhotoMetadata } from '@/lib/services/photos/photoService';
 
+export interface Entry {
   id: string;
   title: string;
   content: string;
@@ -9,14 +10,15 @@ export interface Entry {
   tags: string[];
   createdAt: Date;
   updatedAt: Date;
-  type: 'story' | 'reflection';
+  type: 'journal' | 'note' | 'photo';
   status: 'draft' | 'published';
   date?: Date;  // Optional date field for when the entry was written/occurred
-
- 
-  //author: string;               If multiple authors allowed
-  media?: string[];               // For photo/video attachments
-  visibility?: 'private' | 'family' | 'public';  // For access control
+  publishedAt?: Date;
+  authorId: string;
+  authorName: string;
+  media: PhotoMetadata[];
+  visibility: 'public' | 'private';
+  coverPhoto: PhotoMetadata | null;
 
   // Optional dimensions
   who?: string[];      // Array of tag IDs
@@ -43,4 +45,6 @@ export interface GetEntriesOptions {
     start: Date;
     end: Date;
   };
-} 
+}
+
+export type EntryFormData = Omit<Entry, 'id' | 'createdAt' | 'updatedAt' | 'publishedAt'>; 

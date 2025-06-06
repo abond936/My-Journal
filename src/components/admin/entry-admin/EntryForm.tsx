@@ -6,6 +6,8 @@ import { createEntry, updateEntry } from '@/lib/services/entryService';
 import { organizeEntryTags } from '@/lib/services/tagService';
 import TagSelector from '@/components/common/TagSelector';
 import RichTextEditor from '@/components/common/RichTextEditor';
+import CoverPhotoContainer from './CoverPhotoContainer';
+import { PhotoMetadata } from '@/lib/services/photos/photoService';
 import styles from './EntryForm.module.css';
 
 interface EntryFormProps {
@@ -19,20 +21,15 @@ const EntryForm: React.FC<EntryFormProps> = ({
   onSuccess,
   onCancel 
 }) => {
-  const [formData, setFormData] = useState<Partial<Entry>>(initialEntry || {
-    title: '',
-    content: '',
-    type: 'story',
-    status: 'draft',
-    visibility: 'private',
-    tags: [],
-    who: [],
-    what: [],
-    when: [],
-    where: [],
-    reflection: [],
-    inheritedTags: [],
-    media: []
+  const [formData, setFormData] = useState<Partial<Entry>>({
+    title: initialEntry?.title || '',
+    content: initialEntry?.content || '',
+    type: initialEntry?.type || 'text',
+    status: initialEntry?.status || 'draft',
+    visibility: initialEntry?.visibility || 'private',
+    tags: initialEntry?.tags || [],
+    coverPhoto: initialEntry?.coverPhoto || null,
+    media: initialEntry?.media || []
   });
 
   // Organize tags when initialEntry changes
@@ -46,6 +43,22 @@ const EntryForm: React.FC<EntryFormProps> = ({
       });
     }
   }, [initialEntry]);
+
+  // Replace the existing useEffect for initialEntry with this one
+  useEffect(() => {
+    if (initialEntry) {
+      setFormData({
+        title: initialEntry.title || '',
+        content: initialEntry.content || '',
+        type: initialEntry.type || 'text',
+        status: initialEntry.status || 'draft',
+        visibility: initialEntry.visibility || 'private',
+        tags: initialEntry.tags || [],
+        media: initialEntry.media || [],
+        coverPhoto: initialEntry.coverPhoto || null,
+      });
+    }
+  }, [initialEntry]); // Only run when initialEntry changes
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,28 +86,72 @@ const EntryForm: React.FC<EntryFormProps> = ({
     }));
   };
 
+  const handleContentChange = (newContent: string, newMedia: PhotoMetadata[]) => {
+    console.log('Content changed:', { newContent, newMedia });
+    setFormData(prev => ({
+      ...prev,
+      content: newContent,
+      media: newMedia
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
 
     try {
+      // Extract photo references from content
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = formData.content;
+      const images = tempDiv.querySelectorAll('img[data-photo-metadata]');
+      const photoRefs = Array.from(images).map(img => {
+        const metadata = JSON.parse(img.getAttribute('data-photo-metadata') || '{}');
+        return {
+          id: metadata.id,
+          filename: metadata.filename,
+          path: metadata.path,
+          albumId: metadata.albumId,
+          albumName: metadata.albumName,
+          size: metadata.size,
+          lastModified: metadata.lastModified,
+          caption: metadata.caption,
+          tags: metadata.tags
+        };
+      });
+
+      const entryData = {
+        ...formData,
+        media: photoRefs,
+        coverPhoto: formData.coverPhoto || null
+      };
+
       let result: Entry;
       if (initialEntry?.id) {
-        const updateData = {
-          ...formData,
-          media: initialEntry.media
-        };
-        result = await updateEntry(initialEntry.id, updateData);
+        result = await updateEntry(initialEntry.id, entryData);
       } else {
-        result = await createEntry(formData as Omit<Entry, 'id'>);
+        result = await createEntry(entryData as Omit<Entry, 'id'>);
       }
       onSuccess?.(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save entry');
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCoverPhotoSelect = (photo: PhotoMetadata) => {
+    setFormData(prev => ({
+      ...prev,
+      coverPhoto: photo
+    }));
+  };
+
+  const handleCoverPhotoRemove = () => {
+    setFormData(prev => ({
+      ...prev,
+      coverPhoto: undefined
+    }));
   };
 
   return (
@@ -116,11 +173,20 @@ const EntryForm: React.FC<EntryFormProps> = ({
         </div>
 
         <div className={styles.formGroup}>
-          <label htmlFor="content">Content</label>
+          <label>Cover Photo</label>
+          <CoverPhotoContainer
+            coverPhoto={formData.coverPhoto}
+            onPhotoSelect={handleCoverPhotoSelect}
+            onPhotoRemove={handleCoverPhotoRemove}
+          />
+        </div>
+
+        <div className={styles.formGroup}>
+          <label htmlFor="content" className={styles.label}>Content</label>
           <RichTextEditor
-            content={formData.content}
-            onChange={(content) => setFormData(prev => ({ ...prev, content }))}
-            placeholder="Start writing your entry..."
+            content={formData.content || ''}
+            media={formData.media || []}
+            onChange={handleContentChange}
           />
         </div>
       </div>

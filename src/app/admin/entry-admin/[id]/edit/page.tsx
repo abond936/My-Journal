@@ -1,15 +1,16 @@
 'use client';
 
-import React from 'react';
 import { useRouter } from 'next/navigation';
-import EntryForm from '@/components/admin/entry-admin/EntryForm';
-import { Entry } from '@/lib/types/entry';
 import { useEntry } from '@/lib/hooks/useEntry';
+import { Entry } from '@/lib/types/entry';
+import EntryForm from '@/components/admin/entry-admin/EntryForm';
+import { use } from 'react';
 import styles from './page.module.css';
 
-export default function EditEntryPage({ params }: { params: { id: string } }) {
+export default function EditEntryPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const { entry, loading, error } = useEntry(params.id);
+  const resolvedParams = use(params);
+  const { entry, loading, error } = useEntry(resolvedParams.id);
 
   const handleSuccess = (updatedEntry: Entry) => {
     router.push('/admin/entry-admin');
