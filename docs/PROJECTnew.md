@@ -1375,6 +1375,33 @@ Add support for multiple photo sources
 Implement advanced photo organization features
 Add batch processing capabilities
 
+# Image Handling Strategy
+
+## Aspect Ratios & Sizing
+- Images are classified by natural dimensions (portrait/landscape/square)
+- Automatically fitted to closest standard ratio using `object-fit: cover`
+- No empty space or distortion allowed in layouts
+
+## Cover Images
+- Default to landscape orientation for cards and entry headers
+- Portrait images handled in two ways:
+  1. Smart cropping: AI-powered detection of important content areas to guide cropping
+  2. Blurred background: Portrait images displayed on blurred, stretched version of same image
+
+## Entry Content Images
+- Current toolbar controls: size (small/medium/large) and alignment (left/center/right)
+- Future enhancement: fill mode toggle (cover/contain) for flexible content layout
+
+## Album Layout
+- Quick CSS toggle for image display (cover/contain)
+- Changes not persisted, allowing experimentation with layouts
+- Separate from entry content image controls
+
+## Technical Implementation
+- Original image dimensions preserved
+- Display preferences stored in data attributes
+- CSS-based transformations for performance
+- No permanent image modifications
 
 #### **OneDrive Integration**
 Status: 🟡 Operational

@@ -7,15 +7,6 @@
   padding: 0;
 }
 
-.error {
-  grid-column: 1 / -1;
-  padding: 1rem;
-  background-color: #fee2e2;
-  color: #dc2626;
-  border-radius: 0.375rem;
-  margin-bottom: 1rem;
-}
-
 .mainContent {
   grid-column: 1;
   width: 100%;
@@ -126,31 +117,32 @@
   cursor: not-allowed;
 }
 
-/* Responsive layout */
-@media (max-width: 1023px) {
-  .form {
-    grid-template-columns: 1fr;
-    padding: 1rem;
-  }
-
-  .mainContent {
-    grid-column: 1;
-  }
-
-  .sidebar {
-    grid-column: 1;
-    width: 100%;
-  }
-
-  .formActions {
-    grid-column: 1;
-    width: 100%;
-  }
+.error {
+  background-color: #fee2e2;
+  border: 1px solid #ef4444;
+  color: #b91c1c;
+  padding: 1rem;
+  border-radius: 0.375rem;
+  margin-bottom: 1rem;
+  grid-column: 1 / -1;
 }
 
-/* Remove textarea styles since we're using RichTextEditor */
-.textarea {
-  display: none;
+.validationErrors {
+  background-color: #fff7ed;
+  border: 1px solid #f97316;
+  color: #c2410c;
+  padding: 1rem;
+  border-radius: 0.375rem;
+  margin-bottom: 1rem;
+  grid-column: 1 / -1;
+}
+
+.validationError {
+  margin-bottom: 0.5rem;
+}
+
+.validationError:last-child {
+  margin-bottom: 0;
 }
 
 .editorContainer {

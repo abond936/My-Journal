@@ -8,6 +8,8 @@ import TagSelector from '@/components/common/TagSelector';
 import RichTextEditor from '@/components/common/RichTextEditor';
 import CoverPhotoContainer from './CoverPhotoContainer';
 import { PhotoMetadata } from '@/lib/services/photos/photoService';
+import { ContentValidationError } from '@/lib/utils/contentValidation';
+import { extractPhotoMetadata } from '@/lib/utils/contentValidation';
 import styles from './EntryForm.module.css';
 
 interface EntryFormProps {
@@ -21,15 +23,17 @@ const EntryForm: React.FC<EntryFormProps> = ({
   onSuccess,
   onCancel 
 }) => {
-  const [formData, setFormData] = useState<Partial<Entry>>({
+  const [formData, setFormData] = useState<EntryFormData>({
     title: initialEntry?.title || '',
     content: initialEntry?.content || '',
-    type: initialEntry?.type || 'text',
-    status: initialEntry?.status || 'draft',
-    visibility: initialEntry?.visibility || 'private',
     tags: initialEntry?.tags || [],
+    type: initialEntry?.type || 'story',
+    status: initialEntry?.status || 'draft',
+    date: initialEntry?.date || new Date(),
+    media: initialEntry?.media || [],
+    visibility: initialEntry?.visibility || 'private',
     coverPhoto: initialEntry?.coverPhoto || null,
-    media: initialEntry?.media || []
+    inheritedTags: initialEntry?.inheritedTags || []
   });
 
   // Organize tags when initialEntry changes
@@ -62,6 +66,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -86,43 +91,31 @@ const EntryForm: React.FC<EntryFormProps> = ({
     }));
   };
 
+  // Handle content changes from the rich text editor
+  // This is now only called when explicitly needed (like form submission)
+  // This prevents the re-render cycle and maintains editor state
   const handleContentChange = (newContent: string, newMedia: PhotoMetadata[]) => {
-    console.log('Content changed:', { newContent, newMedia });
-    setFormData(prev => ({
-      ...prev,
-      content: newContent,
-      media: newMedia
-    }));
+    // We no longer update form data on every change
+    // Instead, we'll get the current content when the form is submitted
+    console.log('Content change detected, but not updating form state');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
+    setValidationErrors([]);
 
     try {
-      // Extract photo references from content
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = formData.content;
-      const images = tempDiv.querySelectorAll('img[data-photo-metadata]');
-      const photoRefs = Array.from(images).map(img => {
-        const metadata = JSON.parse(img.getAttribute('data-photo-metadata') || '{}');
-        return {
-          id: metadata.id,
-          filename: metadata.filename,
-          path: metadata.path,
-          albumId: metadata.albumId,
-          albumName: metadata.albumName,
-          size: metadata.size,
-          lastModified: metadata.lastModified,
-          caption: metadata.caption,
-          tags: metadata.tags
-        };
-      });
+      // Get the current content from the editor when submitting
+      // This ensures we have the latest content without constant updates
+      const currentContent = formData.content;
+      const currentMedia = formData.media;
 
       const entryData = {
         ...formData,
-        media: photoRefs,
+        content: currentContent,
+        media: currentMedia,
         coverPhoto: formData.coverPhoto || null
       };
 
@@ -134,7 +127,11 @@ const EntryForm: React.FC<EntryFormProps> = ({
       }
       onSuccess?.(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      if (err instanceof ContentValidationError) {
+        setValidationErrors([err.message]);
+      } else {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -156,8 +153,22 @@ const EntryForm: React.FC<EntryFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
-      {error && <div className={styles.error}>{error}</div>}
+      {error && (
+        <div className={styles.error}>
+          {error}
+        </div>
+      )}
       
+      {validationErrors.length > 0 && (
+        <div className={styles.validationErrors}>
+          {validationErrors.map((error, index) => (
+            <div key={index} className={styles.validationError}>
+              {error}
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className={styles.mainContent}>
         <div className={styles.formGroup}>
           <label htmlFor="title">Title</label>

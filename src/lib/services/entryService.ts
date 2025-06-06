@@ -4,6 +4,8 @@ import { Entry, GetEntriesOptions } from '@/lib/types/entry';
 import { entryCache } from './cacheService';
 import CacheService from './cacheService';
 import { mockEntries } from './mockData';
+import { validateContent, validateMediaReferences, extractPhotoMetadata } from '@/lib/utils/contentValidation';
+import { backupEntryBeforeUpdate } from './backupService';
 
 export async function getAllEntries(options: GetEntriesOptions = {}): Promise<Entry[]> {
   const result = await getEntries(options);
@@ -51,6 +53,17 @@ export async function createEntry(entry: Omit<Entry, 'id'>): Promise<Entry> {
   const entriesRef = collection(db, 'entries');
   const now = new Date();
   
+  // Validate content
+  if (entry.content) {
+    validateContent(entry.content);
+  }
+
+  // Extract and validate media references
+  const media = entry.media || [];
+  if (entry.content) {
+    validateMediaReferences(entry.content, media);
+  }
+  
   const entryData = {
     ...entry,
     createdAt: Timestamp.fromDate(now),
@@ -95,6 +108,26 @@ export async function updateEntry(id: string, entry: Partial<Entry>): Promise<En
   }
   const existingData = entrySnap.data();
   
+  // Create backup before update
+  await backupEntryBeforeUpdate(id, {
+    id,
+    ...existingData,
+    createdAt: existingData.createdAt?.toDate(),
+    updatedAt: existingData.updatedAt?.toDate(),
+    date: existingData.date?.toDate()
+  } as Entry);
+
+  // Validate content if it's being updated
+  if (entry.content) {
+    validateContent(entry.content);
+  }
+
+  // Extract and validate media references
+  const media = entry.media || existingData.media || [];
+  if (entry.content) {
+    validateMediaReferences(entry.content, media);
+  }
+
   const updateData: any = {
     ...existingData,  // Preserve existing data
     ...entry,         // Apply updates
