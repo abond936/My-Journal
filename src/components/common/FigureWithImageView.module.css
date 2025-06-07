@@ -1,0 +1,59 @@
+.figureWrapper {
+  display: inline-block;
+  margin: 1rem 0;
+}
+
+.figure {
+  margin: 0;
+  width: 100%;
+  display: inline-block;
+  border: 1px solid #ddd;
+  padding: 4px;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+}
+
+.left {
+  float: left;
+  margin-right: 1rem;
+}
+
+.right {
+  float: right;
+  margin-left: 1rem;
+}
+
+.center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.small {
+  width: 200px;
+}
+.medium {
+  width: 400px;
+}
+.large {
+  width: 600px;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.caption {
+  color: #555;
+  font-size: 0.9em;
+  text-align: center;
+  padding: 4px;
+  margin-top: 4px;
+}
+
+.caption:focus {
+  outline: 1px solid #007bff;
+} 

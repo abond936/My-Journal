@@ -1,85 +1,101 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import React from 'react';
 import { Editor } from '@tiptap/core';
-import { ImageAttributes } from '@/lib/extensions/CustomImage';
 import styles from './ImageToolbar.module.css';
 
 interface ImageToolbarProps {
   editor: Editor;
-  onClose: () => void;
+  onAction: (type: string, value: string) => void;
 }
 
-export default function ImageToolbar({ editor, onClose }: ImageToolbarProps) {
-  const toolbarRef = useRef<HTMLDivElement>(null);
-
-  const updateImageAttributes = useCallback((attributes: Partial<ImageAttributes>) => {
-    editor.chain().focus().updateImage(attributes).run();
-  }, [editor]);
-
-  const handleClickOutside = useCallback((event: MouseEvent) => {
-    if (toolbarRef.current && !toolbarRef.current.contains(event.target as Node)) {
-      onClose();
-    }
-  }, [onClose]);
-
-  useEffect(() => {
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [handleClickOutside]);
-
-  const selectedNode = editor.state.selection.node;
-  if (!selectedNode || selectedNode.type.name !== 'image') {
-    return null;
-  }
-
-  const currentAttributes = selectedNode.attrs as ImageAttributes;
+const ImageToolbar = ({ editor, onAction }: ImageToolbarProps) => {
+  const size = editor.getAttributes('figureWithImage')['data-size'] || 'medium';
+  const alignment = editor.getAttributes('figureWithImage')['data-alignment'] || 'left';
+  const aspectRatio = editor.getAttributes('figureWithImage')['data-aspect-ratio'] || '4:3';
 
   return (
-    <div ref={toolbarRef} className={styles.toolbar}>
-      <div className={styles.toolbarGroup}>
-        <label>Size</label>
-        <select
-          value={currentAttributes.size || 'medium'}
-          onChange={(e) => updateImageAttributes({ size: e.target.value as 'small' | 'medium' | 'large' })}
-        >
-          <option value="small">Small</option>
-          <option value="medium">Medium</option>
-          <option value="large">Large</option>
-        </select>
+    <div className={styles.imageToolbar}>
+      <div className={styles.toolbarSection}>
+        <label>Size:</label>
+        <div className={styles.buttonGroup}>
+          <button
+            type="button"
+            className={`${styles.toolbarButton} ${size === 'small' ? styles.active : ''}`}
+            onClick={() => onAction('setSize', 'small')}
+          >
+            Small
+          </button>
+          <button
+            type="button"
+            className={`${styles.toolbarButton} ${size === 'medium' ? styles.active : ''}`}
+            onClick={() => onAction('setSize', 'medium')}
+          >
+            Medium
+          </button>
+          <button
+            type="button"
+            className={`${styles.toolbarButton} ${size === 'large' ? styles.active : ''}`}
+            onClick={() => onAction('setSize', 'large')}
+          >
+            Large
+          </button>
+        </div>
       </div>
-
-      <div className={styles.toolbarGroup}>
-        <label>Alignment</label>
-        <select
-          value={currentAttributes.alignment || 'center'}
-          onChange={(e) => updateImageAttributes({ alignment: e.target.value as 'left' | 'center' | 'right' })}
-        >
-          <option value="left">Left</option>
-          <option value="center">Center</option>
-          <option value="right">Right</option>
-        </select>
+      <div className={styles.toolbarSection}>
+        <label>Alignment:</label>
+        <div className={styles.buttonGroup}>
+          <button
+            type="button"
+            className={`${styles.toolbarButton} ${alignment === 'left' ? styles.active : ''}`}
+            onClick={() => onAction('setAlignment', 'left')}
+          >
+            Left
+          </button>
+          <button
+            type="button"
+            className={`${styles.toolbarButton} ${alignment === 'center' ? styles.active : ''}`}
+            onClick={() => onAction('setAlignment', 'center')}
+          >
+            Center
+          </button>
+          <button
+            type="button"
+            className={`${styles.toolbarButton} ${alignment === 'right' ? styles.active : ''}`}
+            onClick={() => onAction('setAlignment', 'right')}
+          >
+            Right
+          </button>
+        </div>
       </div>
-
-      <div className={styles.toolbarGroup}>
-        <label>Caption</label>
-        <input
-          type="text"
-          value={currentAttributes.caption || ''}
-          onChange={(e) => updateImageAttributes({ caption: e.target.value })}
-          placeholder="Add a caption..."
-        />
+      <div className={styles.toolbarSection}>
+        <label>Aspect Ratio:</label>
+        <div className={styles.buttonGroup}>
+          <button
+            type="button"
+            className={`${styles.toolbarButton} ${aspectRatio === '1:1' ? styles.active : ''}`}
+            onClick={() => onAction('setAspectRatio', '1:1')}
+          >
+            1:1
+          </button>
+          <button
+            type="button"
+            className={`${styles.toolbarButton} ${aspectRatio === '4:3' ? styles.active : ''}`}
+            onClick={() => onAction('setAspectRatio', '4:3')}
+          >
+            4:3
+          </button>
+          <button
+            type="button"
+            className={`${styles.toolbarButton} ${aspectRatio === '16:9' ? styles.active : ''}`}
+            onClick={() => onAction('setAspectRatio', '16:9')}
+          >
+            16:9
+          </button>
+        </div>
       </div>
-
-      <button
-        type="button"
-        onClick={onClose}
-        className={styles.closeButton}
-      >
-        ×
-      </button>
     </div>
   );
-} 
+};
+
+export default ImageToolbar; 

@@ -29,7 +29,7 @@ export interface Album {
 export class PhotoService {
   async loadAlbum(albumId: string): Promise<Album> {
     console.log('Loading album:', albumId);
-    const response = await fetch(`/api/photos/albums/${albumId}`);
+    const response = await fetch(`/api/photos/album?id=${encodeURIComponent(albumId)}`);
     if (!response.ok) {
       console.error('Failed to load album:', response.status, response.statusText);
       throw new Error('Failed to load album');

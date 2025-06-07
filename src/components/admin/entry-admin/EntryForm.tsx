@@ -11,6 +11,7 @@ import { PhotoMetadata } from '@/lib/services/photos/photoService';
 import { ContentValidationError } from '@/lib/utils/contentValidation';
 import { extractPhotoMetadata } from '@/lib/utils/contentValidation';
 import styles from './EntryForm.module.css';
+import { EntryFormData } from '@/lib/types/entry';
 
 interface EntryFormProps {
   initialEntry?: Entry;
@@ -24,45 +25,42 @@ const EntryForm: React.FC<EntryFormProps> = ({
   onCancel 
 }) => {
   const [formData, setFormData] = useState<EntryFormData>({
-    title: initialEntry?.title || '',
-    content: initialEntry?.content || '',
-    tags: initialEntry?.tags || [],
-    type: initialEntry?.type || 'story',
-    status: initialEntry?.status || 'draft',
-    date: initialEntry?.date || new Date(),
-    media: initialEntry?.media || [],
-    visibility: initialEntry?.visibility || 'private',
-    coverPhoto: initialEntry?.coverPhoto || null,
-    inheritedTags: initialEntry?.inheritedTags || []
+    title: '',
+    content: '',
+    tags: [],
+    type: 'story',
+    status: 'draft',
+    date: new Date(),
+    media: [],
+    visibility: 'private',
+    coverPhoto: null,
   });
+  const editorRef = React.useRef<any>(null);
 
-  // Organize tags when initialEntry changes
-  useEffect(() => {
-    if (initialEntry?.tags) {
-      organizeEntryTags(initialEntry.tags).then(organizedTags => {
-        setFormData(prev => ({
-          ...prev,
-          ...organizedTags
-        }));
-      });
-    }
-  }, [initialEntry]);
-
-  // Replace the existing useEffect for initialEntry with this one
   useEffect(() => {
     if (initialEntry) {
       setFormData({
         title: initialEntry.title || '',
         content: initialEntry.content || '',
-        type: initialEntry.type || 'text',
-        status: initialEntry.status || 'draft',
-        visibility: initialEntry.visibility || 'private',
         tags: initialEntry.tags || [],
+        type: initialEntry.type || 'story',
+        status: initialEntry.status || 'draft',
+        date: initialEntry.date || new Date(),
         media: initialEntry.media || [],
+        visibility: initialEntry.visibility || 'private',
         coverPhoto: initialEntry.coverPhoto || null,
       });
+
+      if (initialEntry.tags) {
+        organizeEntryTags(initialEntry.tags).then(organizedTags => {
+            setFormData(prev => ({
+                ...prev,
+                ...organizedTags
+            }));
+        });
+      }
     }
-  }, [initialEntry]); // Only run when initialEntry changes
+  }, [initialEntry]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -97,7 +95,12 @@ const EntryForm: React.FC<EntryFormProps> = ({
   const handleContentChange = (newContent: string, newMedia: PhotoMetadata[]) => {
     // We no longer update form data on every change
     // Instead, we'll get the current content when the form is submitted
-    console.log('Content change detected, but not updating form state');
+    // console.log('Content change detected, but not updating form state');
+    setFormData(prev => ({
+      ...prev,
+      content: newContent,
+      media: newMedia
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -109,13 +112,17 @@ const EntryForm: React.FC<EntryFormProps> = ({
     try {
       // Get the current content from the editor when submitting
       // This ensures we have the latest content without constant updates
-      const currentContent = formData.content;
-      const currentMedia = formData.media;
+      const currentContent = editorRef.current?.getContent();
+      const currentMedia = editorRef.current?.getMedia();
+
+      if (currentContent === undefined) {
+        throw new Error("Could not get content from editor.");
+      }
 
       const entryData = {
         ...formData,
         content: currentContent,
-        media: currentMedia,
+        media: currentMedia || formData.media, // Fallback to form's media
         coverPhoto: formData.coverPhoto || null
       };
 
@@ -195,6 +202,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
         <div className={styles.formGroup}>
           <label htmlFor="content" className={styles.label}>Content</label>
           <RichTextEditor
+            ref={editorRef}
             content={formData.content || ''}
             media={formData.media || []}
             onChange={handleContentChange}

@@ -628,10 +628,11 @@ Status: 🟡 Operational
 - Custom Theming
 
 #### **Media Display**
-Status: ⭕ Planned
+Status: 🟡 Operational
 
 ##### Current Features
-- none
+- **✅ In-Content Images:** Images are rendered within the rich text content via a custom Tiptap Node View.
+- **✅ Photo Picker:** A modal for browsing and selecting photos from albums.
 
 ##### Planned Features
 - Image gallery
@@ -690,10 +691,13 @@ Status: 🟡 Operational
 - Title
 - Rich Text Editing
 - Tag Assigment
+- **✅ Image Embedding:** Images can be inserted via the Photo Picker, pasted, or dragged-and-dropped.
+- **✅ Image Manipulation:** Selected images can be resized and aligned. Captions are directly editable.
 
 #### Planned Features
-- Image Embedding
-- Draft/Published states
+- **🟡 Aspect Ratio Control:** UI exists but is not yet functional.
+- Improved paste/drag-drop handling for multiple images.
+- Image-specific metadata management (e.g., tags).
 
 ### **Album Management**
 Status: 🟡 Operational
@@ -1160,6 +1164,9 @@ Location: `src/lib/validation/` ???
 
 The Image Integration system serves as the bridge between the journal and external photo services, 
 enabling users to seamlessly incorporate their existing photo collections into their journal entries. 
+
+**Development Note:** The current implementation uses a local file system proxy to mock an external service like OneDrive. API routes (`/api/photos/...`) read directly from the local hard drive for development and testing purposes. This allows for the development of front-end features without requiring live cloud credentials.
+
 The system is designed to:
 
 1. Connect with external photo services (Google Photos, OneDrive) to access existing photo collections
