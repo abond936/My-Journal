@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { TreeNode } from '@/lib/types/album';
+// 1. Import the new library
+import sizeOf from 'image-size';
 
 const ONEDRIVE_ROOT = process.env.ONEDRIVE_ROOT_FOLDER || '';
 
@@ -43,26 +45,78 @@ export function getFolderTree(): TreeNode[] {
   return buildTree(ONEDRIVE_ROOT);
 }
 
-export function getFolderContents(folderPath: string): { id: string, name: string, path: string, type: 'file' | 'folder' }[] {
+// 2. Update the getFolderContents function
+
+export function getFolderContents(folderPath: string) {
+  // Add detailed logging to debug the file discovery process.
+  console.log(`[DEBUG] getFolderContents called with path: "${folderPath}"`);
+  
   if (!fs.existsSync(folderPath)) {
-    console.error(`Directory not found: ${folderPath}`);
+    console.error(`[DEBUG] Directory not found, path does not exist: "${folderPath}"`);
     return [];
   }
   
   try {
     const items = fs.readdirSync(folderPath);
-    return items.map(item => {
+    console.log(`[DEBUG] Found ${items.length} items in directory:`, items);
+
+    if (items.length === 0) {
+      console.log('[DEBUG] Directory is empty. Returning.');
+      return [];
+    }
+
+    const processedItems = items.map(item => {
+      console.log(`\n[DEBUG] Processing item: "${item}"`);
       const fullPath = path.join(folderPath, item);
+      console.log(`[DEBUG]   > Full path constructed: "${fullPath}"`);
+      
       const stats = fs.statSync(fullPath);
-      return {
-        id: fullPath,
-        name: item,
-        path: fullPath,
-        type: stats.isDirectory() ? 'folder' : 'file',
-      };
-    }).filter(item => item.type === 'file' && /\.(jpg|jpeg|png|gif)$/i.test(item.name));
+
+      if (stats.isDirectory()) {
+        console.log(`[DEBUG]   > SKIPPED: Item is a directory.`);
+        return null;
+      }
+      
+      const lowercasedItem = item.toLowerCase();
+      const isImage = /\.(jpg|jpeg|png|gif)$/.test(lowercasedItem);
+      
+      if (!isImage) {
+        console.log(`[DEBUG]   > SKIPPED: File extension does not match image types.`);
+        return null;
+      }
+      
+      console.log(`[DEBUG]   > PASSED: Item is an image file.`);
+      
+      try {
+        const dimensions = sizeOf(fullPath);
+        console.log(`[DEBUG]   > SUCCESS: Got dimensions W:${dimensions.width}, H:${dimensions.height}`);
+        
+        return {
+          id: fullPath,
+          name: item,
+          path: fullPath,
+          type: 'file',
+          width: dimensions.width,
+          height: dimensions.height,
+          lastModified: stats.mtime,
+          size: stats.size,
+          thumbnailUrl: `/api/photos/image?path=${encodeURIComponent(fullPath)}&size=thumbnail`,
+          webUrl: `/api/photos/image?path=${encodeURIComponent(fullPath)}`,
+        };
+      } catch (e) {
+        // This block will run if the image-size library fails on a file.
+        console.error(`[DEBUG]   > ERROR: The 'image-size' library failed for "${fullPath}"`, e);
+        return null;
+      }
+    });
+
+    const filteredItems = processedItems.filter(item => item !== null);
+    console.log(`\n[DEBUG] Finished processing. Returning ${filteredItems.length} items to the client.`);
+    return filteredItems;
+
   } catch (error) {
-    console.error(`Could not read directory contents: ${folderPath}`, error);
+    // This block will run if reading the directory fails for permission reasons, etc.
+    console.error(`[DEBUG] FATAL ERROR: Could not read directory contents for "${folderPath}"`, error);
     return [];
   }
-} 
+}

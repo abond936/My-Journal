@@ -281,4 +281,29 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.actions button {
+  margin-left: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 5px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.viewButton {
+  background-color: #28a745;
+  color: white;
+  border-color: #28a745;
+}
+
+.viewButton:hover {
+  background-color: #218838;
+  border-color: #1e7e34;
+}
+
+.editButton {
+  background-color: #ffc107;
+  color: #212529;
 } 

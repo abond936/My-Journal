@@ -35,6 +35,37 @@ export async function getAllAlbums(): Promise<Album[]> {
   });
 }
 
+/**
+ * Fetches a single album document by its ID from Firestore.
+ * @param albumId The ID of the album to fetch.
+ * @returns The album object or null if not found.
+ */
+export async function getAlbumById(albumId: string): Promise<Album | null> {
+  const docRef = albumsCollection.doc(albumId);
+  const docSnap = await docRef.get();
+
+  if (!docSnap.exists) {
+    console.warn(`Album with ID ${albumId} not found.`);
+    return null;
+  }
+
+  const data = docSnap.data();
+  if (!data) {
+    return null;
+  }
+  
+  // Convert Firestore Timestamps back to JS Date objects
+  const albumData = {
+    ...data,
+    createdAt: data.createdAt.toDate(),
+    updatedAt: data.updatedAt.toDate(),
+    // Ensure the 'images' field exists, defaulting to an empty array if not.
+    images: data.images || [],
+  } as Album;
+
+  return albumData;
+}
+
 export async function deleteAlbum(albumId: string): Promise<void> {
   await albumsCollection.doc(albumId).delete();
 }

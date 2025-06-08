@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { getTags } from '@/lib/services/tagService';
-import { Album } from '@/lib/types/album';
+import { Album, PhotoMetadata } from '@/lib/types/album';
 import { Tag } from '@/lib/types/tag';
 import styles from '@/app/admin/album-admin/album-admin.module.css';
+import PhotoPicker from '@/components/PhotoPicker';
+import Link from 'next/link';
 
 interface AlbumWithStats extends Album {
   tagNames: { id: string; name: string }[];
@@ -71,6 +73,9 @@ export default function AdminAlbumsPage() {
   const [status, setStatus] = useState<'all' | 'draft' | 'published'>('all');
   const [editingField, setEditingField] = useState<EditingField | null>(null);
   const [editValue, setEditValue] = useState('');
+
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [editingAlbumId, setEditingAlbumId] = useState<string | null>(null);
 
   const tagTrees = useMemo(() => {
     const trees: Record<Tag['dimension'], TagWithChildren[]> = {
@@ -302,6 +307,84 @@ export default function AdminAlbumsPage() {
     }
   };
 
+  /**
+   * Opens the photo picker to select photos for a specific album.
+   * @param albumId The ID of the album to edit.
+   */
+  const handleEditPhotos = (albumId: string) => {
+    setEditingAlbumId(albumId);
+    setIsPickerOpen(true);
+  };
+
+  /**
+   * Callback function for when photos are selected in the PhotoPicker.
+   * This function now maps the basic PhotoMetadata from the picker 
+   * to our rich, permanent AlbumImage data model before saving.
+   * @param photos An array of the selected photo metadata.
+   */
+  const handlePhotosSelected = async (photos: PhotoMetadata[]) => {
+    if (!editingAlbumId) return;
+
+    setLoading(true);
+    try {
+      // For each photo returned by the picker, create a new AlbumImage object.
+      const newImages: AlbumImage[] = photos.map(p => {
+        // Here we perform the mapping from one type to the other.
+        return {
+          // --- Core Identifiers ---
+          // Currently, our local service uses the full path as the ID.
+          sourceId: p.path, 
+          // Since we are only using the local service, we hardcode 'local'.
+          // This will become dynamic when we add more services.
+          sourceType: 'local',
+
+          // --- Core Metadata ---
+          // We will need to add width and height to PhotoMetadata later,
+          // for now we'll use placeholder values.
+          filename: p.filename,
+          width: p.width,
+          height: p.height,
+          createdAt: p.lastModified,
+
+          // --- User-Editable Data ---
+          caption: p.caption || '',
+
+          // --- Cached URLs ---
+          // The picker provides us with the necessary URLs for display.
+          displayUrl: p.webUrl,
+          thumbnailUrl: p.thumbnailUrl,
+
+          // sourceMetadata is optional and not needed for the local service.
+        };
+      });
+
+      // Prepare the final update payload for the album document.
+      const updates = { 
+        images: newImages,
+        mediaCount: newImages.length // Update the media count as well.
+      };
+
+      // Send the complete, rich data structure to the backend API.
+      await fetch(`/api/albums/${editingAlbumId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      
+      // Reload the data to reflect the changes in the UI.
+      await loadData();
+
+    } catch (error) {
+      console.error('Error saving photos to album:', error);
+      setError(error instanceof Error ? error.message : 'Failed to save photos.');
+    } finally {
+      // Close the picker and reset the state.
+      setIsPickerOpen(false);
+      setEditingAlbumId(null);
+      setLoading(false);
+    }
+  };
+
   if (loading) return <div className={styles.loading}>Loading albums...</div>;
   if (error) return <div className={styles.error}>{error}</div>;
 
@@ -494,7 +577,15 @@ export default function AdminAlbumsPage() {
                 </td>
                 <td>
                   <div className={styles.actions}>
-                    <button className={styles.editButton}>Edit</button>
+                    <Link href={`/view/album-view/${album.id}`} passHref>
+                      <button className={styles.viewButton}>View</button>
+                    </Link>
+                    <button 
+                      onClick={() => handleEditPhotos(album.id)}
+                      className={styles.editButton}
+                    >
+                      Edit Photos
+                    </button>
                     <button className={styles.deleteButton}>Delete</button>
                   </div>
                 </td>
@@ -503,6 +594,13 @@ export default function AdminAlbumsPage() {
           </tbody>
         </table>
       </div>
+      {isPickerOpen && (
+        <PhotoPicker
+          multiSelect={true}
+          onMultiPhotoSelect={handlePhotosSelected}
+          onClose={() => setIsPickerOpen(false)}
+        />
+      )}
     </div>
   );
 } 

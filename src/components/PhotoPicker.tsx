@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { PhotoService } from '@/lib/services/photos/photoService';
-import { Album, PhotoMetadata, TreeNode } from '@/lib/types/album';
+import { PhotoMetadata, TreeNode } from '@/lib/types/album';
 import styles from './PhotoPicker.module.css';
 
 interface PhotoPickerProps {
@@ -33,9 +33,9 @@ const FolderTree = ({ nodes, onSelect, selectedId }: { nodes: TreeNode[], onSele
 };
 
 export default function PhotoPicker({ onPhotoSelect, onMultiPhotoSelect, multiSelect = false, onClose }: PhotoPickerProps) {
-  const [albums, setAlbums] = useState<Album[]>([]);
   const [folderTree, setFolderTree] = useState<TreeNode[]>([]);
-  const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
+  const [photos, setPhotos] = useState<PhotoMetadata[]>([]);
+  const [selectedFolder, setSelectedFolder] = useState<TreeNode | null>(null);
   const [selectedPhotos, setSelectedPhotos] = useState<PhotoMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,14 +63,36 @@ export default function PhotoPicker({ onPhotoSelect, onMultiPhotoSelect, multiSe
     }
   };
 
-  const handleAlbumSelect = async (node: TreeNode) => {
+  const handleFolderSelect = async (node: TreeNode) => {
+    if (selectedFolder?.id === node.id) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setSelectedFolder(node);
+    setPhotos([]);
+    setSelectedPhotos([]);
+
     try {
-      setLoading(true);
-      const fullAlbum = await photoService.loadAlbum(node.id);
-      setSelectedAlbum(fullAlbum);
+      const response = await fetch('/api/photos/folder-contents', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ folderPath: node.id }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch photos for folder: ${node.name}`);
+      }
+
+      const folderPhotos: PhotoMetadata[] = await response.json();
+      setPhotos(folderPhotos);
+
     } catch (err) {
-      console.error('Error loading album:', err);
-      setError('Failed to load album details');
+      console.error('Error loading folder contents:', err);
+      setError('Failed to load photos from the selected folder.');
     } finally {
       setLoading(false);
     }
@@ -122,9 +144,9 @@ export default function PhotoPicker({ onPhotoSelect, onMultiPhotoSelect, multiSe
         <div className={styles.content}>
           {/* Album List -> Becomes Folder Tree */}
           <div className={styles.albumList}>
-            <h3 className={styles.albumTitle}>Albums</h3>
+            <h3 className={styles.albumTitle}>Photo Folders</h3>
             {folderTree.length > 0 ? (
-              <FolderTree nodes={folderTree} onSelect={handleAlbumSelect} selectedId={selectedAlbum?.id || null} />
+              <FolderTree nodes={folderTree} onSelect={handleFolderSelect} selectedId={selectedFolder?.id || null} />
             ) : (
               <div className={styles.noContent}>Loading folders...</div>
             )}
@@ -134,9 +156,9 @@ export default function PhotoPicker({ onPhotoSelect, onMultiPhotoSelect, multiSe
           <div className={styles.photoGrid}>
             {loading ? (
               <div className={styles.loading}>Loading photos...</div>
-            ) : selectedAlbum ? (
+            ) : photos.length > 0 ? (
               <div className={styles.grid}>
-                {selectedAlbum.photos.map(photo => {
+                {photos.map(photo => {
                   const isSelected = multiSelect && selectedPhotos.some(p => p.id === photo.id);
                   return (
                     <div
@@ -162,7 +184,9 @@ export default function PhotoPicker({ onPhotoSelect, onMultiPhotoSelect, multiSe
                 })}
               </div>
             ) : (
-              <div className={styles.noContent}>Select an album to view photos</div>
+              <div className={styles.noContent}>
+                {selectedFolder ? 'No photos found in this folder.' : 'Select a folder to view photos'}
+              </div>
             )}
           </div>
         </div>
