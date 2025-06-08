@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-// import { getAllAlbums, deleteAlbum, updateAlbum } from '@/lib/services/albumService';
-// import { getTags } from '@/lib/services/tagService';
+import { getTags } from '@/lib/services/tagService';
 import { Album } from '@/lib/types/album';
 import { Tag } from '@/lib/types/tag';
 import styles from '@/app/admin/album-admin/album-admin.module.css';
@@ -97,12 +96,17 @@ export default function AdminAlbumsPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [allAlbums, allTags] = await Promise.all([
-        Promise.resolve([]),  // TODO: Replace with actual data
-        Promise.resolve([])  // TODO: Replace with actual data
+      const [albumsResponse, allTags] = await Promise.all([
+        fetch('/api/albums'),
+        getTags()
       ]);
 
-      // Add tag names to albums
+      if (!albumsResponse.ok) {
+        throw new Error(`Failed to fetch albums. Status: ${albumsResponse.status}`);
+      }
+
+      const allAlbums: Album[] = await albumsResponse.json();
+
       const albumsWithStats = allAlbums.map(album => ({
         ...album,
         tagNames: album.tags
@@ -155,9 +159,12 @@ export default function AdminAlbumsPage() {
 
     try {
       setLoading(true);
-      await Promise.all(
-        Array.from(selectedAlbums).map(albumId => deleteAlbum(albumId))
+      const deletePromises = Array.from(selectedAlbums).map(albumId =>
+        fetch(`/api/albums/${albumId}`, { method: 'DELETE' })
       );
+      
+      await Promise.all(deletePromises);
+      
       await loadData();
       setSelectedAlbums(new Set());
     } catch (error) {
@@ -187,9 +194,12 @@ export default function AdminAlbumsPage() {
         updates.status = editValue as 'draft' | 'published';
       }
 
-      await updateAlbum(editingField.id, updates);
+      await fetch(`/api/albums/${editingField.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
       
-      // Update local state instead of reloading
       setAlbums(prevAlbums => 
         prevAlbums.map(a => 
           a.id === editingField.id 
@@ -237,11 +247,16 @@ export default function AdminAlbumsPage() {
 
     try {
       setLoading(true);
-      await Promise.all(
-        Array.from(selectedAlbums).map(albumId => 
-          updateAlbum(albumId, { status: newStatus })
-        )
+      const updatePromises = Array.from(selectedAlbums).map(albumId => 
+        fetch(`/api/albums/${albumId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus }),
+        })
       );
+      
+      await Promise.all(updatePromises);
+
       await loadData();
     } catch (error) {
       console.error('Error updating albums:', error);
@@ -258,23 +273,26 @@ export default function AdminAlbumsPage() {
 
     try {
       setLoading(true);
-      await Promise.all(
-        Array.from(selectedAlbums).map(async albumId => {
-          const album = albums.find(a => a.id === albumId);
-          if (!album) return;
+      const updatePromises = Array.from(selectedAlbums).map(async albumId => {
+        const album = albums.find(a => a.id === albumId);
+        if (!album) return;
 
-          // Remove any existing tags from this dimension
-          const existingTags = album.tags.filter(tagId => {
-            const tag = tags.find(t => t.id === tagId);
-            return tag?.dimension !== dimension;
-          });
+        const existingTags = album.tags.filter(tagId => {
+          const tag = tags.find(t => t.id === tagId);
+          return tag?.dimension !== dimension;
+        });
 
-          // Add the new tag if one is selected
-          const newTags = tagId ? [...existingTags, tagId] : existingTags;
+        const newTags = tagId ? [...existingTags, tagId] : existingTags;
 
-          await updateAlbum(albumId, { tags: newTags });
-        })
-      );
+        return fetch(`/api/albums/${albumId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tags: newTags }),
+        });
+      });
+      
+      await Promise.all(updatePromises);
+
       await loadData();
     } catch (error) {
       console.error('Error updating tags:', error);

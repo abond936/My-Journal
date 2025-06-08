@@ -1,7 +1,4 @@
-import { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, orderBy, Timestamp, writeBatch } from 'firebase/firestore';
-import { db } from '@/lib/config/firebase';
 import { Tag } from '@/lib/types/tag';
-import { tagCache } from './cacheService';
 
 // Read counter and warning threshold
 let readCount = 30000; // Starting from current usage
@@ -37,47 +34,21 @@ if (typeof window !== 'undefined') {
 }
 
 export async function getTags(): Promise<Tag[]> {
-  // Try to get from cache first
-  const cacheKey = 'tags:all';
-  const cachedTags = tagCache.get<Tag[]>(cacheKey);
-  if (cachedTags) {
-    console.log('Returning cached tags:', cachedTags);
-    return cachedTags;
-  }
-
-  console.log('Fetching tags from Firestore...');
-  incrementReadCount('getTags');
-  const tagsRef = collection(db, 'tags');
-  const q = query(tagsRef, orderBy('order'));
-  const snapshot = await getDocs(q);
-  const tags = snapshot.docs.map(doc => {
-    const data = doc.data();
-    // Ensure we're using the document ID as the tag ID
-    const tag = { 
-      id: doc.id,  // Use the document ID
-      name: data.name,
-      dimension: data.dimension,
-      parentId: data.parentId,
-      order: data.order || 0, // Default to 0 if order is not set
-      description: data.description,
-      entryCount: data.entryCount,
-      albumCount: data.albumCount
-    } as Tag;
-    return tag;
-  });
-
-  // Sort by parentId and order in memory
-  tags.sort((a, b) => {
-    if (a.parentId !== b.parentId) {
-      return (a.parentId || '').localeCompare(b.parentId || '');
+  try {
+    console.log('Fetching tags from API...');
+    const response = await fetch('/api/tags');
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API call to /api/tags failed with status ${response.status}: ${errorText}`);
     }
-    return (a.order || 0) - (b.order || 0);
-  });
-
-  console.log('Fetched tags:', tags);
-  // Cache the tags
-  tagCache.set(cacheKey, tags);
-  return tags;
+    const tags: Tag[] = await response.json();
+    console.log('Fetched tags from API:', tags);
+    return tags;
+  } catch (error) {
+    console.error('Failed to fetch tags via service:', error);
+    // Return an empty array to prevent the UI from crashing on error.
+    return [];
+  }
 }
 
 export async function createTag(tagData: Omit<Tag, 'id'>): Promise<Tag> {

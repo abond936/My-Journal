@@ -1,0 +1,118 @@
+.container {
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .title {
+    font-size: 2rem;
+    font-weight: 600;
+  }
+  
+  /* Styles for the form itself */
+  .form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .formGroup {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+  }
+  
+  .input,
+  .textarea {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--background-secondary);
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  
+  .input:focus,
+  .textarea:focus {
+    outline: none;
+    border-color: #0070f3;
+    box-shadow: 0 0 0 2px rgba(0, 112, 243, 0.2);
+  }
+  
+  .input:disabled,
+  .textarea:disabled {
+    background-color: var(--hover-color);
+    cursor: not-allowed;
+  }
+  
+  /* Styles for the action buttons footer */
+  .actions {
+    display: flex;
+    justify-content: flex-end; /* Align buttons to the right */
+    gap: 1rem;
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+  }
+  
+  .button {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  
+  .saveButton {
+    background-color: #0070f3;
+    color: white;
+    border: 1px solid #0070f3;
+  }
+  
+  .saveButton:hover:not(:disabled) {
+    background-color: #005bb5;
+    border-color: #005bb5;
+    transform: translateY(-1px);
+  }
+  
+  .saveButton:disabled {
+    background-color: var(--background-secondary);
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+  }
+  
+  .cancelButton {
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+  }
+  
+  .cancelButton:hover:not(:disabled) {
+    background-color: var(--hover-color);
+  }
+  
+  /* Error message style */
+  .error {
+    margin-top: 1rem;
+    color: var(--color-error);
+    font-weight: 500;
+    text-align: right; /* Align with buttons */
+  }
