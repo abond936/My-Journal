@@ -1,9 +1,4 @@
 # MyJournal Project
-Last Updated: [Current Date]
-
-This document is to provide the AI Assistant with context to maintain continuity between sessions. 
-At the end of each session, the AI Assisant will update this for the next AI Assistant.
-
 
 ## Table of Contents
 1. [Project Overview](#project-overview)
@@ -33,6 +28,7 @@ At the end of each session, the AI Assisant will update this for the next AI Ass
      - [Tag-based Navigation](#tag-based-navigation)
      - [Search & Filter](#search-filter)
    - [Content Presentation](#content-presentation)
+     - [Content View](#content-view)   
      - [Entry View](#entry-view)
      - [Album View](#album-view)
      - [Tag View](#tag-view)
@@ -46,6 +42,8 @@ At the end of each session, the AI Assisant will update this for the next AI Ass
    - [Album Management](#album-management)
    - [Tag Management](#tag-management)
    - [Question Management](#question-management)
+   - [Style Management](#style-management)   
+   - [Theme Management](#theme-management)     
    - [Admin Navigation](#admin-navigation)
 
 6. [Technical Infrastructure](#technical-infrastructure)
@@ -54,11 +52,6 @@ At the end of each session, the AI Assisant will update this for the next AI Ass
      - [Backend](#backend)
      - [AI Integration](#ai-integration)
      - [Media Services](#media-services)
-   - [Data Models](#data-models)
-     - [Entry Model](#entry-model)
-     - [Album Model](#album-model)
-     - [Tag Model](#tag-model)
-     - [User Model](#user-model)
    - [Authentication](#authentication)
      - [Overall Strategy](#overall-strategy)
      - [Primary Identity Provider](#primary-identity-provider)
@@ -74,9 +67,11 @@ At the end of each session, the AI Assisant will update this for the next AI Ass
      - [Security Rules](#security-rules)
      - [Data Validation](#data-validation)
    - [Image Integration](#image-integration)
-     - [Google Photos API](#google-photos-api)
-     - [OneDrive Integration](#onedrive-integration)
-     - [Image Processing](#image-processing)
+     - [Image Strategy](#image-strategy)
+     - [Local Drive](#local-drive-photos)   
+     - [OneDrive](#onedrive-photos)
+     - [Google Photos](#google-photos)
+     - [Apple Photos](#apple-photos)
      - [Storage Strategy](#storage-strategy)
 
 7. [Implementation Sequence](#implementation-sequence)
@@ -86,7 +81,7 @@ At the end of each session, the AI Assisant will update this for the next AI Ass
 
 [Back to Top](#myjournal-project)
 
-## 1. Project Overview
+## Project Overview
 
 ### Context
 This project is a personal journaling application that helps users document and share their life stories, reflections, photos, and media with others.
@@ -135,22 +130,19 @@ in a digital journal about those photos and explore both in an immersive flexibl
 
 #### Elements
 The primary elements of the app are Entries and Albums categorized by hierarchical Tags.
-- An entry is a primarily textual, but also visual unit that describes a story of 2 types:
-  - Story - Historical narrative
-  - Reflection - Personal insight
-- An album is a primarily visual, but also textual unit that depicts a story
+- An entry is a primarily textual, but also visual unit
+  - Cover image
+  - Title
+  - Rich Text and embeded images.
+- An album is a primarily visual, but also textual unit
+  - Cover image
+  - Title
+  - Caption
+  - Collections of images
 - Entries can be linked to albums and albums can be linked to entries
 - Both Entries and Albums are categorized into 5 dimensions:
   - who, what, when, where, and reflection
-  - User selects tag and the Entry or Album inherits the defined ancestor tags
-- Albums are collections of photos 
-  - linked to an album of photos
-  - collected individually
-- Album Title and Caption
-- Photos with entries have link
-- Photos with captions
-  - Overlaid, Separate, Random
-- Image management key to speed and minimal cost
+  - present as cards in a grid for consumption
 
 [Back to Top](#myjournal-project)
 
@@ -301,14 +293,30 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
 1. **Base Structure**
    ```
    src/
+   ├── __tests__/   
    ├── app/                      # Next.js app router
    │   ├── admin/                # Admin area
    │   │   ├── album-admin/      # Album management
-   │   │   |   └── page.tsx   
+   │   │   |   ├── [id]/edit/
+   |   |   |   |   ├── page.module.tsx   
+   |   |   |   |   └── page.tsx     
+   │   │   |   ├── new/
+   │   │   |   |   ├── NewAlbumPage.module.css
+   │   │   |   |   └── page.tsx 
+   |   │   |   ├── album-admin.module.css 
+   |   |   │   ├── page.tsx 
    │   │   ├── entry-admin/      # Entry management
+   │   │   |   ├── [id]/edit/
+   |   |   |   |   ├── page.module.css    
+   |   |   |   |   └── page.tsx     
+   │   │   |   ├── new/
+   │   │   |   |   ├── page.module.css
+   │   │   |   |   └── page.tsx 
+   |   │   |   ├── album-admin.module.css  
    |   │   |   └── page.tsx   
    │   │   ├── tag-admin/         # Tag management
-   │   │   |    └── page.tsx   
+   │   │   |    └── page.tsx 
+   |   │   └── AdminLayout.module.css     
    |   │   └── layout.tsx   
    │   ├── api/ 
    │   │   ├── albums/            // Data-access for Album content
@@ -332,32 +340,40 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
    │   ├── globals.css
    |   |
    │   └── view/                    # Public viewing area
-   |       ├── (home)/ 
    │       ├── album-view/[id]/     # Album viewing
-   │       |   └── page.tsx  
+   │       |   └── page.tsx 
+   │       ├── AlbumView/module.css
+   |       |
    │       ├── entry-view/[id]/     # Entry viewing
    │       |   └── page.tsx   
-   |       └── layout.tsx  
+   |       ├── EntryList.module.css 
+   |       ├── layout.tsx 
+   |       └── page.tsx       
    ├── components/          # React components
    │   ├── admin/           # Admin components
    │   ├── common/          # Shared components
    │   └── view/            # View components
+   ├── data/ 
+   │   ├── migration/     
    └── lib/                 # Shared resources
        ├── config/          # Configuration
        ├── contexts/        # React contexts
+       ├── extensions/      # Extensions
        ├── firebase/        # Firebase setup
        ├── hooks/           # Custom hooks
        ├── mocks/           # Mock data
        ├── scripts/         # Utility scripts
        ├── services/        # Business logic
+       ├── tiptap/          # TipTap setup
+       ├── tools/           # Tools              
        ├── types/           # TypeScript types
        └── utils/           # Utility functions
    ```
 
 2. **Component Organization**
+   - MUST follow the structure defined above
    - MUST place components in appropriate subdirectory based on function
    - MUST NOT mix function-based and feature-based organization
-   - MUST follow the structure defined above
    - MUST place shared components in common/ directory
    - MUST place component-specific types in lib/types/
 
@@ -479,6 +495,7 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
 [Back to Top](#myjournal-project)
 
 ## 4. Content Consumption
+=========================
 
 Legend:
 - ✅ Implemented
@@ -487,6 +504,7 @@ Legend:
 - ❓ Open Question
 
 ### **Home Page**
+---------------------------------
 Status: 🟡 Operational
 
 #### Current Features
@@ -497,16 +515,38 @@ Status: 🟡 Operational
 #### Planned Features
 - Login (email/password) to replace Enter button
 
-### **Content Consumption**
+❓ Open Questions:
 
-Development Notes:
-Next: Implement basic card-based navigation
-Depends on: Entry and Album data models
-Notes: Start with simple grid layout before adding advanced features
+### **Content Consumption**
+---------------------------------
+Status: 🟡 Operational
+
+Content will be consumed through a grid-based card system.
+   - Cover image
+   - Title
+   - Tags
+
+#### Current Features
+- Basic card layout connected to Entries only
+
+#### Planned Features
+- Connected to Tags, Albums and Entries
+  - Each dimension and tag requires a card
+    - Image, Name, Entries/Albums
+- Improved styling 
+  - Multi-sized cards
+    - Card height and width ratios of each other to facilitate grid structure
+  - Varying styling
+    - Titles, Tags, Excerpts overlaid/non-overlaid
+
+❓ Open Questions:
+
 
 ### Navigation Systems
+=================================
 
 ### **Top Navigation**
+---------------------------------
 Status: 🟡 Operational
 
 #### Current Features
@@ -515,20 +555,30 @@ Status: 🟡 Operational
 - Content/Admin
 
 #### Planned Features
+- 
+- Improve styling
+   - Increase logo size
+   - Increase vertical size to fit logo
+   - Bottom-align links?
+
+❓Open Questions:
+- What do we want on top navigation?
+  - Must have Admin for Author.
+  - Entries/Albums?
+    - Remove and move into content page as tabs for filtering
+      - All, Entries, Albums
+  - Remove New Entry, Add New Album?
+   - quick access for author as browsing
 
 ### **Card-based Navigation**
+---------------------------------
 Status: ⭕ Planned
 
-Card-based navigation means starting with Tag cards of the 5 dimensions and drilling up and 
-down the tag heirarchy until reaching a level of Entries or Albums. Need to rationalize this
+Card-based navigation means starting with Tag cards of the 5 dimensions and drilling through 
+the tag heirarchy until reaching a level of Entries or Albums. Need to rationalize this
 and see if it makes practical sense.
 
 Current grid system only fed by Entries. Not sure if current grid can be expanded or a new one created.
-
-Development Notes:
-Next: Basic grid implementation
-Depends on: Entry data model
-Notes: Focus on single-column layout first
 
 ##### Current Features
 - none
@@ -546,24 +596,35 @@ Notes: Focus on single-column layout first
 - Card size optimization
 - Card content preview
 
+❓ Open Questions:
+
+
 ### **Tag-based Navigation**
+---------------------------------
 Status: 🟡 Operational
-Tag navigation is a heirarchical tag tree selection to filter entry and album cards. This would be on a slide sidebar with 3 tabs--Tags, Entries, Albums
+Tag navigation is a heirarchical tag tree selection to filter entry and album cards. This would be on 
+a slide sidebar with 3 tabs--Tags, Entries, Albums
 
 #### Current Features
 - Tag hierarchy display
 - Multi-select filtering
 - Tag dimension organization
 - Tag relationship visualization
+- Number of entries (15/?)
 
 #### Planned Features
+- Number of albums (15/21)
 - Styling
 - Advanced tag filtering
 - Tag search
 - Tag analytics
 - Tag suggestions
 
+❓ Open Questions:
+
+
 ### **Element-based Filter**
+---------------------------------
 Status: ⭕ Planned
 Element-base filter is a selector of Entries, Albums or Both to display in the card grid.
 
@@ -573,7 +634,16 @@ Element-base filter is a selector of Entries, Albums or Both to display in the c
 #### Planned Features
 - Tab-selector across the top or radio buttons on the navigation sidebar.
 
+❓Open Questions:
+- How would we order Entries and Albums?
+  - Would we do it by tag selection? 
+  - Order by Tag, show Albums then Entries?
+  - Order by Tag, show Entries, by Albums?
+  - One complicated nested tree structure?
+    - Possible/Advisable?
+
 ### **Search & Filter**
+---------------------------------
 Status: 🟡 Operational
 
 #### Current Features
@@ -587,11 +657,18 @@ Status: 🟡 Operational
 - Search suggestions
 - Filter combinations
 
+❓ Open Questions:
+
 ### **Content Presentation**
+=================================
 
 ### **Entry View**
+---------------------------------
 Status: 🟡 Operational
-This is curretnly card view. May not be needed explcitly and will become "content view".
+
+Entry view contains title, cover image, tags, content.
+
+(This is currently card view. May not be needed explcitly and will become "content view".)
 
 #### Current Features
 - Rich text display
@@ -600,85 +677,119 @@ This is curretnly card view. May not be needed explcitly and will become "conten
 - Tag context
 
 #### Planned Features
-- Reading progress
-- Content sharing
-- Print view
-- Export options
+- User interaction
+   - Like, comment, sharelink
+
+❓ Open Questions:
+
 
 ### **Album View**
+---------------------------------
 Status: ⭕ Planned
 
+Album view contains a title, tags, caption and grid display of images.
 
 #### Current Features
-- Photo grid display
-- Caption display
-- Entry links
-- Tag context
+none
 
 #### Planned Features
-- Gallery view
-- Slideshow mode
-- Download options
-- Share functionality
+- Title
+- Caption
+- Photo grid display
+- Toggle caption display (mobile/tap, other/click)
+- Toggle fill mode (fill/contain)
+- Entry links
+- User interaction
+   - Like, comment, sharelink
+- Styled like a photo album or scrapbook 
+   - Library of styles selectable by album
+   - Selectable sytles by album
+      - Background,color scheme, font
+
+❓ Open Questions:
+
 
 ### **UI Components**
+==============================
 
 ### **Layout System**
+---------------------------------
 Status: 🟡 Operational
 
+The layout straegy is to be fully mobile first and responsive upward.
+
 #### Current Features
-- Card layout
-- Responsive design
-- Mobile-first approach
-- Tablet optimization
+- Grid/Card layout
+- Partially responsive design
 
 #### Planned Features
-- Grid layout
-- Masonry layout
-- Gallery layout
-- Custom layout builder
+- Tablet optimization
+- Custom layout builder ??
+
+❓ Open Questions:
 
 #### **Theme System**
+---------------------------------
 Status: 🟡 Operational
 
 ##### Current Features
 - Light/Dark theme
+- Fixed Schemes
+- Limited styling throughout
 
 ##### Planned Features
-- Settings Dialog
-- Theme Presets
-- Custom Theming
+- Fully styled
+   - MSN-style layout and theme
+- Fully Responsive
+- Fully Customizable
+   - Variable-based CSS
+   - Theme Presets
+   - Custom Theming
 
-#### **Media Display**
-Status: 🟡 Operational
+❓ Open Questions:
 
-##### Current Features
-- **✅ In-Content Images:** Images are rendered within the rich text content via a custom Tiptap Node View.
-- **✅ Photo Picker:** A modal for browsing and selecting photos from albums.
-
-##### Planned Features
-- Image gallery
-- Video player
-- Audio player
-- Media grid
-- Lightbox
-- Thumbnail system
-- Advanced gallery
-- Media editing
 
 [Back to Top](#myjournal-project)
 
-## 5. **Content Administration**
+## **Content Administration**
+=======================================
+Administration is a feature only available to author.
+   - CRUD/Bulk editing operations for appl elements
 
-Development Notes:
-Next: Complete basic entry management
-Depends on: Authentication and basic data models
-Notes: Focus on CRUD operations before adding advanced features
+#### Current Features
+  - Entries
+  - Albums
+  - Tags
+
+#### Planned Features
+  - Questions
+  - Album page styles
+  - Themes
+  - Role-based access
+
+  ❓ Open Questions:
+
+### **Admin Navigation**
+---------------------------------
+Status: 🟡 Operational
+
+- Sidebar to navigate between element lists.
+
+#### Current Features
+- Static Sidebar
+- Basic navigation
+
+#### Planned Features
+- Improve styling 
+
+❓ Open Questions:
 
 ### **Entry Management**
+---------------------------------
 Status: 🟡 Operational
 
 #### Current Features
+- Data model
 - Entry collection
 - Entry listing
 - Statistics
@@ -687,138 +798,143 @@ Status: 🟡 Operational
 - Bulk edit
 
 #### Planned Features
-- Tag assignment
+- Inline/Bulk Tag assignment
 - Improved styling
-- Export functionality
-- Analytics dashboard
+- Export functionality ??
+- Analytics dashboard ??
+
+❓ Open Questions:
 
 ### **Entry Creation**
+---------------------------------
 Stautus: 🟡 Operational
 
 #### Current Features
 - Title
 - Rich Text Editing
 - Tag Assignment
-
-#### Planned Features
-- Cover Image
-- Image Embedding
+- Cover image - Metadata stored coverPhoto field
+- Image embedding - Embedded figure/image element
 - Draft/Published states
 
+#### Planned Features
+- Improved styling
+
+❓ Open Questions:
+
 ### **Entry Edit**
+---------------------------------
 Status: 🟡 Operational
 
 #### Current Features
-- Cover Image
+- Cover Image - Metadata stored coverPhoto field
 - Title
 - Rich Text Editing
 - Tag Assigment
-- **✅ Image Embedding:** Images can be inserted via the Photo Picker, pasted, or dragged-and-dropped.
-- **✅ Image Manipulation:** Selected images can be resized and aligned. Captions are directly editable.
+- Image embedding - Embedded figure/image element
+  - Photo Picker, pasted, or dragged.
+- Image formatting 
+   - Size, alignment, caption
 
 #### Planned Features
-- **🟡 Aspect Ratio Control:** UI exists but is not yet functional.
+- Aspect ratio control 
 - Improved paste/drag-drop handling for multiple images.
 - Image-specific metadata management (e.g., tags).
+- Revisit cover image stored?
+- Fill mode toggle (cover/contain)??
+
+❓ Open Questions:
 
 ### **Album Management**
+---------------------------------
 Status: 🟡 Operational
 
 An album is a collection of images, initially from one source, but eventually potentially from multiple sources. They will have a title, caption and description. 
 - Summary view of cards
-   - Coverpage, title, caption, date, tags
+ - Coverpage, title, caption, date, tags
 - Detailed album view, 
-   - Grid-based presentation of the images
-      - Title, caption, description, tags, images
-      - Scrapbook styling
-         - Colorful backgrounds, styled text
-         - Paginated or scrollable. 
-      Captions togglable
-         Click/hover
-      Links to the 'entries' to which they are associated.
+ - Grid-based presentation of the images
+  - Title, caption, description, tags, images
+  - Scrapbook styling
+   - Colorful backgrounds, styled text
+   - Paginated or scrollable. 
+ - Captions togglable
+   - Click/hover
+      - Links to the 'entries' to which they are associated.
          - Assignment can be done either from the album view,
             - potentially even in the admin album view. 
 
-Code Assessment: Current State of Album Management
-Here is a breakdown of the existing capabilities in src/app/admin/album-admin/page.tsx based on the code I've seen:
-What Still Exists (The UI and Client-Side Logic):
-CRUD UI: The page has a complete UI for managing a list of albums. It includes a table to display albums, buttons for actions, and logic for in-line editing of title and status.
-Bulk Editing UI: The interface for bulk operations is fully built. This includes the "select all" checkbox, individual selection checkboxes, and the dropdowns/buttons for "Update Status," "Update Tags," and "Delete Selected."
-Client-Side Handlers: All the functions to handle these actions are present (handleBulkDelete, handleBulkStatusUpdate, handleEditSave, etc.). These functions are correctly set up to make API calls (fetch) to the server. They are currently calling non-existent or broken service functions, but the client-side part is sound.
-What is Missing or Disconnected (The Backend):
-Data Source: The page is completely disconnected from any data. As we discovered, getAllAlbums() and getTags() are not working. The page currently loads with an empty list.
-Backend API Calls: The client-side handlers are trying to call service functions (deleteAlbum, updateAlbum) that were designed for the old, broken model. We need to replace these with fetch calls to specific API routes that we will create. For example, deleteAlbum(albumId) needs to become fetch('/api/albums/${albumId}', { method: 'DELETE' }).
-Photo Service: The crucial link to your photos is missing. There is no PhotoPicker on this page, and therefore no way to select images for a new album or edit the images in an existing one.
-In short: We have a well-built user interface, but its engine has been removed. The forms, buttons, and tables are all there, but they aren't connected to anything.
-Strategy for Moving Forward: A Controlled, Step-by-Step Rebuild
-Here is the plan to reconnect the engine, one piece at a time, ensuring each step is working before moving to the next.
-Phase 1: Re-establish Core CRUD for Albums (Server-Side)
-Our first priority is to make the existing UI functional again. This means building the server-side API endpoints that the client expects.
-Create /api/albums Routes: We will create a new directory src/app/api/albums/ for our API routes.
-GET /api/albums: Implement the GET handler. This will use the server-side albumService (which we will inspect and fix) to fetch all albums from Firestore and return them as JSON. This will populate the main table on the page.
-POST /api/albums: Implement the POST handler for creating a new album.
-PATCH /api/albums/[id]: Implement the PATCH handler for updating an album (for both single-field edits and bulk updates).
-DELETE /api/albums/[id]: Implement the DELETE handler for deleting a single album.
-Phase 2: Reconnect the Client to the New API
-Once the backend API is ready, we will reconnect the album-admin page to it.
-Fix loadData: We will replace getAllAlbums() with a fetch('/api/albums') call.
-Fix Handlers: We will go through each handler function (handleBulkDelete, handleEditSave, etc.) and ensure it's using a fetch call to the correct API endpoint we built in Phase 1.
-At the end of Phase 2, you will have a fully functional album management page for all text-based data (title, status, description). You will be able to add, edit, and delete albums, and all bulk operations will work.
-Phase 3: Integrate the Local Photo Service
-With the core album functionality restored, we will integrate the photo management.
-Add PhotoPicker: We will add the working PhotoPicker component to a modal or a separate "Create New Album" view.
-"Create Album" Workflow: For creating a new album, the PhotoPicker will provide a list of selected local file paths. These paths will be saved as part of the new album object sent to the POST /api/albums endpoint.
-"Edit Photos" Workflow: We will add an "Edit Photos" button to each album row. This will open the AlbumPhotoManager component (which uses the PhotoPicker) and allow you to modify the list of photo paths for an existing album, saving the changes via the PATCH /api/albums/[id] endpoint.
-This phased approach ensures we are building on a solid foundation. We will verify that each piece of functionality is working perfectly before adding the next layer of complexity.
-Please let me know your thoughts on this assessment and strategy. We will not proceed until you are confident in the plan.
+Album Structure:
+- Virtual albums independent of sources
+- Can combine photos from multiple services
+- Maintains own metadata and relationships
+- Syncs with sources on our schedule
             
 #### Current Features
 - Album collection
-- Album Listing
+- Data model extended for sources
+- Album Listing (table)
+- Album creation
+- Album editing
 - Search and filter
 - Inline edit
 - Bulk edit
+- Server-side API connected
+- Photopicker connected
+- Photo service connected
 
 #### Planned Features
-- Album creation
-- Album editing
-- Album templates
-- Media analytics
-- Batch upload
+- Fix Photopicker
+- Album edit template
+- Media analytics ??
+- Batch upload of photos to albums.
 
 ❓Open Questions:
-- Which image source to begin?
-- Data model sufficient?
+
 
 ### **Album Creation**
+---------------------------------
 Status: ⭕ Planned
 
 #### Current Features
-- none
+- New album button
+- New album page
+   - Title
+   - Description
+   - Caption
 
 #### Planned Features
-- Cover Image
-- Title
-- Caption
-- Image array
+- Add cover image
+- Image selection
 - Tag assignment
 
+❓ Open Questions:
+
+
 ### **Album Edit**
+---------------------------------
 Status: ⭕ Planned
 
 ####Current Features
-- none
+- Inline Album Admin only
 
 #### Planned Features
-- Cover Image
-- Title
-- Caption
-- Image array
-- Tag assignment
+- Separate page
+  - Cover Image (similar to New)
+  - Title
+  - Caption
+  - Photopicker
+  - Tag assignment
+
+❓ Open Questions:
+
 
 ### **Tag Management**
+---------------------------------
 Status: 🟡 Operational
-Tags are managed (added, edited, deleted).
+
+- Tags are managed (added, edited, deleted) from the admin page.
+- No need for separate pages
 
 #### Current Features
 - Tag collection
@@ -832,17 +948,22 @@ Tags are managed (added, edited, deleted).
 
 #### Planned Features
 - Drag and drop hierarchy
-- Tag deletion/merging
+- Tag deletion/merging functionality
 - Styling improvements
+- Cover image
 - Tag analytics ??
 - Tag suggestions ??
 - Tag history ??
 
 ❓ Open Questions
 - How to deal with edited/deleted tags?
+- Feed tags back to photo metadata?
 
 ### **Question Management**
+---------------------------------
 Status: ⭕ Planned
+
+- Questions are prompts for stories
 
 #### Current Features
 - None
@@ -860,24 +981,41 @@ Status: ⭕ Planned
 
 ❓ Open Questions
 - Do we want to track answers?
+- Do we group short questions
 
-### **Admin Navigation**
-Status: 🟡 Operational
+### **Style Management**
+---------------------------------
+Album styles are selectable styles for album pages
+   - Background
+   - 
 
-#### Current Features
-- Static Sidebar
-- Basic navigation
-- Role-based access
+  #### Current Features
+  - None
 
-#### Planned Features
-- Add Tab title
-- Advanced navigation
-- Quick actions
-- Admin dashboard
+  #### Planned Features
+  - Preconfigured page styles for selection
+  - Specifically selected style components
+    - Background, Font, Color scheme, etc.
+
+❓ Open Questions:
+
+
+### **Theme Management**
+----------------------------------
+Themes (color, fonts, boxes, spacing, padding, etc.) can be managed centrally outside the code.
+
+  #### Current Features
+  - Light/Dark
+  #### Planned Features
+  - UI management
+
+❓ Open Questions:
+
 
 [Back to Top](#myjournal-project)
 
-## 6. **Technical Infrastructure**
+## **Technical Infrastructure**
+=====================================
 
 Development Notes:
 Next: Complete Firebase configuration
@@ -885,206 +1023,62 @@ Depends on: None
 Notes: Ensure all environment variables are properly set up
 
 ### **Technical Stack**
+----------------------------------
+Status: 🟡 Operational
 
-#### **Frontend**
-- Next.js 15.3.2
-- React 19
-- TypeScript
-- Native CSS
-- TipTap for rich text editing
-- Framer Motion for animations
+#### Current Features
+- Frontend
+   - Next.js 15.3.2
+   - React 19
+   - TypeScript
+   - Native CSS
+   - TipTap for rich text editing
+   - PhotoPicker for 
+   - Framer Motion for animations
 
-#### **Backend**
+- Backend
 - Firebase (Firestore, Authentication, Storage)
 - Firebase Admin SDK for server-side operations
 
-#### **AI Integration**
-- OpenAI integration for content assistance
+#### Planned Features
+- AI Integration
+   - OpenAI integration for content assistance
+- Media Services
+  - OneDrive 
+  - Google Photos
+  - Apple Photos
 
-#### **Media Services**
-- OneDrive Integration (primary photo source)
-- Google Photos API (future support)
-- Apple Photos (future support)
-
-### **Data Models**
-
-#### **Entry Model**
-```typescript
-interface Entry {
-  id: string;
-  title: string;
-  content: string;
-  type: 'story' | 'reflection';
-  status: 'draft' | 'published';
-  visibility: 'private' | 'family' | 'public';
-  tags: string[];
-  coverPhoto?: PhotoMetadata;  // Optional cover photo for the entry
-  media: PhotoMetadata[];      // Array of photo references used in the content
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-  publishedAt?: Timestamp;
-  author: {
-    id: string;
-    name: string;
-  };
-}
-```
-
-#### **PhotoMetadata Model**
-```typescript
-// Full metadata for photos embedded in entries
-interface PhotoMetadata {
-  id: string;
-  filename: string;
-  path: string;
-  albumId: string;
-  albumName: string;
-  size: number;
-  lastModified: number;
-  thumbnailUrl: string;
-  previewUrl: string;
-  caption?: string;
-  tags?: string[];
-}
-
-// Simplified metadata for photos in albums/photo picker
-interface AlbumPhotoMetadata {
-  id: string;
-  filename: string;
-  path: string;
-  thumbnailUrl: string;
-  previewUrl: string;
-  caption?: string;
-}
-```
-
-The full `PhotoMetadata` is required for:
-- Photos embedded in entry content
-- Entry cover photos
-- Photos that need to maintain album relationships
-
-The simplified `AlbumPhotoMetadata` is used for:
-- Photo picker browsing
-- Album views
-- General photo browsing
-
-#### **Album Model**
-```typescript
-interface AdminAlbum {
-  id: string;
-  name: string;
-  description: string;
-  mediaCount: number;
-  tags: string[];
-  lastModifiedBy: string;
-  lastModifiedAt: Date;
-  metadata: {
-    coverImageId?: string;
-    visibility: 'private' | 'family' | 'public';
-    creationDate: Date;
-    lastMediaAdded: Date;
-  };
-  media: {
-    id: string;
-    order: number;
-    addedAt: Date;
-    addedBy: string;
-  }[];
-  history: {
-    action: string;
-    timestamp: Date;
-    userId: string;
-    changes: Record<string, any>;
-  }[];
-}
-```
-
-#### **Tag Model**
-```typescript
-interface AdminTag {
-  id: string;
-  name: string;
-  dimension: string;
-  parentId: string | null;
-  order: number;
-  entryCount: number;
-  lastModifiedBy: string;
-  lastModifiedAt: Date;
-  metadata: {
-    description?: string;
-    color?: string;
-    icon?: string;
-    isSystem: boolean;
-  };
-  relationships: {
-    parent?: string;
-    children: string[];
-    siblings: string[];
-  };
-  history: {
-    action: string;
-    timestamp: Date;
-    userId: string;
-    changes: Record<string, any>;
-  }[];
-}
-```
-
-#### **User Model**
-```typescript
-interface User {
-  id: string;
-  email: string;
-  displayName: string;
-  photoURL?: string;
-  roles: string[];
-  metadata: {
-    createdAt: Date;
-    lastLogin: Date;
-    lastPasswordChange: Date;
-    emailVerified: boolean;
-  };
-  settings: {
-    twoFactorEnabled: boolean;
-    notificationPreferences: {
-      email: boolean;
-      push: boolean;
-    };
-    securitySettings: {
-      sessionTimeout: number;
-      requireReauth: boolean;
-    };
-  };
-}
-```
+❓ Open Questions:
 
 ### **Authentication**
-  - ### Overall Strategy
-       - Decouple application login from photo service connections to support multiple providers.
-       - Centralize security logic in the Next.js backend, not in client-side code or complex database rules.
-     - ### Primary Identity Provider
-       - Manages user login for the application itself (e.g., email/password, social sign-in).
-       - This is where user roles ('admin', 'viewer') are defined and managed.
-       - A library like `lucia-auth` or a simple provider will be used.
-     - ### Connected Accounts (for Photo Services)
-       - The logged-in admin user can connect to photo services (OneDrive, Google Photos) on a settings page.
-       - Each connection uses a standard OAuth 2.0 flow.
-       - Securely stored tokens are used by the backend to fetch photos on the user's behalf.
-     - ### Firebase for Data Access
-       - The `firebase-admin` SDK will be used on the server-side for database operations.
-       - It is NOT used for user sign-in.
-       - Access is controlled via our own API routes, which check the user's role before interacting with Firestore.
-     - ### Role-Based Access Control (RBAC)
-       - Handled by the primary identity provider.
-       - Server-side API routes will verify user's role (`admin` or `viewer`) before allowing access to resources.
-Development Notes:
-Next: Implement Google authentication
-Depends on: Basic email/password auth
-Notes: Need to set up OAuth credentials first
+===========================================
+Status: 🟡 Operational
+
+- Overall Strategy
+  - Decouple application login from photo service connections to support multiple providers.
+  - Centralize security logic in the Next.js backend, not in client-side code or complex database rules.
+- Primary Identity Provider
+  - Manages user login for the application itself (e.g., email/password, social sign-in).
+  - This is where user roles ('admin', 'viewer') are defined and managed.
+  - A library like `lucia-auth` or a simple provider will be used.
+- Connected Accounts (for Photo Services)
+  - The logged-in admin user can connect to photo services (OneDrive, Google Photos) on a settings page.
+  - Each connection uses a standard OAuth 2.0 flow.
+  - Securely stored tokens are used by the backend to fetch photos on the user's behalf.
+- Firebase for Data Access
+  - The `firebase-admin` SDK will be used on the server-side for database operations.
+  - It is NOT used for user sign-in.
+  - Access is controlled via our own API routes, which check the user's role before interacting with Firestore.
+- Role-Based Access Control (RBAC)
+  - Handled by the primary identity provider.
+  - Server-side API routes will verify user's role (`admin` or `viewer`) before allowing access to resources.
+
+❓ Open Questions:
+- How with the various authentications work?
 
 #### **Firebase Auth**
+--------------------------------------
 Status: 🟡 Operational
-Location: `src/lib/services/auth.tsx`
 
 ##### Current Features
 - Basic email/password authentication
@@ -1102,9 +1096,12 @@ Location: `src/lib/services/auth.tsx`
 - Enhanced error handling
 - Security rules implementation
 
+❓ Open Questions:
+- How has this changed with architecture change?
+
 #### **Session Management**
+---------------------------------------
 Status: ⭕ Planned
-Location: `src/lib/auth/session/`
 
 ##### Current Features
 - Basic session persistence through Firebase Auth
@@ -1120,12 +1117,15 @@ Location: `src/lib/auth/session/`
 - Security alerts
 - Device management
 
+❓ Open Questions:
+- What is this?
+
 #### **Role Management**
+------------------------------------------
 Status: ⭕ Planned
-Location: `src/lib/auth/roles/`
 
 ##### Current Features
-- Basic role definition in User interface
+- Basic role definition in User interface ??
 
 ##### Planned Features
 - Role definitions
@@ -1137,11 +1137,15 @@ Location: `src/lib/auth/roles/`
 - Role analytics
 - Role templates
 
+❓ Open Questions:
+
+
 ### **Backup System**
+======================================
 
 #### **Automatic Backups**
+--------------------------------------
 Status: 🟡 Operational
-Location: `src/lib/backup/`
 
 ##### Current Features
 - Daily backups
@@ -1157,9 +1161,12 @@ Location: `src/lib/backup/`
 - Backup encryption
 - Backup analytics
 
+❓ Open Questions:
+- Review this...
+
 #### **Manual Backups**
+--------------------------------------
 Status: 🟡 Operational
-Location: `src/lib/backup/manual/`
 
 ##### Current Features
 - On-demand backups
@@ -1175,9 +1182,12 @@ Location: `src/lib/backup/manual/`
 - Backup scheduling
 - Backup sharing
 
+❓ Open Questions:
+- Review this...
+
 #### **Recovery**
+---------------------------------------
 Status: 🟡 Operational
-Location: `src/lib/backup/recovery/`
 
 ##### Current Features
 - Point-in-time recovery
@@ -1193,11 +1203,14 @@ Location: `src/lib/backup/recovery/`
 - Recovery analytics
 - Recovery templates
 
+❓ Open Questions:
+- Review this...
+
 ### **Database**
+=======================================
 
 #### **Firestore Structure**
 Status: 🟡 Operational
-Location: `src/lib/firebase/`
 
 ##### Current Features
 - Entry collection
@@ -1213,9 +1226,12 @@ Location: `src/lib/firebase/`
 - Data validation
 - Data migration
 
+❓ Open Questions:
+- Review this...
+
 #### **Security Rules**
+-----------------------------------------
 Status: 🟡 Operational
-Location: `firebase/firestore.rules`
 
 ##### Current Features
 - Data access rules
@@ -1231,9 +1247,12 @@ Location: `firebase/firestore.rules`
 - Rule analytics
 - Rule testing
 
+❓ Open Questions:
+- Are these required anymore since changing client/server architecture?
+
 #### **Data Validation**
+---------------------------------------------
 Status: 🟡 Operational
-Location: `src/lib/validation/` ???
 
 ##### Current Features
 - Input validation
@@ -1247,12 +1266,15 @@ Location: `src/lib/validation/` ???
 - Error handling
 - Validation logging
 
-### **Image Integration**
+❓ Open Questions:
+- What is this data validation in the context of?
 
+### **IMAGE INTEGRATION**
+====================================================================================================
+
+#### **Image Strategy**
 The Image Integration system serves as the bridge between the journal and external photo services, 
 enabling users to seamlessly incorporate their existing photo collections into their journal entries. 
-
-**Development Note:** The current implementation uses a local file system proxy to mock an external service like OneDrive. API routes (`/api/photos/...`) read directly from the local hard drive for development and testing purposes. This allows for the development of front-end features without requiring live cloud credentials.
 
 The system is designed to:
 
@@ -1262,274 +1284,81 @@ The system is designed to:
 4. Optimize performance through caching and lazy loading
 5. Provide a consistent user experience across different photo sources
 
+### Core Data Models: Album vs. Source Collection
+
+To manage photos effectively and support multiple external services, the system architecture is built around two distinct data models:
+
+*   **Album:** An **Album** is a curated collection of photos and content that is part of the journal itself. It is the primary way users will view grouped photos within the application. Each Album has its own metadata (title, caption, tags) and a specific list of photos selected by the author. Albums are stored in the project's Firestore database and managed via the `/api/albums` endpoint.
+
+*   **Source Collection:** A **Source Collection** is a generic representation of a grouping of photos from an external service. This could be a **folder** (from the local drive or OneDrive) or an **album** (from Google Photos or Apple Photos). Source Collections are used to populate the `PhotoPicker` component, allowing the administrator to browse and select images from their original location. They are read-only and are fetched via the `/api/photos/source-collections` endpoint. This abstraction allows the UI to remain consistent while the backend handles the unique details of each photo service.
+
 Key Design Principles:
-- Store only necessary data in Firebase (metadata, references, thumbnails)
-- Use external services for original photo storage
-- Implement efficient caching for frequently accessed content
-- Maintain photo metadata and relationships
-- Support multiple photo sources with a unified interface
-
-    - ### Abstracted Service Layer
-       - A generic "photo service" interface will be used in the application.
-       - This allows plugging in different photo sources (local, OneDrive, Google Photos) without changing UI components.
-     - ### Strict Client-Server Separation
-       - Client components (e.g., `PhotoPicker`) are for UI only.
-       - They make requests to internal API routes (e.g., `/api/photos/list`).
-       - The server-side API route contains the logic to talk to the actual photo source. This prevents leaking keys or using server-only modules (`fs`) on the client.
-     - ### OneDrive Integration
-       - **Interim:** A `LocalPhotoService` will read from the local OneDrive folder via `fs` module for rapid development.
-       - **Final:** A `OneDriveCloudService` will use stored OAuth tokens to call the Microsoft Graph API.
-     - ### Google Photos API
-       - A `GooglePhotosService` will use stored OAuth tokens to call the Google Photos API.
-     - ### Image Processing
-       - Use Next.js Image Optimization to serve efficient, web-friendly images.
-     - ### Storage Strategy
-       - Photos remain in their original source (OneDrive, etc.).
-       - Firestore will only store metadata and references, not binary image data.
-Implementation Plan:
-
-1. **Phase 1: Foundation Setup**
-   ```
-   A. OneDrive Integration (Primary Source)
-   - Set up OneDrive API access
-   - Create folder structure reader
-   - Implement basic photo access
-   - Set up virtual album mapping
-   
-   B. Storage Infrastructure
-   - Configure Firebase Storage
-   - Set up thumbnail generation
-   - Implement preview system
-   - Create caching mechanism
-   ```
-
-2. **Phase 2: Core Album System**
-   ```
-   A. Virtual Album Structure
-   - Create album data model
-   - Implement album-photo relationships
-   - Set up tag system integration
-   - Create metadata storage
-   
-   B. Photo Management
-   - Implement photo metadata tracking
-   - Create service mapping system
-   - Set up sync mechanism
-   - Implement basic search
-   ```
-
-3. **Phase 3: Google Photos Integration**
-   ```
-   A. Google Photos Setup
-   - Set up Google Cloud Project
-   - Configure OAuth
-   - Implement API access
-   
-   B. Integration
-   - Map Google albums to virtual albums
-   - Implement photo mapping
-   - Set up sync system
-   - Handle conflicts
-   ```
-
-4. **Phase 4: User Interface**
-   ```
-   A. Album Management
-   - Create album browser
-   - Implement photo grid
-   - Add drag-and-drop
-   - Create preview system
-   
-   B. Photo Operations
-   - Add tag management
-   - Implement caption system
-   - Create search interface
-   - Add export functionality
-   ```
-
-5. **Phase 5: Optimization**
-   ```
-   A. Performance
-   - Implement lazy loading
-   - Optimize caching
-   - Add compression
-   - Improve load times
-   
-   B. Features
-   - Add batch operations
-   - Implement advanced search
-   - Create analytics
-   - Add backup system
-   ```
-
-Storage Strategy:
-- Originals stay in source services
-- We store thumbnails (~20KB each)
-- We store previews (~100KB each)
-- We maintain metadata in Firestore
-- Estimated storage: ~4% of original size
-
-Album Structure:
-- Virtual albums independent of sources
-- Can combine photos from multiple services
-- Maintains own metadata and relationships
-- Syncs with sources on our schedule
-
-Photo Management:
-- Tracks photos across services
-- Maintains consistent metadata
-- Handles photo movement
-- Supports multiple sources
-
-Development Notes:
-Next: Basic image upload to Firebase
-Depends on: Firebase Storage setup
-Notes: Start with single image upload before adding batch processing
-
-#### Google Photos API
-Status: ⭕ Planned
-Location: `src/lib/services/google-photos/` ???
-
-##### Current Features
-- None
-
-#### **Image Integration**
-Status: 🟡 Operational
-Location: `src/components/common/`
-
-##### Current Features
-- Photo picker component for selecting photos
-- Rich text editor integration for photo placement
-- Cover photo support for entries
-- Photo metadata management
-- Basic image upload
-- File type validation
-- File size validation (5MB limit)
-- Upload progress tracking
-- Error handling
-- Firebase Storage integration
-
-##### Current Issues
-- Photo references not persisting in entries
-- Need to implement proper photo caching
-- Need to implement efficient photo loading strategies
-
-##### Planned Features
-- Image optimization
-- Thumbnail generation
-- Format conversion
-- Metadata extraction
-- Batch processing
-- Advanced validation
-- Compression options
-- Google Photos API integration
-- Apple Photos integration
-- Planned Features
-- Photo import
-- Album sync
-- Photo metadata
-- Photo organization
-- Authentication
-- Rate limiting
-- Error handling
-- Caching strategy
-##### Planned Features
-- Photo import
-- Album sync
-- Photo metadata
-- Photo organization
-- OAuth integration
-- Rate limiting
-- Error handling
-- Caching strategy
-
-- Sourcing photos from OneDrive
-- Limited to one hard-coded folder.
-- Implemented a photpicker that referenced one directory. 
-   - Navigate through directories or albums to get to images. 
-- Cover page in the edit page, photo picker to select a photo
-   - Change or remove it. 
-- Photopicker embedded in rich text editor to insert a photo
-- Size, align, apect ratio and caption of image.
-- API endpoint (/api/photos/albums) reads this folder and creates metadata for each photo
-   - Metadata includes paths, URLs, and basic photo information
-The PhotoPicker component displays these photos using the metadata
-   - create a PhotoMetadata object
-   For cover photos: This metadata is stored directly in the entry's coverPhoto field
-   For embedded photos: The metadata is used to create an image element in the rich text editor
-- Separation between photo storage (OneDrive) and photo usage (entries) is more complex than initially thought
-We need two different metadata models: one for browsing (AlbumPhotoMetadata) and one for usage (PhotoMetadata)
-New Requirements:
-We need a proper album navigation system in the PhotoPicker
-
-
-Medium Term:
-Implement album navigation in the PhotoPicker
-Implement proper photo caching and optimization
-Long Term:
-Add support for multiple photo sources
-Implement advanced photo organization features
-Add batch processing capabilities
-
-# Image Handling Strategy
-
-## Aspect Ratios & Sizing
+- Abstracted Service Layer
+  - A generic "photo service" interface will be used in the application.
+  - Support multiple photo sources with a unified interface
+   -Local, OneDrive, Google Photos without changing UI components.
+- Strict Client-Server Separation
+  - Client components (e.g., `PhotoPicker`) are for UI only.
+  - They make requests to internal API routes (e.g., `/api/photos/list`).
+  - The server-side API route contains the logic to talk to the actual photo source, preventing leaking keys or using server-only modules (`fs`) on the client.
+- Photos remain in their original source (OneDrive, etc.).
+  - Firestore will only store metadata, references, thumbnails, not binary image data.  
+- Optimize image processing
+  - Implement efficient caching for frequently accessed content
+  - Next.js Image Optimization to serve efficient, web-friendly images.
+Aspect Ratio and sizing managed
 - Images are classified by natural dimensions (portrait/landscape/square)
 - Automatically fitted to closest standard ratio using `object-fit: cover`
 - No empty space or distortion allowed in layouts
-
-## Cover Images
-- Default to landscape orientation for cards and entry headers
-- Portrait images handled in two ways:
-  1. Smart cropping: AI-powered detection of important content areas to guide cropping
-  2. Blurred background: Portrait images displayed on blurred, stretched version of same image
-
-## Entry Content Images
-- Current toolbar controls: size (small/medium/large) and alignment (left/center/right)
-- Future enhancement: fill mode toggle (cover/contain) for flexible content layout
-
-## Album Layout
-- Quick CSS toggle for image display (cover/contain)
-- Changes not persisted, allowing experimentation with layouts
-- Separate from entry content image controls
-
-## Technical Implementation
 - Original image dimensions preserved
 - Display preferences stored in data attributes
 - CSS-based transformations for performance
 - No permanent image modifications
+- Cover Images (Entry/Album) Managed
+  - Default to landscape orientation for cards and entry headers
+  - Portrait images handled in two ways:
+    - Smart cropping: AI-powered detection of important content areas to guide cropping
+    - Blurred background: Portrait images displayed on blurred, stretched version of same image
 
-#### **OneDrive Integration**
+❓ Open Questions:
+- Why do we need two different metadata models: one for browsing (AlbumPhotoMetadata) and one for usage (PhotoMetadata)?
+
+#### **Image Integration**
 Status: 🟡 Operational
-Location: `src/lib/services/onedrive/`
 
 ##### Current Features
-- Local config file for album mappings
-- Basic folder structure integration
-- Album path configuration
-- Basic API integration
+- PhotoPicker for selecting photos
+- Integrated with Entry and Album new and edit.
+- Entry/Album data models updated.
+- Photo metadata management
 
-##### Current Issues
-- API endpoint returning 500 errors
-- Need to implement proper file system access
-- Need to establish secure connection to OneDrive API
+##### Planned Features
+- Image optimization ?
+- Thumbnail generation ?
+- Format conversion ?
+- Metadata extraction ?
 
-
-
-
+❓ Open Questions
 
 #### **Storage Strategy**
+-------------------------------------------------
 Status: 🟡 Operational
-Location: `src/lib/services/storage/`
 
-##### Current Features
+Storage Strategy:
+- Originals stay in source services
+- Store thumbnails (~20KB each)
+- Store previews (~100KB each)
+- Maintain metadata in Firestore
+- Estimated storage: ~4% of original size
+
+##### Current Features  ??
 - Firebase Storage integration
 - Basic file upload
 - Download URL generation
 - File organization structure
 - Basic error handling
 
-##### Planned Features
+##### Planned Features ??
 - Storage optimization
   - Image compression
   - Format optimization
@@ -1551,46 +1380,91 @@ Location: `src/lib/services/storage/`
   - Encryption
   - Audit logging
 
+❓ Open Questions:
+
+
+### **Photopicker**
+--------------------------------------------------------------
+Status: 🟡 Operational
+
+Photopicker for selecting and assigning photos to entries and albums.
+
+  #### Current Features
+   - Photopicker component integrated with
+      - Entry new and edit
+      - Album new
+   - Access to folder structure
+
+  #### Planned Features
+  - Fix current error of not returning images that are present
+  - Collapsible/Expandable Tree structure
+  - singleSelect, multiSelect
+  - Integrate with Album edit
+
+  ❓ Open Questions:
+
+
+#### **Local Drive Integration** 
+--------------------------------------------------------------
+Status: 🟡 Operational
+
+Use local drive until operational functionality solid, then link to online sources.
+
+  ##### Current Features
+   - Local drive API 
+   - Root directory C:/users/alanb/onedrive/pictures
+   - Deeply nested subdirectories
+   - Subdirectory structure for photopicker
+   - Navigation of directories to images
+
+  ##### Planned Features
+  - Fix current error of not returning images that are present
+  - Limit integration due to limitations
+   
+❓ Open Questions:
+
+#### **OneDrive Integration**
+-------------------------------------------
+Status: ⭕ Planned
+
+##### Current Features
+- Some basic elements for early experimentation - not operational
+  - Local config file for album mappings
+  - Basic folder structure integration
+  - Album path configuration
+  - Basic API integration
+
+##### Planned Features
+- Proper file system access
+
+❓ Open Questions:
+
+
+#### **Google Photos Integration**
+----------------------------------------------------
+Status: ⭕ Planned
+
+##### Current Features
+- None
+
+##### Planned Features
+- Integration API
+
+❓ Open Questions:
+
+
+#### **Apple Photos Integration**
+----------------------------------------------------
+Status: ⭕ Planned
+
+##### Current Features
+- None
+
+##### Planned Features
+- Integration API
+
+❓ Open Questions:
+
+
 [Back to Top](#myjournal-project)
 
-## 7. Implementation Sequence
-
-### Phase 1: Core Functionality
-1. Authentication
-   - [x] Basic email/password
-   - [ ] Google auth
-   - [ ] Enhanced security
-
-2. Basic Storage
-   - [x] Firebase Storage setup
-   - [ ] Image upload
-   - [ ] Basic optimization
-
-3. Data Management
-   - [x] Basic models
-   - [ ] Enhanced validation
-   - [ ] Relationships
-
-### Phase 2: Media Integration
-1. Image Processing
-   - [ ] Basic upload
-   - [ ] Thumbnails
-   - [ ] Optimization
-
-2. Photo Services
-   - [ ] Google Photos setup
-   - [ ] Basic integration
-   - [ ] Album sync
-
-### Phase 3: Enhanced Features
-1. User Experience
-   - [ ] Advanced navigation
-   - [ ] Search improvements
-   - [ ] Performance optimization
-
-2. Content Management
-   - [ ] Batch operations
-   - [ ] Advanced filtering
-   - [ ] Analytics
-
-[Back to Top](#myjournal-project) 

@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { PhotoService } from '@/lib/services/photos/photoService';
-import { PhotoMetadata, TreeNode } from '@/lib/types/album';
+import { PhotoService, PhotoMetadata, TreeNode } from '@/lib/services/photos/photoService';
 import styles from './PhotoPicker.module.css';
 
 interface PhotoPickerProps {
@@ -39,6 +38,8 @@ export default function PhotoPicker({ onPhotoSelect, onMultiPhotoSelect, multiSe
   const [selectedPhotos, setSelectedPhotos] = useState<PhotoMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // This instance will now be used for all data fetching.
   const photoService = new PhotoService();
 
   useEffect(() => {
@@ -49,15 +50,13 @@ export default function PhotoPicker({ onPhotoSelect, onMultiPhotoSelect, multiSe
   const loadInitialData = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/photos/folder-tree');
-      if (!response.ok) {
-        throw new Error('Failed to fetch folder tree from API');
-      }
-      const tree = await response.json();
+      setError(null);
+      // REPLACED raw fetch with a call to the photo service
+      const tree = await photoService.getFolderTree();
       setFolderTree(tree);
-    } catch (err) {
-      console.error('Error loading folder tree:', err);
-      setError('Failed to load folder structure from OneDrive');
+    } catch (err: any) {
+      console.error('Error in loadInitialData:', err);
+      setError(err.message || 'Failed to load folder structure.');
     } finally {
       setLoading(false);
     }
@@ -75,24 +74,12 @@ export default function PhotoPicker({ onPhotoSelect, onMultiPhotoSelect, multiSe
     setSelectedPhotos([]);
 
     try {
-      const response = await fetch('/api/photos/folder-contents', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ folderPath: node.id }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch photos for folder: ${node.name}`);
-      }
-
-      const folderPhotos: PhotoMetadata[] = await response.json();
+      // REPLACED raw fetch with a call to the photo service
+      const folderPhotos = await photoService.getFolderContents(node.id);
       setPhotos(folderPhotos);
-
-    } catch (err) {
-      console.error('Error loading folder contents:', err);
-      setError('Failed to load photos from the selected folder.');
+    } catch (err: any) {
+      console.error('Error in handleFolderSelect:', err);
+      setError(err.message || `Failed to load photos for folder: ${node.name}`);
     } finally {
       setLoading(false);
     }
@@ -142,7 +129,6 @@ export default function PhotoPicker({ onPhotoSelect, onMultiPhotoSelect, multiSe
         </div>
         
         <div className={styles.content}>
-          {/* Album List -> Becomes Folder Tree */}
           <div className={styles.albumList}>
             <h3 className={styles.albumTitle}>Photo Folders</h3>
             {folderTree.length > 0 ? (
@@ -152,7 +138,6 @@ export default function PhotoPicker({ onPhotoSelect, onMultiPhotoSelect, multiSe
             )}
           </div>
 
-          {/* Photo Grid */}
           <div className={styles.photoGrid}>
             {loading ? (
               <div className={styles.loading}>Loading photos...</div>
@@ -200,4 +185,4 @@ export default function PhotoPicker({ onPhotoSelect, onMultiPhotoSelect, multiSe
       </div>
     </div>
   );
-} 
+}

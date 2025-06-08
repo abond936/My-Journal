@@ -35,7 +35,7 @@ export interface Album {
 
 
 // This interface is used for the data coming from the OneDrive API
-export interface SourceAlbum {
+export interface SourceCollection {
   id: string;
   name: string;
   description: string;
@@ -44,6 +44,7 @@ export interface SourceAlbum {
   photos: PhotoMetadata[];
   tags: string[];
   isEnabled: boolean;
+  sourceProvider: 'onedrive' | 'google-photos' | 'local-drive' | 'file-system';
 }
 
 // Replace the old AlbumImage interface with this new, robust model.
