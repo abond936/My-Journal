@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { PhotoService, PhotoMetadata, TreeNode } from '@/lib/services/photos/photoService';
+import Image from 'next/image';
+import { PhotoService } from '@/lib/services/photos/photoService';
+import { PhotoMetadata, TreeNode } from '@/lib/types/photo'; // Import directly from the source
 import styles from './PhotoPicker.module.css';
 
 interface PhotoPickerProps {
@@ -39,7 +41,6 @@ export default function PhotoPicker({ onPhotoSelect, onMultiPhotoSelect, multiSe
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // This instance will now be used for all data fetching.
   const photoService = new PhotoService();
 
   useEffect(() => {
@@ -51,7 +52,6 @@ export default function PhotoPicker({ onPhotoSelect, onMultiPhotoSelect, multiSe
     try {
       setLoading(true);
       setError(null);
-      // REPLACED raw fetch with a call to the photo service
       const tree = await photoService.getFolderTree();
       setFolderTree(tree);
     } catch (err: any) {
@@ -74,7 +74,6 @@ export default function PhotoPicker({ onPhotoSelect, onMultiPhotoSelect, multiSe
     setSelectedPhotos([]);
 
     try {
-      // REPLACED raw fetch with a call to the photo service
       const folderPhotos = await photoService.getFolderContents(node.id);
       setPhotos(folderPhotos);
     } catch (err: any) {
@@ -120,12 +119,7 @@ export default function PhotoPicker({ onPhotoSelect, onMultiPhotoSelect, multiSe
       <div className={styles.container}>
         <div className={styles.header}>
           <h2 className={styles.title}>Select Photo</h2>
-          <button
-            onClick={onClose}
-            className={styles.closeButton}
-          >
-            ✕
-          </button>
+          <button onClick={onClose} className={styles.closeButton}>✕</button>
         </div>
         
         <div className={styles.content}>
@@ -152,17 +146,15 @@ export default function PhotoPicker({ onPhotoSelect, onMultiPhotoSelect, multiSe
                       onClick={() => handlePhotoClick(photo)}
                     >
                       {isSelected && <div className={styles.checkmark}>✓</div>}
-                      <img
-                        src={photo.thumbnailUrl}
+                      {/* REPLACED standard <img> with Next.js <Image> */}
+                      <Image
+                        src={photo.path} // Use the simple web path
                         alt={photo.filename}
+                        width={150} // Provide a base width for the grid
+                        height={150} // Provide a base height for the grid
                         className={styles.photoImage}
-                        onError={(e) => {
-                          console.error('Error loading image:', photo.thumbnailUrl);
-                          e.currentTarget.src = '/placeholder-image.png';
-                        }}
-                        onLoad={() => {
-                          console.log('Image loaded successfully:', photo.thumbnailUrl);
-                        }}
+                        // The 'style' prop ensures the image covers the grid cell without distortion.
+                        style={{ objectFit: 'cover' }}
                       />
                     </div>
                   );

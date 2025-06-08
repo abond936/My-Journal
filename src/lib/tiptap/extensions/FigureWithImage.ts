@@ -9,82 +9,52 @@ export interface FigureWithImageOptions {
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     figureWithImage: {
-      /**
-       * Add a figure with an image
-       */
-      setFigureWithImage: (options: { src: string; alt?: string; caption?: string }) => ReturnType;
+      setFigureWithImage: (options: { 
+        src: string; 
+        alt?: string; 
+        caption?: string;
+        // ADDED width and height to the command options
+        width: number;
+        height: number;
+      }) => ReturnType;
     };
   }
 }
 
 export const FigureWithImage = Node.create<FigureWithImageOptions>({
   name: 'figureWithImage',
-
   group: 'block',
-
   content: 'text*',
-
   draggable: true,
-
   isolating: true,
 
   addAttributes() {
     return {
-      src: {
-        default: null,
-        parseHTML: element => element.querySelector('img')?.getAttribute('src'),
-      },
-      alt: {
-        default: null,
-        parseHTML: element => element.querySelector('img')?.getAttribute('alt'),
-      },
-      'data-size': {
-        default: 'medium',
-        parseHTML: element => element.getAttribute('data-size') || 'medium',
-      },
-      'data-alignment': {
-        default: 'left',
-        parseHTML: element => element.getAttribute('data-alignment') || 'left',
-      },
-      'data-aspect-ratio': {
-        default: '4:3',
-        parseHTML: element => element.getAttribute('data-aspect-ratio') || '4:3',
-      },
+      src: { default: null },
+      alt: { default: null },
+      // ADDED width and height attributes to the node itself
+      width: { default: null },
+      height: { default: null },
+      'data-size': { default: 'medium' },
+      'data-alignment': { default: 'left' },
     };
   },
 
   parseHTML() {
     return [
       {
-        tag: 'figure',
+        tag: 'figure[data-figure-with-image]',
         contentElement: 'figcaption',
       },
-      {
-        tag: 'img',
-        getAttrs: (node) => {
-            // if it is already in a figure, we don't want to wrap it again
-            if ((node as HTMLElement).parentElement?.tagName === 'FIGURE') {
-                return false
-            }
-            return {}
-        }
-      }
     ];
   },
 
   renderHTML({ HTMLAttributes, node }) {
-    const { 'data-size': size, 'data-alignment': alignment, 'data-aspect-ratio': aspectRatio } = node.attrs;
-    
-    const figureAttrs = {
-        'data-size': size,
-        'data-alignment': alignment,
-        'data-aspect-ratio': aspectRatio,
-    }
-
+    // This is just a fallback for non-React environments
     return [
       'figure',
-      mergeAttributes(this.options.HTMLAttributes, figureAttrs),
-      ['img', { src: node.attrs.src, alt: node.attrs.alt, class: 'image' }],
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { 'data-figure-with-image': '' }),
+      ['img', { src: node.attrs.src, alt: node.attrs.alt, width: node.attrs.width, height: node.attrs.height }],
       ['figcaption', 0],
     ];
   },
@@ -92,6 +62,11 @@ export const FigureWithImage = Node.create<FigureWithImageOptions>({
   addCommands() {
     return {
       setFigureWithImage: options => ({ commands }) => {
+        // Ensure all required attributes are provided
+        if (!options.src || !options.width || !options.height) {
+          console.error("FigureWithImage requires src, width, and height.");
+          return false;
+        }
         return commands.insertContent({
           type: this.name,
           attrs: options,
@@ -103,4 +78,4 @@ export const FigureWithImage = Node.create<FigureWithImageOptions>({
   addNodeView() {
     return ReactNodeViewRenderer(FigureWithImageView);
   },
-}); 
+});

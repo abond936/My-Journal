@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { getTags } from '@/lib/services/tagService';
-import { Album, PhotoMetadata } from '@/lib/types/album';
+import { Album } from '@/lib/types/album';
+import { PhotoMetadata } from '@/lib/types/photo';
 import { Tag } from '@/lib/types/tag';
 import styles from '@/app/admin/album-admin/album-admin.module.css';
 import PhotoPicker from '@/components/PhotoPicker';
