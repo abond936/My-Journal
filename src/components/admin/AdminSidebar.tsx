@@ -4,41 +4,28 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import styles from './AdminSidebar.module.css';
 
+const adminLinks = [
+  { href: '/admin/entry-admin', label: 'Entries' },
+  { href: '/admin/album-admin', label: 'Albums' },
+  { href: '/admin/tag-admin', label: 'Tags' },
+  // Add other admin links here
+];
+
 export default function AdminSidebar() {
   const pathname = usePathname();
-  const isActive = (path: string) => pathname.startsWith(path);
 
   return (
-    <nav className={styles.adminNav}>
-      <div className={styles.section}>
-        <h3>Content Management</h3>
-        <ul>
-          <li>
-            <Link 
-              href="/admin/entry-admin" 
-              className={isActive('/admin/entry-admin') ? styles.active : ''}
-            >
-              Entries
+    <nav className={styles.sidebar}>
+      <h3>Admin Menu</h3>
+      <ul>
+        {adminLinks.map(link => (
+          <li key={link.href}>
+            <Link href={link.href} className={pathname === link.href ? styles.active : ''}>
+              {link.label}
             </Link>
           </li>
-          <li>
-            <Link 
-              href="/admin/album-admin" 
-              className={isActive('/admin/album-admin') ? styles.active : ''}
-            >
-              Albums
-            </Link>
-          </li>
-          <li>
-            <Link 
-              href="/admin/tag-admin" 
-              className={isActive('/admin/tag-admin') ? styles.active : ''}
-            >
-              Tags
-            </Link>
-          </li>
-        </ul>
-      </div>
+        ))}
+      </ul>
     </nav>
   );
 } 

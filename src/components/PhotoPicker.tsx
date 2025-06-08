@@ -2,57 +2,71 @@
 
 import { useState, useEffect } from 'react';
 import { PhotoService } from '@/lib/services/photos/photoService';
-import { Album, PhotoMetadata } from '@/lib/services/photos/photoService';
+import { Album, PhotoMetadata, TreeNode } from '@/lib/types/album';
 import styles from './PhotoPicker.module.css';
 
 interface PhotoPickerProps {
-  onPhotoSelect: (photo: PhotoMetadata) => void;
+  onPhotoSelect?: (photo: PhotoMetadata) => void;
+  onMultiPhotoSelect?: (photos: PhotoMetadata[]) => void;
+  multiSelect?: boolean;
   onClose: () => void;
 }
 
-export default function PhotoPicker({ onPhotoSelect, onClose }: PhotoPickerProps) {
+const FolderTree = ({ nodes, onSelect, selectedId }: { nodes: TreeNode[], onSelect: (node: TreeNode) => void, selectedId: string | null }) => {
+  return (
+    <ul className={styles.tree}>
+      {nodes.map(node => (
+        <li key={node.id}>
+          <div 
+            onClick={() => onSelect(node)} 
+            className={`${styles.treeNode} ${selectedId === node.id ? styles.treeNodeSelected : ''}`}
+          >
+            {node.name}
+          </div>
+          {node.children && node.children.length > 0 && (
+            <FolderTree nodes={node.children} onSelect={onSelect} selectedId={selectedId} />
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+};
+
+export default function PhotoPicker({ onPhotoSelect, onMultiPhotoSelect, multiSelect = false, onClose }: PhotoPickerProps) {
   const [albums, setAlbums] = useState<Album[]>([]);
+  const [folderTree, setFolderTree] = useState<TreeNode[]>([]);
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
+  const [selectedPhotos, setSelectedPhotos] = useState<PhotoMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const photoService = new PhotoService();
 
   useEffect(() => {
     console.log('PhotoPicker mounted');
-    loadAlbums();
+    loadInitialData();
   }, []);
 
-  const loadAlbums = async () => {
+  const loadInitialData = async () => {
     try {
-      console.log('Loading albums...');
       setLoading(true);
-      const allAlbums = await photoService.getAllAlbums();
-      console.log('Loaded albums:', allAlbums);
-      
-      if (allAlbums.length === 0) {
-        console.warn('No albums found');
-      } else {
-        console.log('First album photos:', allAlbums[0].photos);
+      const response = await fetch('/api/photos/folder-tree');
+      if (!response.ok) {
+        throw new Error('Failed to fetch folder tree from API');
       }
-      
-      setAlbums(allAlbums);
-      if (allAlbums.length > 0) {
-        setSelectedAlbum(allAlbums[0]);
-      }
+      const tree = await response.json();
+      setFolderTree(tree);
     } catch (err) {
-      console.error('Error loading albums:', err);
-      setError('Failed to load albums');
+      console.error('Error loading folder tree:', err);
+      setError('Failed to load folder structure from OneDrive');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAlbumSelect = async (album: Album) => {
+  const handleAlbumSelect = async (node: TreeNode) => {
     try {
-      console.log('Selecting album:', album);
       setLoading(true);
-      const fullAlbum = await photoService.loadAlbum(album.id);
-      console.log('Loaded album details:', fullAlbum);
+      const fullAlbum = await photoService.loadAlbum(node.id);
       setSelectedAlbum(fullAlbum);
     } catch (err) {
       console.error('Error loading album:', err);
@@ -62,8 +76,30 @@ export default function PhotoPicker({ onPhotoSelect, onClose }: PhotoPickerProps
     }
   };
 
-  if (loading && albums.length === 0) {
-    return <div className={styles.loading}>Loading albums...</div>;
+  const handlePhotoClick = (photo: PhotoMetadata) => {
+    if (multiSelect) {
+      setSelectedPhotos(prev => {
+        if (prev.find(p => p.id === photo.id)) {
+          return prev.filter(p => p.id !== photo.id);
+        } else {
+          return [...prev, photo];
+        }
+      });
+    } else {
+      if(onPhotoSelect) {
+        onPhotoSelect(photo);
+      }
+    }
+  };
+
+  const handleDoneClick = () => {
+    if (multiSelect && onMultiPhotoSelect) {
+      onMultiPhotoSelect(selectedPhotos);
+    }
+  };
+
+  if (loading && folderTree.length === 0) {
+    return <div className={styles.loading}>Loading folder structure...</div>;
   }
 
   if (error) {
@@ -84,23 +120,13 @@ export default function PhotoPicker({ onPhotoSelect, onClose }: PhotoPickerProps
         </div>
         
         <div className={styles.content}>
-          {/* Album List */}
+          {/* Album List -> Becomes Folder Tree */}
           <div className={styles.albumList}>
             <h3 className={styles.albumTitle}>Albums</h3>
-            {albums && albums.length > 0 ? (
-              albums.map(album => (
-                <div
-                  key={album.id}
-                  className={`${styles.albumItem} ${
-                    selectedAlbum?.id === album.id ? styles.albumItemSelected : ''
-                  }`}
-                  onClick={() => handleAlbumSelect(album)}
-                >
-                  {album.name} ({album.photoCount} photos)
-                </div>
-              ))
+            {folderTree.length > 0 ? (
+              <FolderTree nodes={folderTree} onSelect={handleAlbumSelect} selectedId={selectedAlbum?.id || null} />
             ) : (
-              <div className={styles.noContent}>No albums available</div>
+              <div className={styles.noContent}>Loading folders...</div>
             )}
           </div>
 
@@ -111,13 +137,14 @@ export default function PhotoPicker({ onPhotoSelect, onClose }: PhotoPickerProps
             ) : selectedAlbum ? (
               <div className={styles.grid}>
                 {selectedAlbum.photos.map(photo => {
-                  console.log('Rendering photo:', photo);
+                  const isSelected = multiSelect && selectedPhotos.some(p => p.id === photo.id);
                   return (
                     <div
                       key={photo.id}
-                      className={styles.photoItem}
-                      onClick={() => onPhotoSelect(photo)}
+                      className={`${styles.photoItem} ${isSelected ? styles.photoItemSelected : ''}`}
+                      onClick={() => handlePhotoClick(photo)}
                     >
+                      {isSelected && <div className={styles.checkmark}>✓</div>}
                       <img
                         src={photo.thumbnailUrl}
                         alt={photo.filename}
@@ -139,6 +166,13 @@ export default function PhotoPicker({ onPhotoSelect, onClose }: PhotoPickerProps
             )}
           </div>
         </div>
+        {multiSelect && (
+          <div className={styles.footer}>
+            <button onClick={handleDoneClick} className={styles.doneButton} disabled={selectedPhotos.length === 0}>
+              Add {selectedPhotos.length} Photos
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

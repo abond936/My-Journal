@@ -1,30 +1,8 @@
 import { getConfig } from '@/lib/services/onedrive/config';
 import { AlbumMapping } from '@/lib/services/onedrive/albumConfig';
+import { Album, PhotoMetadata } from '@/lib/types/album';
 
-export interface PhotoMetadata {
-  id: string;
-  filename: string;
-  path: string;
-  albumId: string;
-  albumName: string;
-  tags: string[];
-  size: number;
-  lastModified: Date;
-  thumbnailUrl: string;
-  previewUrl: string;
-  caption?: string;
-}
-
-export interface Album {
-  id: string;
-  name: string;
-  description: string;
-  path: string;
-  photoCount: number;
-  photos: PhotoMetadata[];
-  tags: string[];
-  isEnabled: boolean;
-}
+export { PhotoMetadata, Album };
 
 export class PhotoService {
   async loadAlbum(albumId: string): Promise<Album> {

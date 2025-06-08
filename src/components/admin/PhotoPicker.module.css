@@ -1,0 +1,63 @@
+.pickerContainer {
+  display: flex;
+  height: 500px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.folderTree {
+  width: 250px;
+  height: 100%;
+  overflow-y: auto;
+  border-right: 1px solid #ccc;
+  padding: 10px;
+  background-color: #f9f9f9;
+}
+
+.tree ul {
+  padding-left: 20px;
+  list-style-type: none;
+  margin: 0;
+}
+
+.tree li {
+  padding: 2px 0; /* Reduced vertical padding */
+}
+
+.folderItem {
+  display: flex;
+  align-items: center;
+}
+
+.toggle {
+  cursor: pointer;
+  margin-right: 5px;
+  width: 15px;
+  display: inline-block;
+  text-align: center;
+  font-family: monospace; /* For consistent arrow rendering */
+  user-select: none; /* Prevent text selection on click */
+}
+
+.folderName {
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: 4px;
+  flex-grow: 1;
+}
+
+.folderName:hover {
+  background-color: #e9ecef;
+}
+
+.folderName.selected {
+  background-color: #0070f3;
+  color: white;
+}
+
+.photoGrid {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 10px;
+} 

@@ -1,55 +1,48 @@
+import { adminDb } from '@/lib/config/firebase/admin';
 import { Album } from '@/lib/types/album';
+import { FieldValue } from 'firebase-admin/firestore';
 
-// Mock data for development
-const mockAlbums: Album[] = [
-  {
-    id: '1',
-    title: 'Family Vacation 2024',
-    description: 'Photos from our summer vacation in the mountains',
-    coverImage: '/placeholder.jpg',
-    tags: ['who-1', 'what-1', 'when-1'],
-    mediaCount: 45,
-    createdAt: new Date('2024-03-15'),
-    updatedAt: new Date('2024-03-15'),
-    status: 'published'
-  },
-  {
-    id: '2',
-    title: 'City Life',
-    description: 'Urban photography collection',
-    coverImage: '/placeholder.jpg',
-    tags: ['where-1', 'reflection-1'],
-    mediaCount: 30,
-    createdAt: new Date('2024-03-10'),
-    updatedAt: new Date('2024-03-10'),
-    status: 'draft'
-  }
-];
+const albumsCollection = adminDb.collection('albums');
+
+export async function createAlbum(partialAlbum: Omit<Album, 'id' | 'createdAt' | 'updatedAt' | 'mediaCount' | 'images'>): Promise<Album> {
+  const newAlbumRef = albumsCollection.doc();
+  const now = new Date();
+  const newAlbum: Album = {
+    id: newAlbumRef.id,
+    ...partialAlbum,
+    mediaCount: 0,
+    images: [],
+    createdAt: now,
+    updatedAt: now,
+  };
+  await newAlbumRef.set(newAlbum);
+  return newAlbum;
+}
 
 export async function getAllAlbums(): Promise<Album[]> {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 500));
-  return [...mockAlbums];
+  const snapshot = await albumsCollection.orderBy('createdAt', 'desc').get();
+  if (snapshot.empty) {
+    return [];
+  }
+  return snapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+      ...data,
+      // Convert Firestore Timestamps to JS Dates
+      createdAt: data.createdAt.toDate(),
+      updatedAt: data.updatedAt.toDate(),
+    } as Album;
+  });
 }
 
 export async function deleteAlbum(albumId: string): Promise<void> {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 500));
-  const index = mockAlbums.findIndex(album => album.id === albumId);
-  if (index !== -1) {
-    mockAlbums.splice(index, 1);
-  }
+  await albumsCollection.doc(albumId).delete();
 }
 
 export async function updateAlbum(albumId: string, updates: Partial<Album>): Promise<void> {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 500));
-  const index = mockAlbums.findIndex(album => album.id === albumId);
-  if (index !== -1) {
-    mockAlbums[index] = {
-      ...mockAlbums[index],
-      ...updates,
-      updatedAt: new Date()
-    };
-  }
+  const updateData = {
+    ...updates,
+    updatedAt: FieldValue.serverTimestamp(),
+  };
+  await albumsCollection.doc(albumId).update(updateData);
 } 

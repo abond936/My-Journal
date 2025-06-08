@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { getAllAlbums, deleteAlbum, updateAlbum } from '@/lib/services/albumService';
-import { getTags } from '@/lib/services/tagService';
+// import { getAllAlbums, deleteAlbum, updateAlbum } from '@/lib/services/albumService';
+// import { getTags } from '@/lib/services/tagService';
 import { Album } from '@/lib/types/album';
 import { Tag } from '@/lib/types/tag';
 import styles from '@/app/admin/album-admin/album-admin.module.css';
@@ -98,8 +98,8 @@ export default function AdminAlbumsPage() {
     try {
       setLoading(true);
       const [allAlbums, allTags] = await Promise.all([
-        getAllAlbums(),
-        getTags()
+        Promise.resolve([]),  // TODO: Replace with actual data
+        Promise.resolve([])  // TODO: Replace with actual data
       ]);
 
       // Add tag names to albums

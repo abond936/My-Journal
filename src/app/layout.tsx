@@ -3,7 +3,6 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import './fonts.css';
 import './theme.css';
-import { AuthProvider } from '@/lib/services/auth';
 import { TagProvider } from '@/lib/contexts/TagContext';
 import { ThemeProvider } from '@/components/common/ThemeProvider';
 
@@ -22,13 +21,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#0070f3" />
       </head>
       <body className={inter.className}>
-        <AuthProvider>
-          <ThemeProvider>
-            <TagProvider>
-              {children}
-            </TagProvider>
-          </ThemeProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <TagProvider>
+            {children}
+          </TagProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

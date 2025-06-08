@@ -83,8 +83,8 @@
 }
 
 .albumItemSelected {
-  background-color: #dbeafe;
-  font-weight: 500;
+  font-weight: bold;
+  background-color: #e9f5ff;
 }
 
 .photoGrid {
@@ -109,11 +109,33 @@
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s, box-shadow 0.2s;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
 }
 
 .photoItem:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.photoItemSelected {
+  border-color: #0070f3;
+}
+
+.checkmark {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 20px;
+  height: 20px;
+  background-color: #0070f3;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
 }
 
 .photoImage {
@@ -139,10 +161,59 @@
 }
 
 .noContent {
-  color: #6b7280;
+  color: #888;
   padding: 2rem;
   text-align: center;
   background-color: #f9fafb;
   border-radius: 4px;
   margin: 1rem;
+}
+
+.footer {
+  padding: 1rem;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.doneButton {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  background-color: #0070f3;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+.doneButton:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.tree {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tree ul {
+  padding-left: 1rem;
+}
+
+.treeNode {
+  padding: 0.5rem;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.treeNode:hover {
+  background-color: #f0f0f0;
+}
+
+.treeNodeSelected {
+  background-color: #0070f3;
+  color: white;
+  font-weight: bold;
 } 

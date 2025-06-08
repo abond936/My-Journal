@@ -61,4 +61,31 @@
   margin: 0;
   color: var(--text-primary);
   font-size: 1.5rem;
+}
+
+.container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.unauthorized {
+  text-align: center;
+  padding: 4rem;
+  background-color: var(--surface-2);
+  border-radius: 8px;
+}
+
+.unauthorized h1 {
+  margin-top: 0;
+}
+
+.unauthorized button {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
 } 
