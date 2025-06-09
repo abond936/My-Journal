@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Album } from '@/lib/types/album';
+import { PhotoMetadata } from '@/lib/types/photo';
+import CoverPhotoContainer from '../entry-admin/CoverPhotoContainer';
 import styles from './AlbumForm.module.css';
 
 interface AlbumFormProps {
@@ -14,6 +16,7 @@ export default function AlbumForm({ initialAlbum, onSave }: AlbumFormProps) {
     title: '',
     description: '',
     caption: '',
+    coverPhoto: null as PhotoMetadata | null,
   });
   const [isSaving, setIsSaving] = useState(false);
 
@@ -23,6 +26,7 @@ export default function AlbumForm({ initialAlbum, onSave }: AlbumFormProps) {
         title: initialAlbum.title || '',
         description: initialAlbum.description || '',
         caption: initialAlbum.caption || '',
+        coverPhoto: initialAlbum.coverPhoto || null,
       });
     }
   }, [initialAlbum]);
@@ -32,10 +36,19 @@ export default function AlbumForm({ initialAlbum, onSave }: AlbumFormProps) {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleCoverPhotoSelect = (photo: PhotoMetadata) => {
+    setFormData(prev => ({ ...prev, coverPhoto: photo }));
+  };
+
+  const handleCoverPhotoRemove = () => {
+    setFormData(prev => ({ ...prev, coverPhoto: null }));
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const updatedFields: Partial<Album> = {};
+
     if (formData.title !== (initialAlbum.title || '')) {
       updatedFields.title = formData.title;
     }
@@ -45,9 +58,11 @@ export default function AlbumForm({ initialAlbum, onSave }: AlbumFormProps) {
     if (formData.caption !== (initialAlbum.caption || '')) {
       updatedFields.caption = formData.caption;
     }
+    if (formData.coverPhoto !== (initialAlbum.coverPhoto || null)) {
+      updatedFields.coverPhoto = formData.coverPhoto;
+    }
 
     if (Object.keys(updatedFields).length === 0) {
-      // No changes to save
       return;
     }
 
@@ -74,22 +89,22 @@ export default function AlbumForm({ initialAlbum, onSave }: AlbumFormProps) {
           className={styles.input}
         />
       </div>
+      
+      <div className={styles.formGroup}>
+        <label>Cover Photo</label>
+        <CoverPhotoContainer
+          coverPhoto={formData.coverPhoto}
+          onCoverPhotoSelect={handleCoverPhotoSelect}
+          onCoverPhotoRemove={handleCoverPhotoRemove}
+        />
+      </div>
+
       <div className={styles.formGroup}>
         <label htmlFor="description">Description</label>
         <textarea
           id="description"
           name="description"
           value={formData.description}
-          onChange={handleInputChange}
-          className={styles.textarea}
-        />
-      </div>
-      <div className={styles.formGroup}>
-        <label htmlFor="caption">Caption</label>
-        <textarea
-          id="caption"
-          name="caption"
-          value={formData.caption}
           onChange={handleInputChange}
           className={styles.textarea}
         />

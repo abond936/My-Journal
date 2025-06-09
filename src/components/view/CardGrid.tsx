@@ -9,7 +9,7 @@ interface BaseContent {
   title: string;
   description?: string;
   imageUrl?: string;
-  size?: 'large' | 'medium' | 'small';
+  size?: 'large' | 'medium' | 'small' | 'wide';
   href: string;
 }
 
@@ -38,19 +38,19 @@ interface AlbumContent extends BaseContent {
 type Content = TagContent | EntryContent | AlbumContent;
 
 interface CardGridProps {
-  entries?: Content[];
+  items?: Content[];
   title?: string;
   description?: string;
   onBack?: () => void;
 }
 
 const CardGrid: React.FC<CardGridProps> = ({
-  entries = [],
+  items = [],
   title,
   description,
   onBack
 }) => {
-  if (!entries || entries.length === 0) {
+  if (!items || items.length === 0) {
     return (
       <div className={styles.gridContainer}>
         {(title || description || onBack) && (
@@ -69,16 +69,16 @@ const CardGrid: React.FC<CardGridProps> = ({
           </div>
         )}
         <div className={styles.cardContent}>
-          No entries to display.
+          No items to display.
         </div>
       </div>
     );
   }
 
-  // Assign random sizes to entries if not specified
-  const entriesWithSizes = entries.map(entry => ({
-    ...entry,
-    size: entry.size || ['large', 'medium', 'small'][Math.floor(Math.random() * 3)] as 'large' | 'medium' | 'small'
+  // Assign random sizes to items if not specified
+  const itemsWithSizes = items.map(item => ({
+    ...item,
+    size: item.size || ['large', 'medium', 'small', 'wide'][Math.floor(Math.random() * 4)] as 'large' | 'medium' | 'small' | 'wide'
   }));
 
   return (
@@ -99,10 +99,10 @@ const CardGrid: React.FC<CardGridProps> = ({
         </div>
       )}
       
-      {entriesWithSizes.map(entry => (
+      {itemsWithSizes.map(item => (
         <ContentCard
-          key={entry.id}
-          {...entry}
+          key={item.id}
+          {...item}
         />
       ))}
     </div>

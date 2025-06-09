@@ -246,6 +246,9 @@ const EntryForm: React.FC<EntryFormProps> = ({
           >
             <option value="story">Story</option>
             <option value="reflection">Reflection</option>
+            <option value="qa">Q&A</option>
+            <option value="quote">Quote</option>
+            <option value="callout">Callout</option>
           </select>
         </div>
 

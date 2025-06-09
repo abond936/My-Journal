@@ -1,11 +1,12 @@
-import { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, startAfter, Timestamp, DocumentSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/config/firebase';
+import { adminDb } from '@/lib/config/firebase/admin';
 import { Entry, GetEntriesOptions } from '@/lib/types/entry';
 import { entryCache } from './cacheService';
 import CacheService from './cacheService';
 import { mockEntries } from './mockData';
 import { validateContent, validateMediaReferences, extractPhotoMetadata } from '@/lib/utils/contentValidation';
 import { backupEntryBeforeUpdate } from './backupService';
+import { FieldValue, Timestamp, DocumentSnapshot, Query } from 'firebase-admin/firestore';
+import { PaginatedResult } from '@/lib/types/services';
 
 export async function getAllEntries(options: GetEntriesOptions = {}): Promise<Entry[]> {
   const result = await getEntries(options);
@@ -20,63 +21,45 @@ export async function getEntry(id: string): Promise<Entry | null> {
     return cachedEntry;
   }
 
-  const entryRef = doc(db, 'entries', id);
-  const entrySnap = await getDoc(entryRef);
+  const entryRef = adminDb.collection('entries').doc(id);
+  const entrySnap = await entryRef.get();
   
-  if (!entrySnap.exists()) {
+  if (!entrySnap.exists) {
     return null;
   }
 
-  const data = entrySnap.data();
+  const data = entrySnap.data() as Entry;
   const entry = {
+    ...data,
     id: entrySnap.id,
-    title: data.title,
-    content: data.content,
-    tags: data.tags || [],
-    type: data.type || 'story',
-    status: data.status || 'published',
-    date: data.date?.toDate() || data.createdAt?.toDate(),
-    createdAt: data.createdAt?.toDate(),
-    updatedAt: data.updatedAt?.toDate(),
-    media: data.media || [],
-    visibility: data.visibility || 'private',
-    inheritedTags: data.inheritedTags || data.tags || [],
-    coverPhoto: data.coverPhoto || undefined
-  } as Entry;
+    date: data.date ? (data.date as Timestamp).toDate() : (data.createdAt as Timestamp)?.toDate(),
+    createdAt: (data.createdAt as Timestamp)?.toDate(),
+    updatedAt: (data.updatedAt as Timestamp)?.toDate(),
+  };
 
   // Cache the entry
   entryCache.set(cacheKey, entry);
+  entryCache.delete(`entry:${id}`);
+  entryCache.clear();
   return entry;
 }
 
 export async function createEntry(entry: Omit<Entry, 'id'>): Promise<Entry> {
-  const entriesRef = collection(db, 'entries');
+  const entriesRef = adminDb.collection('entries');
   const now = new Date();
   
-  // Validate content
-  if (entry.content) {
-    validateContent(entry.content);
-  }
-
-  // Extract and validate media references
-  const media = entry.media || [];
-  if (entry.content) {
-    validateMediaReferences(entry.content, media);
-  }
+  if (entry.content) validateContent(entry.content);
+  if (entry.content) validateMediaReferences(entry.content, entry.media || []);
   
   const entryData = {
     ...entry,
+    coverPhoto: entry.coverPhoto || null,
     createdAt: Timestamp.fromDate(now),
     updatedAt: Timestamp.fromDate(now),
     date: Timestamp.fromDate(entry.date || now),
-    type: entry.type || 'story',
-    status: entry.status || 'draft',
-    media: entry.media || [],
-    visibility: entry.visibility || 'private',
-    coverPhoto: entry.coverPhoto || undefined
   };
 
-  const docRef = await addDoc(entriesRef, entryData);
+  const docRef = await entriesRef.add(entryData);
   
   const newEntry = {
     id: docRef.id,
@@ -84,75 +67,41 @@ export async function createEntry(entry: Omit<Entry, 'id'>): Promise<Entry> {
     createdAt: now,
     updatedAt: now,
     date: entry.date || now,
-    type: entry.type || 'story',
-    status: entry.status || 'draft',
-    media: entry.media || [],
-    visibility: entry.visibility || 'private',
-    coverPhoto: entry.coverPhoto || undefined
   } as Entry;
 
-  // Invalidate entries cache
   entryCache.clear();
-  
   return newEntry;
 }
 
 export async function updateEntry(id: string, entry: Partial<Entry>): Promise<Entry> {
-  const entryRef = doc(db, 'entries', id);
+  const entryRef = adminDb.collection('entries').doc(id);
   const now = new Date();
   
-  // Get existing entry data first
-  const entrySnap = await getDoc(entryRef);
-  if (!entrySnap.exists()) {
-    throw new Error('Entry not found');
-  }
-  const existingData = entrySnap.data();
+  const entrySnap = await entryRef.get();
+  if (!entrySnap.exists) throw new Error('Entry not found');
   
-  // Create backup before update
+  const existingData = entrySnap.data() as Entry;
+  
   await backupEntryBeforeUpdate(id, {
-    id,
     ...existingData,
-    createdAt: existingData.createdAt?.toDate(),
-    updatedAt: existingData.updatedAt?.toDate(),
-    date: existingData.date?.toDate()
-  } as Entry);
+    id: entrySnap.id,
+    createdAt: (existingData.createdAt as Timestamp)?.toDate(),
+    updatedAt: (existingData.updatedAt as Timestamp)?.toDate(),
+    date: (existingData.date as Timestamp)?.toDate(),
+  });
 
-  // Validate content if it's being updated
-  if (entry.content) {
-    validateContent(entry.content);
-  }
+  if (entry.content) validateContent(entry.content);
+  if (entry.content) validateMediaReferences(entry.content, entry.media || existingData.media || []);
 
-  // Extract and validate media references
-  const media = entry.media || existingData.media || [];
-  if (entry.content) {
-    validateMediaReferences(entry.content, media);
-  }
+  const updateData: any = { ...entry, updatedAt: Timestamp.fromDate(now) };
 
-  const updateData: any = {
-    ...existingData,  // Preserve existing data
-    ...entry,         // Apply updates
-    updatedAt: Timestamp.fromDate(now)
-  };
+  if (entry.date) updateData.date = Timestamp.fromDate(entry.date);
+  if (entry.coverPhoto !== undefined) updateData.coverPhoto = entry.coverPhoto;
 
-  if (entry.date) {
-    updateData.date = Timestamp.fromDate(entry.date);
-  }
-
-  // Ensure coverPhoto is included in the update
-  if (entry.coverPhoto !== undefined) {
-    updateData.coverPhoto = entry.coverPhoto;
-  }
-
-  await updateDoc(entryRef, updateData);
+  await entryRef.update(updateData);
   
-  const updatedEntry = {
-    id,
-    ...existingData,
-    ...entry,
-    updatedAt: now
-  } as Entry;
+  const updatedEntry = { ...existingData, ...entry, updatedAt: now } as Entry;
 
-  // Invalidate caches
   entryCache.delete(`entry:${id}`);
   entryCache.clear();
   
@@ -160,102 +109,55 @@ export async function updateEntry(id: string, entry: Partial<Entry>): Promise<En
 }
 
 export async function deleteEntry(id: string): Promise<void> {
-  const entryRef = doc(db, 'entries', id);
-  await deleteDoc(entryRef);
+  await adminDb.collection('entries').doc(id).delete();
   
-  // Invalidate caches
   entryCache.delete(`entry:${id}`);
   entryCache.clear();
-}
-
-interface PaginatedResult<T> {
-  items: T[];
-  lastDoc: DocumentSnapshot | null;
-  hasMore: boolean;
 }
 
 export async function getEntries(
   options: GetEntriesOptions & { lastDoc?: DocumentSnapshot } = {}
 ): Promise<PaginatedResult<Entry>> {
   const { 
-    page = 1, 
     limit: pageSize = 10, 
-    tag, 
     tags, 
-    type, 
     status, 
-    dateRange,
     lastDoc 
   } = options;
   
-  // Generate cache key based on options
   const cacheKey = CacheService.generateKey('entries', { ...options, lastDoc: lastDoc?.id });
   const cachedResult = entryCache.get<PaginatedResult<Entry>>(cacheKey);
-  if (cachedResult) {
-    return cachedResult;
-  }
+  if (cachedResult) return cachedResult;
 
-  const entriesRef = collection(db, 'entries');
-  let q = query(entriesRef);
+  let q: Query = adminDb.collection('entries');
   
-  if (tag) {
-    q = query(q, where('tags', 'array-contains', tag));
-  }
-  
-  if (tags && tags.length > 0) {
-    q = query(q, where('tags', 'array-contains-any', tags));
-  }
+  if (tags && tags.length > 0) q = q.where('tags', 'array-contains-any', tags);
+  if (status) q = q.where('status', '==', status);
 
-  if (type) {
-    q = query(q, where('type', '==', type));
-  }
+  q = q.orderBy('createdAt', 'desc');
 
-  if (status) {
-    q = query(q, where('status', '==', status));
-  }
+  if (lastDoc) q = q.startAfter(lastDoc);
+  
+  const snapshot = await q.limit(pageSize + 1).get();
 
-  if (dateRange) {
-    q = query(q, 
-      where('date', '>=', Timestamp.fromDate(dateRange.start)),
-      where('date', '<=', Timestamp.fromDate(dateRange.end))
-    );
-  }
-  
-  // First, get one more document than we need to check if there are more
-  const nextPageQuery = query(q, orderBy('createdAt', 'desc'), limit(pageSize + 1));
-  if (lastDoc) {
-    q = query(nextPageQuery, startAfter(lastDoc));
-  } else {
-    q = nextPageQuery;
-  }
-  
-  const snapshot = await getDocs(q);
   const hasMore = snapshot.docs.length > pageSize;
   const entries = snapshot.docs
-    .slice(0, pageSize) // Only take the number we want to display
-    .map(doc => ({
-      id: doc.id,
-      title: doc.data().title,
-      content: doc.data().content,
-      tags: doc.data().tags || [],
-      type: doc.data().type || 'story',
-      status: doc.data().status || 'published',
-      date: doc.data().date?.toDate() || doc.data().createdAt?.toDate(),
-      createdAt: doc.data().createdAt?.toDate(),
-      updatedAt: doc.data().updatedAt?.toDate(),
-      media: doc.data().media || [],
-      visibility: doc.data().visibility || 'private',
-      inheritedTags: doc.data().inheritedTags || doc.data().tags || [],
-      coverPhoto: doc.data().coverPhoto || undefined
-    })) as Entry[];
+    .slice(0, pageSize)
+    .map(doc => {
+      const data = doc.data();
+      return {
+        ...data,
+        id: doc.id,
+        date: data.date?.toDate() || data.createdAt?.toDate(),
+        createdAt: data.createdAt?.toDate(),
+        updatedAt: data.updatedAt?.toDate(),
+      } as Entry;
+    });
 
-  const result = {
-    items: entries,
-    lastDoc: snapshot.docs[pageSize - 1] || null,
-    hasMore
-  };
+  const newLastDoc = snapshot.docs[entries.length - 1] || null;
+  const result = { items: entries, lastDoc: newLastDoc, hasMore };
 
-  // Cache the result
   entryCache.set(cacheKey, result);
+
   return result;
 } 

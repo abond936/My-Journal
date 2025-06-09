@@ -1,21 +1,70 @@
 import { adminDb } from '@/lib/config/firebase/admin';
-import { Album } from '@/lib/types/album';
-import { FieldValue } from 'firebase-admin/firestore';
+import { Album, GetAlbumsOptions } from '@/lib/types/album';
+import { FieldValue, Query } from 'firebase-admin/firestore';
+import { PaginatedResult } from '@/lib/types/services';
 
 const albumsCollection = adminDb.collection('albums');
+
+export async function getAlbums(
+  options: GetAlbumsOptions = {}
+): Promise<PaginatedResult<Album>> {
+  const { limit: pageSize = 10, tags, lastDoc } = options;
+  
+  let query: Query = albumsCollection;
+
+  // If tags are provided, add a filter
+  if (tags && tags.length > 0) {
+    query = query.where('tags', 'array-contains-any', tags);
+  }
+
+  // Add default sorting
+  query = query.orderBy('createdAt', 'desc');
+
+  if (lastDoc) {
+    query = query.startAfter(lastDoc);
+  }
+  
+  const snapshot = await query.limit(pageSize + 1).get();
+
+  const hasMore = snapshot.docs.length > pageSize;
+
+  const albums = snapshot.docs
+    .slice(0, pageSize)
+    .map(doc => {
+      const data = doc.data();
+      return {
+        ...data,
+        id: doc.id,
+        // Convert Firestore Timestamps to JS Dates
+        createdAt: data.createdAt.toDate(),
+        updatedAt: data.updatedAt.toDate(),
+      } as Album;
+    });
+
+  const newLastDoc = snapshot.docs[albums.length - 1] || null;
+
+  return { items: albums, lastDoc: newLastDoc, hasMore };
+}
 
 export async function createAlbum(partialAlbum: Omit<Album, 'id' | 'createdAt' | 'updatedAt' | 'mediaCount' | 'images'>): Promise<Album> {
   const newAlbumRef = albumsCollection.doc();
   const now = new Date();
-  const newAlbum: Album = {
-    id: newAlbumRef.id,
+  
+  const albumData: Omit<Album, 'id'> = {
     ...partialAlbum,
+    coverPhoto: partialAlbum.coverPhoto || null, // Ensure coverPhoto is handled
     mediaCount: 0,
     images: [],
     createdAt: now,
     updatedAt: now,
   };
-  await newAlbumRef.set(newAlbum);
+
+  const newAlbum: Album = {
+    id: newAlbumRef.id,
+    ...albumData
+  };
+
+  await newAlbumRef.set(albumData);
   return newAlbum;
 }
 
@@ -72,9 +121,14 @@ export async function deleteAlbum(albumId: string): Promise<void> {
 }
 
 export async function updateAlbum(albumId: string, updates: Partial<Album>): Promise<void> {
-  const updateData = {
+  const updateData: Partial<Album> & { updatedAt: FieldValue } = {
     ...updates,
     updatedAt: FieldValue.serverTimestamp(),
   };
+
+  if (updates.coverPhoto !== undefined) {
+    updateData.coverPhoto = updates.coverPhoto;
+  }
+  
   await albumsCollection.doc(albumId).update(updateData);
 } 

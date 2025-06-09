@@ -5,8 +5,6 @@ import { getTags } from '@/lib/services/tagService';
 import { Tag } from '@/lib/types/tag';
 
 interface TagContextType {
-  selectedTag: string | null;
-  setSelectedTag: (tagId: string | null) => void;
   tags: Tag[];
   loading: boolean;
   error: string | null;
@@ -15,7 +13,6 @@ interface TagContextType {
 const TagContext = createContext<TagContextType | undefined>(undefined);
 
 export function TagProvider({ children }: { children: React.ReactNode }) {
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +35,7 @@ export function TagProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <TagContext.Provider value={{ selectedTag, setSelectedTag, tags, loading, error }}>
+    <TagContext.Provider value={{ tags, loading, error }}>
       {children}
     </TagContext.Provider>
   );

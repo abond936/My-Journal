@@ -1,0 +1,1 @@
+export type EntryType = 'all' | 'story' | 'reflection' | 'qa' | 'quote' | 'callout'; 

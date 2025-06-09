@@ -6,15 +6,17 @@ import Navigation from '@/components/common/Navigation';
 import TagTree from '@/components/common/TagTree';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import styles from './ViewLayout.module.css';
+import { useFilter } from '@/lib/contexts/FilterContext';
 
 interface ViewLayoutProps {
   children: React.ReactNode;
-  onTagSelect?: (tagId: string | null) => void;
 }
 
-export default function ViewLayout({ children, onTagSelect }: ViewLayoutProps) {
+export default function ViewLayout({ children }: ViewLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const pathname = usePathname();
+  const { toggleTag, selectedTags } = useFilter();
+
   const isHomePage = pathname === '/';
   const isAdminPage = pathname?.startsWith('/admin');
 
@@ -43,7 +45,7 @@ export default function ViewLayout({ children, onTagSelect }: ViewLayoutProps) {
           {isAdminPage ? (
             <AdminSidebar />
           ) : (
-            <TagTree onTagSelect={onTagSelect} />
+            <TagTree onTagSelect={toggleTag} selectedTags={selectedTags} />
           )}
         </div>
         

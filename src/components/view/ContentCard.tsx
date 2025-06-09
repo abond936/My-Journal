@@ -5,6 +5,14 @@ import Link from 'next/link';
 import { Tag } from '@/lib/types/tag';
 import styles from './ContentCard.module.css';
 
+// Import Swiper components and styles
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Pagination, Navigation } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/pagination';
+import 'swiper/css/navigation';
+import { PhotoMetadata } from '@/lib/types/photo';
+
 interface BaseCardProps {
   id: string;
   title: string;
@@ -31,6 +39,7 @@ interface EntryCardProps extends BaseCardProps {
 
 interface AlbumCardProps extends BaseCardProps {
   type: 'album';
+  images?: PhotoMetadata[];
   entryCount?: number;
   date?: string;
   tags?: string[];
@@ -133,13 +142,32 @@ const ContentCard: React.FC<ContentCardProps> = (props) => {
     }
   };
 
+  const isAlbum = (props: ContentCardProps): props is AlbumCardProps => props.type === 'album';
+
   return (
     <Link href={href} className={`${styles.card} ${styles[type]} ${styles[size]}`}>
-      {imageUrl && (
+      {isAlbum(props) && props.images && props.images.length > 0 ? (
+        <Swiper
+          modules={[Pagination, Navigation]}
+          spaceBetween={0}
+          slidesPerView={1}
+          navigation
+          pagination={{ clickable: true }}
+          className={styles.swiperContainer}
+        >
+          {props.images.map((image) => (
+            <SwiperSlide key={image.path}>
+              <div className={styles.imageContainer}>
+                <img src={image.path} alt={image.filename || title} className={styles.image} />
+              </div>
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      ) : imageUrl ? (
         <div className={styles.imageContainer}>
           <img src={imageUrl} alt={title} className={styles.image} />
         </div>
-      )}
+      ) : null}
       {renderContent()}
     </Link>
   );

@@ -1,5 +1,6 @@
 // src/lib/types/album.ts
 import { PhotoMetadata } from './photo';
+import { DocumentSnapshot } from 'firebase-admin/firestore';
 
 // Represents a collection of photos from an external source (e.g., a folder).
 export interface SourceCollection {
@@ -41,6 +42,12 @@ export interface Album {
 export interface AlbumImage {
   displayUrl: string;
   lastModified?: string;
+}
+
+export interface GetAlbumsOptions {
+  tags?: string[];
+  limit?: number;
+  lastDoc?: DocumentSnapshot;
 }
 
 export interface AlbumStyle {

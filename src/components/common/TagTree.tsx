@@ -1,67 +1,48 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { db } from '@/lib/config/firebase';
-import { collection, getDocs, query, orderBy, onSnapshot, where } from 'firebase/firestore';
 import styles from './TagTree.module.css';
 import { Tag } from '@/lib/types/tag';
-import { useTag } from '@/lib/contexts/TagContext';
 
 interface TagTreeProps {
-  onTagSelect: (tagId: string | null) => void;
+  onTagSelect: (tagId: string) => void;
+  selectedTags: string[];
 }
 
 interface TagWithCount extends Tag {
   entryCount: number;
 }
 
-export default function TagTree({ onTagSelect }: TagTreeProps) {
+export default function TagTree({ onTagSelect, selectedTags }: TagTreeProps) {
   const [tags, setTags] = useState<TagWithCount[]>([]);
   const [expandedTags, setExpandedTags] = useState<Set<string>>(new Set());
-  const { selectedTag, setSelectedTag } = useTag();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const pathname = usePathname();
 
   useEffect(() => {
-    const tagsRef = collection(db, 'tags');
-    const q = query(tagsRef, orderBy('order'));
-    
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const fetchedTags = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Tag[];
-      
-      // Get entry counts for each tag
-      const tagsWithCounts = await Promise.all(
-        fetchedTags.map(async (tag) => {
-          const entriesRef = collection(db, 'entries');
-          const entriesQuery = query(
-            entriesRef,
-            where('tags', 'array-contains', tag.id)
-          );
-          const entriesSnapshot = await getDocs(entriesQuery);
-          return {
-            ...tag,
-            entryCount: entriesSnapshot.size
-          };
-        })
-      );
-      
-      setTags(tagsWithCounts);
-      
-      // Expand root tags by default
-      const rootTags = tagsWithCounts
-        .filter(tag => !tag.parentId)
-        .map(tag => tag.id);
-      setExpandedTags(new Set(rootTags));
-      setIsLoading(false);
-    });
+    async function fetchTagTree() {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/tags/tree');
+        if (!response.ok) {
+          throw new Error('Failed to fetch tag tree data');
+        }
+        const data: TagWithCount[] = await response.json();
+        setTags(data);
 
-    return () => unsubscribe();
+        // Expand root tags by default
+        const rootTags = data
+          .filter(tag => !tag.parentId)
+          .map(tag => tag.id);
+        setExpandedTags(new Set(rootTags));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchTagTree();
   }, []);
 
   const toggleTag = (tagId: string) => {
@@ -76,24 +57,18 @@ export default function TagTree({ onTagSelect }: TagTreeProps) {
     });
   };
 
-  const handleTagClick = (tagId: string) => {
-    const newSelectedTag = selectedTag === tagId ? null : tagId;
-    setSelectedTag(newSelectedTag);
-    onTagSelect(newSelectedTag);
-  };
-
   const renderTag = (tag: TagWithCount, level: number = 0, index: number = 0) => {
     const children = tags.filter(t => t.parentId === tag.id);
     const isExpanded = expandedTags.has(tag.id);
-    const isSelected = selectedTag === tag.id;
+    const isSelected = selectedTags.includes(tag.id);
     const isTopLevel = !tag.parentId;
 
     return (
-      <div 
-        key={`tag-${level}-${tag.id}-${index}`} 
+      <div
+        key={`tag-${level}-${tag.id}-${index}`}
         className={`${styles.categoryItem} ${isTopLevel ? styles.topLevel : ''}`}
       >
-        <div 
+        <div
           className={styles.categoryHeader}
           style={{ paddingLeft: `${level * 0.5}rem` }}
         >
@@ -111,7 +86,7 @@ export default function TagTree({ onTagSelect }: TagTreeProps) {
           </button>
           
           <button
-            onClick={() => handleTagClick(tag.id)}
+            onClick={() => onTagSelect(tag.id)}
             className={`${styles.categoryButton} ${isSelected ? styles.active : ''}`}
             data-dimension={tag.dimension}
           >

@@ -84,7 +84,8 @@
 ## Project Overview
 
 ### Context
-This project is a personal journaling application that helps users document and share their life stories, reflections, photos, and media with others.
+This project is a personal journaling application that helps users document and share their life stories, 
+reflections, photos, and media with others.
 
 ### Scope
 - Story and reflection creation and management
@@ -106,9 +107,10 @@ This project is a personal journaling application that helps users document and 
   - Firebase Admin SDK for server-side operations
 - AI: OpenAI integration for content assistance
 - Media: 
-  - OneDrive Integration (primary photo source)
+  - Local drive integration (current photo source)
+  - OneDrive Integration (next photo source)
   - Google Photos API (future support)
-  - Apple Photos (future support)
+  - Apple Photos API (future support)
 - Hosting: Netlify (primary), with Vercel as backup
 - Version Control: GitHub
 - Testing: Jest, React Testing Library
@@ -117,11 +119,6 @@ This project is a personal journaling application that helps users document and 
   - TypeScript for type safety
   - Jest for testing
   - Custom scripts for migration and backup
-
-### Deployment Model
-- Netlify for hosting and CI/CD
-- GitHub for source control and collaboration
-- Firebase for backend services
 
 ### Operational Summary
 Most have many photos, but they remain hidden with limited ways for them to be enjoyed. This 
@@ -140,16 +137,16 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
   - Caption
   - Collections of images
 - Entries can be linked to albums and albums can be linked to entries
-- Both Entries and Albums are categorized into 5 dimensions:
+- Both Entries and Albums are categorized by Tags into 5 dimensions:
   - who, what, when, where, and reflection
-  - present as cards in a grid for consumption
+- Content is presented as cards in a grid for consumption
 
 [Back to Top](#myjournal-project)
 
 ## 2. Interaction Rules
 
 ### Core Principles
-1. **Never Act Without Approval**
+1. **Only Act With Approval**
    - MUST get explicit approval before ANY code change
    - MUST get explicit approval before ANY file creation
    - MUST get explicit approval before ANY file movement
@@ -188,8 +185,7 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
    - MUST confirm understanding before proceeding
 
 3. **Never Make Unilateral Decisions**
-   - MUST present options and recommendations
-   - MUST explain reasoning behind recommendations
+   - MUST present options and recommendations with reasoning
    - MUST wait for explicit approval
    - MUST confirm understanding of approval
    - MUST explain any deviations from recommendations
@@ -260,7 +256,7 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
    - MUST verify understanding of implications
    - MUST verify understanding of approvals
 
-4. ** Don't Patronize **
+4. **Don't Patronize**
    - Never patronize with compliments about ideas or actions.
    - Just answer the question or request toward the goal of the project.
 
@@ -276,7 +272,7 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
 
 2. **Proposal Format**
    - MUST explain changes in layman's terms
-   - MUST specify file locations
+   - MUST specify file locations for creatio or modification of code
    - MUST reference existing files/variables by name
    - MUST NOT include code snippets unless specifically requested
 
@@ -521,16 +517,22 @@ Status: 🟡 Operational
 ---------------------------------
 Status: 🟡 Operational
 
-Content will be consumed through a grid-based card system.
-   - Cover image
+This is the core function of the application--the consumption of stories and images.
+The vision is to make this best consumed on mobile and tablet devices and emulate a combination of
+MSN, YouTube, Google, and other social media apps, with content presented and consumed through a 
+a grid-based card system. A card will contain
+
+   - Cover image (sometime optional)
    - Title
    - Tags
+   - Excerpt (sometimes)
+   - Full text (sometimes)
 
 #### Current Features
 - Basic card layout connected to Entries only
 
 #### Planned Features
-- Connected to Tags, Albums and Entries
+- Connected to Entries and Albums, navigated by Tags
   - Each dimension and tag requires a card
     - Image, Name, Entries/Albums
 - Improved styling 
@@ -668,7 +670,7 @@ Status: 🟡 Operational
 
 Entry view contains title, cover image, tags, content.
 
-(This is currently card view. May not be needed explcitly and will become "content view".)
+(This is currently card view. To become "content view".)
 
 #### Current Features
 - Rich text display
@@ -700,7 +702,7 @@ none
 - Toggle fill mode (fill/contain)
 - Entry links
 - User interaction
-   - Like, comment, sharelink
+   - Like, comment, share
 - Styled like a photo album or scrapbook 
    - Library of styles selectable by album
    - Selectable sytles by album
@@ -725,6 +727,13 @@ The layout straegy is to be fully mobile first and responsive upward.
 #### Planned Features
 - Tablet optimization
 - Custom layout builder ??
+
+- Vertical scroll for entries
+- Horizontal scroll for album photos. x/y
+- Album opens to google-like grid
+- Related entries and albums
+
+
 
 ❓ Open Questions:
 
@@ -754,7 +763,7 @@ Status: 🟡 Operational
 ## **Content Administration**
 =======================================
 Administration is a feature only available to author.
-   - CRUD/Bulk editing operations for appl elements
+   - CRUD/Bulk editing operations for app elements
 
 #### Current Features
   - Entries
@@ -765,7 +774,7 @@ Administration is a feature only available to author.
   - Questions
   - Album page styles
   - Themes
-  - Role-based access
+  - Users
 
   ❓ Open Questions:
 
@@ -794,8 +803,8 @@ Status: 🟡 Operational
 - Entry listing
 - Statistics
 - Search and filtering
-- Inline edit
-- Bulk edit
+- Inline editing
+- Bulk editing
 
 #### Planned Features
 - Inline/Bulk Tag assignment
@@ -805,17 +814,17 @@ Status: 🟡 Operational
 
 ❓ Open Questions:
 
-### **Entry Creation**
+### **Entry New**
 ---------------------------------
 Stautus: 🟡 Operational
 
 #### Current Features
+- Cover image - Metadata stored coverPhoto field
 - Title
 - Rich Text Editing
-- Tag Assignment
-- Cover image - Metadata stored coverPhoto field
 - Image embedding - Embedded figure/image element
 - Draft/Published states
+- Tag Assignment
 
 #### Planned Features
 - Improved styling
@@ -830,14 +839,13 @@ Status: 🟡 Operational
 - Cover Image - Metadata stored coverPhoto field
 - Title
 - Rich Text Editing
-- Tag Assigment
-- Image embedding - Embedded figure/image element
+- Image embedding
   - Photo Picker, pasted, or dragged.
 - Image formatting 
    - Size, alignment, caption
+- Tag Assigment
 
 #### Planned Features
-- Recheck for RTE/PhotoPicker Next/js Image Optimization changes.
 - Aspect ratio control 
 - Improved paste/drag-drop handling for multiple images.
 - Image-specific metadata management (e.g., tags).
@@ -845,34 +853,7 @@ Status: 🟡 Operational
 - Fill mode toggle (cover/contain)??
 
 ❓ Open Questions:
-Architectural Issue (Discovered during Refactor):
-The current implementation for handling images within the EntryForm and RichTextEditor is based on an outdated, dual-source-of-truth model.
-- It stores image metadata in a separate media array within the EntryForm's state.
-- It also stores image information as <img> tags within the editor's HTML content.
 
-This architecture was made obsolete when we upgraded to the Next.js Image Optimization system. 
-The single source of truth for an entry's images should be the HTML content itself, with <img> tags containing all necessary attributes (src, width, height). 
-The separate media array is now a source of bugs and must be removed.
-
-Required Refactoring Plan:
-
-1. src/components/admin/entry-admin/EntryForm.tsx
-Objective: Make the form a "controller" for the editor.
-State: Remove the media: PhotoMetadata[] field from the form's state.
-UI: Add a dedicated "Add Photo" button to the form's UI to open the <PhotoPicker> modal.
-Logic:
-When a photo is selected in the picker, the form will call a new addImage method on the RichTextEditor component via its ref.
-The handleSubmit function must be simplified to only retrieve the final HTML string from the editor. It should no longer read from or save the separate media array.
-2. src/components/common/RichTextEditor.tsx
-Objective: Make the editor a "passive" component that responds to commands.
-Props:
-- Remove the media and onChange props. 
-  - The component no longer needs to manage a separate media list or report every change.
-- Exposed Methods (useImperativeHandle):
-- Remove the obsolete getMedia() method.
-- Add a new method: addImage(photo: PhotoMetadata).
-- addImage Implementation: This function will contain the Tiptap logic (editor.chain().focus().setImage(...)) to insert the figureWithImage node directly into the editor's content at the current cursor position, using the src, width, and height from the photo object.
-- This refactoring will create a clean, single-source-of-truth architecture where the EntryForm controls the UI and the RichTextEditor manages its own content, leading to a more stable and maintainable system.
 
 ### **Album Management**
 ---------------------------------
