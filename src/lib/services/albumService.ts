@@ -57,9 +57,10 @@ export async function getAlbumById(albumId: string): Promise<Album | null> {
   // Convert Firestore Timestamps back to JS Date objects
   const albumData = {
     ...data,
-    createdAt: data.createdAt.toDate(),
-    updatedAt: data.updatedAt.toDate(),
+    createdAt: data.createdAt?.toDate(),
+    updatedAt: data.updatedAt?.toDate(),
     // Ensure the 'images' field exists, defaulting to an empty array if not.
+    // This is a robust way to handle old data that might be missing the field.
     images: data.images || [],
   } as Album;
 

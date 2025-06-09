@@ -14,6 +14,8 @@
     "backup-codebase": "ts-node src/lib/scripts/utils/backup-codebase.ts"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
     "@tiptap/extension-image": "^2.12.0",
     "@tiptap/extension-link": "^2.12.0",
     "@tiptap/pm": "^2.12.0",
@@ -29,6 +31,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
+    "react-photo-album": "^3.1.0",
     "sharp": "^0.34.2"
   },
   "devDependencies": {

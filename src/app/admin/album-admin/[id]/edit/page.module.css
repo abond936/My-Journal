@@ -1,0 +1,11 @@
+.container {
+  padding: var(--space-large);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.title {
+  font-size: var(--font-size-xx-large);
+  color: var(--color-text);
+  margin-bottom: var(--space-large);
+} 

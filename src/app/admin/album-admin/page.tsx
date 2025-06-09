@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { getTags } from '@/lib/services/tagService';
 import { Album } from '@/lib/types/album';
 import { PhotoMetadata } from '@/lib/types/photo';
@@ -13,11 +13,6 @@ interface AlbumWithStats extends Album {
   tagNames: { id: string; name: string }[];
 }
 
-interface EditingField {
-  id: string;
-  field: 'title' | 'status';
-}
-
 const dimensions: Tag['dimension'][] = ['who', 'what', 'when', 'where', 'reflection'];
 
 interface TagWithChildren extends Tag {
@@ -28,12 +23,10 @@ const buildTagTree = (tags: Tag[]): TagWithChildren[] => {
   const tagMap = new Map<string, TagWithChildren>();
   const rootTags: TagWithChildren[] = [];
 
-  // First pass: create all tag objects with empty children arrays
   tags.forEach(tag => {
     tagMap.set(tag.id, { ...tag, children: [] });
   });
 
-  // Second pass: build the tree structure
   tags.forEach(tag => {
     const tagWithChildren = tagMap.get(tag.id)!;
     if (tag.parentId) {
@@ -72,11 +65,6 @@ export default function AdminAlbumsPage() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [status, setStatus] = useState<'all' | 'draft' | 'published'>('all');
-  const [editingField, setEditingField] = useState<EditingField | null>(null);
-  const [editValue, setEditValue] = useState('');
-
-  const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const [editingAlbumId, setEditingAlbumId] = useState<string | null>(null);
 
   const tagTrees = useMemo(() => {
     const trees: Record<Tag['dimension'], TagWithChildren[]> = {
@@ -95,11 +83,7 @@ export default function AdminAlbumsPage() {
     return trees;
   }, [tags]);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [albumsResponse, allTags] = await Promise.all([
@@ -115,7 +99,7 @@ export default function AdminAlbumsPage() {
 
       const albumsWithStats = allAlbums.map(album => ({
         ...album,
-        tagNames: album.tags
+        tagNames: (album.tags || [])
           .map(tagId => {
             const tag = allTags.find(t => t.id === tagId);
             if (!tag) {
@@ -137,6 +121,38 @@ export default function AdminAlbumsPage() {
       setError(error instanceof Error ? error.message : 'Failed to load data');
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleFieldUpdate = async (albumId: string, field: keyof Album, value: any) => {
+    // Optimistic UI Update
+    setAlbums(prevAlbums => 
+      prevAlbums.map(a => 
+        a.id === albumId 
+          ? { ...a, [field]: value }
+          : a
+      )
+    );
+
+    try {
+      const response = await fetch(`/api/albums/${albumId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: value }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update album');
+      }
+      // Data is saved, no need to do anything else on success
+    } catch (error) {
+      console.error(`Error updating album field ${field}:`, error);
+      // Revert optimistic update on error by reloading all data
+      loadData(); 
     }
   };
 
@@ -181,60 +197,10 @@ export default function AdminAlbumsPage() {
     }
   };
 
-  const startEditing = (albumId: string, field: EditingField['field'], value: string) => {
-    setEditingField({ id: albumId, field });
-    setEditValue(value);
-  };
-
-  const handleEditSave = async () => {
-    if (!editingField) return;
-
-    try {
-      const album = albums.find(a => a.id === editingField.id);
-      if (!album) return;
-
-      const updates: Partial<Album> = {};
-      if (editingField.field === 'title') {
-        updates.title = editValue;
-      } else if (editingField.field === 'status') {
-        updates.status = editValue as 'draft' | 'published';
-      }
-
-      await fetch(`/api/albums/${editingField.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-      
-      setAlbums(prevAlbums => 
-        prevAlbums.map(a => 
-          a.id === editingField.id 
-            ? { ...a, ...updates }
-            : a
-        )
-      );
-
-      setEditingField(null);
-      setEditValue('');
-    } catch (error) {
-      console.error('Error updating album:', error);
-      setError(error instanceof Error ? error.message : 'Failed to update album');
-    }
-  };
-
-  const handleEditSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    handleEditSave();
-  };
-
-  const handleEditCancel = () => {
-    setEditingField(null);
-    setEditValue('');
-  };
-
   const filteredAlbums = albums.filter(album => {
-    const matchesSearch = album.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         album.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const titleMatch = album.title?.toLowerCase().includes(searchTerm.toLowerCase());
+    const descriptionMatch = album.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = titleMatch || descriptionMatch;
     const matchesStatus = status === 'all' || album.status === status;
     return matchesSearch && matchesStatus;
   });
@@ -243,7 +209,7 @@ export default function AdminAlbumsPage() {
     total: albums.length,
     published: albums.filter(a => a.status === 'published').length,
     drafts: albums.filter(a => a.status === 'draft').length,
-    totalMedia: albums.reduce((sum, album) => sum + album.mediaCount, 0)
+    totalMedia: albums.reduce((sum, album) => sum + (album.mediaCount || 0), 0)
   };
 
   const handleBulkStatusUpdate = async (newStatus: 'draft' | 'published') => {
@@ -252,137 +218,52 @@ export default function AdminAlbumsPage() {
     }
 
     try {
-      setLoading(true);
-      const updatePromises = Array.from(selectedAlbums).map(albumId => 
-        fetch(`/api/albums/${albumId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: newStatus }),
-        })
+      const updatePromises = Array.from(selectedAlbums).map(albumId =>
+        handleFieldUpdate(albumId, 'status', newStatus)
       );
-      
       await Promise.all(updatePromises);
-
       await loadData();
     } catch (error) {
-      console.error('Error updating albums:', error);
-      setError(error instanceof Error ? error.message : 'Failed to update albums');
-    } finally {
-      setLoading(false);
+      console.error('Error updating bulk status:', error);
     }
   };
 
   const handleBulkTagUpdate = async (dimension: Tag['dimension'], tagId: string | null) => {
+    if (!tagId) return;
+
     if (!confirm(`Are you sure you want to update tags for ${selectedAlbums.size} albums?`)) {
       return;
     }
 
     try {
-      setLoading(true);
-      const updatePromises = Array.from(selectedAlbums).map(async albumId => {
+      const updatePromises = Array.from(selectedAlbums).map(albumId => {
         const album = albums.find(a => a.id === albumId);
-        if (!album) return;
-
-        const existingTags = album.tags.filter(tagId => {
-          const tag = tags.find(t => t.id === tagId);
-          return tag?.dimension !== dimension;
+        if (!album) return Promise.resolve();
+        
+        const otherDimensionTags = album.tags.filter(tId => {
+          const tag = tags.find(t => t.id === tId);
+          return tag && tag.dimension !== dimension;
         });
-
-        const newTags = tagId ? [...existingTags, tagId] : existingTags;
-
-        return fetch(`/api/albums/${albumId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tags: newTags }),
-        });
+        
+        const newTags = [...otherDimensionTags, tagId];
+        return handleFieldUpdate(albumId, 'tags', newTags);
       });
-      
       await Promise.all(updatePromises);
-
       await loadData();
     } catch (error) {
-      console.error('Error updating tags:', error);
-      setError(error instanceof Error ? error.message : 'Failed to update tags');
-    } finally {
-      setLoading(false);
+      console.error('Error updating bulk tags:', error);
     }
   };
 
-  /**
-   * Opens the photo picker to select photos for a specific album.
-   * @param albumId The ID of the album to edit.
-   */
-  const handleEditPhotos = (albumId: string) => {
-    setEditingAlbumId(albumId);
-    setIsPickerOpen(true);
-  };
-
-  /**
-   * Callback function for when photos are selected in the PhotoPicker.
-   * This function now maps the basic PhotoMetadata from the picker 
-   * to our rich, permanent AlbumImage data model before saving.
-   * @param photos An array of the selected photo metadata.
-   */
-  const handlePhotosSelected = async (photos: PhotoMetadata[]) => {
-    if (!editingAlbumId) return;
-
-    setLoading(true);
+  const handleDeleteAlbum = async (albumId: string, albumTitle: string) => {
+    if (!confirm(`Are you sure you want to delete the album "${albumTitle}"? This cannot be undone.`)) {
+      return;
+    }
     try {
-      // For each photo returned by the picker, create a new AlbumImage object.
-      const newImages: AlbumImage[] = photos.map(p => {
-        // Here we perform the mapping from one type to the other.
-        return {
-          // --- Core Identifiers ---
-          // Currently, our local service uses the full path as the ID.
-          sourceId: p.path, 
-          // Since we are only using the local service, we hardcode 'local'.
-          // This will become dynamic when we add more services.
-          sourceType: 'local',
-
-          // --- Core Metadata ---
-          // We will need to add width and height to PhotoMetadata later,
-          // for now we'll use placeholder values.
-          filename: p.filename,
-          width: p.width,
-          height: p.height,
-          createdAt: p.lastModified,
-
-          // --- User-Editable Data ---
-          caption: p.caption || '',
-
-          // --- Cached URLs ---
-          // The picker provides us with the necessary URLs for display.
-          displayUrl: p.webUrl,
-          thumbnailUrl: p.thumbnailUrl,
-
-          // sourceMetadata is optional and not needed for the local service.
-        };
-      });
-
-      // Prepare the final update payload for the album document.
-      const updates = { 
-        images: newImages,
-        mediaCount: newImages.length // Update the media count as well.
-      };
-
-      // Send the complete, rich data structure to the backend API.
-      await fetch(`/api/albums/${editingAlbumId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-      
-      // Reload the data to reflect the changes in the UI.
+      await fetch(`/api/albums/${albumId}`, { method: 'DELETE' });
       await loadData();
-
     } catch (error) {
-      console.error('Error saving photos to album:', error);
-      setError(error instanceof Error ? error.message : 'Failed to save photos.');
-    } finally {
-      // Close the picker and reset the state.
-      setIsPickerOpen(false);
-      setEditingAlbumId(null);
-      setLoading(false);
+      console.error(`Error deleting album ${albumId}:`, error);
     }
   };
 
@@ -490,6 +371,8 @@ export default function AdminAlbumsPage() {
               </th>
               <th>Cover</th>
               <th>Title</th>
+              <th>Description</th>
+              <th>Caption</th>
               <th>Media</th>
               <th>Status</th>
               <th>Tags</th>
@@ -503,7 +386,7 @@ export default function AdminAlbumsPage() {
                   <input
                     type="checkbox"
                     checked={selectedAlbums.has(album.id)}
-                    onChange={e => handleSelectAlbum(album.id, e.target.checked)}
+                    onChange={(e) => handleSelectAlbum(album.id, e.target.checked)}
                   />
                 </td>
                 <td>
@@ -516,92 +399,56 @@ export default function AdminAlbumsPage() {
                   )}
                 </td>
                 <td>
-                  {editingField?.id === album.id && editingField.field === 'title' ? (
-                    <form onSubmit={handleEditSubmit} className={styles.editingField}>
-                      <input
-                        type="text"
-                        value={editValue}
-                        onChange={e => setEditValue(e.target.value)}
-                        autoFocus
-                      />
-                      <div className={styles.editButtons}>
-                        <button type="submit" className={styles.saveButton}>Save</button>
-                        <button type="button" onClick={handleEditCancel} className={styles.cancelButton}>Cancel</button>
-                      </div>
-                    </form>
-                  ) : (
-                    <div 
-                      className={styles.editableField}
-                      onClick={() => startEditing(album.id, 'title', album.title)}
-                    >
-                      {album.title}
-                    </div>
-                  )}
+                  <input
+                    type="text"
+                    value={album.title || ''}
+                    onBlur={(e) => handleFieldUpdate(album.id, 'title', e.target.value)}
+                    onChange={(e) => setAlbums(albums.map(a => a.id === album.id ? { ...a, title: e.target.value } : a))}
+                    className={styles.inlineInput}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    value={album.description || ''}
+                    onBlur={(e) => handleFieldUpdate(album.id, 'description', e.target.value)}
+                    onChange={(e) => setAlbums(albums.map(a => a.id === album.id ? { ...a, description: e.target.value } : a))}
+                    className={styles.inlineInput}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    value={album.caption || ''}
+                    onBlur={(e) => handleFieldUpdate(album.id, 'caption', e.target.value)}
+                    onChange={(e) => setAlbums(albums.map(a => a.id === album.id ? { ...a, caption: e.target.value } : a))}
+                    className={styles.inlineInput}
+                  />
                 </td>
                 <td>{album.mediaCount}</td>
                 <td>
-                  {editingField?.id === album.id && editingField.field === 'status' ? (
-                    <form onSubmit={handleEditSubmit} className={styles.editingField}>
-                      <select
-                        value={editValue}
-                        onChange={e => setEditValue(e.target.value)}
-                        autoFocus
-                      >
-                        <option value="draft">Draft</option>
-                        <option value="published">Published</option>
-                      </select>
-                      <div className={styles.editButtons}>
-                        <button type="submit" className={styles.saveButton}>Save</button>
-                        <button type="button" onClick={handleEditCancel} className={styles.cancelButton}>Cancel</button>
-                      </div>
-                    </form>
-                  ) : (
-                    <div 
-                      className={styles.editableField}
-                      onClick={() => startEditing(album.id, 'status', album.status)}
-                    >
-                      {album.status}
-                    </div>
-                  )}
+                  <button 
+                    onClick={() => handleFieldUpdate(album.id, 'status', album.status === 'published' ? 'draft' : 'published')}
+                    className={`${styles.statusToggle} ${album.status === 'published' ? styles.published : styles.draft}`}
+                  >
+                    {album.status}
+                  </button>
                 </td>
                 <td>
-                  <div className={styles.tags}>
-                    {album.tagNames.map((tag, index) => (
-                      <span 
-                        key={`${album.id}-${tag.id}-${index}`} 
-                        className={styles.tag}
-                      >
-                        {tag.name}
-                      </span>
-                    ))}
-                  </div>
+                  {album.tagNames.map(tag => (
+                    <span key={tag.id} className={styles.tag}>{tag.name}</span>
+                  ))}
                 </td>
                 <td>
-                  <div className={styles.actions}>
-                    <Link href={`/view/album-view/${album.id}`} passHref>
-                      <button className={styles.viewButton}>View</button>
-                    </Link>
-                    <button 
-                      onClick={() => handleEditPhotos(album.id)}
-                      className={styles.editButton}
-                    >
-                      Edit Photos
-                    </button>
-                    <button className={styles.deleteButton}>Delete</button>
-                  </div>
+                  <Link href={`/view/album-view/${album.id}`} className={styles.actionButton}>View</Link>
+                  <Link href={`/admin/album-admin/${album.id}/edit`} className={styles.actionButton}>Edit</Link>
+                  <button onClick={() => handleDeleteAlbum(album.id, album.title)} className={`${styles.actionButton} ${styles.deleteButton}`}>Delete</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      {isPickerOpen && (
-        <PhotoPicker
-          multiSelect={true}
-          onMultiPhotoSelect={handlePhotosSelected}
-          onClose={() => setIsPickerOpen(false)}
-        />
-      )}
     </div>
   );
 } 

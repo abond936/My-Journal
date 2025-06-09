@@ -7,6 +7,7 @@
  * - FIREBASE_SERVICE_ACCOUNT_PROJECT_ID
  * - FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY
  * - FIREBASE_SERVICE_ACCOUNT_CLIENT_EMAIL
+ * - FIREBASE_STORAGE_BUCKET_URL
  */
 
 import * as admin from 'firebase-admin';
@@ -19,6 +20,7 @@ if (!admin.apps.length) {
       privateKey: process.env.FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, '\n'),
       clientEmail: process.env.FIREBASE_SERVICE_ACCOUNT_CLIENT_EMAIL,
     }),
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET_URL,
   });
 }
 

@@ -9,39 +9,79 @@ import styles from './PhotoPicker.module.css';
 interface PhotoPickerProps {
   onPhotoSelect?: (photo: PhotoMetadata) => void;
   onMultiPhotoSelect?: (photos: PhotoMetadata[]) => void;
-  multiSelect?: boolean;
   onClose: () => void;
+  initialMode?: 'single' | 'multi'; // New prop
 }
 
 const FolderTree = ({ nodes, onSelect, selectedId }: { nodes: TreeNode[], onSelect: (node: TreeNode) => void, selectedId: string | null }) => {
-  return (
-    <ul className={styles.tree}>
-      {nodes.map(node => (
-        <li key={node.id}>
-          <div 
-            onClick={() => onSelect(node)} 
-            className={`${styles.treeNode} ${selectedId === node.id ? styles.treeNodeSelected : ''}`}
-          >
-            {node.name}
-          </div>
-          {node.children && node.children.length > 0 && (
-            <FolderTree nodes={node.children} onSelect={onSelect} selectedId={selectedId} />
-          )}
-        </li>
-      ))}
-    </ul>
-  );
+  const [openFolders, setOpenFolders] = useState<Set<string>>(new Set());
+
+  const toggleFolder = (nodeId: string) => {
+    setOpenFolders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(nodeId)) {
+        newSet.delete(nodeId);
+      } else {
+        newSet.add(nodeId);
+      }
+      return newSet;
+    });
+  };
+
+  const renderNodes = (nodesToRender: TreeNode[], level = 0) => {
+    return (
+      <ul className={styles.tree} style={{ paddingLeft: `${level * 15}px` }}>
+        {nodesToRender.map(node => {
+          const isOpen = openFolders.has(node.id);
+          const hasChildren = node.children && node.children.length > 0;
+          return (
+            <li key={node.id}>
+              <div className={`${styles.treeNode} ${selectedId === node.id ? styles.treeNodeSelected : ''}`}>
+                {hasChildren && (
+                  <span onClick={() => toggleFolder(node.id)} className={styles.treeToggle}>
+                    {isOpen ? '▼' : '►'}
+                  </span>
+                )}
+                <span onClick={() => onSelect(node)} className={styles.treeNodeName}>
+                  {node.name}
+                </span>
+              </div>
+              {hasChildren && isOpen && (
+                renderNodes(node.children, level + 1)
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    );
+  };
+  
+  return renderNodes(nodes);
 };
 
-export default function PhotoPicker({ onPhotoSelect, onMultiPhotoSelect, multiSelect = false, onClose }: PhotoPickerProps) {
+export default function PhotoPicker({ 
+  onPhotoSelect, 
+  onMultiPhotoSelect, 
+  onClose, 
+  initialMode = 'single' // Default to single
+}: PhotoPickerProps) {
   const [folderTree, setFolderTree] = useState<TreeNode[]>([]);
   const [photos, setPhotos] = useState<PhotoMetadata[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<TreeNode | null>(null);
   const [selectedPhotos, setSelectedPhotos] = useState<PhotoMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // State to manage the current selection mode
+  const [isMultiSelect, setIsMultiSelect] = useState(initialMode === 'multi');
   
   const photoService = new PhotoService();
+
+  useEffect(() => {
+    // Lock multi-select mode if the initial mode was 'multi'
+    if (initialMode === 'multi') {
+      setIsMultiSelect(true);
+    }
+  }, [initialMode]);
 
   useEffect(() => {
     console.log('PhotoPicker mounted');
@@ -85,7 +125,7 @@ export default function PhotoPicker({ onPhotoSelect, onMultiPhotoSelect, multiSe
   };
 
   const handlePhotoClick = (photo: PhotoMetadata) => {
-    if (multiSelect) {
+    if (isMultiSelect) {
       setSelectedPhotos(prev => {
         if (prev.find(p => p.id === photo.id)) {
           return prev.filter(p => p.id !== photo.id);
@@ -94,15 +134,22 @@ export default function PhotoPicker({ onPhotoSelect, onMultiPhotoSelect, multiSe
         }
       });
     } else {
-      if(onPhotoSelect) {
+      // In single select mode, fire the event and close immediately
+      if (onPhotoSelect) {
         onPhotoSelect(photo);
+        onClose(); // Close after selection
+      } else if (onMultiPhotoSelect) {
+        // Fallback for single-click when only multi-select handler is provided
+        onMultiPhotoSelect([photo]);
+        onClose();
       }
     }
   };
 
   const handleDoneClick = () => {
-    if (multiSelect && onMultiPhotoSelect) {
+    if (isMultiSelect && onMultiPhotoSelect) {
       onMultiPhotoSelect(selectedPhotos);
+      onClose(); // Close after selection
     }
   };
 
@@ -138,7 +185,7 @@ export default function PhotoPicker({ onPhotoSelect, onMultiPhotoSelect, multiSe
             ) : photos.length > 0 ? (
               <div className={styles.grid}>
                 {photos.map(photo => {
-                  const isSelected = multiSelect && selectedPhotos.some(p => p.id === photo.id);
+                  const isSelected = isMultiSelect && selectedPhotos.some(p => p.id === photo.id);
                   return (
                     <div
                       key={photo.id}
@@ -167,13 +214,27 @@ export default function PhotoPicker({ onPhotoSelect, onMultiPhotoSelect, multiSe
             )}
           </div>
         </div>
-        {multiSelect && (
-          <div className={styles.footer}>
+        
+        <div className={styles.footer}>
+          {/* Only show the multi-select toggle if not locked into multi mode */}
+          {initialMode !== 'multi' && (
+            <div className={styles.multiSelectToggle}>
+              <input
+                type="checkbox"
+                id="multiSelectCheckbox"
+                checked={isMultiSelect}
+                onChange={(e) => setIsMultiSelect(e.target.checked)}
+              />
+              <label htmlFor="multiSelectCheckbox">Select multiple photos</label>
+            </div>
+          )}
+
+          {isMultiSelect && (
             <button onClick={handleDoneClick} className={styles.doneButton} disabled={selectedPhotos.length === 0}>
               Add {selectedPhotos.length} Photos
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

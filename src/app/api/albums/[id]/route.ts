@@ -33,9 +33,11 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     
     await updateAlbum(id, body);
     
-    return NextResponse.json({ message: 'Album updated successfully' });
+    const updatedAlbum = await getAlbumById(id);
+    return NextResponse.json(updatedAlbum);
   } catch (error) {
-    console.error(`Error updating album ${params.id}:`, error);
+    const { id } = params;
+    console.error(`Error updating album ${id}:`, error);
     return NextResponse.json(
       { error: 'Failed to update album', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
@@ -51,7 +53,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     
     return NextResponse.json({ message: 'Album deleted successfully' });
   } catch (error) {
-    console.error(`Error deleting album ${params.id}:`, error);
+    const { id } = params;
+    console.error(`Error deleting album ${id}:`, error);
     return NextResponse.json(
       { error: 'Failed to delete album', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

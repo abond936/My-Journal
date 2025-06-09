@@ -57,7 +57,7 @@
 }
 
 .albumList {
-  width: 250px;
+  width: 350px;
   border-right: 1px solid #e5e7eb;
   padding: 1rem;
   overflow-y: auto;
@@ -194,26 +194,48 @@
 
 .tree {
   list-style: none;
-  padding: 0;
   margin: 0;
 }
 
-.tree ul {
-  padding-left: 1rem;
-}
-
 .treeNode {
-  padding: 0.5rem;
-  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0.2rem 0.5rem;
   border-radius: 4px;
+  cursor: default;
 }
 
 .treeNode:hover {
   background-color: #f0f0f0;
 }
 
-.treeNodeSelected {
+.treeNodeName {
+  flex-grow: 1;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+}
+
+.treeNodeName:hover {
+  background-color: #e0e0e0;
+}
+
+.treeToggle {
+  cursor: pointer;
+  padding: 0 0.5rem;
+  user-select: none;
+}
+
+.treeNodeSelected .treeNodeName {
   background-color: #0070f3;
   color: white;
   font-weight: bold;
+}
+
+.treeNodeSelected:hover {
+  background-color: transparent;
+}
+
+.treeNodeSelected .treeNodeName:hover {
+  background-color: #0056b3;
 } 

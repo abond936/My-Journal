@@ -837,6 +837,7 @@ Status: 🟡 Operational
    - Size, alignment, caption
 
 #### Planned Features
+- Recheck for RTE/PhotoPicker Next/js Image Optimization changes.
 - Aspect ratio control 
 - Improved paste/drag-drop handling for multiple images.
 - Image-specific metadata management (e.g., tags).
@@ -844,6 +845,34 @@ Status: 🟡 Operational
 - Fill mode toggle (cover/contain)??
 
 ❓ Open Questions:
+Architectural Issue (Discovered during Refactor):
+The current implementation for handling images within the EntryForm and RichTextEditor is based on an outdated, dual-source-of-truth model.
+- It stores image metadata in a separate media array within the EntryForm's state.
+- It also stores image information as <img> tags within the editor's HTML content.
+
+This architecture was made obsolete when we upgraded to the Next.js Image Optimization system. 
+The single source of truth for an entry's images should be the HTML content itself, with <img> tags containing all necessary attributes (src, width, height). 
+The separate media array is now a source of bugs and must be removed.
+
+Required Refactoring Plan:
+
+1. src/components/admin/entry-admin/EntryForm.tsx
+Objective: Make the form a "controller" for the editor.
+State: Remove the media: PhotoMetadata[] field from the form's state.
+UI: Add a dedicated "Add Photo" button to the form's UI to open the <PhotoPicker> modal.
+Logic:
+When a photo is selected in the picker, the form will call a new addImage method on the RichTextEditor component via its ref.
+The handleSubmit function must be simplified to only retrieve the final HTML string from the editor. It should no longer read from or save the separate media array.
+2. src/components/common/RichTextEditor.tsx
+Objective: Make the editor a "passive" component that responds to commands.
+Props:
+- Remove the media and onChange props. 
+  - The component no longer needs to manage a separate media list or report every change.
+- Exposed Methods (useImperativeHandle):
+- Remove the obsolete getMedia() method.
+- Add a new method: addImage(photo: PhotoMetadata).
+- addImage Implementation: This function will contain the Tiptap logic (editor.chain().focus().setImage(...)) to insert the figureWithImage node directly into the editor's content at the current cursor position, using the src, width, and height from the photo object.
+- This refactoring will create a clean, single-source-of-truth architecture where the EntryForm controls the UI and the RichTextEditor manages its own content, leading to a more stable and maintainable system.
 
 ### **Album Management**
 ---------------------------------
@@ -902,6 +931,8 @@ Status: ⭕ Planned
    - Title
    - Description
    - Caption
+- Photopicker
+  - Localdrive source
 
 #### Planned Features
 - Add cover image
@@ -909,6 +940,14 @@ Status: ⭕ Planned
 - Tag assignment
 
 ❓ Open Questions:
+- How do we want this page to operate?
+  - Edit Fields
+   - Cover Page
+   - Title
+   - Description
+   - Caption
+   - Style
+  - Edit Photos feature
 
 
 ### **Album Edit**
@@ -916,15 +955,17 @@ Status: ⭕ Planned
 Status: ⭕ Planned
 
 ####Current Features
-- Inline Album Admin only
+  - Separate page
+  - Title
+  - Description
+  - Caption
+
+
 
 #### Planned Features
-- Separate page
-  - Cover Image (similar to New)
-  - Title
-  - Caption
-  - Photopicker
-  - Tag assignment
+- Inline Album Admin only
+- Cover Image (similar to New)
+- Tag assignment
 
 ❓ Open Questions:
 

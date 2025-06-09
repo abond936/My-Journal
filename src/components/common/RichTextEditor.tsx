@@ -1,39 +1,44 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo, useImperativeHandle, forwardRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import Blockquote from '@tiptap/extension-blockquote';
 import { FigureWithImage } from '@/lib/tiptap/extensions/FigureWithImage';
 import PhotoPicker from '@/components/PhotoPicker';
 import ImageToolbar from './ImageToolbar';
-import { PhotoMetadata } from '@/lib/services/photos/photoService';
+import { PhotoMetadata } from '@/lib/types/photo';
 import styles from './RichTextEditor.module.css';
 
 // Props interface defines what data and callbacks the component needs
 interface RichTextEditorProps {
-  content: string;        // The HTML content to be edited
-  media: PhotoMetadata[]; // Array of photo metadata associated with the content
-  onChange: (content: string, media: PhotoMetadata[]) => void; // Called when content changes
-  onPhotoSelect?: (photo: PhotoMetadata) => void; // Optional callback when a photo is selected
+  content: string;        // The initial HTML content
+  onAddImage?: () => void; // Called when the user wants to add an image
+}
+
+// Export the Ref type so the parent component can use it.
+export interface RichTextEditorRef {
+  getContent: () => string;
+  addImage: (photo: PhotoMetadata) => void;
 }
 
 // RichTextEditor component
-const RichTextEditor = React.forwardRef<any, RichTextEditorProps>(({
+const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
   content,
-  media,
-  onChange,
-  onPhotoSelect,
+  onAddImage,
 }, ref) => {
-  const editorRef = useRef<any>();
+  const editorRef = useRef<HTMLDivElement>(null);
 
   // State management for various editor features
-  const [showPhotoPicker, setShowPhotoPicker] = useState(false); // Controls photo picker modal visibility
+  const [showPhotoPicker, setShowPhotoPicker] = useState(false); // This state is no longer used here but kept for context if needed later
   const toolbarRef = useRef<HTMLDivElement>(null); // Reference to the image toolbar
+  const [isUploading, setIsUploading] = useState(false); // To show upload progress/feedback
 
   // Initialize the TipTap editor with custom extensions
   const editor = useEditor({
     extensions: [
       StarterKit, // Basic text formatting (bold, italic, lists, etc.)
+      Blockquote, // Add the blockquote extension
       FigureWithImage.configure({ // Our custom extension
         HTMLAttributes: {
           class: 'figure',
@@ -41,9 +46,7 @@ const RichTextEditor = React.forwardRef<any, RichTextEditorProps>(({
       }),
     ],
     content: content, // Set initial content
-    onUpdate: ({ editor }) => {
-      onChange(editor.getHTML(), media); // Notify parent of content changes
-    },
+    // onUpdate is no longer needed as the parent will pull content on demand
   });
 
   const memoizedEditor = useMemo(() => editor, [editor]);
@@ -55,31 +58,30 @@ const RichTextEditor = React.forwardRef<any, RichTextEditorProps>(({
     }
   }, [content, editor]);
 
-  // Expose a method to get content via the ref
-  React.useImperativeHandle(ref, () => ({
+  // Expose methods to the parent component via the ref
+  useImperativeHandle(ref, () => ({
+    /**
+     * Returns the current HTML content of the editor.
+     */
     getContent: () => {
-      return editor?.getHTML();
+      return editor?.getHTML() || '';
     },
-    getMedia: () => {
-      return media;
+    /**
+     * Inserts an image into the editor at the current cursor position.
+     * @param photo The metadata of the photo to insert.
+     */
+    addImage: (photo: PhotoMetadata) => {
+      if (editor) {
+        editor.chain().focus().setFigureWithImage({ 
+          src: photo.path,
+          alt: photo.filename,
+          width: photo.width,
+          height: photo.height,
+          caption: photo.filename,
+        }).run();
+      }
     }
   }));
-
-  // THIS IS THE FINAL CHANGE
-  const handlePhotoSelect = (photo: PhotoMetadata) => {
-    if (memoizedEditor) {
-      // We now pass the width and height from the photo metadata
-      // to the setFigureWithImage command.
-      memoizedEditor.chain().focus().setFigureWithImage({ 
-        src: photo.path, // Use the simple web path
-        alt: photo.filename,
-        width: photo.width,
-        height: photo.height,
-        caption: photo.filename, // Default caption to filename
-      }).run();
-    }
-    setShowPhotoPicker(false);
-  };
 
   const handleToolbarAction = (action: 'setSize' | 'setAlignment' | 'setAspectRatio', value: string) => {
     if (memoizedEditor?.isActive('figureWithImage')) {
@@ -92,38 +94,79 @@ const RichTextEditor = React.forwardRef<any, RichTextEditorProps>(({
     }
   };
 
+  /**
+   * Handles file uploads for paste and drag-and-drop.
+   */
+  const handleFileUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      return;
+    }
+    setIsUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/photos/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'File upload failed');
+      }
+
+      const { url, name, width, height } = await response.json();
+
+      // Use the addImage method to insert the newly uploaded image
+      if (memoizedEditor) {
+        memoizedEditor.chain().focus().setFigureWithImage({
+          src: url,
+          alt: name,
+          // Note: The API currently doesn't return width/height.
+          // This will need to be added to the API response for full support.
+          // For now, we can omit them or use placeholders if the extension allows.
+          width: width || 500, // Placeholder or actual width from API
+          height: height || 300, // Placeholder or actual height from API
+          caption: name,
+        }).run();
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      // Optionally, display an error to the user in the editor
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handlePaste = (event: ClipboardEvent) => {
-    // Paste logic remains the same for now, would need enhancement for file uploads
     const items = event.clipboardData?.items;
     if (items) {
       for (const item of items) {
-        if (item.type.indexOf('image') === 0) {
+        if (item.type.startsWith('image/')) {
           event.preventDefault();
           const file = item.getAsFile();
           if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              const src = e.target?.result as string;
-              if (src && memoizedEditor) {
-                // NOTE: Pasted images won't have width/height from metadata
-                // This would require a different flow (e.g., upload image first)
-                // For now, it might result in a broken image if width/height are required.
-                // To prevent errors, we should avoid setting the figure if we don't have dimensions.
-                console.warn("Pasted image does not have width/height metadata.");
-              }
-            };
-            reader.readAsDataURL(file);
+            handleFileUpload(file);
           }
         }
       }
     }
   };
 
-  // Drop logic also needs consideration for getting image dimensions
   const handleDrop = (event: DragEvent) => {
     const items = event.dataTransfer?.items;
     if (items) {
-      // Similar logic to paste
+      event.preventDefault();
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            handleFileUpload(file);
+          }
+        }
+      }
     }
   };
 
@@ -132,15 +175,16 @@ const RichTextEditor = React.forwardRef<any, RichTextEditorProps>(({
     if (element) {
         const editorElement = element.querySelector('.ProseMirror');
         if (editorElement) {
-            editorElement.addEventListener('paste', handlePaste);
-            editorElement.addEventListener('drop', handleDrop);
+            const castEditorElement = editorElement as HTMLElement;
+            castEditorElement.addEventListener('paste', handlePaste as EventListener);
+            castEditorElement.addEventListener('drop', handleDrop as EventListener);
             return () => {
-                editorElement.removeEventListener('paste', handlePaste);
-                editorElement.removeEventListener('drop', handleDrop);
+                castEditorElement.removeEventListener('paste', handlePaste as EventListener);
+                castEditorElement.removeEventListener('drop', handleDrop as EventListener);
             };
         }
     }
-  }, [memoizedEditor, handlePaste, handleDrop]);
+  }, [memoizedEditor]); // Dependency array ensures this runs when the editor is ready
 
   if (!memoizedEditor) {
     return null;
@@ -148,13 +192,15 @@ const RichTextEditor = React.forwardRef<any, RichTextEditorProps>(({
 
   return (
     <div className={styles.editorContainer} ref={editorRef}>
-        <div className={styles.toolbar}>
-            <button type="button" onClick={() => memoizedEditor.chain().focus().toggleBold().run()} className={memoizedEditor.isActive('bold') ? styles.active : ''}>Bold</button>
-            <button type="button" onClick={() => memoizedEditor.chain().focus().toggleItalic().run()} className={memoizedEditor.isActive('italic') ? styles.active : ''}>Italic</button>
-            <button type="button" onClick={() => memoizedEditor.chain().focus().toggleHeading({ level: 1 }).run()} className={memoizedEditor.isActive('heading', { level: 1 }) ? styles.active : ''}>H1</button>
-            <button type="button" onClick={() => memoizedEditor.chain().focus().toggleHeading({ level: 2 }).run()} className={memoizedEditor.isActive('heading', { level: 2 }) ? styles.active : ''}>H2</button>
-            <button type="button" onClick={() => setShowPhotoPicker(true)}>Add Image</button>
-        </div>
+      {isUploading && <div className={styles.uploadingOverlay}>Uploading...</div>}
+      <div className={styles.toolbar}>
+        <button type="button" onClick={() => memoizedEditor.chain().focus().toggleBold().run()} className={memoizedEditor.isActive('bold') ? styles.active : ''}>Bold</button>
+        <button type="button" onClick={() => memoizedEditor.chain().focus().toggleItalic().run()} className={memoizedEditor.isActive('italic') ? styles.active : ''}>Italic</button>
+        <button type="button" onClick={() => memoizedEditor.chain().focus().toggleHeading({ level: 1 }).run()} className={memoizedEditor.isActive('heading', { level: 1 }) ? styles.active : ''}>H1</button>
+        <button type="button" onClick={() => memoizedEditor.chain().focus().toggleHeading({ level: 2 }).run()} className={memoizedEditor.isActive('heading', { level: 2 }) ? styles.active : ''}>H2</button>
+        <button type="button" onClick={() => memoizedEditor.chain().focus().toggleBlockquote().run()} className={memoizedEditor.isActive('blockquote') ? styles.active : ''}>Quote</button>
+        <button type="button" onClick={onAddImage}>Add Image</button>
+      </div>
 
       {memoizedEditor.isActive('figureWithImage') && (
         <ImageToolbar
@@ -162,8 +208,6 @@ const RichTextEditor = React.forwardRef<any, RichTextEditorProps>(({
           onAction={handleToolbarAction}
         />
       )}
-      
-      {showPhotoPicker && <PhotoPicker onPhotoSelect={handlePhotoSelect} onClose={() => setShowPhotoPicker(false)} />}
       
       <EditorContent editor={memoizedEditor} className={styles.editorContent} />
     </div>

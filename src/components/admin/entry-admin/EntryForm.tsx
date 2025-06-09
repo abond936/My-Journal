@@ -1,15 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Entry } from '@/lib/types/entry';
 import { createEntry, updateEntry } from '@/lib/services/entryService';
 import { organizeEntryTags } from '@/lib/services/tagService';
 import TagSelector from '@/components/common/TagSelector';
 import RichTextEditor from '@/components/common/RichTextEditor';
+import type { RichTextEditorRef } from '@/components/common/RichTextEditor'; // Import the Ref type
 import CoverPhotoContainer from './CoverPhotoContainer';
-import { PhotoMetadata } from '@/lib/services/photos/photoService';
+import PhotoPicker from '@/components/PhotoPicker'; // Import PhotoPicker
+import { PhotoMetadata } from '@/lib/types/photo';
 import { ContentValidationError } from '@/lib/utils/contentValidation';
-import { extractPhotoMetadata } from '@/lib/utils/contentValidation';
 import styles from './EntryForm.module.css';
 import { EntryFormData } from '@/lib/types/entry';
 
@@ -24,18 +25,18 @@ const EntryForm: React.FC<EntryFormProps> = ({
   onSuccess,
   onCancel 
 }) => {
-  const [formData, setFormData] = useState<EntryFormData>({
+  const [formData, setFormData] = useState<Omit<EntryFormData, 'media'>>({ // Omit 'media' from the type
     title: '',
     content: '',
     tags: [],
     type: 'story',
     status: 'draft',
     date: new Date(),
-    media: [],
     visibility: 'private',
     coverPhoto: null,
   });
-  const editorRef = React.useRef<any>(null);
+  const editorRef = useRef<RichTextEditorRef>(null); // Use the imported Ref type
+  const [isPhotoPickerOpen, setIsPhotoPickerOpen] = useState(false); // State for PhotoPicker
 
   useEffect(() => {
     if (initialEntry) {
@@ -46,7 +47,6 @@ const EntryForm: React.FC<EntryFormProps> = ({
         type: initialEntry.type || 'story',
         status: initialEntry.status || 'draft',
         date: initialEntry.date || new Date(),
-        media: initialEntry.media || [],
         visibility: initialEntry.visibility || 'private',
         coverPhoto: initialEntry.coverPhoto || null,
       });
@@ -89,20 +89,6 @@ const EntryForm: React.FC<EntryFormProps> = ({
     }));
   };
 
-  // Handle content changes from the rich text editor
-  // This is now only called when explicitly needed (like form submission)
-  // This prevents the re-render cycle and maintains editor state
-  const handleContentChange = (newContent: string, newMedia: PhotoMetadata[]) => {
-    // We no longer update form data on every change
-    // Instead, we'll get the current content when the form is submitted
-    // console.log('Content change detected, but not updating form state');
-    setFormData(prev => ({
-      ...prev,
-      content: newContent,
-      media: newMedia
-    }));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -110,19 +96,17 @@ const EntryForm: React.FC<EntryFormProps> = ({
     setValidationErrors([]);
 
     try {
-      // Get the current content from the editor when submitting
-      // This ensures we have the latest content without constant updates
+      // Step 1: Get final HTML content from the editor ref.
       const currentContent = editorRef.current?.getContent();
-      const currentMedia = editorRef.current?.getMedia();
 
-      if (currentContent === undefined) {
-        throw new Error("Could not get content from editor.");
+      if (currentContent === undefined || currentContent === null) {
+        throw new Error("Could not get content from editor. The editor might not be initialized.");
       }
 
+      // Step 2: Assemble the entry data. Note the absence of the 'media' array.
       const entryData = {
         ...formData,
         content: currentContent,
-        media: currentMedia || formData.media, // Fallback to form's media
         coverPhoto: formData.coverPhoto || null
       };
 
@@ -130,7 +114,16 @@ const EntryForm: React.FC<EntryFormProps> = ({
       if (initialEntry?.id) {
         result = await updateEntry(initialEntry.id, entryData);
       } else {
-        result = await createEntry(entryData as Omit<Entry, 'id'>);
+        // Create requires all fields, ensure type safety.
+        const finalDataForCreation = {
+            ...entryData,
+            // Ensure fields that might be null/undefined have defaults if needed by createEntry
+            // Example:
+            tags: entryData.tags || [],
+            date: entryData.date || new Date(),
+            // etc., for all fields in Entry but not in Omit<EntryFormData, 'media'>
+        } as Omit<Entry, 'id'>;
+        result = await createEntry(finalDataForCreation);
       }
       onSuccess?.(result);
     } catch (err) {
@@ -156,6 +149,38 @@ const EntryForm: React.FC<EntryFormProps> = ({
       ...prev,
       coverPhoto: undefined
     }));
+  };
+
+  // --- New Handlers for Photo Picker ---
+  
+  /**
+   * Called by the RichTextEditor when its "Add Image" button is clicked.
+   */
+  const handleOpenPhotoPicker = () => {
+    setIsPhotoPickerOpen(true);
+  };
+
+  /**
+   * Called by the PhotoPicker when a photo is selected.
+   * This function "injects" the image into the RichTextEditor.
+   */
+  const handlePhotoSelectedFromPicker = (photo: PhotoMetadata) => {
+    if (editorRef.current) {
+      editorRef.current.addImage(photo);
+    }
+    setIsPhotoPickerOpen(false);
+  };
+
+  /**
+   * Called by the PhotoPicker when multiple photos are selected.
+   */
+  const handleMultiPhotoSelectedFromPicker = (photos: PhotoMetadata[]) => {
+    if (editorRef.current) {
+      photos.forEach(photo => {
+        editorRef.current?.addImage(photo);
+      });
+    }
+    setIsPhotoPickerOpen(false);
   };
 
   return (
@@ -194,8 +219,8 @@ const EntryForm: React.FC<EntryFormProps> = ({
           <label>Cover Photo</label>
           <CoverPhotoContainer
             coverPhoto={formData.coverPhoto}
-            onPhotoSelect={handleCoverPhotoSelect}
-            onPhotoRemove={handleCoverPhotoRemove}
+            onCoverPhotoSelect={handleCoverPhotoSelect}
+            onCoverPhotoRemove={handleCoverPhotoRemove}
           />
         </div>
 
@@ -204,8 +229,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
           <RichTextEditor
             ref={editorRef}
             content={formData.content || ''}
-            media={formData.media || []}
-            onChange={handleContentChange}
+            onAddImage={handleOpenPhotoPicker} // Pass the handler to the editor
           />
         </div>
       </div>
@@ -249,7 +273,6 @@ const EntryForm: React.FC<EntryFormProps> = ({
             className={styles.select}
           >
             <option value="private">Private</option>
-            <option value="family">Family</option>
             <option value="public">Public</option>
           </select>
         </div>
@@ -317,8 +340,16 @@ const EntryForm: React.FC<EntryFormProps> = ({
           {isSubmitting ? 'Saving...' : initialEntry ? 'Update' : 'Create'}
         </button>
       </div>
+
+      {isPhotoPickerOpen && (
+        <PhotoPicker
+          onPhotoSelect={handlePhotoSelectedFromPicker}
+          onMultiPhotoSelect={handleMultiPhotoSelectedFromPicker}
+          onClose={() => setIsPhotoPickerOpen(false)}
+        />
+      )}
     </form>
   );
 };
 
-export default EntryForm; 
+export default EntryForm;

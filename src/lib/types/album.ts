@@ -30,4 +30,25 @@ export interface Album {
   media: PhotoMetadata[];
   createdAt: string;
   updatedAt: string;
+  status: 'draft' | 'published';
+  mediaCount: number;
+  images: AlbumImage[];
+  sourceId?: string;
+  styleId?: string;
+  [key: string]: any;
+}
+
+export interface AlbumImage {
+  displayUrl: string;
+  lastModified?: string;
+}
+
+export interface AlbumStyle {
+  id: string;
+  name: string;
+  backgroundColor?: string;
+  textColor?: string;
+  fontFamily?: string;
+  backgroundImage?: string;
+  photoFrameStyle?: string; // e.g., 'polaroid', 'shadow'
 }

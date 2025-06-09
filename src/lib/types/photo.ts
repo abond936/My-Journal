@@ -9,6 +9,7 @@ export interface PhotoMetadata {
   height: number;
   lastModified: string;
   size: number;
+  objectPosition?: string; // e.g., "50% 50%"
   thumbnailUrl: string; 
   previewUrl: string;
   webUrl: string; 

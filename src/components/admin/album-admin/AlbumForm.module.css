@@ -1,0 +1,63 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-medium);
+  padding: var(--space-medium);
+  background-color: var(--color-background-offset);
+  border-radius: var(--border-radius-large);
+  border: 1px solid var(--color-border);
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-small);
+}
+
+.formGroup label {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.input,
+.textarea {
+  width: 100%;
+  padding: var(--space-small);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-medium);
+  background-color: var(--color-background);
+  color: var(--color-text);
+  font-size: var(--font-size-medium);
+  transition: border-color 0.2s;
+}
+
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.saveButton {
+  align-self: flex-end;
+  padding: var(--space-small) var(--space-medium);
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-medium);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.saveButton:hover:not(:disabled) {
+  background-color: var(--color-primary-dark);
+}
+
+.saveButton:disabled {
+  background-color: var(--color-background-disabled);
+  cursor: not-allowed;
+} 
