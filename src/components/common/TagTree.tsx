@@ -80,7 +80,7 @@ export default function TagTree({ onTagSelect, selectedTags }: TagTreeProps) {
           >
             {children.length > 0 && (
               <span className={styles.expandIcon}>
-                {isExpanded ? '−' : '+'}
+                {isExpanded ? '▼' : '►'}
               </span>
             )}
           </button>
@@ -116,6 +116,7 @@ export default function TagTree({ onTagSelect, selectedTags }: TagTreeProps) {
 
   return (
     <aside className={styles.sidebar}>
+      <h2 className={styles.title}>Explore</h2>
       <nav className={styles.navigation}>
         {rootTags.map((tag, index) => (
           <React.Fragment key={`root-${tag.id}-${index}`}>

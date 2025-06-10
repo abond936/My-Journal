@@ -31,7 +31,7 @@ export default function ViewLayout({ children }: ViewLayoutProps) {
 
   return (
     <div className={styles.layout}>
-      <Navigation />
+      <Navigation sidebarOpen={sidebarOpen} />
       <div className={styles.contentWrapper}>
         <button 
           className={styles.menuToggle} 

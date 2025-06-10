@@ -11,13 +11,13 @@
   display: flex;
   flex: 1;
   position: relative;
-  margin-top: 54px; /* Account for navigation height */
+  margin-top: 120px; /* Account for navigation height */
 }
 
 .menuToggle {
   position: fixed;
   left: 1rem;
-  top: calc(50% + 27px); /* Adjust for navigation height */
+  top: calc(50% + 60px); /* Adjust for navigation height */
   transform: translateY(-50%);
   z-index: 100;
   background: var(--color-background);
@@ -39,7 +39,7 @@
 .sidebar {
   position: fixed;
   left: 0;
-  top: 54px; /* Start below navigation */
+  top: 120px; /* Start below navigation */
   bottom: 0;
   width: 250px;
   background: var(--color-background);

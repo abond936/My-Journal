@@ -155,17 +155,30 @@ const ContentCard: React.FC<ContentCardProps> = (props) => {
           pagination={{ clickable: true }}
           className={styles.swiperContainer}
         >
-          {props.images.map((image) => (
-            <SwiperSlide key={image.path}>
-              <div className={styles.imageContainer}>
-                <img src={image.path} alt={image.filename || title} className={styles.image} />
-              </div>
-            </SwiperSlide>
-          ))}
+          {props.images.map((image) => {
+            const imageUrl = image.source === 'local' 
+              ? `/api/images/local/file?path=${encodeURIComponent(image.url)}` 
+              : image.url;
+            return (
+              <SwiperSlide key={image.url}>
+                <div className={styles.imageContainer}>
+                  <img src={imageUrl} alt={image.filename || title} className={styles.image} />
+                </div>
+              </SwiperSlide>
+            );
+          })}
         </Swiper>
       ) : imageUrl ? (
         <div className={styles.imageContainer}>
-          <img src={imageUrl} alt={title} className={styles.image} />
+          <img 
+            src={
+              (props as AlbumCardProps).type === 'album' && (props as any).coverPhoto?.source === 'local'
+                ? `/api/images/local/file?path=${encodeURIComponent(imageUrl)}`
+                : imageUrl
+            }
+            alt={title}
+            className={styles.image}
+          />
         </div>
       ) : null}
       {renderContent()}

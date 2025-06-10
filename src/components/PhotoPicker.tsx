@@ -186,6 +186,7 @@ export default function PhotoPicker({
               <div className={styles.grid}>
                 {photos.map(photo => {
                   const isSelected = isMultiSelect && selectedPhotos.some(p => p.id === photo.id);
+                  const imageUrl = `/api/images/local/file?path=${encodeURIComponent(photo.path)}`;
                   return (
                     <div
                       key={photo.id}
@@ -193,14 +194,12 @@ export default function PhotoPicker({
                       onClick={() => handlePhotoClick(photo)}
                     >
                       {isSelected && <div className={styles.checkmark}>✓</div>}
-                      {/* REPLACED standard <img> with Next.js <Image> */}
                       <Image
-                        src={photo.path} // Use the simple web path
+                        src={imageUrl}
                         alt={photo.filename}
-                        width={150} // Provide a base width for the grid
-                        height={150} // Provide a base height for the grid
+                        width={150}
+                        height={150}
                         className={styles.photoImage}
-                        // The 'style' prop ensures the image covers the grid cell without distortion.
                         style={{ objectFit: 'cover' }}
                       />
                     </div>

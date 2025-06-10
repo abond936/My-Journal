@@ -1,55 +1,82 @@
-import { useState, useEffect } from 'react';
-import { getEntry } from '@/lib/services/entryService';
+import useSWR from 'swr';
 import { Entry } from '@/lib/types/entry';
+import { useCallback } from 'react';
 
-// Mock data for testing
-const mockEntry: Entry = {
-  id: 'test-entry-1',
-  title: 'Test Entry',
-  content: '<p>This is a test entry with some <strong>rich text</strong> content.</p><p>It includes multiple paragraphs and <em>formatting</em>.</p>',
-  tags: ['test', 'example'],
-  type: 'story',
-  status: 'published',
-  visibility: 'public',
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  date: new Date(),
-  media: [],
-  inheritedTags: ['test', 'example']
+const fetcher = async (url: string) => {
+  const res = await fetch(url);
+  if (!res.ok) {
+    const error: any = new Error('An error occurred while fetching the data.');
+    error.info = await res.json();
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
 };
 
-export function useEntry(id: string) {
-  const [entry, setEntry] = useState<Entry | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+export function useEntry(id?: string) {
+  const { data: entry, error, isLoading, mutate } = useSWR<Entry>(
+    id ? `/api/entries/${id}` : null,
+    fetcher
+  );
 
-  useEffect(() => {
-    let isMounted = true;
+  const updateEntry = useCallback(
+    async (updateData: Partial<Omit<Entry, 'id'>>) => {
+      if (!id) return;
 
-    const fetchEntry = async () => {
       try {
-        setLoading(true);
-        setError(null);
-        const data = await getEntry(id);
+        const response = await fetch(`/api/entries/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updateData),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to update entry');
+        }
+
+        const updatedEntry = await response.json();
         
-        if (isMounted) {
-          setEntry(data);
-          setLoading(false);
-        }
+        // Optimistically update the local cache
+        mutate(updatedEntry, false);
+        
+        return updatedEntry;
       } catch (err) {
-        if (isMounted) {
-          setError(err instanceof Error ? err : new Error('Failed to fetch entry'));
-          setLoading(false);
-        }
+        console.error('Error updating entry:', err);
+        // On error, revalidate to get the correct server state
+        mutate();
+        throw err;
       }
-    };
+    },
+    [id, mutate]
+  );
 
-    fetchEntry();
+  const deleteEntry = useCallback(async () => {
+    if (!id) return;
 
-    return () => {
-      isMounted = false;
-    };
-  }, [id]);
+    try {
+      const response = await fetch(`/api/entries/${id}`, {
+        method: 'DELETE',
+      });
 
-  return { entry, loading, error };
+      if (!response.ok) {
+        throw new Error('Failed to delete entry');
+      }
+
+      // Clear the local cache for this entry
+      mutate(undefined, false);
+
+    } catch (err) {
+      console.error('Error deleting entry:', err);
+      mutate();
+      throw err;
+    }
+  }, [id, mutate]);
+
+  return {
+    entry,
+    loading: isLoading,
+    error,
+    updateEntry,
+    deleteEntry,
+  };
 } 

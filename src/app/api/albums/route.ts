@@ -1,16 +1,31 @@
 import { NextResponse } from 'next/server';
 import { createAlbum, getAllAlbums } from '@/lib/services/albumService';
 
+/**
+ * @swagger
+ * /api/albums:
+ *   get:
+ *     summary: Retrieve all albums
+ *     description: Fetches a complete list of all albums, sorted by date.
+ *     responses:
+ *       200:
+ *         description: A list of albums.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Album'
+ *       500:
+ *         description: Internal server error.
+ */
 export async function GET() {
   try {
     const albums = await getAllAlbums();
     return NextResponse.json(albums);
   } catch (error) {
-    console.error('Error fetching albums:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch albums', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    console.error('API Error fetching all albums:', error);
+    return new NextResponse('Internal server error', { status: 500 });
   }
 }
 

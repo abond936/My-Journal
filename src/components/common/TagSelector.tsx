@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/config/firebase';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useTag } from '@/lib/contexts/TagContext';
 import { Tag } from '@/lib/types/tag';
 import styles from './TagSelector.module.css';
 
@@ -14,7 +13,6 @@ interface TagSelectorProps {
 
 interface TagWithChildren extends Tag {
   children: TagWithChildren[];
-  isExpanded?: boolean;
 }
 
 const TagSelector: React.FC<TagSelectorProps> = ({
@@ -22,76 +20,46 @@ const TagSelector: React.FC<TagSelectorProps> = ({
   onTagsChange,
   dimension
 }) => {
-  const [tags, setTags] = useState<TagWithChildren[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { tags: allTags, loading: isLoading, error } = useTag();
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedTags, setExpandedTags] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    const fetchTags = async () => {
-      try {
-        const tagsRef = collection(db, 'tags');
-        const q = query(tagsRef, orderBy('name'));
-        const snapshot = await getDocs(q);
-        const fetchedTags = snapshot.docs
-          .map(doc => ({ id: doc.id, ...doc.data() } as Tag))
-          .filter(tag => !dimension || tag.dimension === dimension);
+  const tagTree = useMemo(() => {
+    const filteredTags = dimension 
+      ? allTags.filter(tag => tag.dimension === dimension) 
+      : allTags;
 
-        // Organize tags into a tree structure
-        const tagMap = new Map<string, TagWithChildren>();
-        const rootTags: TagWithChildren[] = [];
+    const tagMap = new Map<string, TagWithChildren>();
+    const rootTags: TagWithChildren[] = [];
 
-        // First pass: create all tag objects
-        fetchedTags.forEach(tag => {
-          tagMap.set(tag.id, { ...tag, children: [] });
-        });
+    filteredTags.forEach(tag => {
+      tagMap.set(tag.id, { ...tag, children: [] });
+    });
 
-        // Second pass: build the tree
-        fetchedTags.forEach(tag => {
-          const tagWithChildren = tagMap.get(tag.id)!;
-          if (tag.parentId && tagMap.has(tag.parentId)) {
-            const parent = tagMap.get(tag.parentId)!;
-            parent.children.push(tagWithChildren);
-          } else {
-            rootTags.push(tagWithChildren);
-          }
-        });
-
-        // Sort tags by order if available, otherwise by name
-        const sortTags = (tags: TagWithChildren[]) => {
-          return tags.sort((a, b) => {
-            if (a.order !== undefined && b.order !== undefined) {
-              return a.order - b.order;
-            }
-            return a.name.localeCompare(b.name);
-          });
-        };
-
-        // Sort all levels of the tree
-        const sortTree = (tags: TagWithChildren[]) => {
-          sortTags(tags);
-          tags.forEach(tag => {
-            if (tag.children.length > 0) {
-              sortTree(tag.children);
-            }
-          });
-        };
-
-        sortTree(rootTags);
-        setTags(rootTags);
-      } catch (err) {
-        setError('Failed to load tags');
-        console.error('Error loading tags:', err);
-      } finally {
-        setIsLoading(false);
+    filteredTags.forEach(tag => {
+      const tagWithChildren = tagMap.get(tag.id)!;
+      if (tag.parentId && tagMap.has(tag.parentId)) {
+        const parent = tagMap.get(tag.parentId)!;
+        parent.children.push(tagWithChildren);
+      } else {
+        rootTags.push(tagWithChildren);
       }
+    });
+
+    const sortTags = (tags: TagWithChildren[]) => {
+      return tags.sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name));
     };
 
-    fetchTags();
-  }, [dimension]);
+    const sortTree = (tags: TagWithChildren[]) => {
+      sortTags(tags);
+      tags.forEach(tag => sortTree(tag.children));
+    };
 
-  const toggleTag = (tagId: string) => {
+    sortTree(rootTags);
+    return rootTags;
+  }, [allTags, dimension]);
+  
+  const toggleTagExpansion = (tagId: string) => {
     setExpandedTags(prev => {
       const next = new Set(prev);
       if (next.has(tagId)) {
@@ -103,7 +71,7 @@ const TagSelector: React.FC<TagSelectorProps> = ({
     });
   };
 
-  const handleTagToggle = (tagId: string) => {
+  const handleTagSelectionToggle = (tagId: string) => {
     const newSelectedTags = selectedTags.includes(tagId)
       ? selectedTags.filter(id => id !== tagId)
       : [...selectedTags, tagId];
@@ -114,12 +82,17 @@ const TagSelector: React.FC<TagSelectorProps> = ({
     const isExpanded = expandedTags.has(tag.id);
     const hasChildren = tag.children.length > 0;
     const isSelected = selectedTags.includes(tag.id);
-    const matchesSearch = tag.name.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesSearch = useMemo(() => {
+        if (!searchTerm) return true;
+        const selfMatches = tag.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const childMatches = tag.children.some(child => 
+            child.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        return selfMatches || childMatches;
+    }, [tag, searchTerm]);
 
-    // If searching and this tag doesn't match, only show if it has matching children
-    if (searchTerm && !matchesSearch && !tag.children.some(child => 
-      child.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )) {
+    if (!matchesSearch) {
       return null;
     }
 
@@ -133,7 +106,7 @@ const TagSelector: React.FC<TagSelectorProps> = ({
           {hasChildren && (
             <button
               className={styles.expandButton}
-              onClick={() => toggleTag(tag.id)}
+              onClick={() => toggleTagExpansion(tag.id)}
               aria-expanded={isExpanded}
             >
               <span className={styles.expandIcon}>
@@ -143,7 +116,7 @@ const TagSelector: React.FC<TagSelectorProps> = ({
           )}
           <button
             className={`${styles.tag} ${isSelected ? styles.selected : ''}`}
-            onClick={() => handleTagToggle(tag.id)}
+            onClick={() => handleTagSelectionToggle(tag.id)}
             type="button"
             title={tag.description}
           >
@@ -164,7 +137,7 @@ const TagSelector: React.FC<TagSelectorProps> = ({
   }
 
   if (error) {
-    return <div className={styles.error}>{error}</div>;
+    return <div className={styles.error}>Error loading tags: {error.message}</div>;
   }
 
   return (
@@ -177,7 +150,7 @@ const TagSelector: React.FC<TagSelectorProps> = ({
         className={styles.searchInput}
       />
       <div className={styles.tagList}>
-        {tags.map(tag => renderTag(tag))}
+        {tagTree.map(tag => renderTag(tag))}
       </div>
     </div>
   );

@@ -5,7 +5,6 @@
    - [Context](#context)
    - [Scope](#scope)
    - [Technical Stack](#technical-stack)
-   - [Deployment Model](#deployment-model)
    - [Operational Summary](#operational-summary)
 
 2. [Interaction Rules](#interaction-rules)
@@ -23,41 +22,35 @@
    - [Code Documentation](#code-documentation)
 
 4. [Content Consumption](#content-consumption)
-   - [Navigation Systems](#navigation-systems)
-     - [Card-based Navigation](#card-based-navigation)
-     - [Tag-based Navigation](#tag-based-navigation)
-     - [Search & Filter](#search-filter)
-   - [Content Presentation](#content-presentation)
+   - [Home Page](#home-page)
+   - [Layout](#layout)
      - [Content View](#content-view)   
      - [Entry View](#entry-view)
      - [Album View](#album-view)
-     - [Tag View](#tag-view)
-   - [UI Components](#ui-components)
-     - [Layout System](#layout-system)
      - [Theme System](#theme-system)
-     - [Media Display](#media-display)
+   - [Navigation Systems](#navigation-systems)
+     - [Top Navigation](#top-navigation)
+     - [Tag Filtering](#tag-filtering)
+     - [Type Filtering](#type-filtering)
+     - [Search](#search)
 
 5. [Content Administration](#content-administration)
+   - [Admin Navigation](#admin-navigation)
    - [Entry Management](#entry-management)
    - [Album Management](#album-management)
    - [Tag Management](#tag-management)
    - [Question Management](#question-management)
    - [Style Management](#style-management)   
    - [Theme Management](#theme-management)     
-   - [Admin Navigation](#admin-navigation)
+
 
 6. [Technical Infrastructure](#technical-infrastructure)
    - [Technical Stack](#technical-stack)
-     - [Frontend](#frontend)
-     - [Backend](#backend)
-     - [AI Integration](#ai-integration)
-     - [Media Services](#media-services)
+   - [Client-Server Architecture](#client-server-architecture)
    - [Authentication](#authentication)
-     - [Overall Strategy](#overall-strategy)
-     - [Primary Identity Provider](#primary-identity-provider)
-     - [Connected Accounts (for Photo Services)](#connected-accounts-for-photo-services)
-     - [Firebase for Data Access](#firebase-for-data-access)
-     - [Role-Based Access Control (RBAC)](#role-based-access-control-rbac)
+     - [Firebase Auth](#firebase-auth)
+     - [Session Mangement](#session-management)
+     - [Role Management](#role-management)
    - [Backup System](#backup-system)
      - [Automatic Backups](#automatic-backups)
      - [Manual Backups](#manual-backups)
@@ -68,16 +61,13 @@
      - [Data Validation](#data-validation)
    - [Image Integration](#image-integration)
      - [Image Strategy](#image-strategy)
-     - [Local Drive](#local-drive-photos)   
-     - [OneDrive](#onedrive-photos)
+     - [Storage Strategy](#storage-strategy)
+     - [PhotoPicker](#photo-picker)
+     - [Local Drive](#local-drive)   
+     - [OneDrive](#onedrive)
      - [Google Photos](#google-photos)
      - [Apple Photos](#apple-photos)
-     - [Storage Strategy](#storage-strategy)
 
-7. [Implementation Sequence](#implementation-sequence)
-   - [Phase 1: Core Functionality](#phase-1-core-functionality)
-   - [Phase 2: Media Integration](#phase-2-media-integration)
-   - [Phase 3: Enhanced Features](#phase-3-enhanced-features)
 
 [Back to Top](#myjournal-project)
 
@@ -143,10 +133,11 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
 
 [Back to Top](#myjournal-project)
 
-## 2. Interaction Rules
+## Interaction Rules
+======================================
 
 ### Core Principles
-1. **Only Act With Approval**
+**Only Act With Approval**
    - MUST get explicit approval before ANY code change
    - MUST get explicit approval before ANY file creation
    - MUST get explicit approval before ANY file movement
@@ -155,14 +146,14 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
    - MUST get explicit approval before ANY configuration change
    - MUST get explicit approval before ANY dependency addition
 
-2. **Always Search First**
+**Always Search First**
    - MUST search entire codebase before proposing any change
    - MUST report ALL search results, even if seemingly irrelevant
    - MUST explicitly state if search returns no results
    - MUST ask for clarification if search results are unclear
    - MUST explain search scope and methodology
 
-3. **Always Explain in Plain Terms**
+**Always Explain in Plain Terms**
    - MUST use layman's terms, not technical jargon
    - MUST explain the "why" before the "what"
    - MUST reference existing files and variables by name
@@ -170,14 +161,14 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
    - MUST explain implications and potential impacts
 
 ### Decision Making
-1. **Never Assume**
+**Never Assume**
    - MUST ask for clarification if there is ANY uncertainty
    - MUST ask for clarification if a rule seems ambiguous
    - MUST ask for clarification if a pattern seems inconsistent
    - MUST ask for guidance if multiple valid options exist
    - MUST state assumptions explicitly
 
-2. **Never Proceed Without Understanding**
+**Never Proceed Without Understanding**
    - MUST ask for clarification if requirements are unclear
    - MUST ask for clarification if rules are unclear
    - MUST ask for clarification if implications are unclear
@@ -191,14 +182,14 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
    - MUST explain any deviations from recommendations
 
 ### Communication Protocol
-1. **Always Be Explicit**
+**Always Be Explicit**
    - MUST state intentions clearly
    - MUST state assumptions explicitly
    - MUST state limitations explicitly
    - MUST state potential issues explicitly
    - MUST state dependencies explicitly
 
-2. **Always Be Proactive**
+**Always Be Proactive**
    - MUST identify potential issues before they occur
    - MUST ask for clarification before proceeding
    - MUST present options before making decisions
@@ -213,21 +204,21 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
    - MUST respond to feedback immediately
 
 ### Self-Correction
-1. **Always Monitor**
+**Always Monitor**
    - MUST monitor compliance with rules
    - MUST monitor understanding
    - MUST monitor assumptions
    - MUST monitor decisions
    - MUST monitor implications
 
-2. **Always Correct**
+**Always Correct**
    - MUST correct mistakes immediately
    - MUST correct misunderstandings immediately
    - MUST correct assumptions immediately
    - MUST correct violations immediately
    - MUST explain corrections
 
-3. **Always Learn**
+**Always Learn**
    - MUST learn from mistakes
    - MUST learn from clarifications
    - MUST learn from corrections
@@ -235,34 +226,34 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
    - MUST apply lessons learned
 
 ### Error Prevention
-1. **Always Validate**
+**Always Validate**
    - MUST validate file paths before operations
    - MUST validate dependencies before changes
    - MUST validate configurations before use
    - MUST validate assumptions before proceeding
    - MUST validate implications before acting
 
-2. **Always Check**
+**Always Check**
    - MUST check for existing code before creating new code
    - MUST check for existing patterns before creating new patterns
    - MUST check for potential conflicts before making changes
    - MUST check for potential side effects before proceeding
    - MUST check for potential issues before acting
 
-3. **Always Verify**
+**Always Verify**
    - MUST verify understanding of requirements
    - MUST verify understanding of rules
    - MUST verify understanding of context
    - MUST verify understanding of implications
    - MUST verify understanding of approvals
 
-4. **Don't Patronize**
+**Don't Patronize**
    - Never patronize with compliments about ideas or actions.
    - Just answer the question or request toward the goal of the project.
 
 [Back to Top](#myjournal-project)
 
-## 3. Development Rules
+## Development Rules
 
 ### Code Creation and Modification
 1. **Pre-Action Requirements**
@@ -290,51 +281,55 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
    ```
    src/
    ├── __tests__/   
-   ├── app/                      # Next.js app router
-   │   ├── admin/                # Admin area
-   │   │   ├── album-admin/      # Album management
+   ├── app/                                              // Next.js app router
+   │   ├── admin/                                        // admin area
+   │   │   ├── album-admin/                              // album management
    │   │   |   ├── [id]/edit/
-   |   |   |   |   ├── page.module.tsx   
-   |   |   |   |   └── page.tsx     
+   |   |   |   |   ├── page.module.css   
+   |   |   |   |   └── page.tsx                          // album edit
    │   │   |   ├── new/
    │   │   |   |   ├── NewAlbumPage.module.css
-   │   │   |   |   └── page.tsx 
+   │   │   |   |   └── page.tsx                          // album new
    |   │   |   ├── album-admin.module.css 
-   |   |   │   ├── page.tsx 
-   │   │   ├── entry-admin/      # Entry management
+   |   |   │   ├── page.tsx                              // album management
+   │   │   ├── entry-admin/                              // entry management
    │   │   |   ├── [id]/edit/
    |   |   |   |   ├── page.module.css    
-   |   |   |   |   └── page.tsx     
+   |   |   |   |   └── page.tsx                          // entry edit
    │   │   |   ├── new/
    │   │   |   |   ├── page.module.css
-   │   │   |   |   └── page.tsx 
+   │   │   |   |   └── page.tsx                          // entry new
    |   │   |   ├── album-admin.module.css  
-   |   │   |   └── page.tsx   
-   │   │   ├── tag-admin/         # Tag management
+   |   │   |   └── page.tsx                              // entry management
+   │   │   ├── tag-admin/                                // tag management
    │   │   |    └── page.tsx 
    |   │   └── AdminLayout.module.css     
-   |   │   └── layout.tsx   
+   |   │   └── layout.tsx                                // Layout for admin 
    │   ├── api/ 
-   │   │   ├── albums/            // Data-access for Album content
-   │   │   │   ├── route.ts       // GET (all), POST
-   │   │   │   └── [id]/
-   │   │   │       └── route.ts   // GET (one), PATCH, DELETE
-   │   │   │
-   │   │   ├── entries/           // Data-access for Entry content (future)
-   │   │   │
-   │   │   ├── tags/              // Data-access for Tag content
-   │   │   │   └── route.ts       // GET (all)
-   │   │   │
-   │   │   └── photos/            // Data-access for the Photo Service Abstraction
-   │   │       ├── tree/
-   │   │       │   └── route.ts   // GET folder structure
-   │   │       ├── contents/
-   │   │       │   └── route.ts   // POST to get folder contents
-   │   │       └── image/
-   │   │           └── route.ts   // GET to serve an image file
-   │   ├── layout.tsx             // Root layout (contains <body>, providers)
+   │   │   ├── albums/                                   // Data-access for Album content
+   │   │   │   ├── [id]/
+   │   │   │   |   └── route.ts                          // GET (one), PATCH, DELETE
+   │   │   │   └── route.ts                              // GET (all), POST
+   │   │   ├── content/                                  
+   │   │   │   └── route.ts                              // GET all content types
+   │   │   ├── entries/                                  // Data-access for Entry content (future)    
+   │   │   │   ├── [id]/
+   │   │   │   |   └── route.ts                          // GET (one), PATCH, DELETE
+   |   │   │   └── route.ts                              // GET (all), POST
+   │   │   ├── photos/                                   // Data-access for the Photo Service Abstraction
+   │   │   |   ├── tree/
+   │   │   |   │   └── route.ts                          // GET folder structure
+   │   │   |   ├── contents/
+   │   │   |   │   └── route.ts                          // POST to get folder contents
+   │   │   |   └── image/
+   │   │   |       └── route.ts                          // GET to serve an image file
+   │   │   ├── tags/                                     // Data-access for Tag content
+   │   │   │   └── route.ts                              // GET (all)
+   │   ├── fonts.css
    │   ├── globals.css
-   |   |
+   |   ├── layout.tsx             // Root tags and wraps app
+   |   ├── page.tsx               // Landing page (calls Home.tsx)
+   |   ├── theme.css 
    │   └── view/                    # Public viewing area
    │       ├── album-view/[id]/     # Album viewing
    │       |   └── page.tsx 
@@ -367,17 +362,16 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
    ```
 
 2. **Component Organization**
-   - MUST follow the structure defined above
-   - MUST place components in appropriate subdirectory based on function
-   - MUST NOT mix function-based and feature-based organization
-   - MUST place shared components in common/ directory
-   - MUST place component-specific types in lib/types/
+   - Follow the structure defined above
+   - Place components in appropriate subdirectory based on function
+   - Place shared components in common/ directory
+   - Place component-specific types in lib/types/
 
 ### Naming Conventions
 1. **File Naming**
-   - MUST use kebab-case for folders and CSS files
-   - MUST use PascalCase for React components
-   - MUST use camelCase for:
+   - Use kebab-case for folders and CSS files
+   - Use PascalCase for React components
+   - Use camelCase for:
      - Hooks
      - Utilities
      - Types
@@ -387,40 +381,34 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
      - Function names
 
 2. **Component Naming**
-   - MUST use PascalCase for component files
-   - MUST match component name with file name
-   - MUST use .module.css for component styles
+   - Use PascalCase for component files
+   - Match component name with file name
+   - Use .module.css for component styles
 
 ### Configuration and Environment
 1. **Environment Variables**
-   - MUST use .env for environment variables
-   - MUST document required variables in script headers
-   - MUST validate required variables before execution
+   - Use .env for environment variables
+   - Document required variables in script headers
+   - Validate required variables before execution
 
 2. **Firebase Configuration**
-   - MUST use client SDK for browser operations
-   - MUST use admin SDK for server operations
-   - MUST NOT mix client and admin SDKs
-   - MUST use correct environment variables for each SDK
+   - Use client SDK for browser operations
+   - Use admin SDK for server operations
+   - Use correct environment variables for each SDK
 
 3. **Script Execution**
-   - MUST use PowerShell for script execution
-   - MUST execute scripts using:
+   - Use PowerShell for script execution
      ```powershell
      npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/<script-name>
      ```
-   - MUST handle file operations sequentially, not in parallel
-   - MUST validate file operations before proceeding
-   - MUST use proper error handling for file operations
-   - MUST log operation results
+   - Handle file operations sequentially, not in parallel
+   - Validate file operations before proceeding
+   - Use proper error handling for file operations
+   - Log operation results
 
 ### Code Documentation
 1. **Code Comments**
-   - MUST comment all code extensively explaining:
-     - What and why of:
-      - Logic
-      - Component relationships
-      - State management
+   - Comment all code extensively explaining:
 
 2. **Type Documentation**
    - MUST document:
@@ -428,9 +416,10 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
      - Field meanings
      - Usage constraints
 
-3. **CSS Guidelines for Responsive Design**
+3. **CSS Rules**
 
    #### Core Principles
+   - Use mobile-first philosophy
    - Use fluid-first approach with relative units (%, vw, vh)
    - Implement smooth scaling with `clamp()` and `min()`
    - Use breakpoints only for fundamental layout changes
@@ -490,7 +479,7 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
 
 [Back to Top](#myjournal-project)
 
-## 4. Content Consumption
+## Content Consumption
 =========================
 
 Legend:
@@ -513,156 +502,47 @@ Status: 🟡 Operational
 
 ❓ Open Questions:
 
-### **Content Consumption**
+### **Layout**
 ---------------------------------
 Status: 🟡 Operational
 
-This is the core function of the application--the consumption of stories and images.
+The core function of the application is the presentation and consumption of content--stories and images.
 The vision is to make this best consumed on mobile and tablet devices and emulate a combination of
 MSN, YouTube, Google, and other social media apps, with content presented and consumed through a 
-a grid-based card system. A card will contain
-
-   - Cover image (sometime optional)
-   - Title
-   - Tags
-   - Excerpt (sometimes)
-   - Full text (sometimes)
+a grid-based card system. 
 
 #### Current Features
-- Basic card layout connected to Entries only
+- Content layout connected to all content.
+- Tag and Content type navigation
+- Infinite scroll
+- Album image scroll
 
 #### Planned Features
-- Connected to Entries and Albums, navigated by Tags
-  - Each dimension and tag requires a card
-    - Image, Name, Entries/Albums
 - Improved styling 
   - Multi-sized cards
     - Card height and width ratios of each other to facilitate grid structure
   - Varying styling
     - Titles, Tags, Excerpts overlaid/non-overlaid
-
-❓ Open Questions:
-
-
-### Navigation Systems
-=================================
-
-### **Top Navigation**
----------------------------------
-Status: 🟡 Operational
-
-#### Current Features
-- Logo
-- Theme toggle
-- Content/Admin
-
-#### Planned Features
-- 
-- Improve styling
-   - Increase logo size
-   - Increase vertical size to fit logo
-   - Bottom-align links?
-
-❓Open Questions:
-- What do we want on top navigation?
-  - Must have Admin for Author.
-  - Entries/Albums?
-    - Remove and move into content page as tabs for filtering
-      - All, Entries, Albums
-  - Remove New Entry, Add New Album?
-   - quick access for author as browsing
-
-### **Card-based Navigation**
----------------------------------
-Status: ⭕ Planned
-
-Card-based navigation means starting with Tag cards of the 5 dimensions and drilling through 
-the tag heirarchy until reaching a level of Entries or Albums. Need to rationalize this
-and see if it makes practical sense.
-
-Current grid system only fed by Entries. Not sure if current grid can be expanded or a new one created.
-
-##### Current Features
-- none
-
-##### Planned Features
-- Remove 'New Entry' button
-- Grid system of multi-size cards
-- Integration of entries, albums, and tags
-- Initial display of 5 tag-based cards
-- Color-coded tag dimensions
-- Hierarchical navigation
+-Related content
+   - Multi-size cards
 - Random/sorted order options
 - Styling
 - Card animation improvements
 - Card size optimization
 - Card content preview
 
-❓ Open Questions:
-
-
-### **Tag-based Navigation**
----------------------------------
-Status: 🟡 Operational
-Tag navigation is a heirarchical tag tree selection to filter entry and album cards. This would be on 
-a slide sidebar with 3 tabs--Tags, Entries, Albums
-
-#### Current Features
-- Tag hierarchy display
-- Multi-select filtering
-- Tag dimension organization
-- Tag relationship visualization
-- Number of entries (15/?)
-
-#### Planned Features
-- Number of albums (15/21)
-- Styling
-- Advanced tag filtering
-- Tag search
-- Tag analytics
-- Tag suggestions
+- Card Types
+   - Entry - Click to page, backk
+     - Story - 
+     - Reflection
+     - Q&A
+     - Callout
+     - Quote
+   - Album - x/y, Horizontal Scroll, Click to Google-like gallery, Click to Carosel, back
+   - Related
+- Vertical scroll for entries
 
 ❓ Open Questions:
-
-
-### **Element-based Filter**
----------------------------------
-Status: ⭕ Planned
-Element-base filter is a selector of Entries, Albums or Both to display in the card grid.
-
-#### Current Features
-- none
-
-#### Planned Features
-- Tab-selector across the top or radio buttons on the navigation sidebar.
-
-❓Open Questions:
-- How would we order Entries and Albums?
-  - Would we do it by tag selection? 
-  - Order by Tag, show Albums then Entries?
-  - Order by Tag, show Entries, by Albums?
-  - One complicated nested tree structure?
-    - Possible/Advisable?
-
-### **Search & Filter**
----------------------------------
-Status: 🟡 Operational
-
-#### Current Features
-- Basic text search
-- Tag filtering
-- Date filtering
-
-#### Planned Features
-- Advanced search
-- Search history
-- Search suggestions
-- Filter combinations
-
-❓ Open Questions:
-
-### **Content Presentation**
-=================================
 
 ### **Entry View**
 ---------------------------------
@@ -670,15 +550,15 @@ Status: 🟡 Operational
 
 Entry view contains title, cover image, tags, content.
 
-(This is currently card view. To become "content view".)
-
 #### Current Features
-- Rich text display
-- Media embedding
-- Related content
-- Tag context
+- Title
+- Cover image
+- Content
+- Tags
 
 #### Planned Features
+- Album links
+- Related content
 - User interaction
    - Like, comment, sharelink
 
@@ -687,12 +567,12 @@ Entry view contains title, cover image, tags, content.
 
 ### **Album View**
 ---------------------------------
-Status: ⭕ Planned
+Status: 🟡 Operational-barely
 
 Album view contains a title, tags, caption and grid display of images.
 
 #### Current Features
-none
+- Shell
 
 #### Planned Features
 - Title
@@ -707,33 +587,7 @@ none
    - Library of styles selectable by album
    - Selectable sytles by album
       - Background,color scheme, font
-
-❓ Open Questions:
-
-
-### **UI Components**
-==============================
-
-### **Layout System**
----------------------------------
-Status: 🟡 Operational
-
-The layout straegy is to be fully mobile first and responsive upward.
-
-#### Current Features
-- Grid/Card layout
-- Partially responsive design
-
-#### Planned Features
-- Tablet optimization
-- Custom layout builder ??
-
-- Vertical scroll for entries
-- Horizontal scroll for album photos. x/y
-- Album opens to google-like grid
-- Related entries and albums
-
-
+- Carosel
 
 ❓ Open Questions:
 
@@ -754,27 +608,113 @@ Status: 🟡 Operational
    - Variable-based CSS
    - Theme Presets
    - Custom Theming
+- Add to Admin
 
 ❓ Open Questions:
 
-
 [Back to Top](#myjournal-project)
+
+
+### Navigation Systems
+=================================
+
+### **Top Navigation**
+---------------------------------
+Status: 🟡 Operational
+
+#### Current Features
+- Logo
+- Theme toggle
+- Content/Admin
+
+#### Planned Features
+- Improve styling
+   - Increase logo size
+   - Increase vertical size to fit logo
+   - Bottom-align links?
+- Remove all for non-authors
+- Admin and New button for Author only
+
+❓Open Questions:
+
+### **Tag Filtering**
+---------------------------------
+Status: 🟡 Operational
+Navigation is facilitated by heirarchical tag filtering. 
+
+#### Current Features
+- Tag hierarchy display
+- Multi-select filtering
+- Tag dimension organization
+- Tag relationship visualization
+- Number of entries (x/y)
+
+#### Planned Features
+- Include number of albums (x/y)
+- Improved styling
+   - Sidebar title
+   - Show tree
+   - Shrink vertical space
+   - Improved font
+- Slide in/out
+
+- Add submenu for Entry types
+   - Q&A, Quote, Callout
+
+❓ Open Questions:
+- Is there a way to navigate by Entry or Album?
+- Multi-orderby?
+
+### **Type Filtering**
+---------------------------------
+Status: 🟡 Operational
+
+Content type based filter is a selector of Entries, Albums or Both (and type) to display in the card grid.
+
+#### Current Features
+- All, Entries, Albums
+
+#### Planned Features
+- Entry Types--Story, Reflection, Q&A, Callout, Quote
+
+❓Open Questions:
+- How would we order Entries and Albums?
+  - Would we do it by tag selection? 
+  - Order by Tag, show Albums then Entries?
+  - Order by Tag, show Entries, by Albums?
+  - One complicated nested tree structure?
+    - Possible/Advisable?
+
+### **Search**
+---------------------------------
+Status: ⭕ Planned
+
+#### Current Features
+- none
+
+#### Planned Features
+- Basic text search
+  - Top of content
+
+❓ Open Questions:
 
 ## **Content Administration**
 =======================================
+Status: 🟡 Operational
+
 Administration is a feature only available to author.
    - CRUD/Bulk editing operations for app elements
 
 #### Current Features
-  - Entries
-  - Albums
-  - Tags
+- Entries
+- Albums
+- Tags
 
 #### Planned Features
-  - Questions
-  - Album page styles
-  - Themes
-  - Users
+- Questions
+- Album page styles
+- Themes
+- Users
 
   ❓ Open Questions:
 
@@ -782,7 +722,7 @@ Administration is a feature only available to author.
 ---------------------------------
 Status: 🟡 Operational
 
-- Sidebar to navigate between element lists.
+Sidebar to navigate between element lists.
 
 #### Current Features
 - Static Sidebar
@@ -799,6 +739,7 @@ Status: 🟡 Operational
 
 #### Current Features
 - Data model
+  - story, reflection, qa, callout, quote
 - Entry collection
 - Entry listing
 - Statistics
@@ -809,10 +750,10 @@ Status: 🟡 Operational
 #### Planned Features
 - Inline/Bulk Tag assignment
 - Improved styling
-- Export functionality ??
-- Analytics dashboard ??
+- Batch upload of tags
 
 ❓ Open Questions:
+
 
 ### **Entry New**
 ---------------------------------
@@ -854,113 +795,70 @@ Status: 🟡 Operational
 
 ❓ Open Questions:
 
-
 ### **Album Management**
 ---------------------------------
 Status: 🟡 Operational
 
-An album is a collection of images, initially from one source, but eventually potentially from multiple sources. They will have a title, caption and description. 
-- Summary view of cards
- - Coverpage, title, caption, date, tags
-- Detailed album view, 
- - Grid-based presentation of the images
-  - Title, caption, description, tags, images
-  - Scrapbook styling
-   - Colorful backgrounds, styled text
-   - Paginated or scrollable. 
- - Captions togglable
-   - Click/hover
-      - Links to the 'entries' to which they are associated.
-         - Assignment can be done either from the album view,
-            - potentially even in the admin album view. 
+An album is a virtual collection of images from one or more sources.
 
-Album Structure:
-- Virtual albums independent of sources
-- Can combine photos from multiple services
-- Maintains own metadata and relationships
-- Syncs with sources on our schedule
-            
 #### Current Features
+- Data model
+  - coverPhoto, title, description, caption, tags, photos
 - Album collection
-- Data model extended for sources
-- Album Listing (table)
+- Album listing
 - Album creation
-- Album editing
 - Search and filter
-- Inline edit
-- Bulk edit
-- Server-side API connected
-- Photopicker connected
-- Photo service connected
+- Inline/Bulk edit
+- Photopicker
+- Local photo service
 
 #### Planned Features
-- Fix Photopicker
-- Album edit template
-- Media analytics ??
+- Add/Delete Photos
 - Batch upload of photos to albums.
+- Sync with sources on our schedule
+- Link to entries
 
 ❓Open Questions:
+- How to handle single photos?
+  - Miscellaneous/Other Album?
 
-
-### **Album Creation**
+### **Album New and Edit**
 ---------------------------------
-Status: ⭕ Planned
+Status: 🟡 Operational
 
 #### Current Features
-- New album button
-- New album page
-   - Title
-   - Description
-   - Caption
-- Photopicker
-  - Localdrive source
+- New album button/page
+- Edit album button/page
+- Cover image
+- Add photos - Photopicker
 
 #### Planned Features
-- Add cover image
-- Image selection
 - Tag assignment
+- Album edit page
+   - Add/Delete photos
+- Grid-based presentation of the images
+  - Scrapbook styling
+  - Paginated or scrollable. 
+ - Captions togglable
+   - Click/hover
+ - Link to associated entries
 
 ❓ Open Questions:
 - How do we want this page to operate?
   - Edit Fields
-   - Cover Page
-   - Title
-   - Description
-   - Caption
-   - Style
-  - Edit Photos feature
+  - Select Style
+  - Add/delete photos
 
-
-### **Album Edit**
----------------------------------
-Status: ⭕ Planned
-
-####Current Features
-  - Separate page
-  - Title
-  - Description
-  - Caption
-
-
-
-#### Planned Features
-- Inline Album Admin only
-- Cover Image (similar to New)
-- Tag assignment
-
-❓ Open Questions:
-
-
-### **Tag Management**
+#### **Tag Management**
 ---------------------------------
 Status: 🟡 Operational
 
-- Tags are managed (added, edited, deleted) from the admin page.
-- No need for separate pages
+Tags are managed (added, edited, deleted) from the admin page.
+No need for separate pages
 
 #### Current Features
 - Tag collection
-- Tag Listing
+- Tag listing
 - Tag hierarchy management
 - Tag ordering
 - Tag relationships
@@ -972,7 +870,7 @@ Status: 🟡 Operational
 - Drag and drop hierarchy
 - Tag deletion/merging functionality
 - Styling improvements
-- Cover image
+- Cover image/icon
 - Tag analytics ??
 - Tag suggestions ??
 - Tag history ??
@@ -1002,14 +900,15 @@ Status: ⭕ Planned
 - User feedback
 
 ❓ Open Questions
-- Do we want to track answers?
-- Do we group short questions
+- Do we want to track questions answered?
+- Do we group short questions?
 
 ### **Style Management**
 ---------------------------------
 Album styles are selectable styles for album pages
    - Background
-   - 
+   - Font
+   - Colors
 
   #### Current Features
   - None
@@ -1039,11 +938,6 @@ Themes (color, fonts, boxes, spacing, padding, etc.) can be managed centrally ou
 ## **Technical Infrastructure**
 =====================================
 
-Development Notes:
-Next: Complete Firebase configuration
-Depends on: None
-Notes: Ensure all environment variables are properly set up
-
 ### **Technical Stack**
 ----------------------------------
 Status: 🟡 Operational
@@ -1057,14 +951,14 @@ Status: 🟡 Operational
    - TipTap for rich text editing
    - PhotoPicker for 
    - Framer Motion for animations
+   - Next.js Image Optimizer
 
 - Backend
 - Firebase (Firestore, Authentication, Storage)
 - Firebase Admin SDK for server-side operations
 
 #### Planned Features
-- AI Integration
-   - OpenAI integration for content assistance
+- AI Integration - OpenAI integration for content assistance
 - Media Services
   - OneDrive 
   - Google Photos
@@ -1072,6 +966,40 @@ Status: 🟡 Operational
 
 ❓ Open Questions:
 
+# **Client-Server Architecture**
+=======================================
+A Core Principle
+This project strictly separates client-side and server-side logic. Understanding this boundary is critical to prevent build errors and maintain a clean architecture. A common error that arises from violating this principle is a Module not found: Can't resolve 'net' (or similar Node.js built-in module) error during compilation.
+The Problem: Server Code on the Client
+The Firebase Admin SDK (firebase-admin) is used for all direct database interactions (reading from and writing to Firestore). This SDK is powerful but is designed exclusively for server environments (like Node.js). It depends on built-in Node.js modules (net, crypto, fs, etc.) that do not exist in a web browser.
+If any code that imports the Firebase Admin SDK (directly or indirectly) is included in a client-side component bundle, the build will fail because the browser cannot resolve these server-side dependencies.
+The Rule: A Bright Line
+Client-Side Code ('use client' Components, Hooks)
+MUST NOT import files from src/lib/services/* (e.g., entryService, albumService).
+MUST NOT import the Firebase Admin SDK (@/lib/config/firebase/admin).
+MUST fetch all data from the database by calling internal API Routes (e.g., fetch('/api/entries/[id]')).
+Client-side hooks (e.g., useEntry, useContent) should encapsulate this fetch logic.
+Server-Side Code (API Routes in src/app/api/**)
+This is the ONLY place where server-side services from src/lib/services/* should be used.
+These routes are responsible for receiving requests from the client, using the services to interact with the database, and returning the data to the client.
+Correct Data Flow Example
+This is the correct flow for a client component displaying a single entry:
+React Component (Client): src/app/view/entry-view/[id]/page.tsx
+Needs to display an entry.
+Calls the useEntry() hook to get the data.
+React Hook (Client): src/lib/hooks/useEntry.ts
+Receives the entry id.
+Uses the fetch API to make a request: fetch('/api/entries/the-entry-id').
+Returns the fetched data, loading state, and error state.
+API Route (Server): src/app/api/entries/[id]/route.ts
+Receives the GET request from the hook.
+Calls the appropriate server-side service: getEntry('the-entry-id').
+Service (Server): src/lib/services/entryService.ts
+Contains the function getEntry(id).
+Uses the adminDb (Firebase Admin SDK) to query the Firestore database.
+Returns the data to the API Route.
+Response: The API Route sends the data back to the client hook as a JSON response, which then updates the component.
+By adhering to this pattern, we ensure that no server-only code ever leaks into the client-side bundle.
 ### **Authentication**
 ===========================================
 Status: 🟡 Operational
@@ -1096,7 +1024,7 @@ Status: 🟡 Operational
   - Server-side API routes will verify user's role (`admin` or `viewer`) before allowing access to resources.
 
 ❓ Open Questions:
-- How with the various authentications work?
+- How will the various authentications work?
 
 #### **Firebase Auth**
 --------------------------------------
@@ -1238,15 +1166,10 @@ Status: 🟡 Operational
 - Entry collection
 - Album collection
 - Tag collection
-- User collection
-- Media collection
-- Security rules
 
 ##### Planned Features
-- Advanced indexing
-- Query optimization
-- Data validation
-- Data migration
+- User collection
+- Media collection
 
 ❓ Open Questions:
 - Review this...
@@ -1292,11 +1215,12 @@ Status: 🟡 Operational
 - What is this data validation in the context of?
 
 ### **IMAGE INTEGRATION**
-====================================================================================================
+=======================================
 
 #### **Image Strategy**
-The Image Integration system serves as the bridge between the journal and external photo services, 
-enabling users to seamlessly incorporate their existing photo collections into their journal entries. 
+The Image Integration system serves as the bridge between the journal 
+and external photo services, enabling users to seamlessly incorporate 
+their existing photo collections into their journal entries. 
 
 The system is designed to:
 
@@ -1307,27 +1231,27 @@ The system is designed to:
 5. Provide a consistent user experience across different photo sources
 
 ### Core Data Models: Album vs. Source Collection
+To manage photos effectively and support multiple external services, 
+the system architecture is built around two distinct data models:
 
-To manage photos effectively and support multiple external services, the system architecture is built around two distinct data models:
+ **Album:** An album is a curated collection of images part of the journal itself. It is the primary way users will view grouped photos within the application. Each Album has its own metadata (title, caption, tags) and a specific list of photos selected by the author. Albums are stored in the project's Firestore database and managed via the `/api/albums` endpoint.
 
-*   **Album:** An **Album** is a curated collection of photos and content that is part of the journal itself. It is the primary way users will view grouped photos within the application. Each Album has its own metadata (title, caption, tags) and a specific list of photos selected by the author. Albums are stored in the project's Firestore database and managed via the `/api/albums` endpoint.
-
-*   **Source Collection:** A **Source Collection** is a generic representation of a grouping of photos from an external service. This could be a **folder** (from the local drive or OneDrive) or an **album** (from Google Photos or Apple Photos). Source Collections are used to populate the `PhotoPicker` component, allowing the administrator to browse and select images from their original location. They are read-only and are fetched via the `/api/photos/source-collections` endpoint. This abstraction allows the UI to remain consistent while the backend handles the unique details of each photo service.
+**Source Collection:** A source collection is a grouping of photos from an external service. This could be a **folder** (from the local drive or OneDrive) or an album (from Google Photos or Apple Photos). Source Collections are used to populate the `PhotoPicker` component, allowing the author to browse and select images for inclusion in My Stories' albums. They are fetched via the `/api/photos/source-collections` endpoint. This abstraction allows the UI to remain consistent while the backend handles the unique details of each photo service.
 
 Key Design Principles:
 - Abstracted Service Layer
-  - A generic "photo service" interface will be used in the application.
-  - Support multiple photo sources with a unified interface
+  - A generic "photo service" interface to source images.
+  - Support for multiple photo sources with a unified interface
    -Local, OneDrive, Google Photos without changing UI components.
 - Strict Client-Server Separation
   - Client components (e.g., `PhotoPicker`) are for UI only.
   - They make requests to internal API routes (e.g., `/api/photos/list`).
   - The server-side API route contains the logic to talk to the actual photo source, preventing leaking keys or using server-only modules (`fs`) on the client.
 - Photos remain in their original source (OneDrive, etc.).
-  - Firestore will only store metadata, references, thumbnails, not binary image data.  
+  - Firestore stores only metadata, references, thumbnails, not binary image data.  
 - Optimize image processing
-  - Implement efficient caching for frequently accessed content
-  - Next.js Image Optimization to serve efficient, web-friendly images.
+  - Caching serves frequently accessed content
+  - Next.js Image Optimization serves efficient, web-friendly images.
 Aspect Ratio and sizing managed
 - Images are classified by natural dimensions (portrait/landscape/square)
 - Automatically fitted to closest standard ratio using `object-fit: cover`
@@ -1338,7 +1262,7 @@ Aspect Ratio and sizing managed
 - No permanent image modifications
 - Cover Images (Entry/Album) Managed
   - Default to landscape orientation for cards and entry headers
-  - Portrait images handled in two ways:
+  - Portrait images handled with:
     - Smart cropping: AI-powered detection of important content areas to guide cropping
     - Blurred background: Portrait images displayed on blurred, stretched version of same image
 
@@ -1349,13 +1273,13 @@ Aspect Ratio and sizing managed
 Status: 🟡 Operational
 
 ##### Current Features
-- PhotoPicker for selecting photos
-- Integrated with Entry and Album new and edit.
-- Entry/Album data models updated.
+- Service layer in place
+- PhotoPicker integrated
 - Photo metadata management
+- Image optimization implemented
 
 ##### Planned Features
-- Image optimization ?
+- Image optimization enhanced
 - Thumbnail generation ?
 - Format conversion ?
 - Metadata extraction ?
@@ -1411,41 +1335,36 @@ Status: 🟡 Operational
 
 Photopicker for selecting and assigning photos to entries and albums.
 
-  #### Current Features
-   - Photopicker component integrated with
-      - Entry new and edit
-      - Album new
-   - Access to folder structure
+#### Current Features
+- Photopicker integrated (Entry- New/Edit, Album-New/)
+- Collapsible/Expandable Tree structure
+- singleSelect/multiSelect dependent on route
 
   #### Planned Features
-  - Fix current error of not returning images that are present
-  - Collapsible/Expandable Tree structure
-  - singleSelect, multiSelect
-  - Integrate with Album edit
+- Integrate with Album-Edit
 
   ❓ Open Questions:
 
 
-#### **Local Drive Integration** 
+#### **Local Drive** 
 --------------------------------------------------------------
 Status: 🟡 Operational
 
 Use local drive until operational functionality solid, then link to online sources.
 
   ##### Current Features
-   - Local drive API 
-   - Root directory C:/users/alanb/onedrive/pictures
-   - Deeply nested subdirectories
-   - Subdirectory structure for photopicker
-   - Navigation of directories to images
+  - Local drive API 
+  - Root directory C:/users/alanb/onedrive/pictures
+  - Deeply nested subdirectories
+  - Subdirectory structure for photopicker
+  - Navigation of directories to images
 
   ##### Planned Features
-  - Fix current error of not returning images that are present
   - Limit integration due to limitations
    
 ❓ Open Questions:
 
-#### **OneDrive Integration**
+#### **OneDrive**
 -------------------------------------------
 Status: ⭕ Planned
 
@@ -1462,7 +1381,7 @@ Status: ⭕ Planned
 ❓ Open Questions:
 
 
-#### **Google Photos Integration**
+#### **Google Photos**
 ----------------------------------------------------
 Status: ⭕ Planned
 
@@ -1475,7 +1394,7 @@ Status: ⭕ Planned
 ❓ Open Questions:
 
 
-#### **Apple Photos Integration**
+#### **Apple Photos**
 ----------------------------------------------------
 Status: ⭕ Planned
 

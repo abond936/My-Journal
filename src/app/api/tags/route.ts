@@ -1,46 +1,76 @@
 import { NextResponse } from 'next/server';
-import { adminDb } from '@/lib/config/firebase/admin';
+import { getAllTags, createTag } from '@/lib/services/tagService';
 import { Tag } from '@/lib/types/tag';
 
 /**
- * Fetches all tags from the Firestore database.
- * This is a server-side route, ensuring database credentials are not exposed to the client.
+ * @swagger
+ * /api/tags:
+ *   get:
+ *     summary: Retrieve all tags
+ *     description: Fetches a comprehensive list of all tags from the database.
+ *     responses:
+ *       200:
+ *         description: A list of tags.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Tag'
+ *       500:
+ *         description: Internal server error.
  */
 export async function GET() {
   try {
-    const tagsRef = adminDb.collection('tags');
-    // Order tags to ensure a consistent, hierarchical order for the client to process.
-    // Root tags (no parentId) will come first, then tags are grouped by their parent.
-    const snapshot = await tagsRef.orderBy('parentId').orderBy('order').get();
+    const tags = await getAllTags();
+    return NextResponse.json(tags);
+  } catch (error) {
+    console.error('API Error fetching all tags:', error);
+    return new NextResponse('Internal server error', { status: 500 });
+  }
+}
 
-    if (snapshot.empty) {
-      // If there are no tags, return an empty array.
-      return NextResponse.json([]);
+/**
+ * @swagger
+ * /api/tags:
+ *   post:
+ *     summary: Create a new tag
+ *     description: Adds a new tag to the database.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/NewTag'
+ *     responses:
+ *       201:
+ *         description: The created tag.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Tag'
+ *       400:
+ *         description: Bad request, validation failed.
+ *       500:
+ *         description: Internal server error.
+ */
+export async function POST(request: Request) {
+  try {
+    const body: Omit<Tag, 'id'> = await request.json();
+    
+    // Basic validation
+    if (!body.name || !body.dimension) {
+      return new NextResponse('Missing required fields: name and dimension', { status: 400 });
     }
 
-    // Map the Firestore documents to the Tag type.
-    const tags: Tag[] = snapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        name: data.name,
-        dimension: data.dimension,
-        parentId: data.parentId || null,
-        order: data.order || 0,
-        description: data.description || '',
-        entryCount: data.entryCount || 0,
-        albumCount: data.albumCount || 0,
-      } as Tag;
-    });
-
-    return NextResponse.json(tags);
-
+    const newTag = await createTag(body);
+    return NextResponse.json(newTag, { status: 201 });
   } catch (error) {
-    // Log any errors to the server console and return a generic error message.
-    console.error('Error fetching tags:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch tags', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    console.error('API Error creating tag:', error);
+    // Could be a JSON parsing error or a database error
+    if (error instanceof SyntaxError) {
+      return new NextResponse('Invalid JSON format', { status: 400 });
+    }
+    return new NextResponse('Internal server error', { status: 500 });
   }
 }

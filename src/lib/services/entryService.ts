@@ -1,163 +1,150 @@
-import { adminDb } from '@/lib/config/firebase/admin';
+import { getFirestore, FieldValue, Timestamp, DocumentSnapshot, Query } from 'firebase-admin/firestore';
+import { getAdminApp } from '@/lib/config/firebase/admin';
 import { Entry, GetEntriesOptions } from '@/lib/types/entry';
-import { entryCache } from './cacheService';
-import CacheService from './cacheService';
-import { mockEntries } from './mockData';
-import { validateContent, validateMediaReferences, extractPhotoMetadata } from '@/lib/utils/contentValidation';
-import { backupEntryBeforeUpdate } from './backupService';
-import { FieldValue, Timestamp, DocumentSnapshot, Query } from 'firebase-admin/firestore';
 import { PaginatedResult } from '@/lib/types/services';
+import { validateContent, validateMediaReferences } from '@/lib/utils/contentValidation';
 
-export async function getAllEntries(options: GetEntriesOptions = {}): Promise<Entry[]> {
-  const result = await getEntries(options);
-  return result.items;
+// Initialize Firebase Admin
+getAdminApp();
+const db = getFirestore();
+const entriesCollection = db.collection('entries');
+
+/**
+ * Converts Firestore document data to an Entry object, handling timestamps.
+ * @param doc The Firestore document snapshot.
+ * @returns The Entry object.
+ */
+function docToEntry(doc: DocumentSnapshot): Entry {
+  const data = doc.data() as Entry;
+  return {
+    ...data,
+    id: doc.id,
+    date: (data.date as Timestamp)?.toDate() || (data.createdAt as Timestamp)?.toDate(),
+    createdAt: (data.createdAt as Timestamp)?.toDate(),
+    updatedAt: (data.updatedAt as Timestamp)?.toDate(),
+  };
 }
 
-export async function getEntry(id: string): Promise<Entry | null> {
-  // Try to get from cache first
-  const cacheKey = `entry:${id}`;
-  const cachedEntry = entryCache.get<Entry>(cacheKey);
-  if (cachedEntry) {
-    return cachedEntry;
+/**
+ * Fetches a paginated list of entries from Firestore based on the provided options.
+ * @param options Options for filtering and pagination.
+ * @returns A paginated result of entries.
+ */
+export async function getEntries(options: GetEntriesOptions = {}): Promise<PaginatedResult<Entry>> {
+  const { limit: pageSize = 10, tags, status, lastDocId } = options;
+
+  let q: Query = entriesCollection;
+
+  if (tags && tags.length > 0) {
+    q = q.where('tags', 'array-contains-any', tags);
+  }
+  if (status) {
+    q = q.where('status', '==', status);
   }
 
-  const entryRef = adminDb.collection('entries').doc(id);
+  q = q.orderBy('date', 'desc');
+
+  if (lastDocId) {
+    const lastDocSnapshot = await entriesCollection.doc(lastDocId).get();
+    if (lastDocSnapshot.exists) {
+      q = q.startAfter(lastDocSnapshot);
+    }
+  }
+
+  // Fetch one more than the page size to check if there are more documents.
+  const snapshot = await q.limit(pageSize + 1).get();
+
+  const entries = snapshot.docs.slice(0, pageSize).map(docToEntry);
+  const hasMore = snapshot.docs.length > pageSize;
+  const lastDoc = hasMore ? snapshot.docs[entries.length - 1] : null;
+
+  return {
+    items: entries,
+    hasMore,
+    lastDoc: lastDoc ? { id: lastDoc.id, date: lastDoc.data().date } : undefined,
+  };
+}
+
+/**
+ * Fetches a single entry by its ID.
+ * @param id The ID of the entry to fetch.
+ * @returns The entry object or null if not found.
+ */
+export async function getEntry(id: string): Promise<Entry | null> {
+  if (!id) return null;
+
+  const entryRef = entriesCollection.doc(id);
   const entrySnap = await entryRef.get();
-  
+
   if (!entrySnap.exists) {
     return null;
   }
 
-  const data = entrySnap.data() as Entry;
-  const entry = {
-    ...data,
-    id: entrySnap.id,
-    date: data.date ? (data.date as Timestamp).toDate() : (data.createdAt as Timestamp)?.toDate(),
-    createdAt: (data.createdAt as Timestamp)?.toDate(),
-    updatedAt: (data.updatedAt as Timestamp)?.toDate(),
-  };
-
-  // Cache the entry
-  entryCache.set(cacheKey, entry);
-  entryCache.delete(`entry:${id}`);
-  entryCache.clear();
-  return entry;
+  return docToEntry(entrySnap);
 }
 
-export async function createEntry(entry: Omit<Entry, 'id'>): Promise<Entry> {
-  const entriesRef = adminDb.collection('entries');
-  const now = new Date();
-  
-  if (entry.content) validateContent(entry.content);
-  if (entry.content) validateMediaReferences(entry.content, entry.media || []);
-  
-  const entryData = {
-    ...entry,
-    coverPhoto: entry.coverPhoto || null,
-    createdAt: Timestamp.fromDate(now),
-    updatedAt: Timestamp.fromDate(now),
-    date: Timestamp.fromDate(entry.date || now),
+/**
+ * Creates a new entry in Firestore.
+ * @param entryData The data for the new entry.
+ * @returns The newly created entry.
+ */
+export async function createEntry(entryData: Omit<Entry, 'id'>): Promise<Entry> {
+  if (entryData.content) validateContent(entryData.content);
+  if (entryData.content) validateMediaReferences(entryData.content, entryData.media || []);
+
+  const dataWithTimestamps = {
+    ...entryData,
+    createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+    date: entryData.date ? Timestamp.fromDate(new Date(entryData.date)) : FieldValue.serverTimestamp(),
   };
 
-  const docRef = await entriesRef.add(entryData);
+  const docRef = await entriesCollection.add(dataWithTimestamps);
   
-  const newEntry = {
+  // To avoid another read, we'll construct the final object, but timestamps will be null
+  // until the data is read back from the server. The client will get this on the next fetch.
+  return {
     id: docRef.id,
-    ...entry,
-    createdAt: now,
-    updatedAt: now,
-    date: entry.date || now,
+    ...entryData,
   } as Entry;
-
-  entryCache.clear();
-  return newEntry;
 }
 
-export async function updateEntry(id: string, entry: Partial<Entry>): Promise<Entry> {
-  const entryRef = adminDb.collection('entries').doc(id);
-  const now = new Date();
+/**
+ * Updates an existing entry.
+ * @param id The ID of the entry to update.
+ * @param entryUpdateData The partial data to update the entry with.
+ * @returns The updated entry.
+ */
+export async function updateEntry(id: string, entryUpdateData: Partial<Omit<Entry, 'id'>>): Promise<Entry> {
+  const entryRef = entriesCollection.doc(id);
+
+  if (entryUpdateData.content) validateContent(entryUpdateData.content);
+  // For media validation, we may need the existing media array if not provided in update
+  if (entryUpdateData.content) {
+      const existing = await entryRef.get();
+      const existingData = existing.data();
+      validateMediaReferences(entryUpdateData.content, entryUpdateData.media || existingData?.media || []);
+  }
+
+  const updateData: any = {
+    ...entryUpdateData,
+    updatedAt: FieldValue.serverTimestamp(),
+  };
+
+  if (entryUpdateData.date) {
+    updateData.date = Timestamp.fromDate(new Date(entryUpdateData.date));
+  }
   
-  const entrySnap = await entryRef.get();
-  if (!entrySnap.exists) throw new Error('Entry not found');
-  
-  const existingData = entrySnap.data() as Entry;
-  
-  await backupEntryBeforeUpdate(id, {
-    ...existingData,
-    id: entrySnap.id,
-    createdAt: (existingData.createdAt as Timestamp)?.toDate(),
-    updatedAt: (existingData.updatedAt as Timestamp)?.toDate(),
-    date: (existingData.date as Timestamp)?.toDate(),
-  });
-
-  if (entry.content) validateContent(entry.content);
-  if (entry.content) validateMediaReferences(entry.content, entry.media || existingData.media || []);
-
-  const updateData: any = { ...entry, updatedAt: Timestamp.fromDate(now) };
-
-  if (entry.date) updateData.date = Timestamp.fromDate(entry.date);
-  if (entry.coverPhoto !== undefined) updateData.coverPhoto = entry.coverPhoto;
-
   await entryRef.update(updateData);
-  
-  const updatedEntry = { ...existingData, ...entry, updatedAt: now } as Entry;
 
-  entryCache.delete(`entry:${id}`);
-  entryCache.clear();
-  
-  return updatedEntry;
+  const updatedSnap = await entryRef.get();
+  return docToEntry(updatedSnap);
 }
 
+/**
+ * Deletes an entry from Firestore.
+ * @param id The ID of the entry to delete.
+ */
 export async function deleteEntry(id: string): Promise<void> {
-  await adminDb.collection('entries').doc(id).delete();
-  
-  entryCache.delete(`entry:${id}`);
-  entryCache.clear();
-}
-
-export async function getEntries(
-  options: GetEntriesOptions & { lastDoc?: DocumentSnapshot } = {}
-): Promise<PaginatedResult<Entry>> {
-  const { 
-    limit: pageSize = 10, 
-    tags, 
-    status, 
-    lastDoc 
-  } = options;
-  
-  const cacheKey = CacheService.generateKey('entries', { ...options, lastDoc: lastDoc?.id });
-  const cachedResult = entryCache.get<PaginatedResult<Entry>>(cacheKey);
-  if (cachedResult) return cachedResult;
-
-  let q: Query = adminDb.collection('entries');
-  
-  if (tags && tags.length > 0) q = q.where('tags', 'array-contains-any', tags);
-  if (status) q = q.where('status', '==', status);
-
-  q = q.orderBy('createdAt', 'desc');
-
-  if (lastDoc) q = q.startAfter(lastDoc);
-  
-  const snapshot = await q.limit(pageSize + 1).get();
-
-  const hasMore = snapshot.docs.length > pageSize;
-  const entries = snapshot.docs
-    .slice(0, pageSize)
-    .map(doc => {
-      const data = doc.data();
-      return {
-        ...data,
-        id: doc.id,
-        date: data.date?.toDate() || data.createdAt?.toDate(),
-        createdAt: data.createdAt?.toDate(),
-        updatedAt: data.updatedAt?.toDate(),
-      } as Entry;
-    });
-
-  const newLastDoc = snapshot.docs[entries.length - 1] || null;
-  const result = { items: entries, lastDoc: newLastDoc, hasMore };
-
-  entryCache.set(cacheKey, result);
-
-  return result;
+  await entriesCollection.doc(id).delete();
 } 

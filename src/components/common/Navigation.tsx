@@ -12,9 +12,10 @@ import styles from './Navigation.module.css';
 
 interface NavigationProps {
   className?: string;
+  sidebarOpen?: boolean;
 }
 
-const Navigation: React.FC<NavigationProps> = ({ className }) => {
+const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
   // State to track if mobile menu is open
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -36,7 +37,7 @@ const Navigation: React.FC<NavigationProps> = ({ className }) => {
 
   return (
     <nav className={`${styles.navigation} ${className || ''}`}>
-      <div className={styles.navContainer}>
+      <div className={`${styles.navContainer} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
         {/* Logo/Home link */}
         <Link href="/" className={styles.logo}>
           <img 
@@ -59,50 +60,14 @@ const Navigation: React.FC<NavigationProps> = ({ className }) => {
         {/* Navigation links */}
         <div className={`${styles.navLinks} ${isMenuOpen ? styles.open : ''}`}>
           <Link
-            href="/view/entry-view"
+            href="/view"
             className={`${styles.navLink} ${
-              pathname?.startsWith('/view/entry-view')
+              pathname === '/view'
                 ? styles.active
                 : ''
             }`}
           >
             Content
-          </Link>
-          <Link
-            href="/view/entry-view"
-            className={`${styles.navLink} ${
-              pathname?.startsWith('/view/entry-view')
-                ? styles.active
-                : ''
-            }`}
-          >
-            Entries
-          </Link>
-          <Link
-            href="/view/tag-view"
-            className={`${styles.navLink} ${
-              pathname?.startsWith('/tags')
-                ? styles.active
-                : ''
-            }`}
-          >
-            Tags
-          </Link>
-          <Link
-            href="/view/album-view"
-            className={`${styles.navLink} ${
-              pathname?.startsWith('/albums')
-                ? styles.active
-                : ''
-            }`}
-          >
-            Albums
-          </Link>
-          <Link
-            href="/admin/entry-admin/new"
-            className={styles.navLink}
-          >
-            New Entry
           </Link>
           <Link
             href="/admin/entry-admin"
