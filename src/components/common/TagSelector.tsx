@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useTag } from '@/lib/contexts/TagContext';
+import { useTag } from '@/components/providers/TagProvider';
 import { Tag } from '@/lib/types/tag';
 import styles from './TagSelector.module.css';
 

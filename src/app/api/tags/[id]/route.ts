@@ -1,4 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../../auth/[...nextauth]/route';
 import { getTagById, updateTag, deleteTag } from '@/lib/services/tagService';
 import { Tag } from '@/lib/types/tag';
 
@@ -32,6 +34,14 @@ interface Params {
  *         description: Internal server error.
  */
 export async function GET(request: NextRequest, { params }: { params: Params }) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const { id } = params;
     const tag = await getTagById(id);
@@ -81,6 +91,14 @@ export async function GET(request: NextRequest, { params }: { params: Params }) 
  *         description: Internal server error.
  */
 export async function PUT(request: NextRequest, { params }: { params: Params }) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== 'admin') {
+    return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const { id } = params;
     const body: Partial<Omit<Tag, 'id'>> = await request.json();
@@ -127,6 +145,14 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
  *         description: Internal server error.
  */
 export async function DELETE(request: NextRequest, { params }: { params: Params }) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== 'admin') {
+    return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const { id } = params;
     await deleteTag(id);

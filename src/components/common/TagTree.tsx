@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import styles from './TagTree.module.css';
 import { Tag } from '@/lib/types/tag';
-import { useTag } from '@/lib/contexts/TagContext';
+import { useTag } from '@/components/providers/TagProvider';
 
 interface TagTreeProps {
   onTagSelect: (tagId: string) => void;

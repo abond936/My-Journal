@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../auth/[...nextauth]/route';
 import { getAllTags, createTag } from '@/lib/services/tagService';
 import { Tag } from '@/lib/types/tag';
 
@@ -21,6 +23,14 @@ import { Tag } from '@/lib/types/tag';
  *         description: Internal server error.
  */
 export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const tags = await getAllTags();
     return NextResponse.json(tags);
@@ -55,6 +65,14 @@ export async function GET() {
  *         description: Internal server error.
  */
 export async function POST(request: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== 'admin') {
+    return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const body: Omit<Tag, 'id'> = await request.json();
     

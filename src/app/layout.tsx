@@ -3,8 +3,9 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import './fonts.css';
 import './theme.css';
-import { TagProvider } from '@/lib/contexts/TagContext';
-import { ThemeProvider } from '@/components/common/ThemeProvider';
+import { TagProvider } from '@/components/providers/TagProvider';
+import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import AuthProvider from '@/components/providers/AuthProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -21,11 +22,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#0070f3" />
       </head>
       <body className={inter.className}>
-        <ThemeProvider>
-          <TagProvider>
-            {children}
-          </TagProvider>
-        </ThemeProvider>
+        <AuthProvider>
+          <ThemeProvider>
+            <TagProvider>
+              {children}
+            </TagProvider>
+          </ThemeProvider>
+        </AuthProvider>
       </body>
     </html>
   );

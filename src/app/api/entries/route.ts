@@ -1,4 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../auth/[...nextauth]/route';
 import { getEntries, createEntry } from '@/lib/services/entryService';
 import { GetEntriesOptions } from '@/lib/types/entry';
 import { Entry } from '@/lib/types/entry';
@@ -37,10 +39,20 @@ import { Entry } from '@/lib/types/entry';
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/PaginatedEntries'
+ *       401:
+ *         description: Unauthorized.
  *       500:
  *         description: Internal server error.
  */
 export async function GET(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const { searchParams } = request.nextUrl;
     const options: GetEntriesOptions = {
@@ -77,12 +89,20 @@ export async function GET(request: NextRequest) {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Entry'
- *       400:
- *         description: Bad request, validation failed.
+ *       403:
+ *         description: Forbidden.
  *       500:
  *         description: Internal server error.
  */
 export async function POST(request: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== 'admin') {
+    return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const body: Omit<Entry, 'id'> = await request.json();
 

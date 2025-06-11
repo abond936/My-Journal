@@ -2,7 +2,7 @@
 
 import React from 'react';
 import ViewLayout from '@/components/view/ViewLayout';
-import { FilterProvider } from '@/lib/contexts/FilterContext';
+import { FilterProvider } from '@/components/providers/FilterProvider';
 
 export default function ViewSectionLayout({
   children,

@@ -136,6 +136,39 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
 ## Interaction Rules
 ======================================
 
+That is good, thank you. Before we begin, I want to reiterate:
+While you have read the project documentation and reviewed the codebase, it is impossible that 
+you have established sufficient context to fully understand the nuance of the history of the project, 
+the detail of the desired outcome that only I can provide. I will in many cases ultimately agree with
+your assessment, recommendation and course of action, but there will often be times when I have a piece 
+of context or knowledge that you do not have and is critical to the proper assessment, recommendaton and 
+action.
+
+Therefore,
+
+- You are not to make any changes or additions to the codebase or directory/file sturucture
+without my explicit approval.
+
+- You will perform and explain your assessment and options, your recommendation and rationale, and ask for my approval before doing anything.
+
+- Your analysis will include reviewing the codebase for the potential existence of what you believe is necessary, first in the expected location and, if not found, in the rest of the codebase, because it may exist 
+in a location you do not expect.
+
+- Your recommendatons will include your analyis, including the results of the search for existing 
+code, the specific action you recommend, and the directory/filename you recommend modifying or creating, ensuring that the recommendation adheres to the development standards.
+
+Once approved, 
+
+- You will change or create only what has been approve to be changed, and nothing else.
+
+- You will not make changes or create what has not been discussed and approved. If you find that other changes
+are made than you initially recommended and were approved to make, you will stop, provide the analysis and recommendation and seek approval for the other changes.
+
+These rules of engagement are non-negotiable and the first priority of our interactiona and the project.
+
+Are we clear on these rules?
+
+
 ### Core Principles
 **Only Act With Approval**
    - MUST get explicit approval before ANY code change
@@ -290,8 +323,10 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
    │   │   |   ├── new/
    │   │   |   |   ├── NewAlbumPage.module.css
    │   │   |   |   └── page.tsx                          // album new, *needs work*
-   |   │   |   ├── album-admin.module.css 
-   |   |   │   ├── page.tsx                              // album management
+   |   |   |   |
+   |   │   |   ├── album-admin.module.css                // album management
+   |   |   │   └── page.tsx                              
+   |   |   |   
    │   │   ├── entry-admin/                              // entry management
    │   │   |   ├── [id]/edit/
    |   |   |   |   ├── page.module.css    
@@ -314,6 +349,8 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
    │   │   │   ├── [id]/
    │   │   │   |   └── route.ts                          // GET (one), PATCH, DELETE
    │   │   │   └── route.ts                              // GET (all), POST
+   │   │   ├── auth/[...nextauth]/    
+   │   │   │   └── route.ts
    │   │   ├── entries/                                  // Data-access for Entry content (future)    
    │   │   │   ├── [id]/
    │   │   │   |   └── route.ts                          // GET (one), PATCH, DELETE
@@ -357,7 +394,7 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
    │       │   ├── AlbumForm.module.css
    │       │   ├── AlbumForm.tsx
    │       │   ├── AlbumStyleSelector.module.css         // *needs work*
-   │       |   ├── AlbumStyleSelector.tsx
+   |       |   ├── AlbumStyleSelector.tsx
    │       │   ├── PhotoManager.module.css               // *needs work*
    │       │   └── PhotoManager.tsx
    │       ├── entry-admin/
@@ -383,6 +420,11 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
    │       ├── ThemeProvider.tsx
    │       ├── ThemeToggle.module.css
    │       ├── ThemeToggle.tsx
+   |       providers/
+   │       ├── AuthProviders.tsx
+   │       ├── FiltersProvider.tsx
+   │       ├── TagProvider.tsx
+   │       ├── ThemeProvider.tsx 
    |       view/
    │       ├── album/
    │       |    ├── album-view/                          // View Album
@@ -408,7 +450,6 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
    │   ├── migration/     
    └── lib/                 # Shared resources
        ├── config/          # Configuration
-       ├── contexts/        # React contexts
        ├── extensions/      # Extensions
        ├── firebase/        # Firebase setup
        ├── hooks/           # Custom hooks
@@ -426,6 +467,12 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
    - Place components in appropriate subdirectory based on function
    - Place shared components in common/ directory
    - Place component-specific types in lib/types/
+
+3. **Provider Component Convention**
+   - Philosophy: Components that provide application-wide React Context (e.g., for themes, authentication, data) are treated as a special category of component.
+   - Location: All such providers **MUST** be placed in the `src/components/providers/` directory.
+   - Naming: Files **MUST** be named according to the provider component they export, e.g., `ThemeProvider.tsx`, `AuthProvider.tsx`.
+   - Structure: Each provider module should be self-contained, exporting the Provider component and a corresponding `use...()` hook for easy consumption (e.g., `useTheme()`).
 
 ### Naming Conventions
 1. **File Naming**
@@ -1071,92 +1118,97 @@ Server Code (src/app/api/**):
 
 ### **Authentication**
 ===========================================
-Status: 🟡 Operational
+Status: ✅ Implemented
 
-- Overall Strategy
-  - Decouple application login from photo service connections to support multiple providers.
-  - Centralize security logic in the Next.js backend, not in client-side code or complex database rules.
-- Primary Identity Provider
-  - Manages user login for the application itself (e.g., email/password, social sign-in).
-  - This is where user roles ('admin', 'viewer') are defined and managed.
-  - A library like `lucia-auth` or a simple provider will be used.
-- Connected Accounts (for Photo Services)
-  - The logged-in admin user can connect to photo services (OneDrive, Google Photos) on a settings page.
-  - Each connection uses a standard OAuth 2.0 flow.
-  - Securely stored tokens are used by the backend to fetch photos on the user's behalf.
-- Firebase for Data Access
-  - The `firebase-admin` SDK will be used on the server-side for database operations.
-  - It is NOT used for user sign-in.
-  - Access is controlled via our own API routes, which check the user's role before interacting with Firestore.
-- Role-Based Access Control (RBAC)
-  - Handled by the primary identity provider.
-  - Server-side API routes will verify user's role (`admin` or `viewer`) before allowing access to resources.
+#### Overall Strategy
+The application's authentication is managed by **`next-auth`** (Auth.js), which handles user sign-in and session management for the journal itself. This core identity is kept separate from connections to external services.
 
-❓ Open Questions:
-- How will the various authentications work?
+The security model is centralized in the Next.js backend, where all API routes are secured at the edge. This approach relies on two key authentication patterns:
+
+1.  **Primary Authentication (Implemented):** This is the user's login to the MyJournal application. It is handled by `next-auth` and the providers configured within it (e.g., Credentials-based login).
+
+2.  **Connected Accounts (Planned):** For integrating with third-party photo services (like OneDrive or Google Photos), a separate OAuth 2.0 flow will be used. From a dedicated settings page, the logged-in admin will be able to authorize the application to access their photo libraries. The secure tokens from this OAuth flow will be stored and used by the backend to fetch media on the user's behalf.
+
+#### AI Assistant & Developer Guide
+To work with the authentication system, follow these patterns:
+
+- **Core Configuration:** The main `next-auth` configuration is located at `src/app/api/auth/[...nextauth]/route.ts`. This file defines the authentication providers (e.g., Credentials) and connects to the database via the `FirestoreAdapter`.
+
+- **Session Management (Client-Side):**
+  - The application is wrapped in an `AuthProvider` located at `src/components/providers/AuthProvider.tsx`.
+  - To access user session data in client components (e.g., to show a user's name), use the `useSession()` hook from `next-auth/react`.
+
+- **Securing API Routes (Server-Side):**
+  - At the beginning of every server-side API route handler (`GET`, `POST`, etc.), you **MUST** add a security check.
+  - Use `const session = await getServerSession(authOptions);` to retrieve the current session.
+  - **For read-only routes (e.g., GET):** Check if the session exists.
+    ```typescript
+    if (!session) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+    ```
+  - **For modification routes (e.g., POST, PUT, DELETE):** Check for an admin role.
+    ```typescript
+    if (!session || session.user.role !== 'admin') {
+      return new NextResponse('Forbidden', { status: 403 });
+    }
+    ```
+
+- **User Model:** User data (including a `role` field) is automatically managed by the `@auth/firebase-adapter` and stored in the `users` collection in Firestore.
+
+- **Environment Variables:** Credentials for local development are stored in `.env.local`. This file is not committed to version control.
 
 #### **Firebase Auth**
 --------------------------------------
-Status: 🟡 Operational
+Status: ✅ Implemented
 
 ##### Current Features
-- Basic email/password authentication
-- Session persistence
-- Auth state management
-- Basic error handling
-- Auth context provider
+- Credential-Based Login: Secure sign-in using email and password.
+- `next-auth` Integration: Uses `next-auth` as the primary authentication handler, not Firebase's client-side SDK for auth.
+- Firestore Adapter: User and session data is stored in Firestore via `@auth/firebase-adapter`.
 
 ##### Planned Features
-- Google authentication
-- Social auth providers
-- 2FA support
-- Password policies
-- Account recovery
-- Enhanced error handling
-- Security rules implementation
+- Social auth providers (e.g., Google)
+- Passwordless login (e.g., email links)
+- Account management features (e.g., password change)
 
 ❓ Open Questions:
-- How has this changed with architecture change?
+- None at this time.
 
 #### **Session Management**
 ---------------------------------------
-Status: ⭕ Planned
+Status: ✅ Implemented
 
 ##### Current Features
-- Basic session persistence through Firebase Auth
+- Session Provider: `AuthProvider` provides session state to the entire application.
+- Session Persistence: User sessions are securely persisted in a browser cookie.
+- Session State Access: `useSession` hook for client components.
+- Server-Side Session Validation: `getServerSession` for securing API routes.
+- Token Handling: JWT-based session strategy handled automatically by `next-auth`.
 
 ##### Planned Features
-- Session tracking
-- Token refresh
-- Session timeout
-- Device tracking
-- Security logging
-- Multi-device support
 - Session analytics
-- Security alerts
-- Device management
+- Security alerts for session activity
+- UI for multi-device management
 
 ❓ Open Questions:
-- What is this?
+- None at this time.
 
 #### **Role Management**
 ------------------------------------------
-Status: ⭕ Planned
+Status: ✅ Implemented
 
 ##### Current Features
-- Basic role definition in User interface ??
+- Basic Role Definition: Users have a `role` property in their session and database record (e.g., 'admin').
+- API-Level Access Control: API routes enforce access control based on the user's role.
 
 ##### Planned Features
-- Role definitions
-- Permission management
-- Access control
-- Role assignment
-- Role validation
-- Role hierarchy
-- Role analytics
-- Role templates
+- Role hierarchy (e.g., editor, viewer)
+- UI for role assignment and management by an admin.
+- Granular, per-item permissions.
 
 ❓ Open Questions:
+- None at this time.
 
 
 ### **Backup System**

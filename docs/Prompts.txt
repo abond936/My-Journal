@@ -1,0 +1,7 @@
+Prompts
+
+Please review Project.md and the codebase in detail to familiarize 
+yourself with the project and let me know if you find any inconsistencies, 
+have any questions or have any recommendations.
+
+Before we start, I reiterate our rules of interaction and engagement.

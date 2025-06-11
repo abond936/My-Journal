@@ -6,7 +6,7 @@ import Navigation from '@/components/common/Navigation';
 import TagTree from '@/components/common/TagTree';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import styles from './ViewLayout.module.css';
-import { useFilter } from '@/lib/contexts/FilterContext';
+import { useFilter } from '@/components/providers/FilterProvider';
 
 interface ViewLayoutProps {
   children: React.ReactNode;

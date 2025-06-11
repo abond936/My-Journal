@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../auth/[...nextauth]/route';
 import { createAlbum, getAllAlbums } from '@/lib/services/albumService';
 
 /**
@@ -20,6 +22,14 @@ import { createAlbum, getAllAlbums } from '@/lib/services/albumService';
  *         description: Internal server error.
  */
 export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const albums = await getAllAlbums();
     return NextResponse.json(albums);
@@ -29,13 +39,19 @@ export async function GET() {
   }
 }
 
-// ... existing GET function ...
-
 /**
  * Handles the creation of a new album.
  * It expects album data (e.g., title, description) in the request body.
  */
 export async function POST(request: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== 'admin') {
+    return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     // 1. Read the JSON data from the incoming request.
     // This will be the album details submitted by the user from the form.

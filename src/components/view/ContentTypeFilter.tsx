@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useFilter, ContentType, EntryType } from '@/lib/contexts/FilterContext';
+import { useFilter, ContentType, EntryType } from '@/components/providers/FilterProvider';
 import styles from './ContentTypeFilter.module.css';
 
 export default function ContentTypeFilter() {

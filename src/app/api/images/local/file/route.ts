@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import fs from 'fs/promises';
 import path from 'path';
 import mime from 'mime-types';
@@ -8,6 +10,14 @@ import mime from 'mime-types';
 const PHOTOS_ROOT_DIR = process.env.PHOTOS_ROOT_DIR;
 
 export async function GET(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   if (!PHOTOS_ROOT_DIR) {
     console.error('PHOTOS_ROOT_DIR environment variable is not set.');
     return new NextResponse('Server configuration error.', { status: 500 });

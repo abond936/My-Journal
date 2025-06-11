@@ -14,6 +14,7 @@
     "backup-codebase": "ts-node src/lib/scripts/utils/backup-codebase.ts"
   },
   "dependencies": {
+    "@auth/firebase-adapter": "^2.9.1",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@tiptap/extension-image": "^2.12.0",
@@ -24,10 +25,11 @@
     "@uiw/react-md-editor": "^4.0.6",
     "csv-parse": "^5.6.0",
     "firebase": "^11.8.1",
-    "firebase-admin": "^13.4.0",
+    "firebase-admin": "^12.0.0",
     "framer-motion": "^12.12.1",
     "image-size": "^2.0.2",
     "next": "15.3.2",
+    "next-auth": "^4.24.11",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",

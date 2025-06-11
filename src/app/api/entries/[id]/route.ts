@@ -1,4 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../../auth/[...nextauth]/route';
 import { getEntry, updateEntry, deleteEntry } from '@/lib/services/entryService';
 import { Entry } from '@/lib/types/entry';
 
@@ -24,6 +26,14 @@ interface RouteParams {
  *         description: Entry not found.
  */
 export async function GET(request: NextRequest, { params }: { params: RouteParams }) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const { id } = params;
     const entry = await getEntry(id);
@@ -65,6 +75,14 @@ export async function GET(request: NextRequest, { params }: { params: RouteParam
  *         description: Entry not found.
  */
 export async function PUT(request: NextRequest, { params }: { params: RouteParams }) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== 'admin') {
+    return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const { id } = params;
     const body: Partial<Omit<Entry, 'id'>> = await request.json();
@@ -101,6 +119,14 @@ export async function PUT(request: NextRequest, { params }: { params: RouteParam
  *         description: Entry not found.
  */
 export async function DELETE(request: NextRequest, { params }: { params: RouteParams }) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== 'admin') {
+    return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const { id } = params;
     await deleteEntry(id);

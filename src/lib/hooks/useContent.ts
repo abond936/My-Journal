@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useFilter } from '@/lib/contexts/FilterContext';
+import { useFilter } from '@/components/providers/FilterProvider';
 import { Entry } from '@/lib/types/entry';
 import { Album } from '@/lib/types/album';
 import { EntryType } from '@/lib/types/entryType';

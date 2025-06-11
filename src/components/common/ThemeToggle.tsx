@@ -1,6 +1,6 @@
 'use client';
 
-import { useTheme } from '@/components/common/ThemeProvider';
+import { useTheme } from '@/components/providers/ThemeProvider';
 import { useEffect, useState } from 'react';
 import styles from './ThemeToggle.module.css';
 
