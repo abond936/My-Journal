@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Album } from '@/lib/types/album';
 import AlbumLayout from '@/components/view/album-view/AlbumLayout';
-import styles from '../AlbumView.module.css';
 
 // The props for this page will include the 'id' from the dynamic route segment.
 interface AlbumViewPageProps {
@@ -58,12 +57,20 @@ export default function AlbumViewPage({ params }: AlbumViewPageProps) {
     }, 300);
   };
 
+  const loadingOrErrorStyle: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100vh',
+    fontSize: '1.2rem',
+  };
+
   if (loading) {
-    return <div className={styles.centered}>Loading album...</div>;
+    return <div style={loadingOrErrorStyle}>Loading album...</div>;
   }
 
   if (error) {
-    return <div className={`${styles.centered} ${styles.error}`}>{error}</div>;
+    return <div style={{ ...loadingOrErrorStyle, color: 'red' }}>{error}</div>;
   }
 
   return (

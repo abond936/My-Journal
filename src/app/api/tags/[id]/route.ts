@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { getTagById, updateTag, deleteTag } from '@/lib/services/tagService';
 import { Tag } from '@/lib/types/tag';
 
@@ -31,7 +31,7 @@ interface Params {
  *       500:
  *         description: Internal server error.
  */
-export async function GET(request: Request, { params }: { params: Params }) {
+export async function GET(request: NextRequest, { params }: { params: Params }) {
   try {
     const { id } = params;
     const tag = await getTagById(id);
@@ -80,7 +80,7 @@ export async function GET(request: Request, { params }: { params: Params }) {
  *       500:
  *         description: Internal server error.
  */
-export async function PUT(request: Request, { params }: { params: Params }) {
+export async function PUT(request: NextRequest, { params }: { params: Params }) {
   try {
     const { id } = params;
     const body: Partial<Omit<Tag, 'id'>> = await request.json();
@@ -126,7 +126,7 @@ export async function PUT(request: Request, { params }: { params: Params }) {
  *       500:
  *         description: Internal server error.
  */
-export async function DELETE(request: Request, { params }: { params: Params }) {
+export async function DELETE(request: NextRequest, { params }: { params: Params }) {
   try {
     const { id } = params;
     await deleteTag(id);

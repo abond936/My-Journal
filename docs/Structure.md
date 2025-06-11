@@ -4,7 +4,7 @@
 
 This directory contains the root of the Next.js application, including the main entry point and global layouts.
 
-### File: `src/app/layout.tsx` *ok. Refactor sidebar process*
+### File: `src/app/layout.tsx` *ok*
 *   **Imports:**
     *   `@/lib/contexts/TagContext` -> `TagProvider`
     *   `@/components/common/ThemeProvider`
@@ -39,8 +39,6 @@ This directory contains the routes and layouts for the administration section of
     *   Provides the main layout for the entire admin section. It re-uses the `ViewLayout` and adds an admin-specific Floating Action Button (`AdminFAB`).
 *   **Initial Assessment:**
     *   `Live Path`
-
----
 
 ## Directory: `src/app/admin/album-admin`
 
@@ -376,8 +374,6 @@ Route for getting the entire folder structure from the local photo source.
 *   **Initial Assessment:**
     *   `Live Path`
 
----
-
 ### Directory: `src/app/api/photos/image` *Consolidate*
 
 Contains redundant routes for serving image files from the local file system.
@@ -423,8 +419,6 @@ A third, redundant route for serving image files.
     *   Serves an image file from the local file system, taking a base64-encoded path as a route parameter. It appears functionally identical to `/api/photos/image/[id]/route.ts`, but is labeled as a "preview". It serves the full, raw image without any processing.
 *   **Initial Assessment:**
     *   `Potentially Obsolete` - This is a third, redundant image-serving implementation that creates significant confusion.
-
----
 
 ### Directory: `src/app/api/photos/source-collections` *ok*
 

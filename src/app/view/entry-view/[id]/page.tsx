@@ -1,8 +1,7 @@
 'use client';
 
 import { useEntry } from '@/lib/hooks/useEntry';
-import EntryLayout from '@/components/view/entry/EntryLayout';
-import styles from './page.module.css';
+import EntryLayout from '@/components/view/entry-view/EntryLayout';
 
 interface EntryViewPageProps {
   params: {
@@ -14,16 +13,24 @@ export default function EntryViewPage({ params }: EntryViewPageProps) {
   const { id } = params;
   const { entry, loading, error } = useEntry(id);
 
+  const loadingOrErrorStyle: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100vh',
+    fontSize: '1.2rem',
+  };
+
   if (loading) {
-    return <div className={styles.centered}>Loading entry...</div>;
+    return <div style={loadingOrErrorStyle}>Loading entry...</div>;
   }
 
   if (error) {
-    return <div className={`${styles.centered} ${styles.error}`}>{error.message}</div>;
+    return <div style={{ ...loadingOrErrorStyle, color: 'red' }}>{error.message}</div>;
   }
 
   if (!entry) {
-    return <div className={styles.centered}>Entry not found.</div>;
+    return <div style={loadingOrErrorStyle}>Entry not found.</div>;
   }
 
   return <EntryLayout entry={entry} />;

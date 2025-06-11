@@ -1,4 +1,4 @@
-import { getFirestore, Timestamp, DocumentSnapshot } from 'firebase-admin/firestore';
+import { getFirestore, Timestamp, DocumentSnapshot, FieldValue } from 'firebase-admin/firestore';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { Album } from '@/lib/types/album';
 

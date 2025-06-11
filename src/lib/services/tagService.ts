@@ -1,10 +1,25 @@
-import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
+import { getFirestore, Timestamp, FieldValue, DocumentSnapshot } from 'firebase-admin/firestore';
 import { Tag } from '@/lib/types/tag';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 
 // Initialize Firebase Admin
 getAdminApp();
 const db = getFirestore();
+
+/**
+ * Converts a Firestore document to a Tag object, handling timestamps.
+ * @param doc The Firestore document snapshot.
+ * @returns The Tag object.
+ */
+function docToTag(doc: DocumentSnapshot): Tag {
+  const data = doc.data() as Omit<Tag, 'id'>;
+  return {
+    id: doc.id,
+    ...data,
+    createdAt: (data.createdAt as Timestamp)?.toDate(),
+    updatedAt: (data.updatedAt as Timestamp)?.toDate(),
+  };
+}
 
 /**
  * Fetches all tags from Firestore.
@@ -19,12 +34,7 @@ export async function getAllTags(): Promise<Tag[]> {
       return [];
     }
 
-    const tags: Tag[] = [];
-    snapshot.forEach(doc => {
-      tags.push({ id: doc.id, ...doc.data() } as Tag);
-    });
-    
-    return tags;
+    return snapshot.docs.map(docToTag);
   } catch (error) {
     console.error('Error fetching all tags from Firestore:', error);
     throw new Error('Failed to fetch tags.');
@@ -48,7 +58,7 @@ export async function getTagById(id: string): Promise<Tag | null> {
             return null;
         }
 
-        return { id: doc.id, ...doc.data() } as Tag;
+        return docToTag(doc);
     } catch (error) {
         console.error(`Error fetching tag with ID ${id}:`, error);
         throw new Error('Failed to fetch tag.');
@@ -69,7 +79,8 @@ export async function createTag(tagData: Omit<Tag, 'id'>): Promise<Tag> {
       updatedAt: FieldValue.serverTimestamp(),
     });
 
-    return { id: docRef.id, ...tagData };
+    const newDoc = await docRef.get();
+    return docToTag(newDoc);
   } catch (error) {
     console.error('Error creating tag in Firestore:', error);
     throw new Error('Failed to create tag.');
@@ -98,7 +109,7 @@ export async function updateTag(id: string, tagData: Partial<Omit<Tag, 'id' | 'c
       throw new Error('Tag not found after update.');
     }
 
-    return { id: updatedDoc.id, ...updatedDoc.data() } as Tag;
+    return docToTag(updatedDoc);
   } catch (error) {
     console.error(`Error updating tag with ID ${id}:`, error);
     throw new Error('Failed to update tag.');

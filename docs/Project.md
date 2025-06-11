@@ -278,7 +278,7 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
 
 ### Directory Structure
 1. **Base Structure**
-   ```
+   
    src/
    ├── __tests__/   
    ├── app/                                              // Next.js app router
@@ -286,10 +286,10 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
    │   │   ├── album-admin/                              // album management
    │   │   |   ├── [id]/edit/
    |   |   |   |   ├── page.module.css   
-   |   |   |   |   └── page.tsx                          // album edit
+   |   |   |   |   └── page.tsx                          // album edit, *needs work*
    │   │   |   ├── new/
    │   │   |   |   ├── NewAlbumPage.module.css
-   │   │   |   |   └── page.tsx                          // album new
+   │   │   |   |   └── page.tsx                          // album new, *needs work*
    |   │   |   ├── album-admin.module.css 
    |   |   │   ├── page.tsx                              // album management
    │   │   ├── entry-admin/                              // entry management
@@ -301,49 +301,109 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
    │   │   |   |   └── page.tsx                          // entry new
    |   │   |   ├── album-admin.module.css  
    |   │   |   └── page.tsx                              // entry management
-   │   │   ├── tag-admin/                                // tag management
-   │   │   |    └── page.tsx 
-   |   │   └── AdminLayout.module.css     
-   |   │   └── layout.tsx                                // Layout for admin 
+   |   |   |
+   │   │   ├── tag-admin/                                // tag management, *needs work*
+   │   │   |    ├── page.tsx 
+   |   |   |    └── SortableTag.tsx                      // drag and drop
+   |   |   |
+   |   │   ├── AdminLayout.module.css     
+   |   │   └── layout.tsx                                // Layout for admin, ViewLayout, AdminFAB 
+   |   |
    │   ├── api/ 
    │   │   ├── albums/                                   // Data-access for Album content
    │   │   │   ├── [id]/
    │   │   │   |   └── route.ts                          // GET (one), PATCH, DELETE
    │   │   │   └── route.ts                              // GET (all), POST
-   │   │   ├── content/                                  
-   │   │   │   └── route.ts                              // GET all content types
    │   │   ├── entries/                                  // Data-access for Entry content (future)    
    │   │   │   ├── [id]/
    │   │   │   |   └── route.ts                          // GET (one), PATCH, DELETE
    |   │   │   └── route.ts                              // GET (all), POST
-   │   │   ├── photos/                                   // Data-access for the Photo Service Abstraction
-   │   │   |   ├── tree/
-   │   │   |   │   └── route.ts                          // GET folder structure
-   │   │   |   ├── contents/
-   │   │   |   │   └── route.ts                          // POST to get folder contents
-   │   │   |   └── image/
-   │   │   |       └── route.ts                          // GET to serve an image file
-   │   │   ├── tags/                                     // Data-access for Tag content
-   │   │   │   └── route.ts                              // GET (all)
+   │   │   ├── images/                                   // Data-access for the Photo Service Abstraction
+   │   │   |   ├── local/
+   │   │   |   |   ├── file/
+   │   │   |   │   |   └── route.ts                      // GET folder structure
+   │   │   |   |   ├── folder-contents/
+   │   │   |   │   |   └── route.ts                      // POST to get folder contents
+   │   │   |   |   └── folder-tree
+   │   │   |   |       └── route.ts                      // GET to serve an image file
+   │   │   |   ├── source-collections/                   // to be expanded
+   │   │   |   |   └──  route.tx
+   │   │   |   ├── uploads/                              // pasted/dragged media
+   │   │   |   |   └──  route.tx
+   │   │   └── tags/                                     // Data-access for Tag content
+   │   │       ├── [id]/
+   │   │       |   └── route.ts                          // GET (one), PATCH, DELETE
+   |   │       └── route.ts                              // GET (all), POST
+   |   |   
+   │   ├── view/                                         // Public viewing area
+   │   |   ├── album-view/[id]/                          // Album viewing, *needs work*
+   │   |   |   └── page.tsx 
+   |   |   |
+   │   |   ├── entry-view/[id]/                          // Entry viewing, *needs work*
+   │   |   |   └── page.tsx   
+   |   |   |
+   |   |   ├── layout.tsx                                // Primary content layout
+   |   |   └── page.tsx                                  // Primary content page
+   |   |
    │   ├── fonts.css
    │   ├── globals.css
-   |   ├── layout.tsx             // Root tags and wraps app
-   |   ├── page.tsx               // Landing page (calls Home.tsx)
-   |   ├── theme.css 
-   │   └── view/                    # Public viewing area
-   │       ├── album-view/[id]/     # Album viewing
-   │       |   └── page.tsx 
-   │       ├── AlbumView/module.css
-   |       |
-   │       ├── entry-view/[id]/     # Entry viewing
-   │       |   └── page.tsx   
-   |       ├── EntryList.module.css 
-   |       ├── layout.tsx 
-   |       └── page.tsx       
-   ├── components/          # React components
-   │   ├── admin/           # Admin components
-   │   ├── common/          # Shared components
-   │   └── view/            # View components
+   |   ├── layout.tsx                                     // Root tags, ThemeProvider, TagProvider
+   |   ├── page.tsx                                       // Landing page (calls Home.tsx) Enter/Login
+   |   └── theme.css 
+   |
+   ├── components/                                       // React components
+   |   └── admin/
+   │       ├── album-admin/
+   │       │   ├── AlbumForm.module.css
+   │       │   ├── AlbumForm.tsx
+   │       │   ├── AlbumStyleSelector.module.css         // *needs work*
+   │       |   ├── AlbumStyleSelector.tsx
+   │       │   ├── PhotoManager.module.css               // *needs work*
+   │       │   └── PhotoManager.tsx
+   │       ├── entry-admin/
+   |       │   ├── CoverPhotoContainer.module.css        // Move to common
+   │       │   ├── CoverPhotoContainer.tsx               // Move to common
+   │       │   ├── EntryForm.module.css
+   │       │   └── EntryForm.tsx
+   │       ├── AdminFAB.module.css                       // Rename AddButton, Move to common
+   │       ├── AdminFAB.tsx                              // Rename AddButton, Move to common
+   │       ├── AdminSidebar.module.css
+   │       ├── AdminSidebar.tsx
+   |       common/
+   │       ├── FigureWithImageView.module.css            // used by TipTap
+   │       ├── FigureWithImageView.tsx
+   │       ├── Navigation.module.css                     // top navigation
+   │       ├── Navigation.tsx
+   │       ├── RichTextEditor.module.css                 // edit content with media
+   │       ├── RichTextEditor.tsx
+   │       ├── TagSelector.module.css                    // assign tags
+   │       ├── TagSelector.tsx
+   │       ├── TagTree.module.css                        // display tag tree
+   │       ├── TagTree.tsx
+   │       ├── ThemeProvider.tsx
+   │       ├── ThemeToggle.module.css
+   │       ├── ThemeToggle.tsx
+   |       view/
+   │       ├── album/
+   │       |    ├── album-view/                          // View Album
+   │       |    │   ├── AlbumLayout.module.css
+   │       |    │   └── AlbumLayout.tsx
+   │       |    ├── entry/                               // View Entry--Move to entry-view/, delete entry/
+   │       |    │   ├── EntryLayout.module.css
+   │       |    │   └── EntryLayout.tsx
+   │       |    ├── entry-view/
+   │       |    ├── CardGrid.module.css                  // grid layout
+   │       |    ├── CardGrid.tsx
+   │       |    ├── ContentCard.module.css               // content cards
+   │       |    ├── ContentCard.tsx
+   │       |    ├── ContentTypeFilter.module.css         // type filter, rename ContentFilter?
+   │       |    ├── ContentTypeFilter.tsx
+   │       |    ├── Home.module.css                      // homepage
+   │       |    ├── Home.tsx
+   │       |    ├── ViewLayout.module.css                // master view layout
+   │       |    └── ViewLayout.tsx
+   |       ├── PhotoPicker.module.css                    // Move to common/??
+   |       ├── PhotoPicker.tsx
    ├── data/ 
    │   ├── migration/     
    └── lib/                 # Shared resources
@@ -405,6 +465,11 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
    - Validate file operations before proceeding
    - Use proper error handling for file operations
    - Log operation results
+
+API Route Handler Rule
+For any dynamic API route (e.g., in a folder named [id]), the handler functions (GET, PUT, POST, DELETE) MUST use NextRequest from next/server as the type for the first parameter. The params object is available on the second parameter.
+Correct Implementation:
+Apply to Project.md
 
 ### Code Documentation
 1. **Code Comments**
@@ -509,7 +574,7 @@ Status: 🟡 Operational
 The core function of the application is the presentation and consumption of content--stories and images.
 The vision is to make this best consumed on mobile and tablet devices and emulate a combination of
 MSN, YouTube, Google, and other social media apps, with content presented and consumed through a 
-a grid-based card system. 
+a grid-based card system with infinite scroll.
 
 #### Current Features
 - Content layout connected to all content.
@@ -518,21 +583,19 @@ a grid-based card system.
 - Album image scroll
 
 #### Planned Features
-- Improved styling 
-  - Multi-sized cards
-    - Card height and width ratios of each other to facilitate grid structure
-  - Varying styling
-    - Titles, Tags, Excerpts overlaid/non-overlaid
--Related content
-   - Multi-size cards
-- Random/sorted order options
-- Styling
-- Card animation improvements
-- Card size optimization
-- Card content preview
+Function
+- *Related content*
+- *Order options*
+Styling 
+- Multi-sized cards
+  - Card height and width ratios of each other to facilitate grid structure
+- Varying styling
+  - Titles, Tags, Excerpts overlaid/non-overlaid
+- Card animation
+
 
 - Card Types
-   - Entry - Click to page, backk
+   - Entry - Click to page, back
      - Story - 
      - Reflection
      - Q&A
@@ -540,7 +603,7 @@ a grid-based card system.
      - Quote
    - Album - x/y, Horizontal Scroll, Click to Google-like gallery, Click to Carosel, back
    - Related
-- Vertical scroll for entries
+
 
 ❓ Open Questions:
 
@@ -555,12 +618,21 @@ Entry view contains title, cover image, tags, content.
 - Cover image
 - Content
 - Tags
+- Back button
 
 #### Planned Features
-- Album links
-- Related content
-- User interaction
-   - Like, comment, sharelink
+Function
+- *Album links*
+- *Related content*
+- User interaction - Like, comment, sharelink
+
+Styling
+- *Emulate edit page for Story*
+- Vary by Type
+   - Story, Reflection, Q&A, Callout, Quote
+- Vary by orientation
+   - Landscape, Portrait
+- Back button
 
 ❓ Open Questions:
 
@@ -575,19 +647,15 @@ Album view contains a title, tags, caption and grid display of images.
 - Shell
 
 #### Planned Features
-- Title
-- Caption
-- Photo grid display
+- *Design Page*
+   - Title, Caption
+- *Photo grid display*
 - Toggle caption display (mobile/tap, other/click)
 - Toggle fill mode (fill/contain)
-- Entry links
-- User interaction
-   - Like, comment, share
-- Styled like a photo album or scrapbook 
-   - Library of styles selectable by album
-   - Selectable sytles by album
-      - Background,color scheme, font
-- Carosel
+- *Entry links*
+- User interaction - Like, comment, share
+- *Selectable style*
+- *Photo Carosel*
 
 ❓ Open Questions:
 
@@ -602,7 +670,7 @@ Status: 🟡 Operational
 
 ##### Planned Features
 - Fully styled
-   - MSN-style layout and theme
+   - *MSN-style layout and theme*
 - Fully Responsive
 - Fully Customizable
    - Variable-based CSS
@@ -628,12 +696,12 @@ Status: 🟡 Operational
 - Content/Admin
 
 #### Planned Features
-- Improve styling
-   - Increase logo size
-   - Increase vertical size to fit logo
-   - Bottom-align links?
-- Remove all for non-authors
+Function
 - Admin and New button for Author only
+
+Styling
+
+
 
 ❓Open Questions:
 
@@ -650,16 +718,13 @@ Navigation is facilitated by heirarchical tag filtering.
 - Number of entries (x/y)
 
 #### Planned Features
-- Include number of albums (x/y)
-- Improved styling
-   - Sidebar title
-   - Show tree
-   - Shrink vertical space
-   - Improved font
-- Slide in/out
+Function
+- Include number of entries/albums (x/y)
+- Fix code to update count
 
-- Add submenu for Entry types
-   - Q&A, Quote, Callout
+Styling
+- Slide in/out
+- Left arrow
 
 ❓ Open Questions:
 - Is there a way to navigate by Entry or Album?
@@ -693,8 +758,7 @@ Status: ⭕ Planned
 - none
 
 #### Planned Features
-- Basic text search
-  - Top of content
+- *Basic text search - Top of content*
 
 ❓ Open Questions:
 
@@ -729,7 +793,10 @@ Sidebar to navigate between element lists.
 - Basic navigation
 
 #### Planned Features
-- Improve styling 
+Function
+
+Styling 
+- Title
 
 ❓ Open Questions:
 
@@ -748,9 +815,11 @@ Status: 🟡 Operational
 - Bulk editing
 
 #### Planned Features
-- Inline/Bulk Tag assignment
-- Improved styling
+Function
+- *Inline/Bulk Tag assignment*
 - Batch upload of tags
+
+Styling
 
 ❓ Open Questions:
 
@@ -768,7 +837,9 @@ Stautus: 🟡 Operational
 - Tag Assignment
 
 #### Planned Features
-- Improved styling
+Function
+
+Styling
 
 ❓ Open Questions:
 
@@ -787,11 +858,14 @@ Status: 🟡 Operational
 - Tag Assigment
 
 #### Planned Features
+Function
 - Aspect ratio control 
 - Improved paste/drag-drop handling for multiple images.
 - Image-specific metadata management (e.g., tags).
 - Revisit cover image stored?
 - Fill mode toggle (cover/contain)??
+
+Styling
 
 ❓ Open Questions:
 
@@ -813,10 +887,12 @@ An album is a virtual collection of images from one or more sources.
 - Local photo service
 
 #### Planned Features
-- Add/Delete Photos
+Function
 - Batch upload of photos to albums.
 - Sync with sources on our schedule
-- Link to entries
+
+Styling
+
 
 ❓Open Questions:
 - How to handle single photos?
@@ -833,21 +909,25 @@ Status: 🟡 Operational
 - Add photos - Photopicker
 
 #### Planned Features
-- Tag assignment
-- Album edit page
-   - Add/Delete photos
-- Grid-based presentation of the images
-  - Scrapbook styling
-  - Paginated or scrollable. 
- - Captions togglable
-   - Click/hover
- - Link to associated entries
+Function
+- *Tag assignment*
+- *Manage Photos* - Add/Delete/Order/Orientation
+- *Link to entries*
+- Paginated or scrollable. 
+- Captions togglable - Click/hover
+- Select Style
+
+Styling
+- Grid-based/Masonry Gallery
+- Scrapbook
+
 
 ❓ Open Questions:
 - How do we want this page to operate?
   - Edit Fields
   - Select Style
-  - Add/delete photos
+  - Manage photos
+- How will masonry work/look?
 
 #### **Tag Management**
 ---------------------------------
@@ -867,16 +947,17 @@ No need for separate pages
 - Search and filter
 
 #### Planned Features
-- Drag and drop hierarchy
-- Tag deletion/merging functionality
-- Styling improvements
+Function
+- *Drag and drop hierarchy*
+- *Tag deletion/merging functionality*
 - Cover image/icon
-- Tag analytics ??
-- Tag suggestions ??
-- Tag history ??
+Styling
+
 
 ❓ Open Questions
 - How to deal with edited/deleted tags?
+   - Edited - warning - heirarchy staying the same, unless edited.
+   - Deleted - warning - Deleting this tag will remove this and all children tags from all entries and albums.
 - Feed tags back to photo metadata?
 
 ### **Question Management**
@@ -898,6 +979,8 @@ Status: ⭕ Planned
 - Question templates
 - Answer validation
 - User feedback
+- Tagged?
+- Grouped?
 
 ❓ Open Questions
 - Do we want to track questions answered?
@@ -905,33 +988,36 @@ Status: ⭕ Planned
 
 ### **Style Management**
 ---------------------------------
+Status: ⭕ Planned
 Album styles are selectable styles for album pages
-   - Background
-   - Font
-   - Colors
 
-  #### Current Features
-  - None
 
-  #### Planned Features
-  - Preconfigured page styles for selection
-  - Specifically selected style components
-    - Background, Font, Color scheme, etc.
+#### Current Features
+- None
+
+#### Planned Features
+- Preconfigured album and entry (by type) page styles for selection
+- Preconfigured
+  - Background, Font, Color scheme, etc.
+- Custom - 
 
 ❓ Open Questions:
-
+- What are the variables that need to be included/decided?
 
 ### **Theme Management**
 ----------------------------------
-Themes (color, fonts, boxes, spacing, padding, etc.) can be managed centrally outside the code.
+Status: ⭕ Planned
 
-  #### Current Features
-  - Light/Dark
-  #### Planned Features
-  - UI management
+Themes customizable.
+
+#### Current Features
+- Light/Dark
+
+#### Planned Features
+- UI management
 
 ❓ Open Questions:
-
+- What are the variables that need to be included/decided?
 
 [Back to Top](#myjournal-project)
 
@@ -944,14 +1030,14 @@ Status: 🟡 Operational
 
 #### Current Features
 - Frontend
-   - Next.js 15.3.2
-   - React 19
-   - TypeScript
-   - Native CSS
-   - TipTap for rich text editing
-   - PhotoPicker for 
-   - Framer Motion for animations
-   - Next.js Image Optimizer
+  - Next.js 15.3.2
+  - React 19
+  - TypeScript
+  - Native CSS
+  - TipTap for rich text editing
+  - PhotoPicker for 
+  - Framer Motion for animations
+  - Next.js Image Optimizer
 
 - Backend
 - Firebase (Firestore, Authentication, Storage)
@@ -968,38 +1054,21 @@ Status: 🟡 Operational
 
 # **Client-Server Architecture**
 =======================================
-A Core Principle
-This project strictly separates client-side and server-side logic. Understanding this boundary is critical to prevent build errors and maintain a clean architecture. A common error that arises from violating this principle is a Module not found: Can't resolve 'net' (or similar Node.js built-in module) error during compilation.
-The Problem: Server Code on the Client
-The Firebase Admin SDK (firebase-admin) is used for all direct database interactions (reading from and writing to Firestore). This SDK is powerful but is designed exclusively for server environments (like Node.js). It depends on built-in Node.js modules (net, crypto, fs, etc.) that do not exist in a web browser.
-If any code that imports the Firebase Admin SDK (directly or indirectly) is included in a client-side component bundle, the build will fail because the browser cannot resolve these server-side dependencies.
-The Rule: A Bright Line
-Client-Side Code ('use client' Components, Hooks)
-MUST NOT import files from src/lib/services/* (e.g., entryService, albumService).
-MUST NOT import the Firebase Admin SDK (@/lib/config/firebase/admin).
-MUST fetch all data from the database by calling internal API Routes (e.g., fetch('/api/entries/[id]')).
-Client-side hooks (e.g., useEntry, useContent) should encapsulate this fetch logic.
-Server-Side Code (API Routes in src/app/api/**)
-This is the ONLY place where server-side services from src/lib/services/* should be used.
-These routes are responsible for receiving requests from the client, using the services to interact with the database, and returning the data to the client.
-Correct Data Flow Example
-This is the correct flow for a client component displaying a single entry:
-React Component (Client): src/app/view/entry-view/[id]/page.tsx
-Needs to display an entry.
-Calls the useEntry() hook to get the data.
-React Hook (Client): src/lib/hooks/useEntry.ts
-Receives the entry id.
-Uses the fetch API to make a request: fetch('/api/entries/the-entry-id').
-Returns the fetched data, loading state, and error state.
-API Route (Server): src/app/api/entries/[id]/route.ts
-Receives the GET request from the hook.
-Calls the appropriate server-side service: getEntry('the-entry-id').
-Service (Server): src/lib/services/entryService.ts
-Contains the function getEntry(id).
-Uses the adminDb (Firebase Admin SDK) to query the Firestore database.
-Returns the data to the API Route.
-Response: The API Route sends the data back to the client hook as a JSON response, which then updates the component.
-By adhering to this pattern, we ensure that no server-only code ever leaks into the client-side bundle.
+This project adheres to a strict client/server architecture so no server-only code (like database credentials or Node.js modules) is ever sent to the browser.
+
+- Client components get data by calling internal API routes.
+- API Routes use server-side services to interact with the database.
+
+Implementation Constraints:
+
+Client Code ('use client' files, hooks):
+- MUST NOT import from src/lib/services/.
+- MUST NOT import @/lib/config/firebase/admin.
+- MUST fetch data via internal API routes (e.g., fetch('/api/...')).
+Server Code (src/app/api/**):
+- This is the ONLY location where modules from src/lib/services/ should be imported and used.
+
+
 ### **Authentication**
 ===========================================
 Status: 🟡 Operational
@@ -1160,6 +1229,7 @@ Status: 🟡 Operational
 =======================================
 
 #### **Firestore Structure**
+---------------------------------------
 Status: 🟡 Operational
 
 ##### Current Features
@@ -1170,6 +1240,20 @@ Status: 🟡 Operational
 ##### Planned Features
 - User collection
 - Media collection
+
+#### **Cost Management**
+----------------------------------------
+Status: ⭕ Planned
+
+##### Current Features
+- Some caching
+
+##### Planned Features
+- Cache strategy
+  - CDN integration
+  - Browser caching
+  - Service worker caching
+- Usage monitoring
 
 ❓ Open Questions:
 - Review this...
@@ -1269,6 +1353,40 @@ Aspect Ratio and sizing managed
 ❓ Open Questions:
 - Why do we need two different metadata models: one for browsing (AlbumPhotoMetadata) and one for usage (PhotoMetadata)?
 
+Core Concepts & Terminology
+- Source: The top-level service where the original media is stored.
+- Asset: A single, unique media file (photo or video) within a Source.
+- Collection: A logical grouping of Assets within a Source.
+- Navigation:A specific method or strategy for browsing the Assets within a Source.
+  - Folder tree, Collections, Date 
+API Architecture Summary
+- Adapt to source
+- Discover Navigation Methods
+- Endpoint: GET /api/images/{source}/navigation
+- Endpoint: GET /api/images/{source}/browse/{mode}
+- Endpoint: GET /api/images/{source}/collections/{collectionId}
+- Endpoint: GET /api/images/{source}/assets/{assetId}
+- Endpoint: GET /api/images/{source}/search?query=...
+
+            └── [source]                  // Dynamic route for the Source (e.g., 'local', 'google-photos')
+                ├── assets
+                │   └── [assetId]         // Dynamic route for a single Asset ID
+                │       └── route.ts      // Handles GET for a single asset
+                │
+                ├── browse
+                │   └── [mode]            // Dynamic route for the Navigation Mode
+                │       └── route.ts      // Handles GET for browsing (e.g., the folder tree)
+                │
+                ├── collections
+                │   └── [collectionId]    // Dynamic route for a single Collection ID
+                │       └── route.ts      // Handles GET for a collection's contents
+                │
+                ├── search
+                │   └── route.ts          // Handles GET for free-form search queries
+                │
+                └── navigation
+                    └── route.ts          // Handles GET to discover navigation modes for the source
+
 #### **Image Integration**
 Status: 🟡 Operational
 
@@ -1292,10 +1410,7 @@ Status: 🟡 Operational
 
 Storage Strategy:
 - Originals stay in source services
-- Store thumbnails (~20KB each)
-- Store previews (~100KB each)
-- Maintain metadata in Firestore
-- Estimated storage: ~4% of original size
+- Only store thumbnails, previews, metadata in Firestore
 
 ##### Current Features  ??
 - Firebase Storage integration
@@ -1309,22 +1424,7 @@ Storage Strategy:
   - Image compression
   - Format optimization
   - Lazy loading
-- Cost management
-  - Usage monitoring
-  - Cost optimization
-  - Storage quotas
-- Cache strategy
-  - CDN integration
-  - Browser caching
-  - Service worker caching
-- Backup integration
-  - Automatic backups
-  - Version control
-  - Recovery options
-- Security
-  - Access control
-  - Encryption
-  - Audit logging
+
 
 ❓ Open Questions:
 
@@ -1340,7 +1440,7 @@ Photopicker for selecting and assigning photos to entries and albums.
 - Collapsible/Expandable Tree structure
 - singleSelect/multiSelect dependent on route
 
-  #### Planned Features
+#### Planned Features
 - Integrate with Album-Edit
 
   ❓ Open Questions:
@@ -1352,15 +1452,16 @@ Status: 🟡 Operational
 
 Use local drive until operational functionality solid, then link to online sources.
 
-  ##### Current Features
-  - Local drive API 
-  - Root directory C:/users/alanb/onedrive/pictures
-  - Deeply nested subdirectories
-  - Subdirectory structure for photopicker
-  - Navigation of directories to images
+##### Current Features
+- Local drive API 
+- Root directory C:/users/alanb/onedrive/pictures
+- Deeply nested subdirectories
+- Subdirectory structure for photopicker
+- Navigation of directories to images
 
-  ##### Planned Features
-  - Limit integration due to limitations
+##### Planned Features
+- Limit integration due to limitations
+- Standardize code/naming on standards
    
 ❓ Open Questions:
 

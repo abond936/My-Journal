@@ -1,49 +1,64 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import styles from './TagTree.module.css';
 import { Tag } from '@/lib/types/tag';
+import { useTag } from '@/lib/contexts/TagContext';
 
 interface TagTreeProps {
   onTagSelect: (tagId: string) => void;
   selectedTags: string[];
 }
 
-interface TagWithCount extends Tag {
-  entryCount: number;
+interface TagWithChildren extends Tag {
+  children: TagWithChildren[];
 }
 
 export default function TagTree({ onTagSelect, selectedTags }: TagTreeProps) {
-  const [tags, setTags] = useState<TagWithCount[]>([]);
+  const { tags, loading: isLoading, error: contextError } = useTag();
   const [expandedTags, setExpandedTags] = useState<Set<string>>(new Set());
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  
+  const [error, setError] = useState<string | null>(contextError?.message || null);
+
+  const tagTree = useMemo(() => {
+    if (!tags || tags.length === 0) return [];
+
+    const tagsWithChildren: TagWithChildren[] = tags.map(tag => ({ ...tag, children: [] }));
+    const tagMap = new Map(tagsWithChildren.map(tag => [tag.id, tag]));
+    const rootTags: TagWithChildren[] = [];
+
+    tagsWithChildren.forEach(tag => {
+      if (tag.parentId) {
+        const parent = tagMap.get(tag.parentId);
+        if (parent) {
+          parent.children.push(tag);
+        }
+      } else {
+        rootTags.push(tag);
+      }
+    });
+
+    // Recursive sort function
+    const sortTags = (tagList: TagWithChildren[]) => {
+      tagList.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      tagList.forEach(tag => {
+        if (tag.children.length > 0) {
+          sortTags(tag.children);
+        }
+      });
+    };
+
+    sortTags(rootTags);
+    return rootTags;
+  }, [tags]);
 
   useEffect(() => {
-    async function fetchTagTree() {
-      try {
-        setIsLoading(true);
-        const response = await fetch('/api/tags/tree');
-        if (!response.ok) {
-          throw new Error('Failed to fetch tag tree data');
-        }
-        const data: TagWithCount[] = await response.json();
-        setTags(data);
-
-        // Expand root tags by default
-        const rootTags = data
-          .filter(tag => !tag.parentId)
-          .map(tag => tag.id);
-        setExpandedTags(new Set(rootTags));
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An unknown error occurred');
-      } finally {
-        setIsLoading(false);
-      }
+    // When the tree is built, expand the root tags by default.
+    if (tagTree.length > 0) {
+      const rootTagIds = new Set(tagTree.map(t => t.id));
+      setExpandedTags(rootTagIds);
     }
-
-    fetchTagTree();
-  }, []);
+  }, [tagTree]);
 
   const toggleTag = (tagId: string) => {
     setExpandedTags(prev => {
@@ -57,8 +72,8 @@ export default function TagTree({ onTagSelect, selectedTags }: TagTreeProps) {
     });
   };
 
-  const renderTag = (tag: TagWithCount, level: number = 0, index: number = 0) => {
-    const children = tags.filter(t => t.parentId === tag.id);
+  const renderTag = (tag: TagWithChildren, level: number = 0, index: number = 0) => {
+    const children = tag.children; // Use children from the processed tree
     const isExpanded = expandedTags.has(tag.id);
     const isSelected = selectedTags.includes(tag.id);
     const isTopLevel = !tag.parentId;
@@ -91,7 +106,6 @@ export default function TagTree({ onTagSelect, selectedTags }: TagTreeProps) {
             data-dimension={tag.dimension}
           >
             <span className={styles.tagName}>{tag.name}</span>
-            <span className={styles.entryCount}>({tag.entryCount})</span>
           </button>
         </div>
 
@@ -112,15 +126,13 @@ export default function TagTree({ onTagSelect, selectedTags }: TagTreeProps) {
     return <div className={styles.error}>{error}</div>;
   }
 
-  const rootTags = tags.filter(tag => !tag.parentId);
-
   return (
     <aside className={styles.sidebar}>
       <h2 className={styles.title}>Explore</h2>
       <nav className={styles.navigation}>
-        {rootTags.map((tag, index) => (
+        {tagTree.map((tag, index) => (
           <React.Fragment key={`root-${tag.id}-${index}`}>
-            {renderTag(tag)}
+            {renderTag(tag, 0, index)}
           </React.Fragment>
         ))}
       </nav>

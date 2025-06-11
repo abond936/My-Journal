@@ -29,6 +29,9 @@ export function useContent() {
     if (pageIndex > 0 && previousPageData?.lastDoc?.id) {
       params.set('lastDocId', previousPageData.lastDoc.id);
     }
+    if (selectedTags.length > 0) {
+      params.set('tags', selectedTags.join(','));
+    }
     return `/api/entries?${params.toString()}`;
   };
 

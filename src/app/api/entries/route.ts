@@ -99,43 +99,4 @@ export async function POST(request: Request) {
     }
     return new NextResponse('Internal server error', { status: 500 });
   }
-}
-
-// GET /api/entries/[id]
-export async function GET_BY_ID(request: Request, { params }: { params: { id: string } }) {
-  try {
-    const entryRef = doc(db, 'entries', params.id);
-    const entrySnap = await getDoc(entryRef);
-    
-    if (!entrySnap.exists()) {
-      return NextResponse.json({ error: 'Entry not found' }, { status: 404 });
-    }
-
-    return NextResponse.json({ id: entrySnap.id, ...entrySnap.data() });
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch entry' }, { status: 500 });
-  }
-}
-
-// PUT /api/entries/[id]
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
-  try {
-    const entry = await request.json();
-    const entryRef = doc(db, 'entries', params.id);
-    await updateDoc(entryRef, entry);
-    return NextResponse.json({ id: params.id, ...entry });
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to update entry' }, { status: 500 });
-  }
-}
-
-// DELETE /api/entries/[id]
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
-  try {
-    const entryRef = doc(db, 'entries', params.id);
-    await deleteDoc(entryRef);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete entry' }, { status: 500 });
-  }
 } 
