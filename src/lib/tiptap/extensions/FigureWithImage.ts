@@ -45,6 +45,18 @@ export const FigureWithImage = Node.create<FigureWithImageOptions>({
       {
         tag: 'figure[data-figure-with-image]',
         contentElement: 'figcaption',
+        getAttrs: (element: HTMLElement) => {
+          const img = element.querySelector('img');
+          if (!img) {
+            return {};
+          }
+          return {
+            src: img.getAttribute('src'),
+            alt: img.getAttribute('alt'),
+            width: parseInt(img.getAttribute('width') || '0', 10),
+            height: parseInt(img.getAttribute('height') || '0', 10),
+          };
+        },
       },
     ];
   },

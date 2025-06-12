@@ -6,7 +6,7 @@ import { Album, AlbumImage } from '@/lib/types/album';
 import { PhotoMetadata } from '@/lib/types/photo';
 import AlbumForm from '@/components/admin/album-admin/AlbumForm';
 import PhotoManager from '@/components/admin/album-admin/PhotoManager';
-import PhotoPicker from '@/components/PhotoPicker';
+import PhotoPicker from '@/components/common/PhotoPicker';
 import AlbumStyleSelector from '@/components/admin/album-admin/AlbumStyleSelector';
 import styles from './page.module.css';
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { PhotoMetadata } from '@/lib/types/photo';
-import PhotoPicker from '@/components/PhotoPicker';
+import PhotoPicker from '@/components/common/PhotoPicker';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import styles from './CoverPhotoContainer.module.css';
 

@@ -12,9 +12,21 @@ const fetcher = (url: string) => fetch(url).then(res => {
     return res.json();
 });
 
+// New Interface for a tag node in the tree
+interface TagNode extends Tag {
+  children: TagNode[];
+}
+
+// New Interface for a dimension with its tag tree
+interface DimensionWithTree {
+  dimension: Tag['dimension'];
+  tree: TagNode[];
+}
+
 interface TagContextType {
   tags: Tag[];
   tagsByDimension: Record<Tag['dimension'], Tag[]>;
+  dimensionalTree: TagNode[]; // <-- Changed from DimensionWithTree[]
   loading: boolean;
   error: Error | undefined;
   createTag: (tagData: Omit<Tag, 'id'>) => Promise<Tag | undefined>;
@@ -23,6 +35,9 @@ interface TagContextType {
 }
 
 const TagContext = createContext<TagContextType | undefined>(undefined);
+
+// The canonical order for dimensions
+const DIMENSION_ORDER: Tag['dimension'][] = ['who', 'what', 'when', 'where', 'reflection'];
 
 export function TagProvider({ children }: { children: React.ReactNode }) {
   const { data: tags, error, isLoading, mutate } = useSWR<Tag[]>('/api/tags', fetcher);
@@ -33,13 +48,69 @@ export function TagProvider({ children }: { children: React.ReactNode }) {
     };
     if (tags) {
         tags.forEach(tag => {
-            if (byDimension[tag.dimension]) {
+            if (tag.dimension && byDimension[tag.dimension]) {
                 byDimension[tag.dimension].push(tag);
             }
         });
     }
     return byDimension;
   }, [tags]);
+
+  // New Memoized function to build the dimensional tree
+  const dimensionalTree = useMemo(() => {
+    if (!tags) return [];
+
+    const buildTree = (tagList: Tag[]): TagNode[] => {
+      const tagMap = new Map<string, TagNode>();
+      const roots: TagNode[] = [];
+
+      // Initialize map with nodes that have children arrays
+      tagList.forEach(tag => {
+        tagMap.set(tag.id, { ...tag, children: [] });
+      });
+
+      // Populate children arrays
+      tagList.forEach(tag => {
+        if (tag.parentId) {
+          const parent = tagMap.get(tag.parentId);
+          if (parent) {
+            parent.children.push(tagMap.get(tag.id)!);
+          }
+        } else {
+          roots.push(tagMap.get(tag.id)!);
+        }
+      });
+      
+      // Recursive sort function
+      const sortTags = (nodes: TagNode[]) => {
+        nodes.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        nodes.forEach(node => {
+          if (node.children.length > 0) {
+            sortTags(node.children);
+          }
+        });
+      };
+
+      sortTags(roots);
+      return roots;
+    };
+    
+    // Build the final structure, ordered by DIMENSION_ORDER
+    const allRoots = DIMENSION_ORDER.flatMap(dimension => {
+      const tagsForDimension = tagsByDimension[dimension] || [];
+      return buildTree(tagsForDimension);
+    });
+
+    // Sort the root tags themselves according to the canonical dimension order
+    allRoots.sort((a, b) => {
+      const aIndex = DIMENSION_ORDER.indexOf(a.dimension!);
+      const bIndex = DIMENSION_ORDER.indexOf(b.dimension!);
+      return aIndex - bIndex;
+    });
+
+    return allRoots;
+
+  }, [tags, tagsByDimension]);
 
   const createTag = useCallback(async (tagData: Omit<Tag, 'id'>) => {
     try {
@@ -112,12 +183,13 @@ export function TagProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(() => ({
     tags: tags || [],
     tagsByDimension,
+    dimensionalTree, // <-- Add to context value
     loading: isLoading,
     error,
     createTag,
     updateTag,
     deleteTag,
-  }), [tags, tagsByDimension, isLoading, error, createTag, updateTag, deleteTag]);
+  }), [tags, tagsByDimension, dimensionalTree, isLoading, error, createTag, updateTag, deleteTag]);
 
   return (
     <TagContext.Provider value={value}>

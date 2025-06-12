@@ -2,6 +2,12 @@
 
 import { PhotoMetadata } from '@/lib/services/photos/photoService';
 
+// The valid types for an actual Entry document
+export type EntryType = 'story' | 'reflection' | 'qa' | 'quote' | 'callout';
+
+// The types available in the filter UI (includes 'all')
+export type FilterableEntryType = 'all' | EntryType;
+
 export interface Entry {
   id: string;
   title: string;
@@ -10,7 +16,7 @@ export interface Entry {
   tags: string[];
   createdAt: Date;
   updatedAt: Date;
-  type: 'journal' | 'note' | 'photo';
+  type: EntryType;
   status: 'draft' | 'published';
   date?: Date;  // Optional date field for when the entry was written/occurred
   publishedAt?: Date;
@@ -39,7 +45,7 @@ export interface GetEntriesOptions {
   limit?: number;
   tag?: string;
   tags?: string[];
-  type?: 'story' | 'reflection';
+  type?: EntryType;
   status?: 'draft' | 'published';
   dateRange?: {
     start: Date;

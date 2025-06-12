@@ -8,7 +8,7 @@ import TagSelector from '@/components/common/TagSelector';
 import RichTextEditor from '@/components/common/RichTextEditor';
 import type { RichTextEditorRef } from '@/components/common/RichTextEditor'; // Import the Ref type
 import CoverPhotoContainer from './CoverPhotoContainer';
-import PhotoPicker from '@/components/PhotoPicker'; // Import PhotoPicker
+import PhotoPicker from '@/components/common/PhotoPicker'; // Import PhotoPicker
 import { PhotoMetadata } from '@/lib/types/photo';
 import { ContentValidationError } from '@/lib/utils/contentValidation';
 import styles from './EntryForm.module.css';

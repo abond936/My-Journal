@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
         const tags = snapshot.docs.map(doc => {
             const data = doc.data();
             return {
+                ...data,
                 id: doc.id,
                 name: data.name,
                 createdAt: (data.createdAt as Timestamp)?.toDate(),

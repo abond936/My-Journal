@@ -64,6 +64,7 @@ export async function GET(request: NextRequest) {
     const lastDocId = searchParams.get('lastDocId') || undefined;
     const tags = searchParams.has('tags') ? searchParams.get('tags')!.split(',') : undefined;
     const status = searchParams.get('status') || undefined;
+    const type = searchParams.get('type') || undefined;
 
     let q: Query = entriesCollection;
 
@@ -72,6 +73,9 @@ export async function GET(request: NextRequest) {
     }
     if (status) {
       q = q.where('status', '==', status);
+    }
+    if (type) {
+      q = q.where('type', '==', type);
     }
 
     q = q.orderBy('date', 'desc');
@@ -147,9 +151,48 @@ export async function POST(request: Request) {
 
   try {
     const body: Omit<Entry, 'id'> = await request.json();
+    const { title, content, type, status, visibility, tags, media } = body;
 
-    if (!body.title || !body.content) {
-      return new NextResponse('Missing required fields: title and content', { status: 400 });
+    const validationErrors: string[] = [];
+
+    // 1. Validate Title
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      validationErrors.push('A non-empty title is required.');
+    }
+
+    // 2. Validate Content
+    if (!content || typeof content !== 'string' || content.trim().length === 0) {
+      validationErrors.push('Content cannot be empty.');
+    }
+
+    // 3. Validate Type
+    const allowedTypes: Entry['type'][] = ['journal', 'note', 'photo'];
+    if (!type || !allowedTypes.includes(type)) {
+      validationErrors.push(`Type must be one of: ${allowedTypes.join(', ')}.`);
+    }
+
+    // 4. Validate Status
+    const allowedStatuses: Entry['status'][] = ['draft', 'published'];
+    if (!status || !allowedStatuses.includes(status)) {
+      validationErrors.push(`Status must be one of: ${allowedStatuses.join(', ')}.`);
+    }
+
+    // 5. Validate Visibility
+    const allowedVisibilities: Entry['visibility'][] = ['public', 'private'];
+    if (!visibility || !allowedVisibilities.includes(visibility)) {
+        validationErrors.push(`Visibility must be one of: ${allowedVisibilities.join(', ')}.`);
+    }
+
+    // 6. Validate Tags and Media arrays
+    if (!Array.isArray(tags)) {
+        validationErrors.push('Tags must be an array.');
+    }
+    if (!Array.isArray(media)) {
+        validationErrors.push('Media must be an array.');
+    }
+
+    if (validationErrors.length > 0) {
+      return new NextResponse(JSON.stringify({ errors: validationErrors }), { status: 400 });
     }
 
     const dataWithTimestamps = {

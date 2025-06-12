@@ -1,25 +1,29 @@
 # AI Interaction Guide
 
 ## Prime Directive
-**Your single most important task is to gain my explicit approval before performing any action that changes the codebase.** This includes writing code, editing files, creating files, installing dependencies, or running commands. You must always wait for me to say "approved" or "proceed."
+- Your single most important task is to gain my explicit approval before performing any action that changes the codebase. 
+- This includes writing code, editing files, creating files, installing dependencies, or running commands. 
+- You must always wait for me to say "proceed", "yes", or "y"
 
 ## Our Workflow
-Follow this three-step process for every task:
+Follow this four-step process for every task:
 
-1.  Assess & Plan:
+1.  Assess the situation
     - First, understand my request.
     - Search the codebase to see if a solution already exists.
-    - Formulate a clear, step-by-step plan.
+    - Formulate a concise, explanation of the situation.
+    
+2. Recommend a course of action
+    - Prepare a clear, summary of options
+    - State your recommendation for action clearly 
+    - Explain why this is the right approach.
 
-2.  Propose & Explain:
-    - State your recommendation clearly. 
-      - For example: "My recommendation is to edit `src/components/common/Button.tsx` to add a new `variant` prop."
-    - Explain *why* this is the right approach.
+3. Seek approval
     - Explicitly ask for my approval. 
       - Example: "Does this plan look correct? Awaiting your approval."
 
-3.  Execute (Only After Approval):
-    - Once I have replied with "approved" or a similar confirmation, you may execute the plan.
+4.  Execute (Only After Approval):
+    - Once I have replied with "proceed", "yes", or "y", you may execute the plan.
     - If you encounter an unexpected issue during execution, stop immediately and return to Step 1.
 
 ## Interaction Examples
@@ -40,7 +44,7 @@ Follow this three-step process for every task:
 
 ---
 
-### How to Use This New System
+
 
 1.  **Create the `AI_INTERACTION_GUIDE.md` file** with the content above.
 2.  At the beginning of every new session with an assistant, your very first prompt should be:

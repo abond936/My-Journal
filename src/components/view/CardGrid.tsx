@@ -99,9 +99,9 @@ const CardGrid: React.FC<CardGridProps> = ({
         </div>
       )}
       
-      {itemsWithSizes.map(item => (
+      {itemsWithSizes.map((item, idx) => (
         <ContentCard
-          key={item.id}
+          key={item.id || `${item.type}-${idx}`}
           {...item}
         />
       ))}

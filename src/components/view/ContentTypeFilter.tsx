@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { useFilter, ContentType, EntryType } from '@/components/providers/FilterProvider';
+import { useFilter, ContentType } from '@/components/providers/FilterProvider';
+import { FilterableEntryType } from '@/lib/types/entry';
 import styles from './ContentTypeFilter.module.css';
 
 export default function ContentTypeFilter() {
@@ -13,7 +14,7 @@ export default function ContentTypeFilter() {
     { label: 'Albums', value: 'albums' },
   ];
 
-  const entryTypeOptions: { label: string; value: EntryType }[] = [
+  const entryTypeOptions: { label: string; value: FilterableEntryType }[] = [
     { label: 'All Stories', value: 'all' },
     { label: 'Stories', value: 'story' },
     { label: 'Reflections', value: 'reflection' },

@@ -1,19 +1,19 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useCallback, useMemo } from 'react';
+import { FilterableEntryType } from '@/lib/types/entry';
 
 export type ContentType = 'all' | 'entries' | 'albums';
-export type EntryType = 'all' | 'story' | 'reflection' | 'qa' | 'quote' | 'callout';
 
 interface IFilterContext {
   selectedTags: string[];
   contentType: ContentType;
-  entryType: EntryType;
+  entryType: FilterableEntryType;
   addTag: (tagId: string) => void;
   removeTag: (tagId: string) => void;
   toggleTag: (tagId: string) => void;
   setContentType: (type: ContentType) => void;
-  setEntryType: (type: EntryType) => void;
+  setEntryType: (type: FilterableEntryType) => void;
   clearFilters: () => void;
 }
 
@@ -22,7 +22,7 @@ const FilterContext = createContext<IFilterContext | undefined>(undefined);
 export const FilterProvider = ({ children }: { children: ReactNode }) => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [contentType, setContentType] = useState<ContentType>('all');
-  const [entryType, setEntryType] = useState<EntryType>('all');
+  const [entryType, setEntryType] = useState<FilterableEntryType>('all');
 
   const addTag = useCallback((tagId: string) => {
     setSelectedTags(prevTags => [...new Set([...prevTags, tagId])]);

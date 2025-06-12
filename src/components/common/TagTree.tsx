@@ -1,64 +1,22 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from './TagTree.module.css';
 import { Tag } from '@/lib/types/tag';
 import { useTag } from '@/components/providers/TagProvider';
+
+interface TagNode extends Tag {
+  children: TagNode[];
+}
 
 interface TagTreeProps {
   onTagSelect: (tagId: string) => void;
   selectedTags: string[];
 }
 
-interface TagWithChildren extends Tag {
-  children: TagWithChildren[];
-}
-
 export default function TagTree({ onTagSelect, selectedTags }: TagTreeProps) {
-  const { tags, loading: isLoading, error: contextError } = useTag();
+  const { dimensionalTree, loading: isLoading, error } = useTag();
   const [expandedTags, setExpandedTags] = useState<Set<string>>(new Set());
-  
-  const [error, setError] = useState<string | null>(contextError?.message || null);
-
-  const tagTree = useMemo(() => {
-    if (!tags || tags.length === 0) return [];
-
-    const tagsWithChildren: TagWithChildren[] = tags.map(tag => ({ ...tag, children: [] }));
-    const tagMap = new Map(tagsWithChildren.map(tag => [tag.id, tag]));
-    const rootTags: TagWithChildren[] = [];
-
-    tagsWithChildren.forEach(tag => {
-      if (tag.parentId) {
-        const parent = tagMap.get(tag.parentId);
-        if (parent) {
-          parent.children.push(tag);
-        }
-      } else {
-        rootTags.push(tag);
-      }
-    });
-
-    // Recursive sort function
-    const sortTags = (tagList: TagWithChildren[]) => {
-      tagList.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-      tagList.forEach(tag => {
-        if (tag.children.length > 0) {
-          sortTags(tag.children);
-        }
-      });
-    };
-
-    sortTags(rootTags);
-    return rootTags;
-  }, [tags]);
-
-  useEffect(() => {
-    // When the tree is built, expand the root tags by default.
-    if (tagTree.length > 0) {
-      const rootTagIds = new Set(tagTree.map(t => t.id));
-      setExpandedTags(rootTagIds);
-    }
-  }, [tagTree]);
 
   const toggleTag = (tagId: string) => {
     setExpandedTags(prev => {
@@ -72,28 +30,24 @@ export default function TagTree({ onTagSelect, selectedTags }: TagTreeProps) {
     });
   };
 
-  const renderTag = (tag: TagWithChildren, level: number = 0, index: number = 0) => {
-    const children = tag.children; // Use children from the processed tree
+  const renderTag = (tag: TagNode, level: number = 0) => {
     const isExpanded = expandedTags.has(tag.id);
     const isSelected = selectedTags.includes(tag.id);
-    const isTopLevel = !tag.parentId;
 
     return (
       <div
-        key={`tag-${level}-${tag.id}-${index}`}
-        className={`${styles.categoryItem} ${isTopLevel ? styles.topLevel : ''}`}
+        key={tag.id}
+        className={styles.tagItem}
+        style={{ paddingLeft: `${level * 1.5}rem` }}
       >
-        <div
-          className={styles.categoryHeader}
-          style={{ paddingLeft: `${level * 0.5}rem` }}
-        >
+        <div className={styles.tagHeader}>
           <button
             className={styles.expandButton}
             onClick={() => toggleTag(tag.id)}
             aria-expanded={isExpanded}
-            disabled={children.length === 0}
+            disabled={tag.children.length === 0}
           >
-            {children.length > 0 && (
+            {tag.children.length > 0 && (
               <span className={styles.expandIcon}>
                 {isExpanded ? '▼' : '►'}
               </span>
@@ -102,16 +56,15 @@ export default function TagTree({ onTagSelect, selectedTags }: TagTreeProps) {
           
           <button
             onClick={() => onTagSelect(tag.id)}
-            className={`${styles.categoryButton} ${isSelected ? styles.active : ''}`}
-            data-dimension={tag.dimension}
+            className={`${styles.tagButton} ${isSelected ? styles.active : ''}`}
           >
             <span className={styles.tagName}>{tag.name}</span>
           </button>
         </div>
 
-        {isExpanded && children.length > 0 && (
+        {isExpanded && tag.children.length > 0 && (
           <div className={styles.children}>
-            {children.map((child, childIndex) => renderTag(child, level + 1, childIndex))}
+            {tag.children.map(child => renderTag(child, level + 1))}
           </div>
         )}
       </div>
@@ -123,18 +76,14 @@ export default function TagTree({ onTagSelect, selectedTags }: TagTreeProps) {
   }
 
   if (error) {
-    return <div className={styles.error}>{error}</div>;
+    return <div className={styles.error}>{error.message}</div>;
   }
 
   return (
     <aside className={styles.sidebar}>
       <h2 className={styles.title}>Explore</h2>
       <nav className={styles.navigation}>
-        {tagTree.map((tag, index) => (
-          <React.Fragment key={`root-${tag.id}-${index}`}>
-            {renderTag(tag, 0, index)}
-          </React.Fragment>
-        ))}
+        {dimensionalTree.map(rootTagNode => renderTag(rootTagNode, 0))}
       </nav>
     </aside>
   );

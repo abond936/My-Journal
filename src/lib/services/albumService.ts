@@ -5,21 +5,34 @@
 import { Album } from '@/lib/types/album';
 
 /**
- * Fetches all albums from the API.
- * @returns {Promise<Album[]>} A promise that resolves to an array of albums.
+ * Fetches a paginated list of albums from the API.
+ * @param options Optional parameters for pagination and filtering.
+ * @returns {Promise<{ items: Album[], hasMore: boolean, lastDocId?: string }>} Paginated result.
  */
-export async function getAlbums(): Promise<Album[]> {
-    const response = await fetch('/api/albums');
+export async function getAlbums(options: {
+    limit?: number;
+    lastDocId?: string;
+    tags?: string[];
+} = {}): Promise<{ items: Album[], hasMore: boolean, lastDocId?: string }> {
+    const params = new URLSearchParams();
+    if (options.limit) params.set('limit', String(options.limit));
+    if (options.lastDocId) params.set('lastDocId', options.lastDocId);
+    if (options.tags && options.tags.length > 0) params.set('tags', options.tags.join(','));
+
+    const response = await fetch(`/api/albums?${params.toString()}`);
     if (!response.ok) {
         throw new Error('Failed to fetch albums');
     }
-    const albums = await response.json();
-    // Convert date strings back to Date objects
-    return albums.map((album: any) => ({
-        ...album,
-        createdAt: album.createdAt ? new Date(album.createdAt) : undefined,
-        updatedAt: album.updatedAt ? new Date(album.updatedAt) : undefined,
-    }));
+    const result = await response.json();
+    // Convert date strings back to Date objects for each album
+    return {
+        ...result,
+        items: result.items.map((album: any) => ({
+            ...album,
+            createdAt: album.createdAt ? new Date(album.createdAt) : undefined,
+            updatedAt: album.updatedAt ? new Date(album.updatedAt) : undefined,
+        })),
+    };
 }
 
 /**

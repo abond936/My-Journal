@@ -5,10 +5,10 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Blockquote from '@tiptap/extension-blockquote';
 import { FigureWithImage } from '@/lib/tiptap/extensions/FigureWithImage';
-import PhotoPicker from '@/components/PhotoPicker';
+import PhotoPicker from '@/components/common/PhotoPicker';
 import ImageToolbar from './ImageToolbar';
 import { PhotoMetadata } from '@/lib/types/photo';
-import styles from './RichTextEditor.module.css';
+import styles from '@/components/common/RichTextEditor.module.css';
 
 // Props interface defines what data and callbacks the component needs
 interface RichTextEditorProps {

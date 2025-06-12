@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { PhotoService } from '@/lib/services/photos/photoService';
 import { PhotoMetadata, TreeNode } from '@/lib/types/photo'; // Import directly from the source
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
-import styles from './PhotoPicker.module.css';
+import styles from '@/components/common/PhotoPicker.module.css';
 
 interface PhotoPickerProps {
   onPhotoSelect?: (photo: PhotoMetadata) => void;

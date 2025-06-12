@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue, Timestamp, Query } from 'firebase-admin/firestore';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { authOptions } from '../auth/[...nextauth]/route';
 import { Album } from '@/lib/types/album';
@@ -15,7 +15,13 @@ const albumsCollection = db.collection('albums');
  * /api/albums:
  *   get:
  *     summary: Retrieve all albums
- *     description: Fetches a complete list of all albums, sorted by date.
+ *     description: Fetches a complete list of all albums, sorted by date. Can be filtered by tags.
+ *     parameters:
+ *       - in: query
+ *         name: tags
+ *         schema:
+ *           type: string
+ *         description: A comma-separated list of tag IDs to filter by.
  *     responses:
  *       200:
  *         description: A list of albums.
@@ -38,8 +44,29 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const snapshot = await albumsCollection.orderBy('date', 'desc').get();
-        const albums = snapshot.docs.map(doc => {
+        const { searchParams } = request.nextUrl;
+        const tags = searchParams.has('tags') ? searchParams.get('tags')!.split(',') : undefined;
+        const pageSize = searchParams.has('limit') ? parseInt(searchParams.get('limit')!, 10) : 10;
+        const lastDocId = searchParams.get('lastDocId') || undefined;
+
+        let q: Query = albumsCollection;
+
+        if (tags && tags.length > 0) {
+            q = q.where('tags', 'array-contains-any', tags);
+        }
+
+        q = q.orderBy('date', 'desc');
+
+        if (lastDocId) {
+            const lastDocSnapshot = await albumsCollection.doc(lastDocId).get();
+            if (lastDocSnapshot.exists) {
+                q = q.startAfter(lastDocSnapshot);
+            }
+        }
+
+        const snapshot = await q.limit(pageSize + 1).get();
+
+        const albums = snapshot.docs.slice(0, pageSize).map(doc => {
             const data = doc.data();
             return {
                 id: doc.id,
@@ -49,7 +76,24 @@ export async function GET(request: NextRequest) {
                 updatedAt: (data.updatedAt as Timestamp)?.toDate(),
             };
         });
-        return NextResponse.json(albums);
+
+        const hasMore = snapshot.docs.length > pageSize;
+        const nextLastDoc = hasMore ? snapshot.docs[albums.length - 1] : null;
+
+        const result = {
+            items: albums,
+            hasMore,
+            lastDocId: hasMore && nextLastDoc ? nextLastDoc.id : undefined,
+        };
+
+        // Debug logging
+        console.log('[API /api/albums] Returned:', {
+            items: albums.length,
+            hasMore,
+            lastDocId: result.lastDocId
+        });
+
+        return NextResponse.json(result);
     } catch (error) {
         console.error('API Error fetching all albums:', error);
         return new NextResponse('Internal server error', { status: 500 });

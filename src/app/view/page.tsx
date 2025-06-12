@@ -34,9 +34,15 @@ function useIntersectionObserver(callback: () => void, options?: IntersectionObs
 export default function ViewPage() {
   const { content, loading, error, hasMore, loadingMore, loadMore } = useContent();
 
+  // Add a ref to lock loadMore
+  const loadingLock = useRef(false);
+
   const handleLoadMore = useCallback(() => {
-    if (hasMore && !loadingMore) {
+    console.log('handleLoadMore triggered', { hasMore, loadingMore, loadingLock: loadingLock.current });
+    if (hasMore && !loadingMore && !loadingLock.current) {
+      loadingLock.current = true;
       loadMore();
+      setTimeout(() => { loadingLock.current = false; }, 500); // Release lock after 500ms
     }
   }, [hasMore, loadingMore, loadMore]);
 

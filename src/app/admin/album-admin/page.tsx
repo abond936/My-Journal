@@ -6,7 +6,7 @@ import { Album } from '@/lib/types/album';
 import { PhotoMetadata } from '@/lib/types/photo';
 import { Tag } from '@/lib/types/tag';
 import styles from '@/app/admin/album-admin/album-admin.module.css';
-import PhotoPicker from '@/components/PhotoPicker';
+import PhotoPicker from '@/components/common/PhotoPicker';
 import Link from 'next/link';
 
 interface AlbumWithStats extends Album {
@@ -198,10 +198,15 @@ export default function AdminAlbumsPage() {
   };
 
   const filteredAlbums = albums.filter(album => {
-    const titleMatch = album.title?.toLowerCase().includes(searchTerm.toLowerCase());
-    const descriptionMatch = album.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSearch = titleMatch || descriptionMatch;
     const matchesStatus = status === 'all' || album.status === status;
+
+    const searchLower = searchTerm.toLowerCase();
+    let matchesSearch = searchTerm === ''; // If search is empty, it's a match
+    if (!matchesSearch) {
+        matchesSearch = (album.title && album.title.toLowerCase().includes(searchLower)) ||
+                        (album.description && album.description.toLowerCase().includes(searchLower)) || false;
+    }
+    
     return matchesSearch && matchesStatus;
   });
 
