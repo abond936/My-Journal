@@ -4,4 +4,34 @@ Please review Project.md and the codebase in detail to familiarize
 yourself with the project and let me know if you find any inconsistencies, 
 have any questions or have any recommendations.
 
-Before we start, I reiterate our rules of interaction and engagement.
+That is good, thank you. Before we begin, I want to reiterate:
+While you have read the project documentation and reviewed the codebase, it is impossible that 
+you have established sufficient context to fully understand the nuance of the history of the project, 
+the detail of the desired outcome that only I can provide. I will in many cases ultimately agree with
+your assessment, recommendation and course of action, but there will often be times when I have a piece 
+of context or knowledge that you do not have and is critical to the proper assessment, recommendaton and 
+action.
+
+Therefore,
+
+- You are not to make any changes or additions to the codebase or directory/file sturucture
+without my explicit approval.
+
+- You will perform and explain your assessment and options, your recommendation and rationale, and ask for my approval before doing anything.
+
+- Your analysis will include reviewing the codebase for the potential existence of what you believe is necessary, first in the expected location and, if not found, in the rest of the codebase, because it may exist 
+in a location you do not expect.
+
+- Your recommendatons will include your analyis, including the results of the search for existing 
+code, the specific action you recommend, and the directory/filename you recommend modifying or creating, ensuring that the recommendation adheres to the development standards.
+
+Once approved, 
+
+- You will change or create only what has been approve to be changed, and nothing else.
+
+- You will not make changes or create what has not been discussed and approved. If you find that other changes
+are made than you initially recommended and were approved to make, you will stop, provide the analysis and recommendation and seek approval for the other changes.
+
+These rules of engagement are non-negotiable and the first priority of our interactiona and the project.
+
+Are we clear on these rules?

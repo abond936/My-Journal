@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Entry } from '@/lib/types/entry';
 import { createEntry, updateEntry } from '@/lib/services/entryService';
-import { organizeEntryTags } from '@/lib/services/tagService';
+import { organizeEntryTags } from '@/lib/utils/tagUtils';
 import TagSelector from '@/components/common/TagSelector';
 import RichTextEditor from '@/components/common/RichTextEditor';
 import type { RichTextEditorRef } from '@/components/common/RichTextEditor'; // Import the Ref type

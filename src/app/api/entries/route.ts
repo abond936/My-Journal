@@ -1,9 +1,14 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth/next';
+import { getFirestore, FieldValue, Timestamp, Query } from 'firebase-admin/firestore';
+import { getAdminApp } from '@/lib/config/firebase/admin';
 import { authOptions } from '../auth/[...nextauth]/route';
-import { getEntries, createEntry } from '@/lib/services/entryService';
-import { GetEntriesOptions } from '@/lib/types/entry';
 import { Entry } from '@/lib/types/entry';
+
+// Initialize Firebase Admin
+getAdminApp();
+const db = getFirestore();
+const entriesCollection = db.collection('entries');
 
 /**
  * @swagger
@@ -55,14 +60,51 @@ export async function GET(request: NextRequest) {
 
   try {
     const { searchParams } = request.nextUrl;
-    const options: GetEntriesOptions = {
-      limit: searchParams.has('limit') ? parseInt(searchParams.get('limit')!, 10) : 10,
-      lastDocId: searchParams.get('lastDocId') || undefined,
-      tags: searchParams.has('tags') ? searchParams.get('tags')!.split(',') : undefined,
-      status: searchParams.get('status') || undefined,
+    const pageSize = searchParams.has('limit') ? parseInt(searchParams.get('limit')!, 10) : 10;
+    const lastDocId = searchParams.get('lastDocId') || undefined;
+    const tags = searchParams.has('tags') ? searchParams.get('tags')!.split(',') : undefined;
+    const status = searchParams.get('status') || undefined;
+
+    let q: Query = entriesCollection;
+
+    if (tags && tags.length > 0) {
+      q = q.where('tags', 'array-contains-any', tags);
+    }
+    if (status) {
+      q = q.where('status', '==', status);
+    }
+
+    q = q.orderBy('date', 'desc');
+
+    if (lastDocId) {
+      const lastDocSnapshot = await entriesCollection.doc(lastDocId).get();
+      if (lastDocSnapshot.exists) {
+        q = q.startAfter(lastDocSnapshot);
+      }
+    }
+
+    const snapshot = await q.limit(pageSize + 1).get();
+
+    const entries = snapshot.docs.slice(0, pageSize).map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            date: data.date?.toDate(),
+            createdAt: data.createdAt?.toDate(),
+            updatedAt: data.updatedAt?.toDate(),
+        }
+    });
+
+    const hasMore = snapshot.docs.length > pageSize;
+    const nextLastDoc = hasMore ? snapshot.docs[entries.length - 1] : null;
+
+    const result = {
+      items: entries,
+      hasMore,
+      lastDocId: hasMore && nextLastDoc ? nextLastDoc.id : undefined,
     };
 
-    const result = await getEntries(options);
     return NextResponse.json(result);
   } catch (error) {
     console.error('API Error fetching entries:', error);
@@ -110,7 +152,16 @@ export async function POST(request: Request) {
       return new NextResponse('Missing required fields: title and content', { status: 400 });
     }
 
-    const newEntry = await createEntry(body);
+    const dataWithTimestamps = {
+      ...body,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+      date: body.date ? Timestamp.fromDate(new Date(body.date)) : FieldValue.serverTimestamp(),
+    };
+
+    const docRef = await entriesCollection.add(dataWithTimestamps);
+    const newEntry = { id: docRef.id, ...body };
+
     return NextResponse.json(newEntry, { status: 201 });
   } catch (error) {
     console.error('API Error creating entry:', error);

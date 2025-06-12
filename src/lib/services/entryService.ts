@@ -1,150 +1,129 @@
-import { getFirestore, FieldValue, Timestamp, DocumentSnapshot, Query } from 'firebase-admin/firestore';
-import { getAdminApp } from '@/lib/config/firebase/admin';
+// This file is now a CLIENT-SIDE service.
+// It is responsible for making fetch requests to the API routes.
+// It should NEVER import 'firebase-admin' or other server-side code.
+
 import { Entry, GetEntriesOptions } from '@/lib/types/entry';
 import { PaginatedResult } from '@/lib/types/services';
-import { validateContent, validateMediaReferences } from '@/lib/utils/contentValidation';
-
-// Initialize Firebase Admin
-getAdminApp();
-const db = getFirestore();
-const entriesCollection = db.collection('entries');
 
 /**
- * Converts Firestore document data to an Entry object, handling timestamps.
- * @param doc The Firestore document snapshot.
- * @returns The Entry object.
- */
-function docToEntry(doc: DocumentSnapshot): Entry {
-  const data = doc.data() as Entry;
-  return {
-    ...data,
-    id: doc.id,
-    date: (data.date as Timestamp)?.toDate() || (data.createdAt as Timestamp)?.toDate(),
-    createdAt: (data.createdAt as Timestamp)?.toDate(),
-    updatedAt: (data.updatedAt as Timestamp)?.toDate(),
-  };
-}
-
-/**
- * Fetches a paginated list of entries from Firestore based on the provided options.
+ * Fetches a paginated list of entries from the API.
  * @param options Options for filtering and pagination.
  * @returns A paginated result of entries.
  */
 export async function getEntries(options: GetEntriesOptions = {}): Promise<PaginatedResult<Entry>> {
   const { limit: pageSize = 10, tags, status, lastDocId } = options;
 
-  let q: Query = entriesCollection;
+  const params = new URLSearchParams();
+  params.set('limit', String(pageSize));
 
   if (tags && tags.length > 0) {
-    q = q.where('tags', 'array-contains-any', tags);
+    params.set('tags', tags.join(','));
   }
   if (status) {
-    q = q.where('status', '==', status);
+    params.set('status', status);
   }
-
-  q = q.orderBy('date', 'desc');
-
   if (lastDocId) {
-    const lastDocSnapshot = await entriesCollection.doc(lastDocId).get();
-    if (lastDocSnapshot.exists) {
-      q = q.startAfter(lastDocSnapshot);
-    }
+    params.set('lastDocId', lastDocId);
   }
 
-  // Fetch one more than the page size to check if there are more documents.
-  const snapshot = await q.limit(pageSize + 1).get();
+  const response = await fetch(`/api/entries?${params.toString()}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch entries');
+  }
 
-  const entries = snapshot.docs.slice(0, pageSize).map(docToEntry);
-  const hasMore = snapshot.docs.length > pageSize;
-  const lastDoc = hasMore ? snapshot.docs[entries.length - 1] : null;
-
+  // The API now returns data with dates already serialized as strings.
+  const result = await response.json();
   return {
-    items: entries,
-    hasMore,
-    lastDoc: lastDoc ? { id: lastDoc.id, date: lastDoc.data().date } : undefined,
+      ...result,
+      items: result.items.map((item: any) => ({
+          ...item,
+          date: item.date ? new Date(item.date) : undefined,
+          createdAt: item.createdAt ? new Date(item.createdAt) : undefined,
+          updatedAt: item.updatedAt ? new Date(item.updatedAt) : undefined,
+          coverPhoto: item.coverPhoto ? {
+              ...item.coverPhoto,
+              createdAt: item.coverPhoto.createdAt ? new Date(item.coverPhoto.createdAt) : undefined,
+          } : null,
+      }))
   };
 }
 
 /**
- * Fetches a single entry by its ID.
+ * Fetches a single entry by its ID from the API.
  * @param id The ID of the entry to fetch.
  * @returns The entry object or null if not found.
  */
 export async function getEntry(id: string): Promise<Entry | null> {
   if (!id) return null;
 
-  const entryRef = entriesCollection.doc(id);
-  const entrySnap = await entryRef.get();
-
-  if (!entrySnap.exists) {
-    return null;
+  const response = await fetch(`/api/entries/${id}`);
+  if (!response.ok) {
+    if (response.status === 404) return null;
+    throw new Error('Failed to fetch entry');
   }
-
-  return docToEntry(entrySnap);
+  const result = await response.json();
+  return {
+      ...result,
+      date: result.date ? new Date(result.date) : undefined,
+      createdAt: result.createdAt ? new Date(result.createdAt) : undefined,
+      updatedAt: result.updatedAt ? new Date(result.updatedAt) : undefined,
+      coverPhoto: result.coverPhoto ? {
+          ...result.coverPhoto,
+          createdAt: result.coverPhoto.createdAt ? new Date(result.coverPhoto.createdAt) : undefined,
+      } : null,
+  };
 }
 
 /**
- * Creates a new entry in Firestore.
+ * Creates a new entry via the API.
  * @param entryData The data for the new entry.
  * @returns The newly created entry.
  */
 export async function createEntry(entryData: Omit<Entry, 'id'>): Promise<Entry> {
-  if (entryData.content) validateContent(entryData.content);
-  if (entryData.content) validateMediaReferences(entryData.content, entryData.media || []);
-
-  const dataWithTimestamps = {
-    ...entryData,
-    createdAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
-    date: entryData.date ? Timestamp.fromDate(new Date(entryData.date)) : FieldValue.serverTimestamp(),
-  };
-
-  const docRef = await entriesCollection.add(dataWithTimestamps);
-  
-  // To avoid another read, we'll construct the final object, but timestamps will be null
-  // until the data is read back from the server. The client will get this on the next fetch.
-  return {
-    id: docRef.id,
-    ...entryData,
-  } as Entry;
+  const response = await fetch('/api/entries', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(entryData),
+  });
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error('Failed to create entry:', errorBody);
+    throw new Error(`Failed to create entry: ${errorBody}`);
+  }
+  return response.json();
 }
 
 /**
- * Updates an existing entry.
+ * Updates an existing entry via the API.
  * @param id The ID of the entry to update.
  * @param entryUpdateData The partial data to update the entry with.
  * @returns The updated entry.
  */
 export async function updateEntry(id: string, entryUpdateData: Partial<Omit<Entry, 'id'>>): Promise<Entry> {
-  const entryRef = entriesCollection.doc(id);
-
-  if (entryUpdateData.content) validateContent(entryUpdateData.content);
-  // For media validation, we may need the existing media array if not provided in update
-  if (entryUpdateData.content) {
-      const existing = await entryRef.get();
-      const existingData = existing.data();
-      validateMediaReferences(entryUpdateData.content, entryUpdateData.media || existingData?.media || []);
+  const response = await fetch(`/api/entries/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(entryUpdateData),
+  });
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error(`Failed to update entry ${id}:`, errorBody);
+    throw new Error(`Failed to update entry ${id}: ${errorBody}`);
   }
-
-  const updateData: any = {
-    ...entryUpdateData,
-    updatedAt: FieldValue.serverTimestamp(),
-  };
-
-  if (entryUpdateData.date) {
-    updateData.date = Timestamp.fromDate(new Date(entryUpdateData.date));
-  }
-  
-  await entryRef.update(updateData);
-
-  const updatedSnap = await entryRef.get();
-  return docToEntry(updatedSnap);
+  return response.json();
 }
 
 /**
- * Deletes an entry from Firestore.
+ * Deletes an entry via the API.
  * @param id The ID of the entry to delete.
  */
 export async function deleteEntry(id: string): Promise<void> {
-  await entriesCollection.doc(id).delete();
+  const response = await fetch(`/api/entries/${id}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error(`Failed to delete entry ${id}:`, errorBody);
+    throw new Error(`Failed to delete entry ${id}: ${errorBody}`);
+  }
 } 

@@ -136,39 +136,6 @@ The primary elements of the app are Entries and Albums categorized by hierarchic
 ## Interaction Rules
 ======================================
 
-That is good, thank you. Before we begin, I want to reiterate:
-While you have read the project documentation and reviewed the codebase, it is impossible that 
-you have established sufficient context to fully understand the nuance of the history of the project, 
-the detail of the desired outcome that only I can provide. I will in many cases ultimately agree with
-your assessment, recommendation and course of action, but there will often be times when I have a piece 
-of context or knowledge that you do not have and is critical to the proper assessment, recommendaton and 
-action.
-
-Therefore,
-
-- You are not to make any changes or additions to the codebase or directory/file sturucture
-without my explicit approval.
-
-- You will perform and explain your assessment and options, your recommendation and rationale, and ask for my approval before doing anything.
-
-- Your analysis will include reviewing the codebase for the potential existence of what you believe is necessary, first in the expected location and, if not found, in the rest of the codebase, because it may exist 
-in a location you do not expect.
-
-- Your recommendatons will include your analyis, including the results of the search for existing 
-code, the specific action you recommend, and the directory/filename you recommend modifying or creating, ensuring that the recommendation adheres to the development standards.
-
-Once approved, 
-
-- You will change or create only what has been approve to be changed, and nothing else.
-
-- You will not make changes or create what has not been discussed and approved. If you find that other changes
-are made than you initially recommended and were approved to make, you will stop, provide the analysis and recommendation and seek approval for the other changes.
-
-These rules of engagement are non-negotiable and the first priority of our interactiona and the project.
-
-Are we clear on these rules?
-
-
 ### Core Principles
 **Only Act With Approval**
    - MUST get explicit approval before ANY code change
@@ -766,12 +733,15 @@ Navigation is facilitated by heirarchical tag filtering.
 
 #### Planned Features
 Function
+- Fix ordering of tags/tree.
+
 - Include number of entries/albums (x/y)
 - Fix code to update count
 
 Styling
 - Slide in/out
 - Left arrow
+- Style type menu
 
 ❓ Open Questions:
 - Is there a way to navigate by Entry or Album?
@@ -865,6 +835,9 @@ Status: 🟡 Operational
 Function
 - *Inline/Bulk Tag assignment*
 - Batch upload of tags
+- List more per page?
+- Make inline edits without save/cancel
+
 
 Styling
 
@@ -885,6 +858,8 @@ Stautus: 🟡 Operational
 
 #### Planned Features
 Function
+- Does not seem to have editor?
+- The New Entry/New Album popups don;t hide after selection.
 
 Styling
 
@@ -901,16 +876,27 @@ Status: 🟡 Operational
 - Image embedding
   - Photo Picker, pasted, or dragged.
 - Image formatting 
-   - Size, alignment, caption
+   - Size, alignment
 - Tag Assigment
 
 #### Planned Features
 Function
-- Aspect ratio control 
-- Improved paste/drag-drop handling for multiple images.
-- Image-specific metadata management (e.g., tags).
-- Revisit cover image stored?
-- Fill mode toggle (cover/contain)??
+- Fix aspect ratio control
+- Fix caption
+- Test Paste
+- Test Drag 
+- Remove first 'cover photo' label
+- Move cover photo to above title
+- Move tags to under title
+- Move type, status and Visibility to under tags
+- Make 'update' only if changed.
+- Add 'Preview' for modal button.
+- Move H1 and H2 to first buttons
+- Make Remove button same as change
+- Change Tags to tree selects
+- Add more sizes
+- Is cover photo a fixed size?
+- Make same changes to NEW
 
 Styling
 
@@ -937,7 +923,7 @@ An album is a virtual collection of images from one or more sources.
 Function
 - Batch upload of photos to albums.
 - Sync with sources on our schedule
-
+- No albums listed
 Styling
 
 
@@ -998,6 +984,9 @@ Function
 - *Drag and drop hierarchy*
 - *Tag deletion/merging functionality*
 - Cover image/icon
+- Remove 'show tag structure'
+- Make stats same as others
+
 Styling
 
 
@@ -1438,6 +1427,21 @@ API Architecture Summary
                 │
                 └── navigation
                     └── route.ts          // Handles GET to discover navigation modes for the source
+
+Coverphoto - We store a reference to a canonical photo object.
+PhotoMetadata Object
+The PhotoMetadata type (defined in /src/lib/types/photo.ts) is the standard structure for all photo references. A key property within this object is path, which contains the necessary information to locate the original image file.
+
+Local - .env.local contains the ONEDRIVE_ROOT_FOLDER variable, the absolute path to the root directory where all photos are stored.
+
+Server-side route /api/images/local/file serves these images. 
+- Accepts a path query parameter from the PhotoMetadata object0.
+- Joins this relative path with the ONEDRIVE_ROOT_FOLDER to get the full, secure file path on the server.
+- Reads the image file from the disk.
+- Returns the image data with the correct Content-Type.
+Client-Side Rendering via getDisplayUrl
+- getDisplayUrl(photo: PhotoMetadata) in /src/lib/utils/photoUtils.ts.
+Rule: Any client-side component that needs to display an image must use this function. Components should never attempt to construct an image URL themselves or use the path property directly. They pass the entire PhotoMetadata object to this function to get a usable URL.
 
 #### **Image Integration**
 Status: 🟡 Operational

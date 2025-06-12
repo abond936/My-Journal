@@ -12,14 +12,14 @@ export const authOptions = {
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        email: { label: "Email", type: "email" },
+        username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
         // This is a basic authorization for development.
         // It checks against environment variables.
         // In a production environment, you would look up the user in your database.
-        const isAdminUser = credentials?.email === process.env.ADMIN_EMAIL &&
+        const isAdminUser = credentials?.username === process.env.ADMIN_EMAIL &&
                             credentials?.password === process.env.ADMIN_PASSWORD;
 
         if (isAdminUser) {
@@ -27,7 +27,8 @@ export const authOptions = {
           // The adapter will automatically create this user in Firestore if they don't exist.
           return {
             id: 'admin', // A static ID for the single admin user
-            email: process.env.ADMIN_EMAIL,
+            name: process.env.ADMIN_EMAIL,
+            email: process.env.ADMIN_EMAIL, // FirestoreAdapter may still require email
             role: 'admin',
           };
         }

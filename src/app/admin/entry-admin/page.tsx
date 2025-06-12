@@ -8,7 +8,6 @@ import { Entry } from '@/lib/types/entry';
 import { Tag } from '@/lib/types/tag';
 import styles from '@/app/admin/entry-admin/entry-admin.module.css';
 import React from 'react';
-import { DocumentSnapshot } from 'firebase/firestore';
 
 interface EntryWithStats extends Entry {
   tagNames: string[];
@@ -78,7 +77,7 @@ export default function AdminEntriesPage() {
   const [status, setStatus] = useState<'all' | 'draft' | 'published'>('all');
   const [editingField, setEditingField] = useState<EditingField | null>(null);
   const [editValue, setEditValue] = useState('');
-  const [lastDoc, setLastDoc] = useState<DocumentSnapshot | null>(null);
+  const [lastDocId, setLastDocId] = useState<string | undefined>(undefined);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [selectedTagByDimension, setSelectedTagByDimension] = useState<Record<Tag['dimension'], string | null>>({
@@ -122,7 +121,7 @@ export default function AdminEntriesPage() {
       const [entriesResult, allTags] = await Promise.all([
         getEntries({
           limit: 10,
-          lastDoc: loadMore ? lastDoc : undefined,
+          lastDocId: loadMore ? lastDocId : undefined,
           type: entryType === 'all' ? undefined : entryType,
           status: status === 'all' ? undefined : status,
           tags: selectedTag ? [selectedTag] : undefined
@@ -133,14 +132,14 @@ export default function AdminEntriesPage() {
       console.log('Entries result:', {
         itemsCount: entriesResult.items.length,
         hasMore: entriesResult.hasMore,
-        lastDoc: entriesResult.lastDoc ? 'exists' : 'null'
+        lastDocId: entriesResult.lastDocId || 'null'
       });
       
       if (entriesResult.items.length > 0) {
         // Map entries to include tag names
         const entriesWithStats = entriesResult.items.map(entry => ({
           ...entry,
-          tagNames: entry.tags.map(tagId => 
+          tagNames: (entry.tags || []).map(tagId => 
             allTags.find(tag => tag.id === tagId)?.name || `Unknown Tag (${tagId})`
           )
         }));
@@ -148,7 +147,7 @@ export default function AdminEntriesPage() {
         console.log('Setting new entries:', entriesWithStats.map(e => ({ id: e.id, title: e.title })));
         setEntries(prev => loadMore ? [...prev, ...entriesWithStats] : entriesWithStats);
         setTags(allTags);
-        setLastDoc(entriesResult.lastDoc);
+        setLastDocId(entriesResult.lastDocId);
         setHasMore(entriesResult.hasMore);
       } else {
         console.log('No entries found');

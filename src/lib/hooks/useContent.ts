@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useFilter } from '@/components/providers/FilterProvider';
 import { Entry } from '@/lib/types/entry';
 import { Album } from '@/lib/types/album';
@@ -22,7 +22,7 @@ export function useContent() {
   const { contentType, selectedTags, entryType } = useFilter();
 
   // --- Data Fetching ---
-  const getKey = (pageIndex: number, previousPageData: PaginatedResult<Entry> | null) => {
+  const getKey = useCallback((pageIndex: number, previousPageData: PaginatedResult<Entry> | null) => {
     if (previousPageData && !previousPageData.hasMore) return null;
     const params = new URLSearchParams();
     params.set('limit', '10');
@@ -33,7 +33,7 @@ export function useContent() {
       params.set('tags', selectedTags.join(','));
     }
     return `/api/entries?${params.toString()}`;
-  };
+  }, [selectedTags]);
 
   const {
     data: paginatedEntries,
@@ -90,12 +90,16 @@ export function useContent() {
   const hasMore = paginatedEntries?.[paginatedEntries.length - 1]?.hasMore ?? true;
   const error = entriesError || albumsError;
 
-  return {
+  const loadMore = useCallback(() => {
+    setSize(size + 1);
+  }, [setSize, size]);
+
+  return useMemo(() => ({
     content: filteredContent,
     loading: isLoadingInitialData,
     loadingMore: isLoadingMore,
     error,
     hasMore,
-    loadMore: () => setSize(size + 1),
-  };
+    loadMore,
+  }), [filteredContent, isLoadingInitialData, isLoadingMore, error, hasMore, loadMore]);
 } 

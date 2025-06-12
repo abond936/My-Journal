@@ -1,11 +1,17 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth/next';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getAdminApp } from '@/lib/config/firebase/admin';
 import { authOptions } from '../../auth/[...nextauth]/route';
-import { getTagById, updateTag, deleteTag } from '@/lib/services/tagService';
 import { Tag } from '@/lib/types/tag';
 
-interface Params {
-  id: string;
+// Initialize Firebase Admin
+getAdminApp();
+const db = getFirestore();
+const tagsCollection = db.collection('tags');
+
+interface RouteParams {
+    id: string;
 }
 
 /**
@@ -33,34 +39,43 @@ interface Params {
  *       500:
  *         description: Internal server error.
  */
-export async function GET(request: NextRequest, { params }: { params: Params }) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
-  try {
-    const { id } = params;
-    const tag = await getTagById(id);
-
-    if (!tag) {
-      return new NextResponse('Tag not found', { status: 404 });
+export async function GET(request: NextRequest, context: { params: RouteParams }) {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+        return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' },
+        });
     }
 
-    return NextResponse.json(tag);
-  } catch (error) {
-    console.error(`API Error fetching tag with ID ${params.id}:`, error);
-    return new NextResponse('Internal server error', { status: 500 });
-  }
+    try {
+        const { id } = context.params;
+        const tagRef = tagsCollection.doc(id);
+        const tagSnap = await tagRef.get();
+
+        if (!tagSnap.exists()) {
+            return new NextResponse('Tag not found', { status: 404 });
+        }
+        
+        const data = tagSnap.data();
+        const tag = {
+            id: tagSnap.id,
+            ...data,
+            createdAt: data?.createdAt?.toDate(),
+            updatedAt: data?.updatedAt?.toDate(),
+        };
+
+        return NextResponse.json(tag);
+    } catch (error) {
+        console.error(`API Error fetching tag ${context.params.id}:`, error);
+        return new NextResponse('Internal server error', { status: 500 });
+    }
 }
 
 /**
  * @swagger
  * /api/tags/{id}:
- *   put:
+ *   patch:
  *     summary: Update a tag
  *     description: Modifies the details of an existing tag.
  *     parameters:
@@ -90,37 +105,43 @@ export async function GET(request: NextRequest, { params }: { params: Params }) 
  *       500:
  *         description: Internal server error.
  */
-export async function PUT(request: NextRequest, { params }: { params: Params }) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
-    return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
-  try {
-    const { id } = params;
-    const body: Partial<Omit<Tag, 'id'>> = await request.json();
-
-    // Basic validation
-    if (Object.keys(body).length === 0) {
-      return new NextResponse('Request body cannot be empty', { status: 400 });
+export async function PATCH(request: NextRequest, context: { params: RouteParams }) {
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== 'admin') {
+        return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' },
+        });
     }
 
-    const updatedTag = await updateTag(id, body);
-    return NextResponse.json(updatedTag);
-  } catch (error) {
-    console.error(`API Error updating tag with ID ${params.id}:`, error);
-    if (error instanceof SyntaxError) {
-      return new NextResponse('Invalid JSON format', { status: 400 });
+    try {
+        const { id } = context.params;
+        const body: Partial<Omit<Tag, 'id' | 'createdAt'>> = await request.json();
+
+        if (Object.keys(body).length === 0) {
+            return new NextResponse('Request body cannot be empty', { status: 400 });
+        }
+
+        const tagRef = tagsCollection.doc(id);
+        await tagRef.update({
+            ...body,
+            updatedAt: FieldValue.serverTimestamp(),
+        });
+
+        const updatedSnap = await tagRef.get();
+        const updatedData = updatedSnap.data();
+        const updatedTag = {
+            id: updatedSnap.id,
+            ...updatedData,
+            createdAt: updatedData?.createdAt?.toDate(),
+            updatedAt: updatedData?.updatedAt?.toDate(),
+        };
+
+        return NextResponse.json(updatedTag);
+    } catch (error) {
+        console.error(`API Error updating tag ${context.params.id}:`, error);
+        return new NextResponse('Internal server error', { status: 500 });
     }
-    // Differentiate between "not found" and other errors if possible
-    if ((error as Error).message.includes('not found')) {
-        return new NextResponse('Tag not found', { status: 404 });
-    }
-    return new NextResponse('Internal server error', { status: 500 });
-  }
 }
 
 /**
@@ -144,24 +165,21 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
  *       500:
  *         description: Internal server error.
  */
-export async function DELETE(request: NextRequest, { params }: { params: Params }) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
-    return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
-  try {
-    const { id } = params;
-    await deleteTag(id);
-    return new NextResponse(null, { status: 204 });
-  } catch (error) {
-    console.error(`API Error deleting tag with ID ${params.id}:`, error);
-    if ((error as Error).message.includes('not found')) {
-        return new NextResponse('Tag not found', { status: 404 });
+export async function DELETE(request: NextRequest, context: { params: RouteParams }) {
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== 'admin') {
+        return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' },
+        });
     }
-    return new NextResponse('Internal server error', { status: 500 });
-  }
+
+    try {
+        const { id } = context.params;
+        await tagsCollection.doc(id).delete();
+        return new NextResponse(null, { status: 204 });
+    } catch (error) {
+        console.error(`API Error deleting tag ${context.params.id}:`, error);
+        return new NextResponse('Internal server error', { status: 500 });
+    }
 } 

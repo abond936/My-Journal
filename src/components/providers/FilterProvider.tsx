@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useMemo } from 'react';
 
 export type ContentType = 'all' | 'entries' | 'albums';
 export type EntryType = 'all' | 'story' | 'reflection' | 'qa' | 'quote' | 'callout';
@@ -58,7 +58,7 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
     setEntryType('all');
   }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     selectedTags,
     contentType,
     entryType,
@@ -68,7 +68,7 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
     setContentType: handleSetContentType,
     setEntryType,
     clearFilters,
-  };
+  }), [selectedTags, contentType, entryType, addTag, removeTag, toggleTag, handleSetContentType, setEntryType, clearFilters]);
 
   return <FilterContext.Provider value={value}>{children}</FilterContext.Provider>;
 };

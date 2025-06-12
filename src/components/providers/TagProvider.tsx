@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useCallback } from 'react';
+import React, { createContext, useContext, useCallback, useMemo } from 'react';
 import useSWR from 'swr';
 import { Tag } from '@/lib/types/tag';
 
@@ -109,7 +109,7 @@ export function TagProvider({ children }: { children: React.ReactNode }) {
     }
   }, [mutate]);
 
-  const value = {
+  const value = useMemo(() => ({
     tags: tags || [],
     tagsByDimension,
     loading: isLoading,
@@ -117,7 +117,7 @@ export function TagProvider({ children }: { children: React.ReactNode }) {
     createTag,
     updateTag,
     deleteTag,
-  };
+  }), [tags, tagsByDimension, isLoading, error, createTag, updateTag, deleteTag]);
 
   return (
     <TagContext.Provider value={value}>

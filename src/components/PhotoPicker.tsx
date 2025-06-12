@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { PhotoService } from '@/lib/services/photos/photoService';
 import { PhotoMetadata, TreeNode } from '@/lib/types/photo'; // Import directly from the source
+import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import styles from './PhotoPicker.module.css';
 
 interface PhotoPickerProps {
@@ -186,7 +187,6 @@ export default function PhotoPicker({
               <div className={styles.grid}>
                 {photos.map(photo => {
                   const isSelected = isMultiSelect && selectedPhotos.some(p => p.id === photo.id);
-                  const imageUrl = `/api/images/local/file?path=${encodeURIComponent(photo.path)}`;
                   return (
                     <div
                       key={photo.id}
@@ -195,7 +195,7 @@ export default function PhotoPicker({
                     >
                       {isSelected && <div className={styles.checkmark}>✓</div>}
                       <Image
-                        src={imageUrl}
+                        src={getDisplayUrl(photo)}
                         alt={photo.filename}
                         width={150}
                         height={150}

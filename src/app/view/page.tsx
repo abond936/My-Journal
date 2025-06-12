@@ -34,7 +34,13 @@ function useIntersectionObserver(callback: () => void, options?: IntersectionObs
 export default function ViewPage() {
   const { content, loading, error, hasMore, loadingMore, loadMore } = useContent();
 
-  const loadMoreRef = useIntersectionObserver(loadMore, {
+  const handleLoadMore = useCallback(() => {
+    if (hasMore && !loadingMore) {
+      loadMore();
+    }
+  }, [hasMore, loadingMore, loadMore]);
+
+  const loadMoreRef = useIntersectionObserver(handleLoadMore, {
     rootMargin: '200px', // Load more when the user is 200px away from the bottom
   });
 

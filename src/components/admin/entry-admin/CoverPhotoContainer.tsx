@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { PhotoMetadata } from '@/lib/types/photo';
 import PhotoPicker from '@/components/PhotoPicker';
+import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import styles from './CoverPhotoContainer.module.css';
 
 interface CoverPhotoContainerProps {
@@ -104,7 +105,7 @@ export default function CoverPhotoContainer({
       {coverPhoto ? (
         <div className={styles.coverPhoto}>
           <img
-            src={coverPhoto.path}
+            src={getDisplayUrl(coverPhoto)}
             alt={coverPhoto.filename}
             className={styles.image}
             style={imageStyle}

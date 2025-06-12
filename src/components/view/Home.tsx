@@ -10,7 +10,7 @@ import styles from '@/components/view/Home.module.css';
 const Home: React.FC = () => {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
@@ -20,7 +20,7 @@ const Home: React.FC = () => {
 
     const result = await signIn('credentials', {
       redirect: false,
-      email,
+      username,
       password,
     });
 
@@ -39,10 +39,10 @@ const Home: React.FC = () => {
     <form onSubmit={handleSignIn} className={styles.loginForm}>
       {error && <p className={styles.errorMessage}>{error}</p>}
       <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        type="text"
+        placeholder="Username"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
         className={styles.inputField}
         required
       />
@@ -63,7 +63,7 @@ const Home: React.FC = () => {
   const renderWelcomeMessage = () => (
     <>
       <p className={styles.welcomeText}>
-        Welcome back, {session?.user?.email}.<br />
+        Welcome back, {session?.user?.name}.<br />
         Ready to continue your story?
       </p>
       <button onClick={handleEnter} className={styles.enterButton}>

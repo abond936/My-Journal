@@ -6,8 +6,8 @@ import path from 'path';
 import mime from 'mime-types';
 
 // This is the root directory where your images are stored.
-// IMPORTANT: Ensure this environment variable is set in your .env file.
-const PHOTOS_ROOT_DIR = process.env.PHOTOS_ROOT_DIR;
+// IMPORTANT: Ensure this environment variable is set in your .env.local file.
+const ONEDRIVE_ROOT_FOLDER = process.env.ONEDRIVE_ROOT_FOLDER;
 
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -18,8 +18,8 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  if (!PHOTOS_ROOT_DIR) {
-    console.error('PHOTOS_ROOT_DIR environment variable is not set.');
+  if (!ONEDRIVE_ROOT_FOLDER) {
+    console.error('ONEDRIVE_ROOT_FOLDER environment variable is not set.');
     return new NextResponse('Server configuration error.', { status: 500 });
   }
 
@@ -33,12 +33,12 @@ export async function GET(request: NextRequest) {
   try {
     // Decode the file path and resolve it against the root directory.
     const decodedPath = decodeURIComponent(filePathParam);
-    const safeFilePath = path.join(PHOTOS_ROOT_DIR, decodedPath);
+    const safeFilePath = path.join(ONEDRIVE_ROOT_FOLDER, decodedPath);
 
     // Security Check: Ensure the resolved path is still within the root directory.
     // This prevents directory traversal attacks (e.g., trying to access '../../...').
     const resolvedPath = path.resolve(safeFilePath);
-    const rootPath = path.resolve(PHOTOS_ROOT_DIR);
+    const rootPath = path.resolve(ONEDRIVE_ROOT_FOLDER);
     if (!resolvedPath.startsWith(rootPath)) {
         return new NextResponse('Access denied. Invalid file path.', { status: 403 });
     }

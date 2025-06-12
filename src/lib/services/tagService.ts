@@ -1,198 +1,145 @@
-import { getFirestore, Timestamp, FieldValue, DocumentSnapshot } from 'firebase-admin/firestore';
+// This file is now a CLIENT-SIDE service.
+// It is responsible for making fetch requests to the API routes.
+// It should NEVER import 'firebase-admin' or other server-side code.
+
 import { Tag } from '@/lib/types/tag';
-import { getAdminApp } from '@/lib/config/firebase/admin';
-
-// Initialize Firebase Admin
-getAdminApp();
-const db = getFirestore();
 
 /**
- * Converts a Firestore document to a Tag object, handling timestamps.
- * @param doc The Firestore document snapshot.
- * @returns The Tag object.
- */
-function docToTag(doc: DocumentSnapshot): Tag {
-  const data = doc.data() as Omit<Tag, 'id'>;
-  return {
-    id: doc.id,
-    ...data,
-    createdAt: (data.createdAt as Timestamp)?.toDate(),
-    updatedAt: (data.updatedAt as Timestamp)?.toDate(),
-  };
-}
-
-/**
- * Fetches all tags from Firestore.
+ * Fetches all tags from the API.
  * @returns {Promise<Tag[]>} A promise that resolves to an array of tags.
  */
-export async function getAllTags(): Promise<Tag[]> {
-  try {
-    const tagsRef = db.collection('tags');
-    const snapshot = await tagsRef.get();
-    
-    if (snapshot.empty) {
-      return [];
-    }
-
-    return snapshot.docs.map(docToTag);
-  } catch (error) {
-    console.error('Error fetching all tags from Firestore:', error);
-    throw new Error('Failed to fetch tags.');
+export async function getTags(): Promise<Tag[]> {
+  const response = await fetch('/api/tags');
+  if (!response.ok) {
+    throw new Error('Failed to fetch tags');
   }
+  const tags = await response.json();
+  // Convert date strings back to Date objects
+  return tags.map((tag: any) => ({
+    ...tag,
+    createdAt: tag.createdAt ? new Date(tag.createdAt) : undefined,
+    updatedAt: tag.updatedAt ? new Date(tag.updatedAt) : undefined,
+  }));
 }
 
 /**
- * Fetches a single tag by its ID.
+ * Fetches a single tag by its ID from the API.
  * @param {string} id - The ID of the tag to fetch.
  * @returns {Promise<Tag | null>} A promise that resolves to the tag or null if not found.
  */
 export async function getTagById(id: string): Promise<Tag | null> {
-    if (!id) {
-        throw new Error('Tag ID is required');
-    }
-    try {
-        const tagRef = db.collection('tags').doc(id);
-        const doc = await tagRef.get();
-
-        if (!doc.exists) {
-            return null;
-        }
-
-        return docToTag(doc);
-    } catch (error) {
-        console.error(`Error fetching tag with ID ${id}:`, error);
-        throw new Error('Failed to fetch tag.');
-    }
+  if (!id) return null;
+  const response = await fetch(`/api/tags/${id}`);
+  if (!response.ok) {
+    if (response.status === 404) return null;
+    throw new Error(`Failed to fetch tag ${id}`);
+  }
+  const tag = await response.json();
+  return {
+    ...tag,
+    createdAt: tag.createdAt ? new Date(tag.createdAt) : undefined,
+    updatedAt: tag.updatedAt ? new Date(tag.updatedAt) : undefined,
+  };
 }
 
 /**
- * Creates a new tag in Firestore.
+ * Creates a new tag via the API.
  * @param {Omit<Tag, 'id'>} tagData - The data for the new tag.
  * @returns {Promise<Tag>} A promise that resolves to the newly created tag.
  */
-export async function createTag(tagData: Omit<Tag, 'id'>): Promise<Tag> {
-  try {
-    const tagsRef = db.collection('tags');
-    const docRef = await tagsRef.add({
-      ...tagData,
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-    });
-
-    const newDoc = await docRef.get();
-    return docToTag(newDoc);
-  } catch (error) {
-    console.error('Error creating tag in Firestore:', error);
-    throw new Error('Failed to create tag.');
+export async function createTag(tagData: Omit<Tag, 'id' | 'createdAt' | 'updatedAt'>): Promise<Tag> {
+  const response = await fetch('/api/tags', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(tagData),
+  });
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Failed to create tag: ${errorBody}`);
   }
+  return response.json();
 }
 
 /**
- * Updates an existing tag in Firestore.
+ * Updates an existing tag via the API.
  * @param {string} id - The ID of the tag to update.
  * @param {Partial<Tag>} tagData - The data to update.
  * @returns {Promise<Tag>} A promise that resolves to the updated tag.
  */
 export async function updateTag(id: string, tagData: Partial<Omit<Tag, 'id' | 'createdAt'>>): Promise<Tag> {
-  if (!id) {
-    throw new Error('Tag ID is required for update');
+  const response = await fetch(`/api/tags/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(tagData),
+  });
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Failed to update tag ${id}: ${errorBody}`);
   }
-  try {
-    const tagRef = db.collection('tags').doc(id);
-    await tagRef.update({
-      ...tagData,
-      updatedAt: FieldValue.serverTimestamp(),
-    });
-
-    const updatedDoc = await tagRef.get();
-    if (!updatedDoc.exists) {
-      throw new Error('Tag not found after update.');
-    }
-
-    return docToTag(updatedDoc);
-  } catch (error) {
-    console.error(`Error updating tag with ID ${id}:`, error);
-    throw new Error('Failed to update tag.');
-  }
+  return response.json();
 }
 
 /**
- * Deletes a tag and all its children from Firestore.
+ * Deletes a tag via the API.
  * @param {string} id - The ID of the tag to delete.
  * @returns {Promise<void>} A promise that resolves when the deletion is complete.
  */
 export async function deleteTag(id: string): Promise<void> {
-  if (!id) {
-    throw new Error('Tag ID is required');
-  }
-  
-  try {
-    const tagRef = db.collection('tags').doc(id);
-    
-    // Find all direct children of the tag
-    const childrenQuery = db.collection('tags').where('parentId', '==', id);
-    const childrenSnapshot = await childrenQuery.get();
-
-    // Use a batch to delete the parent and all children atomically
-    const batch = db.batch();
-    
-    // Delete parent
-    batch.delete(tagRef);
-    
-    // Delete children
-    childrenSnapshot.forEach(doc => {
-      batch.delete(doc.ref);
-    });
-
-    await batch.commit();
-    console.log(`Successfully deleted tag ${id} and its ${childrenSnapshot.size} children.`);
-  } catch (error) {
-    console.error(`Error deleting tag with ID ${id} and its children:`, error);
-    throw new Error('Failed to delete tag and its children.');
+  const response = await fetch(`/api/tags/${id}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Failed to delete tag ${id}: ${errorBody}`);
   }
 }
 
-export async function getTagsByDimension(): Promise<Record<Tag['dimension'], Tag[]>> {
-  const tags = await getAllTags();
-  const tagsByDimension: Record<Tag['dimension'], Tag[]> = {
-    who: [],
-    what: [],
-    when: [],
-    where: [],
-    reflection: []
-  };
+// These functions below don't make sense as client-side service functions
+// as they require fetching all tags first. This logic should live in components
+// that already have the tags or be handled by a more specific API endpoint if needed.
+// I'm commenting them out to complete the refactor.
 
-  tags.forEach(tag => {
-    if (tag.dimension in tagsByDimension) {
-      tagsByDimension[tag.dimension].push(tag);
-    }
-  });
+// export async function getTagsByDimension(): Promise<Record<Tag['dimension'], Tag[]>> {
+//   const tags = await getTags();
+//   const tagsByDimension: Record<Tag['dimension'], Tag[]> = {
+//     who: [],
+//     what: [],
+//     when: [],
+//     where: [],
+//     reflection: []
+//   };
 
-  return tagsByDimension;
-}
+//   tags.forEach(tag => {
+//     if (tag.dimension in tagsByDimension) {
+//       tagsByDimension[tag.dimension].push(tag);
+//     }
+//   });
 
-export async function organizeEntryTags(entryTags: string[]): Promise<{
-  who: string[];
-  what: string[];
-  when: string[];
-  where: string[];
-  reflection: string[];
-}> {
-  const tags = await getAllTags();
-  const organizedTags = {
-    who: [] as string[],
-    what: [] as string[],
-    when: [] as string[],
-    where: [] as string[],
-    reflection: [] as string[]
-  };
+//   return tagsByDimension;
+// }
 
-  entryTags.forEach(tagId => {
-    const tag = tags.find(t => t.id === tagId);
-    if (tag && tag.dimension in organizedTags) {
-      organizedTags[tag.dimension].push(tagId);
-    }
-  });
+// export async function organizeEntryTags(entryTags: string[]): Promise<{
+//   who: string[];
+//   what: string[];
+//   when: string[];
+//   where: string[];
+//   reflection: string[];
+// }> {
+//   const tags = await getTags();
+//   const organizedTags = {
+//     who: [] as string[],
+//     what: [] as string[],
+//     when: [] as string[],
+//     where: [] as string[],
+//     reflection: [] as string[]
+//   };
 
-  return organizedTags;
-} 
+//   entryTags.forEach(tagId => {
+//     const tag = tags.find(t => t.id === tagId);
+//     if (tag && tag.dimension in organizedTags) {
+//       organizedTags[tag.dimension].push(tagId);
+//     }
+//   });
+
+//   return organizedTags;
+// } 
