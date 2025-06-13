@@ -4,6 +4,7 @@ import { getFirestore, FieldValue, Timestamp, Query } from 'firebase-admin/fires
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { authOptions } from '../auth/[...nextauth]/route';
 import { Entry } from '@/lib/types/entry';
+import { safeToDate } from '@/lib/utils/dateUtils';
 
 // Initialize Firebase Admin
 getAdminApp();
@@ -91,12 +92,13 @@ export async function GET(request: NextRequest) {
 
     const entries = snapshot.docs.slice(0, pageSize).map(doc => {
         const data = doc.data();
+        delete data.id;
         return {
-            id: doc.id,
             ...data,
-            date: data.date?.toDate(),
-            createdAt: data.createdAt?.toDate(),
-            updatedAt: data.updatedAt?.toDate(),
+            id: doc.id,
+            date: safeToDate(data.date),
+            createdAt: safeToDate(data.createdAt),
+            updatedAt: safeToDate(data.updatedAt),
         }
     });
 
@@ -203,7 +205,18 @@ export async function POST(request: Request) {
     };
 
     const docRef = await entriesCollection.add(dataWithTimestamps);
-    const newEntry = { id: docRef.id, ...body };
+    
+    // Fetch the new doc to return it with resolved timestamps
+    const newDocSnap = await docRef.get();
+    const newEntryData = newDocSnap.data();
+
+    const newEntry = { 
+        id: docRef.id, 
+        ...newEntryData,
+        date: safeToDate(newEntryData?.date),
+        createdAt: safeToDate(newEntryData?.createdAt),
+        updatedAt: safeToDate(newEntryData?.updatedAt),
+    };
 
     return NextResponse.json(newEntry, { status: 201 });
   } catch (error) {

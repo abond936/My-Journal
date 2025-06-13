@@ -4,6 +4,7 @@ import { getFirestore, FieldValue, Timestamp, Query } from 'firebase-admin/fires
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { authOptions } from '../auth/[...nextauth]/route';
 import { Album } from '@/lib/types/album';
+import { safeToDate } from '@/lib/utils/dateUtils';
 
 // Initialize Firebase Admin
 getAdminApp();
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
             q = q.where('tags', 'array-contains-any', tags);
         }
 
-        q = q.orderBy('date', 'desc');
+        q = q.orderBy('createdAt', 'desc');
 
         if (lastDocId) {
             const lastDocSnapshot = await albumsCollection.doc(lastDocId).get();
@@ -68,12 +69,13 @@ export async function GET(request: NextRequest) {
 
         const albums = snapshot.docs.slice(0, pageSize).map(doc => {
             const data = doc.data();
+            delete data.id;
             return {
-                id: doc.id,
                 ...data,
-                date: (data.date as Timestamp)?.toDate() || (data.createdAt as Timestamp)?.toDate(),
-                createdAt: (data.createdAt as Timestamp)?.toDate(),
-                updatedAt: (data.updatedAt as Timestamp)?.toDate(),
+                id: doc.id,
+                date: safeToDate(data.date) || safeToDate(data.createdAt),
+                createdAt: safeToDate(data.createdAt),
+                updatedAt: safeToDate(data.updatedAt),
             };
         });
 
@@ -132,12 +134,16 @@ export async function POST(request: NextRequest) {
 
         const docRef = await albumsCollection.add(newAlbumData);
         
+        // Fetch the newly created document to return it with resolved timestamps
+        const newDocSnap = await docRef.get();
+        const createdData = newDocSnap.data();
+
         const newAlbum = {
             id: docRef.id,
-            ...body,
-            mediaCount: 0,
-            images: [],
-            // Timestamps will be handled by the client-side service for now
+            ...createdData,
+            date: safeToDate(createdData?.date) || safeToDate(createdData?.createdAt),
+            createdAt: safeToDate(createdData?.createdAt),
+            updatedAt: safeToDate(createdData?.updatedAt),
         };
 
         return new NextResponse(JSON.stringify(newAlbum), {

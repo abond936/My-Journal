@@ -2,12 +2,15 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { getTags } from '@/lib/services/tagService';
+import { getAlbums } from '@/lib/services/albumService';
 import { Album } from '@/lib/types/album';
 import { PhotoMetadata } from '@/lib/types/photo';
 import { Tag } from '@/lib/types/tag';
 import styles from '@/app/admin/album-admin/album-admin.module.css';
 import PhotoPicker from '@/components/common/PhotoPicker';
 import Link from 'next/link';
+import AlbumForm from '@/components/admin/album-admin/AlbumForm';
+import Modal from '@/components/common/Modal';
 
 interface AlbumWithStats extends Album {
   tagNames: { id: string; name: string }[];
@@ -87,15 +90,15 @@ export default function AdminAlbumsPage() {
     try {
       setLoading(true);
       const [albumsResponse, allTags] = await Promise.all([
-        fetch('/api/albums'),
+        getAlbums(),
         getTags()
       ]);
 
-      if (!albumsResponse.ok) {
-        throw new Error(`Failed to fetch albums. Status: ${albumsResponse.status}`);
+      if (!albumsResponse || !albumsResponse.items) {
+        throw new Error('Failed to fetch albums or albums response is malformed.');
       }
-
-      const allAlbums: Album[] = await albumsResponse.json();
+      
+      const allAlbums = albumsResponse.items;
 
       const albumsWithStats = allAlbums.map(album => ({
         ...album,
@@ -381,6 +384,7 @@ export default function AdminAlbumsPage() {
               <th>Media</th>
               <th>Status</th>
               <th>Tags</th>
+              <th>Created At</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -431,23 +435,16 @@ export default function AdminAlbumsPage() {
                   />
                 </td>
                 <td>{album.mediaCount}</td>
-                <td>
-                  <button 
-                    onClick={() => handleFieldUpdate(album.id, 'status', album.status === 'published' ? 'draft' : 'published')}
-                    className={`${styles.statusToggle} ${album.status === 'published' ? styles.published : styles.draft}`}
-                  >
-                    {album.status}
-                  </button>
-                </td>
+                <td>{album.status}</td>
                 <td>
                   {album.tagNames.map(tag => (
                     <span key={tag.id} className={styles.tag}>{tag.name}</span>
                   ))}
                 </td>
-                <td>
-                  <Link href={`/view/album-view/${album.id}`} className={styles.actionButton}>View</Link>
+                <td>{album.createdAt ? new Date(album.createdAt).toLocaleDateString() : 'N/A'}</td>
+                <td className={styles.actions}>
                   <Link href={`/admin/album-admin/${album.id}/edit`} className={styles.actionButton}>Edit</Link>
-                  <button onClick={() => handleDeleteAlbum(album.id, album.title)} className={`${styles.actionButton} ${styles.deleteButton}`}>Delete</button>
+                  <Link href={`/albums/${album.id}`} className={styles.actionButton}>View</Link>
                 </td>
               </tr>
             ))}

@@ -39,6 +39,9 @@ export const authOptions = {
     })
   ],
   adapter: FirestoreAdapter(db),
+  pages: {
+    signIn: '/',
+  },
   session: {
     strategy: 'jwt',
   },

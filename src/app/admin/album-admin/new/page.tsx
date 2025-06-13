@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './NewAlbumPage.module.css';
 import { Album } from '@/lib/types/album';
+import Modal from '@/components/common/Modal';
+import AlbumLayout from '@/components/view/album-view/AlbumLayout';
 
 /**
  * A form page for creating a new album.
@@ -20,6 +22,7 @@ export default function NewAlbumPage() {
   // State to handle the UI feedback during the save operation.
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   /**
    * Handles the "Save" button click.
@@ -74,6 +77,26 @@ export default function NewAlbumPage() {
     router.push('/admin/album-admin');
   };
 
+  const handlePreview = () => {
+    setShowPreview(true);
+  };
+
+  // Create a temporary album object from state for previewing
+  const previewAlbumData: Album = {
+    id: 'preview',
+    title: title || 'Untitled Album',
+    description: description || 'No description provided.',
+    caption: '',
+    coverImage: '',
+    mediaCount: 0,
+    status: 'draft',
+    tags: [],
+    images: [],
+    name: title || 'Untitled Album',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -119,6 +142,13 @@ export default function NewAlbumPage() {
           Cancel
         </button>
         <button
+          onClick={handlePreview}
+          disabled={!title.trim()}
+          className={`${styles.button} ${styles.previewButton}`}
+        >
+          Preview
+        </button>
+        <button
           onClick={handleSave}
           disabled={loading || !title.trim()}
           className={`${styles.button} ${styles.saveButton}`}
@@ -129,6 +159,12 @@ export default function NewAlbumPage() {
 
       {/* Error Display */}
       {error && <p className={styles.error}>{error}</p>}
+
+      {showPreview && (
+        <Modal onClose={() => setShowPreview(false)}>
+            <AlbumLayout album={previewAlbumData} onClose={() => setShowPreview(false)} />
+        </Modal>
+      )}
     </div>
   );
 }

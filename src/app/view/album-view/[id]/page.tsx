@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Album } from '@/lib/types/album';
+import { getAlbumById } from '@/lib/services/albumService';
 import AlbumLayout from '@/components/view/album-view/AlbumLayout';
 
 // The props for this page will include the 'id' from the dynamic route segment.
@@ -31,11 +32,10 @@ export default function AlbumViewPage({ params }: AlbumViewPageProps) {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`/api/albums/${id}`);
-        if (!response.ok) {
-          throw new Error(response.status === 404 ? 'Album not found.' : 'Failed to fetch album data.');
+        const data = await getAlbumById(id);
+        if (!data) {
+          throw new Error('Album not found.');
         }
-        const data: Album = await response.json();
         setAlbum(data);
         setShowAlbum(true); // Show album once data is fetched
       } catch (err) {

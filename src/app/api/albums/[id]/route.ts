@@ -4,6 +4,7 @@ import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { authOptions } from '../../auth/[...nextauth]/route';
 import { Album } from '@/lib/types/album';
+import { safeToDate } from '@/lib/utils/dateUtils';
 
 // Initialize Firebase Admin
 getAdminApp();
@@ -36,12 +37,29 @@ export async function GET(request: NextRequest, context: { params: RouteParams }
         }
         
         const data = albumSnap.data();
-        const album = {
+        if (!data) {
+            return new NextResponse('Album data is missing', { status: 404 });
+        }
+
+        // Defensively remove any 'id' field from the data
+        delete data.id;
+
+        // Explicitly map fields to prevent including any unserializable data
+        const album: Album = {
             id: albumSnap.id,
-            ...data,
-            date: (data?.date as Timestamp)?.toDate() || (data?.createdAt as Timestamp)?.toDate(),
-            createdAt: (data?.createdAt as Timestamp)?.toDate(),
-            updatedAt: (data?.updatedAt as Timestamp)?.toDate(),
+            name: data.name || '',
+            title: data.title || '',
+            description: data.description || '',
+            caption: data.caption || '',
+            coverImage: data.coverImage || '',
+            mediaCount: data.mediaCount || 0,
+            status: data.status || 'draft',
+            tags: data.tags || [],
+            images: data.images || [],
+            // Safely handle dates
+            date: safeToDate(data?.date) || safeToDate(data?.createdAt),
+            createdAt: safeToDate(data?.createdAt),
+            updatedAt: safeToDate(data?.updatedAt),
         };
 
         return NextResponse.json(album);
@@ -64,6 +82,10 @@ export async function PATCH(request: NextRequest, context: { params: RouteParams
         const { id } = context.params;
         const body: Partial<Omit<Album, 'id' | 'createdAt'>> = await request.json();
 
+        // The bug is that the body can contain an `id` field, which should not be saved
+        // into the document's data. We must remove it before updating.
+        delete (body as Partial<Album>).id;
+
         if (Object.keys(body).length === 0) {
             return new NextResponse('Request body cannot be empty', { status: 400 });
         }
@@ -81,12 +103,25 @@ export async function PATCH(request: NextRequest, context: { params: RouteParams
 
         const updatedSnap = await albumRef.get();
         const updatedData = updatedSnap.data();
-        const updatedAlbum = {
+        if (!updatedData) {
+            return new NextResponse('Updated album data is missing', { status: 404 });
+        }
+        
+        // Also apply explicit mapping here for consistency
+        const updatedAlbum: Album = {
             id: updatedSnap.id,
-            ...updatedData,
-            date: updatedData?.date?.toDate() || updatedData?.createdAt?.toDate(),
-            createdAt: updatedData?.createdAt?.toDate(),
-            updatedAt: updatedData?.updatedAt?.toDate(),
+            name: updatedData.name || '',
+            title: updatedData.title || '',
+            description: updatedData.description || '',
+            caption: updatedData.caption || '',
+            coverImage: updatedData.coverImage || '',
+            mediaCount: updatedData.mediaCount || 0,
+            status: updatedData.status || 'draft',
+            tags: updatedData.tags || [],
+            images: updatedData.images || [],
+            date: safeToDate(updatedData?.date) || safeToDate(updatedData?.createdAt),
+            createdAt: safeToDate(updatedData?.createdAt),
+            updatedAt: safeToDate(updatedData?.updatedAt),
         };
 
         return NextResponse.json(updatedAlbum);

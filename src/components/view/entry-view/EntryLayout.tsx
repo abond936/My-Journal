@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Entry } from '@/lib/types/entry';
 import { deleteEntry } from '@/lib/services/entryService'; // Note: This is a temporary architectural violation
-import TipTapRenderer from '@/components/tiptap/TipTapRenderer';
+import TipTapRenderer from '@/components/common/TipTapRenderer';
 import styles from './EntryLayout.module.css';
 
 interface EntryLayoutProps {

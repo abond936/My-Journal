@@ -622,21 +622,35 @@ Status: 🟡 Operational
 
 # **Client-Server Architecture**
 =======================================
-Status: 🟡 Operational
-This project adheres to a strict client/server architecture so no server-only code (like database credentials or Node.js modules)
-is ever sent to the browser.
+Status: ✅ Implemented
+This project adheres to a strict client-server architecture, ensuring that no server-only code (like database credentials or Node.js modules) is ever exposed to the browser. The data flow is designed to be secure and maintain a clear separation of concerns.
 
-- Client components get data by calling internal API routes.
-- API Routes use server-side services to interact with the database.
+The architecture follows a one-way data flow:
+**Client Components & Hooks ➡️ Client-Side Services ➡️ Internal API Routes ➡️ Firebase**
 
-Implementation Constraints:
+### 1. Client-Side Services (`src/lib/services/`)
+- **Role:** These are lightweight, client-side modules responsible for communicating with the application's internal API.
+- **Function:** They abstract the logic of making `fetch` requests to specific API endpoints (e.g., `/api/entries`, `/api/albums`). They handle formatting request parameters and parsing responses.
+- **Constraints:**
+  - **MUST** run only on the client.
+  - **MUST NOT** import server-side packages like `firebase-admin` or Node.js modules (`fs`).
+  - They are the designated way for client components to fetch or modify data.
 
-Client Code ('use client' files, hooks):
-- MUST NOT import from src/lib/services/.
-- MUST NOT import @/lib/config/firebase/admin.
-- MUST fetch data via internal API routes (e.g., fetch('/api/...')).
-Server Code (src/app/api/**):
-- This is the ONLY location where modules from src/lib/services/ should be imported and used.
+### 2. API Routes (`src/app/api/`)
+- **Role:** These are the server-side endpoints that contain the core business logic.
+- **Function:** They are responsible for receiving requests from the client-side services, validating them, interacting with the database (Firestore), and performing any other server-side operations.
+- **Constraints:**
+  - **MUST** run only on the server.
+  - This is the **ONLY** layer that can import and use the `firebase-admin` SDK.
+  - They handle all direct database queries and mutations.
+
+### 3. Client Components & Hooks (`src/components/`, `src/app/view/`, etc.)
+- **Role:** These are the UI-facing parts of the application.
+- **Function:** To get or modify data, they call functions from the client-side services in `src/lib/services`.
+- **Constraints:**
+  - **MUST NOT** call `fetch` directly.
+  - **MUST NOT** contain any business logic for data manipulation.
+  - **MUST** use the service layer (`src/lib/services/`) for all data operations.
 
 
 ### **Authentication**

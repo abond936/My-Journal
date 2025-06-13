@@ -4,6 +4,7 @@ import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { authOptions } from '../auth/[...nextauth]/route';
 import { Tag } from '@/lib/types/tag';
+import { safeToDate } from '@/lib/utils/dateUtils';
 
 // Initialize Firebase Admin
 getAdminApp();
@@ -45,8 +46,8 @@ export async function GET(request: NextRequest) {
                 ...data,
                 id: doc.id,
                 name: data.name,
-                createdAt: (data.createdAt as Timestamp)?.toDate(),
-                updatedAt: (data.updatedAt as Timestamp)?.toDate(),
+                createdAt: safeToDate(data.createdAt),
+                updatedAt: safeToDate(data.updatedAt),
             };
         });
         return NextResponse.json(tags);
@@ -113,10 +114,15 @@ export async function POST(request: NextRequest) {
 
         const docRef = await tagsCollection.add(newTagData);
         
+        // Fetch the new doc to return it with resolved timestamps
+        const newDocSnap = await docRef.get();
+        const createdData = newDocSnap.data();
+
         const newTag = {
             id: docRef.id,
-            ...body,
-            // Timestamps will be handled by the client-side service for now
+            ...createdData,
+            createdAt: safeToDate(createdData?.createdAt),
+            updatedAt: safeToDate(createdData?.updatedAt),
         };
 
         return new NextResponse(JSON.stringify(newTag), {

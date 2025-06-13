@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAllEntries, deleteEntry, updateEntry, getEntries } from '@/lib/services/entryService';
 import { getTags } from '@/lib/services/tagService';
@@ -8,6 +8,8 @@ import { Entry } from '@/lib/types/entry';
 import { Tag } from '@/lib/types/tag';
 import styles from '@/app/admin/entry-admin/entry-admin.module.css';
 import React from 'react';
+import Link from 'next/link';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface EntryWithStats extends Entry {
   tagNames: string[];
@@ -107,7 +109,7 @@ export default function AdminEntriesPage() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [entryType, status, selectedTag]);
 
   const loadData = async (loadMore: boolean = false) => {
     try {
@@ -145,7 +147,15 @@ export default function AdminEntriesPage() {
         }));
         
         console.log('Setting new entries:', entriesWithStats.map(e => ({ id: e.id, title: e.title })));
-        setEntries(prev => loadMore ? [...prev, ...entriesWithStats] : entriesWithStats);
+        setEntries(prev => {
+            if (!loadMore) {
+                return entriesWithStats; // If not loading more, just replace the list
+            }
+            // If loading more, filter out any duplicates before appending
+            const existingIds = new Set(prev.map(e => e.id));
+            const newUniqueEntries = entriesWithStats.filter(e => !existingIds.has(e.id));
+            return [...prev, ...newUniqueEntries];
+        });
         setTags(allTags);
         setLastDocId(entriesResult.lastDocId);
         setHasMore(entriesResult.hasMore);
@@ -169,7 +179,7 @@ export default function AdminEntriesPage() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedEntries(new Set(filteredEntries.map(entry => entry.id)));
+      setSelectedEntries(new Set(entries.map(entry => entry.id)));
     } else {
       setSelectedEntries(new Set());
     }
@@ -536,17 +546,11 @@ export default function AdminEntriesPage() {
         <table className={styles.entriesTable}>
           <thead>
             <tr>
-              <th>
-                <input
-                  type="checkbox"
-                  checked={selectedEntries.size === filteredEntries.length}
-                  onChange={e => handleSelectAll(e.target.checked)}
-                />
-              </th>
+              <th><input type="checkbox" onChange={e => handleSelectAll(e.target.checked)} /></th>
               <th>Title</th>
-              <th>Date</th>
               <th>Type</th>
               <th>Status</th>
+              <th>Date</th>
               <th>Tags</th>
               <th>Actions</th>
             </tr>
@@ -554,148 +558,69 @@ export default function AdminEntriesPage() {
           <tbody>
             {filteredEntries.map(entry => (
               <tr key={entry.id}>
-                <td>
-                  <input
-                    type="checkbox"
-                    checked={selectedEntries.has(entry.id)}
-                    onChange={e => handleSelectEntry(entry.id, e.target.checked)}
-                  />
-                </td>
-                <td>
+                <td><input type="checkbox" checked={selectedEntries.has(entry.id)} onChange={e => handleSelectEntry(entry.id, e.target.checked)} /></td>
+                <td className={styles.tableCellTitle}>
                   {editingField?.id === entry.id && editingField.field === 'title' ? (
-                    <form onSubmit={handleEditSubmit} className={styles.editingField}>
-                      <input
-                        type="text"
-                        value={editValue}
-                        onChange={e => setEditValue(e.target.value)}
-                        autoFocus
-                      />
-                      <div className={styles.editButtons}>
-                        <button type="submit" className={styles.saveButton}>Save</button>
-                        <button type="button" onClick={handleEditCancel} className={styles.cancelButton}>Cancel</button>
-                      </div>
+                    <form onSubmit={handleEditSubmit} className={styles.editForm}>
+                      <input type="text" value={editValue} onChange={(e) => setEditValue(e.target.value)} autoFocus onBlur={handleEditSave} />
                     </form>
                   ) : (
-                    <div 
-                      className={styles.editableField}
-                      onClick={() => startEditing(entry.id, 'title', entry.title)}
-                    >
-                      {entry.title}
-                    </div>
-                  )}
-                </td>
-                <td>
-                  {editingField?.id === entry.id && editingField.field === 'date' ? (
-                    <form onSubmit={handleEditSubmit} className={styles.editingField}>
-                      <input
-                        type="date"
-                        value={editValue}
-                        onChange={e => setEditValue(e.target.value)}
-                        autoFocus
-                      />
-                      <div className={styles.editButtons}>
-                        <button type="submit" className={styles.saveButton}>Save</button>
-                        <button type="button" onClick={handleEditCancel} className={styles.cancelButton}>Cancel</button>
-                      </div>
-                    </form>
-                  ) : (
-                    <div 
-                      className={styles.editableField}
-                      onClick={() => startEditing(entry.id, 'date', entry.date)}
-                    >
-                      {new Date(entry.date).toLocaleDateString()}
-                    </div>
+                    <span onClick={() => startEditing(entry.id, 'title', entry.title)}>{entry.title}</span>
                   )}
                 </td>
                 <td>
                   {editingField?.id === entry.id && editingField.field === 'type' ? (
-                    <form onSubmit={handleEditSubmit} className={styles.editingField}>
-                      <select
-                        value={editValue}
-                        onChange={e => setEditValue(e.target.value)}
-                        autoFocus
-                      >
-                        <option value="story">Story</option>
-                        <option value="reflection">Reflection</option>
-                      </select>
-                      <div className={styles.editButtons}>
-                        <button type="submit" className={styles.saveButton}>Save</button>
-                        <button type="button" onClick={handleEditCancel} className={styles.cancelButton}>Cancel</button>
-                      </div>
-                    </form>
+                    <select value={editValue} onChange={(e) => setEditValue(e.target.value)} onBlur={handleEditSave} autoFocus>
+                      <option value="story">Story</option>
+                      <option value="reflection">Reflection</option>
+                    </select>
                   ) : (
-                    <div 
-                      className={styles.editableField}
-                      onClick={() => startEditing(entry.id, 'type', entry.type)}
-                    >
-                      {entry.type}
-                    </div>
+                    <span onClick={() => startEditing(entry.id, 'type', entry.type)}>{entry.type}</span>
                   )}
                 </td>
                 <td>
                   {editingField?.id === entry.id && editingField.field === 'status' ? (
-                    <form onSubmit={handleEditSubmit} className={styles.editingField}>
-                      <select
-                        value={editValue}
-                        onChange={e => setEditValue(e.target.value)}
-                        autoFocus
-                      >
-                        <option value="draft">Draft</option>
-                        <option value="published">Published</option>
-                      </select>
-                      <div className={styles.editButtons}>
-                        <button type="submit" className={styles.saveButton}>Save</button>
-                        <button type="button" onClick={handleEditCancel} className={styles.cancelButton}>Cancel</button>
-                      </div>
-                    </form>
+                    <select value={editValue} onChange={(e) => setEditValue(e.target.value)} onBlur={handleEditSave} autoFocus>
+                      <option value="draft">Draft</option>
+                      <option value="published">Published</option>
+                    </select>
                   ) : (
-                    <div 
-                      className={styles.editableField}
-                      onClick={() => startEditing(entry.id, 'status', entry.status)}
-                    >
-                      {entry.status}
-                    </div>
+                    <span onClick={() => startEditing(entry.id, 'status', entry.status)}>{entry.status}</span>
                   )}
                 </td>
                 <td>
-                  <div className={styles.tags}>
-                    {entry.tagNames.map(tagName => (
-                      <span key={tagName} className={styles.tag}>{tagName}</span>
+                  {editingField?.id === entry.id && editingField.field === 'date' ? (
+                    <input type="date" value={editValue} onChange={(e) => setEditValue(e.target.value)} onBlur={handleEditSave} autoFocus />
+                  ) : (
+                    <span onClick={() => startEditing(entry.id, 'date', entry.date || new Date())}>
+                      {entry.date ? new Date(entry.date).toLocaleDateString() : 'No date'}
+                    </span>
+                  )}
+                </td>
+                <td>
+                  <div className={styles.tagContainer}>
+                    {entry.tagNames.map((tagName, index) => (
+                      <span key={index} className={styles.tag}>{tagName}</span>
                     ))}
                   </div>
                 </td>
-                <td>
-                  <div className={styles.actions}>
-                    <button 
-                      onClick={() => handleEdit(entry.id)}
-                      className={styles.editButton}
-                    >
-                      Edit
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(entry.id)}
-                      className={styles.deleteButton}
-                    >
-                      Delete
-                    </button>
-                  </div>
+                <td className={styles.actions}>
+                  <Link href={`/admin/entry-admin/${entry.id}/edit`} className={styles.actionButton}>Edit</Link>
+                  <button onClick={() => handleDelete(entry.id)} className={`${styles.actionButton} ${styles.deleteButton}`}>Delete</button>
+                  <Link href={`/entries/${entry.id}`} className={styles.actionButton}>View</Link>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {hasMore && entries.length > 0 && (
-          <div className={styles.loadMoreContainer}>
-            <button 
-              onClick={handleLoadMore}
-              disabled={loadingMore}
-              className={styles.loadMoreButton}
-            >
-              {loadingMore ? 'Loading...' : 'Load More Entries'}
-            </button>
-          </div>
-        )}
       </div>
+
+      {loadingMore && <div className={styles.loading}>Loading more entries...</div>}
+      {!loading && hasMore && (
+        <div className={styles.loadMoreContainer}>
+          <button onClick={handleLoadMore} className={styles.loadMoreButton}>Load More</button>
+        </div>
+      )}
     </div>
   );
 } 

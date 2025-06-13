@@ -4,6 +4,7 @@ import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { authOptions } from '../../auth/[...nextauth]/route';
 import { Entry } from '@/lib/types/entry';
+import { safeToDate } from '@/lib/utils/dateUtils';
 
 // Initialize Firebase Admin
 getAdminApp();
@@ -50,12 +51,17 @@ export async function GET(request: NextRequest, context: { params: RouteParams }
     }
     
     const data = entrySnap.data();
+    // Defensively remove any 'id' field from the data to prevent it from
+    // overwriting the true document ID.
+    if (data) {
+        delete data.id;
+    }
     const entry = {
-      id: entrySnap.id,
       ...data,
-      date: data?.date?.toDate(),
-      createdAt: data?.createdAt?.toDate(),
-      updatedAt: data?.updatedAt?.toDate(),
+      id: entrySnap.id,
+      date: safeToDate(data?.date),
+      createdAt: safeToDate(data?.createdAt),
+      updatedAt: safeToDate(data?.updatedAt),
     };
 
     return NextResponse.json(entry);
@@ -103,6 +109,10 @@ export async function PATCH(request: NextRequest, context: { params: RouteParams
     const { id } = context.params;
     const body: Partial<Omit<Entry, 'id'>> = await request.json();
 
+    // The bug is that the body can contain an `id` field, which should not be saved
+    // into the document's data. We must remove it before updating.
+    delete (body as Partial<Entry>).id;
+
     if (Object.keys(body).length === 0) {
       return new NextResponse('Request body cannot be empty', { status: 400 });
     }
@@ -127,9 +137,9 @@ export async function PATCH(request: NextRequest, context: { params: RouteParams
     const updatedEntry = {
         id: updatedSnap.id,
         ...updatedData,
-        date: updatedData?.date?.toDate(),
-        createdAt: updatedData?.createdAt?.toDate(),
-        updatedAt: updatedData?.updatedAt?.toDate(),
+        date: safeToDate(updatedData?.date),
+        createdAt: safeToDate(updatedData?.createdAt),
+        updatedAt: safeToDate(updatedData?.updatedAt),
     }
 
     return NextResponse.json(updatedEntry);
