@@ -491,35 +491,22 @@ Styling
 ---------------------------------
 Status: 🟡 Operational
 
-Tags are managed (added, edited, deleted) from the admin page.
-No need for separate pages
+The Tag Management page provides an administrative interface for organizing the hierarchical tag system used for content categorization.
 
-#### Current 
-- Tag collection
-- Tag listing
-- Tag hierarchy management
-- Tag ordering
-- Tag relationships
-- Tag cleanup
-- Bulk edit
-- Search and filter
+#### Current Features
+- **Hierarchical Tree View:** Tags are displayed in a collapsible tree structure that reflects their parent-child relationships and sort order.
+- **Inline Name Editing:** Tag names can be edited directly in the list by clicking on the name. Changes are saved automatically.
+- **Drag-and-Drop Reordering:** The sort order of tags within the same parent can be changed by dragging and dropping a tag to a new position in its sibling list.
+- **Drag-and-Drop Reparenting:** Tags can be reparented by dragging them horizontally onto a new parent tag.
+- **Add Child Tag:** New tags can be added as children to any existing tag using the `+` button on each row.
+- **Tag Deletion:** Tags can be deleted using the "Delete" button. The user is prompted to choose a deletion strategy:
+  - **Promote Children:** The tag is deleted, and its direct children are moved up to become children of the deleted tag's parent.
+  - **Cascade Delete:** The tag and all of its descendants are deleted.
 
-#### Next
-Function
-- *Fix Drag and drop hierarchy*
-- *Determine tag deletion/merging functionality*
-- Add cover image/icon
-- Remove 'show tag structure'
-- Make stats same as others
-
-Styling
-
-
-❓ Open Questions
-- How to deal with edited/deleted tags?
-   - Edited - warning - heirarchy staying the same, unless edited.
-   - Deleted - warning - Deleting this tag will remove this and all children tags from all entries and albums.
-- Feed tags back to photo metadata?
+#### Planned Features
+- A more robust user interface for the deletion strategy choice (replacing the browser prompt).
+- Full implementation of the drag-and-drop reordering and reparenting logic to persist changes to the database.
+- A background task system for processing complex deletions to prevent UI freezes.
 
 ### **Question Management**
 ---------------------------------
@@ -756,69 +743,55 @@ Status: ✅ Implemented
 
 ### **Backup System**
 ======================================
+The backup strategy is divided into two distinct areas: Codebase Backup and Data Backup.
 
-#### **Automatic Backups**
+#### **Codebase Backup**
 --------------------------------------
 Status: 🟡 Operational
 
 ##### Current Features
-- Daily backups
-- Incremental backups
-- Backup scheduling
-- Backup verification
-- Error handling
-- Notification system
+- A Node.js script (`src/lib/scripts/utils/backup-codebase.ts`) creates a compressed `.zip` archive of the entire codebase.
+- Uses `git ls-files` to efficiently and accurately gather all project files, respecting `.gitignore`.
+- A PowerShell script (`src/lib/scripts/utils/setup-backup-task.ps1`) creates a Windows Scheduled Task to run the backup script daily at 1 AM for local backups.
+- A GitHub Actions workflow (`.github/workflows/backup.yml`) automatically creates a backup on every push to the `main` branch. This backup is stored as a workflow artifact for 7 days, providing an off-site copy.
+- Automatically cleans up local backups older than 5 days.
 
 ##### Planned Features
-- Real-time backups
-- Backup compression
-- Backup encryption
-- Backup analytics
+- Integrate with cloud storage for off-site backups.
 
-❓ Open Questions:
-- Review this...
-
-#### **Manual Backups**
+#### **Data Backup (Firestore)**
 --------------------------------------
 Status: 🟡 Operational
 
 ##### Current Features
-- On-demand backups
-- Backup selection
-- Backup validation
-- Backup export
-- Progress tracking
-- Error handling
+- A Node.js script (`src/lib/scripts/backup-database.ts`) reads all documents from the `entries`, `albums`, `tags`, and `users` collections and saves them to a single, timestamped JSON file.
+- A PowerShell script (`src/lib/scripts/setup-database-backup-task.ps1`) creates a Windows Scheduled Task to run the backup script daily at 2 AM.
 
 ##### Planned Features
-- Custom backup sets
-- Backup templates
-- Backup scheduling
-- Backup sharing
-
-❓ Open Questions:
-- Review this...
+- Add more collections to the backup script as the application grows.
 
 #### **Recovery**
 ---------------------------------------
 Status: 🟡 Operational
 
-##### Current Features
-- Point-in-time recovery
-- Selective recovery
-- Recovery validation
-- Recovery testing
-- Error handling
-- Progress tracking
+This section outlines the procedures for recovering from a critical failure.
 
-##### Planned Features
-- Automated recovery
-- Recovery scheduling
-- Recovery analytics
-- Recovery templates
+##### Codebase Recovery
+This is a manual process:
+1.  Locate the latest codebase backup file (e.g., `backup-....zip`) in the backup directory.
+2.  Unzip the file. This will restore the complete project structure.
+3.  Open a terminal in the restored project directory and run `npm install` to reinstall all dependencies.
 
-❓ Open Questions:
-- Review this...
+##### Database Recovery
+This is a deliberate, interactive process using the `restore-database.ts` script.
+1.  Identify the JSON backup file you wish to restore (e.g., `firestore-backup-....json`).
+2.  Run the restore script from the terminal, passing the full path to the backup file as an argument. Example:
+    ```bash
+    npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/restore-database.ts "C:\\Path\\To\\Your\\Backup\\file.json"
+    ```
+3.  The script will display the collections and document counts from the backup file and ask for confirmation.
+4.  To proceed, you must type `restore` and press Enter. Any other input will cancel the operation.
+5.  The script will then overwrite the existing database collections with the data from the backup file.
 
 ### **Database**
 =======================================
@@ -947,6 +920,13 @@ Aspect Ratio and sizing managed
 
 ❓ Open Questions:
 - Why do we need two different metadata models: one for browsing (AlbumPhotoMetadata) and one for usage (PhotoMetadata)?
+
+### Clarification on Image Models
+The term `AlbumPhotoMetadata` is a remnant from a previous design. The current, correct implementation uses two distinct models for clear separation of concerns:
+- **`PhotoMetadata`**: This is the canonical data model stored in Firestore. It represents a specific photo that has been associated with an Entry or Album and contains all necessary info for rendering and retrieval.
+- **`TreeNode`**: This is a UI-specific model used only by the `PhotoPicker` component. It represents a folder in a photo source (e.g., a directory on the local drive) and is used to build the navigable folder tree. It is not stored in the database.
+
+This separation ensures that the core application data (`PhotoMetadata`) is stable, while the UI components for browsing (`TreeNode`) can be adapted to different photo sources as needed.
 
 Core Concepts & Terminology
 - Source: The top-level service where the original media is stored.

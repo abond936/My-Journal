@@ -26,7 +26,7 @@ import { execSync } from 'child_process';
 async function backupCodebase() {
   let output = '';
   let success = true;
-  let files: string[] = [];
+  const files: string[] = [];
   const excludeDirs = [
     'node_modules',
     '.next',
@@ -50,6 +50,7 @@ async function backupCodebase() {
       : 'C:\\Users\\alanb\\CodeBase Backups';
 
     if (!fs.existsSync(backupDir)) {
+      console.log(`Creating backup directory: ${backupDir}`);
       fs.mkdirSync(backupDir, { recursive: true });
     }
 
@@ -58,10 +59,21 @@ async function backupCodebase() {
     const backupPath = path.join(backupDir, `backup-${timestamp}`);
     const zipPath = path.join(backupDir, `backup-${timestamp}.zip`);
 
-    output += `\n=== Starting Codebase Backup ===\n`;
-    output += `Timestamp: ${new Date().toISOString()}\n`;
-    output += `Backup path: ${zipPath}\n`;
-    output += `Environment: ${isGitHubActions ? 'GitHub Actions' : 'Local'}\n`;
+    const startMsg = `\n=== Starting Codebase Backup ===`;
+    console.log(startMsg);
+    output += `${startMsg}\n`;
+    
+    const timeMsg = `Timestamp: ${new Date().toISOString()}`;
+    console.log(timeMsg);
+    output += `${timeMsg}\n`;
+
+    const pathMsg = `Backup path: ${zipPath}`;
+    console.log(pathMsg);
+    output += `${pathMsg}\n`;
+
+    const envMsg = `Environment: ${isGitHubActions ? 'GitHub Actions' : 'Local'}`;
+    console.log(envMsg);
+    output += `${envMsg}\n`;
 
     // Create a zip archive with maximum compression
     const archive = archiver('zip', {
@@ -73,7 +85,9 @@ async function backupCodebase() {
     // Handle archive events
     archive.on('warning', (err) => {
       if (err.code === 'ENOENT') {
-        output += `Warning: ${err.message}\n`;
+        const warningMsg = `Warning: ${err.message}`;
+        console.warn(warningMsg);
+        output += `${warningMsg}\n`;
       } else {
         throw err;
       }
@@ -84,10 +98,12 @@ async function backupCodebase() {
     });
 
     // Wait for the write stream to finish
-    await new Promise((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       outputStream.on('close', () => {
-        output += `\nArchive finalized. Total bytes: ${archive.pointer()}\n`;
-        resolve(true);
+        const closeMsg = `\nArchive finalized. Total bytes: ${archive.pointer()}`;
+        console.log(closeMsg);
+        output += `${closeMsg}\n`;
+        resolve();
       });
 
       outputStream.on('end', () => {
@@ -101,17 +117,24 @@ async function backupCodebase() {
       // Pipe archive data to the file
       archive.pipe(outputStream);
 
-      // Get all files in the project directory
-      const projectRoot = process.cwd();
-      files = getAllFiles(projectRoot, excludeDirs);
+      // Get all files from git, respecting .gitignore. This is fast and accurate.
+      console.log('\nGathering file list from git...');
+      const gitFiles = execSync('git ls-files --cached --others --exclude-standard')
+        .toString()
+        .trim()
+        .split('\n');
+      
+      console.log(`Found ${gitFiles.length} files to archive.`);
+      files.push(...gitFiles);
 
       // Add each file to the archive
       for (const file of files) {
-        const relativePath = path.relative(projectRoot, file);
-        archive.file(file, { name: relativePath });
+        // The path from git is already relative to the project root
+        archive.file(file, { name: file });
       }
 
       // Finalize the archive
+      console.log('Finalizing archive... (this may take a moment)');
       archive.finalize();
     });
 
@@ -126,7 +149,6 @@ async function backupCodebase() {
       commitMessage,
       fileCount: files.length,
       backupSize: fs.statSync(zipPath).size,
-      excludedDirs: excludeDirs,
       environment: isGitHubActions ? 'GitHub Actions' : 'Local',
       recentChanges: [
         'Added Firebase configuration backup',
@@ -139,12 +161,24 @@ async function backupCodebase() {
 
     // Write metadata to a separate file
     const metadataPath = path.join(backupDir, `backup-${timestamp}-metadata.json`);
+    console.log(`\nWriting metadata to ${metadataPath}`);
     fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
 
-    output += `\nBackup completed successfully\n`;
-    output += `Total files: ${files.length}\n`;
-    output += `Backup size: ${(metadata.backupSize / 1024 / 1024).toFixed(2)} MB\n`;
-    output += `Latest commit: ${commitHash}\n`;
+    const completeMsg = `\nBackup completed successfully`;
+    console.log(completeMsg);
+    output += `${completeMsg}\n`;
+
+    const fileCountMsg = `Total files: ${files.length}`;
+    console.log(fileCountMsg);
+    output += `${fileCountMsg}\n`;
+
+    const sizeMsg = `Backup size: ${(metadata.backupSize / 1024 / 1024).toFixed(2)} MB`;
+    console.log(sizeMsg);
+    output += `${sizeMsg}\n`;
+
+    const commitMsg = `Latest commit: ${commitHash}`;
+    console.log(commitMsg);
+    output += `${commitMsg}\n`;
 
     // Clean up old backups (only for local backups)
     if (!isGitHubActions) {
@@ -154,7 +188,9 @@ async function backupCodebase() {
         .reverse();
 
       if (backups.length > 5) {
-        output += `\n=== Cleaning up old backups ===\n`;
+        const cleanupMsg = `\n=== Cleaning up old backups ===`;
+        console.log(cleanupMsg);
+        output += `${cleanupMsg}\n`;
         for (const oldBackup of backups.slice(5)) {
           const oldBackupPath = path.join(backupDir, oldBackup);
           const oldMetadataPath = path.join(backupDir, oldBackup.replace('.zip', '-metadata.json'));
@@ -162,7 +198,9 @@ async function backupCodebase() {
           if (fs.existsSync(oldMetadataPath)) {
             fs.rmSync(oldMetadataPath, { force: true });
           }
-          output += `Deleted old backup: ${oldBackup}\n`;
+          const deletedMsg = `Deleted old backup: ${oldBackup}`;
+          console.log(deletedMsg);
+          output += `${deletedMsg}\n`;
         }
       }
     }
@@ -183,29 +221,25 @@ async function backupCodebase() {
     } else {
       output += `${error}\n`;
     }
-  } finally {
-    // Exit with appropriate status code
-    process.exit(success ? 0 : 1);
   }
 }
 
-function getAllFiles(dirPath: string, excludeDirs: string[], arrayOfFiles: string[] = []): string[] {
-  const files = fs.readdirSync(dirPath);
-
-  files.forEach(file => {
-    const fullPath = path.join(dirPath, file);
-    
-    if (fs.statSync(fullPath).isDirectory()) {
-      if (!excludeDirs.includes(file)) {
-        arrayOfFiles = getAllFiles(fullPath, excludeDirs, arrayOfFiles);
-      }
+// Main execution wrapper
+async function main() {
+  try {
+    await backupCodebase();
+    console.log('\nBackup script completed successfully.');
+  } catch (error) {
+    console.error('\nError during backup process:');
+    if (error instanceof Error) {
+      console.error(`Message: ${error.message}`);
+      console.error(`Stack: ${error.stack}`);
     } else {
-      arrayOfFiles.push(fullPath);
+      console.error(error);
     }
-  });
-
-  return arrayOfFiles;
+    process.exitCode = 1; // Signal failure to the OS
+  }
 }
 
 // Run the backup
-backupCodebase(); 
+main(); 
