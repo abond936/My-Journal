@@ -1,16 +1,15 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef, useCallback, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { deleteEntry, updateEntry } from '@/lib/services/entryService';
-import { Entry } from '@/lib/types/entry';
-import styles from '@/app/admin/entry-admin/entry-admin.module.css';
-import React from 'react';
 import Link from 'next/link';
-import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { useContentContext } from '@/components/providers/ContentProvider';
 import { useTag } from '@/components/providers/TagProvider';
-import ContentTypeFilter from '@/components/view/ContentTypeFilter';
+import { Entry, FilterableEntryType } from '@/lib/types/entry';
+import { Tag } from '@/lib/types/tag';
+import { updateEntry } from '@/lib/services/entryService';
+import styles from './entry-admin.module.css';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface EntryWithStats extends Entry {
   tagNames: string[];
@@ -21,89 +20,75 @@ interface EditingField {
   field: 'title' | 'type' | 'status' | 'date';
 }
 
-const SCROLL_POSITION_KEY = 'admin_entries_scroll_position';
+const dimensions: Tag['dimension'][] = ['who', 'what', 'when', 'where', 'reflection'];
 
-// Custom hook for scroll restoration
-function useScrollRestoration(key: string) {
-  useLayoutEffect(() => {
-    const savedPosition = sessionStorage.getItem(key);
-    if (savedPosition) {
-      window.scrollTo(0, parseInt(savedPosition, 10));
-    }
-  }, [key]);
-
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      sessionStorage.setItem(key, window.scrollY.toString());
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      sessionStorage.setItem(key, window.scrollY.toString());
-    };
-  }, [key]);
-}
-
-// IntersectionObserver Hook
-function useIntersectionObserver(callback: () => void, options?: IntersectionObserverInit) {
-  const observer = useRef<IntersectionObserver | null>(null);
-  const ref = useCallback(node => {
-    if (observer.current) observer.current.disconnect();
-    observer.current = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) callback();
-    }, options);
-    if (node) observer.current.observe(node);
-  }, [callback, options]);
-  return ref;
-}
+const renderTagOption = (tag: any, level: number = 0) => {
+  const padding = level * 10;
+  return (
+    <React.Fragment key={tag.id}>
+      <option value={tag.id} style={{ paddingLeft: `${padding}px` }}>
+        {'—'.repeat(level)} {tag.name}
+      </option>
+      {tag.children.map((child: any) => renderTagOption(child, level + 1))}
+    </React.Fragment>
+  );
+};
 
 export default function AdminEntriesPage() {
   const router = useRouter();
+
+  // Centralized state from providers
   const {
-    content: entries,
-    isLoading: loading,
+    content,
+    isLoading,
     loadingMore,
     error,
     hasMore,
     loadMore,
     mutate,
     contentType,
-    setContentType
+    setContentType,
+    entryType,
+    setEntryType,
+    searchTerm,
+    setSearchTerm,
+    status,
+    setStatus,
+    selectedTags,
+    toggleTag,
+    addTag,
+    removeTag
   } = useContentContext();
 
-  const { tags: allTags } = useTag();
-  const tagMap = useMemo(() => new Map(allTags.map(tag => [tag.id, tag.name])), [allTags]);
+  const { tags, tagsByDimension } = useTag();
 
-  const entriesWithTagNames = useMemo((): EntryWithStats[] => {
-    return entries.map(entry => ({
-      ...entry,
-      tagNames: (entry.tags || []).map(tagId => tagMap.get(tagId) || `Unknown Tag`)
-    }));
-  }, [entries, tagMap]);
-  
   // Local UI state
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
   const [editingField, setEditingField] = useState<EditingField | null>(null);
   const [editValue, setEditValue] = useState('');
-
-  useScrollRestoration(SCROLL_POSITION_KEY);
-
-  // Ensure we are always looking at entries
+  
+  // Ensure content type is set to entries
   useEffect(() => {
     if (contentType !== 'entries') {
       setContentType('entries');
     }
   }, [contentType, setContentType]);
+  
+  const entries = useMemo(() => content.filter(item => item.type !== 'album'), [content]) as Entry[];
 
-  const loadMoreRef = useIntersectionObserver(() => {
-    if (hasMore && !loadingMore) {
-      loadMore();
-    }
-  }, { rootMargin: '400px' });
+  const entriesWithTagNames = useMemo((): EntryWithStats[] => {
+    const tagMap = new Map(tags.map(t => [t.id, t.name]));
+    return entries.map(entry => ({
+      ...entry,
+      tagNames: (entry.tags || []).map(tagId => tagMap.get(tagId) || `Unknown Tag`)
+    }));
+  }, [entries, tags]);
+  
+  // --- Event Handlers ---
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedEntries(new Set(entriesWithTagNames.map(entry => entry.id)));
+      setSelectedEntries(new Set(entries.map(entry => entry.id)));
     } else {
       setSelectedEntries(new Set());
     }
@@ -111,22 +96,17 @@ export default function AdminEntriesPage() {
 
   const handleSelectEntry = (entryId: string, checked: boolean) => {
     const newSelected = new Set(selectedEntries);
-    if (checked) {
-      newSelected.add(entryId);
-    } else {
-      newSelected.delete(entryId);
-    }
+    if (checked) newSelected.add(entryId);
+    else newSelected.delete(entryId);
     setSelectedEntries(newSelected);
   };
+  
+  // --- Bulk Actions ---
 
   const handleBulkDelete = async () => {
-    if (!confirm(`Are you sure you want to delete ${selectedEntries.size} entries? This cannot be undone.`)) {
-      return;
-    }
+    if (!confirm(`Are you sure you want to delete ${selectedEntries.size} entries?`)) return;
     try {
-      await Promise.all(
-        Array.from(selectedEntries).map(entryId => deleteEntry(entryId))
-      );
+      await Promise.all(Array.from(selectedEntries).map(id => fetch(`/api/entries/${id}`, { method: 'DELETE' })));
       mutate();
       setSelectedEntries(new Set());
     } catch (err) {
@@ -134,115 +114,244 @@ export default function AdminEntriesPage() {
     }
   };
 
-  const handleBulkStatusUpdate = async (newStatus: 'draft' | 'published') => {
-    if (!confirm(`Are you sure you want to update ${selectedEntries.size} entries to ${newStatus}?`)) {
-      return;
-    }
+  const handleBulkUpdate = async (field: keyof Entry, value: any, confirmMessage: string) => {
+    if (!confirm(confirmMessage)) return;
     try {
       await Promise.all(
-        Array.from(selectedEntries).map(entryId =>
-          updateEntry(entryId, { status: newStatus })
-        )
+        Array.from(selectedEntries).map(id => updateEntry(id, { [field]: value }))
       );
       mutate();
     } catch (err) {
-      console.error('Error updating entries:', err);
-    }
-  };
-
-  const handleEdit = (entryId: string) => {
-    router.push(`/admin/entry-admin/${entryId}/edit`);
-  };
-
-  const handleDelete = async (entryId: string) => {
-    if (!confirm('Are you sure you want to delete this entry?')) {
-      return;
-    }
-    try {
-      await deleteEntry(entryId);
-      mutate();
-    } catch (err) {
-      console.error('Error deleting entry:', err);
+      console.error(`Error updating ${field}:`, err);
     }
   };
   
-  if (error) return <div>Error loading entries. See console for details.</div>;
+  const handleBulkTagUpdate = async (dimension: Tag['dimension'], tagId: string | null) => {
+    if (!tagId || !confirm(`Update tags for ${selectedEntries.size} entries?`)) return;
+    try {
+      await Promise.all(Array.from(selectedEntries).map(async entryId => {
+        const entry = entries.find(e => e.id === entryId);
+        if (!entry) return;
+        const otherDimensionTags = (entry.tags || []).filter(tId => {
+          const tag = tags.find(t => t.id === tId);
+          return tag?.dimension !== dimension;
+        });
+        const newTags = [...otherDimensionTags, tagId];
+        await updateEntry(entryId, { tags: newTags });
+      }));
+      mutate();
+    } catch (err) {
+      console.error('Error updating bulk tags:', err);
+    }
+  };
+
+  // --- Inline Editing ---
+
+  const startEditing = (entryId: string, field: EditingField['field'], value: string | Date) => {
+    setEditingField({ id: entryId, field });
+    setEditValue(value instanceof Date ? value.toISOString().split('T')[0] : value);
+  };
+
+  const handleEditCancel = () => {
+    setEditingField(null);
+    setEditValue('');
+  };
+  
+  const handleEditSave = async () => {
+    if (!editingField) return;
+    try {
+      await updateEntry(editingField.id, { [editingField.field]: editValue });
+      mutate();
+      handleEditCancel();
+    } catch (err) {
+      console.error('Error updating entry:', err);
+    }
+  };
+  
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleEditSave();
+  };
+
+  const stats = useMemo(() => ({
+    total: entries.length,
+    stories: entries.filter(e => e.type === 'story').length,
+    reflections: entries.filter(e => e.type === 'reflection').length,
+    drafts: entries.filter(e => e.status === 'draft').length,
+    published: entries.filter(e => e.status === 'published').length
+  }), [entries]);
+
+  if (isLoading && entries.length === 0) return <LoadingSpinner />;
+  if (error) return <div className={styles.error}>{error.message || 'Failed to load entries.'}</div>;
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Entries Management ({entries.length})</h1>
-        <div className={styles.headerActions}>
-            <Link href="/admin/entry-admin/new" className={styles.newEntryButton}>
-                New Entry
-            </Link>
+        <div className={styles.headerContent}>
+          <h1 className={styles.title}>Entries Management</h1>
+          <div className={styles.stats}>
+             <div className={styles.statItem}>Total: <span className={styles.statValue}>{stats.total}</span></div>
+             <div className={styles.statItem}>Stories: <span className={styles.statValue}>{stats.stories}</span></div>
+             <div className={styles.statItem}>Reflections: <span className={styles.statValue}>{stats.reflections}</span></div>
+             <div className={styles.statItem}>Drafts: <span className={styles.statValue}>{stats.drafts}</span></div>
+             <div className={styles.statItem}>Published: <span className={styles.statValue}>{stats.published}</span></div>
+          </div>
         </div>
       </div>
-      
-      <div className={styles.controls}>
-        <ContentTypeFilter />
-        {selectedEntries.size > 0 && (
-          <div className={styles.bulkActions}>
-            <span>{selectedEntries.size} selected:</span>
-            <button onClick={handleBulkDelete} className={`${styles.actionButton} ${styles.deleteButton}`}>
-              Delete Selected
-            </button>
-            <button onClick={() => handleBulkStatusUpdate('published')} className={styles.actionButton}>
-              Set to Published
-            </button>
-            <button onClick={() => handleBulkStatusUpdate('draft')} className={styles.actionButton}>
-              Set to Draft
-            </button>
+
+      <div className={styles.filterSection}>
+        <div className={styles.topFilters}>
+          <input
+            type="text"
+            placeholder="Search entries..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className={styles.searchBox}
+          />
+          <div className={styles.filterControls}>
+             <select
+              value={entryType}
+              onChange={e => setEntryType(e.target.value as FilterableEntryType)}
+              className={styles.filterSelect}
+            >
+              <option value="all">All Types</option>
+              <option value="story">Story</option>
+              <option value="reflection">Reflection</option>
+              <option value="qa">Q&A</option>
+              <option value="quote">Quote</option>
+              <option value="callout">Callout</option>
+            </select>
+            <select
+              value={status}
+              onChange={e => setStatus(e.target.value as typeof status)}
+              className={styles.filterSelect}
+            >
+              <option value="all">All Status</option>
+              <option value="draft">Drafts</option>
+              <option value="published">Published</option>
+            </select>
           </div>
-        )}
+        </div>
       </div>
+
+      {selectedEntries.size > 0 && (
+        <div className={styles.bulkActions}>
+          <span>{selectedEntries.size} entries selected</span>
+          <div className={styles.actions}>
+            <input type="date" onChange={e => handleBulkUpdate('date', e.target.value, `Update date for ${selectedEntries.size} entries?`)} className={styles.filterSelect} />
+            <select onChange={e => handleBulkUpdate('type', e.target.value, `Update type for ${selectedEntries.size} entries?`)} className={styles.filterSelect}>
+              <option value="">Update Type</option>
+              <option value="story">Set to Story</option>
+              <option value="reflection">Set to Reflection</option>
+            </select>
+            <select onChange={e => handleBulkUpdate('status', e.target.value, `Update status for ${selectedEntries.size} entries?`)} className={styles.filterSelect}>
+              <option value="">Update Status</option>
+              <option value="draft">Set to Draft</option>
+              <option value="published">Set to Published</option>
+            </select>
+            <button onClick={handleBulkDelete} className={styles.deleteButton}>Delete Selected</button>
+          </div>
+        </div>
+      )}
+
+      {selectedEntries.size > 0 && (
+        <div className={styles.bulkTagActions}>
+           <div className={styles.dimensionFilters}>
+            {dimensions.map(dimension => {
+              const tagsForDimension = tagsByDimension[dimension] || [];
+              const buildTree = (tags: Tag[]) => {
+                  const tagMap = new Map();
+                  const roots: any[] = [];
+                  tags.forEach(tag => tagMap.set(tag.id, { ...tag, children: [] }));
+                  tags.forEach(tag => {
+                      if (tag.parentId) tagMap.get(tag.parentId)?.children.push(tagMap.get(tag.id));
+                      else roots.push(tagMap.get(tag.id));
+                  });
+                  return roots;
+              };
+              return (
+              <select key={dimension} onChange={e => handleBulkTagUpdate(dimension, e.target.value || null)} className={styles.dimensionSelect}>
+                <option value="">Update {dimension}</option>
+                {buildTree(tagsForDimension).map(tag => renderTagOption(tag))}
+              </select>
+            )})}
+          </div>
+        </div>
+      )}
 
       <div className={styles.tableContainer}>
-        {loading && entries.length === 0 ? (
-          <LoadingSpinner />
-        ) : (
-          <table className={styles.entriesTable}>
-            <thead>
-              <tr>
-                <th><input type="checkbox" onChange={e => handleSelectAll(e.target.checked)} checked={selectedEntries.size > 0 && selectedEntries.size === entriesWithTagNames.length} /></th>
-                <th>Title</th>
-                <th>Type</th>
-                <th>Tags</th>
-                <th>Status</th>
-                <th>Date</th>
-                <th>Actions</th>
+        <table className={styles.entriesTable}>
+          <thead>
+            <tr>
+              <th><input type="checkbox" checked={selectedEntries.size > 0 && selectedEntries.size === entries.length} onChange={e => handleSelectAll(e.target.checked)} /></th>
+              <th>Title</th>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Tags</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {entriesWithTagNames.map(entry => (
+              <tr key={entry.id}>
+                <td><input type="checkbox" checked={selectedEntries.has(entry.id)} onChange={e => handleSelectEntry(entry.id, e.target.checked)} /></td>
+                <td>
+                  {editingField?.id === entry.id && editingField.field === 'title' ? (
+                    <form onSubmit={handleEditSubmit} className={styles.editingField}>
+                      <input type="text" value={editValue} onChange={e => setEditValue(e.target.value)} autoFocus onBlur={handleEditSave}/>
+                    </form>
+                  ) : (
+                    <div className={styles.editableField} onClick={() => startEditing(entry.id, 'title', entry.title)}>{entry.title}</div>
+                  )}
+                </td>
+                <td>
+                  {editingField?.id === entry.id && editingField.field === 'date' ? (
+                     <form onSubmit={handleEditSubmit} className={styles.editingField}>
+                      <input type="date" value={editValue} onChange={e => setEditValue(e.target.value)} autoFocus onBlur={handleEditSave}/>
+                    </form>
+                  ) : (
+                    <div className={styles.editableField} onClick={() => startEditing(entry.id, 'date', entry.date)}>{new Date(entry.date).toLocaleDateString()}</div>
+                  )}
+                </td>
+                <td>
+                   {editingField?.id === entry.id && editingField.field === 'type' ? (
+                    <form onSubmit={handleEditSubmit} className={styles.editingField}>
+                      <select value={editValue} onChange={e => setEditValue(e.target.value)} autoFocus onBlur={handleEditSave}>
+                        <option value="story">Story</option>
+                        <option value="reflection">Reflection</option>
+                      </select>
+                    </form>
+                  ) : (
+                    <div className={styles.editableField} onClick={() => startEditing(entry.id, 'type', entry.type)}>{entry.type}</div>
+                  )}
+                </td>
+                <td>
+                  {editingField?.id === entry.id && editingField.field === 'status' ? (
+                     <form onSubmit={handleEditSubmit} className={styles.editingField}>
+                      <select value={editValue} onChange={e => setEditValue(e.target.value)} autoFocus onBlur={handleEditSave}>
+                        <option value="draft">Draft</option>
+                        <option value="published">Published</option>
+                      </select>
+                    </form>
+                  ) : (
+                    <div className={styles.editableField} onClick={() => startEditing(entry.id, 'status', entry.status)}>{entry.status}</div>
+                  )}
+                </td>
+                <td><div className={styles.tags}>{entry.tagNames.map(tagName => (<span key={tagName} className={styles.tag}>{tagName}</span>))}</div></td>
+                <td><div className={styles.actions}><Link href={`/admin/entry-admin/${entry.id}/edit`} className={styles.editButton}>Edit</Link></div></td>
               </tr>
-            </thead>
-            <tbody>
-              {entriesWithTagNames.map((entry) => (
-                <tr key={entry.id}>
-                  <td>
-                    <input 
-                      type="checkbox" 
-                      checked={selectedEntries.has(entry.id)}
-                      onChange={e => handleSelectEntry(entry.id, e.target.checked)}
-                    />
-                  </td>
-                  <td className={styles.tableCellTitle}>{entry.title}</td>
-                  <td>{entry.type}</td>
-                  <td>{(entry.tagNames || []).join(', ')}</td>
-                  <td>{entry.status}</td>
-                  <td>{new Date(entry.date || entry.createdAt).toLocaleDateString()}</td>
-                   <td className={styles.actions}>
-                     <button onClick={() => handleEdit(entry.id)} className={styles.actionButton}>Edit</button>
-                     <button onClick={() => handleDelete(entry.id)} className={`${styles.actionButton} ${styles.deleteButton}`}>Delete</button>
-                   </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+            ))}
+          </tbody>
+        </table>
       </div>
-
-      <div ref={loadMoreRef} style={{ height: '50px' }}>
-        {loadingMore && <LoadingSpinner />}
-      </div>
-      {!hasMore && entries.length > 0 && <div className={styles.endOfResults}>End of results</div>}
+      {hasMore && (
+        <div className={styles.loadMoreContainer}>
+            <button onClick={loadMore} disabled={loadingMore} className={styles.loadMoreButton}>
+                {loadingMore ? 'Loading...' : 'Load More Entries'}
+            </button>
+        </div>
+      )}
     </div>
   );
 }
