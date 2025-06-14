@@ -10,10 +10,11 @@ import styles from './page.module.css';
 export default function EditEntryPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const resolvedParams = use(params);
-  const { entry, loading, error } = useEntry(resolvedParams.id);
+  const { entry, loading, error, mutate } = useEntry(resolvedParams.id);
 
   const handleSuccess = (updatedEntry: Entry) => {
-    router.push('/admin/entry-admin');
+    mutate(updatedEntry); // Optimistically update the cache
+    router.back();
   };
 
   const handleCancel = () => {

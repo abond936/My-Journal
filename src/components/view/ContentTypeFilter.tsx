@@ -1,12 +1,12 @@
 'use client';
 
 import React from 'react';
-import { useFilter, ContentType } from '@/components/providers/FilterProvider';
+import { useContentContext, ContentType } from '@/components/providers/ContentProvider';
 import { FilterableEntryType } from '@/lib/types/entry';
 import styles from './ContentTypeFilter.module.css';
 
 export default function ContentTypeFilter() {
-  const { contentType, setContentType, entryType, setEntryType } = useFilter();
+  const { contentType, setContentType, entryType, setEntryType } = useContentContext();
 
   const mainOptions: { label: string; value: ContentType }[] = [
     { label: 'All Content', value: 'all' },

@@ -1,12 +1,45 @@
 'use client';
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 import CardGrid from '@/components/view/CardGrid';
 import styles from '@/components/view/CardGrid.module.css';
 import Link from 'next/link';
-import { useContent } from '@/lib/hooks/useContent';
-import ContentTypeFilter from '@/components/view/ContentTypeFilter';
+import { useContentContext } from '@/components/providers/ContentProvider';
 import AdminFAB from '@/components/admin/AdminFAB';
+
+const SCROLL_POSITION_KEY = 'content_scroll_position';
+
+// Custom hook for scroll restoration
+function useScrollRestoration(key: string) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const savedPosition = sessionStorage.getItem(key);
+    if (savedPosition) {
+      window.scrollTo(0, parseInt(savedPosition, 10));
+    }
+
+    return () => {
+      // Intentionally not saving on unmount here, to use the 'beforeunload' event instead
+    };
+  }, [key]);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      sessionStorage.setItem(key, window.scrollY.toString());
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // Save on component unmount (e.g., navigation)
+      sessionStorage.setItem(key, window.scrollY.toString());
+    };
+  }, [key]);
+
+  return scrollRef;
+}
 
 // A simple hook for IntersectionObserver
 function useIntersectionObserver(callback: () => void, options?: IntersectionObserverInit) {
@@ -32,7 +65,8 @@ function useIntersectionObserver(callback: () => void, options?: IntersectionObs
 }
 
 export default function ViewPage() {
-  const { content, loading, error, hasMore, loadingMore, loadMore } = useContent();
+  const { content, loading, error, hasMore, loadingMore, loadMore } = useContentContext();
+  useScrollRestoration(SCROLL_POSITION_KEY);
 
   // Add a ref to lock loadMore
   const loadingLock = useRef(false);
@@ -69,6 +103,7 @@ export default function ViewPage() {
     date: item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '',
     tags: item.tags,
     href: `/view/${item.type}-view/${item.id}`,
+    editHref: `/admin/${item.type}-admin/${item.id}/edit?returnTo=/view`,
     imageUrl: item.coverPhoto || (item.type === 'album' && item.images && item.images.length > 0 ? item.images[0].path : undefined),
     images: item.type === 'album' ? item.images : undefined,
     size: item.size || 'medium',
@@ -77,11 +112,6 @@ export default function ViewPage() {
 
   return (
     <div className={styles.entriesPage}>
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <ContentTypeFilter />
-        </div>
-      </header>
       <CardGrid
         items={mappedContent}
       />

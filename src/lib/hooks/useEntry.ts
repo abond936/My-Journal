@@ -78,5 +78,6 @@ export function useEntry(id?: string) {
     error,
     updateEntry,
     deleteEntry,
+    mutate,
   };
 } 

@@ -1,16 +1,17 @@
 'use client';
 
+import { use } from 'react';
 import { useEntry } from '@/lib/hooks/useEntry';
 import EntryLayout from '@/components/view/entry-view/EntryLayout';
 
 interface EntryViewPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function EntryViewPage({ params }: EntryViewPageProps) {
-  const { id } = params;
+  const { id } = use(params);
   const { entry, loading, error } = useEntry(id);
 
   const loadingOrErrorStyle: React.CSSProperties = {

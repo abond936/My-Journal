@@ -1,0 +1,26 @@
+.nav {
+  display: flex;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--background-secondary);
+}
+
+.tab {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  color: var(--text-color);
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+.tab:hover {
+  background-color: var(--background-tertiary);
+  color: var(--text-accent);
+}
+
+.tab.active {
+  background-color: var(--primary-color);
+  color: white;
+} 

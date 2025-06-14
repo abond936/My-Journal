@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Entry } from '@/lib/types/entry';
 import { deleteEntry } from '@/lib/services/entryService'; // Note: This is a temporary architectural violation
 import TipTapRenderer from '@/components/common/TipTapRenderer';
@@ -13,10 +14,12 @@ interface EntryLayoutProps {
 
 export default function EntryLayout({ entry }: EntryLayoutProps) {
   const router = useRouter();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === 'admin';
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleEdit = () => {
-    router.push(`/admin/entry-admin/${entry.id}/edit`);
+    router.push(`/admin/entry-admin/${entry.id}/edit?returnTo=/view/entry-view/${entry.id}`);
   };
 
   const handleDelete = async () => {
@@ -52,15 +55,16 @@ export default function EntryLayout({ entry }: EntryLayoutProps) {
                 </time>
             )}
         </div>
-        {/* TODO: This should be conditionally rendered based on user auth state */}
-        <div className={styles.entryActions}>
-          <button onClick={handleEdit} className={styles.editButton} aria-label="Edit entry">
-            Edit
-          </button>
-          <button onClick={handleDelete} className={styles.deleteButton} disabled={isDeleting} aria-label="Delete entry">
-            {isDeleting ? 'Deleting...' : 'Delete'}
-          </button>
-        </div>
+        {isAdmin && (
+          <div className={styles.entryActions}>
+            <button onClick={handleEdit} className={styles.editButton} aria-label="Edit entry">
+              Edit
+            </button>
+            <button onClick={handleDelete} className={styles.deleteButton} disabled={isDeleting} aria-label="Delete entry">
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </button>
+          </div>
+        )}
       </header>
       
       <div className={styles.contentContainer}>

@@ -5,7 +5,7 @@ import './fonts.css';
 import './theme.css';
 import { TagProvider } from '@/components/providers/TagProvider';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
-import { FilterProvider } from '@/components/providers/FilterProvider';
+import { ContentProvider } from '@/components/providers/ContentProvider';
 import AuthProvider from '@/components/providers/AuthProvider';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -25,11 +25,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={inter.className}>
         <AuthProvider>
           <ThemeProvider>
-            <FilterProvider>
+            <ContentProvider>
               <TagProvider>
                 {children}
               </TagProvider>
-            </FilterProvider>
+            </ContentProvider>
           </ThemeProvider>
         </AuthProvider>
       </body>

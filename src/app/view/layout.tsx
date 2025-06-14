@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import ViewLayout from '@/components/view/ViewLayout';
-import { FilterProvider } from '@/components/providers/FilterProvider';
 
 export default async function ViewSectionLayout({
   children,
@@ -17,10 +16,8 @@ export default async function ViewSectionLayout({
   }
 
   return (
-    <FilterProvider>
-      <ViewLayout>
-        {children}
-      </ViewLayout>
-    </FilterProvider>
+    <ViewLayout>
+      {children}
+    </ViewLayout>
   );
 } 
