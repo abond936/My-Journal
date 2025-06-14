@@ -139,7 +139,7 @@ export function TagProvider({ children }: { children: React.ReactNode }) {
   const updateTag = useCallback(async (id: string, tagData: Partial<Omit<Tag, 'id'>>) => {
     try {
       const response = await fetch(`/api/tags/${id}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(tagData),
       });

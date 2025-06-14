@@ -1,61 +1,78 @@
+/**
+ * @file TagAdminRow.tsx
+ * @description This component renders a single row in the tag management tree.
+ * It is a purely presentational component responsible for displaying tag information,
+ * handling user interactions like editing, adding a child, and deleting, but it
+ * does NOT contain any drag-and-drop logic itself. The drag-and-drop capability
+ * is provided by a parent wrapper component (e.g., SortableTag).
+ */
 'use client';
 
 import React, { useState } from 'react';
 import { Tag } from '@/lib/types/tag';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 
+// Extends the base Tag type to include children for tree structures.
 interface TagWithChildren extends Tag {
-  children?: Tag[];
+  children?: TagWithChildren[];
 }
 
+// Defines the props accepted by the TagAdminRow component.
 interface TagAdminRowProps {
   tag: TagWithChildren;
-  onUpdateTag: (tagId: string, updates: Partial<Omit<Tag, 'id'>>) => void;
-  onDeleteTag: (tagId: string) => void;
-  onCreateTag: (name: string, parentId: string | null) => void;
-  isCollapsed: boolean;
+  depth: number; // The nesting level of the tag in the tree, used for indentation.
+  onUpdateTag: (id: string, tagData: Partial<Omit<Tag, 'id'>>) => void;
+  onDeleteTag: (id: string) => void;
+  onCreateTag: (tagData: Omit<Tag, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  isCollapsed: boolean; // Whether the node's children are currently hidden.
   onToggleCollapse: (tagId: string) => void;
 }
 
-export function TagAdminRow({ tag, onUpdateTag, onDeleteTag, onCreateTag, isCollapsed, onToggleCollapse }: TagAdminRowProps) {
+export function TagAdminRow({
+  tag,
+  depth,
+  onUpdateTag,
+  onDeleteTag,
+  onCreateTag,
+  isCollapsed,
+  onToggleCollapse,
+}: TagAdminRowProps) {
+  // State for handling inline editing of the tag name.
   const [isEditing, setIsEditing] = useState(false);
   const [tagName, setTagName] = useState(tag.name);
+
+  // State for showing/hiding the "add child" form.
   const [isAddingChild, setIsAddingChild] = useState(false);
   const [childName, setChildName] = useState('');
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: tag.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    padding: '4px 10px',
-    marginBottom: '1px',
+  // Dynamic style to apply indentation based on the tag's depth in the tree.
+  const rowStyle = {
+    marginLeft: `${depth * 24}px`,
     display: 'flex',
     alignItems: 'center',
+    padding: '4px',
+    boxSizing: 'border-box' as const,
   };
 
+  /**
+   * Saves the updated tag name if it has changed.
+   */
   const handleSave = () => {
-    if (tagName.trim() !== '' && tagName.trim() !== tag.name) {
+    if (tagName.trim() && tagName.trim() !== tag.name) {
       onUpdateTag(tag.id, { name: tagName.trim() });
     }
     setIsEditing(false);
   };
 
-  const handleAddChild = (e: React.FormEvent) => {
+  /**
+   * Handles the form submission for creating a new child tag.
+   */
+  const handleAddChild = async (e: React.FormEvent) => {
     e.preventDefault();
     if (childName.trim()) {
-      onCreateTag(childName.trim(), tag.id);
-      setChildName('');
+      // The parentId is the current tag's id.
+      await onCreateTag({ name: childName.trim(), parentId: tag.id });
       setIsAddingChild(false);
+      setChildName('');
     }
   };
 
@@ -63,68 +80,47 @@ export function TagAdminRow({ tag, onUpdateTag, onDeleteTag, onCreateTag, isColl
 
   return (
     <div>
-      <div ref={setNodeRef} style={style} {...attributes}>
-        <span {...listeners} style={{ cursor: 'grab', paddingRight: '8px', touchAction: 'none' }}>
-          &#x2630;
-        </span>
-
-        <div style={{ width: '24px' }}>
+      <div style={rowStyle}>
+        {/* Expander button (for nodes with children) */}
+        <div style={{ width: '24px', flexShrink: 0 }}>
           {hasChildren && (
             <button onClick={() => onToggleCollapse(tag.id)} style={{ all: 'unset', cursor: 'pointer', display: 'inline-block', width: '100%' }}>
-              {isCollapsed ? '▶' : '▼'}
+              {isCollapsed ? '►' : '▼'}
             </button>
           )}
         </div>
 
+        {/* Tag name (editable on click) */}
         {isEditing ? (
           <input
-            type="text"
             value={tagName}
             onChange={(e) => setTagName(e.target.value)}
             onBlur={handleSave}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleSave();
-              if (e.key === 'Escape') {
-                setIsEditing(false);
-                setTagName(tag.name);
-              }
-            }}
+            onKeyDown={(e) => e.key === 'Enter' && handleSave()}
             autoFocus
             style={{ flexGrow: 1 }}
           />
         ) : (
-          <span onClick={() => setIsEditing(true)} style={{ flexGrow: 1 }}>
+          <span onClick={() => setIsEditing(true)} style={{ flexGrow: 1, cursor: 'pointer' }}>
             {tag.name}
           </span>
         )}
-
-        <button
-          onClick={() => setIsAddingChild(true)}
-          style={{ marginLeft: '10px', cursor: 'pointer' }}
-        >
-          +
-        </button>
-
-        <button
-          onClick={() => onDeleteTag(tag.id)}
-          style={{ marginLeft: '10px', cursor: 'pointer' }}
-        >
-          Delete
-        </button>
+        
+        {/* Action Buttons */}
+        <button onClick={() => setIsAddingChild(p => !p)} style={{ marginLeft: 'auto', flexShrink: 0 }}>+</button>
+        <button onClick={() => onDeleteTag(tag.id)} style={{ flexShrink: 0 }}>Delete</button>
       </div>
 
+      {/* Form for adding a new child tag */}
       {isAddingChild && (
-        <form onSubmit={handleAddChild} style={{ marginLeft: '50px', padding: '5px 0' }}>
+        <form onSubmit={handleAddChild} style={{ marginLeft: `${depth * 24 + 50}px` }}>
           <input
-            type="text"
             value={childName}
             onChange={(e) => setChildName(e.target.value)}
-            placeholder="New child tag name"
+            placeholder="New child name"
             autoFocus
-            onBlur={() => setIsAddingChild(false)} // Optional: hide on blur
-            style={{ marginRight: '10px' }}
           />
-          <button type="submit">Add</button>
+          <button type="submit">Add Child</button>
         </form>
       )}
     </div>

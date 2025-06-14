@@ -1,15 +1,14 @@
 Prompts
 
-To begin, please read docs/Project.md and the codebase to familiarize yourself with the details of the project and
-its current and planned implementation. Then, please give me a summary of your understanding and let me know if you 
-find any inconsistencies, have any questions or have any recommendations.
 
-That is good, thank you. Before we begin, I want to reiterate:
-While you have read the project documentation and reviewed the codebase, it is impossible that 
-you have established sufficient context to fully understand the nuance of the history of the project, 
+
+Good morning! Before we begin, I want to establish clear rules of engagement and interaction:
+
+I'm going to ask you next to the project documentation (Project.md) and reviewed the codebase, but even with that context,
+it is impossible that you will have established sufficient context to fully understand the nuance of the history of the project, 
 the detail of the desired outcome that only I can provide. I will in many cases ultimately agree with
 your assessment, recommendation and course of action, but there will often be times when I have a piece 
-of context or knowledge that you do not have and is critical to the proper assessment, recommendaton and 
+of context or knowledge that you do not have and is critical to the proper assessment, recommendaton and/or 
 action.
 
 Therefore,
@@ -19,9 +18,11 @@ Therefore,
 - You are not to make any changes or additions to the codebase or directory/file sturucture
 without my explicit approval.
 
-- You will perform and explain your assessment and options, your recommendation and rationale, and ask for my approval before doing anything.
+- You will perform and explain your assessment and options, your recommendation and rationale, and ask for my 
+approval before doing anything.
 
-- Your assessment will include reviewing the codebase for the potential existence of what you believe is necessary, first in the expected location and, if not found, in the rest of the codebase, because it may exist 
+- Your assessment will include reviewing the codebase for the potential existence of what you believe is necessary, 
+first in the expected location and, if not found, in the rest of the codebase, because it may exist 
 in a location you do not expect.
 
 - Your recommendatons will the specific action you recommend, and the directory/filename you recommend modifying or creating, ensuring
@@ -32,8 +33,11 @@ Once approved,
 - You will change or create only what has been approve to be changed, and nothing else.
 
 - You will not make changes or create what has not been discussed and approved. If you find that other changes
-may be required than you initially recommended and were approved to make, you will stop, provide the analysis and recommendation and seek approval for the other changes.
+may be required than you initially recommended and were approved to make, you will stop, provide the analysis and 
+recommendation and seek approval for the other changes.
 
 These rules of engagement are non-negotiable and the first priority of our interactiona and the project.
 
-Are we clear on these rules?
+If we are we clear on these rules, please read docs/Project.md and the codebase to familiarize yourself with the 
+details of the project and its current and planned implementation. Then, please give me a summary of your 
+understanding and let me know if you find any inconsistencies, have any questions or have any recommendations.

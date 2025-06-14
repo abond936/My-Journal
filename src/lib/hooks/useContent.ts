@@ -79,14 +79,25 @@ export function useContent() {
   const allAlbums = useMemo(() => paginatedAlbums?.flatMap(page => page.items) || [], [paginatedAlbums]);
 
   const sourceOfTruthContent = useMemo(() => {
-    const entriesWithT: ContentItem[] = allEntries.map(e => ({ ...e, type: 'entry' }));
-    const albumsWithT: ContentItem[] = allAlbums.map(a => ({ ...a, type: 'album' }));
-    return [...entriesWithT, ...albumsWithT].sort((a, b) => {
+    // Determine which content to display based on the filter
+    let contentToShow: ContentItem[] = [];
+    if (contentType === 'entries') {
+        contentToShow = allEntries.map(e => ({ ...e, type: 'entry' }));
+    } else if (contentType === 'albums') {
+        contentToShow = allAlbums.map(a => ({ ...a, type: 'album' }));
+    } else { // 'all'
+        const entriesWithT: ContentItem[] = allEntries.map(e => ({ ...e, type: 'entry' }));
+        const albumsWithT: ContentItem[] = allAlbums.map(a => ({ ...a, type: 'album' }));
+        contentToShow = [...entriesWithT, ...albumsWithT];
+    }
+    
+    // Sort the final list
+    return contentToShow.sort((a, b) => {
       const dateA = new Date(a.date || a.createdAt);
       const dateB = new Date(b.date || b.createdAt);
       return dateB.getTime() - dateA.getTime();
     });
-  }, [allEntries, allAlbums]);
+  }, [allEntries, allAlbums, contentType]);
   
   // This effect synchronizes the optimistic state with the server state.
   // It runs ONLY when the data from the server (sourceOfTruthContent) changes.
@@ -94,8 +105,10 @@ export function useContent() {
     setOptimisticContent(sourceOfTruthContent);
   }, [sourceOfTruthContent]);
 
-  // This effect handles the INSTANT optimistic UI update when filters change.
-  // It runs ONLY when a filter is changed by the user.
+  // THIS ENTIRE EFFECT IS THE LIKELY CULPRIT AND WILL BE REMOVED.
+  // The backend is already filtering, this client-side filtering is redundant
+  // and likely causing re-render loops with SWR's automatic re-fetching.
+  /*
   useEffect(() => {
     // It applies the new filters to the content that is CURRENTLY visible.
     setOptimisticContent(currentContent => {
@@ -125,6 +138,7 @@ export function useContent() {
     // No manual mutation is needed here.
 
   }, [contentType, selectedTags, entryType]);
+  */
 
 
   // --- Derived State for UI ---

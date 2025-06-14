@@ -51,6 +51,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "archiver": "^7.0.1",
+    "csv-stringify": "^6.5.0",
     "dotenv": "^16.5.0",
     "eslint": "^9",
     "eslint-config-next": "15.3.2",

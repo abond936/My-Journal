@@ -491,6 +491,52 @@ Styling
 ---------------------------------
 Status: 🟡 Operational
 
+### Tag System Architecture
+The tag system is designed to be highly efficient for querying and filtering, trading a small amount of complexity on writes and maintenance for significant speed and cost savings on reads.
+
+#### 1. Data Models
+
+**a) `tags` collection (`/tags/{tagId}`)**
+This is the authoritative source of truth for all tags. Each document represents a single tag.
+- **`name`**: (string) The display name of the tag (e.g., "Grandma Sue").
+- **`parentId`**: (string) The ID of the parent tag, forming the hierarchy. Null for top-level tags.
+- **`path`**: (array of strings) An ordered array of parent IDs, representing the full lineage of the tag (e.g., `['tag_who', 'tag_family']`). This is a denormalized field used for efficient lineage generation.
+
+**b) `entries` collection (`/entries/{entryId}`)**
+Each entry stores two fields for tag management.
+- **`tags`**: (array of strings) The "source of truth" array containing only the tag IDs directly selected by the user in the UI.
+- **`_tag_lineage`**: (array of strings) A denormalized and comprehensive array containing the IDs from the `tags` field *plus* the `path` and ID from every selected tag. This field is used for all filtering queries. The `_` prefix denotes it as a derived, internal field.
+
+#### 2. Write-Time Tag Expansion
+When an entry is saved or updated, the backend performs the following steps before writing to Firestore:
+1.  **Read Selected Tags:** For each `tagId` in the entry's `tags` array, it reads the corresponding document from the `tags` collection.
+2.  **Build Lineage:** It aggregates the `path` array and the `tagId` from each tag document read.
+3.  **Combine & Deduplicate:** It combines all lineage arrays into a single `_tag_lineage` array and removes duplicates.
+4.  **Write to Entry:** It saves both the original `tags` array and the final `_tag_lineage` array to the entry document.
+
+This ensures that queries for a parent tag (e.g., "Family") will correctly match entries tagged with a child (e.g., "Grandma Sue") without complex, expensive query-time logic.
+
+#### 3. Client-Side Tag Tree Caching & UI
+
+**a) The Tag Tree Cache**
+To avoid reading the entire `tags` collection on every app load, the complete tag tree is stored in a single document (`/cache/tagTree`).
+- The client application reads this single document on startup to build the tag filtering UI. This is a single, cheap read operation.
+- This document's content is a pre-formatted JSON structure representing the entire tag hierarchy.
+
+**b) Automated Cache Updates**
+A **Firebase Cloud Function** is triggered by any create, update, or delete operation on the `/tags/{tagId}` collection.
+- This serverless function automatically rebuilds the `/cache/tagTree` document, ensuring the cache is always in sync with the source-of-truth `tags` collection.
+- This automates cache maintenance and decouples the admin UI from the cache management logic.
+
+**c) Debounced Filtering**
+To prevent excessive reads from rapid-fire filter selections in the UI, filtering actions are "debounced." A query is only sent to Firestore after the user has paused their selections for a brief period (e.g., 400ms), bundling multiple filter changes into a single database query. (potentially require a click to accept filter)
+
+#### 4. Maintenance & Reorganization
+If the tag hierarchy is ever changed (e.g., a tag is moved to a new parent), the maintenance process is efficient and contained:
+1. The `parentId` and `path` array of the moved tag are updated.
+2. A script updates the `path` array for all *descendant tags* of the moved tag.
+3. **No `entry` documents need to be modified**, as their `_tag_lineage` is rebuilt on their next write. The Firebase Function will automatically update the UI cache.
+
 The Tag Management page provides an administrative interface for organizing the hierarchical tag system used for content categorization.
 
 #### Current Features
