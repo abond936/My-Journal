@@ -11,6 +11,7 @@ import { getAlbums } from '@/lib/services/albumService';
 import { getEntries } from '@/lib/services/entryService';
 
 export type ContentType = 'all' | 'entries' | 'albums';
+export type ContentStatus = 'all' | 'draft' | 'published';
 export type ContentItem = (Entry | Album) & { type: 'entry' | 'album' };
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
@@ -20,6 +21,8 @@ interface IContentContext {
   selectedTags: string[];
   contentType: ContentType;
   entryType: FilterableEntryType;
+  searchTerm: string;
+  status: ContentStatus;
 
   // Filter actions
   addTag: (tagId: string) => void;
@@ -27,6 +30,8 @@ interface IContentContext {
   toggleTag: (tagId: string) => void;
   setContentType: (type: ContentType) => void;
   setEntryType: (type: FilterableEntryType) => void;
+  setSearchTerm: (term: string) => void;
+  setStatus: (status: ContentStatus) => void;
   clearFilters: () => void;
 
   // SWR/Data state
@@ -49,6 +54,8 @@ export const ContentProvider = ({ children }: { children: ReactNode }) => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [contentType, setContentType] = useState<ContentType>('all');
   const [entryType, setEntryType] = useState<FilterableEntryType>('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [status, setStatus] = useState<ContentStatus>('all');
 
   // --- Data Fetching Logic (moved from useContent) ---
   const {
@@ -61,10 +68,11 @@ export const ContentProvider = ({ children }: { children: ReactNode }) => {
   } = useSWRInfinite<PaginatedResult<Entry | Album>>((pageIndex, previousPageData) => {
     if (previousPageData && !previousPageData.hasMore) return null;
 
-    const params: any = { 
+    const params: any = {
       limit: 10,
-      tags: selectedTags.length > 0 ? selectedTags : undefined,
-      status: isAdmin ? undefined : 'published', // Only fetch published unless admin
+      tags: selectedTags.length > 0 ? selectedTags.join(',') : undefined,
+      status: status === 'all' ? (isAdmin ? 'all' : 'published') : status,
+      q: searchTerm || undefined,
     };
 
     if (pageIndex > 0 && previousPageData?.lastDocId) {
@@ -149,17 +157,23 @@ export const ContentProvider = ({ children }: { children: ReactNode }) => {
     setSelectedTags([]);
     setContentType('all');
     setEntryType('all');
+    setSearchTerm('');
+    setStatus('all');
   }, []);
 
   const value = useMemo(() => ({
     selectedTags,
     contentType,
     entryType,
+    searchTerm,
+    status,
     addTag,
     removeTag,
     toggleTag,
     setContentType: handleSetContentType,
     setEntryType,
+    setSearchTerm,
+    setStatus,
     clearFilters,
     content,
     error,
@@ -169,7 +183,7 @@ export const ContentProvider = ({ children }: { children: ReactNode }) => {
     loadMore,
     mutate
   }), [
-    selectedTags, contentType, entryType, addTag, removeTag, toggleTag, handleSetContentType, setEntryType, clearFilters,
+    selectedTags, contentType, entryType, searchTerm, status, addTag, removeTag, toggleTag, handleSetContentType, setEntryType, setSearchTerm, setStatus, clearFilters,
     content, error, isLoading, loadingMore, hasMore, loadMore, mutate
   ]);
 
