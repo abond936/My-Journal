@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { getFirestore, FieldValue, Timestamp, Query } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue, Timestamp, Query, doc } from 'firebase-admin/firestore';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { authOptions } from '../auth/[...nextauth]/route';
 import { Entry } from '@/lib/types/entry';
@@ -72,14 +72,14 @@ export async function GET(request: NextRequest) {
     if (tags && tags.length > 0) {
       q = q.where('tags', 'array-contains-any', tags);
     }
-    if (status) {
+    if (status && status !== 'all') {
       q = q.where('status', '==', status);
     }
     if (type) {
       q = q.where('type', '==', type);
     }
 
-    q = q.orderBy('date', 'desc');
+    q = q.orderBy('createdAt', 'desc');
 
     if (lastDocId) {
       const lastDocSnapshot = await entriesCollection.doc(lastDocId).get();
@@ -89,6 +89,19 @@ export async function GET(request: NextRequest) {
     }
 
     const snapshot = await q.limit(pageSize + 1).get();
+
+    console.log('[API /api/entries] Firestore Query:', {
+      params: {
+        pageSize,
+        lastDocId,
+        tags,
+        status,
+        type,
+      },
+      results: {
+        count: snapshot.docs.length,
+      }
+    });
 
     const entries = snapshot.docs.slice(0, pageSize).map(doc => {
         const data = doc.data();

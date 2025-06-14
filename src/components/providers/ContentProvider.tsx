@@ -65,41 +65,35 @@ export const ContentProvider = ({ children }: { children: ReactNode }) => {
     size,
     setSize,
     mutate
-  } = useSWRInfinite<PaginatedResult<Entry | Album>>((pageIndex, previousPageData) => {
-    if (previousPageData && !previousPageData.hasMore) return null;
+  } = useSWRInfinite<PaginatedResult<Entry | Album>>(
+    (pageIndex, previousPageData) => {
+      if (previousPageData && !previousPageData.hasMore) return null;
 
-    const params: any = {
-      limit: 10,
-      tags: selectedTags.length > 0 ? selectedTags.join(',') : undefined,
-      status: status === 'all' ? (isAdmin ? 'all' : 'published') : status,
-      q: searchTerm || undefined,
-    };
+      const endpoint = contentType === 'albums' ? '/api/albums' : '/api/entries';
+      const params = new URLSearchParams({
+        limit: '10',
+      });
 
-    if (pageIndex > 0 && previousPageData?.lastDocId) {
-      params.lastDocId = previousPageData.lastDocId;
-    }
+      const statusQuery = status === 'all' ? (isAdmin ? 'all' : 'published') : status;
+      params.set('status', statusQuery);
+      
+      if (selectedTags.length > 0) {
+        params.set('tags', selectedTags.join(','));
+      }
+      if (searchTerm) {
+        params.set('q', searchTerm);
+      }
+      if (contentType === 'entries' && entryType !== 'all') {
+        params.set('type', entryType);
+      }
+      if (pageIndex > 0 && previousPageData?.lastDocId) {
+        params.set('lastDocId', previousPageData.lastDocId);
+      }
 
-    // Determine the API endpoint and parameters based on content type
-    if (contentType === 'entries') {
-      if (entryType !== 'all') params.type = entryType;
-      return ['/api/entries', params];
-    }
-    if (contentType === 'albums') {
-      return ['/api/albums', params];
-    }
-    // For 'all', we might need a combined endpoint or handle it differently.
-    // For now, let's assume 'all' fetches entries, which is a simplification.
-    // A proper implementation might require a new `/api/content` endpoint.
-    return ['/api/entries', params];
-  },
-  async ([url, params]) => {
-    const query = new URLSearchParams(
-      Object.entries(params).filter(([, value]) => value !== undefined)
-    ).toString();
-    
-    // This is a simplified fetcher. We might need to call getEntries/getAlbums directly
-    return fetcher(`${url}?${query}`);
-  });
+      return `${endpoint}?${params.toString()}`;
+    },
+    fetcher
+  );
 
   // --- Derived State ---
   const isLoading = swrLoading && !data;

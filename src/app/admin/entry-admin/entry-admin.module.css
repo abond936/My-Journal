@@ -204,8 +204,14 @@
 }
 
 .deleteButton {
-  background: #ff4444;
-  color: white;
+  background-color: #dc3545;
+}
+
+.errorDot {
+  color: red;
+  margin-right: 8px;
+  font-size: 1.2em;
+  cursor: help;
 }
 
 /* Bulk Actions */

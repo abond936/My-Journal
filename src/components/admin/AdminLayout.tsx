@@ -2,21 +2,26 @@
 
 import React, { useState } from 'react';
 import Navigation from '@/components/common/Navigation';
-import TagTree from '@/components/common/TagTree';
-import styles from './ViewLayout.module.css';
-import { useContentContext } from '@/components/providers/ContentProvider';
-import ContentTypeFilter from '@/components/view/ContentTypeFilter';
+import styles from './AdminLayout.module.css';
+import { AdminNavTabs } from '@/components/admin/AdminNavTabs';
+import { useTag } from '@/components/providers/TagProvider';
+import TagTree from '../common/TagTree';
 
-interface ViewLayoutProps {
+interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
-export default function ViewLayout({ children }: ViewLayoutProps) {
+export default function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const { toggleTag, selectedTags } = useContentContext();
+  const { tags } = useTag();
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  // Dummy functions for TagTree props for now
+  const handleTagSelect = (tagId: string) => {
+    console.log("Admin Tag Selected:", tagId);
   };
 
   return (
@@ -24,7 +29,7 @@ export default function ViewLayout({ children }: ViewLayoutProps) {
       <Navigation sidebarOpen={sidebarOpen} />
       <div className={styles.contentWrapper}>
         <button
-          className={styles.menuToggle}
+          className={`${styles.menuToggle} ${sidebarOpen ? styles.open : styles.closed}`}
           onClick={toggleSidebar}
           aria-label="Toggle navigation menu"
         >
@@ -32,12 +37,12 @@ export default function ViewLayout({ children }: ViewLayoutProps) {
         </button>
 
         <div className={`${styles.sidebar} ${sidebarOpen ? styles.open : styles.closed}`}>
-          <TagTree onTagSelect={toggleTag} selectedTags={selectedTags} />
+          <TagTree onTagSelect={handleTagSelect} selectedTags={[]} />
         </div>
 
-        <main className={`${styles.mainContent} ${sidebarOpen ? styles.mainContentOpen : ''}`}>
+        <main className={styles.mainContent}>
           <div className={styles.topNavContainer}>
-            <ContentTypeFilter />
+            <AdminNavTabs />
           </div>
           <div className={styles.pageContent}>
             {children}

@@ -32,7 +32,7 @@ interface RouteParams {
  *       404:
  *         description: Entry not found.
  */
-export async function GET(request: NextRequest, context: { params: RouteParams }) {
+export async function GET(request: Request, context: { params: RouteParams }) {
   const session = await getServerSession(authOptions);
   if (!session) {
     return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest, context: { params: RouteParams }
  *       404:
  *         description: Entry not found.
  */
-export async function PATCH(request: NextRequest, context: { params: RouteParams }) {
+export async function PATCH(request: Request, context: { params: RouteParams }) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') {
     return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
@@ -168,7 +168,7 @@ export async function PATCH(request: NextRequest, context: { params: RouteParams
  *       404:
  *         description: Entry not found.
  */
-export async function DELETE(request: NextRequest, context: { params: RouteParams }) {
+export async function DELETE(request: Request, context: { params: RouteParams }) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') {
     return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {

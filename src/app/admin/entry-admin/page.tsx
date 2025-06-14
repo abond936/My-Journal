@@ -1,18 +1,20 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useContentContext } from '@/components/providers/ContentProvider';
 import { useTag } from '@/components/providers/TagProvider';
 import { Entry, FilterableEntryType } from '@/lib/types/entry';
+import { PaginatedResult } from '@/lib/types/services';
 import { Tag } from '@/lib/types/tag';
 import { updateEntry } from '@/lib/services/entryService';
 import styles from './entry-admin.module.css';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import useSWR from 'swr';
 
 interface EntryWithStats extends Entry {
   tagNames: string[];
+  hasUnknownTags: boolean;
 }
 
 interface EditingField {
@@ -34,31 +36,27 @@ const renderTagOption = (tag: any, level: number = 0) => {
   );
 };
 
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 export default function AdminEntriesPage() {
   const router = useRouter();
 
-  // Centralized state from providers
-  const {
-    content,
-    isLoading,
-    loadingMore,
-    error,
-    hasMore,
-    loadMore,
-    mutate,
-    contentType,
-    setContentType,
-    entryType,
-    setEntryType,
-    searchTerm,
-    setSearchTerm,
-    status,
-    setStatus,
-    selectedTags,
-    toggleTag,
-    addTag,
-    removeTag
-  } = useContentContext();
+  // --- Start: New Self-Contained Logic ---
+  const [localSearchTerm, setLocalSearchTerm] = useState('');
+  const [localEntryType, setLocalEntryType] = useState<FilterableEntryType>('all');
+  const [localStatus, setLocalStatus] = useState<Entry['status'] | 'all'>('all');
+
+  const buildUrl = useCallback(() => {
+    const params = new URLSearchParams();
+    params.set('limit', '50'); // Admin pages can show more items
+    if (localSearchTerm) params.set('q', localSearchTerm);
+    if (localEntryType !== 'all') params.set('type', localEntryType);
+    if (localStatus !== 'all') params.set('status', localStatus);
+    return `/api/entries?${params.toString()}`;
+  }, [localSearchTerm, localEntryType, localStatus]);
+
+  const { data: swrData, error: swrError, isLoading: swrIsLoading, mutate } = useSWR<PaginatedResult<Entry>>(buildUrl(), fetcher);
+  // --- End: New Self-Contained Logic ---
 
   const { tags, tagsByDimension } = useTag();
 
@@ -67,21 +65,26 @@ export default function AdminEntriesPage() {
   const [editingField, setEditingField] = useState<EditingField | null>(null);
   const [editValue, setEditValue] = useState('');
   
-  // Ensure content type is set to entries
-  useEffect(() => {
-    if (contentType !== 'entries') {
-      setContentType('entries');
-    }
-  }, [contentType, setContentType]);
-  
-  const entries = useMemo(() => content.filter(item => item.type !== 'album'), [content]) as Entry[];
+  const entries = useMemo(() => swrData?.items || [], [swrData]);
 
   const entriesWithTagNames = useMemo((): EntryWithStats[] => {
     const tagMap = new Map(tags.map(t => [t.id, t.name]));
-    return entries.map(entry => ({
-      ...entry,
-      tagNames: (entry.tags || []).map(tagId => tagMap.get(tagId) || `Unknown Tag`)
-    }));
+    return entries.map(entry => {
+      let hasUnknown = false;
+      const tagNames = (entry.tags || []).map(tagId => {
+        const name = tagMap.get(tagId);
+        if (!name) {
+          hasUnknown = true;
+          return `Unknown Tag`;
+        }
+        return name;
+      });
+      return {
+        ...entry,
+        tagNames: tagNames,
+        hasUnknownTags: hasUnknown,
+      }
+    });
   }, [entries, tags]);
   
   // --- Event Handlers ---
@@ -181,8 +184,8 @@ export default function AdminEntriesPage() {
     published: entries.filter(e => e.status === 'published').length
   }), [entries]);
 
-  if (isLoading && entries.length === 0) return <LoadingSpinner />;
-  if (error) return <div className={styles.error}>{error.message || 'Failed to load entries.'}</div>;
+  if (swrIsLoading) return <LoadingSpinner />;
+  if (swrError) return <div className={styles.error}>{swrError.message || 'Failed to load entries.'}</div>;
 
   return (
     <div className={styles.container}>
@@ -204,14 +207,14 @@ export default function AdminEntriesPage() {
           <input
             type="text"
             placeholder="Search entries..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
+            value={localSearchTerm}
+            onChange={e => setLocalSearchTerm(e.target.value)}
             className={styles.searchBox}
           />
           <div className={styles.filterControls}>
              <select
-              value={entryType}
-              onChange={e => setEntryType(e.target.value as FilterableEntryType)}
+              value={localEntryType}
+              onChange={e => setLocalEntryType(e.target.value as FilterableEntryType)}
               className={styles.filterSelect}
             >
               <option value="all">All Types</option>
@@ -222,8 +225,8 @@ export default function AdminEntriesPage() {
               <option value="callout">Callout</option>
             </select>
             <select
-              value={status}
-              onChange={e => setStatus(e.target.value as typeof status)}
+              value={localStatus}
+              onChange={e => setLocalStatus(e.target.value as typeof localStatus)}
               className={styles.filterSelect}
             >
               <option value="all">All Status</option>
@@ -302,7 +305,10 @@ export default function AdminEntriesPage() {
                       <input type="text" value={editValue} onChange={e => setEditValue(e.target.value)} autoFocus onBlur={handleEditSave}/>
                     </form>
                   ) : (
-                    <div className={styles.editableField} onClick={() => startEditing(entry.id, 'title', entry.title)}>{entry.title}</div>
+                    <div className={styles.editableField} onClick={() => startEditing(entry.id, 'title', entry.title)}>
+                      {entry.hasUnknownTags && <span className={styles.errorDot} title="Contains unknown tags">•</span>}
+                      {entry.title}
+                    </div>
                   )}
                 </td>
                 <td>
@@ -338,20 +344,13 @@ export default function AdminEntriesPage() {
                     <div className={styles.editableField} onClick={() => startEditing(entry.id, 'status', entry.status)}>{entry.status}</div>
                   )}
                 </td>
-                <td><div className={styles.tags}>{entry.tagNames.map(tagName => (<span key={tagName} className={styles.tag}>{tagName}</span>))}</div></td>
+                <td><div className={styles.tags}>{entry.tagNames.map((tagName, index) => (<span key={`${entry.id}-${tagName}-${index}`} className={styles.tag}>{tagName}</span>))}</div></td>
                 <td><div className={styles.actions}><Link href={`/admin/entry-admin/${entry.id}/edit`} className={styles.editButton}>Edit</Link></div></td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      {hasMore && (
-        <div className={styles.loadMoreContainer}>
-            <button onClick={loadMore} disabled={loadingMore} className={styles.loadMoreButton}>
-                {loadingMore ? 'Loading...' : 'Load More Entries'}
-            </button>
-        </div>
-      )}
     </div>
   );
 }

@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import ViewLayout from '@/components/view/ViewLayout';
+import { TagProvider } from '@/components/providers/TagProvider';
+import { ContentProvider } from '@/components/providers/ContentProvider';
 
 export default async function ViewSectionLayout({
   children,
@@ -16,8 +18,10 @@ export default async function ViewSectionLayout({
   }
 
   return (
-    <ViewLayout>
-      {children}
-    </ViewLayout>
+    <ContentProvider>
+      <TagProvider>
+        <ViewLayout>{children}</ViewLayout>
+      </TagProvider>
+    </ContentProvider>
   );
 } 

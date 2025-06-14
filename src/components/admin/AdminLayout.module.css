@@ -1,0 +1,78 @@
+.layout {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    padding-top: 120px; /* Account for fixed Navigation height */
+  }
+  
+  .contentWrapper {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .menuToggle {
+    position: absolute;
+    top: 10px;
+    z-index: 1200;
+    background-color: var(--background-start);
+    color: var(--foreground);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    transition: left 0.3s ease;
+  }
+  
+  .menuToggle.open {
+    left: 310px; /* sidebar width + 10px */
+  }
+  
+  .menuToggle.closed {
+    left: 10px;
+  }
+  
+  .sidebar {
+    width: 300px;
+    background-color: var(--background-start);
+    border-right: 1px solid var(--border);
+    transition: margin-left 0.3s ease;
+    padding: 20px;
+    overflow-y: auto;
+  }
+  
+  .sidebar.closed {
+    margin-left: -300px;
+  }
+  
+  .sidebar.open {
+    margin-left: 0;
+  }
+  
+  .mainContent {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  
+  .topNavContainer {
+    padding: 1rem 2rem;
+    border-bottom: 1px solid var(--border);
+    background-color: var(--background-start);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+  
+  .pageContent {
+    flex: 1;
+    padding: 2rem;
+  } 

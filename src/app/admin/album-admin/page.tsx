@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { useTag } from '@/components/providers/TagProvider';
-import { useContentContext } from '@/components/providers/ContentProvider';
 import { Album } from '@/lib/types/album';
 import { Tag } from '@/lib/types/tag';
+import { PaginatedResult } from '@/lib/types/services';
 import styles from '@/app/admin/album-admin/album-admin.module.css';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import useSWR from 'swr';
 
 interface AlbumWithStats extends Album {
   tagNames: { id: string; name: string }[];
@@ -27,34 +28,27 @@ const renderTagOption = (tag: any, level: number = 0) => {
   );
 };
 
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 export default function AdminAlbumsPage() {
   const [selectedAlbums, setSelectedAlbums] = useState<Set<string>>(new Set());
 
-  const {
-    content,
-    isLoading,
-    loadingMore,
-    error,
-    hasMore,
-    loadMore,
-    mutate,
-    contentType,
-    setContentType,
-    searchTerm,
-    setSearchTerm,
-    status,
-    setStatus,
-  } = useContentContext();
+  const [localSearchTerm, setLocalSearchTerm] = useState('');
+  const [localStatus, setLocalStatus] = useState<Album['status'] | 'all'>('all');
+
+  const buildUrl = useCallback(() => {
+    const params = new URLSearchParams();
+    params.set('limit', '50');
+    if (localSearchTerm) params.set('q', localSearchTerm);
+    if (localStatus !== 'all') params.set('status', localStatus);
+    return `/api/albums?${params.toString()}`;
+  }, [localSearchTerm, localStatus]);
+
+  const { data: swrData, error: swrError, isLoading: swrIsLoading, mutate } = useSWR<PaginatedResult<Album>>(buildUrl(), fetcher);
 
   const { tags, tagsByDimension } = useTag();
 
-  useEffect(() => {
-    if (contentType !== 'albums') {
-      setContentType('albums');
-    }
-  }, [contentType, setContentType]);
-
-  const albums = useMemo(() => content.filter(item => item.type === 'album'), [content]) as Album[];
+  const albums = useMemo(() => swrData?.items || [], [swrData]);
 
   const albumsWithTagNames = useMemo((): AlbumWithStats[] => {
     const tagMap = new Map(tags.map(t => [t.id, t.name]));
@@ -140,8 +134,8 @@ export default function AdminAlbumsPage() {
     totalMedia: albums.reduce((sum, album) => sum + (album.mediaCount || 0), 0),
   }), [albums]);
 
-  if (isLoading && albums.length === 0) return <LoadingSpinner />;
-  if (error) return <div className={styles.error}>{error.message}</div>;
+  if (swrIsLoading) return <LoadingSpinner />;
+  if (swrError) return <div className={styles.error}>{swrError.message}</div>;
 
   return (
     <div className={styles.container}>
@@ -162,14 +156,14 @@ export default function AdminAlbumsPage() {
           <input
             type="text"
             placeholder="Search albums..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
+            value={localSearchTerm}
+            onChange={e => setLocalSearchTerm(e.target.value)}
             className={styles.searchBox}
           />
           <div className={styles.filterControls}>
             <select
-              value={status}
-              onChange={e => setStatus(e.target.value as typeof status)}
+              value={localStatus}
+              onChange={e => setLocalStatus(e.target.value as typeof localStatus)}
               className={styles.filterSelect}
             >
               <option value="all">All Status</option>
@@ -265,13 +259,6 @@ export default function AdminAlbumsPage() {
           </tbody>
         </table>
       </div>
-       {hasMore && (
-        <div className={styles.loadMoreContainer}>
-            <button onClick={loadMore} disabled={loadingMore} className={styles.loadMoreButton}>
-                {loadingMore ? 'Loading...' : 'Load More Albums'}
-            </button>
-        </div>
-      )}
     </div>
   );
 } 

@@ -2,10 +2,11 @@ import React from 'react';
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import ViewLayout from '@/components/view/ViewLayout';
+import AdminLayout from '@/components/admin/AdminLayout';
 import AdminFAB from '@/components/admin/AdminFAB';
+import { TagProvider } from '@/components/providers/TagProvider';
 
-export default async function AdminLayout({
+export default async function RootAdminLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -18,9 +19,11 @@ export default async function AdminLayout({
   }
 
   return (
-    <ViewLayout>
-      {children}
-      <AdminFAB />
-    </ViewLayout>
+    <TagProvider>
+      <AdminLayout>
+        {children}
+        <AdminFAB />
+      </AdminLayout>
+    </TagProvider>
   );
 } 
