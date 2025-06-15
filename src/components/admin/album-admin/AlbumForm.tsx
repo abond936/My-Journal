@@ -9,9 +9,10 @@ import styles from './AlbumForm.module.css';
 interface AlbumFormProps {
   initialAlbum: Album;
   onSave: (updatedAlbum: Partial<Album>) => Promise<void>;
+  onCancel: () => void;
 }
 
-export default function AlbumForm({ initialAlbum, onSave }: AlbumFormProps) {
+export default function AlbumForm({ initialAlbum, onSave, onCancel }: AlbumFormProps) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -109,9 +110,14 @@ export default function AlbumForm({ initialAlbum, onSave }: AlbumFormProps) {
           className={styles.textarea}
         />
       </div>
-      <button type="submit" disabled={isSaving} className={styles.saveButton}>
-        {isSaving ? 'Saving...' : 'Save Changes'}
-      </button>
+      <div className={styles.buttonGroup}>
+        <button type="button" onClick={onCancel} className={styles.cancelButton}>
+          Cancel
+        </button>
+        <button type="submit" disabled={isSaving} className={styles.saveButton}>
+          {isSaving ? 'Saving...' : 'Save Changes'}
+        </button>
+      </div>
     </form>
   );
 } 

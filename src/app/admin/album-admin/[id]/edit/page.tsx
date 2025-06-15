@@ -53,14 +53,15 @@ export default function AlbumEditPage() {
         throw new Error('Failed to update album');
       }
       
-      // Optionally, show a success message
-      // For now, we just refetch the data to show the update
-      const data = await response.json();
-      setAlbum(data);
+      router.push('/admin/album-admin');
     } catch (err) {
       console.error(err);
       // Show error to user
     }
+  };
+
+  const handleCancel = () => {
+    router.push('/admin/album-admin');
   };
 
   const handleUpdatePhotos = async (newImages: AlbumImage[]) => {
@@ -126,7 +127,7 @@ export default function AlbumEditPage() {
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Edit Album</h1>
-      <AlbumForm initialAlbum={album} onSave={handleSave} />
+      <AlbumForm initialAlbum={album} onSave={handleSave} onCancel={handleCancel} />
 
       <hr className={styles.divider} />
 

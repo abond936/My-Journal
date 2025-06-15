@@ -60,4 +60,25 @@
 .saveButton:disabled {
   background-color: var(--color-background-disabled);
   cursor: not-allowed;
+}
+
+.buttonGroup {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-medium);
+  margin-top: var(--space-medium);
+}
+
+.cancelButton {
+  padding: var(--space-small) var(--space-medium);
+  background-color: var(--color-background-offset-dark);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-medium);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cancelButton:hover {
+  background-color: var(--color-border);
 } 

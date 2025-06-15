@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Album } from '@/lib/types/album';
 import { getAlbumById } from '@/lib/services/albumService';
 import AlbumLayout from '@/components/view/album-view/AlbumLayout';
@@ -19,6 +19,7 @@ interface AlbumViewPageProps {
 export default function AlbumViewPage({ params }: AlbumViewPageProps) {
   const { id } = params;
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [album, setAlbum] = useState<Album | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,9 +52,10 @@ export default function AlbumViewPage({ params }: AlbumViewPageProps) {
 
   const handleClose = () => {
     setShowAlbum(false);
+    const from = searchParams.get('from');
     // Navigate back to the main view page after a short delay to allow for animations
     setTimeout(() => {
-      router.push('/view');
+      router.push(from || '/view');
     }, 300);
   };
 

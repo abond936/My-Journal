@@ -3,8 +3,8 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import AdminLayout from '@/components/admin/AdminLayout';
-import AdminFAB from '@/components/admin/AdminFAB';
 import { TagProvider } from '@/components/providers/TagProvider';
+import AdminPageWrapper from '@/components/admin/AdminPageWrapper';
 
 export default async function RootAdminLayout({
   children,
@@ -21,8 +21,9 @@ export default async function RootAdminLayout({
   return (
     <TagProvider>
       <AdminLayout>
-        {children}
-        <AdminFAB />
+        <AdminPageWrapper>
+          {children}
+        </AdminPageWrapper>
       </AdminLayout>
     </TagProvider>
   );

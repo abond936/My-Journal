@@ -249,10 +249,10 @@ export default function AdminAlbumsPage() {
                 <td>{album.mediaCount}</td>
                 <td>{album.status}</td>
                 <td>{album.tagNames.map(tag => <span key={tag.id} className={styles.tag}>{tag.name}</span>)}</td>
-                <td>{album.createdAt ? new Date(album.createdAt).toLocaleDateString() : 'N/A'}</td>
+                <td>{new Date(album.createdAt!).toLocaleDateString()}</td>
                 <td className={styles.actions}>
-                  <Link href={`/admin/album-admin/${album.id}/edit`} className={styles.actionButton}>Edit</Link>
-                  <Link href={`/view/album-view/${album.id}`} className={styles.actionButton}>View</Link>
+                  <Link href={`/view/album/${album.id}?from=/admin/album-admin`}>View</Link>
+                  <Link href={`/admin/album-admin/edit/${album.id}`}>Edit</Link>
                 </td>
               </tr>
             ))}
