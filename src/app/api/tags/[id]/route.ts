@@ -39,7 +39,7 @@ interface RouteParams {
  *       500:
  *         description: Internal server error.
  */
-export async function GET(request: Request, context: { params: RouteParams }) {
+export async function GET(request: Request, { params }: { params: RouteParams }) {
     const session = await getServerSession(authOptions);
     if (!session) {
         return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
@@ -49,7 +49,7 @@ export async function GET(request: Request, context: { params: RouteParams }) {
     }
 
     try {
-        const { id } = context.params;
+        const { id } = params;
         const tagRef = tagsCollection.doc(id);
         const tagSnap = await tagRef.get();
 
@@ -67,7 +67,7 @@ export async function GET(request: Request, context: { params: RouteParams }) {
 
         return NextResponse.json(tag);
     } catch (error) {
-        console.error(`API Error fetching tag ${context.params.id}:`, error);
+        console.error(`API Error fetching tag ${params.id}:`, error);
         return new NextResponse('Internal server error', { status: 500 });
     }
 }
@@ -105,7 +105,7 @@ export async function GET(request: Request, context: { params: RouteParams }) {
  *       500:
  *         description: Internal server error.
  */
-export async function PATCH(request: Request, context: { params: RouteParams }) {
+export async function PATCH(request: Request, { params }: { params: RouteParams }) {
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'admin') {
         return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
@@ -115,7 +115,7 @@ export async function PATCH(request: Request, context: { params: RouteParams }) 
     }
 
     try {
-        const { id } = context.params;
+        const { id } = params;
         const body: Partial<Omit<Tag, 'id' | 'createdAt'>> = await request.json();
 
         if (Object.keys(body).length === 0) {
@@ -139,7 +139,7 @@ export async function PATCH(request: Request, context: { params: RouteParams }) 
 
         return NextResponse.json(updatedTag);
     } catch (error) {
-        console.error(`API Error updating tag ${context.params.id}:`, error);
+        console.error(`API Error updating tag ${params.id}:`, error);
         return new NextResponse('Internal server error', { status: 500 });
     }
 }
@@ -165,7 +165,7 @@ export async function PATCH(request: Request, context: { params: RouteParams }) 
  *       500:
  *         description: Internal server error.
  */
-export async function DELETE(request: Request, context: { params: RouteParams }) {
+export async function DELETE(request: Request, { params }: { params: RouteParams }) {
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'admin') {
         return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
@@ -175,11 +175,11 @@ export async function DELETE(request: Request, context: { params: RouteParams })
     }
 
     try {
-        const { id } = context.params;
+        const { id } = params;
         await tagsCollection.doc(id).delete();
         return new NextResponse(null, { status: 204 });
     } catch (error) {
-        console.error(`API Error deleting tag ${context.params.id}:`, error);
+        console.error(`API Error deleting tag ${params.id}:`, error);
         return new NextResponse('Internal server error', { status: 500 });
     }
 } 

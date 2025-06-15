@@ -61,11 +61,10 @@ This project is a personal journaling application that helps users document and 
 reflections, photos, and media with others.
 
 ### Scope
-- Story and reflection creation and management
-- Photo and media integration
+- Story creation and management
+- Media integration
 - Tag-based organization
 - Family sharing and interaction
-- AI-assisted content creation and organization
 
 ### Operational Summary
 The application integrates stories with one's digital photo stores for exploration 
@@ -73,19 +72,20 @@ in an immersive flexible or curated manner.
 
 #### Elements
 The primary elements of the app are Entries and Albums categorized by hierarchical Tags.
-- An entry is a primarily textual, but includes media
+- An entry is a primarily text, but includes media
   - Cover image
   - Title
-  - Rich Text and embeded images.
-- An album is a primarily visual, but includes text
+  - Rich Text
+  - Embeded images
+- An album is a primarily media, but includes text
   - Cover image
   - Title
   - Caption
   - Collection of media
-- Entries can be linked to albums and albums can be linked to entries
+
+- Entries and Albumes can be linked
 - Both Entries and Albums are categorized by Tags on 5 dimensions:
   - who, what, when, where, and reflection
-    - (may need to revisit the reflection dimension)
 - Content is presented as cards in a grid for consumption
 
 Legend:
@@ -101,13 +101,13 @@ Legend:
 ---------------------------------
 Status: - ✅ Implemented
 
-#### Current Features
+#### Current
 - Images
 - Welcome message
 - Login
 
-#### Planned Features
-
+#### Next
+- Add images
 
 ❓ Open Questions:
 
@@ -116,12 +116,12 @@ Status: - ✅ Implemented
 Status: 🟡 Operational
 
 The core function of the application is the presentation for consumption of content--entries and albums.
-The vision is to make this best consumed on mobile and tablet devices i a grid-based card system with 
+The vision is to make this best consumed on mobile and tablet devices in a grid-based card system with 
 navigation through tag and type filters, infinite scroll and related content links.
 
 #### Current Features
 - Content layout connected to all content.
-- Tag and Content type navigation
+- Tag- and Content-type navigation
 - Infinite scroll
 - Album image scroll
 
@@ -168,7 +168,7 @@ Entry view contains title, cover image, tags, content.
 Function
 - *Add album links*
 - *Add 'related' content*
-- Add user interaction - Like, comment, sharelink
+
 
 Styling
 - *Emulate edit page for Story*
@@ -200,6 +200,18 @@ Album view contains a title, tags, caption and grid display of images.
 
 ❓ Open Questions:
 
+#### **User Interaction System**
+---------------------------------
+- ⭕ Planned
+
+##### Current
+
+
+##### Next
+- Add user interaction - Like, comment, sharelink
+
+❓ Open Questions:
+
 
 #### **Theme System**
 ---------------------------------
@@ -212,6 +224,11 @@ Status: 🟡 Operational
 
 ##### Planned Features
 - *Add MSN-style layout and theme*
+- *Home*
+- *Content page*
+- *Entries by type*
+- *Albums*
+- *Admin pages*
 - Make fully customizable - Add to Settings
 
 ❓ Open Questions:
@@ -236,8 +253,8 @@ Function
 Styling
 
 
-
 ❓Open Questions:
+
 
 ### **Tag Filtering**
 ---------------------------------
@@ -255,13 +272,12 @@ Navigation is facilitated by heirarchical tag filtering.
 Function
 - *Fix ordering of tags/tree.*
 - Include number of entries/albums (x/y)
-- Fix code to update count
+
 
 Styling
-- Left arrow
+
 
 ❓ Open Questions:
-- Is there a way to navigate by Entry or Album?
 - How do we want the sidebar to operate?
    - Slide in/out on mobile?
 - Multi-orderby?
@@ -290,6 +306,16 @@ Styling
   - Order by Tag, show Entries, by Albums?
   - One complicated nested tree structure?
     - Possible/Advisable?
+
+### **Curated Navigaton**
+---------------------------------
+Status: ⭕ Planned
+
+#### Current
+- none
+
+#### Next
+- Table of Contents
 
 ### **Search**
 ---------------------------------

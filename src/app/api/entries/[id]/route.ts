@@ -32,7 +32,7 @@ interface RouteParams {
  *       404:
  *         description: Entry not found.
  */
-export async function GET(request: Request, context: { params: RouteParams }) {
+export async function GET(request: Request, { params }: { params: RouteParams }) {
   const session = await getServerSession(authOptions);
   if (!session) {
     return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
@@ -42,7 +42,7 @@ export async function GET(request: Request, context: { params: RouteParams }) {
   }
 
   try {
-    const { id } = context.params;
+    const { id } = params;
     const entryRef = entriesCollection.doc(id);
     const entrySnap = await entryRef.get();
 
@@ -66,7 +66,7 @@ export async function GET(request: Request, context: { params: RouteParams }) {
 
     return NextResponse.json(entry);
   } catch (error) {
-    console.error(`API Error fetching entry ${context.params.id}:`, error);
+    console.error(`API Error fetching entry ${params.id}:`, error);
     return new NextResponse('Internal server error', { status: 500 });
   }
 }
@@ -96,7 +96,7 @@ export async function GET(request: Request, context: { params: RouteParams }) {
  *       404:
  *         description: Entry not found.
  */
-export async function PATCH(request: Request, context: { params: RouteParams }) {
+export async function PATCH(request: Request, { params }: { params: RouteParams }) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') {
     return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
@@ -106,7 +106,7 @@ export async function PATCH(request: Request, context: { params: RouteParams }) 
   }
 
   try {
-    const { id } = context.params;
+    const { id } = params;
     const body: Partial<Omit<Entry, 'id'>> = await request.json();
 
     // The bug is that the body can contain an `id` field, which should not be saved
@@ -144,7 +144,7 @@ export async function PATCH(request: Request, context: { params: RouteParams }) 
 
     return NextResponse.json(updatedEntry);
   } catch (error) {
-    console.error(`API Error updating entry ${context.params.id}:`, error);
+    console.error(`API Error updating entry ${params.id}:`, error);
     if ((error as Error).message.includes('not found')) {
       return new NextResponse('Entry not found', { status: 404 });
     }
@@ -168,7 +168,7 @@ export async function PATCH(request: Request, context: { params: RouteParams }) 
  *       404:
  *         description: Entry not found.
  */
-export async function DELETE(request: Request, context: { params: RouteParams }) {
+export async function DELETE(request: Request, { params }: { params: RouteParams }) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') {
     return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
@@ -178,11 +178,11 @@ export async function DELETE(request: Request, context: { params: RouteParams })
   }
 
   try {
-    const { id } = context.params;
+    const { id } = params;
     await entriesCollection.doc(id).delete();
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    console.error(`API Error deleting entry ${context.params.id}:`, error);
+    console.error(`API Error deleting entry ${params.id}:`, error);
     return new NextResponse('Internal server error', { status: 500 });
   }
 } 

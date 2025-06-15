@@ -18,7 +18,7 @@ interface RouteParams {
 /**
  * Handles fetching a single album by its ID.
  */
-export async function GET(request: Request, context: { params: RouteParams }) {
+export async function GET(request: Request, { params }: { params: RouteParams }) {
     const session = await getServerSession(authOptions);
     if (!session) {
         return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
@@ -28,7 +28,7 @@ export async function GET(request: Request, context: { params: RouteParams }) {
     }
 
     try {
-        const { id } = context.params;
+        const { id } = params;
         const albumRef = albumsCollection.doc(id);
         const albumSnap = await albumRef.get();
 
@@ -64,12 +64,12 @@ export async function GET(request: Request, context: { params: RouteParams }) {
 
         return NextResponse.json(album);
     } catch (error) {
-        console.error(`API Error fetching album ${context.params.id}:`, error);
+        console.error(`API Error fetching album ${params.id}:`, error);
         return new NextResponse('Internal server error', { status: 500 });
     }
 }
 
-export async function PATCH(request: Request, context: { params: RouteParams }) {
+export async function PATCH(request: Request, { params }: { params: RouteParams }) {
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'admin') {
         return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
@@ -79,7 +79,7 @@ export async function PATCH(request: Request, context: { params: RouteParams }) 
     }
 
     try {
-        const { id } = context.params;
+        const { id } = params;
         const body: Partial<Omit<Album, 'id' | 'createdAt'>> = await request.json();
 
         // The bug is that the body can contain an `id` field, which should not be saved
@@ -126,12 +126,12 @@ export async function PATCH(request: Request, context: { params: RouteParams }) 
 
         return NextResponse.json(updatedAlbum);
     } catch (error) {
-        console.error(`API Error updating album ${context.params.id}:`, error);
+        console.error(`API Error updating album ${params.id}:`, error);
         return new NextResponse('Internal server error', { status: 500 });
     }
 }
 
-export async function DELETE(request: Request, context: { params: RouteParams }) {
+export async function DELETE(request: Request, { params }: { params: RouteParams }) {
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'admin') {
         return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
@@ -141,13 +141,13 @@ export async function DELETE(request: Request, context: { params: RouteParams })
     }
 
     try {
-        const { id } = context.params;
+        const { id } = params;
         // Note: This does not handle deleting associated images from storage.
         // That would require a more complex implementation.
         await albumsCollection.doc(id).delete();
         return new NextResponse(null, { status: 204 });
     } catch (error) {
-        console.error(`API Error deleting album ${context.params.id}:`, error);
+        console.error(`API Error deleting album ${params.id}:`, error);
         return new NextResponse('Internal server error', { status: 500 });
     }
 } 
