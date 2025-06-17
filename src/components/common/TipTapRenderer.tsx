@@ -28,6 +28,7 @@ const TipTapRenderer: React.FC<TipTapRendererProps> = ({ content }) => {
       }),
     ],
     content: content,
+    immediatelyRender: false,
   });
 
   // Effect to update content if the prop changes after initial render

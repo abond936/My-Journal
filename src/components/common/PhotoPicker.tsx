@@ -7,6 +7,8 @@ import { PhotoMetadata, TreeNode } from '@/lib/types/photo'; // Import directly 
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import styles from '@/components/common/PhotoPicker.module.css';
 
+const photoService = new PhotoService(); // Instantiate service once
+
 interface PhotoPickerProps {
   onPhotoSelect?: (photo: PhotoMetadata) => void;
   onMultiPhotoSelect?: (photos: PhotoMetadata[]) => void;
@@ -75,8 +77,6 @@ export default function PhotoPicker({
   // State to manage the current selection mode
   const [isMultiSelect, setIsMultiSelect] = useState(initialMode === 'multi');
   
-  const photoService = new PhotoService();
-
   useEffect(() => {
     // Lock multi-select mode if the initial mode was 'multi'
     if (initialMode === 'multi') {

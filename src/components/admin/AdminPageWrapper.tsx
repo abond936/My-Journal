@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import AdminFAB from '@/components/admin/AdminFAB';
+import CardAdminFAB from '@/components/admin/CardAdminFAB';
 
 interface AdminPageWrapperProps {
   children: React.ReactNode;
@@ -19,6 +20,8 @@ const HIDDEN_PATH_PREFIXES = [
   '/admin/entry-admin/edit',
   '/admin/album-admin/new',
   '/admin/album-admin/edit',
+  '/admin/card-admin/new',
+  '/admin/card-admin/edit',
 ];
 
 export default function AdminPageWrapper({ children }: AdminPageWrapperProps) {
@@ -38,10 +41,16 @@ export default function AdminPageWrapper({ children }: AdminPageWrapperProps) {
   const isFabVisible = !HIDDEN_PATHS.includes(pathname) && 
                        !HIDDEN_PATH_PREFIXES.some(prefix => pathname.startsWith(prefix));
 
+  const isCardAdminPage = pathname.startsWith('/admin/card-admin');
+
   return (
     <>
       {children}
-      {isFabVisible && <AdminFAB isExpanded={isExpanded} onToggle={handleToggle} />}
+      {isFabVisible && (
+        isCardAdminPage 
+          ? <CardAdminFAB /> 
+          : <AdminFAB isExpanded={isExpanded} onToggle={handleToggle} />
+      )}
     </>
   );
 } 

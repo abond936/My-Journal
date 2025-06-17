@@ -53,6 +53,33 @@
    - [Manual Backups](#manual-backups)
    - [Recovery](#recovery)
 
+## Revised Architecture: The `Card` Model
+---------------------------------
+Status: 🟡 Prototyped
+
+To address the complexities of managing two separate content types (`entries` and `albums`) and to enable richer, more curated storytelling, a new unified architecture has been designed and prototyped. This model moves away from separate Firestore collections and UIs to a single, flexible entity: the `Card`.
+
+### Core Concepts
+The new architecture is built on the following principles:
+
+- **Unified Data Model:** All content, regardless of its nature (story, gallery, quote, etc.), is a `Card` and is stored in a single `cards` collection in Firestore. This simplifies data management, queries, and frontend logic significantly.
+
+- **Hierarchical Structure:** Cards can be nested. A `Card` can contain a `childrenIds` array, allowing it to act as a container or a "collection" of other cards. This enables the creation of curated experiences, such as a main story card that contains a series of related Q&A cards and photo galleries.
+
+- **Flexible Content Types:** Each `Card` has a `type` property (e.g., `story`, `gallery`, `qa`, `quote`). This property dictates how the card is rendered and what data it contains, allowing for a wide variety of content presentations from a single data model.
+
+- **Defined Interaction Model:** Each `Card` also has a `displayMode` property that controls its behavior when a user interacts with it:
+  - `navigate`: The card acts as a link, navigating the user to a new page that displays that card as a parent collection (e.g., `/collections/[card.id]`).
+  - `inline`: The card expands and collapses in place, functioning like an accordion to reveal its content directly within the current view.
+  - `static`: The card is not interactive and serves only to display its content.
+
+### Implementation
+A prototype of this architecture has been built at the `/collections` route. This implementation is completely parallel to the existing `/view` route and does not disrupt any current functionality. It includes:
+- A new `cardService` for backend logic.
+- A new API endpoint at `/api/collections/[id]`.
+- A new page structure at `/collections/[id]` to render the hierarchical card data.
+
+This prototype proves the viability of the `Card` model and serves as the foundation for the future direction of the application's architecture.
 
 ## Project Overview
 
@@ -342,7 +369,6 @@ Administration is a feature only available to author.
 - Tags management
 
 #### Next
-- *The New Entry/New Album popups don;t hide after selection.*
 - Questions management
 - Album page styles management
 - Themes management
@@ -357,11 +383,10 @@ Status: 🟡 Operational
 Sidebar to navigate between element lists.
 
 #### Current
-- Static Sidebar
+- Static TabBar
 - Basic navigation
 
 #### Next
-Function
 
 Styling 
 - Title
@@ -373,8 +398,7 @@ Styling
 Status: 🟡 Operational
 
 #### Current 
-- Data model
-  - story, reflection, qa, callout, quote
+- Data model - story, reflection, qa, callout, quote
 - Entry collection
 - Entry listing
 - Statistics
@@ -472,7 +496,6 @@ An album is a virtual collection of images from one or more sources.
 
 #### Next
 Function
-- *Fix no albums listed*
 - Batch upload of photos to albums.
 - Sync with sources on our schedule
 
@@ -575,7 +598,7 @@ The Tag Management page provides an administrative interface for organizing the 
   - **Promote Children:** The tag is deleted, and its direct children are moved up to become children of the deleted tag's parent.
   - **Cascade Delete:** The tag and all of its descendants are deleted.
 
-#### Planned Features
+#### Next
 - A more robust user interface for the deletion strategy choice (replacing the browser prompt).
 - Full implementation of the drag-and-drop reordering and reparenting logic to persist changes to the database.
 - A background task system for processing complex deletions to prevent UI freezes.
@@ -819,7 +842,7 @@ The backup strategy is divided into two distinct areas: Codebase Backup and Data
 
 #### **Codebase Backup**
 --------------------------------------
-Status: 🟡 Operational
+Status: ✅ Implemented
 
 ##### Current Features
 - A Node.js script (`src/lib/scripts/utils/backup-codebase.ts`) creates a compressed `.zip` archive of the entire codebase.
@@ -833,7 +856,7 @@ Status: 🟡 Operational
 
 #### **Data Backup (Firestore)**
 --------------------------------------
-Status: 🟡 Operational
+Status: ✅ Implemented
 
 ##### Current Features
 - A Node.js script (`src/lib/scripts/backup-database.ts`) reads all documents from the `entries`, `albums`, `tags`, and `users` collections and saves them to a single, timestamped JSON file.
@@ -844,7 +867,7 @@ Status: 🟡 Operational
 
 #### **Recovery**
 ---------------------------------------
-Status: 🟡 Operational
+Status: ✅ Implemented
 
 This section outlines the procedures for recovering from a critical failure.
 
@@ -870,7 +893,7 @@ This is a deliberate, interactive process using the `restore-database.ts` script
 
 #### **Firestore Structure**
 ---------------------------------------
-Status: 🟡 Operational
+Status: ✅ Implemented
 
 ##### Current Features
 - Entry collection
@@ -900,7 +923,7 @@ Status: ⭕ Planned
 
 #### **Security Rules**
 -----------------------------------------
-Status: 🟡 Operational
+Status: ✅ Implemented
 
 ##### Current Features
 - Data access rules
@@ -990,8 +1013,6 @@ Aspect Ratio and sizing managed
     - Smart cropping: AI-powered detection of important content areas to guide cropping
     - Blurred background: Portrait images displayed on blurred, stretched version of same image
 
-❓ Open Questions:
-- Why do we need two different metadata models: one for browsing (AlbumPhotoMetadata) and one for usage (PhotoMetadata)?
 
 ### Clarification on Image Models
 The term `AlbumPhotoMetadata` is a remnant from a previous design. The current, correct implementation uses two distinct models for clear separation of concerns:
@@ -1062,6 +1083,7 @@ Rule: Any client-side component that needs to display an image must use this fun
 - Metadata extraction ?
 
 ❓ Open Questions
+- Do we use local, onedrive or google for live system.
 
 #### **Storage Strategy**
 -------------------------------------------------
@@ -1094,12 +1116,12 @@ Status: 🟡 Operational
 
 Photopicker for selecting and assigning photos to entries and albums.
 
-#### Current Features
+#### Current
 - Photopicker integrated (Entry- New/Edit, Album-New/)
 - Collapsible/Expandable Tree structure
 - singleSelect/multiSelect dependent on route
 
-#### Planned Features
+#### Next
 - Integrate with Album-Edit
 
   ❓ Open Questions:

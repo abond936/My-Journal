@@ -1,0 +1,108 @@
+.container {
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    margin-top: 1.5rem;
+    background-color: var(--color-background-offset);
+}
+
+.searchSection {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.searchInput {
+    flex-grow: 1;
+    padding: 0.5rem;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--color-border);
+}
+
+.searchButton {
+    padding: 0.5rem 1rem;
+    background-color: var(--color-primary);
+    color: var(--color-primary-contrast);
+    border: none;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+}
+
+.searchResults {
+    margin-top: 1rem;
+    border-top: 1px solid var(--color-border);
+    padding-top: 1rem;
+}
+
+.searchResults ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.resultItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.addButton {
+    padding: 0.25rem 0.5rem;
+    background-color: var(--color-success);
+    color: var(--color-success-contrast);
+    border: none;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.childList ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.childItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--color-border);
+    background-color: var(--color-background);
+}
+
+.childItem:last-child {
+    border-bottom: none;
+}
+
+.childInfo {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    margin-left: 0.5rem;
+}
+
+.removeButton {
+    padding: 0.25rem 0.5rem;
+    background-color: var(--color-danger);
+    color: var(--color-danger-contrast);
+    border: none;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.error {
+    color: var(--color-danger);
+    margin-top: 0.5rem;
+}
+
+.sortableItem {
+    touch-action: none; /* For better mobile drag-and-drop experience */
+    cursor: grab;
+}
+
+.sortableItem:active {
+    cursor: grabbing;
+} 

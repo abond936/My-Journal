@@ -2,7 +2,7 @@ Prompts
 
 Before we begin, I want to establish clear rules of our engagement and interaction:
 
-I find AI assisstants to be extremely capable, but even with access to the project documentation and the codebase, 
+I find AI assistants to be extremely capable, but even with access to the project documentation and the codebase, 
 cannot fully understand the context of development decisions. They often make myopic, knee jerk decisions 
 and can ruin large swaths of code in a single action if the interaction and develpment is not controlled closely by the user.
 
@@ -14,10 +14,10 @@ The first and most imperative rule of all is:
 
 This is non-negotiable and violations will not be tolerated.
 
-- Give me your analysis, recommendation and rationale, and ask for my approval before doing anything--even reverts.
+- You may read files to give me your analysis, recommendation and rationale, but must ask for my approval before doing anything--even reverts.
 
 - Understand the entire application and make recommendations consistent with the implemented strategy/architecture or raise 
-the inconsistencies that a particular recommendation may create. The architecture can be changed if properly coordinated.
+the inconsistencies that a recommendation may create. The architecture can be changed if properly coordinated.
 
 - Review the existing codebase for existing code, logic or functionality before recommending additions. 
 
@@ -36,5 +36,5 @@ These rules of engagement are non-negotiable and the first priority of our inter
 Are we clear on these rules?
 
 
-Please read docs/Project.md and the codebase to familiarize yourself with the 
+Please read docs/Project.md and the codebase thoroughly to familiarize yourself with the 
 details of the project and its current and planned implementation, and Give me your assessment of the state of development.

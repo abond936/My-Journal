@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import styles from './AdminNavTabs.module.css';
 
 const adminLinks = [
+  { name: 'Cards', href: '/admin/card-admin' },
   { name: 'Entries', href: '/admin/entry-admin' },
   { name: 'Albums', href: '/admin/album-admin' },
   { name: 'Tags', href: '/admin/tag-admin' },

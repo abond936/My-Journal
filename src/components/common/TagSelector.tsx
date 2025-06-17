@@ -58,6 +58,35 @@ const TagSelector: React.FC<TagSelectorProps> = ({
     sortTree(rootTags);
     return rootTags;
   }, [allTags, dimension]);
+
+  const visibleTags = useMemo(() => {
+    if (!searchTerm) {
+      return new Set<string>();
+    }
+
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    const matchingTags = new Set<string>();
+
+    const findMatchingChildren = (tag: TagWithChildren): boolean => {
+      let isMatch = tag.name.toLowerCase().includes(lowerCaseSearchTerm);
+
+      if (tag.children.length > 0) {
+        for (const child of tag.children) {
+          if (findMatchingChildren(child)) {
+            isMatch = true;
+          }
+        }
+      }
+      
+      if (isMatch) {
+        matchingTags.add(tag.id);
+      }
+      return isMatch;
+    };
+
+    tagTree.forEach(findMatchingChildren);
+    return matchingTags;
+  }, [searchTerm, tagTree]);
   
   const toggleTagExpansion = (tagId: string) => {
     setExpandedTags(prev => {
@@ -82,17 +111,8 @@ const TagSelector: React.FC<TagSelectorProps> = ({
     const isExpanded = expandedTags.has(tag.id);
     const hasChildren = tag.children.length > 0;
     const isSelected = selectedTags.includes(tag.id);
-    
-    const matchesSearch = useMemo(() => {
-        if (!searchTerm) return true;
-        const selfMatches = tag.name.toLowerCase().includes(searchTerm.toLowerCase());
-        const childMatches = tag.children.some(child => 
-            child.name.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        return selfMatches || childMatches;
-    }, [tag, searchTerm]);
 
-    if (!matchesSearch) {
+    if (searchTerm && !visibleTags.has(tag.id)) {
       return null;
     }
 
