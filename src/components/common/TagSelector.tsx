@@ -16,7 +16,7 @@ interface TagWithChildren extends Tag {
 }
 
 const TagSelector: React.FC<TagSelectorProps> = ({
-  selectedTags,
+  selectedTags = [],
   onTagsChange,
   dimension
 }) => {

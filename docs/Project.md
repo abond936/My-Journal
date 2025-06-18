@@ -57,7 +57,7 @@
 ---------------------------------
 Status: 🟡 Prototyped
 
-To address the complexities of managing two separate content types (`entries` and `albums`) and to enable richer, more curated storytelling, a new unified architecture has been designed and prototyped. This model moves away from separate Firestore collections and UIs to a single, flexible entity: the `Card`.
+To address the complexities of managing two separate content types (`entries` and `albums`) and to enable richer, more curated storytelling, a new unified architecture has been designed, prototyped and is in the process of being implemented completely parallel to the existing architecture until it is fully operational, at which time, the existing architecture can be removed. This model moves away from separate Firestore collections and UIs to a single, flexible entity: the `Card`.
 
 ### Core Concepts
 The new architecture is built on the following principles:
@@ -98,28 +98,86 @@ The application integrates stories with one's digital photo stores for explorati
 in an immersive flexible or curated manner.
 
 #### Elements
-The primary elements of the app are Entries and Albums categorized by hierarchical Tags.
-- An entry is a primarily text, but includes media
-  - Cover image
-  - Title
-  - Rich Text
-  - Embeded images
-- An album is a primarily media, but includes text
-  - Cover image
-  - Title
-  - Caption
-  - Collection of media
+Formerly, the primary elements of the app were Entries and Albums categorized by hierarchical Tags.
+- An entry was primarily text, but included media
+  - Cover image, Title, Rich Text w/ embeded images
+- An album was primarily media, but included text
+  - Cover image, Title, Caption, Collection of media
 
-- Entries and Albumes can be linked
-- Both Entries and Albums are categorized by Tags on 5 dimensions:
+- Entries and Albumes could be linked and were categorized by Tags on 5 dimensions:
   - who, what, when, where, and reflection
-- Content is presented as cards in a grid for consumption
+- Content was presented as cards in a grid for consumption
+
+The new model utilizes a `card` concept, were both textual and media content can be contained in the same element,
+categorized by tag as the prior model, and presented as cards that can be nested as desired to accomplish various 
+presentation styles.
 
 Legend:
 - ✅ Implemented
 - 🟡 Operational
 - ⭕ Planned
 - ❓ Open Question
+
+## Card Architecture Migration Plan
+---------------------------------
+Status: 🟡 In Progress
+
+This plan outlines the phases required to fully transition the application from its legacy dual-entity architecture (`Entries` and `Albums`) to the new, unified `Card` model. The new system is being built in parallel to the existing one to ensure no disruption to current functionality.
+
+### **Phase 1: Admin Foundation**
+---------------------------------
+Status: ✅ Complete
+
+This phase focused on creating the basic structure for card administration and the ability to view, create, and update cards. The work leverages existing components from the legacy admin system to accelerate development.
+
+- ✅ **Create Admin Route & List View:** Duplicated `entry-admin` to create `card-admin`, displaying a list of all cards.
+- ✅ **Implement Create/Update Form (`CardForm`):** Built a comprehensive form for managing all core `Card` properties.
+- ✅ **Implement Child Card Management:** Created a `ChildCardManager` to handle the hierarchical relationships between cards.
+- ✅ **Implement Gallery Management:** Created a `GalleryManager` to manage image collections within `gallery` type cards.
+
+### **Phase 2: Admin Workflow & Experience**
+---------------------------------
+Status: 🟡 In Progress
+
+This phase focuses on replicating and improving the core administrative workflows.
+
+- ✅ **Stabilization & Hardening:** Audited and secured all `Card` API endpoints and improved server-side validation.
+- ✅ **Refactor Floating Action Button (FAB):** Created a dedicated `CardAdminFAB` for the new admin section.
+- ✅ **Implement "Delete" Functionality:** Added delete capabilities with a safeguard to prevent accidental deletion of nested cards.
+- ⭕ **Implement Bulk Tag Editing:** Add the ability to add/remove tags from multiple selected cards at once.
+- ⭕ **Implement "View as User" Link:** Ensure the "View" link in the admin list points to the card's public consumption page.
+
+### **Phase 3: Consumption Experience**
+---------------------------------
+Status: ⭕ Planned
+
+This is the most critical upcoming phase, focused on building the public-facing, non-admin user experience for consuming `Card` content. This will replace the legacy `/view` page.
+
+1.  **Build a Dynamic `CardProvider`:**
+    -   **Task:** Create a `CardProvider` modeled directly after the existing `ContentProvider`.
+    -   **Details:** This provider will be the heart of the new consumption experience. It will use `useSWRInfinite` to fetch `cards` from a new `/api/cards` endpoint, manage pagination for infinite scroll, and handle dynamic filtering by tags, type, status, etc. This is the key to replicating the legacy system's dynamic feel.
+
+2.  **Enhance the `/api/cards` Endpoint:**
+    -   **Task:** Ensure the main `/api/cards` endpoint is robust and can handle all necessary query parameters for filtering and pagination (`limit`, `lastDocId`, `tags`, `q`, `status`).
+
+3.  **Build the Main Card Feed Page:**
+    -   **Task:** Create a new primary consumption page (e.g., at `/cards` or by replacing `/view`).
+    -   **Details:** This page will use the new `CardProvider` to display a filterable, infinitely-scrolling grid of all published `Card`s, directly replacing the functionality of the old `/view` page.
+
+4.  **Build the Individual Card View Page:**
+    -   **Task:** Create the page for viewing a single `Card` and its content (e.g., `/collections/[id]`).
+    -   **Details:** This page will serve as the destination when a user clicks on a `navigate` type card, displaying its title, content, and any nested children cards.
+
+### **Phase 4: Migration & Finalization**
+---------------------------------
+Status: ⭕ Planned
+
+Once the new `Card` admin and consumption views are fully tested and approved, the final steps can be taken.
+
+- ⭕ **Write Migration Script:** Create a one-time script that reads all documents from the `entries` and `albums` collections and converts them into new documents in the `cards` collection.
+- ⭕ **Verify Migration:** Manually review the migrated data to ensure integrity.
+- ⭕ **Deprecate Old System:** Once the migration is successful, the old admin routes, services, and view pages can be safely removed from the codebase, completing the transition.
+
 
 ## Content Consumption
 =========================
@@ -142,9 +200,9 @@ Status: - ✅ Implemented
 ---------------------------------
 Status: 🟡 Operational
 
-The core function of the application is the presentation for consumption of content--entries and albums.
+The core function of the application is the presentation for consumption of textual and image content.
 The vision is to make this best consumed on mobile and tablet devices in a grid-based card system with 
-navigation through tag and type filters, infinite scroll and related content links.
+navigation through tag (and formerly type) filters, infinite scroll and related content links.
 
 #### Current Features
 - Content layout connected to all content.
@@ -157,30 +215,48 @@ Function
 - *Related content*
 - *Order options*
 Styling 
-- Multi-sized cards
-  - Card height and width ratios of each other to facilitate grid structure
-- Varying styling
-  - Titles, Tags, Excerpts overlaid/non-overlaid
+- Multi-sized cards - Card height and width ratios of each other to facilitate grid structure
+- Varying styling - Titles, Tags, Excerpts overlaid/non-overlaid
 - Card animation - image motion, gifs, videos
 
-- Card Types
-   - Entry - Click to page, click back
-     - Story - 
-     - Reflection
-     - Q&A
-     - Callout
-     - Quote
-   - Album - x/y, Horizontal Scroll, Click to Google-like gallery, Click to Carosel, back
+- Card Types - story, gallery, quote, qa,
+   - gallery - x/y, Horizontal Scroll, Click to Google-like gallery, Click to Carosel, back
    - Related
 
 
 ❓ Open Questions:
 - How to include 'related' content?
 
+### **Card View** - New
+---------------------------------
+Status: 🟡 Operational
+
+#### Current 
+- Title
+- Cover image
+- Content
+- Gallery
+- Tags
+- Children
+
+#### Next
+Function
+- *Add 'related' content*
+
+
+Styling
+- *Emulate edit page for Story*
+- Vary page by Type - Story, Reflection, Q&A, Callout, Quote
+- Vary by orientation - Landscape, Portrait
+- Style back button
+
+❓ Open Questions:
+
+
 
 ### **Entry View**
 ---------------------------------
-Status: 🟡 Operational
+Status: 🟡 Operational - On hold
 
 Entry view contains title, cover image, tags, content.
 
@@ -208,7 +284,7 @@ Styling
 
 ### **Album View**
 ---------------------------------
-Status: 🟡 Operational-barely
+Status: 🟡 Operational-barely - On hold
 
 Album view contains a title, tags, caption and grid display of images.
 

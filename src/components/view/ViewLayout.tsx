@@ -4,16 +4,21 @@ import React, { useState } from 'react';
 import Navigation from '@/components/common/Navigation';
 import TagTree from '@/components/common/TagTree';
 import styles from './ViewLayout.module.css';
-import { useContentContext } from '@/components/providers/ContentProvider';
-import ContentTypeFilter from '@/components/view/ContentTypeFilter';
 
 interface ViewLayoutProps {
   children: React.ReactNode;
+  selectedTags: string[];
+  onTagSelect: (tagId: string) => void;
+  FilterComponent?: React.ReactNode;
 }
 
-export default function ViewLayout({ children }: ViewLayoutProps) {
+export default function ViewLayout({ 
+  children,
+  selectedTags,
+  onTagSelect,
+  FilterComponent,
+}: ViewLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const { toggleTag, selectedTags } = useContentContext();
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -32,12 +37,12 @@ export default function ViewLayout({ children }: ViewLayoutProps) {
         </button>
 
         <div className={`${styles.sidebar} ${sidebarOpen ? styles.open : styles.closed}`}>
-          <TagTree onTagSelect={toggleTag} selectedTags={selectedTags} />
+          <TagTree onTagSelect={onTagSelect} selectedTags={selectedTags} />
         </div>
 
         <main className={`${styles.mainContent} ${sidebarOpen ? styles.mainContentOpen : ''}`}>
           <div className={styles.topNavContainer}>
-            <ContentTypeFilter />
+            {FilterComponent}
           </div>
           <div className={styles.pageContent}>
             {children}

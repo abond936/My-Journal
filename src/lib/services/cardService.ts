@@ -1,6 +1,8 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
-import { Card } from '@/lib/types/card';
+import { Card, cardSchema } from '@/lib/types/card';
 import { getTagAncestors, getTagPaths } from '@/lib/firebase/tagDataAccess';
+import { getFirestore, writeBatch } from 'firebase-admin/firestore';
+import { doc } from 'firebase-admin/firestore';
 
 const adminApp = getAdminApp();
 const firestore = adminApp.firestore();
@@ -139,6 +141,67 @@ export async function getCardsByIds(ids: string[]): Promise<Card[]> {
 }
 
 /**
+ * Retrieves a paginated subset of cards from a given list of IDs.
+ * @param ids - The full list of card IDs to paginate through.
+ * @param options - Options for pagination (limit, lastDocId).
+ * @returns A paginated result of cards from the specified list.
+ */
+export async function getPaginatedCardsByIds(
+  ids: string[],
+  options: {
+    limit?: number;
+    lastDocId?: string;
+  } = {}
+): Promise<{ items: Card[]; lastDocId?: string; hasMore: boolean }> {
+  const { limit = 10, lastDocId } = options;
+
+  if (!ids || ids.length === 0) {
+    return { items: [], hasMore: false };
+  }
+
+  const startIndex = lastDocId ? ids.indexOf(lastDocId) + 1 : 0;
+  if (startIndex < 0 || startIndex >= ids.length) {
+    return { items: [], hasMore: false };
+  }
+
+  const endIndex = startIndex + limit;
+  const pageIds = ids.slice(startIndex, endIndex);
+
+  if (pageIds.length === 0) {
+    return { items: [], hasMore: false };
+  }
+
+  const items = await getCardsByIds(pageIds);
+  const newLastDocId = items.length > 0 ? items[items.length - 1].id : undefined;
+  const hasMore = endIndex < ids.length;
+
+  return { items, lastDocId: newLastDocId, hasMore };
+}
+
+/**
+ * Updates the tags for a list of cards in a batch operation.
+ * @param cardIds - The IDs of the cards to update.
+ * @param tags - The new array of tag IDs to set for all cards.
+ * @returns A promise that resolves when the batch update is complete.
+ */
+export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise<void> {
+  const db = getFirestore();
+  const batch = writeBatch(db);
+
+  const newInheritedTags = await getInheritedTags(tags);
+
+  cardIds.forEach(id => {
+    const cardRef = doc(db, 'cards', id);
+    batch.update(cardRef, { 
+      tags,
+      inheritedTags: newInheritedTags,
+    });
+  });
+
+  await batch.commit();
+}
+
+/**
  * Deletes all documents from the 'cards' collection.
  * This is a utility function for seeding and should be used with caution.
  */
@@ -174,6 +237,59 @@ export async function deleteCard(cardId: string): Promise<void> {
 }
 
 /**
+ * Searches for cards based on a query string across multiple fields.
+ * This is a server-side function.
+ * @param options - Options for filtering and pagination.
+ * @returns A paginated result of cards.
+ */
+export async function searchCards(options: {
+  q: string;
+  status?: Card['status'] | 'all';
+  limit?: number;
+  lastDocId?: string;
+} = { q: '' }): Promise<{ items: Card[]; lastDocId?: string; hasMore: boolean }> {
+  const { q, status = 'published', limit = 10, lastDocId } = options;
+  const db = getFirestore();
+  let query: FirebaseFirestore.Query = db.collection(CARDS_COLLECTION);
+
+  // New tag-based search logic
+  const tags = q.split(' ').filter(tag => tag.trim() !== '');
+
+  if (tags.length > 0) {
+    // Firestore allows up to 10 `array-contains` clauses for 'AND' operations.
+    // We will use `inheritedTags` which should contain the tag itself and its ancestors.
+    tags.forEach(tag => {
+      query = query.where('inheritedTags', 'array-contains', tag.trim());
+    });
+  } else {
+    // If no tags are provided, return no results.
+    return { items: [], hasMore: false };
+  }
+
+  if (status !== 'all') {
+    query = query.where('status', '==', status);
+  }
+
+  query = query.orderBy('createdAt', 'desc');
+
+  if (lastDocId) {
+    const lastDocSnap = await db.collection(CARDS_COLLECTION).doc(lastDocId).get();
+    if (lastDocSnap.exists) {
+      query = query.startAfter(lastDocSnap);
+    }
+  }
+
+  const snapshot = await query.limit(limit).get();
+  
+  const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Card));
+  
+  const hasMore = items.length === limit;
+  const newLastDocId = items.length > 0 ? items[items.length - 1].id : undefined;
+
+  return { items, lastDocId: newLastDocId, hasMore };
+}
+
+/**
  * Retrieves a paginated and filtered list of cards from Firestore.
  * This is a server-side function.
  * @param options - Options for filtering and pagination.
@@ -183,43 +299,70 @@ export async function getCards(options: {
   q?: string;
   status?: Card['status'] | 'all';
   type?: Card['type'] | 'all';
+  tags?: string[];
   childrenIds_contains?: string;
   limit?: number;
   lastDocId?: string;
-} = {}): Promise<{ items: Card[]; lastDocId?: string }> {
-  const { q, status = 'all', type = 'all', childrenIds_contains, limit = 10, lastDocId } = options;
-  let query: FirebaseFirestore.Query = firestore.collection(CARDS_COLLECTION);
+} = {}): Promise<{ items: Card[]; lastDocId?: string; hasMore: boolean }> {
+  const {
+    q,
+    status = 'published',
+    type = 'all',
+    tags,
+    childrenIds_contains,
+    limit = 10,
+    lastDocId,
+  } = options;
 
-  // Apply filters
-  if (status && status !== 'all') {
-    query = query.where('status', '==', status);
-  }
-  if (type && type !== 'all') {
-    query = query.where('type', '==', type);
-  }
-  if (childrenIds_contains) {
-    query = query.where('childrenIds', 'array-contains', childrenIds_contains);
-  }
+  const collectionRef = firestore.collection(CARDS_COLLECTION);
+  let query = collectionRef.orderBy('createdAt', 'desc');
 
-  // Note: Firestore does not support full-text search natively.
-  // A simple "startsWith" search on the title is implemented here.
-  // For more complex search, a dedicated search service like Algolia is needed.
   if (q) {
     query = query.where('title', '>=', q).where('title', '<=', q + '\uf8ff');
   }
 
-  query = query.orderBy('createdAt', 'desc').limit(limit);
+  if (status !== 'all') {
+    query = query.where('status', '==', status);
+  }
+
+  if (type !== 'all') {
+    query = query.where('type', '==', type);
+  }
+
+  if (tags && tags.length > 0) {
+    query = query.where('inheritedTags', 'array-contains-any', tags);
+  }
+  
+  if (childrenIds_contains) {
+    query = query.where('childrenIds', 'array-contains', childrenIds_contains);
+  }
 
   if (lastDocId) {
-    const lastDoc = await firestore.collection(CARDS_COLLECTION).doc(lastDocId).get();
-    if (lastDoc.exists) {
-      query = query.startAfter(lastDoc);
+    const lastDocSnap = await collectionRef.doc(lastDocId).get();
+    if (lastDocSnap.exists) {
+      query = query.startAfter(lastDocSnap);
     }
   }
 
-  const snapshot = await query.get();
-  const items = snapshot.docs.map(doc => doc.data() as Card);
-  const newLastDocId = snapshot.docs[snapshot.docs.length - 1]?.id;
+  const querySnapshot = await query.limit(limit).get();
+  
+  const items = querySnapshot.docs
+    .map(doc => {
+      const data = doc.data();
+      // Add the document ID to the data object
+      data.id = doc.id;
+      const validation = cardSchema.safeParse(data);
+      if (validation.success) {
+        return validation.data as Card;
+      } else {
+        console.warn(`[Data Integrity] Invalid card data found for doc id: ${doc.id}. Issues:`, validation.error.issues);
+        return null;
+      }
+    })
+    .filter((item): item is Card => item !== null);
 
-  return { items, lastDocId: newLastDocId };
+  const hasMore = querySnapshot.docs.length === limit;
+  const newLastDocId = items.length > 0 ? items[items.length - 1].id : undefined;
+
+  return { items, lastDocId: newLastDocId, hasMore };
 } 

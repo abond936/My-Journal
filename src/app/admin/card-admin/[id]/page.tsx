@@ -1,15 +1,16 @@
 'use client';
 
-import React from 'react';
+import React, { use } from 'react';
 import CardAdminClientPage from './CardAdminClientPage';
 
 interface EditCardPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function EditCardPage({ params }: EditCardPageProps) {
-  const isNew = params.id === 'new';
-  return <CardAdminClientPage cardId={isNew ? null : params.id} />;
+  const { id } = use(params);
+  const isNew = id === 'new';
+  return <CardAdminClientPage cardId={isNew ? null : id} />;
 } 

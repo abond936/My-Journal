@@ -1,20 +1,24 @@
 // src/lib/types/photo.ts
 
+import { z } from 'zod';
+
 // Defines the core metadata for a single photo.
-export interface PhotoMetadata {
-  id: string;
-  filename: string;
-  path: string; // This will be the web-accessible path (e.g., /images/local/...)
-  width: number;
-  height: number;
-  lastModified: string;
-  size: number;
-  objectPosition?: string; // e.g., "50% 50%"
-  thumbnailUrl: string; 
-  previewUrl: string;
-  webUrl: string; 
-  caption?: string;
-}
+export const photoMetadataSchema = z.object({
+  id: z.string(),
+  filename: z.string(),
+  path: z.string(),
+  width: z.number(),
+  height: z.number(),
+  lastModified: z.string(),
+  size: z.number(),
+  objectPosition: z.string().optional(),
+  thumbnailUrl: z.string(),
+  previewUrl: z.string(),
+  webUrl: z.string(),
+  caption: z.string().optional(),
+});
+
+export type PhotoMetadata = z.infer<typeof photoMetadataSchema>;
 
 // Defines a node in the folder tree structure for the PhotoPicker.
 export interface TreeNode {

@@ -37,6 +37,11 @@ const initialState: State = {
   inheritedTags: [],
   tagPaths: [],
   childrenIds: [],
+  who: [],
+  what: [],
+  when: [],
+  where: [],
+  reflection: [],
 };
 
 function cardReducer(state: State, action: Action): State {
