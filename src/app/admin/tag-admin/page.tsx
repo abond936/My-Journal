@@ -1,88 +1,180 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { useTag, TagProvider } from '@/components/providers/TagProvider';
+import React, { useState, useCallback, useMemo } from 'react';
+import { useTag, TagProvider, TagWithChildren } from '@/components/providers/TagProvider';
 import { Tag } from '@/lib/types/tag';
 import { TagAdminList } from '@/components/admin/tag-admin/TagAdminList';
 import styles from './tag-admin.module.css';
+import { buildTagTree } from '@/lib/utils/tagUtils';
+import TagTreeView from '@/components/admin/tag-admin/TagTreeView';
 
-// Helper to find a tag and its parent in the tree
-const findTagAndParent = (nodes: Tag[], tagId: string, parent: Tag[] | null = null): { tag: Tag; parent: Tag[] | null } | null => {
-  for (const node of nodes) {
-    if (node.id === tagId) return { tag: node, parent };
-    if (node.children) {
-      const found = findTagAndParent(node.children, tagId, nodes);
-      if (found) return found;
+// This function can remain as it is, it's a pure utility for converting a flat list to a tree
+const buildTagTree = (tags: Tag[]): TagWithChildren[] => {
+  const tagMap = new Map<string, TagWithChildren>();
+  const rootTags: TagWithChildren[] = [];
+
+  if (!tags) return [];
+
+  // It's critical to create a deep copy to avoid mutating the source array (from SWR or state)
+  const tagsCopy = JSON.parse(JSON.stringify(tags));
+
+  tagsCopy.forEach((tag: Tag) => {
+    tagMap.set(tag.id, { ...tag, children: [] });
+  });
+
+  tagsCopy.forEach((tag: Tag) => {
+    const tagNode = tagMap.get(tag.id);
+    if (tagNode) {
+      if (tag.parentId && tagMap.has(tag.parentId)) {
+        const parentNode = tagMap.get(tag.parentId);
+        parentNode?.children.push(tagNode);
+      } else {
+        rootTags.push(tagNode);
+      }
     }
-  }
-  return null;
+  });
+
+  const sortTags = (tagNodes: TagWithChildren[]) => {
+    tagNodes.sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name));
+    tagNodes.forEach(t => sortTags(t.children));
+  };
+
+  sortTags(rootTags);
+  return rootTags;
 };
 
+// --- Core UI Logic Hook ---
 function useTagManagement() {
-  const { dimensionalTree, createTag, updateTag, deleteTag, loading, error, mutate } = useTag();
+  const { tags: swrTags, createTag, updateTag, deleteTag, loading, error: swrError, mutate } = useTag();
+  const [temporaryTags, setTemporaryTags] = useState<Tag[] | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleReorder = useCallback(async (activeId: string, overId: string | null, placement: 'before' | 'after' | null) => {
-    if (!overId || !placement || activeId === overId) return;
+  // The single source of truth for rendering: use the temporary override if it exists, otherwise use the confirmed SWR data.
+  const tagsToUse = temporaryTags || swrTags;
 
-    const treeClone = JSON.parse(JSON.stringify(dimensionalTree));
+  const dimensionalTree = useMemo(() => {
+    if (!tagsToUse || tagsToUse.length === 0) return [];
 
-    const activeResult = findTagAndParent(treeClone, activeId);
-    const overResult = findTagAndParent(treeClone, overId);
+    const masterTagTree = buildTagTree(tagsToUse);
     
-    const activeParentId = activeResult?.tag?.parentId ?? null;
-    const overParentId = overResult?.tag?.parentId ?? null;
+    const dimensions: Record<string, TagWithChildren> = {
+      who: { id: 'dim-who', name: 'Who', children: [] },
+      what: { id: 'dim-what', name: 'What', children: [] },
+      when: { id: 'dim-when', name: 'When', children: [] },
+      where: { id: 'dim-where', name: 'Where', children: [] },
+      reflection: { id: 'dim-reflection', name: 'Reflection', children: [] },
+    };
+    const uncategorized: TagWithChildren = { id: 'dim-uncategorized', name: 'Uncategorized', children: [] };
 
-    if (!activeResult || !overResult || activeParentId !== overParentId) {
-      console.log("Reorder invalid. Items must share the same parent.");
+    masterTagTree.forEach(rootNode => {
+      if (rootNode.dimension && dimensions[rootNode.dimension]) {
+        dimensions[rootNode.dimension].children.push(rootNode);
+      } else {
+        uncategorized.children.push(rootNode);
+      }
+    });
+
+    const result = Object.values(dimensions);
+    if (uncategorized.children.length > 0) {
+      result.push(uncategorized);
+    }
+    
+    return result;
+  }, [tagsToUse]);
+
+  const handleReorder = useCallback(async (activeId: string, overId: string, placement: 'before' | 'after') => {
+    if (activeId === overId) return;
+    setIsSaving(true);
+    setError(null);
+
+    const currentTags = temporaryTags || swrTags || [];
+    const activeIndex = currentTags.findIndex(t => t.id === activeId);
+    const overIndex = currentTags.findIndex(t => t.id === overId);
+    if (activeIndex === -1 || overIndex === -1) return;
+
+    const activeTag = { ...currentTags[activeIndex] };
+    const overTag = { ...currentTags[overIndex] };
+    console.log('--- handleReorder ---');
+    console.log('activeTag:', activeTag);
+    console.log('overTag:', overTag);
+    console.log('activeTag.parentId:', activeTag.parentId, 'overTag.parentId:', overTag.parentId);
+    if (activeTag.parentId !== overTag.parentId) {
+      console.log('Blocked: parentIds do not match');
       return;
     }
 
-    const siblings = overResult.parent ?? treeClone;
-    const overIndex = siblings.findIndex(t => t.id === overId);
-
-    let newOrder;
-
-    if (placement === 'before') {
-      const prevTag = siblings[overIndex - 1];
-      const nextTag = siblings[overIndex];
-      const orderPrev = prevTag ? prevTag.order ?? 0 : 0;
-      const orderNext = nextTag.order ?? (orderPrev + 2);
-      newOrder = (orderPrev + orderNext) / 2;
-    } else { // 'after'
-      const prevTag = siblings[overIndex];
-      const nextTag = siblings[overIndex + 1];
-      const orderPrev = prevTag.order ?? 0;
-      const orderNext = nextTag ? nextTag.order ?? (orderPrev + 2) : (orderPrev + 2);
-      newOrder = (orderPrev + orderNext) / 2;
-    }
-
-    // --- Optimistic Update ---
-    const optimisticData = JSON.parse(JSON.stringify(dimensionalTree));
-    const optimisticTag = findTagAndParent(optimisticData, activeId)?.tag;
-    if (optimisticTag) {
-      optimisticTag.order = newOrder;
-      // You might need a more sophisticated way to re-sort the local tree if visual order is critical
-    }
-    mutate(optimisticData, false); // Update local state immediately, but don't re-fetch
-
-    console.log(`Reordering ${activeId} to new order: ${newOrder}`);
-    await updateTag(activeId, { order: newOrder });
-
-  }, [dimensionalTree, updateTag, mutate]);
-
-  const handleReparent = useCallback(async (activeId: string, overId: string | null) => {
-    if (!overId) {
-      console.log("Cannot reparent to a null target.");
+    let siblings = currentTags
+      .filter(t => t.parentId === activeTag.parentId)
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    console.log('siblings (before removal):', siblings.map(t => ({ id: t.id, name: t.name, order: t.order })));
+    // Remove the activeTag from siblings
+    siblings = siblings.filter(t => t.id !== activeId);
+    // Find the index to insert
+    let insertIndex = siblings.findIndex(t => t.id === overId);
+    if (insertIndex === -1) {
+      console.log('Blocked: overSiblingIndex === -1');
       return;
     }
-    console.log(`Reparenting ${activeId} to be a child of ${overId}`);
-    await updateTag(activeId, { parentId: overId });
-  }, [updateTag]);
+    if (placement === 'after') {
+      insertIndex += 1;
+    }
+    console.log('siblings (after removal):', siblings.map(t => ({ id: t.id, name: t.name, order: t.order })));
+    console.log('Insert at index:', insertIndex, 'placement:', placement);
+    // Insert the activeTag at the new position
+    siblings.splice(insertIndex, 0, activeTag);
+    // Calculate new order for the moved tag
+    let prevOrder = insertIndex > 0 ? siblings[insertIndex - 1].order ?? 0 : 0;
+    let nextOrder = insertIndex < siblings.length - 1 ? siblings[insertIndex + 1].order ?? prevOrder + 2 : prevOrder + 2;
+    let newOrder = (prevOrder + nextOrder) / 2;
+    console.log('prevOrder:', prevOrder, 'nextOrder:', nextOrder, 'newOrder:', newOrder);
+    const newFlatTags = currentTags.map(t => t.id === activeId ? { ...t, order: newOrder } : t);
+    setTemporaryTags(newFlatTags);
+
+    try {
+      const result = await updateTag(activeId, { order: newOrder });
+      console.log('Backend update result:', result);
+      await mutate();
+    } catch (err) {
+      setError('Failed to reorder tag. Please try again.');
+      console.error('Failed to reorder tag:', err);
+    } finally {
+      setTemporaryTags(null);
+      setIsSaving(false);
+    }
+  }, [temporaryTags, swrTags, updateTag, mutate]);
+
+  const handleReparent = useCallback(async (activeId: string, overId:string) => {
+    if (activeId === overId) return;
+    setIsSaving(true);
+    setError(null);
+
+    const currentTags = temporaryTags || swrTags || [];
+    
+    const newSiblings = currentTags.filter(t => t.parentId === overId);
+    const maxOrder = newSiblings.reduce((max, t) => Math.max(max, t.order ?? 0), 0);
+    const newOrder = maxOrder + 10;
+
+    const newFlatTags = currentTags.map(t => t.id === activeId ? { ...t, parentId: overId, order: newOrder } : t);
+    
+    setTemporaryTags(newFlatTags);
+
+    try {
+      await updateTag(activeId, { parentId: overId, order: newOrder });
+      await mutate();
+    } catch (err) {
+      setError('Failed to reparent tag. Please try again.');
+    } finally {
+      setTemporaryTags(null);
+      setIsSaving(false);
+    }
+  }, [temporaryTags, swrTags, updateTag, mutate]);
 
   return {
     tagTree: dimensionalTree,
     loading,
-    error,
+    error: error || swrError,
+    isSaving,
     handleCreateTag: createTag,
     handleUpdateTag: updateTag,
     handleDeleteTag: deleteTag,
@@ -96,6 +188,7 @@ function AdminTagsPageContent() {
     tagTree,
     loading,
     error,
+    isSaving,
     handleCreateTag,
     handleUpdateTag,
     handleDeleteTag,
@@ -109,17 +202,11 @@ function AdminTagsPageContent() {
       <p>Drag and drop to reorder or reparent tags. Use the `+` button to add a child tag.</p>
 
       {loading && <p>Loading tags...</p>}
-      {error && <p style={{ color: 'red' }}>{error.message}</p>}
+      {isSaving && <p style={{ color: 'blue' }}>Saving changes...</p>}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
 
       {!loading && !error && (
-        <TagAdminList
-          tags={tagTree}
-          onUpdateTag={handleUpdateTag}
-          onDeleteTag={handleDeleteTag}
-          onCreateTag={handleCreateTag}
-          onReorder={handleReorder}
-          onReparent={handleReparent}
-        />
+        <TagTreeView />
       )}
     </div>
   );
@@ -131,4 +218,4 @@ export default function AdminTagsPage() {
       <AdminTagsPageContent />
     </TagProvider>
   )
-} 
+}

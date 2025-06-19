@@ -1,207 +1,166 @@
 'use client';
 
-import React, { createContext, useContext, useCallback, useMemo } from 'react';
-import useSWR from 'swr';
+import React, { createContext, useContext, useMemo, ReactNode, useCallback } from 'react';
+import useSWR, { SWRMutator } from 'swr';
 import { Tag } from '@/lib/types/tag';
+import { buildTagTree } from '@/lib/utils/tagUtils';
 
-// The fetcher function for SWR, which can be reused.
-const fetcher = (url: string) => fetch(url).then(res => {
-    if (!res.ok) {
-        throw new Error('An error occurred while fetching the data.');
-    }
-    return res.json();
-});
+// --- Helper Functions ---
 
-// New Interface for a tag node in the tree
-interface TagNode extends Tag {
-  children: TagNode[];
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
+export interface TagWithChildren extends Tag {
+  children: TagWithChildren[];
 }
 
-// New Interface for a dimension with its tag tree
-interface DimensionWithTree {
-  dimension: Tag['dimension'];
-  tree: TagNode[];
-}
+// --- Context Definition ---
 
-interface TagContextType {
+export interface TagContextType {
   tags: Tag[];
-  tagsByDimension: Record<Tag['dimension'], Tag[]>;
-  dimensionalTree: TagNode[]; // <-- Changed from DimensionWithTree[]
   loading: boolean;
-  error: Error | undefined;
+  error: Error | null;
   createTag: (tagData: Omit<Tag, 'id'>) => Promise<Tag | undefined>;
   updateTag: (id: string, tagData: Partial<Omit<Tag, 'id'>>) => Promise<Tag | undefined>;
   deleteTag: (id: string) => Promise<void>;
+  getTagById: (id: string) => Tag | undefined;
+  getTagsByIds: (ids: string[]) => Tag[];
+  getTagPath: (id: string) => Tag[];
+  masterTree: TagWithChildren[];
+  dimensionTree: Record<string, TagWithChildren[]>;
+  mutate: SWRMutator<Tag[], any>;
 }
 
 const TagContext = createContext<TagContextType | undefined>(undefined);
 
-// The canonical order for dimensions
-const DIMENSION_ORDER: Tag['dimension'][] = ['who', 'what', 'when', 'where', 'reflection'];
+// --- Provider Component ---
 
-export function TagProvider({ children }: { children: React.ReactNode }) {
-  const { data: tags, error, isLoading, mutate } = useSWR<Tag[]>('/api/tags', fetcher);
+export function TagProvider({ children }: { children: ReactNode }) {
+  const { data: tags, error, isLoading, mutate } = useSWR<Tag[]>('/api/tags', fetcher, {
+    fallbackData: [],
+  });
 
-  const tagsByDimension = React.useMemo(() => {
-    const byDimension: Record<Tag['dimension'], Tag[]> = {
-        who: [], what: [], when: [], where: [], reflection: []
-    };
-    if (tags) {
-        tags.forEach(tag => {
-            if (tag.dimension && byDimension[tag.dimension]) {
-                byDimension[tag.dimension].push(tag);
-            }
-        });
-    }
-    return byDimension;
-  }, [tags]);
-
-  // New Memoized function to build the dimensional tree
-  const dimensionalTree = useMemo(() => {
-    if (!tags) return [];
-
-    const buildTree = (tagList: Tag[]): TagNode[] => {
-      const tagMap = new Map<string, TagNode>();
-      const roots: TagNode[] = [];
-
-      // Initialize map with nodes that have children arrays
-      tagList.forEach(tag => {
-        tagMap.set(tag.id, { ...tag, children: [] });
-      });
-
-      // Populate children arrays
-      tagList.forEach(tag => {
-        if (tag.parentId) {
-          const parent = tagMap.get(tag.parentId);
-          if (parent) {
-            parent.children.push(tagMap.get(tag.id)!);
-          }
-        } else {
-          roots.push(tagMap.get(tag.id)!);
-        }
-      });
-      
-      // Recursive sort function
-      const sortTags = (nodes: TagNode[]) => {
-        nodes.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-        nodes.forEach(node => {
-          if (node.children.length > 0) {
-            sortTags(node.children);
-          }
-        });
-      };
-
-      sortTags(roots);
-      return roots;
-    };
-    
-    // Build the final structure, ordered by DIMENSION_ORDER
-    const allRoots = DIMENSION_ORDER.flatMap(dimension => {
-      const tagsForDimension = tagsByDimension[dimension] || [];
-      return buildTree(tagsForDimension);
-    });
-
-    // Sort the root tags themselves according to the canonical dimension order
-    allRoots.sort((a, b) => {
-      const aIndex = DIMENSION_ORDER.indexOf(a.dimension!);
-      const bIndex = DIMENSION_ORDER.indexOf(b.dimension!);
-      return aIndex - bIndex;
-    });
-
-    return allRoots;
-
-  }, [tags, tagsByDimension]);
-
-  const createTag = useCallback(async (tagData: Omit<Tag, 'id'>) => {
+  const createTag = useCallback(async (tagData: Omit<Tag, 'id'>): Promise<Tag | undefined> => {
     try {
-      const response = await fetch('/api/tags', {
+      const newTag = await fetch('/api/tags', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(tagData),
-      });
+      }).then(res => res.json());
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to create tag: ${errorText}`);
-      }
-
-      const newTag = await response.json();
-      mutate(currentTags => [...(currentTags || []), newTag], false); // Optimistic update
+      mutate(); // Revalidate the tags list
       return newTag;
     } catch (e) {
-      console.error('Error creating tag:', e);
-      // Optionally re-fetch data on error to revert optimistic update
-      mutate(); 
+      console.error("Failed to create tag", e);
       return undefined;
     }
   }, [mutate]);
 
-  const updateTag = useCallback(async (id: string, tagData: Partial<Omit<Tag, 'id'>>) => {
+  const updateTag = useCallback(async (id: string, tagData: Partial<Omit<Tag, 'id'>>): Promise<Tag | undefined> => {
     try {
-      const response = await fetch(`/api/tags/${id}`, {
+      const updatedTag = await fetch(`/api/tags/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(tagData),
-      });
+      }).then(res => res.json());
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to update tag: ${errorText}`);
-      }
-
-      const updatedTag = await response.json();
-      mutate(currentTags => 
-          currentTags?.map(tag => (tag.id === id ? updatedTag : tag)) || [], 
-          false
-      ); // Optimistic update
       return updatedTag;
     } catch (e) {
-      console.error(`Error updating tag ${id}:`, e);
-      mutate();
+      console.error("Failed to update tag", e);
       return undefined;
     }
   }, [mutate]);
 
-  const deleteTag = useCallback(async (id: string) => {
+  const deleteTag = useCallback(async (id: string): Promise<void> => {
     try {
-      const response = await fetch(`/api/tags/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to delete tag: ${errorText}`);
-      }
-      
-      mutate(currentTags => currentTags?.filter(tag => tag.id !== id) || [], false); // Optimistic update
+      await fetch(`/api/tags/${id}`, { method: 'DELETE' });
+      mutate(); // Revalidate the tags list
     } catch (e) {
-      console.error(`Error deleting tag ${id}:`, e);
-      mutate();
+      console.error("Failed to delete tag", e);
     }
   }, [mutate]);
 
-  const value = useMemo(() => ({
+  const getTagById = useCallback((id: string) => {
+    return tags?.find(tag => tag.id === id);
+  }, [tags]);
+
+  const getTagsByIds = useCallback((ids: string[]) => {
+    if (!tags) return [];
+    return tags.filter(tag => ids.includes(tag.id));
+  }, [tags]);
+
+  const getTagPath = useCallback((id: string) => {
+    const path: Tag[] = [];
+    let currentTag = getTagById(id);
+    while (currentTag) {
+      path.unshift(currentTag);
+      currentTag = currentTag.parentId ? getTagById(currentTag.parentId) : undefined;
+    }
+    return path;
+  }, [getTagById]);
+
+  // --- Tree Construction ---
+  console.log('[TagProvider] fetched tags:', tags);
+  const masterTree = useMemo(() => {
+    const tree = buildTagTree(tags || []);
+    console.log('[TagProvider] built masterTree:', tree);
+    return tree;
+  }, [tags]);
+
+  // Build dimensionTree: for each dimension, include the full subtree rooted at each tag with that dimension
+  const dimensionTree = useMemo(() => {
+    const dims = ['who', 'what', 'when', 'where', 'reflection'];
+    const result: Record<string, TagWithChildren[]> = {};
+    // Build the full tree once
+    const fullTree = buildTagTree(tags || []);
+    dims.forEach(dim => {
+      // For each dimension, find roots with that dimension
+      result[dim] = fullTree.filter(root => root.dimension === dim);
+    });
+    console.log('[TagProvider] built dimensionTree:', result);
+    return result;
+  }, [tags]);
+
+  const contextValue = useMemo(() => ({
     tags: tags || [],
-    tagsByDimension,
-    dimensionalTree, // <-- Add to context value
     loading: isLoading,
-    error,
+    error: error || null,
     createTag,
     updateTag,
     deleteTag,
-  }), [tags, tagsByDimension, dimensionalTree, isLoading, error, createTag, updateTag, deleteTag]);
+    getTagById,
+    getTagsByIds,
+    getTagPath,
+    masterTree,
+    dimensionTree,
+    mutate,
+  }), [
+    tags, 
+    isLoading, 
+    error, 
+    createTag, 
+    updateTag, 
+    deleteTag, 
+    getTagById, 
+    getTagsByIds, 
+    getTagPath,
+    masterTree,
+    dimensionTree,
+    mutate
+  ]);
 
   return (
-    <TagContext.Provider value={value}>
+    <TagContext.Provider value={contextValue}>
       {children}
     </TagContext.Provider>
   );
 }
 
-export function useTag() {
+// --- Custom Hook ---
+
+export const useTag = (): TagContextType => {
   const context = useContext(TagContext);
   if (context === undefined) {
     throw new Error('useTag must be used within a TagProvider');
   }
   return context;
-} 
+}; 

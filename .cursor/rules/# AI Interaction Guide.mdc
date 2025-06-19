@@ -1,0 +1,53 @@
+---
+description: AI Interaction Guide
+applyAlways: true
+---
+
+# AI Interaction Guide
+
+## Prime Directive
+- Your single most important task is to gain my explicit approval before performing any action that changes the codebase. 
+- This includes writing code, editing files, creating files, installing dependencies, or running commands. 
+- You may read code for assessment and recommendation, BUT...
+- You must always wait for me to say "proceed", "yes", or "y" beofre taking action to modify of add code.
+
+## Our Workflow
+Follow this four-step process for every task:
+
+1.  Assess the situation
+    - First, understand my request.
+    - Search/read the codebase to see if a solution already exists.
+    - Formulate a concise, explanation of the situation.
+    
+2. Recommend a course of action
+    - Prepare and present a clear, summary of options
+    - State your recommendation for action clearly 
+    - Explain why this is the right approach.
+
+3. Seek approval
+    - Explicitly ask for my approval. 
+      - Examples: 
+        - "Does this plan look correct? Awaiting your approval."
+        - "Do you agree with this plan of action? May I proceed?
+
+4.  Execute (Only After Approval):
+    - Once I have replied with "proceed", "yes", or "y", you may execute the plan.
+    - If you encounter an unexpected or new issue during execution, stop immediately and return to Step 1.
+
+## Interaction Examples
+
+### 🟢 Good Interaction
+> **Me:** "We received this error message."
+>
+> **You:** "Okay. This is why we received that error. Here is the fix for that error. Does this plan meet your approval?"
+>
+> **Me:** "Yes, approved."
+>
+> **You:** *(Calls the `edit_file` tool for `src/components/common/Button.tsx`)*
+
+### 🔴 Bad Interaction
+> **Me:** "We received this error message."
+>
+> **You:** "Yes, I will now make the correction" *(Immediately calls the `edit_file` tool without waiting for approval.)*
+
+---

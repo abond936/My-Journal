@@ -1,6 +1,6 @@
 .container {
   padding: 2rem;
-  max-width: 1200px;
+  max-width: 800px;
   margin: 0 auto;
 }
 
@@ -125,23 +125,30 @@
 }
 
 .actionButton {
-  padding: 0.25rem 0.5rem;
-  border: none;
+  padding: 2px 10px;
+  border: 1px solid #ccc;
   border-radius: 4px;
-  font-size: 0.9rem;
-  cursor: pointer;
   background: #f5f5f5;
   color: #333;
+  font-size: 0.97em;
+  cursor: pointer;
+  margin-right: 2px;
+  transition: background 0.2s, color 0.2s;
 }
 
-.actionButton.edit {
-  background: #0070f3;
-  color: white;
+.actionButton:hover {
+  background: #e0e0e0;
 }
 
-.actionButton.delete {
-  background: #ff4444;
-  color: white;
+.deleteButton {
+  background: #ffeded;
+  color: #b00;
+  border: 1px solid #ffb3b3;
+}
+
+.deleteButton:hover {
+  background: #ffb3b3;
+  color: #fff;
 }
 
 .addTagForm {
@@ -193,14 +200,77 @@
   color: #dc3545;
 }
 
-.dragHandle {
-  cursor: move;
-  color: #999;
-  padding: 0.5rem;
+/* Base styles for the tag row wrapper */
+.rowWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background-color: var(--color-background-secondary);
+  border-radius: 4px;
+  margin-bottom: 2px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  padding-left: 0px;
+  padding-right: 0px;
+  transition: background-color 0.2s ease-in-out;
+  line-height: 1.25;
+  min-height: unset;
+  height: unset;
+  font-size: 0.97em;
 }
 
-.dragHandle:hover {
-  color: #666;
+.rowWrapper > * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  min-height: unset !important;
+  height: unset !important;
+}
+
+.rowWrapper[data-is-dragging='true'] {
+  opacity: 0.5;
+  z-index: 1000;
+}
+
+.rowWrapper[data-reparent-target='true'] > *:not(.dropLine) {
+  background-color: #e6f7ff; /* light blue */
+  border-radius: 4px;
+}
+
+.rowWrapper[data-is-over='true'] {
+  background-color: var(--color-background-hover);
+}
+
+/* Styles for the drop indicator line */
+.dropLine {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background-color: var(--color-primary);
+  border-radius: 2px;
+  z-index: 2000;
+}
+
+.dropLine.top {
+  top: -4px;
+}
+
+.dropLine.bottom {
+  bottom: -4px;
+}
+
+/* Styles for the drag handle */
+.dragHandle {
+  cursor: grab;
+  padding: 8px;
+  touch-action: none;
+  color: var(--color-text-secondary);
+}
+
+.dragHandle:active {
+  cursor: grabbing;
 }
 
 @media (max-width: 768px) {
@@ -228,4 +298,10 @@
     align-items: flex-start;
     gap: 0.5rem;
   }
+}
+
+.noBullets {
+  list-style: none !important;
+  padding-left: 0 !important;
+  margin-left: 0 !important;
 } 

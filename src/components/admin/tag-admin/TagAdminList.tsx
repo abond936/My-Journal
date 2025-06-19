@@ -1,191 +1,143 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Tag } from '@/lib/types/tag';
 import { TagAdminRow } from './TagAdminRow';
-import { DndContext, PointerSensor, useSensor, useSensors, DragEndEvent, DragMoveEvent } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
-import { useSortable } from '@dnd-kit/sortable';
+import { DndContext, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverEvent, UniqueIdentifier } from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import styles from '@/app/admin/tag-admin/tag-admin.module.css';
+
+// Type for storing the state of the current drag operation for visual feedback
+type DropIndicatorState = {
+  overId: UniqueIdentifier;
+  type: 'reorder-before' | 'reorder-after' | 'reparent';
+} | null;
 
 /**
- * A wrapper component that makes its children draggable and sortable.
- * It connects to the DndContext and provides the necessary props and styles.
+ * A wrapper component that makes its children draggable and provides visual feedback.
  */
-function SortableTag({ tag, dropIndicator, children }: { tag: Tag, dropIndicator: DropIndicatorState, children: React.ReactNode }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: tag.id });
+function SortableTag({ tag, dropIndicator, children }: { tag: Tag & { depth: number }; dropIndicator: DropIndicatorState; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tag.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 1 : 0,
-    position: 'relative' as const,
+    marginLeft: `${tag.depth * 24}px`,
   };
 
   const isOver = dropIndicator?.overId === tag.id;
-  const placement = isOver ? dropIndicator?.placement : null;
-
+  const showReparentIndicator = isOver && dropIndicator?.type === 'reparent';
+  
   return (
-    <div ref={setNodeRef} style={style} {...attributes}>
-      {/* Visual Drop Indicator */}
-      {placement === 'reparent' && <div style={{ position: 'absolute', inset: 0, border: '2px solid blue', borderRadius: '4px', zIndex: -1 }} />}
-      {placement === 'before' && <div style={{ position: 'absolute', top: -2, left: 0, right: 0, height: '4px', background: 'blue' }} />}
-      {placement === 'after' && <div style={{ position: 'absolute', bottom: -2, left: 0, right: 0, height: '4px', background: 'blue' }} />}
-
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <span {...listeners} style={{ cursor: 'grab', padding: '8px', touchAction: 'none' }}>
-          &#x2630;
-        </span>
-        <div style={{ flexGrow: 1 }}>{children}</div>
-      </div>
+    <div ref={setNodeRef} style={style} className={styles.rowWrapper} data-is-dragging={isDragging} data-reparent-target={showReparentIndicator}>
+      {isOver && dropIndicator?.type === 'reorder-before' && <div className={`${styles.dropLine} ${styles.top}`} />}
+      <span {...attributes} {...listeners} className={styles.dragHandle}>
+        &#x2630;
+      </span>
+      <div style={{ flexGrow: 1 }}>{children}</div>
+      {isOver && dropIndicator?.type === 'reorder-after' && <div className={`${styles.dropLine} ${styles.bottom}`} />}
     </div>
   );
 }
 
-interface TagWithChildren extends Tag {
-  children: TagWithChildren[];
-}
-
-interface FlattenedTag extends TagWithChildren {
-  depth: number;
-}
-
 interface TagAdminListProps {
-  tags: TagWithChildren[];
+  tags: Tag[];
   onUpdateTag: (id: string, tagData: Partial<Omit<Tag, 'id'>>) => Promise<Tag | undefined>;
   onDeleteTag: (id: string) => Promise<void>;
   onCreateTag: (tagData: Omit<Tag, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Tag | undefined>;
-  onReorder: (activeId: string, overId: string | null, placement: 'before' | 'after' | null) => void;
-  onReparent: (activeId: string, overId: string | null) => void;
+  onReorder: (activeId: string, overId: string, placement: 'before' | 'after') => void;
+  onReparent: (activeId: string, overId: string) => void;
 }
 
-// Type for storing the state of the current drag operation for visual feedback
-type DropIndicatorState = {
-  activeId: string;
-  overId: string;
-  placement: 'reparent' | 'before' | 'after';
-} | null;
-
 export function TagAdminList({ tags: initialTagTree, onUpdateTag, onDeleteTag, onCreateTag, onReorder, onReparent }: TagAdminListProps) {
-  const [tagTree, setTagTree] = useState(initialTagTree);
   const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
   const [dropIndicator, setDropIndicator] = useState<DropIndicatorState>(null);
 
-  useEffect(() => {
-    setTagTree(initialTagTree);
-  }, [initialTagTree]);
-
-  useEffect(() => {
-    const initialCollapsed = new Set<string>();
-    const findParents = (nodes: TagWithChildren[]) => {
-      for (const node of nodes) {
-        if (node.children && node.children.length > 0) {
-          initialCollapsed.add(node.id);
-          findParents(node.children);
-        }
-      }
-    }
-    findParents(initialTagTree);
-    setCollapsedNodes(initialCollapsed);
-  }, [initialTagTree]);
-  
   const flattenedTree = useMemo(() => {
-    const flattened: FlattenedTag[] = [];
-    const traverse = (nodes: TagWithChildren[], depth: number) => {
+    const flattened: (Tag & { depth: number, children?: Tag[] })[] = [];
+    const traverse = (nodes: Tag[], depth: number) => {
       for (const node of nodes) {
         flattened.push({ ...node, depth });
-        if (!collapsedNodes.has(node.id)) {
-          traverse(node.children, depth + 1);
+        if (!collapsedNodes.has(node.id) && node.children) {
+          traverse(node.children as Tag[], depth + 1);
         }
       }
-    }
+    };
     traverse(initialTagTree, 0);
     return flattened;
   }, [initialTagTree, collapsedNodes]);
 
   const sortedIds = useMemo(() => flattenedTree.map(tag => tag.id), [flattenedTree]);
-  
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  );
+  const tagMap = useMemo(() => new Map(flattenedTree.map(tag => [tag.id, tag])), [flattenedTree]);
 
-  const handleDragMove = (event: DragMoveEvent) => {
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
+  const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
-    const overId = over?.id as string | null;
-
-    if (!active || !overId || active.id === overId) {
+    if (!over || active.id === over.id) {
       setDropIndicator(null);
       return;
     }
 
-    // Determine the drop position relative to the target element
-    const overNode = over?.rect ? document.elementFromPoint(over.rect.left, over.rect.top) : null;
-    const overRect = overNode?.getBoundingClientRect();
-
-    if (!overRect) {
-      setDropIndicator(null);
-      return;
-    }
-
-    const relativeY = event.activatorEvent.clientY - overRect.top;
-    const midpoint = overRect.height / 2;
-
-    let placement: 'before' | 'after' = relativeY < midpoint ? 'before' : 'after';
+    const overNodeRect = over.rect;
+    // Use clientY to get position relative to viewport, which is more reliable with scrolling
+    const clientY = 'clientY' in event.activatorEvent ? event.activatorEvent.clientY : 0;
+    const dropPoint = clientY - overNodeRect.top;
+    const dropZoneHeight = overNodeRect.height;
     
-    // For now, we are disabling reparenting logic to focus on reordering.
-    // We can re-introduce a rule for it later if needed.
+    // Define thresholds for reordering vs. reparenting
+    const reorderThreshold = dropZoneHeight * 0.25;
 
-    setDropIndicator({ activeId: active.id as string, overId, placement });
+    let type: DropIndicatorState['type'] = 'reparent';
+    if (dropPoint < reorderThreshold) {
+      type = 'reorder-before';
+    } else if (dropPoint > dropZoneHeight - reorderThreshold) {
+      type = 'reorder-after';
+    }
+
+    const activeTag = tagMap.get(active.id as string);
+    const overTag = tagMap.get(over.id as string);
+
+    // Prevent reordering with a non-sibling
+    if (type !== 'reparent' && activeTag?.parentId !== overTag?.parentId) {
+      setDropIndicator(null);
+      return;
+    }
+    
+    setDropIndicator({ overId: over.id, type });
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     if (dropIndicator) {
-      const { activeId, overId, placement } = dropIndicator;
-      
-      // Perform optimistic update on the local state
-      const activeIndex = flattenedTree.findIndex(t => t.id === activeId);
-      const overIndex = flattenedTree.findIndex(t => t.id === overId);
-      
-      if (activeIndex !== -1 && overIndex !== -1) {
-        const newTree = arrayMove(flattenedTree, activeIndex, overIndex);
-        // Note: This optimistic update is visual only and does not reconstruct the tree.
-        // The final state will come from the server.
+      const { type, overId } = dropIndicator;
+      const activeId = event.active.id as string;
+
+      if (type === 'reparent') {
+        onReparent(activeId, overId as string);
+      } else {
+        const placement = type === 'reorder-before' ? 'before' : 'after';
+        onReorder(activeId, overId as string, placement);
       }
-      
-      onReorder(activeId, overId, placement);
     }
-
-    setDropIndicator(null); // Clear indicator on drop
-  };
-
-  const handleDragCancel = () => {
     setDropIndicator(null);
   };
+
+  const handleDragCancel = () => setDropIndicator(null);
 
   const handleToggleCollapse = (tagId: string) => {
     setCollapsedNodes(prev => {
       const next = new Set(prev);
-      if (next.has(tagId)) next.delete(tagId); else next.add(tagId);
+      if (next.has(tagId)) next.delete(tagId);
+      else next.add(tagId);
       return next;
     });
   };
-  
+
   return (
-    <DndContext 
-      sensors={sensors} 
-      onDragMove={handleDragMove}
+    <DndContext
+      sensors={sensors}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >

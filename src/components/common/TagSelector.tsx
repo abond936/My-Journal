@@ -1,63 +1,26 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { useTag } from '@/components/providers/TagProvider';
+import React, { useState, useMemo } from 'react';
 import { Tag } from '@/lib/types/tag';
 import styles from './TagSelector.module.css';
-
-interface TagSelectorProps {
-  selectedTags: string[];
-  onTagsChange: (tags: string[]) => void;
-  dimension?: 'who' | 'what' | 'when' | 'where' | 'reflection';
-}
 
 interface TagWithChildren extends Tag {
   children: TagWithChildren[];
 }
 
+interface TagSelectorProps {
+  tree: TagWithChildren[];
+  selectedTags: string[];
+  onTagsChange: (tags: string[]) => void;
+}
+
 const TagSelector: React.FC<TagSelectorProps> = ({
+  tree,
   selectedTags = [],
   onTagsChange,
-  dimension
 }) => {
-  const { tags: allTags, loading: isLoading, error } = useTag();
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedTags, setExpandedTags] = useState<Set<string>>(new Set());
-
-  const tagTree = useMemo(() => {
-    const filteredTags = dimension 
-      ? allTags.filter(tag => tag.dimension === dimension) 
-      : allTags;
-
-    const tagMap = new Map<string, TagWithChildren>();
-    const rootTags: TagWithChildren[] = [];
-
-    filteredTags.forEach(tag => {
-      tagMap.set(tag.id, { ...tag, children: [] });
-    });
-
-    filteredTags.forEach(tag => {
-      const tagWithChildren = tagMap.get(tag.id)!;
-      if (tag.parentId && tagMap.has(tag.parentId)) {
-        const parent = tagMap.get(tag.parentId)!;
-        parent.children.push(tagWithChildren);
-      } else {
-        rootTags.push(tagWithChildren);
-      }
-    });
-
-    const sortTags = (tags: TagWithChildren[]) => {
-      return tags.sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name));
-    };
-
-    const sortTree = (tags: TagWithChildren[]) => {
-      sortTags(tags);
-      tags.forEach(tag => sortTree(tag.children));
-    };
-
-    sortTree(rootTags);
-    return rootTags;
-  }, [allTags, dimension]);
 
   const visibleTags = useMemo(() => {
     if (!searchTerm) {
@@ -70,7 +33,7 @@ const TagSelector: React.FC<TagSelectorProps> = ({
     const findMatchingChildren = (tag: TagWithChildren): boolean => {
       let isMatch = tag.name.toLowerCase().includes(lowerCaseSearchTerm);
 
-      if (tag.children.length > 0) {
+      if (tag.children?.length > 0) {
         for (const child of tag.children) {
           if (findMatchingChildren(child)) {
             isMatch = true;
@@ -84,9 +47,9 @@ const TagSelector: React.FC<TagSelectorProps> = ({
       return isMatch;
     };
 
-    tagTree.forEach(findMatchingChildren);
+    tree.forEach(findMatchingChildren);
     return matchingTags;
-  }, [searchTerm, tagTree]);
+  }, [searchTerm, tree]);
   
   const toggleTagExpansion = (tagId: string) => {
     setExpandedTags(prev => {
@@ -109,7 +72,7 @@ const TagSelector: React.FC<TagSelectorProps> = ({
 
   const renderTag = (tag: TagWithChildren, level: number = 0) => {
     const isExpanded = expandedTags.has(tag.id);
-    const hasChildren = tag.children.length > 0;
+    const hasChildren = tag.children && tag.children.length > 0;
     const isSelected = selectedTags.includes(tag.id);
 
     if (searchTerm && !visibleTags.has(tag.id)) {
@@ -152,12 +115,8 @@ const TagSelector: React.FC<TagSelectorProps> = ({
     );
   };
 
-  if (isLoading) {
+  if (!tree) {
     return <div className={styles.loading}>Loading tags...</div>;
-  }
-
-  if (error) {
-    return <div className={styles.error}>Error loading tags: {error.message}</div>;
   }
 
   return (
@@ -170,7 +129,7 @@ const TagSelector: React.FC<TagSelectorProps> = ({
         className={styles.searchInput}
       />
       <div className={styles.tagList}>
-        {tagTree.map(tag => renderTag(tag))}
+        {tree.map(tag => renderTag(tag))}
       </div>
     </div>
   );

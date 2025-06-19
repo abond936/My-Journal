@@ -30,7 +30,9 @@ const tagsCollection = db.collection('tags');
  *         description: Internal server error.
  */
 export async function GET(request: NextRequest) {
+    console.log('[API /api/tags] GET called');
     const session = await getServerSession(authOptions);
+    console.log('[API /api/tags] Session:', session);
     if (!session) {
         return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
             status: 401,

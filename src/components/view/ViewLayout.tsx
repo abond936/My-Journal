@@ -4,12 +4,15 @@ import React, { useState } from 'react';
 import Navigation from '@/components/common/Navigation';
 import TagTree from '@/components/common/TagTree';
 import styles from './ViewLayout.module.css';
+import { TagWithChildren } from '@/components/providers/TagProvider';
 
 interface ViewLayoutProps {
   children: React.ReactNode;
   selectedTags: string[];
   onTagSelect: (tagId: string) => void;
   FilterComponent?: React.ReactNode;
+  tree: TagWithChildren[];
+  loading: boolean;
 }
 
 export default function ViewLayout({ 
@@ -17,6 +20,8 @@ export default function ViewLayout({
   selectedTags,
   onTagSelect,
   FilterComponent,
+  tree,
+  loading,
 }: ViewLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -37,7 +42,7 @@ export default function ViewLayout({
         </button>
 
         <div className={`${styles.sidebar} ${sidebarOpen ? styles.open : styles.closed}`}>
-          <TagTree onTagSelect={onTagSelect} selectedTags={selectedTags} />
+          <TagTree tree={tree} onTagSelect={onTagSelect} selectedTags={selectedTags} loading={loading} />
         </div>
 
         <main className={`${styles.mainContent} ${sidebarOpen ? styles.mainContentOpen : ''}`}>

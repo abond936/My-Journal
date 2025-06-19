@@ -1,0 +1,2042 @@
+[
+  {
+    "id": "0.00",
+    "name": "WHO/Social",
+    "dimension": "who",
+    "parentId": "NULL",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "1.00",
+    "name": "Self/Personal",
+    "dimension": "who",
+    "parentId": "0.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "2.00",
+    "name": "Family",
+    "dimension": "who",
+    "parentId": "0.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "3.00",
+    "name": "Parents",
+    "dimension": "who",
+    "parentId": "2.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "4.00",
+    "name": "Father",
+    "dimension": "who",
+    "parentId": "3.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "5.00",
+    "name": "Mother",
+    "dimension": "who",
+    "parentId": "3.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "6.00",
+    "name": "GrandParents",
+    "dimension": "who",
+    "parentId": "2.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "7.00",
+    "name": "Paternal Grand Father",
+    "dimension": "who",
+    "parentId": "6.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "8.00",
+    "name": "Paternal Grand Mother",
+    "dimension": "who",
+    "parentId": "6.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "9.00",
+    "name": "Maternal Grand Father",
+    "dimension": "who",
+    "parentId": "6.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "10.00",
+    "name": "Maternal Grand Mother",
+    "dimension": "who",
+    "parentId": "6.00",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "11.00",
+    "name": "Maternal Step Grand Mother",
+    "dimension": "who",
+    "parentId": "6.00",
+    "Order": "5",
+    "": ""
+  },
+  {
+    "id": "12.00",
+    "name": "Siblings",
+    "dimension": "who",
+    "parentId": "2.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "13.00",
+    "name": "Cousins",
+    "dimension": "who",
+    "parentId": "2.00",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "14.00",
+    "name": "Spouse",
+    "dimension": "who",
+    "parentId": "2.00",
+    "Order": "5",
+    "": ""
+  },
+  {
+    "id": "15.00",
+    "name": "Children/Parenthood",
+    "dimension": "who",
+    "parentId": "2.00",
+    "Order": "6",
+    "": ""
+  },
+  {
+    "id": "16.00",
+    "name": "William",
+    "dimension": "who",
+    "parentId": "15.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "17.00",
+    "name": "Elizabeth",
+    "dimension": "who",
+    "parentId": "15.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "18.00",
+    "name": "Caroline",
+    "dimension": "who",
+    "parentId": "15.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "19.00",
+    "name": "Grandchildren",
+    "dimension": "who",
+    "parentId": "2.00",
+    "Order": "7",
+    "": ""
+  },
+  {
+    "id": "20.00",
+    "name": "In-Laws",
+    "dimension": "who",
+    "parentId": "2.00",
+    "Order": "8",
+    "": ""
+  },
+  {
+    "id": "21.00",
+    "name": "Pets",
+    "dimension": "who",
+    "parentId": "2.00",
+    "Order": "9",
+    "": ""
+  },
+  {
+    "id": "21.10",
+    "name": "Pud",
+    "dimension": "who",
+    "parentId": "21.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "21.20",
+    "name": "Brady",
+    "dimension": "who",
+    "parentId": "21.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "21.30",
+    "name": "Maddie",
+    "dimension": "who",
+    "parentId": "21.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "21.40",
+    "name": "Tucker",
+    "dimension": "who",
+    "parentId": "21.00",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "21.50",
+    "name": "Cassie",
+    "dimension": "who",
+    "parentId": "21.00",
+    "Order": "5",
+    "": ""
+  },
+  {
+    "id": "21.60",
+    "name": "Beau",
+    "dimension": "who",
+    "parentId": "21.00",
+    "Order": "6",
+    "": ""
+  },
+  {
+    "id": "22.00",
+    "name": "Friends",
+    "dimension": "who",
+    "parentId": "0.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "23.00",
+    "name": "Boy/Girlfriend",
+    "dimension": "who",
+    "parentId": "22.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "24.00",
+    "name": "Neighborhood",
+    "dimension": "who",
+    "parentId": "22.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "25.00",
+    "name": "Work",
+    "dimension": "who",
+    "parentId": "22.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "26.00",
+    "name": "School",
+    "dimension": "who",
+    "parentId": "22.00",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "27.00",
+    "name": "WHAT - Themes/Domains",
+    "dimension": "what",
+    "parentId": "NULL",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "28.00",
+    "name": "My Birth",
+    "dimension": "what",
+    "parentId": "27.00",
+    "Order": "",
+    "": ""
+  },
+  {
+    "id": "29.00",
+    "name": "Ancestry",
+    "dimension": "what",
+    "parentId": "27.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "30.00",
+    "name": "Family Names",
+    "dimension": "what",
+    "parentId": "29.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "31.00",
+    "name": "Bond",
+    "dimension": "what",
+    "parentId": "30.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "32.00",
+    "name": "Davis",
+    "dimension": "what",
+    "parentId": "30.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "33.00",
+    "name": "Education",
+    "dimension": "what",
+    "parentId": "27.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "34.00",
+    "name": "Preschool",
+    "dimension": "what",
+    "parentId": "33.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "35.00",
+    "name": "Kindergarten",
+    "dimension": "what",
+    "parentId": "33.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "36.00",
+    "name": "Elementary",
+    "dimension": "what",
+    "parentId": "33.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "37.00",
+    "name": "Middle School",
+    "dimension": "what",
+    "parentId": "33.00",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "38.00",
+    "name": "High School",
+    "dimension": "what",
+    "parentId": "33.00",
+    "Order": "5",
+    "": ""
+  },
+  {
+    "id": "39.00",
+    "name": "Graduation",
+    "dimension": "what",
+    "parentId": "38.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "40.00",
+    "name": "Prom",
+    "dimension": "what",
+    "parentId": "39.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "41.00",
+    "name": "Spring Break",
+    "dimension": "what",
+    "parentId": "40.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "42.00",
+    "name": "College",
+    "dimension": "what",
+    "parentId": "33.00",
+    "Order": "6",
+    "": ""
+  },
+  {
+    "id": "43.00",
+    "name": "Graduate School",
+    "dimension": "what",
+    "parentId": "33.00",
+    "Order": "7",
+    "": ""
+  },
+  {
+    "id": "43.10",
+    "name": "Internship",
+    "dimension": "what",
+    "parentId": "43.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "44.00",
+    "name": "Birthdays",
+    "dimension": "what",
+    "parentId": "27.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "45.00",
+    "name": "Marriage",
+    "dimension": "what",
+    "parentId": "27.00",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "45.10",
+    "name": "Ceremony",
+    "dimension": "what",
+    "parentId": "45.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "45.20",
+    "name": "Reception",
+    "dimension": "what",
+    "parentId": "45.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "45.30",
+    "name": "Honeymoon",
+    "dimension": "what",
+    "parentId": "45.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "46.00",
+    "name": "Financial",
+    "dimension": "what",
+    "parentId": "27.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "47.00",
+    "name": "Income/Career",
+    "dimension": "what",
+    "parentId": "46.00",
+    "Order": "5",
+    "": ""
+  },
+  {
+    "id": "47.10",
+    "name": "USC",
+    "dimension": "what",
+    "parentId": "47.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "47.20",
+    "name": "NCR",
+    "dimension": "what",
+    "parentId": "47.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "47.30",
+    "name": "H/3M",
+    "dimension": "what",
+    "parentId": "47.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "47.40",
+    "name": "SQL",
+    "dimension": "what",
+    "parentId": "47.00",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "47.50",
+    "name": "Caribiner",
+    "dimension": "what",
+    "parentId": "47.00",
+    "Order": "5",
+    "": ""
+  },
+  {
+    "id": "47.60",
+    "name": "McKesson",
+    "dimension": "what",
+    "parentId": "47.00",
+    "Order": "6",
+    "": ""
+  },
+  {
+    "id": "47.70",
+    "name": "Given",
+    "dimension": "what",
+    "parentId": "47.00",
+    "Order": "7",
+    "": ""
+  },
+  {
+    "id": "47.80",
+    "name": "Dune",
+    "dimension": "what",
+    "parentId": "47.00",
+    "Order": "8",
+    "": ""
+  },
+  {
+    "id": "48.00",
+    "name": "Worth/Investing",
+    "dimension": "what",
+    "parentId": "46.00",
+    "Order": "9",
+    "": ""
+  },
+  {
+    "id": "49.00",
+    "name": "Experiential",
+    "dimension": "what",
+    "parentId": "27.00",
+    "Order": "6",
+    "": ""
+  },
+  {
+    "id": "50.00",
+    "name": "Travel",
+    "dimension": "what",
+    "parentId": "49.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "51.00",
+    "name": "Sports",
+    "dimension": "what",
+    "parentId": "49.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "51.10",
+    "name": "Baseball",
+    "dimension": "what",
+    "parentId": "51.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "51.20",
+    "name": "Basketball",
+    "dimension": "what",
+    "parentId": "51.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "51.30",
+    "name": "Golf",
+    "dimension": "what",
+    "parentId": "51.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "51.40",
+    "name": "Skiing",
+    "dimension": "what",
+    "parentId": "51.00",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "51.50",
+    "name": "Tennis",
+    "dimension": "what",
+    "parentId": "51.00",
+    "Order": "5",
+    "": ""
+  },
+  {
+    "id": "51.60",
+    "name": "Swimming",
+    "dimension": "what",
+    "parentId": "51.00",
+    "Order": "6",
+    "": ""
+  },
+  {
+    "id": "51.70",
+    "name": "Footbal",
+    "dimension": "what",
+    "parentId": "51.00",
+    "Order": "7",
+    "": ""
+  },
+  {
+    "id": "52.00",
+    "name": "Cars",
+    "dimension": "what",
+    "parentId": "49.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "53.00",
+    "name": "Vacations",
+    "dimension": "what",
+    "parentId": "49.00",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "54.00",
+    "name": "Adventures",
+    "dimension": "what",
+    "parentId": "49.00",
+    "Order": "5",
+    "": ""
+  },
+  {
+    "id": "55.00",
+    "name": "Homes & Moves",
+    "dimension": "what",
+    "parentId": "49.00",
+    "Order": "6",
+    "": ""
+  },
+  {
+    "id": "56.00",
+    "name": "Holidays",
+    "dimension": "what",
+    "parentId": "49.00",
+    "Order": "7",
+    "": ""
+  },
+  {
+    "id": "56.10",
+    "name": "Christmas",
+    "dimension": "what",
+    "parentId": "56.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "56.20",
+    "name": "Easter",
+    "dimension": "what",
+    "parentId": "56.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "56.30",
+    "name": "Thanksgiving",
+    "dimension": "what",
+    "parentId": "56.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "57.00",
+    "name": "Food",
+    "dimension": "what",
+    "parentId": "49.00",
+    "Order": "8",
+    "": ""
+  },
+  {
+    "id": "58.00",
+    "name": "Music",
+    "dimension": "what",
+    "parentId": "49.00",
+    "Order": "9",
+    "": ""
+  },
+  {
+    "id": "59.00",
+    "name": "Books",
+    "dimension": "what",
+    "parentId": "49.00",
+    "Order": "10",
+    "": ""
+  },
+  {
+    "id": "60.00",
+    "name": "Styles",
+    "dimension": "what",
+    "parentId": "49.00",
+    "Order": "11",
+    "": ""
+  },
+  {
+    "id": "61.00",
+    "name": "Movies",
+    "dimension": "what",
+    "parentId": "49.00",
+    "Order": "12",
+    "": ""
+  },
+  {
+    "id": "62.00",
+    "name": "Television",
+    "dimension": "what",
+    "parentId": "49.00",
+    "Order": "13",
+    "": ""
+  },
+  {
+    "id": "63.00",
+    "name": "Miscellaneous",
+    "dimension": "what",
+    "parentId": "49.00",
+    "Order": "14",
+    "": ""
+  },
+  {
+    "id": "64.00",
+    "name": "World  & Politics",
+    "dimension": "what",
+    "parentId": "27.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "64.10",
+    "name": "Issues",
+    "dimension": "what",
+    "parentId": "64.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "65.00",
+    "name": "Science & Technoogy",
+    "dimension": "what",
+    "parentId": "27.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "66.00",
+    "name": "Economy & Business",
+    "dimension": "what",
+    "parentId": "27.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "67.00",
+    "name": "Society & Culture",
+    "dimension": "what",
+    "parentId": "27.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "68.00",
+    "name": "WHEN",
+    "dimension": "when",
+    "parentId": "NULL",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "69.00",
+    "name": "Past",
+    "dimension": "when",
+    "parentId": "68.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "70.00",
+    "name": "The Decades",
+    "dimension": "when",
+    "parentId": "69.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "71.00",
+    "name": "The 1960s",
+    "dimension": "when",
+    "parentId": "70.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "71.01",
+    "name": "1960",
+    "dimension": "when",
+    "parentId": "71.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "71.02",
+    "name": "1961",
+    "dimension": "when",
+    "parentId": "71.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "71.03",
+    "name": "1962",
+    "dimension": "when",
+    "parentId": "71.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "71.04",
+    "name": "1963",
+    "dimension": "when",
+    "parentId": "71.00",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "71.05",
+    "name": "1964",
+    "dimension": "when",
+    "parentId": "71.00",
+    "Order": "5",
+    "": ""
+  },
+  {
+    "id": "71.06",
+    "name": "1965",
+    "dimension": "when",
+    "parentId": "71.00",
+    "Order": "6",
+    "": ""
+  },
+  {
+    "id": "71.07",
+    "name": "1966",
+    "dimension": "when",
+    "parentId": "71.00",
+    "Order": "7",
+    "": ""
+  },
+  {
+    "id": "71.08",
+    "name": "1967",
+    "dimension": "when",
+    "parentId": "71.00",
+    "Order": "8",
+    "": ""
+  },
+  {
+    "id": "71.09",
+    "name": "1968",
+    "dimension": "when",
+    "parentId": "71.00",
+    "Order": "9",
+    "": ""
+  },
+  {
+    "id": "71.10",
+    "name": "1969",
+    "dimension": "when",
+    "parentId": "71.00",
+    "Order": "10",
+    "": ""
+  },
+  {
+    "id": "72.00",
+    "name": "The 1970s",
+    "dimension": "when",
+    "parentId": "70.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "72.01",
+    "name": "1970",
+    "dimension": "when",
+    "parentId": "72.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "72.02",
+    "name": "1971",
+    "dimension": "when",
+    "parentId": "72.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "72.03",
+    "name": "1972",
+    "dimension": "when",
+    "parentId": "72.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "72.04",
+    "name": "1973",
+    "dimension": "when",
+    "parentId": "72.00",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "72.05",
+    "name": "1974",
+    "dimension": "when",
+    "parentId": "72.00",
+    "Order": "5",
+    "": ""
+  },
+  {
+    "id": "72.06",
+    "name": "1975",
+    "dimension": "when",
+    "parentId": "72.00",
+    "Order": "6",
+    "": ""
+  },
+  {
+    "id": "72.07",
+    "name": "1976",
+    "dimension": "when",
+    "parentId": "72.00",
+    "Order": "7",
+    "": ""
+  },
+  {
+    "id": "72.08",
+    "name": "1977",
+    "dimension": "when",
+    "parentId": "72.00",
+    "Order": "8",
+    "": ""
+  },
+  {
+    "id": "72.09",
+    "name": "1978",
+    "dimension": "when",
+    "parentId": "72.00",
+    "Order": "9",
+    "": ""
+  },
+  {
+    "id": "72.10",
+    "name": "1979",
+    "dimension": "when",
+    "parentId": "72.00",
+    "Order": "10",
+    "": ""
+  },
+  {
+    "id": "73.00",
+    "name": "The 1980s",
+    "dimension": "when",
+    "parentId": "70.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "73.01",
+    "name": "1980",
+    "dimension": "when",
+    "parentId": "73.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "73.02",
+    "name": "1981",
+    "dimension": "when",
+    "parentId": "73.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "73.03",
+    "name": "1982",
+    "dimension": "when",
+    "parentId": "73.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "73.04",
+    "name": "1983",
+    "dimension": "when",
+    "parentId": "73.00",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "73.05",
+    "name": "1984",
+    "dimension": "when",
+    "parentId": "73.00",
+    "Order": "5",
+    "": ""
+  },
+  {
+    "id": "73.06",
+    "name": "1985",
+    "dimension": "when",
+    "parentId": "73.00",
+    "Order": "6",
+    "": ""
+  },
+  {
+    "id": "73.07",
+    "name": "1986",
+    "dimension": "when",
+    "parentId": "73.00",
+    "Order": "7",
+    "": ""
+  },
+  {
+    "id": "73.08",
+    "name": "1987",
+    "dimension": "when",
+    "parentId": "73.00",
+    "Order": "8",
+    "": ""
+  },
+  {
+    "id": "73.09",
+    "name": "1988",
+    "dimension": "when",
+    "parentId": "73.00",
+    "Order": "9",
+    "": ""
+  },
+  {
+    "id": "73.10",
+    "name": "1989",
+    "dimension": "when",
+    "parentId": "73.00",
+    "Order": "10",
+    "": ""
+  },
+  {
+    "id": "74.00",
+    "name": "The 1990s",
+    "dimension": "when",
+    "parentId": "70.00",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "74.01",
+    "name": "1990",
+    "dimension": "when",
+    "parentId": "74.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "74.02",
+    "name": "1991",
+    "dimension": "when",
+    "parentId": "74.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "74.03",
+    "name": "1992",
+    "dimension": "when",
+    "parentId": "74.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "74.04",
+    "name": "1993",
+    "dimension": "when",
+    "parentId": "74.00",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "74.05",
+    "name": "1994",
+    "dimension": "when",
+    "parentId": "74.00",
+    "Order": "5",
+    "": ""
+  },
+  {
+    "id": "74.06",
+    "name": "1995",
+    "dimension": "when",
+    "parentId": "74.00",
+    "Order": "6",
+    "": ""
+  },
+  {
+    "id": "74.07",
+    "name": "1996",
+    "dimension": "when",
+    "parentId": "74.00",
+    "Order": "7",
+    "": ""
+  },
+  {
+    "id": "74.08",
+    "name": "1997",
+    "dimension": "when",
+    "parentId": "74.00",
+    "Order": "8",
+    "": ""
+  },
+  {
+    "id": "74.09",
+    "name": "1998",
+    "dimension": "when",
+    "parentId": "74.00",
+    "Order": "9",
+    "": ""
+  },
+  {
+    "id": "74.10",
+    "name": "1999",
+    "dimension": "when",
+    "parentId": "74.00",
+    "Order": "10",
+    "": ""
+  },
+  {
+    "id": "75.00",
+    "name": "The 2000s",
+    "dimension": "when",
+    "parentId": "70.00",
+    "Order": "5",
+    "": ""
+  },
+  {
+    "id": "75.01",
+    "name": "2000",
+    "dimension": "when",
+    "parentId": "75.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "75.02",
+    "name": "2001",
+    "dimension": "when",
+    "parentId": "75.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "75.03",
+    "name": "2002",
+    "dimension": "when",
+    "parentId": "75.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "75.04",
+    "name": "2003",
+    "dimension": "when",
+    "parentId": "75.00",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "75.05",
+    "name": "2004",
+    "dimension": "when",
+    "parentId": "75.00",
+    "Order": "5",
+    "": ""
+  },
+  {
+    "id": "75.06",
+    "name": "2005",
+    "dimension": "when",
+    "parentId": "75.00",
+    "Order": "6",
+    "": ""
+  },
+  {
+    "id": "75.07",
+    "name": "2006",
+    "dimension": "when",
+    "parentId": "75.00",
+    "Order": "7",
+    "": ""
+  },
+  {
+    "id": "75.08",
+    "name": "2007",
+    "dimension": "when",
+    "parentId": "75.00",
+    "Order": "8",
+    "": ""
+  },
+  {
+    "id": "75.09",
+    "name": "2008",
+    "dimension": "when",
+    "parentId": "75.00",
+    "Order": "9",
+    "": ""
+  },
+  {
+    "id": "75.10",
+    "name": "2009",
+    "dimension": "when",
+    "parentId": "75.00",
+    "Order": "10",
+    "": ""
+  },
+  {
+    "id": "76.00",
+    "name": "The 2010s",
+    "dimension": "when",
+    "parentId": "70.00",
+    "Order": "6",
+    "": ""
+  },
+  {
+    "id": "76.01",
+    "name": "2010",
+    "dimension": "when",
+    "parentId": "76.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "76.02",
+    "name": "2011",
+    "dimension": "when",
+    "parentId": "76.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "76.03",
+    "name": "2012",
+    "dimension": "when",
+    "parentId": "76.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "76.04",
+    "name": "2013",
+    "dimension": "when",
+    "parentId": "76.00",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "76.05",
+    "name": "2014",
+    "dimension": "when",
+    "parentId": "76.00",
+    "Order": "5",
+    "": ""
+  },
+  {
+    "id": "76.06",
+    "name": "2015",
+    "dimension": "when",
+    "parentId": "76.00",
+    "Order": "6",
+    "": ""
+  },
+  {
+    "id": "76.07",
+    "name": "2016",
+    "dimension": "when",
+    "parentId": "76.00",
+    "Order": "7",
+    "": ""
+  },
+  {
+    "id": "76.08",
+    "name": "2017",
+    "dimension": "when",
+    "parentId": "76.00",
+    "Order": "8",
+    "": ""
+  },
+  {
+    "id": "76.09",
+    "name": "2018",
+    "dimension": "when",
+    "parentId": "76.00",
+    "Order": "9",
+    "": ""
+  },
+  {
+    "id": "76.10",
+    "name": "2019",
+    "dimension": "when",
+    "parentId": "76.00",
+    "Order": "10",
+    "": ""
+  },
+  {
+    "id": "77.00",
+    "name": "The 2020s",
+    "dimension": "when",
+    "parentId": "70.00",
+    "Order": "7",
+    "": ""
+  },
+  {
+    "id": "77.01",
+    "name": "2020",
+    "dimension": "when",
+    "parentId": "77.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "77.02",
+    "name": "2021",
+    "dimension": "when",
+    "parentId": "77.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "77.03",
+    "name": "2022",
+    "dimension": "when",
+    "parentId": "77.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "77.04",
+    "name": "2023",
+    "dimension": "when",
+    "parentId": "77.00",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "77.05",
+    "name": "2024",
+    "dimension": "when",
+    "parentId": "77.00",
+    "Order": "5",
+    "": ""
+  },
+  {
+    "id": "77.06",
+    "name": "2025",
+    "dimension": "when",
+    "parentId": "77.00",
+    "Order": "6",
+    "": ""
+  },
+  {
+    "id": "77.07",
+    "name": "2026",
+    "dimension": "when",
+    "parentId": "77.00",
+    "Order": "7",
+    "": ""
+  },
+  {
+    "id": "77.08",
+    "name": "2027",
+    "dimension": "when",
+    "parentId": "77.00",
+    "Order": "8",
+    "": ""
+  },
+  {
+    "id": "77.09",
+    "name": "2028",
+    "dimension": "when",
+    "parentId": "77.00",
+    "Order": "9",
+    "": ""
+  },
+  {
+    "id": "77.10",
+    "name": "2029",
+    "dimension": "when",
+    "parentId": "77.00",
+    "Order": "10",
+    "": ""
+  },
+  {
+    "id": "78.00",
+    "name": "Month",
+    "dimension": "when",
+    "parentId": "68.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "78.01",
+    "name": "January",
+    "dimension": "when",
+    "parentId": "78.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "78.02",
+    "name": "February",
+    "dimension": "when",
+    "parentId": "78.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "78.03",
+    "name": "March",
+    "dimension": "when",
+    "parentId": "78.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "78.04",
+    "name": "April",
+    "dimension": "when",
+    "parentId": "78.00",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "78.05",
+    "name": "May",
+    "dimension": "when",
+    "parentId": "78.00",
+    "Order": "5",
+    "": ""
+  },
+  {
+    "id": "78.06",
+    "name": "June",
+    "dimension": "when",
+    "parentId": "78.00",
+    "Order": "6",
+    "": ""
+  },
+  {
+    "id": "78.07",
+    "name": "July",
+    "dimension": "when",
+    "parentId": "78.00",
+    "Order": "7",
+    "": ""
+  },
+  {
+    "id": "78.08",
+    "name": "August",
+    "dimension": "when",
+    "parentId": "78.00",
+    "Order": "8",
+    "": ""
+  },
+  {
+    "id": "78.09",
+    "name": "September",
+    "dimension": "when",
+    "parentId": "78.00",
+    "Order": "9",
+    "": ""
+  },
+  {
+    "id": "78.10",
+    "name": "October",
+    "dimension": "when",
+    "parentId": "78.00",
+    "Order": "10",
+    "": ""
+  },
+  {
+    "id": "78.11",
+    "name": "November",
+    "dimension": "when",
+    "parentId": "78.00",
+    "Order": "11",
+    "": ""
+  },
+  {
+    "id": "78.12",
+    "name": "December",
+    "dimension": "when",
+    "parentId": "78.00",
+    "Order": "12",
+    "": ""
+  },
+  {
+    "id": "79.00",
+    "name": "Seasons",
+    "dimension": "when",
+    "parentId": "68.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "79.01",
+    "name": "winter",
+    "dimension": "when",
+    "parentId": "79.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "79.02",
+    "name": "spring",
+    "dimension": "when",
+    "parentId": "79.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "79.03",
+    "name": "summer",
+    "dimension": "when",
+    "parentId": "79.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "79.04",
+    "name": "fall",
+    "dimension": "when",
+    "parentId": "79.00",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "80.00",
+    "name": "Stage",
+    "dimension": "when",
+    "parentId": "68.00",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "80.01",
+    "name": "Childhood",
+    "dimension": "when",
+    "parentId": "80.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "80.02",
+    "name": "Infancy",
+    "dimension": "when",
+    "parentId": "80.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "80.03",
+    "name": "Toddler",
+    "dimension": "when",
+    "parentId": "80.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "80.04",
+    "name": "Childhood",
+    "dimension": "when",
+    "parentId": "80.00",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "80.05",
+    "name": "Teenager",
+    "dimension": "when",
+    "parentId": "80.00",
+    "Order": "5",
+    "": ""
+  },
+  {
+    "id": "80.06",
+    "name": "Adulthood",
+    "dimension": "when",
+    "parentId": "80.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "81.00",
+    "name": "Future",
+    "dimension": "when",
+    "parentId": "68.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "82.00",
+    "name": "WHERE",
+    "dimension": "where",
+    "parentId": "NULL",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "83.00",
+    "name": "World",
+    "dimension": "where",
+    "parentId": "82.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "84.00",
+    "name": "International",
+    "dimension": "where",
+    "parentId": "83.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "85.00",
+    "name": "Country",
+    "dimension": "where",
+    "parentId": "84.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "86.00",
+    "name": "State",
+    "dimension": "where",
+    "parentId": "85.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "87.00",
+    "name": "City",
+    "dimension": "where",
+    "parentId": "86.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "88.00",
+    "name": "Place",
+    "dimension": "where",
+    "parentId": "87.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "88.01",
+    "name": "Beach",
+    "dimension": "where",
+    "parentId": "88.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "88.02",
+    "name": "Mountains",
+    "dimension": "where",
+    "parentId": "88.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "89.00",
+    "name": "Domestic",
+    "dimension": "where",
+    "parentId": "83.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "90.00",
+    "name": "Country",
+    "dimension": "where",
+    "parentId": "89.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "91.00",
+    "name": "State",
+    "dimension": "where",
+    "parentId": "90.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "92.00",
+    "name": "City",
+    "dimension": "where",
+    "parentId": "91.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "93.00",
+    "name": "Place",
+    "dimension": "where",
+    "parentId": "92.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "93.01",
+    "name": "Greenhill Rd.",
+    "dimension": "where",
+    "parentId": "93.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "93.02",
+    "name": "Creighton St.",
+    "dimension": "where",
+    "parentId": "93.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "93.03",
+    "name": "Cleveland St",
+    "dimension": "where",
+    "parentId": "93.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "93.04",
+    "name": "Parkins Mill Rd",
+    "dimension": "where",
+    "parentId": "93.00",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "93.05",
+    "name": "Woodrow",
+    "dimension": "where",
+    "parentId": "93.00",
+    "Order": "5",
+    "": ""
+  },
+  {
+    "id": "93.06",
+    "name": "Maple St.",
+    "dimension": "where",
+    "parentId": "93.00",
+    "Order": "6",
+    "": ""
+  },
+  {
+    "id": "93.07",
+    "name": "Spanish Villas",
+    "dimension": "where",
+    "parentId": "93.00",
+    "Order": "7",
+    "": ""
+  },
+  {
+    "id": "93.08",
+    "name": "Springbrook",
+    "dimension": "where",
+    "parentId": "93.00",
+    "Order": "8",
+    "": ""
+  },
+  {
+    "id": "93.09",
+    "name": "Linbrook Dr",
+    "dimension": "where",
+    "parentId": "93.00",
+    "Order": "9",
+    "": ""
+  },
+  {
+    "id": "93.10",
+    "name": "Amberglen Ln",
+    "dimension": "where",
+    "parentId": "93.00",
+    "Order": "10",
+    "": ""
+  },
+  {
+    "id": "93.11",
+    "name": "Ave des Abeilles",
+    "dimension": "where",
+    "parentId": "93.00",
+    "Order": "11",
+    "": ""
+  },
+  {
+    "id": "93.12",
+    "name": "Woodbrook",
+    "dimension": "where",
+    "parentId": "93.00",
+    "Order": "12",
+    "": ""
+  },
+  {
+    "id": "93.13",
+    "name": "Andellle",
+    "dimension": "where",
+    "parentId": "93.00",
+    "Order": "13",
+    "": ""
+  },
+  {
+    "id": "93.14",
+    "name": "Capitol View",
+    "dimension": "where",
+    "parentId": "93.00",
+    "Order": "14",
+    "": ""
+  },
+  {
+    "id": "93.15",
+    "name": "McEwen Northside",
+    "dimension": "where",
+    "parentId": "93.00",
+    "Order": "15",
+    "": ""
+  },
+  {
+    "id": "94.00",
+    "name": "REFLECTIONS",
+    "dimension": "reflection",
+    "parentId": "NULL",
+    "Order": "5",
+    "": ""
+  },
+  {
+    "id": "95.00",
+    "name": "Outcomes",
+    "dimension": "reflection",
+    "parentId": "94.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "95.01",
+    "name": "Success / Failure",
+    "dimension": "reflection",
+    "parentId": "95.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "95.02",
+    "name": "Right Call / Mistake",
+    "dimension": "reflection",
+    "parentId": "95.01",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "95.03",
+    "name": "Blessing/Curse",
+    "dimension": "reflection",
+    "parentId": "95.02",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "95.04",
+    "name": "Surprise/Expected",
+    "dimension": "reflection",
+    "parentId": "95.03",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "95.05",
+    "name": "Regret/Disappointment",
+    "dimension": "reflection",
+    "parentId": "95.04",
+    "Order": "5",
+    "": ""
+  },
+  {
+    "id": "96.00",
+    "name": "Lessons",
+    "dimension": "reflection",
+    "parentId": "94.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "96.01",
+    "name": "Learnings/Evolution",
+    "dimension": "reflection",
+    "parentId": "96.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "96.02",
+    "name": "Wisdom/Advice",
+    "dimension": "reflection",
+    "parentId": "96.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "96.03",
+    "name": "Inspiration/Motivation",
+    "dimension": "reflection",
+    "parentId": "96.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "96.04",
+    "name": "Do Differently/Alternative",
+    "dimension": "reflection",
+    "parentId": "96.00",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "96.05",
+    "name": "Growth/Differences",
+    "dimension": "reflection",
+    "parentId": "96.00",
+    "Order": "5",
+    "": ""
+  },
+  {
+    "id": "97.00",
+    "name": "Superlatives",
+    "dimension": "reflection",
+    "parentId": "94.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "97.01",
+    "name": "Best / Worst",
+    "dimension": "reflection",
+    "parentId": "97.00",
+    "Order": "1",
+    "": ""
+  },
+  {
+    "id": "97.02",
+    "name": "Happiest / Saddest",
+    "dimension": "reflection",
+    "parentId": "97.00",
+    "Order": "2",
+    "": ""
+  },
+  {
+    "id": "97.03",
+    "name": "Toughest / Easiest",
+    "dimension": "reflection",
+    "parentId": "97.00",
+    "Order": "3",
+    "": ""
+  },
+  {
+    "id": "97.04",
+    "name": "Favorite / Least Favorite",
+    "dimension": "reflection",
+    "parentId": "97.00",
+    "Order": "4",
+    "": ""
+  },
+  {
+    "id": "97.05",
+    "name": "Likes/Dislikes",
+    "dimension": "reflection",
+    "parentId": "97.00",
+    "Order": "5",
+    "": ""
+  },
+  {
+    "id": "97.06",
+    "name": "Longest / Shortest",
+    "dimension": "reflection",
+    "parentId": "97.00",
+    "Order": "6",
+    "": ""
+  },
+  {
+    "id": "97.07",
+    "name": "Most / Least",
+    "dimension": "reflection",
+    "parentId": "97.00",
+    "Order": "7",
+    "": ""
+  },
+  {
+    "id": "97.08",
+    "name": "Strengths / Weaknesses",
+    "dimension": "reflection",
+    "parentId": "97.00",
+    "Order": "8",
+    "": ""
+  },
+  {
+    "id": "",
+    "name": "",
+    "dimension": "",
+    "parentId": "",
+    "Order": "",
+    "": ""
+  }
+]

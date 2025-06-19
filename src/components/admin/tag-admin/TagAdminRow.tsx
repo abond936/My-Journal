@@ -10,6 +10,7 @@
 
 import React, { useState } from 'react';
 import { Tag } from '@/lib/types/tag';
+import styles from './TagAdminRow.module.css';
 
 // Extends the base Tag type to include children for tree structures.
 interface TagWithChildren extends Tag {
@@ -79,48 +80,53 @@ export function TagAdminRow({
   const hasChildren = tag.children && tag.children.length > 0;
 
   return (
-    <div>
-      <div style={rowStyle}>
+    <div className={styles.tagAdminRow}>
+      <div className={styles.tagContent}>
         {/* Expander button (for nodes with children) */}
-        <div style={{ width: '24px', flexShrink: 0 }}>
+        <div className={styles.expander}>
           {hasChildren && (
-            <button onClick={() => onToggleCollapse(tag.id)} style={{ all: 'unset', cursor: 'pointer', display: 'inline-block', width: '100%' }}>
+            <button onClick={() => onToggleCollapse(tag.id)} className={styles.expandButton}>
               {isCollapsed ? '►' : '▼'}
             </button>
           )}
         </div>
 
         {/* Tag name (editable on click) */}
-        {isEditing ? (
-          <input
-            value={tagName}
-            onChange={(e) => setTagName(e.target.value)}
-            onBlur={handleSave}
-            onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-            autoFocus
-            style={{ flexGrow: 1 }}
-          />
-        ) : (
-          <span onClick={() => setIsEditing(true)} style={{ flexGrow: 1, cursor: 'pointer' }}>
-            {tag.name}
-          </span>
-        )}
+        <div className={styles.tagNameContainer}>
+          {isEditing ? (
+            <input
+              value={tagName}
+              onChange={(e) => setTagName(e.target.value)}
+              onBlur={handleSave}
+              onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+              autoFocus
+              className={styles.editInput}
+            />
+          ) : (
+            <span onClick={() => setIsEditing(true)} className={styles.tagName}>
+              {tag.name}
+            </span>
+          )}
+        </div>
         
         {/* Action Buttons */}
-        <button onClick={() => setIsAddingChild(p => !p)} style={{ marginLeft: 'auto', flexShrink: 0 }}>+</button>
-        <button onClick={() => onDeleteTag(tag.id)} style={{ flexShrink: 0 }}>Delete</button>
+        <div className={styles.actions}>
+          <button onClick={() => setIsAddingChild(p => !p)} className={styles.actionButton}>+</button>
+          <button onClick={() => onDeleteTag(tag.id)} className={styles.actionButton}>Delete</button>
+        </div>
       </div>
 
       {/* Form for adding a new child tag */}
       {isAddingChild && (
-        <form onSubmit={handleAddChild} style={{ marginLeft: `${depth * 24 + 50}px` }}>
+        <form onSubmit={handleAddChild} className={styles.addChildForm} style={{ marginLeft: `${depth * 24}px` }}>
           <input
             value={childName}
             onChange={(e) => setChildName(e.target.value)}
             placeholder="New child name"
             autoFocus
+            className={styles.addChildInput}
           />
-          <button type="submit">Add Child</button>
+          <button type="submit" className={styles.addChildButton}>Add Child</button>
         </form>
       )}
     </div>

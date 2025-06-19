@@ -2,20 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import styles from './TagTree.module.css';
-import { Tag } from '@/lib/types/tag';
-import { useTag } from '@/components/providers/TagProvider';
-
-interface TagNode extends Tag {
-  children: TagNode[];
-}
+import { TagWithChildren } from '@/components/providers/TagProvider';
 
 interface TagTreeProps {
+  tree: TagWithChildren[];
   onTagSelect: (tagId: string) => void;
   selectedTags: string[];
+  loading?: boolean;
 }
 
-export default function TagTree({ onTagSelect, selectedTags }: TagTreeProps) {
-  const { dimensionalTree, loading: isLoading, error } = useTag();
+export default function TagTree({ tree, onTagSelect, selectedTags, loading }: TagTreeProps) {
   const [expandedTags, setExpandedTags] = useState<Set<string>>(new Set());
 
   const toggleTag = (tagId: string) => {
@@ -30,7 +26,7 @@ export default function TagTree({ onTagSelect, selectedTags }: TagTreeProps) {
     });
   };
 
-  const renderTag = (tag: TagNode, level: number = 0) => {
+  const renderTag = (tag: TagWithChildren, level: number = 0) => {
     const isExpanded = expandedTags.has(tag.id);
     const isSelected = selectedTags.includes(tag.id);
 
@@ -71,19 +67,18 @@ export default function TagTree({ onTagSelect, selectedTags }: TagTreeProps) {
     );
   };
 
-  if (isLoading) {
+  if (loading) {
     return <div className={styles.loading}>Loading tags...</div>;
   }
-
-  if (error) {
-    return <div className={styles.error}>{error.message}</div>;
+  if (!tree || tree.length === 0) {
+    return <div className={styles.loading}>No tags available.</div>;
   }
 
   return (
     <aside className={styles.sidebar}>
       <h2 className={styles.title}>Explore</h2>
       <nav className={styles.navigation}>
-        {dimensionalTree.map(rootTagNode => renderTag(rootTagNode, 0))}
+        {tree.map(rootTagNode => renderTag(rootTagNode, 0))}
       </nav>
     </aside>
   );

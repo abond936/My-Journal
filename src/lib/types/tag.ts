@@ -5,6 +5,7 @@ export interface Tag {
   name: string;
   dimension?: 'who' | 'what' | 'when' | 'where' | 'reflection';
   parentId?: string;
+  path?: string[]; // For hierarchical queries, array of ancestor IDs
   order?: number;
   description?: string;
   entryCount?: number;
@@ -14,7 +15,6 @@ export interface Tag {
   //updatedAt: Date;
 
   // Planned Properties
-  // path: string[];          //  For hierarchical queries
   //entryCount: number;       //  For analytics
   //description: string;      //  For better organization
   //color: string;            //  For visual distinction

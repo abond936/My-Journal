@@ -53,49 +53,36 @@
    - [Manual Backups](#manual-backups)
    - [Recovery](#recovery)
 
+## Project Overview
+
+### Context
+This project is a personal journaling application that helps users document and share their illustrated life stories with others in an immersive flexible and curated manner.
+
+### Scope
+- Story creation, media integration and management
+- Tag-based organization
+- Family sharing and interaction
+
+
 ## Revised Architecture: The `Card` Model
 ---------------------------------
-Status: 🟡 Prototyped
+Status: 🟡 Operational
 
-To address the complexities of managing two separate content types (`entries` and `albums`) and to enable richer, more curated storytelling, a new unified architecture has been designed, prototyped and is in the process of being implemented completely parallel to the existing architecture until it is fully operational, at which time, the existing architecture can be removed. This model moves away from separate Firestore collections and UIs to a single, flexible entity: the `Card`.
+To address the complexities of managing two separate content types (`entries` and `albums`) and to enable richer, more curated storytelling, a new unified `card` architecture has been designed and implemented completely parallel to the existing architecture until it is fully operational, at which time, the existing architecture can be removed. 
 
 ### Core Concepts
 The new architecture is built on the following principles:
 
-- **Unified Data Model:** All content, regardless of its nature (story, gallery, quote, etc.), is a `Card` and is stored in a single `cards` collection in Firestore. This simplifies data management, queries, and frontend logic significantly.
+- **Unified Data Model:** All content (story, gallery, quote, etc.), is a `Card`, simplifying data management, queries, and frontend logic.
 
-- **Hierarchical Structure:** Cards can be nested. A `Card` can contain a `childrenIds` array, allowing it to act as a container or a "collection" of other cards. This enables the creation of curated experiences, such as a main story card that contains a series of related Q&A cards and photo galleries.
+- **Hierarchical Structure:** Cards can be nested, containing a `childrenIds` array, acting as a container other cards. This enables the creation of curated experiences.
 
-- **Flexible Content Types:** Each `Card` has a `type` property (e.g., `story`, `gallery`, `qa`, `quote`). This property dictates how the card is rendered and what data it contains, allowing for a wide variety of content presentations from a single data model.
+- **Flexible Content Types:** Each `Card` has a `type` property (e.g., `story`, `gallery`, `qa`, `quote`), dictating how the card is rendered and what data it contains, allowing for a wide variety of content presentations from a single data model.
 
-- **Defined Interaction Model:** Each `Card` also has a `displayMode` property that controls its behavior when a user interacts with it:
-  - `navigate`: The card acts as a link, navigating the user to a new page that displays that card as a parent collection (e.g., `/collections/[card.id]`).
+- **Defined Interaction Model:** Each `Card` has a `displayMode` property controlling its behavior:
+  - `navigate`: The card acts as a link, navigating the user to a new page that displays that card as parent collection (e.g., `/card/[id]/`).
   - `inline`: The card expands and collapses in place, functioning like an accordion to reveal its content directly within the current view.
   - `static`: The card is not interactive and serves only to display its content.
-
-### Implementation
-A prototype of this architecture has been built at the `/collections` route. This implementation is completely parallel to the existing `/view` route and does not disrupt any current functionality. It includes:
-- A new `cardService` for backend logic.
-- A new API endpoint at `/api/collections/[id]`.
-- A new page structure at `/collections/[id]` to render the hierarchical card data.
-
-This prototype proves the viability of the `Card` model and serves as the foundation for the future direction of the application's architecture.
-
-## Project Overview
-
-### Context
-This project is a personal journaling application that helps users document and share their life stories, 
-reflections, photos, and media with others.
-
-### Scope
-- Story creation and management
-- Media integration
-- Tag-based organization
-- Family sharing and interaction
-
-### Operational Summary
-The application integrates stories with one's digital photo stores for exploration 
-in an immersive flexible or curated manner.
 
 #### Elements
 Formerly, the primary elements of the app were Entries and Albums categorized by hierarchical Tags.
@@ -122,11 +109,9 @@ Legend:
 ---------------------------------
 Status: 🟡 In Progress
 
-This plan outlines the phases required to fully transition the application from its legacy dual-entity architecture (`Entries` and `Albums`) to the new, unified `Card` model. The new system is being built in parallel to the existing one to ensure no disruption to current functionality.
-
 ### **Phase 1: Admin Foundation**
 ---------------------------------
-Status: ✅ Complete
+Status: 🟡 Operational
 
 This phase focused on creating the basic structure for card administration and the ability to view, create, and update cards. The work leverages existing components from the legacy admin system to accelerate development.
 
@@ -137,19 +122,19 @@ This phase focused on creating the basic structure for card administration and t
 
 ### **Phase 2: Admin Workflow & Experience**
 ---------------------------------
-Status: 🟡 In Progress
+Status: 🟡 Operational
 
 This phase focuses on replicating and improving the core administrative workflows.
 
 - ✅ **Stabilization & Hardening:** Audited and secured all `Card` API endpoints and improved server-side validation.
 - ✅ **Refactor Floating Action Button (FAB):** Created a dedicated `CardAdminFAB` for the new admin section.
 - ✅ **Implement "Delete" Functionality:** Added delete capabilities with a safeguard to prevent accidental deletion of nested cards.
-- ⭕ **Implement Bulk Tag Editing:** Add the ability to add/remove tags from multiple selected cards at once.
-- ⭕ **Implement "View as User" Link:** Ensure the "View" link in the admin list points to the card's public consumption page.
+- ✅ **Implement Bulk Tag Editing:** Add the ability to add/remove tags from multiple selected cards at once.
+- ✅ **Implement "View as User" Link:** Ensure the "View" link in the admin list points to the card's public consumption page.
 
 ### **Phase 3: Consumption Experience**
 ---------------------------------
-Status: ⭕ Planned
+Status: 🟡 Operational
 
 This is the most critical upcoming phase, focused on building the public-facing, non-admin user experience for consuming `Card` content. This will replace the legacy `/view` page.
 
@@ -165,17 +150,17 @@ This is the most critical upcoming phase, focused on building the public-facing,
     -   **Details:** This page will use the new `CardProvider` to display a filterable, infinitely-scrolling grid of all published `Card`s, directly replacing the functionality of the old `/view` page.
 
 4.  **Build the Individual Card View Page:**
-    -   **Task:** Create the page for viewing a single `Card` and its content (e.g., `/collections/[id]`).
+    -   **Task:** Create the page for viewing a single `Card` and its content (e.g., `/cards/[id]`).
     -   **Details:** This page will serve as the destination when a user clicks on a `navigate` type card, displaying its title, content, and any nested children cards.
 
 ### **Phase 4: Migration & Finalization**
 ---------------------------------
-Status: ⭕ Planned
+Status: 🟡 Operational
 
 Once the new `Card` admin and consumption views are fully tested and approved, the final steps can be taken.
 
-- ⭕ **Write Migration Script:** Create a one-time script that reads all documents from the `entries` and `albums` collections and converts them into new documents in the `cards` collection.
-- ⭕ **Verify Migration:** Manually review the migrated data to ensure integrity.
+- ✅ **Write Migration Script:** Create a one-time script that reads all documents from the `entries` and `albums` collections and converts them into new documents in the `cards` collection.
+- ✅ **Verify Migration:** Manually review the migrated data to ensure integrity.
 - ⭕ **Deprecate Old System:** Once the migration is successful, the old admin routes, services, and view pages can be safely removed from the codebase, completing the transition.
 
 
@@ -204,30 +189,30 @@ The core function of the application is the presentation for consumption of text
 The vision is to make this best consumed on mobile and tablet devices in a grid-based card system with 
 navigation through tag (and formerly type) filters, infinite scroll and related content links.
 
-#### Current Features
+#### Current
 - Content layout connected to all content.
 - Tag- and Content-type navigation
 - Infinite scroll
 - Album image scroll
 
-#### Planned Features
+#### Next
 Function
-- *Related content*
-- *Order options*
+- *Add Related content*
+- *Add Order options*
+- *Modify content-type navigation*
 Styling 
 - Multi-sized cards - Card height and width ratios of each other to facilitate grid structure
 - Varying styling - Titles, Tags, Excerpts overlaid/non-overlaid
 - Card animation - image motion, gifs, videos
 
-- Card Types - story, gallery, quote, qa,
+- Multi-type cards - story, gallery, quote, qa,
    - gallery - x/y, Horizontal Scroll, Click to Google-like gallery, Click to Carosel, back
-   - Related
-
+   - Related list??
 
 ❓ Open Questions:
 - How to include 'related' content?
 
-### **Card View** - New
+### **Card View**
 ---------------------------------
 Status: 🟡 Operational
 
@@ -246,7 +231,7 @@ Function
 
 Styling
 - *Emulate edit page for Story*
-- Vary page by Type - Story, Reflection, Q&A, Callout, Quote
+- Vary page by Type - Story, Reflection, Q&A, Quote
 - Vary by orientation - Landscape, Portrait
 - Style back button
 
@@ -254,9 +239,9 @@ Styling
 
 
 
-### **Entry View**
+### **Entry View** - On hold
 ---------------------------------
-Status: 🟡 Operational - On hold
+Status: 🟡 Operational
 
 Entry view contains title, cover image, tags, content.
 
@@ -282,9 +267,9 @@ Styling
 ❓ Open Questions:
 
 
-### **Album View**
+### **Album View** - On hold
 ---------------------------------
-Status: 🟡 Operational-barely - On hold
+Status: 🟡 Operational-barely
 
 Album view contains a title, tags, caption and grid display of images.
 
@@ -329,8 +314,7 @@ Status: 🟡 Operational
 - *Add MSN-style layout and theme*
 - *Home*
 - *Content page*
-- *Entries by type*
-- *Albums*
+- *Cards by type*
 - *Admin pages*
 - Make fully customizable - Add to Settings
 
@@ -344,17 +328,18 @@ Status: 🟡 Operational
 ---------------------------------
 Status: 🟡 Operational
 
-#### Current Features
+#### Current
 - Logo
 - Theme toggle
 - Content/Admin
-
-#### Planned Features
-Function
 - Customize by user role.
 
-Styling
+#### Next
+Function
 
+
+Styling
+- *Improve logo*
 
 ❓Open Questions:
 
@@ -373,6 +358,7 @@ Navigation is facilitated by heirarchical tag filtering.
 
 #### Next
 Function
+- *Revisit tag system overall*
 - *Fix ordering of tags/tree.*
 - Include number of entries/albums (x/y)
 
@@ -397,18 +383,13 @@ Content type based filter is a selector of Entries, Albums or Both (and type) to
 #### Next
 Function
 - *Fix Functioning*
-- Add submenu for entry types--story, reflection, qa, callout, quote
+- *Reduce to card types--story, reflection, qa, quote
 
 Styling
 - Style type menu
 
 ❓Open Questions:
-- How would we order Entries and Albums?
-  - Would we do it by tag selection? 
-  - Order by Tag, show Albums then Entries?
-  - Order by Tag, show Entries, by Albums?
-  - One complicated nested tree structure?
-    - Possible/Advisable?
+- How do we order cards?
 
 ### **Curated Navigaton**
 ---------------------------------
@@ -418,7 +399,8 @@ Status: ⭕ Planned
 - none
 
 #### Next
-- Table of Contents
+- *Create Table of Contents*
+- *Tab Sidebar - TOC/TAG)*
 
 ### **Search**
 ---------------------------------
@@ -428,7 +410,7 @@ Status: ⭕ Planned
 - none
 
 #### Next
-- *Add Basic text search - Top of content*
+- *Add basic text search - top of content*
 
 ❓ Open Questions:
 
@@ -440,13 +422,13 @@ Administration is a feature only available to author.
    - CRUD/Bulk editing operations for app elements
 
 #### Current 
+- Card management
 - Entries management
 - Albums management
 - Tags management
 
 #### Next
 - Questions management
-- Album page styles management
 - Themes management
 - Users management
 
@@ -456,20 +438,99 @@ Administration is a feature only available to author.
 ---------------------------------
 Status: 🟡 Operational
 
-Sidebar to navigate between element lists.
+Topbar to navigate between element lists.
 
 #### Current
-- Static TabBar
-- Basic navigation
+- In place
 
 #### Next
+Function
+- none
 
 Styling 
 - Title
 
 ❓ Open Questions:
 
-### **Entry Management**
+### **Card Management** 
+---------------------------------
+Status: 🟡 Operational
+
+#### Current 
+- List
+- Statistics
+- Search and filtering
+- Bulk editing
+
+#### Next
+Function
+- *Inline/Bulk Tag assignment*
+- *Inline editing*
+
+Styling
+
+❓ Open Questions:
+
+### **Card New**
+---------------------------------
+Stautus: 🟡 Operational
+
+#### Current
+- Cover image 
+- Title
+- Rich Text Editing
+- Image embedding
+- Draft/Published states
+- Tag Assignment
+- Gallery
+- Childre
+
+#### Next
+Function
+
+Styling
+
+❓ Open Questions:
+
+### **Card Edit**
+---------------------------------
+Status: 🟡 Operational
+
+#### Current 
+- Cover Image
+- Title
+- Rich Text Editing
+- Image embedding
+  - Photo Picker, pasted, or dragged.
+- Image formatting 
+   - Size, alignment
+- Tag Assigment
+
+#### Next
+Function
+- *Fix aspect ratio control*
+- *Fix caption*
+- *Test Paste*
+- *Test Drag*
+- *Remove first 'cover photo' label*
+- *Move cover photo to above title*
+- *Move tags to under title*
+- *Move type, status and Visibility to under tags*
+- *Make 'update' only if changed.*
+- *Add 'Preview' for modal button.*
+- *Move H1 and H2 to first buttons*
+- *Make Remove button same as change*
+- *Change Tags to tree selects*
+- *Add more sizes*
+- *Is cover photo a fixed size?*
+- *Make same changes to NEW*
+
+Styling
+
+❓ Open Questions:
+
+
+### **Entry Management** - on hold
 ---------------------------------
 Status: 🟡 Operational
 
@@ -495,7 +556,7 @@ Styling
 ❓ Open Questions:
 
 
-### **Entry New**
+### **Entry New** - on hold
 ---------------------------------
 Stautus: 🟡 Operational
 
@@ -516,7 +577,7 @@ Styling
 
 ❓ Open Questions:
 
-### **Entry Edit**
+### **Entry Edit** - on hold
 ---------------------------------
 Status: 🟡 Operational
 
@@ -553,7 +614,7 @@ Styling
 
 ❓ Open Questions:
 
-### **Album Management**
+### **Album Management** - on hold
 ---------------------------------
 Status: 🟡 Operational
 
@@ -582,7 +643,7 @@ Styling
 - How to handle single photos?
   - Miscellaneous/Other Album?
 
-### **Album New and Edit**
+### **Album New and Edit** - on hold
 ---------------------------------
 Status: 🟡 Operational
 
@@ -623,7 +684,7 @@ The tag system is designed to be highly efficient for querying and filtering, tr
 
 **a) `tags` collection (`/tags/{tagId}`)**
 This is the authoritative source of truth for all tags. Each document represents a single tag.
-- **`name`**: (string) The display name of the tag (e.g., "Grandma Sue").
+- **`name`**: (string) The display name of the tag.
 - **`parentId`**: (string) The ID of the parent tag, forming the hierarchy. Null for top-level tags.
 - **`path`**: (array of strings) An ordered array of parent IDs, representing the full lineage of the tag (e.g., `['tag_who', 'tag_family']`). This is a denormalized field used for efficient lineage generation.
 
@@ -633,13 +694,13 @@ Each entry stores two fields for tag management.
 - **`_tag_lineage`**: (array of strings) A denormalized and comprehensive array containing the IDs from the `tags` field *plus* the `path` and ID from every selected tag. This field is used for all filtering queries. The `_` prefix denotes it as a derived, internal field.
 
 #### 2. Write-Time Tag Expansion
-When an entry is saved or updated, the backend performs the following steps before writing to Firestore:
+When a card (n entry) is saved or updated, the backend performs the following steps before writing to Firestore:
 1.  **Read Selected Tags:** For each `tagId` in the entry's `tags` array, it reads the corresponding document from the `tags` collection.
 2.  **Build Lineage:** It aggregates the `path` array and the `tagId` from each tag document read.
 3.  **Combine & Deduplicate:** It combines all lineage arrays into a single `_tag_lineage` array and removes duplicates.
 4.  **Write to Entry:** It saves both the original `tags` array and the final `_tag_lineage` array to the entry document.
 
-This ensures that queries for a parent tag (e.g., "Family") will correctly match entries tagged with a child (e.g., "Grandma Sue") without complex, expensive query-time logic.
+This ensures that queries for a parent tag will correctly match entries tagged with a child without complex, expensive query-time logic.
 
 #### 3. Client-Side Tag Tree Caching & UI
 
@@ -660,21 +721,22 @@ To prevent excessive reads from rapid-fire filter selections in the UI, filterin
 If the tag hierarchy is ever changed (e.g., a tag is moved to a new parent), the maintenance process is efficient and contained:
 1. The `parentId` and `path` array of the moved tag are updated.
 2. A script updates the `path` array for all *descendant tags* of the moved tag.
-3. **No `entry` documents need to be modified**, as their `_tag_lineage` is rebuilt on their next write. The Firebase Function will automatically update the UI cache.
+3. **No `card` documents need to be modified**, as their `_tag_lineage` is rebuilt on their next write. The Firebase Function will automatically update the UI cache.
 
 The Tag Management page provides an administrative interface for organizing the hierarchical tag system used for content categorization.
 
-#### Current Features
-- **Hierarchical Tree View:** Tags are displayed in a collapsible tree structure that reflects their parent-child relationships and sort order.
-- **Inline Name Editing:** Tag names can be edited directly in the list by clicking on the name. Changes are saved automatically.
-- **Drag-and-Drop Reordering:** The sort order of tags within the same parent can be changed by dragging and dropping a tag to a new position in its sibling list.
-- **Drag-and-Drop Reparenting:** Tags can be reparented by dragging them horizontally onto a new parent tag.
-- **Add Child Tag:** New tags can be added as children to any existing tag using the `+` button on each row.
-- **Tag Deletion:** Tags can be deleted using the "Delete" button. The user is prompted to choose a deletion strategy:
-  - **Promote Children:** The tag is deleted, and its direct children are moved up to become children of the deleted tag's parent.
-  - **Cascade Delete:** The tag and all of its descendants are deleted.
+#### Current
+- Hierarchical Tree View: Tags are displayed in a collapsible tree structure that reflects their parent-child relationships and sort order.
+- Inline Name Editing: Tag names can be edited directly in the list by clicking on the name. Changes are saved automatically.
+- Drag-and-Drop Reordering: Tags are reordered within the same parent by dragging and dropping between its siblings.
+- Drag-and-Drop Reparenting: Tags are reparented by dragging them onto a new parent tag.
+- Add Child Tag: New tags are added as children to any existing tag using the `+` button on each row.
+- Tag Deletion: Tags are deleted using the "Delete" button. The user is prompted to choose a deletion strategy:
+  - Promote Children: The tag is deleted, and its direct children become children of the deleted tag's parent.
+  - Cascade Delete: The tag and all of its descendant tags are deleted. Cards lose their tags
 
 #### Next
+- *Revisit entire tag implementation*
 - A more robust user interface for the deletion strategy choice (replacing the browser prompt).
 - Full implementation of the drag-and-drop reordering and reparenting logic to persist changes to the database.
 - A background task system for processing complex deletions to prevent UI freezes.
@@ -705,11 +767,11 @@ Status: ⭕ Planned
 - Do we want to track questions answered?
 - Do we group short questions?
 
-### **Style Management**
+### **Gallery Style Management**
 ---------------------------------
 Status: ⭕ Planned
-Album styles are selectable styles for album pages
 
+Album styles are selectable styles for album pages
 
 #### Current 
 - None
@@ -738,7 +800,6 @@ Themes customizable.
 ❓ Open Questions:
 - What are the variables that need to be included/decided?
 
-[Back to Top](#myjournal-project)
 
 ## **Technical Infrastructure**
 =====================================
@@ -754,7 +815,7 @@ Status: 🟡 Operational
   - TypeScript
   - Native CSS
   - TipTap for rich text editing
-  - PhotoPicker for 
+  - PhotoPicker for populating content and gallery
   - Framer Motion for animations
   - Next.js Image Optimizer
 
@@ -812,7 +873,7 @@ The architecture follows a one-way data flow:
 
 
 ### **Authentication**
-===========================================
+=================================
 Status: ✅ Implemented
 
 #### Overall Strategy
@@ -874,7 +935,6 @@ Status: ✅ Implemented
 - Account management features (e.g., password change)
 
 ❓ Open Questions:
-- None at this time.
 
 #### **Session Management**
 ---------------------------------------
@@ -893,7 +953,6 @@ Status: ✅ Implemented
 - UI for multi-device management
 
 ❓ Open Questions:
-- None at this time.
 
 #### **Role Management**
 ------------------------------------------
@@ -909,7 +968,6 @@ Status: ✅ Implemented
 - Granular, per-item permissions.
 
 ❓ Open Questions:
-- None at this time.
 
 
 ### **Backup System**
@@ -1022,20 +1080,22 @@ Status: ✅ Implemented
 ---------------------------------------------
 Status: 🟡 Operational
 
-##### Current Features
+##### Current 
 - Input validation
 - Data type checking
 - Required field validation
 - Format validation
+- Zod added
 
 ##### Planned Features
+- App-wide zod implementation
 - Custom validators
 - Validation rules
 - Error handling
 - Validation logging
 
 ❓ Open Questions:
-- What is this data validation in the context of?
+
 
 ### **IMAGE INTEGRATION**
 =======================================
@@ -1142,6 +1202,7 @@ Server-side route /api/images/local/file serves these images.
 - Joins this relative path with the ONEDRIVE_ROOT_FOLDER to get the full, secure file path on the server.
 - Reads the image file from the disk.
 - Returns the image data with the correct Content-Type.
+
 Client-Side Rendering via getDisplayUrl
 - getDisplayUrl(photo: PhotoMetadata) in /src/lib/utils/photoUtils.ts.
 Rule: Any client-side component that needs to display an image must use this function. Components should never attempt to construct an image URL themselves or use the path property directly. They pass the entire PhotoMetadata object to this function to get a usable URL.
@@ -1169,22 +1230,22 @@ Storage Strategy:
 - Originals stay in source services
 - Only store thumbnails, previews, metadata in Firestore
 
-##### Current Features  ??
+##### Current
 - Firebase Storage integration
 - Basic file upload
 - Download URL generation
 - File organization structure
 - Basic error handling
 
-##### Planned Features ??
+##### Next
 - Storage optimization
   - Image compression
   - Format optimization
   - Lazy loading
 
-
 ❓ Open Questions:
-
+- Which source should be used for implementation?
+- Is link vs store strategy inherently weak/slow?
 
 ### **Photopicker**
 --------------------------------------------------------------
@@ -1198,7 +1259,7 @@ Photopicker for selecting and assigning photos to entries and albums.
 - singleSelect/multiSelect dependent on route
 
 #### Next
-- Integrate with Album-Edit
+- Integrate with Card-Edit
 
   ❓ Open Questions:
 
@@ -1226,14 +1287,14 @@ Use local drive until operational functionality solid, then link to online sourc
 -------------------------------------------
 Status: ⭕ Planned
 
-##### Current Features
+##### Current
 - Some basic elements for early experimentation - not operational
   - Local config file for album mappings
   - Basic folder structure integration
   - Album path configuration
   - Basic API integration
 
-##### Planned Features
+##### Next
 - Proper file system access
 
 ❓ Open Questions:
@@ -1243,10 +1304,10 @@ Status: ⭕ Planned
 ----------------------------------------------------
 Status: ⭕ Planned
 
-##### Current Features
+##### Current
 - None
 
-##### Planned Features
+##### Next
 - Integration API
 
 ❓ Open Questions:
@@ -1256,14 +1317,11 @@ Status: ⭕ Planned
 ----------------------------------------------------
 Status: ⭕ Planned
 
-##### Current Features
+##### Current
 - None
 
-##### Planned Features
+##### Next
 - Integration API
 
 ❓ Open Questions:
-
-
-[Back to Top](#myjournal-project)
 

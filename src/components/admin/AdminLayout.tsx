@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Navigation from '@/components/common/Navigation';
 import styles from './AdminLayout.module.css';
 import { AdminNavTabs } from '@/components/admin/AdminNavTabs';
-import { useTag } from '@/components/providers/TagProvider';
+import { useTag, TagWithChildren } from '@/components/providers/TagProvider';
 import TagTree from '../common/TagTree';
+import { Tag } from '@/lib/types/tag';
+import { buildTagTree } from '@/lib/utils/tagUtils';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -14,6 +16,36 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { tags } = useTag();
+
+  const dimensionalTree = useMemo(() => {
+    if (!tags || tags.length === 0) return [];
+
+    const masterTagTree = buildTagTree(tags);
+    
+    const dimensions: Record<string, TagWithChildren> = {
+      who: { id: 'dim-who', name: 'Who', children: [] },
+      what: { id: 'dim-what', name: 'What', children: [] },
+      when: { id: 'dim-when', name: 'When', children: [] },
+      where: { id: 'dim-where', name: 'Where', children: [] },
+      reflection: { id: 'dim-reflection', name: 'Reflection', children: [] },
+    };
+    const uncategorized: TagWithChildren = { id: 'dim-uncategorized', name: 'Uncategorized', children: [] };
+
+    masterTagTree.forEach(rootNode => {
+      if (rootNode.dimension && dimensions[rootNode.dimension]) {
+        dimensions[rootNode.dimension].children.push(rootNode);
+      } else {
+        uncategorized.children.push(rootNode);
+      }
+    });
+
+    const result = Object.values(dimensions);
+    if (uncategorized.children.length > 0) {
+      result.push(uncategorized);
+    }
+    
+    return result;
+  }, [tags]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -37,7 +69,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </button>
 
         <div className={`${styles.sidebar} ${sidebarOpen ? styles.open : styles.closed}`}>
-          <TagTree onTagSelect={handleTagSelect} selectedTags={[]} />
+          <TagTree tree={dimensionalTree} onTagSelect={handleTagSelect} selectedTags={[]} />
         </div>
 
         <main className={styles.mainContent}>

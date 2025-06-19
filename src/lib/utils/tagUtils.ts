@@ -1,5 +1,6 @@
 import { Tag } from '@/lib/types/tag';
 import { getTags } from '@/lib/services/tagService';
+import { TagWithChildren } from "@/components/providers/TagProvider";
 
 /**
  * Organizes a flat list of entry tag IDs into categories based on their dimension.
@@ -38,4 +39,37 @@ export async function organizeEntryTags(entryTagIds: string[]): Promise<{ [key: 
     // Return empty object on error to prevent form crashing
     return {};
   }
-} 
+}
+
+export const buildTagTree = (tags: Tag[]): TagWithChildren[] => {
+  const tagMap = new Map<string, TagWithChildren>();
+  const rootTags: TagWithChildren[] = [];
+
+  if (!tags) return [];
+  
+  const tagsCopy = JSON.parse(JSON.stringify(tags));
+
+  tagsCopy.forEach((tag: Tag) => {
+    tagMap.set(tag.id, { ...tag, children: [] });
+  });
+
+  tagsCopy.forEach((tag: Tag) => {
+    const tagNode = tagMap.get(tag.id);
+    if (tagNode) {
+      if (tag.parentId && tagMap.has(tag.parentId)) {
+        const parentNode = tagMap.get(tag.parentId);
+        parentNode?.children.push(tagNode);
+      } else {
+        rootTags.push(tagNode);
+      }
+    }
+  });
+
+  const sortTags = (tagNodes: TagWithChildren[]) => {
+    tagNodes.sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name));
+    tagNodes.forEach(t => sortTags(t.children));
+  };
+
+  sortTags(rootTags);
+  return rootTags;
+}; 
