@@ -48,18 +48,18 @@ export async function getTagAncestors(tagIds: string[]): Promise<string[]> {
 }
 
 /**
- * Calculates all ancestor paths for a given list of tag IDs using server-side data.
+ * Calculates all ancestor paths for a given list of tag IDs and returns them as a map.
  * @param tagIds The list of tag IDs to find paths for.
- * @returns A promise that resolves to an array of string arrays, where each inner array is an ordered path.
+ * @returns A promise that resolves to a map where keys are concatenated path strings.
  */
-export async function getTagPaths(tagIds: string[]): Promise<string[][]> {
+export async function getTagPathsMap(tagIds: string[]): Promise<Record<string, boolean>> {
   if (!tagIds || tagIds.length === 0) {
-    return [];
+    return {};
   }
 
   const allTags = await getAllTags();
   const tagMap = new Map(allTags.map(tag => [tag.id, tag]));
-  const paths: string[][] = [];
+  const pathsMap: Record<string, boolean> = {};
 
   const findPath = (tagId: string): string[] => {
     const path: string[] = [];
@@ -72,8 +72,12 @@ export async function getTagPaths(tagIds: string[]): Promise<string[][]> {
   };
 
   for (const tagId of tagIds) {
-    paths.push(findPath(tagId));
+    const pathArray = findPath(tagId);
+    if (pathArray.length > 0) {
+      const pathString = pathArray.join('_');
+      pathsMap[pathString] = true;
+    }
   }
 
-  return paths;
+  return pathsMap;
 } 

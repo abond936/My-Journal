@@ -39,7 +39,7 @@ interface RouteParams {
  *       500:
  *         description: Internal server error.
  */
-export async function GET(request: NextRequest, context: { params: RouteParams }) {
+export async function GET(request: NextRequest, { params }: { params: RouteParams }) {
     const session = await getServerSession(authOptions);
     if (!session) {
         return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
@@ -49,8 +49,7 @@ export async function GET(request: NextRequest, context: { params: RouteParams }
     }
 
     try {
-        const params = await context.params;
-        const { id } = params;
+        const { id } = await params;
         const tagRef = tagsCollection.doc(id);
         const tagSnap = await tagRef.get();
 
@@ -106,7 +105,7 @@ export async function GET(request: NextRequest, context: { params: RouteParams }
  *       500:
  *         description: Internal server error.
  */
-export async function PATCH(request: NextRequest, context: { params: RouteParams }) {
+export async function PATCH(request: NextRequest, { params }: { params: RouteParams }) {
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'admin') {
         return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
@@ -116,8 +115,7 @@ export async function PATCH(request: NextRequest, context: { params: RouteParams
     }
 
     try {
-        const params = await context.params;
-        const { id } = params;
+        const { id } = await params;
         const body: Partial<Omit<Tag, 'id' | 'createdAt'>> = await request.json();
 
         if (Object.keys(body).length === 0) {
@@ -167,7 +165,7 @@ export async function PATCH(request: NextRequest, context: { params: RouteParams
  *       500:
  *         description: Internal server error.
  */
-export async function DELETE(request: NextRequest, context: { params: RouteParams }) {
+export async function DELETE(request: NextRequest, { params }: { params: RouteParams }) {
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'admin') {
         return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
@@ -177,8 +175,7 @@ export async function DELETE(request: NextRequest, context: { params: RouteParam
     }
 
     try {
-        const params = await context.params;
-        const { id } = params;
+        const { id } = await params;
         await tagsCollection.doc(id).delete();
         return new NextResponse(null, { status: 204 });
     } catch (error) {

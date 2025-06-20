@@ -99,10 +99,8 @@ export function TagProvider({ children }: { children: ReactNode }) {
   }, [getTagById]);
 
   // --- Tree Construction ---
-  console.log('[TagProvider] fetched tags:', tags);
   const masterTree = useMemo(() => {
     const tree = buildTagTree(tags || []);
-    console.log('[TagProvider] built masterTree:', tree);
     return tree;
   }, [tags]);
 
@@ -116,7 +114,6 @@ export function TagProvider({ children }: { children: ReactNode }) {
       // For each dimension, find roots with that dimension
       result[dim] = fullTree.filter(root => root.dimension === dim);
     });
-    console.log('[TagProvider] built dimensionTree:', result);
     return result;
   }, [tags]);
 

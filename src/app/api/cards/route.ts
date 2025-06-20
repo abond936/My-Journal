@@ -65,7 +65,10 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
 
-    const status = (searchParams.get('status') as Card['status'] | 'all') || 'published';
+    let status = searchParams.get('status') as Card['status'] | 'all' | null;
+    if (!status) {
+      status = isAdmin ? 'all' : 'published';
+    }
     
     // Security check: Only admins can request 'draft' or 'all' cards
     if ((status === 'draft' || status === 'all') && !isAdmin) {
@@ -91,14 +94,9 @@ export async function GET(request: Request) {
         lastDocId,
       });
 
-      // DIAGNOSTIC LOG
-      console.log('[API /api/cards] Result from getCards:', JSON.stringify(result, null, 2));
-
       return NextResponse.json(result);
     } catch (error) {
-      console.error('!!!!!!!!!! DETAILED ERROR IN /api/cards !!!!!!!!!!');
-      console.dir(error, { depth: null }); // Print the full error object
-      console.error('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+      console.error('Error in GET /api/cards:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       return NextResponse.json({ error: 'Internal Server Error', detailedError: errorMessage }, { status: 500 });
     }

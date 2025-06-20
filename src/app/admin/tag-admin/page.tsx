@@ -95,49 +95,37 @@ function useTagManagement() {
 
     const activeTag = { ...currentTags[activeIndex] };
     const overTag = { ...currentTags[overIndex] };
-    console.log('--- handleReorder ---');
-    console.log('activeTag:', activeTag);
-    console.log('overTag:', overTag);
-    console.log('activeTag.parentId:', activeTag.parentId, 'overTag.parentId:', overTag.parentId);
     if (activeTag.parentId !== overTag.parentId) {
-      console.log('Blocked: parentIds do not match');
       return;
     }
 
     let siblings = currentTags
       .filter(t => t.parentId === activeTag.parentId)
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-    console.log('siblings (before removal):', siblings.map(t => ({ id: t.id, name: t.name, order: t.order })));
     // Remove the activeTag from siblings
     siblings = siblings.filter(t => t.id !== activeId);
     // Find the index to insert
     let insertIndex = siblings.findIndex(t => t.id === overId);
     if (insertIndex === -1) {
-      console.log('Blocked: overSiblingIndex === -1');
       return;
     }
     if (placement === 'after') {
       insertIndex += 1;
     }
-    console.log('siblings (after removal):', siblings.map(t => ({ id: t.id, name: t.name, order: t.order })));
-    console.log('Insert at index:', insertIndex, 'placement:', placement);
     // Insert the activeTag at the new position
     siblings.splice(insertIndex, 0, activeTag);
     // Calculate new order for the moved tag
     let prevOrder = insertIndex > 0 ? siblings[insertIndex - 1].order ?? 0 : 0;
     let nextOrder = insertIndex < siblings.length - 1 ? siblings[insertIndex + 1].order ?? prevOrder + 2 : prevOrder + 2;
     let newOrder = (prevOrder + nextOrder) / 2;
-    console.log('prevOrder:', prevOrder, 'nextOrder:', nextOrder, 'newOrder:', newOrder);
     const newFlatTags = currentTags.map(t => t.id === activeId ? { ...t, order: newOrder } : t);
     setTemporaryTags(newFlatTags);
 
     try {
-      const result = await updateTag(activeId, { order: newOrder });
-      console.log('Backend update result:', result);
+      await updateTag(activeId, { order: newOrder });
       await mutate();
     } catch (err) {
       setError('Failed to reorder tag. Please try again.');
-      console.error('Failed to reorder tag:', err);
     } finally {
       setTemporaryTags(null);
       setIsSaving(false);

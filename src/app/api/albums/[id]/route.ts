@@ -28,7 +28,7 @@ export async function GET(request: Request, { params }: { params: RouteParams })
     }
 
     try {
-        const { id } = params;
+        const { id } = await params;
         const albumRef = albumsCollection.doc(id);
         const albumSnap = await albumRef.get();
 
@@ -79,7 +79,7 @@ export async function PATCH(request: Request, { params }: { params: RouteParams 
     }
 
     try {
-        const { id } = params;
+        const { id } = await params;
         const body: Partial<Omit<Album, 'id' | 'createdAt'>> = await request.json();
 
         // The bug is that the body can contain an `id` field, which should not be saved
@@ -141,7 +141,7 @@ export async function DELETE(request: Request, { params }: { params: RouteParams
     }
 
     try {
-        const { id } = params;
+        const { id } = await params;
         // Note: This does not handle deleting associated images from storage.
         // That would require a more complex implementation.
         await albumsCollection.doc(id).delete();

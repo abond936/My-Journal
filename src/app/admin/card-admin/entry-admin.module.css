@@ -113,7 +113,7 @@
 
 .entriesTable th,
 .entriesTable td {
-  padding: 0.75rem;
+  padding: 0.1rem;
   text-align: left;
   border-bottom: 1px solid #eee;
 }
@@ -186,6 +186,26 @@
 .actions {
   display: flex;
   gap: 0.5rem;
+  align-items: center;
+}
+
+.actionButton {
+  display: inline-block;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  background-color: white;
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.actionButton:hover {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
 }
 
 .editButton,

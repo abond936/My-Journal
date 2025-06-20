@@ -1,6 +1,6 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { Card, cardSchema } from '@/lib/types/card';
-import { getTagAncestors, getTagPaths } from '@/lib/firebase/tagDataAccess';
+import { getTagAncestors, getTagPathsMap } from '@/lib/firebase/tagDataAccess';
 import { getFirestore, writeBatch } from 'firebase-admin/firestore';
 import { doc } from 'firebase-admin/firestore';
 
@@ -35,7 +35,7 @@ export async function addCard(cardData: Omit<Card, 'id' | 'createdAt' | 'updated
  * @param cardData The data for the new card, excluding 'id'.
  * @returns The newly created card with its ID.
  */
-export async function createCard(cardData: Partial<Omit<Card, 'id' | 'createdAt' | 'updatedAt' | 'inheritedTags' | 'tagPaths'>>): Promise<Card> {
+export async function createCard(cardData: Partial<Omit<Card, 'id' | 'createdAt' | 'updatedAt' | 'inheritedTags' | 'tagPathsMap'>>): Promise<Card> {
   const collectionRef = firestore.collection(CARDS_COLLECTION);
   const docRef = collectionRef.doc();
 
@@ -51,7 +51,7 @@ export async function createCard(cardData: Partial<Omit<Card, 'id' | 'createdAt'
   const selectedTags = dataWithDefaults.tags;
   const ancestorTags = await getTagAncestors(selectedTags);
   const inheritedTags = [...new Set([...selectedTags, ...ancestorTags])];
-  const tagPaths = await getTagPaths(selectedTags);
+  const tagPathsMap = await getTagPathsMap(selectedTags);
 
   const newCard: Card = {
     contentMedia: [],
@@ -59,7 +59,7 @@ export async function createCard(cardData: Partial<Omit<Card, 'id' | 'createdAt'
     ...dataWithDefaults,
     id: docRef.id,
     inheritedTags,
-    tagPaths,
+    tagPathsMap,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
@@ -86,7 +86,7 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'i
     const selectedTags = cardData.tags;
     const ancestorTags = await getTagAncestors(selectedTags);
     updateData.inheritedTags = [...new Set([...selectedTags, ...ancestorTags])];
-    updateData.tagPaths = await getTagPaths(selectedTags);
+    updateData.tagPathsMap = await getTagPathsMap(selectedTags);
   }
 
   await docRef.update(updateData);
@@ -300,45 +300,49 @@ export async function getCards(options: {
   status?: Card['status'] | 'all';
   type?: Card['type'] | 'all';
   tags?: string[];
+  dimensionalTags?: string[];
   childrenIds_contains?: string;
   limit?: number;
   lastDocId?: string;
 } = {}): Promise<{ items: Card[]; lastDocId?: string; hasMore: boolean }> {
-  const {
-    q,
-    status = 'published',
-    type = 'all',
-    tags,
-    childrenIds_contains,
-    limit = 10,
-    lastDocId,
-  } = options;
+  const { q, status, type, tags, dimensionalTags, childrenIds_contains, limit = 10, lastDocId } = options;
+  let query: FirebaseFirestore.Query = firestore.collection(CARDS_COLLECTION);
 
-  const collectionRef = firestore.collection(CARDS_COLLECTION);
-  let query = collectionRef.orderBy('createdAt', 'desc');
-
-  if (q) {
-    query = query.where('title', '>=', q).where('title', '<=', q + '\uf8ff');
-  }
-
-  if (status !== 'all') {
+  // Apply filters
+  if (status && status !== 'all') {
     query = query.where('status', '==', status);
   }
-
-  if (type !== 'all') {
+  if (type && type !== 'all') {
     query = query.where('type', '==', type);
   }
-
   if (tags && tags.length > 0) {
     query = query.where('inheritedTags', 'array-contains-any', tags);
   }
-  
+  if (dimensionalTags && dimensionalTags.length > 0) {
+    dimensionalTags.forEach(tag => {
+      query = query.where(`tagPathsMap.${tag}`, '!=', null);
+    });
+  }
   if (childrenIds_contains) {
     query = query.where('childrenIds', 'array-contains', childrenIds_contains);
   }
+  if (q) {
+    const searchTerm = q.trim();
+    if (searchTerm) {
+        query = query.where('title', '>=', searchTerm)
+                     .where('title', '<=', searchTerm + '\uf8ff')
+                     .orderBy('title');
+    }
+  }
 
+  // Apply sorting
+  if (!q) {
+    query = query.orderBy('createdAt', 'desc');
+  }
+
+  // Apply pagination
   if (lastDocId) {
-    const lastDocSnap = await collectionRef.doc(lastDocId).get();
+    const lastDocSnap = await firestore.collection(CARDS_COLLECTION).doc(lastDocId).get();
     if (lastDocSnap.exists) {
       query = query.startAfter(lastDocSnap);
     }

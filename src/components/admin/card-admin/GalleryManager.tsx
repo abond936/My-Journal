@@ -17,6 +17,7 @@ import {
 import { PhotoMetadata } from '@/lib/types/photo';
 import PhotoPicker from '@/components/common/PhotoPicker';
 import styles from './GalleryManager.module.css';
+import formStyles from './CardForm.module.css';
 import { SortableItem } from './SortableItem';
 import EditModal from './EditModal';
 
@@ -68,7 +69,7 @@ export default function GalleryManager({ galleryMedia, onGalleryChange }: Galler
         <button
           type="button"
           onClick={() => setIsPickerOpen(true)}
-          className={styles.manageButton}
+          className={formStyles.secondaryButton}
         >
           Add / Manage Images
         </button>

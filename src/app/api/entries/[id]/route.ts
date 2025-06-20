@@ -42,7 +42,7 @@ export async function GET(request: Request, { params }: { params: RouteParams })
   }
 
   try {
-    const { id } = params;
+    const { id } = await params;
     const entryRef = entriesCollection.doc(id);
     const entrySnap = await entryRef.get();
 
@@ -106,7 +106,7 @@ export async function PATCH(request: Request, { params }: { params: RouteParams 
   }
 
   try {
-    const { id } = params;
+    const { id } = await params;
     const body: Partial<Omit<Entry, 'id'>> = await request.json();
 
     // The bug is that the body can contain an `id` field, which should not be saved
@@ -178,7 +178,7 @@ export async function DELETE(request: Request, { params }: { params: RouteParams
   }
 
   try {
-    const { id } = params;
+    const { id } = await params;
     await entriesCollection.doc(id).delete();
     return new NextResponse(null, { status: 204 });
   } catch (error) {

@@ -16,6 +16,7 @@ import {
 } from '@dnd-kit/sortable';
 import { Card } from '@/lib/types/card';
 import styles from './ChildCardManager.module.css';
+import formStyles from './CardForm.module.css';
 import { useChildCards } from './useChildCards';
 import { SortableItem } from './SortableItem';
 
@@ -102,7 +103,7 @@ export default function ChildCardManager({
           placeholder="Search for cards to add..."
           className={styles.searchInput}
         />
-        <button type="button" onClick={handleSearch} disabled={isSearching} className={styles.searchButton}>
+        <button type="button" onClick={handleSearch} disabled={isSearching} className={formStyles.secondaryButton}>
           {isSearching ? 'Searching...' : 'Search'}
         </button>
       </div>

@@ -72,4 +72,72 @@ export const buildTagTree = (tags: Tag[]): TagWithChildren[] => {
 
   sortTags(rootTags);
   return rootTags;
+};
+
+/**
+ * Builds a hierarchical tag tree and then groups the top-level tags by their 'dimension'.
+ * @param tags - A flat array of all tags from the database.
+ * @returns An array of "dimension" tags (Who, What, When, etc.), each containing its respective tag tree.
+ */
+export const buildDimensionalTagTree = (tags: Tag[]): TagWithChildren[] => {
+  if (!tags || tags.length === 0) return [];
+
+  // First, build the standard hierarchical tree from the flat list
+  const masterTagTree = buildTagTree(tags);
+  
+  // Define the dimension containers
+  const dimensions: Record<string, TagWithChildren> = {
+    who: { id: 'dim-who', name: 'Who', children: [], dimension: 'who' },
+    what: { id: 'dim-what', name: 'What', children: [], dimension: 'what' },
+    when: { id: 'dim-when', name: 'When', children: [], dimension: 'when' },
+    where: { id: 'dim-where', name: 'Where', children: [], dimension: 'where' },
+    reflection: { id: 'dim-reflection', name: 'Reflection', children: [], dimension: 'reflection' },
+  };
+  const uncategorized: TagWithChildren = { id: 'dim-uncategorized', name: 'Uncategorized', children: [] };
+
+  //- Distribute the top-level tags from the master tree into the dimension containers
+  masterTagTree.forEach(rootNode => {
+    if (rootNode.dimension && dimensions[rootNode.dimension]) {
+      dimensions[rootNode.dimension].children.push(rootNode);
+    } else {
+      uncategorized.children.push(rootNode);
+    }
+  });
+
+  const result = Object.values(dimensions);
+  if (uncategorized.children.length > 0) {
+    result.push(uncategorized);
+  }
+  
+  return result;
+};
+
+/**
+ * Builds a partial tag tree containing only the specified tags and their direct parents.
+ * @param allTags - A flat array of all tags.
+ * @param selectedTagIds - An array of IDs for the tags that should be included in the tree.
+ * @returns An array of `TagWithChildren` representing the root nodes of the sparse tree.
+ */
+export const buildSparseTagTree = (allTags: Tag[], selectedTagIds: string[]): TagWithChildren[] => {
+  if (!allTags || !selectedTagIds || selectedTagIds.length === 0) {
+    return [];
+  }
+
+  const tagMap = new Map<string, Tag>();
+  allTags.forEach(tag => tagMap.set(tag.id, tag));
+
+  const includedTags = new Map<string, Tag>();
+
+  // Add all selected tags and their ancestors to the `includedTags` map
+  selectedTagIds.forEach(id => {
+    let currentTag = tagMap.get(id);
+    while (currentTag) {
+      if (includedTags.has(currentTag.id)) break; // Stop if we've already processed this branch
+      includedTags.set(currentTag.id, currentTag);
+      currentTag = currentTag.parentId ? tagMap.get(currentTag.parentId) : undefined;
+    }
+  });
+
+  // Now, build a tree from only the included tags
+  return buildTagTree(Array.from(includedTags.values()));
 }; 

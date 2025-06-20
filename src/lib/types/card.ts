@@ -4,6 +4,7 @@ import { photoMetadataSchema } from './photo';
 export const cardSchema = z.object({
   id: z.string(),
   title: z.string().default(''),
+  title_lowercase: z.string().default(''),
   subtitle: z.string().optional().nullable(),
   excerpt: z.string().optional().nullable(),
   
@@ -29,7 +30,7 @@ export const cardSchema = z.object({
   // Combined and calculated tags for querying
   tags: z.array(z.string()).default([]),
   inheritedTags: z.array(z.string()).default([]),
-  tagPaths: z.array(z.any()).default([]), // Flexible for path structure
+  tagPathsMap: z.record(z.boolean()).default({}),
   
   childrenIds: z.array(z.string()).default([]),
   createdAt: z.number(),

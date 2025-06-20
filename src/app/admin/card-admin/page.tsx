@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useTag } from '@/components/providers/TagProvider';
 import { Card } from '@/lib/types/card';
@@ -9,6 +9,7 @@ import { PaginatedResult } from '@/lib/types/services';
 import styles from './entry-admin.module.css';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import useSWR from 'swr';
+import { buildDimensionalTagTree } from '@/lib/utils/tagUtils';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -32,20 +33,75 @@ export default function AdminCardsPage() {
   const [typeFilter, setTypeFilter] = useState<Card['type'] | 'all'>('all');
   const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(new Set());
   
-  const { tags, tagsByDimension, dimensionalTree } = useTag();
+  const [cards, setCards] = useState<Card[]>([]);
+  const [lastDocId, setLastDocId] = useState<string | undefined>(undefined);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  const buildUrl = useCallback(() => {
+  const { tags, loading: tagsLoading } = useTag();
+  const { data: statsData, error: statsError, mutate: mutateStats } = useSWR('/api/statistics/cards', fetcher);
+
+  const dimensionalTree = useMemo(() => {
+    if (!tags) return [];
+    return buildDimensionalTagTree(tags);
+  }, [tags]);
+
+  const buildUrl = useCallback((cursor?: string) => {
     const params = new URLSearchParams();
     params.set('limit', '50');
     if (searchTerm) params.set('q', searchTerm);
     if (statusFilter !== 'all') params.set('status', statusFilter);
     if (typeFilter !== 'all') params.set('type', typeFilter);
+    if (cursor) params.set('lastDocId', cursor);
     return `/api/cards?${params.toString()}`;
   }, [searchTerm, statusFilter, typeFilter]);
 
-  const { data, error, isLoading, mutate } = useSWR<PaginatedResult<Card>>(buildUrl(), fetcher);
+  const { data: initialData, error, isLoading: isInitialLoading, mutate } = useSWR<PaginatedResult<Card>>(
+    buildUrl(), 
+    fetcher, 
+    { revalidateOnFocus: false }
+  );
+  
+  useEffect(() => {
+    if (initialData) {
+      setCards(initialData.items || []);
+      setLastDocId(initialData.lastDocId);
+      setHasMore(initialData.hasMore);
+      setSelectedCardIds(new Set());
+    }
+  }, [initialData]);
 
-  const cards = useMemo(() => data?.items || [], [data]);
+  useEffect(() => {
+    if (cards.length > 0) {
+      const savedScrollPos = sessionStorage.getItem('adminCardListScrollPos');
+      if (savedScrollPos) {
+        window.scrollTo(0, parseInt(savedScrollPos, 10));
+        sessionStorage.removeItem('adminCardListScrollPos');
+      }
+    }
+  }, [cards]);
+
+  const loadMoreCards = async () => {
+    if (!lastDocId || isLoadingMore || !hasMore) return;
+
+    setIsLoadingMore(true);
+    try {
+      const url = buildUrl(lastDocId);
+      const moreData: PaginatedResult<Card> = await fetcher(url);
+      setCards(prevCards => [...prevCards, ...(moreData.items || [])]);
+      setLastDocId(moreData.lastDocId);
+      setHasMore(moreData.hasMore);
+    } catch (err) {
+      console.error("Failed to load more cards", err);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  const handleRefreshStats = async () => {
+    alert('Requesting statistics refresh... Data will update shortly.');
+    await mutateStats();
+  };
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
@@ -118,28 +174,18 @@ export default function AdminCardsPage() {
     if (!confirm(`Are you sure you want to delete ${selectedCardIds.size} cards?`)) return;
     try {
       await Promise.all(Array.from(selectedCardIds).map(id => fetch(`/api/cards/${id}`, { method: 'DELETE' })));
-      mutate();
+      setCards(prev => prev.filter(c => !selectedCardIds.has(c.id)));
       setSelectedCardIds(new Set());
     } catch (err) {
       console.error('Error deleting cards:', err);
     }
   };
 
-  const stats = useMemo(() => {
-    const typeCounts = cards.reduce((acc, card) => {
-      acc[card.type] = (acc[card.type] || 0) + 1;
-      return acc;
-    }, {} as Record<Card['type'], number>);
+  const handleEditClick = () => {
+    sessionStorage.setItem('adminCardListScrollPos', window.scrollY.toString());
+  };
 
-    return {
-      total: cards.length,
-      ...typeCounts,
-      drafts: cards.filter(c => c.status === 'draft').length,
-      published: cards.filter(c => c.status === 'published').length,
-    };
-  }, [cards]);
-
-  if (isLoading) return <LoadingSpinner />;
+  if (isInitialLoading || tagsLoading) return <LoadingSpinner />;
   if (error) return <div className={styles.error}>{error.message || 'Failed to load cards.'}</div>;
 
   return (
@@ -147,12 +193,21 @@ export default function AdminCardsPage() {
       <div className={styles.header}>
         <h1 className={styles.title}>Cards Management</h1>
         <div className={styles.stats}>
-          <div>Total: {stats.total}</div>
-          <div>Stories: {stats.story || 0}</div>
-          <div>Galleries: {stats.gallery || 0}</div>
-          <div>Q&As: {stats.qa || 0}</div>
-          <div>Published: {stats.published || 0}</div>
-          <div>Drafts: {stats.drafts || 0}</div>
+          {statsError ? (
+            <div>Error loading stats.</div>
+          ) : !statsData ? (
+            <div>Loading stats...</div>
+          ) : (
+            <>
+              <div>Total: {statsData.totalCount}</div>
+              <div>Stories: {statsData.types?.story || 0}</div>
+              <div>Galleries: {statsData.types?.gallery || 0}</div>
+              <div>Q&As: {statsData.types?.qa || 0}</div>
+              <div>Published: {statsData.statuses?.published || 0}</div>
+              <div>Drafts: {statsData.statuses?.draft || 0}</div>
+              <button onClick={handleRefreshStats} className={styles.refreshButton}>Refresh Stats</button>
+            </>
+          )}
         </div>
       </div>
 
@@ -236,7 +291,7 @@ export default function AdminCardsPage() {
             <th>
               <input
                 type="checkbox"
-                onChange={(e) => handleSelectAll(e.target.checked)}
+                onChange={handleSelectAll}
                 checked={cards.length > 0 && selectedCardIds.size === cards.length}
               />
             </th>
@@ -271,7 +326,7 @@ export default function AdminCardsPage() {
                 <Link href={`/cards/${card.id}?returnTo=/admin/card-admin`} className={styles.actionButton} target="_blank" rel="noopener noreferrer">
                   View
                 </Link>
-                <Link href={`/admin/card-admin/${card.id}`} className={styles.actionButton}>
+                <Link href={`/admin/card-admin/${card.id}`} className={styles.actionButton} onClick={handleEditClick}>
                   Edit
                 </Link>
               </td>
@@ -279,6 +334,18 @@ export default function AdminCardsPage() {
           ))}
         </tbody>
       </table>
+
+      {hasMore && (
+        <div className={styles.loadMoreContainer}>
+          <button
+            onClick={loadMoreCards}
+            className={styles.loadMoreButton}
+            disabled={isLoadingMore}
+          >
+            {isLoadingMore ? 'Loading...' : 'Load More'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -5,17 +5,16 @@ import { deleteCard, getCardById, updateCard, getPaginatedCardsByIds } from '@/l
 import { Card } from '@/lib/types/card';
 import { PaginatedResult } from '@/lib/types/services';
 
-interface RouteParams {
-  id: string;
-}
+export const dynamic = 'force-dynamic';
 
 /**
  * GET a card by ID.
  */
 export async function GET(
   request: Request,
-  { params: { id } }: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
+  const { id } = await params;
   try {
     if (!id) {
       return NextResponse.json({ error: 'Card ID is required' }, { status: 400 });
@@ -60,7 +59,11 @@ export async function GET(
 /**
  * PATCH handler for updating a card.
  */
-export async function PATCH(request: Request, { params }: { params: RouteParams }) {
+export async function PATCH(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') {
     return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
@@ -71,19 +74,22 @@ export async function PATCH(request: Request, { params }: { params: RouteParams 
 
   try {
     const body: Partial<Omit<Card, 'id'>> = await request.json();
-    const updatedCard = await updateCard(params.id, body);
+    const updatedCard = await updateCard(id, body);
     return NextResponse.json(updatedCard);
   } catch (error) {
-    console.error(`API Error updating card ${params.id}:`, error);
+    console.error(`API Error updating card ${id}:`, error);
     return new NextResponse('Internal server error', { status: 500 });
   }
 }
 
-
 /**
  * DELETE a card by ID.
  */
-export async function DELETE(request: Request, { params }: { params: RouteParams }) {
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') {
     return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
@@ -93,11 +99,10 @@ export async function DELETE(request: Request, { params }: { params: RouteParams
   }
 
   try {
-    const { id } = params;
     await deleteCard(id);
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    console.error(`API Error deleting card ${params.id}:`, error);
+    console.error(`API Error deleting card ${id}:`, error);
     return new NextResponse('Internal server error', { status: 500 });
   }
 } 
