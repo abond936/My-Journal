@@ -5,17 +5,16 @@ export interface Tag {
   name: string;
   dimension?: 'who' | 'what' | 'when' | 'where' | 'reflection';
   parentId?: string;
-  path?: string[]; // For hierarchical queries, array of ancestor IDs
+  path?: string[];             // For hierarchical queries, array of ancestor IDs
   order?: number;
   description?: string;
-  entryCount?: number;
-  albumCount?: number;
+  entryCount?: number;         // Change to cardCount
+  albumCount?: number;         // Delete
 
-  //   createdAt: Date;
-  //updatedAt: Date;
+  // Timestamps
+  createdAt?: Date;
+  updatedAt?: Date;
 
   // Planned Properties
-  //entryCount: number;       //  For analytics
-  //description: string;      //  For better organization
-  //color: string;            //  For visual distinction
+  // color: string;            //  For visual distinction
 } 

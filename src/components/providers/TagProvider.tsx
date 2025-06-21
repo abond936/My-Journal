@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useMemo, ReactNode, useCallback } from 'react';
 import useSWR, { SWRMutator } from 'swr';
+import { useSession } from 'next-auth/react';
 import { Tag } from '@/lib/types/tag';
 import { buildTagTree } from '@/lib/utils/tagUtils';
 
@@ -35,9 +36,14 @@ const TagContext = createContext<TagContextType | undefined>(undefined);
 // --- Provider Component ---
 
 export function TagProvider({ children }: { children: ReactNode }) {
-  const { data: tags, error, isLoading, mutate } = useSWR<Tag[]>('/api/tags', fetcher, {
-    fallbackData: [],
-  });
+  const { status } = useSession();
+  const { data: tags, error, isLoading, mutate } = useSWR<Tag[]>(
+    status === 'authenticated' ? '/api/tags' : null, 
+    fetcher, 
+    {
+      fallbackData: [],
+    }
+  );
 
   const createTag = useCallback(async (tagData: Omit<Tag, 'id'>): Promise<Tag | undefined> => {
     try {
