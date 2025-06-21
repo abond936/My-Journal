@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Navigation from '@/components/common/Navigation';
 import styles from './AdminLayout.module.css';
 import { AdminNavTabs } from '@/components/admin/AdminNavTabs';
-import { useTag, TagWithChildren } from '@/components/providers/TagProvider';
-import TagTree from '../common/TagTree';
-import { Tag } from '@/lib/types/tag';
+import { useTag } from '@/components/providers/TagProvider';
+import TagTree from '@/components/common/TagTree';
 import { buildTagTree } from '@/lib/utils/tagUtils';
 
 interface AdminLayoutProps {
@@ -15,45 +15,65 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const { tags } = useTag();
+  const { tags, loading: tagsLoading } = useTag();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-  const dimensionalTree = useMemo(() => {
+  // State for checkboxes, updated instantly
+  const [stagedSelection, setStagedSelection] = useState<string[]>([]);
+
+  const tagTree = useMemo(() => {
     if (!tags || tags.length === 0) return [];
-
-    const masterTagTree = buildTagTree(tags);
-    
-    const dimensions: Record<string, TagWithChildren> = {
-      who: { id: 'dim-who', name: 'Who', children: [] },
-      what: { id: 'dim-what', name: 'What', children: [] },
-      when: { id: 'dim-when', name: 'When', children: [] },
-      where: { id: 'dim-where', name: 'Where', children: [] },
-      reflection: { id: 'dim-reflection', name: 'Reflection', children: [] },
-    };
-    const uncategorized: TagWithChildren = { id: 'dim-uncategorized', name: 'Uncategorized', children: [] };
-
-    masterTagTree.forEach(rootNode => {
-      if (rootNode.dimension && dimensions[rootNode.dimension]) {
-        dimensions[rootNode.dimension].children.push(rootNode);
-      } else {
-        uncategorized.children.push(rootNode);
-      }
-    });
-
-    const result = Object.values(dimensions);
-    if (uncategorized.children.length > 0) {
-      result.push(uncategorized);
-    }
-    
-    return result;
+    return buildTagTree(tags);
   }, [tags]);
+
+  // On initial load, sync state from URL
+  useEffect(() => {
+    const tagsFromUrl = searchParams.get('tags')?.split(',') || [];
+    const uniqueTags = Array.from(new Set(tagsFromUrl.filter(t => t)));
+    setStagedSelection(uniqueTags);
+  }, [searchParams]);
+
+  const handleSelectionChange = (tagId: string, isSelected: boolean) => {
+    setStagedSelection(prev => {
+      const newSelection = new Set(prev);
+      if (isSelected) {
+        newSelection.add(tagId);
+      } else {
+        newSelection.delete(tagId);
+      }
+      return Array.from(newSelection);
+    });
+  };
+
+  const handleApplyFilters = () => {
+    const current = new URLSearchParams(Array.from(searchParams.entries()));
+    if (stagedSelection.length > 0) {
+      current.set('tags', stagedSelection.join(','));
+    } else {
+      current.delete('tags');
+    }
+    // Reset pagination when filters change
+    current.delete('lastDocId'); 
+    const search = current.toString();
+    const query = search ? `?${search}` : '';
+    router.push(`${pathname}${query}`);
+  };
+
+  const handleClearFilters = () => {
+    setStagedSelection([]);
+    const current = new URLSearchParams(Array.from(searchParams.entries()));
+    current.delete('tags');
+    // Reset pagination when filters change
+    current.delete('lastDocId');
+    const search = current.toString();
+    const query = search ? `?${search}` : '';
+    router.push(`${pathname}${query}`);
+  };
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
-  };
-
-  // Dummy functions for TagTree props for now
-  const handleTagSelect = (tagId: string) => {
-    console.log("Admin Tag Selected:", tagId);
   };
 
   return (
@@ -69,7 +89,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </button>
 
         <div className={`${styles.sidebar} ${sidebarOpen ? styles.open : styles.closed}`}>
-          <TagTree tree={dimensionalTree} onTagSelect={handleTagSelect} selectedTags={[]} />
+          <h2 className={styles.title}>Explore</h2>
+          <nav className={styles.navigation}>
+            <TagTree
+              tree={tagTree}
+              selectedTags={stagedSelection}
+              onSelectionChange={handleSelectionChange}
+              loading={tagsLoading}
+            />
+          </nav>
+          <div className={styles.filterControls}>
+            <button onClick={handleApplyFilters} className={styles.applyButton}>Apply</button>
+            <button onClick={handleClearFilters} className={styles.clearButton}>Clear</button>
+          </div>
         </div>
 
         <main className={styles.mainContent}>

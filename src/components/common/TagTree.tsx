@@ -6,13 +6,34 @@ import { TagWithChildren } from '@/components/providers/TagProvider';
 
 interface TagTreeProps {
   tree: TagWithChildren[];
-  onTagSelect: (tagId: string) => void;
+  onSelectionChange: (tagId: string, isSelected: boolean) => void;
   selectedTags: string[];
   loading?: boolean;
 }
 
-export default function TagTree({ tree, onTagSelect, selectedTags, loading }: TagTreeProps) {
+const getAllParentTagIds = (tree: TagWithChildren[]): Set<string> => {
+  const parentIds = new Set<string>();
+  const traverse = (nodes: TagWithChildren[]) => {
+    nodes.forEach(node => {
+      if (node.children && node.children.length > 0) {
+        parentIds.add(node.id);
+        traverse(node.children);
+      }
+    });
+  };
+  traverse(tree);
+  return parentIds;
+};
+
+export default function TagTree({ tree, onSelectionChange, selectedTags, loading }: TagTreeProps) {
   const [expandedTags, setExpandedTags] = useState<Set<string>>(new Set());
+
+  // Expand all tags by default when the tree is first loaded
+  useEffect(() => {
+    if (tree.length > 0) {
+      setExpandedTags(getAllParentTagIds(tree));
+    }
+  }, [tree]);
 
   const toggleTag = (tagId: string) => {
     setExpandedTags(prev => {
@@ -34,7 +55,7 @@ export default function TagTree({ tree, onTagSelect, selectedTags, loading }: Ta
       <div
         key={tag.id}
         className={styles.tagItem}
-        style={{ paddingLeft: `${level * 1.5}rem` }}
+        style={{ paddingLeft: `${level * 0.2}rem` }}
       >
         <div className={styles.tagHeader}>
           <button
@@ -50,12 +71,16 @@ export default function TagTree({ tree, onTagSelect, selectedTags, loading }: Ta
             )}
           </button>
           
-          <button
-            onClick={() => onTagSelect(tag.id)}
-            className={`${styles.tagButton} ${isSelected ? styles.active : ''}`}
-          >
-            <span className={styles.tagName}>{tag.name}</span>
-          </button>
+          <input
+            type="checkbox"
+            id={`tag-${tag.id}`}
+            checked={isSelected}
+            onChange={e => onSelectionChange(tag.id, e.target.checked)}
+            className={styles.checkbox}
+          />
+          <label htmlFor={`tag-${tag.id}`} className={styles.tagName}>
+            {tag.name}
+          </label>
         </div>
 
         {isExpanded && tag.children.length > 0 && (
@@ -75,11 +100,8 @@ export default function TagTree({ tree, onTagSelect, selectedTags, loading }: Ta
   }
 
   return (
-    <aside className={styles.sidebar}>
-      <h2 className={styles.title}>Explore</h2>
-      <nav className={styles.navigation}>
-        {tree.map(rootTagNode => renderTag(rootTagNode, 0))}
-      </nav>
-    </aside>
+    <>
+      {tree.map(rootTagNode => renderTag(rootTagNode, 0))}
+    </>
   );
 } 

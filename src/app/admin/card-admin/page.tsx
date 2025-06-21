@@ -1,22 +1,24 @@
 'use client';
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useTag } from '@/components/providers/TagProvider';
 import { Card } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
-import { PaginatedResult } from '@/lib/types/services';
 import styles from './entry-admin.module.css';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import useSWR from 'swr';
-import { buildDimensionalTagTree } from '@/lib/utils/tagUtils';
+import { useCards } from '@/lib/hooks/useCards';
+import { buildTagTree } from '@/lib/utils/tagUtils';
+import CardAdminList from '@/components/admin/card-admin/CardAdminList';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 const dimensions: Tag['dimension'][] = ['who', 'what', 'when', 'where', 'reflection'];
 
 const renderCardAdminTagOption = (tag: any, level: number = 0) => {
-  const padding = level * 10;
+  const padding = level * 4;
   return (
     <React.Fragment key={tag.id}>
       <option value={tag.id} style={{ paddingLeft: `${padding}px` }}>
@@ -28,80 +30,66 @@ const renderCardAdminTagOption = (tag: any, level: number = 0) => {
 };
 
 export default function AdminCardsPage() {
+  const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<Card['status'] | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<Card['type'] | 'all'>('all');
   const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(new Set());
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   
-  const [cards, setCards] = useState<Card[]>([]);
-  const [lastDocId, setLastDocId] = useState<string | undefined>(undefined);
-  const [hasMore, setHasMore] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const tags = searchParams.get('tags')?.split(',');
 
-  const { tags, loading: tagsLoading } = useTag();
-  const { data: statsData, error: statsError, mutate: mutateStats } = useSWR('/api/statistics/cards', fetcher);
+  const { 
+    cards, 
+    error, 
+    isLoading, 
+    isLoadingMore, 
+    hasMore, 
+    loadMore, 
+    mutate: mutateCards,
+    updateCardInCache,
+    removeCardFromCache,
+    saveStateToSession
+  } = useCards({
+    searchTerm,
+    status: statusFilter,
+    type: typeFilter,
+    tags: tags,
+    limit: 50,
+  });
+
+  const { tags: allTags, loading: tagsLoading } = useTag();
+  // const { data: statsData, error: statsError, mutate: mutateStats } = useSWR('/api/statistics/cards', fetcher);
 
   const dimensionalTree = useMemo(() => {
-    if (!tags) return [];
-    return buildDimensionalTagTree(tags);
-  }, [tags]);
+    if (!allTags) return [];
+    return buildTagTree(allTags);
+  }, [allTags]);
 
-  const buildUrl = useCallback((cursor?: string) => {
-    const params = new URLSearchParams();
-    params.set('limit', '50');
-    if (searchTerm) params.set('q', searchTerm);
-    if (statusFilter !== 'all') params.set('status', statusFilter);
-    if (typeFilter !== 'all') params.set('type', typeFilter);
-    if (cursor) params.set('lastDocId', cursor);
-    return `/api/cards?${params.toString()}`;
+  const lastScrollY = useRef(0);
+
+  // Clear selection when filters change to avoid confusion
+  useEffect(() => {
+    setSelectedCardIds(new Set());
   }, [searchTerm, statusFilter, typeFilter]);
 
-  const { data: initialData, error, isLoading: isInitialLoading, mutate } = useSWR<PaginatedResult<Card>>(
-    buildUrl(), 
-    fetcher, 
-    { revalidateOnFocus: false }
-  );
-  
   useEffect(() => {
-    if (initialData) {
-      setCards(initialData.items || []);
-      setLastDocId(initialData.lastDocId);
-      setHasMore(initialData.hasMore);
-      setSelectedCardIds(new Set());
-    }
-  }, [initialData]);
-
-  useEffect(() => {
-    if (cards.length > 0) {
+    // Only attempt to scroll when both cards and tags are fully loaded.
+    if (cards.length > 0 && !tagsLoading) {
       const savedScrollPos = sessionStorage.getItem('adminCardListScrollPos');
       if (savedScrollPos) {
-        window.scrollTo(0, parseInt(savedScrollPos, 10));
-        sessionStorage.removeItem('adminCardListScrollPos');
+        setTimeout(() => {
+          window.scrollTo(0, parseInt(savedScrollPos, 10));
+          sessionStorage.removeItem('adminCardListScrollPos');
+        }, 100); // A small delay to allow the DOM to render the full list
       }
     }
-  }, [cards]);
+  }, [cards, tagsLoading]);
 
-  const loadMoreCards = async () => {
-    if (!lastDocId || isLoadingMore || !hasMore) return;
-
-    setIsLoadingMore(true);
-    try {
-      const url = buildUrl(lastDocId);
-      const moreData: PaginatedResult<Card> = await fetcher(url);
-      setCards(prevCards => [...prevCards, ...(moreData.items || [])]);
-      setLastDocId(moreData.lastDocId);
-      setHasMore(moreData.hasMore);
-    } catch (err) {
-      console.error("Failed to load more cards", err);
-    } finally {
-      setIsLoadingMore(false);
-    }
-  };
-
-  const handleRefreshStats = async () => {
+  /* const handleRefreshStats = async () => {
     alert('Requesting statistics refresh... Data will update shortly.');
     await mutateStats();
-  };
+  }; */
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
@@ -126,73 +114,108 @@ export default function AdminCardsPage() {
 
   const handleBulkUpdate = async (field: keyof Card, value: any, confirmMessage: string) => {
     if (!confirm(confirmMessage)) return;
+    
+    // Optimistically update the UI
+    const updatedCards: Card[] = [];
+    cards.forEach(card => {
+      if (selectedCardIds.has(card.id)) {
+        const updatedCard = { ...card, [field]: value };
+        updateCardInCache(updatedCard);
+        updatedCards.push(updatedCard);
+      }
+    });
+
     try {
       await Promise.all(
-        Array.from(selectedCardIds).map(id => 
-          fetch(`/api/cards/${id}`, {
+        updatedCards.map(card =>
+          fetch(`/api/cards/${card.id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ [field]: value }),
           })
         )
       );
-      mutate(); // Revalidate the data
+      // Optional: revalidate silently in the background after success
+      mutateCards();
     } catch (err) {
       console.error(`Error updating ${field}:`, err);
-      alert(`An error occurred while updating ${field}.`);
+      alert(`An error occurred while updating ${field}. Reverting changes.`);
+      // Revert optimistic updates on failure
+      mutateCards();
     }
   };
 
   const handleBulkTagUpdate = async (dimension: Tag['dimension'], tagId: string | null) => {
     if (!tagId || !confirm(`Update tags for ${selectedCardIds.size} cards?`)) return;
-    try {
-      await Promise.all(Array.from(selectedCardIds).map(async cardId => {
-        const card = cards.find(c => c.id === cardId);
-        if (!card) return;
-        
+
+    const updates = new Map<string, Card>();
+
+    // Prepare and apply optimistic updates
+    cards.forEach(card => {
+      if (selectedCardIds.has(card.id)) {
         const otherDimensionTags = (card.tags || []).filter(tId => {
-          const tag = tags.find(t => t.id === tId);
+          const tag = allTags.find(t => t.id === tId);
           return tag && tag.dimension !== dimension;
         });
-
         const newTags = [...otherDimensionTags, tagId];
-        
-        await fetch(`/api/cards/${cardId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tags: newTags }),
-        });
-      }));
-      mutate(); // Revalidate the data
+        const updatedCard = { ...card, tags: newTags };
+        updates.set(card.id, updatedCard);
+        updateCardInCache(updatedCard);
+      }
+    });
+
+    try {
+      await Promise.all(
+        Array.from(updates.values()).map(card =>
+          fetch(`/api/cards/${card.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tags: card.tags }),
+          })
+        )
+      );
+      // Optional: revalidate silently in the background after success
+      mutateCards();
     } catch (err) {
       console.error('Error updating bulk tags:', err);
-      alert('An error occurred while updating tags.');
+      alert('An error occurred while updating tags. Reverting changes.');
+      mutateCards(); // Revert
     }
   };
 
   const handleBulkDelete = async () => {
     if (!confirm(`Are you sure you want to delete ${selectedCardIds.size} cards?`)) return;
+    
+    const idsToDelete = Array.from(selectedCardIds);
+    
+    // Optimistically update the UI
+    idsToDelete.forEach(id => removeCardFromCache(id));
+    setSelectedCardIds(new Set());
+    
     try {
-      await Promise.all(Array.from(selectedCardIds).map(id => fetch(`/api/cards/${id}`, { method: 'DELETE' })));
-      setCards(prev => prev.filter(c => !selectedCardIds.has(c.id)));
-      setSelectedCardIds(new Set());
+      await Promise.all(idsToDelete.map(id => fetch(`/api/cards/${id}`, { method: 'DELETE' })));
+      // No need to revalidate on delete, the items are already gone
     } catch (err) {
       console.error('Error deleting cards:', err);
+      alert('An error occurred while deleting cards. Reverting changes.');
+      mutateCards(); // Revert optimistic updates
     }
   };
 
   const handleEditClick = () => {
+    console.log('--- Saving state to session ---');
     sessionStorage.setItem('adminCardListScrollPos', window.scrollY.toString());
+    saveStateToSession();
   };
 
-  if (isInitialLoading || tagsLoading) return <LoadingSpinner />;
+  if (isLoading || tagsLoading) return <LoadingSpinner />;
   if (error) return <div className={styles.error}>{error.message || 'Failed to load cards.'}</div>;
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <h1 className={styles.title}>Cards Management</h1>
-        <div className={styles.stats}>
+        {/* <div className={styles.stats}>
           {statsError ? (
             <div>Error loading stats.</div>
           ) : !statsData ? (
@@ -208,7 +231,7 @@ export default function AdminCardsPage() {
               <button onClick={handleRefreshStats} className={styles.refreshButton}>Refresh Stats</button>
             </>
           )}
-        </div>
+        </div> */}
       </div>
 
       <div className={styles.filterSection}>
@@ -297,9 +320,8 @@ export default function AdminCardsPage() {
             </th>
             <th>Title</th>
             <th>Type</th>
-            <th>Display Mode</th>
             <th>Status</th>
-            <th>Created</th>
+            <th>Updated</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -315,13 +337,12 @@ export default function AdminCardsPage() {
               </td>
               <td>{card.title || 'Untitled'}</td>
               <td>{card.type}</td>
-              <td>{card.displayMode}</td>
               <td>
                 <span className={`${styles.status} ${styles[card.status]}`}>
                   {card.status}
                 </span>
               </td>
-              <td>{new Date(card.createdAt).toLocaleDateString()}</td>
+              <td>{new Date(card.updatedAt).toLocaleDateString()}</td>
               <td>
                 <Link href={`/cards/${card.id}?returnTo=/admin/card-admin`} className={styles.actionButton} target="_blank" rel="noopener noreferrer">
                   View
@@ -337,11 +358,7 @@ export default function AdminCardsPage() {
 
       {hasMore && (
         <div className={styles.loadMoreContainer}>
-          <button
-            onClick={loadMoreCards}
-            className={styles.loadMoreButton}
-            disabled={isLoadingMore}
-          >
+          <button onClick={loadMore} disabled={isLoadingMore} className={styles.loadMoreButton}>
             {isLoadingMore ? 'Loading...' : 'Load More'}
           </button>
         </div>

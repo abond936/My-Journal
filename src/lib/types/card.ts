@@ -31,6 +31,7 @@ export const cardSchema = z.object({
   tags: z.array(z.string()).default([]),
   inheritedTags: z.array(z.string()).default([]),
   tagPathsMap: z.record(z.boolean()).default({}),
+  filterTags: z.record(z.boolean()).optional(),
   
   childrenIds: z.array(z.string()).default([]),
   createdAt: z.number(),

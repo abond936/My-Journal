@@ -8,6 +8,8 @@ import useSWR from 'swr';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import styles from '@/components/admin/card-admin/CardForm.module.css'; // Re-use styles for buttons
 
+const UPDATED_CARD_KEY = 'updatedCardState';
+
 interface CardAdminClientPageProps {
   cardId: string | null;
 }
@@ -46,9 +48,12 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
         throw new Error(errorData.message || 'Failed to save the card.');
       }
 
+      const updatedCard = await response.json();
+      console.log('--- Saving updated card to session ---', updatedCard);
+      sessionStorage.setItem(UPDATED_CARD_KEY, JSON.stringify(updatedCard));
+
       // Redirect to the main admin page on success
-      router.push('/admin/card-admin');
-      router.refresh(); // Invalidate client cache
+      router.back();
     } catch (error) {
       console.error('Failed to save card:', error);
     }

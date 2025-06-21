@@ -1,5 +1,6 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { Card, cardSchema } from '@/lib/types/card';
+import { Tag } from '@/lib/types/tag';
 import { getTagAncestors, getTagPathsMap } from '@/lib/firebase/tagDataAccess';
 import { getFirestore, writeBatch } from 'firebase-admin/firestore';
 import { doc } from 'firebase-admin/firestore';
@@ -35,7 +36,7 @@ export async function addCard(cardData: Omit<Card, 'id' | 'createdAt' | 'updated
  * @param cardData The data for the new card, excluding 'id'.
  * @returns The newly created card with its ID.
  */
-export async function createCard(cardData: Partial<Omit<Card, 'id' | 'createdAt' | 'updatedAt' | 'inheritedTags' | 'tagPathsMap'>>): Promise<Card> {
+export async function createCard(cardData: Partial<Omit<Card, 'id' | 'createdAt' | 'updatedAt' | 'inheritedTags' | 'tagPathsMap' | 'filterTags'>>): Promise<Card> {
   const collectionRef = firestore.collection(CARDS_COLLECTION);
   const docRef = collectionRef.doc();
 
@@ -52,6 +53,10 @@ export async function createCard(cardData: Partial<Omit<Card, 'id' | 'createdAt'
   const ancestorTags = await getTagAncestors(selectedTags);
   const inheritedTags = [...new Set([...selectedTags, ...ancestorTags])];
   const tagPathsMap = await getTagPathsMap(selectedTags);
+  const filterTags = inheritedTags.reduce((acc, tagId) => {
+    acc[tagId] = true;
+    return acc;
+  }, {} as Record<string, boolean>);
 
   const newCard: Card = {
     contentMedia: [],
@@ -60,6 +65,7 @@ export async function createCard(cardData: Partial<Omit<Card, 'id' | 'createdAt'
     id: docRef.id,
     inheritedTags,
     tagPathsMap,
+    filterTags,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
@@ -87,6 +93,10 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'i
     const ancestorTags = await getTagAncestors(selectedTags);
     updateData.inheritedTags = [...new Set([...selectedTags, ...ancestorTags])];
     updateData.tagPathsMap = await getTagPathsMap(selectedTags);
+    updateData.filterTags = updateData.inheritedTags.reduce((acc, tagId) => {
+      acc[tagId] = true;
+      return acc;
+    }, {} as Record<string, boolean>);
   }
 
   await docRef.update(updateData);
@@ -189,12 +199,17 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
   const batch = writeBatch(db);
 
   const newInheritedTags = await getInheritedTags(tags);
+  const filterTags = newInheritedTags.reduce((acc, tagId) => {
+    acc[tagId] = true;
+    return acc;
+  }, {} as Record<string, boolean>);
 
   cardIds.forEach(id => {
     const cardRef = doc(db, 'cards', id);
     batch.update(cardRef, { 
       tags,
       inheritedTags: newInheritedTags,
+      filterTags,
     });
   });
 
@@ -306,18 +321,69 @@ export async function getCards(options: {
   lastDocId?: string;
 } = {}): Promise<{ items: Card[]; lastDocId?: string; hasMore: boolean }> {
   const { q, status, type, tags, dimensionalTags, childrenIds_contains, limit = 10, lastDocId } = options;
-  let query: FirebaseFirestore.Query = firestore.collection(CARDS_COLLECTION);
 
-  // Apply filters
+  if (tags && tags.length > 0) {
+    // Step 1: Fetch all tags to get their dimensions
+    const allTagsSnapshot = await firestore.collection('tags').get();
+    const allTagsMap = new Map(allTagsSnapshot.docs.map(doc => [doc.id, doc.data() as Tag]));
+
+    // Step 2: Group the filter tags by dimension
+    const tagsByDimension: Record<string, string[]> = {};
+    for (const tagId of tags) {
+      const tag = allTagsMap.get(tagId.trim());
+      if (tag) {
+        if (!tagsByDimension[tag.dimension]) {
+          tagsByDimension[tag.dimension] = [];
+        }
+        tagsByDimension[tag.dimension].push(tag.id);
+      }
+    }
+
+    // Step 3: Fetch document IDs for each dimension group ("OR" logic)
+    const dimensionIdSets: Set<string>[] = [];
+    for (const dimension in tagsByDimension) {
+      const dimensionTags = tagsByDimension[dimension];
+      const idsInDimension = new Set<string>();
+
+      const tagQueries = dimensionTags.map(tagId =>
+        firestore.collection(CARDS_COLLECTION).where(`filterTags.${tagId}`, '==', true).select().get()
+      );
+      
+      const querySnapshots = await Promise.all(tagQueries);
+      querySnapshots.forEach(snapshot => {
+        snapshot.docs.forEach(doc => idsInDimension.add(doc.id));
+      });
+      dimensionIdSets.push(idsInDimension);
+    }
+    
+    // Step 4: Intersect results from each dimension group ("AND" logic)
+    if (dimensionIdSets.length === 0) {
+      return { items: [], hasMore: false };
+    }
+
+    const intersectedIds = dimensionIdSets.reduce((intersection, currentSet) => {
+      return new Set([...intersection].filter(id => currentSet.has(id)));
+    });
+
+    const finalIds = Array.from(intersectedIds);
+
+    if (finalIds.length === 0) {
+      return { items: [], hasMore: false };
+    }
+    
+    // Step 5: Paginate through the final list of IDs
+    return getPaginatedCardsByIds(finalIds, { limit, lastDocId });
+  }
+
+  // Apply filters for non-tag queries
+  let query: FirebaseFirestore.Query = firestore.collection(CARDS_COLLECTION);
   if (status && status !== 'all') {
     query = query.where('status', '==', status);
   }
   if (type && type !== 'all') {
     query = query.where('type', '==', type);
   }
-  if (tags && tags.length > 0) {
-    query = query.where('inheritedTags', 'array-contains-any', tags);
-  }
+  
   if (dimensionalTags && dimensionalTags.length > 0) {
     dimensionalTags.forEach(tag => {
       query = query.where(`tagPathsMap.${tag}`, '!=', null);
@@ -349,7 +415,7 @@ export async function getCards(options: {
   }
 
   const querySnapshot = await query.limit(limit).get();
-  
+
   const items = querySnapshot.docs
     .map(doc => {
       const data = doc.data();
@@ -364,9 +430,19 @@ export async function getCards(options: {
       }
     })
     .filter((item): item is Card => item !== null);
-
+  
   const hasMore = querySnapshot.docs.length === limit;
   const newLastDocId = items.length > 0 ? items[items.length - 1].id : undefined;
 
   return { items, lastDocId: newLastDocId, hasMore };
+}
+
+/**
+ * Retrieves the full set of inherited tags for a given list of direct tags.
+ * @param tags - The list of direct tags.
+ * @returns The full set of inherited tags for the given list.
+ */
+export async function getInheritedTags(tags: string[]): Promise<string[]> {
+  const ancestorTags = await getTagAncestors(tags);
+  return [...new Set([...tags, ...ancestorTags])];
 } 
