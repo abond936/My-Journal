@@ -1,42 +1,42 @@
 'use client';
 
-import React from 'react';
-import { useContentContext } from '@/components/providers/ContentProvider';
+import React, { useMemo } from 'react';
+import { CardProvider, useCardContext } from '@/components/providers/CardProvider';
 import ViewLayout from '@/components/view/ViewLayout';
-import ContentTypeFilter from '@/components/view/ContentTypeFilter';
 import { TagProvider, useTag } from '@/components/providers/TagProvider';
-import { ContentProvider } from '@/components/providers/ContentProvider';
+import { buildTagTree } from '@/lib/utils/tagUtils';
 
-function ViewSectionInner({ children }: { children: React.ReactNode }) {
-  const { selectedTags, toggleTag } = useContentContext();
-  const { dimensionTree, loading } = useTag();
+function CardsLayoutInner({ children }: { children: React.ReactNode }) {
+  // From CardProvider: handles which cards to show and which tags are selected
+  const { selectedTags, toggleTag } = useCardContext();
+  // From TagProvider: handles fetching the master list of all tags to display in the filter
+  const { tags, loading: tagsLoading } = useTag();
 
-  // Combine all dimension roots into a single array for the sidebar tree
-  const allRoots = Object.values(dimensionTree).flat();
-  console.log('[ViewSectionInner] dimensionTree:', dimensionTree);
-  console.log('[ViewSectionInner] allRoots:', allRoots);
-
+  // Build the hierarchical tree structure required by the TagTree component
+  const tagTree = useMemo(() => {
+    if (!tags) return [];
+    return buildTagTree(tags);
+  }, [tags]);
+  
   return (
     <ViewLayout
       selectedTags={selectedTags}
       onTagSelect={toggleTag}
-      FilterComponent={<ContentTypeFilter />}
-      tree={allRoots}
-      loading={loading}
+      FilterComponent={null} // This can be used later for other filters (e.g., by type)
+      tree={tagTree}
+      loading={tagsLoading}
     >
       {children}
     </ViewLayout>
   );
 }
 
-export default function ViewSectionLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function CardsLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ContentProvider>
-      <ViewSectionInner>{children}</ViewSectionInner>
-    </ContentProvider>
+    <CardProvider>
+      <TagProvider>
+        <CardsLayoutInner>{children}</CardsLayoutInner>
+      </TagProvider>
+    </CardProvider>
   );
 } 

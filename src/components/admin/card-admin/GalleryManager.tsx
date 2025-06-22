@@ -15,7 +15,7 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { PhotoMetadata } from '@/lib/types/photo';
-import PhotoPicker from '@/components/common/PhotoPicker';
+import PhotoPicker from './PhotoPicker';
 import styles from './GalleryManager.module.css';
 import formStyles from './CardForm.module.css';
 import { SortableItem } from './SortableItem';

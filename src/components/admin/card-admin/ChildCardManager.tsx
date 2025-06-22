@@ -17,8 +17,8 @@ import {
 import { Card } from '@/lib/types/card';
 import styles from './ChildCardManager.module.css';
 import formStyles from './CardForm.module.css';
-import { useChildCards } from './useChildCards';
 import { SortableItem } from './SortableItem';
+import { useChildCards } from '@/lib/hooks/useChildCards';
 
 interface ChildCardManagerProps {
   childIds: string[];

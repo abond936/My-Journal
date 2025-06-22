@@ -70,7 +70,7 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
             Content
           </Link>
           <Link
-            href="/admin/entry-admin"
+            href="/admin/card-admin"
             className={`${styles.navLink} ${
               pathname?.startsWith('/admin')
                 ? styles.active

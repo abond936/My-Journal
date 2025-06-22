@@ -468,25 +468,7 @@ Top navigation essentially toggles between content and admin for the administrat
 ❓
 
 
-### **Tag Filtering** ❗
----------------------------------
-Status: 🟡 Operational
 
-Navigation is facilitated by dimensional, heirarchical tag filtering. 
-
-✅ 
-- Tag hierarchy display
-
-⭕
-Function
-- *Test filtering function.*
-- *Include number of cards (x)*
-
-Styling
-- *Lessen indention*
-- *Expand tree 1, 2, 3 levels?*
-- *Slide in/out on mobile*
-- *Add multiple orderBy*
 
 ### **Curated Navigaton**
 ---------------------------------
@@ -578,41 +560,40 @@ Styling
 
 ❓ Which image source do we implement with? (local/onedrive)
 
-#### **Tag Management**
+#### **Tag System**
 ---------------------------------
 Status: 🟡 Operational
 
-Efficient querying and filtering
+Cards are assigned dimensional and heriarchical tags to facilitate flexible filtering.
 
-Write-Time Tag Expansion
-When a card is saved or updated, the backend performs the following steps before writing to Firestore:
-- Read Selected Tags
-- Build Lineage 
-- Combine & Deduplicate 
-- Write to Card 
+Core Concepts
+**Tag Assignment** - Tags are assigned multi-select on creation or edit of the card.
+**Tag Expansion** - When a card is saved, the backendcalculates (combines and deduplicates) the full tag lineage (all parents) and stores it on the card document to facilitate queries. 
+**Tag Filtering** - Filtering logic is executed on the server to avoid Firestore's query limitations.(`getCards`) (`src/lib/services/cardService.ts`)
+**Tag UI Cache** - Tag hierarchy UI display is sourced from a single cached JSON object in Firestore `cache/tagTree`, initiated once on startup and automatically updated by a serverless Cloud Function whenever a tag is changed to ensure fast-loading UI with minimal reads.
 
-This ensures that queries for a parent tag will correctly match entries tagged with a child without complex, expensive query-time logic.
+Data Models
+`Card.filterTags: Record<string, boolean>`
+- An object (or map) on each `Card` document.
+- Keys are the IDs of every tag associated with the card, including all of their ancestor tags (the "expanded" lineage).
+- Values are always `true`.
+- This denormalized structure is essential for the server-side filtering logic.
 
-#### Client-Side Tag Tree Caching & UI
 
-**The Tag Tree Cache**
-To avoid reading the entire `tags` collection on every app load, the complete tag tree is stored in a single document (`/cache/tagTree`) in a pre-formatted JSON structure representing the entire tag hierarchy
-- The client application reads this single document on startup to build the tag filtering UI. This is a single, cheap read operation.
+Group Tags by Dimension - The service receives tag IDs, fetches their definitions, and groups them by dimension (e.g., 'who', 'what').
+Intra-Dimension "OR" Logic - For each dimension, it fetches all card IDs that match *any* of the selected tags in that group.
+Inter-Dimension "AND" Logic - It then calculates the *intersection* of the results from each dimension to get the final list of card IDs that match all criteria.
+Pagination - It paginates over this final list of IDs to return the requested page of cards.
 
-**Automated Cache Updates**
-A **Firebase Serverless Cloud Function** is triggered by any create, update, or delete operation on the `/tags/{tagId}` collection to automatically rebuild the `/cache/tagTree` document, ensuring the cache is always in sync with the source-of-truth `tags` collection. This automates cache maintenance and decouples the admin UI from the cache management logic.
+**Tag Administration UI (`/admin/tag-admin`)**
 
-**Debounced Filtering**
-To prevent excessive reads from rapid-fire filter selections in the UI, filtering actions are "debounced." A query is only sent to Firestore after the user has paused their selections for a brief period (e.g., 400ms), bundling multiple filter changes into a single database query. (potentially require a click to accept filter)
-
-#### Maintenance & Reorganization
+Maintenance & Reorganization
 If the tag hierarchy is ever moved or deleted the maintenance process is efficient and contained:
 - The `parentId` and `path` array of the moved tag are updated.
 - A script updates the `path` array for all *descendant tags* of the moved tag.
 - **No `card` documents need to be modified**, as their `_tag_lineage` is rebuilt on their next write. 
-- The Firebase Function will automatically update the UI cache.
 
-The Tag Management page provides an administrative interface for organizing the hierarchical tag system used for content categorization.
+The Tag Management page provides an administrative interface.
 
 ✅
 - tag collection
@@ -621,14 +602,34 @@ The Tag Management page provides an administrative interface for organizing the 
 - inline name editing 
 - drag-and-drop reordering 
 - drag-and-drop reparenting
-- add child cag button `+`
+- add child tag button `+`
 - tag deletion handling
   - promote children: The tag is deleted, and its direct children become children of the deleted tag's parent.
   - Cascade Delete: The tag and all of its descendant tags are deleted. Cards lose their tags
 
 ⭕
-- *modify deletion strategy choice modal (replacing the browser prompt)*
-- *A background task system for processing complex deletions to prevent UI freezes.*
+- modify deletion strategy choice modal (replacing the browser prompt)
+- A background task system for processing complex deletions to prevent UI freezes.
+
+### **Tag Filtering** ❗
+---------------------------------
+Status: 🟡 Operational
+
+Navigation is facilitated by dimensional, heirarchical tag filtering. 
+
+✅ 
+- Tag hierarchy display
+
+⭕
+Function
+- *Test filtering function.*
+- *Include number of cards (x)*
+
+Styling
+- *Lessen indention*
+- *Expand tree 1, 2, 3 levels?*
+- *Slide in/out on mobile*
+- *Add multiple orderBy*
 
 ### **Question Management**
 ---------------------------------
@@ -897,3 +898,4 @@ Status: ⭕ Planned
 - Integration API
 
 ❓ 
+

@@ -5,10 +5,12 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Blockquote from '@tiptap/extension-blockquote';
 import { FigureWithImage } from '@/lib/tiptap/extensions/FigureWithImage';
-import PhotoPicker from '@/components/common/PhotoPicker';
-import ImageToolbar from './ImageToolbar';
+import Image from '@tiptap/extension-image';
+import Link from '@tiptap/extension-link';
 import { PhotoMetadata } from '@/lib/types/photo';
+import ImageToolbar from './ImageToolbar';
 import styles from '@/components/common/RichTextEditor.module.css';
+import { getDisplayUrl } from '@/lib/utils/photoUtils';
 
 // Props interface defines what data and callbacks the component needs
 interface RichTextEditorProps {
@@ -44,6 +46,8 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
           class: 'figure',
         },
       }),
+      Image,
+      Link,
     ],
     content: content, // Set initial content
     // onUpdate is no longer needed as the parent will pull content on demand
@@ -107,7 +111,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('/api/photos/upload', {
+      const response = await fetch('/api/images/upload', {
         method: 'POST',
         body: formData,
       });

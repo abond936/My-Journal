@@ -4,6 +4,7 @@ import { Card } from '@/lib/types/card';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]/route';
 import { PaginatedResult } from '@/lib/types/services';
+import { cardSchema } from '@/lib/types/card';
 
 export const dynamic = 'force-dynamic';
 
@@ -142,13 +143,35 @@ export async function POST(request: Request) {
 
   try {
     const cardData: Partial<Card> = await request.json();
+    const { title, type, status, displayMode } = cardData;
 
-    // Basic validation
-    if (!cardData.title || !cardData.type) {
-      return new NextResponse(
-        JSON.stringify({ error: 'Missing required fields: title and type.' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+    const validationErrors: string[] = [];
+
+    // 1. Validate Title
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      validationErrors.push('A non-empty title is required.');
+    }
+
+    // 2. Validate Type
+    if (!type || !cardSchema.shape.type.options.includes(type)) {
+      validationErrors.push(`Type must be one of: ${cardSchema.shape.type.options.join(', ')}.`);
+    }
+
+    // 3. Validate Status
+    if (!status || !cardSchema.shape.status.options.includes(status)) {
+        validationErrors.push(`Status must be one of: ${cardSchema.shape.status.options.join(', ')}.`);
+    }
+
+    // 4. Validate DisplayMode
+    if (!displayMode || !cardSchema.shape.displayMode.options.includes(displayMode)) {
+        validationErrors.push(`Display Mode must be one of: ${cardSchema.shape.displayMode.options.join(', ')}.`);
+    }
+
+    if (validationErrors.length > 0) {
+        return new NextResponse(JSON.stringify({ errors: validationErrors }), { 
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+        });
     }
     
     // The createCard service function will handle defaults and timestamps

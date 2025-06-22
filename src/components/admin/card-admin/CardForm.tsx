@@ -1,14 +1,18 @@
 'use client';
 
-import React from 'react';
-import { Card } from '@/lib/types/card';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Card, CardType, CardDisplayMode } from '@/lib/types/card';
+import { useTag } from '@/components/providers/TagProvider';
+import { Tag } from '@/lib/types/tag';
+import TiptapEditor from '@/components/common/TiptapEditor';
+import CoverPhotoContainer from './CoverPhotoContainer';
 import styles from './CardForm.module.css';
 import RichTextEditor, { RichTextEditorRef } from '@/components/common/RichTextEditor';
-import CoverPhotoContainer from '../entry-admin/CoverPhotoContainer';
 import { PhotoMetadata } from '@/lib/types/photo';
 import ChildCardManager from './ChildCardManager';
 import GalleryManager from './GalleryManager';
 import MacroTagSelector from './MacroTagSelector';
+import PhotoPicker from './PhotoPicker';
 
 // --- State and Reducer ---
 
@@ -73,6 +77,7 @@ interface CardFormProps {
 export default function CardForm({ initialCard, onSave, onCancel, onDelete }: CardFormProps) {
   const [state, dispatch] = React.useReducer(cardReducer, initialState);
   const editorRef = React.useRef<RichTextEditorRef>(null);
+  const [isPhotoPickerOpen, setIsPhotoPickerOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (initialCard) {
@@ -103,6 +108,17 @@ export default function CardForm({ initialCard, onSave, onCancel, onDelete }: Ca
   
   const handleGalleryChange = (newMedia: PhotoMetadata[]) => {
     dispatch({ type: 'SET_FIELD', field: 'galleryMedia', value: newMedia });
+  };
+
+  const handleOpenPhotoPicker = () => {
+    setIsPhotoPickerOpen(true);
+  };
+
+  const handlePhotoSelectedFromPicker = (photo: PhotoMetadata) => {
+    if (editorRef.current) {
+      editorRef.current.addImage(photo);
+    }
+    setIsPhotoPickerOpen(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -197,6 +213,7 @@ export default function CardForm({ initialCard, onSave, onCancel, onDelete }: Ca
           <RichTextEditor
             ref={editorRef}
             content={state.content || ''}
+            onAddImage={handleOpenPhotoPicker}
           />
         </div>
 
@@ -215,6 +232,14 @@ export default function CardForm({ initialCard, onSave, onCancel, onDelete }: Ca
       <div className={styles.sidebar}>
         {/* Sidebar content if any, can be developed here */}
       </div>
+
+      {isPhotoPickerOpen && (
+        <PhotoPicker
+          onPhotoSelect={handlePhotoSelectedFromPicker}
+          onClose={() => setIsPhotoPickerOpen(false)}
+          initialMode="single"
+        />
+      )}
     </form>
   );
 }

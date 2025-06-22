@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { useTag } from '@/components/providers/TagProvider';
 import { Card } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
-import styles from './entry-admin.module.css';
+import styles from './card-admin.module.css';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import useSWR from 'swr';
 import { useCards } from '@/lib/hooks/useCards';
@@ -344,12 +344,12 @@ export default function AdminCardsPage() {
               </td>
               <td>{new Date(card.updatedAt).toLocaleDateString()}</td>
               <td>
-                <Link href={`/cards/${card.id}?returnTo=/admin/card-admin`} className={styles.actionButton} target="_blank" rel="noopener noreferrer">
-                  View
-                </Link>
-                <Link href={`/admin/card-admin/${card.id}`} className={styles.actionButton} onClick={handleEditClick}>
-                  Edit
-                </Link>
+                <div className={styles.actionButtons}>
+                  <button onClick={() => handleDelete(card.id)} className={styles.actionButton} aria-label="Delete">🗑️</button>
+                  <button onClick={() => handleHide(card.id)} className={styles.actionButton} aria-label="Hide">🙈</button>
+                  <button onClick={() => handleShow(card.id)} className={styles.actionButton} aria-label="Show">👁️</button>
+                  <Link href={`/view/${card.id}?returnTo=/admin/card-admin`} className={styles.actionButton} target="_blank" rel="noopener noreferrer">👁️‍🗨️</Link>
+                </div>
               </td>
             </tr>
           ))}

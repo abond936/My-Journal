@@ -2,55 +2,36 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import AdminFAB from '@/components/admin/AdminFAB';
-import CardAdminFAB from '@/components/admin/CardAdminFAB';
+import { useSession } from 'next-auth/react';
+import AdminNavTabs from './AdminNavTabs';
+import AdminSidebar from './AdminSidebar';
+import styles from './AdminLayout.module.css';
+import AdminFAB from './card-admin/AdminFAB';
 
 interface AdminPageWrapperProps {
   children: React.ReactNode;
 }
 
-// List of paths where the FAB should be hidden
-const HIDDEN_PATHS = [
-  '/admin/tag-admin',
-];
-
-// List of prefixes for paths where the FAB should be hidden
-const HIDDEN_PATH_PREFIXES = [
-  '/admin/entry-admin/new',
-  '/admin/entry-admin/edit',
-  '/admin/album-admin/new',
-  '/admin/album-admin/edit',
-  '/admin/card-admin/new',
-  '/admin/card-admin/edit',
-];
-
 export default function AdminPageWrapper({ children }: AdminPageWrapperProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
   const pathname = usePathname();
+  const { data: session } = useSession();
 
-  // Close the FAB when the path changes
-  useEffect(() => {
-    setIsExpanded(false);
-  }, [pathname]);
+  const showTabs = !pathname.includes('/new') && !pathname.includes('/edit');
 
-  const handleToggle = () => {
-    setIsExpanded(prev => !prev);
-  };
-
-  // Determine if the FAB should be visible
-  const isFabVisible = !HIDDEN_PATHS.includes(pathname) && 
-                       !HIDDEN_PATH_PREFIXES.some(prefix => pathname.startsWith(prefix));
-
-  const isCardAdminPage = pathname.startsWith('/admin/card-admin');
+  if (!session || session.user.role !== 'admin') {
+    return <div>Access Denied</div>;
+  }
 
   return (
-    <>
-      {children}
-      {isFabVisible && (
-        isCardAdminPage 
-          ? <CardAdminFAB /> 
-          : <AdminFAB isExpanded={isExpanded} onToggle={handleToggle} />
-      )}
-    </>
+    <div className={styles.layout}>
+      <AdminSidebar />
+      <div className={styles.mainContent}>
+        {showTabs && <AdminNavTabs />}
+        <div className={styles.pageContent}>
+          {children}
+        </div>
+      </div>
+      <AdminFAB />
+    </div>
   );
 } 

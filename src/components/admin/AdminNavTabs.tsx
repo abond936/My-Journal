@@ -5,19 +5,17 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import styles from './AdminNavTabs.module.css';
 
-const adminLinks = [
+const tabs = [
   { name: 'Cards', href: '/admin/card-admin' },
-  { name: 'Entries', href: '/admin/entry-admin' },
-  { name: 'Albums', href: '/admin/album-admin' },
   { name: 'Tags', href: '/admin/tag-admin' },
 ];
 
-export function AdminNavTabs() {
+export default function AdminNavTabs() {
   const pathname = usePathname();
 
   return (
     <nav className={styles.nav}>
-      {adminLinks.map(link => {
+      {tabs.map(link => {
         const isActive = pathname.startsWith(link.href);
         return (
           <Link
