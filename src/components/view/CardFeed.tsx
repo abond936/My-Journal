@@ -3,7 +3,7 @@
 import React, { useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { Card } from '@/lib/types/card';
-import styles from './CardList.module.css';
+import styles from './CardFeed.module.css';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 
 interface CardFeedProps {

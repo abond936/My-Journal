@@ -16,6 +16,7 @@ import { getDisplayUrl } from '@/lib/utils/photoUtils';
 interface RichTextEditorProps {
   content: string;        // The initial HTML content
   onAddImage?: () => void; // Called when the user wants to add an image
+  isUploading?: boolean;   // To show upload progress/feedback
 }
 
 // Export the Ref type so the parent component can use it.
@@ -28,13 +29,14 @@ export interface RichTextEditorRef {
 const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
   content,
   onAddImage,
+  isUploading,
 }, ref) => {
   const editorRef = useRef<HTMLDivElement>(null);
 
   // State management for various editor features
   const [showPhotoPicker, setShowPhotoPicker] = useState(false); // This state is no longer used here but kept for context if needed later
   const toolbarRef = useRef<HTMLDivElement>(null); // Reference to the image toolbar
-  const [isUploading, setIsUploading] = useState(false); // To show upload progress/feedback
+  const [isFileUploading, setIsFileUploading] = useState(false); // For drag/drop and paste
 
   // Initialize the TipTap editor with custom extensions
   const editor = useEditor({
@@ -50,6 +52,42 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
       Link,
     ],
     content: content, // Set initial content
+    editorProps: {
+      handleDrop(view, event, slice, moved) {
+        if (
+          !moved &&
+          event.dataTransfer &&
+          event.dataTransfer.files &&
+          event.dataTransfer.files[0]
+        ) {
+          event.preventDefault();
+          const file = event.dataTransfer.files[0];
+          handleFileUpload(file);
+          return true; // Mark as handled
+        }
+        return false; // Not handled, let Tiptap proceed
+      },
+      handlePaste(view, event, slice) {
+        const items = event.clipboardData?.items;
+        if (!items) {
+          return false; // No clipboard data
+        }
+        
+        // Find the first image item in the clipboard
+        const imageItem = Array.from(items).find(item => item.type.startsWith('image/'));
+
+        if (imageItem) {
+          event.preventDefault();
+          const file = imageItem.getAsFile();
+          if (file) {
+            handleFileUpload(file);
+            return true; // Mark as handled
+          }
+        }
+
+        return false; // Not an image, let Tiptap handle it
+      },
+    },
     // onUpdate is no longer needed as the parent will pull content on demand
   });
 
@@ -77,7 +115,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
     addImage: (photo: PhotoMetadata) => {
       if (editor) {
         editor.chain().focus().setFigureWithImage({ 
-          src: photo.path,
+          src: photo.storageUrl,
           alt: photo.filename,
           width: photo.width,
           height: photo.height,
@@ -105,13 +143,13 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
     if (!file.type.startsWith('image/')) {
       return;
     }
-    setIsUploading(true);
+    setIsFileUploading(true);
 
     try {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('/api/images/upload', {
+      const response = await fetch('/api/images/import-from-upload', {
         method: 'POST',
         body: formData,
       });
@@ -121,74 +159,25 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
         throw new Error(errorData.error || 'File upload failed');
       }
 
-      const { url, name, width, height } = await response.json();
+      const permanentPhoto: PhotoMetadata = await response.json();
 
       // Use the addImage method to insert the newly uploaded image
       if (memoizedEditor) {
         memoizedEditor.chain().focus().setFigureWithImage({
-          src: url,
-          alt: name,
-          // Note: The API currently doesn't return width/height.
-          // This will need to be added to the API response for full support.
-          // For now, we can omit them or use placeholders if the extension allows.
-          width: width || 500, // Placeholder or actual width from API
-          height: height || 300, // Placeholder or actual height from API
-          caption: name,
+          src: permanentPhoto.storageUrl,
+          alt: permanentPhoto.filename,
+          width: permanentPhoto.width,
+          height: permanentPhoto.height,
+          caption: permanentPhoto.filename,
         }).run();
       }
     } catch (error) {
       console.error('Error uploading image:', error);
       // Optionally, display an error to the user in the editor
     } finally {
-      setIsUploading(false);
+      setIsFileUploading(false);
     }
   };
-
-  const handlePaste = (event: ClipboardEvent) => {
-    const items = event.clipboardData?.items;
-    if (items) {
-      for (const item of items) {
-        if (item.type.startsWith('image/')) {
-          event.preventDefault();
-          const file = item.getAsFile();
-          if (file) {
-            handleFileUpload(file);
-          }
-        }
-      }
-    }
-  };
-
-  const handleDrop = (event: DragEvent) => {
-    const items = event.dataTransfer?.items;
-    if (items) {
-      event.preventDefault();
-      for (const item of items) {
-        if (item.type.startsWith('image/')) {
-          const file = item.getAsFile();
-          if (file) {
-            handleFileUpload(file);
-          }
-        }
-      }
-    }
-  };
-
-  useEffect(() => {
-    const element = editorRef.current;
-    if (element) {
-        const editorElement = element.querySelector('.ProseMirror');
-        if (editorElement) {
-            const castEditorElement = editorElement as HTMLElement;
-            castEditorElement.addEventListener('paste', handlePaste as EventListener);
-            castEditorElement.addEventListener('drop', handleDrop as EventListener);
-            return () => {
-                castEditorElement.removeEventListener('paste', handlePaste as EventListener);
-                castEditorElement.removeEventListener('drop', handleDrop as EventListener);
-            };
-        }
-    }
-  }, [memoizedEditor]); // Dependency array ensures this runs when the editor is ready
 
   if (!memoizedEditor) {
     return null;
@@ -196,7 +185,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
 
   return (
     <div className={styles.editorContainer} ref={editorRef}>
-      {isUploading && <div className={styles.uploadingOverlay}>Uploading...</div>}
+      {(isUploading || isFileUploading) && <div className={styles.uploadingOverlay}>Importing...</div>}
       <div className={styles.toolbar}>
         <button type="button" onClick={() => memoizedEditor.chain().focus().toggleBold().run()} className={memoizedEditor.isActive('bold') ? styles.active : ''}>Bold</button>
         <button type="button" onClick={() => memoizedEditor.chain().focus().toggleItalic().run()} className={memoizedEditor.isActive('italic') ? styles.active : ''}>Italic</button>

@@ -20,20 +20,22 @@ import styles from './GalleryManager.module.css';
 import formStyles from './CardForm.module.css';
 import { SortableItem } from './SortableItem';
 import EditModal from './EditModal';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface GalleryManagerProps {
   galleryMedia: PhotoMetadata[];
   onGalleryChange: (newMedia: PhotoMetadata[]) => void;
+  onPhotosImport: (photos: PhotoMetadata[]) => void;
+  isImporting?: boolean;
 }
 
-export default function GalleryManager({ galleryMedia, onGalleryChange }: GalleryManagerProps) {
+export default function GalleryManager({ galleryMedia, onGalleryChange, onPhotosImport, isImporting }: GalleryManagerProps) {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [editingPhoto, setEditingPhoto] = useState<PhotoMetadata | null>(null);
 
   const handlePhotoSelection = (photos: PhotoMetadata[]) => {
-    // This assumes the picker returns the full new set of selected photos.
-    // We may need to adjust this depending on the picker's implementation.
-    onGalleryChange(photos);
+    console.log('[GalleryManager] handlePhotoSelection: Received photos from picker:', JSON.stringify(photos, null, 2));
+    onPhotosImport(photos);
     setIsPickerOpen(false);
   };
 
@@ -70,8 +72,16 @@ export default function GalleryManager({ galleryMedia, onGalleryChange }: Galler
           type="button"
           onClick={() => setIsPickerOpen(true)}
           className={formStyles.secondaryButton}
+          disabled={isImporting}
         >
-          Add / Manage Images
+          {isImporting ? (
+            <>
+              <LoadingSpinner size={16} />
+              <span style={{ marginLeft: '8px' }}>Importing...</span>
+            </>
+          ) : (
+            'Add / Manage Images'
+          )}
         </button>
       </div>
 
@@ -86,7 +96,7 @@ export default function GalleryManager({ galleryMedia, onGalleryChange }: Galler
             {galleryMedia.map(photo => (
               <SortableItem key={photo.id} id={photo.id}>
                 <div className={styles.thumbnail}>
-                  <img src={photo.thumbnailUrl} alt={photo.caption || photo.filename} />
+                  <img src={photo.storageUrl} alt={photo.caption || photo.filename} />
                   <div className={styles.thumbnailOverlay}>
                     <button
                       type="button"
@@ -129,10 +139,9 @@ export default function GalleryManager({ galleryMedia, onGalleryChange }: Galler
         <PhotoPicker
           isOpen={isPickerOpen}
           onClose={() => setIsPickerOpen(false)}
-          onPhotoSelected={(photo) => handlePhotoSelection([...galleryMedia, photo])} // Example for single add
-          onMultiPhotoSelected={handlePhotoSelection}
+          onMultiPhotoSelect={handlePhotoSelection}
           initialSelection={galleryMedia}
-          allowMultiple
+          initialMode="multi"
         />
       )}
     </div>

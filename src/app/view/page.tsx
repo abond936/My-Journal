@@ -2,7 +2,7 @@
 
 import React, { useRef, useCallback, useEffect } from 'react';
 import { useCardContext } from '@/components/providers/CardProvider';
-import styles from './CardList.module.css';
+import styles from './ViewPage.module.css';
 import AdminFAB from '@/components/admin/card-admin/AdminFAB';
 import CardFeed from '@/components/view/CardFeed';
 

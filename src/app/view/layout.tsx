@@ -1,7 +1,5 @@
 'use client';
 
-import ViewNav from '@/components/view/ViewNav';
-
 // This layout wraps the main content area for the "View" section
 // It includes the ViewNav component, which is responsible for navigation and filtering controls
 
@@ -17,7 +15,6 @@ export default function ViewLayout({
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <ViewNav />
       <main style={{ flex: 1, overflowY: 'auto' }}>
         {children}
       </main>

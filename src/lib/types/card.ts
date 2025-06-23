@@ -17,7 +17,7 @@ export const cardSchema = z.object({
   
   // Future-proof media objects
   coverImage: photoMetadataSchema.optional().nullable(),
-  contentMedia: z.array(photoMetadataSchema).default([]),
+  contentMedia: z.array(z.any()).default([]),
   galleryMedia: z.array(photoMetadataSchema).default([]),
   
   // The 5 tag dimensions

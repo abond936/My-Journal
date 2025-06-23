@@ -35,18 +35,16 @@ export async function POST(request: NextRequest) {
           const fileBuffer = await fs.readFile(fullPath);
           const stats = await fs.stat(fullPath);
           const dimensions = sizeOf(fileBuffer);
-          
-          const photo: PhotoMetadata = {
+
+          // This is a temporary object for the picker. It's not a complete, permanent PhotoMetadata object.
+          // We provide just enough information for the picker to display it and for the form to import it.
+          const photo: any = {
             id: relativePath,
             filename: entry.name,
-            path: relativePath,
             width: dimensions.width || 0,
             height: dimensions.height || 0,
-            lastModified: stats.mtime.toISOString(),
-            size: stats.size,
-            webUrl: `/api/images/local/file?path=${encodeURIComponent(relativePath)}`,
-            thumbnailUrl: `/api/images/local/file?path=${encodeURIComponent(relativePath)}&width=150`, // Add width for thumbnail handling
-            previewUrl: `/api/images/local/file?path=${encodeURIComponent(relativePath)}&width=800`, // Add width for preview handling
+            sourcePath: relativePath, // The key piece of info the CardForm needs to start the import
+            storageUrl: `/api/images/local/file?path=${encodeURIComponent(relativePath)}`, // For temp display
           };
           photos.push(photo);
         } catch (fileError) {

@@ -12,6 +12,8 @@ interface PhotoPickerProps {
   onMultiPhotoSelect?: (photos: PhotoMetadata[]) => void;
   onClose: () => void;
   initialMode?: 'single' | 'multi'; // New prop
+  isOpen?: boolean;
+  initialSelection?: PhotoMetadata[];
 }
 
 const FolderTree = ({ nodes, onSelect, selectedId }: { nodes: TreeNode[], onSelect: (node: TreeNode) => void, selectedId: string | null }) => {
@@ -64,16 +66,19 @@ export default function PhotoPicker({
   onPhotoSelect, 
   onMultiPhotoSelect, 
   onClose, 
-  initialMode = 'single' // Default to single
+  initialMode = 'single', // Default to single
+  initialSelection = []
 }: PhotoPickerProps) {
   const [folderTree, setFolderTree] = useState<TreeNode[]>([]);
   const [photos, setPhotos] = useState<PhotoMetadata[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<TreeNode | null>(null);
-  const [selectedPhotos, setSelectedPhotos] = useState<PhotoMetadata[]>([]);
+  const [selectedPhotos, setSelectedPhotos] = useState<PhotoMetadata[]>(initialSelection);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // State to manage the current selection mode
   const [isMultiSelect, setIsMultiSelect] = useState(initialMode === 'multi');
+  
+  console.log('[PhotoPicker] RENDER. isMultiSelect:', isMultiSelect, 'selectedPhotos:', JSON.stringify(selectedPhotos.map(p => p.id)));
   
   useEffect(() => {
     // Lock multi-select mode if the initial mode was 'multi'
@@ -124,6 +129,7 @@ export default function PhotoPicker({
   };
 
   const handlePhotoClick = (photo: PhotoMetadata) => {
+    console.log('[PhotoPicker] handlePhotoClick. photo:', JSON.stringify(photo, null, 2));
     if (isMultiSelect) {
       setSelectedPhotos(prev => {
         if (prev.find(p => p.id === photo.id)) {
@@ -147,6 +153,7 @@ export default function PhotoPicker({
 
   const handleDoneClick = () => {
     if (isMultiSelect && onMultiPhotoSelect) {
+      console.log('[PhotoPicker] handleDoneClick: Firing onMultiPhotoSelect with:', JSON.stringify(selectedPhotos, null, 2));
       onMultiPhotoSelect(selectedPhotos);
       onClose(); // Close after selection
     }
@@ -227,7 +234,11 @@ export default function PhotoPicker({
           )}
 
           {isMultiSelect && (
-            <button onClick={handleDoneClick} className={styles.doneButton} disabled={selectedPhotos.length === 0}>
+            <button
+              onClick={handleDoneClick}
+              className={styles.doneButton}
+              disabled={selectedPhotos.length === 0}
+            >
               Add {selectedPhotos.length} Photos
             </button>
           )}

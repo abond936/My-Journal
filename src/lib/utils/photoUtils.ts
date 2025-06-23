@@ -7,12 +7,11 @@ import { PhotoMetadata } from '@/lib/types/photo';
  * @returns A string representing the web-accessible URL for the image.
  */
 export function getDisplayUrl(photo: PhotoMetadata): string {
-  // Currently, the only photo source is the local file system.
-  // The 'path' property contains the necessary information to construct a URL
-  // that hits our internal API route for serving local images.
-  if (!photo || !photo.path) {
-    // Return a placeholder or a transparent pixel to avoid broken image icons
-    return 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+  // After the import process, the photo object contains the direct public URL.
+  if (photo?.storageUrl) {
+    return photo.storageUrl;
   }
-  return `/api/images/local/file?path=${encodeURIComponent(photo.path)}`;
+  
+  // Return a placeholder or a transparent pixel if the URL is missing, to avoid broken image icons.
+  return 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 } 
