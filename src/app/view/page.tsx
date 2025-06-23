@@ -1,36 +1,13 @@
 'use client';
 
-import React, { useRef, useCallback, useLayoutEffect, useEffect } from 'react';
-import Link from 'next/link';
+import React, { useRef, useCallback, useEffect } from 'react';
 import { useCardContext } from '@/components/providers/CardProvider';
-import styles from './CardList.module.css'; // Use the new, correct stylesheet
+import styles from './CardList.module.css';
 import AdminFAB from '@/components/admin/card-admin/AdminFAB';
-import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import CardFeed from '@/components/view/CardFeed';
 
-const SCROLL_POSITION_KEY = 'cards_feed_scroll_position';
+const SCROLL_POSITION_KEY = 'contentViewScrollPos';
 
-// Custom hook for scroll restoration (from legacy /view page)
-function useScrollRestoration(key: string) {
-  useLayoutEffect(() => {
-    const savedPosition = sessionStorage.getItem(key);
-    if (savedPosition) {
-      window.scrollTo(0, parseInt(savedPosition, 10));
-    }
-  }, [key]);
-
-  const handleScroll = useCallback(() => {
-    sessionStorage.setItem(key, window.scrollY.toString());
-  }, [key]);
-
-  useEffect(() => {
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, [key, handleScroll]);
-}
-
-// Custom hook for IntersectionObserver (from legacy /view page)
 function useIntersectionObserver(callback: () => void, options?: IntersectionObserverInit) {
   const observer = useRef<IntersectionObserver | null>(null);
   const ref = useCallback(node => {
@@ -43,10 +20,8 @@ function useIntersectionObserver(callback: () => void, options?: IntersectionObs
   return ref;
 }
 
-// This is the inner component that renders the UI, now matching the prototype.
-const CardFeed = () => {
+export default function CardsPage() {
   const { cards, loadingMore, hasMore, loadMore, isLoading } = useCardContext();
-  useScrollRestoration(SCROLL_POSITION_KEY);
 
   const loadingLock = useRef(false);
   const handleLoadMore = useCallback(() => {
@@ -61,44 +36,37 @@ const CardFeed = () => {
     rootMargin: '400px',
   });
 
-  if (isLoading) {
-    // A simple loading state
-    return <div className={styles.page}><header className={styles.header}><h1>My Stories</h1></header><main>Loading...</main></div>;
-  }
+  // Restore scroll position on page load
+  useEffect(() => {
+    if (!isLoading && cards.length > 0) {
+      const savedPosition = sessionStorage.getItem(SCROLL_POSITION_KEY);
+      if (savedPosition) {
+        setTimeout(() => {
+          window.scrollTo(0, parseInt(savedPosition, 10));
+          sessionStorage.removeItem(SCROLL_POSITION_KEY);
+        }, 100); // Delay to allow DOM to render
+      }
+    }
+  }, [isLoading, cards.length]);
+
+  const onSaveScrollPosition = useCallback(() => {
+    sessionStorage.setItem(SCROLL_POSITION_KEY, window.scrollY.toString());
+  }, []);
   
   return (
     <div className={styles.page}>
       <header className={styles.header}>
         <h1>My Stories</h1>
-        {/* TODO: Add Filter UI components here */}
       </header>
-      <main className={styles.grid}>
-        {cards.map(card => (
-          <Link key={card.id} href={`/view/${card.id}`} className={styles.cardLink}>
-            <div className={styles.card}>
-              {card.coverImage && (
-                <img
-                  src={getDisplayUrl(card.coverImage)} 
-                  alt={card.title}
-                  className={styles.cardImage}
-                />
-              )}
-              <div className={styles.cardOverlay}>
-                <h2 className={styles.cardTitle}>{card.title}</h2>
-                {card.subtitle && <p className={styles.cardSubtitle}>{card.subtitle}</p>}
-              </div>
-            </div>
-          </Link>
-        ))}
-      </main>
+      <CardFeed 
+        cards={cards} 
+        loading={isLoading}
+        loadMoreRef={loadMoreRef} 
+        onSaveScrollPosition={onSaveScrollPosition}
+      />
       <div ref={loadMoreRef} style={{ height: '100px' }} />
       {loadingMore && <div style={{ textAlign: 'center', padding: '2rem' }}>Loading more...</div>}
       <AdminFAB />
     </div>
   );
-};
-
-// This is the main page component. It now just renders the CardFeed.
-export default function CardsPage() {
-  return <CardFeed />;
 } 

@@ -2,12 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
-import { PhotoService } from '@/lib/services/images/local/photoService';
+import { getFolderTree, getFolderContents } from '@/lib/services/images/local/photoService';
 import { PhotoMetadata, TreeNode } from '@/lib/types/photo'; // Import directly from the source
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import styles from './PhotoPicker.module.css';
-
-const photoService = new PhotoService(); // Instantiate service once
 
 interface PhotoPickerProps {
   onPhotoSelect?: (photo: PhotoMetadata) => void;
@@ -93,7 +91,7 @@ export default function PhotoPicker({
     try {
       setLoading(true);
       setError(null);
-      const tree = await photoService.getFolderTree();
+      const tree = await getFolderTree();
       setFolderTree(tree);
     } catch (err: any) {
       console.error('Error in loadInitialData:', err);
@@ -115,7 +113,7 @@ export default function PhotoPicker({
     setSelectedPhotos([]);
 
     try {
-      const folderPhotos = await photoService.getFolderContents(node.id);
+      const folderPhotos = await getFolderContents(node.id);
       setPhotos(folderPhotos);
     } catch (err: any) {
       console.error('Error in handleFolderSelect:', err);

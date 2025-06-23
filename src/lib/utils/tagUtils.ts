@@ -41,6 +41,12 @@ export async function organizeEntryTags(entryTagIds: string[]): Promise<{ [key: 
   }
 }
 
+/**
+ * Builds a hierarchical tree of tags from a flat list.
+ * This is the foundational function for all other tree-building utilities.
+ * @param tags - A flat array of all tags.
+ * @returns An array of root-level tags, each with a `children` array.
+ */
 export const buildTagTree = (tags: Tag[]): TagWithChildren[] => {
   const tagMap = new Map<string, TagWithChildren>();
   const rootTags: TagWithChildren[] = [];
@@ -75,41 +81,56 @@ export const buildTagTree = (tags: Tag[]): TagWithChildren[] => {
 };
 
 /**
- * Builds a hierarchical tag tree and then groups the top-level tags by their 'dimension'.
- * @param tags - A flat array of all tags from the database.
- * @returns An array of "dimension" tags (Who, What, When, etc.), each containing its respective tag tree.
+ * [Core Utility] Groups a pre-built tag tree by dimension.
+ * @param tree - A hierarchical array of `TagWithChildren`.
+ * @returns A record where keys are dimensions and values are the corresponding tag trees.
  */
-export const buildDimensionalTagTree = (tags: Tag[]): TagWithChildren[] => {
-  if (!tags || tags.length === 0) return [];
-
-  // First, build the standard hierarchical tree from the flat list
-  const masterTagTree = buildTagTree(tags);
-  
-  // Define the dimension containers
-  const dimensions: Record<string, TagWithChildren> = {
-    who: { id: 'dim-who', name: 'Who', children: [], dimension: 'who' },
-    what: { id: 'dim-what', name: 'What', children: [], dimension: 'what' },
-    when: { id: 'dim-when', name: 'When', children: [], dimension: 'when' },
-    where: { id: 'dim-where', name: 'Where', children: [], dimension: 'where' },
-    reflection: { id: 'dim-reflection', name: 'Reflection', children: [], dimension: 'reflection' },
+const groupTreeByDimension = (tree: TagWithChildren[]): Record<string, TagWithChildren[]> => {
+  const dimensionMap: Record<string, TagWithChildren[]> = {
+    who: [], what: [], when: [], where: [], reflection: [],
   };
-  const uncategorized: TagWithChildren = { id: 'dim-uncategorized', name: 'Uncategorized', children: [] };
 
-  //- Distribute the top-level tags from the master tree into the dimension containers
-  masterTagTree.forEach(rootNode => {
-    if (rootNode.dimension && dimensions[rootNode.dimension]) {
-      dimensions[rootNode.dimension].children.push(rootNode);
-    } else {
-      uncategorized.children.push(rootNode);
+  tree.forEach(rootNode => {
+    const dimension = rootNode.dimension;
+    if (dimension && dimensionMap.hasOwnProperty(dimension)) {
+      dimensionMap[dimension].push(rootNode);
     }
   });
 
-  const result = Object.values(dimensions);
-  if (uncategorized.children.length > 0) {
-    result.push(uncategorized);
-  }
+  return dimensionMap;
+};
+
+/**
+ * [For UI Selectors] Builds a map of tags grouped by dimension.
+ * Useful for creating separate dropdowns for 'who', 'what', etc.
+ * @param tags - A flat array of all tags.
+ * @returns An object where keys are dimensions and values are the corresponding tag trees.
+ */
+export const buildDimensionTree = (tags: Tag[]): Record<string, TagWithChildren[]> => {
+  const tree = buildTagTree(tags || []);
+  return groupTreeByDimension(tree);
+};
+
+/**
+ * [For UI Tree View] Builds a hierarchical tag tree where top-level nodes are the dimensions themselves.
+ * Useful for rendering a single, comprehensive tree view with dimensions as roots.
+ * @param tags - A flat array of all tags from the database.
+ * @returns An array of "dimension" tags (Who, What, etc.), each containing its respective tag tree.
+ */
+export const createUITreeFromDimensions = (tags: Tag[]): TagWithChildren[] => {
+  if (!tags || tags.length === 0) return [];
+
+  const dimensionalMap = buildDimensionTree(tags);
   
-  return result;
+  const dimensions: Record<string, TagWithChildren> = {
+    who: { id: 'dim-who', name: 'Who', children: dimensionalMap.who, dimension: 'who' },
+    what: { id: 'dim-what', name: 'What', children: dimensionalMap.what, dimension: 'what' },
+    when: { id: 'dim-when', name: 'When', children: dimensionalMap.when, dimension: 'when' },
+    where: { id: 'dim-where', name: 'Where', children: dimensionalMap.where, dimension: 'where' },
+    reflection: { id: 'dim-reflection', name: 'Reflection', children: dimensionalMap.reflection, dimension: 'reflection' },
+  };
+  
+  return Object.values(dimensions);
 };
 
 /**

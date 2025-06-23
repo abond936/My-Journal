@@ -40,16 +40,11 @@ export async function createCard(cardData: Partial<Omit<Card, 'id' | 'createdAt'
   const collectionRef = firestore.collection(CARDS_COLLECTION);
   const docRef = collectionRef.doc();
 
-  // Ensure required arrays are present
-  const dataWithDefaults = {
-    ...cardData,
-    tags: cardData.tags || [],
-    contentMedia: cardData.contentMedia || [],
-    galleryMedia: cardData.galleryMedia || [],
-  };
+  // Validate and apply defaults using Zod
+  const validatedData = cardSchema.partial().parse(cardData);
 
   // Calculate inherited tags and paths
-  const selectedTags = dataWithDefaults.tags;
+  const selectedTags = validatedData.tags || [];
   const ancestorTags = await getTagAncestors(selectedTags);
   const inheritedTags = [...new Set([...selectedTags, ...ancestorTags])];
   const tagPathsMap = await getTagPathsMap(selectedTags);
@@ -59,10 +54,11 @@ export async function createCard(cardData: Partial<Omit<Card, 'id' | 'createdAt'
   }, {} as Record<string, boolean>);
 
   const newCard: Card = {
-    contentMedia: [],
-    galleryMedia: [],
-    ...dataWithDefaults,
+    ...validatedData,
     id: docRef.id,
+    tags: selectedTags, // ensure tags is not undefined
+    contentMedia: validatedData.contentMedia || [], // ensure arrays are not undefined
+    galleryMedia: validatedData.galleryMedia || [], // ensure arrays are not undefined
     inheritedTags,
     tagPathsMap,
     filterTags,
@@ -81,18 +77,28 @@ export async function createCard(cardData: Partial<Omit<Card, 'id' | 'createdAt'
  */
 export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'id'>>): Promise<Card> {
   const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
-  
+  const docSnap = await docRef.get();
+  if (!docSnap.exists) {
+    throw new Error(`Card with ID ${cardId} not found.`);
+  }
+  const existingData = docSnap.data() as Card;
+
+  // Validate the incoming partial data
+  const validatedUpdate = cardSchema.partial().parse(cardData);
+
   const updateData: Partial<Card> = {
-    ...cardData,
+    ...validatedUpdate,
     updatedAt: Date.now(),
   };
 
-  // If tags are being updated, recalculate inheritedTags and tagPaths
-  if (cardData.tags) {
-    const selectedTags = cardData.tags;
-    const ancestorTags = await getTagAncestors(selectedTags);
-    updateData.inheritedTags = [...new Set([...selectedTags, ...ancestorTags])];
-    updateData.tagPathsMap = await getTagPathsMap(selectedTags);
+  // Determine the final set of tags for recalculation
+  const finalTags = validatedUpdate.tags ?? existingData.tags;
+
+  // Always recalculate hierarchy if tags exist
+  if (finalTags) {
+    const ancestorTags = await getTagAncestors(finalTags);
+    updateData.inheritedTags = [...new Set([...finalTags, ...ancestorTags])];
+    updateData.tagPathsMap = await getTagPathsMap(finalTags);
     updateData.filterTags = updateData.inheritedTags.reduce((acc, tagId) => {
       acc[tagId] = true;
       return acc;
@@ -322,83 +328,41 @@ export async function getCards(options: {
 } = {}): Promise<{ items: Card[]; lastDocId?: string; hasMore: boolean }> {
   const { q, status, type, tags, dimensionalTags, childrenIds_contains, limit = 10, lastDocId } = options;
 
-  if (tags && tags.length > 0) {
-    // Step 1: Fetch all tags to get their dimensions
-    const allTagsSnapshot = await firestore.collection('tags').get();
-    const allTagsMap = new Map(allTagsSnapshot.docs.map(doc => [doc.id, doc.data() as Tag]));
+  let query = firestore.collection(CARDS_COLLECTION) as FirebaseFirestore.Query<Card>;
 
-    // Step 2: Group the filter tags by dimension
-    const tagsByDimension: Record<string, string[]> = {};
-    for (const tagId of tags) {
-      const tag = allTagsMap.get(tagId.trim());
-      if (tag) {
-        if (!tagsByDimension[tag.dimension]) {
-          tagsByDimension[tag.dimension] = [];
-        }
-        tagsByDimension[tag.dimension].push(tag.id);
-      }
-    }
-
-    // Step 3: Fetch document IDs for each dimension group ("OR" logic)
-    const dimensionIdSets: Set<string>[] = [];
-    for (const dimension in tagsByDimension) {
-      const dimensionTags = tagsByDimension[dimension];
-      const idsInDimension = new Set<string>();
-
-      const tagQueries = dimensionTags.map(tagId =>
-        firestore.collection(CARDS_COLLECTION).where(`filterTags.${tagId}`, '==', true).select().get()
-      );
-      
-      const querySnapshots = await Promise.all(tagQueries);
-      querySnapshots.forEach(snapshot => {
-        snapshot.docs.forEach(doc => idsInDimension.add(doc.id));
-      });
-      dimensionIdSets.push(idsInDimension);
-    }
-    
-    // Step 4: Intersect results from each dimension group ("AND" logic)
-    if (dimensionIdSets.length === 0) {
-      return { items: [], hasMore: false };
-    }
-
-    const intersectedIds = dimensionIdSets.reduce((intersection, currentSet) => {
-      return new Set([...intersection].filter(id => currentSet.has(id)));
-    });
-
-    const finalIds = Array.from(intersectedIds);
-
-    if (finalIds.length === 0) {
-      return { items: [], hasMore: false };
-    }
-    
-    // Step 5: Paginate through the final list of IDs
-    return getPaginatedCardsByIds(finalIds, { limit, lastDocId });
-  }
-
-  // Apply filters for non-tag queries
-  let query: FirebaseFirestore.Query = firestore.collection(CARDS_COLLECTION);
-  if (status && status !== 'all') {
-    query = query.where('status', '==', status);
-  }
-  if (type && type !== 'all') {
-    query = query.where('type', '==', type);
-  }
-  
-  if (dimensionalTags && dimensionalTags.length > 0) {
-    dimensionalTags.forEach(tag => {
-      query = query.where(`tagPathsMap.${tag}`, '!=', null);
-    });
-  }
-  if (childrenIds_contains) {
-    query = query.where('childrenIds', 'array-contains', childrenIds_contains);
-  }
+  // Combined text search and tag filtering
   if (q) {
     const searchTerm = q.trim();
     if (searchTerm) {
-        query = query.where('title', '>=', searchTerm)
-                     .where('title', '<=', searchTerm + '\uf8ff')
-                     .orderBy('title');
+      query = query.where('title', '>=', searchTerm)
+                   .where('title', '<=', searchTerm + '\uf8ff')
+                   .orderBy('title');
     }
+  }
+
+  // --- Filter by tags ---
+  if (tags && tags.length > 0) {
+    query = query.where('inheritedTags', 'array-contains-any', tags);
+  }
+
+  // Filter by status
+  if (status && status !== 'all') {
+    query = query.where('status', '==', status);
+  }
+
+  // Filter by type
+  if (type && type !== 'all') {
+    query = query.where('type', '==', type);
+  }
+
+  // Filter by dimensional tags
+  if (dimensionalTags && dimensionalTags.length > 0) {
+    query = query.where('tagPathsMap', '!=', null);
+  }
+
+  // Filter by childrenIds_contains
+  if (childrenIds_contains) {
+    query = query.where('childrenIds', 'array-contains', childrenIds_contains);
   }
 
   // Apply sorting

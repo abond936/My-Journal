@@ -1,14 +1,10 @@
 .navigation {
   background: var(--color-background);
   border-bottom: 1px solid var(--color-border);
-  padding: 0;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  min-height: 120px;
-  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
 }
 
 .navContainer {
@@ -16,7 +12,8 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  min-height: 120px;
+  width: 100%;
+  height: 100%;
   margin-left: 0;
   transition: margin-left 0.3s ease;
 }
@@ -40,7 +37,8 @@
 }
 
 .logoImage {
-  height: 150px;
+  height: 100%; /* Make logo image fill the header height */
+  max-height: 50px; /* But don't let it get too big */
   width: auto;
   padding-top: 0;
   object-fit: contain;

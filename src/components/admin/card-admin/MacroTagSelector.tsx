@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useTag } from '@/components/providers/TagProvider';
 import { Tag, TagWithChildren } from '@/lib/types/tag';
 import styles from './MacroTagSelector.module.css';
-import { buildSparseTagTree, buildDimensionalTagTree } from '@/lib/utils/tagUtils';
+import { buildSparseTagTree, createUITreeFromDimensions } from '@/lib/utils/tagUtils';
 
 interface MacroTagSelectorProps {
   selectedTagIds: string[];
@@ -109,7 +109,7 @@ function ExpandedView({ initialSelection, onSave, onCancel }: ExpandedViewProps)
 
   const dimensionalTree = useMemo(() => {
     if (!tags) return [];
-    return buildDimensionalTagTree(tags);
+    return createUITreeFromDimensions(tags);
   }, [tags]);
 
   const handleTagChange = (tagId: string, isSelected: boolean) => {

@@ -1,3 +1,19 @@
+.simplifiedLayout {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.topNavContainer {
+  padding: 0 1.5rem; /* Match main content padding */
+  border-bottom: 1px solid var(--border);
+  background-color: var(--background-start);
+}
+
+.pageContent {
+  flex: 1;
+}
+
 .layout {
     display: flex;
     flex-direction: column;
@@ -63,20 +79,6 @@
     overflow-y: auto;
   }
   
-  .topNavContainer {
-    padding: 1rem 2rem;
-    border-bottom: 1px solid var(--border);
-    background-color: var(--background-start);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-  }
-  
-  .pageContent {
-    flex: 1;
-    padding: 2rem;
-  }
-
   .title {
     margin-top: 0;
     margin-bottom: 1rem;

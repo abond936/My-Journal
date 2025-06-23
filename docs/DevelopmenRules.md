@@ -5,7 +5,7 @@ Development Rules
 
 - Code is to be modular with self-contained components.
 
-- Edit on specific code under consideration.
+- Edit only specific code under consideration.
 - Make only changes authorized to make 
   - Do not make changes to code outside the scope of the question/issue at hand.
     - For example, do not deleted comments, rename variables, or change any code not specifically related to the functionality at hand.
@@ -164,10 +164,8 @@ Before proposing any code or refactor, evaluate the following:
    │   ├── migration/     
    └── lib/                 # Shared resources
        ├── config/          # Configuration
-       ├── extensions/      # Extensions
        ├── firebase/        # Firebase setup
        ├── hooks/           # Custom hooks
-       ├── mocks/           # Mock data
        ├── scripts/         # Utility scripts
        ├── services/        # Business logic
        ├── tiptap/          # TipTap setup

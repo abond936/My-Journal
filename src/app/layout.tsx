@@ -6,6 +6,8 @@ import './theme.css';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import AuthProvider from '@/components/providers/AuthProvider';
 import { TagProvider } from '@/components/providers/TagProvider';
+import { CardProvider } from '@/components/providers/CardProvider';
+import AppShell from '@/components/common/AppShell';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -25,7 +27,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <ThemeProvider>
             <TagProvider>
-              {children}
+              <CardProvider>
+                <AppShell>
+                  {children}
+                </AppShell>
+              </CardProvider>
             </TagProvider>
           </ThemeProvider>
         </AuthProvider>

@@ -3,8 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import AdminNavTabs from './AdminNavTabs';
-import AdminSidebar from './AdminSidebar';
 import styles from './AdminLayout.module.css';
 import AdminFAB from './card-admin/AdminFAB';
 
@@ -24,9 +22,7 @@ export default function AdminPageWrapper({ children }: AdminPageWrapperProps) {
 
   return (
     <div className={styles.layout}>
-      <AdminSidebar />
       <div className={styles.mainContent}>
-        {showTabs && <AdminNavTabs />}
         <div className={styles.pageContent}>
           {children}
         </div>

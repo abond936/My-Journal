@@ -1,0 +1,41 @@
+.appShell {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  .header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px; /* Define a standard header height */
+    z-index: 1100;
+  }
+  
+  .contentWrapper {
+    display: flex;
+    flex: 1;
+    padding-top: 60px; /* Add padding to push content below the fixed header */
+    overflow: hidden;
+  }
+  
+  .sidebarWrapper {
+    height: 100%; /* Make sidebar wrapper take full viewport height */
+    position: relative;
+    z-index: 1000;
+  }
+  
+  .mainContent {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+  }
+  
+  /* On small screens, the main content takes the full width */
+  @media (max-width: 768px) {
+    .mainContent {
+      width: 100%;
+    }
+  } 

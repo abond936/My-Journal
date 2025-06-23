@@ -1,42 +1,26 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import { CardProvider, useCardContext } from '@/components/providers/CardProvider';
-import ViewLayout from '@/components/view/ViewLayout';
-import { TagProvider, useTag } from '@/components/providers/TagProvider';
-import { buildTagTree } from '@/lib/utils/tagUtils';
+import ViewNav from '@/components/view/ViewNav';
 
-function CardsLayoutInner({ children }: { children: React.ReactNode }) {
-  // From CardProvider: handles which cards to show and which tags are selected
-  const { selectedTags, toggleTag } = useCardContext();
-  // From TagProvider: handles fetching the master list of all tags to display in the filter
-  const { tags, loading: tagsLoading } = useTag();
+// This layout wraps the main content area for the "View" section
+// It includes the ViewNav component, which is responsible for navigation and filtering controls
 
-  // Build the hierarchical tree structure required by the TagTree component
-  const tagTree = useMemo(() => {
-    if (!tags) return [];
-    return buildTagTree(tags);
-  }, [tags]);
-  
+// The CardProvider has been moved to the root layout (src/app/layout.tsx) 
+// to provide a global state for card data and filters across the entire application.
+// This ensures that filter states persist when navigating between different sections
+// like '/view' and '/admin'. We no longer need to instantiate it here.
+
+export default function ViewLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <ViewLayout
-      selectedTags={selectedTags}
-      onTagSelect={toggleTag}
-      FilterComponent={null} // This can be used later for other filters (e.g., by type)
-      tree={tagTree}
-      loading={tagsLoading}
-    >
-      {children}
-    </ViewLayout>
-  );
-}
-
-export default function CardsLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <CardProvider>
-      <TagProvider>
-        <CardsLayoutInner>{children}</CardsLayoutInner>
-      </TagProvider>
-    </CardProvider>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <ViewNav />
+      <main style={{ flex: 1, overflowY: 'auto' }}>
+        {children}
+      </main>
+    </div>
   );
 } 

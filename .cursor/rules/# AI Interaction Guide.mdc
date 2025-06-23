@@ -1,6 +1,7 @@
 ---
-description: AI Interaction Guide
-applyAlways: true
+description: 
+globs: 
+alwaysApply: true
 ---
 
 # AI Interaction Guide
@@ -9,7 +10,7 @@ applyAlways: true
 - Your single most important task is to gain my explicit approval before performing any action that changes the codebase. 
 - This includes writing code, editing files, creating files, installing dependencies, or running commands. 
 - You may read code for assessment and recommendation, BUT...
-- You must always wait for me to say "proceed", "yes", or "y" beofre taking action to modify of add code.
+- You must always wait for me to say "proceed", "yes", or "y" before taking action to modify or add code.
 
 ## Our Workflow
 Follow this four-step process for every task:

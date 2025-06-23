@@ -7,6 +7,9 @@ import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import styles from '@/components/admin/card-admin/CardForm.module.css'; // Re-use styles for buttons
+import { useCardContext } from '@/components/providers/CardProvider';
+import { PaginatedResult } from '@/lib/types/services';
+import { mutate as globalMutate } from 'swr';
 
 const UPDATED_CARD_KEY = 'updatedCardState';
 
@@ -18,6 +21,7 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps) {
   const router = useRouter();
+  const { mutate } = useCardContext();
   const { data: card, error, isLoading } = useSWR<Card | null>(
     cardId ? `/api/cards/${cardId}` : null,
     fetcher
@@ -48,12 +52,13 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
         throw new Error(errorData.message || 'Failed to save the card.');
       }
 
-      const updatedCard = await response.json();
-      console.log('--- Saving updated card to session ---', updatedCard);
-      sessionStorage.setItem(UPDATED_CARD_KEY, JSON.stringify(updatedCard));
+      const updatedCard: Card = await response.json();
+
+      // Call the aliased global mutate function to revalidate all SWR keys.
+      await globalMutate(() => true, undefined, { revalidate: true });
 
       // Redirect to the main admin page on success
-      router.back();
+      router.push('/admin/card-admin');
     } catch (error) {
       console.error('Failed to save card:', error);
     }

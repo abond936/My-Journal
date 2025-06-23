@@ -66,6 +66,10 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
 
+    console.log(`[API_DEBUG] Request URL: ${request.url}`);
+    const tags = searchParams.get('tags')?.split(',');
+    console.log(`[API_DEBUG] Parsed tags:`, tags);
+
     let status = searchParams.get('status') as Card['status'] | 'all' | null;
     if (!status) {
       status = isAdmin ? 'all' : 'published';
@@ -79,7 +83,6 @@ export async function GET(request: Request) {
       });
     }
 
-    const tags = searchParams.get('tags')?.split(',');
     const type = (searchParams.get('type') as Card['type'] | 'all') || 'all';
     const q = searchParams.get('q') || undefined;
     const limit = searchParams.has('limit') ? parseInt(searchParams.get('limit')!, 10) : 10;

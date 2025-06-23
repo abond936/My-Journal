@@ -1,35 +1,15 @@
 # Project Overview
 
-## Context
-This project is a personal journaling application that helps users document and share their illustrated 
-life stories with others in an immersive flexible and curated manner.
+This project is a personal journaling application that helps users document, illustrate and share their life stories with others in an immersive flexible and curated manner.
 
-## Scope
-- Story creation, media integration and management
-- Dimensional, heirarchical, tag-based organization
-- Family sharing and interaction
-
-## The `Card` Model
----------------------------------
-Status: 🟡 Operational
-
-To address the complexities of managing two separate content types (`entries` and `albums`) and to enable richer, more curated storytelling, a new unified `card` architecture has been designed and implemented parallel to the existing entry.album architecture until it is fully operational, at which time, the existing architecture can be removed. 
-
-Core Concepts
-The new architecture is built on the following principles:
-
-**Unified Data Model** All content (story, gallery, quote, etc.), is a `Card`, simplifying data management, queries, and frontend logic.
-
-**Hierarchical Structure** Cards can be standalone or nested, containing a `childrenIds` array, acting as a container of other cards, enabling the creation of curated experiences.
-
-**Flexible Content Types** Each `Card` has a `type` property (e.g., `story`, `gallery`, `qa`, `quote`), dictating what data it contains and how the card is rendered, allowing for a wide variety of content presentations from a single data model.
-
-**Defined Interaction Model** Each `Card` has a `displayMode` property controlling its presentation and behavior:
+Card - A card is a piece of content--a story, gallery, quote, question--a combination of text and media.
+Hierarchy - Cards can be standalone or nested, containing a `childrenIds` array, acting as a container of other cards.
+Tags - A card is tagged with dimensional and heirarchicall tags for flexible filtering.
+Display - Each `Card` `type` can be presented in various ways (`displayMode`) property controlling its presentation and behavior:
   - `navigate`: The card acts as a link, navigating the user to a new page that displays that card as parent collection (e.g., `/card/[id]/`).
   - `inline`: The card expands and collapses in place, functioning like an accordion to reveal its content directly within the current view.
   - `static`: The card is not interactive and serves only to display its content.
 
-The new model utilizes a `card` concept, where both textual and media content can be contained in the same element, categorized by tag as the prior model, and presented as cards that can be nested as desired to accomplish various presentation styles.
 
 Legend:
 - ✅ Implemented
@@ -40,9 +20,11 @@ Legend:
 ## **Technical Infrastructure**
 =====================================
 
+- This project adheres to a strict client-server, separation of concerns architecture
+
 ### **Technical Stack**
 ----------------------------------
-Status: 🟡 Operational
+Status: ✅ Implemented
 
 - Frontend
   ✅ 
@@ -50,22 +32,20 @@ Status: 🟡 Operational
   - React 19
   - TypeScript
   - Native CSS
-  - TipTap for rich text editing
-  - PhotoPicker for populating content and gallery
+  - TipTap rich text editing
+  - PhotoPicker for populating media
   - Framer Motion for animations
   - Next.js Image Optimizer
-  - Drag n Drop
+  - DragnDrop
 
 - Backend
+  - Auth.js
   - Firebase (Firestore, Authentication, Storage)
   - Firebase Admin SDK for server-side operations
+  - Zod
 
 - Media: 
   - Local drive integration (current photo source)
-  ⭕
-  - OneDrive Integration (next photo source)
-  - Google Photos API (future support)
-  - Apple Photos API (future support)
 
 - Development Tools:
   - Version Control: GitHub
@@ -74,76 +54,42 @@ Status: 🟡 Operational
   - Jest/React for testing
   - Zod for data validation
   - Custom scripts for migration and backup
+
   ⭕
   - Hosting: Netlify (primary), with Vercel as backup
-  - AI: OpenAI integration for content assistance
-
-❓ 
-
-### **Client-Server Architecture**
-=======================================
-Status: ✅ Implemented
-
-- This project adheres to a strict client-server architecture
-- No server-only code (like database credentials or Node.js modules) is ever exposed to the browser. 
-- The data flow is designed to be secure and maintain a clear separation of concerns.
-- The architecture follows a one-way data flow:
-**Client Components & Hooks ➡️ Client-Side Services ➡️ Internal API Routes ➡️ Firebase**
-
-#### Client-Side Services (`src/lib/services/`)
-- **Role:** Lightweight, client-side modules responsible for communicating with the application's internal API.
-- **Function:** They abstract the logic of making `fetch` requests to specific API endpoints (e.g., `/api/cards`). They handle formatting request parameters and parsing responses.
-- **Constraints:**
-  - **MUST** run only on the client.
-  - **MUST NOT** import server-side packages like `firebase-admin` or Node.js modules (`fs`).
-  - They are the designated way for client components to fetch or modify data.
-
-#### API Routes (`src/app/api/`)
-- **Role:** These are the server-side endpoints that contain the core business logic.
-- **Function:** They are responsible for receiving requests from the client-side services, validating them, interacting with the database (Firestore), and performing any other server-side operations.
-- **Constraints:**
-  - **MUST** run only on the server.
-  - This is the **ONLY** layer that can import and use the `firebase-admin` SDK.
-  - They handle all direct database queries and mutations.
-
-#### Client Components & Hooks (`src/components/`, `src/app/view/`, etc.)
-- **Role:** These are the UI-facing parts of the application.
-- **Function:** To get or modify data, they call functions from the client-side services in `src/lib/services`.
-- **Constraints:**
-  - **MUST NOT** call `fetch` directly.
-  - **MUST NOT** contain any business logic for data manipulation.
-  - **MUST** use the service layer (`src/lib/services/`) for all data operations.
-
+  - OneDrive Integration (next photo source)
+  - Google Photos API (future support)
+  - Apple Photos API (future support)
 
 ### **Authentication**
 =================================
 Status: ✅ Implemented
 
-**Strategy**
-The application's authentication is managed by **`next-auth`** (Auth.js), which handles user sign-in and session management for the journal itself. This core identity is kept separate from connections to external services.
+Strategy
+- Auth.js handles user sign-in and session management for the app.
+- All API routes are secured at the edge. 
 
-The security model is centralized in the Next.js backend, where all API routes are secured at the edge. This 
-approach relies on two key authentication patterns:
+✅
+- User login to the application.
 
-**Primary Authentication:** (Implemented) This is the user's login to the application. It is 
-handled by `next-auth` and the providers configured within it (e.g., Credentials-based login).
+⭕
+- Connected Accounts
+  - third-party photo services (like OneDrive or Google Photos)
+  - separate OAuth 2.0 flow will be used
+  - dedicated settings page
+  - secure tokens authorize the backend to fetch media on the user's behalf.
 
-**Connected Accounts:** (Planned) For integrating with third-party photo services (like OneDrive or Google 
-Photos), a separate OAuth 2.0 flow will be used. From a dedicated settings page, the logged-in admin will be able to authorize the application to access their photo libraries. The secure tokens from this OAuth flow will be stored and used by the backend to fetch media on the user's behalf.
-
-#### AI Assistant & Developer Guide
-To work with the authentication system, follow these patterns:
-
-**Core Configuration:** The main `next-auth` configuration is located at `src/app/api/auth/[...nextauth]/route.ts`. This file defines the authentication providers (e.g., Credentials) and connects to the database via the `FirestoreAdapter`.
+**Core Configuration:** 
+`src/app/api/auth/[...nextauth]/route.ts` defines the authentication providers (e.g., Credentials) and connects to the database via the `FirestoreAdapter`.
 
 **Session Management (Client-Side):**
-  - The application is wrapped in an `AuthProvider` located at `src/components/providers/AuthProvider.tsx`.
-  - To access user session data in client components (e.g., to show a user's name), use the `useSession()` hook from `next-auth/react`.
+- The application is wrapped in an `AuthProvider` located at `src/components/providers/AuthProvider.tsx`.
+- To access user session data in client components use the `useSession()` hook from `next-auth/react`.
 
 **Securing API Routes (Server-Side):**
-  - Add a security checka t the beginning of every server-side API route handler (`GET`, `POST`, etc.).
-  - Use `const session = await getServerSession(authOptions);` to retrieve the current session.
-  - **For read-only routes (e.g., GET):** Check if the session exists.
+- Add a security checks to the beginning of every server-side API route handler (`GET`, `POST`, etc.).
+- Use `const session = await getServerSession(authOptions);` to retrieve the current session.
+- **For read-only routes (e.g., GET):** Check if the session exists.
     ```typescript
     if (!session) {
       return new NextResponse('Unauthorized', { status: 401 });
@@ -186,11 +132,6 @@ Status: ✅ Implemented
 - Server-Side Session Validation: `getServerSession` for securing API routes.
 - Token Handling: JWT-based session strategy handled automatically by `next-auth`.
 
-⭕
-- Session analytics
-- Security alerts for session activity
-- UI for multi-device management
-
 
 ### **Role Management**
 ------------------------------------------
@@ -203,8 +144,6 @@ Status: ✅ Implemented
 ⭕
 - Role hierarchy (e.g., editor, viewer)
 - UI for role assignment and management by an admin.
-- Granular, per-item permissions.
-
 
 ### **Backup System**
 ======================================
@@ -221,8 +160,6 @@ Status: ✅ Implemented
 - A GitHub Actions workflow (`.github/workflows/backup.yml`) automatically creates a backup on every push to the `main` branch. This backup is stored as a workflow artifact for 7 days, providing an off-site copy.
 - Automatically cleans up local backups older than 5 days.
 
-⭕
-
 
 ### **Data Backup (Firestore)**
 --------------------------------------
@@ -233,7 +170,7 @@ Status: ✅ Implemented
 - A PowerShell script (`src/lib/scripts/setup-database-backup-task.ps1`) creates a Windows Scheduled Task to run the backup script daily at 2 AM.
 
 ⭕
-- Add  collections to the backup script as the application grows.
+- Update backup script
 
 ### **Recovery**
 ---------------------------------------
@@ -266,31 +203,25 @@ This is a deliberate, interactive process using the `restore-database.ts` script
 Status: ✅ Implemented
 
 ✅ 
-- Cards collection
-- Entries collection
-- Albums collection
-- Tags collection
+- cards collection
+- entries collection
+- albums collection
+- tags collection
 
 ⭕
-- User collection
-- Media collection
-- Questions
+- remove entries/albums collections
+- add user collection
+- add media collection
+- add questions collection
 
 #### **Cost Management**
 ----------------------------------------
-Status: ⭕ Planned
+Status: ✅ Implemented
 
 ✅ 
 - Some caching for cards/tags
 
-⭕ 
-- Cache strategy
-  - CDN integration
-  - Browser caching
-  - Service worker caching
-- Usage monitoring
-
-❓ What opportunities are there for read savings?
+❓ What opportunities are there for cost savings?
 
 #### **Security Rules**
 -----------------------------------------
@@ -304,12 +235,6 @@ Status: ✅ Implemented
 - Rate limiting
 - Security logging
 
-⭕ 
-- Advanced rules
-- Rule templates
-- Rule analytics
-- Rule testing
-
 ❓ Is anything else required?
 
 #### **Data Validation**
@@ -318,30 +243,12 @@ Status: 🟡 Operational
 
 ✅ 
 - input validation
-- Data type checking
-- Required field validation
-- Format validation
-- Zod added
+- data type checking
+- required field validation
+- format validation
+- Zod
 
-⭕ 
-- Assess app for further implementation
-- Custom validators
-- Validation rules
-- Error handling
-- Validation logging
-
-❓ What else is required?
-
-### **Card Architecture Migration Plan**
--------------------------------------------
-Status: 🟡 Operational
-
-✅
-- New architecture skeleton in place
-
-⭕
-- Deprecate Old System - Remove legacy components, routes, and services
-
+❓ What additional data validation is required?
 
 ## **Content Consumption**
 ======================================
@@ -350,9 +257,6 @@ Status: 🟡 Operational
 ---------------------------------
 Status: - ✅ Implemented
 
-- Entry page to the app. 
-- Includes welcome message and login.
-
 ✅
 - Logo
 - Cloud images
@@ -360,14 +264,14 @@ Status: - ✅ Implemented
 - Login
 
 ⭕
-- *Add image(s) of me from various stages*
+- Add image(s) of me from various stages
 
 
 ### **Content Page** ❗
 ---------------------------------
 Status: 🟡 Operational
 
-The core function of the application is the presentation for consumption of textual and image content through a single portal. The vision is to make this best consumed on mobile and tablet devices in a grid-based card system with navigation through tag (and formerly type) filters, infinite scroll and related content links.
+The core function of the application is the presentation for consumption of textual and image content through a single portal. The vision is to make this best consumed on mobile and tablet devices in a grid-based card system with navigation through tag filters, infinite scroll and related content links.
 
 ✅
 - Grid-based layout connected to all content (cards)
@@ -375,8 +279,8 @@ The core function of the application is the presentation for consumption of text
 
 ⭕
 Function
-- *Fix ghost layout*
-- *Fix grid sizing*
+- Fix ghost layout
+- Fix grid sizing
 
 Styling 
 - Multi-sized cards - Card height and width ratios of each other to facilitate grid structure
@@ -400,19 +304,19 @@ Status: 🟡 Operational
 ⭕
 Function
 * Navigate page
-- *Understand functionality*
-- *Add Back button*
-- *Add subtitle*
-- *Add tags buttons*
-- *Add gallery*
-- *Add children*
-- *Add 'related' content*
+- understand functionality
+- add Back button
+- add subtitle
+- add tags buttons
+- add gallery
+- add children
+- add 'related' content
 
 Styling
-- Navigate page
-- Inline page
-- Static page - Quote
-- Style gallery
+- navigate page
+- inline page
+- static page - quote
+- style gallery
 
 ❓ 
 
@@ -421,7 +325,7 @@ Styling
 - ⭕ Planned
 
 ⭕
-- Add user interaction - Like, comment, sharelink
+- add user interaction - Like, comment, sharelink
 
 ❓ 
 
@@ -430,19 +334,19 @@ Styling
 Status: 🟡 Operational
 
 ✅
-- Light/Dark theme
-- Fixed Schemes
-- Limited styling throughout
+- light/dark theme
+- fixed schemes
+- limited styling throughout
 
 ⭕
-- *Add MSN-style layout and theme*
-- *Home*
-- *Content page*
-- *Cards by type*
-- *Admin pages*
-- *Make fully customizable - Add to Settings*
+- add MSN-style layout and theme
+- home
+- content page
+- cards by type
+- aAdmin pages
+- make fully customizable - add to Settings
 
-❓ Do we open users to Admin/Settings only
+❓ do we open users to Admin for settings only?
 
 ### **Navigation Systems**
 =====================================
@@ -451,39 +355,35 @@ Status: 🟡 Operational
 ---------------------------------
 Status: 🟡 Operational
 
-Top navigation essentially toggles between content and admin for the administrator and defaults to content for a user. 
+Top navigation toggles between content and admin for the administrator and defaults to content for a user. 
 
 ✅ 
-- Logo
-- Content - Available to users and admin
-- Admin - Only available to administrator
-- Theme toggle
+- logo
+- content - aAvailable to users and admin
+- admin - only available to administrator
+- theme toggle
 
 ⭕
-- *Make Admin available to users for settings only*
-- *Make logo svg and background transparent*
-- *Remove 'lines'*
-- *Make consistent throughout*
-
-❓
-
-
-
+- make aAdmin available to users for settings only
+- make logo svg and background transparent
+- remove 'lines'
+- make consistent throughout
 
 ### **Curated Navigaton**
 ---------------------------------
 Status: ⭕ Planned
 
 ⭕
-- *Create Table of Contents*
-- *Tab Sidebar - TOC/TAG*
+- create table of contents
+- create tabbed sidebar - toc/tag
 
 ### **View Search**
 ---------------------------------
 Status: ⭕ Planned
 
 ⭕
-- *Add basic text search - top of content*
+- add basic title search - top of content
+- add subtitle, status, content
 
 
 ## **Content Administration**
@@ -494,83 +394,78 @@ Administration is only available to author.
    - CRUD/Bulk editing operations for app elements
 
 ✅
-- Navigation
-- Card management
-- Tags management
-- Entries management
-- Albums management
+- navigation
+- card management
+- tag management
 
 ⭕ 
-- Fix page scrolling under navigation bar
-- Make card admin default
-- Remove entries/albums
-- Questions management
-- Themes management
-- Users management
+- fix page scrolling under navigation bar
+- add questions management
+- add themes management
+- add users management
 
 ### **Card Management** 
 ---------------------------------
 Status: 🟡 Operational
 
 ✅
-- Card list
-- Load more
-- Title search
-- Type/Status filtering
+- card list
+- load more pagination
+- title search
+- type/status filtering
 
 ⭕
-1 Bulk Tag assignment
-1 Inline editing
-1 Bulk editing
-2 Return to origin location
-2 Fix statistics
-2 Add displaymode to filter
+1 bulk tag assignment
+1 inline editing
+1 bulk editing
+2 return to origin location
+2 fix statistics
+2 add displaymode to filter
 
 ### **Card New/Edit** ❗
 ---------------------------------
 Stautus: 🟡 Operational
 
 ✅
-- Cover image 
-- Title, Subtitle, Excerpt
-- Rich Text Editing
-- Draft/Published states
-- Macro Tag Assignment
+- cover image 
+- title, subtitle, excerpt
+- rich text editing
+- draft/published status
+- macro tag assignment
 
 ⭕
 Function
-- *Cover pick/paste/drag*
-- *Is cover photo a fixed size?*
-- *Content pick/paste/drag*
-- *Content image styling - Size/Align/Aspect/Caption*
-- *Add gallery pick* 
-- *Fix Search Children*
-- *Default Excerpt to first x characters*
+- cover pick/paste/drag
+- content pick/paste/drag
+- content image styling - size/align/aspect/caption
+- add gallery pick
+- fix search children
+- default excerpt to first x characters
 - batch upload gallery cards
-- Sync with sources on our schedule
-- *Add manage photos* - Add/Delete/Order/Orientation
+- sync with sources on our schedule
+- add manage photos - add/delete/order/orientation
 - gallery captions
 
 Styling
-- *Move H1 and H2 to first buttons*
-- *Make Remove button same as change*
-- *Add more sizes*
-- *Change Create Card to Save*
-- *Move Content/Image menus to same line as Content label*
+- move H1 and H2 to first buttons
+- make remove button same as change
+- add more sizes
+- change create card to save
+- move content/image menus to same line as content label
 
-❓ Which image source do we implement with? (local/onedrive)
+❓ is cover photo a fixed size?
 
-#### **Tag System**
+### **Tag System**
 ---------------------------------
 Status: 🟡 Operational
 
-Cards are assigned dimensional and heriarchical tags to facilitate flexible filtering.
+Cards are assigned dimensional and heirarchical tags to facilitate flexible filtering.
 
 Core Concepts
-**Tag Assignment** - Tags are assigned multi-select on creation or edit of the card.
-**Tag Expansion** - When a card is saved, the backendcalculates (combines and deduplicates) the full tag lineage (all parents) and stores it on the card document to facilitate queries. 
-**Tag Filtering** - Filtering logic is executed on the server to avoid Firestore's query limitations.(`getCards`) (`src/lib/services/cardService.ts`)
-**Tag UI Cache** - Tag hierarchy UI display is sourced from a single cached JSON object in Firestore `cache/tagTree`, initiated once on startup and automatically updated by a serverless Cloud Function whenever a tag is changed to ensure fast-loading UI with minimal reads.
+- Assignment - Tags are assigned multi-select on creation or edit of the card.
+- Expansion - When a card is saved, the backendcalculates (combines and deduplicates) the full tag lineage (all parents) and stores it on the card document to facilitate queries. 
+- Filtering - Filtering logic is executed on the server to avoid Firestore's query limitations.(`getCards`) (`src/lib/services/cardService.ts`)
+- Cache - Tag hierarchy UI display is sourced from a single cached JSON object in Firestore `cache/tagTree`, initiated once on startup and automatically updated by a serverless Cloud Function whenever a tag is changed to ensure fast-loading UI with minimal reads.
 
 Data Models
 `Card.filterTags: Record<string, boolean>`
@@ -578,7 +473,6 @@ Data Models
 - Keys are the IDs of every tag associated with the card, including all of their ancestor tags (the "expanded" lineage).
 - Values are always `true`.
 - This denormalized structure is essential for the server-side filtering logic.
-
 
 Group Tags by Dimension - The service receives tag IDs, fetches their definitions, and groups them by dimension (e.g., 'who', 'what').
 Intra-Dimension "OR" Logic - For each dimension, it fetches all card IDs that match *any* of the selected tags in that group.
@@ -598,7 +492,6 @@ The Tag Management page provides an administrative interface.
 ✅
 - tag collection
 - type
-- card assignment logic- hierarchical tree view
 - inline name editing 
 - drag-and-drop reordering 
 - drag-and-drop reparenting
@@ -609,7 +502,7 @@ The Tag Management page provides an administrative interface.
 
 ⭕
 - modify deletion strategy choice modal (replacing the browser prompt)
-- A background task system for processing complex deletions to prevent UI freezes.
+- add background task system for processing complex deletions to prevent UI freezes.
 
 ### **Tag Filtering** ❗
 ---------------------------------
@@ -618,18 +511,18 @@ Status: 🟡 Operational
 Navigation is facilitated by dimensional, heirarchical tag filtering. 
 
 ✅ 
-- Tag hierarchy display
+- tag hierarchy display
 
 ⭕
 Function
-- *Test filtering function.*
-- *Include number of cards (x)*
+- test filtering function.
+- include number of cards (x)
 
 Styling
-- *Lessen indention*
-- *Expand tree 1, 2, 3 levels?*
-- *Slide in/out on mobile*
-- *Add multiple orderBy*
+- lessen indention
+- expand tree 1, 2, 3 levels?
+- slide in/out on mobile
+- add multiple orderBy
 
 ### **Question Management**
 ---------------------------------
@@ -654,10 +547,10 @@ Questions are prompts for stories.
 - Grouped?
 
 ❓ 
-- Selecting a question from list creates a card.
+- Selecting a question from list creates a card
 - Many questions are already part of stories
-  - Create those stories in the db.
-  - Mark as selected.
+  - Create those stories in the db
+  - Mark as selected
   - If deleted, remove from 'used'
 - Do we group short questions?
 
@@ -691,34 +584,28 @@ Themes customizable.
 
 ❓ - What are the variables that need to be included/decided?
 
-
-
 ### **IMAGE INTEGRATION**
 =======================================
 Status: 🟡 Operational
 
-### **Image Strategy**
+Image Strategy
 - Connect with external photo services to access existing photo collections
 - Provide a consistent user experience across different photo sources
-- Maintain metadata and relationships between photos and journal entries
+- Maintain metadata and relationships between photos and cards
 - Optimize performance through caching and lazy loading
 - Manage the storage, processing, and display of images efficiently
 
+Source Collection
+A source collection is a grouping of photos from an external service - the local drive, OneDrive, Google Photos or Apple Photos. 
 
-### **Core Data Models:** Gallery vs. Source Collection
-To manage photos effectively through multiple external services, 
-the system architecture is built around two distinct data models:
-
- **Gallery:** An gallery is a curated collection of images part of the journal itself. It is the primary way users will view grouped photos within the application. Each Gallery has its own metadata (title, caption, tags) and a specific list of photos selected by the author. Galleries are stored in the project's Firestore database and managed via the `/api/cards` endpoint.
-
-**Source Collection:** A source collection is a grouping of photos from an external service. This could be a **folder** (from the local drive or OneDrive) or an album (from Google Photos or Apple Photos). Source Collections are used to populate the `PhotoPicker` component, allowing the author to browse and select images for inclusion in My Stories' cards. They are fetched via the `/api/photos/source-collections` {needs update} endpoint. This abstraction allows the UI to remain consistent while the backend handles the unique details of each photo service.
+`PhotoPicker` accesses source collections to browse and select images for inclusion in cards. 
 
 Key Design Principles:
 - Abstracted Service Layer
   - A generic "photo service" interface to seemlessly support multiple image soources without changing UI components.
 - Strict Client-Server Separation
-  - Client components (e.g., `PhotoPicker`) make requests to internal API routes (e.g., `/api/photos/list`).
-  - The server-side API route contains the logic to talk to the actual photo source, 
+  - Client components make requests to internal API routes
+  - The server-side API route contains the logic to talk to the actual photo source
 - Photos remain in their original source (OneDrive, etc.).
   - Firestore stores only metadata, references, thumbnails, not binary image data.  
 - Optimize image processing
@@ -738,17 +625,18 @@ Key Design Principles:
     - Smart cropping: AI-powered detection of important content areas to guide cropping
     - Blurred background: Portrait images displayed on blurred, stretched version of same image
 
-### **Image Models**
+**Image Models**
 `PhotoMetadata`- `/src/lib/types/photo.ts` The canonical data model stored in Firestore. It represents a specific photo that has been associated with a card and contains all necessary info for rendering and retrieval.
 `TreeNode` - This is a UI-specific model used only by the `PhotoPicker` component. It represents a folder in a photo source (e.g., a directory on the local drive) and is used to build the navigable folder tree. It is not stored in the database.
 - This separation ensures that the core application data (`PhotoMetadata`) is stable, while the UI components for browsing (`TreeNode`) can be adapted to different photo sources as needed.
 
-### **Terminology**
+**Terminology**
 - Source: The top-level service where the original media is stored.
-- Asset: A single, unique media file (photo or video) within a Source.
+- Asset: A single, unique media file (photo or video) within a source.
 - Collection: A logical grouping of Assets within a Source.
 - Navigation: A specific method or strategy for browsing the Assets within a Source.
   - Folder tree, Collections, Date 
+
 API Architecture Summary
 - Adapt to source
 - Discover Navigation Methods
@@ -779,7 +667,6 @@ API Architecture Summary
 
 - Coverphoto - We store a reference to a canonical photo object - PhotoMetadata Object
 
-
 Server-side route `/api/images/local/file` serves these images. 
 - Accepts a path query parameter from the PhotoMetadata object0.
 - Joins this relative path with the ONEDRIVE_ROOT_FOLDER to get the full, secure file path on the server.
@@ -801,6 +688,17 @@ Rule: Any client-side component that needs to display an image must use this fun
 ❓ 
 - Do we use local, onedrive or google for live system.
 - What other image handling do we need?
+
+### **Image Service Abstraction**
+-------------------------------------------------
+Status: 🟡 Operational
+
+✅
+- service layer in place for local
+
+⭕
+- build out service suite
+
 
 ### **Storage**
 -------------------------------------------------

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useMemo, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useMemo, ReactNode, useCallback, useState } from 'react';
 import useSWR, { SWRMutator } from 'swr';
 import { useSession } from 'next-auth/react';
 import { Tag } from '@/lib/types/tag';
@@ -20,6 +20,8 @@ export interface TagContextType {
   tags: Tag[];
   loading: boolean;
   error: Error | null;
+  selectedFilterTagIds: string[];
+  setFilterTags: (tagIds: string[]) => void;
   createTag: (tagData: Omit<Tag, 'id'>) => Promise<Tag | undefined>;
   updateTag: (id: string, tagData: Partial<Omit<Tag, 'id'>>) => Promise<Tag | undefined>;
   deleteTag: (id: string) => Promise<void>;
@@ -44,6 +46,9 @@ export function TagProvider({ children }: { children: ReactNode }) {
       fallbackData: [],
     }
   );
+
+  // State for the global tag filter
+  const [selectedFilterTagIds, setFilterTags] = useState<string[]>([]);
 
   const createTag = useCallback(async (tagData: Omit<Tag, 'id'>): Promise<Tag | undefined> => {
     try {
@@ -127,6 +132,8 @@ export function TagProvider({ children }: { children: ReactNode }) {
     tags: tags || [],
     loading: isLoading,
     error: error || null,
+    selectedFilterTagIds,
+    setFilterTags,
     createTag,
     updateTag,
     deleteTag,
@@ -139,7 +146,8 @@ export function TagProvider({ children }: { children: ReactNode }) {
   }), [
     tags, 
     isLoading, 
-    error, 
+    error,
+    selectedFilterTagIds,
     createTag, 
     updateTag, 
     deleteTag, 
