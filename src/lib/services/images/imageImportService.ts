@@ -15,53 +15,40 @@ const ONEDRIVE_ROOT_FOLDER = process.env.ONEDRIVE_ROOT_FOLDER;
  * @returns A promise that resolves with the photo's metadata after upload.
  */
 export async function importFromLocalDrive(sourcePath: string): Promise<PhotoMetadata> {
-  console.log(`[importFromLocalDrive] Starting import for sourcePath: ${sourcePath}`);
-  
   if (!ONEDRIVE_ROOT_FOLDER) {
-    console.error('[importFromLocalDrive] Server configuration error: ONEDRIVE_ROOT_FOLDER is not set.');
     throw new Error('Server configuration error: ONEDRIVE_ROOT_FOLDER is not set.');
   }
 
   const fullPath = path.join(ONEDRIVE_ROOT_FOLDER, sourcePath);
-  console.log(`[importFromLocalDrive] Full path to local file: ${fullPath}`);
 
   try {
     // 1. Read the file into a buffer
-    console.log('[importFromLocalDrive] Reading file into buffer...');
     const fileBuffer = await fs.readFile(fullPath);
-    console.log('[importFromLocalDrive] File read success. Analyzing with sharp...');
     const image = sharp(fileBuffer);
     const metadata = await image.metadata();
-    console.log('[importFromLocalDrive] Sharp analysis success.');
 
     // 2. Generate a unique filename
     const uniqueId = uuidv4();
     const originalFilename = path.basename(sourcePath);
     const storageFilename = `${uniqueId}-${originalFilename}`;
-    console.log(`[importFromLocalDrive] Generated unique storage filename: ${storageFilename}`);
 
     // 3. Upload to Firebase Storage
-    console.log('[importFromLocalDrive] Initializing Firebase and getting bucket...');
     const app = getAdminApp();
     const bucket = app.storage().bucket();
     const storagePath = `images/${storageFilename}`;
     const file = bucket.file(storagePath);
-    console.log(`[importFromLocalDrive] Attempting to save to storage path: ${storagePath}`);
 
     await file.save(fileBuffer, {
       metadata: {
         contentType: metadata.format ? `image/${metadata.format}` : 'application/octet-stream',
       },
     });
-    console.log('[importFromLocalDrive] File saved to storage successfully.');
 
     // 4. Get the public URL
-    console.log('[importFromLocalDrive] Getting signed URL...');
     const [publicUrl] = await file.getSignedUrl({
       action: 'read',
       expires: '03-09-2491', // A very long expiration date
     });
-    console.log(`[importFromLocalDrive] Successfully got signed URL: ${publicUrl}`);
 
     // 5. Construct and return the PhotoMetadata object
     const photoMetadata: PhotoMetadata = {
@@ -72,8 +59,8 @@ export async function importFromLocalDrive(sourcePath: string): Promise<PhotoMet
       storageUrl: publicUrl,
       storagePath: storagePath,
       sourcePath: sourcePath,
+      status: 'raw',
     };
-    console.log('[importFromLocalDrive] Constructed PhotoMetadata object:', photoMetadata);
 
     return photoMetadata;
   } catch (error) {
@@ -127,6 +114,7 @@ export async function importFromBuffer(fileBuffer: Buffer, originalFilename: str
       storageUrl: publicUrl,
       storagePath: storagePath,
       sourcePath: `upload://${originalFilename}`, // Indicate the source was an upload
+      status: 'raw',
     };
 
     return photoMetadata;
@@ -134,4 +122,54 @@ export async function importFromBuffer(fileBuffer: Buffer, originalFilename: str
     console.error(`Failed to import image from buffer (${originalFilename}):`, error);
     throw new Error(`Failed to import uploaded image. See server logs for details.`);
   }
+}
+
+/**
+ * Deletes an image from Firebase Storage using its public URL.
+ * @param imageUrl The full gs:// or https:// URL of the image.
+ */
+export async function deleteImageByUrl(imageUrl: string): Promise<void> {
+    if (!imageUrl) {
+        throw new Error('Image URL must be provided for deletion.');
+    }
+
+    try {
+        const app = getAdminApp();
+        const bucket = app.storage().bucket();
+        let filePath: string;
+
+        if (imageUrl.startsWith('gs://')) {
+            const url = new URL(imageUrl);
+            if (url.hostname !== bucket.name) {
+                throw new Error(`URL does not belong to the configured bucket.`);
+            }
+            filePath = url.pathname.substring(1); 
+        } else if (imageUrl.startsWith('https://storage.googleapis.com/')) {
+            const url = new URL(imageUrl);
+            const pathParts = url.pathname.split('/');
+            if (pathParts[1] !== bucket.name) {
+                 throw new Error(`URL does not belong to the configured bucket.`);
+            }
+            filePath = pathParts.slice(2).join('/');
+        } else {
+            throw new Error('Unsupported image URL format for deletion.');
+        }
+
+        if (!filePath) {
+            throw new Error('Could not determine file path from URL.');
+        }
+
+        const file = bucket.file(filePath);
+        const [exists] = await file.exists();
+
+        if (exists) {
+            await file.delete();
+            console.log(`Successfully deleted ${filePath} from storage.`);
+        } else {
+            console.warn(`File not found, skipping deletion: ${filePath}`);
+        }
+    } catch (error) {
+        console.error(`Error deleting image from URL "${imageUrl}":`, error);
+        throw new Error(`Failed to delete image. Reason: ${error instanceof Error ? error.message : 'Unknown'}`);
+    }
 } 

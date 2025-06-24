@@ -16,7 +16,17 @@ export const cardSchema = z.object({
   displayMode: z.enum(['inline', 'navigate', 'static']),
   
   // Future-proof media objects
-  coverImage: photoMetadataSchema.optional().nullable(),
+  coverImage: z.preprocess(
+    (arg) => {
+      // If the arg is an object but doesn't have the required properties,
+      // treat it as null. This handles legacy data where coverImage might be `{}`.
+      if (typeof arg === 'object' && arg !== null && !('storageUrl' in arg)) {
+        return null;
+      }
+      return arg;
+    },
+    photoMetadataSchema.nullable()
+  ),
   contentMedia: z.array(z.any()).default([]),
   galleryMedia: z.array(photoMetadataSchema).default([]),
   

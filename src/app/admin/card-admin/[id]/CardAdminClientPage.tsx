@@ -28,22 +28,24 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
   );
   const [isDeleting, setIsDeleting] = React.useState(false);
 
-  const handleSave = async (cardData: Partial<Card>) => {
+  const handleSave = async (cardData: Partial<Card>, deletedImageUrls?: string[]) => {
     try {
       let response;
+      const body = { ...cardData, deletedImageUrls };
+
       if (cardId) {
         // Update existing card
         response = await fetch(`/api/cards/${cardId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(cardData),
+          body: JSON.stringify(body),
         });
       } else {
         // Create new card
         response = await fetch('/api/cards', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(cardData),
+          body: JSON.stringify(cardData), // Note: deletedImageUrls is not relevant for new cards
         });
       }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { getFolderTree, getFolderContents } from '@/lib/services/images/local/photoService';
 import { PhotoMetadata, TreeNode } from '@/lib/types/photo'; // Import directly from the source
@@ -78,6 +78,23 @@ export default function PhotoPicker({
   // State to manage the current selection mode
   const [isMultiSelect, setIsMultiSelect] = useState(initialMode === 'multi');
   
+  const { buttonText, hasChanged } = useMemo(() => {
+    const initialIds = new Set(initialSelection.map(p => p.id));
+    const selectedIds = new Set(selectedPhotos.map(p => p.id));
+    
+    const addedCount = Array.from(selectedIds).filter(id => !initialIds.has(id)).length;
+    const removedCount = Array.from(initialIds).filter(id => !selectedIds.has(id)).length;
+    
+    const hasChanged = addedCount > 0 || removedCount > 0;
+    
+    let text = 'Done';
+    if (addedCount > 0) {
+      text = `Add ${addedCount} Photo${addedCount !== 1 ? 's' : ''}`;
+    }
+    
+    return { buttonText: text, hasChanged };
+  }, [selectedPhotos, initialSelection]);
+  
   console.log('[PhotoPicker] RENDER. isMultiSelect:', isMultiSelect, 'selectedPhotos:', JSON.stringify(selectedPhotos.map(p => p.id)));
   
   useEffect(() => {
@@ -115,7 +132,6 @@ export default function PhotoPicker({
     setError(null);
     setSelectedFolder(node);
     setPhotos([]);
-    setSelectedPhotos([]);
 
     try {
       const folderPhotos = await getFolderContents(node.id);
@@ -237,9 +253,9 @@ export default function PhotoPicker({
             <button
               onClick={handleDoneClick}
               className={styles.doneButton}
-              disabled={selectedPhotos.length === 0}
+              disabled={!hasChanged}
             >
-              Add {selectedPhotos.length} Photos
+              {buttonText}
             </button>
           )}
         </div>

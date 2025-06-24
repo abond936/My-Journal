@@ -66,9 +66,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
 
-    console.log(`[API_DEBUG] Request URL: ${request.url}`);
     const tags = searchParams.get('tags')?.split(',');
-    console.log(`[API_DEBUG] Parsed tags:`, tags);
 
     let status = searchParams.get('status') as Card['status'] | 'all' | null;
     if (!status) {

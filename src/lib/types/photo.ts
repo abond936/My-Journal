@@ -20,6 +20,7 @@ export const photoMetadataSchema = z.object({
   // Optional fields
   objectPosition: z.string().optional(),
   caption: z.string().optional(),
+  status: z.enum(['raw', 'edited']).default('raw'),
 });
 
 export type PhotoMetadata = z.infer<typeof photoMetadataSchema>;

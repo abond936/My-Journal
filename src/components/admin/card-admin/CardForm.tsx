@@ -73,7 +73,7 @@ function cardReducer(state: State, action: Action): State {
 
 interface CardFormProps {
   initialCard?: Card | null;
-  onSave: (cardData: Partial<Card>) => void;
+  onSave: (cardData: Partial<Card>, deletedImageUrls?: string[]) => void;
   onCancel: () => void;
   onDelete?: (cardId: string) => void;
 }
@@ -82,6 +82,7 @@ export default function CardForm({ initialCard, onSave, onCancel, onDelete }: Ca
   const [state, dispatch] = React.useReducer(cardReducer, initialState);
   const editorRef = React.useRef<RichTextEditorRef>(null);
   const [isPhotoPickerOpen, setIsPhotoPickerOpen] = React.useState(false);
+  const [deletedImageUrls, setDeletedImageUrls] = React.useState<string[]>([]);
   const [isImporting, setIsImporting] = useState(false);
   const [isImportingGallery, setIsImportingGallery] = useState(false);
   const [isImportingContent, setIsImportingContent] = useState(false);
@@ -112,8 +113,8 @@ export default function CardForm({ initialCard, onSave, onCancel, onDelete }: Ca
   const handleCoverPhotoSelect = async (photo: any) => {
     // The photo object from the picker is temporary. We must import it.
     // We use `any` here because the object from the old API doesn't match our new PhotoMetadata type.
-    if (!photo?.path) {
-      console.error('Selected photo is invalid for import.');
+    if (!photo?.sourcePath) {
+      console.error('Selected photo is invalid for import: missing sourcePath.');
       return;
     }
 
@@ -122,7 +123,7 @@ export default function CardForm({ initialCard, onSave, onCancel, onDelete }: Ca
       const response = await fetch('/api/images/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sourcePath: photo.path }),
+        body: JSON.stringify({ sourcePath: photo.sourcePath }),
       });
 
       if (!response.ok) {
@@ -223,17 +224,12 @@ export default function CardForm({ initialCard, onSave, onCancel, onDelete }: Ca
         console.log('[CardForm] Successfully imported photos:', JSON.stringify(importedPhotos, null, 2));
       }
       
-      // **Canonical & Safe Append Logic**
-      // Pass a function to dispatch to ensure we're working with the latest state.
-      const updater = (prev: PhotoMetadata[] | undefined) => {
-        const existingIds = new Set((prev || []).map(p => p.id));
-        const newPhotos = importedPhotos.filter(p => !existingIds.has(p.id));
-        const finalGallery = [...(prev || []), ...newPhotos];
-        console.log('[CardForm] Final combined gallery:', JSON.stringify(finalGallery, null, 2));
-        return finalGallery;
-      };
+      // The final gallery is the combination of photos that were already uploaded 
+      // and the ones that were newly imported from the selection.
+      const finalGallery = [...existingPhotos, ...importedPhotos];
+      console.log('[CardForm] Final combined gallery:', JSON.stringify(finalGallery, null, 2));
 
-      dispatch({ type: 'SET_FIELD', field: 'galleryMedia', value: updater });
+      dispatch({ type: 'SET_FIELD', field: 'galleryMedia', value: finalGallery });
 
     } catch (error) {
       console.error('Gallery image import failed:', error);
@@ -254,18 +250,22 @@ export default function CardForm({ initialCard, onSave, onCancel, onDelete }: Ca
   };
   
   const handlePhotoSelectedFromPicker = async (photo: any) => {
-    if (!photo?.path) return;
+    if (!photo?.sourcePath) {
+      console.error('Selected photo is invalid for import: missing sourcePath.');
+      return;
+    }
 
     setIsImportingContent(true);
     try {
       const response = await fetch('/api/images/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sourcePath: photo.path }),
+        body: JSON.stringify({ sourcePath: photo.sourcePath }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to import image for content.');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to import image for content.');
       }
 
       const permanentPhoto: PhotoMetadata = await response.json();
@@ -281,10 +281,14 @@ export default function CardForm({ initialCard, onSave, onCancel, onDelete }: Ca
     }
   };
 
+  const handleImageDeletedFromRTE = (imageUrl: string) => {
+    setDeletedImageUrls(prev => [...prev, imageUrl]);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const content = editorRef.current?.getContent() || '';
-    onSave({ ...state, content });
+    onSave({ ...state, content }, deletedImageUrls);
   };
 
   return (
@@ -387,6 +391,7 @@ export default function CardForm({ initialCard, onSave, onCancel, onDelete }: Ca
               ref={editorRef}
               content={state.content || ''}
               onAddImage={handleOpenPhotoPickerForContent}
+              onImageDelete={handleImageDeletedFromRTE}
               isUploading={isImportingContent}
             />
           </div>

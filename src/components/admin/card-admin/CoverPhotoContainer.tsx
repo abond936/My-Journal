@@ -29,6 +29,7 @@ export default function CoverPhotoContainer({
   const [isRepositioning, setIsRepositioning] = useState(false);
   const [position, setPosition] = useState({ x: 50, y: 50 });
   const [isDragging, setIsDragging] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     if (coverPhoto?.objectPosition) {
@@ -40,6 +41,8 @@ export default function CoverPhotoContainer({
     } else {
       setPosition({ x: 50, y: 50 });
     }
+    // Reset error state when the photo changes
+    setHasError(false);
   }, [coverPhoto]);
 
   const handlePhotoSelect = (photo: PhotoMetadata) => {
@@ -153,12 +156,19 @@ export default function CoverPhotoContainer({
         </div>
       ) : coverPhoto ? (
         <div className={styles.coverPhoto}>
-          <img
-            src={getDisplayUrl(coverPhoto)}
-            alt={coverPhoto.filename}
-            className={styles.image}
-            style={imageStyle}
-          />
+          {hasError ? (
+            <div className={`${styles.placeholder} ${styles.error}`}>
+              <div className={styles.placeholderText}>Image not found</div>
+            </div>
+          ) : (
+            <img
+              src={getDisplayUrl(coverPhoto)}
+              alt={coverPhoto.filename}
+              className={styles.image}
+              style={imageStyle}
+              onError={() => setHasError(true)}
+            />
+          )}
         </div>
       ) : (
         <div className={styles.placeholder}>

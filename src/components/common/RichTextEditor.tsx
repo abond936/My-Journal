@@ -16,6 +16,7 @@ import { getDisplayUrl } from '@/lib/utils/photoUtils';
 interface RichTextEditorProps {
   content: string;        // The initial HTML content
   onAddImage?: () => void; // Called when the user wants to add an image
+  onImageDelete?: (imageUrl: string) => void; // Called when an image is deleted
   isUploading?: boolean;   // To show upload progress/feedback
 }
 
@@ -29,6 +30,7 @@ export interface RichTextEditorRef {
 const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
   content,
   onAddImage,
+  onImageDelete,
   isUploading,
 }, ref) => {
   const editorRef = useRef<HTMLDivElement>(null);
@@ -125,8 +127,19 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
     }
   }));
 
-  const handleToolbarAction = (action: 'setSize' | 'setAlignment' | 'setAspectRatio', value: string) => {
-    if (memoizedEditor?.isActive('figureWithImage')) {
+  const handleToolbarAction = (action: 'setSize' | 'setAlignment' | 'setAspectRatio' | 'delete', value?: string) => {
+    if (!memoizedEditor) return;
+
+    if (action === 'delete') {
+        const src = memoizedEditor.getAttributes('figureWithImage').src;
+        if (src && onImageDelete) {
+            onImageDelete(src);
+        }
+        memoizedEditor.chain().focus().deleteSelection().run();
+        return;
+    }
+
+    if (memoizedEditor.isActive('figureWithImage')) {
         let attr = '';
         if (action === 'setSize') attr = 'data-size';
         else if (action === 'setAlignment') attr = 'data-alignment';
@@ -187,20 +200,22 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
     <div className={styles.editorContainer} ref={editorRef}>
       {(isUploading || isFileUploading) && <div className={styles.uploadingOverlay}>Importing...</div>}
       <div className={styles.toolbar}>
-        <button type="button" onClick={() => memoizedEditor.chain().focus().toggleBold().run()} className={memoizedEditor.isActive('bold') ? styles.active : ''}>Bold</button>
-        <button type="button" onClick={() => memoizedEditor.chain().focus().toggleItalic().run()} className={memoizedEditor.isActive('italic') ? styles.active : ''}>Italic</button>
-        <button type="button" onClick={() => memoizedEditor.chain().focus().toggleHeading({ level: 1 }).run()} className={memoizedEditor.isActive('heading', { level: 1 }) ? styles.active : ''}>H1</button>
-        <button type="button" onClick={() => memoizedEditor.chain().focus().toggleHeading({ level: 2 }).run()} className={memoizedEditor.isActive('heading', { level: 2 }) ? styles.active : ''}>H2</button>
-        <button type="button" onClick={() => memoizedEditor.chain().focus().toggleBlockquote().run()} className={memoizedEditor.isActive('blockquote') ? styles.active : ''}>Quote</button>
-        <button type="button" onClick={onAddImage}>Add Image</button>
+        <div>
+          <button type="button" onClick={() => memoizedEditor.chain().focus().toggleBold().run()} className={memoizedEditor.isActive('bold') ? styles.active : ''}>Bold</button>
+          <button type="button" onClick={() => memoizedEditor.chain().focus().toggleItalic().run()} className={memoizedEditor.isActive('italic') ? styles.active : ''}>Italic</button>
+          <button type="button" onClick={() => memoizedEditor.chain().focus().toggleHeading({ level: 1 }).run()} className={memoizedEditor.isActive('heading', { level: 1 }) ? styles.active : ''}>H1</button>
+          <button type="button" onClick={() => memoizedEditor.chain().focus().toggleHeading({ level: 2 }).run()} className={memoizedEditor.isActive('heading', { level: 2 }) ? styles.active : ''}>H2</button>
+          <button type="button" onClick={() => memoizedEditor.chain().focus().toggleBlockquote().run()} className={memoizedEditor.isActive('blockquote') ? styles.active : ''}>Quote</button>
+          <button type="button" onClick={onAddImage}>Add Image</button>
+        </div>
+        
+        {memoizedEditor.isActive('figureWithImage') && (
+          <ImageToolbar
+            editor={memoizedEditor}
+            onAction={handleToolbarAction}
+          />
+        )}
       </div>
-
-      {memoizedEditor.isActive('figureWithImage') && (
-        <ImageToolbar
-          editor={memoizedEditor}
-          onAction={handleToolbarAction}
-        />
-      )}
       
       <EditorContent editor={memoizedEditor} className={styles.editorContent} />
     </div>

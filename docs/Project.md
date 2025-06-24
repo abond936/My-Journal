@@ -427,7 +427,7 @@ Status: 🟡 Operational
 Stautus: 🟡 Operational
 
 ✅
-- cover image 
+- cover image - pick/paste/drag
 - title, subtitle, excerpt
 - rich text editing
 - draft/published status
@@ -435,14 +435,13 @@ Stautus: 🟡 Operational
 
 ⭕
 Function
-- cover pick/paste/drag
+
 - content pick/paste/drag
 - content image styling - size/align/aspect/caption
 - add gallery pick
 - fix search children
 - default excerpt to first x characters
 - batch upload gallery cards
-- sync with sources on our schedule
 - add manage photos - add/delete/order/orientation
 - gallery captions
 
@@ -461,8 +460,7 @@ Status: 🟡 Operational
 
 Cards are assigned dimensional and heirarchical tags to facilitate flexible filtering.
 
-Core Concepts
-- Assignment - Tags are assigned multi-select on creation or edit of the card.
+- Assignment - Tags are assigned multi-select on creation or edit of the card `MacroTagSelector`.
 - Expansion - When a card is saved, the backendcalculates (combines and deduplicates) the full tag lineage (all parents) and stores it on the card document to facilitate queries. 
 - Filtering - Filtering logic is executed on the server to avoid Firestore's query limitations.(`getCards`) (`src/lib/services/cardService.ts`)
 - Cache - Tag hierarchy UI display is sourced from a single cached JSON object in Firestore `cache/tagTree`, initiated once on startup and automatically updated by a serverless Cloud Function whenever a tag is changed to ensure fast-loading UI with minimal reads.
@@ -519,8 +517,7 @@ Function
 - include number of cards (x)
 
 Styling
-- lessen indention
-- expand tree 1, 2, 3 levels?
+- increase indention
 - slide in/out on mobile
 - add multiple orderBy
 
@@ -589,45 +586,34 @@ Themes customizable.
 Status: 🟡 Operational
 
 Image Strategy
-- Connect with external photo services to access existing photo collections
+- Connect with external image sources via generic service layer
 - Provide a consistent user experience across different photo sources
 - Maintain metadata and relationships between photos and cards
 - Optimize performance through caching and lazy loading
 - Manage the storage, processing, and display of images efficiently
 
-Source Collection
-A source collection is a grouping of photos from an external service - the local drive, OneDrive, Google Photos or Apple Photos. 
 
-`PhotoPicker` accesses source collections to browse and select images for inclusion in cards. 
+`PhotoPicker` accesses source collections to browse and select images. 
 
-Key Design Principles:
-- Abstracted Service Layer
-  - A generic "photo service" interface to seemlessly support multiple image soources without changing UI components.
-- Strict Client-Server Separation
-  - Client components make requests to internal API routes
-  - The server-side API route contains the logic to talk to the actual photo source
-- Photos remain in their original source (OneDrive, etc.).
-  - Firestore stores only metadata, references, thumbnails, not binary image data.  
+
+- Store optimized images, metadata, references, thumbnails
 - Optimize image processing
-  - Caching serves frequently accessed content
-  - Next.js Image Optimization serves efficient, web-friendly images.
+- Next.js Image Optimization
 - Aspect Ratio and sizing managed
   - Images are classified by natural dimensions (portrait/landscape/square)
   - Automatically fitted to closest standard ratio using `object-fit: cover`
-  - No empty space or distortion allowed in layouts
-  - Original image dimensions preserved
+  - No empty space or distortion
   - Display preferences stored in data attributes
   - CSS-based transformations for performance
   - No permanent image modifications
-- Cover Images Managed
+- Cover Images
   - Default to landscape orientation for card headers
   - Portrait images handled with:
     - Smart cropping: AI-powered detection of important content areas to guide cropping
     - Blurred background: Portrait images displayed on blurred, stretched version of same image
 
-**Image Models**
 `PhotoMetadata`- `/src/lib/types/photo.ts` The canonical data model stored in Firestore. It represents a specific photo that has been associated with a card and contains all necessary info for rendering and retrieval.
-`TreeNode` - This is a UI-specific model used only by the `PhotoPicker` component. It represents a folder in a photo source (e.g., a directory on the local drive) and is used to build the navigable folder tree. It is not stored in the database.
+`TreeNode` - This is a UI-specific model used only by the `PhotoPicker` component. It represents a folder in a photo source and is used to build the navigable folder tree. 
 - This separation ensures that the core application data (`PhotoMetadata`) is stable, while the UI components for browsing (`TreeNode`) can be adapted to different photo sources as needed.
 
 **Terminology**
@@ -680,14 +666,13 @@ Rule: Any client-side component that needs to display an image must use this fun
 ✅
 - service layer in place
 - photopicker integrated
-- photo metadata management
+- photo metadata managed
 - image optimization implemented
 
 ⭕
 
-❓ 
-- Do we use local, onedrive or google for live system.
-- What other image handling do we need?
+❓ What is the best thing to do with images.
+
 
 ### **Image Service Abstraction**
 -------------------------------------------------
@@ -706,7 +691,7 @@ Status: 🟡 Operational
 
 Storage Strategy:
 - Originals stay in source services
-- Only store thumbnails, previews, metadata in Firestore
+- Store optimized versions, thumbnails, previews, metadata in Firestore
 
 ✅
 - firebase storage integration
@@ -725,6 +710,32 @@ Storage Strategy:
 - Is link vs store strategy inherently weak/slow?
 - What image storage issues need to be addressed?
 
+### **Normalization**
+--------------------------------------------------
+Status:  ⭕Planned
+
+⭕
+- resize - thumb 400w, medium 600w, large 1600w - 2048px max
+- aspect ratios - landscape/banner, portrait, square
+  - smart crop - VisionAPI cropHintsAnnotation
+- upscale
+- convert format - webP or optimized JPEG
+- white balance
+- color balance?
+- auto contrast
+- gamma correction
+- sharpening
+- rename
+- extract metadata
+- process - upload->normalize
+- preserve originals
+- VisionAPI
+  - auto-tag
+  - face detection
+- stable unique id on import
+- build replace utility
+- use srcset to allow browser to select?
+
 ### **Photopicker**
 --------------------------------------------------------------
 Status: 🟡 Operational
@@ -732,12 +743,11 @@ Status: 🟡 Operational
 Photopicker for selecting and assigning photos to cover, content, galleries.
 
 ✅
-- photopicker integratedwith legacy entries 
+- photopicker integrated  
 - collapsible/expandable tree structure
 - single-select/multi-select dependent on route
 
 ⭕
-- migrate capability to card-new/edit
 
 
 ### **Local Drive** 
@@ -751,10 +761,7 @@ Use local drive until operational functionality solid, then link to online sourc
 - env.local contains the ONEDRIVE_ROOT_FOLDER variable, the absolute path to the root directory where all local photos are stored.
 
 ⭕
-- Limit integration due to limitations
-- Standardize code/naming on standards
-   
-❓ 
+ 
 
 ### **OneDrive**
 -------------------------------------------

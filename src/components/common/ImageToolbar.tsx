@@ -6,7 +6,7 @@ import styles from './ImageToolbar.module.css';
 
 interface ImageToolbarProps {
   editor: Editor;
-  onAction: (action: 'setSize' | 'setAlignment' | 'setAspectRatio', value: string) => void;
+  onAction: (action: 'setSize' | 'setAlignment' | 'setAspectRatio' | 'delete', value?: string) => void;
 }
 
 const ImageToolbar = ({ editor, onAction }: ImageToolbarProps) => {
@@ -69,29 +69,14 @@ const ImageToolbar = ({ editor, onAction }: ImageToolbarProps) => {
         </div>
       </div>
       <div className={styles.toolbarSection}>
-        <label>Aspect Ratio:</label>
         <div className={styles.buttonGroup}>
-          <button
-            type="button"
-            className={`${styles.toolbarButton} ${aspectRatio === '1:1' ? styles.active : ''}`}
-            onClick={() => onAction('setAspectRatio', '1:1')}
-          >
-            1:1
-          </button>
-          <button
-            type="button"
-            className={`${styles.toolbarButton} ${aspectRatio === '4:3' ? styles.active : ''}`}
-            onClick={() => onAction('setAspectRatio', '4:3')}
-          >
-            4:3
-          </button>
-          <button
-            type="button"
-            className={`${styles.toolbarButton} ${aspectRatio === '16:9' ? styles.active : ''}`}
-            onClick={() => onAction('setAspectRatio', '16:9')}
-          >
-            16:9
-          </button>
+            <button
+                type="button"
+                className={`${styles.toolbarButton} ${styles.dangerButton}`}
+                onClick={() => onAction('delete')}
+            >
+                Remove
+            </button>
         </div>
       </div>
     </div>

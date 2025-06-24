@@ -84,18 +84,31 @@
 }
 
 .toolbarButton {
-  background: #fff;
-  border: 1px solid #ccc;
-  padding: 4px 8px;
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
   cursor: pointer;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s;
 }
 
 .toolbarButton.active {
-  background: #007bff;
-  color: #fff;
-  border-color: #007bff;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  border-color: var(--color-primary);
 }
 
 .toolbarButton:not(:last-child) {
   border-right: none;
+}
+
+.dangerButton {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.dangerButton:hover {
+  background-color: var(--color-danger-light);
+  color: var(--color-danger-dark);
 } 

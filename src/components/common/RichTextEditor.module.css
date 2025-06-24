@@ -9,12 +9,12 @@
 
 .toolbar {
   display: flex;
-  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
   padding: 0.5rem;
-  border-bottom: 1px solid #e2e8f0;
-  background: #f8fafc;
-  border-top-left-radius: 0.375rem;
-  border-top-right-radius: 0.375rem;
+  border-bottom: 1px solid var(--border-color);
+  gap: 1rem;
 }
 
 .toolbarGroup {
