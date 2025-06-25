@@ -8,6 +8,10 @@ import { TreeNode } from '@/lib/types/photo';
 // Define the path to the root directory from environment variables.
 const baseDir = process.env.ONEDRIVE_ROOT_FOLDER;
 
+// Utility functions for consistent path handling
+const toSystemPath = (p: string) => p.split('/').join(path.sep);
+const toDatabasePath = (p: string) => p.split(path.sep).join('/');
+
 // This function recursively builds a tree structure of the directories.
 const getDirectoryTree = (dirPath: string): TreeNode[] => {
   try {
@@ -17,11 +21,11 @@ const getDirectoryTree = (dirPath: string): TreeNode[] => {
     for (const entry of entries) {
       if (entry.isDirectory()) {
         const fullPath = path.join(dirPath, entry.name);
-        // We use the relative path from the base directory as the ID
         const relativePath = path.relative(baseDir, fullPath);
+        const normalizedPath = toDatabasePath(relativePath);
 
         const node: TreeNode = {
-          id: relativePath.replace(/\\\\/g, '/'), // Use forward slashes for cross-platform consistency
+          id: normalizedPath,
           name: entry.name,
           children: getDirectoryTree(fullPath),
         };
@@ -29,10 +33,8 @@ const getDirectoryTree = (dirPath: string): TreeNode[] => {
       }
     }
 
-    // Sort nodes alphabetically by name
     return nodes.sort((a, b) => a.name.localeCompare(b.name));
   } catch (error) {
-    // If a directory can't be read (e.g., permissions), just return an empty array.
     console.error(`Could not read directory: ${dirPath}`, error);
     return [];
   }

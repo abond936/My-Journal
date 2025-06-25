@@ -1,15 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Card } from '@/lib/types/card';
+import React from 'react';
+import { Card, CardUpdate } from '@/lib/types/card';
+import { Tag } from '@/lib/types/tag';
 import CardForm from '@/components/admin/card-admin/CardForm';
 import { useRouter } from 'next/navigation';
-import useSWR from 'swr';
+import useSWR, { mutate as globalMutate } from 'swr';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import styles from '@/components/admin/card-admin/CardForm.module.css'; // Re-use styles for buttons
 import { useCardContext } from '@/components/providers/CardProvider';
 import { PaginatedResult } from '@/lib/types/services';
-import { mutate as globalMutate } from 'swr';
 
 const UPDATED_CARD_KEY = 'updatedCardState';
 
@@ -22,47 +22,47 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps) {
   const router = useRouter();
   const { mutate } = useCardContext();
-  const { data: card, error, isLoading } = useSWR<Card | null>(
+  
+  const { data: card, error: cardError, isLoading: isCardLoading } = useSWR<Card | null>(
     cardId ? `/api/cards/${cardId}` : null,
     fetcher
   );
+
+  const { data: tagsData, error: tagsError, isLoading: areTagsLoading } = useSWR<Tag[]>(
+    '/api/tags', 
+    fetcher
+  );
+  
   const [isDeleting, setIsDeleting] = React.useState(false);
 
-  const handleSave = async (cardData: Partial<Card>, deletedImageUrls?: string[]) => {
+  const handleSave = async (cardData: CardUpdate, tags: Tag[]) => {
     try {
-      let response;
-      const body = { ...cardData, deletedImageUrls };
+      const body = { 
+        ...cardData, 
+        tagIds: tags.map(t => t.id) // Pass tag IDs for the backend to process
+      };
 
-      if (cardId) {
-        // Update existing card
-        response = await fetch(`/api/cards/${cardId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-      } else {
-        // Create new card
-        response = await fetch('/api/cards', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(cardData), // Note: deletedImageUrls is not relevant for new cards
-        });
-      }
+      const url = cardId ? `/api/cards/${cardId}` : '/api/cards';
+      const method = cardId ? 'PATCH' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to save the card.');
       }
 
-      const updatedCard: Card = await response.json();
-
-      // Call the aliased global mutate function to revalidate all SWR keys.
+      // Revalidate all data and redirect
       await globalMutate(() => true, undefined, { revalidate: true });
-
-      // Redirect to the main admin page on success
       router.push('/admin/card-admin');
+
     } catch (error) {
       console.error('Failed to save card:', error);
+      // It might be useful to show an alert here in the future
     }
   };
 
@@ -104,14 +104,20 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
     }
   };
 
+  const isLoading = isCardLoading || areTagsLoading;
+
   if (isLoading) {
     return <LoadingSpinner />;
   }
 
-  if (error) {
-    return <div>Error loading card data.</div>;
+  if (cardError || tagsError) {
+    return <div>Error loading data. {cardError?.message} {tagsError?.message}</div>;
   }
   
+  // This page is also used for creating new cards, so `card` can be null.
+  // The CardForm is designed to handle this case.
+  const allTags = tagsData || [];
+
   return (
     <div>
       <div className={styles.formHeader}>
@@ -137,9 +143,8 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
       </div>
       <CardForm
         initialCard={card || null}
+        allTags={allTags}
         onSave={handleSave}
-        onCancel={handleCancel}
-        onDelete={handleDelete}
       />
     </div>
   );

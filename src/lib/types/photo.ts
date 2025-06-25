@@ -27,11 +27,33 @@ export const mediaSchema = z.object({
   caption: z.string().optional(),
 
   // The status of the media asset in its processing lifecycle.
-  status: z.enum(['raw', 'processed', 'archived']).default('raw'),
+  status: z.enum(['temporary', 'active', 'deleted']).default('temporary'),
 
   // Timestamps for creation and last update.
   createdAt: z.number(),
   updatedAt: z.number(),
 });
 
-export type Media = z.infer<typeof mediaSchema>; 
+export type Media = z.infer<typeof mediaSchema>;
+
+// No longer needed
+/*
+export const pickerMediaSchema = z.object({
+  // In the context of the picker, the ID is a temporary identifier, usually the sourcePath.
+  id: z.string(),
+  filename: z.string(),
+  width: z.number(),
+  height: z.number(),
+  // The key piece of information needed to perform the actual import.
+  sourcePath: z.string(),
+  // A temporary URL for rendering the image preview in the picker.
+  storageUrl: z.string(),
+});
+
+export type PickerMedia = z.infer<typeof pickerMediaSchema>; 
+*/
+
+// Obsolete, replaced by Media
+// export type PhotoMetadata = Media & {
+//   objectPosition?: string;
+// }; 

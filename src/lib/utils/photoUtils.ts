@@ -3,10 +3,10 @@ import { PhotoMetadata } from '@/lib/types/photo';
 /**
  * Generates the correct display URL for a photo based on its metadata.
  * This centralizes the logic for handling different photo sources in the future.
- * @param photo - The photo metadata object.
+ * @param photo - An object containing photo metadata, must have a `storageUrl`.
  * @returns A string representing the web-accessible URL for the image.
  */
-export function getDisplayUrl(photo: PhotoMetadata): string {
+export function getDisplayUrl(photo: { storageUrl?: string | null } | null | undefined): string {
   // After the import process, the photo object contains the direct public URL.
   if (photo?.storageUrl) {
     return photo.storageUrl;

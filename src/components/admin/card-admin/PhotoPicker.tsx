@@ -4,11 +4,23 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { getFolderTree, getFolderContents } from '@/lib/services/images/local/photoService';
 import { Media, TreeNode } from '@/lib/types/photo';
+import { importLocalFile } from '@/lib/services/images/imageService';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import styles from './PhotoPicker.module.css';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
+
+// The type from the server `getFolderContents` is a pointer to a file on the server.
+interface ServerFile {
+  id: string; // sourcePath
+  filename: string;
+  width: number;
+  height: number;
+  sourcePath: string;
+  storageUrl: string; // temporary display url
+}
 
 interface PhotoPickerProps {
-  onSelect?: (photo: Media) => void;
+  onSelect: (media: Media) => void;
   onMultiSelect?: (photos: Media[]) => void;
   onClose: () => void;
   initialMode?: 'single' | 'multiple';
@@ -67,12 +79,13 @@ export default function PhotoPicker({
   initialMode = 'single',
 }: PhotoPickerProps) {
   const [folderTree, setFolderTree] = useState<TreeNode[]>([]);
-  const [photos, setPhotos] = useState<Media[]>([]);
+  const [photos, setPhotos] = useState<ServerFile[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<TreeNode | null>(null);
   const [selectedPhotos, setSelectedPhotos] = useState<Media[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isMultiMode, setIsMultiMode] = useState(initialMode === 'multiple');
+  const [importingId, setImportingId] = useState<string | null>(null);
 
   useEffect(() => {
     // This effect now correctly syncs the internal mode with the prop
@@ -98,7 +111,7 @@ export default function PhotoPicker({
   }, []);
 
   const handleFolderSelect = async (node: TreeNode) => {
-    if (selectedFolder?.id === node.id) {
+    if (selectedFolder?.id === node.id || importingId) {
       return;
     }
 
@@ -109,7 +122,7 @@ export default function PhotoPicker({
 
     try {
       const folderPhotos = await getFolderContents(node.id);
-      setPhotos(folderPhotos);
+      setPhotos(folderPhotos as ServerFile[]);
     } catch (err: any) {
       console.error('Error in handleFolderSelect:', err);
       setError(err.message || `Failed to load photos for folder: ${node.name}`);
@@ -118,19 +131,21 @@ export default function PhotoPicker({
     }
   };
 
-  const handlePhotoClick = (photo: Media) => {
-    if (isMultiMode) {
-      setSelectedPhotos(prev => 
-        prev.some(p => p.id === photo.id)
-          ? prev.filter(p => p.id !== photo.id)
-          : [...prev, photo]
-      );
-    } else {
-      // In single select mode, we now correctly call the onSelect prop.
-      if (typeof onSelect === 'function') {
-        onSelect(photo);
-      }
-      onClose(); // Always close after single selection.
+  const handlePhotoClick = async (photo: ServerFile) => {
+    if (isMultiMode || importingId) {
+      return;
+    }
+
+    try {
+      setError(null);
+      setImportingId(photo.id);
+      const newMedia = await importLocalFile(photo.sourcePath);
+      onSelect(newMedia);
+    } catch (err: any) {
+      console.error('Failed to import photo:', err);
+      setError('Failed to import selected photo. Please try again.');
+    } finally {
+      setImportingId(null);
     }
   };
 
@@ -152,16 +167,12 @@ export default function PhotoPicker({
     return <div className={styles.loading}>Loading folder structure...</div>;
   }
 
-  if (error) {
-    return <div className={styles.error}>{error}</div>;
-  }
-
   return (
     <div className={styles.overlay}>
       <div className={styles.container}>
         <div className={styles.header}>
           <h2 className={styles.title}>Select Photo(s)</h2>
-          <button onClick={onClose} className={styles.closeButton}>✕</button>
+          <button onClick={onClose} className={styles.closeButton} disabled={!!importingId}>✕</button>
         </div>
         
         <div className={styles.content}>
@@ -175,21 +186,24 @@ export default function PhotoPicker({
           </div>
 
           <div className={styles.photoGrid}>
+            {error && <div className={styles.errorBanner}>{error}</div>}
             {loading && photos.length === 0 ? (
               <div className={styles.noContent}>Loading photos...</div>
             ) : photos.length > 0 ? (
               <div className={styles.grid}>
                 {photos.map(photo => {
                   const isSelected = isMultiMode && selectedPhotos.some(p => p.id === photo.id);
+                  const isImporting = importingId === photo.id;
                   return (
                     <div
                       key={photo.id}
-                      className={`${styles.photoItem} ${isSelected ? styles.photoItemSelected : ''}`}
+                      className={`${styles.photoItem} ${isSelected ? styles.photoItemSelected : ''} ${isImporting ? styles.photoItemImporting : ''}`}
                       onClick={() => handlePhotoClick(photo)}
                     >
+                      {isImporting && <div className={styles.importingOverlay}><LoadingSpinner /></div>}
                       {isSelected && <div className={styles.checkmark}>✓</div>}
                       <Image
-                        src={getDisplayUrl(photo)}
+                        src={getDisplayUrl(photo as any)}
                         alt={photo.filename}
                         width={150}
                         height={150}
@@ -209,7 +223,7 @@ export default function PhotoPicker({
         
         <div className={styles.footer}>
           {isMultiMode && (
-            <button onClick={handleDoneClick} className={styles.doneButton}>
+            <button onClick={handleDoneClick} className={styles.doneButton} disabled={!!importingId}>
               {buttonText}
             </button>
           )}
