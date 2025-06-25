@@ -3,17 +3,15 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { getFolderTree, getFolderContents } from '@/lib/services/images/local/photoService';
-import { PhotoMetadata, TreeNode } from '@/lib/types/photo'; // Import directly from the source
+import { Media, TreeNode } from '@/lib/types/photo';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import styles from './PhotoPicker.module.css';
 
 interface PhotoPickerProps {
-  onPhotoSelect?: (photo: PhotoMetadata) => void;
-  onMultiPhotoSelect?: (photos: PhotoMetadata[]) => void;
+  onSelect?: (photo: Media) => void;
+  onMultiSelect?: (photos: Media[]) => void;
   onClose: () => void;
-  initialMode?: 'single' | 'multi'; // New prop
-  isOpen?: boolean;
-  initialSelection?: PhotoMetadata[];
+  initialMode?: 'single' | 'multiple';
 }
 
 const FolderTree = ({ nodes, onSelect, selectedId }: { nodes: TreeNode[], onSelect: (node: TreeNode) => void, selectedId: string | null }) => {
@@ -63,65 +61,41 @@ const FolderTree = ({ nodes, onSelect, selectedId }: { nodes: TreeNode[], onSele
 };
 
 export default function PhotoPicker({ 
-  onPhotoSelect, 
-  onMultiPhotoSelect, 
+  onSelect, 
+  onMultiSelect, 
   onClose, 
-  initialMode = 'single', // Default to single
-  initialSelection = []
+  initialMode = 'single',
 }: PhotoPickerProps) {
   const [folderTree, setFolderTree] = useState<TreeNode[]>([]);
-  const [photos, setPhotos] = useState<PhotoMetadata[]>([]);
+  const [photos, setPhotos] = useState<Media[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<TreeNode | null>(null);
-  const [selectedPhotos, setSelectedPhotos] = useState<PhotoMetadata[]>(initialSelection);
+  const [selectedPhotos, setSelectedPhotos] = useState<Media[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // State to manage the current selection mode
-  const [isMultiSelect, setIsMultiSelect] = useState(initialMode === 'multi');
-  
-  const { buttonText, hasChanged } = useMemo(() => {
-    const initialIds = new Set(initialSelection.map(p => p.id));
-    const selectedIds = new Set(selectedPhotos.map(p => p.id));
-    
-    const addedCount = Array.from(selectedIds).filter(id => !initialIds.has(id)).length;
-    const removedCount = Array.from(initialIds).filter(id => !selectedIds.has(id)).length;
-    
-    const hasChanged = addedCount > 0 || removedCount > 0;
-    
-    let text = 'Done';
-    if (addedCount > 0) {
-      text = `Add ${addedCount} Photo${addedCount !== 1 ? 's' : ''}`;
-    }
-    
-    return { buttonText: text, hasChanged };
-  }, [selectedPhotos, initialSelection]);
-  
-  console.log('[PhotoPicker] RENDER. isMultiSelect:', isMultiSelect, 'selectedPhotos:', JSON.stringify(selectedPhotos.map(p => p.id)));
-  
+  const [isMultiMode, setIsMultiMode] = useState(initialMode === 'multiple');
+
   useEffect(() => {
-    // Lock multi-select mode if the initial mode was 'multi'
-    if (initialMode === 'multi') {
-      setIsMultiSelect(true);
-    }
+    // This effect now correctly syncs the internal mode with the prop
+    // every time the picker is opened with a potentially different mode.
+    setIsMultiMode(initialMode === 'multiple');
   }, [initialMode]);
 
   useEffect(() => {
-    console.log('PhotoPicker mounted');
+    const loadInitialData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const tree = await getFolderTree();
+        setFolderTree(tree);
+      } catch (err: any) {
+        console.error('Error in loadInitialData:', err);
+        setError(err.message || 'Failed to load folder structure.');
+      } finally {
+        setLoading(false);
+      }
+    };
     loadInitialData();
   }, []);
-
-  const loadInitialData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const tree = await getFolderTree();
-      setFolderTree(tree);
-    } catch (err: any) {
-      console.error('Error in loadInitialData:', err);
-      setError(err.message || 'Failed to load folder structure.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleFolderSelect = async (node: TreeNode) => {
     if (selectedFolder?.id === node.id) {
@@ -144,36 +118,35 @@ export default function PhotoPicker({
     }
   };
 
-  const handlePhotoClick = (photo: PhotoMetadata) => {
-    console.log('[PhotoPicker] handlePhotoClick. photo:', JSON.stringify(photo, null, 2));
-    if (isMultiSelect) {
-      setSelectedPhotos(prev => {
-        if (prev.find(p => p.id === photo.id)) {
-          return prev.filter(p => p.id !== photo.id);
-        } else {
-          return [...prev, photo];
-        }
-      });
+  const handlePhotoClick = (photo: Media) => {
+    if (isMultiMode) {
+      setSelectedPhotos(prev => 
+        prev.some(p => p.id === photo.id)
+          ? prev.filter(p => p.id !== photo.id)
+          : [...prev, photo]
+      );
     } else {
-      // In single select mode, fire the event and close immediately
-      if (onPhotoSelect) {
-        onPhotoSelect(photo);
-        onClose(); // Close after selection
-      } else if (onMultiPhotoSelect) {
-        // Fallback for single-click when only multi-select handler is provided
-        onMultiPhotoSelect([photo]);
-        onClose();
+      // In single select mode, we now correctly call the onSelect prop.
+      if (typeof onSelect === 'function') {
+        onSelect(photo);
       }
+      onClose(); // Always close after single selection.
     }
   };
 
   const handleDoneClick = () => {
-    if (isMultiSelect && onMultiPhotoSelect) {
-      console.log('[PhotoPicker] handleDoneClick: Firing onMultiPhotoSelect with:', JSON.stringify(selectedPhotos, null, 2));
-      onMultiPhotoSelect(selectedPhotos);
-      onClose(); // Close after selection
+    // This handler is now specifically for multi-select mode.
+    if (isMultiMode && typeof onMultiSelect === 'function') {
+      onMultiSelect(selectedPhotos);
     }
+    onClose(); // Always close when done.
   };
+
+  const buttonText = useMemo(() => {
+    if (!isMultiMode) return 'Done'; // Should not be visible, but for completeness
+    if (selectedPhotos.length === 0) return 'Done';
+    return `Add ${selectedPhotos.length} Photo${selectedPhotos.length > 1 ? 's' : ''}`;
+  }, [isMultiMode, selectedPhotos.length]);
 
   if (loading && folderTree.length === 0) {
     return <div className={styles.loading}>Loading folder structure...</div>;
@@ -187,7 +160,7 @@ export default function PhotoPicker({
     <div className={styles.overlay}>
       <div className={styles.container}>
         <div className={styles.header}>
-          <h2 className={styles.title}>Select Photo</h2>
+          <h2 className={styles.title}>Select Photo(s)</h2>
           <button onClick={onClose} className={styles.closeButton}>✕</button>
         </div>
         
@@ -202,12 +175,12 @@ export default function PhotoPicker({
           </div>
 
           <div className={styles.photoGrid}>
-            {loading ? (
-              <div className={styles.loading}>Loading photos...</div>
+            {loading && photos.length === 0 ? (
+              <div className={styles.noContent}>Loading photos...</div>
             ) : photos.length > 0 ? (
               <div className={styles.grid}>
                 {photos.map(photo => {
-                  const isSelected = isMultiSelect && selectedPhotos.some(p => p.id === photo.id);
+                  const isSelected = isMultiMode && selectedPhotos.some(p => p.id === photo.id);
                   return (
                     <div
                       key={photo.id}
@@ -221,7 +194,6 @@ export default function PhotoPicker({
                         width={150}
                         height={150}
                         className={styles.photoImage}
-                        style={{ objectFit: 'cover' }}
                       />
                     </div>
                   );
@@ -236,25 +208,8 @@ export default function PhotoPicker({
         </div>
         
         <div className={styles.footer}>
-          {/* Only show the multi-select toggle if not locked into multi mode */}
-          {initialMode !== 'multi' && (
-            <div className={styles.multiSelectToggle}>
-              <input
-                type="checkbox"
-                id="multiSelectCheckbox"
-                checked={isMultiSelect}
-                onChange={(e) => setIsMultiSelect(e.target.checked)}
-              />
-              <label htmlFor="multiSelectCheckbox">Select multiple photos</label>
-            </div>
-          )}
-
-          {isMultiSelect && (
-            <button
-              onClick={handleDoneClick}
-              className={styles.doneButton}
-              disabled={!hasChanged}
-            >
+          {isMultiMode && (
+            <button onClick={handleDoneClick} className={styles.doneButton}>
               {buttonText}
             </button>
           )}

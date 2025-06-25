@@ -2,33 +2,36 @@
 
 import { z } from 'zod';
 
-// Defines the core metadata for a single photo.
-// This model is storage-centric, not file-system-centric.
-export const photoMetadataSchema = z.object({
-  id: z.string(), // The ID of the photo in our system (could be the Card ID or a unique ID)
+// Defines the canonical metadata for a single media asset in the system.
+// This is the single source of truth, stored in the top-level 'media' collection.
+export const mediaSchema = z.object({
+  // A unique identifier for the media asset, generated on creation.
+  id: z.string(), 
+  
+  // The original filename from the source.
   filename: z.string(),
+  
+  // Image dimensions
   width: z.number(),
   height: z.number(),
   
-  // Storage-related fields
-  storageUrl: z.string(), // The public, permanent URL of the image in Firebase Storage
-  storagePath: z.string(), // The path to the file within the Firebase Storage bucket
+  // Firebase Storage details. The URL is the primary way to access the image.
+  storageUrl: z.string(), // Public, permanent URL from Firebase Storage.
+  storagePath: z.string(), // The path to the file within the Storage bucket (e.g., 'images/uuid-filename.jpg').
   
-  // Source-related fields
-  sourcePath: z.string(), // The original path from the source (e.g., local drive)
+  // Details about the original source of the file.
+  source: z.enum(['local-drive', 'upload', 'paste', 'onedrive', 'google-photos']),
+  sourcePath: z.string(), // The original path/identifier from the source (e.g., '/2023/Vacation/IMG_1234.jpg').
   
-  // Optional fields
-  objectPosition: z.string().optional(),
+  // The default caption for the image. Can be overridden at the point of use (e.g., in a card gallery).
   caption: z.string().optional(),
-  status: z.enum(['raw', 'edited']).default('raw'),
+
+  // The status of the media asset in its processing lifecycle.
+  status: z.enum(['raw', 'processed', 'archived']).default('raw'),
+
+  // Timestamps for creation and last update.
+  createdAt: z.number(),
+  updatedAt: z.number(),
 });
 
-export type PhotoMetadata = z.infer<typeof photoMetadataSchema>;
-
-// Defines a node in the folder tree structure for the PhotoPicker.
-// This remains unchanged as it's used for browsing the original source.
-export interface TreeNode {
-  id: string; // The full system path to the folder
-  name: string;
-  children?: TreeNode[];
-} 
+export type Media = z.infer<typeof mediaSchema>; 

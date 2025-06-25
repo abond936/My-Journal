@@ -5,7 +5,6 @@ import Image from 'next/image'; // Import the Next.js Image component
 import styles from './FigureWithImageView.module.css';
 
 export const FigureWithImageView = ({ node, updateAttributes, editor, selected, getPos }) => {
-  const [hasError, setHasError] = useState(false);
 
   // Destructure all attributes from the node, including the new width and height
   const { 
@@ -49,21 +48,14 @@ export const FigureWithImageView = ({ node, updateAttributes, editor, selected, 
         This wrapper is the key. Its onClick forces the node selection.
       */}
       <div onClick={selectNodeManually} className={styles.imageContainer}>
-        {hasError ? (
-          <div className={styles.errorPlaceholder}>
-            <span>Image not found</span>
-          </div>
-        ) : (
-          <Image
-            src={src}
-            alt={alt}
-            width={width}
-            height={height}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className={styles.image}
-            onError={() => setHasError(true)}
-          />
-        )}
+        <Image
+          src={src}
+          alt={alt}
+          width={width}
+          height={height}
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          className={styles.image}
+        />
       </div>
       {/* The NodeViewContent component renders the editable figcaption. */}
       <NodeViewContent as="figcaption" className={styles.caption} />

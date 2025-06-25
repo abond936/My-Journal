@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { PhotoMetadata } from '@/lib/types/photo';
+import { Media } from '@/lib/types/photo';
 import styles from './CoverPhotoContainer.module.css';
 import PhotoPicker from './PhotoPicker';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
@@ -9,21 +9,21 @@ import { SlidersHorizontal, Trash2, ImageUp } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface CoverPhotoContainerProps {
-  coverPhoto?: PhotoMetadata | null;
+  coverPhoto?: Media | null;
   isImporting?: boolean;
-  onCoverPhotoSelect: (photo: PhotoMetadata) => void;
-  onCoverPhotoUpload: (file: File) => void;
-  onMetadataChange: (metadata: PhotoMetadata) => void;
-  onCoverPhotoRemove: () => void;
+  onSelect: (photo: Media) => void;
+  onUpload: (file: File) => void;
+  onMetadataUpdate: (metadata: Media) => void;
+  onRemove: () => void;
 }
 
 export default function CoverPhotoContainer({
   coverPhoto,
   isImporting,
-  onCoverPhotoSelect,
-  onCoverPhotoUpload,
-  onMetadataChange,
-  onCoverPhotoRemove
+  onSelect,
+  onUpload,
+  onMetadataUpdate,
+  onRemove
 }: CoverPhotoContainerProps) {
   const [showPhotoPicker, setShowPhotoPicker] = useState(false);
   const [isRepositioning, setIsRepositioning] = useState(false);
@@ -45,8 +45,8 @@ export default function CoverPhotoContainer({
     setHasError(false);
   }, [coverPhoto]);
 
-  const handlePhotoSelect = (photo: PhotoMetadata) => {
-    onCoverPhotoSelect(photo);
+  const handlePhotoSelect = (photo: Media) => {
+    onSelect(photo);
     setShowPhotoPicker(false);
   };
 
@@ -60,7 +60,7 @@ export default function CoverPhotoContainer({
         ...coverPhoto,
         objectPosition: `${position.x}% ${position.y}%`,
       };
-      onMetadataChange(updatedPhoto);
+      onMetadataUpdate(updatedPhoto);
     }
     setIsRepositioning(false);
   };
@@ -85,7 +85,7 @@ export default function CoverPhotoContainer({
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
       if (file.type.startsWith('image/')) {
-        onCoverPhotoUpload(file);
+        onUpload(file);
       }
     }
   };
@@ -129,7 +129,7 @@ export default function CoverPhotoContainer({
               )}
               <button
                 type="button"
-                onClick={onCoverPhotoRemove}
+                onClick={onRemove}
                 className={`${styles.button} ${styles.removeButton}`}
                 disabled={isImporting}
               >
@@ -211,9 +211,9 @@ export default function CoverPhotoContainer({
 
       {showPhotoPicker && (
         <PhotoPicker
-          onPhotoSelect={handlePhotoSelect}
+          onSelect={handlePhotoSelect}
           onClose={() => setShowPhotoPicker(false)}
-          initialMode="single"
+          mode="single"
         />
       )}
     </div>

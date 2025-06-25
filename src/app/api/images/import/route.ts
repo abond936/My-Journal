@@ -18,9 +18,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'sourcePath is required.' }, { status: 400 });
     }
 
-    const photoMetadata = await importFromLocalDrive(sourcePath);
+    const newMedia = await importFromLocalDrive(sourcePath);
 
-    return NextResponse.json(photoMetadata);
+    return NextResponse.json(newMedia);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error('Error importing image:', errorMessage);

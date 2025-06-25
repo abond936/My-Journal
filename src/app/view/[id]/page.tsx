@@ -38,7 +38,8 @@ async function getCardData(id: string): Promise<CardPageData | null> {
   }
 }
 
-export default async function CardPage({ params: { id } }: CardPageProps) {
+export default async function CardPage({ params }: CardPageProps) {
+  const { id } = params;
   const pageData = await getCardData(id);
 
   if (!pageData) {

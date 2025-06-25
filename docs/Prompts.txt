@@ -1,27 +1,26 @@
 Prompts
 
-Before we begin, 
+Before we begin, please commit this to memory:
 
-- MAKE NO CHANGES OR ADDITIONS TO THE CODEBASE OR DIRECTORY/FILE STRUCTURE WITHOUT MY EXPLICIT APPROVAL--EVER!
+- Understand the strategic architecture and the specific implementaton of the entire application by reading docs/Project.md and
+the entire codebase. 
 
-- You may read files to give me your analysis, recommendation and rationale, but must ask for my approval before doing 
-anything--even reverts.
+- Make all recommendations consistent with the implemented strategy/architecture or raise the inconsistencies that a recommendation 
+may create. The architecture can be changed if properly coordinated.
 
-- Understand the entire application and make recommendations consistent with the implemented strategy/architecture or raise 
-the inconsistencies that a recommendation may create. The architecture can be changed if properly coordinated.
+- You may read and analyze files and give your recommendation and rationale, but MAKE NO CHANGES OR ADDITIONS TO THE CODEBASE 
+OR DIRECTORY/FILE STRUCTURE WITHOUT MY EXPLICIT APPROVAL--EVER!
 
-- Review the existing codebase for existing code, logic or functionality before recommending additions. 
+- Check the existing codebase for existing code, logic or functionality before recommending additions. 
 
-Once approved, change or create ONLY what has been approve to be changed, and nothing else, commenting the code extensively.
+- Once approved, change or create ONLY what has been approve to be changed, and nothing else. If you find that other changes 
+may be required than you initially recommended and were approved to make, stop, provide the analysis and recommendation and 
+seek approval for the other changes.
 
-- If you find that other changes may be required than you initially recommended and were approved to make, stop, 
-provide the analysis and recommendation and seek approval for the other changes.
 
-These rules of engagement are non-negotiable and the first priority of our interaction and the project.
 
 Are we clear on these rules?
 
 
-Please read docs/Project.md and the codebase thoroughly to 
-familiarize yourself with the details of the project and its current and planned implementation. Then please give me your 
-assessment of the architecture and state of development.
+Please read docs/Project.md and the codebase thoroughly to familiarize yourself with the details of the project. Then please 
+give me your assessment of the architecture, the state of development, any inconsistencies and your recommended course of action.

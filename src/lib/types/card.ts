@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { photoMetadataSchema } from './photo';
+import { mediaSchema } from './photo';
 
 export const cardSchema = z.object({
   id: z.string(),
@@ -15,20 +15,21 @@ export const cardSchema = z.object({
   status: z.enum(['draft', 'published']),
   displayMode: z.enum(['inline', 'navigate', 'static']),
   
-  // Future-proof media objects
-  coverImage: z.preprocess(
-    (arg) => {
-      // If the arg is an object but doesn't have the required properties,
-      // treat it as null. This handles legacy data where coverImage might be `{}`.
-      if (typeof arg === 'object' && arg !== null && !('storageUrl' in arg)) {
-        return null;
-      }
-      return arg;
-    },
-    photoMetadataSchema.nullable()
-  ),
+  // A reference to a single Media document's ID.
+  coverImageId: z.string().optional().nullable(),
+
+  // The 'content' field may contain embedded images, which will be handled
+  // by the Tiptap implementation (storing data-media-id).
   contentMedia: z.array(z.any()).default([]),
-  galleryMedia: z.array(photoMetadataSchema).default([]),
+
+  // An array of objects defining the gallery's content and structure.
+  // Each object references a Media document and can override its caption.
+  galleryMedia: z.array(z.object({
+    mediaId: z.string(),
+    caption: z.string().optional(),
+    order: z.number(),
+    objectPosition: z.string().optional(),
+  })).default([]),
   
   // The 5 tag dimensions
   who: z.array(z.string()).default([]),

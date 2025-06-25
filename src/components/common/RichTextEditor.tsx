@@ -7,7 +7,7 @@ import Blockquote from '@tiptap/extension-blockquote';
 import { FigureWithImage } from '@/lib/tiptap/extensions/FigureWithImage';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
-import { PhotoMetadata } from '@/lib/types/photo';
+import { Media } from '@/lib/types/photo';
 import ImageToolbar from './ImageToolbar';
 import styles from '@/components/common/RichTextEditor.module.css';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
@@ -23,7 +23,7 @@ interface RichTextEditorProps {
 // Export the Ref type so the parent component can use it.
 export interface RichTextEditorRef {
   getContent: () => string;
-  addImage: (photo: PhotoMetadata) => void;
+  addImage: (photo: Media) => void;
 }
 
 // RichTextEditor component
@@ -114,10 +114,11 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
      * Inserts an image into the editor at the current cursor position.
      * @param photo The metadata of the photo to insert.
      */
-    addImage: (photo: PhotoMetadata) => {
+    addImage: (photo: Media) => {
       if (editor) {
+        const displayUrl = getDisplayUrl(photo);
         editor.chain().focus().setFigureWithImage({ 
-          src: photo.storageUrl,
+          src: displayUrl,
           alt: photo.filename,
           width: photo.width,
           height: photo.height,
@@ -172,12 +173,13 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
         throw new Error(errorData.error || 'File upload failed');
       }
 
-      const permanentPhoto: PhotoMetadata = await response.json();
+      const permanentPhoto: Media = await response.json();
 
       // Use the addImage method to insert the newly uploaded image
       if (memoizedEditor) {
+        const displayUrl = getDisplayUrl(permanentPhoto);
         memoizedEditor.chain().focus().setFigureWithImage({
-          src: permanentPhoto.storageUrl,
+          src: displayUrl,
           alt: permanentPhoto.filename,
           width: permanentPhoto.width,
           height: permanentPhoto.height,

@@ -4,6 +4,7 @@ import { Tag } from '@/lib/types/tag';
 import { getTagAncestors, getTagPathsMap } from '@/lib/firebase/tagDataAccess';
 import { getFirestore, writeBatch } from 'firebase-admin/firestore';
 import { doc } from 'firebase-admin/firestore';
+import { deleteMediaAsset } from './images/imageImportService';
 
 const adminApp = getAdminApp();
 const firestore = adminApp.firestore();
@@ -83,8 +84,18 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'i
   }
   const existingData = docSnap.data() as Card;
 
+  // Defensively sanitize incoming array fields to prevent accidental deletion in Firestore.
+  // If a client sends 'tags: undefined', Firestore deletes the field. This ensures it becomes 'tags: []'.
+  const sanitizedCardData = { ...cardData };
+  const arrayFields: (keyof Card)[] = ['tags', 'galleryMedia', 'childrenIds', 'who', 'what', 'when', 'where', 'reflection'];
+  arrayFields.forEach(field => {
+    if (sanitizedCardData[field] === null || sanitizedCardData[field] === undefined) {
+      delete sanitizedCardData[field]; // Remove explicit null/undefined to avoid conflicts
+    }
+  });
+
   // Validate the incoming partial data
-  const validatedUpdate = cardSchema.partial().parse(cardData);
+  const validatedUpdate = cardSchema.partial().parse(sanitizedCardData);
 
   const updateData: Partial<Card> = {
     ...validatedUpdate,
@@ -249,12 +260,48 @@ export async function deleteAllCards(): Promise<void> {
 }
 
 /**
- * Deletes a card from the Firestore 'cards' collection.
+ * Deletes a card and all its associated media assets (cover image, gallery images).
+ * This function enforces the "no orphans" rule for media.
  * @param cardId The ID of the card to delete.
  */
 export async function deleteCard(cardId: string): Promise<void> {
+  const card = await getCardById(cardId);
+  if (!card) {
+    console.warn(`[deleteCard] Card with ID ${cardId} not found. Skipping deletion.`);
+    return;
+  }
+
+  const mediaIdsToDelete: string[] = [];
+
+  // 1. Collect cover image ID
+  if (card.coverImageId) {
+    mediaIdsToDelete.push(card.coverImageId);
+  }
+
+  // 2. Collect gallery image IDs
+  if (card.galleryMedia && card.galleryMedia.length > 0) {
+    card.galleryMedia.forEach(item => mediaIdsToDelete.push(item.mediaId));
+  }
+
+  // TODO: Add logic to parse contentMediaIds when that feature is implemented.
+
+  // 3. Delete all associated media assets in parallel
+  if (mediaIdsToDelete.length > 0) {
+    console.log(`[deleteCard] Deleting ${mediaIdsToDelete.length} associated media assets for card ${cardId}...`);
+    const deletionPromises = mediaIdsToDelete.map(mediaId => 
+      deleteMediaAsset(mediaId).catch(err => {
+        // Log error for a specific asset but don't let it stop the process
+        console.error(`[deleteCard] Failed to delete media asset ${mediaId} for card ${cardId}:`, err);
+      })
+    );
+    await Promise.all(deletionPromises);
+    console.log(`[deleteCard] Finished deleting media assets for card ${cardId}.`);
+  }
+
+  // 4. Finally, delete the card document itself
   const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
   await docRef.delete();
+  console.log(`[deleteCard] Successfully deleted card document ${cardId}.`);
 }
 
 /**

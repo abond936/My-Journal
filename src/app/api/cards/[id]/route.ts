@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../auth/[...nextauth]/route';
 import { deleteCard, getCardById, updateCard, getPaginatedCardsByIds } from '@/lib/services/cardService';
-import { deleteImageByUrl } from '@/lib/services/images/imageImportService';
 import { Card } from '@/lib/types/card';
 import { PaginatedResult } from '@/lib/types/services';
 
@@ -36,8 +35,17 @@ export async function GET(
       { limit, lastDocId }
     );
 
+    // Sanitize the response to ensure it conforms to the Card type, preventing client-side errors.
     const responseData = {
       ...parentCard,
+      tags: parentCard.tags || [],
+      who: parentCard.who || [],
+      what: parentCard.what || [],
+      when: parentCard.when || [],
+      where: parentCard.where || [],
+      reflection: parentCard.reflection || [],
+      galleryMedia: parentCard.galleryMedia || [],
+      childrenIds: parentCard.childrenIds || [],
       children: childrenResult.items, // The first page of children
       hasMoreChildren: childrenResult.hasMore,
       lastChildId: childrenResult.lastDocId,
@@ -74,29 +82,10 @@ export async function PATCH(
   }
 
   try {
-    const body: Partial<Omit<Card, 'id'>> & { deletedImageUrls?: string[] } = await request.json();
-    const { deletedImageUrls, ...cardData } = body;
-
-    // 1. Update card data
+    // The incoming body can be directly passed to the now-hardened updateCard service.
+    // The service handles sanitation and tag recalculations.
+    const cardData: Partial<Omit<Card, 'id'>> = await request.json();
     const updatedCard = await updateCard(id, cardData);
-
-    // 2. Delete any images that were removed
-    if (deletedImageUrls && deletedImageUrls.length > 0) {
-      console.log(`Deleting ${deletedImageUrls.length} images...`);
-      // We will proceed even if some deletions fail, but we'll log the errors.
-      const deletionPromises = deletedImageUrls.map(async (url) => {
-        try {
-          await deleteImageByUrl(url);
-        } catch (error) {
-          console.error(`Failed to delete image ${url}:`, error);
-          // Decide if you want to collect these errors and report them back.
-          // For now, we just log them.
-        }
-      });
-      await Promise.all(deletionPromises);
-      console.log('Image deletion process finished.');
-    }
-
     return NextResponse.json(updatedCard);
   } catch (error) {
     console.error(`API Error updating card ${id}:`, error);

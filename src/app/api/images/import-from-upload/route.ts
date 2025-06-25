@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     const fileBuffer = Buffer.from(await file.arrayBuffer());
     
-    const photoMetadata = await importFromBuffer(fileBuffer, file.name);
+    const newMedia = await importFromBuffer(fileBuffer, file.name);
 
     return NextResponse.json(photoMetadata);
   } catch (error) {
