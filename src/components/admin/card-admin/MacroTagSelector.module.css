@@ -4,6 +4,17 @@
   padding: 10px;
   margin-top: 8px;
   background-color: #f9f9f9;
+  transition: all 0.2s ease-in-out;
+  position: relative;
+}
+
+.container.hasError {
+  border-color: var(--color-danger);
+  background-color: var(--color-danger-light);
+}
+
+.container.isDirty {
+  border-color: var(--color-warning);
 }
 
 .header {
@@ -25,11 +36,21 @@
   border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
+  transition: all 0.2s ease-in-out;
 }
 
 .editButton {
   background-color: #007bff;
   color: white;
+}
+
+.editButton:hover {
+  background-color: #0056b3;
+}
+
+.editButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .collapsedView {
@@ -59,12 +80,62 @@
 
 .tagNode {
   font-size: 0.9rem;
+  padding: 4px 0;
+  display: flex;
+  align-items: center;
 }
 
 .tagChildren {
-  margin-left: 8px;
-  padding-left: 8px;
+  margin-left: 24px;
+  padding-left: 12px;
   border-left: 1px solid #e0e0e0;
+}
+
+.nodeControl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.nodeControl input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+}
+
+.nodeControl label {
+  margin: 0;
+  cursor: pointer;
+  flex: 1;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.nodeControl label:hover {
+  background-color: #f0f0f0;
+}
+
+.collapseButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  font-size: 0.8rem;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.collapseButton:hover {
+  color: #333;
+}
+
+.collapseButton:focus {
+  outline: none;
+  color: #333;
 }
 
 /* Styles for the expanded overlay */
@@ -93,17 +164,16 @@
   width: 90%;
   max-width: 1200px;
   max-height: 80vh;
-  overflow-y: auto;
   background-color: white;
   border-radius: 8px;
   padding: 24px;
-  display: flex;
-  flex-direction: column;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .modalHeader {
-  margin-top: 0;
-  margin-bottom: 24px;
+  margin: 0 0 24px 0;
+  font-size: 1.5rem;
+  color: #333;
 }
 
 .interactiveColumns {
@@ -111,9 +181,7 @@
   grid-template-columns: repeat(5, 1fr);
   gap: 20px;
   width: 100%;
-  flex-grow: 1;
-  overflow-y: auto;
-  padding: 10px;
+  padding: 16px;
   background-color: #fdfdfd;
   border: 1px solid #eee;
   border-radius: 8px;
@@ -122,31 +190,11 @@
 .interactiveTree {
   max-height: 55vh;
   overflow-y: auto;
+  padding: 8px;
 }
 
 .interactiveNode {
   margin-bottom: 4px;
-}
-
-.nodeControl {
-  display: flex;
-  align-items: center;
-}
-
-.nodeControl label {
-  margin-left: 8px;
-  cursor: pointer;
-}
-
-.collapseButton {
-  background: none;
-  border: none;
-  cursor: pointer;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  font-size: 0.8rem;
-  color: #666;
 }
 
 .actions {
@@ -161,9 +209,39 @@
 .saveButton {
   background-color: #28a745;
   color: white;
+  position: relative;
+}
+
+.saveButton.isDirty::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  background-color: var(--color-warning);
+  border-radius: 50%;
+}
+
+.saveButton:hover {
+  background-color: #218838;
+}
+
+.saveButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .cancelButton {
   background-color: #6c757d;
   color: white;
+}
+
+.cancelButton:hover {
+  background-color: #5a6268;
+}
+
+.cancelButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 } 

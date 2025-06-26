@@ -152,12 +152,23 @@
 }
 
 .error {
-  padding: 2rem;
-  text-align: center;
-  color: #ef4444;
-  background-color: #fee2e2;
-  border-radius: 4px;
+  padding: 1rem;
   margin: 1rem;
+  color: var(--color-danger);
+  background-color: var(--color-danger-light);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--border-radius);
+  font-size: 0.875rem;
+}
+
+.errorBanner {
+  padding: 1rem;
+  margin: 1rem;
+  color: var(--color-danger);
+  background-color: var(--color-danger-light);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--border-radius);
+  font-size: 0.875rem;
 }
 
 .noContent {
@@ -195,6 +206,7 @@
 .tree {
   list-style: none;
   margin: 0;
+  padding: 0;
 }
 
 .treeNode {

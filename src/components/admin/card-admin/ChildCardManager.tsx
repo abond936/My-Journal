@@ -19,20 +19,20 @@ import styles from './ChildCardManager.module.css';
 import formStyles from './CardForm.module.css';
 import { SortableItem } from './SortableItem';
 import { useChildCards } from '@/lib/hooks/useChildCards';
+import { useCardForm } from '@/components/providers/CardFormProvider';
+import clsx from 'clsx';
 
 interface ChildCardManagerProps {
-  childIds: string[];
-  onAddChild: (cardId: string) => void;
-  onRemoveChild: (cardId: string) => void;
-  onReorderChildren: (newChildIds: string[]) => void;
+  className?: string;
 }
 
-export default function ChildCardManager({
-  childIds,
-  onAddChild,
-  onRemoveChild,
-  onReorderChildren,
-}: ChildCardManagerProps) {
+export default function ChildCardManager({ className }: ChildCardManagerProps) {
+  const {
+    formState: { cardData, errors },
+    updateChildIds,
+  } = useCardForm();
+
+  const childIds = cardData.childrenIds || [];
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Card[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -53,12 +53,12 @@ export default function ChildCardManager({
     setSearchError(null);
     try {
       const params = new URLSearchParams({ q: searchQuery, limit: '10' });
-      const response = await fetch(`/api/cards?${params.toString()}`);
+      const response = await fetch(`/api/cards/search?${params.toString()}`);
       if (!response.ok) {
         throw new Error('Failed to fetch search results.');
       }
       const results = await response.json();
-      setSearchResults(results);
+      setSearchResults(results.items || []);
     } catch (err) {
       setSearchError(err instanceof Error ? err.message : 'An unknown error occurred.');
     } finally {
@@ -68,12 +68,23 @@ export default function ChildCardManager({
 
   const handleAdd = (cardId: string) => {
     if (childIds.includes(cardId)) {
-      alert('This card is already a child.');
+      setSearchError('This card is already a child.');
       return;
     }
-    onAddChild(cardId);
+    
+    // Check if we're trying to add the current card as its own child
+    if (cardData.id === cardId) {
+      setSearchError('A card cannot be its own child.');
+      return;
+    }
+    
+    updateChildIds([...childIds, cardId]);
     setSearchQuery('');
     setSearchResults([]);
+  };
+
+  const handleRemove = (cardId: string) => {
+    updateChildIds(childIds.filter(id => id !== cardId));
   };
 
   const sensors = useSensors(
@@ -83,16 +94,16 @@ export default function ChildCardManager({
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (active.id !== over?.id) {
+    if (over && active.id !== over.id) {
       const oldIndex = childIds.indexOf(active.id as string);
-      const newIndex = childIds.indexOf(over!.id as string);
+      const newIndex = childIds.indexOf(over.id as string);
       const newOrder = arrayMove(childIds, oldIndex, newIndex);
-      onReorderChildren(newOrder);
+      updateChildIds(newOrder);
     }
   };
 
   return (
-    <div className={styles.container}>
+    <div className={clsx(styles.container, className)}>
       <h4>Child Cards</h4>
       
       <div className={styles.searchSection}>
@@ -103,12 +114,18 @@ export default function ChildCardManager({
           placeholder="Search for cards to add..."
           className={styles.searchInput}
         />
-        <button type="button" onClick={handleSearch} disabled={isSearching} className={formStyles.secondaryButton}>
+        <button 
+          type="button" 
+          onClick={handleSearch} 
+          disabled={isSearching} 
+          className={formStyles.secondaryButton}
+        >
           {isSearching ? 'Searching...' : 'Search'}
         </button>
       </div>
 
       {searchError && <p className={styles.error}>{searchError}</p>}
+      {errors.childrenIds && <p className={styles.error}>{errors.childrenIds}</p>}
       
       {searchResults.length > 0 && (
         <div className={styles.searchResults}>
@@ -148,10 +165,15 @@ export default function ChildCardManager({
                 {childCards.map((child) => (
                   <SortableItem key={child.id} id={child.id}>
                     <div className={styles.childItem}>
-                      <span>{child.title} <span className={styles.childInfo}>({child.type} - {child.id})</span></span>
+                      <span>
+                        {child.title} 
+                        <span className={styles.childInfo}>
+                          ({child.type} - {child.id})
+                        </span>
+                      </span>
                       <button
                         type="button"
-                        onClick={() => onRemoveChild(child.id)}
+                        onClick={() => handleRemove(child.id)}
                         className={styles.removeButton}
                       >
                         Remove

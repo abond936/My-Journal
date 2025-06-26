@@ -1,233 +1,209 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import Image from 'next/image';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getFolderTree, getFolderContents } from '@/lib/services/images/local/photoService';
 import { Media, TreeNode } from '@/lib/types/photo';
-import { importLocalFile } from '@/lib/services/images/imageService';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import styles from './PhotoPicker.module.css';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
-// The type from the server `getFolderContents` is a pointer to a file on the server.
-interface ServerFile {
-  id: string; // sourcePath
-  filename: string;
-  width: number;
-  height: number;
-  sourcePath: string;
-  storageUrl: string; // temporary display url
-}
-
 interface PhotoPickerProps {
+  isOpen: boolean;
   onSelect: (media: Media) => void;
-  onMultiSelect?: (photos: Media[]) => void;
+  onMultiSelect?: (media: Media[]) => void;
   onClose: () => void;
-  initialMode?: 'single' | 'multiple';
+  initialMode?: 'single' | 'multi';
 }
-
-const FolderTree = ({ nodes, onSelect, selectedId }: { nodes: TreeNode[], onSelect: (node: TreeNode) => void, selectedId: string | null }) => {
-  const [openFolders, setOpenFolders] = useState<Set<string>>(new Set());
-
-  const toggleFolder = (nodeId: string) => {
-    setOpenFolders(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(nodeId)) {
-        newSet.delete(nodeId);
-      } else {
-        newSet.add(nodeId);
-      }
-      return newSet;
-    });
-  };
-
-  const renderNodes = (nodesToRender: TreeNode[], level = 0) => {
-    return (
-      <ul className={styles.tree} style={{ paddingLeft: `${level * 15}px` }}>
-        {nodesToRender.map(node => {
-          const isOpen = openFolders.has(node.id);
-          const hasChildren = node.children && node.children.length > 0;
-          return (
-            <li key={node.id}>
-              <div className={`${styles.treeNode} ${selectedId === node.id ? styles.treeNodeSelected : ''}`}>
-                {hasChildren && (
-                  <span onClick={() => toggleFolder(node.id)} className={styles.treeToggle}>
-                    {isOpen ? '▼' : '►'}
-                  </span>
-                )}
-                <span onClick={() => onSelect(node)} className={styles.treeNodeName}>
-                  {node.name}
-                </span>
-              </div>
-              {hasChildren && isOpen && (
-                renderNodes(node.children, level + 1)
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    );
-  };
-  
-  return renderNodes(nodes);
-};
 
 export default function PhotoPicker({ 
+  isOpen,
   onSelect, 
   onMultiSelect, 
   onClose, 
   initialMode = 'single',
 }: PhotoPickerProps) {
   const [folderTree, setFolderTree] = useState<TreeNode[]>([]);
-  const [photos, setPhotos] = useState<ServerFile[]>([]);
-  const [selectedFolder, setSelectedFolder] = useState<TreeNode | null>(null);
+  const [photos, setPhotos] = useState<Media[]>([]);
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [selectedPhotos, setSelectedPhotos] = useState<Media[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isMultiMode, setIsMultiMode] = useState(initialMode === 'multiple');
-  const [importingId, setImportingId] = useState<string | null>(null);
+  const [mode] = useState<'single' | 'multi'>(initialMode);
 
-  useEffect(() => {
-    // This effect now correctly syncs the internal mode with the prop
-    // every time the picker is opened with a potentially different mode.
-    setIsMultiMode(initialMode === 'multiple');
-  }, [initialMode]);
-
-  useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const tree = await getFolderTree();
-        setFolderTree(tree);
-      } catch (err: any) {
-        console.error('Error in loadInitialData:', err);
-        setError(err.message || 'Failed to load folder structure.');
-      } finally {
-        setLoading(false);
+  const loadFolderTree = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const tree = await getFolderTree();
+      setFolderTree(tree);
+      if (tree.length > 0) {
+        setSelectedFolder(tree[0].id);
       }
-    };
-    loadInitialData();
+    } catch (err) {
+      setError('Failed to load folder structure. Please try again.');
+      console.error('Error loading folder tree:', err);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const handleFolderSelect = async (node: TreeNode) => {
-    if (selectedFolder?.id === node.id || importingId) {
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    setSelectedFolder(node);
-    setPhotos([]);
-
+  const loadPhotos = useCallback(async (folderId: string) => {
     try {
-      const folderPhotos = await getFolderContents(node.id);
-      setPhotos(folderPhotos as ServerFile[]);
-    } catch (err: any) {
-      console.error('Error in handleFolderSelect:', err);
-      setError(err.message || `Failed to load photos for folder: ${node.name}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePhotoClick = async (photo: ServerFile) => {
-    if (isMultiMode || importingId) {
-      return;
-    }
-
-    try {
+      setIsLoading(true);
       setError(null);
-      setImportingId(photo.id);
-      const newMedia = await importLocalFile(photo.sourcePath);
-      onSelect(newMedia);
-    } catch (err: any) {
-      console.error('Failed to import photo:', err);
-      setError('Failed to import selected photo. Please try again.');
+      const contents = await getFolderContents(folderId);
+      setPhotos(contents);
+    } catch (err) {
+      setError('Failed to load photos. Please try again.');
+      console.error('Error loading photos:', err);
     } finally {
-      setImportingId(null);
+      setIsLoading(false);
     }
-  };
+  }, []);
 
-  const handleDoneClick = () => {
-    // This handler is now specifically for multi-select mode.
-    if (isMultiMode && typeof onMultiSelect === 'function') {
+  // Reset state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedPhotos([]);
+      setError(null);
+      loadFolderTree();
+    }
+  }, [isOpen, loadFolderTree]);
+
+  // Load photos when folder is selected
+  useEffect(() => {
+    if (selectedFolder) {
+      loadPhotos(selectedFolder);
+    }
+  }, [selectedFolder, loadPhotos]);
+
+  const handleFolderSelect = useCallback((folderId: string) => {
+    setSelectedFolder(folderId);
+    setSelectedPhotos([]);
+    setError(null);
+  }, []);
+
+  const handlePhotoSelect = useCallback((photo: Media) => {
+    if (mode === 'single') {
+      onSelect(photo);
+    } else {
+      setSelectedPhotos(prev => {
+        const isSelected = prev.some(p => p.id === photo.id);
+        if (isSelected) {
+          return prev.filter(p => p.id !== photo.id);
+        } else {
+          return [...prev, photo];
+        }
+      });
+    }
+  }, [mode, onSelect]);
+
+  const handleDone = useCallback(() => {
+    if (mode === 'multi' && onMultiSelect) {
       onMultiSelect(selectedPhotos);
     }
-    onClose(); // Always close when done.
-  };
+    onClose();
+  }, [mode, onMultiSelect, selectedPhotos, onClose]);
 
-  const buttonText = useMemo(() => {
-    if (!isMultiMode) return 'Done'; // Should not be visible, but for completeness
-    if (selectedPhotos.length === 0) return 'Done';
-    return `Add ${selectedPhotos.length} Photo${selectedPhotos.length > 1 ? 's' : ''}`;
-  }, [isMultiMode, selectedPhotos.length]);
-
-  if (loading && folderTree.length === 0) {
-    return <div className={styles.loading}>Loading folder structure...</div>;
-  }
+  if (!isOpen) return null;
 
   return (
-    <div className={styles.overlay}>
-      <div className={styles.container}>
+    <div className={styles.overlay} onClick={onClose}>
+      <div className={styles.container} onClick={e => e.stopPropagation()}>
         <div className={styles.header}>
-          <h2 className={styles.title}>Select Photo(s)</h2>
-          <button onClick={onClose} className={styles.closeButton} disabled={!!importingId}>✕</button>
+          <h2 className={styles.title}>Select Photo</h2>
+          <button 
+            onClick={onClose} 
+            className={styles.closeButton} 
+            aria-label="Close"
+            type="button"
+          >
+            ×
+          </button>
         </div>
-        
+
+        {error && (
+          <div className={styles.error} role="alert">
+            {error}
+            <button 
+              onClick={() => selectedFolder ? loadPhotos(selectedFolder) : loadFolderTree()} 
+              className={styles.retryButton}
+              type="button"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         <div className={styles.content}>
           <div className={styles.albumList}>
-            <h3 className={styles.albumTitle}>Photo Folders</h3>
-            {folderTree.length > 0 ? (
-              <FolderTree nodes={folderTree} onSelect={handleFolderSelect} selectedId={selectedFolder?.id || null} />
-            ) : (
-              <div className={styles.noContent}>Loading folders...</div>
-            )}
+            <h3 className={styles.albumTitle}>Albums</h3>
+            {folderTree.map(folder => (
+              <div
+                key={folder.id}
+                className={`${styles.albumItem} ${selectedFolder === folder.id ? styles.albumItemSelected : ''}`}
+                onClick={() => handleFolderSelect(folder.id)}
+                role="button"
+                tabIndex={0}
+              >
+                {folder.name}
+              </div>
+            ))}
           </div>
 
           <div className={styles.photoGrid}>
-            {error && <div className={styles.errorBanner}>{error}</div>}
-            {loading && photos.length === 0 ? (
-              <div className={styles.noContent}>Loading photos...</div>
-            ) : photos.length > 0 ? (
+            {isLoading ? (
+              <div className={styles.loading}>
+                <LoadingSpinner />
+              </div>
+            ) : photos.length === 0 ? (
+              <div className={styles.noContent}>
+                No photos in this album
+              </div>
+            ) : (
               <div className={styles.grid}>
                 {photos.map(photo => {
-                  const isSelected = isMultiMode && selectedPhotos.some(p => p.id === photo.id);
-                  const isImporting = importingId === photo.id;
+                  const isSelected = mode === 'multi' 
+                    ? selectedPhotos.some(p => p.id === photo.id)
+                    : false;
+                  
                   return (
                     <div
                       key={photo.id}
-                      className={`${styles.photoItem} ${isSelected ? styles.photoItemSelected : ''} ${isImporting ? styles.photoItemImporting : ''}`}
-                      onClick={() => handlePhotoClick(photo)}
+                      className={`${styles.photoItem} ${isSelected ? styles.photoItemSelected : ''}`}
+                      onClick={() => handlePhotoSelect(photo)}
+                      role="button"
+                      tabIndex={0}
                     >
-                      {isImporting && <div className={styles.importingOverlay}><LoadingSpinner /></div>}
-                      {isSelected && <div className={styles.checkmark}>✓</div>}
-                      <Image
-                        src={getDisplayUrl(photo as any)}
-                        alt={photo.filename}
-                        width={150}
-                        height={150}
+                      <img
+                        src={getDisplayUrl(photo)}
+                        alt={photo.alt || ''}
                         className={styles.photoImage}
+                        loading="lazy"
                       />
+                      {isSelected && (
+                        <div className={styles.checkmark} aria-hidden="true">✓</div>
+                      )}
                     </div>
                   );
                 })}
               </div>
-            ) : (
-              <div className={styles.noContent}>
-                {selectedFolder ? 'No photos found in this folder.' : 'Select a folder to view photos'}
-              </div>
             )}
           </div>
         </div>
-        
-        <div className={styles.footer}>
-          {isMultiMode && (
-            <button onClick={handleDoneClick} className={styles.doneButton} disabled={!!importingId}>
-              {buttonText}
+
+        {mode === 'multi' && (
+          <div className={styles.footer}>
+            <button
+              onClick={handleDone}
+              className={styles.doneButton}
+              disabled={selectedPhotos.length === 0}
+              type="button"
+            >
+              Done ({selectedPhotos.length} selected)
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

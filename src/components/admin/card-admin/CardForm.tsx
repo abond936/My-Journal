@@ -1,168 +1,241 @@
 'use client';
 
-import { Tag } from '@/lib/types/tag';
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useRef, useCallback, useState, memo } from 'react';
 import { Card, CardUpdate } from '@/lib/types/card';
-import CoverPhotoContainer from './CoverPhotoContainer';
-import { Media } from '@/lib/types/photo';
-import GalleryManager from './GalleryManager';
-import MacroTagSelector from './MacroTagSelector';
-import ChildCardManager from './ChildCardManager';
+import { Tag } from '@/lib/types/tag';
+import CoverPhotoContainer from '@/components/admin/card-admin/CoverPhotoContainer';
+import GalleryManager from '@/components/admin/card-admin/GalleryManager';
+import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
+import ChildCardManager from '@/components/admin/card-admin/ChildCardManager';
 import RichTextEditor, { RichTextEditorRef } from '@/components/common/RichTextEditor';
 import styles from './CardForm.module.css';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { debounce } from 'lodash';
-import { updateMediaStatus } from '@/lib/services/images/imageService';
-
-const EMPTY_CARD: Card = {
-  id: '',
-  title: '',
-  content: '',
-  status: 'draft',
-  createdAt: 0,
-  updatedAt: 0,
-  tags: [],
-  children: [],
-  filterTags: {},
-  coverImageId: null,
-  coverImage: null,
-};
+import { useCardForm } from '@/components/providers/CardFormProvider';
+import clsx from 'clsx';
+import PhotoPicker from '@/components/admin/card-admin/PhotoPicker';
+import LoadingOverlay from '@/components/admin/card-admin/LoadingOverlay';
+import NavigationGuard from '@/components/admin/card-admin/NavigationGuard';
 
 interface CardFormProps {
   initialCard: Card | null;
   allTags: Tag[];
-  onSave: (cardData: CardUpdate, tags: Tag[]) => Promise<void>;
   onDelete?: () => Promise<void>;
 }
 
-const CardForm: React.FC<CardFormProps> = ({ initialCard, allTags, onSave, onDelete }) => {
-  const cardToEdit = initialCard || EMPTY_CARD;
+// Memoized form sections
+const TitleSection = memo(({ title, onChange, error }: { title: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void, error?: string }) => (
+  <div className={styles.titleSection}>
+    <input
+      type="text"
+      name="title"
+      value={title || ''}
+      onChange={onChange}
+      placeholder="Card Title"
+      className={clsx(styles.titleInput, error && styles.inputError)}
+      aria-invalid={!!error}
+      aria-describedby={error ? 'title-error' : undefined}
+    />
+    {error && <p id="title-error" className={styles.errorText}>{error}</p>}
+  </div>
+));
 
-  const [cardData, setCardData] = useState<CardUpdate>({ ...cardToEdit });
-  const [tags, setTags] = useState<Tag[]>(cardToEdit.tags || []);
-  const [coverImage, setCoverImage] = useState<Media | undefined | null>(cardToEdit.coverImage);
-  const [isSaving, setIsSaving] = useState(false);
-  
-  const originalCoverImageId = useRef<string | null | undefined>(cardToEdit.coverImageId);
+const StatusSection = memo(({ status, onChange, error }: { status: Card['status'], onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void, error?: string }) => (
+  <div className={styles.statusSection}>
+    <label htmlFor="status">Status</label>
+    <select
+      id="status"
+      name="status"
+      value={status || ''}
+      onChange={onChange}
+      className={clsx(styles.select, error && styles.inputError)}
+      aria-invalid={!!error}
+      aria-describedby={error ? 'status-error' : undefined}
+    >
+      <option value="draft">Draft</option>
+      <option value="published">Published</option>
+      <option value="archived">Archived</option>
+    </select>
+    {error && <p id="status-error" className={styles.errorText}>{error}</p>}
+  </div>
+));
+
+const ErrorSummary = memo(({ errors }: { errors: Record<string, string> }) => {
+  if (Object.keys(errors).length === 0) return null;
+
+  return (
+    <div className={styles.errorSummary} role="alert">
+      <h4>Please fix the following errors:</h4>
+      <ul>
+        {Object.entries(errors).map(([field, message]) => (
+          <li key={field}>
+            <button
+              type="button"
+              onClick={() => {
+                const element = document.querySelector(`[name="${field}"]`);
+                if (element) {
+                  element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }}
+            >
+              {field}: {message}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+});
+
+const CardForm: React.FC<CardFormProps> = ({ initialCard, allTags, onDelete }) => {
+  const {
+    formState: { cardData, tags, coverImage, galleryMedia, mediaCache, isDirty, isSaving, errors },
+    updateField,
+    updateTags,
+    updateCoverImage,
+    updateGalleryMedia,
+    handleSave,
+    validateForm,
+  } = useCardForm();
 
   const editorRef = useRef<RichTextEditorRef>(null);
+  const [isPhotoPickerOpen, setIsPhotoPickerOpen] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
 
-  useEffect(() => {
-    const freshCardToEdit = initialCard || EMPTY_CARD;
-    setCardData({ ...freshCardToEdit });
-    setTags(freshCardToEdit.tags || []);
-    setCoverImage(freshCardToEdit.coverImage);
-    originalCoverImageId.current = freshCardToEdit.coverImageId;
-  }, [initialCard]);
+  // Only show errors after user interaction
+  const displayErrors = hasInteracted ? errors : {};
 
-  const debouncedDataChange = useCallback(debounce((field: keyof CardUpdate, value: any) => {
-    setCardData(prev => ({ ...prev, [field]: value }));
-  }, 300), []);
+  // Memoized event handlers
+  const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setHasInteracted(true);
+    updateField('title', e.target.value);
+  }, [updateField]);
 
-  const handleCoverPhotoUpdate = (media: Media | null) => {
-    setCoverImage(media);
-    setCardData(prev => ({ ...prev, coverImageId: media?.id || null }));
-  };
-  
-  const handleSave = async (e: React.FormEvent) => {
+  const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setHasInteracted(true);
+    updateField('status', e.target.value as Card['status']);
+  }, [updateField]);
+
+  const handleContentChange = useCallback((content: string) => {
+    setHasInteracted(true);
+    updateField('content', content);
+  }, [updateField]);
+
+  const handleTagsChange = useCallback((newIds: string[]) => {
+    setHasInteracted(true);
+    updateTags(allTags.filter(tag => newIds.includes(tag.id)));
+  }, [updateTags, allTags]);
+
+  const handleGalleryChange = useCallback((newMedia: Card['galleryMedia']) => {
+    setHasInteracted(true);
+    updateGalleryMedia(newMedia);
+  }, [updateGalleryMedia]);
+
+  const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsSaving(true);
+    setHasInteracted(true);
+    
+    if (!validateForm()) {
+      const firstErrorElement = document.querySelector(`.${styles.inputError}`);
+      if (firstErrorElement) {
+        firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
 
     try {
-      await onSave(cardData, tags);
-
-      const newCoverImageId = coverImage?.id;
-      
-      // Phase 2: Finalize media status changes
-      if (newCoverImageId && newCoverImageId !== originalCoverImageId.current) {
-        // A new image was added, finalize it.
-        await updateMediaStatus(newCoverImageId, 'active');
-      }
-      
-      if (originalCoverImageId.current && newCoverImageId !== originalCoverImageId.current) {
-        // An old image was replaced or removed, mark it as deleted.
-        await updateMediaStatus(originalCoverImageId.current, 'deleted');
-      }
-      
-      originalCoverImageId.current = newCoverImageId;
-
+      await handleSave();
     } catch (error) {
-      console.error('Error during save process:', error);
-      // Optionally, show an error message to the user
-    } finally {
-      setIsSaving(false);
+      console.error('Error submitting form:', error);
     }
-  };
-  
-  const galleryImages: Media[] = [];
+  }, [validateForm, handleSave]);
+
+  const handleAddImage = useCallback(() => {
+    setIsPhotoPickerOpen(true);
+  }, []);
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <form onSubmit={handleSave} className={styles.form}>
+      <NavigationGuard />
+      <LoadingOverlay isVisible={isSaving} />
+      <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.mainContent}>
-          <div className={styles.formGroup}>
-            <label htmlFor="title" className={styles.label}>Title</label>
+          <div className={styles.header}>
             <input
               type="text"
-              id="title"
-              value={cardData.title || ''}
-              onChange={(e) => debouncedDataChange('title', e.target.value)}
-              className={styles.input}
+              value={cardData.title}
+              onChange={handleTitleChange}
+              placeholder="Card Title"
+              className={clsx(styles.titleInput, displayErrors.title && styles.inputError)}
             />
+            {displayErrors.title && <p className={styles.errorText}>{displayErrors.title}</p>}
           </div>
-          <div className={styles.formGroup}>
-            <RichTextEditor ref={editorRef} initialContent={cardData.content} />
-          </div>
-        </div>
 
-        <div className={styles.sidebar}>
-          <div className={styles.formGroup}>
-            <button type="submit" className={styles.saveButton} disabled={isSaving}>
-              {isSaving ? 'Saving...' : 'Save Card'}
-            </button>
-            {onDelete && (
-              <button type="button" onClick={onDelete} className={styles.deleteButton}>
-                Delete Card
-              </button>
-            )}
-          </div>
-          <div className={styles.formGroup}>
+          <div className={styles.coverPhotoSection}>
             <CoverPhotoContainer
               coverImage={coverImage}
-              onUpdate={handleCoverPhotoUpdate}
+              onChange={updateCoverImage}
+              error={displayErrors.coverImage}
             />
           </div>
 
-          <GalleryManager 
-            mediaItems={galleryImages} 
-            onAdd={() => { /* Implement gallery logic later */ }}
-            onRemove={() => { /* Implement gallery logic later */ }}
-          />
-
-          <div className={styles.formGroup}>
-            <label>Tags</label>
-            <MacroTagSelector
-              selectedTagIds={tags ? tags.map(tag => tag.id) : []}
-              onSave={newIds => setTags(allTags.filter(tag => newIds.includes(tag.id)))}
-            />
-          </div>
-
-          <div className={styles.formGroup}>
-            <label>Status</label>
+          <div className={styles.statusSection}>
             <select
-              value={cardData.status || 'draft'}
-              onChange={(e) => debouncedDataChange('status', e.target.value)}
-              className={styles.select}
+              value={cardData.status}
+              onChange={handleStatusChange}
+              className={clsx(styles.statusSelect, displayErrors.status && styles.inputError)}
             >
               <option value="draft">Draft</option>
               <option value="published">Published</option>
+              <option value="archived">Archived</option>
             </select>
+            {displayErrors.status && <p className={styles.errorText}>{displayErrors.status}</p>}
+          </div>
+
+          <div className={styles.tagsSection}>
+            <MacroTagSelector
+              selectedTags={tags}
+              allTags={allTags}
+              onChange={handleTagsChange}
+              error={displayErrors.tags}
+              className={clsx(styles.tagSelector, displayErrors.tags && styles.inputError)}
+            />
+          </div>
+
+          <div className={styles.editorSection}>
+            <RichTextEditor
+              ref={editorRef}
+              initialContent={cardData.content}
+              onChange={handleContentChange}
+              onAddImage={handleAddImage}
+              error={displayErrors.content}
+              className={clsx(displayErrors.content && styles.inputError)}
+            />
+            {displayErrors.content && <p className={styles.errorText}>{displayErrors.content}</p>}
+          </div>
+
+          <div className={styles.gallerySection}>
+            <GalleryManager />
+          </div>
+
+          <div className={styles.childrenSection}>
+            <ChildCardManager />
           </div>
         </div>
       </form>
+
+      <PhotoPicker
+        isOpen={isPhotoPickerOpen}
+        onClose={() => setIsPhotoPickerOpen(false)}
+        onSelect={(media) => {
+          if (editorRef.current) {
+            editorRef.current.insertImage(media);
+          }
+          setIsPhotoPickerOpen(false);
+        }}
+      />
     </DndProvider>
   );
 };
 
-export default CardForm;
+export default memo(CardForm);

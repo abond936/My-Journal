@@ -5,79 +5,75 @@ import { useTag } from '@/components/providers/TagProvider';
 import { Tag, TagWithChildren } from '@/lib/types/tag';
 import styles from './MacroTagSelector.module.css';
 import { buildSparseTagTree, createUITreeFromDimensions } from '@/lib/utils/tagUtils';
+import clsx from 'clsx';
+import { useCardForm } from '@/components/providers/CardFormProvider';
 
 interface MacroTagSelectorProps {
-  selectedTagIds: string[];
-  onSave: (newTagIds: string[]) => void;
+  selectedTags: Tag[];
+  allTags: Tag[];
+  onChange: (newIds: string[]) => void;
+  error?: string;
+  className?: string;
 }
 
-export default function MacroTagSelector({ selectedTagIds, onSave }: MacroTagSelectorProps) {
+export default function MacroTagSelector({ selectedTags, allTags, onChange, error, className }: MacroTagSelectorProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const { tags } = useTag();
-
-  const handleEditClick = () => {
-    setIsExpanded(true);
+  const handleSave = (newSelection: string[]) => {
+    onChange(newSelection);
+    setIsExpanded(false);
   };
 
   const handleCancel = () => {
     setIsExpanded(false);
   };
 
-  const handleSave = (newSelection: string[]) => {
-    onSave(newSelection);
-    setIsExpanded(false);
-  };
+  const selectedTagIds = selectedTags.map(tag => tag.id);
 
-  const selectedTagTree = useMemo(() => {
-    if (!tags || selectedTagIds.length === 0) return [];
-    return buildSparseTagTree(tags, selectedTagIds);
-  }, [tags, selectedTagIds]);
-
-  const dimensionalSelectedTree = useMemo(() => {
-    const dimensions: Record<string, TagWithChildren[]> = {
-      who: [], what: [], when: [], where: [], reflection: []
-    };
-    selectedTagTree.forEach(rootNode => {
-      if (rootNode.dimension && dimensions[rootNode.dimension]) {
-        dimensions[rootNode.dimension].push(rootNode);
-      }
-    });
-    return dimensions;
-  }, [selectedTagTree]);
-
-  if (isExpanded) {
-    return (
-      <ExpandedView
-        initialSelection={selectedTagIds}
-        onSave={handleSave}
-        onCancel={handleCancel}
-      />
-    );
-  }
-
-  // This is the default, collapsed view
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h3>Tags</h3>
-        <button type="button" onClick={handleEditClick} className={styles.editButton}>Edit</button>
-      </div>
-      <div className={styles.collapsedView}>
-        <div className={styles.dimensionColumns}>
-          {Object.entries(dimensionalSelectedTree).map(([dimension, roots]) => (
-            <div key={dimension} className={styles.dimensionColumn}>
-              <h4>{dimension.charAt(0).toUpperCase() + dimension.slice(1)}</h4>
-              {roots.length > 0 ? (
-                roots.map(root => <TagNode key={root.id} node={root} />)
-              ) : (
-                <span className={styles.noTags}>None</span>
-              )}
-            </div>
-          ))}
+    <>
+      <div className={clsx(styles.container, className, error && styles.error)}>
+        <div className={styles.header}>
+          <h3>Tags</h3>
+          <button
+            onClick={() => setIsExpanded(true)}
+            className={styles.editButton}
+            type="button"
+          >
+            Edit Tags
+          </button>
         </div>
+        <div className={styles.collapsedView}>
+          {selectedTags.length === 0 ? (
+            <span className={styles.noTags}>No tags selected</span>
+          ) : (
+            <div className={styles.dimensionColumns}>
+              {['who', 'what', 'when', 'where', 'reflection'].map(dimension => {
+                const dimensionTags = selectedTags.filter(tag => tag.dimension === dimension);
+                return (
+                  <div key={dimension} className={styles.dimensionColumn}>
+                    <h4>{dimension.charAt(0).toUpperCase() + dimension.slice(1)}</h4>
+                    {dimensionTags.map(tag => (
+                      <div key={tag.id} className={styles.tagNode}>
+                        {tag.name}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        {error && <p className={styles.errorText}>{error}</p>}
       </div>
-    </div>
+      {isExpanded && (
+        <ExpandedView
+          initialSelection={selectedTagIds}
+          onSave={handleSave}
+          onCancel={handleCancel}
+        />
+      )}
+    </>
   );
 }
 
@@ -101,9 +97,10 @@ interface ExpandedViewProps {
   initialSelection: string[];
   onSave: (newSelection: string[]) => void;
   onCancel: () => void;
+  className?: string;
 }
 
-function ExpandedView({ initialSelection, onSave, onCancel }: ExpandedViewProps) {
+function ExpandedView({ initialSelection, onSave, onCancel, className }: ExpandedViewProps) {
   const { tags } = useTag();
   const [currentSelection, setCurrentSelection] = useState<Set<string>>(new Set(initialSelection));
 
@@ -129,7 +126,7 @@ function ExpandedView({ initialSelection, onSave, onCancel }: ExpandedViewProps)
   };
 
   return (
-    <div className={styles.overlay}>
+    <div className={clsx(styles.overlay, className)}>
       <div className={styles.modalContainer}>
         <h2 className={styles.modalHeader}>Edit Tags</h2>
         <div className={styles.interactiveColumns}>

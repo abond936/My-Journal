@@ -16,48 +16,72 @@ import {
 } from '@dnd-kit/sortable';
 import { Media } from '@/lib/types/photo';
 import { Card } from '@/lib/types/card';
-import PhotoPicker from './PhotoPicker';
+import PhotoPicker from '@/components/admin/card-admin/PhotoPicker';
 import styles from './GalleryManager.module.css';
 import { SortableItem } from './SortableItem';
 import EditModal from './EditModal';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { useCardForm } from '@/components/providers/CardFormProvider';
 
 // Type for a single item in the galleryMedia array from the Card type
 type GalleryMediaItem = Card['galleryMedia'][number];
 
 interface GalleryManagerProps {
-  mediaItems: GalleryMediaItem[];
-  mediaCache: Map<string, Media>;
-  onGalleryChange: (newMedia: GalleryMediaItem[]) => void;
-  onOpenPhotoPicker: () => void;
-  isImporting?: boolean;
+  className?: string;
 }
 
-export default function GalleryManager({ 
-  mediaItems,
-  mediaCache,
-  onGalleryChange, 
-  onOpenPhotoPicker, 
-  isImporting 
-}: GalleryManagerProps) {
+export default function GalleryManager({ className }: GalleryManagerProps) {
+  const { formState, updateGalleryMedia } = useCardForm();
+  const { galleryMedia } = formState;
   const [editingItem, setEditingItem] = useState<GalleryMediaItem | null>(null);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
 
-  const handleRemovePhoto = (mediaIdToRemove: string) => {
-    const newMedia = mediaItems.filter(item => item.mediaId !== mediaIdToRemove);
-    onGalleryChange(newMedia);
+  const handlePhotoSelect = (media: Media) => {
+    const newGalleryItem = {
+      mediaId: media.id,
+      caption: media.caption || '',
+      order: galleryMedia.length,
+      objectPosition: media.objectPosition || 'center',
+    };
+
+    updateGalleryMedia([...galleryMedia, newGalleryItem]);
+    setIsPickerOpen(false);
+  };
+
+  const handleRemovePhoto = (index: number) => {
+    const newGalleryMedia = galleryMedia.filter((_, i) => i !== index);
+    // Reorder remaining items
+    const reorderedMedia = newGalleryMedia.map((item, i) => ({
+      ...item,
+      order: i,
+    }));
+    updateGalleryMedia(reorderedMedia);
+  };
+
+  const handleMovePhoto = (fromIndex: number, toIndex: number) => {
+    const newGalleryMedia = [...galleryMedia];
+    const [movedItem] = newGalleryMedia.splice(fromIndex, 1);
+    newGalleryMedia.splice(toIndex, 0, movedItem);
+    
+    // Update order values
+    const reorderedMedia = newGalleryMedia.map((item, i) => ({
+      ...item,
+      order: i,
+    }));
+    updateGalleryMedia(reorderedMedia);
   };
 
   const handleSaveMetadata = (updatedItem: GalleryMediaItem) => {
     // Also update the canonical object in the cache
-    const fullMediaObject = mediaCache.get(updatedItem.mediaId);
+    const fullMediaObject = formState.mediaCache.get(updatedItem.mediaId);
     if (fullMediaObject) {
-      mediaCache.set(updatedItem.mediaId, { ...fullMediaObject, caption: updatedItem.caption });
+      formState.mediaCache.set(updatedItem.mediaId, { ...fullMediaObject, caption: updatedItem.caption });
     }
     
-    const newMedia = mediaItems.map(item =>
+    const newMedia = galleryMedia.map(item =>
       item.mediaId === updatedItem.mediaId ? updatedItem : item
     );
-    onGalleryChange(newMedia);
+    updateGalleryMedia(newMedia);
     setEditingItem(null);
   };
 
@@ -66,90 +90,87 @@ export default function GalleryManager({
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (active.id !== over?.id) {
-      const oldIndex = mediaItems.findIndex(p => p.mediaId === active.id);
-      const newIndex = mediaItems.findIndex(p => p.mediaId === over!.id);
-      const newOrder = arrayMove(mediaItems, oldIndex, newIndex);
+      const oldIndex = galleryMedia.findIndex(p => p.mediaId === active.id);
+      const newIndex = galleryMedia.findIndex(p => p.mediaId === over!.id);
+      const newOrder = arrayMove(galleryMedia, oldIndex, newIndex);
       // Re-assign the order property based on the new array index
       const finalOrder = newOrder.map((item, index) => ({ ...item, order: index }));
-      onGalleryChange(finalOrder);
+      updateGalleryMedia(finalOrder);
     }
   };
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${className || ''}`}>
       <div className={styles.header}>
-        <label>Gallery</label>
+        <h3>Gallery Images</h3>
         <button
-          type="button"
-          onClick={onOpenPhotoPicker}
+          onClick={() => setIsPickerOpen(true)}
           className={styles.addButton}
-          disabled={isImporting}
+          type="button"
         >
-          {isImporting ? (
-            <>
-              <LoadingSpinner size={16} />
-              <span style={{ marginLeft: '8px' }}>Importing...</span>
-            </>
-          ) : (
-            'Add Images'
-          )}
+          Add Photo
         </button>
       </div>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext items={mediaItems.map(p => p.mediaId)} strategy={rectSortingStrategy}>
-          <div className={styles.grid}>
-            {mediaItems.map(item => {
-              const fullMediaObject = mediaCache.get(item.mediaId);
-              if (!fullMediaObject) {
-                // Render a placeholder if the media object isn't in the cache yet
-                return <div key={item.mediaId} className={styles.thumbnailPlaceholder}>Loading...</div>;
-              }
-              return (
-                <SortableItem key={item.mediaId} id={item.mediaId}>
-                  <div className={styles.thumbnail}>
-                    <img src={fullMediaObject.storageUrl} alt={item.caption || fullMediaObject.filename} style={{ objectPosition: item.objectPosition }}/>
-                    <div className={styles.thumbnailOverlay}>
-                      <button
-                        type="button"
-                        onClick={() => setEditingItem(item)}
-                        className={styles.editButton}
-                        title="Edit Metadata"
-                      >
-                        &#9998; {/* Pencil Icon */}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleRemovePhoto(item.mediaId)}
-                        className={styles.removeButton}
-                        title="Remove from Gallery"
-                      >
-                        &times;
-                      </button>
-                    </div>
-                  </div>
-                </SortableItem>
-              );
-            })}
+      <div className={styles.imageGrid}>
+        {galleryMedia.map((item, index) => (
+          <div key={item.mediaId} className={styles.imageItem}>
+            <img
+              src={formState.mediaCache.get(item.mediaId)?.url || ''}
+              alt={formState.mediaCache.get(item.mediaId)?.alt || ''}
+              className={styles.thumbnail}
+              style={{ objectPosition: item.objectPosition }}
+            />
+            <div className={styles.controls}>
+              {index > 0 && (
+                <button
+                  onClick={() => handleMovePhoto(index, index - 1)}
+                  className={styles.moveButton}
+                  aria-label="Move up"
+                >
+                  ↑
+                </button>
+              )}
+              {index < galleryMedia.length - 1 && (
+                <button
+                  onClick={() => handleMovePhoto(index, index + 1)}
+                  className={styles.moveButton}
+                  aria-label="Move down"
+                >
+                  ↓
+                </button>
+              )}
+              <button
+                onClick={() => handleRemovePhoto(index)}
+                className={styles.removeButton}
+                aria-label="Remove image"
+              >
+                ×
+              </button>
+            </div>
           </div>
-        </SortableContext>
-      </DndContext>
+        ))}
+      </div>
 
       {editingItem && (
         <EditModal
           isOpen={!!editingItem}
           onClose={() => setEditingItem(null)}
-          title={`Edit: ${mediaCache.get(editingItem.mediaId)?.filename || 'Image'}`}
+          title={`Edit: ${formState.mediaCache.get(editingItem.mediaId)?.filename || 'Image'}`}
         >
           <GalleryItemForm
             item={editingItem}
             onSave={handleSaveMetadata}
           />
         </EditModal>
+      )}
+
+      {isPickerOpen && (
+        <PhotoPicker
+          onSelect={handlePhotoSelect}
+          onClose={() => setIsPickerOpen(false)}
+          initialMode="single"
+        />
       )}
     </div>
   );
@@ -190,10 +211,13 @@ function GalleryItemForm({ item, onSave }: GalleryItemFormProps) {
           value={objectPosition}
           onChange={(e) => setObjectPosition(e.target.value)}
           className={styles.input}
-          placeholder="e.g., 50% 25% or top center"
         />
       </div>
-      <button type="submit" className={styles.saveButton}>Save</button>
+      <div className={styles.formActions}>
+        <button type="submit" className={styles.saveButton}>
+          Save Changes
+        </button>
+      </div>
     </form>
   );
 } 

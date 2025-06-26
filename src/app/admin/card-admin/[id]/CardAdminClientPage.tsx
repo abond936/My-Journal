@@ -7,9 +7,10 @@ import CardForm from '@/components/admin/card-admin/CardForm';
 import { useRouter } from 'next/navigation';
 import useSWR, { mutate as globalMutate } from 'swr';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import styles from '@/components/admin/card-admin/CardForm.module.css'; // Re-use styles for buttons
+import styles from './page.module.css';
 import { useCardContext } from '@/components/providers/CardProvider';
 import { PaginatedResult } from '@/lib/types/services';
+import { CardFormProvider } from '@/components/providers/CardFormProvider';
 
 const UPDATED_CARD_KEY = 'updatedCardState';
 
@@ -62,12 +63,8 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
 
     } catch (error) {
       console.error('Failed to save card:', error);
-      // It might be useful to show an alert here in the future
+      throw error; // Re-throw to let the form handle the error
     }
-  };
-
-  const handleCancel = () => {
-    router.push('/admin/card-admin');
   };
 
   const handleDelete = async () => {
@@ -133,7 +130,7 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
               {isDeleting ? 'Deleting...' : 'Delete'}
             </button>
           )}
-          <button type="button" onClick={handleCancel} className={styles.cancelButton}>
+          <button type="button" onClick={handleDelete} className={styles.cancelButton}>
             Cancel
           </button>
           <button type="submit" form="card-form" className={styles.submitButton}>
@@ -141,11 +138,17 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
           </button>
         </div>
       </div>
-      <CardForm
-        initialCard={card || null}
+      <CardFormProvider
+        initialCard={card}
         allTags={allTags}
         onSave={handleSave}
-      />
+      >
+        <CardForm
+          initialCard={card}
+          allTags={allTags}
+          onDelete={handleDelete}
+        />
+      </CardFormProvider>
     </div>
   );
 } 

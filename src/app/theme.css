@@ -1,26 +1,48 @@
 /* Theme variables for light and dark modes */
 
 :root {
+  /* Border Radius */
+  --border-radius: 0.5rem;
+  --border-radius-sm: 0.25rem;
+  --border-radius-lg: 0.75rem;
+  --border-radius-xl: 1rem;
+  --border-radius-full: 9999px;
+
+  /* Surface Colors */
+  --surface-color: var(--color-background);
+  --surface-color-hover: var(--color-background-hover);
+  --on-surface-color: var(--color-text);
+
+  /* Primary Colors */
+  --primary-color: var(--color-primary);
+  --primary-hover-color: var(--color-primary-dark);
+  --on-primary-color: white;
+
   /* Base Colors - More muted and professional */
   --color-primary: #4f46e5;      /* Muted Indigo */
   --color-primary-light: #818cf8;
   --color-primary-dark: #3730a3;
+  --color-primary-alpha: rgba(79, 70, 229, 0.2);  /* 20% opacity of primary */
   
   --color-secondary: #059669;    /* Muted Emerald */
   --color-secondary-light: #34d399;
   --color-secondary-dark: #065f46;
+  --color-secondary-alpha: rgba(5, 150, 105, 0.2);  /* 20% opacity of secondary */
   
   --color-accent: #d97706;       /* Muted Amber */
   --color-accent-light: #fbbf24;
   --color-accent-dark: #b45309;
+  --color-accent-alpha: rgba(217, 119, 6, 0.2);  /* 20% opacity of accent */
   
   --color-info: #2563eb;         /* Muted Blue */
   --color-info-light: #60a5fa;
   --color-info-dark: #1d4ed8;
+  --color-info-alpha: rgba(37, 99, 235, 0.2);  /* 20% opacity of info */
   
   --color-warning: #ea580c;      /* Muted Orange */
   --color-warning-light: #fb923c;
   --color-warning-dark: #c2410c;
+  --color-warning-alpha: rgba(234, 88, 12, 0.2);  /* 20% opacity of warning */
 
   /* Neutral Colors - More subtle grays */
   --color-neutral-50: #f8fafc;
@@ -38,19 +60,18 @@
   --color-success: #059669;
   --color-success-light: #34d399;
   --color-success-dark: #065f46;
+  --color-success-alpha: rgba(5, 150, 105, 0.2);  /* 20% opacity of success */
   
   --color-error: #dc2626;
   --color-error-light: #f87171;
   --color-error-dark: #b91c1c;
+  --color-error-alpha: rgba(220, 38, 38, 0.2);  /* 20% opacity of error */
   
-  --color-warning: #d97706;
-  --color-warning-light: #fbbf24;
-  --color-warning-dark: #b45309;
+  --color-danger: #dc2626;
+  --color-danger-light: #f87171;
+  --color-danger-dark: #b91c1c;
+  --color-danger-alpha: rgba(220, 38, 38, 0.2);  /* 20% opacity of danger */
   
-  --color-info: #2563eb;
-  --color-info-light: #60a5fa;
-  --color-info-dark: #1d4ed8;
-
   /* Background Colors - More subtle */
   --color-background: var(--color-neutral-50);
   --color-background-alt: var(--color-neutral-100);
@@ -109,22 +130,27 @@
   --color-primary: #6366f1;      /* Slightly brighter for dark mode */
   --color-primary-light: #818cf8;
   --color-primary-dark: #4f46e5;
+  --color-primary-alpha: rgba(100, 102, 241, 0.2);  /* 20% opacity of primary */
   
   --color-secondary: #10b981;    /* Slightly brighter for dark mode */
   --color-secondary-light: #34d399;
   --color-secondary-dark: #059669;
+  --color-secondary-alpha: rgba(16, 185, 129, 0.2);  /* 20% opacity of secondary */
   
   --color-accent: #f59e0b;       /* Slightly brighter for dark mode */
   --color-accent-light: #fbbf24;
   --color-accent-dark: #d97706;
+  --color-accent-alpha: rgba(245, 158, 11, 0.2);  /* 20% opacity of accent */
   
   --color-info: #3b82f6;         /* Slightly brighter for dark mode */
   --color-info-light: #60a5fa;
   --color-info-dark: #2563eb;
+  --color-info-alpha: rgba(59, 130, 246, 0.2);  /* 20% opacity of info */
   
   --color-warning: #f97316;      /* Slightly brighter for dark mode */
   --color-warning-light: #fb923c;
   --color-warning-dark: #ea580c;
+  --color-warning-alpha: rgba(249, 115, 22, 0.2);  /* 20% opacity of warning */
 
   /* Dark theme neutral colors - More blue-tinted for better contrast */
   --color-neutral-50: #0f172a;

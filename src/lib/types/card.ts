@@ -11,12 +11,13 @@ export const cardSchema = z.object({
   // Flexible content to handle both rich text (object) and simple strings
   content: z.union([z.string(), z.record(z.any())]).optional().nullable(),
   
-  type: z.enum(['story', 'qa', 'quote', 'callout', 'gallery', 'collection']),
-  status: z.enum(['draft', 'published']),
-  displayMode: z.enum(['inline', 'navigate', 'static']),
+  type: z.enum(['story', 'qa', 'quote', 'callout', 'gallery', 'collection']).default('story'),
+  status: z.enum(['draft', 'published', 'archived']).default('draft'),
+  displayMode: z.enum(['inline', 'navigate', 'static']).default('inline'),
   
   // A reference to a single Media document's ID.
   coverImageId: z.string().optional().nullable(),
+  coverImage: z.any().optional().nullable(),
 
   // The 'content' field may contain embedded images, which will be handled
   // by the Tiptap implementation (storing data-media-id).
@@ -48,5 +49,8 @@ export const cardSchema = z.object({
   createdAt: z.number(),
   updatedAt: z.number(),
 });
+
+export type Card = z.infer<typeof cardSchema>;
+export type CardUpdate = Partial<Card>;
 
 export type Card = z.infer<typeof cardSchema>; 

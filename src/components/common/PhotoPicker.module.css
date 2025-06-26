@@ -1,0 +1,42 @@
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  border: 2px dashed var(--border-color);
+  border-radius: 0.5rem;
+  background-color: var(--surface-color);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.container:hover,
+.dragActive {
+  border-color: var(--primary-color);
+  background-color: var(--surface-hover-color);
+}
+
+.button {
+  padding: 0.5rem 1rem;
+  background-color: var(--primary-color);
+  color: var(--on-primary-color);
+  border: none;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.button:hover:not(:disabled) {
+  background-color: var(--primary-hover-color);
+}
+
+.button:disabled {
+  background-color: var(--disabled-color);
+  cursor: not-allowed;
+}
+
+.container:focus-within {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+} 
