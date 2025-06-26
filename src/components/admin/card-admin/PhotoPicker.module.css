@@ -70,21 +70,50 @@
   color: #374151;
 }
 
-.albumItem {
-  padding: 0.75rem;
-  cursor: pointer;
-  border-radius: 4px;
-  margin-bottom: 0.5rem;
-  transition: background-color 0.2s;
+.treeNode {
+  margin-bottom: 0.125rem;
 }
 
-.albumItem:hover {
+.treeNodeHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.treeToggle {
+  background: none;
+  border: none;
+  padding: 0.125rem;
+  cursor: pointer;
+  color: #6b7280;
+  font-size: 0.75rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+}
+
+.treeNodeName {
+  padding: 0.25rem 0.375rem;
+  cursor: pointer;
+  border-radius: 4px;
+  flex: 1;
+  transition: background-color 0.2s;
+  font-size: 0.875rem;
+}
+
+.treeNodeName:hover {
   background-color: #f3f4f6;
 }
 
-.albumItemSelected {
-  font-weight: bold;
+.treeNodeSelected {
   background-color: #e9f5ff;
+  font-weight: 500;
+}
+
+.treeChildren {
+  margin-left: 0.5rem;
 }
 
 .photoGrid {
@@ -110,7 +139,6 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s, box-shadow 0.2s;
   border: 2px solid transparent;
-  transition: border-color 0.2s;
 }
 
 .photoItem:hover {
@@ -159,16 +187,24 @@
   border: 1px solid var(--color-danger);
   border-radius: var(--border-radius);
   font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
-.errorBanner {
-  padding: 1rem;
-  margin: 1rem;
-  color: var(--color-danger);
-  background-color: var(--color-danger-light);
-  border: 1px solid var(--color-danger);
+.retryButton {
+  padding: 0.5rem 1rem;
+  background-color: var(--color-danger);
+  color: white;
+  border: none;
   border-radius: var(--border-radius);
+  cursor: pointer;
   font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.retryButton:hover {
+  background-color: var(--color-danger-dark);
 }
 
 .noContent {
@@ -198,56 +234,11 @@
   transition: background-color 0.2s;
 }
 
+.doneButton:hover {
+  background-color: #0052cc;
+}
+
 .doneButton:disabled {
   background-color: #ccc;
   cursor: not-allowed;
-}
-
-.tree {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.treeNode {
-  display: flex;
-  align-items: center;
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  cursor: default;
-}
-
-.treeNode:hover {
-  background-color: #f0f0f0;
-}
-
-.treeNodeName {
-  flex-grow: 1;
-  cursor: pointer;
-  padding: 0.2rem 0.4rem;
-  border-radius: 3px;
-}
-
-.treeNodeName:hover {
-  background-color: #e0e0e0;
-}
-
-.treeToggle {
-  cursor: pointer;
-  padding: 0 0.5rem;
-  user-select: none;
-}
-
-.treeNodeSelected .treeNodeName {
-  background-color: #0070f3;
-  color: white;
-  font-weight: bold;
-}
-
-.treeNodeSelected:hover {
-  background-color: transparent;
-}
-
-.treeNodeSelected .treeNodeName:hover {
-  background-color: #0056b3;
 } 

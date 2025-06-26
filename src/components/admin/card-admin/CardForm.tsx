@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useCallback, useState, memo } from 'react';
+import React, { useRef, useCallback, useState, memo, useEffect } from 'react';
 import { Card, CardUpdate } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 import CoverPhotoContainer from '@/components/admin/card-admin/CoverPhotoContainer';
@@ -15,7 +15,6 @@ import { useCardForm } from '@/components/providers/CardFormProvider';
 import clsx from 'clsx';
 import PhotoPicker from '@/components/admin/card-admin/PhotoPicker';
 import LoadingOverlay from '@/components/admin/card-admin/LoadingOverlay';
-import NavigationGuard from '@/components/admin/card-admin/NavigationGuard';
 
 interface CardFormProps {
   initialCard: Card | null;
@@ -102,6 +101,11 @@ const CardForm: React.FC<CardFormProps> = ({ initialCard, allTags, onDelete }) =
   const [isPhotoPickerOpen, setIsPhotoPickerOpen] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
 
+  useEffect(() => {
+    console.log('CardForm coverImage:', coverImage);
+    console.log('CardForm mediaCache:', mediaCache);
+  }, [coverImage, mediaCache]);
+
   // Only show errors after user interaction
   const displayErrors = hasInteracted ? errors : {};
 
@@ -156,9 +160,8 @@ const CardForm: React.FC<CardFormProps> = ({ initialCard, allTags, onDelete }) =
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <NavigationGuard />
       <LoadingOverlay isVisible={isSaving} />
-      <form onSubmit={handleSubmit} className={styles.form}>
+      <form id="card-form" onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.mainContent}>
           <div className={styles.header}>
             <input
@@ -172,6 +175,7 @@ const CardForm: React.FC<CardFormProps> = ({ initialCard, allTags, onDelete }) =
           </div>
 
           <div className={styles.coverPhotoSection}>
+            {console.log('Rendering CoverPhotoContainer with:', { coverImage, displayErrors })}
             <CoverPhotoContainer
               coverImage={coverImage}
               onChange={updateCoverImage}

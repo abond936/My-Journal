@@ -13,7 +13,6 @@ interface FormState {
   coverImage: Media | null | undefined;
   galleryMedia: Card['galleryMedia'];
   mediaCache: Map<string, Media>;
-  isDirty: boolean;
   isSaving: boolean;
   errors: Record<string, string>;
   lastSavedState: {
@@ -85,22 +84,29 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
   const cardToEdit = useMemo(() => initialCard || EMPTY_CARD, [initialCard]);
   
   // State
-  const [formState, setFormState] = useState<FormState>(() => ({
-    cardData: { ...cardToEdit },
-    tags: cardToEdit.tags?.map(tagId => allTags.find(t => t.id === tagId)).filter(Boolean) || [],
-    coverImage: cardToEdit.coverImage || null,
-    galleryMedia: cardToEdit.galleryMedia || [],
-    mediaCache: new Map(),
-    isDirty: false,
-    isSaving: false,
-    errors: {},
-    lastSavedState: {
+  const [formState, setFormState] = useState<FormState>(() => {
+    // Initialize media cache with cover image if it exists
+    const mediaCache = new Map<string, Media>();
+    if (cardToEdit.coverImage) {
+      mediaCache.set(cardToEdit.coverImageId!, cardToEdit.coverImage);
+    }
+    
+    return {
       cardData: { ...cardToEdit },
       tags: cardToEdit.tags?.map(tagId => allTags.find(t => t.id === tagId)).filter(Boolean) || [],
       coverImage: cardToEdit.coverImage || null,
       galleryMedia: cardToEdit.galleryMedia || [],
-    },
-  }));
+      mediaCache,
+      isSaving: false,
+      errors: {},
+      lastSavedState: {
+        cardData: { ...cardToEdit },
+        tags: cardToEdit.tags?.map(tagId => allTags.find(t => t.id === tagId)).filter(Boolean) || [],
+        coverImage: cardToEdit.coverImage || null,
+        galleryMedia: cardToEdit.galleryMedia || [],
+      },
+    };
+  });
 
   // Track whether the form has been submitted
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -130,7 +136,6 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
             coverImage: prev.coverImage,
             galleryMedia: prev.galleryMedia,
           },
-          isDirty: false,
           errors: {},
         }));
       } catch (error) {
@@ -179,12 +184,12 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     setFormState(prev => ({
       ...prev,
       ...updates,
-      isDirty: true,
     }));
   }, []);
 
   // Update handlers with optimistic updates and batched state
   const updateField = useCallback((field: keyof CardUpdate, value: any) => {
+    console.log('Updating field:', field, 'with value:', value);
     const error = validateSingleField(field, value);
     batchStateUpdate({
       cardData: { ...formState.cardData, [field]: value },
@@ -200,13 +205,28 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     });
   }, [validateSingleField, batchStateUpdate, formState.errors]);
 
-  const updateCoverImage = useCallback((media: Media | null) => {
+  const updateCoverImage = useCallback(async (media: Media | null) => {
+    console.log('Updating cover image:', media);
+    
+    // If we're replacing a temporary image, delete it
+    if (formState.coverImage?.id && 
+        formState.coverImage.status === 'temporary' && 
+        formState.coverImage.id !== media?.id) {
+      try {
+        await fetch(`/api/images/${formState.coverImage.id}`, {
+          method: 'DELETE'
+        });
+      } catch (error) {
+        console.error('Error cleaning up temporary cover image:', error);
+      }
+    }
+
     batchStateUpdate({
       coverImage: media,
       cardData: { ...formState.cardData, coverImageId: media?.id || null },
       errors: { ...formState.errors, submit: undefined },
     });
-  }, [batchStateUpdate, formState.cardData, formState.errors]);
+  }, [batchStateUpdate, formState.cardData, formState.errors, formState.coverImage]);
 
   const updateGalleryMedia = useCallback((newMedia: Card['galleryMedia']) => {
     batchStateUpdate({
@@ -238,53 +258,23 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
 
   // Form actions with optimistic updates
   const handleSave = useCallback(async () => {
-    setHasSubmitted(true);
-    
-    // Only validate if the form has been submitted
-    if (hasSubmitted) {
-      const validationObject = {
-        ...formState.cardData,
-        tags: formState.tags.map(t => t.id),
-        coverImage: formState.coverImage,
-        galleryMedia: formState.galleryMedia,
-      };
-
-      // Skip validation for empty fields in new cards
-      const isNewCard = !formState.cardData.id;
-      const result = isNewCard 
-        ? cardSchema.partial().safeParse(validationObject)
-        : cardSchema.safeParse(validationObject);
-
-      if (!result.success) {
-        const errors = result.error.errors.reduce((acc, err) => {
-          const path = err.path.join('.');
-          acc[path] = err.message;
-          return acc;
-        }, {} as Record<string, string>);
-
-        setFormState(prev => ({
-          ...prev,
-          errors,
-        }));
-
-        return;
-      }
-    }
-
     try {
       setFormState(prev => ({ ...prev, isSaving: true, errors: {} }));
-      await onSave(formState.cardData, formState.tags);
+      
+      const cardDataWithCoverImage = {
+        ...formState.cardData,
+        coverImageId: formState.coverImage?.id || null
+      };
+
+      await onSave(cardDataWithCoverImage, formState.tags);
+      
       setFormState(prev => ({
         ...prev,
-        lastSavedState: {
-          cardData: { ...formState.cardData },
-          tags: [...formState.tags],
-          coverImage: formState.coverImage,
-          galleryMedia: formState.galleryMedia,
-        },
-        isDirty: false,
-        errors: {},
+        isSaving: false,
+        errors: {}
       }));
+
+      return true;
     } catch (error) {
       console.error('Error saving card:', error);
       setFormState(prev => ({
@@ -292,11 +282,11 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
         errors: {
           submit: error instanceof Error ? error.message : 'Failed to save changes',
         },
+        isSaving: false
       }));
-    } finally {
-      setFormState(prev => ({ ...prev, isSaving: false }));
+      throw error;
     }
-  }, [formState.cardData, formState.tags, formState.coverImage, formState.galleryMedia, onSave, hasSubmitted]);
+  }, [formState.cardData, formState.tags, formState.coverImage, onSave]);
 
   const resetForm = useCallback(() => {
     setFormState({
@@ -305,7 +295,6 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       coverImage: cardToEdit.coverImage || null,
       galleryMedia: cardToEdit.galleryMedia || [],
       mediaCache: new Map(),
-      isDirty: false,
       isSaving: false,
       errors: {},
       lastSavedState: {

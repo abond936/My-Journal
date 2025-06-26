@@ -98,8 +98,8 @@ export async function importFromLocalDrive(sourcePath: string): Promise<Media> {
     const fileBuffer = await fs.readFile(fullPath);
     const filename = path.basename(fullPath);
 
-    // Use the central createMediaAsset function
-    return await createMediaAsset(fileBuffer, filename, 'local-drive', sourcePath, 'active');
+    // Create as temporary by default
+    return await createMediaAsset(fileBuffer, filename, 'local-drive', sourcePath, 'temporary');
   } catch (error) {
     console.error('[importFromLocalDrive] Error importing file:', {
       sourcePath,

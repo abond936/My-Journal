@@ -24,15 +24,28 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
   const router = useRouter();
   const { mutate } = useCardContext();
   
+  // Local state to hold the card data
+  const [localCard, setLocalCard] = React.useState<Card | null>(null);
+  const [localTags, setLocalTags] = React.useState<Tag[]>([]);
+  
+  // Fetch initial data
   const { data: card, error: cardError, isLoading: isCardLoading } = useSWR<Card | null>(
     cardId ? `/api/cards/${cardId}` : null,
-    fetcher
+    fetcher,
+    { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
 
   const { data: tagsData, error: tagsError, isLoading: areTagsLoading } = useSWR<Tag[]>(
     '/api/tags', 
-    fetcher
+    fetcher,
+    { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
+
+  // Set local state when initial data loads
+  React.useEffect(() => {
+    if (card) setLocalCard(card);
+    if (tagsData) setLocalTags(tagsData);
+  }, [card, tagsData]);
   
   const [isDeleting, setIsDeleting] = React.useState(false);
 
@@ -40,7 +53,8 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
     try {
       const body = { 
         ...cardData, 
-        tagIds: tags.map(t => t.id) // Pass tag IDs for the backend to process
+        tagIds: tags.map(t => t.id),
+        coverImageId: cardData.coverImageId
       };
 
       const url = cardId ? `/api/cards/${cardId}` : '/api/cards';
@@ -52,18 +66,19 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
         body: JSON.stringify(body),
       });
 
+      const savedData = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to save the card.');
+        throw new Error('Failed to save the card.');
       }
 
-      // Revalidate all data and redirect
-      await globalMutate(() => true, undefined, { revalidate: true });
-      router.push('/admin/card-admin');
+      // Store the saved state
+      setLocalCard(savedData);
+      return savedData;
 
     } catch (error) {
       console.error('Failed to save card:', error);
-      throw error; // Re-throw to let the form handle the error
+      throw error;
     }
   };
 
@@ -101,6 +116,25 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
     }
   };
 
+  const handleCancel = () => {
+    // If we have a card ID, it means we're editing an existing card, so we can just navigate away
+    if (cardId) {
+      router.push('/admin/card-admin');
+      return;
+    }
+
+    // If we're creating a new card and haven't saved yet, confirm with the user
+    if (!localCard?.id) {
+      if (window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+        router.push('/admin/card-admin');
+      }
+      return;
+    }
+
+    // If we have a local card with an ID, it means we've saved, so we can navigate away
+    router.push('/admin/card-admin');
+  };
+
   const isLoading = isCardLoading || areTagsLoading;
 
   if (isLoading) {
@@ -111,10 +145,6 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
     return <div>Error loading data. {cardError?.message} {tagsError?.message}</div>;
   }
   
-  // This page is also used for creating new cards, so `card` can be null.
-  // The CardForm is designed to handle this case.
-  const allTags = tagsData || [];
-
   return (
     <div>
       <div className={styles.formHeader}>
@@ -130,22 +160,30 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
               {isDeleting ? 'Deleting...' : 'Delete'}
             </button>
           )}
-          <button type="button" onClick={handleDelete} className={styles.cancelButton}>
+          <button 
+            type="button" 
+            onClick={handleCancel}
+            className={styles.cancelButton}
+          >
             Cancel
           </button>
-          <button type="submit" form="card-form" className={styles.submitButton}>
+          <button 
+            type="submit" 
+            form="card-form" 
+            className={styles.submitButton}
+          >
             {cardId ? 'Save' : 'Create Card'}
           </button>
         </div>
       </div>
       <CardFormProvider
-        initialCard={card}
-        allTags={allTags}
+        initialCard={localCard}
+        allTags={localTags}
         onSave={handleSave}
       >
         <CardForm
-          initialCard={card}
-          allTags={allTags}
+          initialCard={localCard}
+          allTags={localTags}
           onDelete={handleDelete}
         />
       </CardFormProvider>

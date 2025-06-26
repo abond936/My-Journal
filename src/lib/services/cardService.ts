@@ -116,7 +116,47 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'i
     }, {} as Record<string, boolean>);
   }
 
-  await docRef.update(updateData);
+  // Update media status to active
+  const batch = firestore.batch();
+  batch.update(docRef, updateData);
+
+  // Update cover image status if it exists
+  if (validatedUpdate.coverImageId) {
+    const mediaRef = firestore.collection('media').doc(validatedUpdate.coverImageId);
+    batch.update(mediaRef, { 
+      status: 'active',
+      updatedAt: Date.now()
+    });
+  }
+
+  // Update gallery media status if it exists
+  if (validatedUpdate.galleryMedia?.length) {
+    for (const media of validatedUpdate.galleryMedia) {
+      if (media.id) {
+        const mediaRef = firestore.collection('media').doc(media.id);
+        batch.update(mediaRef, { 
+          status: 'active',
+          updatedAt: Date.now()
+        });
+      }
+    }
+  }
+
+  // Update content media status if it exists
+  if (validatedUpdate.contentMedia?.length) {
+    for (const media of validatedUpdate.contentMedia) {
+      if (media.id) {
+        const mediaRef = firestore.collection('media').doc(media.id);
+        batch.update(mediaRef, { 
+          status: 'active',
+          updatedAt: Date.now()
+        });
+      }
+    }
+  }
+
+  await batch.commit();
+
   const updatedDoc = await docRef.get();
   return updatedDoc.data() as Card;
 }

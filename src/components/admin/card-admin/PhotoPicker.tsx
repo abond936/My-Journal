@@ -6,6 +6,7 @@ import { Media, TreeNode } from '@/lib/types/photo';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import styles from './PhotoPicker.module.css';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { importLocalFile } from '@/lib/services/images/imageService';
 
 interface PhotoPickerProps {
   isOpen: boolean;
@@ -14,6 +15,55 @@ interface PhotoPickerProps {
   onClose: () => void;
   initialMode?: 'single' | 'multi';
 }
+
+interface FolderItemProps {
+  node: TreeNode;
+  selectedFolder: string | null;
+  onSelect: (folderId: string) => void;
+  level?: number;
+}
+
+const FolderItem = ({ node, selectedFolder, onSelect, level = 0 }: FolderItemProps) => {
+  const [isExpanded, setIsExpanded] = useState(true);
+  const hasChildren = node.children && node.children.length > 0;
+
+  return (
+    <div className={styles.treeNode} style={{ marginLeft: `${level * 8}px` }}>
+      <div className={styles.treeNodeHeader}>
+        {hasChildren && (
+          <button
+            className={styles.treeToggle}
+            onClick={() => setIsExpanded(!isExpanded)}
+            type="button"
+          >
+            {isExpanded ? '▼' : '▶'}
+          </button>
+        )}
+        <div
+          className={`${styles.treeNodeName} ${selectedFolder === node.id ? styles.treeNodeSelected : ''}`}
+          onClick={() => onSelect(node.id)}
+          role="button"
+          tabIndex={0}
+        >
+          {node.name}
+        </div>
+      </div>
+      {hasChildren && isExpanded && (
+        <div className={styles.treeChildren}>
+          {node.children.map(child => (
+            <FolderItem
+              key={child.id}
+              node={child}
+              selectedFolder={selectedFolder}
+              onSelect={onSelect}
+              level={level + 1}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function PhotoPicker({ 
   isOpen,
@@ -35,6 +85,7 @@ export default function PhotoPicker({
       setIsLoading(true);
       setError(null);
       const tree = await getFolderTree();
+      console.log('Loaded folder tree:', tree);
       setFolderTree(tree);
       if (tree.length > 0) {
         setSelectedFolder(tree[0].id);
@@ -61,7 +112,6 @@ export default function PhotoPicker({
     }
   }, []);
 
-  // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
       setSelectedPhotos([]);
@@ -70,7 +120,6 @@ export default function PhotoPicker({
     }
   }, [isOpen, loadFolderTree]);
 
-  // Load photos when folder is selected
   useEffect(() => {
     if (selectedFolder) {
       loadPhotos(selectedFolder);
@@ -83,20 +132,41 @@ export default function PhotoPicker({
     setError(null);
   }, []);
 
-  const handlePhotoSelect = useCallback((photo: Media) => {
-    if (mode === 'single') {
-      onSelect(photo);
-    } else {
-      setSelectedPhotos(prev => {
-        const isSelected = prev.some(p => p.id === photo.id);
-        if (isSelected) {
-          return prev.filter(p => p.id !== photo.id);
-        } else {
-          return [...prev, photo];
-        }
+  const handlePhotoSelect = useCallback(async (photo: LocalPhotoInfo) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // Immediate import to storage as temporary
+      console.log('Importing local file:', photo.sourcePath);
+      const response = await fetch('/api/images/local/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sourcePath: photo.sourcePath })
       });
+
+      if (!response.ok) {
+        throw new Error(`Failed to import image: ${response.statusText}`);
+      }
+
+      const media: Media = await response.json();
+      console.log('Imported media:', media);
+
+      if (mode === 'single') {
+        onSelect(media);
+      } else {
+        setSelectedPhotos(prev => [...prev, media]);
+      }
+    } catch (error) {
+      console.error('Error importing photo:', error);
+      setError(error instanceof Error ? error.message : 'Failed to import photo');
+    } finally {
+      setIsLoading(false);
+      if (mode === 'single') {
+        onClose();
+      }
     }
-  }, [mode, onSelect]);
+  }, [mode, onSelect, onClose]);
 
   const handleDone = useCallback(() => {
     if (mode === 'multi' && onMultiSelect) {
@@ -138,16 +208,13 @@ export default function PhotoPicker({
         <div className={styles.content}>
           <div className={styles.albumList}>
             <h3 className={styles.albumTitle}>Albums</h3>
-            {folderTree.map(folder => (
-              <div
-                key={folder.id}
-                className={`${styles.albumItem} ${selectedFolder === folder.id ? styles.albumItemSelected : ''}`}
-                onClick={() => handleFolderSelect(folder.id)}
-                role="button"
-                tabIndex={0}
-              >
-                {folder.name}
-              </div>
+            {folderTree.map(node => (
+              <FolderItem
+                key={node.id}
+                node={node}
+                selectedFolder={selectedFolder}
+                onSelect={handleFolderSelect}
+              />
             ))}
           </div>
 
@@ -200,7 +267,7 @@ export default function PhotoPicker({
               disabled={selectedPhotos.length === 0}
               type="button"
             >
-              Done ({selectedPhotos.length} selected)
+              Select {selectedPhotos.length} Photos
             </button>
           </div>
         )}

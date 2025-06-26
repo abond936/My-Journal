@@ -8,45 +8,18 @@
   border: 1px solid var(--color-border);
 }
 
-.container:hover {
-  border-color: var(--color-primary);
+.imageContainer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-color: var(--surface-color);
 }
 
-.container.isDragActive {
-  border-color: var(--color-primary);
-  background-color: var(--color-background-offset);
-}
-
-.container.isDisabled {
-  cursor: not-allowed;
-  opacity: 0.7;
-  border-color: var(--color-border);
-}
-
-.container.isDisabled:hover {
-  border-color: var(--color-border);
-}
-
-.container.isProcessing {
-  cursor: wait;
-  border-color: var(--color-primary);
-  background-color: var(--color-background-offset);
-}
-
-.container.error {
-  border-color: var(--color-danger);
-  background-color: var(--color-danger-light);
-}
-
-.preview {
+.coverImage {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: opacity 0.2s ease-in-out;
-}
-
-.container.isDisabled .preview {
-  opacity: 0.7;
+  display: block;
 }
 
 .placeholder {
@@ -55,114 +28,79 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px dashed var(--color-border);
-  border-radius: var(--border-radius);
   background-color: var(--surface-color);
 }
 
-.container.isDisabled .placeholder {
-  color: var(--color-text-disabled);
-}
-
-.container.error .placeholder {
-  border-color: var(--color-danger);
-}
-
-.removeButton {
+.buttonContainer {
   position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  padding: 0.5rem 1rem;
-  background-color: rgba(0, 0, 0, 0.5);
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.imageContainer:hover .buttonContainer {
+  opacity: 1;
+}
+
+.addButton {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--color-primary);
   color: white;
   border: none;
   border-radius: var(--border-radius);
+  font-size: 1rem;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.addButton:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.changeButton {
+  padding: 0.5rem 1rem;
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
   font-size: 0.875rem;
   font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.changeButton:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.removeButton {
+  padding: 0.5rem 1rem;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .removeButton:hover {
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.8);
 }
 
-.removeButton:disabled {
-  background-color: var(--color-danger-light);
-  cursor: not-allowed;
-}
-
-.disabledOverlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(255, 255, 255, 0.5);
-  pointer-events: none;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem;
-  background-color: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.title {
-  font-size: 1rem;
-  font-weight: 500;
-  color: #1e293b;
-  margin: 0;
-}
-
-.actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.button {
-  padding: 0.5rem 1rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.375rem;
-  background-color: white;
-  color: #475569;
+.errorText {
+  color: var(--color-danger);
   font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
+  margin-top: 0.5rem;
 }
 
-.button:hover {
-  background-color: #f1f5f9;
-  border-color: #cbd5e1;
-}
-
-.coverPhoto {
-  position: relative;
-  width: 100%;
-  height: 300px;
-  background-color: #f8fafc;
-}
-
-.image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: var(--border-radius-medium);
-}
-
-.caption {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 1rem;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
-  color: white;
-  font-size: 0.875rem;
+.container.error {
+  border-color: var(--color-danger);
 }
 
 .placeholderText {
@@ -206,7 +144,7 @@
 .sliderContainer label {
   font-size: var(--font-size-small);
   color: var(--color-text-secondary);
-  width: 70px; /* Align labels */
+  width: 70px;
 }
 
 .slider {
@@ -233,42 +171,4 @@
   to {
     transform: rotate(360deg);
   }
-}
-
-.imageContainer {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-.coverImage {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.addButton {
-  padding: 0.75rem 1.5rem;
-  background-color: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: var(--border-radius);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.addButton:hover {
-  background-color: var(--color-primary-dark);
-}
-
-.errorText {
-  color: var(--color-danger);
-  font-size: 0.875rem;
-  margin-top: 0.5rem;
-  padding: 0.5rem;
-  background-color: var(--color-danger-light);
-  border-radius: var(--border-radius);
-  border: 1px solid var(--color-danger);
 } 
