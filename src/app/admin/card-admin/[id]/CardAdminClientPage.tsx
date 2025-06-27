@@ -43,7 +43,18 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
 
   // Set local state when initial data loads
   React.useEffect(() => {
-    if (card) setLocalCard(card);
+    if (card) {
+      console.log('CardAdminClientPage - Received card data:', {
+        id: card.id,
+        galleryMedia: card.galleryMedia?.length || 0,
+        galleryMediaDetails: card.galleryMedia?.map(item => ({
+          mediaId: item.mediaId,
+          hasMedia: !!item.media,
+          mediaUrl: item.media?.url || 'missing'
+        }))
+      });
+      setLocalCard(card);
+    }
     if (tagsData) setLocalTags(tagsData);
   }, [card, tagsData]);
   
@@ -51,10 +62,27 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
 
   const handleSave = async (cardData: CardUpdate, tags: Tag[]) => {
     try {
+      console.log('CardAdminClientPage - Saving card with data:', {
+        galleryMedia: cardData.galleryMedia?.length || 0,
+        galleryMediaDetails: cardData.galleryMedia?.map(item => ({
+          mediaId: item.mediaId,
+          hasMedia: !!item.media,
+          mediaUrl: item.media?.url || 'missing'
+        }))
+      });
+
       const body = { 
         ...cardData, 
         tagIds: tags.map(t => t.id),
-        coverImageId: cardData.coverImageId
+        coverImageId: cardData.coverImageId,
+        // Ensure we include the full media objects
+        galleryMedia: cardData.galleryMedia?.map(item => ({
+          mediaId: item.mediaId,
+          caption: item.caption || '',
+          order: item.order,
+          objectPosition: item.objectPosition || 'center',
+          media: item.media
+        }))
       };
 
       const url = cardId ? `/api/cards/${cardId}` : '/api/cards';
@@ -97,7 +125,7 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
       let confirmMessage = 'Are you sure you want to delete this card? This action cannot be undone.';
       if (parentCards.length > 0) {
         const parentTitles = parentCards.map(p => p.title).join(', ');
-        confirmMessage = `WARNING: This card is a child of the following cards: ${parentTitles}.\\n\\nDeleting it will remove it from these collections. Are you sure you want to proceed?`;
+        confirmMessage = `WARNING: This card is a child of the following cards: ${parentTitles}.\n\nDeleting it will remove it from these collections. Are you sure you want to proceed?`;
       }
 
       if (window.confirm(confirmMessage)) {
@@ -105,6 +133,8 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
         if (!deleteResponse.ok) {
           throw new Error('Failed to delete card.');
         }
+        // Save the card ID for scroll position restoration
+        sessionStorage.setItem('scrollToCardId', cardId);
         router.push('/admin/card-admin');
         router.refresh();
       }
@@ -182,8 +212,6 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
         onSave={handleSave}
       >
         <CardForm
-          initialCard={localCard}
-          allTags={localTags}
           onDelete={handleDelete}
         />
       </CardFormProvider>

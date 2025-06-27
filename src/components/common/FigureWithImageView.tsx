@@ -13,7 +13,9 @@ export const FigureWithImageView = ({ node, updateAttributes, editor, selected, 
     width, 
     height,
     'data-size': size, 
-    'data-alignment': alignment 
+    'data-alignment': alignment,
+    'data-media-id': mediaId,
+    'data-media-type': mediaType
   } = node.attrs;
 
   const selectNodeManually = () => {
@@ -38,6 +40,8 @@ export const FigureWithImageView = ({ node, updateAttributes, editor, selected, 
     <NodeViewWrapper 
       as="figure"
       className={`${styles.figureWrapper} ${styles[alignment]} ${styles[size]} ${selected ? 'ProseMirror-selectednode' : ''}`}
+      data-media-id={mediaId}
+      data-media-type={mediaType}
     >
       <div className={styles.dragHandle} data-drag-handle>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
@@ -55,6 +59,8 @@ export const FigureWithImageView = ({ node, updateAttributes, editor, selected, 
           height={height}
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className={styles.image}
+          data-media-id={mediaId}
+          data-media-type={mediaType}
         />
       </div>
       {/* The NodeViewContent component renders the editable figcaption. */}

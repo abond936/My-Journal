@@ -16,9 +16,18 @@ interface CoverPhotoContainerProps {
 export default function CoverPhotoContainer({ className, error, onChange, coverImage }: CoverPhotoContainerProps) {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [horizontalPosition, setHorizontalPosition] = useState(50);
+  const [verticalPosition, setVerticalPosition] = useState(50);
 
   useEffect(() => {
-    console.log('CoverPhotoContainer received coverImage:', coverImage);
+    if (coverImage?.objectPosition) {
+      const [x, y] = coverImage.objectPosition.split(' ').map(pos => parseInt(pos));
+      setHorizontalPosition(x || 50);
+      setVerticalPosition(y || 50);
+    } else {
+      setHorizontalPosition(50);
+      setVerticalPosition(50);
+    }
   }, [coverImage]);
 
   const handlePhotoSelect = async (media: Media) => {
@@ -50,28 +59,15 @@ export default function CoverPhotoContainer({ className, error, onChange, coverI
     }
   };
 
-  useEffect(() => {
-    if (coverImage) {
-      console.log('CoverPhotoContainer: Displaying image:', {
-        id: coverImage.id,
-        url: coverImage.storageUrl,
-        filename: coverImage.filename,
-        source: coverImage.source,
-        status: coverImage.status
-      });
-    }
-  }, [coverImage]);
-
-  console.log('CoverPhotoContainer styles:', {
-    container: styles.container,
-    imageContainer: styles.imageContainer,
-    coverImage: styles.coverImage,
-    placeholder: styles.placeholder,
-    addButton: styles.addButton,
-    buttonContainer: styles.buttonContainer,
-    changeButton: styles.changeButton,
-    removeButton: styles.removeButton
-  });
+  const handlePositionChange = (horizontal: number, vertical: number) => {
+    if (!coverImage) return;
+    
+    const updatedMedia: Media = {
+      ...coverImage,
+      objectPosition: `${horizontal}% ${vertical}%`
+    };
+    onChange(updatedMedia);
+  };
 
   return (
     <div className={`${styles.container} ${className || ''} ${error ? styles.error : ''}`}>
@@ -80,41 +76,78 @@ export default function CoverPhotoContainer({ className, error, onChange, coverI
           <LoadingSpinner />
         </div>
       ) : coverImage && coverImage.storageUrl ? (
-        <div className={styles.imageContainer}>
-          <img
-            src={coverImage.storageUrl}
-            alt={coverImage.filename}
-            className={styles.coverImage}
-            onLoad={() => {
-              console.log('Cover image loaded successfully:', coverImage.storageUrl);
-            }}
-            onError={(e) => {
-              console.error('Failed to load cover image:', e);
-              console.log('Failed image details:', {
-                url: coverImage.storageUrl,
-                id: coverImage.id,
-                status: coverImage.status
-              });
-              onChange(null);
-            }}
-          />
-          <div className={styles.buttonContainer}>
-            <button
-              onClick={() => setIsPickerOpen(true)}
-              className={styles.changeButton}
-              type="button"
-            >
-              Change
-            </button>
-            <button
-              onClick={handleRemovePhoto}
-              className={styles.removeButton}
-              type="button"
-            >
-              Remove
-            </button>
+        <>
+          <div className={styles.imageContainer}>
+            <img
+              src={coverImage.storageUrl}
+              alt={coverImage.filename}
+              className={styles.coverImage}
+              style={{ objectPosition: `${horizontalPosition}% ${verticalPosition}%` }}
+              onLoad={() => {
+                console.log('Cover image loaded successfully:', coverImage.storageUrl);
+              }}
+              onError={(e) => {
+                console.error('Failed to load cover image:', e);
+                console.log('Failed image details:', {
+                  url: coverImage.storageUrl,
+                  id: coverImage.id,
+                  status: coverImage.status
+                });
+                onChange(null);
+              }}
+            />
+            <div className={styles.buttonContainer}>
+              <button
+                onClick={() => setIsPickerOpen(true)}
+                className={styles.changeButton}
+                type="button"
+              >
+                Change
+              </button>
+              <button
+                onClick={handleRemovePhoto}
+                className={styles.removeButton}
+                type="button"
+              >
+                Remove
+              </button>
+            </div>
           </div>
-        </div>
+          <div className={styles.repositionControls}>
+            <div className={styles.sliderContainer}>
+              <label htmlFor="horizontal-position">Horizontal:</label>
+              <input
+                id="horizontal-position"
+                type="range"
+                min="0"
+                max="100"
+                value={horizontalPosition}
+                onChange={(e) => {
+                  const newHorizontal = parseInt(e.target.value);
+                  setHorizontalPosition(newHorizontal);
+                  handlePositionChange(newHorizontal, verticalPosition);
+                }}
+                className={styles.slider}
+              />
+            </div>
+            <div className={styles.sliderContainer}>
+              <label htmlFor="vertical-position">Vertical:</label>
+              <input
+                id="vertical-position"
+                type="range"
+                min="0"
+                max="100"
+                value={verticalPosition}
+                onChange={(e) => {
+                  const newVertical = parseInt(e.target.value);
+                  setVerticalPosition(newVertical);
+                  handlePositionChange(horizontalPosition, newVertical);
+                }}
+                className={styles.slider}
+              />
+            </div>
+          </div>
+        </>
       ) : (
         <div className={styles.placeholder}>
           <button

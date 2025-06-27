@@ -1,21 +1,31 @@
 import { z } from 'zod';
-import { mediaSchema } from './photo';
 
+/**
+ * Schema for a card in the system.
+ * A card is the primary content unit, representing a story, Q&A, quote, etc.
+ */
 export const cardSchema = z.object({
+  // Basic card identification and metadata
   id: z.string(),
   title: z.string().default(''),
   title_lowercase: z.string().default(''),
   subtitle: z.string().optional().nullable(),
   excerpt: z.string().optional().nullable(),
   
-  // Flexible content to handle both rich text (object) and simple strings
-  content: z.union([z.string(), z.record(z.any())]).optional().nullable(),
+  // The content field stores HTML with embedded media references.
+  // Media is embedded using figure elements with data attributes:
+  // <figure data-figure-with-image data-media-id="123" data-size="medium" data-alignment="left">
+  //   <img src="..." alt="..." width="..." height="...">
+  //   <figcaption>Optional caption specific to this usage</figcaption>
+  // </figure>
+  content: z.string().default(''),
   
+  // Card type and status controls visibility and behavior
   type: z.enum(['story', 'qa', 'quote', 'callout', 'gallery', 'collection']).default('story'),
-  status: z.enum(['draft', 'published', 'archived']).default('draft'),
-  displayMode: z.enum(['inline', 'navigate', 'static']).default('inline'),
+  status: z.enum(['draft', 'published']).default('draft'),
+  displayMode: z.enum(['inline', 'navigate', 'static']).default('navigate'),
   
-  // A reference to a single Media document's ID.
+  // Cover image reference with position information
   coverImageId: z.string().optional().nullable(),
   coverImage: z.any().optional().nullable(),
 

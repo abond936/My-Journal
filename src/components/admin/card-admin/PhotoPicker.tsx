@@ -77,6 +77,7 @@ export default function PhotoPicker({
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [selectedPhotos, setSelectedPhotos] = useState<Media[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mode] = useState<'single' | 'multi'>(initialMode);
 
@@ -132,48 +133,62 @@ export default function PhotoPicker({
     setError(null);
   }, []);
 
-  const handlePhotoSelect = useCallback(async (photo: LocalPhotoInfo) => {
+  const handleDone = useCallback(async () => {
+    if (selectedPhotos.length === 0) return;
+    
     try {
-      setIsLoading(true);
+      setIsImporting(true);
       setError(null);
-      
-      // Immediate import to storage as temporary
-      console.log('Importing local file:', photo.sourcePath);
-      const response = await fetch('/api/images/local/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sourcePath: photo.sourcePath })
+
+      // Import all selected photos
+      const importPromises = selectedPhotos.map(async (photo) => {
+        const response = await fetch('/api/images/local/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sourcePath: photo.sourcePath })
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to import image: ${errorText}`);
+        }
+
+        return await response.json();
       });
 
-      if (!response.ok) {
-        throw new Error(`Failed to import image: ${response.statusText}`);
-      }
+      const importedMedia = await Promise.all(importPromises);
+      console.log('Successfully imported media:', importedMedia);
 
-      const media: Media = await response.json();
-      console.log('Imported media:', media);
-
-      if (mode === 'single') {
-        onSelect(media);
-      } else {
-        setSelectedPhotos(prev => [...prev, media]);
+      if (mode === 'single' && importedMedia.length > 0) {
+        onSelect(importedMedia[0]);
+      } else if (mode === 'multi' && onMultiSelect) {
+        onMultiSelect(importedMedia);
       }
+      onClose();
     } catch (error) {
-      console.error('Error importing photo:', error);
-      setError(error instanceof Error ? error.message : 'Failed to import photo');
+      console.error('Error importing photos:', error);
+      setError(error instanceof Error ? error.message : 'Failed to import photos');
     } finally {
-      setIsLoading(false);
-      if (mode === 'single') {
-        onClose();
-      }
+      setIsImporting(false);
     }
-  }, [mode, onSelect, onClose]);
+  }, [mode, onSelect, onMultiSelect, onClose, selectedPhotos]);
 
-  const handleDone = useCallback(() => {
-    if (mode === 'multi' && onMultiSelect) {
-      onMultiSelect(selectedPhotos);
+  const handlePhotoSelect = useCallback((photo: Photo) => {
+    if (mode === 'single') {
+      setSelectedPhotos([photo]);
+      handleDone();
+    } else {
+      // Toggle selection for multi-select mode
+      setSelectedPhotos(prev => {
+        const isSelected = prev.some(p => p.sourcePath === photo.sourcePath);
+        if (isSelected) {
+          return prev.filter(p => p.sourcePath !== photo.sourcePath);
+        } else {
+          return [...prev, photo];
+        }
+      });
     }
-    onClose();
-  }, [mode, onMultiSelect, selectedPhotos, onClose]);
+  }, [mode, handleDone]);
 
   if (!isOpen) return null;
 
@@ -181,7 +196,7 @@ export default function PhotoPicker({
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.container} onClick={e => e.stopPropagation()}>
         <div className={styles.header}>
-          <h2 className={styles.title}>Select Photo</h2>
+          <h2 className={styles.title}>Select Photos</h2>
           <button 
             onClick={onClose} 
             className={styles.closeButton} 
@@ -191,19 +206,6 @@ export default function PhotoPicker({
             ×
           </button>
         </div>
-
-        {error && (
-          <div className={styles.error} role="alert">
-            {error}
-            <button 
-              onClick={() => selectedFolder ? loadPhotos(selectedFolder) : loadFolderTree()} 
-              className={styles.retryButton}
-              type="button"
-            >
-              Retry
-            </button>
-          </div>
-        )}
 
         <div className={styles.content}>
           <div className={styles.albumList}>
@@ -222,6 +224,7 @@ export default function PhotoPicker({
             {isLoading ? (
               <div className={styles.loading}>
                 <LoadingSpinner />
+                <p>Loading photos...</p>
               </div>
             ) : photos.length === 0 ? (
               <div className={styles.noContent}>
@@ -230,15 +233,13 @@ export default function PhotoPicker({
             ) : (
               <div className={styles.grid}>
                 {photos.map(photo => {
-                  const isSelected = mode === 'multi' 
-                    ? selectedPhotos.some(p => p.id === photo.id)
-                    : false;
+                  const isSelected = selectedPhotos.some(p => p.sourcePath === photo.sourcePath);
                   
                   return (
                     <div
                       key={photo.id}
                       className={`${styles.photoItem} ${isSelected ? styles.photoItemSelected : ''}`}
-                      onClick={() => handlePhotoSelect(photo)}
+                      onClick={() => !isImporting && handlePhotoSelect(photo)}
                       role="button"
                       tabIndex={0}
                     >
@@ -259,15 +260,42 @@ export default function PhotoPicker({
           </div>
         </div>
 
-        {mode === 'multi' && (
-          <div className={styles.footer}>
-            <button
-              onClick={handleDone}
-              className={styles.doneButton}
-              disabled={selectedPhotos.length === 0}
+        <div className={styles.footer}>
+          <button
+            onClick={handleDone}
+            className={styles.doneButton}
+            disabled={selectedPhotos.length === 0 || isImporting}
+            type="button"
+          >
+            {isImporting ? (
+              <>
+                <LoadingSpinner size="small" />
+                <span>Importing {selectedPhotos.length} photo{selectedPhotos.length !== 1 ? 's' : ''}...</span>
+              </>
+            ) : (
+              `Add ${selectedPhotos.length} Photo${selectedPhotos.length !== 1 ? 's' : ''}`
+            )}
+          </button>
+        </div>
+
+        {error && (
+          <div className={styles.error} role="alert">
+            {error}
+            <button 
+              onClick={() => {
+                setError(null);
+                if (isImporting) {
+                  handleDone();
+                } else if (selectedFolder) {
+                  loadPhotos(selectedFolder);
+                } else {
+                  loadFolderTree();
+                }
+              }}
+              className={styles.retryButton}
               type="button"
             >
-              Select {selectedPhotos.length} Photos
+              Retry
             </button>
           </div>
         )}

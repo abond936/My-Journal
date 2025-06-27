@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import { usePathname } from 'next/navigation';
 import Navigation from '@/components/common/Navigation';
 import GlobalSidebar from '@/components/common/GlobalSidebar';
 import styles from './AppShell.module.css';
@@ -12,7 +13,8 @@ interface AppShellProps {
 
 export default function AppShell({ children }: AppShellProps) {
   const { data: session, status } = useSession();
-  const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const pathname = usePathname();
+  const [isSidebarOpen, setSidebarOpen] = useState(pathname !== '/');
 
   const isAuthenticated = status === 'authenticated';
 
@@ -22,6 +24,13 @@ export default function AppShell({ children }: AppShellProps) {
       setSidebarOpen(false);
     }
   }, []);
+
+  // Update sidebar state when route changes
+  useEffect(() => {
+    if (pathname === '/') {
+      setSidebarOpen(false);
+    }
+  }, [pathname]);
 
   const toggleSidebar = () => {
     setSidebarOpen(prev => !prev);

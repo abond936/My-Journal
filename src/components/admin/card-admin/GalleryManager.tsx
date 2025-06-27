@@ -33,10 +33,30 @@ interface GalleryManagerProps {
 export default function GalleryManager({ className }: GalleryManagerProps) {
   const { formState, updateGalleryMedia } = useCardForm();
   const { galleryMedia } = formState;
+
+  console.log('GalleryManager - Current state:', {
+    galleryMediaLength: galleryMedia?.length || 0,
+    mediaCache: Array.from(formState.mediaCache.entries()).map(([id, media]) => ({
+      id,
+      hasUrl: !!media?.url
+    })),
+    galleryMediaDetails: galleryMedia?.map(item => ({
+      mediaId: item.mediaId,
+      mediaInCache: formState.mediaCache.has(item.mediaId),
+      mediaUrl: formState.mediaCache.get(item.mediaId)?.url || 'missing'
+    }))
+  });
+
   const [editingItem, setEditingItem] = useState<GalleryMediaItem | null>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   const handlePhotoSelect = (media: Media) => {
+    // First update the media cache
+    formState.mediaCache.set(media.id, {
+      ...media,
+      url: media.storageUrl || media.url
+    });
+
     const newGalleryItem = {
       mediaId: media.id,
       caption: media.caption || '',
@@ -45,6 +65,26 @@ export default function GalleryManager({ className }: GalleryManagerProps) {
     };
 
     updateGalleryMedia([...galleryMedia, newGalleryItem]);
+    setIsPickerOpen(false);
+  };
+
+  const handleMultiPhotoSelect = (medias: Media[]) => {
+    // First update the media cache with all new media
+    medias.forEach(media => {
+      formState.mediaCache.set(media.id, {
+        ...media,
+        url: media.storageUrl || media.url
+      });
+    });
+
+    const newItems = medias.map((media, index) => ({
+      mediaId: media.id,
+      caption: media.caption || '',
+      order: galleryMedia.length + index,
+      objectPosition: media.objectPosition || 'center',
+    }));
+
+    updateGalleryMedia([...galleryMedia, ...newItems]);
     setIsPickerOpen(false);
   };
 
@@ -113,43 +153,57 @@ export default function GalleryManager({ className }: GalleryManagerProps) {
       </div>
 
       <div className={styles.imageGrid}>
-        {galleryMedia.map((item, index) => (
-          <div key={item.mediaId} className={styles.imageItem}>
-            <img
-              src={formState.mediaCache.get(item.mediaId)?.url || ''}
-              alt={formState.mediaCache.get(item.mediaId)?.alt || ''}
-              className={styles.thumbnail}
-              style={{ objectPosition: item.objectPosition }}
-            />
-            <div className={styles.controls}>
-              {index > 0 && (
-                <button
-                  onClick={() => handleMovePhoto(index, index - 1)}
-                  className={styles.moveButton}
-                  aria-label="Move up"
-                >
-                  ↑
-                </button>
+        {galleryMedia.map((item, index) => {
+          const media = formState.mediaCache.get(item.mediaId);
+          console.log('GalleryManager - Rendering item:', {
+            mediaId: item.mediaId,
+            hasMedia: !!media,
+            mediaUrl: media?.url || 'missing'
+          });
+          return (
+            <div key={item.mediaId} className={styles.imageItem}>
+              {media?.url ? (
+                <img
+                  src={media.url}
+                  alt={media.alt || ''}
+                  className={styles.thumbnail}
+                  style={{ objectPosition: item.objectPosition }}
+                />
+              ) : (
+                <div className={styles.placeholder}>
+                  <LoadingSpinner />
+                </div>
               )}
-              {index < galleryMedia.length - 1 && (
+              <div className={styles.controls}>
+                {index > 0 && (
+                  <button
+                    onClick={() => handleMovePhoto(index, index - 1)}
+                    className={styles.moveButton}
+                    aria-label="Move up"
+                  >
+                    ↑
+                  </button>
+                )}
+                {index < galleryMedia.length - 1 && (
+                  <button
+                    onClick={() => handleMovePhoto(index, index + 1)}
+                    className={styles.moveButton}
+                    aria-label="Move down"
+                  >
+                    ↓
+                  </button>
+                )}
                 <button
-                  onClick={() => handleMovePhoto(index, index + 1)}
-                  className={styles.moveButton}
-                  aria-label="Move down"
+                  onClick={() => handleRemovePhoto(index)}
+                  className={styles.removeButton}
+                  aria-label="Remove image"
                 >
-                  ↓
+                  ×
                 </button>
-              )}
-              <button
-                onClick={() => handleRemovePhoto(index)}
-                className={styles.removeButton}
-                aria-label="Remove image"
-              >
-                ×
-              </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {editingItem && (
@@ -167,9 +221,11 @@ export default function GalleryManager({ className }: GalleryManagerProps) {
 
       {isPickerOpen && (
         <PhotoPicker
+          isOpen={isPickerOpen}
           onSelect={handlePhotoSelect}
+          onMultiSelect={handleMultiPhotoSelect}
           onClose={() => setIsPickerOpen(false)}
-          initialMode="single"
+          initialMode="multi"
         />
       )}
     </div>

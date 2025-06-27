@@ -20,14 +20,18 @@ export const mediaSchema = z.object({
   storagePath: z.string(), // The path to the file within the Storage bucket (e.g., 'images/uuid-filename.jpg').
   
   // Details about the original source of the file.
-  source: z.enum(['local-drive', 'upload', 'paste', 'onedrive', 'google-photos']),
+  source: z.enum(['local', 'paste']),
   sourcePath: z.string(), // The original path/identifier from the source (e.g., '/2023/Vacation/IMG_1234.jpg').
   
-  // The default caption for the image. Can be overridden at the point of use (e.g., in a card gallery).
+  // The default caption for the image, potentially from file metadata.
+  // This serves as the base caption that can be overridden in specific contexts.
   caption: z.string().optional(),
 
   // The status of the media asset in its processing lifecycle.
   status: z.enum(['temporary', 'active', 'deleted']).default('temporary'),
+
+  // The focal point position for the image, in CSS object-position format (e.g., '50% 50%')
+  objectPosition: z.string().optional().default('50% 50%'),
 
   // Timestamps for creation and last update.
   createdAt: z.number(),

@@ -104,7 +104,7 @@
 
 .toolbar {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
   padding: 0.75rem;
   border-bottom: 1px solid var(--color-border);
@@ -120,6 +120,68 @@
   padding: 0.25rem;
   border-radius: var(--border-radius-sm);
   background-color: var(--color-background);
+}
+
+.imageToolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  background: none;
+  padding: 0;
+}
+
+.imageToolbar .toolbarSection {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem;
+  border-radius: var(--border-radius-sm);
+  background-color: var(--color-background);
+}
+
+.imageToolbar .toolbarSection label {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text);
+}
+
+.imageToolbar .buttonGroup {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.imageToolbar .toolbarButton {
+  padding: 0.5rem;
+  background: none;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  color: var(--color-text);
+  font-size: 0.875rem;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+}
+
+.imageToolbar .toolbarButton:hover:not(:disabled) {
+  background-color: var(--color-background-hover);
+}
+
+.imageToolbar .toolbarButton.active {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.imageToolbar .toolbarButton.dangerButton {
+  color: var(--color-danger);
+}
+
+.imageToolbar .toolbarButton.dangerButton:hover {
+  background-color: var(--color-danger-light);
 }
 
 .toolbarButton {

@@ -8,6 +8,7 @@ import styles from './CardDetail.module.css';
 import CardGrid from '@/components/view/CardGrid';
 import TipTapRenderer from '@/components/common/TipTapRenderer';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface CardDetailPageProps {
   card: Card;
@@ -15,6 +16,8 @@ interface CardDetailPageProps {
 }
 
 const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) => {
+  const router = useRouter();
+
   const childItems = (childrenCards || []).map(child => ({
     id: child.id,
     title: child.title,
@@ -29,6 +32,15 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) 
 
   return (
     <article className={styles.container}>
+      <div className={styles.backButtonContainer}>
+        <button 
+          onClick={() => router.back()} 
+          className={styles.backButton}
+          aria-label="Go back"
+        >
+          ← Back
+        </button>
+      </div>
       <header className={styles.header}>
         {card.coverImage && (
           <div className={styles.coverImageContainer}>

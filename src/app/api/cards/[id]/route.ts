@@ -26,6 +26,22 @@ export async function GET(
       return NextResponse.json({ error: 'Card not found' }, { status: 404 });
     }
 
+    // Log the raw card data before sanitization
+    console.log('API GET [id] - Raw card data before sanitization:', {
+      id: parentCard.id,
+      title: parentCard.title,
+      content: parentCard.content ? 'Present' : 'Missing',
+      coverImageId: parentCard.coverImageId,
+      coverImage: parentCard.coverImage ? 'Present' : 'Missing',
+      when: parentCard.when,
+      galleryMedia: parentCard.galleryMedia?.length || 0,
+      galleryMediaDetails: parentCard.galleryMedia?.map(item => ({
+        mediaId: item.mediaId,
+        hasMedia: !!item.media,
+        mediaUrl: item.media?.url || 'missing'
+      }))
+    });
+
     const { searchParams } = new URL(request.url);
     const limit = searchParams.has('limit') ? parseInt(searchParams.get('limit')!, 10) : 10;
     const lastDocId = searchParams.get('lastDocId') || undefined;
@@ -35,7 +51,7 @@ export async function GET(
       { limit, lastDocId }
     );
 
-    // Sanitize the response to ensure it conforms to the Card type, preventing client-side errors.
+    // Sanitize the response
     const responseData = {
       ...parentCard,
       tags: parentCard.tags || [],
@@ -46,10 +62,21 @@ export async function GET(
       reflection: parentCard.reflection || [],
       galleryMedia: parentCard.galleryMedia || [],
       childrenIds: parentCard.childrenIds || [],
-      children: childrenResult.items, // The first page of children
+      children: childrenResult.items,
       hasMoreChildren: childrenResult.hasMore,
       lastChildId: childrenResult.lastDocId,
     };
+
+    // Log the sanitized data
+    console.log('API GET [id] - Sanitized response data:', {
+      id: responseData.id,
+      title: responseData.title,
+      content: responseData.content ? 'Present' : 'Missing',
+      coverImageId: responseData.coverImageId,
+      coverImage: responseData.coverImage ? 'Present' : 'Missing',
+      when: responseData.when,
+      galleryMedia: responseData.galleryMedia?.length || 0
+    });
 
     const response = NextResponse.json(responseData);
 
@@ -85,7 +112,31 @@ export async function PATCH(
     // The incoming body can be directly passed to the now-hardened updateCard service.
     // The service handles sanitation and tag recalculations.
     const cardData: Partial<Omit<Card, 'id'>> = await request.json();
+    
+    // Log the incoming data
+    console.log('API PATCH [id] - Received card data:', {
+      id,
+      galleryMedia: cardData.galleryMedia?.length || 0,
+      galleryMediaDetails: cardData.galleryMedia?.map(item => ({
+        mediaId: item.mediaId,
+        hasMedia: !!item.media,
+        mediaUrl: item.media?.url || 'missing'
+      }))
+    });
+
     const updatedCard = await updateCard(id, cardData);
+
+    // Log the updated card
+    console.log('API PATCH [id] - Updated card data:', {
+      id: updatedCard.id,
+      galleryMedia: updatedCard.galleryMedia?.length || 0,
+      galleryMediaDetails: updatedCard.galleryMedia?.map(item => ({
+        mediaId: item.mediaId,
+        hasMedia: !!item.media,
+        mediaUrl: item.media?.url || 'missing'
+      }))
+    });
+
     return NextResponse.json(updatedCard);
   } catch (error) {
     console.error(`API Error updating card ${id}:`, error);

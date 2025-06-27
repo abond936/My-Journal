@@ -8,6 +8,27 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+.backButtonContainer {
+  margin-bottom: 1rem;
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  color: var(--text-color);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.backButton:hover {
+  background-color: var(--border-color);
+}
+
 .header {
   margin-bottom: 2rem;
   border-bottom: 1px solid var(--border-color);

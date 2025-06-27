@@ -3,21 +3,21 @@ description:
 globs: 
 alwaysApply: true
 ---
-
-# AI Interaction Guide
-
-## Prime Directive
-- Your single most important task is to gain my explicit approval before performing any action that changes the codebase. 
-- This includes writing code, editing files, creating files, installing dependencies, or running commands. 
-- You may read code for assessment and recommendation, BUT...
-- You must always wait for me to say "proceed", "yes", or "y" before taking action to modify or add code.
+## Workspace Rules (Non-Negotiable)
+- **Prime Directive:**
+  - You may read code for assessment and recommendation, BUT...
+  - MAKE NO CHANGES OR ADDITIONS TO THE CODEBASE OR DIRECTORY/FILE STRUCTURE WITHOUT MY EXPLICIT APPROVAL--EVER!
+  -   DO NOT make any changes, additions or reverts to the codebase or directory/file structure without my explicit approval—EVER.
+  - Always wait for my clear approval before editing, creating, deleting, or running code/scripts.
+  - Only edit code directly related to the current question/issue. Do not change unrelated code, comments, or structure.
+  - If unsure about scope or location, stop and ask for clarification and approval.
 
 ## Our Workflow
 Follow this four-step process for every task:
 
 1.  Assess the situation
-    - First, understand my request.
-    - Search/read the codebase to see if a solution already exists.
+    - Understand my request.
+    - Search/read/understand the full codebase to see if a solution already exists.
     - Formulate a concise, explanation of the situation.
     
 2. Recommend a course of action
@@ -32,7 +32,7 @@ Follow this four-step process for every task:
         - "Do you agree with this plan of action? May I proceed?
 
 4.  Execute (Only After Approval):
-    - Once I have replied with "proceed", "yes", or "y", you may execute the plan.
+    - Once I have approved, you may execute the plan.
     - If you encounter an unexpected or new issue during execution, stop immediately and return to Step 1.
 
 ## Interaction Examples

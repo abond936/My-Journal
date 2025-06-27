@@ -13,10 +13,15 @@ declare module '@tiptap/core' {
         src: string; 
         alt?: string; 
         caption?: string;
-        // ADDED width and height to the command options
         width: number;
         height: number;
+        mediaId?: string;
+        'data-media-id'?: string;
+        'data-media-type'?: string;
       }) => ReturnType;
+      setFigureSize: (size: 'small' | 'medium' | 'large') => ReturnType;
+      setFigureAlignment: (alignment: 'left' | 'center' | 'right') => ReturnType;
+      deleteFigure: () => ReturnType;
     };
   }
 }
@@ -33,11 +38,19 @@ export const FigureWithImage = Node.create<FigureWithImageOptions>({
     return {
       src: { default: null },
       alt: { default: null },
-      // ADDED width and height attributes to the node itself
       width: { default: null },
       height: { default: null },
       'data-size': { default: 'medium' },
       'data-alignment': { default: 'left' },
+      'data-media-id': { default: null },
+      'data-media-type': { default: 'content' },
+      mediaId: { 
+        default: null,
+        parseHTML: element => element.getAttribute('data-media-id'),
+        renderHTML: attributes => ({
+          'data-media-id': attributes.mediaId
+        })
+      }
     };
   },
 
@@ -51,11 +64,17 @@ export const FigureWithImage = Node.create<FigureWithImageOptions>({
           if (!img) {
             return {};
           }
+          const mediaId = element.getAttribute('data-media-id');
           return {
             src: img.getAttribute('src'),
             alt: img.getAttribute('alt'),
             width: parseInt(img.getAttribute('width') || '0', 10),
             height: parseInt(img.getAttribute('height') || '0', 10),
+            'data-size': element.getAttribute('data-size') || 'medium',
+            'data-alignment': element.getAttribute('data-alignment') || 'left',
+            'data-media-id': mediaId,
+            'data-media-type': element.getAttribute('data-media-type') || 'content',
+            mediaId: mediaId
           };
         },
       },
@@ -63,11 +82,23 @@ export const FigureWithImage = Node.create<FigureWithImageOptions>({
   },
 
   renderHTML({ HTMLAttributes, node }) {
-    // This is just a fallback for non-React environments
+    const mediaId = node.attrs.mediaId || node.attrs['data-media-id'];
     return [
       'figure',
-      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { 'data-figure-with-image': '' }),
-      ['img', { src: node.attrs.src, alt: node.attrs.alt, width: node.attrs.width, height: node.attrs.height }],
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { 
+        'data-figure-with-image': '',
+        'data-size': node.attrs['data-size'] || 'medium',
+        'data-alignment': node.attrs['data-alignment'] || 'left',
+        'data-media-id': mediaId,
+        'data-media-type': node.attrs['data-media-type'] || 'content'
+      }),
+      ['img', { 
+        src: node.attrs.src, 
+        alt: node.attrs.alt, 
+        width: node.attrs.width, 
+        height: node.attrs.height,
+        'data-media-id': mediaId
+      }],
       ['figcaption', 0],
     ];
   },
@@ -75,7 +106,6 @@ export const FigureWithImage = Node.create<FigureWithImageOptions>({
   addCommands() {
     return {
       setFigureWithImage: options => ({ commands }) => {
-        // Ensure all required attributes are provided
         if (!options.src || !options.width || !options.height) {
           console.error("FigureWithImage requires src, width, and height.");
           return false;
@@ -85,6 +115,31 @@ export const FigureWithImage = Node.create<FigureWithImageOptions>({
           attrs: options,
         });
       },
+      setFigureSize: size => ({ tr, state }) => {
+        const { selection } = state;
+        const node = state.doc.nodeAt(selection.from);
+        if (!node || node.type.name !== this.name) return false;
+
+        tr.setNodeMarkup(selection.from, null, {
+          ...node.attrs,
+          'data-size': size
+        });
+        return true;
+      },
+      setFigureAlignment: alignment => ({ tr, state }) => {
+        const { selection } = state;
+        const node = state.doc.nodeAt(selection.from);
+        if (!node || node.type.name !== this.name) return false;
+
+        tr.setNodeMarkup(selection.from, null, {
+          ...node.attrs,
+          'data-alignment': alignment
+        });
+        return true;
+      },
+      deleteFigure: () => ({ commands }) => {
+        return commands.deleteNode(this.name);
+      }
     };
   },
 

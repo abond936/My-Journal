@@ -17,8 +17,6 @@ import PhotoPicker from '@/components/admin/card-admin/PhotoPicker';
 import LoadingOverlay from '@/components/admin/card-admin/LoadingOverlay';
 
 interface CardFormProps {
-  initialCard: Card | null;
-  allTags: Tag[];
   onDelete?: () => Promise<void>;
 }
 
@@ -86,13 +84,15 @@ const ErrorSummary = memo(({ errors }: { errors: Record<string, string> }) => {
   );
 });
 
-const CardForm: React.FC<CardFormProps> = ({ initialCard, allTags, onDelete }) => {
+const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
   const {
     formState: { cardData, tags, coverImage, galleryMedia, mediaCache, isDirty, isSaving, errors },
+    allTags,
     updateField,
     updateTags,
     updateCoverImage,
     updateGalleryMedia,
+    updateContentMedia,
     handleSave,
     validateForm,
   } = useCardForm();
@@ -101,10 +101,18 @@ const CardForm: React.FC<CardFormProps> = ({ initialCard, allTags, onDelete }) =
   const [isPhotoPickerOpen, setIsPhotoPickerOpen] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
 
+  // Add diagnostic logging for initial data
   useEffect(() => {
-    console.log('CardForm coverImage:', coverImage);
-    console.log('CardForm mediaCache:', mediaCache);
-  }, [coverImage, mediaCache]);
+    console.log('CardForm - Initial card data:', {
+      id: cardData?.id,
+      title: cardData?.title,
+      content: cardData?.content ? 'Present' : 'Missing',
+      coverImageId: cardData?.coverImageId,
+      coverImage: coverImage ? 'Present' : 'Missing',
+      when: cardData?.when,
+      galleryMedia: galleryMedia?.length || 0
+    });
+  }, [cardData, coverImage, galleryMedia]);
 
   // Only show errors after user interaction
   const displayErrors = hasInteracted ? errors : {};
@@ -121,9 +129,15 @@ const CardForm: React.FC<CardFormProps> = ({ initialCard, allTags, onDelete }) =
   }, [updateField]);
 
   const handleContentChange = useCallback((content: string) => {
+    console.log('CardForm - Content changed:', { content });
     setHasInteracted(true);
     updateField('content', content);
   }, [updateField]);
+
+  const handleContentMediaChange = useCallback((mediaIds: string[]) => {
+    setHasInteracted(true);
+    updateContentMedia(mediaIds);
+  }, [updateContentMedia]);
 
   const handleTagsChange = useCallback((newIds: string[]) => {
     setHasInteracted(true);
@@ -139,7 +153,15 @@ const CardForm: React.FC<CardFormProps> = ({ initialCard, allTags, onDelete }) =
     e.preventDefault();
     setHasInteracted(true);
     
+    console.log('CardForm - Attempting to save:', {
+      cardData,
+      isValid: validateForm(),
+      errors,
+      content: cardData.content
+    });
+    
     if (!validateForm()) {
+      console.log('CardForm - Validation failed:', errors);
       const firstErrorElement = document.querySelector(`.${styles.inputError}`);
       if (firstErrorElement) {
         firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -148,11 +170,13 @@ const CardForm: React.FC<CardFormProps> = ({ initialCard, allTags, onDelete }) =
     }
 
     try {
+      console.log('CardForm - Validation passed, saving...');
       await handleSave();
+      console.log('CardForm - Save successful');
     } catch (error) {
-      console.error('Error submitting form:', error);
+      console.error('CardForm - Error submitting form:', error);
     }
-  }, [validateForm, handleSave]);
+  }, [validateForm, handleSave, cardData, errors]);
 
   const handleAddImage = useCallback(() => {
     setIsPhotoPickerOpen(true);
@@ -211,6 +235,7 @@ const CardForm: React.FC<CardFormProps> = ({ initialCard, allTags, onDelete }) =
               ref={editorRef}
               initialContent={cardData.content}
               onChange={handleContentChange}
+              onContentMediaChange={handleContentMediaChange}
               onAddImage={handleAddImage}
               error={displayErrors.content}
               className={clsx(displayErrors.content && styles.inputError)}

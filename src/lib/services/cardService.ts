@@ -123,42 +123,121 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'i
   // Update cover image status if it exists
   if (validatedUpdate.coverImageId) {
     const mediaRef = firestore.collection('media').doc(validatedUpdate.coverImageId);
-    batch.update(mediaRef, { 
+    const mediaUpdate: any = { 
       status: 'active',
       updatedAt: Date.now()
-    });
+    };
+    
+    // If we have the full media object with objectPosition, update it
+    if (validatedUpdate.coverImage?.objectPosition) {
+      mediaUpdate.objectPosition = validatedUpdate.coverImage.objectPosition;
+    }
+    
+    batch.update(mediaRef, mediaUpdate);
   }
 
   // Update gallery media status if it exists
   if (validatedUpdate.galleryMedia?.length) {
-    for (const media of validatedUpdate.galleryMedia) {
-      if (media.id) {
-        const mediaRef = firestore.collection('media').doc(media.id);
-        batch.update(mediaRef, { 
-          status: 'active',
-          updatedAt: Date.now()
-        });
+    const updatedGalleryMedia = [];
+    for (const item of validatedUpdate.galleryMedia) {
+      if (item.mediaId) {
+        const mediaRef = firestore.collection('media').doc(item.mediaId);
+        const mediaSnap = await mediaRef.get();
+        const mediaData = mediaSnap.data();
+        
+        if (mediaData) {
+          const mediaUpdate: any = { 
+            status: 'active',
+            updatedAt: Date.now(),
+            objectPosition: item.objectPosition || mediaData.objectPosition || 'center'
+          };
+          
+          batch.update(mediaRef, mediaUpdate);
+
+          // Add the full media object to the gallery item
+          updatedGalleryMedia.push({
+            mediaId: item.mediaId,
+            caption: item.caption || '',
+            order: item.order,
+            objectPosition: item.objectPosition || mediaData.objectPosition || 'center',
+            media: {
+              id: item.mediaId,
+              filename: mediaData.filename || '',
+              width: mediaData.width || 0,
+              height: mediaData.height || 0,
+              storageUrl: mediaData.storageUrl || '',
+              storagePath: mediaData.storagePath || '',
+              source: mediaData.source || 'upload',
+              sourcePath: mediaData.sourcePath || '',
+              caption: mediaData.caption || '',
+              status: 'active',
+              objectPosition: item.objectPosition || mediaData.objectPosition || 'center',
+              createdAt: mediaData.createdAt || Date.now(),
+              updatedAt: Date.now(),
+              url: mediaData.storageUrl || mediaData.url || ''
+            }
+          });
+        }
       }
     }
+    // Update the gallery media with full media objects
+    updateData.galleryMedia = updatedGalleryMedia;
   }
 
   // Update content media status if it exists
   if (validatedUpdate.contentMedia?.length) {
-    for (const media of validatedUpdate.contentMedia) {
-      if (media.id) {
-        const mediaRef = firestore.collection('media').doc(media.id);
-        batch.update(mediaRef, { 
-          status: 'active',
-          updatedAt: Date.now()
-        });
+    const updatedContentMedia = [];
+    for (const item of validatedUpdate.contentMedia) {
+      if (item.id) {
+        const mediaRef = firestore.collection('media').doc(item.id);
+        const mediaSnap = await mediaRef.get();
+        const mediaData = mediaSnap.data();
+        
+        if (mediaData) {
+          const mediaUpdate: any = { 
+            status: 'active',
+            updatedAt: Date.now()
+          };
+          
+          batch.update(mediaRef, mediaUpdate);
+
+          // Add the full media object to the content media item
+          updatedContentMedia.push({
+            id: item.id,
+            status: 'active',
+            updatedAt: Date.now(),
+            media: {
+              id: item.id,
+              filename: mediaData.filename || '',
+              width: mediaData.width || 0,
+              height: mediaData.height || 0,
+              storageUrl: mediaData.storageUrl || '',
+              storagePath: mediaData.storagePath || '',
+              source: mediaData.source || 'upload',
+              sourcePath: mediaData.sourcePath || '',
+              caption: mediaData.caption || '',
+              status: 'active',
+              objectPosition: mediaData.objectPosition || 'center',
+              createdAt: mediaData.createdAt || Date.now(),
+              updatedAt: mediaData.updatedAt || Date.now(),
+              url: mediaData.storageUrl || mediaData.url || ''
+            }
+          });
+        }
       }
     }
+    // Update the content media with full media objects
+    updateData.contentMedia = updatedContentMedia;
   }
 
   await batch.commit();
 
-  const updatedDoc = await docRef.get();
-  return updatedDoc.data() as Card;
+  // Use getCardById to get the full card with media objects
+  const updatedCard = await getCardById(cardId);
+  if (!updatedCard) {
+    throw new Error(`Failed to fetch updated card with ID ${cardId}`);
+  }
+  return updatedCard;
 }
 
 /**
@@ -174,7 +253,66 @@ export async function getCardById(id: string): Promise<Card | null> {
     return null;
   }
 
-  return docSnap.data() as Card;
+  const cardData = docSnap.data() as Card;
+
+  // Load cover image if it exists
+  if (cardData.coverImageId) {
+    const mediaRef = firestore.collection('media').doc(cardData.coverImageId);
+    const mediaSnap = await mediaRef.get();
+    const mediaData = mediaSnap.data();
+    if (mediaData) {
+      cardData.coverImage = {
+        ...mediaData,
+        url: mediaData.storageUrl || mediaData.url
+      };
+    }
+  }
+
+  // Load gallery media if it exists
+  if (cardData.galleryMedia?.length) {
+    const updatedGalleryMedia = [];
+    for (const item of cardData.galleryMedia) {
+      if (item.mediaId) {
+        const mediaRef = firestore.collection('media').doc(item.mediaId);
+        const mediaSnap = await mediaRef.get();
+        const mediaData = mediaSnap.data();
+        if (mediaData) {
+          updatedGalleryMedia.push({
+            ...item,
+            media: {
+              ...mediaData,
+              url: mediaData.storageUrl || mediaData.url
+            }
+          });
+        }
+      }
+    }
+    cardData.galleryMedia = updatedGalleryMedia;
+  }
+
+  // Load content media if it exists
+  if (cardData.contentMedia?.length) {
+    const updatedContentMedia = [];
+    for (const item of cardData.contentMedia) {
+      if (item.id) {
+        const mediaRef = firestore.collection('media').doc(item.id);
+        const mediaSnap = await mediaRef.get();
+        const mediaData = mediaSnap.data();
+        if (mediaData) {
+          updatedContentMedia.push({
+            ...item,
+            media: {
+              ...mediaData,
+              url: mediaData.storageUrl || mediaData.url
+            }
+          });
+        }
+      }
+    }
+    cardData.contentMedia = updatedContentMedia;
+  }
+
+  return cardData;
 }
 
 /**
@@ -301,7 +439,7 @@ export async function deleteAllCards(): Promise<void> {
 
 /**
  * Deletes a card and all its associated media assets (cover image, gallery images).
- * This function enforces the "no orphans" rule for media.
+ * This function enforces the "no orphans" rule for media and updates parent cards.
  * @param cardId The ID of the card to delete.
  */
 export async function deleteCard(cardId: string): Promise<void> {
@@ -320,12 +458,45 @@ export async function deleteCard(cardId: string): Promise<void> {
 
   // 2. Collect gallery image IDs
   if (card.galleryMedia && card.galleryMedia.length > 0) {
-    card.galleryMedia.forEach(item => mediaIdsToDelete.push(item.mediaId));
+    card.galleryMedia.forEach(item => {
+      if (item.mediaId) {
+        mediaIdsToDelete.push(item.mediaId);
+      }
+    });
   }
 
-  // TODO: Add logic to parse contentMediaIds when that feature is implemented.
+  // 3. Collect content media IDs
+  if (card.contentMedia && card.contentMedia.length > 0) {
+    card.contentMedia.forEach(item => {
+      if (item.id) {
+        mediaIdsToDelete.push(item.id);
+      }
+    });
+  }
 
-  // 3. Delete all associated media assets in parallel
+  // 4. Find all parent cards that have this card as a child
+  const parentCardsQuery = await firestore.collection(CARDS_COLLECTION)
+    .where('childrenIds', 'array-contains', cardId)
+    .get();
+
+  // 5. Start a batch write
+  const batch = firestore.batch();
+
+  // 6. Update all parent cards to remove this card from their childrenIds
+  parentCardsQuery.docs.forEach(doc => {
+    const parentCard = doc.data() as Card;
+    const updatedChildrenIds = parentCard.childrenIds?.filter(id => id !== cardId) || [];
+    batch.update(doc.ref, { childrenIds: updatedChildrenIds });
+  });
+
+  // 7. Delete the card document
+  const cardRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
+  batch.delete(cardRef);
+
+  // 8. Commit the batch (card deletion and parent updates)
+  await batch.commit();
+
+  // 9. Delete all associated media assets in parallel
   if (mediaIdsToDelete.length > 0) {
     console.log(`[deleteCard] Deleting ${mediaIdsToDelete.length} associated media assets for card ${cardId}...`);
     const deletionPromises = mediaIdsToDelete.map(mediaId => 
@@ -338,10 +509,7 @@ export async function deleteCard(cardId: string): Promise<void> {
     console.log(`[deleteCard] Finished deleting media assets for card ${cardId}.`);
   }
 
-  // 4. Finally, delete the card document itself
-  const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
-  await docRef.delete();
-  console.log(`[deleteCard] Successfully deleted card document ${cardId}.`);
+  console.log(`[deleteCard] Successfully deleted card document ${cardId} and updated all parent references.`);
 }
 
 /**
@@ -467,16 +635,31 @@ export async function getCards(options: {
 
   const querySnapshot = await query.limit(limit).get();
 
-  const items = querySnapshot.docs
-    .map(doc => {
-      const data = doc.data();
-      // Add the document ID to the data object
-      data.id = doc.id;
+  // Fetch all media objects in parallel for better performance
+  const mediaPromises = querySnapshot.docs.map(async doc => {
+    const data = doc.data();
+    data.id = doc.id;
+
+    // If there's a coverImageId, fetch the media object
+    if (data.coverImageId) {
+      const mediaDoc = await firestore.collection('media').doc(data.coverImageId).get();
+      if (mediaDoc.exists) {
+        data.coverImage = mediaDoc.data();
+      }
+    }
+
+    return data;
+  });
+
+  const cardsWithMedia = await Promise.all(mediaPromises);
+
+  const items = cardsWithMedia
+    .map(data => {
       const validation = cardSchema.safeParse(data);
       if (validation.success) {
         return validation.data as Card;
       } else {
-        console.warn(`[Data Integrity] Invalid card data found for doc id: ${doc.id}. Issues:`, validation.error.issues);
+        console.warn(`[Data Integrity] Invalid card data found for doc id: ${data.id}. Issues:`, validation.error.issues);
         return null;
       }
     })

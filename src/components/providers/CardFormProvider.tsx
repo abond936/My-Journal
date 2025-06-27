@@ -1,3 +1,32 @@
+/**
+ * CardFormProvider
+ * 
+ * A context provider that manages the state and operations for a card editing form.
+ * Handles all aspects of card data, including:
+ * - Basic card fields (title, content, etc.)
+ * - Tags and tag relationships
+ * - Media management (cover image, gallery, content media)
+ * - Form validation
+ * - Save state tracking
+ * 
+ * Key Features:
+ * 1. Media Cache Management
+ *    - Maintains a central cache of all media used in the card
+ *    - Handles media transformations and URL normalization
+ *    - Provides consistent media access across components
+ * 
+ * 2. State Management
+ *    - Tracks current and last saved state
+ *    - Manages loading and saving states
+ *    - Handles validation errors
+ * 
+ * 3. Form Operations
+ *    - Field updates with validation
+ *    - Media updates (cover, gallery, content)
+ *    - Tag management
+ *    - Save operations with optimistic updates
+ */
+
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useRef, useMemo, useEffect } from 'react';
@@ -7,6 +36,19 @@ import { Media } from '@/lib/types/photo';
 import { debounce } from 'lodash';
 import { z } from 'zod';
 
+/**
+ * FormState Interface
+ * Represents the complete state of the card form
+ * 
+ * @property cardData - The current card data being edited
+ * @property tags - Currently selected tags
+ * @property coverImage - Selected cover image
+ * @property galleryMedia - Media items in the gallery
+ * @property mediaCache - Central cache for all media objects
+ * @property isSaving - Whether a save operation is in progress
+ * @property errors - Validation errors by field
+ * @property lastSavedState - Snapshot of last successfully saved state
+ */
 interface FormState {
   cardData: CardUpdate;
   tags: Tag[];
@@ -23,9 +65,34 @@ interface FormState {
   };
 }
 
+/**
+ * FormContextValue Interface
+ * Defines the API exposed by the CardFormProvider
+ * 
+ * State Access:
+ * - formState: Complete form state
+ * - allTags: All available tags
+ * 
+ * Update Operations:
+ * - updateField: Update a single card field
+ * - updateTags: Update selected tags
+ * - updateCoverImage: Set/update cover image
+ * - updateGalleryMedia: Update gallery media list
+ * - updateChildIds: Update child card relationships
+ * - updateContentMedia: Update media used in content
+ * 
+ * Form Actions:
+ * - handleSave: Save the current state
+ * - resetForm: Reset to last saved state
+ * 
+ * Validation:
+ * - validateField: Validate a single field
+ * - validateForm: Validate entire form
+ */
 interface FormContextValue {
   // State
   formState: FormState;
+  allTags: Tag[];
   
   // Field Updates
   updateField: (field: keyof CardUpdate, value: any) => void;
@@ -33,6 +100,7 @@ interface FormContextValue {
   updateCoverImage: (media: Media | null) => void;
   updateGalleryMedia: (newMedia: Card['galleryMedia']) => void;
   updateChildIds: (newChildIds: string[]) => void;
+  updateContentMedia: (mediaIds: string[]) => void;
   
   // Form Actions
   handleSave: () => Promise<void>;
@@ -43,6 +111,10 @@ interface FormContextValue {
   validateForm: () => boolean;
 }
 
+/**
+ * Empty card template used for new cards
+ * Provides default values for all required fields
+ */
 const EMPTY_CARD: Card = {
   id: '',
   title: '',
@@ -71,8 +143,17 @@ const EMPTY_CARD: Card = {
   coverImage: null,
 };
 
+// Create the context with type safety
 const FormContext = createContext<FormContextValue | undefined>(undefined);
 
+/**
+ * Props for the CardFormProvider component
+ * 
+ * @property children - Child components that will have access to the form context
+ * @property initialCard - Initial card data (null for new cards)
+ * @property allTags - Complete list of available tags
+ * @property onSave - Callback to handle saving card data
+ */
 interface FormProviderProps {
   children: React.ReactNode;
   initialCard: Card | null;
@@ -80,43 +161,208 @@ interface FormProviderProps {
   onSave: (cardData: CardUpdate, tags: Tag[]) => Promise<void>;
 }
 
+/**
+ * CardFormProvider Component
+ * 
+ * Provides form state and operations to child components through React Context.
+ * Handles initialization and updates of the form state, including:
+ * - Setting up initial state from provided card data
+ * - Initializing and maintaining the media cache
+ * - Processing and normalizing media objects
+ * - Managing form state updates
+ */
 export function CardFormProvider({ children, initialCard, allTags, onSave }: FormProviderProps) {
-  const cardToEdit = useMemo(() => initialCard || EMPTY_CARD, [initialCard]);
-  
-  // State
+  // Initialize form state with media cache setup
   const [formState, setFormState] = useState<FormState>(() => {
-    // Initialize media cache with cover image if it exists
+    // Create new media cache
     const mediaCache = new Map<string, Media>();
-    if (cardToEdit.coverImage) {
-      mediaCache.set(cardToEdit.coverImageId!, cardToEdit.coverImage);
+    
+    if (initialCard) {
+      console.log('CardFormProvider - Initializing with card:', {
+        id: initialCard.id,
+        hasCoverImage: !!initialCard.coverImage,
+        galleryMediaLength: initialCard.galleryMedia?.length || 0
+      });
+
+      // Cache cover image if it exists
+      if (initialCard.coverImage) {
+        mediaCache.set(initialCard.coverImageId!, {
+          ...initialCard.coverImage,
+          url: initialCard.coverImage.storageUrl || initialCard.coverImage.url
+        });
+      }
+      
+      // Process and cache gallery media
+      if (initialCard.galleryMedia) {
+        console.log('CardFormProvider - Processing gallery media:', {
+          galleryMediaLength: initialCard.galleryMedia.length,
+          items: initialCard.galleryMedia.map(item => ({
+            mediaId: item.mediaId,
+            hasMedia: !!item.media,
+            mediaUrl: item.media?.url || 'missing'
+          }))
+        });
+
+        initialCard.galleryMedia.forEach(item => {
+          if (item.mediaId && item.media) {
+            console.log('CardFormProvider - Adding gallery media to cache:', {
+              mediaId: item.mediaId,
+              hasStorageUrl: !!item.media.storageUrl,
+              hasUrl: !!item.media.url,
+              media: item.media
+            });
+            
+            // Transform media object to consistent format
+            const media = {
+              id: item.mediaId,
+              filename: item.media.filename || '',
+              width: item.media.width || 0,
+              height: item.media.height || 0,
+              storageUrl: item.media.storageUrl || '',
+              storagePath: item.media.storagePath || '',
+              source: item.media.source || 'upload',
+              sourcePath: item.media.sourcePath || '',
+              caption: item.media.caption || '',
+              status: item.media.status || 'active',
+              objectPosition: item.media.objectPosition || '50% 50%',
+              createdAt: item.media.createdAt || Date.now(),
+              updatedAt: item.media.updatedAt || Date.now(),
+              // Ensure consistent URL access
+              url: item.media.storageUrl || item.media.url || ''
+            };
+            
+            mediaCache.set(item.mediaId, media);
+          } else {
+            console.warn('CardFormProvider - Missing media data for gallery item:', {
+              mediaId: item.mediaId,
+              hasMedia: !!item.media
+            });
+          }
+        });
+      }
     }
     
+    const card = initialCard || EMPTY_CARD;
+    
+    // Return initial state with populated media cache
     return {
-      cardData: { ...cardToEdit },
-      tags: cardToEdit.tags?.map(tagId => allTags.find(t => t.id === tagId)).filter(Boolean) || [],
-      coverImage: cardToEdit.coverImage || null,
-      galleryMedia: cardToEdit.galleryMedia || [],
+      cardData: { ...card },
+      tags: card.tags?.map(tagId => allTags.find(t => t.id === tagId)).filter(Boolean) || [],
+      coverImage: card.coverImage || null,
+      galleryMedia: card.galleryMedia || [],
       mediaCache,
       isSaving: false,
       errors: {},
       lastSavedState: {
-        cardData: { ...cardToEdit },
-        tags: cardToEdit.tags?.map(tagId => allTags.find(t => t.id === tagId)).filter(Boolean) || [],
-        coverImage: cardToEdit.coverImage || null,
-        galleryMedia: cardToEdit.galleryMedia || [],
+        cardData: { ...card },
+        tags: card.tags?.map(tagId => allTags.find(t => t.id === tagId)).filter(Boolean) || [],
+        coverImage: card.coverImage || null,
+        galleryMedia: card.galleryMedia || [],
       },
     };
   });
+
+  /**
+   * Effect to update form state when initialCard changes
+   * Rebuilds the entire form state, including:
+   * - Reconstructing the media cache
+   * - Processing all media objects
+   * - Updating the form state with new data
+   */
+  useEffect(() => {
+    if (initialCard) {
+      console.log('CardFormProvider - Updating form state with new card:', {
+        id: initialCard.id,
+        hasCoverImage: !!initialCard.coverImage,
+        galleryMediaLength: initialCard.galleryMedia?.length || 0
+      });
+
+      const mediaCache = new Map<string, Media>();
+      
+      // Rebuild media cache with cover image
+      if (initialCard.coverImage) {
+        mediaCache.set(initialCard.coverImageId!, {
+          ...initialCard.coverImage,
+          url: initialCard.coverImage.storageUrl || initialCard.coverImage.url
+        });
+      }
+
+      // Rebuild media cache with gallery media
+      if (initialCard.galleryMedia) {
+        console.log('CardFormProvider - Processing gallery media:', {
+          galleryMediaLength: initialCard.galleryMedia.length,
+          items: initialCard.galleryMedia.map(item => ({
+            mediaId: item.mediaId,
+            hasMedia: !!item.media,
+            mediaUrl: item.media?.url || 'missing'
+          }))
+        });
+
+        initialCard.galleryMedia.forEach(item => {
+          if (item.mediaId && item.media) {
+            console.log('CardFormProvider - Adding gallery media to cache:', {
+              mediaId: item.mediaId,
+              hasStorageUrl: !!item.media.storageUrl,
+              hasUrl: !!item.media.url,
+              media: item.media
+            });
+            
+            // Transform media to consistent format
+            const media = {
+              id: item.mediaId,
+              filename: item.media.filename || '',
+              width: item.media.width || 0,
+              height: item.media.height || 0,
+              storageUrl: item.media.storageUrl || '',
+              storagePath: item.media.storagePath || '',
+              source: item.media.source || 'upload',
+              sourcePath: item.media.sourcePath || '',
+              caption: item.media.caption || '',
+              status: item.media.status || 'active',
+              objectPosition: item.media.objectPosition || '50% 50%',
+              createdAt: item.media.createdAt || Date.now(),
+              updatedAt: item.media.updatedAt || Date.now(),
+              // For backward compatibility with components expecting url
+              url: item.media.storageUrl || item.media.url || ''
+            };
+            
+            mediaCache.set(item.mediaId, media);
+          } else {
+            console.warn('CardFormProvider - Missing media data for gallery item:', {
+              mediaId: item.mediaId,
+              hasMedia: !!item.media
+            });
+          }
+        });
+      }
+
+      // Update form state with new data and cache
+      setFormState(prev => ({
+        ...prev,
+        cardData: { ...initialCard },
+        tags: initialCard.tags?.map(tagId => allTags.find(t => t.id === tagId)).filter(Boolean) || [],
+        coverImage: initialCard.coverImage || null,
+        galleryMedia: initialCard.galleryMedia || [],
+        mediaCache,
+        lastSavedState: {
+          cardData: { ...initialCard },
+          tags: initialCard.tags?.map(tagId => allTags.find(t => t.id === tagId)).filter(Boolean) || [],
+          coverImage: initialCard.coverImage || null,
+          galleryMedia: initialCard.galleryMedia || [],
+        },
+      }));
+    }
+  }, [initialCard, allTags]);
 
   // Track whether the form has been submitted
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
   // Track original values for dirty checking
   const originalValues = useRef({
-    cardData: { ...cardToEdit },
-    tags: cardToEdit.tags?.map(tagId => allTags.find(t => t.id === tagId)).filter(Boolean) || [],
-    coverImage: cardToEdit.coverImage,
-    galleryMedia: cardToEdit.galleryMedia || [],
+    cardData: { ...initialCard },
+    tags: initialCard?.tags?.map(tagId => allTags.find(t => t.id === tagId)).filter(Boolean) || [],
+    coverImage: initialCard?.coverImage,
+    galleryMedia: initialCard?.galleryMedia || [],
   });
 
   // Memoize validation schema
@@ -187,15 +433,54 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     }));
   }, []);
 
-  // Update handlers with optimistic updates and batched state
+  // Validation functions should be defined before they are used
+  const validateField = useCallback((field: keyof CardUpdate): boolean => {
+    const errors: Record<string, string> = {};
+    
+    switch (field) {
+      case 'title':
+        if (!formState.cardData.title?.trim()) {
+          errors.title = 'Title is required';
+        }
+        break;
+      // Add other field validations as needed
+    }
+    
+    setFormState(prev => ({
+      ...prev,
+      errors: { ...prev.errors, ...errors }
+    }));
+    
+    return Object.keys(errors).length === 0;
+  }, [formState.cardData.title]);
+
+  const validateForm = useCallback((): boolean => {
+    const errors: Record<string, string> = {};
+    
+    // Required fields
+    if (!formState.cardData.title?.trim()) {
+      errors.title = 'Title is required';
+    }
+    
+    // Add other validations as needed
+    
+    setFormState(prev => ({
+      ...prev,
+      errors
+    }));
+    
+    return Object.keys(errors).length === 0;
+  }, [formState.cardData.title]);
+
+  // Field update functions
   const updateField = useCallback((field: keyof CardUpdate, value: any) => {
-    console.log('Updating field:', field, 'with value:', value);
-    const error = validateSingleField(field, value);
     batchStateUpdate({
-      cardData: { ...formState.cardData, [field]: value },
-      errors: { ...formState.errors, [field]: error, submit: undefined },
+      cardData: {
+        ...formState.cardData,
+        [field]: value
+      }
     });
-  }, [validateSingleField, batchStateUpdate, formState.cardData, formState.errors]);
+  }, [batchStateUpdate, formState.cardData]);
 
   const updateTags = useCallback((newTags: Tag[]) => {
     const error = validateSingleField('tags', newTags.map(t => t.id));
@@ -221,12 +506,33 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       }
     }
 
-    batchStateUpdate({
-      coverImage: media,
-      cardData: { ...formState.cardData, coverImageId: media?.id || null },
-      errors: { ...formState.errors, submit: undefined },
-    });
-  }, [batchStateUpdate, formState.cardData, formState.errors, formState.coverImage]);
+    // Update the media cache with the new image
+    if (media) {
+      const updatedCache = new Map(formState.mediaCache);
+      updatedCache.set(media.id, media);
+      
+      batchStateUpdate({
+        coverImage: media,
+        cardData: {
+          ...formState.cardData,
+          coverImageId: media.id,
+          coverImage: media
+        },
+        mediaCache: updatedCache,
+        errors: { ...formState.errors, coverImage: undefined, submit: undefined },
+      });
+    } else {
+      batchStateUpdate({
+        coverImage: null,
+        cardData: {
+          ...formState.cardData,
+          coverImageId: null,
+          coverImage: null
+        },
+        errors: { ...formState.errors, coverImage: undefined, submit: undefined },
+      });
+    }
+  }, [batchStateUpdate, formState.cardData, formState.coverImage?.id, formState.errors, formState.mediaCache]);
 
   const updateGalleryMedia = useCallback((newMedia: Card['galleryMedia']) => {
     batchStateUpdate({
@@ -256,126 +562,179 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     });
   }, [batchStateUpdate, formState.cardData, formState.errors]);
 
-  // Form actions with optimistic updates
-  const handleSave = useCallback(async () => {
-    try {
-      setFormState(prev => ({ ...prev, isSaving: true, errors: {} }));
-      
-      const cardDataWithCoverImage = {
+  const updateContentMedia = useCallback(async (mediaIds: string[]) => {
+    console.log('CardFormProvider - Updating content media:', { mediaIds });
+
+    // First, update the media cache with any new media
+    const updatedCache = new Map(formState.mediaCache);
+    const contentMediaPromises = mediaIds.map(async id => {
+      // If we don't have this media in the cache yet, we need to fetch it
+      if (!updatedCache.has(id)) {
+        try {
+          const response = await fetch(`/api/images/${id}`);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch media ${id}`);
+          }
+          const media = await response.json();
+          updatedCache.set(id, {
+            ...media,
+            url: media.storageUrl || media.url
+          });
+        } catch (error) {
+          console.error('Error fetching media:', error);
+          return null;
+        }
+      }
+
+      const media = updatedCache.get(id);
+      if (!media) {
+        console.warn(`Media ${id} not found in cache`);
+        return null;
+      }
+
+      return {
+        id,
+        status: 'active',
+        updatedAt: Date.now(),
+        media: {
+          id: media.id,
+          filename: media.filename || '',
+          width: media.width || 0,
+          height: media.height || 0,
+          storageUrl: media.storageUrl || '',
+          storagePath: media.storagePath || '',
+          source: media.source || 'upload',
+          sourcePath: media.sourcePath || '',
+          caption: media.caption || '',
+          status: 'active',
+          objectPosition: media.objectPosition || 'center',
+          createdAt: media.createdAt || Date.now(),
+          updatedAt: Date.now(),
+          url: media.storageUrl || media.url || ''
+        }
+      };
+    });
+
+    const contentMedia = (await Promise.all(contentMediaPromises)).filter(Boolean);
+    console.log('CardFormProvider - New content media array:', { contentMedia });
+
+    batchStateUpdate({
+      cardData: {
         ...formState.cardData,
-        coverImageId: formState.coverImage?.id || null
+        contentMedia
+      },
+      mediaCache: updatedCache
+    });
+  }, [batchStateUpdate, formState.cardData, formState.mediaCache]);
+
+  // Form actions
+  const handleSave = useCallback(async () => {
+    console.log('CardFormProvider - Saving card:', {
+      cardData: formState.cardData,
+      contentMedia: formState.cardData.contentMedia,
+      content: formState.cardData.content
+    });
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setFormState(prev => ({ ...prev, isSaving: true }));
+
+    try {
+      // Prepare card data for saving
+      const cardUpdate: CardUpdate = {
+        ...formState.cardData,
+        title_lowercase: formState.cardData.title?.toLowerCase() || '',
+        updatedAt: Date.now(),
       };
 
-      await onSave(cardDataWithCoverImage, formState.tags);
-      
-      setFormState(prev => ({
-        ...prev,
-        isSaving: false,
-        errors: {}
-      }));
+      // Add full media objects to gallery media
+      if (formState.galleryMedia?.length) {
+        cardUpdate.galleryMedia = formState.galleryMedia.map(item => ({
+          ...item,
+          media: formState.mediaCache.get(item.mediaId)
+        }));
+      }
 
-      return true;
+      // Add full media objects to content media
+      if (cardUpdate.contentMedia?.length) {
+        cardUpdate.contentMedia = cardUpdate.contentMedia.map(item => ({
+          ...item,
+          media: formState.mediaCache.get(item.id)
+        }));
+      }
+
+      console.log('CardFormProvider - Prepared card update:', {
+        cardUpdate,
+        contentMedia: cardUpdate.contentMedia,
+        content: cardUpdate.content,
+        galleryMedia: cardUpdate.galleryMedia
+      });
+
+      await onSave(cardUpdate, formState.tags);
+
+      console.log('CardFormProvider - Card saved successfully');
     } catch (error) {
-      console.error('Error saving card:', error);
-      setFormState(prev => ({
-        ...prev,
-        errors: {
-          submit: error instanceof Error ? error.message : 'Failed to save changes',
-        },
-        isSaving: false
-      }));
+      console.error('CardFormProvider - Error saving card:', error);
       throw error;
+    } finally {
+      setFormState(prev => ({ ...prev, isSaving: false }));
     }
-  }, [formState.cardData, formState.tags, formState.coverImage, onSave]);
+  }, [formState.cardData, formState.tags, formState.galleryMedia, formState.mediaCache, validateForm, onSave]);
 
   const resetForm = useCallback(() => {
     setFormState({
-      cardData: { ...cardToEdit },
-      tags: cardToEdit.tags?.map(tagId => allTags.find(t => t.id === tagId)).filter(Boolean) || [],
-      coverImage: cardToEdit.coverImage || null,
-      galleryMedia: cardToEdit.galleryMedia || [],
+      cardData: { ...initialCard },
+      tags: initialCard?.tags?.map(tagId => allTags.find(t => t.id === tagId)).filter(Boolean) || [],
+      coverImage: initialCard?.coverImage || null,
+      galleryMedia: initialCard?.galleryMedia || [],
       mediaCache: new Map(),
       isSaving: false,
       errors: {},
       lastSavedState: {
-        cardData: { ...cardToEdit },
-        tags: cardToEdit.tags?.map(tagId => allTags.find(t => t.id === tagId)).filter(Boolean) || [],
-        coverImage: cardToEdit.coverImage || null,
-        galleryMedia: cardToEdit.galleryMedia || [],
+        cardData: { ...initialCard },
+        tags: initialCard?.tags?.map(tagId => allTags.find(t => t.id === tagId)).filter(Boolean) || [],
+        coverImage: initialCard?.coverImage || null,
+        galleryMedia: initialCard?.galleryMedia || [],
       },
     });
     originalValues.current = {
-      cardData: { ...cardToEdit },
-      tags: cardToEdit.tags?.map(tagId => allTags.find(t => t.id === tagId)).filter(Boolean) || [],
-      coverImage: cardToEdit.coverImage,
-      galleryMedia: cardToEdit.galleryMedia || [],
+      cardData: { ...initialCard },
+      tags: initialCard?.tags?.map(tagId => allTags.find(t => t.id === tagId)).filter(Boolean) || [],
+      coverImage: initialCard?.coverImage,
+      galleryMedia: initialCard?.galleryMedia || [],
     };
-  }, [cardToEdit, allTags]);
-
-  // Validation with memoized schema
-  const validateField = useCallback((field: keyof CardUpdate): boolean => {
-    const error = validateSingleField(field, formState.cardData[field]);
-    setFormState(prev => ({
-      ...prev,
-      errors: { ...prev.errors, [field]: error },
-    }));
-    return !error;
-  }, [formState.cardData, validateSingleField]);
-
-  const validateForm = useCallback((): boolean => {
-    const validationObject = {
-      ...formState.cardData,
-      tags: formState.tags.map(t => t.id),
-      coverImage: formState.coverImage,
-      galleryMedia: formState.galleryMedia,
-    };
-
-    const result = validationSchema.safeParse(validationObject);
-
-    if (!result.success) {
-      const errors = result.error.errors.reduce((acc, err) => {
-        const path = err.path.join('.');
-        acc[path] = err.message;
-        return acc;
-      }, {} as Record<string, string>);
-
-      setFormState(prev => ({
-        ...prev,
-        errors,
-      }));
-      return false;
-    }
-
-    return true;
-  }, [validationSchema, formState.cardData, formState.tags, formState.coverImage, formState.galleryMedia]);
+  }, [initialCard, allTags]);
 
   // Memoize context value to prevent unnecessary re-renders
-  const contextValue = useMemo(
-    () => ({
-      formState,
-      updateField,
-      updateTags,
-      updateCoverImage,
-      updateGalleryMedia,
-      updateChildIds,
-      handleSave,
-      resetForm,
-      validateField,
-      validateForm,
-    }),
-    [
-      formState,
-      updateField,
-      updateTags,
-      updateCoverImage,
-      updateGalleryMedia,
-      updateChildIds,
-      handleSave,
-      resetForm,
-      validateField,
-      validateForm,
-    ]
-  );
+  const contextValue = useMemo<FormContextValue>(() => ({
+    formState,
+    allTags,
+    updateField,
+    updateTags,
+    updateCoverImage,
+    updateGalleryMedia,
+    updateChildIds,
+    updateContentMedia,
+    handleSave,
+    resetForm,
+    validateField,
+    validateForm,
+  }), [
+    formState,
+    allTags,
+    updateField,
+    updateTags,
+    updateCoverImage,
+    updateGalleryMedia,
+    updateChildIds,
+    updateContentMedia,
+    handleSave,
+    resetForm,
+    validateField,
+    validateForm,
+  ]);
 
   return (
     <FormContext.Provider value={contextValue}>
@@ -390,4 +749,62 @@ export function useCardForm() {
     throw new Error('useCardForm must be used within a CardFormProvider');
   }
   return context;
-} 
+}
+
+const handleImageUpload = async (file: File) => {
+  if (isDisabled || isProcessingImage) return;
+
+  setIsProcessingImage(true);
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch('/api/images/browser/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to upload image');
+    }
+
+    const media: Media = await response.json();
+    console.log('Image uploaded successfully:', { media });
+    
+    // Update the media cache with the new image
+    const updatedCache = new Map(formState.mediaCache);
+    updatedCache.set(media.id, {
+      ...media,
+      url: media.storageUrl || media.url
+    });
+    
+    batchStateUpdate({
+      mediaCache: updatedCache
+    });
+    
+    if (editor) {
+      const displayUrl = getDisplayUrl(media);
+      console.log('Inserting image into editor:', { displayUrl, mediaId: media.id });
+      editor.chain().focus().setFigureWithImage({
+        src: displayUrl,
+        alt: media.filename,
+        width: media.width,
+        height: media.height,
+        caption: media.caption || media.filename,
+        mediaId: media.id,
+        'data-media-id': media.id,
+        'data-media-type': 'content'
+      }).run();
+
+      // Extract and notify about media IDs
+      const mediaIds = extractMediaIds(editor.getHTML());
+      console.log('Notifying about content media change after upload:', { mediaIds });
+      onContentMediaChange?.(mediaIds);
+    }
+  } catch (error) {
+    console.error('Error uploading image:', error);
+  } finally {
+    setIsProcessingImage(false);
+  }
+}; 
