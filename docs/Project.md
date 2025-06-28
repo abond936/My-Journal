@@ -3,7 +3,6 @@
 A personal journaling application combining text and media in an immersive flexible and/or curated manner. 
 
 A 'card' contains a story, gallery, quote, or question--made up of text and media and is:
-
 - standalone or nested, containing an array of children, acting as a container of other cards. 
 - assigned dimensional and heirarchical tags for flexible filtering. 
 - presented in various ways
@@ -33,26 +32,14 @@ Image handling through Firebase Storage
 Legend:
 - ✅ Implemented
 - 🟡 Operational
-- ⭕ Planned
+- ⭕ Planned - Priority: 1 - next, 2 - on hold
 - ❓ Open Question
-
-Priority:
-1 - next
-2 - on hold
-
-
-
-
 
 ## **Technical Infrastructure**
 =====================================
-
-This project adheres to a strict client-server, separation of concerns architecture
+- This project adheres to a strict client-server, separation of concerns architecture
 
 ### **Technical Stack**
-----------------------------------
-Status: ✅ Implemented
-
 - Frontend
   ✅ 
   - Next.js App Router
@@ -61,6 +48,7 @@ Status: ✅ Implemented
   - CSS Modules
   - TipTap rich text editing
   - PhotoPicker for media selection
+  - GalleryManager for galleries
   - Next.js Image Optimization
   - DragNDrop (dnd-kit)
   - Swiper for galleries
@@ -94,9 +82,6 @@ Status: ✅ Implemented
 2 - Hosting: Netlify (primary), with Vercel as backup
 
 ### **Authentication**
-=================================
-Status: ✅ Implemented
-
 ✅
 - Auth.js handles user sign-in and session management
 - Firestore Adapter: User and session data stored in Firestore
@@ -110,9 +95,6 @@ Status: ✅ Implemented
 2 - Implement more granular permissions
 
 ### **Codebase Backup**
---------------------------------------
-Status: ✅ Implemented
-
 ✅
 - Backup script - A Node.js script (`src/lib/scripts/utils/backup-codebase.ts`) creates a compressed `.zip` archive of the entire codebase on OneDrive.
 - Files included - Uses `git ls-files` to efficiently and accurately gather all project files, respecting `.gitignore`.
@@ -120,30 +102,25 @@ Status: ✅ Implemented
 - Github backup - A GitHub Actions workflow (`.github/workflows/backup.yml`) automatically creates a backup on every push to the `main` branch. This backup is stored as a workflow artifact for 7 days, providing an off-site copy.
 - Cleanup - Automatically cleans up local backups older than 5 days.
 
-### **Data Backup (Firestore)**
---------------------------------------
-Status: ✅ Implemented
+⭕2 - Update backup scripts and automation
 
+### **Data Backup (Firestore)**
 ✅ 
 - Backup script - A Node.js script (`src/lib/scripts/backup-database.ts`) reads all documents from the `entries`, `albums`, `tags`, and `users` collections and saves them to a single, timestamped JSON file.
 - Scheduled backup - A PowerShell script (`src/lib/scripts/setup-database-backup-task.ps1`) creates a Windows Scheduled Task to run the backup script daily at 2 AM.
 
-⭕
-2 - Update backup scripts and automation
+⭕2 - Update backup scripts and automation
 
 ### **Recovery**
----------------------------------------
-Status: ✅ Implemented
+- This section outlines the procedures for recovering from a critical failure.
 
-This section outlines the procedures for recovering from a critical failure.
-
-Codebase Recovery
+✅Codebase Recovery
 This is a manual process:
 - Locate the latest codebase backup file (e.g., `backup-....zip`) in the backup directory.
 - Unzip the file. This will restore the complete project structure.
 - Open a terminal in the restored project directory and run `npm install` to reinstall all dependencies.
 
-Database Recovery
+✅Database Recovery
 This is a deliberate, interactive process using the `restore-database.ts` script.
 - Identify the JSON backup file you wish to restore (e.g., `firestore-backup-....json`).
 - Run the restore script from the terminal, passing the full path to the backup file as an argument. Example:
@@ -158,9 +135,6 @@ This is a deliberate, interactive process using the `restore-database.ts` script
 =======================================
 
 #### **Firestore Structure**
----------------------------------------
-Status: ✅ Implemented
-
 ✅ 
 - cards collection (primary content store)
 - media collection (asset metadata)
@@ -168,13 +142,9 @@ Status: ✅ Implemented
 - cache collection (performance optimization)
 - users collection (authentication)
 
-⭕
-1 - Remove legacy collections (entries/albums)
+⭕2 - Remove legacy collections (entries/albums)
 
 #### **Security Rules**
------------------------------------------
-Status: ✅ Implemented
-
 ✅ 
 - Data access rules
 - Collection-level security
@@ -187,9 +157,6 @@ Status: ✅ Implemented
 2 - Add request validation rules
 
 #### **Data Validation**
----------------------------------------------
-Status: ✅ Implemented
-
 ✅ 
 - Zod schemas for all data types
 - Server-side validation
@@ -207,9 +174,6 @@ Status: ✅ Implemented
 ======================================
 
 ### **Home Page**
----------------------------------
-Status: - ✅ Implemented
-
 ✅
 - Logo
 - Cloud images
@@ -221,9 +185,6 @@ Status: - ✅ Implemented
 
 
 ### **Content Page**
----------------------------------
-Status: ✅ Implemented
-
 - Opening View for all users.
 - Focused on consuming content: viewing cards, galleries, and navigating via tags.
 - No editing or admin controls.
@@ -231,53 +192,37 @@ Status: ✅ Implemented
 ✅ Grid View: CardFeed.tsx and ContentCard.tsx work together to display a grid of cards for browsing.
     - Responsive grid-based layout
     - Dynamic card sizing
+    - Three display modes
+      - Inline - expands/collapses in place
+      - Navigate - Links to dedicated card view page
+      - Static - Display only
     - Infinite scroll pagination
     - Uses IntersectionObserver to load more children as the user scrolls.
     - Tag-based filtering
     - Search functionality
     - Optimized image loading
-    - Cached tag hierarchy
-✅- Three display modes
-    - Inline - expands/collapses in place
-    - Navigate - Links to dedicated card view page
-    - Static - Display only
-⭕ 1 - Fix ghost/error layout issues
-⭕ 2 - Improve styling - card sizing 
-⭕ 2 - Add sorting options
+⭕2 - Test `inline` mode - expands/collapses in place - may already exist
+⭕2 - Test `static` - Display only
+⭕2 - Style card types
+⭕2 - Fix ghost/error layout issues
 
 ### **Card View**
----------------------------------
-Status: ✅ Implemented
+`src/app/view/`
 
-Location: src/app/view/
-
-✅ Navigate View - `[id]/CardDetailPage.tsx` provides the dedicated, full-page view for a single card, including children, gallery, and content.
-✅ Infinite Scroll - The card feed uses an IntersectionObserver to automatically load more cards as the user scrolls to the bottom of the page.
-❓2 - Are query optimization or alternative data-loading strategies needed?
-⭕ 2 Conditional Render - Render page based on type and components.
+✅ Page - `[id]/CardDetailPage.tsx` provides the dedicated, full-page view for a single card, including children, gallery, and content.
+⭕2 Conditional Render - Render page based on type and components.
       - Title - Render first
       - Subtitle - If present, render next
       - Cover image - If present, render next
       - Content - If present, render using TipTapRenderer.
       - Gallery - If present, render grid,
       - Children - If present, render next.
-        - Uses CardProvider to fetch and render child cards (nested structure).
-⭕ 2 - Test `inline` mode - expands/collapses in place - may already exist
-⭕ 2 - Test `static` - Display only
-⭕ 2 - Styling for card types
-
 
 ### **User Interaction System**
----------------------------------
-Status: ⭕ Planned
-
 ⭕
 2 - add user interaction - Like, comment, sharelink
 
 ### **Theme System**
----------------------------------
-Status: 🟡 Operational
-
 ✅
 - light/dark theme
 - fixed schemes
@@ -295,10 +240,7 @@ Status: 🟡 Operational
 =====================================
 
 ### **Top Navigation**
----------------------------------
-Status: ✅ Implemented
-
-Top navigation toggles between content and admin for the administrator and defaults to content for a user. 
+- Top navigation toggles content and admin for the administrator and defaults to content for a user. 
 
 ✅ 
 - logo
@@ -313,30 +255,21 @@ Top navigation toggles between content and admin for the administrator and defau
 2 - make consistent throughout
 
 ### **Curated Navigaton**
----------------------------------
-Status: ⭕ Planned
-
 ⭕
 2 - create table of contents
 2 - create tabbed sidebar - toc/tag
 
 ### **View Search**
----------------------------------
-Status: ⭕ Planned
-
 ⭕
 2 - add basic title search - top of content
 2 - add subtitle, status, content
 
-
 ## **Content Administration**
 =======================================
-Status: 🟡 Operational
-
-- src/app/admin/ - Admin-only features for managing cards, tags, and other resources.
-- layout.tsx - Admin layout, navigation, and access control.
-- Administration is only available to admin
-   - CRUD/Bulk editing operations for app elements
+- Admin-only features for managing cards, tags, and other resources.
+- CRUD/Bulk editing operations for app elements
+`src/app/admin/`
+`layout.tsx`- Admin layout, navigation, and access control.
 
 ✅
 - navigation
@@ -352,25 +285,22 @@ Status: 🟡 Operational
 ### **Card System**
 =======================================
 
-The Card is the central data entity of the application
-All business logic on the server-side (cardService), making card creation, updates, and retrieval a simple process for the client. The data model is heavily denormalized to support complex relationships (with tags and media) while ensuring fast, efficient reads for the end-user.
+- The Card is the central data entity of the application
+- All business logic on the server-side (cardService) 
+- The data model is denormalized to efficiently support complex relationships (with tags and media)
 
 #### **Data Model & Backend**
-----------------------------------------
-Status: ✅ Implemented
-
 ✅ Firestore Collection: `cards` collection stores all card documents.
-⭕ Thin Client - Refactor `cardService` according to thin clinet architecture.
-✅ Media Lifecycle: `cardService` manages the media lifecycle. 
 ✅ Atomic Writes: All card updates are performed within a Firestore writeBatch to ensure that updates to the card document and any related media documents either all succeed or all fail together, preventing data inconsistency.
-❓ Child Card Management: The strategy for managing child cards is not fully defined. What happens to child cards when a parent card is deleted? (e.g., Are they deleted? Promoted to top-level cards?).
+⭕ Child Strategy - The strategy for managing child cards is not fully defined. 
+    - The idea behind having a nested card was to be able to accomodate the conceived World & Politics, Father sections, where a card can contain related stories. 
+    - How are cards assigned? - Currently there is a search bar, but this is not going to suffice. What is needed is a filtering system to list the related cards and select/order them for inclusion. This could be done by modal within a card or in bulk assign children in card management. Perhaps this could be done like tag heirarchy and order. Filter on cards, then assign parent/order
+    - When a parent card is deleted, their children are promoted.
 ⭕ 1 Data Validation: Implement Zod schemas on the POST /api/cards and PATCH /api/cards/[id] routes to validate all incoming data before it reaches the cardService.
 
 #### **Card Management** 
----------------------------------
-Status: ✅ Implemented
-
-`/app/admin/card-admin/` - Card management (list, create, edit, bulk actions).
+- Card management (list, create, edit, bulk actions).
+`/app/admin/card-admin/` 
 
 ✅ Comprehensive card list
 ✅ Card Creation & Editing: CardForm.tsx is the primary component for all card create/update operations.
@@ -389,16 +319,11 @@ Status: ✅ Implemented
 ⭕2 - Test inline editing
 ⭕2 - Fix statistics
 ⭕2 - Tag management
-⭕2 UI/UX Polish: The CardForm.tsx is complex. It could benefit from being broken into smaller, more manageable sub-components to improve code clarity and user experience. ??
-
+⭕2 - Drag n Drop parent/order functionality
 
 ### **Card New/Edit** 
----------------------------------
-Status: ✅ Implemented
-
-Creating/Editing a Card (
-  `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
-  `CardForm.tsx`
+`src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
+`CardForm.tsx`
 
 #### **CardAdminClientPage**
 ✅ - Handles data fetching (card and tags)
@@ -422,7 +347,6 @@ Creating/Editing a Card (
 ⭕2 - Validate dimensional tags
 ⭕2 - Implement vaidation and logging
 
-
 #### **CardForm** (Main Form)
 ✅ - Renders form sections
 ✅ - Handles form submission
@@ -433,82 +357,66 @@ Creating/Editing a Card (
 ⭕2 - Implement valdiation and error handling
 ⭕2 - Remove redundant state management
 
-
-#### **MacroTagSelector** (Tag Component)
-✅ - Tries to handle single dimension
-✅ - Direct form state access
-✅ - Mixed tag ID and object handling
-
-⭕2 - Fix prop/state mismatch
-⭕2 - Fix incorrect dimension handling
-⭕2 - Implement type safety
-⭕2 - Fix Inconsistent data structure usage
-
 ✅ Cover Image: 
   - Image used for preview card and view page header.
   - CoverPhotoContainer and PhotoPicker to select/upload an image.
+  - Paste/Drag to upload image.
   - Stores reference, not the image.
   - Stores objectPosition, no caption
-  - Fetches and caches media details for display.
+
 ✅ Content field:
   - Rich text editing
   - Embedded images, id only
   - Rest of content held in HTML
-  ⭕1- Add Quote Block
-  ⭕1- Fix text wrap
-  ⭕1 Fix image engine
-✅ Tag assignment
+  - Captions default to media object with override stored in card.
+
+✅ Tag assignment:
+  `MacroTagSelector`(Tag Component)
+  - Modal Selector: `ExpandedView` allows users to select tags from the full dimensional hierarchy.
+  - Collapsed View: When not editing, the component displays the selected tags, organized by dimension.
   ⭕2 Fix tag strategy
+      - Fix prop/state mismatch
+      - Fix incorrect dimension handling
+      - Implement type safety
+      - Fix Inconsistent data structure usage
+
 ✅ Gallery:
     - Uses GalleryManager and PhotoPicker for multi-image selection.
     - Stores gallery as an array of media IDs.
-    - Defaults to media object caption
-✅ Child card linking
-  ⭕2 - Develop linking strategy
-⭕2 - Implement Status control
-⭕2 - Implement Validation
-⭕2 - Implement Error handling
+    - Defaults to media object caption with override stored in media object (overwrite)
+    - Set caption, focal point
 
-⭕2 - Default excerpt to first x characters
+✅ Child card linking
+    - Search only right now.
+    ⭕2 - Develop linking strategy
+
+⭕2 - Validation - Implement Validation
+⭕2 - Error Handling - Implement Error handling
+
+⭕2 - Excerpt - Default excerpt to first x characters, with override
 ⭕2 - Batch upload gallery cards
-⭕2 - Normalize images 
+⭕2 - Normalize images pre-import
 
 
 ### **Tag System**
 ===========================================
-Status: ✅ Implemented
-
-Strategy
-
 - All cards are assigned multiple, dimensional, and heirarchical tags to enable flexible filtering. 
--Tags are  denormalized on each `Card` document during write operations to makes read queries fast and simple by avoiding complex, real-time hierarchy calculations. 
-
+- Tags are  denormalized on each `Card` document for filtering. 
 
 #### **1. Data Model & Backend**
-------------------------------------------
-Status: ✅ Implemented
-
 ✅ Firestore Collection - `tags` canonical tag data
 ⭕ 1 Structure: The current `dimension` model is flat. We need to decide if a more complex, multi-dimensional, or faceted tag structure is needed for the long term. This decision impacts almost every part of the tagging system.
 ⭕ Card type has dimensional arrays. Form state has flat tag array
 ✅ Denormalization - On card save, `cardService` uses `tagDataAccess.ts` to calculate and save derived tag data onto the `Card` document itself.
-⭕ 1 Performance: `tagDataAccess.ts` currently fetches all tags from Firestore on every calculation. This should be optimized with a server-side cache to reduce Firestore reads during bulk updates.
+⭕2 Performance: `tagDataAccess.ts` currently fetches all tags from Firestore on every calculation. This should be optimized with a server-side cache to reduce Firestore reads during bulk updates.
 ✅ Storage - `Card.tags` - Stores only the tags directly assigned by the user.
 ✅ Inheritance - `Card.inheritedTags` - Flattened array of direct and ancestor tags (e.g., "Paris" -> "France" -> "Europe").
 ✅ Filter - `Card.filterTags`: Stores a map object (`{ "tagId": true, ... }`) of all inherited tags, optimized for fast Firestore `where` queries.
-##### **3. Data Validation & Error Handling**
---------------------------------------------
-Status: ⭕ Planned
-
-⭕ 1 API Route Validation: API routes (`/api/tags`) should use Zod schemas to validate incoming request bodies for create and update operations. This ensures required fields (like `name`) are present and data types are correct.
-⭕ 1 Error Handling: API routes should use `try...catch` blocks to handle errors from services gracefully, returning appropriate HTTP status codes (e.g., 400, 404, 500) and logging the error server-side for troubleshooting.
-
+⭕1 API Route Validation: API routes (`/api/tags`) should use Zod schemas to validate incoming request bodies for create and update operations. This ensures required fields (like `name`) are present and data types are correct.
+⭕1 Error Handling: API routes should use `try...catch` blocks to handle errors from services gracefully, returning appropriate HTTP status codes (e.g., 400, 404, 500) and logging the error server-side for troubleshooting.
 
 #### **2. Tag Administration**
---------------------------------------------
-Status: ✅ Implemented
-
-Location: `/app/admin/tag-admin/`
+`/app/admin/tag-admin/`
 
 ✅ Hierarchical View: The `page.tsx` renders all tags in a tree structure `TagTreeView`
 ✅ Editing: Users can click to edit tag names inline (`TagAdminRow.tsx`).
@@ -517,24 +425,20 @@ Location: `/app/admin/tag-admin/`
   - OnDelete - User choice of 1) children are promoted or 2) cascade deleted
   ❓ When tags are moved/renamed, what is the update strategy for the denormalized inheritedTags and filterTags on thousands of existing cards? (e.g., On next card write? Or a one-time bulk update script?)
 ⭕ 2 Dimension Assignment: Currently, a tag's `dimension` (`who`, `what`, `when`, etc.) is a string field that must be set manually in Firestore. An admin UI should be created to manage this.
-✅ Bulk operations
+✅ Bulk Editing: The `BulkTagEditorModal.tsx` reuses this logic to allow applying tags to multiple cards at once.
 ✅ Add child tags with a + button.
 
 ### **3. Tag Filtering**
----------------------------------
-Status: ✅ Implemented
+- Primary user-facing feature for discovering content via tags.
+- Filtering is Inter-dimensional "AND" and Intra-dimensional "OR"
+`GlobalSidebar.tsx` and `TagTree.tsx`
 
-Primary user-facing feature for discovering content via tags.
-Filtering is Inter-dimensional "AND" and Intra-dimensional "OR"
-
-Location: `GlobalSidebar.tsx` and `TagTree.tsx`.
 ✅ State Management: `TagProvider` fetches all tags and provides the tag tree and filter state to the application.
 ✅ Hierarchical Display: `TagTree.tsx` displays the full, browseable hierarchy of tags, grouped by dimension with expand/collapse functionality.
-⭕ 2 - include number of cards (x) - requires cloud function
-⭕ 2 - add multiple orderBy
-⭕ 2 - increase indention
-⭕ 2 - slide in/out on mobile
-
+  ⭕2 - include number of cards (x) - requires cloud function
+  ⭕2 - add orderBy options
+  ⭕2 - increase indention
+  ⭕2 - slide in/out on mobile
 ✅ Multi-Select Filtering: Users can select multiple tags. `CardProvider` then uses the `selectedFilterTagIds` to query for cards that contain any of the selected tags in their `filterTags` map.
 ✅ Filtering - Filtering logic is executed on the server to avoid Firestore's query limitations.
 ✅ Cache - Tag hierarchy UI display is sourced from a single cached JSON object in Firestore `cache/tagTree`, initiated once on startup and automatically updated by a serverless Cloud Function whenever a tag is changed to ensure fast-loading UI with minimal reads.
@@ -543,25 +447,10 @@ Location: `GlobalSidebar.tsx` and `TagTree.tsx`.
 ✅ Inter-Dimension "AND" Logic - It then calculates the *intersection* of the results from each dimension to get the final list of card IDs that match all criteria.
 ✅ Pagination - It paginates over this final list of IDs to return the requested page of cards.
 ✅ Security Model: Tag creation, modification, and deletion are restricted to authenticated users with an 'admin' role via the /api/tags endpoint.
-
-
-#### **4. Tag Assignment**
-----------------------------------------
-Status: ✅ Implemented
-
-Tags are assigned to a `Card` during creation or editing using `MacroTagSelector`.
-Tag lineage is calculated and assigned server-side by `cardService`
-
-Location: `MacroTagSelector.tsx`.
-✅ Modal Selector: A modal (`ExpandedView`) allows users to select tags from the full dimensional hierarchy (`who`, `what`, `when`, etc.).
-✅ Collapsed View: When not editing, the component displays the selected tags, organized by dimension, providing a clear summary.
-✅ Bulk Editing: The `BulkTagEditorModal.tsx` reuses this logic to allow applying tags to multiple cards at once.
+❓2 - Are query optimization or alternative data-loading strategies needed?
 
 ### **Question Management**
----------------------------------
-Status: ⭕ Planned - on hold
-
-Questions are prompts for stories.
+- Questions are prompts for stories.
 
 ✅
 - None
@@ -588,10 +477,7 @@ Questions are prompts for stories.
 - Do we group short questions?
 
 ### **Gallery Style Management**
----------------------------------
-Status: ⭕ Planned - on hold
-
-Gallery styles are selectable styles for gallery cards
+- Gallery styles are selectable styles for gallery cards
 
 ✅
 - None
@@ -603,10 +489,7 @@ Gallery styles are selectable styles for gallery cards
 ❓what are the variables that need to be included/decided on gallery styling
 
 ### **Theme Management**
-----------------------------------
-Status: ⭕ Planned
-
-Themes customizable.
+- Themes customizable.
 
 ✅
 - Light/Dark toggle
@@ -618,145 +501,80 @@ Themes customizable.
 
 ### **IMAGE INTEGRATION**
 =======================================
-Status: 🟡 Operational
-
-The system is designed to provide a seamless way to import images from various sources, process them for web use, and associate them with content cards in the form of cover images, content embeds, and galleries.
 
 Conceptual Architecture:
-- Source images reside in various *external sources*
-  - Current implementation sources from local drive (mirrored from OneDrive)
-  - Future sources conceived of being OneDrive directly, Google Photos, and/or Apple Photos
+- Source images reside in various *external sources* --(local, OneDrive, Google, Appple, etc.)
+  - Current implementation sources from *local drive* (mirrored from OneDrive)
+- Images imported (picker or paste/drop) and assigned to fields in cards
 - The app provides a *generic service layer* to external sources to:
   - Connect
-  - Browse and select their content with PhotoPicker
-  - Import the images, *sharp* process them, prepare *metadata* 
-- Store images Firebase
-- Firebase serves as delivery mechanism for all app content *by ID*
-  - Images are not stored in the cards.
-  - only context-secific image metadata is stored in the cards.
-- Media collection tracks metadata and relationships
-- Optimize performance through caching and lazy loading.
-- Image operations (processing, storage, lifecycle management) are handled by server-side services.
-
-#### **Data Model & Backend**
-----------------------------------------
-Status: 🟡 Operational
-
-✅ Firestone Collection: `media` 
-
-❓ sourcePath Field: The sourcePath field stores a path back to the user's local drive (e.g., C:\Users\...\image.jpg). Is this necessary? It could be a privacy concern and may not be useful long-term. We should decide if this field should be kept, anonymized, or removed.
-❓ Error Handling: What is the desired user experience if an image upload fails partway through the process? The current API returns a generic 500 error. A more robust strategy for handling and communicating partial failures to the user should be designed.
-
-
-
-Image Integration (src/components/admin/card-admin/CardForm.tsx, imageImportService.ts)
+  - Browse and select their content with PhotoPicker or accept paste/drop
+  - Import the images to firebase, *sharp* process them, prepare *metadata* 
+  - Return *ID* to card for storage and object for immediate display
+    - Only context-secific image metadata is stored in the cards.
+    - Media collection tracks metadata and relationships
+  - Optimize performance through caching and lazy loading.
 Flow:
-- User browses local files through PhotoPicker
+- User browses local files through PhotoPicker or paste/drop
 - Selected images uploaded to Firebase Storage
 - Metadata stored in media collection
-- Images served to content via Firebase URLs
-- Next.js Image Optimization
-- Automatically fitted to closest standard ratio using `object-fit: cover`
-- Display preferences stored in data attributes
-- CSS-based transformations for performance
-- No permanent image modifications
-- Portrait images handled with:
-  - Smart cropping
-  - Blurred background
-  Object position control
-✅ 
-- Local drive integration complete
-- PhotoPicker UI implemented
-- Firebase Storage integration
-- Basic file upload/download
-- Metadata tracking
-- Images fetched and cached for fast display
-
-⭕
-1 - Rrationalize image strategy 
-1 - Normalize images prior to upload
-2 - Batch clean images from testing before production
-
-❓
+- Images served to content via Firebase ID/URLs
 - Image import/processing happens on select.
   - Allows handling of select-save period.
-  - Delete if not saved.
+  - Must delete if not saved to avoid orphans
 - Image deletion happens on-demand. 
 - User selects, 
   - onAdd, 
-  - import, 
-    - error handle
-  - process, 
-    - create id & meta data
-    - mark temporary,
-  - send id and object to display,
-  - OnSave,
-    - update to doc to 'active'
-  - OnRemove/OnCancel/OnDelete,
+    - import
+    - process - create id & metadata
+      - mark 'temporary'
+    - send id and object to display
+  - OnSave
+    - update doc to 'active'
+  - OnRemove/OnCancel/OnDelete
     - delete media doc/object
-- Images sized on the fly.
-- objectPosition saved by container
-- How to best normalize images prior to upload.
-- 
+- Images sized on the fly
 
-Where to place validation logic
-Error handling strategy
+✅**Data Model & Backend**
 
-
-Live text content needs to be preserved
-
-
-Gallery needs explicit ordering for grid/horizontal scroll
-Content images are positioned by their place in the text
-Content captions are saved with field
-Gallery captions are same as media object captions, but can be overridden and save in media
-Content captions default to media object caption but be overridden and saved in card
-Base caption stored with media object (potentially from file metadata later)
-All captions are optional
-
-Should only have two states: 'temporary' (selected but not saved) and 'active'
-Images become 'active' when their parent card is saved
-Object Position Needs to be context-specific
-Gallery images
-Cover image
-Preview card (potentially different handling needed)
-Doesn't apply to content images
-Usage Tracking:
-Need to track where images are used for safe deletion
-Same image can be used in multiple cards
-Same image shouldn't appear twice in same gallery
-
-### **Storage**
--------------------------------------------------
-Status: ✅ Implemented
-
-✅
-- Firebase Storage integration
-- Efficient file organization
+✅**Firebase**
+- Collection - `media`
+- Schema set
 - Metadata management
 - Access control
-- Cache management
 - Download URL generation
-- Error handling
+- Cache management
+Base caption (optional) stored with media object (potentially from file metadata later)
+Images have two states: 'temporary' (selected but not saved) and 'active'(saved)
+Object Position Needs to be context-specific
+Preview card (potentially different handling needed)
+Doesn't apply to content images
+⭕2 - Backup - Add media to backup 
+⭕2 - Error Handling - If import fails, provide error and options. Accept imported or none.
 
-⭕
-1 - Implement image optimization
-2 - Add media to backup 
+✅**Local Drive** 
+- API integration
+- File system navigation
 
-### **Normalization**
---------------------------------------------------
-Status: ✅ Implemented
+✅**Photopicker**
+- Integrated media selection
+- Tree-based navigation
+- Single/multi-select modes
 
-✅
-- Sharp image processing pipeline
-- Automatic resizing (thumb, medium, large)
-- Format optimization (WebP)
+✅**Services**
+`imageImportService.ts`
+
+- Sharp image processing
 - Metadata extraction
 - Unique ID generation
 - Error handling
 
+**Normalization**
 ⭕
-1 - Implement advanced image processing
+2 - Normalize images prior to upload
+2 - Batch clean images from testing before production
+1 - Prepare Images for upload
+- Implement advanced image processing
 - resize - thumb 400w, medium 600w, large 1600w - 2048px max
 - aspect ratios - landscape/banner, portrait, square
   - smart crop - VisionAPI cropHintsAnnotation
@@ -778,77 +596,6 @@ Status: ✅ Implemented
 - build replace utility
 - use srcset to allow browser to select?
 2 - Implement batch processing
-
-### **Photopicker**
---------------------------------------------------------------
-Status: ✅ Implemented
-
-✅
-- Integrated media selection
-- Multiple source support
-- Tree-based navigation
-- Single/multi-select modes
-- Preview capabilities
-- Drag and drop support
-- Upload functionality
-- Paste support
-
-⭕
-
-### **Local Drive** 
---------------------------------------------------------------
-Status: ✅ Implemented
-
-✅
-- Local drive API integration
-- Folder structure support
-- File system navigation
-- Metadata extraction
-- Error handling
-- Environment configuration
-
-⭕
-1 - Improve error handling
-2 - Add file watching ??
-2 - Implement cleanup jobs
-
-### **OneDrive**
--------------------------------------------
-Status: ⭕ Planned
-
-✅
-- Basic API integration
-- Authentication flow
-- Folder structure support
-
-⭕
-1 - Complete API integration
-2 - Add sync functionality
-2 - Implement backup strategy
-
-### **Google Photos**
-----------------------------------------------------
-Status: ⭕ Planned
-
-✅
-- Authentication setup
-- Basic API exploration
-
-⭕
-1 - Implement API integration
-2 - Add album support
-
-
-### **Apple Photos**
-----------------------------------------------------
-Status: ⭕ Planned
-
-✅
-- Initial research completed
-
-⭕
-1 - Research API limitations
-2 - Plan integration strategy
-2 - Evaluate feasibility
-
-
+- Portrait images in landscape containers handled with:
+  - Smart cropping
+  - Blurred background

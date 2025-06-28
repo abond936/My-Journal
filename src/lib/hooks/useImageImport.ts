@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Media } from '@/lib/types/photo';
+import { deleteMediaAsset } from '@/lib/services/images/imageImportService';
 
 /**
  * Represents the state of a single file being uploaded.
@@ -93,9 +94,19 @@ export function useImageImport({ onSuccess, onError, onSettled }: UseImageImport
     onSettled?.();
   }, [onSuccess, onError, onSettled]);
 
+  const cleanup = useCallback(async (mediaId: string) => {
+    try {
+      await deleteMediaAsset(mediaId);
+    } catch (error) {
+      console.error(`[useImageImport] Failed to clean up media asset ${mediaId}:`, error);
+      // We log the error but don't re-throw, as this is a background cleanup task.
+    }
+  }, []);
+
   return {
     importImages,
     uploadingFiles,
     isImporting,
+    cleanup,
   };
-} 
+}

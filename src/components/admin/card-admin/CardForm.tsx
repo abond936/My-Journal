@@ -22,7 +22,7 @@ interface CardFormProps {
 
 const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
   const {
-    formState: { cardData, tags, isSaving, errors },
+    formState: { cardData, isSaving, errors },
     allTags,
     setField,
     updateTags,
@@ -38,10 +38,17 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
   const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => setField('status', e.target.value as Card['status']), [setField]);
   const handleContentChange = useCallback((content: string) => setField('content', content), [setField]);
   const handleTagsChange = useCallback((newIds: string[]) => updateTags(allTags.filter(tag => newIds.includes(tag.id))), [updateTags, allTags]);
+  const selectedTags = React.useMemo(() => {
+    const tagIds = new Set(cardData.tags || []);
+    return allTags.filter(tag => tagIds.has(tag.id));
+  }, [cardData.tags, allTags]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      console.log("Form is invalid. Submission prevented.");
+      return;
+    }
     await handleSave();
   }, [validateForm, handleSave]);
 

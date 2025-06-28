@@ -13,18 +13,21 @@ import { useImageImport } from '@/lib/hooks/useImageImport';
  * Represents the complete state of the card form
  */
 interface FormState {
+  // The cardData object is now the single source of truth for all form fields.
+  // It holds the complete state of the card being edited, including transient/populated fields
+  // like the full coverImage object, which won't be saved directly to Firestore.
   cardData: CardUpdate;
-  tags: Tag[];
-  coverImage: Media | null | undefined;
-  galleryMedia: Card['galleryMedia'];
+
+  // The mediaCache holds full Media objects, keyed by their ID.
+  // This is used to display images and manage their lifecycle (e.g., cleaning up temporary uploads).
   mediaCache: Map<string, Media>;
+
   isSaving: boolean;
   errors: Record<string, string>;
+
+  // A snapshot of the last successfully saved state. Used for 'reset' or 'cancel' logic.
   lastSavedState: {
     cardData: CardUpdate;
-    tags: Tag[];
-    coverImage: Media | null | undefined;
-    galleryMedia: Card['galleryMedia'];
   };
 }
 
@@ -46,6 +49,12 @@ interface FormContextValue {
   updateGalleryMedia: (newMedia: Card['galleryMedia']) => void;
   updateChildIds: (newChildIds: string[]) => void;
   updateContentMedia: (mediaIds: string[]) => void;
+  
+  // New functions to manage the gallery state robustly.
+  addGalleryItems: (newMedia: Media[]) => void;
+  removeGalleryItem: (mediaIdToRemove: string) => void;
+  updateGalleryItem: (mediaId: string, updates: Partial<GalleryMediaItem>) => void;
+  reorderGalleryItems: (reorderedItems: Card['galleryMedia']) => void;
   
   // Form Actions
   handleSave: () => Promise<void>;
@@ -97,7 +106,7 @@ interface FormProviderProps {
   children: React.ReactNode;
   initialCard: Card | null;
   allTags: Tag[];
-  onSave: (cardData: CardUpdate, tags: Tag[]) => Promise<void>;
+  onSave: (cardData: CardUpdate) => Promise<void>;
 }
 
 /**
@@ -107,54 +116,34 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
   const { importImage, isImporting, cleanup, error: importError } = useImageImport();
 
   const [formState, setFormState] = useState<FormState>(() => {
+    // The media cache will store full Media objects for display and management.
     const mediaCache = new Map<string, Media>();
-    
-    if (initialCard) {
-      if (initialCard.coverImage) {
-        mediaCache.set(initialCard.coverImageId!, {
-          ...initialCard.coverImage,
-        });
-      }
-      
-      if (initialCard.galleryMedia) {
-        initialCard.galleryMedia.forEach(item => {
-          if (item.mediaId && item.media) {
-            const media = {
-              id: item.mediaId,
-              filename: item.media.filename || '',
-              width: item.media.width || 0,
-              height: item.media.height || 0,
-              storageUrl: item.media.storageUrl || '',
-              storagePath: item.media.storagePath || '',
-              source: item.media.source || 'upload',
-              sourcePath: item.media.sourcePath || '',
-              caption: item.media.caption || '',
-              status: item.media.status || 'active',
-              objectPosition: item.media.objectPosition || '50% 50%',
-              createdAt: item.media.createdAt || Date.now(),
-              updatedAt: item.media.updatedAt || Date.now(),
-            };
-            mediaCache.set(item.mediaId, media);
-          }
-        });
-      }
-    }
-    
     const card = initialCard || EMPTY_CARD;
-    
+
+    // Populate the media cache from the initial card data.
+    // This is crucial for displaying existing images when editing a card.
+    if (card.coverImage) {
+      mediaCache.set(card.coverImageId!, { ...card.coverImage });
+    }
+    if (card.galleryMedia) {
+      card.galleryMedia.forEach(item => {
+        if (item.mediaId && item.media) {
+          mediaCache.set(item.mediaId, {
+            id: item.mediaId,
+            ...item.media
+          });
+        }
+      });
+    }
+
+    // The initial form state. cardData is the single source of truth.
     return {
       cardData: { ...card },
-      tags: card.tags?.map(tagId => allTags.find(t => t.id === tagId)).filter(Boolean) as Tag[] || [],
-      coverImage: card.coverImage || null,
-      galleryMedia: card.galleryMedia || [],
       mediaCache,
       isSaving: false,
       errors: {},
       lastSavedState: {
         cardData: { ...card },
-        tags: card.tags?.map(tagId => allTags.find(t => t.id === tagId)).filter(Boolean) as Tag[] || [],
-        coverImage: card.coverImage || null,
-        galleryMedia: card.galleryMedia || [],
       },
     };
   });
@@ -172,22 +161,10 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       if (initialCard.galleryMedia) {
         initialCard.galleryMedia.forEach(item => {
           if (item.mediaId && item.media) {
-            const media = {
+            mediaCache.set(item.mediaId, {
               id: item.mediaId,
-              filename: item.media.filename || '',
-              width: item.media.width || 0,
-              height: item.media.height || 0,
-              storageUrl: item.media.storageUrl || '',
-              storagePath: item.media.storagePath || '',
-              source: item.media.source || 'upload',
-              sourcePath: item.media.sourcePath || '',
-              caption: item.media.caption || '',
-              status: item.media.status || 'active',
-              objectPosition: item.media.objectPosition || '50% 50%',
-              createdAt: item.media.createdAt || Date.now(),
-              updatedAt: item.media.updatedAt || Date.now(),
-            };
-            mediaCache.set(item.mediaId, media);
+              ...item.media,
+            });
           }
         });
       }
@@ -195,31 +172,25 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       setFormState(prev => ({
         ...prev,
         cardData: { ...initialCard },
-        tags: initialCard.tags?.map(tagId => allTags.find(t => t.id === tagId)).filter(Boolean) as Tag[] || [],
-        coverImage: initialCard.coverImage || null,
-        galleryMedia: initialCard.galleryMedia || [],
         mediaCache,
         lastSavedState: {
           cardData: { ...initialCard },
-          tags: initialCard.tags?.map(tagId => allTags.find(t => t.id === tagId)).filter(Boolean) as Tag[] || [],
-          coverImage: initialCard.coverImage || null,
-          galleryMedia: initialCard.galleryMedia || [],
         },
       }));
     }
-  }, [initialCard, allTags]);
+  }, [initialCard]);
 
-  const prevCoverImageRef = useRef<Media | null | undefined>(formState.coverImage);
+  const prevCoverImageRef = useRef<Media | null | undefined>(formState.cardData.coverImage);
   useEffect(() => {
     const prevCoverImage = prevCoverImageRef.current;
-    const currentCoverImage = formState.coverImage;
+    const currentCoverImage = formState.cardData.coverImage;
 
     if (prevCoverImage && prevCoverImage.status === 'temporary' && prevCoverImage.id !== currentCoverImage?.id) {
       cleanup(prevCoverImage.id);
     }
 
     prevCoverImageRef.current = currentCoverImage;
-  }, [formState.coverImage, cleanup]);
+  }, [formState.cardData.coverImage, cleanup]);
   
   useEffect(() => {
     return () => {
@@ -248,11 +219,11 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     }
     
     batchStateUpdate({
-      coverImage: media,
       cardData: { 
         ...formState.cardData, 
+        coverImage: media,
         coverImageId: media?.id || null,
-        coverImageObjectPosition: null
+        coverImageObjectPosition: media?.objectPosition || null
       },
       mediaCache: updatedCache,
       errors: { ...formState.errors, coverImage: undefined },
@@ -281,9 +252,9 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
 
   const updateGalleryMedia = useCallback((newMedia: Card['galleryMedia']) => {
     batchStateUpdate({
-      galleryMedia: newMedia,
+      cardData: { ...formState.cardData, galleryMedia: newMedia },
     });
-  }, [batchStateUpdate]);
+  }, [batchStateUpdate, formState.cardData]);
 
   const updateChildIds = useCallback((newChildIds: string[]) => {
     batchStateUpdate({
@@ -297,40 +268,149 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     });
   }, [batchStateUpdate, formState.cardData]);
   
+  /**
+   * Adds one or more new images to the gallery.
+   * @param newMedia An array of Media objects, typically from the PhotoPicker.
+   */
+  const addGalleryItems = useCallback((newMedia: Media[]) => {
+    // First, update the central media cache with the new media objects.
+    const updatedCache = new Map(formState.mediaCache);
+    newMedia.forEach(media => updatedCache.set(media.id, media));
+
+    // Create the GalleryMediaItem objects that will be stored in the cardData.
+    const newGalleryItems = newMedia.map((media, index) => ({
+      mediaId: media.id,
+      caption: media.caption || '',
+      // The order is appended to the end of the existing gallery.
+      order: (formState.cardData.galleryMedia?.length || 0) + index,
+      objectPosition: media.objectPosition || '50% 50%',
+    }));
+
+    // Update the state with the new gallery items and the updated cache.
+    batchStateUpdate({
+      cardData: {
+        ...formState.cardData,
+        galleryMedia: [...(formState.cardData.galleryMedia || []), ...newGalleryItems],
+      },
+      mediaCache: updatedCache,
+    });
+  }, [batchStateUpdate, formState.cardData, formState.mediaCache]);
+
+  /**
+   * Removes an image from the gallery.
+   * Critically, it also cleans up any temporary images from storage.
+   * @param mediaIdToRemove The ID of the media item to remove.
+   */
+  const removeGalleryItem = useCallback((mediaIdToRemove: string) => {
+    // Find the media object in the cache to check its status.
+    const mediaInCache = formState.mediaCache.get(mediaIdToRemove);
+
+    // If the image was a temporary upload that hasn't been saved, clean it up.
+    if (mediaInCache?.status === 'temporary') {
+      cleanup(mediaIdToRemove);
+    }
+    
+    // Filter the galleryMedia array to remove the item.
+    const newGalleryMedia = formState.cardData.galleryMedia?.filter(item => item.mediaId !== mediaIdToRemove) || [];
+    // Re-apply the order property to ensure the sequence is correct.
+    const reorderedMedia = newGalleryMedia.map((item, i) => ({ ...item, order: i }));
+
+    batchStateUpdate({
+      cardData: {
+        ...formState.cardData,
+        galleryMedia: reorderedMedia,
+      },
+    });
+  }, [batchStateUpdate, formState.cardData, formState.mediaCache, cleanup]);
+
+  /**
+   * Updates a single item in the gallery (e.g., its caption or objectPosition).
+   * @param mediaId The ID of the media item to update.
+   * @param updates A partial object of GalleryMediaItem properties to update.
+   */
+  const updateGalleryItem = useCallback((mediaId: string, updates: Partial<Card['galleryMedia'][number]>) => {
+    const newGalleryMedia = formState.cardData.galleryMedia?.map(item =>
+      item.mediaId === mediaId ? { ...item, ...updates } : item
+    ) || [];
+
+    batchStateUpdate({
+      cardData: { ...formState.cardData, galleryMedia: newGalleryMedia },
+    });
+  }, [batchStateUpdate, formState.cardData]);
+
+  /**
+   * Replaces the entire gallery order, typically after a drag-and-drop operation.
+   * @param reorderedItems The full, reordered array of gallery items.
+   */
+  const reorderGalleryItems = useCallback((reorderedItems: Card['galleryMedia']) => {
+    // Ensure the 'order' property is correctly set based on the new sequence.
+    const finalOrder = reorderedItems.map((item, index) => ({ ...item, order: index }));
+    batchStateUpdate({
+      cardData: { ...formState.cardData, galleryMedia: finalOrder },
+    });
+  }, [batchStateUpdate, formState.cardData]);
+
   const validateField = useCallback((field: keyof CardUpdate) => {
     // Basic validation logic
     return true;
   }, []);
 
   const validateForm = useCallback(() => {
-    // Form-level validation
-    return true;
-  }, []);
+    // We use safeParse to check the data against the Zod schema without throwing an error.
+    const result = cardSchema.safeParse(formState.cardData);
+
+    // If validation fails, we format the errors and update the state.
+    if (!result.success) {
+      const formattedErrors = result.error.flatten().fieldErrors;
+      const newErrors: Record<string, string> = {};
+      for (const key in formattedErrors) {
+        // We only take the first error message for each field.
+        if (formattedErrors[key]) {
+          newErrors[key] = formattedErrors[key]![0];
+        }
+      }
+      batchStateUpdate({ errors: newErrors });
+      console.error("Validation Errors:", newErrors);
+      return false; // Indicates validation failure
+    }
+
+    // If validation succeeds, we clear any existing errors.
+    batchStateUpdate({ errors: {} });
+    return true; // Indicates validation success
+  }, [formState.cardData, batchStateUpdate]);
 
   const handleSave = useCallback(async () => {
     batchStateUpdate({ isSaving: true });
-    await onSave(formState.cardData, formState.tags);
+    // We now pass the entire cardData object, which is our single source of truth.
+    await onSave(formState.cardData);
     batchStateUpdate({ isSaving: false });
-  }, [onSave, formState.cardData, formState.tags, batchStateUpdate]);
+  }, [onSave, formState.cardData, batchStateUpdate]);
 
   const resetForm = useCallback(() => {
     const card = initialCard || EMPTY_CARD;
+    // We also need to rebuild the media cache on reset.
+    const mediaCache = new Map<string, Media>();
+    if (card.coverImage) {
+      mediaCache.set(card.coverImageId!, { ...card.coverImage });
+    }
+    if (card.galleryMedia) {
+      card.galleryMedia.forEach(item => {
+        if (item.mediaId && item.media) {
+          mediaCache.set(item.mediaId, { id: item.mediaId, ...item.media });
+        }
+      });
+    }
+
     setFormState({
       cardData: { ...card },
-      tags: card.tags?.map(tagId => allTags.find(t => t.id === tagId)).filter(Boolean) as Tag[] || [],
-      coverImage: card.coverImage || null,
-      galleryMedia: card.galleryMedia || [],
-      mediaCache: new Map(),
+      mediaCache,
       isSaving: false,
       errors: {},
       lastSavedState: {
         cardData: { ...card },
-        tags: card.tags?.map(tagId => allTags.find(t => t.id === tagId)).filter(Boolean) as Tag[] || [],
-        coverImage: card.coverImage || null,
-        galleryMedia: card.galleryMedia || [],
       },
     });
-  }, [initialCard, allTags]);
+  }, [initialCard]);
 
   const contextValue = useMemo(() => ({
     formState,
@@ -343,6 +423,10 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     updateGalleryMedia,
     updateChildIds,
     updateContentMedia,
+    addGalleryItems,
+    removeGalleryItem,
+    updateGalleryItem,
+    reorderGalleryItems,
     handleSave,
     resetForm,
     validateField,
@@ -358,6 +442,10 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     updateGalleryMedia,
     updateChildIds,
     updateContentMedia,
+    addGalleryItems,
+    removeGalleryItem,
+    updateGalleryItem,
+    reorderGalleryItems,
     handleSave,
     resetForm,
     validateField,

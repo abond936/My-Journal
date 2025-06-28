@@ -60,7 +60,7 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
   
   const [isDeleting, setIsDeleting] = React.useState(false);
 
-  const handleSave = async (cardData: CardUpdate, tags: Tag[]) => {
+  const handleSave = async (cardData: CardUpdate) => {
     try {
       console.log('CardAdminClientPage - Saving card with data:', {
         galleryMedia: cardData.galleryMedia?.length || 0,
@@ -71,19 +71,9 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
         }))
       });
 
-      const body = { 
-        ...cardData, 
-        tagIds: tags.map(t => t.id),
-        coverImageId: cardData.coverImageId,
-        // Ensure we include the full media objects
-        galleryMedia: cardData.galleryMedia?.map(item => ({
-          mediaId: item.mediaId,
-          caption: item.caption || '',
-          order: item.order,
-          objectPosition: item.objectPosition || 'center',
-          media: item.media
-        }))
-      };
+      // The body sent to the API should be the pure cardData.
+      // The provider now ensures this cardData is the single source of truth.
+      const body = { ...cardData };
 
       const url = cardId ? `/api/cards/${cardId}` : '/api/cards';
       const method = cardId ? 'PATCH' : 'POST';

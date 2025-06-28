@@ -31,97 +31,43 @@ interface GalleryManagerProps {
 }
 
 export default function GalleryManager({ className }: GalleryManagerProps) {
-  const { formState, updateGalleryMedia } = useCardForm();
-  const { galleryMedia } = formState;
+  const {
+    formState: { cardData, mediaCache },
+    addGalleryItems,
+    removeGalleryItem,
+    updateGalleryItem,
+    reorderGalleryItems,
+  } = useCardForm();
+  
+  const { galleryMedia } = cardData;
 
   console.log('GalleryManager - Current state:', {
     galleryMediaLength: galleryMedia?.length || 0,
-    mediaCache: Array.from(formState.mediaCache.entries()).map(([id, media]) => ({
+    mediaCache: Array.from(mediaCache.entries()).map(([id, media]) => ({
       id,
       hasUrl: !!media?.url
     })),
     galleryMediaDetails: galleryMedia?.map(item => ({
       mediaId: item.mediaId,
-      mediaInCache: formState.mediaCache.has(item.mediaId),
-      mediaUrl: formState.mediaCache.get(item.mediaId)?.url || 'missing'
+      mediaInCache: mediaCache.has(item.mediaId),
+      mediaUrl: mediaCache.get(item.mediaId)?.url || 'missing'
     }))
   });
 
   const [editingItem, setEditingItem] = useState<GalleryMediaItem | null>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
-  const handlePhotoSelect = (media: Media) => {
-    // First update the media cache
-    formState.mediaCache.set(media.id, {
-      ...media,
-      url: media.storageUrl || media.url
-    });
-
-    const newGalleryItem = {
-      mediaId: media.id,
-      caption: media.caption || '',
-      order: galleryMedia.length,
-      objectPosition: media.objectPosition || 'center',
-    };
-
-    updateGalleryMedia([...galleryMedia, newGalleryItem]);
-    setIsPickerOpen(false);
-  };
-
   const handleMultiPhotoSelect = (medias: Media[]) => {
-    // First update the media cache with all new media
-    medias.forEach(media => {
-      formState.mediaCache.set(media.id, {
-        ...media,
-        url: media.storageUrl || media.url
-      });
-    });
-
-    const newItems = medias.map((media, index) => ({
-      mediaId: media.id,
-      caption: media.caption || '',
-      order: galleryMedia.length + index,
-      objectPosition: media.objectPosition || 'center',
-    }));
-
-    updateGalleryMedia([...galleryMedia, ...newItems]);
+    addGalleryItems(medias);
     setIsPickerOpen(false);
   };
 
-  const handleRemovePhoto = (index: number) => {
-    const newGalleryMedia = galleryMedia.filter((_, i) => i !== index);
-    // Reorder remaining items
-    const reorderedMedia = newGalleryMedia.map((item, i) => ({
-      ...item,
-      order: i,
-    }));
-    updateGalleryMedia(reorderedMedia);
-  };
-
-  const handleMovePhoto = (fromIndex: number, toIndex: number) => {
-    const newGalleryMedia = [...galleryMedia];
-    const [movedItem] = newGalleryMedia.splice(fromIndex, 1);
-    newGalleryMedia.splice(toIndex, 0, movedItem);
-    
-    // Update order values
-    const reorderedMedia = newGalleryMedia.map((item, i) => ({
-      ...item,
-      order: i,
-    }));
-    updateGalleryMedia(reorderedMedia);
+  const handleRemovePhoto = (mediaId: string) => {
+    removeGalleryItem(mediaId);
   };
 
   const handleSaveMetadata = (updatedItem: GalleryMediaItem) => {
-    // Also update the canonical object in the cache
-    const fullMediaObject = formState.mediaCache.get(updatedItem.mediaId);
-    if (fullMediaObject) {
-      formState.mediaCache.set(updatedItem.mediaId, { ...fullMediaObject, caption: updatedItem.caption });
-    }
-    
-    const newMedia = galleryMedia.map(item =>
-      item.mediaId === updatedItem.mediaId ? updatedItem : item
-    );
-    updateGalleryMedia(newMedia);
+    updateGalleryItem(updatedItem.mediaId, updatedItem);
     setEditingItem(null);
   };
 
@@ -133,9 +79,7 @@ export default function GalleryManager({ className }: GalleryManagerProps) {
       const oldIndex = galleryMedia.findIndex(p => p.mediaId === active.id);
       const newIndex = galleryMedia.findIndex(p => p.mediaId === over!.id);
       const newOrder = arrayMove(galleryMedia, oldIndex, newIndex);
-      // Re-assign the order property based on the new array index
-      const finalOrder = newOrder.map((item, index) => ({ ...item, order: index }));
-      updateGalleryMedia(finalOrder);
+      reorderGalleryItems(newOrder);
     }
   };
 
@@ -154,7 +98,7 @@ export default function GalleryManager({ className }: GalleryManagerProps) {
 
       <div className={styles.imageGrid}>
         {galleryMedia.map((item, index) => {
-          const media = formState.mediaCache.get(item.mediaId);
+          const media = mediaCache.get(item.mediaId);
           console.log('GalleryManager - Rendering item:', {
             mediaId: item.mediaId,
             hasMedia: !!media,
@@ -175,26 +119,15 @@ export default function GalleryManager({ className }: GalleryManagerProps) {
                 </div>
               )}
               <div className={styles.controls}>
-                {index > 0 && (
-                  <button
-                    onClick={() => handleMovePhoto(index, index - 1)}
-                    className={styles.moveButton}
-                    aria-label="Move up"
-                  >
-                    ↑
-                  </button>
-                )}
-                {index < galleryMedia.length - 1 && (
-                  <button
-                    onClick={() => handleMovePhoto(index, index + 1)}
-                    className={styles.moveButton}
-                    aria-label="Move down"
-                  >
-                    ↓
-                  </button>
-                )}
                 <button
-                  onClick={() => handleRemovePhoto(index)}
+                  onClick={() => setEditingItem(item)}
+                  className={styles.editButton}
+                  aria-label="Edit image metadata"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleRemovePhoto(item.mediaId)}
                   className={styles.removeButton}
                   aria-label="Remove image"
                 >
@@ -210,7 +143,7 @@ export default function GalleryManager({ className }: GalleryManagerProps) {
         <EditModal
           isOpen={!!editingItem}
           onClose={() => setEditingItem(null)}
-          title={`Edit: ${formState.mediaCache.get(editingItem.mediaId)?.filename || 'Image'}`}
+          title={`Edit: ${mediaCache.get(editingItem.mediaId)?.filename || 'Image'}`}
         >
           <GalleryItemForm
             item={editingItem}
@@ -222,7 +155,7 @@ export default function GalleryManager({ className }: GalleryManagerProps) {
       {isPickerOpen && (
         <PhotoPicker
           isOpen={isPickerOpen}
-          onSelect={handlePhotoSelect}
+          onSelect={(media) => handleMultiPhotoSelect([media])}
           onMultiSelect={handleMultiPhotoSelect}
           onClose={() => setIsPickerOpen(false)}
           initialMode="multi"
