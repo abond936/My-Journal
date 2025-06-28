@@ -1,6 +1,17 @@
 import { z } from 'zod';
 
 /**
+ * Schema for an item within a gallery card.
+ * It references a media asset and allows for context-specific overrides.
+ */
+const galleryMediaItemSchema = z.object({
+  mediaId: z.string(),
+  caption: z.string().optional(),
+  order: z.number(),
+  objectPosition: z.string().optional(),
+});
+
+/**
  * Schema for a card in the system.
  * A card is the primary content unit, representing a story, Q&A, quote, etc.
  */
@@ -13,11 +24,6 @@ export const cardSchema = z.object({
   excerpt: z.string().optional().nullable(),
   
   // The content field stores HTML with embedded media references.
-  // Media is embedded using figure elements with data attributes:
-  // <figure data-figure-with-image data-media-id="123" data-size="medium" data-alignment="left">
-  //   <img src="..." alt="..." width="..." height="...">
-  //   <figcaption>Optional caption specific to this usage</figcaption>
-  // </figure>
   content: z.string().default(''),
   
   // Card type and status controls visibility and behavior
@@ -26,41 +32,42 @@ export const cardSchema = z.object({
   displayMode: z.enum(['inline', 'navigate', 'static']).default('navigate'),
   
   // Cover image reference with position information
-  coverImageId: z.string().optional().nullable(),
-  coverImage: z.any().optional().nullable(),
+  coverImageId: z.string().nullable().optional(),
+  coverImageObjectPosition: z.string().optional(), // e.g., '50% 50%'
 
-  // The 'content' field may contain embedded images, which will be handled
-  // by the Tiptap implementation (storing data-media-id).
-  contentMedia: z.array(z.any()).default([]),
+  // References to media assets embedded within the 'content' field.
+  contentMedia: z.array(z.string()).optional(),
 
   // An array of objects defining the gallery's content and structure.
-  // Each object references a Media document and can override its caption.
-  galleryMedia: z.array(z.object({
-    mediaId: z.string(),
-    caption: z.string().optional(),
-    order: z.number(),
-    objectPosition: z.string().optional(),
-  })).default([]),
+  galleryMedia: z.array(galleryMediaItemSchema).optional(),
   
   // The 5 tag dimensions
-  who: z.array(z.string()).default([]),
-  what: z.array(z.string()).default([]),
-  when: z.array(z.string()).default([]),
-  where: z.array(z.string()).default([]),
-  reflection: z.array(z.string()).default([]),
+  who: z.array(z.string()).optional(),
+  what: z.array(z.string()).optional(),
+  when: z.array(z.string()).optional(),
+  where: z.array(z.string()).optional(),
+  reflection: z.array(z.string()).optional(),
 
   // Combined and calculated tags for querying
-  tags: z.array(z.string()).default([]),
-  inheritedTags: z.array(z.string()).default([]),
-  tagPathsMap: z.record(z.boolean()).default({}),
+  tags: z.array(z.string()).optional(),
+  inheritedTags: z.array(z.string()).optional(),
+  tagPathsMap: z.record(z.boolean()).optional(),
   filterTags: z.record(z.boolean()).optional(),
   
-  childrenIds: z.array(z.string()).default([]),
+  // For 'collection' type cards, this lists the IDs of child cards.
+  childrenIds: z.array(z.string()).optional(),
+
+  // Timestamps
   createdAt: z.number(),
   updatedAt: z.number(),
+
+  // --- Transient/Populated Fields ---
+  // These fields are not stored in Firestore but can be populated by services.
+  
+  // The populated cover image Media object.
+  coverImage: z.any().optional().nullable(),
 });
 
 export type Card = z.infer<typeof cardSchema>;
 export type CardUpdate = Partial<Card>;
-
-export type Card = z.infer<typeof cardSchema>; 
+export type GalleryMediaItem = z.infer<typeof galleryMediaItemSchema>;

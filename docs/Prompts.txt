@@ -22,15 +22,9 @@ seek approval for the other changes.
 Are we clear on these rules?
 
 
-Please read docs/Project.md and the codebase thoroughly to familiarize yourself with the details of the project. Then please 
-give me your assessment of the architecture, the state of development, any inconsistencies and your recommended course of action.
+Please read docs/Project.md and the codebase thoroughly to familiarize yourself with the details of the project. Then please give me your assessment of the architecture, the state of development, any inconsistencies you may have found and your recommended course of action. I expect you to do a thorough job. The code and logic is complex and a cursory review will not work.
 
 
-EDIT FAILURES - Frequently the AI assistant receives messages that its edits are not accepted or otherwise incorrect.
-This is often not the case, as the code appears as intended in the editor.
-When the AI assistant receives a message that its edits are not accepted, it should immediately
-directly check the code instead of relying on the message.
+EDIT FAILURES - When you receive messages that edits are not accepted or otherwise incorrect, check the file directly. The messages are almost always incorrect.
 
-I want your expert architectural and implmentation capability to improve/repair my project. While not rocket science, it is complex in parts with lots of dependencies, related components, APIs, services, etc. The challenge I have had is prior assistants have not taken the time to not zoom out to comprehend the macro picture and zoomed in deeply enough into the detail to grasp the micro picture. As a result, they write code not consistent with the architecture, overwrite or delete code that is working for the sake of trying to fix an issue, take action without discussing the issue, options, their recommendation and getting my approval. While their coding skills are better than mine, they do not have the context that I have or an understanding of the desired end result like I do. I have documentation and of course the code is available to read, but the documentation is not always precisely up to date and cannot inform at the detail of such a complex subject. And, the codebase can be misleading if it has not been fully developed or is being migrated from a prior architecture or is just plain wrong. So, in engaging in this with you I want and need to to come into this with the expertise and ability to see even craft the big picture and also dive into the most minor detail to craft the precise code that will perform the required function. And I want you to do this in an advisory capacity, where I describe the issue, you go exhaustively study the macro and micro issues, prepare an expert recommended options with explanation that adhere to our architecture and rules and wait for my approval. After approval, you execute those actions, and only those actions. If you discover something new (which whould be rare given your thoroughness), you stop, explain the new circumstances and recommendation and wait for my approval again. Together, this close interaction guides us methodically, efficiently and effectively toward the objective with limited steps backward. 
 
-If I have your commitment to this, please read docs/Project.md and then scour the codebase from top to bottom, working through the all of the view and admin components, the services, the apis, types, etc. to completely understand the app. Then we can get started.

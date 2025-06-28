@@ -21,6 +21,7 @@ declare module '@tiptap/core' {
       }) => ReturnType;
       setFigureSize: (size: 'small' | 'medium' | 'large') => ReturnType;
       setFigureAlignment: (alignment: 'left' | 'center' | 'right') => ReturnType;
+      setFigureWrap: (wrap: 'on' | 'off') => ReturnType;
       deleteFigure: () => ReturnType;
     };
   }
@@ -42,6 +43,7 @@ export const FigureWithImage = Node.create<FigureWithImageOptions>({
       height: { default: null },
       'data-size': { default: 'medium' },
       'data-alignment': { default: 'left' },
+      'data-wrap': { default: 'off' },
       'data-media-id': { default: null },
       'data-media-type': { default: 'content' },
       mediaId: { 
@@ -72,6 +74,7 @@ export const FigureWithImage = Node.create<FigureWithImageOptions>({
             height: parseInt(img.getAttribute('height') || '0', 10),
             'data-size': element.getAttribute('data-size') || 'medium',
             'data-alignment': element.getAttribute('data-alignment') || 'left',
+            'data-wrap': element.getAttribute('data-wrap') || 'off',
             'data-media-id': mediaId,
             'data-media-type': element.getAttribute('data-media-type') || 'content',
             mediaId: mediaId
@@ -89,6 +92,7 @@ export const FigureWithImage = Node.create<FigureWithImageOptions>({
         'data-figure-with-image': '',
         'data-size': node.attrs['data-size'] || 'medium',
         'data-alignment': node.attrs['data-alignment'] || 'left',
+        'data-wrap': node.attrs['data-wrap'] || 'off',
         'data-media-id': mediaId,
         'data-media-type': node.attrs['data-media-type'] || 'content'
       }),
@@ -134,6 +138,17 @@ export const FigureWithImage = Node.create<FigureWithImageOptions>({
         tr.setNodeMarkup(selection.from, null, {
           ...node.attrs,
           'data-alignment': alignment
+        });
+        return true;
+      },
+      setFigureWrap: (wrap: 'on' | 'off') => ({ tr, state }) => {
+        const { selection } = state;
+        const node = state.doc.nodeAt(selection.from);
+        if (!node || node.type.name !== this.name) return false;
+
+        tr.setNodeMarkup(selection.from, null, {
+          ...node.attrs,
+          'data-wrap': wrap
         });
         return true;
       },

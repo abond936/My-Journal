@@ -3,52 +3,43 @@ description:
 globs: 
 alwaysApply: true
 ---
-## Workspace Rules (Non-Negotiable)
-- **Prime Directive:**
   - You may read code for assessment and recommendation, BUT...
   - MAKE NO CHANGES OR ADDITIONS TO THE CODEBASE OR DIRECTORY/FILE STRUCTURE WITHOUT MY EXPLICIT APPROVAL--EVER!
-  -   DO NOT make any changes, additions or reverts to the codebase or directory/file structure without my explicit approval—EVER.
-  - Always wait for my clear approval before editing, creating, deleting, or running code/scripts.
-  - Only edit code directly related to the current question/issue. Do not change unrelated code, comments, or structure.
+  - I REPEAT
+  - DO NOT make ANY changes, additions or reverts to the codebase or directory/file structure without my explicit approval—EVER.
+  
+  - Once approved, ONLY edit code DIRECTLY related to the current question/issue. 
+  - Do not change unrelated code, comments, or structure.
   - If unsure about scope or location, stop and ask for clarification and approval.
 
-## Our Workflow
-Follow this four-step process for every task:
+You will follow this four-step process for every task without exception:
 
 1.  Assess the situation
     - Understand my request.
-    - Search/read/understand the full codebase to see if a solution already exists.
-    - Formulate a concise, explanation of the situation.
+    - Search/read/understand the full codebase to understand the architecture and the specific implementation.
+    - Formulate a solution that is compatible with existing architecture and code.
+        - If the solution has implications for existing code, explain its implications
     
 2. Recommend a course of action
     - Prepare and present a clear, summary of options
     - State your recommendation for action clearly 
     - Explain why this is the right approach.
+    - If the recommendation has implications for other architecture or code, explain it's implicatons.
 
 3. Seek approval
     - Explicitly ask for my approval. 
-      - Examples: 
-        - "Does this plan look correct? Awaiting your approval."
+      - Example: 
         - "Do you agree with this plan of action? May I proceed?
 
 4.  Execute (Only After Approval):
     - Once I have approved, you may execute the plan.
     - If you encounter an unexpected or new issue during execution, stop immediately and return to Step 1.
 
-## Interaction Examples
-
-### 🟢 Good Interaction
-> **Me:** "We received this error message."
->
-> **You:** "Okay. This is why we received that error. Here is the fix for that error. Does this plan meet your approval?"
->
-> **Me:** "Yes, approved."
->
-> **You:** *(Calls the `edit_file` tool for `src/components/common/Button.tsx`)*
-
-### 🔴 Bad Interaction
-> **Me:** "We received this error message."
->
-> **You:** "Yes, I will now make the correction" *(Immediately calls the `edit_file` tool without waiting for approval.)*
-
----
+  - You may read code for assessment and recommendation, BUT...
+  - MAKE NO CHANGES OR ADDITIONS TO THE CODEBASE OR DIRECTORY/FILE STRUCTURE WITHOUT MY EXPLICIT APPROVAL--EVER!
+  - I REPEAT
+  - DO NOT make ANY changes, additions or reverts to the codebase or directory/file structure without my explicit approval—EVER.
+  
+  - Once approved, ONLY edit code DIRECTLY related to the current question/issue. 
+  - Do not change unrelated code, comments, or structure.
+  - If unsure about scope or location, stop and ask for clarification and approval.

@@ -99,7 +99,7 @@ export async function importFromLocalDrive(sourcePath: string): Promise<Media> {
     const filename = path.basename(fullPath);
 
     // Create as temporary by default
-    return await createMediaAsset(fileBuffer, filename, 'local-drive', sourcePath, 'temporary');
+    return await createMediaAsset(fileBuffer, filename, 'local', sourcePath, 'temporary');
   } catch (error) {
     console.error('[importFromLocalDrive] Error importing file:', {
       sourcePath,
@@ -127,7 +127,7 @@ export async function importFromBuffer(
   try {
     // For uploads/pastes, the sourcePath is just a representation of where it came from.
     const sourcePath = `upload://${originalFilename}`;
-    return await createMediaAsset(fileBuffer, originalFilename, 'upload', sourcePath, 'temporary');
+    return await createMediaAsset(fileBuffer, originalFilename, 'paste', sourcePath, 'temporary');
   } catch (error) {
     console.error(`Failed to import image from buffer (${originalFilename}):`, error);
     throw new Error(`Failed to import uploaded image. See server logs for details.`);
