@@ -126,7 +126,9 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
 
   useEffect(() => {
     if (editor && initialContent !== content) {
-      editor.commands.setContent(initialContent, false);
+      setTimeout(() => {
+        editor.commands.setContent(initialContent, false);
+      }, 0);
     }
   }, [initialContent, editor]);
 

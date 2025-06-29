@@ -7,11 +7,12 @@ import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import styles from './PhotoPicker.module.css';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { importLocalFile } from '@/lib/services/images/imageService';
+import { HydratedGalleryMediaItem } from '@/lib/types/card';
 
 interface PhotoPickerProps {
   isOpen: boolean;
-  onSelect: (media: Media) => void;
-  onMultiSelect?: (media: Media[]) => void;
+  onSelect: (media: HydratedGalleryMediaItem) => void;
+  onMultiSelect?: (media: HydratedGalleryMediaItem[]) => void;
   onClose: () => void;
   initialMode?: 'single' | 'multi';
 }
@@ -156,13 +157,20 @@ export default function PhotoPicker({
         return await response.json();
       });
 
-      const importedMedia = await Promise.all(importPromises);
+      const importedMedia: Media[] = await Promise.all(importPromises);
       console.log('Successfully imported media:', importedMedia);
 
-      if (mode === 'single' && importedMedia.length > 0) {
-        onSelect(importedMedia[0]);
+      // Transform the imported Media objects into HydratedGalleryMediaItems
+      const hydratedItems: HydratedGalleryMediaItem[] = importedMedia.map(media => ({
+        mediaId: media.id,
+        order: 0, // Default order, can be adjusted later if needed
+        media: media,
+      }));
+
+      if (mode === 'single' && hydratedItems.length > 0) {
+        onSelect(hydratedItems[0]);
       } else if (mode === 'multi' && onMultiSelect) {
-        onMultiSelect(importedMedia);
+        onMultiSelect(hydratedItems);
       }
       onClose();
     } catch (error) {

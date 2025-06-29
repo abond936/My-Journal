@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import styles from './CoverPhotoContainer.module.css';
-import { Media } from '@/lib/types/photo';
+import { HydratedGalleryMediaItem } from '@/lib/types/card';
 import PhotoPicker from '@/components/admin/card-admin/PhotoPicker';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { useCardForm } from '@/components/providers/CardFormProvider';
@@ -12,8 +12,8 @@ interface CoverPhotoContainerProps {
 }
 
 export default function CoverPhotoContainer({ className }: CoverPhotoContainerProps) {
-  const { formState, setField, updateCoverImage, importAndSetCoverImage, isImporting } = useCardForm();
-  const { cardData, coverImage, errors } = formState;
+  const { formState: { cardData, errors, isSaving }, setField } = useCardForm();
+  const { coverImage } = cardData;
   
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [horizontalPosition, setHorizontalPosition] = useState(50);
@@ -30,14 +30,16 @@ export default function CoverPhotoContainer({ className }: CoverPhotoContainerPr
     }
   }, [cardData.coverImageObjectPosition]);
 
-  const handlePhotoSelect = useCallback(async (selectedMedia: Media) => {
+  const handlePhotoSelect = (selectedMedia: HydratedGalleryMediaItem) => {
     setIsPickerOpen(false);
-    await importAndSetCoverImage(selectedMedia);
-  }, [importAndSetCoverImage]);
+    setField('coverImage', selectedMedia.media);
+    setField('coverImageId', selectedMedia.mediaId);
+  };
 
   const handleRemovePhoto = useCallback(() => {
-    updateCoverImage(null);
-  }, [updateCoverImage]);
+    setField('coverImage', null);
+    setField('coverImageId', null);
+  }, [setField]);
 
   const handlePositionChange = useCallback((horizontal: number, vertical: number) => {
     setField('coverImageObjectPosition', `${horizontal}% ${vertical}%`);
@@ -47,7 +49,7 @@ export default function CoverPhotoContainer({ className }: CoverPhotoContainerPr
 
   return (
     <div className={`${styles.container} ${className || ''} ${displayError ? styles.error : ''}`}>
-      {isImporting ? (
+      {isSaving ? (
         <div className={styles.placeholder}>
           <LoadingSpinner />
         </div>
@@ -59,18 +61,6 @@ export default function CoverPhotoContainer({ className }: CoverPhotoContainerPr
               alt={coverImage.filename || 'Cover image'}
               className={styles.coverImage}
               style={{ objectPosition: cardData.coverImageObjectPosition || '50% 50%' }}
-              onLoad={() => {
-                console.log('Cover image loaded successfully:', coverImage.storageUrl);
-              }}
-              onError={(e) => {
-                console.error('Failed to load cover image:', e);
-                console.log('Failed image details:', {
-                  url: coverImage.storageUrl,
-                  id: coverImage.id,
-                  status: coverImage.status
-                });
-                updateCoverImage(null);
-              }}
             />
             <div className={styles.buttonContainer}>
               <button

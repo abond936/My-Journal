@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { mediaSchema } from './photo';
 
 /**
  * Schema for an item within a gallery card.
@@ -9,6 +10,7 @@ const galleryMediaItemSchema = z.object({
   caption: z.string().optional(),
   order: z.number(),
   objectPosition: z.string().optional(),
+  media: mediaSchema.optional(),
 });
 
 /**
@@ -71,3 +73,11 @@ export const cardSchema = z.object({
 export type Card = z.infer<typeof cardSchema>;
 export type CardUpdate = Partial<Card>;
 export type GalleryMediaItem = z.infer<typeof galleryMediaItemSchema>;
+
+/**
+ * Represents a gallery item that has been "hydrated" with the full Media object.
+ * This is used on the client-side for rendering and state management.
+ */
+export type HydratedGalleryMediaItem = GalleryMediaItem & {
+  media: Media;
+};

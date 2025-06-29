@@ -22,66 +22,40 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps) {
   const router = useRouter();
-  const { mutate } = useCardContext();
   
-  // Local state to hold the card data
-  const [localCard, setLocalCard] = React.useState<Card | null>(null);
-  const [localTags, setLocalTags] = React.useState<Tag[]>([]);
-  
-  // Fetch initial data
-  const { data: card, error: cardError, isLoading: isCardLoading } = useSWR<Card | null>(
+  // Fetch initial data using SWR. This is the single source of truth.
+  const { 
+    data: card, 
+    error: cardError, 
+    isLoading: isCardLoading, 
+    mutate: mutateCard 
+  } = useSWR<Card | null>(
     cardId ? `/api/cards/${cardId}` : null,
     fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
 
-  const { data: tagsData, error: tagsError, isLoading: areTagsLoading } = useSWR<Tag[]>(
+  const { 
+    data: tagsData, 
+    error: tagsError, 
+    isLoading: areTagsLoading 
+  } = useSWR<Tag[]>(
     '/api/tags', 
     fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
-
-  // Set local state when initial data loads
-  React.useEffect(() => {
-    if (card) {
-      console.log('CardAdminClientPage - Received card data:', {
-        id: card.id,
-        galleryMedia: card.galleryMedia?.length || 0,
-        galleryMediaDetails: card.galleryMedia?.map(item => ({
-          mediaId: item.mediaId,
-          hasMedia: !!item.media,
-          mediaUrl: item.media?.url || 'missing'
-        }))
-      });
-      setLocalCard(card);
-    }
-    if (tagsData) setLocalTags(tagsData);
-  }, [card, tagsData]);
   
   const [isDeleting, setIsDeleting] = React.useState(false);
 
   const handleSave = async (cardData: CardUpdate) => {
     try {
-      console.log('CardAdminClientPage - Saving card with data:', {
-        galleryMedia: cardData.galleryMedia?.length || 0,
-        galleryMediaDetails: cardData.galleryMedia?.map(item => ({
-          mediaId: item.mediaId,
-          hasMedia: !!item.media,
-          mediaUrl: item.media?.url || 'missing'
-        }))
-      });
-
-      // The body sent to the API should be the pure cardData.
-      // The provider now ensures this cardData is the single source of truth.
-      const body = { ...cardData };
-
       const url = cardId ? `/api/cards/${cardId}` : '/api/cards';
       const method = cardId ? 'PATCH' : 'POST';
 
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify(cardData),
       });
 
       const savedData = await response.json();
@@ -90,9 +64,13 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
         throw new Error('Failed to save the card.');
       }
 
-      // Store the saved state
-      setLocalCard(savedData);
-      return savedData;
+      // Update the local SWR cache with the saved data without re-fetching.
+      mutateCard(savedData, false);
+      
+      // If a new card was created, navigate to its new edit page.
+      if (!cardId) {
+        router.push(`/admin/card-admin/${savedData.id}`);
+      }
 
     } catch (error) {
       console.error('Failed to save card:', error);
@@ -143,16 +121,10 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
       return;
     }
 
-    // If we're creating a new card and haven't saved yet, confirm with the user
-    if (!localCard?.id) {
-      if (window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
-        router.push('/admin/card-admin');
-      }
-      return;
+    // For new cards, confirm before leaving
+    if (window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+      router.push('/admin/card-admin');
     }
-
-    // If we have a local card with an ID, it means we've saved, so we can navigate away
-    router.push('/admin/card-admin');
   };
 
   const isLoading = isCardLoading || areTagsLoading;
@@ -197,8 +169,8 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
         </div>
       </div>
       <CardFormProvider
-        initialCard={localCard}
-        allTags={localTags}
+        initialCard={card}
+        allTags={tagsData || []}
         onSave={handleSave}
       >
         <CardForm

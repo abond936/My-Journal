@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useCallback, useState } from 'react';
-import { Card } from '@/lib/types/card';
+import { Card, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { Media } from '@/lib/types/photo';
 import CoverPhotoContainer from '@/components/admin/card-admin/CoverPhotoContainer';
 import GalleryManager from '@/components/admin/card-admin/GalleryManager';
@@ -25,10 +25,7 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
     formState: { cardData, isSaving, errors },
     allTags,
     setField,
-    updateTags,
-    updateContentMedia,
     handleSave,
-    validateForm,
   } = useCardForm();
 
   const editorRef = useRef<RichTextEditorRef>(null);
@@ -37,27 +34,29 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
   const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setField('title', e.target.value), [setField]);
   const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => setField('status', e.target.value as Card['status']), [setField]);
   const handleContentChange = useCallback((content: string) => setField('content', content), [setField]);
-  const handleTagsChange = useCallback((newIds: string[]) => updateTags(allTags.filter(tag => newIds.includes(tag.id))), [updateTags, allTags]);
-  const selectedTags = React.useMemo(() => {
+  
+  const handleTagsChange = useCallback((newTagIds: string[]) => {
+    setField('tags', newTagIds);
+  }, [setField]);
+
+  const selectedTagObjects = React.useMemo(() => {
     const tagIds = new Set(cardData.tags || []);
     return allTags.filter(tag => tagIds.has(tag.id));
   }, [cardData.tags, allTags]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!validateForm()) {
-      console.log("Form is invalid. Submission prevented.");
-      return;
-    }
     await handleSave();
-  }, [validateForm, handleSave]);
+  }, [handleSave]);
 
   const handleAddImageToContent = useCallback(() => {
     setIsPhotoPickerOpen(true);
   }, []);
 
-  const handlePhotoSelectForContent = useCallback((media: Media) => {
-    editorRef.current?.insertImage(media);
+  const handlePhotoSelectForContent = useCallback((selectedMedia: HydratedGalleryMediaItem) => {
+    if (editorRef.current && selectedMedia.media) {
+      editorRef.current.insertImage(selectedMedia.media);
+    }
     setIsPhotoPickerOpen(false);
   }, []);
 
@@ -101,7 +100,7 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
 
           <div className={styles.tagsSection}>
             <MacroTagSelector
-              selectedTags={tags}
+              selectedTags={selectedTagObjects}
               allTags={allTags}
               onChange={handleTagsChange}
               className={clsx(styles.tagSelector, errors.tags && styles.inputError)}
@@ -113,7 +112,6 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
               ref={editorRef}
               initialContent={cardData.content}
               onChange={handleContentChange}
-              onContentMediaChange={updateContentMedia}
               onAddImage={handleAddImageToContent}
               error={errors.content}
               className={clsx(errors.content && styles.inputError)}

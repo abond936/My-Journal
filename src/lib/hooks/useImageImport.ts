@@ -96,10 +96,16 @@ export function useImageImport({ onSuccess, onError, onSettled }: UseImageImport
 
   const cleanup = useCallback(async (mediaId: string) => {
     try {
-      await deleteMediaAsset(mediaId);
+      // Correctly call the API endpoint
+      const response = await fetch(`/api/images/${mediaId}`, { 
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to clean up media asset');
+      }
     } catch (error) {
       console.error(`[useImageImport] Failed to clean up media asset ${mediaId}:`, error);
-      // We log the error but don't re-throw, as this is a background cleanup task.
     }
   }, []);
 

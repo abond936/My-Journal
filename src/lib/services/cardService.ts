@@ -1,14 +1,17 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
-import { Card, cardSchema } from '@/lib/types/card';
+import { Card, cardSchema, GalleryMediaItem } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 import { getTagAncestors, getTagPathsMap } from '@/lib/firebase/tagDataAccess';
 import { getFirestore, writeBatch } from 'firebase-admin/firestore';
 import { doc } from 'firebase-admin/firestore';
 import { deleteMediaAsset } from './images/imageImportService';
+import { extractMediaFromContent } from '@/lib/utils/cardUtils';
+import { Media } from '@/lib/types/photo';
 
 const adminApp = getAdminApp();
 const firestore = adminApp.firestore();
 const CARDS_COLLECTION = 'cards';
+const MEDIA_COLLECTION = 'media';
 
 /**
  * Adds a new card to the Firestore 'cards' collection.
@@ -84,155 +87,75 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'i
   }
   const existingData = docSnap.data() as Card;
 
-  // Defensively sanitize incoming array fields to prevent accidental deletion in Firestore.
-  // If a client sends 'tags: undefined', Firestore deletes the field. This ensures it becomes 'tags: []'.
-  const sanitizedCardData = { ...cardData };
-  const arrayFields: (keyof Card)[] = ['tags', 'galleryMedia', 'childrenIds', 'who', 'what', 'when', 'where', 'reflection'];
-  arrayFields.forEach(field => {
-    if (sanitizedCardData[field] === null || sanitizedCardData[field] === undefined) {
-      delete sanitizedCardData[field]; // Remove explicit null/undefined to avoid conflicts
+  // --- Start Firestore Batch Write ---
+  const batch = firestore.batch();
+
+  // Dehydrate gallery media for saving, and update captions on root media objects.
+  const dehydratedGalleryMedia = cardData.galleryMedia?.map(item => {
+    if (item.media && item.caption !== item.media.caption) {
+      const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(item.mediaId);
+      batch.update(mediaRef, { caption: item.caption });
     }
-  });
-
-  // Validate the incoming partial data
-  const validatedUpdate = cardSchema.partial().parse(sanitizedCardData);
-
-  const updateData: Partial<Card> = {
-    ...validatedUpdate,
+    const { media, ...rest } = item;
+    return rest;
+  }) || [];
+  
+  // The 'content' field from the client is the source of truth for content media.
+  const contentMediaIds = cardData.content ? extractMediaFromContent(cardData.content) : [];
+  
+  const updatePayload: Partial<Card> = {
+    ...cardData,
+    coverImageId: cardData.coverImageId || null,
+    galleryMedia: dehydratedGalleryMedia,
+    contentMedia: contentMediaIds,
     updatedAt: Date.now(),
   };
 
-  // Determine the final set of tags for recalculation
-  const finalTags = validatedUpdate.tags ?? existingData.tags;
+  // Remove transient fields that shouldn't be saved.
+  delete updatePayload.coverImage;
 
-  // Always recalculate hierarchy if tags exist
-  if (finalTags) {
+  // The client now sends the complete, hydrated card object.
+  // We just need to persist it and update media statuses.
+  // Validate the incoming partial data against the card schema.
+  const validatedUpdate = cardSchema.partial().parse(updatePayload);
+
+  // Always recalculate tag hierarchy if tags have been modified.
+  if (validatedUpdate.tags) {
+    const finalTags = validatedUpdate.tags ?? existingData.tags;
     const ancestorTags = await getTagAncestors(finalTags);
-    updateData.inheritedTags = [...new Set([...finalTags, ...ancestorTags])];
-    updateData.tagPathsMap = await getTagPathsMap(finalTags);
-    updateData.filterTags = updateData.inheritedTags.reduce((acc, tagId) => {
+    validatedUpdate.inheritedTags = [...new Set([...finalTags, ...ancestorTags])];
+    validatedUpdate.tagPathsMap = await getTagPathsMap(finalTags);
+    validatedUpdate.filterTags = validatedUpdate.inheritedTags.reduce((acc, tagId) => {
       acc[tagId] = true;
       return acc;
     }, {} as Record<string, boolean>);
   }
 
-  // Update media status to active
-  const batch = firestore.batch();
-  batch.update(docRef, updateData);
+  // 1. Update the card document with the new data.
+  batch.update(docRef, validatedUpdate);
 
-  // Update cover image status if it exists
+  // 2. Collect all media IDs that should be marked as 'active'.
+  const mediaIdsToActivate = new Set<string>();
   if (validatedUpdate.coverImageId) {
-    const mediaRef = firestore.collection('media').doc(validatedUpdate.coverImageId);
-    const mediaUpdate: any = { 
-      status: 'active',
-      updatedAt: Date.now()
-    };
-    
-    // If we have the full media object with objectPosition, update it
-    if (validatedUpdate.coverImage?.objectPosition) {
-      mediaUpdate.objectPosition = validatedUpdate.coverImage.objectPosition;
-    }
-    
-    batch.update(mediaRef, mediaUpdate);
+    mediaIdsToActivate.add(validatedUpdate.coverImageId);
+  }
+  if (validatedUpdate.galleryMedia) {
+    validatedUpdate.galleryMedia.forEach(item => item.mediaId && mediaIdsToActivate.add(item.mediaId));
+  }
+  if (validatedUpdate.contentMedia) {
+    validatedUpdate.contentMedia.forEach(id => mediaIdsToActivate.add(id));
   }
 
-  // Update gallery media status if it exists
-  if (validatedUpdate.galleryMedia?.length) {
-    const updatedGalleryMedia = [];
-    for (const item of validatedUpdate.galleryMedia) {
-      if (item.mediaId) {
-        const mediaRef = firestore.collection('media').doc(item.mediaId);
-        const mediaSnap = await mediaRef.get();
-        const mediaData = mediaSnap.data();
-        
-        if (mediaData) {
-          const mediaUpdate: any = { 
-            status: 'active',
-            updatedAt: Date.now(),
-            objectPosition: item.objectPosition || mediaData.objectPosition || 'center'
-          };
-          
-          batch.update(mediaRef, mediaUpdate);
-
-          // Add the full media object to the gallery item
-          updatedGalleryMedia.push({
-            mediaId: item.mediaId,
-            caption: item.caption || '',
-            order: item.order,
-            objectPosition: item.objectPosition || mediaData.objectPosition || 'center',
-            media: {
-              id: item.mediaId,
-              filename: mediaData.filename || '',
-              width: mediaData.width || 0,
-              height: mediaData.height || 0,
-              storageUrl: mediaData.storageUrl || '',
-              storagePath: mediaData.storagePath || '',
-              source: mediaData.source || 'upload',
-              sourcePath: mediaData.sourcePath || '',
-              caption: mediaData.caption || '',
-              status: 'active',
-              objectPosition: item.objectPosition || mediaData.objectPosition || 'center',
-              createdAt: mediaData.createdAt || Date.now(),
-              updatedAt: Date.now(),
-              url: mediaData.storageUrl || mediaData.url || ''
-            }
-          });
-        }
-      }
-    }
-    // Update the gallery media with full media objects
-    updateData.galleryMedia = updatedGalleryMedia;
+  // 3. Update the status of all associated media to 'active'.
+  for (const mediaId of Array.from(mediaIdsToActivate)) {
+    const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
+    batch.update(mediaRef, { status: 'active', updatedAt: Date.now() });
   }
 
-  // Update content media status if it exists
-  if (validatedUpdate.contentMedia?.length) {
-    const updatedContentMedia = [];
-    for (const item of validatedUpdate.contentMedia) {
-      if (item.id) {
-        const mediaRef = firestore.collection('media').doc(item.id);
-        const mediaSnap = await mediaRef.get();
-        const mediaData = mediaSnap.data();
-        
-        if (mediaData) {
-          const mediaUpdate: any = { 
-            status: 'active',
-            updatedAt: Date.now()
-          };
-          
-          batch.update(mediaRef, mediaUpdate);
-
-          // Add the full media object to the content media item
-          updatedContentMedia.push({
-            id: item.id,
-            status: 'active',
-            updatedAt: Date.now(),
-            media: {
-              id: item.id,
-              filename: mediaData.filename || '',
-              width: mediaData.width || 0,
-              height: mediaData.height || 0,
-              storageUrl: mediaData.storageUrl || '',
-              storagePath: mediaData.storagePath || '',
-              source: mediaData.source || 'upload',
-              sourcePath: mediaData.sourcePath || '',
-              caption: mediaData.caption || '',
-              status: 'active',
-              objectPosition: mediaData.objectPosition || 'center',
-              createdAt: mediaData.createdAt || Date.now(),
-              updatedAt: mediaData.updatedAt || Date.now(),
-              url: mediaData.storageUrl || mediaData.url || ''
-            }
-          });
-        }
-      }
-    }
-    // Update the content media with full media objects
-    updateData.contentMedia = updatedContentMedia;
-  }
-
+  // Commit all database operations atomically.
   await batch.commit();
 
-  // Use getCardById to get the full card with media objects
+  // Return the full, hydrated card by calling the trusted getCardById function.
   const updatedCard = await getCardById(cardId);
   if (!updatedCard) {
     throw new Error(`Failed to fetch updated card with ID ${cardId}`);
@@ -255,62 +178,44 @@ export async function getCardById(id: string): Promise<Card | null> {
 
   const cardData = docSnap.data() as Card;
 
-  // Load cover image if it exists
+  // --- Start Hydration ---
+  // Collect all unique media IDs from all fields.
+  const mediaIds = new Set<string>();
   if (cardData.coverImageId) {
-    const mediaRef = firestore.collection('media').doc(cardData.coverImageId);
-    const mediaSnap = await mediaRef.get();
-    const mediaData = mediaSnap.data();
-    if (mediaData) {
-      cardData.coverImage = {
-        ...mediaData,
-        url: mediaData.storageUrl || mediaData.url
-      };
-    }
+    mediaIds.add(cardData.coverImageId);
+  }
+  if (cardData.galleryMedia) {
+    cardData.galleryMedia.forEach(item => item.mediaId && mediaIds.add(item.mediaId));
+  }
+  if (cardData.contentMedia) {
+    cardData.contentMedia.forEach(id => mediaIds.add(id));
   }
 
-  // Load gallery media if it exists
-  if (cardData.galleryMedia?.length) {
-    const updatedGalleryMedia = [];
-    for (const item of cardData.galleryMedia) {
-      if (item.mediaId) {
-        const mediaRef = firestore.collection('media').doc(item.mediaId);
-        const mediaSnap = await mediaRef.get();
-        const mediaData = mediaSnap.data();
-        if (mediaData) {
-          updatedGalleryMedia.push({
-            ...item,
-            media: {
-              ...mediaData,
-              url: mediaData.storageUrl || mediaData.url
-            }
-          });
-        }
-      }
-    }
-    cardData.galleryMedia = updatedGalleryMedia;
+  // Fetch all media objects in a single batch query.
+  const mediaMap = new Map<string, Media>();
+  if (mediaIds.size > 0) {
+    const mediaDocs = await firestore.collection(MEDIA_COLLECTION).where('id', 'in', Array.from(mediaIds)).get();
+    mediaDocs.forEach(doc => mediaMap.set(doc.id, doc.data() as Media));
   }
 
-  // Load content media if it exists
-  if (cardData.contentMedia?.length) {
-    const updatedContentMedia = [];
-    for (const item of cardData.contentMedia) {
-      if (item.id) {
-        const mediaRef = firestore.collection('media').doc(item.id);
-        const mediaSnap = await mediaRef.get();
-        const mediaData = mediaSnap.data();
-        if (mediaData) {
-          updatedContentMedia.push({
-            ...item,
-            media: {
-              ...mediaData,
-              url: mediaData.storageUrl || mediaData.url
-            }
-          });
-        }
-      }
-    }
-    cardData.contentMedia = updatedContentMedia;
+  // Inject the full media objects back into the card.
+  if (cardData.coverImageId) {
+    cardData.coverImage = mediaMap.get(cardData.coverImageId) || null;
   }
+
+  if (cardData.galleryMedia) {
+    cardData.galleryMedia = cardData.galleryMedia.map(item => ({
+      ...item,
+      media: mediaMap.get(item.mediaId),
+    }));
+  }
+
+  if (cardData.contentMedia) {
+    // The client doesn't need a hydrated contentMedia array, as the content
+    // itself contains the necessary markup. We just ensure the array exists.
+    cardData.contentMedia = cardData.contentMedia || [];
+  }
+  // --- End Hydration ---
 
   return cardData;
 }

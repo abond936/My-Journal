@@ -68,6 +68,8 @@ async function createMediaAsset(
     source,
     sourcePath,
     status,
+    objectPosition: '50% 50%',
+    caption: '', 
     createdAt: now,
     updatedAt: now,
   };
@@ -82,9 +84,9 @@ async function createMediaAsset(
  * Imports an image from the local filesystem. Reads the file and passes it to the central creator function.
  *
  * @param sourcePath - The relative path of the image from the local drive root.
- * @returns A promise that resolves with the new Media object.
+ * @returns A promise that resolves with the new Media object, structured for client-side use.
  */
-export async function importFromLocalDrive(sourcePath: string): Promise<Media> {
+export async function importFromLocalDrive(sourcePath: string): Promise<{ mediaId: string; media: Media }> {
   if (!ONEDRIVE_ROOT_FOLDER) {
     throw new Error('ONEDRIVE_ROOT_FOLDER environment variable not set');
   }
@@ -98,8 +100,14 @@ export async function importFromLocalDrive(sourcePath: string): Promise<Media> {
     const fileBuffer = await fs.readFile(fullPath);
     const filename = path.basename(fullPath);
 
-    // Create as temporary by default
-    return await createMediaAsset(fileBuffer, filename, 'local', sourcePath, 'temporary');
+    // Create the raw media asset
+    const newMedia = await createMediaAsset(fileBuffer, filename, 'local', sourcePath, 'temporary');
+    
+    // Return the hydrated object that the client expects
+    return {
+      mediaId: newMedia.id,
+      media: newMedia,
+    };
   } catch (error) {
     console.error('[importFromLocalDrive] Error importing file:', {
       sourcePath,
@@ -118,16 +126,22 @@ export async function importFromLocalDrive(sourcePath: string): Promise<Media> {
  *
  * @param fileBuffer - The buffer containing the image data.
  * @param originalFilename - The original name of the file.
- * @returns A promise that resolves with the new Media object.
+ * @returns A promise that resolves with the new Media object, structured for client-side use.
  */
 export async function importFromBuffer(
   fileBuffer: Buffer, 
   originalFilename: string
-): Promise<Media> {
+): Promise<{ mediaId: string; media: Media }> {
   try {
     // For uploads/pastes, the sourcePath is just a representation of where it came from.
     const sourcePath = `upload://${originalFilename}`;
-    return await createMediaAsset(fileBuffer, originalFilename, 'paste', sourcePath, 'temporary');
+    const newMedia = await createMediaAsset(fileBuffer, originalFilename, 'paste', sourcePath, 'temporary');
+
+    // Return the hydrated object that the client expects
+    return {
+      mediaId: newMedia.id,
+      media: newMedia,
+    };
   } catch (error) {
     console.error(`Failed to import image from buffer (${originalFilename}):`, error);
     throw new Error(`Failed to import uploaded image. See server logs for details.`);

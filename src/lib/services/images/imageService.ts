@@ -1,4 +1,5 @@
 import { Media } from '@/lib/types/photo';
+import * as admin from 'firebase-admin';
 
 /**
  * Uploads a file from the user's browser (e.g., via drag/drop or file input).
@@ -61,8 +62,8 @@ export async function updateMediaStatus(id: string, status: 'temporary' | 'activ
 }
 
 /**
- * Fetches multiple media objects by their IDs.
- * @param ids An array of media IDs.
+ * Retrieves multiple media documents from Firestore by their IDs.
+ * @param ids - An array of media document IDs.
  * @returns A promise that resolves with an array of Media objects.
  */
 export async function getMediaByIds(ids: string[]): Promise<Media[]> {
@@ -70,16 +71,26 @@ export async function getMediaByIds(ids: string[]): Promise<Media[]> {
     return [];
   }
 
-  const response = await fetch('/api/media/by-ids', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ids }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: 'Failed to fetch media by IDs.' }));
-    throw new Error(errorData.message || 'An unknown error occurred while fetching media.');
+  const app = getAdminApp();
+  const firestore = app.firestore();
+  const mediaRef = firestore.collection('media');
+  
+  // Firestore 'in' query can take up to 30 IDs at a time.
+  const chunks = [];
+  for (let i = 0; i < ids.length; i += 30) {
+    chunks.push(ids.slice(i, i + 30));
   }
 
-  return response.json();
+  const promises = chunks.map(chunk => mediaRef.where(admin.firestore.FieldPath.documentId(), 'in', chunk).get());
+  
+  const snapshotResults = await Promise.all(promises);
+  
+  const mediaItems: Media[] = [];
+  snapshotResults.forEach(snapshot => {
+    snapshot.docs.forEach(doc => {
+      mediaItems.push(doc.data() as Media);
+    });
+  });
+
+  return mediaItems;
 }
