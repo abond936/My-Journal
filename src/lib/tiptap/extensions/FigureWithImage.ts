@@ -109,15 +109,20 @@ export const FigureWithImage = Node.create<FigureWithImageOptions>({
 
   addCommands() {
     return {
-      setFigureWithImage: options => ({ commands }) => {
-        if (!options.src || !options.width || !options.height) {
-          console.error("FigureWithImage requires src, width, and height.");
-          return false;
-        }
-        return commands.insertContent({
-          type: this.name,
-          attrs: options,
+      setFigureWithImage: (options: FigureWithImageOptions) => ({ tr, dispatch }) => {
+        const { selection } = tr;
+
+        console.log('[FigureWithImage] Creating node', {
+          timestamp: new Date().toISOString(),
+          attrs: options
         });
+
+        const node = this.type.create(options);
+        if (dispatch) {
+          tr.replaceSelectionWith(node);
+        }
+
+        return true;
       },
       setFigureSize: size => ({ tr, state }) => {
         const { selection } = state;

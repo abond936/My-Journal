@@ -19,10 +19,10 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('[/api/images/local/import] Attempting to import:', { sourcePath });
-    const newMedia = await importFromLocalDrive(sourcePath);
-    console.log('[/api/images/local/import] Successfully imported:', { sourcePath, mediaId: newMedia.id });
+    const { mediaId, media } = await importFromLocalDrive(sourcePath);
+    console.log('[/api/images/local/import] Successfully imported:', { sourcePath, mediaId });
 
-    return NextResponse.json(newMedia);
+    return NextResponse.json({ mediaId, media });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error('[/api/images/local/import] Error importing image:', {

@@ -19,7 +19,7 @@ const galleryMediaItemSchema = z.object({
  */
 export const cardSchema = z.object({
   // Basic card identification and metadata
-  id: z.string(),
+  id: z.string().optional(),
   title: z.string().default(''),
   title_lowercase: z.string().default(''),
   subtitle: z.string().optional().nullable(),

@@ -5,7 +5,7 @@ import { Card, CardUpdate, cardSchema, GalleryMediaItem, HydratedGalleryMediaIte
 import { Tag } from '@/lib/types/tag';
 import { Media } from '@/lib/types/photo';
 import { ZodError } from 'zod';
-import { extractMediaFromContent } from '@/lib/utils/cardUtils';
+import { extractMediaFromContent, dehydrateCardForSave } from '@/lib/utils/cardUtils';
 
 /**
  * FormState Interface
@@ -46,6 +46,9 @@ interface FormContextValue {
   
   // Validation
   validateForm: () => boolean;
+
+  // Content Media
+  updateContentMedia: (mediaIds: string[]) => void;
 }
 
 /**
@@ -110,11 +113,26 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
 
   useEffect(() => {
     if (initialCard) {
-      setFormState(prevState => ({
-        ...prevState,
-        cardData: { ...EMPTY_CARD, ...initialCard },
-        errors: {},
-      }));
+      // Only update if this is the first load or if the initialCard.id has changed
+      setFormState(prevState => {
+        if (!prevState.cardData.id || prevState.cardData.id !== initialCard.id) {
+          console.log('[CardFormProvider] Updating form state with new initialCard', {
+            prevId: prevState.cardData.id,
+            newId: initialCard.id,
+            prevContentLength: prevState.cardData.content?.length,
+            newContentLength: initialCard.content?.length
+          });
+          return {
+            ...prevState,
+            cardData: { ...EMPTY_CARD, ...initialCard },
+            errors: {},
+            lastSavedState: {
+              cardData: { ...EMPTY_CARD, ...initialCard }
+            }
+          };
+        }
+        return prevState;
+      });
     }
   }, [initialCard]);
 
@@ -123,10 +141,40 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
   }, []);
 
   const setField = useCallback((field: keyof CardUpdate, value: any) => {
-    batchStateUpdate({
-      cardData: { ...formState.cardData, [field]: value },
-    });
-  }, [batchStateUpdate, formState.cardData]);
+    if (!formState.cardData) return;
+
+    // Only update if the value has actually changed
+    if (value !== formState.cardData[field]) {
+      // Only log content length changes that are significant
+      if (field === 'content' && Math.abs((value?.length || 0) - (formState.cardData.content?.length || 0)) > 10) {
+        console.log('[CardFormProvider] Content length changed:', {
+          from: formState.cardData.content?.length || 0,
+          to: value?.length || 0,
+          field
+        });
+      }
+
+      setFormState(prev => {
+        const newState = {
+          ...prev,
+          cardData: {
+            ...prev.cardData,
+            [field]: value
+          }
+        };
+
+        // Log the state update
+        if (field === 'content') {
+          console.log('[CardFormProvider] State updated', {
+            contentLength: newState.cardData.content?.length,
+            mediaCount: newState.cardData.contentMedia?.length
+          });
+        }
+
+        return newState;
+      });
+    }
+  }, [formState.cardData]);
 
   const updateTags = useCallback((newTags: Tag[]) => {
     const tagIds = newTags.map(t => t.id);
@@ -141,8 +189,34 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     });
   }, [batchStateUpdate, formState.cardData]);
 
+  const updateContentMedia = useCallback((mediaIds: string[]) => {
+    // Only update if the media IDs have actually changed
+    const currentMediaIds = formState.cardData.contentMedia || [];
+    const hasChanged = mediaIds.length !== currentMediaIds.length ||
+      mediaIds.some(id => !currentMediaIds.includes(id));
+
+    if (hasChanged) {
+      console.log('[CardFormProvider] Updating content media', {
+        currentContentLength: formState.cardData.content?.length,
+        from: currentMediaIds,
+        to: mediaIds
+      });
+
+      setFormState(prev => ({
+        ...prev,
+        cardData: {
+          ...prev.cardData,
+          contentMedia: mediaIds
+        }
+      }));
+    }
+  }, [formState.cardData]);
+
   const validateForm = useCallback(() => {
-    const result = cardSchema.safeParse(formState.cardData);
+    // Strip transient, client-only fields before validating.
+    const dataForValidation = dehydrateCardForSave(formState.cardData);
+
+    const result = cardSchema.safeParse(dataForValidation);
 
     if (!result.success) {
       const formattedErrors = result.error.flatten().fieldErrors;
@@ -166,10 +240,38 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       console.log("Form validation failed. Save aborted.");
       return;
     }
+
+    console.log('[handleSave] Starting save process', {
+      currentContentLength: formState.cardData.content?.length
+    });
+
     batchStateUpdate({ isSaving: true });
-    await onSave(formState.cardData);
-    batchStateUpdate({ isSaving: false });
-  }, [onSave, formState.cardData, batchStateUpdate, validateForm]);
+
+    try {
+      // Prepare payload identical to what passed validation
+      const payload = dehydrateCardForSave(formState.cardData);
+
+      console.log('[handleSave] Prepared payload', {
+        contentLength: payload.content?.length
+      });
+
+      // Save to backend
+      await onSave(payload);
+
+      // Update last saved state
+      batchStateUpdate({
+        isSaving: false,
+        lastSavedState: {
+          cardData: formState.cardData
+        }
+      });
+
+      console.log('[handleSave] Save completed successfully');
+    } catch (error) {
+      console.error('[handleSave] Error during save:', error);
+      batchStateUpdate({ isSaving: false });
+    }
+  }, [formState.cardData, validateForm, batchStateUpdate, onSave]);
 
   const resetForm = useCallback(() => {
     setFormState({
@@ -188,6 +290,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     setField,
     updateTags,
     updateChildIds,
+    updateContentMedia,
     handleSave,
     resetForm,
     validateForm,
@@ -197,6 +300,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     setField,
     updateTags,
     updateChildIds,
+    updateContentMedia,
     handleSave,
     resetForm,
     validateForm,

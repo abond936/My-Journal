@@ -2,50 +2,57 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import styles from './CoverPhotoContainer.module.css';
-import { HydratedGalleryMediaItem } from '@/lib/types/card';
+import { Media } from '@/lib/types/photo';
+import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import PhotoPicker from '@/components/admin/card-admin/PhotoPicker';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import { useCardForm } from '@/components/providers/CardFormProvider';
 
 interface CoverPhotoContainerProps {
+  coverImage: Media | null;
+  objectPosition?: string;
+  onChange: (newCoverImage: Media | null, newPosition?: string) => void;
+  error?: string;
   className?: string;
+  isSaving: boolean;
 }
 
-export default function CoverPhotoContainer({ className }: CoverPhotoContainerProps) {
-  const { formState: { cardData, errors, isSaving }, setField } = useCardForm();
-  const { coverImage } = cardData;
-  
+export default function CoverPhotoContainer({ 
+  coverImage, 
+  objectPosition,
+  onChange,
+  error,
+  className,
+  isSaving
+}: CoverPhotoContainerProps) {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [horizontalPosition, setHorizontalPosition] = useState(50);
   const [verticalPosition, setVerticalPosition] = useState(50);
 
   useEffect(() => {
-    if (cardData.coverImageObjectPosition) {
-      const [x, y] = cardData.coverImageObjectPosition.split(' ').map(pos => parseInt(pos));
+    if (objectPosition) {
+      const [x, y] = objectPosition.split(' ').map(pos => parseInt(pos));
       setHorizontalPosition(x || 50);
       setVerticalPosition(y || 50);
     } else {
       setHorizontalPosition(50);
       setVerticalPosition(50);
     }
-  }, [cardData.coverImageObjectPosition]);
+  }, [objectPosition]);
 
-  const handlePhotoSelect = (selectedMedia: HydratedGalleryMediaItem) => {
+  const handlePhotoSelect = (media: Media) => {
     setIsPickerOpen(false);
-    setField('coverImage', selectedMedia.media);
-    setField('coverImageId', selectedMedia.mediaId);
+    onChange(media);
   };
 
   const handleRemovePhoto = useCallback(() => {
-    setField('coverImage', null);
-    setField('coverImageId', null);
-  }, [setField]);
+    onChange(null);
+  }, [onChange]);
 
   const handlePositionChange = useCallback((horizontal: number, vertical: number) => {
-    setField('coverImageObjectPosition', `${horizontal}% ${vertical}%`);
-  }, [setField]);
+    onChange(coverImage, `${horizontal}% ${vertical}%`);
+  }, [onChange, coverImage]);
   
-  const displayError = errors.coverImage;
+  const displayError = error;
 
   return (
     <div className={`${styles.container} ${className || ''} ${displayError ? styles.error : ''}`}>
@@ -53,14 +60,14 @@ export default function CoverPhotoContainer({ className }: CoverPhotoContainerPr
         <div className={styles.placeholder}>
           <LoadingSpinner />
         </div>
-      ) : coverImage && coverImage.storageUrl ? (
+      ) : coverImage ? (
         <>
           <div className={styles.imageContainer}>
             <img
-              src={coverImage.storageUrl}
+              src={getDisplayUrl(coverImage)}
               alt={coverImage.filename || 'Cover image'}
               className={styles.coverImage}
-              style={{ objectPosition: cardData.coverImageObjectPosition || '50% 50%' }}
+              style={{ objectPosition: objectPosition || '50% 50%' }}
             />
             <div className={styles.buttonContainer}>
               <button

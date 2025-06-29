@@ -6,12 +6,13 @@ import { PhotoMetadata } from '@/lib/types/photo';
  * @param photo - An object containing photo metadata, must have a `storageUrl`.
  * @returns A string representing the web-accessible URL for the image.
  */
-export function getDisplayUrl(photo: { storageUrl?: string | null } | null | undefined): string {
-  // After the import process, the photo object contains the direct public URL.
-  if (photo?.storageUrl) {
-    return photo.storageUrl;
-  }
-  
-  // Return a placeholder or a transparent pixel if the URL is missing, to avoid broken image icons.
+export function getDisplayUrl(photo: { storageUrl?: string | null; url?: string | null } | null | undefined): string {
+  // Prefer the canonical storage URL when it exists.
+  if (photo?.storageUrl) return photo.storageUrl;
+
+  // Fallback: local-drive or legacy objects may expose `url` instead.
+  if (photo?.url) return photo.url;
+
+  // Transparent pixel placeholder to avoid broken-image icons.
   return 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 } 

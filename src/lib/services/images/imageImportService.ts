@@ -38,6 +38,19 @@ async function createMediaAsset(
   // 1. Analyze the image and generate a unique ID
   const image = sharp(fileBuffer);
   const metadata = await image.metadata();
+
+  // Always derive reliable dimensions using image-size
+  let { width, height } = metadata as { width?: number; height?: number };
+  if (!width || !height) {
+    const dims = sizeOf(fileBuffer);
+    width = dims.width;
+    height = dims.height;
+  }
+
+  if (!width || !height) {
+    throw new Error('Could not determine image dimensions.');
+  }
+
   const mediaId = uuidv4();
   const storageFilename = `${mediaId}-${originalFilename}`;
 
@@ -61,8 +74,8 @@ async function createMediaAsset(
   const newMedia: Media = {
     id: mediaId,
     filename: originalFilename,
-    width: metadata.width || 0,
-    height: metadata.height || 0,
+    width,
+    height,
     storageUrl: publicUrl,
     storagePath,
     source,
@@ -203,11 +216,9 @@ export async function deleteMediaAsset(mediaId: string): Promise<void> {
         await bucket.file(storagePath).delete();
         console.log(`[deleteMediaAsset] Successfully deleted file ${storagePath} from Storage.`);
       } catch (storageError: any) {
-        // If the file doesn't exist, GCS throws code 404. We can ignore this.
         if (storageError.code === 404) {
           console.warn(`[deleteMediaAsset] File ${storagePath} not found in Storage. It might have been deleted already.`);
         } else {
-          // For other errors, we should log them but still proceed to delete the Firestore doc.
           console.error(`[deleteMediaAsset] Error deleting file ${storagePath} from Storage:`, storageError);
         }
       }
@@ -221,4 +232,4 @@ export async function deleteMediaAsset(mediaId: string): Promise<void> {
     console.error(`[deleteMediaAsset] CRITICAL ERROR during deletion for media ID ${mediaId}:`, error);
     throw new Error(`Failed to delete media asset ${mediaId}. See server logs for details.`);
   }
-} 
+}

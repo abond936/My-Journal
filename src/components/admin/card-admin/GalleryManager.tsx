@@ -15,35 +15,35 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { HydratedGalleryMediaItem } from '@/lib/types/card';
+import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import PhotoPicker from '@/components/admin/card-admin/PhotoPicker';
 import styles from './GalleryManager.module.css';
 import { SortableItem } from './SortableItem';
 import EditModal from './EditModal';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import { useCardForm } from '@/components/providers/CardFormProvider';
 
 interface GalleryManagerProps {
+  galleryMedia: HydratedGalleryMediaItem[];
+  onUpdate: (newGallery: HydratedGalleryMediaItem[]) => void;
+  error?: string;
   className?: string;
 }
 
-export default function GalleryManager({ className }: GalleryManagerProps) {
-  const { formState: { cardData }, setField } = useCardForm();
-  const { galleryMedia = [] } = cardData;
-
+export default function GalleryManager({ galleryMedia, onUpdate, error, className }: GalleryManagerProps) {
   const [editingItem, setEditingItem] = useState<HydratedGalleryMediaItem | null>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   const handleMultiPhotoSelect = (newItems: HydratedGalleryMediaItem[]) => {
-    setField('galleryMedia', [...galleryMedia, ...newItems]);
+    onUpdate([...galleryMedia, ...newItems]);
     setIsPickerOpen(false);
   };
 
   const handleRemovePhoto = (mediaId: string) => {
-    setField('galleryMedia', galleryMedia.filter(item => item.mediaId !== mediaId));
+    onUpdate(galleryMedia.filter(item => item.mediaId !== mediaId));
   };
 
   const handleSaveMetadata = (updatedItem: HydratedGalleryMediaItem) => {
-    setField('galleryMedia', galleryMedia.map(item =>
+    onUpdate(galleryMedia.map(item =>
       item.mediaId === updatedItem.mediaId ? updatedItem : item
     ));
     setEditingItem(null);
@@ -56,8 +56,11 @@ export default function GalleryManager({ className }: GalleryManagerProps) {
     if (active.id !== over?.id) {
       const oldIndex = galleryMedia.findIndex(p => p.mediaId === active.id);
       const newIndex = galleryMedia.findIndex(p => p.mediaId === over!.id);
-      const newOrder = arrayMove(galleryMedia, oldIndex, newIndex);
-      setField('galleryMedia', newOrder);
+      const reordered = arrayMove(galleryMedia, oldIndex, newIndex).map((item, idx) => ({
+        ...item,
+        order: idx,
+      }));
+      onUpdate(reordered);
     }
   };
 
@@ -84,9 +87,9 @@ export default function GalleryManager({ className }: GalleryManagerProps) {
             {galleryMedia.map((item) => (
               <SortableItem key={item.mediaId} id={item.mediaId}>
                 <div className={styles.imageItem}>
-                  {item.media?.storageUrl ? (
+                  {item.media ? (
                     <img
-                      src={item.media.storageUrl}
+                      src={getDisplayUrl(item.media)}
                       alt={item.media.alt || ''}
                       className={styles.thumbnail}
                       style={{ objectPosition: item.objectPosition }}
@@ -135,7 +138,6 @@ export default function GalleryManager({ className }: GalleryManagerProps) {
       {isPickerOpen && (
         <PhotoPicker
           isOpen={isPickerOpen}
-          onSelect={(media) => handleMultiPhotoSelect([media])}
           onMultiSelect={handleMultiPhotoSelect}
           onClose={() => setIsPickerOpen(false)}
           initialMode="multi"

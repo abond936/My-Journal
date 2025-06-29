@@ -3,6 +3,7 @@
 import React, { useRef, useCallback, useState } from 'react';
 import { Card, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { Media } from '@/lib/types/photo';
+import { extractMediaFromContent } from '@/lib/utils/cardUtils';
 import CoverPhotoContainer from '@/components/admin/card-admin/CoverPhotoContainer';
 import GalleryManager from '@/components/admin/card-admin/GalleryManager';
 import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
@@ -26,6 +27,7 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
     allTags,
     setField,
     handleSave,
+    updateContentMedia,
   } = useCardForm();
 
   const editorRef = useRef<RichTextEditorRef>(null);
@@ -33,10 +35,31 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
   
   const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setField('title', e.target.value), [setField]);
   const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => setField('status', e.target.value as Card['status']), [setField]);
-  const handleContentChange = useCallback((content: string) => setField('content', content), [setField]);
+  const handleContentChange = useCallback((content: string) => {
+    setField('content', content);
+    updateContentMedia(extractMediaFromContent(content));
+  }, [setField, updateContentMedia]);
   
   const handleTagsChange = useCallback((newTagIds: string[]) => {
     setField('tags', newTagIds);
+  }, [setField]);
+
+  const handleCoverImageChange = useCallback((newCoverImage: Media | null, newPosition?: string) => {
+    setField('coverImage', newCoverImage);
+    setField('coverImageId', newCoverImage ? newCoverImage.id : null);
+    // Only update position if it's explicitly provided.
+    // This handles the case where we just change the image but not its position yet.
+    if (newPosition !== undefined) {
+      setField('coverImageObjectPosition', newPosition);
+    }
+  }, [setField]);
+
+  const handleGalleryUpdate = useCallback((newGallery: HydratedGalleryMediaItem[]) => {
+    setField('galleryMedia', newGallery);
+  }, [setField]);
+
+  const handleChildCardsChange = useCallback((newChildIds: string[]) => {
+    setField('childrenIds', newChildIds);
   }, [setField]);
 
   const selectedTagObjects = React.useMemo(() => {
@@ -53,9 +76,9 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
     setIsPhotoPickerOpen(true);
   }, []);
 
-  const handlePhotoSelectForContent = useCallback((selectedMedia: HydratedGalleryMediaItem) => {
-    if (editorRef.current && selectedMedia.media) {
-      editorRef.current.insertImage(selectedMedia.media);
+  const handlePhotoSelectForContent = useCallback((media: Media) => {
+    if (editorRef.current && media) {
+      editorRef.current.insertImage(media);
     }
     setIsPhotoPickerOpen(false);
   }, []);
@@ -84,7 +107,13 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
           </div>
 
           <div className={styles.coverPhotoSection}>
-            <CoverPhotoContainer />
+            <CoverPhotoContainer
+              coverImage={cardData.coverImage}
+              objectPosition={cardData.coverImageObjectPosition}
+              onChange={handleCoverImageChange}
+              isSaving={isSaving}
+              error={errors.coverImage}
+            />
           </div>
 
           <div className={styles.statusSection}>
@@ -119,11 +148,20 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
           </div>
 
           <div className={styles.gallerySection}>
-            <GalleryManager />
+            <GalleryManager
+              galleryMedia={cardData.galleryMedia || []}
+              onUpdate={handleGalleryUpdate}
+              error={errors.galleryMedia}
+            />
           </div>
 
           <div className={styles.childrenSection}>
-            <ChildCardManager />
+            <ChildCardManager
+              cardId={cardData.id}
+              childrenIds={cardData.childrenIds || []}
+              onUpdate={handleChildCardsChange}
+              error={errors.childrenIds}
+            />
           </div>
         </div>
       </form>

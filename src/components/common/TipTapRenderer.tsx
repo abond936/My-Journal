@@ -31,6 +31,14 @@ const TipTapRenderer: React.FC<TipTapRendererProps> = ({ content }) => {
     immediatelyRender: false,
   });
 
+  // DEBUG: expose the raw content HTML so we can inspect it in DevTools.
+  if (typeof window !== 'undefined') {
+    // @ts-ignore
+    window.__CARD_CONTENT = content;
+    // eslint-disable-next-line no-console
+    console.log('[TipTapRenderer] content length:', content?.length);
+  }
+
   // Effect to update content if the prop changes after initial render
   useEffect(() => {
     if (editor && content && editor.getHTML() !== content) {

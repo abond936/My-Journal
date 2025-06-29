@@ -5,7 +5,7 @@ import { getTagAncestors, getTagPathsMap } from '@/lib/firebase/tagDataAccess';
 import { getFirestore, writeBatch } from 'firebase-admin/firestore';
 import { doc } from 'firebase-admin/firestore';
 import { deleteMediaAsset } from './images/imageImportService';
-import { extractMediaFromContent } from '@/lib/utils/cardUtils';
+import { extractMediaFromContent, stripContentImageSrc, hydrateContentImageSrc } from '@/lib/utils/cardUtils';
 import { Media } from '@/lib/types/photo';
 
 const adminApp = getAdminApp();
@@ -57,11 +57,17 @@ export async function createCard(cardData: Partial<Omit<Card, 'id' | 'createdAt'
     return acc;
   }, {} as Record<string, boolean>);
 
+  // --- Content sanitation ---
+  const rawContent = validatedData.content ?? '';
+  const cleanedContent = stripContentImageSrc(rawContent);
+  const contentMediaIds = extractMediaFromContent(cleanedContent);
+
   const newCard: Card = {
     ...validatedData,
+    content: cleanedContent,
     id: docRef.id,
     tags: selectedTags, // ensure tags is not undefined
-    contentMedia: validatedData.contentMedia || [], // ensure arrays are not undefined
+    contentMedia: contentMediaIds, // always an array even if empty
     galleryMedia: validatedData.galleryMedia || [], // ensure arrays are not undefined
     inheritedTags,
     tagPathsMap,
@@ -87,6 +93,12 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'i
   }
   const existingData = docSnap.data() as Card;
 
+  // Log incoming content
+  console.log('[updateCard] Incoming content length:', cardData.content?.length);
+  if (cardData.content) {
+    console.log('[updateCard] First 200 chars of incoming content:', cardData.content.slice(0, 200));
+  }
+
   // --- Start Firestore Batch Write ---
   const batch = firestore.batch();
 
@@ -100,16 +112,33 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'i
     return rest;
   }) || [];
   
-  // The 'content' field from the client is the source of truth for content media.
-  const contentMediaIds = cardData.content ? extractMediaFromContent(cardData.content) : [];
+  // Sanitize content HTML and derive content media IDs.
+  const sanitizedContent = cardData.content ? stripContentImageSrc(cardData.content) : cardData.content;
+  
+  // Log sanitized content
+  console.log('[updateCard] Sanitized content length:', sanitizedContent?.length);
+  if (sanitizedContent) {
+    console.log('[updateCard] First 200 chars of sanitized content:', sanitizedContent.slice(0, 200));
+    console.log('[updateCard] Content contains figure tags:', sanitizedContent.includes('<figure'));
+  }
+
+  const contentMediaIds = sanitizedContent ? extractMediaFromContent(sanitizedContent) : [];
+  console.log('[updateCard] Extracted media IDs:', contentMediaIds);
   
   const updatePayload: Partial<Card> = {
     ...cardData,
+    content: sanitizedContent,
     coverImageId: cardData.coverImageId || null,
     galleryMedia: dehydratedGalleryMedia,
     contentMedia: contentMediaIds,
     updatedAt: Date.now(),
   };
+
+  // Log final content before save
+  console.log('[updateCard] Final content length:', updatePayload.content?.length);
+  if (updatePayload.content) {
+    console.log('[updateCard] First 200 chars of final content:', updatePayload.content.slice(0, 200));
+  }
 
   // Remove transient fields that shouldn't be saved.
   delete updatePayload.coverImage;
@@ -146,7 +175,15 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'i
     validatedUpdate.contentMedia.forEach(id => mediaIdsToActivate.add(id));
   }
 
-  // 3. Update the status of all associated media to 'active'.
+  // 3. If a new coverImageObjectPosition was provided, update it on the media doc.
+  const coverImagePosition = validatedUpdate.coverImageObjectPosition;
+  const coverImageId = validatedUpdate.coverImageId ?? existingData.coverImageId;
+  if (coverImageId && coverImagePosition) {
+    const coverRef = firestore.collection(MEDIA_COLLECTION).doc(coverImageId);
+    batch.update(coverRef, { objectPosition: coverImagePosition, updatedAt: Date.now() });
+  }
+
+  // 4. Update the status of all associated media to 'active'.
   for (const mediaId of Array.from(mediaIdsToActivate)) {
     const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
     batch.update(mediaRef, { status: 'active', updatedAt: Date.now() });
@@ -176,7 +213,7 @@ export async function getCardById(id: string): Promise<Card | null> {
     return null;
   }
 
-  const cardData = docSnap.data() as Card;
+  const cardData = { ...docSnap.data(), id } as Card;
 
   // --- Start Hydration ---
   // Collect all unique media IDs from all fields.
@@ -211,9 +248,12 @@ export async function getCardById(id: string): Promise<Card | null> {
   }
 
   if (cardData.contentMedia) {
-    // The client doesn't need a hydrated contentMedia array, as the content
-    // itself contains the necessary markup. We just ensure the array exists.
     cardData.contentMedia = cardData.contentMedia || [];
+  }
+
+  // Reconstruct <img src="…"> attributes for content images on read.
+  if (cardData.content && cardData.contentMedia && cardData.contentMedia.length) {
+    cardData.content = hydrateContentImageSrc(cardData.content, mediaMap);
   }
   // --- End Hydration ---
 
@@ -372,11 +412,7 @@ export async function deleteCard(cardId: string): Promise<void> {
 
   // 3. Collect content media IDs
   if (card.contentMedia && card.contentMedia.length > 0) {
-    card.contentMedia.forEach(item => {
-      if (item.id) {
-        mediaIdsToDelete.push(item.id);
-      }
-    });
+    card.contentMedia.forEach(id => mediaIdsToDelete.push(id));
   }
 
   // 4. Find all parent cards that have this card as a child
@@ -540,23 +576,31 @@ export async function getCards(options: {
 
   const querySnapshot = await query.limit(limit).get();
 
-  // Fetch all media objects in parallel for better performance
-  const mediaPromises = querySnapshot.docs.map(async doc => {
-    const data = doc.data();
-    data.id = doc.id;
+  // Batch-fetch all cover images instead of one-by-one
+  const rawCards = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Card));
 
-    // If there's a coverImageId, fetch the media object
-    if (data.coverImageId) {
-      const mediaDoc = await firestore.collection('media').doc(data.coverImageId).get();
-      if (mediaDoc.exists) {
-        data.coverImage = mediaDoc.data();
-      }
+  const coverIds = Array.from(new Set(
+    rawCards
+      .filter(c => c.coverImageId)
+      .map(c => c.coverImageId as string)
+  ));
+
+  const coverMap = new Map<string, Media>();
+  if (coverIds.length) {
+    const chunks: string[][] = [];
+    for (let i = 0; i < coverIds.length; i += 30) chunks.push(coverIds.slice(i, i + 30));
+    const snaps = await Promise.all(
+      chunks.map(chk => firestore.collection('media').where('id', 'in', chk).get())
+    );
+    snaps.forEach(snap => snap.docs.forEach(d => coverMap.set(d.id, d.data() as Media)));
+  }
+
+  const cardsWithMedia = rawCards.map(card => {
+    if (card.coverImageId) {
+      card.coverImage = coverMap.get(card.coverImageId) || undefined;
     }
-
-    return data;
+    return card as Card;
   });
-
-  const cardsWithMedia = await Promise.all(mediaPromises);
 
   const items = cardsWithMedia
     .map(data => {

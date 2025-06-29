@@ -3,7 +3,6 @@
 import React, { useState, useCallback, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Blockquote from '@tiptap/extension-blockquote';
 import { FigureWithImage } from '@/lib/tiptap/extensions/FigureWithImage';
 import Link from '@tiptap/extension-link';
 import { Media } from '@/lib/types/photo';
@@ -44,6 +43,13 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
   const [content, setContent] = useState(initialContent);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [selectedNode, setSelectedNode] = useState<any | null>(null);
+
+  const logPreview = (tag: string, html: string, length: number) => {
+    // Only log significant content changes (more than 10 characters difference)
+    if (Math.abs(length - (content?.length || 0)) > 10) {
+      console.log(`[${tag}] content length: ${length}`);
+    }
+  };
 
   const extractMediaIds = useCallback((htmlContent: string) => {
     const mediaIds = new Set<string>();
@@ -86,21 +92,61 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
     }
   };
 
+  const handleContentUpdate = useCallback((newContent: string) => {
+    const mediaIds = extractMediaIds(newContent);
+    
+    // Only update if content has actually changed
+    if (newContent !== content) {
+      setContent(newContent);
+      
+      console.log('[RichTextEditor] Content update', {
+        contentLength: newContent.length,
+        mediaCount: mediaIds.length,
+        hasChanged: newContent !== content
+      });
+      
+      // Notify parent components
+      onChange?.(newContent);
+      
+      // Only update media IDs if they've changed
+      const currentMediaIds = extractMediaIds(content);
+      const mediaIdsChanged = mediaIds.length !== currentMediaIds.length || 
+        mediaIds.some(id => !currentMediaIds.includes(id));
+      
+      if (mediaIdsChanged) {
+        console.log('[RichTextEditor] Media IDs changed', {
+          from: currentMediaIds,
+          to: mediaIds
+        });
+        updateContentMedia(mediaIds);
+        onContentMediaChange?.(mediaIds);
+      }
+    }
+  }, [content, onChange, updateContentMedia, onContentMediaChange, extractMediaIds]);
+
   const editor = useEditor({
-    extensions: [ StarterKit, Blockquote, FigureWithImage, Link ],
+    extensions: [ StarterKit, FigureWithImage, Link ],
     content: content,
     editable: !isDisabled,
+    immediatelyRender: false,
     onSelectionUpdate: ({ editor }) => {
       const node = editor.state.doc.nodeAt(editor.state.selection.from);
       setSelectedNode(node?.type.name === 'figureWithImage' ? node : null);
     },
-    onUpdate: ({ editor }) => {
-      const newContent = editor.getHTML();
-      setContent(newContent);
-      onChange?.(newContent);
-      const mediaIds = extractMediaIds(newContent);
-      updateContentMedia(mediaIds);
-      onContentMediaChange?.(mediaIds);
+    onTransaction: ({ editor, transaction }) => {
+      // Only log transactions that change the document structure
+      if (transaction.docChanged && transaction.steps.length > 0) {
+        console.log('[Editor Transaction]', {
+          timestamp: new Date().toISOString(),
+          docChanged: true,
+          stepTypes: transaction.steps.map(step => step.toJSON().stepType)
+        });
+      }
+    },
+    onUpdate: ({ editor, transaction }) => {
+      if (transaction.docChanged) {
+        handleContentUpdate(editor.getHTML());
+      }
     },
     editorProps: {
       attributes: { class: clsx(styles.editor, className, { [styles.isDisabled]: isDisabled }) },
@@ -125,12 +171,15 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
   });
 
   useEffect(() => {
-    if (editor && initialContent !== content) {
-      setTimeout(() => {
-        editor.commands.setContent(initialContent, false);
-      }, 0);
+    // Only update content from initialContent on first mount or if editor is empty
+    if (editor && (!content || content === '<p></p>' || content === '') && initialContent) {
+      console.log('[RichTextEditor] Setting initial content', {
+        currentLength: content?.length,
+        initialLength: initialContent?.length
+      });
+      editor.commands.setContent(initialContent, false);
     }
-  }, [initialContent, editor]);
+  }, [initialContent, editor, content]);
 
   const handleImageUpload = async (file: File) => {
     if (isDisabled || isProcessingImage) return;
@@ -147,17 +196,30 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
   };
 
   const insertImage = useCallback((media: Media) => {
-    if (editor) {
-      editor.chain().focus().setFigureWithImage({
-        src: getDisplayUrl(media),
-        width: media.width,
-        height: media.height,
-        alt: media.filename,
-        mediaId: media.id,
-        'data-media-id': media.id,
-      }).run();
-    }
-  }, [editor]);
+    if (!editor) return;
+
+    console.log('[Image Insertion] Starting', {
+      mediaId: media.id,
+      timestamp: new Date().toISOString()
+    });
+
+    editor.chain().focus().setFigureWithImage({
+      src: getDisplayUrl(media),
+      width: media.width,
+      height: media.height,
+      alt: media.filename,
+      mediaId: media.id,
+      'data-media-id': media.id,
+    }).run();
+
+    const newContent = editor.getHTML();
+    handleContentUpdate(newContent);
+
+    console.log('[Image Insertion] Complete', {
+      timestamp: new Date().toISOString(),
+      contentLength: newContent.length
+    });
+  }, [editor, handleContentUpdate]);
 
   useImperativeHandle(ref, () => ({
     getContent: () => editor?.getHTML() || '',

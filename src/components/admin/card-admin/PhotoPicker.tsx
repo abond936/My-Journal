@@ -6,12 +6,16 @@ import { Media, TreeNode } from '@/lib/types/photo';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import styles from './PhotoPicker.module.css';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import { importLocalFile } from '@/lib/services/images/imageService';
 import { HydratedGalleryMediaItem } from '@/lib/types/card';
 
 interface PhotoPickerProps {
   isOpen: boolean;
-  onSelect: (media: HydratedGalleryMediaItem) => void;
+  /**
+   * For single-select mode the picker returns a plain Media object.
+   * It is optional so callers that only use multi-select (gallery) don't need to pass it.
+   */
+  onSelect?: (media: Media) => void;
+  /** For multi-select mode the picker returns an array of HydratedGalleryMediaItems */
   onMultiSelect?: (media: HydratedGalleryMediaItem[]) => void;
   onClose: () => void;
   initialMode?: 'single' | 'multi';
@@ -87,7 +91,6 @@ export default function PhotoPicker({
       setIsLoading(true);
       setError(null);
       const tree = await getFolderTree();
-      console.log('Loaded folder tree:', tree);
       setFolderTree(tree);
       if (tree.length > 0) {
         setSelectedFolder(tree[0].id);
@@ -157,19 +160,18 @@ export default function PhotoPicker({
         return await response.json();
       });
 
-      const importedMedia: Media[] = await Promise.all(importPromises);
-      console.log('Successfully imported media:', importedMedia);
+      const importedResults: { mediaId: string; media: Media }[] = await Promise.all(importPromises);
 
-      // Transform the imported Media objects into HydratedGalleryMediaItems
-      const hydratedItems: HydratedGalleryMediaItem[] = importedMedia.map(media => ({
-        mediaId: media.id,
-        order: 0, // Default order, can be adjusted later if needed
-        media: media,
-      }));
-
-      if (mode === 'single' && hydratedItems.length > 0) {
-        onSelect(hydratedItems[0]);
+      if (mode === 'single') {
+        if (importedResults.length > 0 && onSelect) {
+          onSelect(importedResults[0].media);
+        }
       } else if (mode === 'multi' && onMultiSelect) {
+        const hydratedItems: HydratedGalleryMediaItem[] = importedResults.map(res => ({
+          mediaId: res.mediaId,
+          order: 0,
+          media: res.media,
+        }));
         onMultiSelect(hydratedItems);
       }
       onClose();
@@ -181,7 +183,7 @@ export default function PhotoPicker({
     }
   }, [mode, onSelect, onMultiSelect, onClose, selectedPhotos]);
 
-  const handlePhotoSelect = useCallback((photo: Photo) => {
+  const handlePhotoSelect = useCallback((photo: Media) => {
     if (mode === 'single') {
       setSelectedPhotos([photo]);
       handleDone();

@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../auth/[...nextauth]/route';
 import { deleteCard, getCardById, updateCard, getPaginatedCardsByIds } from '@/lib/services/cardService';
-import { getMediaByIds } from '@/lib/services/images/imageService';
 import { Card } from '@/lib/types/card';
 import { PaginatedResult } from '@/lib/types/services';
 

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 import styles from '@/app/admin/card-admin/card-admin.module.css';
+import { getDisplayUrl } from '@/lib/utils/photoUtils';
 
 interface CardAdminListProps {
   cards: Card[];
@@ -56,9 +57,9 @@ export default function CardAdminList({
                 />
               </td>
               <td className={styles.coverImageCell}>
-                {card.coverImage?.storageUrl ? (
+                {card.coverImage ? (
                   <img 
-                    src={card.coverImage.storageUrl} 
+                    src={getDisplayUrl(card.coverImage)} 
                     alt="Cover"
                     className={styles.coverThumbnail}
                   />

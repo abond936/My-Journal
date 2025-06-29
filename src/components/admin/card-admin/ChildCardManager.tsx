@@ -19,20 +19,23 @@ import styles from './ChildCardManager.module.css';
 import formStyles from './CardForm.module.css';
 import { SortableItem } from './SortableItem';
 import { useChildCards } from '@/lib/hooks/useChildCards';
-import { useCardForm } from '@/components/providers/CardFormProvider';
 import clsx from 'clsx';
 
 interface ChildCardManagerProps {
+  cardId: string | undefined;
+  childrenIds: string[];
+  onUpdate: (newChildIds: string[]) => void;
+  error?: string;
   className?: string;
 }
 
-export default function ChildCardManager({ className }: ChildCardManagerProps) {
-  const {
-    formState: { cardData, errors },
-    updateChildIds,
-  } = useCardForm();
-
-  const childIds = cardData.childrenIds || [];
+export default function ChildCardManager({ 
+  cardId, 
+  childrenIds, 
+  onUpdate, 
+  error, 
+  className 
+}: ChildCardManagerProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Card[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -42,7 +45,7 @@ export default function ChildCardManager({ className }: ChildCardManagerProps) {
     childCards, 
     isLoading: areChildrenLoading, 
     error: childrenError 
-  } = useChildCards(childIds);
+  } = useChildCards(childrenIds);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
@@ -66,25 +69,25 @@ export default function ChildCardManager({ className }: ChildCardManagerProps) {
     }
   };
 
-  const handleAdd = (cardId: string) => {
-    if (childIds.includes(cardId)) {
+  const handleAdd = (newCardId: string) => {
+    if (childrenIds.includes(newCardId)) {
       setSearchError('This card is already a child.');
       return;
     }
     
     // Check if we're trying to add the current card as its own child
-    if (cardData.id === cardId) {
+    if (cardId === newCardId) {
       setSearchError('A card cannot be its own child.');
       return;
     }
     
-    updateChildIds([...childIds, cardId]);
+    onUpdate([...childrenIds, newCardId]);
     setSearchQuery('');
     setSearchResults([]);
   };
 
-  const handleRemove = (cardId: string) => {
-    updateChildIds(childIds.filter(id => id !== cardId));
+  const handleRemove = (idToRemove: string) => {
+    onUpdate(childrenIds.filter(id => id !== idToRemove));
   };
 
   const sensors = useSensors(
@@ -95,10 +98,10 @@ export default function ChildCardManager({ className }: ChildCardManagerProps) {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      const oldIndex = childIds.indexOf(active.id as string);
-      const newIndex = childIds.indexOf(over.id as string);
-      const newOrder = arrayMove(childIds, oldIndex, newIndex);
-      updateChildIds(newOrder);
+      const oldIndex = childrenIds.indexOf(active.id as string);
+      const newIndex = childrenIds.indexOf(over.id as string);
+      const newOrder = arrayMove(childrenIds, oldIndex, newIndex);
+      onUpdate(newOrder);
     }
   };
 
@@ -125,7 +128,7 @@ export default function ChildCardManager({ className }: ChildCardManagerProps) {
       </div>
 
       {searchError && <p className={styles.error}>{searchError}</p>}
-      {errors.childrenIds && <p className={styles.error}>{errors.childrenIds}</p>}
+      {error && <p className={styles.error}>{error}</p>}
       
       {searchResults.length > 0 && (
         <div className={styles.searchResults}>
@@ -160,7 +163,7 @@ export default function ChildCardManager({ className }: ChildCardManagerProps) {
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
-            <SortableContext items={childIds} strategy={verticalListSortingStrategy}>
+            <SortableContext items={childrenIds} strategy={verticalListSortingStrategy}>
               <ul>
                 {childCards.map((child) => (
                   <SortableItem key={child.id} id={child.id}>
