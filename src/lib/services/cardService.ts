@@ -84,13 +84,12 @@ export async function addCard(cardData: Omit<Card, 'id' | 'createdAt' | 'updated
   
   const newCard: Card = {
     ...cardData,
-    id: docRef.id,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
 
   await docRef.set(newCard);
-  return newCard;
+  return { ...newCard, id: docRef.id };
 }
 
 /**
@@ -123,7 +122,6 @@ export async function createCard(cardData: Partial<Omit<Card, 'id' | 'createdAt'
   const newCard: Card = {
     ...validatedData,
     content: cleanedContent,
-    id: docRef.id,
     tags: selectedTags, // ensure tags is not undefined
     contentMedia: contentMediaIds, // always an array even if empty
     galleryMedia: validatedData.galleryMedia || [], // ensure arrays are not undefined
@@ -134,7 +132,7 @@ export async function createCard(cardData: Partial<Omit<Card, 'id' | 'createdAt'
     updatedAt: Date.now(),
   };
   await docRef.set(newCard);
-  return newCard;
+  return { ...newCard, id: docRef.id };
 }
 
 /**
@@ -150,12 +148,6 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'i
     throw new Error(`Card with ID ${cardId} not found.`);
   }
   const existingData = docSnap.data() as Card;
-
-  // Log incoming content
-  console.log('[updateCard] Incoming content length:', cardData.content?.length);
-  if (cardData.content) {
-    console.log('[updateCard] First 200 chars of incoming content:', cardData.content.slice(0, 200));
-  }
 
   // --- Start Firestore Batch Write ---
   const batch = firestore.batch();
@@ -173,15 +165,7 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'i
   // Sanitize content HTML and derive content media IDs.
   const sanitizedContent = cardData.content ? stripContentImageSrc(cardData.content) : cardData.content;
   
-  // Log sanitized content
-  console.log('[updateCard] Sanitized content length:', sanitizedContent?.length);
-  if (sanitizedContent) {
-    console.log('[updateCard] First 200 chars of sanitized content:', sanitizedContent.slice(0, 200));
-    console.log('[updateCard] Content contains figure tags:', sanitizedContent.includes('<figure'));
-  }
-
   const contentMediaIds = sanitizedContent ? extractMediaFromContent(sanitizedContent) : [];
-  console.log('[updateCard] Extracted media IDs:', contentMediaIds);
   
   const updatePayload: Partial<Card> = {
     ...cardData,
@@ -191,12 +175,6 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'i
     contentMedia: contentMediaIds,
     updatedAt: Date.now(),
   };
-
-  // Log final content before save
-  console.log('[updateCard] Final content length:', updatePayload.content?.length);
-  if (updatePayload.content) {
-    console.log('[updateCard] First 200 chars of final content:', updatePayload.content.slice(0, 200));
-  }
 
   // Remove transient fields that shouldn't be saved.
   delete updatePayload.coverImage;
@@ -271,8 +249,7 @@ export async function getCardById(id: string): Promise<Card | null> {
     return null;
   }
 
-  const cardData = { ...docSnap.data(), id } as Card;
-  
+  const cardData = { ...docSnap.data(), id: docSnap.id } as Card;
   // Refactor to use the helper function
   const hydratedCards = await _hydrateCards([cardData]);
   return hydratedCards[0] || null;
@@ -295,14 +272,13 @@ export async function getCardsByIds(ids: string[]): Promise<Card[]> {
   }
 
   const promises = chunks.map(chunk =>
-    collectionRef.where('id', 'in', chunk).get()
+    collectionRef.where(firestore.FieldPath.documentId(), 'in', chunk).get()
   );
 
   const snapshotResults = await Promise.all(promises);
   const cards = snapshotResults.flatMap(snapshot =>
-    snapshot.docs.map(doc => doc.data() as Card)
+    snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Card))
   );
-  
   // Preserve the original order of IDs
   const cardMap = new Map(cards.map(c => [c.id, c]));
   return ids.map(id => cardMap.get(id)).filter((c): c is Card => !!c);
@@ -535,7 +511,13 @@ export async function getCards(options: {
   status?: Card['status'] | 'all';
   type?: Card['type'] | 'all';
   tags?: string[];
-  dimensionalTags?: string[];
+  dimensionalTags?: {
+    who?: string[];
+    what?: string[];
+    when?: string[];
+    where?: string[];
+    reflection?: string[];
+  };
   childrenIds_contains?: string;
   limit?: number;
   lastDocId?: string;
@@ -579,8 +561,25 @@ export async function getCards(options: {
   }
 
   // Filter by dimensional tags
-  if (dimensionalTags && dimensionalTags.length > 0) {
-    query = query.where('tagPathsMap', '!=', null);
+  if (dimensionalTags) {
+    const { who, what, when, where, reflection } = dimensionalTags;
+    
+    // Apply dimensional filtering with intra-dimension OR logic and inter-dimension AND logic
+    if (who && who.length > 0) {
+      query = query.where('who', 'array-contains-any', who);
+    }
+    if (what && what.length > 0) {
+      query = query.where('what', 'array-contains-any', what);
+    }
+    if (when && when.length > 0) {
+      query = query.where('when', 'array-contains-any', when);
+    }
+    if (where && where.length > 0) {
+      query = query.where('where', 'array-contains-any', where);
+    }
+    if (reflection && reflection.length > 0) {
+      query = query.where('reflection', 'array-contains-any', reflection);
+    }
   }
 
   // Filter by childrenIds_contains

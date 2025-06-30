@@ -28,6 +28,8 @@
   margin: 0;
   font-size: 1.1rem;
   color: #333;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
 }
 
 .editButton, .saveButton, .cancelButton {
@@ -57,22 +59,6 @@
   display: flex;
 }
 
-.dimensionColumns {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 20px;
-  width: 100%;
-}
-
-.dimensionColumn h4 {
-  margin-top: 0;
-  margin-bottom: 10px;
-  font-size: 1rem;
-  color: #555;
-  border-bottom: 2px solid #eee;
-  padding-bottom: 6px;
-}
-
 .noTags {
   color: #999;
   font-style: italic;
@@ -80,22 +66,18 @@
 
 .tagNode {
   font-size: 0.9rem;
-  padding: 4px 0;
-  display: flex;
-  align-items: center;
+  margin-bottom: 1px;
 }
 
 .tagChildren {
-  margin-left: 24px;
-  padding-left: 12px;
+  margin-left: 4px;
+  padding-left: 4px;
   border-left: 1px solid #e0e0e0;
 }
 
 .nodeControl {
   display: flex;
   align-items: center;
-  gap: 8px;
-  width: 100%;
 }
 
 .nodeControl input[type="checkbox"] {
@@ -104,11 +86,8 @@
 }
 
 .nodeControl label {
-  margin: 0;
+  margin-left: 8px;
   cursor: pointer;
-  flex: 1;
-  padding: 4px 8px;
-  border-radius: 4px;
 }
 
 .nodeControl label:hover {
@@ -119,14 +98,11 @@
   background: none;
   border: none;
   cursor: pointer;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   padding: 0;
   font-size: 0.8rem;
   color: #666;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .collapseButton:hover {
@@ -164,16 +140,57 @@
   width: 90%;
   max-width: 1200px;
   max-height: 80vh;
+  overflow-y: auto;
   background-color: white;
   border-radius: 8px;
   padding: 24px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
 }
 
 .modalHeader {
-  margin: 0 0 24px 0;
-  font-size: 1.5rem;
-  color: #333;
+  margin-top: 0;
+  margin-bottom: 24px;
+}
+
+/* Tree Display Section Styles */
+.treeDisplaySection {
+  margin-bottom: 24px;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+}
+
+.treeDisplaySection h3 {
+  margin: 0 0 12px 0;
+  font-size: 1.1rem;
+  color: #495057;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 8px;
+}
+
+.selectedTagTree {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 8px;
+  background-color: white;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+}
+
+.selectedTagTree .tagNode {
+  padding: 4px 8px;
+  margin: 2px 0;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+  border-left: 3px solid #007bff;
+}
+
+.selectedTagTree .tagChildren {
+  margin-left: 16px;
+  padding-left: 8px;
+  border-left: 1px solid #dee2e6;
 }
 
 .interactiveColumns {
@@ -181,7 +198,9 @@
   grid-template-columns: repeat(5, 1fr);
   gap: 20px;
   width: 100%;
-  padding: 16px;
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 10px;
   background-color: #fdfdfd;
   border: 1px solid #eee;
   border-radius: 8px;
@@ -190,7 +209,6 @@
 .interactiveTree {
   max-height: 55vh;
   overflow-y: auto;
-  padding: 8px;
 }
 
 .interactiveNode {
@@ -209,7 +227,6 @@
 .saveButton {
   background-color: #28a745;
   color: white;
-  position: relative;
 }
 
 .saveButton.isDirty::after {
@@ -244,4 +261,42 @@
 .cancelButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.dimensionColumns {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 20px;
+  width: 100%;
+}
+
+.dimensionColumn h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 1rem;
+  color: #555;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 6px;
+}
+
+.dimensionColumn .tagNode {
+  font-size: 0.9rem;
+  padding: 0;
+  display: block !important;
+  align-items: unset;
+  margin-bottom: 0;
+  line-height: 1.2;
+}
+
+.dimensionColumn .tagChildren {
+  margin-left: 6px;
+  padding-left: 3px;
+  border-left: 1px solid #e0e0e0;
+}
+
+.dimensionLabel {
+  color: #999;
+  font-style: italic;
+  font-weight: bold;
+  font-size: 0.9rem;
 } 

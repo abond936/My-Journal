@@ -52,7 +52,7 @@ export const CardProvider = ({ children, collectionId }: CardProviderProps) => {
   const pathname = usePathname();
 
   // --- Global Filter State ---
-  const { selectedFilterTagIds, setFilterTags } = useTag();
+  const { selectedFilterTagIds, setFilterTags, tags: allTags } = useTag();
 
   // --- Local Filter State ---
   const [cardType, setCardType] = useState<CardFilterType>('all');
@@ -63,6 +63,31 @@ export const CardProvider = ({ children, collectionId }: CardProviderProps) => {
   // Define which paths should trigger card fetching
   const activePaths = ['/view', '/admin/card-admin', '/search'];
   const isFetchActive = activePaths.some(path => pathname.startsWith(path));
+
+  // Organize selected tags by dimension
+  const dimensionalTags = useMemo(() => {
+    if (!selectedFilterTagIds || !allTags) return {};
+    
+    const dimensionalMap: {
+      who?: string[];
+      what?: string[];
+      when?: string[];
+      where?: string[];
+      reflection?: string[];
+    } = {};
+    
+    selectedFilterTagIds.forEach(tagId => {
+      const tag = allTags.find(t => t.id === tagId);
+      if (tag && tag.dimension) {
+        if (!dimensionalMap[tag.dimension]) {
+          dimensionalMap[tag.dimension] = [];
+        }
+        dimensionalMap[tag.dimension]!.push(tagId);
+      }
+    });
+    
+    return dimensionalMap;
+  }, [selectedFilterTagIds, allTags]);
 
   const {
     data,
@@ -94,9 +119,13 @@ export const CardProvider = ({ children, collectionId }: CardProviderProps) => {
       
       params.set('status', status);
         
-      if (selectedFilterTagIds && selectedFilterTagIds.length > 0) {
-        params.set('tags', selectedFilterTagIds.join(','));
-      }
+      // Send dimensional tags instead of flat tags array
+      Object.entries(dimensionalTags).forEach(([dimension, tagIds]) => {
+        if (tagIds && tagIds.length > 0) {
+          params.set(dimension, tagIds.join(','));
+        }
+      });
+      
       if (searchTerm && searchTerm.trim() !== '') {
         params.set('q', searchTerm);
       }

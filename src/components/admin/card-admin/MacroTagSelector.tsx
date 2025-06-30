@@ -30,50 +30,63 @@ export default function MacroTagSelector({ selectedTags, allTags, onChange, erro
 
   const selectedTagIds = selectedTags.map(tag => tag.id);
 
+  // Build the sparse tree of selected tags and their ancestors
+  const selectedTagTree = useMemo(() => {
+    if (!allTags || selectedTagIds.length === 0) return [];
+    return buildSparseTagTree(allTags, selectedTagIds);
+  }, [allTags, selectedTagIds]);
+
+  // Organize the sparse tree by dimension
+  const dimensionalSelectedTree = useMemo(() => {
+    const dimensions: Record<string, TagWithChildren[]> = {
+      who: [], what: [], when: [], where: [], reflection: []
+    };
+    selectedTagTree.forEach(rootNode => {
+      if (rootNode.dimension && dimensions[rootNode.dimension]) {
+        dimensions[rootNode.dimension].push(rootNode);
+      }
+    });
+    return dimensions;
+  }, [selectedTagTree]);
+
+  if (isExpanded) {
+    return (
+      <ExpandedView
+        initialSelection={selectedTagIds}
+        onSave={handleSave}
+        onCancel={handleCancel}
+      />
+    );
+  }
+
+  // This is the default, collapsed view
   return (
-    <>
-      <div className={clsx(styles.container, className, error && styles.error)}>
-        <div className={styles.header}>
-          <h3>Tags</h3>
-          <button
-            onClick={() => setIsExpanded(true)}
-            className={styles.editButton}
-            type="button"
-          >
-            Edit Tags
-          </button>
-        </div>
-        <div className={styles.collapsedView}>
-          {selectedTags.length === 0 ? (
-            <span className={styles.noTags}>No tags selected</span>
-          ) : (
-            <div className={styles.dimensionColumns}>
-              {['who', 'what', 'when', 'where', 'reflection'].map(dimension => {
-                const dimensionTags = selectedTags.filter(tag => tag.dimension === dimension);
-                return (
-                  <div key={dimension} className={styles.dimensionColumn}>
-                    <h4>{dimension.charAt(0).toUpperCase() + dimension.slice(1)}</h4>
-                    {dimensionTags.map(tag => (
-                      <div key={tag.id} className={styles.tagNode}>
-                        {tag.name}
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-        {error && <p className={styles.errorText}>{error}</p>}
+    <div className={clsx(styles.container, className, error && styles.error)}>
+      <div className={styles.header}>
+        <h3>Tags</h3>
+        <button
+          onClick={() => setIsExpanded(true)}
+          className={styles.editButton}
+          type="button"
+        >
+          Edit
+        </button>
       </div>
-      {isExpanded && (
-        <ExpandedView
-          initialSelection={selectedTagIds}
-          onSave={handleSave}
-          onCancel={handleCancel}
-        />
-      )}
-    </>
+      <div className={styles.collapsedView}>
+        <div className={styles.dimensionColumns}>
+          {Object.entries(dimensionalSelectedTree).map(([dimension, roots]) => (
+            <div key={dimension} className={styles.dimensionColumn}>
+              {roots.length > 0 ? (
+                roots.map(root => <TagNode key={root.id} node={root} />)
+              ) : (
+                <span className={styles.dimensionLabel}>{dimension.toUpperCase()}</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+      {error && <p className={styles.errorText}>{error}</p>}
+    </div>
   );
 }
 
@@ -81,7 +94,7 @@ export default function MacroTagSelector({ selectedTags, allTags, onChange, erro
 function TagNode({ node }: { node: TagWithChildren }) {
   return (
     <div className={styles.tagNode}>
-      <span>{node.name}</span>
+      <div>{node.name}</div>
       {node.children && node.children.length > 0 && (
         <div className={styles.tagChildren}>
           {node.children.map(child => <TagNode key={child.id} node={child} />)}
@@ -109,6 +122,12 @@ function ExpandedView({ initialSelection, onSave, onCancel, className }: Expande
     return createUITreeFromDimensions(tags);
   }, [tags]);
 
+  // Build sparse tree showing selected tags and their ancestors
+  const selectedTagTree = useMemo(() => {
+    if (!tags || currentSelection.size === 0) return [];
+    return buildSparseTagTree(tags, Array.from(currentSelection));
+  }, [tags, currentSelection]);
+
   const handleTagChange = (tagId: string, isSelected: boolean) => {
     setCurrentSelection(prev => {
       const newSelection = new Set(prev);
@@ -129,6 +148,19 @@ function ExpandedView({ initialSelection, onSave, onCancel, className }: Expande
     <div className={clsx(styles.overlay, className)}>
       <div className={styles.modalContainer}>
         <h2 className={styles.modalHeader}>Edit Tags</h2>
+        
+        {/* Tree Display Section */}
+        {selectedTagTree.length > 0 && (
+          <div className={styles.treeDisplaySection}>
+            <h3>Selected Tag Hierarchy</h3>
+            <div className={styles.selectedTagTree}>
+              {selectedTagTree.map(root => (
+                <TagNode key={root.id} node={root} />
+              ))}
+            </div>
+          </div>
+        )}
+        
         <div className={styles.interactiveColumns}>
           {dimensionalTree.map(dimension => (
             <div key={dimension.id} className={styles.dimensionColumn}>

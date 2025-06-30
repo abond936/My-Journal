@@ -68,6 +68,27 @@ export async function GET(request: Request) {
 
     const tags = searchParams.get('tags')?.split(',');
 
+    // Parse dimensional tags from query parameters
+    const dimensionalTags: {
+      who?: string[];
+      what?: string[];
+      when?: string[];
+      where?: string[];
+      reflection?: string[];
+    } = {};
+    
+    const whoTags = searchParams.get('who')?.split(',').filter(tag => tag.trim());
+    const whatTags = searchParams.get('what')?.split(',').filter(tag => tag.trim());
+    const whenTags = searchParams.get('when')?.split(',').filter(tag => tag.trim());
+    const whereTags = searchParams.get('where')?.split(',').filter(tag => tag.trim());
+    const reflectionTags = searchParams.get('reflection')?.split(',').filter(tag => tag.trim());
+    
+    if (whoTags && whoTags.length > 0) dimensionalTags.who = whoTags;
+    if (whatTags && whatTags.length > 0) dimensionalTags.what = whatTags;
+    if (whenTags && whenTags.length > 0) dimensionalTags.when = whenTags;
+    if (whereTags && whereTags.length > 0) dimensionalTags.where = whereTags;
+    if (reflectionTags && reflectionTags.length > 0) dimensionalTags.reflection = reflectionTags;
+
     let status = searchParams.get('status') as Card['status'] | 'all' | null;
     if (!status) {
       status = isAdmin ? 'all' : 'published';
@@ -92,6 +113,7 @@ export async function GET(request: Request) {
         status,
         type,
         tags,
+        dimensionalTags: Object.keys(dimensionalTags).length > 0 ? dimensionalTags : undefined,
         limit,
         lastDocId,
       });

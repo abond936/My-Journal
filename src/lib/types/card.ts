@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { mediaSchema } from './photo';
+import { mediaSchema, Media } from './photo';
 
 /**
  * Schema for an item within a gallery card.
@@ -19,11 +19,10 @@ const galleryMediaItemSchema = z.object({
  */
 export const cardSchema = z.object({
   // Basic card identification and metadata
-  id: z.string().optional(),
   title: z.string().default(''),
   title_lowercase: z.string().default(''),
   subtitle: z.string().optional().nullable(),
-  excerpt: z.string().optional().nullable(),
+  excerpt: z.string().optional().nullable(),     //default to first 100 characters
   
   // The content field stores HTML with embedded media references.
   content: z.string().default(''),

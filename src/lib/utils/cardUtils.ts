@@ -48,8 +48,6 @@ export function transformToCardUpdate(hydratedCard: HydratedCard): CardUpdate {
 export function dehydrateCardForSave(raw: any): CardUpdate {
   const { coverImage: _ci, galleryMedia, contentMedia, ...rest } = raw;
 
-  console.log('[dehydrateCardForSave] Input content length:', raw.content?.length);
-
   const dehydratedGallery = galleryMedia?.map((item: any) => {
     const { media: _m, ...g } = item || {};
     return g;
@@ -68,8 +66,6 @@ export function dehydrateCardForSave(raw: any): CardUpdate {
     ...(dehydratedGallery ? { galleryMedia: dehydratedGallery } : {}),
     ...(cleanedContent ? { contentMedia: cleanedContent } : {}),
   } as CardUpdate;
-
-  console.log('[dehydrateCardForSave] Output content length:', result.content?.length);
 
   return result;
 }
@@ -104,9 +100,6 @@ export function stripContentImageSrc(html: string | null | undefined): string {
     return html || '';
   }
 
-  console.log('[stripContentImageSrc] Input length:', html.length);
-  console.log('[stripContentImageSrc] First 200 chars:', html.slice(0, 200));
-
   // First handle standalone img tags
   let result = html.replace(/<img[^>]*data-media-id=["'][^"']+["'][^>]*>/gi, (tag) => {
     // Remove the src="..." portion if it exists
@@ -123,9 +116,6 @@ export function stripContentImageSrc(html: string | null | undefined): string {
     }
   );
 
-  console.log('[stripContentImageSrc] Output length:', result.length);
-  console.log('[stripContentImageSrc] First 200 chars of output:', result.slice(0, 200));
-
   return result;
 }
 
@@ -137,9 +127,6 @@ export function hydrateContentImageSrc(html: string | null | undefined, mediaMap
   if (!html || typeof html !== 'string') {
     return html || '';
   }
-
-  console.log('[hydrateContentImageSrc] Input length:', html.length);
-  console.log('[hydrateContentImageSrc] First 200 chars:', html.slice(0, 200));
 
   // First handle standalone img tags
   let result = html.replace(/<img[^>]*data-media-id=["']([^"']+)["'][^>]*>/gi, (tag, mediaId: string) => {
@@ -175,9 +162,6 @@ export function hydrateContentImageSrc(html: string | null | undefined, mediaMap
       return match.replace(imgContent, updatedImgContent);
     }
   );
-
-  console.log('[hydrateContentImageSrc] Output length:', result.length);
-  console.log('[hydrateContentImageSrc] First 200 chars of output:', result.slice(0, 200));
 
   return result;
 } 

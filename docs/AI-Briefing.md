@@ -10,7 +10,7 @@ Welcome, AI assistant. This document is your guide to understanding the "My Jour
 "My Journal" is a personal journaling application that goes beyond simple text entries. It's designed to capture moments and stories by combining text and media into "cards." These cards can be standalone or nested to create rich, hierarchical narratives (e.g., a main "Vacation" card containing child cards for each day). The core experience is centered around flexible content discovery through dimensional tagging and curated collections.
 
 **Who is the user?**
-The primary user is the journal's author, who acts as both creator and consumer of the content. There is an admin view for content management and a user view for consumption.
+The primary user is the journal's author, who acts as both creator and consumer of the content, and his family. There is an admin view for content management and a user view for consumption.
 
 ## 2. Architectural Principles & Core Technologies
 
@@ -36,7 +36,7 @@ This map will help you navigate the project.
 *   `src/app/`: The heart of the Next.js App Router.
     *   `api/`: Contains all backend API route handlers.
     *   `admin/`: Pages and layouts for the content management interface.
-    *   `view/`: Pages and layouts for the primary content consumption experience.
+    *   `view/`: Pages and layouts for the primary content consumption.
     *   `layout.tsx`: The root layout, which includes global providers.
 
 *   `src/components/`: Reusable React components.
@@ -57,7 +57,7 @@ This map will help you navigate the project.
 The data models are defined using Zod schemas in `src/lib/types/`. These files are the single source of truth. Instead of duplicating them here, you should **read them directly**. They contain comments explaining the purpose of each model and its fields.
 
 *   **`Card` (`src/lib/types/card.ts`):** The central data entity in the application. Represents a single journal entry, which can be a story, a gallery, a quote, etc. It contains content, metadata, and references to tags and other cards.
-*   **`Tag` (`src/lib/types/tag.ts`):** Defines the structure for hierarchical tags used for organizing and filtering cards.
+*   **`Tag` (`src/lib/types/tag.ts`):** Defines the structure for dimensional and hierarchical tags used for organizing and filtering cards.
 *   **`Media` (`src/lib/types/photo.ts`):** Represents a media asset (image, video) stored in Firebase Storage, including metadata like dimensions and paths.
 
 ## 5. Common Workflows
