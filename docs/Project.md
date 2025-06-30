@@ -154,7 +154,6 @@ This is a deliberate, interactive process using the `restore-database.ts` script
 
 ⭕
 2 - Implement more granular field-level security
-2 - Add request validation rules
 
 #### **Data Validation**
 ✅ 
@@ -168,7 +167,6 @@ This is a deliberate, interactive process using the `restore-database.ts` script
 
 ⭕
 2 - Add more comprehensive error messages
-2 - Implement custom validation rules
 
 ## **Content Consumption**
 ======================================
@@ -217,10 +215,7 @@ This is a deliberate, interactive process using the `restore-database.ts` script
       - Content - If present, render using TipTapRenderer.
       - Gallery - If present, render grid,
       - Children - If present, render next.
-
-### **User Interaction System**
-⭕
-2 - add user interaction - Like, comment, sharelink
+⭕2 User Interaction - add user interaction - Like, comment, sharelink
 
 ### **Theme System**
 ✅
@@ -228,13 +223,12 @@ This is a deliberate, interactive process using the `restore-database.ts` script
 - fixed schemes
 - limited styling throughout
 
-⭕
-2 - add MSN-style layout and theme
-2 - home
-2 - content page
-2 - cards by type
-2 - admin pages
-2 - make fully customizable - add to Settings
+⭕ @ MSN Layout - add MSN-style layout and theme
+    2 - home
+    2 - content page
+    2 - cards by type
+    2 - admin pages
+    2 - make fully customizable - add to Settings
 
 ### **Navigation Systems**
 =====================================
@@ -292,11 +286,11 @@ This is a deliberate, interactive process using the `restore-database.ts` script
 #### **Data Model & Backend**
 ✅ Firestore Collection: `cards` collection stores all card documents.
 ✅ Atomic Writes: All card updates are performed within a Firestore writeBatch to ensure that updates to the card document and any related media documents either all succeed or all fail together, preventing data inconsistency.
-⭕ Child Strategy - The strategy for managing child cards is not fully defined. 
+⭕2 Child Strategy - The strategy for managing child cards is not fully defined. 
     - The idea behind having a nested card was to be able to accomodate the conceived World & Politics, Father sections, where a card can contain related stories. 
     - How are cards assigned? - Currently there is a search bar, but this is not going to suffice. What is needed is a filtering system to list the related cards and select/order them for inclusion. This could be done by modal within a card or in bulk assign children in card management. Perhaps this could be done like tag heirarchy and order. Filter on cards, then assign parent/order
     - When a parent card is deleted, their children are promoted.
-⭕ 1 Data Validation: Implement Zod schemas on the POST /api/cards and PATCH /api/cards/[id] routes to validate all incoming data before it reaches the cardService.
+⭕1 Data Validation: Implement Zod schemas on the POST /api/cards and PATCH /api/cards/[id] routes to validate all incoming data before it reaches the cardService.
 
 #### **Card Management** 
 - Card management (list, create, edit, bulk actions).
@@ -313,7 +307,7 @@ This is a deliberate, interactive process using the `restore-database.ts` script
 ✅ Filtering - Type/status filtering
 ✅ Bulk operations
 
-⭕1 - Improve bulk operations
+⭕2 - Improve bulk operations
 ⭕2 - Add advanced filtering - other fields, displayMode
 ⭕2 - Implement sorting options
 ⭕2 - Test inline editing
@@ -325,37 +319,10 @@ This is a deliberate, interactive process using the `restore-database.ts` script
 `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
 `CardForm.tsx`
 
-#### **CardAdminClientPage**
-✅ - Handles data fetching (card and tags)
-✅ - Manages delete functionality
-✅ - Wraps everything in CardFormProvider
-✅ - Passes props: initialCard, allTags, onSave
-⭕2 - Pass same props to either CardFormProvider and CardForm, not both.
-⭕2 - Delete functionality could be moved to CardForm
-⭕2 - No loading states for tag fetching
-⭕2 - Simplify prop passing
-⭕2 - Better error handling
-⭕2 - Clear separation of concerns
-
-#### **CardFormProvider** (Context)
-✅ - Manages form state
-✅ - Handles validation
-✅ - Provides update methods
-✅ - Uses a single tags array
-⭕2 - Doesn't properly handle dimensional tags (who, what, when, where, reflection)
-⭕2 - Restructure state to match Card type
-⭕2 - Validate dimensional tags
-⭕2 - Implement vaidation and logging
-
-#### **CardForm** (Main Form)
-✅ - Renders form sections
-✅ - Handles form submission
-✅ - Manages child components
-✅ - Passes props to tag selectors
-⭕2 - Consistent prop passing
-⭕2 - Clear mixed responsibilities
-⭕2 - Implement valdiation and error handling
-⭕2 - Remove redundant state management
+✅Title
+✅Subtitle
+✅Excerpt - 
+  ⭕2 Default excerpt to first x characters, with override
 
 ✅ Cover Image: 
   - Image used for preview card and view page header.
@@ -390,12 +357,8 @@ This is a deliberate, interactive process using the `restore-database.ts` script
     - Search only right now.
     ⭕2 - Develop linking strategy
 
-⭕2 - Validation - Implement Validation
-⭕2 - Error Handling - Implement Error handling
-
-⭕2 - Excerpt - Default excerpt to first x characters, with override
 ⭕2 - Batch upload gallery cards
-⭕2 - Normalize images pre-import
+
 
 
 ### **Tag System**
@@ -550,7 +513,7 @@ Object Position Needs to be context-specific
 Preview card (potentially different handling needed)
 Doesn't apply to content images
 ⭕2 - Backup - Add media to backup 
-⭕2 - Error Handling - If import fails, provide error and options. Accept imported or none.
+⭕2 - Error Handling - If import fails, provide error and options. Accept imported or none?
 
 ✅**Local Drive** 
 - API integration
@@ -570,7 +533,7 @@ Doesn't apply to content images
 - Error handling
 
 **Normalization**
-⭕
+⭕2 - Normalize images pre-import
 2 - Normalize images prior to upload
 2 - Batch clean images from testing before production
 1 - Prepare Images for upload

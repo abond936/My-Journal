@@ -1,0 +1,107 @@
+.galleryContainer {
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  overflow: hidden;
+  background-color: var(--color-background);
+  border-radius: var(--border-radius);
+}
+
+.imageContainer {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: pan-y pinch-zoom;
+}
+
+.galleryImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: transform 0.3s ease-in-out;
+}
+
+.navButton {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  padding: 1rem 0.75rem;
+  font-size: 2rem;
+  cursor: pointer;
+  z-index: 2;
+  transition: all 0.2s ease-in-out;
+  opacity: 0;
+}
+
+.galleryContainer:hover .navButton {
+  opacity: 1;
+}
+
+.navButton:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.navButton:disabled {
+  opacity: 0;
+  cursor: default;
+}
+
+.prevButton {
+  left: 0;
+  border-radius: 0 4px 4px 0;
+}
+
+.nextButton {
+  right: 0;
+  border-radius: 4px 0 0 4px;
+}
+
+.caption {
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.05);
+  text-align: center;
+}
+
+.caption p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+}
+
+.paginationDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  background-color: var(--color-border);
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s ease-in-out;
+}
+
+.paginationDot.active {
+  background-color: var(--color-primary);
+  transform: scale(1.2);
+}
+
+@media (max-width: 768px) {
+  .navButton {
+    opacity: 1;
+    padding: 0.75rem 0.5rem;
+    font-size: 1.5rem;
+  }
+} 

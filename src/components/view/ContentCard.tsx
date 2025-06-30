@@ -35,6 +35,8 @@ interface EntryCardProps extends BaseCardProps {
   type: 'entry';
   date?: string;
   tags?: string[];
+  cardType?: 'story' | 'qa' | 'quote' | 'callout' | 'gallery' | 'collection';
+  galleryMedia?: PhotoMetadata[];
 }
 
 interface AlbumCardProps extends BaseCardProps {
@@ -99,18 +101,16 @@ const ContentCard: React.FC<ContentCardProps> = (props) => {
         const entryProps = props as EntryCardProps;
         return (
           <div className={styles.content}>
-            <div className={styles.header}>
-              {entryProps.tags && entryProps.tags.length > 0 && (
-                <div className={styles.tags}>
-                  {entryProps.tags.slice(0, 3).map(tag => (
-                    <span key={tag} className={styles.tag}>{tag}</span>
-                  ))}
-                </div>
-              )}
-              {entryProps.date && <time className={styles.date}>{entryProps.date}</time>}
-            </div>
             <h2 className={styles.title}>{title}</h2>
             {description && <p className={styles.description}>{description}</p>}
+            {entryProps.date && <div className={styles.date}>{entryProps.date}</div>}
+            {entryProps.tags && entryProps.tags.length > 0 && (
+              <div className={styles.tags}>
+                {entryProps.tags.map(tag => (
+                  <span key={tag} className={styles.tag}>{tag}</span>
+                ))}
+              </div>
+            )}
           </div>
         );
 
@@ -144,9 +144,36 @@ const ContentCard: React.FC<ContentCardProps> = (props) => {
 
   const isAlbum = (props: ContentCardProps): props is AlbumCardProps => props.type === 'album';
 
+  const isGalleryEntry = (props: ContentCardProps): props is EntryCardProps => {
+    return props.type === 'entry' && (props as EntryCardProps).cardType === 'gallery';
+  };
+
+  const getDisplayUrl = (image: PhotoMetadata): string => {
+    return image.source === 'local' 
+      ? `/api/images/local/file?path=${encodeURIComponent(image.url)}` 
+      : image.url;
+  };
+
   return (
     <Link href={href} className={`${styles.card} ${styles[type]} ${styles[size]}`}>
-      {isAlbum(props) && props.images && props.images.length > 0 ? (
+      {isGalleryEntry(props) && props.galleryMedia && props.galleryMedia.length > 0 ? (
+        <Swiper
+          modules={[Pagination, Navigation]}
+          spaceBetween={0}
+          slidesPerView={1}
+          navigation
+          pagination={{ clickable: true }}
+          className={styles.swiperContainer}
+        >
+          {props.galleryMedia.map((image) => (
+            <SwiperSlide key={image.id}>
+              <div className={styles.imageContainer}>
+                <img src={getDisplayUrl(image)} alt={image.filename || title} className={styles.image} />
+              </div>
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      ) : isAlbum(props) && props.images && props.images.length > 0 ? (
         <Swiper
           modules={[Pagination, Navigation]}
           spaceBetween={0}

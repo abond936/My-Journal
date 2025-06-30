@@ -14,6 +14,64 @@ const CARDS_COLLECTION = 'cards';
 const MEDIA_COLLECTION = 'media';
 
 /**
+ * Hydrates an array of cards with their full Media objects.
+ * @param cards - An array of Card objects to hydrate.
+ * @returns A promise that resolves to the array of hydrated cards.
+ */
+async function _hydrateCards(cards: Card[]): Promise<Card[]> {
+  if (!cards || cards.length === 0) {
+    return [];
+  }
+
+  // 1. Collect all unique media IDs from all cards.
+  const mediaIds = new Set<string>();
+  for (const card of cards) {
+    if (card.coverImageId) mediaIds.add(card.coverImageId);
+    if (card.galleryMedia) card.galleryMedia.forEach(item => item.mediaId && mediaIds.add(item.mediaId));
+    if (card.contentMedia) card.contentMedia.forEach(id => mediaIds.add(id));
+  }
+
+  if (mediaIds.size === 0) {
+    return cards; // No media to hydrate
+  }
+
+  // 2. Fetch all media objects in a single batch query.
+  const mediaMap = new Map<string, Media>();
+  // Firestore 'in' queries are limited to 30 items. We must batch the requests.
+  const mediaIdChunks: string[][] = [];
+  const allMediaIds = Array.from(mediaIds);
+  for (let i = 0; i < allMediaIds.length; i += 30) {
+    mediaIdChunks.push(allMediaIds.slice(i, i + 30));
+  }
+
+  for (const chunk of mediaIdChunks) {
+    if (chunk.length > 0) {
+      const mediaDocs = await firestore.collection(MEDIA_COLLECTION).where('id', 'in', chunk).get();
+      mediaDocs.forEach(doc => mediaMap.set(doc.id, doc.data() as Media));
+    }
+  }
+  
+  // 3. Inject the full media objects back into each card.
+  return cards.map(card => {
+    const hydratedCard = { ...card };
+    if (hydratedCard.coverImageId) {
+      hydratedCard.coverImage = mediaMap.get(hydratedCard.coverImageId) || null;
+    }
+    if (hydratedCard.galleryMedia) {
+      hydratedCard.galleryMedia = hydratedCard.galleryMedia.map(item => ({
+        ...item,
+        media: mediaMap.get(item.mediaId),
+      }));
+    }
+    // Hydrate content for rendering (server-side only)
+    if (hydratedCard.content) {
+      hydratedCard.content = hydrateContentImageSrc(hydratedCard.content, mediaMap);
+    }
+    return hydratedCard;
+  });
+}
+
+/**
  * Adds a new card to the Firestore 'cards' collection.
  *
  * @param cardData - The data for the card to be created.
@@ -214,50 +272,10 @@ export async function getCardById(id: string): Promise<Card | null> {
   }
 
   const cardData = { ...docSnap.data(), id } as Card;
-
-  // --- Start Hydration ---
-  // Collect all unique media IDs from all fields.
-  const mediaIds = new Set<string>();
-  if (cardData.coverImageId) {
-    mediaIds.add(cardData.coverImageId);
-  }
-  if (cardData.galleryMedia) {
-    cardData.galleryMedia.forEach(item => item.mediaId && mediaIds.add(item.mediaId));
-  }
-  if (cardData.contentMedia) {
-    cardData.contentMedia.forEach(id => mediaIds.add(id));
-  }
-
-  // Fetch all media objects in a single batch query.
-  const mediaMap = new Map<string, Media>();
-  if (mediaIds.size > 0) {
-    const mediaDocs = await firestore.collection(MEDIA_COLLECTION).where('id', 'in', Array.from(mediaIds)).get();
-    mediaDocs.forEach(doc => mediaMap.set(doc.id, doc.data() as Media));
-  }
-
-  // Inject the full media objects back into the card.
-  if (cardData.coverImageId) {
-    cardData.coverImage = mediaMap.get(cardData.coverImageId) || null;
-  }
-
-  if (cardData.galleryMedia) {
-    cardData.galleryMedia = cardData.galleryMedia.map(item => ({
-      ...item,
-      media: mediaMap.get(item.mediaId),
-    }));
-  }
-
-  if (cardData.contentMedia) {
-    cardData.contentMedia = cardData.contentMedia || [];
-  }
-
-  // Reconstruct <img src="…"> attributes for content images on read.
-  if (cardData.content && cardData.contentMedia && cardData.contentMedia.length) {
-    cardData.content = hydrateContentImageSrc(cardData.content, mediaMap);
-  }
-  // --- End Hydration ---
-
-  return cardData;
+  
+  // Refactor to use the helper function
+  const hydratedCards = await _hydrateCards([cardData]);
+  return hydratedCards[0] || null;
 }
 
 /**
@@ -522,9 +540,18 @@ export async function getCards(options: {
   limit?: number;
   lastDocId?: string;
 } = {}): Promise<{ items: Card[]; lastDocId?: string; hasMore: boolean }> {
-  const { q, status, type, tags, dimensionalTags, childrenIds_contains, limit = 10, lastDocId } = options;
+  const { 
+    q,
+    status = 'published',
+    type = 'all',
+    tags,
+    dimensionalTags,
+    childrenIds_contains,
+    limit = 10,
+    lastDocId,
+  } = options;
 
-  let query = firestore.collection(CARDS_COLLECTION) as FirebaseFirestore.Query<Card>;
+  let query: FirebaseFirestore.Query = firestore.collection(CARDS_COLLECTION);
 
   // Combined text search and tag filtering
   if (q) {
@@ -576,48 +603,19 @@ export async function getCards(options: {
 
   const querySnapshot = await query.limit(limit).get();
 
-  // Batch-fetch all cover images instead of one-by-one
-  const rawCards = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Card));
-
-  const coverIds = Array.from(new Set(
-    rawCards
-      .filter(c => c.coverImageId)
-      .map(c => c.coverImageId as string)
-  ));
-
-  const coverMap = new Map<string, Media>();
-  if (coverIds.length) {
-    const chunks: string[][] = [];
-    for (let i = 0; i < coverIds.length; i += 30) chunks.push(coverIds.slice(i, i + 30));
-    const snaps = await Promise.all(
-      chunks.map(chk => firestore.collection('media').where('id', 'in', chk).get())
-    );
-    snaps.forEach(snap => snap.docs.forEach(d => coverMap.set(d.id, d.data() as Media)));
-  }
-
-  const cardsWithMedia = rawCards.map(card => {
-    if (card.coverImageId) {
-      card.coverImage = coverMap.get(card.coverImageId) || undefined;
-    }
-    return card as Card;
-  });
-
-  const items = cardsWithMedia
-    .map(data => {
-      const validation = cardSchema.safeParse(data);
-      if (validation.success) {
-        return validation.data as Card;
-      } else {
-        console.warn(`[Data Integrity] Invalid card data found for doc id: ${data.id}. Issues:`, validation.error.issues);
-        return null;
-      }
-    })
-    .filter((item): item is Card => item !== null);
+  let cards: Card[] = querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+  } as Card));
   
-  const hasMore = querySnapshot.docs.length === limit;
-  const newLastDocId = items.length > 0 ? items[items.length - 1].id : undefined;
+  // --- ADD THE HYDRATION STEP HERE ---
+  cards = await _hydrateCards(cards);
 
-  return { items, lastDocId: newLastDocId, hasMore };
+  const lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
+  const lastDocIdResult = lastVisible ? lastVisible.id : undefined;
+  const hasMore = querySnapshot.size === limit;
+
+  return { items: cards, lastDocId: lastDocIdResult, hasMore };
 }
 
 /**

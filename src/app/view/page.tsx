@@ -4,7 +4,7 @@ import React, { useRef, useCallback, useEffect } from 'react';
 import { useCardContext } from '@/components/providers/CardProvider';
 import styles from './ViewPage.module.css';
 import AdminFAB from '@/components/admin/card-admin/AdminFAB';
-import CardFeed from '@/components/view/CardFeed';
+import CardFeedV2 from '@/components/view/CardFeedV2';
 
 const SCROLL_POSITION_KEY = 'contentViewScrollPos';
 
@@ -58,13 +58,12 @@ export default function CardsPage() {
       <header className={styles.header}>
         <h1>My Stories</h1>
       </header>
-      <CardFeed 
+      <CardFeedV2 
         cards={cards} 
         loading={isLoading}
         loadMoreRef={loadMoreRef} 
         onSaveScrollPosition={onSaveScrollPosition}
       />
-      <div ref={loadMoreRef} style={{ height: '100px' }} />
       {loadingMore && <div style={{ textAlign: 'center', padding: '2rem' }}>Loading more...</div>}
       <AdminFAB />
     </div>

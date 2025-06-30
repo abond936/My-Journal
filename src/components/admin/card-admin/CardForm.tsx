@@ -35,6 +35,7 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
   
   const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setField('title', e.target.value), [setField]);
   const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => setField('status', e.target.value as Card['status']), [setField]);
+  const handleTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => setField('type', e.target.value as Card['type']), [setField]);
   const handleContentChange = useCallback((content: string) => {
     setField('content', content);
     updateContentMedia(extractMediaFromContent(content));
@@ -117,14 +118,34 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
           </div>
 
           <div className={styles.statusSection}>
-            <select
-              value={cardData.status}
-              onChange={handleStatusChange}
-              className={clsx(styles.statusSelect, errors.status && styles.inputError)}
-            >
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
-            </select>
+            <div className={styles.selectGroup}>
+              <label htmlFor="status-select" className={styles.selectLabel}>Status</label>
+              <select
+                id="status-select"
+                value={cardData.status}
+                onChange={handleStatusChange}
+                className={clsx(styles.statusSelect, errors.status && styles.inputError)}
+              >
+                <option value="draft">Draft</option>
+                <option value="published">Published</option>
+              </select>
+            </div>
+            <div className={styles.selectGroup}>
+              <label htmlFor="type-select" className={styles.selectLabel}>Type</label>
+              <select
+                id="type-select"
+                value={cardData.type}
+                onChange={handleTypeChange}
+                className={clsx(styles.statusSelect, errors.type && styles.inputError)}
+              >
+                <option value="story">Story</option>
+                <option value="qa">Q&A</option>
+                <option value="quote">Quote</option>
+                <option value="callout">Callout</option>
+                <option value="gallery">Gallery</option>
+                <option value="collection">Collection</option>
+              </select>
+            </div>
           </div>
 
           <div className={styles.tagsSection}>
