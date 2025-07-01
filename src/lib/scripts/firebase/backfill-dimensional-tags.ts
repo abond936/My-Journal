@@ -1,0 +1,258 @@
+import * as dotenv from 'dotenv';
+import { resolve } from 'path';
+
+// Load environment variables from .env file
+dotenv.config({ path: resolve(process.cwd(), '.env') });
+
+import { getAdminApp } from '@/lib/config/firebase/admin';
+import { organizeTagsByDimension } from '@/lib/firebase/tagDataAccess';
+import { Card } from '@/lib/types/card';
+
+const adminApp = getAdminApp();
+const firestore = adminApp.firestore();
+const CARDS_COLLECTION = 'cards';
+
+interface BackfillOptions {
+  dryRun?: boolean;
+  batchSize?: number;
+  limit?: number;
+}
+
+interface BackfillResult {
+  totalCards: number;
+  processedCards: number;
+  updatedCards: number;
+  skippedCards: number;
+  errors: string[];
+  processingTime: number;
+}
+
+/**
+ * Backfills dimensional tag arrays (who, what, when, where, reflection) for all existing cards.
+ * This script takes the existing flat tags array and organizes it by dimension.
+ */
+export async function backfillDimensionalTags(options: BackfillOptions = {}): Promise<BackfillResult> {
+  const {
+    dryRun = false,
+    batchSize = 500,
+    limit
+  } = options;
+
+  const startTime = Date.now();
+  const result: BackfillResult = {
+    totalCards: 0,
+    processedCards: 0,
+    updatedCards: 0,
+    skippedCards: 0,
+    errors: [],
+    processingTime: 0
+  };
+
+  console.log(`🚀 Starting dimensional tags backfill...`);
+  console.log(`📋 Options: dryRun=${dryRun}, batchSize=${batchSize}, limit=${limit || 'unlimited'}`);
+  console.log(`⏰ Started at: ${new Date().toISOString()}`);
+  console.log('');
+
+  try {
+    // Get all cards
+    let query: any = firestore.collection(CARDS_COLLECTION);
+    if (limit) {
+      query = query.limit(limit);
+    }
+
+    const snapshot = await query.get();
+    const allCards = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as Card));
+
+    result.totalCards = allCards.length;
+    console.log(`📊 Found ${result.totalCards} cards to process`);
+
+    if (result.totalCards === 0) {
+      console.log('✅ No cards found. Nothing to do.');
+      return result;
+    }
+
+    // Process cards in batches
+    const batches = [];
+    for (let i = 0; i < allCards.length; i += batchSize) {
+      batches.push(allCards.slice(i, i + batchSize));
+    }
+
+    console.log(`🔄 Processing ${batches.length} batches of up to ${batchSize} cards each`);
+    console.log('');
+
+    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+      const batch = batches[batchIndex];
+      console.log(`📦 Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} cards)`);
+
+      const batchPromises = batch.map(async (card) => {
+        try {
+          result.processedCards++;
+
+          // Skip cards that already have dimensional arrays populated
+          if (card.who && card.who.length > 0 && 
+              card.what && card.what.length > 0 && 
+              card.when && card.when.length > 0 && 
+              card.where && card.where.length > 0 && 
+              card.reflection && card.reflection.length > 0) {
+            result.skippedCards++;
+            return { cardId: card.docId || card.id, status: 'skipped', reason: 'Already has dimensional arrays populated' };
+          }
+
+          // Skip cards with no tags
+          if (!card.tags || card.tags.length === 0) {
+            result.skippedCards++;
+            return { cardId: card.docId || card.id, status: 'skipped', reason: 'No tags to organize' };
+          }
+
+          // Organize tags by dimension
+          const dimensionalTags = await organizeTagsByDimension(card.tags);
+
+          // Check if any dimensional arrays would be populated
+          const hasDimensionalTags = Object.values(dimensionalTags).some(arr => arr.length > 0);
+          if (!hasDimensionalTags) {
+            result.skippedCards++;
+            return { cardId: card.docId || card.id, status: 'skipped', reason: 'No dimensional tags found' };
+          }
+
+          if (dryRun) {
+            console.log(`  🔍 [DRY RUN] Would update card ${card.docId || card.id}:`);
+            console.log(`     Tags: [${card.tags.join(', ')}]`);
+            console.log(`     Who: [${dimensionalTags.who.join(', ')}]`);
+            console.log(`     What: [${dimensionalTags.what.join(', ')}]`);
+            console.log(`     When: [${dimensionalTags.when.join(', ')}]`);
+            console.log(`     Where: [${dimensionalTags.where.join(', ')}]`);
+            console.log(`     Reflection: [${dimensionalTags.reflection.join(', ')}]`);
+            result.updatedCards++;
+            return { cardId: card.docId || card.id, status: 'would_update', dimensionalTags };
+          }
+
+          // Update the card
+          const cardRef = firestore.collection(CARDS_COLLECTION).doc(card.docId || card.id);
+          await cardRef.update({
+            who: dimensionalTags.who || [],
+            what: dimensionalTags.what || [],
+            when: dimensionalTags.when || [],
+            where: dimensionalTags.where || [],
+            reflection: dimensionalTags.reflection || [],
+            updatedAt: Date.now()
+          });
+
+          result.updatedCards++;
+          return { cardId: card.docId || card.id, status: 'updated', dimensionalTags };
+
+        } catch (error) {
+          const errorMsg = `Failed to process card ${card.docId || card.id}: ${error}`;
+          console.error(`  ❌ ${errorMsg}`);
+          result.errors.push(errorMsg);
+          return { cardId: card.docId || card.id, status: 'error', error };
+        }
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+      
+      // Log batch summary
+      const batchUpdated = batchResults.filter(r => r.status === 'updated' || r.status === 'would_update').length;
+      const batchSkipped = batchResults.filter(r => r.status === 'skipped').length;
+      const batchErrors = batchResults.filter(r => r.status === 'error').length;
+      
+      console.log(`  ✅ Batch ${batchIndex + 1} complete: ${batchUpdated} updated, ${batchSkipped} skipped, ${batchErrors} errors`);
+      console.log('');
+    }
+
+    result.processingTime = Date.now() - startTime;
+
+    // Final summary
+    console.log('🎉 Backfill complete!');
+    console.log('📊 Summary:');
+    console.log(`   Total cards: ${result.totalCards}`);
+    console.log(`   Processed: ${result.processedCards}`);
+    console.log(`   Updated: ${result.updatedCards}`);
+    console.log(`   Skipped: ${result.skippedCards}`);
+    console.log(`   Errors: ${result.errors.length}`);
+    console.log(`   Processing time: ${(result.processingTime / 1000).toFixed(2)}s`);
+
+    if (result.errors.length > 0) {
+      console.log('');
+      console.log('❌ Errors encountered:');
+      result.errors.forEach(error => console.log(`   - ${error}`));
+    }
+
+    if (dryRun) {
+      console.log('');
+      console.log('🔍 This was a dry run. No changes were made to the database.');
+      console.log('   Run without dryRun=true to apply the changes.');
+    }
+
+    return result;
+
+  } catch (error) {
+    result.processingTime = Date.now() - startTime;
+    const errorMsg = `Backfill failed: ${error}`;
+    console.error(`❌ ${errorMsg}`);
+    result.errors.push(errorMsg);
+    return result;
+  }
+}
+
+// Main execution wrapper
+async function main() {
+  const args = process.argv.slice(2);
+  const options: BackfillOptions = {
+    dryRun: args.includes('--dry-run'),
+    batchSize: parseInt(args.find(arg => arg.startsWith('--batch-size='))?.split('=')[1] || '500'),
+    limit: parseInt(args.find(arg => arg.startsWith('--limit='))?.split('=')[1] || '0') || undefined
+  };
+
+  console.log('🔧 Dimensional Tags Backfill Script');
+  console.log('====================================');
+  console.log('');
+
+  console.log('📋 Configuration:');
+  console.log(`   Dry run: ${options.dryRun ? 'YES' : 'NO'}`);
+  console.log(`   Batch size: ${options.batchSize}`);
+  console.log(`   Limit: ${options.limit || 'unlimited'}`);
+  console.log('');
+
+  if (options.dryRun) {
+    console.log('🔍 DRY RUN MODE - No changes will be made to the database');
+    console.log('');
+  } else {
+    console.log('⚠️  LIVE MODE - Changes will be made to the database');
+    console.log('   Press Ctrl+C to cancel, or wait 5 seconds to continue...');
+    console.log('');
+    
+    // Give user time to cancel
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  }
+
+  try {
+    const result = await backfillDimensionalTags(options);
+    
+    console.log('');
+    console.log('🎯 Final Result:');
+    console.log(`   Success: ${result.updatedCards > 0 ? 'YES' : 'NO'}`);
+    console.log(`   Cards updated: ${result.updatedCards}`);
+    console.log(`   Cards skipped: ${result.skippedCards}`);
+    console.log(`   Errors: ${result.errors.length}`);
+    console.log(`   Total time: ${(result.processingTime / 1000).toFixed(2)}s`);
+    
+    if (result.errors.length > 0) {
+      console.log('');
+      console.log('❌ Errors occurred during processing. Check the output above for details.');
+      process.exit(1);
+    } else {
+      console.log('');
+      console.log('✅ Backfill completed successfully!');
+      process.exit(0);
+    }
+  } catch (error) {
+    console.error('💥 Fatal error:', error);
+    process.exit(1);
+  }
+}
+
+// Run the script
+main(); 

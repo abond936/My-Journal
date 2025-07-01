@@ -135,11 +135,11 @@ export default function ChildCardManager({
           <h5>Search Results</h5>
           <ul>
             {searchResults.map(card => (
-              <li key={card.id} className={styles.resultItem}>
+              <li key={card.docId} className={styles.resultItem}>
                 <span>{card.title} ({card.type})</span>
                 <button
                   type="button"
-                  onClick={() => handleAdd(card.id)}
+                  onClick={() => handleAdd(card.docId)}
                   className={styles.addButton}
                 >
                   Add
@@ -166,17 +166,17 @@ export default function ChildCardManager({
             <SortableContext items={childrenIds} strategy={verticalListSortingStrategy}>
               <ul>
                 {childCards.map((child) => (
-                  <SortableItem key={child.id} id={child.id}>
+                  <SortableItem key={child.docId} id={child.docId}>
                     <div className={styles.childItem}>
                       <span>
                         {child.title} 
                         <span className={styles.childInfo}>
-                          ({child.type} - {child.id})
+                          ({child.type} - {child.docId})
                         </span>
                       </span>
                       <button
                         type="button"
-                        onClick={() => handleRemove(child.id)}
+                        onClick={() => handleRemove(child.docId)}
                         className={styles.removeButton}
                       >
                         Remove

@@ -99,7 +99,7 @@ interface V2ContentCardProps {
 const V2ContentCard: React.FC<V2ContentCardProps> = ({ card, size = 'medium', onClick }) => {
   const isInteractive = card.type === 'story' || card.type === 'collection' || card.type === 'gallery';
   const Wrapper = isInteractive ? Link : 'div';
-  const wrapperProps = isInteractive ? { href: `/view/${card.id}`, onClick } : {};
+  const wrapperProps = isInteractive ? { href: `/view/${card.docId}`, onClick } : {};
 
   const cardTypeClass = styles[card.type] || styles.story;
   const sizeClass = styles[size] || styles.medium;

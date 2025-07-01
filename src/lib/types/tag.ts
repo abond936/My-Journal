@@ -17,4 +17,16 @@ export interface Tag {
 
   // Planned Properties
   // color: string;            //  For visual distinction
+}
+
+/**
+ * Represents tags organized by their dimensions.
+ * Used for both client-side UI organization and server-side data processing.
+ */
+export interface OrganizedTags {
+  who: string[];
+  what: string[];
+  when: string[];
+  where: string[];
+  reflection: string[];
 } 

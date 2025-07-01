@@ -100,7 +100,7 @@ const ChildCard = ({ card }: { card: Card }) => {
 
     if (card.displayMode === 'navigate') {
         return (
-            <Link href={`/view/${card.id}`} className={styles.cardLink}> // Updated path
+            <Link href={`/view/${card.docId}`} className={styles.cardLink}> // Updated path
                 <div className={styles.card}>
                     {cardHeader}
                     {cardBody}

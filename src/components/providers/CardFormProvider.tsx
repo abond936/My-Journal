@@ -55,7 +55,7 @@ interface FormContextValue {
  * Empty card template used for new cards
  */
 const EMPTY_CARD: Card = {
-  id: '',
+  docId: '',
   title: '',
   title_lowercase: '',
   subtitle: null,
@@ -113,12 +113,12 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
 
   useEffect(() => {
     if (initialCard) {
-      // Only update if this is the first load or if the initialCard.id has changed
+      // Only update if this is the first load or if the initialCard.docId has changed
       setFormState(prevState => {
-        if (!prevState.cardData.id || prevState.cardData.id !== initialCard.id) {
+        if (!prevState.cardData.docId || prevState.cardData.docId !== initialCard.docId) {
           console.log('[CardFormProvider] Updating form state with new initialCard', {
-            prevId: prevState.cardData.id,
-            newId: initialCard.id,
+            prevId: prevState.cardData.docId,
+            newId: initialCard.docId,
             prevContentLength: prevState.cardData.content?.length,
             newContentLength: initialCard.content?.length
           });

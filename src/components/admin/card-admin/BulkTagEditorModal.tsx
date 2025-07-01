@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import styles from './CardForm.module.css';
 import { Card } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
-import { organizeCardTags, OrganizedTags } from '@/lib/utils/cardTagUtils';
 import TagSelector from '@/components/common/TagSelector';
 import { useTag } from '@/components/providers/TagProvider';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -22,6 +21,20 @@ const getCommonElements = (arrays: string[][]): string[] => {
   }
   return arrays.reduce((a, b) => a.filter(c => b.includes(c)));
 };
+
+// Local utility to organize tags by dimension using cached allTags
+function organizeTagsByDimension(tagIds: string[], allTags: Tag[]): OrganizedTags {
+  const organized: OrganizedTags = { who: [], what: [], when: [], where: [], reflection: [] };
+  if (!tagIds || !allTags) return organized;
+  const tagMap = new Map(allTags.map(tag => [tag.id, tag]));
+  for (const tagId of tagIds) {
+    const tag = tagMap.get(tagId);
+    if (tag && tag.dimension && organized.hasOwnProperty(tag.dimension)) {
+      organized[tag.dimension].push(tag.id);
+    }
+  }
+  return organized;
+}
 
 export default function BulkTagEditorModal({ cardIds, isOpen, onClose }: BulkTagEditorModalProps) {
   const { tags: allTags, loading: tagsLoading } = useTag();
@@ -51,7 +64,7 @@ export default function BulkTagEditorModal({ cardIds, isOpen, onClose }: BulkTag
 
           // Find common tags
           const commonTagIds = getCommonElements(cards.map(c => c.tags || []));
-          const organized = await organizeCardTags(commonTagIds, allTags);
+          const organized = organizeTagsByDimension(commonTagIds, allTags);
           setOrganizedTags(organized);
 
         } catch (err) {

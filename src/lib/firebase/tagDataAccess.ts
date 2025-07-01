@@ -1,5 +1,5 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
-import { Tag } from '@/lib/types/tag';
+import { Tag, OrganizedTags } from '@/lib/types/tag';
 
 const adminApp = getAdminApp();
 const firestore = adminApp.firestore();
@@ -16,6 +16,58 @@ async function getAllTags(): Promise<Tag[]> {
     return [];
   }
   return snapshot.docs.map(doc => doc.data() as Tag);
+}
+
+/**
+ * Organizes a list of tag IDs by their dimensions using server-side data.
+ * This function uses Firebase Admin SDK directly and should be used for server-side operations.
+ * @param tagIds The list of tag IDs to organize by dimension.
+ * @returns A promise that resolves to an object with tags categorized by dimension.
+ */
+export async function organizeTagsByDimension(tagIds: string[]): Promise<OrganizedTags> {
+  if (!tagIds || tagIds.length === 0) {
+    return {
+      who: [],
+      what: [],
+      when: [],
+      where: [],
+      reflection: []
+    };
+  }
+
+  try {
+    const allTags = await getAllTags();
+    const organizedTags: OrganizedTags = {
+      who: [],
+      what: [],
+      when: [],
+      where: [],
+      reflection: []
+    };
+
+    const tagMap = new Map(allTags.map(tag => [tag.id, tag]));
+
+    for (const tagId of tagIds) {
+      const tag = tagMap.get(tagId);
+      if (tag && tag.dimension) {
+        if (organizedTags.hasOwnProperty(tag.dimension)) {
+          organizedTags[tag.dimension].push(tag.id);
+        }
+      }
+    }
+
+    return organizedTags;
+  } catch (error) {
+    console.error("Error organizing tags by dimension:", error);
+    // Return empty organized tags on error to prevent crashes
+    return {
+      who: [],
+      what: [],
+      when: [],
+      where: [],
+      reflection: []
+    };
+  }
 }
 
 /**

@@ -1,7 +1,7 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { Card, cardSchema, GalleryMediaItem } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
-import { getTagAncestors, getTagPathsMap } from '@/lib/firebase/tagDataAccess';
+import { getTagAncestors, getTagPathsMap, organizeTagsByDimension } from '@/lib/firebase/tagDataAccess';
 import { getFirestore, writeBatch } from 'firebase-admin/firestore';
 import { doc } from 'firebase-admin/firestore';
 import { deleteMediaAsset } from './images/imageImportService';
@@ -114,6 +114,9 @@ export async function createCard(cardData: Partial<Omit<Card, 'id' | 'createdAt'
     return acc;
   }, {} as Record<string, boolean>);
 
+  // Organize tags by dimension
+  const dimensionalTags = await organizeTagsByDimension(selectedTags);
+
   // --- Content sanitation ---
   const rawContent = validatedData.content ?? '';
   const cleanedContent = stripContentImageSrc(rawContent);
@@ -128,6 +131,12 @@ export async function createCard(cardData: Partial<Omit<Card, 'id' | 'createdAt'
     inheritedTags,
     tagPathsMap,
     filterTags,
+    // Populate dimensional arrays
+    who: dimensionalTags.who || [],
+    what: dimensionalTags.what || [],
+    when: dimensionalTags.when || [],
+    where: dimensionalTags.where || [],
+    reflection: dimensionalTags.reflection || [],
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
@@ -194,6 +203,14 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'i
       acc[tagId] = true;
       return acc;
     }, {} as Record<string, boolean>);
+    
+    // Also recalculate dimensional arrays
+    const dimensionalTags = await organizeTagsByDimension(finalTags);
+    validatedUpdate.who = dimensionalTags.who || [];
+    validatedUpdate.what = dimensionalTags.what || [];
+    validatedUpdate.when = dimensionalTags.when || [];
+    validatedUpdate.where = dimensionalTags.where || [];
+    validatedUpdate.reflection = dimensionalTags.reflection || [];
   }
 
   // 1. Update the card document with the new data.
@@ -249,7 +266,7 @@ export async function getCardById(id: string): Promise<Card | null> {
     return null;
   }
 
-  const cardData = { ...docSnap.data(), id: docSnap.id } as Card;
+  const cardData = { ...docSnap.data(), docId: docSnap.id } as Card;
   // Refactor to use the helper function
   const hydratedCards = await _hydrateCards([cardData]);
   return hydratedCards[0] || null;
@@ -277,10 +294,10 @@ export async function getCardsByIds(ids: string[]): Promise<Card[]> {
 
   const snapshotResults = await Promise.all(promises);
   const cards = snapshotResults.flatMap(snapshot =>
-    snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Card))
+    snapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id } as Card))
   );
   // Preserve the original order of IDs
-  const cardMap = new Map(cards.map(c => [c.id, c]));
+  const cardMap = new Map(cards.map(c => [c.docId, c]));
   return ids.map(id => cardMap.get(id)).filter((c): c is Card => !!c);
 }
 
@@ -316,7 +333,7 @@ export async function getPaginatedCardsByIds(
   }
 
   const items = await getCardsByIds(pageIds);
-  const newLastDocId = items.length > 0 ? items[items.length - 1].id : undefined;
+  const newLastDocId = items.length > 0 ? items[items.length - 1].docId : undefined;
   const hasMore = endIndex < ids.length;
 
   return { items, lastDocId: newLastDocId, hasMore };
@@ -338,12 +355,21 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
     return acc;
   }, {} as Record<string, boolean>);
 
+  // Organize tags by dimension
+  const dimensionalTags = await organizeTagsByDimension(tags);
+
   cardIds.forEach(id => {
     const cardRef = doc(db, 'cards', id);
     batch.update(cardRef, { 
       tags,
       inheritedTags: newInheritedTags,
       filterTags,
+      // Populate dimensional arrays
+      who: dimensionalTags.who || [],
+      what: dimensionalTags.what || [],
+      when: dimensionalTags.when || [],
+      where: dimensionalTags.where || [],
+      reflection: dimensionalTags.reflection || [],
     });
   });
 
@@ -492,10 +518,10 @@ export async function searchCards(options: {
 
   const snapshot = await query.limit(limit).get();
   
-  const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Card));
+  const items = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Card));
   
   const hasMore = items.length === limit;
-  const newLastDocId = items.length > 0 ? items[items.length - 1].id : undefined;
+  const newLastDocId = items.length > 0 ? items[items.length - 1].docId : undefined;
 
   return { items, lastDocId: newLastDocId, hasMore };
 }
@@ -603,7 +629,7 @@ export async function getCards(options: {
   const querySnapshot = await query.limit(limit).get();
 
   let cards: Card[] = querySnapshot.docs.map(doc => ({
-    id: doc.id,
+    docId: doc.id,
     ...doc.data(),
   } as Card));
   

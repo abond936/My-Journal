@@ -178,7 +178,7 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
 
           <div className={styles.childrenSection}>
             <ChildCardManager
-              cardId={cardData.id}
+              cardId={cardData.docId}
               childrenIds={cardData.childrenIds || []}
               onUpdate={handleChildCardsChange}
               error={errors.childrenIds}

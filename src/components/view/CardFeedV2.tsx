@@ -27,7 +27,7 @@ export default function CardFeedV2({ cards, loading, loadMoreRef, onSaveScrollPo
     <main className={styles.grid}>
       {cards.map(card => (
         <V2ContentCard 
-          key={card.id} 
+          key={card.docId} 
           card={card}
           // All cards will be 'medium' for now.
           size="medium" 

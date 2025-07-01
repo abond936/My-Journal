@@ -48,12 +48,12 @@ export default function CardAdminList({
         </thead>
         <tbody>
           {cards.map(card => (
-            <tr key={card.id} id={`card-${card.id}`} className={selectedCardIds.has(card.id) ? styles.selectedRow : ''}>
+            <tr key={card.docId} id={`card-${card.docId}`} className={selectedCardIds.has(card.docId) ? styles.selectedRow : ''}>
               <td>
                 <input
                   type="checkbox"
-                  checked={selectedCardIds.has(card.id)}
-                  onChange={() => onSelectCard(card.id)}
+                  checked={selectedCardIds.has(card.docId)}
+                  onChange={() => onSelectCard(card.docId)}
                 />
               </td>
               <td className={styles.coverImageCell}>
@@ -80,7 +80,7 @@ export default function CardAdminList({
               </td>
               <td className={styles.actions}>
                 <button
-                  onClick={() => handleEditClick(card.id)}
+                  onClick={() => handleEditClick(card.docId)}
                   className={styles.actionButton}
                 >
                   Edit
@@ -88,10 +88,10 @@ export default function CardAdminList({
                 <button
                   onClick={async () => {
                     // Save scroll position before potential deletion
-                    onSaveScrollPosition(card.id);
+                    onSaveScrollPosition(card.docId);
                     
                     // Check for parent cards
-                    const params = new URLSearchParams({ childrenIds_contains: card.id });
+                    const params = new URLSearchParams({ childrenIds_contains: card.docId });
                     const response = await fetch(`/api/cards?${params.toString()}`);
                     if (!response.ok) {
                       alert('Could not verify parent cards.');
@@ -109,7 +109,7 @@ export default function CardAdminList({
 
                     if (window.confirm(confirmMessage)) {
                       try {
-                        const deleteResponse = await fetch(`/api/cards/${card.id}`, { method: 'DELETE' });
+                        const deleteResponse = await fetch(`/api/cards/${card.docId}`, { method: 'DELETE' });
                         if (!deleteResponse.ok) {
                           throw new Error('Failed to delete card.');
                         }

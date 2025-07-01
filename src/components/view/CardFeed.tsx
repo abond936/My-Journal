@@ -39,17 +39,17 @@ export default function CardFeed({ cards, loading, loadMoreRef, onSaveScrollPosi
     <main className={styles.grid}>
       {cards.map(card => (
         <Link 
-          key={card.id} 
-          href={`/view/${card.id}`} 
+          key={card.docId} 
+          href={`/view/${card.docId}`} 
           className={styles.cardLink}
           onClick={onSaveScrollPosition}
         >
           <div className={styles.card}>
             {card.type === 'gallery' && card.galleryMedia && card.galleryMedia.length > 0 ? (
-              <div className={styles.horizontalScroll} id={`gallery-${card.id}`}>
+              <div className={styles.horizontalScroll} id={`gallery-${card.docId}`}>
                 <button 
                   className={`${styles.galleryNav} ${styles.prevButton}`}
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleScroll(card.id, 'left'); }}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleScroll(card.docId, 'left'); }}
                   aria-label="Previous image"
                 >
                   ‹
@@ -66,7 +66,7 @@ export default function CardFeed({ cards, loading, loadMoreRef, onSaveScrollPosi
                 ))}
                 <button 
                   className={`${styles.galleryNav} ${styles.nextButton}`}
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleScroll(card.id, 'right'); }}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleScroll(card.docId, 'right'); }}
                   aria-label="Next image"
                 >
                   ›

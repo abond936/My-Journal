@@ -134,13 +134,13 @@ export default function AdminCardsPage() {
     const updates = new Map<string, string[]>();
 
     cards.forEach(card => {
-      if (selectedCardIds.has(card.id)) {
+              if (selectedCardIds.has(card.docId)) {
         const otherDimensionTags = (card.tags || []).filter(tId => {
           const tag = allTags.find(t => t.id === tId);
           return tag && tag.dimension !== dimension;
         });
         const newTags = [...otherDimensionTags, tagId];
-        updates.set(card.id, newTags);
+                  updates.set(card.docId, newTags);
       }
     });
 

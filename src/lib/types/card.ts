@@ -18,6 +18,9 @@ const galleryMediaItemSchema = z.object({
  * A card is the primary content unit, representing a story, Q&A, quote, etc.
  */
 export const cardSchema = z.object({
+  // Document identifier - Firestore's immutable docId
+  docId: z.string().min(1, "Document ID is required"),
+  
   // Basic card identification and metadata
   title: z.string().default(''),
   title_lowercase: z.string().default(''),

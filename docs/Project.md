@@ -1,16 +1,17 @@
 # Project Overview
 
-A personal journaling application combining text and media into cards of a story, gallery, question, quote or callout, tagged in a dimensional, heirarchical system and presented in an immersive flexible and/or curated manner. 
+**Purpose** - A personal journaling application combining text and media into cards (stories, galleries, Q&A's, quotes or callouts), with dimensional heirarchical tagging for flexible content consumption.  
 
-The primary users are the author (admin) creating the content and his family consuming it.
+**Primary Users** -The primary users are the author (admin) creating the content and his family consuming it.
 
+**Current State** - Core functionality exists, some architectural elements still pending and further functional buildout and testing required.
 
+**Critical Context for AI Assistants**: This is a maturing, complex application. Prefer extending existing solutions over new implementationsBefore suggesting changes, understand the existing patterns and architectural decisions. The codebase is the source of truth for implementation details.
 
-**Key Features
-Infinite scrolling for card lists
-Real-time filtering and search
-Form state management for card editing
-Image handling through Firebase Storage
+**Roadmap**
+- Rationalize harden tag system
+- Implement table of contents
+
 
 
 Legend:
@@ -21,79 +22,79 @@ Legend:
 
 ## **Technical**
 =====================================
-- This project adheres to a strict client-server, separation of concerns architecture
+
+**Key Design Decisions**
+- Architecture
+  - Strict client-server, separation of concerns
+- Consumption and Administration separated.
+- Data Model (Cards → Tags → Media)
+- Cards (primary content)
+  - Contain text and media, combining legacy entries and albums.
+  - Presentation varied with type and styling.
+- Tags (hierarchical organization)
+  - Dimensional and heirarchical, parent/child relationship
+  - Multi-select for greatest effectiveness.
+  - Tags denormalized into cards for query performance
+  - Server-side filtering to avoid Firestore limitations  
+- Media (assets)
+  - Imported from external sources for stability.
+  - Media stored in db, referenced in cards by id, and hydrated on demand
+  - Media processing pipeline with Sharp
+
+**Architectural Patterns to Follow**
+- Server-side validation with Zod schemas
+- Client-side state management with React providers
+- Firebase Admin SDK for server operations
+- CSS Modules for styling
+- TypeScript throughout
 
 **Frontend**
-✅ 
-  - Next.js App Router
-  - React 18
+  - Next.js 15 App Router
+  - React 19
   - TypeScript
   - CSS Modules
-  - TipTap rich text editing
+  - `@tiptap/react` rich text editing
   - PhotoPicker for media selection
   - GalleryManager for galleries
-  - Next.js Image Optimization
-  - DragNDrop (dnd-kit)
+  - `next/image`- image Optimization
+  - `@dnd-kit/core` - dragndrop 
   - Swiper for galleries
-  - Zod for schema validation
+  - `zod` - schema validation
 
 **Backend**
-✅
   - Auth.js with Firebase adapter
-  - Firebase (Firestore, Authentication, Storage)
-  - Firebase Admin SDK for server-side operations
+  - `firebase-admin` SDK for server-side operations
   - Zod for data validation
   - Next.js API Routes
-
-**Media**
-✅
-  - Local drive integration
-  - Firebase storage for asset management
-  - Sharp for image processing
-
-**Development Tools**
-✅
-  - Version Control: GitHub
-  - ESLint for code quality
-  - TypeScript for type safety
-  - Jest/React Testing Library
-  - CSS Modules for styling
-  - Custom scripts for migration and backup
+  - Application wrapped in AuthProvider
+  - All API routes secured at the edge
+  - Role-based access control
+  - Session persistence
 
 ⭕
 2 - Hosting: Netlify (primary), with Vercel as backup
-
-**Authentication**
-✅
-- Auth.js handles user sign-in and session management
-- Firestore Adapter: User and session data stored in Firestore
-- Application wrapped in AuthProvider
-- All API routes secured at the edge
-- Role-based access control
-- Session persistence
-
-⭕
 2 - Add user management interface
 2 - Implement more granular permissions
 
+
 **Backup**
+✅ 
+- Scripts
+    codebase - `src/lib/scripts/utils/backup-codebase.ts` a OneDrive .zip file
+    database - `src/lib/scripts/backup-database.ts` a single, timestamped JSON file.
+- Scheduled 
+  - `src/lib/scripts/utils/setup-backup-task.ps1`  Windows Scheduled Task to run at 1am daily
+  - `src/lib/scripts/setup-database-backup-task.ps1` Windows Scheduled Task to run 2am daily
+- Github backup - `.github/workflows/backup.yml`) automatica backup on every push to the `main` branch. This backup is stored as a workflow artifact for 7 days, providing an off-site copy.
+- Cleanup 
+  codebase - stored 7 days
+  database - Automatically cleans up local backups > 5 days.
+- Recovery 
+  - codebase Unzip the file to restore the complete project, run `npm install` to reinstall all dependencies.
+  - `npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/restore-database.ts "C:\\Path\\To\\Your\\Backup\\file.json"`
 
-✅ *Codebase*
-- Backup script - `src/lib/scripts/utils/backup-codebase.ts`
-    - `.zip` archive of the entire codebase on OneDrive.
-    - `git ls-files` respecting `.gitignore`.
-- Scheduled - `src/lib/scripts/utils/setup-backup-task.ps1`) creates a Windows Scheduled Task to run the backup script daily at 1 AM for local backups.
-- Github backup - `.github/workflows/backup.yml`) automatically creates a backup on every push to the `main` branch. This backup is stored as a workflow artifact for 7 days, providing an off-site copy.
-- Cleanup - Automatically cleans up local backups > 5 days.
-- Recovery - Unzip the file to restore the complete project structure, run `npm install` to reinstall all dependencies.
-
-✅ *Database*
-- Backup script - `src/lib/scripts/backup-database.ts` a single, timestamped JSON file.
-- Scheduled - A PowerShell script (`src/lib/scripts/setup-database-backup-task.ps1`) creates a Windows Scheduled Task to run the backup script daily at 2 AM.
-- Recovery
-  - Script `npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/restore-database.ts "C:\\Path\\To\\Your\\Backup\\file.json"`
-
-⭕2 - Update backup scripts and automation
+⭕
+2 - Update backup scripts and automation
 
 **Database** (Firestore)
 ✅ 
@@ -103,21 +104,20 @@ Legend:
 - albums (legacy)
 - entries (legacy)
 
-⭕2 - Remove legacy collections (entries/albums)
-Security Rules
+⭕
+2 - Remove legacy collections (entries/albums)
 
-
-### **Data Models**
+**Data Models**
 ✅ 
-- `src/lib/types/` *read directly - commented*
+- `src/lib/types/` *read directly - fully commented*
 - Zod schemas for all data types
 - Single source of truth
 - Server-side validation
 - Client-side validation
 - Type checking with TypeScript
-- `Card` - `src/lib/types/card.ts` - Central data entity in the application, containing content, metadata, and references to tags and other cards.
-- `Tag` - `src/lib/types/tag.ts` - Structure for dimensional and hierarchical tags used for organizing and filtering cards.
-- `Media` - `src/lib/types/photo.ts` - Media assets (image, video) stored in Firebase Storage, including metadata like dimensions and paths.
+  - `Card` - `src/lib/types/card.ts` - Central data entity in the application, containing content, metadata, and references to tags and other cards.
+  - `Tag` - `src/lib/types/tag.ts` - Structure for dimensional and hierarchical tags used for organizing and filtering cards.
+  - `Media` - `src/lib/types/photo.ts` - Media assets (image, video) stored in Firebase Storage, including metadata like dimensions and paths.
 
 ⭕
 2 - Do comprehensive assessment and update
@@ -125,6 +125,16 @@ Security Rules
 **APPLICATION**
 ================================
 The application is bifuracted into 'viewing' and 'administration' with the core components wrapped in navigation and providers.
+
+**Application Structure**
+- Providers - The core layouts are wrapped in providers
+  - AuthProvider: Handles authentication state using NextAuth.js
+  - TagProvider: Manages tag data and operations globally
+  - CardProvider: Manages card data, filtering, and pagination
+- Layouts - Layout handle 
+- AppShell: Main layout wrapper providing navigation and structure
+- ViewLayout: Handles the main viewing experience
+- AdminLayout: Manages the admin interface
 
 **Directory Structure**
  `src/app/`  Next.js App Router
@@ -144,16 +154,6 @@ The application is bifuracted into 'viewing' and 'administration' with the core 
    `hooks/` Reusable client-side React hooks
    `utils/` General utility functions (e.g., date formatting, tag manipulation)
 
-**Application Structure**
-- Providers - The core layouts are wrapped in providers
-  - AuthProvider: Handles authentication state using NextAuth.js
-  - TagProvider: Manages tag data and operations globally
-  - CardProvider: Manages card data, filtering, and pagination
-- Layouts - Layout handle 
-- AppShell: Main layout wrapper providing navigation and structure
-- ViewLayout: Handles the main viewing experience
-- AdminLayout: Manages the admin interface
-
 **Home Page**
 - Application opens to the home page for login.
 
@@ -167,32 +167,32 @@ The application is bifuracted into 'viewing' and 'administration' with the core 
 2 - Add image(s) of me from various stages
 
 **AppShell**
-- After login, the opens to the Appshell which provides top and left sidebar navigation.
+- After login, the app opens to the Appshell which provides top and left sidebar navigation.
 
 **Top Navigation**
 - Top navigation toggles content and admin for the administrator and defaults to content for a user. 
 
 ✅ 
 - logo
-- content - aAvailable to users and admin
-- admin - only available to administrator
+- content - Available to users and admin
+- admin - Only available to administrator
 - theme toggle
 
 ⭕
 2 - make admin available to users for settings only
 2 - make logo svg and background transparent
-2 - remove 'lines'
-2 - make consistent throughout
 
 **Left Sidebar Navigation**
 - Left sidebar provides a tabbed table of contents and multi-tag selection for card filtering.
 
-✅ Hierarchical Tag Display: `GlobalSidebar.tsx` and `TagTree.tsx` display the full, browseable hierarchy of tags, grouped by dimension with expand/collapse functionality.
-  ⭕2 - include number of cards (x) - requires cloud function
-  ⭕2 - add orderBy options
-  ⭕2 - increase indention
-  ⭕2 - make slide in/out on mobile
-⭕2 Table of Contents - A curated table of contents, essentially pre-built filters.
+✅ 
+Hierarchical Tag Display: `GlobalSidebar.tsx` and `TagTree.tsx` display the full, browseable hierarchy of tags, grouped by dimension with expand/collapse functionality.
+⭕2 Filtering - Flesh out filtering
+      - include number of cards (x) - requires cloud function
+      - add orderBy options
+      - increase indention
+      - make slide in/out on mobile
+⭕2 Table of Contents - Add a curated table of contents, essentially pre-built filters.
 ⭕2 Search - add title & content search
 
 **Content Page**
@@ -211,7 +211,6 @@ The application is bifuracted into 'viewing' and 'administration' with the core 
     - Infinite scroll pagination - IntersectionObserver
     - Tag-based filtering
     - Optimized image loading
-    ⭕❗Fix detached left sidebar ❗
     ⭕2 Fix ghost/error layout issues
     ⭕2 Add Search 
 
@@ -219,33 +218,35 @@ The application is bifuracted into 'viewing' and 'administration' with the core 
 - Clicking a `navigate`card navigates to card detail page
 `src/app/view/[id]/CardDetailPage.tsx` conditionally rendering card components
 
-`src/app/view/[id]/page.tsx` is executed on the server. Inside this page component, the `getCardData` function calls `getCardById(id)` from `src/lib/services/cardService.ts` to fetch the main card's data from Firestore. If the card has children (`childrenIds`), it then calls `getCardsByIds` to fetch them.
-4.  **Props Passing**: The fetched `card` and `children` objects are passed as props to the client component `<CardDetailPage />`.
-5.  **Client-Side Render**: The `CardDetailPage` component (`src/components/view/CardDetailPage.tsx`) receives the data and is responsible for rendering the final view in the browser. It does not need to fetch this data itself.
+`src/app/view/[id]/page.tsx` is executed on the server. Inside this page component, the `getCardData` function calls `getCardById(id)` from `src/lib/services/cardService.ts` to fetch the main card's data from Firestore. 
+If the card has children (`childrenIds`), it then calls `getCardsByIds` to fetch them.
 
-✅ Page - Full-page card view
-   Conditional Render - Render page based on components.
-      - Title - Render first
-      - Subtitle - If present, render next
-      - Cover image - If present, render next
-      - Content - If present, render using TipTapRenderer.
-      ⭕2 Gallery - If present, render grid, (design)
-      ⭕2 Children - If present, render next.
+**Props Passing**: The fetched `card` and `children` objects are passed as props to the client component `<CardDetailPage />`.
+
+**Client-Side Render**: The `CardDetailPage` component (`src/components/view/CardDetailPage.tsx`) receives the data and is responsible for rendering the final view in the browser. It does not need to fetch this data itself.
+
+✅ 
+- Conditional Render - Render page based on components.
+  - Title - Render first
+  - Subtitle - If present, render next
+  - Cover image - If present, render next
+  - Content - If present, render using TipTapRenderer.
+  ⭕2 Gallery - If present, render grid, (design)
+  ⭕2 Children - If present, render next.
 ⭕2 User Interaction - add user interaction - Like, comment, sharelink
 
-## **Theme System**
+##**Theme System**
 ✅
-- light/dark theme
-- fixed schemes
+- light/dark fixed theme
 - limited styling throughout
 
-⭕ @ MSN Layout - add MSN-style layout and theme
+⭕ 
+2 - MSN Layout - add MSN-style layout and theme
     2 - home
     2 - content page
     2 - cards by type
     2 - admin pages
     2 - make fully customizable - add to Settings
-
 
 ## **Administration**
 =======================================
@@ -269,8 +270,6 @@ The application is bifuracted into 'viewing' and 'administration' with the core 
 ✅ 
 - Collection - `cards` collection stores all card documents.
 - Schema - `src/lib/types/cards.ts`
-⭕2 id - remove, not needed, confusing
-⭕2 Size - Add, `sm`, `md`, `lg`, hard-coded, eventually themed
 ⭕2 Child Strategy - The strategy for managing child cards is not fully defined. 
     - The idea behind having a nested card was to be able to accomodate the conceived World & Politics, Father sections, where a card can contain related stories. 
     Filtering related cards and select/order them for inclusion. By modal within a card or in bulk assign children in card management. 
@@ -283,11 +282,11 @@ The application is bifuracted into 'viewing' and 'administration' with the core 
 ✅ 
 - Search by title
   ⭕2 - Improve css - Move statuses and types to the right to make room for blue box
-  ⭕2 - add content(?)
+  ⭕2 - add content to search
 - Filter by Status and Type - `CardProvider` uses the `selectedFilterTagIds` to query for cards that contain any of the selected tags in their `filterTags` map.
 - Bulk Operations - `BulkTagEditorModal.tsx` 
   ⭕2 - Organize on 2 lines
-  ⭕2 - Add type and size(?)
+  ⭕2 - Add type
 - Card list
   - CoverIcon - Thumbnail version of coverImage
   - Title
@@ -320,7 +319,6 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
   ⭕2 Default excerpt to first x characters, with override
 - Type - `story`, `gallery`, `qa`, `quote`, `callout`
 - Status - `draft`, `published`
-⭕2 Size - See schema
 - Cover Image
   - `CoverPhotoContainer` and `PhotoPicker` to select/upload image.
   - Image used for preview card and view page header.
@@ -336,8 +334,6 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
 
 - Tags
   - `MacroTagSelector`(Tag Component) Modal Selector:
-  - `ExpandedView` allows tag selection from the full dimensional hierarchy.
-  - Collapsed View - displays the selected tags and ancestors
   - Tag Selection - `Card.tags` - Stores the tags directly assigned by the user.
   - Denormalization - On card save, `cardService` uses `tagDataAccess.ts` to calculate and save derived tag data onto the `Card` document.
     - Tag Inheritance - `Card.inheritedTags` - Flattened array of direct and ancestor tags (e.g., "Paris" -> "France" -> "Europe").
@@ -362,21 +358,17 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
   - New - the form data is sent via a `POST` request to the API endpoint at `/api/cards/`. The route handler at `src/app/api/cards/route.ts` receives the request. It validates the incoming data against the `cardSchema` from Zod, then calls `createCard` from `src/lib/services/cardService.ts` to write the new document to Firestore.
   - Edit - the form data is sent via a `PATCH` request to the API endpoint at `/api/cards`. The route handler at `src/app/api/cards/route.ts` receives the request. It validates the incoming data against the `cardSchema` from Zod, then calls `updateCard` from `src/lib/services/cardService.ts` to update the  document to Firestore.
 
-⭕2- Catalog/Rationalize card services/api's
+⭕2 - Rationalize card services/api's
 
 ### **Tag System**
 ===========================================
 - All cards are assigned multiple, dimensional, and heirarchical tags to enable flexible filtering. 
-
-⭕1 Fix tag strategy and implementation
-The current `dimension` model is flat. We need to decide if a more complex, multi-dimensional, or faceted tag structure is needed for the long term. This decision impacts almost every part of the tagging system.
 
 **Tag Data Model**
 ✅ 
 - Collection - `tags` canonical tag data
 - Schema - `src/lib/types/tag.ts`
 
-⭕2 Performance: `tagDataAccess.ts` currently fetches all tags from Firestore on every calculation. This should be optimized with a server-side cache to reduce Firestore reads during bulk updates.
 ⭕1 Validation - Implement zod validation
 ⭕1 Error Handling: API routes should use `try...catch` blocks to handle errors from services gracefully, returning appropriate HTTP status codes (e.g., 400, 404, 500) and logging the error server-side for troubleshooting.
 
@@ -417,7 +409,7 @@ The current `dimension` model is flat. We need to decide if a more complex, mult
 ✅
 - None
 
-⭕2
+⭕3
 - Question collection
 - Question listing and filtering
 - Question creation and editing
@@ -439,7 +431,7 @@ The current `dimension` model is flat. We need to decide if a more complex, mult
 - Do we group short questions?
 
 **Gallery Style Management**
-⭕2 - Gallery styles are selectable styles for gallery cards
+- Gallery styles are selectable styles for gallery cards
 
 ✅
 - None
@@ -447,8 +439,6 @@ The current `dimension` model is flat. We need to decide if a more complex, mult
 ⭕
 2 - Devise preconfigured card styles for selection
   ❓- expose style selection on view card or set on edit card?
-
-❓what are the variables that need to be included/decided on gallery styling
 
 **Theme Management**
 - Themes customizable.
@@ -488,10 +478,9 @@ Conceptual Architecture:
 ✅
 - Collection - `media`
 - Schema  - `src/lib/types/photo.ts`
-  ⭕2 - rename to `media.ts` and cascade
 
 ⭕2 - Error Handling - If import fails, provide error and options. Accept imported or none?
-
+- Firebase storage for asset management
 - Local Drive Integration
 - Photopicker Integration
 - `imageImportService.ts`

@@ -19,10 +19,10 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) 
   const router = useRouter();
 
   const childItems = (childrenCards || []).map(child => ({
-    id: child.id,
+    id: child.docId,
     title: child.title,
     description: child.excerpt || child.subtitle || '',
-    href: `/view/${child.id}`,
+    href: `/view/${child.docId}`,
     imageUrl: child.coverImage ? getDisplayUrl(child.coverImage) : undefined,
     // The CardGrid component might need more properties, but this is a start.
   }));
