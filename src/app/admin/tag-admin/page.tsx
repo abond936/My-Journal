@@ -6,7 +6,6 @@ import { Tag } from '@/lib/types/tag';
 import { TagAdminList } from '@/components/admin/tag-admin/TagAdminList';
 import styles from './tag-admin.module.css';
 import { buildTagTree } from '@/lib/utils/tagUtils';
-import TagTreeView from '@/components/admin/tag-admin/TagTreeView';
 
 // This function can remain as it is, it's a pure utility for converting a flat list to a tree
 const buildTagTree = (tags: Tag[]): TagWithChildren[] => {
@@ -46,12 +45,11 @@ const buildTagTree = (tags: Tag[]): TagWithChildren[] => {
 // --- Core UI Logic Hook ---
 function useTagManagement() {
   const { tags: swrTags, createTag, updateTag, deleteTag, loading, error: swrError, mutate } = useTag();
-  const [temporaryTags, setTemporaryTags] = useState<Tag[] | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // The single source of truth for rendering: use the temporary override if it exists, otherwise use the confirmed SWR data.
-  const tagsToUse = temporaryTags || swrTags;
+  // The single source of truth for rendering is the confirmed SWR data.
+  const tagsToUse = swrTags;
 
   const dimensionalTree = useMemo(() => {
     if (!tagsToUse || tagsToUse.length === 0) return [];
@@ -88,78 +86,93 @@ function useTagManagement() {
     setIsSaving(true);
     setError(null);
 
-    const currentTags = temporaryTags || swrTags || [];
-    const activeIndex = currentTags.findIndex(t => t.id === activeId);
-    const overIndex = currentTags.findIndex(t => t.id === overId);
-    if (activeIndex === -1 || overIndex === -1) return;
-
-    const activeTag = { ...currentTags[activeIndex] };
-    const overTag = { ...currentTags[overIndex] };
-    if (activeTag.parentId !== overTag.parentId) {
+    const currentTags = swrTags || [];
+    
+    // Find both tags
+    const activeTag = currentTags.find(t => t.id === activeId);
+    const overTag = currentTags.find(t => t.id === overId);
+    
+    if (!activeTag || !overTag) {
+      console.error('Tags not found:', { activeId, overId });
       return;
     }
 
-    let siblings = currentTags
+    if (activeTag.parentId !== overTag.parentId) {
+      console.log('Cannot reorder: tags have different parents');
+      return;
+    }
+
+    // Get ALL siblings for this parent
+    const allSiblings = currentTags
       .filter(t => t.parentId === activeTag.parentId)
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-    // Remove the activeTag from siblings
-    siblings = siblings.filter(t => t.id !== activeId);
-    // Find the index to insert
-    let insertIndex = siblings.findIndex(t => t.id === overId);
-    if (insertIndex === -1) {
-      return;
-    }
-    if (placement === 'after') {
-      insertIndex += 1;
-    }
-    // Insert the activeTag at the new position
-    siblings.splice(insertIndex, 0, activeTag);
-    // Calculate new order for the moved tag
-    let prevOrder = insertIndex > 0 ? siblings[insertIndex - 1].order ?? 0 : 0;
-    let nextOrder = insertIndex < siblings.length - 1 ? siblings[insertIndex + 1].order ?? prevOrder + 2 : prevOrder + 2;
-    let newOrder = (prevOrder + nextOrder) / 2;
-    const newFlatTags = currentTags.map(t => t.id === activeId ? { ...t, order: newOrder } : t);
-    setTemporaryTags(newFlatTags);
+
+    // Remove active tag from the array
+    const withoutActive = allSiblings.filter(t => t.id !== activeId);
+    
+    // Find where to insert the active tag
+    const targetIndex = withoutActive.findIndex(t => t.id === overId);
+    const insertAt = placement === 'before' ? targetIndex : targetIndex + 1;
+
+    // Create the new order
+    const reordered = [
+      ...withoutActive.slice(0, insertAt),
+      activeTag,
+      ...withoutActive.slice(insertAt)
+    ];
+
+    // Assign new orders
+    const updates = reordered.map((tag, idx) => ({
+      id: tag.id,
+      order: idx * 10
+    }));
 
     try {
-      await updateTag(activeId, { order: newOrder });
+      // Update all siblings to maintain consistent spacing
+      await Promise.all(updates.map(update => 
+        updateTag(update.id, { order: update.order })
+      ));
       await mutate();
     } catch (err) {
-      setError('Failed to reorder tag. Please try again.');
+      console.error('Failed to reorder tags:', err);
+      setError('Failed to reorder tags. Please try again.');
     } finally {
-      setTemporaryTags(null);
       setIsSaving(false);
     }
-  }, [temporaryTags, swrTags, updateTag, mutate]);
+  }, [swrTags, updateTag, mutate]);
 
   const handleReparent = useCallback(async (activeId: string, overId:string) => {
     if (activeId === overId) return;
     setIsSaving(true);
     setError(null);
 
-    const currentTags = temporaryTags || swrTags || [];
-    
-    const newSiblings = currentTags.filter(t => t.parentId === overId);
-    const maxOrder = newSiblings.reduce((max, t) => Math.max(max, t.order ?? 0), 0);
-    const newOrder = maxOrder + 10;
-
-    const newFlatTags = currentTags.map(t => t.id === activeId ? { ...t, parentId: overId, order: newOrder } : t);
-    
-    setTemporaryTags(newFlatTags);
-
     try {
-      await updateTag(activeId, { parentId: overId, order: newOrder });
-      await mutate();
+        // This is a complex operation that must be handled by a dedicated API route.
+        const response = await fetch(`/api/tags/${activeId}/reparent`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ newParentId: overId }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to reparent tag.');
+        }
+        
+        // On success, re-fetch all tag data to ensure the UI is consistent.
+        await mutate();
+
     } catch (err) {
-      setError('Failed to reparent tag. Please try again.');
+        console.error('Failed to reparent tag:', err);
+        setError(err instanceof Error ? err.message : 'An unknown error occurred.');
     } finally {
-      setTemporaryTags(null);
-      setIsSaving(false);
+        setIsSaving(false);
     }
-  }, [temporaryTags, swrTags, updateTag, mutate]);
+  }, [mutate]);
 
   return {
     tagTree: dimensionalTree,
+    flatTags: tagsToUse,
     loading,
     error: error || swrError,
     isSaving,
@@ -174,6 +187,7 @@ function useTagManagement() {
 function AdminTagsPageContent() {
   const {
     tagTree,
+    flatTags,
     loading,
     error,
     isSaving,
@@ -190,11 +204,18 @@ function AdminTagsPageContent() {
       <p>Drag and drop to reorder or reparent tags. Use the `+` button to add a child tag.</p>
 
       {loading && <p>Loading tags...</p>}
-      {isSaving && <p style={{ color: 'blue' }}>Saving changes...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <p className={styles.error}>{error.toString()}</p>}
+      {isSaving && <p>Saving changes...</p>}
 
       {!loading && !error && (
-        <TagTreeView />
+        <TagAdminList
+          tagTree={tagTree}
+          onReorder={handleReorder}
+          onReparent={handleReparent}
+          onCreateTag={handleCreateTag}
+          onUpdateTag={handleUpdateTag}
+          onDeleteTag={handleDeleteTag}
+        />
       )}
     </div>
   );
@@ -205,5 +226,5 @@ export default function AdminTagsPage() {
     <TagProvider>
       <AdminTagsPageContent />
     </TagProvider>
-  )
+  );
 }

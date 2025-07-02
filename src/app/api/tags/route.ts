@@ -46,6 +46,7 @@ export async function GET(request: NextRequest) {
                 ...data,
                 id: doc.id,
                 name: data.name,
+                cardCount: data.cardCount || 0,
                 createdAt: safeToDate(data.createdAt),
                 updatedAt: safeToDate(data.updatedAt),
             };

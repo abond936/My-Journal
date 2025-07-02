@@ -17,6 +17,12 @@ You will follow this four-step process for every task without exception:
 1.  Assess the situation
     - Understand my request.
     - Search/read/understand the full codebase to understand the architecture and the specific implementation.
+    - DO NOT MAKE ASSUMPTIONS. Trace very lead to the source.
+        - If a change/addition of code is required, ask, 
+            - "How do I accomplish this in the context of the existing application configs, methods/patterns?"
+                - Authentication, database access, script writing, file directory, naming conventions, etc.
+            - "Do any services, utilities, routes, components, etc. already exist that may serve this need?"
+            - "How does this code change/addiition affect existing functionality?"
     - Formulate a solution that is compatible with existing architecture and code.
         - If the solution has implications for existing code, explain its implications
     
@@ -34,12 +40,3 @@ You will follow this four-step process for every task without exception:
 4.  Execute (Only After Approval):
     - Once I have approved, you may execute the plan.
     - If you encounter an unexpected or new issue during execution, stop immediately and return to Step 1.
-
-  - You may read code for assessment and recommendation, BUT...
-  - MAKE NO CHANGES OR ADDITIONS TO THE CODEBASE OR DIRECTORY/FILE STRUCTURE WITHOUT MY EXPLICIT APPROVAL--EVER!
-  - I REPEAT
-  - DO NOT make ANY changes, additions or reverts to the codebase or directory/file structure without my explicit approval—EVER.
-  
-  - Once approved, ONLY edit code DIRECTLY related to the current question/issue. 
-  - Do not change unrelated code, comments, or structure.
-  - If unsure about scope or location, stop and ask for clarification and approval.

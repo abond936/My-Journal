@@ -9,11 +9,13 @@ import styles from './card-admin.module.css';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { buildDimensionTree } from '@/lib/utils/tagUtils';
 import CardAdminList from '@/components/admin/card-admin/CardAdminList';
+import BulkEditTagsModal from '@/components/admin/card-admin/BulkEditTagsModal';
 
 const SCROLL_POSITION_KEY = 'adminCardListScrollPos';
 
 export default function AdminCardsPage() {
   const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(new Set());
+  const [isBulkTagModalOpen, setIsBulkTagModalOpen] = useState(false);
 
   const { 
     tags: allTags, 
@@ -128,40 +130,6 @@ export default function AdminCardsPage() {
     }
   };
 
-  const handleBulkTagUpdate = async (dimension: Tag['dimension'], tagId: string | null) => {
-    if (!tagId || !confirm(`Update tags for ${selectedCardIds.size} cards?`)) return;
-
-    const updates = new Map<string, string[]>();
-
-    cards.forEach(card => {
-              if (selectedCardIds.has(card.docId)) {
-        const otherDimensionTags = (card.tags || []).filter(tId => {
-          const tag = allTags.find(t => t.id === tId);
-          return tag && tag.dimension !== dimension;
-        });
-        const newTags = [...otherDimensionTags, tagId];
-                  updates.set(card.docId, newTags);
-      }
-    });
-
-    try {
-      await Promise.all(
-        Array.from(updates.entries()).map(([cardId, tags]) =>
-          fetch(`/api/cards/${cardId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tags }),
-          })
-        )
-      );
-      mutate();
-    } catch (err) {
-      console.error('Error updating bulk tags:', err);
-      alert('An error occurred while updating tags. Reverting changes.');
-      mutate();
-    }
-  };
-
   const handleBulkDelete = async () => {
     if (!confirm(`Are you sure you want to delete ${selectedCardIds.size} cards?`)) return;
     
@@ -175,6 +143,29 @@ export default function AdminCardsPage() {
       console.error('Error deleting cards:', err);
       alert('An error occurred while deleting cards. Reverting changes.');
       mutate();
+    }
+  };
+
+  const handleUpdateCard = async (cardId: string, updateData: Partial<Card>) => {
+    try {
+      const response = await fetch(`/api/cards/${cardId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update card.');
+      }
+      // Optimistic update can be tricky, so we revalidate from server
+      await mutate();
+    } catch (err) {
+      console.error(`Error updating card ${cardId}:`, err);
+      // It's good practice to inform the user and maybe revert UI changes
+      alert(`An error occurred while updating the card. Please refresh and try again.`);
+      // Re-fetch data to ensure UI consistency
+      await mutate();
+      throw err; // Re-throw to allow caller to handle it
     }
   };
 
@@ -231,22 +222,9 @@ export default function AdminCardsPage() {
               <option value="draft">Set to Draft</option>
               <option value="published">Set to Published</option>
             </select>
-            <div className={styles.bulkTagActions}>
-              {Object.entries(dimensionalTree).map(([dimension, tags]) => (
-                <div key={dimension} className={styles.dimensionGroup}>
-                  <select
-                    onChange={(e) => handleBulkTagUpdate(dimension as Tag['dimension'], e.target.value)}
-                    className={styles.dimensionSelect}
-                    defaultValue=""
-                  >
-                    <option value="" disabled>Assign {dimension}</option>
-                    {dimensionalTree[dimension].map(tag => (
-                      <option key={tag.id} value={tag.id}>{tag.name}</option>
-                    ))}
-                  </select>
-                </div>
-              ))}
-            </div>
+            <button onClick={() => setIsBulkTagModalOpen(true)} className={styles.actionButton}>
+              Edit Tags
+            </button>
             <button onClick={handleBulkDelete} className={styles.deleteButton}>Delete Selected</button>
           </div>
         </div>
@@ -255,19 +233,27 @@ export default function AdminCardsPage() {
       <CardAdminList
         cards={cards}
         selectedCardIds={selectedCardIds}
-        allTags={allTags}
+        allTags={allTags || []}
         onSelectCard={handleSelectCard}
         onSelectAll={handleSelectAll}
         onSaveScrollPosition={onSaveScrollPosition}
+        onUpdateCard={handleUpdateCard}
       />
 
       {hasMore && (
         <div className={styles.loadMoreContainer}>
-          <button onClick={loadMore} disabled={isLoadingMore}>
+          <button onClick={loadMore} disabled={isLoadingMore} className={styles.loadMoreButton}>
             {isLoadingMore ? 'Loading...' : 'Load More'}
           </button>
         </div>
       )}
+
+      <BulkEditTagsModal
+        isOpen={isBulkTagModalOpen}
+        onClose={() => setIsBulkTagModalOpen(false)}
+        cardIds={Array.from(selectedCardIds)}
+        onSave={mutate}
+      />
     </div>
   );
 }

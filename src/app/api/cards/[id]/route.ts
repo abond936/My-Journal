@@ -1,43 +1,79 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../auth/[...nextauth]/route';
 import { deleteCard, getCardById, updateCard, getPaginatedCardsByIds } from '@/lib/services/cardService';
 import { Card } from '@/lib/types/card';
 import { PaginatedResult } from '@/lib/types/services';
+import { withErrorHandler } from '@/lib/middleware/errorHandler';
+import { AppError, ErrorCode } from '@/lib/types/error';
+import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 
+// Validation schema for card updates
+const cardUpdateSchema = z.object({
+  title: z.string().optional(),
+  content: z.string().optional(),
+  status: z.enum(['draft', 'published', 'archived']).optional(),
+  type: z.enum(['story', 'gallery', 'qa']).optional(),
+  tags: z.array(z.string()).optional(),
+  displayMode: z.enum(['full', 'compact']).optional(),
+});
+
 /**
  * GET a card by ID.
+ * Demonstrates error handling with input validation and proper error responses.
  */
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { id } = await params;
-  try {
-    if (!id) {
-      return NextResponse.json({ error: 'Card ID is required' }, { status: 400 });
+  return withErrorHandler(request, async () => {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      throw new AppError(
+        ErrorCode.UNAUTHORIZED,
+        'Authentication required to access this resource'
+      );
     }
 
-    const parentCard = await getCardById(id);
-
-    if (!parentCard) {
-      return NextResponse.json({ error: 'Card not found' }, { status: 404 });
+    // Validate ID format (example validation)
+    if (!/^[a-zA-Z0-9-]+$/.test(params.id)) {
+      throw new AppError(
+        ErrorCode.VALIDATION_ERROR,
+        'Invalid card ID format',
+        { id: params.id }
+      );
     }
 
+    const card = await getCardById(params.id);
+    if (!card) {
+      throw new AppError(
+        ErrorCode.NOT_FOUND,
+        `Card with ID ${params.id} not found`
+      );
+    }
+
+    // Parse query parameters with validation
     const { searchParams } = new URL(request.url);
-    const limit = searchParams.has('limit') ? parseInt(searchParams.get('limit')!, 10) : 10;
-    const lastDocId = searchParams.get('lastDocId') || undefined;
+    const limit = z.coerce
+      .number()
+      .min(1)
+      .max(100)
+      .default(10)
+      .parse(searchParams.get('limit'));
+    
+    const lastDocId = searchParams.get('lastDocId');
 
+    // Fetch children with pagination
     const childrenResult: PaginatedResult<Card> = await getPaginatedCardsByIds(
-      parentCard.childrenIds || [],
+      card.childrenIds || [],
       { limit, lastDocId }
     );
 
-    // Sanitize the response
+    // Construct the response
     const responseData = {
-      ...parentCard,
+      ...card,
       children: childrenResult.items,
       hasMoreChildren: childrenResult.hasMore,
       lastChildId: childrenResult.lastDocId,
@@ -45,65 +81,85 @@ export async function GET(
 
     const response = NextResponse.json(responseData);
 
-    // Prevent caching
+    // Set cache control headers
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     response.headers.set('Pragma', 'no-cache');
     response.headers.set('Expires', '0');
 
     return response;
-  } catch (error) {
-    console.error(`Error fetching data for card ${id}:`, error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
-  }
+  });
 }
 
 /**
- * PATCH handler for updating a card.
+ * PUT/UPDATE a card by ID.
+ * Demonstrates validation and error handling for update operations.
  */
-export async function PATCH(
-  request: Request,
+export async function PUT(
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { id } = await params;
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
-    return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+  return withErrorHandler(request, async () => {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.role === 'admin') {
+      throw new AppError(
+        ErrorCode.FORBIDDEN,
+        'Admin access required to update cards'
+      );
+    }
 
-  try {
-    const cardData: Partial<Omit<Card, 'id'>> = await request.json();
-    const updatedCard = await updateCard(id, cardData);
+    // Parse and validate the request body
+    const body = await request.json();
+    const validatedData = cardUpdateSchema.parse(body);
+
+    const existingCard = await getCardById(params.id);
+    if (!existingCard) {
+      throw new AppError(
+        ErrorCode.NOT_FOUND,
+        `Cannot update: Card with ID ${params.id} not found`
+      );
+    }
+
+    // Perform the update
+    const updatedCard = await updateCard(params.id, validatedData);
     return NextResponse.json(updatedCard);
-  } catch (error) {
-    console.error(`API Error updating card ${id}:`, error);
-    return new NextResponse('Internal server error', { status: 500 });
-  }
+  });
 }
 
 /**
  * DELETE a card by ID.
+ * Demonstrates error handling for delete operations.
  */
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { id } = await params;
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
-    return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+  return withErrorHandler(request, async () => {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.role === 'admin') {
+      throw new AppError(
+        ErrorCode.FORBIDDEN,
+        'Admin access required to delete cards'
+      );
+    }
 
-  try {
-    await deleteCard(id);
+    const existingCard = await getCardById(params.id);
+    if (!existingCard) {
+      throw new AppError(
+        ErrorCode.NOT_FOUND,
+        `Cannot delete: Card with ID ${params.id} not found`
+      );
+    }
+
+    // Check if card can be deleted (example business rule)
+    if (existingCard.childrenIds?.length > 0) {
+      throw new AppError(
+        ErrorCode.CONFLICT,
+        'Cannot delete card with children',
+        { childCount: existingCard.childrenIds.length }
+      );
+    }
+
+    await deleteCard(params.id);
     return new NextResponse(null, { status: 204 });
-  } catch (error) {
-    console.error(`API Error deleting card ${id}:`, error);
-    return new NextResponse('Internal server error', { status: 500 });
-  }
+  });
 } 

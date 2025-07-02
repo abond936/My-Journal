@@ -252,7 +252,12 @@
 }
 
 .deleteButton {
-  background-color: #dc3545;
+  color: var(--color-error);
+}
+
+.deleteButton:hover {
+  color: var(--color-error-dark);
+  background-color: var(--color-error-alpha);
 }
 
 .errorDot {
@@ -388,4 +393,46 @@
 .loadMoreButton:disabled {
   background-color: var(--color-gray);
   cursor: not-allowed;
+}
+
+/* Styles for Inline Editing */
+.inlineEditInput {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-base);
+  line-height: 1.4;
+}
+
+.editableField {
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  min-height: 24px; /* Ensure clickable area */
+}
+
+.emptyField {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.inlineEditSelect {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid transparent;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-base);
+  line-height: 1.4;
+  background-color: transparent;
+  cursor: pointer;
+}
+
+.inlineEditSelect:hover {
+  border-color: var(--border-color);
+}
+
+.inlineEditSelect:focus {
+  border-color: var(--color-primary);
+  background-color: var(--color-background);
 } 

@@ -1,25 +1,23 @@
 .tagAdminRow {
   width: 100%;
+  line-height: 1;
 }
 
 .tagContent {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-xs);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  background: var(--background-color);
-  transition: all 0.2s ease;
+  gap: 2px;
+  padding: 2px 1px;
+  transition: background-color 0.15s ease;
+  min-height: 22px;
 }
 
 .tagContent:hover {
-  border-color: var(--primary-color-light);
   background: var(--light-gray);
 }
 
 .expander {
-  width: 24px;
+  width: 8px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -32,60 +30,102 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 24px;
-  border-radius: var(--border-radius);
+  width: 8px;
+  height: 12px;
+  font-size: 8px;
+  color: var(--text-color);
+  opacity: 0.5;
+}
+
+.expandButton:hover {
+  opacity: 1;
 }
 
 .tagNameContainer {
   flex-grow: 1;
   cursor: pointer;
+  min-width: 0;
+  line-height: 1;
 }
 
 .tagName {
   display: block;
-  padding: var(--spacing-xs) 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1;
+}
+
+.cardCount {
+  margin-left: 4px;
+  font-size: 0.85em;
+  color: var(--text-color-secondary);
+  opacity: 0.8;
 }
 
 .editInput {
   width: 100%;
   font-size: var(--font-size-base);
-  padding: var(--spacing-xs);
+  padding: 1px 2px;
   border: 1px solid var(--primary-color);
   border-radius: var(--border-radius);
+  line-height: 1;
 }
 
 .actions {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
-  margin-left: auto;
+  gap: 2px;
+  flex-shrink: 0;
 }
 
 .actionButton {
   all: unset;
   cursor: pointer;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--border-radius);
-  font-size: var(--font-size-sm);
-  background: var(--light-gray);
-  border: 1px solid var(--border-color);
+  padding: 1px 4px;
+  font-size: var(--font-size-base);
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+  transform: scale(1.8);
+  transition: opacity 0.15s ease;
 }
 
 .actionButton:hover {
-  background: var(--medium-gray);
-  border-color: var(--dark-gray);
+  opacity: 1;
 }
 
 .addChildForm {
-  padding: var(--spacing-sm) 0 var(--spacing-sm) 52px;
+  padding: 2px 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 2px;
 }
 
 .addChildInput {
-  margin-right: var(--spacing-sm);
-  padding: var(--spacing-xs);
+  flex-grow: 1;
+  padding: 1px 2px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-sm);
+  line-height: 1;
 }
 
 .addChildButton {
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: 1px 4px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background: var(--light-gray);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.addChildButton:hover {
+  background: var(--medium-gray);
 } 

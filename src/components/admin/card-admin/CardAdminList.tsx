@@ -6,6 +6,8 @@ import { Card } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 import styles from '@/app/admin/card-admin/card-admin.module.css';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import EditableTitleCell from './EditableTitleCell';
+import EditableDisplayModeCell from './EditableDisplayModeCell';
 
 interface CardAdminListProps {
   cards: Card[];
@@ -14,6 +16,7 @@ interface CardAdminListProps {
   onSelectCard: (cardId: string) => void;
   onSelectAll: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onSaveScrollPosition: (cardId: string) => void;
+  onUpdateCard: (cardId: string, updateData: Partial<Card>) => Promise<void>;
 }
 
 export default function CardAdminList({
@@ -23,6 +26,7 @@ export default function CardAdminList({
   onSelectCard,
   onSelectAll,
   onSaveScrollPosition,
+  onUpdateCard,
 }: CardAdminListProps) {
   const router = useRouter();
   const isAllSelected = cards.length > 0 && selectedCardIds.size === cards.length;
@@ -42,6 +46,10 @@ export default function CardAdminList({
             <th>Title</th>
             <th>Type</th>
             <th>Status</th>
+            <th>Display</th>
+            <th>Content</th>
+            <th>Gallery</th>
+            <th>Children</th>
             <th>Tags</th>
             <th>Actions</th>
           </tr>
@@ -67,9 +75,17 @@ export default function CardAdminList({
                   <span className={styles.noCover}>—</span>
                 )}
               </td>
-              <td>{card.title}</td>
+              <td>
+                <EditableTitleCell card={card} onUpdate={onUpdateCard} />
+              </td>
               <td>{card.type}</td>
               <td>{card.status}</td>
+              <td>
+                <EditableDisplayModeCell card={card} onUpdate={onUpdateCard} />
+              </td>
+              <td>{card.content ? 'Y' : 'N'}</td>
+              <td>{card.galleryMedia?.length || 0}</td>
+              <td>{card.childrenIds?.length || 0}</td>
               <td>
                 <div className={styles.tags}>
                   {(card.tags || []).map(tagId => {

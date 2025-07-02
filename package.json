@@ -11,7 +11,11 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "generate-migration-plan": "ts-node src/lib/scripts/migration-plan-generator.ts",
-    "backup-codebase": "ts-node src/lib/scripts/utils/backup-codebase.ts"
+    "backup-codebase": "ts-node src/lib/scripts/utils/backup-codebase.ts",
+    "export:csv": "tsx src/lib/scripts/migration/export-to-csv.ts",
+    "backfill:tags": "tsx src/lib/scripts/tags/backfill-tag-paths.ts",
+    "update:tag-counts": "tsx src/lib/scripts/tags/update-tag-counts.ts",
+    "diagnose:tag": "tsx src/lib/scripts/dev/diagnose-single-tag.ts"
   },
   "dependencies": {
     "@auth/firebase-adapter": "^2.9.1",
@@ -25,6 +29,7 @@
     "@tiptap/starter-kit": "^2.12.0",
     "@uiw/react-md-editor": "^4.0.6",
     "clsx": "^2.1.1",
+    "commander": "^14.0.0",
     "csv-parse": "^5.6.0",
     "firebase": "^11.8.1",
     "firebase-admin": "^12.0.0",
@@ -42,6 +47,7 @@
     "sharp": "^0.34.2",
     "swiper": "^11.2.8",
     "swr": "^2.3.3",
+    "tsx": "^4.20.3",
     "zod": "^3.25.67"
   },
   "devDependencies": {

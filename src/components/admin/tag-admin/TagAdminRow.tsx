@@ -45,15 +45,6 @@ export function TagAdminRow({
   const [isAddingChild, setIsAddingChild] = useState(false);
   const [childName, setChildName] = useState('');
 
-  // Dynamic style to apply indentation based on the tag's depth in the tree.
-  const rowStyle = {
-    marginLeft: `${depth * 24}px`,
-    display: 'flex',
-    alignItems: 'center',
-    padding: '4px',
-    boxSizing: 'border-box' as const,
-  };
-
   /**
    * Saves the updated tag name if it has changed.
    */
@@ -83,13 +74,14 @@ export function TagAdminRow({
     <div className={styles.tagAdminRow}>
       <div className={styles.tagContent}>
         {/* Expander button (for nodes with children) */}
-        <div className={styles.expander}>
-          {hasChildren && (
+        {hasChildren && (
+          <div className={styles.expander}>
             <button onClick={() => onToggleCollapse(tag.id)} className={styles.expandButton}>
               {isCollapsed ? '►' : '▼'}
             </button>
-          )}
-        </div>
+          </div>
+        )}
+        {!hasChildren && <div className={styles.expander} />}
 
         {/* Tag name (editable on click) */}
         <div className={styles.tagNameContainer}>
@@ -103,8 +95,17 @@ export function TagAdminRow({
               className={styles.editInput}
             />
           ) : (
-            <span onClick={() => setIsEditing(true)} className={styles.tagName}>
+            <span 
+              onClick={() => setIsEditing(true)} 
+              className={styles.tagName}
+              data-dimension={tag.dimension || 'none'}
+            >
               {tag.name}
+              {tag.cardCount !== undefined && (
+                <span className={styles.cardCount}>
+                  ({tag.cardCount})
+                </span>
+              )}
             </span>
           )}
         </div>
@@ -112,13 +113,13 @@ export function TagAdminRow({
         {/* Action Buttons */}
         <div className={styles.actions}>
           <button onClick={() => setIsAddingChild(p => !p)} className={styles.actionButton}>+</button>
-          <button onClick={() => onDeleteTag(tag.id)} className={styles.actionButton}>Delete</button>
+          <button onClick={() => onDeleteTag(tag.id)} className={styles.actionButton}>×</button>
         </div>
       </div>
 
       {/* Form for adding a new child tag */}
       {isAddingChild && (
-        <form onSubmit={handleAddChild} className={styles.addChildForm} style={{ marginLeft: `${depth * 24}px` }}>
+        <form onSubmit={handleAddChild} className={styles.addChildForm}>
           <input
             value={childName}
             onChange={(e) => setChildName(e.target.value)}
@@ -126,7 +127,7 @@ export function TagAdminRow({
             autoFocus
             className={styles.addChildInput}
           />
-          <button type="submit" className={styles.addChildButton}>Add Child</button>
+          <button type="submit" className={styles.addChildButton}>Add</button>
         </form>
       )}
     </div>

@@ -52,10 +52,8 @@ export const cardSchema = z.object({
   where: z.array(z.string()).optional(),
   reflection: z.array(z.string()).optional(),
 
-  // Combined and calculated tags for querying
+  // Direct tag assignments and optimized query structure
   tags: z.array(z.string()).optional(),
-  inheritedTags: z.array(z.string()).optional(),
-  tagPathsMap: z.record(z.boolean()).optional(),
   filterTags: z.record(z.boolean()).optional(),
   
   // For 'collection' type cards, this lists the IDs of child cards.

@@ -205,68 +205,42 @@
   position: relative;
   display: flex;
   align-items: center;
-  background-color: var(--color-background-secondary);
-  border-radius: 4px;
-  margin-bottom: 2px;
-  padding-top: 2px;
-  padding-bottom: 2px;
-  padding-left: 0px;
-  padding-right: 0px;
-  transition: background-color 0.2s ease-in-out;
-  line-height: 1.25;
-  min-height: unset;
-  height: unset;
+  margin-bottom: 0;
+  padding: 0 2px;
+  transition: background-color 0.15s ease-in-out;
+  line-height: 1;
   font-size: 0.97em;
 }
 
 .rowWrapper > * {
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
   min-height: unset !important;
   height: unset !important;
+  line-height: 1 !important;
 }
 
 .rowWrapper[data-is-dragging='true'] {
   opacity: 0.5;
   z-index: 1000;
+  background-color: var(--color-background-secondary);
 }
 
-.rowWrapper[data-reparent-target='true'] > *:not(.dropLine) {
-  background-color: #e6f7ff; /* light blue */
-  border-radius: 4px;
-}
-
-.rowWrapper[data-is-over='true'] {
+.rowWrapper:hover {
   background-color: var(--color-background-hover);
 }
 
-/* Styles for the drop indicator line */
-.dropLine {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background-color: var(--color-primary);
-  border-radius: 2px;
-  z-index: 2000;
-}
-
-.dropLine.top {
-  top: -4px;
-}
-
-.dropLine.bottom {
-  bottom: -4px;
-}
-
-/* Styles for the drag handle */
 .dragHandle {
-  cursor: grab;
-  padding: 8px;
-  touch-action: none;
-  color: var(--color-text-secondary);
+  cursor: move;
+  padding: 0 2px;
+  color: #666;
+  user-select: none;
+  opacity: 0.5;
+  font-size: 0.8em;
+}
+
+.dragHandle:hover {
+  opacity: 1;
 }
 
 .dragHandle:active {

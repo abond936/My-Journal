@@ -1,9 +1,8 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { Card, cardSchema, GalleryMediaItem } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
-import { getTagAncestors, getTagPathsMap, organizeTagsByDimension } from '@/lib/firebase/tagDataAccess';
-import { getFirestore, writeBatch } from 'firebase-admin/firestore';
-import { doc } from 'firebase-admin/firestore';
+import { updateTagCounts, calculateDerivedTagData } from '@/lib/firebase/tagDataAccess';
+import { getFirestore, FieldPath } from 'firebase-admin/firestore';
 import { deleteMediaAsset } from './images/imageImportService';
 import { extractMediaFromContent, stripContentImageSrc, hydrateContentImageSrc } from '@/lib/utils/cardUtils';
 import { Media } from '@/lib/types/photo';
@@ -72,50 +71,20 @@ async function _hydrateCards(cards: Card[]): Promise<Card[]> {
 }
 
 /**
- * Adds a new card to the Firestore 'cards' collection.
- *
- * @param cardData - The data for the card to be created.
- *   The 'id' can be omitted, and Firestore will generate one.
- * @returns The full Card object, including the generated ID.
- */
-export async function addCard(cardData: Omit<Card, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): Promise<Card> {
-  const collectionRef = firestore.collection(CARDS_COLLECTION);
-  const docRef = cardData.id ? collectionRef.doc(cardData.id) : collectionRef.doc();
-  
-  const newCard: Card = {
-    ...cardData,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-  };
-
-  await docRef.set(newCard);
-  return { ...newCard, id: docRef.id };
-}
-
-/**
  * Creates a new card in Firestore.
  * @param cardData The data for the new card, excluding 'id'.
  * @returns The newly created card with its ID.
  */
-export async function createCard(cardData: Partial<Omit<Card, 'id' | 'createdAt' | 'updatedAt' | 'inheritedTags' | 'tagPathsMap' | 'filterTags'>>): Promise<Card> {
+export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'createdAt' | 'updatedAt' | 'filterTags'>>): Promise<Card> {
   const collectionRef = firestore.collection(CARDS_COLLECTION);
   const docRef = collectionRef.doc();
 
   // Validate and apply defaults using Zod
   const validatedData = cardSchema.partial().parse(cardData);
 
-  // Calculate inherited tags and paths
+  // Calculate all derived tag data using centralized function
   const selectedTags = validatedData.tags || [];
-  const ancestorTags = await getTagAncestors(selectedTags);
-  const inheritedTags = [...new Set([...selectedTags, ...ancestorTags])];
-  const tagPathsMap = await getTagPathsMap(selectedTags);
-  const filterTags = inheritedTags.reduce((acc, tagId) => {
-    acc[tagId] = true;
-    return acc;
-  }, {} as Record<string, boolean>);
-
-  // Organize tags by dimension
-  const dimensionalTags = await organizeTagsByDimension(selectedTags);
+  const { filterTags, dimensionalTags } = await calculateDerivedTagData(selectedTags);
 
   // --- Content sanitation ---
   const rawContent = validatedData.content ?? '';
@@ -124,12 +93,11 @@ export async function createCard(cardData: Partial<Omit<Card, 'id' | 'createdAt'
 
   const newCard: Card = {
     ...validatedData,
+    docId: docRef.id,
     content: cleanedContent,
     tags: selectedTags, // ensure tags is not undefined
     contentMedia: contentMediaIds, // always an array even if empty
     galleryMedia: validatedData.galleryMedia || [], // ensure arrays are not undefined
-    inheritedTags,
-    tagPathsMap,
     filterTags,
     // Populate dimensional arrays
     who: dimensionalTags.who || [],
@@ -140,8 +108,23 @@ export async function createCard(cardData: Partial<Omit<Card, 'id' | 'createdAt'
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
-  await docRef.set(newCard);
-  return { ...newCard, id: docRef.id };
+  
+  // Use a transaction to ensure atomicity
+  await firestore.runTransaction(async (transaction) => {
+      // 1. Create the new card document
+      transaction.set(docRef, newCard);
+
+      // 2. Increment counts for all associated tags if the card is published
+      if (newCard.status === 'published' && newCard.tags && newCard.tags.length > 0) {
+          await updateTagCounts(newCard.tags, 'increment', transaction);
+      }
+  });
+  
+  // The created card object needs to be constructed outside the transaction to be returned
+  const finalCard = await getCardById(docRef.id);
+  if (!finalCard) throw new Error("Failed to create or retrieve card.");
+
+  return finalCard;
 }
 
 /**
@@ -150,107 +133,125 @@ export async function createCard(cardData: Partial<Omit<Card, 'id' | 'createdAt'
  * @param cardData The partial data to update the card with.
  * @returns The updated card.
  */
-export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'id'>>): Promise<Card> {
-  const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
-  const docSnap = await docRef.get();
-  if (!docSnap.exists) {
-    throw new Error(`Card with ID ${cardId} not found.`);
-  }
-  const existingData = docSnap.data() as Card;
-
-  // --- Start Firestore Batch Write ---
-  const batch = firestore.batch();
-
-  // Dehydrate gallery media for saving, and update captions on root media objects.
-  const dehydratedGalleryMedia = cardData.galleryMedia?.map(item => {
-    if (item.media && item.caption !== item.media.caption) {
-      const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(item.mediaId);
-      batch.update(mediaRef, { caption: item.caption });
-    }
-    const { media, ...rest } = item;
-    return rest;
-  }) || [];
-  
-  // Sanitize content HTML and derive content media IDs.
-  const sanitizedContent = cardData.content ? stripContentImageSrc(cardData.content) : cardData.content;
-  
-  const contentMediaIds = sanitizedContent ? extractMediaFromContent(sanitizedContent) : [];
-  
-  const updatePayload: Partial<Card> = {
-    ...cardData,
-    content: sanitizedContent,
-    coverImageId: cardData.coverImageId || null,
-    galleryMedia: dehydratedGalleryMedia,
-    contentMedia: contentMediaIds,
-    updatedAt: Date.now(),
-  };
-
-  // Remove transient fields that shouldn't be saved.
-  delete updatePayload.coverImage;
-
-  // The client now sends the complete, hydrated card object.
-  // We just need to persist it and update media statuses.
-  // Validate the incoming partial data against the card schema.
-  const validatedUpdate = cardSchema.partial().parse(updatePayload);
-
-  // Always recalculate tag hierarchy if tags have been modified.
-  if (validatedUpdate.tags) {
-    const finalTags = validatedUpdate.tags ?? existingData.tags;
-    const ancestorTags = await getTagAncestors(finalTags);
-    validatedUpdate.inheritedTags = [...new Set([...finalTags, ...ancestorTags])];
-    validatedUpdate.tagPathsMap = await getTagPathsMap(finalTags);
-    validatedUpdate.filterTags = validatedUpdate.inheritedTags.reduce((acc, tagId) => {
-      acc[tagId] = true;
-      return acc;
-    }, {} as Record<string, boolean>);
+export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'docId'>>): Promise<Card> {
+    const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
     
-    // Also recalculate dimensional arrays
-    const dimensionalTags = await organizeTagsByDimension(finalTags);
-    validatedUpdate.who = dimensionalTags.who || [];
-    validatedUpdate.what = dimensionalTags.what || [];
-    validatedUpdate.when = dimensionalTags.when || [];
-    validatedUpdate.where = dimensionalTags.where || [];
-    validatedUpdate.reflection = dimensionalTags.reflection || [];
-  }
+    return firestore.runTransaction(async (transaction) => {
+      const docSnap = await transaction.get(docRef);
+      if (!docSnap.exists) {
+        throw new Error(`Card with ID ${cardId} not found.`);
+      }
+      const existingData = docSnap.data() as Card;
+  
+      // --- Start Firestore Batch Write ---
+  
+      // Dehydrate gallery media for saving, and update captions on root media objects.
+      const dehydratedGalleryMedia = cardData.galleryMedia?.map(item => {
+        if (item.media && item.caption !== item.media.caption) {
+          const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(item.mediaId);
+          transaction.update(mediaRef, { caption: item.caption });
+        }
+        const { media, ...rest } = item;
+        return rest;
+      }) || [];
+      
+      // Sanitize content HTML and derive content media IDs.
+      const sanitizedContent = cardData.content ? stripContentImageSrc(cardData.content) : cardData.content;
+      
+      const contentMediaIds = sanitizedContent ? extractMediaFromContent(sanitizedContent) : [];
+      
+      const updatePayload: Partial<Card> = {
+        ...cardData,
+        content: sanitizedContent,
+        coverImageId: cardData.coverImageId || null,
+        galleryMedia: dehydratedGalleryMedia,
+        contentMedia: contentMediaIds,
+        updatedAt: Date.now(),
+      };
+  
+      // Remove transient fields that shouldn't be saved.
+      delete updatePayload.coverImage;
+  
+      // The client now sends the complete, hydrated card object.
+      // We just need to persist it and update media statuses.
+      // Validate the incoming partial data against the card schema.
+      const validatedUpdate = cardSchema.partial().parse(updatePayload);
+  
+      // Determine tag changes
+      const oldTags = new Set(existingData.tags || []);
+      const newTags = new Set(cardData.tags || []);
+      const tagsAdded = [...newTags].filter(t => !oldTags.has(t));
+      const tagsRemoved = [...oldTags].filter(t => !newTags.has(t));
 
-  // 1. Update the card document with the new data.
-  batch.update(docRef, validatedUpdate);
+      // Determine status changes
+      const wasPublished = existingData.status === 'published';
+      const isPublished = cardData.status === 'published';
 
-  // 2. Collect all media IDs that should be marked as 'active'.
-  const mediaIdsToActivate = new Set<string>();
-  if (validatedUpdate.coverImageId) {
-    mediaIdsToActivate.add(validatedUpdate.coverImageId);
-  }
-  if (validatedUpdate.galleryMedia) {
-    validatedUpdate.galleryMedia.forEach(item => item.mediaId && mediaIdsToActivate.add(item.mediaId));
-  }
-  if (validatedUpdate.contentMedia) {
-    validatedUpdate.contentMedia.forEach(id => mediaIdsToActivate.add(id));
-  }
+      // Always recalculate tag hierarchy if tags have been modified.
+      if ('tags' in validatedUpdate) {
+        const finalTags = validatedUpdate.tags ?? existingData.tags;
+        const { filterTags, dimensionalTags } = await calculateDerivedTagData(finalTags || []);
+        
+        validatedUpdate.filterTags = filterTags;
+        validatedUpdate.who = dimensionalTags.who || [];
+        validatedUpdate.what = dimensionalTags.what || [];
+        validatedUpdate.when = dimensionalTags.when || [];
+        validatedUpdate.where = dimensionalTags.where || [];
+        validatedUpdate.reflection = dimensionalTags.reflection || [];
+      }
+  
+      // 1. Update the card document with the new data.
+      transaction.update(docRef, validatedUpdate);
+  
+      // 2. Adjust tag counts based on changes
+      // Case 1: A published card's tags changed
+      if (wasPublished && isPublished) {
+          if (tagsAdded.length > 0) await updateTagCounts(tagsAdded, 'increment', transaction);
+          if (tagsRemoved.length > 0) await updateTagCounts(tagsRemoved, 'decrement', transaction);
+      } 
+      // Case 2: A card was just published
+      else if (!wasPublished && isPublished) {
+          if (newTags.size > 0) await updateTagCounts(Array.from(newTags), 'increment', transaction);
+      }
+      // Case 3: A card was unpublished
+      else if (wasPublished && !isPublished) {
+          if (oldTags.size > 0) await updateTagCounts(Array.from(oldTags), 'decrement', transaction);
+      }
 
-  // 3. If a new coverImageObjectPosition was provided, update it on the media doc.
-  const coverImagePosition = validatedUpdate.coverImageObjectPosition;
-  const coverImageId = validatedUpdate.coverImageId ?? existingData.coverImageId;
-  if (coverImageId && coverImagePosition) {
-    const coverRef = firestore.collection(MEDIA_COLLECTION).doc(coverImageId);
-    batch.update(coverRef, { objectPosition: coverImagePosition, updatedAt: Date.now() });
-  }
-
-  // 4. Update the status of all associated media to 'active'.
-  for (const mediaId of Array.from(mediaIdsToActivate)) {
-    const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
-    batch.update(mediaRef, { status: 'active', updatedAt: Date.now() });
-  }
-
-  // Commit all database operations atomically.
-  await batch.commit();
-
-  // Return the full, hydrated card by calling the trusted getCardById function.
-  const updatedCard = await getCardById(cardId);
-  if (!updatedCard) {
-    throw new Error(`Failed to fetch updated card with ID ${cardId}`);
-  }
-  return updatedCard;
+      // 3. Collect all media IDs that should be marked as 'active'.
+      const mediaIdsToActivate = new Set<string>();
+      if (validatedUpdate.coverImageId) {
+        mediaIdsToActivate.add(validatedUpdate.coverImageId);
+      }
+      if (validatedUpdate.galleryMedia) {
+        validatedUpdate.galleryMedia.forEach(item => item.mediaId && mediaIdsToActivate.add(item.mediaId));
+      }
+      if (validatedUpdate.contentMedia) {
+        validatedUpdate.contentMedia.forEach(id => mediaIdsToActivate.add(id));
+      }
+  
+      // 4. If a new coverImageObjectPosition was provided, update it on the media doc.
+      const coverImagePosition = validatedUpdate.coverImageObjectPosition;
+      const coverImageId = validatedUpdate.coverImageId ?? existingData.coverImageId;
+      if (coverImageId && coverImagePosition) {
+        const coverRef = firestore.collection(MEDIA_COLLECTION).doc(coverImageId);
+        transaction.update(coverRef, { objectPosition: coverImagePosition, updatedAt: Date.now() });
+      }
+  
+      // 5. Update the status of all associated media to 'active'.
+      for (const mediaId of Array.from(mediaIdsToActivate)) {
+        const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
+        transaction.update(mediaRef, { status: 'active', updatedAt: Date.now() });
+      }
+  
+      // Return the full, hydrated card by calling the trusted getCardById function.
+      // Note: getCardById is called outside the transaction to get the final hydrated state.
+      const updatedCard = await getCardById(cardId);
+      if (!updatedCard) {
+        throw new Error(`Failed to fetch updated card with ID ${cardId}`);
+      }
+      return updatedCard;
+    });
 }
 
 /**
@@ -281,24 +282,32 @@ export async function getCardsByIds(ids: string[]): Promise<Card[]> {
   if (!ids || ids.length === 0) {
     return [];
   }
-  const collectionRef = firestore.collection(CARDS_COLLECTION);
-  // Firestore 'in' queries are limited to 30 items.
-  const chunks = [];
+
+  // Firestore 'in' queries are limited to 30 items. We must batch the requests.
+  const idChunks: string[][] = [];
   for (let i = 0; i < ids.length; i += 30) {
-    chunks.push(ids.slice(i, i + 30));
+    idChunks.push(ids.slice(i, i + 30));
   }
 
-  const promises = chunks.map(chunk =>
-    collectionRef.where(firestore.FieldPath.documentId(), 'in', chunk).get()
-  );
+  const cards: Card[] = [];
+  const collectionRef = firestore.collection(CARDS_COLLECTION);
 
-  const snapshotResults = await Promise.all(promises);
-  const cards = snapshotResults.flatMap(snapshot =>
-    snapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id } as Card))
-  );
+  for (const chunk of idChunks) {
+    if (chunk.length > 0) {
+      const query = collectionRef.where(FieldPath.documentId(), 'in', chunk);
+      const snapshot = await query.get();
+      snapshot.forEach(doc => {
+        const data = doc.data() as Card;
+        cards.push({ ...data, docId: doc.id });
+      });
+    }
+  }
+
   // Preserve the original order of IDs
   const cardMap = new Map(cards.map(c => [c.docId, c]));
-  return ids.map(id => cardMap.get(id)).filter((c): c is Card => !!c);
+  const orderedCards = ids.map(id => cardMap.get(id)).filter((c): c is Card => !!c);
+
+  return await _hydrateCards(orderedCards);
 }
 
 /**
@@ -349,20 +358,13 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
   const db = getFirestore();
   const batch = writeBatch(db);
 
-  const newInheritedTags = await getInheritedTags(tags);
-  const filterTags = newInheritedTags.reduce((acc, tagId) => {
-    acc[tagId] = true;
-    return acc;
-  }, {} as Record<string, boolean>);
-
-  // Organize tags by dimension
-  const dimensionalTags = await organizeTagsByDimension(tags);
+  // Calculate all derived tag data using centralized function
+  const { filterTags, dimensionalTags } = await calculateDerivedTagData(tags);
 
   cardIds.forEach(id => {
     const cardRef = doc(db, 'cards', id);
     batch.update(cardRef, { 
       tags,
-      inheritedTags: newInheritedTags,
       filterTags,
       // Populate dimensional arrays
       who: dimensionalTags.who || [],
@@ -382,24 +384,18 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
  */
 export async function deleteAllCards(): Promise<void> {
   const collectionRef = firestore.collection(CARDS_COLLECTION);
-  const querySnapshot = await collectionRef.limit(500).get();
-
-  if (querySnapshot.empty) {
-    console.log('No documents to delete.');
+  const snapshot = await collectionRef.get();
+  
+  if (snapshot.empty) {
     return;
   }
-
+  
   const batch = firestore.batch();
-  querySnapshot.docs.forEach(doc => {
+  snapshot.docs.forEach(doc => {
     batch.delete(doc.ref);
   });
-
+  
   await batch.commit();
-
-  // If there might be more documents, recursively delete them.
-  if (querySnapshot.size === 500) {
-    await deleteAllCards();
-  }
 }
 
 /**
@@ -408,69 +404,40 @@ export async function deleteAllCards(): Promise<void> {
  * @param cardId The ID of the card to delete.
  */
 export async function deleteCard(cardId: string): Promise<void> {
-  const card = await getCardById(cardId);
-  if (!card) {
-    console.warn(`[deleteCard] Card with ID ${cardId} not found. Skipping deletion.`);
-    return;
-  }
+    const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
 
-  const mediaIdsToDelete: string[] = [];
+    return firestore.runTransaction(async (transaction) => {
+        const docSnap = await transaction.get(docRef);
+        if (!docSnap.exists) {
+            console.warn(`Card with ID ${cardId} not found for deletion.`);
+            return;
+        }
+        const cardToDelete = docSnap.data() as Card;
 
-  // 1. Collect cover image ID
-  if (card.coverImageId) {
-    mediaIdsToDelete.push(card.coverImageId);
-  }
+        // --- Delete Associated Media Assets ---
+        const mediaToDelete = new Set<string>();
+        if (cardToDelete.coverImageId) {
+            mediaToDelete.add(cardToDelete.coverImageId);
+        }
+        if (cardToDelete.galleryMedia) {
+            cardToDelete.galleryMedia.forEach(item => mediaToDelete.add(item.mediaId));
+        }
+        if (cardToDelete.contentMedia) {
+            cardToDelete.contentMedia.forEach(id => mediaToDelete.add(id));
+        }
 
-  // 2. Collect gallery image IDs
-  if (card.galleryMedia && card.galleryMedia.length > 0) {
-    card.galleryMedia.forEach(item => {
-      if (item.mediaId) {
-        mediaIdsToDelete.push(item.mediaId);
-      }
+        for (const mediaId of Array.from(mediaToDelete)) {
+            await deleteMediaAsset(mediaId, transaction);
+        }
+
+        // Decrement counts for all associated tags if the card was published
+        if (cardToDelete.status === 'published' && cardToDelete.tags && cardToDelete.tags.length > 0) {
+            await updateTagCounts(cardToDelete.tags, 'decrement', transaction);
+        }
+
+        // Delete the card document
+        transaction.delete(docRef);
     });
-  }
-
-  // 3. Collect content media IDs
-  if (card.contentMedia && card.contentMedia.length > 0) {
-    card.contentMedia.forEach(id => mediaIdsToDelete.push(id));
-  }
-
-  // 4. Find all parent cards that have this card as a child
-  const parentCardsQuery = await firestore.collection(CARDS_COLLECTION)
-    .where('childrenIds', 'array-contains', cardId)
-    .get();
-
-  // 5. Start a batch write
-  const batch = firestore.batch();
-
-  // 6. Update all parent cards to remove this card from their childrenIds
-  parentCardsQuery.docs.forEach(doc => {
-    const parentCard = doc.data() as Card;
-    const updatedChildrenIds = parentCard.childrenIds?.filter(id => id !== cardId) || [];
-    batch.update(doc.ref, { childrenIds: updatedChildrenIds });
-  });
-
-  // 7. Delete the card document
-  const cardRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
-  batch.delete(cardRef);
-
-  // 8. Commit the batch (card deletion and parent updates)
-  await batch.commit();
-
-  // 9. Delete all associated media assets in parallel
-  if (mediaIdsToDelete.length > 0) {
-    console.log(`[deleteCard] Deleting ${mediaIdsToDelete.length} associated media assets for card ${cardId}...`);
-    const deletionPromises = mediaIdsToDelete.map(mediaId => 
-      deleteMediaAsset(mediaId).catch(err => {
-        // Log error for a specific asset but don't let it stop the process
-        console.error(`[deleteCard] Failed to delete media asset ${mediaId} for card ${cardId}:`, err);
-      })
-    );
-    await Promise.all(deletionPromises);
-    console.log(`[deleteCard] Finished deleting media assets for card ${cardId}.`);
-  }
-
-  console.log(`[deleteCard] Successfully deleted card document ${cardId} and updated all parent references.`);
 }
 
 /**
@@ -493,10 +460,10 @@ export async function searchCards(options: {
   const tags = q.split(' ').filter(tag => tag.trim() !== '');
 
   if (tags.length > 0) {
-    // Firestore allows up to 10 `array-contains` clauses for 'AND' operations.
-    // We will use `inheritedTags` which should contain the tag itself and its ancestors.
+    // Use filterTags for efficient tag-based queries
+    // filterTags contains both direct tags and inherited tags
     tags.forEach(tag => {
-      query = query.where('inheritedTags', 'array-contains', tag.trim());
+      query = query.where(`filterTags.${tag.trim()}`, '==', true);
     });
   } else {
     // If no tags are provided, return no results.
@@ -573,7 +540,12 @@ export async function getCards(options: {
 
   // --- Filter by tags ---
   if (tags && tags.length > 0) {
-    query = query.where('inheritedTags', 'array-contains-any', tags);
+    // Use filterTags for efficient tag-based queries
+    // Note: Firestore doesn't support 'array-contains-any' on map fields
+    // We'll use individual field queries for each tag
+    tags.forEach(tag => {
+      query = query.where(`filterTags.${tag}`, '==', true);
+    });
   }
 
   // Filter by status
