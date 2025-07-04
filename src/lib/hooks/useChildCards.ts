@@ -18,8 +18,8 @@ export function useChildCards(childIds: string[]) {
       setIsLoading(true);
       setError(null);
       try {
-        const params = new URLSearchParams({ ids: childIds.join(',') });
-        // This endpoint doesn't exist yet. We will need to create it.
+        const params = new URLSearchParams();
+        childIds.forEach(id => params.append('id', id));
         const response = await fetch(`/api/cards/by-ids?${params.toString()}`); 
         if (!response.ok) {
           throw new Error('Failed to fetch child card details.');
@@ -27,7 +27,7 @@ export function useChildCards(childIds: string[]) {
         const results: Card[] = await response.json();
         
         // Ensure the order from the original childIds array is preserved
-        const cardMap = new Map(results.map(c => [c.id, c]));
+        const cardMap = new Map(results.map(c => [c.docId, c]));
         const orderedCards = childIds.map(id => cardMap.get(id)).filter((c): c is Card => !!c);
 
         setChildCards(orderedCards);

@@ -5,7 +5,11 @@ import { z } from 'zod';
  * This is the single source of truth for tag validation and type generation.
  */
 export const tagSchema = z.object({
-  id: z.string(),
+  // Firestore document ID (canonical)
+  docId: z.string().optional(),
+
+  // Legacy field – will be removed once all code paths use docId exclusively
+  id: z.string().optional(),
   name: z.string(),
   
   dimension: z.enum(['who', 'what', 'when', 'where', 'reflection']).optional(),

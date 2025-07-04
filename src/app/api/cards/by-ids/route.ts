@@ -17,10 +17,15 @@ export async function GET(request: Request) {
 
   try {
     const { searchParams } = new URL(request.url);
-    const ids = searchParams.getAll('id');
+    let ids: string[] = searchParams.getAll('id');
 
-    if (!ids || ids.length === 0) {
-      return new NextResponse('Missing "id" query parameter(s)', { status: 400 });
+    // Enforce the repeated ?id=A&id=B pattern
+    if (ids.length === 0) {
+      // Previously a legacy CSV style ?ids=a,b,c was sometimes used. We now reject it
+      return new NextResponse(
+        'Missing "id" query parameters. Use repeated ?id=123&id=456 style.',
+        { status: 400 }
+      );
     }
     
     const cards = await getCardsByIds(ids);

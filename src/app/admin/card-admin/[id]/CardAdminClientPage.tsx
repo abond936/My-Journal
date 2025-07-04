@@ -69,7 +69,7 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
       
       // If a new card was created, navigate to its new edit page.
       if (!cardId) {
-        router.push(`/admin/card-admin/${savedData.id}`);
+        router.push(`/admin/card-admin/${savedData.docId}`);
       }
 
     } catch (error) {

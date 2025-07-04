@@ -10,15 +10,18 @@ import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 
+// Type for params to ensure consistency
+type RouteParams = Promise<{ id: string }>;
+
 // Validation schema for card updates
 const cardUpdateSchema = z.object({
   title: z.string().optional(),
   content: z.string().optional(),
-  status: z.enum(['draft', 'published', 'archived']).optional(),
-  type: z.enum(['story', 'gallery', 'qa']).optional(),
+  status: z.enum(['draft', 'published']).optional(),
+  type: z.enum(['story', 'gallery', 'qa', 'quote', 'callout']).optional(),
   tags: z.array(z.string()).optional(),
-  displayMode: z.enum(['full', 'compact']).optional(),
-});
+  displayMode: z.enum(['static', 'inline', 'navigate']).optional(),
+}).passthrough();
 
 /**
  * GET a card by ID.
@@ -26,7 +29,7 @@ const cardUpdateSchema = z.object({
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: RouteParams }
 ) {
   return withErrorHandler(request, async () => {
     const session = await getServerSession(authOptions);
@@ -37,31 +40,39 @@ export async function GET(
       );
     }
 
+    // Get ID from params
+    const { id } = await params;
+
     // Validate ID format (example validation)
-    if (!/^[a-zA-Z0-9-]+$/.test(params.id)) {
+    if (!/^[a-zA-Z0-9-]+$/.test(id)) {
       throw new AppError(
         ErrorCode.VALIDATION_ERROR,
         'Invalid card ID format',
-        { id: params.id }
+        { id }
       );
     }
 
-    const card = await getCardById(params.id);
+    const card = await getCardById(id);
     if (!card) {
       throw new AppError(
         ErrorCode.NOT_FOUND,
-        `Card with ID ${params.id} not found`
+        `Card with ID ${id} not found`
       );
     }
 
     // Parse query parameters with validation
     const { searchParams } = new URL(request.url);
-    const limit = z.coerce
-      .number()
-      .min(1)
-      .max(100)
-      .default(10)
-      .parse(searchParams.get('limit'));
+    const limitParam = searchParams.get('limit');
+    
+    // If limit is not provided or invalid, use default
+    const limit = limitParam 
+      ? z.coerce
+          .number()
+          .min(1)
+          .max(100)
+          .catch(10) // Use 10 as fallback if parsing fails
+          .parse(limitParam)
+      : 10;
     
     const lastDocId = searchParams.get('lastDocId');
 
@@ -96,31 +107,72 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: RouteParams }
 ) {
   return withErrorHandler(request, async () => {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.role === 'admin') {
+    if (session?.user?.role !== 'admin') {
       throw new AppError(
         ErrorCode.FORBIDDEN,
         'Admin access required to update cards'
       );
     }
 
+    // Get ID from params
+    const { id } = await params;
+
     // Parse and validate the request body
     const body = await request.json();
     const validatedData = cardUpdateSchema.parse(body);
 
-    const existingCard = await getCardById(params.id);
+    const existingCard = await getCardById(id);
     if (!existingCard) {
       throw new AppError(
         ErrorCode.NOT_FOUND,
-        `Cannot update: Card with ID ${params.id} not found`
+        `Cannot update: Card with ID ${id} not found`
       );
     }
 
     // Perform the update
-    const updatedCard = await updateCard(params.id, validatedData);
+    const updatedCard = await updateCard(id, validatedData);
+    return NextResponse.json(updatedCard);
+  });
+}
+
+/**
+ * PATCH a card by ID.
+ * Allows partial updates; identical validation and auth as PUT.
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: RouteParams }
+) {
+  return withErrorHandler(request, async () => {
+    const session = await getServerSession(authOptions);
+    if (session?.user?.role !== 'admin') {
+      throw new AppError(
+        ErrorCode.FORBIDDEN,
+        'Admin access required to update cards'
+      );
+    }
+
+    // Get ID from params
+    const { id } = await params;
+
+    // Parse and validate the request body
+    const body = await request.json();
+    const validatedData = cardUpdateSchema.parse(body);
+
+    const existingCard = await getCardById(id);
+    if (!existingCard) {
+      throw new AppError(
+        ErrorCode.NOT_FOUND,
+        `Cannot update: Card with ID ${id} not found`
+      );
+    }
+
+    // Perform the update
+    const updatedCard = await updateCard(id, validatedData);
     return NextResponse.json(updatedCard);
   });
 }
@@ -131,22 +183,25 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: RouteParams }
 ) {
   return withErrorHandler(request, async () => {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.role === 'admin') {
+    if (session?.user?.role !== 'admin') {
       throw new AppError(
         ErrorCode.FORBIDDEN,
         'Admin access required to delete cards'
       );
     }
 
-    const existingCard = await getCardById(params.id);
+    // Get ID from params
+    const { id } = await params;
+
+    const existingCard = await getCardById(id);
     if (!existingCard) {
       throw new AppError(
         ErrorCode.NOT_FOUND,
-        `Cannot delete: Card with ID ${params.id} not found`
+        `Cannot delete: Card with ID ${id} not found`
       );
     }
 
@@ -159,7 +214,7 @@ export async function DELETE(
       );
     }
 
-    await deleteCard(params.id);
+    await deleteCard(id);
     return new NextResponse(null, { status: 204 });
   });
 } 

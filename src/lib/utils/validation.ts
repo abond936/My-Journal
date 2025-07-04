@@ -61,7 +61,7 @@ export const cardValidation: FieldValidation = {
     rules.minLength(10, 'Content must be at least 10 characters when provided')
   ],
   status: [
-    rules.enum(['draft', 'published', 'archived'], 'Status must be either draft, published, or archived')
+    rules.enum(['draft', 'published'], 'Status must be either draft or published')
   ],
   tags: [
     rules.custom(

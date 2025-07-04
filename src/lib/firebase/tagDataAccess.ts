@@ -16,7 +16,16 @@ async function getAllTags(): Promise<Tag[]> {
   if (snapshot.empty) {
     return [];
   }
-  return snapshot.docs.map(doc => doc.data() as Tag);
+  return snapshot.docs.map(doc => {
+    const data = doc.data() as Partial<Tag>;
+
+    // Ensure we always have docId (canonical) and id (legacy) for compatibility
+    return {
+      docId: doc.id,
+      id: data.id ?? doc.id,
+      ...data,
+    } as Tag;
+  });
 }
 
 /**
@@ -38,6 +47,8 @@ export async function organizeTagsByDimension(tagIds: string[]): Promise<Organiz
 
   try {
     const allTags = await getAllTags();
+    const tagMap = new Map(allTags.map(tag => [(tag.docId || tag.id)!, tag]));
+
     const organizedTags: OrganizedTags = {
       who: [],
       what: [],
@@ -46,14 +57,27 @@ export async function organizeTagsByDimension(tagIds: string[]): Promise<Organiz
       reflection: []
     };
 
-    const tagMap = new Map(allTags.map(tag => [tag.id, tag]));
+    // Helper to resolve a tag's dimension. If the tag itself doesn't have a dimension,
+    // walk up its ancestors until we find one that does.
+    const resolveDimension = (tagId: string): keyof OrganizedTags | null => {
+      let current = tagMap.get(tagId);
+      while (current) {
+        if (current.dimension) {
+          const dim = current.dimension.toLowerCase() as keyof OrganizedTags;
+          if (organizedTags.hasOwnProperty(dim)) return dim;
+        }
+        if (!current.parentId) break;
+        current = tagMap.get(current.parentId);
+      }
+      return null;
+    };
 
     for (const tagId of tagIds) {
-      const tag = tagMap.get(tagId);
-      if (tag && tag.dimension) {
-        if (organizedTags.hasOwnProperty(tag.dimension)) {
-          organizedTags[tag.dimension].push(tag.id);
-        }
+      const dim = resolveDimension(tagId);
+      // DEBUG: log dimension resolution
+      console.log('[organizeTagsByDimension] tag', tagId, 'resolved dim', dim);
+      if (dim) {
+        organizedTags[dim].push(tagId);
       }
     }
 
@@ -82,7 +106,7 @@ export async function getTagAncestors(tagIds: string[]): Promise<string[]> {
   }
 
   const allTags = await getAllTags();
-  const tagMap = new Map(allTags.map(tag => [tag.id, tag]));
+  const tagMap = new Map(allTags.map(tag => [(tag.docId || tag.id)!, tag]));
   const ancestors = new Set<string>();
 
   const findAncestors = (tagId: string) => {
@@ -111,7 +135,7 @@ export async function getTagPathsMap(tagIds: string[]): Promise<Record<string, b
   }
 
   const allTags = await getAllTags();
-  const tagMap = new Map(allTags.map(tag => [tag.id, tag]));
+  const tagMap = new Map(allTags.map(tag => [(tag.docId || tag.id)!, tag]));
   const pathsMap: Record<string, boolean> = {};
 
   const findPath = (tagId: string): string[] => {

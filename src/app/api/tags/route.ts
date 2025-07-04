@@ -44,7 +44,8 @@ export async function GET(request: NextRequest) {
             const data = doc.data();
             return {
                 ...data,
-                id: doc.id,
+                docId: doc.id,
+                id: data.id ?? doc.id,
                 name: data.name,
                 cardCount: data.cardCount || 0,
                 createdAt: safeToDate(data.createdAt),

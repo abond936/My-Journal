@@ -248,8 +248,20 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     batchStateUpdate({ isSaving: true });
 
     try {
-      // Prepare payload identical to what passed validation
-      const payload = dehydrateCardForSave(formState.cardData);
+      let payload = dehydrateCardForSave(formState.cardData);
+
+      // --- Ensure tags array is present and reflects dimensional selections ---
+      const dimensionKeys = ['who','what','when','where','reflection'] as const;
+      const tagSet = new Set<string>(payload.tags ?? []);
+      dimensionKeys.forEach(dim => {
+        const arr = (payload as any)[dim] as string[] | undefined;
+        if (Array.isArray(arr)) arr.forEach(id => tagSet.add(id));
+        delete (payload as any)[dim]; // strip after union
+      });
+      payload.tags = Array.from(tagSet);
+
+      // Remove derived fields – server will regenerate
+      delete (payload as any).filterTags;
 
       console.log('[handleSave] Prepared payload', {
         contentLength: payload.content?.length

@@ -2,7 +2,7 @@ import { getAdminApp } from '@/lib/config/firebase/admin';
 import { Card, cardSchema, GalleryMediaItem } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 import { updateTagCounts, calculateDerivedTagData } from '@/lib/firebase/tagDataAccess';
-import { getFirestore, FieldPath } from 'firebase-admin/firestore';
+import { getFirestore, FieldPath, FieldValue } from 'firebase-admin/firestore';
 import { deleteMediaAsset } from './images/imageImportService';
 import { extractMediaFromContent, stripContentImageSrc, hydrateContentImageSrc } from '@/lib/utils/cardUtils';
 import { Media } from '@/lib/types/photo';
@@ -145,11 +145,11 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
   
       // --- Start Firestore Batch Write ---
   
-      // Dehydrate gallery media for saving, and update captions on root media objects.
+      // Capture gallery caption changes to update later (writes must come after all reads)
+      const captionUpdates: { mediaId: string; caption: string }[] = [];
       const dehydratedGalleryMedia = cardData.galleryMedia?.map(item => {
         if (item.media && item.caption !== item.media.caption) {
-          const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(item.mediaId);
-          transaction.update(mediaRef, { caption: item.caption });
+          captionUpdates.push({ mediaId: item.mediaId, caption: item.caption });
         }
         const { media, ...rest } = item;
         return rest;
@@ -172,73 +172,138 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       // Remove transient fields that shouldn't be saved.
       delete updatePayload.coverImage;
   
-      // The client now sends the complete, hydrated card object.
-      // We just need to persist it and update media statuses.
       // Validate the incoming partial data against the card schema.
       const validatedUpdate = cardSchema.partial().parse(updatePayload);
   
-      // Determine tag changes
+      // Helper to recursively strip undefined values (Firestore disallows them)
+      const removeUndefinedDeep = (val: any): any => {
+        if (Array.isArray(val)) {
+          return val.map(removeUndefinedDeep);
+        }
+        if (val && typeof val === 'object') {
+          return Object.fromEntries(
+            Object.entries(val)
+              .filter(([, v]) => v !== undefined)
+              .map(([k, v]) => [k, removeUndefinedDeep(v)])
+          );
+        }
+        return val;
+      };
+  
+      const cleanedUpdate = removeUndefinedDeep(validatedUpdate);
+  
+      // If no fields remain after cleaning, nothing to update – return current data
+      if (Object.keys(cleanedUpdate).length === 0) {
+        return existingData;
+      }
+  
+      // Determine tag changes and prepare derived tag data BEFORE any writes
       const oldTags = new Set(existingData.tags || []);
       const newTags = new Set(cardData.tags || []);
       const tagsAdded = [...newTags].filter(t => !oldTags.has(t));
       const tagsRemoved = [...oldTags].filter(t => !newTags.has(t));
 
-      // Determine status changes
       const wasPublished = existingData.status === 'published';
       const isPublished = cardData.status === 'published';
 
-      // Always recalculate tag hierarchy if tags have been modified.
-      if ('tags' in validatedUpdate) {
-        const finalTags = validatedUpdate.tags ?? existingData.tags;
-        const { filterTags, dimensionalTags } = await calculateDerivedTagData(finalTags || []);
-        
-        validatedUpdate.filterTags = filterTags;
-        validatedUpdate.who = dimensionalTags.who || [];
-        validatedUpdate.what = dimensionalTags.what || [];
-        validatedUpdate.when = dimensionalTags.when || [];
-        validatedUpdate.where = dimensionalTags.where || [];
-        validatedUpdate.reflection = dimensionalTags.reflection || [];
-      }
-  
-      // 1. Update the card document with the new data.
-      transaction.update(docRef, validatedUpdate);
-  
-      // 2. Adjust tag counts based on changes
-      // Case 1: A published card's tags changed
+      // Prepare derived tag data (reads) BEFORE any writes to comply with Firestore transaction rules
+      const finalTags = ('tags' in cleanedUpdate) ? (cleanedUpdate.tags ?? existingData.tags) : existingData.tags;
+      const { filterTags, dimensionalTags } = await calculateDerivedTagData(finalTags || []);
+
+      // --- DEBUG LOGS ---
+      console.log('[updateCard] finalTags', finalTags);
+      console.log('[updateCard] dimensionalTags', JSON.stringify(dimensionalTags));
+      // --- END DEBUG LOGS ---
+
+      // --- Consolidated tag count adjustments (single read phase, then writes) ---
+      const deltaMap: Record<string, number> = {};
+      const applyDelta = (ids: string[], delta: number) => {
+        ids.forEach(id => {
+          deltaMap[id] = (deltaMap[id] || 0) + delta;
+        });
+      };
+
       if (wasPublished && isPublished) {
-          if (tagsAdded.length > 0) await updateTagCounts(tagsAdded, 'increment', transaction);
-          if (tagsRemoved.length > 0) await updateTagCounts(tagsRemoved, 'decrement', transaction);
-      } 
-      // Case 2: A card was just published
-      else if (!wasPublished && isPublished) {
-          if (newTags.size > 0) await updateTagCounts(Array.from(newTags), 'increment', transaction);
-      }
-      // Case 3: A card was unpublished
-      else if (wasPublished && !isPublished) {
-          if (oldTags.size > 0) await updateTagCounts(Array.from(oldTags), 'decrement', transaction);
+        applyDelta(tagsAdded, +1);
+        applyDelta(tagsRemoved, -1);
+      } else if (!wasPublished && isPublished) {
+        applyDelta(Array.from(newTags), +1);
+      } else if (wasPublished && !isPublished) {
+        applyDelta(Array.from(oldTags), -1);
       }
 
-      // 3. Collect all media IDs that should be marked as 'active'.
+      const candidateIds = Object.keys(deltaMap);
+      if (candidateIds.length > 0) {
+        // Read all affected tags once
+        const tagRefs = candidateIds.map(id => firestore.collection('tags').doc(id));
+        const tagDocs = await transaction.getAll(...tagRefs);
+
+        // Include ancestors in deltaMap
+        for (const docSnap of tagDocs) {
+          if (!docSnap.exists) continue;
+          const tagData = docSnap.data() as Tag;
+          const tagId = docSnap.id;
+          const delta = deltaMap[tagId] || 0;
+          if (delta === 0) continue;
+
+          if (Array.isArray(tagData.path)) {
+            tagData.path.forEach(ancestorId => {
+              deltaMap[ancestorId] = (deltaMap[ancestorId] || 0) + delta;
+            });
+          }
+        }
+
+        // Apply all increments/decrements after reads
+        for (const [tid, delta] of Object.entries(deltaMap)) {
+          if (delta !== 0) {
+            const ref = firestore.collection('tags').doc(tid);
+            transaction.update(ref, { cardCount: FieldValue.increment(delta) });
+          }
+        }
+      }
+
+      cleanedUpdate.filterTags = filterTags;
+      cleanedUpdate.who = dimensionalTags.who || [];
+      cleanedUpdate.what = dimensionalTags.what || [];
+      cleanedUpdate.when = dimensionalTags.when || [];
+      cleanedUpdate.where = dimensionalTags.where || [];
+      cleanedUpdate.reflection = dimensionalTags.reflection || [];
+  
+      // 1. Update tag counts before any writes (requires reads first)
+      //   (already executed above)
+
+      // 2. Apply gallery caption updates captured earlier
+      for (const { mediaId, caption } of captionUpdates) {
+        const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
+        transaction.update(mediaRef, { caption });
+      }
+
+      // 3. Update the card document with the new data.
+      transaction.update(docRef, cleanedUpdate);
+  
+      // 4. Tag counts were already adjusted earlier.
+
+      // 5. Collect all media IDs that should be marked as 'active'.
       const mediaIdsToActivate = new Set<string>();
-      if (validatedUpdate.coverImageId) {
-        mediaIdsToActivate.add(validatedUpdate.coverImageId);
+      if (cleanedUpdate.coverImageId) {
+        mediaIdsToActivate.add(cleanedUpdate.coverImageId);
       }
-      if (validatedUpdate.galleryMedia) {
-        validatedUpdate.galleryMedia.forEach(item => item.mediaId && mediaIdsToActivate.add(item.mediaId));
+      if (cleanedUpdate.galleryMedia) {
+        cleanedUpdate.galleryMedia.forEach(item => item.mediaId && mediaIdsToActivate.add(item.mediaId));
       }
-      if (validatedUpdate.contentMedia) {
-        validatedUpdate.contentMedia.forEach(id => mediaIdsToActivate.add(id));
+      if (cleanedUpdate.contentMedia) {
+        cleanedUpdate.contentMedia.forEach(id => mediaIdsToActivate.add(id));
       }
   
-      // 4. If a new coverImageObjectPosition was provided, update it on the media doc.
-      const coverImagePosition = validatedUpdate.coverImageObjectPosition;
-      const coverImageId = validatedUpdate.coverImageId ?? existingData.coverImageId;
+      // 6. If a new coverImageObjectPosition was provided, update it on the media doc.
+      const coverImagePosition = cleanedUpdate.coverImageObjectPosition;
+      const coverImageId = cleanedUpdate.coverImageId ?? existingData.coverImageId;
       if (coverImageId && coverImagePosition) {
         const coverRef = firestore.collection(MEDIA_COLLECTION).doc(coverImageId);
         transaction.update(coverRef, { objectPosition: coverImagePosition, updatedAt: Date.now() });
       }
   
-      // 5. Update the status of all associated media to 'active'.
+      // 7. Update the status of all associated media to 'active'.
       for (const mediaId of Array.from(mediaIdsToActivate)) {
         const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
         transaction.update(mediaRef, { status: 'active', updatedAt: Date.now() });

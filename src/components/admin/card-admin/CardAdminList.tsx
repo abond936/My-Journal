@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
@@ -8,6 +8,27 @@ import styles from '@/app/admin/card-admin/card-admin.module.css';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import EditableTitleCell from './EditableTitleCell';
 import EditableDisplayModeCell from './EditableDisplayModeCell';
+import ResizableHeader from './ResizableHeader';
+import { getCoreTagsByDimension } from '@/lib/utils/tagDisplay';
+
+const COLUMN_WIDTHS_KEY = 'cardAdminColumnWidths';
+const DEFAULT_COLUMN_WIDTHS = {
+  checkbox: 40,
+  cover: 60,
+  title: 200,
+  type: 100,
+  status: 100,
+  display: 100,
+  content: 80,
+  gallery: 80,
+  children: 80,
+  who: 150,
+  what: 150,
+  when: 150,
+  where: 150,
+  reflection: 150,
+  actions: 120
+};
 
 interface CardAdminListProps {
   cards: Card[];
@@ -18,6 +39,14 @@ interface CardAdminListProps {
   onSaveScrollPosition: (cardId: string) => void;
   onUpdateCard: (cardId: string, updateData: Partial<Card>) => Promise<void>;
 }
+
+// Helper function to get tags for a dimension
+const getDimensionTags = (card: Card, dimension: 'who' | 'what' | 'when' | 'where' | 'reflection', allTags: Tag[]) => {
+  const dimensionTagIds = card[dimension] || [];
+  return dimensionTagIds
+    .map(id => allTags.find(t => t.id === id))
+    .filter((tag): tag is Tag => tag !== undefined);
+};
 
 export default function CardAdminList({
   cards,
@@ -31,6 +60,24 @@ export default function CardAdminList({
   const router = useRouter();
   const isAllSelected = cards.length > 0 && selectedCardIds.size === cards.length;
 
+  // Map of tagId -> tag name for quick lookup
+  const tagMap = React.useMemo(() => new Map(allTags.map(t => [(t.id ?? t.docId)!, t.name])), [allTags]);
+
+  // Column width management
+  const [columnWidths, setColumnWidths] = useState(() => {
+    if (typeof window === 'undefined') return DEFAULT_COLUMN_WIDTHS;
+    const saved = localStorage.getItem(COLUMN_WIDTHS_KEY);
+    return saved ? { ...DEFAULT_COLUMN_WIDTHS, ...JSON.parse(saved) } : DEFAULT_COLUMN_WIDTHS;
+  });
+
+  const handleColumnResize = useCallback((columnId: keyof typeof DEFAULT_COLUMN_WIDTHS, width: number) => {
+    setColumnWidths(prev => {
+      const updated = { ...prev, [columnId]: width };
+      localStorage.setItem(COLUMN_WIDTHS_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
   const handleEditClick = (cardId: string) => {
     onSaveScrollPosition(cardId);
     router.push(`/admin/card-admin/${cardId}/edit`);
@@ -41,30 +88,64 @@ export default function CardAdminList({
       <table className={styles.entriesTable}>
         <thead>
           <tr>
-            <th><input type="checkbox" checked={isAllSelected} onChange={onSelectAll} /></th>
-            <th>Cover</th>
-            <th>Title</th>
-            <th>Type</th>
-            <th>Status</th>
-            <th>Display</th>
-            <th>Content</th>
-            <th>Gallery</th>
-            <th>Children</th>
-            <th>Tags</th>
-            <th>Actions</th>
+            <ResizableHeader width={columnWidths.checkbox} onResize={(w) => handleColumnResize('checkbox', w)}>
+              <input type="checkbox" checked={isAllSelected} onChange={onSelectAll} />
+            </ResizableHeader>
+            <ResizableHeader width={columnWidths.cover} onResize={(w) => handleColumnResize('cover', w)}>
+              Cover
+            </ResizableHeader>
+            <ResizableHeader width={columnWidths.title} onResize={(w) => handleColumnResize('title', w)}>
+              Title
+            </ResizableHeader>
+            <ResizableHeader width={columnWidths.type} onResize={(w) => handleColumnResize('type', w)}>
+              Type
+            </ResizableHeader>
+            <ResizableHeader width={columnWidths.status} onResize={(w) => handleColumnResize('status', w)}>
+              Status
+            </ResizableHeader>
+            <ResizableHeader width={columnWidths.display} onResize={(w) => handleColumnResize('display', w)}>
+              Display
+            </ResizableHeader>
+            <ResizableHeader width={columnWidths.content} onResize={(w) => handleColumnResize('content', w)}>
+              Content
+            </ResizableHeader>
+            <ResizableHeader width={columnWidths.gallery} onResize={(w) => handleColumnResize('gallery', w)}>
+              Gallery
+            </ResizableHeader>
+            <ResizableHeader width={columnWidths.children} onResize={(w) => handleColumnResize('children', w)}>
+              Children
+            </ResizableHeader>
+            <ResizableHeader width={columnWidths.who} onResize={(w) => handleColumnResize('who', w)}>
+              Who
+            </ResizableHeader>
+            <ResizableHeader width={columnWidths.what} onResize={(w) => handleColumnResize('what', w)}>
+              What
+            </ResizableHeader>
+            <ResizableHeader width={columnWidths.when} onResize={(w) => handleColumnResize('when', w)}>
+              When
+            </ResizableHeader>
+            <ResizableHeader width={columnWidths.where} onResize={(w) => handleColumnResize('where', w)}>
+              Where
+            </ResizableHeader>
+            <ResizableHeader width={columnWidths.reflection} onResize={(w) => handleColumnResize('reflection', w)}>
+              Reflection
+            </ResizableHeader>
+            <ResizableHeader width={columnWidths.actions} onResize={(w) => handleColumnResize('actions', w)}>
+              Actions
+            </ResizableHeader>
           </tr>
         </thead>
         <tbody>
           {cards.map(card => (
             <tr key={card.docId} id={`card-${card.docId}`} className={selectedCardIds.has(card.docId) ? styles.selectedRow : ''}>
-              <td>
+              <td style={{ width: columnWidths.checkbox }}>
                 <input
                   type="checkbox"
                   checked={selectedCardIds.has(card.docId)}
                   onChange={() => onSelectCard(card.docId)}
                 />
               </td>
-              <td className={styles.coverImageCell}>
+              <td className={styles.coverImageCell} style={{ width: columnWidths.cover }}>
                 {card.coverImage ? (
                   <img 
                     src={getDisplayUrl(card.coverImage)} 
@@ -75,26 +156,45 @@ export default function CardAdminList({
                   <span className={styles.noCover}>—</span>
                 )}
               </td>
-              <td>
+              <td style={{ width: columnWidths.title }}>
                 <EditableTitleCell card={card} onUpdate={onUpdateCard} />
               </td>
-              <td>{card.type}</td>
-              <td>{card.status}</td>
-              <td>
+              <td style={{ width: columnWidths.type }}>{card.type}</td>
+              <td style={{ width: columnWidths.status }}>{card.status}</td>
+              <td style={{ width: columnWidths.display }}>
                 <EditableDisplayModeCell card={card} onUpdate={onUpdateCard} />
               </td>
-              <td>{card.content ? 'Y' : 'N'}</td>
-              <td>{card.galleryMedia?.length || 0}</td>
-              <td>{card.childrenIds?.length || 0}</td>
-              <td>
-                <div className={styles.tags}>
-                  {(card.tags || []).map(tagId => {
-                    const tag = allTags.find(t => t.id === tagId);
-                    return tag ? <span key={tag.id} className={styles.tag}>{tag.name}</span> : null;
-                  })}
-                </div>
-              </td>
-              <td className={styles.actions}>
+              <td style={{ width: columnWidths.content }}>{card.content ? 'Y' : 'N'}</td>
+              <td style={{ width: columnWidths.gallery }}>{card.galleryMedia?.length || 0}</td>
+              <td style={{ width: columnWidths.children }}>{card.childrenIds?.length || 0}</td>
+              {
+                (() => {
+                  const core = getCoreTagsByDimension(card);
+                  const render = (ids: string[]) => ids.map(id => (
+                    <span key={id} className={styles.tag}>{tagMap.get(id) ?? id}</span>
+                  ));
+                  return (
+                    <>
+                      <td style={{ width: columnWidths.who }}>
+                        <div className={styles.tags}>{render(core.who)}</div>
+                      </td>
+                      <td style={{ width: columnWidths.what }}>
+                        <div className={styles.tags}>{render(core.what)}</div>
+                      </td>
+                      <td style={{ width: columnWidths.when }}>
+                        <div className={styles.tags}>{render(core.when)}</div>
+                      </td>
+                      <td style={{ width: columnWidths.where }}>
+                        <div className={styles.tags}>{render(core.where)}</div>
+                      </td>
+                      <td style={{ width: columnWidths.reflection }}>
+                        <div className={styles.tags}>{render(core.reflection)}</div>
+                      </td>
+                    </>
+                  );
+                })()
+              }
+              <td style={{ width: columnWidths.actions }}>
                 <button
                   onClick={() => handleEditClick(card.docId)}
                   className={styles.actionButton}

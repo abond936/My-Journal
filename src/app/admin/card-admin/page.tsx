@@ -84,7 +84,7 @@ export default function AdminCardsPage() {
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      const allIds = new Set(cards.map(c => c.id));
+      const allIds = new Set(cards.map(c => c.docId));
       setSelectedCardIds(allIds);
     } else {
       setSelectedCardIds(new Set());
@@ -209,26 +209,39 @@ export default function AdminCardsPage() {
         </select>
       </div>
       
-      {selectedCardIds.size > 0 && (
-        <div className={styles.bulkActions}>
-          <span>{selectedCardIds.size} cards selected</span>
-          <div className={styles.actions}>
-            <select
-              onChange={e => handleBulkUpdate('status', e.target.value)}
-              className={styles.filterSelect}
-              defaultValue=""
-            >
-              <option value="" disabled>Update Status</option>
-              <option value="draft">Set to Draft</option>
-              <option value="published">Set to Published</option>
-            </select>
-            <button onClick={() => setIsBulkTagModalOpen(true)} className={styles.actionButton}>
-              Edit Tags
-            </button>
-            <button onClick={handleBulkDelete} className={styles.deleteButton}>Delete Selected</button>
-          </div>
+      <div className={styles.bulkActions}>
+        <span>
+          {selectedCardIds.size === 0 
+            ? "No cards selected" 
+            : `${selectedCardIds.size} cards selected`}
+        </span>
+        <div className={styles.actions}>
+          <select
+            onChange={e => handleBulkUpdate('status', e.target.value)}
+            className={styles.filterSelect}
+            defaultValue=""
+            disabled={selectedCardIds.size === 0}
+          >
+            <option value="" disabled>Update Status</option>
+            <option value="draft">Set to Draft</option>
+            <option value="published">Set to Published</option>
+          </select>
+          <button 
+            onClick={() => setIsBulkTagModalOpen(true)} 
+            className={styles.actionButton}
+            disabled={selectedCardIds.size === 0}
+          >
+            Edit Tags
+          </button>
+          <button 
+            onClick={handleBulkDelete} 
+            className={`${styles.actionButton} ${styles.deleteButton}`}
+            disabled={selectedCardIds.size === 0}
+          >
+            Delete Selected
+          </button>
         </div>
-      )}
+      </div>
 
       <CardAdminList
         cards={cards}
