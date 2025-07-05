@@ -77,7 +77,7 @@ export const CardProvider = ({ children, collectionId }: CardProviderProps) => {
     } = {};
     
     selectedFilterTagIds.forEach(tagId => {
-      const tag = allTags.find(t => t.id === tagId);
+      const tag = allTags.find(t => t.docId === tagId);
       if (tag && tag.dimension) {
         if (!dimensionalMap[tag.dimension]) {
           dimensionalMap[tag.dimension] = [];

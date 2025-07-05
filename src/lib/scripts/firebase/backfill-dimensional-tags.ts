@@ -5,7 +5,7 @@ import { resolve } from 'path';
 dotenv.config({ path: resolve(process.cwd(), '.env') });
 
 import { getAdminApp } from '@/lib/config/firebase/admin';
-import { organizeTagsByDimension } from '@/lib/firebase/tagDataAccess';
+import { organizeTagsByDimension, calculateDerivedTagData } from '@/lib/firebase/tagService';
 import { Card } from '@/lib/types/card';
 
 const adminApp = getAdminApp();
@@ -28,8 +28,8 @@ interface BackfillResult {
 }
 
 /**
- * Backfills dimensional tag arrays (who, what, when, where, reflection) for all existing cards.
- * This script takes the existing flat tags array and organizes it by dimension.
+ * Backfills dimensional tag arrays (who, what, when, where, reflection) and filterTags for all existing cards.
+ * This script takes the existing flat tags array and organizes it by dimension, and calculates inherited tags.
  */
 export async function backfillDimensionalTags(options: BackfillOptions = {}): Promise<BackfillResult> {
   const {
@@ -48,7 +48,7 @@ export async function backfillDimensionalTags(options: BackfillOptions = {}): Pr
     processingTime: 0
   };
 
-  console.log(`🚀 Starting dimensional tags backfill...`);
+  console.log(`🚀 Starting dimensional tags and filterTags backfill...`);
   console.log(`📋 Options: dryRun=${dryRun}, batchSize=${batchSize}, limit=${limit || 'unlimited'}`);
   console.log(`⏰ Started at: ${new Date().toISOString()}`);
   console.log('');
@@ -62,7 +62,7 @@ export async function backfillDimensionalTags(options: BackfillOptions = {}): Pr
 
     const snapshot = await query.get();
     const allCards = snapshot.docs.map(doc => ({
-      id: doc.id,
+      docId: doc.id,
       ...doc.data()
     } as Card));
 
@@ -91,47 +91,52 @@ export async function backfillDimensionalTags(options: BackfillOptions = {}): Pr
         try {
           result.processedCards++;
 
-          // Skip cards that already have dimensional arrays populated
+          // Skip cards that already have dimensional arrays populated AND filterTags
           if (card.who && card.who.length > 0 && 
               card.what && card.what.length > 0 && 
               card.when && card.when.length > 0 && 
               card.where && card.where.length > 0 && 
-              card.reflection && card.reflection.length > 0) {
+              card.reflection && card.reflection.length > 0 &&
+              card.filterTags && Object.keys(card.filterTags).length > 0) {
             result.skippedCards++;
-            return { cardId: card.docId || card.id, status: 'skipped', reason: 'Already has dimensional arrays populated' };
+            return { cardId: card.docId, status: 'skipped', reason: 'Already has dimensional arrays and filterTags populated' };
           }
 
           // Skip cards with no tags
           if (!card.tags || card.tags.length === 0) {
             result.skippedCards++;
-            return { cardId: card.docId || card.id, status: 'skipped', reason: 'No tags to organize' };
+            return { cardId: card.docId, status: 'skipped', reason: 'No tags to organize' };
           }
 
-          // Organize tags by dimension
-          const dimensionalTags = await organizeTagsByDimension(card.tags);
+          // Calculate all derived tag data using centralized function
+          const { filterTags, dimensionalTags } = await calculateDerivedTagData(card.tags);
 
           // Check if any dimensional arrays would be populated
           const hasDimensionalTags = Object.values(dimensionalTags).some(arr => arr.length > 0);
-          if (!hasDimensionalTags) {
+          const hasFilterTags = Object.keys(filterTags).length > 0;
+          
+          if (!hasDimensionalTags && !hasFilterTags) {
             result.skippedCards++;
-            return { cardId: card.docId || card.id, status: 'skipped', reason: 'No dimensional tags found' };
+            return { cardId: card.docId, status: 'skipped', reason: 'No dimensional tags or filterTags found' };
           }
 
           if (dryRun) {
-            console.log(`  🔍 [DRY RUN] Would update card ${card.docId || card.id}:`);
+            console.log(`  🔍 [DRY RUN] Would update card ${card.docId}:`);
             console.log(`     Tags: [${card.tags.join(', ')}]`);
+            console.log(`     FilterTags: ${Object.keys(filterTags).length} tags`);
             console.log(`     Who: [${dimensionalTags.who.join(', ')}]`);
             console.log(`     What: [${dimensionalTags.what.join(', ')}]`);
             console.log(`     When: [${dimensionalTags.when.join(', ')}]`);
             console.log(`     Where: [${dimensionalTags.where.join(', ')}]`);
             console.log(`     Reflection: [${dimensionalTags.reflection.join(', ')}]`);
             result.updatedCards++;
-            return { cardId: card.docId || card.id, status: 'would_update', dimensionalTags };
+            return { cardId: card.docId, status: 'would_update', dimensionalTags, filterTags };
           }
 
           // Update the card
-          const cardRef = firestore.collection(CARDS_COLLECTION).doc(card.docId || card.id);
+          const cardRef = firestore.collection(CARDS_COLLECTION).doc(card.docId);
           await cardRef.update({
+            filterTags,
             who: dimensionalTags.who || [],
             what: dimensionalTags.what || [],
             when: dimensionalTags.when || [],
@@ -141,13 +146,13 @@ export async function backfillDimensionalTags(options: BackfillOptions = {}): Pr
           });
 
           result.updatedCards++;
-          return { cardId: card.docId || card.id, status: 'updated', dimensionalTags };
+          return { cardId: card.docId, status: 'updated', dimensionalTags, filterTags };
 
         } catch (error) {
-          const errorMsg = `Failed to process card ${card.docId || card.id}: ${error}`;
+          const errorMsg = `Failed to process card ${card.docId}: ${error}`;
           console.error(`  ❌ ${errorMsg}`);
           result.errors.push(errorMsg);
-          return { cardId: card.docId || card.id, status: 'error', error };
+          return { cardId: card.docId, status: 'error', error };
         }
       });
 
@@ -206,8 +211,8 @@ async function main() {
     limit: parseInt(args.find(arg => arg.startsWith('--limit='))?.split('=')[1] || '0') || undefined
   };
 
-  console.log('🔧 Dimensional Tags Backfill Script');
-  console.log('====================================');
+  console.log('🔧 Dimensional Tags and FilterTags Backfill Script');
+  console.log('==================================================');
   console.log('');
 
   console.log('📋 Configuration:');

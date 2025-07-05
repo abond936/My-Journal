@@ -34,6 +34,8 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
   const [isPhotoPickerOpen, setIsPhotoPickerOpen] = useState(false);
   
   const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setField('title', e.target.value), [setField]);
+  const handleSubtitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setField('subtitle', e.target.value), [setField]);
+  const handleExcerptChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setField('excerpt', e.target.value), [setField]);
   const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => setField('status', e.target.value as Card['status']), [setField]);
   const handleTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => setField('type', e.target.value as Card['type']), [setField]);
   const handleContentChange = useCallback((content: string) => {
@@ -65,7 +67,7 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
 
   const selectedTagObjects = React.useMemo(() => {
     const tagIds = new Set(cardData.tags || []);
-    return allTags.filter(tag => tagIds.has(tag.id));
+    return allTags.filter(tag => tagIds.has(tag.docId));
   }, [cardData.tags, allTags]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
@@ -104,6 +106,20 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
               onChange={handleTitleChange}
               placeholder="Card Title"
               className={clsx(styles.titleInput, errors.title && styles.inputError)}
+            />
+            <input
+              type="text"
+              value={cardData.subtitle || ''}
+              onChange={handleSubtitleChange}
+              placeholder="Subtitle (optional)"
+              className={styles.subtitleInput}
+            />
+            <textarea
+              value={cardData.excerpt || ''}
+              onChange={handleExcerptChange}
+              placeholder="Excerpt (optional) - Brief summary of the card content"
+              className={styles.excerptInput}
+              rows={3}
             />
           </div>
 

@@ -7,9 +7,6 @@ import { z } from 'zod';
 export const tagSchema = z.object({
   // Firestore document ID (canonical)
   docId: z.string().optional(),
-
-  // Legacy field – will be removed once all code paths use docId exclusively
-  id: z.string().optional(),
   name: z.string(),
   
   dimension: z.enum(['who', 'what', 'when', 'where', 'reflection']).optional(),

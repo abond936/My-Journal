@@ -177,7 +177,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
   }, [formState.cardData]);
 
   const updateTags = useCallback((newTags: Tag[]) => {
-    const tagIds = newTags.map(t => t.id);
+    const tagIds = newTags.map(t => t.docId);
     batchStateUpdate({
       cardData: { ...formState.cardData, tags: tagIds },
     });
@@ -237,35 +237,16 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
 
   const handleSave = useCallback(async () => {
     if (!validateForm()) {
-      console.log("Form validation failed. Save aborted.");
       return;
     }
-
-    console.log('[handleSave] Starting save process', {
-      currentContentLength: formState.cardData.content?.length
-    });
 
     batchStateUpdate({ isSaving: true });
 
     try {
       let payload = dehydrateCardForSave(formState.cardData);
 
-      // --- Ensure tags array is present and reflects dimensional selections ---
-      const dimensionKeys = ['who','what','when','where','reflection'] as const;
-      const tagSet = new Set<string>(payload.tags ?? []);
-      dimensionKeys.forEach(dim => {
-        const arr = (payload as any)[dim] as string[] | undefined;
-        if (Array.isArray(arr)) arr.forEach(id => tagSet.add(id));
-        delete (payload as any)[dim]; // strip after union
-      });
-      payload.tags = Array.from(tagSet);
-
       // Remove derived fields – server will regenerate
       delete (payload as any).filterTags;
-
-      console.log('[handleSave] Prepared payload', {
-        contentLength: payload.content?.length
-      });
 
       // Save to backend
       await onSave(payload);
@@ -277,8 +258,6 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
           cardData: formState.cardData
         }
       });
-
-      console.log('[handleSave] Save completed successfully');
     } catch (error) {
       console.error('[handleSave] Error during save:', error);
       batchStateUpdate({ isSaving: false });

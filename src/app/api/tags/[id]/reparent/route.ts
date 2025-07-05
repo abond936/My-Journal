@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAdminApp } from '@/lib/config/firebase/admin';
-import { updateTagAndDescendantPaths } from '@/lib/firebase/tagDataAccess';
+import { updateTagAndDescendantPaths } from '@/lib/firebase/tagService';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { getServerSession } from 'next-auth/next';
 

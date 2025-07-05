@@ -28,7 +28,7 @@ export default function MacroTagSelector({ selectedTags, allTags, onChange, erro
     setIsExpanded(false);
   };
 
-  const selectedTagIds = selectedTags.map(tag => tag.id);
+  const selectedTagIds = selectedTags.map(tag => tag.docId);
 
   // Build the sparse tree of selected tags and their ancestors
   const selectedTagTree = useMemo(() => {
@@ -77,7 +77,7 @@ export default function MacroTagSelector({ selectedTags, allTags, onChange, erro
           {Object.entries(dimensionalSelectedTree).map(([dimension, roots]) => (
             <div key={dimension} className={styles.dimensionColumn}>
               {roots.length > 0 ? (
-                roots.map(root => <TagNode key={root.id} node={root} />)
+                roots.map(root => <TagNode key={root.docId} node={root} />)
               ) : (
                 <span className={styles.dimensionLabel}>{dimension.toUpperCase()}</span>
               )}
@@ -92,12 +92,14 @@ export default function MacroTagSelector({ selectedTags, allTags, onChange, erro
 
 // A simple recursive component to render the nodes of the sparse tree
 function TagNode({ node }: { node: TagWithChildren }) {
+  const hasChildren = node.children && node.children.length > 0;
+  
   return (
     <div className={styles.tagNode}>
-      <div>{node.name}</div>
-      {node.children && node.children.length > 0 && (
+      <span className={styles.tagName}>{node.name}</span>
+      {hasChildren && (
         <div className={styles.tagChildren}>
-          {node.children.map(child => <TagNode key={child.id} node={child} />)}
+          {node.children.map(child => <TagNode key={child.docId} node={child} />)}
         </div>
       )}
     </div>
@@ -128,6 +130,19 @@ function ExpandedView({ initialSelection, onSave, onCancel, className }: Expande
     return buildSparseTagTree(tags, Array.from(currentSelection));
   }, [tags, currentSelection]);
 
+  // Organize the sparse tree by dimension (same logic as main component)
+  const dimensionalSelectedTree = useMemo(() => {
+    const dimensions: Record<string, TagWithChildren[]> = {
+      who: [], what: [], when: [], where: [], reflection: []
+    };
+    selectedTagTree.forEach(rootNode => {
+      if (rootNode.dimension && dimensions[rootNode.dimension]) {
+        dimensions[rootNode.dimension].push(rootNode);
+      }
+    });
+    return dimensions;
+  }, [selectedTagTree]);
+
   const handleTagChange = (tagId: string, isSelected: boolean) => {
     setCurrentSelection(prev => {
       const newSelection = new Set(prev);
@@ -152,10 +167,16 @@ function ExpandedView({ initialSelection, onSave, onCancel, className }: Expande
         {/* Tree Display Section */}
         {selectedTagTree.length > 0 && (
           <div className={styles.treeDisplaySection}>
-            <h3>Selected Tag Hierarchy</h3>
-            <div className={styles.selectedTagTree}>
-              {selectedTagTree.map(root => (
-                <TagNode key={root.id} node={root} />
+            <h3>Selected Tags</h3>
+            <div className={styles.dimensionColumns}>
+              {Object.entries(dimensionalSelectedTree).map(([dimension, roots]) => (
+                <div key={dimension} className={styles.dimensionColumn}>
+                  {roots.length > 0 ? (
+                    roots.map(root => <TagNode key={root.docId} node={root} />)
+                  ) : (
+                    <span className={styles.dimensionLabel}>{dimension.toUpperCase()}</span>
+                  )}
+                </div>
               ))}
             </div>
           </div>
@@ -163,12 +184,12 @@ function ExpandedView({ initialSelection, onSave, onCancel, className }: Expande
         
         <div className={styles.interactiveColumns}>
           {dimensionalTree.map(dimension => (
-            <div key={dimension.id} className={styles.dimensionColumn}>
+            <div key={dimension.docId} className={styles.dimensionColumn}>
               <h4>{dimension.name}</h4>
               <div className={styles.interactiveTree}>
                 {dimension.children.map(root => (
                   <InteractiveTagNode
-                    key={root.id}
+                    key={root.docId}
                     node={root}
                     selection={currentSelection}
                     onChange={handleTagChange}
@@ -198,10 +219,10 @@ interface InteractiveTagNodeProps {
 function InteractiveTagNode({ node, selection, onChange }: InteractiveTagNodeProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const isSelected = selection.has(node.id);
+  const isSelected = selection.has(node.docId);
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(node.id, e.target.checked);
+    onChange(node.docId, e.target.checked);
   };
 
   const hasChildren = node.children && node.children.length > 0;
@@ -220,17 +241,17 @@ function InteractiveTagNode({ node, selection, onChange }: InteractiveTagNodePro
         )}
         <input
           type="checkbox"
-          id={`tag-${node.id}`}
+          id={`tag-${node.docId}`}
           checked={isSelected}
           onChange={handleCheckboxChange}
         />
-        <label htmlFor={`tag-${node.id}`}>{node.name}</label>
+        <label htmlFor={`tag-${node.docId}`}>{node.name}</label>
       </div>
       {!isCollapsed && hasChildren && (
         <div className={styles.tagChildren}>
           {node.children.map(child => (
             <InteractiveTagNode
-              key={child.id}
+              key={child.docId}
               node={child}
               selection={selection}
               onChange={onChange}

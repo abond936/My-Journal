@@ -16,11 +16,11 @@ export const buildTagTree = (tags: Tag[]): TagWithChildren[] => {
   const tagsCopy = JSON.parse(JSON.stringify(tags));
 
   tagsCopy.forEach((tag: Tag) => {
-    tagMap.set(tag.id, { ...tag, children: [] });
+    tagMap.set(tag.docId!, { ...tag, children: [] });
   });
 
   tagsCopy.forEach((tag: Tag) => {
-    const tagNode = tagMap.get(tag.id);
+    const tagNode = tagMap.get(tag.docId!);
     if (tagNode) {
       if (tag.parentId && tagMap.has(tag.parentId)) {
         const parentNode = tagMap.get(tag.parentId);
@@ -105,7 +105,7 @@ export const buildSparseTagTree = (allTags: Tag[], selectedTagIds: string[]): Ta
   }
 
   const tagMap = new Map<string, Tag>();
-  allTags.forEach(tag => tagMap.set(tag.id, tag));
+  allTags.forEach(tag => tagMap.set(tag.docId!, tag));
 
   const includedTags = new Map<string, Tag>();
 
@@ -113,8 +113,8 @@ export const buildSparseTagTree = (allTags: Tag[], selectedTagIds: string[]): Ta
   selectedTagIds.forEach(id => {
     let currentTag = tagMap.get(id);
     while (currentTag) {
-      if (includedTags.has(currentTag.id)) break; // Stop if we've already processed this branch
-      includedTags.set(currentTag.id, currentTag);
+      if (includedTags.has(currentTag.docId!)) break; // Stop if we've already processed this branch
+      includedTags.set(currentTag.docId!, currentTag);
       currentTag = currentTag.parentId ? tagMap.get(currentTag.parentId) : undefined;
     }
   });

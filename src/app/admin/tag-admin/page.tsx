@@ -9,7 +9,7 @@ import { buildTagTree } from '@/lib/utils/tagUtils';
 
 // This function can remain as it is, it's a pure utility for converting a flat list to a tree
 const buildTagTree = (tags: Tag[]): TagWithChildren[] => {
-  const tagMap = new Map<string, TagWithChildren>();
+  const tagMap = new Map();
   const rootTags: TagWithChildren[] = [];
 
   if (!tags) return [];
@@ -18,11 +18,11 @@ const buildTagTree = (tags: Tag[]): TagWithChildren[] => {
   const tagsCopy = JSON.parse(JSON.stringify(tags));
 
   tagsCopy.forEach((tag: Tag) => {
-    tagMap.set(tag.id, { ...tag, children: [] });
+    tagMap.set(tag.docId, { ...tag, children: [] });
   });
 
   tagsCopy.forEach((tag: Tag) => {
-    const tagNode = tagMap.get(tag.id);
+    const tagNode = tagMap.get(tag.docId);
     if (tagNode) {
       if (tag.parentId && tagMap.has(tag.parentId)) {
         const parentNode = tagMap.get(tag.parentId);
@@ -89,8 +89,8 @@ function useTagManagement() {
     const currentTags = swrTags || [];
     
     // Find both tags
-    const activeTag = currentTags.find(t => t.id === activeId);
-    const overTag = currentTags.find(t => t.id === overId);
+    const activeTag = currentTags.find(t => t.docId === activeId);
+    const overTag = currentTags.find(t => t.docId === overId);
     
     if (!activeTag || !overTag) {
       console.error('Tags not found:', { activeId, overId });
@@ -108,10 +108,10 @@ function useTagManagement() {
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
     // Remove active tag from the array
-    const withoutActive = allSiblings.filter(t => t.id !== activeId);
+    const withoutActive = allSiblings.filter(t => t.docId !== activeId);
     
     // Find where to insert the active tag
-    const targetIndex = withoutActive.findIndex(t => t.id === overId);
+    const targetIndex = withoutActive.findIndex(t => t.docId === overId);
     const insertAt = placement === 'before' ? targetIndex : targetIndex + 1;
 
     // Create the new order
@@ -123,14 +123,14 @@ function useTagManagement() {
 
     // Assign new orders
     const updates = reordered.map((tag, idx) => ({
-      id: tag.id,
+      id: tag.docId,
       order: idx * 10
     }));
 
     try {
       // Update all siblings to maintain consistent spacing
       await Promise.all(updates.map(update => 
-        updateTag(update.id, { order: update.order })
+        updateTag(update.docId, { order: update.order })
       ));
       await mutate();
     } catch (err) {

@@ -44,7 +44,7 @@ interface CardAdminListProps {
 const getDimensionTags = (card: Card, dimension: 'who' | 'what' | 'when' | 'where' | 'reflection', allTags: Tag[]) => {
   const dimensionTagIds = card[dimension] || [];
   return dimensionTagIds
-    .map(id => allTags.find(t => t.id === id))
+    .map(id => allTags.find(t => t.docId === id))
     .filter((tag): tag is Tag => tag !== undefined);
 };
 
@@ -61,7 +61,7 @@ export default function CardAdminList({
   const isAllSelected = cards.length > 0 && selectedCardIds.size === cards.length;
 
   // Map of tagId -> tag name for quick lookup
-  const tagMap = React.useMemo(() => new Map(allTags.map(t => [(t.id ?? t.docId)!, t.name])), [allTags]);
+  const tagMap = React.useMemo(() => new Map(allTags.map(t => [t.docId!, t.name])), [allTags]);
 
   // Column width management
   const [columnWidths, setColumnWidths] = useState(() => {

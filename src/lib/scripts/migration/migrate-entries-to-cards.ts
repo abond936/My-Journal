@@ -31,7 +31,7 @@ import { getAdminApp } from '@/lib/config/firebase/admin';
 import { CollectionReference, DocumentData, getFirestore } from 'firebase-admin/firestore';
 import { Entry, EntryType } from '@/lib/types/entry';
 import { Card } from '@/lib/types/card';
-import { getTagAncestors } from '@/lib/firebase/tagDataAccess';
+import { getTagAncestors } from '@/lib/firebase/tagService';
 import { PhotoMetadata } from '@/lib/types/photo';
 
 const BATCH_SIZE = 500; // Firestore batch writes are limited to 500 operations

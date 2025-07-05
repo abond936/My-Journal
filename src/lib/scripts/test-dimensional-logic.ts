@@ -5,7 +5,7 @@ import { resolve } from 'path';
 dotenv.config({ path: resolve(process.cwd(), '.env') });
 
 import { getAdminApp } from '@/lib/config/firebase/admin';
-import { organizeTagsByDimension } from '@/lib/firebase/tagDataAccess';
+import { organizeTagsByDimension } from '@/lib/firebase/tagService';
 
 const adminApp = getAdminApp();
 const firestore = adminApp.firestore();

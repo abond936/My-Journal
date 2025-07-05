@@ -17,7 +17,7 @@ export function SortableTag({ tag, children }: SortableTagProps) {
     transition,
     isDragging,
   } = useSortable({ 
-    id: tag.id,
+    id: tag.docId,
     disabled: true // Disable drag by default
   });
 

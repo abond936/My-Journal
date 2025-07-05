@@ -11,18 +11,16 @@ const TAGS_COLLECTION = 'tags';
  * This is a server-side function.
  * @returns A promise that resolves to an array of all tags.
  */
-async function getAllTags(): Promise<Tag[]> {
-  const snapshot = await firestore.collection(TAGS_COLLECTION).get();
+export async function getAllTags(): Promise<Tag[]> {
+  const snapshot = await firestore.collection(TAGS_COLLECTION).orderBy('name', 'asc').get();
   if (snapshot.empty) {
     return [];
   }
   return snapshot.docs.map(doc => {
     const data = doc.data() as Partial<Tag>;
 
-    // Ensure we always have docId (canonical) and id (legacy) for compatibility
     return {
       docId: doc.id,
-      id: data.id ?? doc.id,
       ...data,
     } as Tag;
   });
@@ -47,7 +45,8 @@ export async function organizeTagsByDimension(tagIds: string[]): Promise<Organiz
 
   try {
     const allTags = await getAllTags();
-    const tagMap = new Map(allTags.map(tag => [(tag.docId || tag.id)!, tag]));
+    
+    const tagMap = new Map(allTags.map(tag => [tag.docId!, tag]));
 
     const organizedTags: OrganizedTags = {
       who: [],
@@ -64,7 +63,9 @@ export async function organizeTagsByDimension(tagIds: string[]): Promise<Organiz
       while (current) {
         if (current.dimension) {
           const dim = current.dimension.toLowerCase() as keyof OrganizedTags;
-          if (organizedTags.hasOwnProperty(dim)) return dim;
+          if (organizedTags.hasOwnProperty(dim)) {
+            return dim;
+          }
         }
         if (!current.parentId) break;
         current = tagMap.get(current.parentId);
@@ -74,8 +75,6 @@ export async function organizeTagsByDimension(tagIds: string[]): Promise<Organiz
 
     for (const tagId of tagIds) {
       const dim = resolveDimension(tagId);
-      // DEBUG: log dimension resolution
-      console.log('[organizeTagsByDimension] tag', tagId, 'resolved dim', dim);
       if (dim) {
         organizedTags[dim].push(tagId);
       }
@@ -83,7 +82,7 @@ export async function organizeTagsByDimension(tagIds: string[]): Promise<Organiz
 
     return organizedTags;
   } catch (error) {
-    console.error("Error organizing tags by dimension:", error);
+    console.error("[organizeTagsByDimension] Error organizing tags by dimension:", error);
     // Return empty organized tags on error to prevent crashes
     return {
       who: [],
@@ -106,7 +105,7 @@ export async function getTagAncestors(tagIds: string[]): Promise<string[]> {
   }
 
   const allTags = await getAllTags();
-  const tagMap = new Map(allTags.map(tag => [(tag.docId || tag.id)!, tag]));
+  const tagMap = new Map(allTags.map(tag => [tag.docId!, tag]));
   const ancestors = new Set<string>();
 
   const findAncestors = (tagId: string) => {
@@ -135,14 +134,14 @@ export async function getTagPathsMap(tagIds: string[]): Promise<Record<string, b
   }
 
   const allTags = await getAllTags();
-  const tagMap = new Map(allTags.map(tag => [(tag.docId || tag.id)!, tag]));
+  const tagMap = new Map(allTags.map(tag => [tag.docId!, tag]));
   const pathsMap: Record<string, boolean> = {};
 
   const findPath = (tagId: string): string[] => {
     const path: string[] = [];
     let currentTag = tagMap.get(tagId);
     while (currentTag) {
-      path.unshift(currentTag.id);
+      path.unshift(currentTag.docId!);
       currentTag = currentTag.parentId ? tagMap.get(currentTag.parentId) : undefined;
     }
     return path;
@@ -193,12 +192,14 @@ export async function calculateDerivedTagData(directTagIds: string[]): Promise<{
     // Organize both direct and inherited tags by dimension
     const dimensionalTags = await organizeTagsByDimension(inheritedTags);
 
-    return {
+    const result = {
       filterTags,
       dimensionalTags
     };
+    
+    return result;
   } catch (error) {
-    console.error('Error calculating derived tag data:', error);
+    console.error('[calculateDerivedTagData] Error calculating derived tag data:', error);
     throw new Error(`Failed to calculate derived tag data: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -279,7 +280,7 @@ export async function updateCardsForTagChange(tagId: string): Promise<void> {
             when: dimensionalTags.when,
             where: dimensionalTags.where,
             reflection: dimensionalTags.reflection,
-            updatedAt: Date.now()
+            updatedAt: FieldValue.serverTimestamp()
           });
 
           updatedCount++;
@@ -299,12 +300,122 @@ export async function updateCardsForTagChange(tagId: string): Promise<void> {
 }
 
 /**
+ * Fetches a single tag by its docId.
+ * @param docId The document ID of the tag to fetch
+ * @returns Promise resolving to the tag or null if not found
+ */
+export async function getTagById(docId: string): Promise<Tag | null> {
+  try {
+    const doc = await firestore.collection(TAGS_COLLECTION).doc(docId).get();
+    if (!doc.exists) {
+      return null;
+    }
+    
+    const data = doc.data() as Partial<Tag>;
+    return {
+      docId: doc.id,
+      ...data,
+    } as Tag;
+  } catch (error) {
+    console.error(`Error fetching tag ${docId}:`, error);
+    throw new Error(`Failed to fetch tag: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Updates an existing tag.
+ * @param docId The document ID of the tag to update
+ * @param tagData The data to update
+ * @returns Promise resolving to the updated tag
+ */
+export async function updateTag(docId: string, tagData: Partial<Omit<Tag, 'docId' | 'createdAt'>>): Promise<Tag> {
+  try {
+    const tagRef = firestore.collection(TAGS_COLLECTION).doc(docId);
+    
+    // Check if tag exists
+    const doc = await tagRef.get();
+    if (!doc.exists) {
+      throw new Error(`Tag with ID ${docId} not found`);
+    }
+
+    // Prepare update data
+    const updateData = {
+      ...tagData,
+      updatedAt: FieldValue.serverTimestamp()
+    };
+
+    await tagRef.update(updateData);
+    
+    // Fetch and return the updated tag
+    const updatedDoc = await tagRef.get();
+    const data = updatedDoc.data() as Partial<Tag>;
+    return {
+      docId: updatedDoc.id,
+      ...data,
+    } as Tag;
+  } catch (error) {
+    console.error(`Error updating tag ${docId}:`, error);
+    throw new Error(`Failed to update tag: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Deletes a tag and all its descendants.
+ * @param docId The document ID of the tag to delete
+ * @returns Promise resolving when deletion is complete
+ */
+export async function deleteTag(docId: string): Promise<void> {
+  try {
+    // First, find all descendants of this tag
+    const allTags = await getAllTags();
+    const tagMap = new Map(allTags.map(tag => [tag.docId!, tag]));
+    const descendants = new Set<string>();
+    
+    const findDescendants = (tagId: string) => {
+      descendants.add(tagId);
+      // Find all children of this tag
+      allTags.forEach(tag => {
+        if (tag.parentId === tagId) {
+          findDescendants(tag.docId!);
+        }
+      });
+    };
+    
+    findDescendants(docId);
+    const tagsToDelete = Array.from(descendants);
+    
+    console.log(`Deleting tag ${docId} and ${tagsToDelete.length - 1} descendants`);
+    
+    // Delete all descendants in a batch
+    const batch = firestore.batch();
+    tagsToDelete.forEach(tagId => {
+      const tagRef = firestore.collection(TAGS_COLLECTION).doc(tagId);
+      batch.delete(tagRef);
+    });
+    
+    await batch.commit();
+  } catch (error) {
+    console.error(`Error deleting tag ${docId}:`, error);
+    throw new Error(`Failed to delete tag: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
  * Creates a new tag, inheriting dimension from parent if applicable.
  * @param tagData The tag data to create
  * @returns Promise resolving to the created tag
  */
-export async function createTag(tagData: Omit<Tag, 'id' | 'createdAt' | 'updatedAt' | 'path'>): Promise<Tag> {
+export async function createTag(tagData: Omit<Tag, 'docId' | 'createdAt' | 'updatedAt' | 'path'>): Promise<Tag> {
   try {
+    // Check for duplicate tag name (case-insensitive)
+    const querySnapshot = await firestore.collection(TAGS_COLLECTION)
+      .where('name', '==', tagData.name)
+      .get();
+    
+    if (!querySnapshot.empty) {
+      throw new Error('Tag with this name already exists');
+    }
+
     const newPath: string[] = [];
     
     // If tag has a parent, build its path and inherit its dimension.
@@ -320,25 +431,33 @@ export async function createTag(tagData: Omit<Tag, 'id' | 'createdAt' | 'updated
         if (parentData.path) {
           newPath.push(...parentData.path);
         }
-        newPath.push(parentData.id); // Add the parent itself to the path
+        newPath.push(parentData.docId!); // Add the parent itself to the path
       }
     }
 
     // Create the tag
     const tagRef = firestore.collection(TAGS_COLLECTION).doc();
-    const now = new Date();
     
-    const newTag: Omit<Tag, 'id'> & { id: string } = {
-      id: tagRef.id,
+    const newTagData = {
       ...tagData,
       path: newPath, // Save the calculated path
       cardCount: 0, // Ensure new tags start with a count of 0
-      createdAt: now,
-      updatedAt: now
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     };
 
-    await tagRef.set(newTag);
-    return newTag as Tag;
+    await tagRef.set(newTagData);
+    
+    // Fetch the created document to get the resolved timestamps
+    const createdDoc = await tagRef.get();
+    const createdData = createdDoc.data();
+    
+    const newTag: Tag = {
+      docId: tagRef.id,
+      ...createdData,
+    } as Tag;
+    
+    return newTag;
   } catch (error) {
     console.error('Error creating tag:', error);
     throw new Error(`Failed to create tag: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -419,7 +538,7 @@ export async function updateTagCardCount(tagId: string): Promise<number> {
     // Update the tag
     await firestore.collection('tags').doc(tagId).update({
       cardCount: totalCount,
-      updatedAt: new Date()
+      updatedAt: FieldValue.serverTimestamp()
     });
 
     return totalCount;
@@ -439,7 +558,7 @@ export async function updateAllTagCardCounts(): Promise<number> {
   try {
     const tagsSnapshot = await firestore.collection('tags').get();
     const allTags = tagsSnapshot.docs.map(doc => ({ 
-      id: doc.id, 
+      docId: doc.id, 
       parentId: doc.data().parentId,
     }));
 
@@ -450,7 +569,7 @@ export async function updateAllTagCardCounts(): Promise<number> {
       if (!tagsByParent.has(parentId)) {
         tagsByParent.set(parentId, []);
       }
-      tagsByParent.get(parentId)!.push(tag.id);
+      tagsByParent.get(parentId)!.push(tag.docId);
     });
 
     let processedCount = 0;

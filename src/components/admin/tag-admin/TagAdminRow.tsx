@@ -21,9 +21,9 @@ interface TagWithChildren extends Tag {
 interface TagAdminRowProps {
   tag: TagWithChildren;
   depth: number; // The nesting level of the tag in the tree, used for indentation.
-  onUpdateTag: (id: string, tagData: Partial<Omit<Tag, 'id'>>) => void;
+  onUpdateTag: (id: string, tagData: Partial<Omit<Tag, 'docId'>>) => void;
   onDeleteTag: (id: string) => void;
-  onCreateTag: (tagData: Omit<Tag, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onCreateTag: (tagData: Omit<Tag, 'docId' | 'createdAt' | 'updatedAt'>) => void;
   isCollapsed: boolean; // Whether the node's children are currently hidden.
   onToggleCollapse: (tagId: string) => void;
 }
@@ -50,7 +50,7 @@ export function TagAdminRow({
    */
   const handleSave = () => {
     if (tagName.trim() && tagName.trim() !== tag.name) {
-      onUpdateTag(tag.id, { name: tagName.trim() });
+      onUpdateTag(tag.docId!, { name: tagName.trim() });
     }
     setIsEditing(false);
   };
@@ -61,8 +61,8 @@ export function TagAdminRow({
   const handleAddChild = async (e: React.FormEvent) => {
     e.preventDefault();
     if (childName.trim()) {
-      // The parentId is the current tag's id.
-      await onCreateTag({ name: childName.trim(), parentId: tag.id });
+      // The parentId is the current tag's docId.
+      await onCreateTag({ name: childName.trim(), parentId: tag.docId! });
       setIsAddingChild(false);
       setChildName('');
     }
@@ -76,7 +76,7 @@ export function TagAdminRow({
         {/* Expander button (for nodes with children) */}
         {hasChildren && (
           <div className={styles.expander}>
-            <button onClick={() => onToggleCollapse(tag.id)} className={styles.expandButton}>
+            <button onClick={() => onToggleCollapse(tag.docId!)} className={styles.expandButton}>
               {isCollapsed ? '►' : '▼'}
             </button>
           </div>
@@ -113,7 +113,7 @@ export function TagAdminRow({
         {/* Action Buttons */}
         <div className={styles.actions}>
           <button onClick={() => setIsAddingChild(p => !p)} className={styles.actionButton}>+</button>
-          <button onClick={() => onDeleteTag(tag.id)} className={styles.actionButton}>×</button>
+          <button onClick={() => onDeleteTag(tag.docId!)} className={styles.actionButton}>×</button>
         </div>
       </div>
 

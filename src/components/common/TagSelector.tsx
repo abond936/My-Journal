@@ -42,7 +42,7 @@ const TagSelector: React.FC<TagSelectorProps> = ({
       }
       
       if (isMatch) {
-        matchingTags.add(tag.id);
+        matchingTags.add(tag.docId);
       }
       return isMatch;
     };
@@ -71,17 +71,17 @@ const TagSelector: React.FC<TagSelectorProps> = ({
   };
 
   const renderTag = (tag: TagWithChildren, level: number = 0) => {
-    const isExpanded = expandedTags.has(tag.id);
+    const isExpanded = expandedTags.has(tag.docId);
     const hasChildren = tag.children && tag.children.length > 0;
-    const isSelected = selectedTags.includes(tag.id);
+    const isSelected = selectedTags.includes(tag.docId);
 
-    if (searchTerm && !visibleTags.has(tag.id)) {
+    if (searchTerm && !visibleTags.has(tag.docId)) {
       return null;
     }
 
     return (
       <div 
-        key={tag.id}
+        key={tag.docId}
         className={styles.tagItem}
         style={{ paddingLeft: `${level * 1.5}rem` }}
       >
@@ -89,7 +89,7 @@ const TagSelector: React.FC<TagSelectorProps> = ({
           {hasChildren && (
             <button
               className={styles.expandButton}
-              onClick={() => toggleTagExpansion(tag.id)}
+              onClick={() => toggleTagExpansion(tag.docId)}
               aria-expanded={isExpanded}
             >
               <span className={styles.expandIcon}>
@@ -99,7 +99,7 @@ const TagSelector: React.FC<TagSelectorProps> = ({
           )}
           <button
             className={`${styles.tag} ${isSelected ? styles.selected : ''}`}
-            onClick={() => handleTagSelectionToggle(tag.id)}
+            onClick={() => handleTagSelectionToggle(tag.docId)}
             type="button"
             title={tag.description}
           >

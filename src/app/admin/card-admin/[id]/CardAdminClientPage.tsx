@@ -64,8 +64,16 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
         throw new Error('Failed to save the card.');
       }
 
-      // Update the local SWR cache with the saved data without re-fetching.
+      // Update individual card cache immediately
       mutateCard(savedData, false);
+      
+      // Update all list/search caches with new card data without re-fetching
+      globalMutate((key) => {
+        if (typeof key === 'string' && key.startsWith('/api/cards?')) {
+          return true; // Update this cache
+        }
+        return false; // Don't update other caches
+      }, undefined, false);
       
       // If a new card was created, navigate to its new edit page.
       if (!cardId) {

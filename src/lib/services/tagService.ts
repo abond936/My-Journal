@@ -44,10 +44,10 @@ export async function getTagById(id: string): Promise<Tag | null> {
 
 /**
  * Creates a new tag via the API.
- * @param {Omit<Tag, 'id'>} tagData - The data for the new tag.
+ * @param {Omit<Tag, 'docId'>} tagData - The data for the new tag.
  * @returns {Promise<Tag>} A promise that resolves to the newly created tag.
  */
-export async function createTag(tagData: Omit<Tag, 'id' | 'createdAt' | 'updatedAt'>): Promise<Tag> {
+export async function createTag(tagData: Omit<Tag, 'docId' | 'createdAt' | 'updatedAt'>): Promise<Tag> {
   const response = await fetch('/api/tags', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -66,7 +66,7 @@ export async function createTag(tagData: Omit<Tag, 'id' | 'createdAt' | 'updated
  * @param {Partial<Tag>} tagData - The data to update.
  * @returns {Promise<Tag>} A promise that resolves to the updated tag.
  */
-export async function updateTag(id: string, tagData: Partial<Omit<Tag, 'id' | 'createdAt'>>): Promise<Tag> {
+export async function updateTag(id: string, tagData: Partial<Omit<Tag, 'docId' | 'createdAt'>>): Promise<Tag> {
   const response = await fetch(`/api/tags/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -135,7 +135,7 @@ export async function deleteTag(id: string): Promise<void> {
 //   };
 
 //   entryTags.forEach(tagId => {
-//     const tag = tags.find(t => t.id === tagId);
+//     const tag = tags.find(t => t.docId === tagId);
 //     if (tag && tag.dimension in organizedTags) {
 //       organizedTags[tag.dimension].push(tagId);
 //     }
@@ -155,7 +155,7 @@ export async function deleteTag(id: string): Promise<void> {
 //   }
 
 //   const allTags = await getTags();
-//   const tagMap = new Map(allTags.map(tag => [tag.id, tag]));
+//   const tagMap = new Map(allTags.map(tag => [tag.docId!, tag]));
 //   const ancestors = new Set<string>();
 
 //   const findAncestors = (tagId: string) => {
@@ -184,14 +184,14 @@ export async function deleteTag(id: string): Promise<void> {
 //   }
 
 //   const allTags = await getTags();
-//   const tagMap = new Map(allTags.map(tag => [tag.id, tag]));
+//   const tagMap = new Map(allTags.map(tag => [tag.docId!, tag]));
 //   const paths: string[][] = [];
 
 //   const findPath = (tagId: string): string[] => {
 //     const path: string[] = [];
 //     let currentTag = tagMap.get(tagId);
 //     while (currentTag) {
-//       path.unshift(currentTag.id);
+//       path.unshift(currentTag.docId!);
 //       currentTag = currentTag.parentId ? tagMap.get(currentTag.parentId) : undefined;
 //     }
 //     return path;

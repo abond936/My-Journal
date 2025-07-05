@@ -22,8 +22,8 @@ export interface TagContextType {
   error: Error | null;
   selectedFilterTagIds: string[];
   setFilterTags: (tagIds: string[]) => void;
-  createTag: (tagData: Omit<Tag, 'id'>) => Promise<Tag | undefined>;
-  updateTag: (id: string, tagData: Partial<Omit<Tag, 'id'>>) => Promise<Tag | undefined>;
+  createTag: (tagData: Omit<Tag, 'docId'>) => Promise<Tag | undefined>;
+  updateTag: (id: string, tagData: Partial<Omit<Tag, 'docId'>>) => Promise<Tag | undefined>;
   deleteTag: (id: string) => Promise<void>;
   getTagById: (id: string) => Tag | undefined;
   getTagsByIds: (ids: string[]) => Tag[];
@@ -50,7 +50,7 @@ export function TagProvider({ children }: { children: ReactNode }) {
   // State for the global tag filter
   const [selectedFilterTagIds, setFilterTags] = useState<string[]>([]);
 
-  const createTag = useCallback(async (tagData: Omit<Tag, 'id'>): Promise<Tag | undefined> => {
+  const createTag = useCallback(async (tagData: Omit<Tag, 'docId'>): Promise<Tag | undefined> => {
     try {
       const newTag = await fetch('/api/tags', {
         method: 'POST',
@@ -66,7 +66,7 @@ export function TagProvider({ children }: { children: ReactNode }) {
     }
   }, [mutate]);
 
-  const updateTag = useCallback(async (id: string, tagData: Partial<Omit<Tag, 'id'>>): Promise<Tag | undefined> => {
+  const updateTag = useCallback(async (id: string, tagData: Partial<Omit<Tag, 'docId'>>): Promise<Tag | undefined> => {
     try {
       console.log('Updating tag:', { id, tagData });
       const updatedTag = await fetch(`/api/tags/${id}`, {
@@ -93,12 +93,12 @@ export function TagProvider({ children }: { children: ReactNode }) {
   }, [mutate]);
 
   const getTagById = useCallback((id: string) => {
-    return tags?.find(tag => tag.id === id);
+    return tags?.find(tag => tag.docId === id);
   }, [tags]);
 
   const getTagsByIds = useCallback((ids: string[]) => {
     if (!tags) return [];
-    return tags.filter(tag => ids.includes(tag.id));
+    return tags.filter(tag => ids.includes(tag.docId!));
   }, [tags]);
 
   const getTagPath = useCallback((id: string) => {

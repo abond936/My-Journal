@@ -133,8 +133,6 @@ Legend:
   - `Tag` - `src/lib/types/tag.ts` - Structure for dimensional and hierarchical tags used for organizing and filtering cards.
   - `Media` - `src/lib/types/photo.ts` - Media assets (image, video) stored in Firebase Storage, including metadata like dimensions and paths.
 
-⭕2 - Remove legacy collections (entries/albums)
-
 ### **Home Page**
 - Application opens to the home page for login.
 
@@ -265,7 +263,7 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
 - Tags
   - `MacroTagSelector`(Tag Component) Modal Selector:
   - Tag Selection - `Card.tags` - Stores the tags directly assigned by the user.
-  - Denormalization - On card save, `cardService` uses `tagDataAccess.ts` to calculate and save derived tag data onto the `Card` document.
+  - Denormalization - On card save, `cardService` uses `tagService.ts` to calculate and save derived tag data onto the `Card` document.
     - Tag Inheritance - `Card.inheritedTags` - Flattened array of direct and ancestor tags (e.g., "Paris" -> "France" -> "Europe").
     - Tag Filter - `Card.filterTags`: Stores a map object (`{ "tagId": true, ... }`) of all inherited tags, optimized for fast Firestore `where` queries.
 - Gallery
@@ -289,7 +287,6 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
 - Collection - `tags` canonical tag data
 - Schema - `src/lib/types/tag.ts`
 
-⭕1 Error Handling: API routes should use `try...catch` blocks to handle errors from services gracefully, returning appropriate HTTP status codes (e.g., 400, 404, 500) and logging the error server-side for troubleshooting.
 
 **Tag Administration**
 `/app/admin/tag-admin/page.tsx`

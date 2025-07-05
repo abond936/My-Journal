@@ -16,7 +16,7 @@ const getAllParentTagIds = (tree: TagWithChildren[]): Set<string> => {
   const traverse = (nodes: TagWithChildren[]) => {
     nodes.forEach(node => {
       if (node.children && node.children.length > 0) {
-        parentIds.add(node.id);
+        parentIds.add(node.docId);
         traverse(node.children);
       }
     });
@@ -48,19 +48,19 @@ export default function TagTree({ tree, onSelectionChange, selectedTags, loading
   };
 
   const renderTag = (tag: TagWithChildren, level: number = 0) => {
-    const isExpanded = expandedTags.has(tag.id);
-    const isSelected = selectedTags.includes(tag.id);
+    const isExpanded = expandedTags.has(tag.docId);
+    const isSelected = selectedTags.includes(tag.docId);
 
     return (
       <div
-        key={tag.id}
+        key={tag.docId}
         className={styles.tagItem}
         style={{ paddingLeft: `${level * 0.2}rem` }}
       >
         <div className={styles.tagHeader}>
           <button
             className={styles.expandButton}
-            onClick={() => toggleTag(tag.id)}
+            onClick={() => toggleTag(tag.docId)}
             aria-expanded={isExpanded}
             disabled={tag.children.length === 0}
           >
@@ -73,12 +73,12 @@ export default function TagTree({ tree, onSelectionChange, selectedTags, loading
           
           <input
             type="checkbox"
-            id={`tag-${tag.id}`}
+            id={`tag-${tag.docId}`}
             checked={isSelected}
-            onChange={e => onSelectionChange(tag.id, e.target.checked)}
+            onChange={e => onSelectionChange(tag.docId, e.target.checked)}
             className={styles.checkbox}
           />
-          <label htmlFor={`tag-${tag.id}`} className={styles.tagName}>
+          <label htmlFor={`tag-${tag.docId}`} className={styles.tagName}>
             {tag.name}
           </label>
         </div>

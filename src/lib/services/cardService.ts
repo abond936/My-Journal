@@ -1,7 +1,7 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { Card, cardSchema, GalleryMediaItem } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
-import { updateTagCounts, calculateDerivedTagData } from '@/lib/firebase/tagDataAccess';
+import { updateTagCounts, calculateDerivedTagData } from '@/lib/firebase/tagService';
 import { getFirestore, FieldPath, FieldValue } from 'firebase-admin/firestore';
 import { deleteMediaAsset } from './images/imageImportService';
 import { extractMediaFromContent, stripContentImageSrc, hydrateContentImageSrc } from '@/lib/utils/cardUtils';
@@ -134,6 +134,7 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
  * @returns The updated card.
  */
 export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'docId'>>): Promise<Card> {
+    
     const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
     
     return firestore.runTransaction(async (transaction) => {
@@ -142,6 +143,8 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         throw new Error(`Card with ID ${cardId} not found.`);
       }
       const existingData = docSnap.data() as Card;
+      
+
   
       // --- Start Firestore Batch Write ---
   
@@ -174,6 +177,8 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
   
       // Validate the incoming partial data against the card schema.
       const validatedUpdate = cardSchema.partial().parse(updatePayload);
+      
+
   
       // Helper to recursively strip undefined values (Firestore disallows them)
       const removeUndefinedDeep = (val: any): any => {
@@ -191,6 +196,8 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       };
   
       const cleanedUpdate = removeUndefinedDeep(validatedUpdate);
+      
+
   
       // If no fields remain after cleaning, nothing to update – return current data
       if (Object.keys(cleanedUpdate).length === 0) {
@@ -202,18 +209,16 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       const newTags = new Set(cardData.tags || []);
       const tagsAdded = [...newTags].filter(t => !oldTags.has(t));
       const tagsRemoved = [...oldTags].filter(t => !newTags.has(t));
+      
+
 
       const wasPublished = existingData.status === 'published';
       const isPublished = cardData.status === 'published';
 
       // Prepare derived tag data (reads) BEFORE any writes to comply with Firestore transaction rules
       const finalTags = ('tags' in cleanedUpdate) ? (cleanedUpdate.tags ?? existingData.tags) : existingData.tags;
+      
       const { filterTags, dimensionalTags } = await calculateDerivedTagData(finalTags || []);
-
-      // --- DEBUG LOGS ---
-      console.log('[updateCard] finalTags', finalTags);
-      console.log('[updateCard] dimensionalTags', JSON.stringify(dimensionalTags));
-      // --- END DEBUG LOGS ---
 
       // --- Consolidated tag count adjustments (single read phase, then writes) ---
       const deltaMap: Record<string, number> = {};

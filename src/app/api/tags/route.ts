@@ -1,15 +1,13 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { authOptions } from '../auth/[...nextauth]/route';
+import { getAllTags, createTag } from '@/lib/firebase/tagService';
 import { Tag } from '@/lib/types/tag';
 import { safeToDate } from '@/lib/utils/dateUtils';
 
 // Initialize Firebase Admin
 getAdminApp();
-const db = getFirestore();
-const tagsCollection = db.collection('tags');
 
 /**
  * @swagger
@@ -39,20 +37,14 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const snapshot = await tagsCollection.orderBy('name', 'asc').get();
-        const tags = snapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                ...data,
-                docId: doc.id,
-                id: data.id ?? doc.id,
-                name: data.name,
-                cardCount: data.cardCount || 0,
-                createdAt: safeToDate(data.createdAt),
-                updatedAt: safeToDate(data.updatedAt),
-            };
-        });
-        return NextResponse.json(tags);
+        const tags = await getAllTags();
+        // Convert timestamps to dates for API response
+        const tagsWithDates = tags.map(tag => ({
+            ...tag,
+            createdAt: safeToDate(tag.createdAt),
+            updatedAt: safeToDate(tag.updatedAt),
+        }));
+        return NextResponse.json(tagsWithDates);
     } catch (error) {
         console.error('API Error fetching all tags:', error);
         return new NextResponse('Internal server error', { status: 500 });
@@ -93,47 +85,37 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-        const body: Omit<Tag, 'id' | 'createdAt' | 'updatedAt'> = await request.json();
+        const body: Omit<Tag, 'docId' | 'createdAt' | 'updatedAt'> = await request.json();
 
         if (!body.name) {
             return new NextResponse('Tag name is required', { status: 400 });
         }
-        
-        // Check for duplicate tag name (case-insensitive)
-        const querySnapshot = await tagsCollection.where('name', '==', body.name).get();
-        if (!querySnapshot.empty) {
-            return new NextResponse(JSON.stringify({ error: 'Tag with this name already exists' }), {
-                status: 409,
-                headers: { 'Content-Type': 'application/json' },
-            });
-        }
 
-        const newTagData = {
-            ...body,
-            createdAt: FieldValue.serverTimestamp(),
-            updatedAt: FieldValue.serverTimestamp(),
+        const newTag = await createTag(body);
+        
+        // Convert timestamps to dates for API response
+        const tagWithDates = {
+            ...newTag,
+            createdAt: safeToDate(newTag.createdAt),
+            updatedAt: safeToDate(newTag.updatedAt),
         };
 
-        const docRef = await tagsCollection.add(newTagData);
-        
-        // Fetch the new doc to return it with resolved timestamps
-        const newDocSnap = await docRef.get();
-        const createdData = newDocSnap.data();
-
-        const newTag = {
-            id: docRef.id,
-            ...createdData,
-            createdAt: safeToDate(createdData?.createdAt),
-            updatedAt: safeToDate(createdData?.updatedAt),
-        };
-
-        return new NextResponse(JSON.stringify(newTag), {
+        return new NextResponse(JSON.stringify(tagWithDates), {
             status: 201,
             headers: { 'Content-Type': 'application/json' },
         });
 
     } catch (error) {
         console.error('API Error creating tag:', error);
+        
+        // Handle specific error for duplicate names
+        if (error instanceof Error && error.message === 'Tag with this name already exists') {
+            return new NextResponse(JSON.stringify({ error: 'Tag with this name already exists' }), {
+                status: 409,
+                headers: { 'Content-Type': 'application/json' },
+            });
+        }
+        
         return new NextResponse('Internal server error', { status: 500 });
     }
 }

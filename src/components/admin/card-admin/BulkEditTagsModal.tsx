@@ -105,12 +105,12 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
         ) : (
           <div className={styles.interactiveColumns}>
             {dimensionalTree.map(dimension => (
-              <div key={dimension.id} className={styles.dimensionColumn}>
+              <div key={dimension.docId} className={styles.dimensionColumn}>
                 <h4>{dimension.name}</h4>
                 <div className={styles.interactiveTree}>
                   {dimension.children.map(root => (
                     <InteractiveTagNode
-                      key={root.id}
+                      key={root.docId}
                       node={root}
                       selection={currentSelection}
                       onChange={handleTagChange}
@@ -142,11 +142,11 @@ interface InteractiveTagNodeProps {
 
 function InteractiveTagNode({ node, selection, onChange }: InteractiveTagNodeProps) {
   const [isCollapsed, setIsCollapsed] = useState(true);
-  const isSelected = selection.has(node.id);
+  const isSelected = selection.has(node.docId);
   const hasChildren = node.children && node.children.length > 0;
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(node.id, e.target.checked);
+    onChange(node.docId, e.target.checked);
   };
 
   return (
@@ -159,17 +159,17 @@ function InteractiveTagNode({ node, selection, onChange }: InteractiveTagNodePro
         )}
         <input
           type="checkbox"
-          id={`bulk-tag-${node.id}`}
+          id={`bulk-tag-${node.docId}`}
           checked={isSelected}
           onChange={handleCheckboxChange}
         />
-        <label htmlFor={`bulk-tag-${node.id}`}>{node.name}</label>
+        <label htmlFor={`bulk-tag-${node.docId}`}>{node.name}</label>
       </div>
       {!isCollapsed && hasChildren && (
         <div className={styles.tagChildren}>
           {node.children.map(child => (
             <InteractiveTagNode
-              key={child.id}
+              key={child.docId}
               node={child}
               selection={selection}
               onChange={onChange}

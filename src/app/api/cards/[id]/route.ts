@@ -161,6 +161,7 @@ export async function PATCH(
 
     // Parse and validate the request body
     const body = await request.json();
+    
     const validatedData = cardUpdateSchema.parse(body);
 
     const existingCard = await getCardById(id);
@@ -173,6 +174,7 @@ export async function PATCH(
 
     // Perform the update
     const updatedCard = await updateCard(id, validatedData);
+    
     return NextResponse.json(updatedCard);
   });
 }
