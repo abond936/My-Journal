@@ -62,7 +62,6 @@
 
 .imageToolbar {
   display: flex;
-  background: #f0f0f0;
   padding: 8px;
   border-radius: 4px;
   margin-bottom: 8px;
@@ -76,7 +75,7 @@
 
 .toolbarSection label {
   margin-right: 8px;
-  font-weight: bold;
+  font-size: 0.9rem;
 }
 
 .buttonGroup {

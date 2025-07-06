@@ -1,9 +1,10 @@
 .editorContainer {
   border: 1px solid #ccc;
   border-radius: 4px;
-  padding: 10px;
+  padding: 16px;
   background-color: #fff;
   position: relative;
+  overflow: hidden;
 }
 
 .editorContainer.error {
@@ -46,10 +47,20 @@
 .editorContent {
   min-height: 200px;
   outline: none;
+  height: auto;
+  overflow: visible;
 }
 
 .editorContent > div {
   outline: none;
+  height: auto;
+  min-height: inherit;
+}
+
+/* Add ProseMirror-specific height management */
+.editorContent :global(.ProseMirror) {
+  min-height: 200px;
+  overflow: visible;
 }
 
 .isDisabled {

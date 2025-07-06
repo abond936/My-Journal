@@ -40,12 +40,9 @@ export const FigureWithImageView = ({ node, updateAttributes, editor, selected, 
       className={`${styles.figureWrapper} ${styles[alignment]} ${styles[size]}`}
       data-wrap={wrap || 'off'}
       data-media-id={mediaId}
+      data-drag-handle
     >
-      <div 
-        className={styles.dragHandle} 
-        data-drag-handle 
-        onMouseDown={handleDragHandleMouseDown}
-      >
+      <div className={styles.dragHandle}>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
           <path d="M10 4h4v4h-4zM4 10h4v4H4zM16 10h4v4h-4zM10 16h4v4h-4zM4 16h4v4H4zM16 16h4v4h-4zM4 4h4v4H4zM10 10h4v4h-4zM16 4h4v4h-4z" />
         </svg>

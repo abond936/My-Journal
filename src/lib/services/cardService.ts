@@ -572,6 +572,21 @@ export async function deleteCard(cardId: string): Promise<void> {
             await updateTagCounts(cardToDelete.tags, 'decrement', transaction);
         }
 
+        // --- Clean up parent-child relationships ---
+        // Find all cards that have this card in their childrenIds and remove it
+        const parentCardsQuery = firestore.collection(CARDS_COLLECTION)
+            .where('childrenIds', 'array-contains', cardId);
+        const parentCardsSnapshot = await transaction.get(parentCardsQuery);
+        
+        for (const parentDoc of parentCardsSnapshot.docs) {
+            const parentData = parentDoc.data() as Card;
+            const updatedChildrenIds = (parentData.childrenIds || []).filter(id => id !== cardId);
+            transaction.update(parentDoc.ref, { 
+                childrenIds: updatedChildrenIds,
+                updatedAt: Date.now()
+            });
+        }
+
         // Delete the card document
         transaction.delete(docRef);
     });

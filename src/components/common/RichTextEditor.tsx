@@ -99,12 +99,6 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
     if (newContent !== content) {
       setContent(newContent);
       
-      console.log('[RichTextEditor] Content update', {
-        contentLength: newContent.length,
-        mediaCount: mediaIds.length,
-        hasChanged: newContent !== content
-      });
-      
       // Notify parent components
       onChange?.(newContent);
       
@@ -114,10 +108,6 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
         mediaIds.some(id => !currentMediaIds.includes(id));
       
       if (mediaIdsChanged) {
-        console.log('[RichTextEditor] Media IDs changed', {
-          from: currentMediaIds,
-          to: mediaIds
-        });
         updateContentMedia(mediaIds);
         onContentMediaChange?.(mediaIds);
       }
@@ -134,14 +124,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
       setSelectedNode(node?.type.name === 'figureWithImage' ? node : null);
     },
     onTransaction: ({ editor, transaction }) => {
-      // Only log transactions that change the document structure
-      if (transaction.docChanged && transaction.steps.length > 0) {
-        console.log('[Editor Transaction]', {
-          timestamp: new Date().toISOString(),
-          docChanged: true,
-          stepTypes: transaction.steps.map(step => step.toJSON().stepType)
-        });
-      }
+      // Transaction handling without logging
     },
     onUpdate: ({ editor, transaction }) => {
       if (transaction.docChanged) {
@@ -173,10 +156,6 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
   useEffect(() => {
     // Only update content from initialContent on first mount or if editor is empty
     if (editor && (!content || content === '<p></p>' || content === '') && initialContent) {
-      console.log('[RichTextEditor] Setting initial content', {
-        currentLength: content?.length,
-        initialLength: initialContent?.length
-      });
       editor.commands.setContent(initialContent, false);
     }
   }, [initialContent, editor, content]);
@@ -191,17 +170,11 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
       if (!response.ok) throw new Error('Upload failed');
       const newMedia: Media = await response.json();
       insertImage(newMedia);
-    } catch (err) { console.error(err); } 
-    finally { setIsProcessingImage(false); }
+    } finally { setIsProcessingImage(false); }
   };
 
   const insertImage = useCallback((media: Media) => {
     if (!editor) return;
-
-    console.log('[Image Insertion] Starting', {
-      mediaId: media.id,
-      timestamp: new Date().toISOString()
-    });
 
     editor.chain().focus().setFigureWithImage({
       src: getDisplayUrl(media),
@@ -214,11 +187,6 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
 
     const newContent = editor.getHTML();
     handleContentUpdate(newContent);
-
-    console.log('[Image Insertion] Complete', {
-      timestamp: new Date().toISOString(),
-      contentLength: newContent.length
-    });
   }, [editor, handleContentUpdate]);
 
   useImperativeHandle(ref, () => ({

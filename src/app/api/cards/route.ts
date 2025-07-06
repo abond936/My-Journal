@@ -106,6 +106,7 @@ export async function GET(request: Request) {
     const q = searchParams.get('q') || undefined;
     const limit = searchParams.has('limit') ? parseInt(searchParams.get('limit')!, 10) : 10;
     const lastDocId = searchParams.get('lastDocId') || undefined;
+    const childrenIds_contains = searchParams.get('childrenIds_contains') || undefined;
 
     try {
       const result: PaginatedResult<Card> = await getCards({
@@ -114,6 +115,7 @@ export async function GET(request: Request) {
         type,
         tags,
         dimensionalTags: Object.keys(dimensionalTags).length > 0 ? dimensionalTags : undefined,
+        childrenIds_contains,
         limit,
         lastDocId,
       });

@@ -57,7 +57,7 @@ export const CardProvider = ({ children, collectionId }: CardProviderProps) => {
   // --- Local Filter State ---
   const [cardType, setCardType] = useState<CardFilterType>('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [status, setStatus] = useState<CardStatus>(isAdmin ? 'all' : 'published');
+  const [status, setStatus] = useState<CardStatus>('all'); // Always default to 'all' for admin pages
   const [pageLimit, setPageLimit] = useState(20); // Default limit for cards
   
   // Define which paths should trigger card fetching

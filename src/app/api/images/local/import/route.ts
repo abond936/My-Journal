@@ -18,9 +18,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'sourcePath is required.' }, { status: 400 });
     }
 
-    console.log('[/api/images/local/import] Attempting to import:', { sourcePath });
     const { mediaId, media } = await importFromLocalDrive(sourcePath);
-    console.log('[/api/images/local/import] Successfully imported:', { sourcePath, mediaId });
 
     return NextResponse.json({ mediaId, media });
   } catch (error) {

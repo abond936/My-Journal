@@ -112,11 +112,6 @@ export const FigureWithImage = Node.create<FigureWithImageOptions>({
       setFigureWithImage: (options: FigureWithImageOptions) => ({ tr, dispatch }) => {
         const { selection } = tr;
 
-        console.log('[FigureWithImage] Creating node', {
-          timestamp: new Date().toISOString(),
-          attrs: options
-        });
-
         const node = this.type.create(options);
         if (dispatch) {
           tr.replaceSelectionWith(node);

@@ -143,14 +143,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
 
     // Only update if the value has actually changed
     if (value !== formState.cardData[field]) {
-      // Only log content length changes that are significant
-      if (field === 'content' && Math.abs((value?.length || 0) - (formState.cardData.content?.length || 0)) > 10) {
-        console.log('[CardFormProvider] Content length changed:', {
-          from: formState.cardData.content?.length || 0,
-          to: value?.length || 0,
-          field
-        });
-      }
+
 
       setFormState(prev => {
         const newState = {
@@ -161,13 +154,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
           }
         };
 
-        // Log the state update
-        if (field === 'content') {
-          console.log('[CardFormProvider] State updated', {
-            contentLength: newState.cardData.content?.length,
-            mediaCount: newState.cardData.contentMedia?.length
-          });
-        }
+
 
         return newState;
       });
