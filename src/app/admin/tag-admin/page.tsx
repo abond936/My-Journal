@@ -57,13 +57,13 @@ function useTagManagement() {
     const masterTagTree = buildTagTree(tagsToUse);
     
     const dimensions: Record<string, TagWithChildren> = {
-      who: { id: 'dim-who', name: 'Who', children: [] },
-      what: { id: 'dim-what', name: 'What', children: [] },
-      when: { id: 'dim-when', name: 'When', children: [] },
-      where: { id: 'dim-where', name: 'Where', children: [] },
-      reflection: { id: 'dim-reflection', name: 'Reflection', children: [] },
+      who: { docId: 'dim-who', name: 'Who', children: [] },
+      what: { docId: 'dim-what', name: 'What', children: [] },
+      when: { docId: 'dim-when', name: 'When', children: [] },
+      where: { docId: 'dim-where', name: 'Where', children: [] },
+      reflection: { docId: 'dim-reflection', name: 'Reflection', children: [] },
     };
-    const uncategorized: TagWithChildren = { id: 'dim-uncategorized', name: 'Uncategorized', children: [] };
+    const uncategorized: TagWithChildren = { docId: 'dim-uncategorized', name: 'Uncategorized', children: [] };
 
     masterTagTree.forEach(rootNode => {
       if (rootNode.dimension && dimensions[rootNode.dimension]) {

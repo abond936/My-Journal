@@ -166,39 +166,36 @@ export async function POST(request: Request) {
 
   try {
     const cardData: Partial<Card> = await request.json();
-    const { title, type, status, displayMode } = cardData;
+    
+    console.log('[POST /api/cards] Received data:', cardData);
 
-    const validationErrors: string[] = [];
-
-    // 1. Validate Title
-    if (!title || typeof title !== 'string' || title.trim().length === 0) {
-      validationErrors.push('A non-empty title is required.');
-    }
-
-    // 2. Validate Type
-    if (!type || !cardSchema.shape.type.options.includes(type)) {
-      validationErrors.push(`Type must be one of: ${cardSchema.shape.type.options.join(', ')}.`);
-    }
-
-    // 3. Validate Status
-    if (!status || !cardSchema.shape.status.options.includes(status)) {
-        validationErrors.push(`Status must be one of: ${cardSchema.shape.status.options.join(', ')}.`);
-    }
-
-    // 4. Validate DisplayMode
-    if (!displayMode || !cardSchema.shape.displayMode.options.includes(displayMode)) {
-        validationErrors.push(`Display Mode must be one of: ${cardSchema.shape.displayMode.options.join(', ')}.`);
-    }
-
-    if (validationErrors.length > 0) {
-        return new NextResponse(JSON.stringify({ errors: validationErrors }), { 
-            status: 400,
-            headers: { 'Content-Type': 'application/json' }
-        });
+    // Use Zod validation for consistent error handling
+    const validationResult = cardSchema.partial().safeParse(cardData);
+    
+    if (!validationResult.success) {
+      console.log('[POST /api/cards] Validation failed:', validationResult.error);
+      const formattedErrors = validationResult.error.flatten().fieldErrors;
+      const errorMessages: string[] = [];
+      
+      for (const [field, errors] of Object.entries(formattedErrors)) {
+        if (errors && errors.length > 0) {
+          errorMessages.push(`${field}: ${errors[0]}`);
+        }
+      }
+      
+      console.log('[POST /api/cards] Error messages:', errorMessages);
+      
+      return new NextResponse(JSON.stringify({ 
+        error: 'Validation failed',
+        details: errorMessages 
+      }), { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
     
     // The createCard service function will handle defaults and timestamps
-    const newCard = await createCard(cardData as Omit<Card, 'id' | 'createdAt' | 'updatedAt' | 'inheritedTags' | 'tagPaths'>);
+    const newCard = await createCard(cardData as Omit<Card, 'docId' | 'createdAt' | 'updatedAt' | 'filterTags'>);
 
     return NextResponse.json(newCard, { status: 201 });
   } catch (error) {

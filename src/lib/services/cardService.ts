@@ -94,6 +94,7 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
   const newCard: Card = {
     ...validatedData,
     docId: docRef.id,
+    title_lowercase: validatedData.title?.toLowerCase() || '',
     content: cleanedContent,
     tags: selectedTags, // ensure tags is not undefined
     contentMedia: contentMediaIds, // always an array even if empty
@@ -425,27 +426,93 @@ export async function getPaginatedCardsByIds(
  * @returns A promise that resolves when the batch update is complete.
  */
 export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise<void> {
-  const db = getFirestore();
-  const batch = writeBatch(db);
+  if (!cardIds || cardIds.length === 0) {
+    return;
+  }
 
   // Calculate all derived tag data using centralized function
   const { filterTags, dimensionalTags } = await calculateDerivedTagData(tags);
 
-  cardIds.forEach(id => {
-    const cardRef = doc(db, 'cards', id);
-    batch.update(cardRef, { 
-      tags,
-      filterTags,
-      // Populate dimensional arrays
-      who: dimensionalTags.who || [],
-      what: dimensionalTags.what || [],
-      when: dimensionalTags.when || [],
-      where: dimensionalTags.where || [],
-      reflection: dimensionalTags.reflection || [],
-    });
+  // Use a transaction to ensure atomicity of tag count updates and card updates
+  await firestore.runTransaction(async (transaction) => {
+    // 1. Read all affected cards to get their current tags
+    const cardRefs = cardIds.map(id => firestore.collection(CARDS_COLLECTION).doc(id));
+    const cardDocs = await transaction.getAll(...cardRefs);
+    
+    // 2. Calculate tag count deltas for all affected cards
+    const deltaMap: Record<string, number> = {};
+    
+    for (const cardDoc of cardDocs) {
+      if (!cardDoc.exists) continue;
+      
+      const cardData = cardDoc.data() as Card;
+      const oldTags = new Set(cardData.tags || []);
+      const newTags = new Set(tags);
+      
+      // Only process published cards for tag counting
+      if (cardData.status === 'published') {
+        // Calculate tags to remove
+        const tagsRemoved = [...oldTags].filter(t => !newTags.has(t));
+        // Calculate tags to add
+        const tagsAdded = [...newTags].filter(t => !oldTags.has(t));
+        
+        // Apply deltas
+        tagsRemoved.forEach(tagId => {
+          deltaMap[tagId] = (deltaMap[tagId] || 0) - 1;
+        });
+        tagsAdded.forEach(tagId => {
+          deltaMap[tagId] = (deltaMap[tagId] || 0) + 1;
+        });
+      }
+    }
+    
+    // 3. Update tag counts for all affected tags and their ancestors
+    const candidateIds = Object.keys(deltaMap);
+    if (candidateIds.length > 0) {
+      // Read all affected tags to get their paths
+      const tagRefs = candidateIds.map(id => firestore.collection('tags').doc(id));
+      const tagDocs = await transaction.getAll(...tagRefs);
+      
+      // Include ancestors in deltaMap
+      for (const docSnap of tagDocs) {
+        if (!docSnap.exists) continue;
+        const tagData = docSnap.data() as Tag;
+        const tagId = docSnap.id;
+        const delta = deltaMap[tagId] || 0;
+        if (delta === 0) continue;
+        
+        if (Array.isArray(tagData.path)) {
+          tagData.path.forEach(ancestorId => {
+            deltaMap[ancestorId] = (deltaMap[ancestorId] || 0) + delta;
+          });
+        }
+      }
+      
+      // Apply all increments/decrements
+      for (const [tagId, delta] of Object.entries(deltaMap)) {
+        if (delta !== 0) {
+          const ref = firestore.collection('tags').doc(tagId);
+          transaction.update(ref, { cardCount: FieldValue.increment(delta) });
+        }
+      }
+    }
+    
+    // 4. Update all cards with new tag data
+    for (const cardId of cardIds) {
+      const cardRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
+      transaction.update(cardRef, { 
+        tags,
+        filterTags,
+        // Populate dimensional arrays
+        who: dimensionalTags.who || [],
+        what: dimensionalTags.what || [],
+        when: dimensionalTags.when || [],
+        where: dimensionalTags.where || [],
+        reflection: dimensionalTags.reflection || [],
+        updatedAt: Date.now(),
+      });
+    }
   });
-
-  await batch.commit();
 }
 
 /**

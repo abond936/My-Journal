@@ -98,6 +98,13 @@
   /* ... existing code ... */
 }
 
+.cardCount {
+  margin-left: 4px;
+  font-size: 0.85em;
+  color: var(--text-color-secondary);
+  opacity: 0.8;
+}
+
 /* Desktop adjustments */
 @media (min-width: 768px) {
   .sidebar {

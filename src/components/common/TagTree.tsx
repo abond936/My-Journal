@@ -80,6 +80,11 @@ export default function TagTree({ tree, onSelectionChange, selectedTags, loading
           />
           <label htmlFor={`tag-${tag.docId}`} className={styles.tagName}>
             {tag.name}
+            {tag.cardCount !== undefined && tag.cardCount > 0 && (
+              <span className={styles.cardCount}>
+                ({tag.cardCount})
+              </span>
+            )}
           </label>
         </div>
 

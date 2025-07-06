@@ -19,6 +19,31 @@
     flex: 1;
     padding-top: 60px; /* Add padding to push content below the fixed header */
     overflow: hidden;
+    position: relative;
+  }
+  
+  .sidebarToggle {
+    position: fixed;
+    left: 1rem;
+    top: calc(60px + 1rem); /* Position below header */
+    z-index: 1200;
+    background: var(--background-start);
+    color: var(--foreground);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+  }
+  
+  .sidebarToggle:hover {
+    background: var(--background-end);
+    transform: scale(1.05);
   }
   
   .sidebarWrapper {
@@ -37,5 +62,9 @@
   @media (max-width: 768px) {
     .mainContent {
       width: 100%;
+    }
+    
+    .sidebarToggle {
+      display: none; /* Hide toggle button on mobile */
     }
   } 

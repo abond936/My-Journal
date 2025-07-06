@@ -386,14 +386,62 @@ export async function deleteTag(docId: string): Promise<void> {
     
     console.log(`Deleting tag ${docId} and ${tagsToDelete.length - 1} descendants`);
     
-    // Delete all descendants in a batch
-    const batch = firestore.batch();
-    tagsToDelete.forEach(tagId => {
-      const tagRef = firestore.collection(TAGS_COLLECTION).doc(tagId);
-      batch.delete(tagRef);
+    // Find all cards that use any of the tags being deleted
+    const affectedCardIds = new Set<string>();
+    for (const tagId of tagsToDelete) {
+      const cardIds = await findCardsUsingTag(tagId);
+      cardIds.forEach(id => affectedCardIds.add(id));
+    }
+    
+    console.log(`Found ${affectedCardIds.size} cards affected by tag deletion`);
+    
+    // Use a transaction to ensure atomicity
+    await firestore.runTransaction(async (transaction) => {
+      // Update all affected cards to remove the deleted tags
+      for (const cardId of affectedCardIds) {
+        const cardRef = firestore.collection('cards').doc(cardId);
+        const cardDoc = await transaction.get(cardRef);
+        
+        if (cardDoc.exists) {
+          const cardData = cardDoc.data();
+          const currentTags = cardData?.tags || [];
+          
+          // Remove all tags that are being deleted
+          const updatedTags = currentTags.filter((tagId: string) => !tagsToDelete.includes(tagId));
+          
+          if (updatedTags.length !== currentTags.length) {
+            // Recalculate derived tag data
+            const { filterTags, dimensionalTags } = await calculateDerivedTagData(updatedTags);
+            
+            // Update the card
+            transaction.update(cardRef, {
+              tags: updatedTags,
+              filterTags,
+              who: dimensionalTags.who,
+              what: dimensionalTags.what,
+              when: dimensionalTags.when,
+              where: dimensionalTags.where,
+              reflection: dimensionalTags.reflection,
+              updatedAt: FieldValue.serverTimestamp()
+            });
+            
+            // Decrement counts for all affected tags and their ancestors
+            const removedTags = currentTags.filter((tagId: string) => tagsToDelete.includes(tagId));
+            if (removedTags.length > 0) {
+              await updateTagCounts(removedTags, 'decrement', transaction);
+            }
+          }
+        }
+      }
+      
+      // Delete all tag descendants
+      tagsToDelete.forEach(tagId => {
+        const tagRef = firestore.collection(TAGS_COLLECTION).doc(tagId);
+        transaction.delete(tagRef);
+      });
     });
     
-    await batch.commit();
+    console.log(`Successfully deleted ${tagsToDelete.length} tags and updated ${affectedCardIds.size} cards`);
   } catch (error) {
     console.error(`Error deleting tag ${docId}:`, error);
     throw new Error(`Failed to delete tag: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -615,7 +663,43 @@ export async function updateAllTagCardCounts(): Promise<number> {
 export async function updateTagAndDescendantPaths(tagId: string, newParentId: string | undefined, transaction: FirebaseFirestore.Transaction) {
   const tagsCollection = firestore.collection('tags');
   
-  // 1. Get the new parent's data to determine the base of the new path.
+  // 1. Get the moved tag's current data to determine the old parent hierarchy
+  const movedTagRef = tagsCollection.doc(tagId);
+  const movedTagDoc = await transaction.get(movedTagRef);
+  if (!movedTagDoc.exists) {
+    throw new Error(`Cannot move non-existent tag: ${tagId}`);
+  }
+  const movedTagData = movedTagDoc.data() as Tag;
+  const oldParentId = movedTagData.parentId;
+  
+  // 2. Find all descendants that will be moved
+  const allTags = await getAllTags();
+  const tagMap = new Map(allTags.map(tag => [tag.docId!, tag]));
+  const descendants = new Set<string>();
+  
+  const findDescendants = (tagId: string) => {
+    descendants.add(tagId);
+    // Find all children of this tag
+    allTags.forEach(tag => {
+      if (tag.parentId === tagId) {
+        findDescendants(tag.docId!);
+      }
+    });
+  };
+  
+  findDescendants(tagId);
+  const tagsBeingMoved = Array.from(descendants);
+  
+  // 3. Find all cards that use any of the tags being moved
+  const affectedCardIds = new Set<string>();
+  for (const tagId of tagsBeingMoved) {
+    const cardIds = await findCardsUsingTag(tagId);
+    cardIds.forEach(id => affectedCardIds.add(id));
+  }
+  
+  console.log(`Moving tag ${tagId} and ${tagsBeingMoved.length - 1} descendants, affecting ${affectedCardIds.size} cards`);
+  
+  // 4. Get the new parent's data to determine the base of the new path
   let newBasePath: string[] = [];
   if (newParentId) {
     const parentRef = tagsCollection.doc(newParentId);
@@ -627,37 +711,97 @@ export async function updateTagAndDescendantPaths(tagId: string, newParentId: st
     newBasePath = [...(parentData.path || []), parentDoc.id];
   }
 
-  // 2. Define a recursive function to update a tag and its children.
+  // 5. Define a recursive function to update a tag and its children
   async function updateRecursively(currentTagId: string, parentPath: string[]) {
     const currentTagRef = tagsCollection.doc(currentTagId);
     const newPath = [...parentPath, currentTagId];
 
-    // Update the current tag's path.
+    // Update the current tag's path
     transaction.update(currentTagRef, { path: newPath, parentId: newParentId });
 
-    // Find all direct children of the current tag.
+    // Find all direct children of the current tag
     const childrenQuery = tagsCollection.where('parentId', '==', currentTagId);
     const childrenSnapshot = await transaction.get(childrenQuery);
 
     if (childrenSnapshot.empty) {
-      return; // Base case: no children to update.
+      return; // Base case: no children to update
     }
 
-    // Recursively call the function for each child.
+    // Recursively call the function for each child
     for (const childDoc of childrenSnapshot.docs) {
       await updateRecursively(childDoc.id, newPath);
     }
   }
 
-  // 3. Start the recursive update process from the moved tag.
-  const movedTagRef = tagsCollection.doc(tagId);
+  // 6. Update all affected cards with recalculated derived data
+  for (const cardId of affectedCardIds) {
+    const cardRef = firestore.collection('cards').doc(cardId);
+    const cardDoc = await transaction.get(cardRef);
+    
+    if (cardDoc.exists) {
+      const cardData = cardDoc.data();
+      const currentTags = cardData?.tags || [];
+      
+      // Recalculate derived tag data (since ancestor paths have changed)
+      const { filterTags, dimensionalTags } = await calculateDerivedTagData(currentTags);
+      
+      // Update the card
+      transaction.update(cardRef, {
+        filterTags,
+        who: dimensionalTags.who,
+        what: dimensionalTags.what,
+        when: dimensionalTags.when,
+        where: dimensionalTags.where,
+        reflection: dimensionalTags.reflection,
+        updatedAt: FieldValue.serverTimestamp()
+      });
+    }
+  }
+  
+  // 7. Update tag counts for old parent hierarchy (decrement)
+  if (oldParentId) {
+    const oldParentRef = tagsCollection.doc(oldParentId);
+    const oldParentDoc = await transaction.get(oldParentRef);
+    if (oldParentDoc.exists) {
+      const oldParentData = oldParentDoc.data() as Tag;
+      const oldAncestorIds = oldParentData.path || [];
+      const oldHierarchyIds = [oldParentId, ...oldAncestorIds];
+      
+      // Decrement counts for old hierarchy by the number of affected cards
+      for (const ancestorId of oldHierarchyIds) {
+        const ancestorRef = tagsCollection.doc(ancestorId);
+        transaction.update(ancestorRef, { cardCount: FieldValue.increment(-affectedCardIds.size) });
+      }
+    }
+  }
+  
+  // 8. Update tag counts for new parent hierarchy (increment)
+  if (newParentId) {
+    const newParentRef = tagsCollection.doc(newParentId);
+    const newParentDoc = await transaction.get(newParentRef);
+    if (newParentDoc.exists) {
+      const newParentData = newParentDoc.data() as Tag;
+      const newAncestorIds = newParentData.path || [];
+      const newHierarchyIds = [newParentId, ...newAncestorIds];
+      
+      // Increment counts for new hierarchy by the number of affected cards
+      for (const ancestorId of newHierarchyIds) {
+        const ancestorRef = tagsCollection.doc(ancestorId);
+        transaction.update(ancestorRef, { cardCount: FieldValue.increment(affectedCardIds.size) });
+      }
+    }
+  }
+
+  // 9. Start the recursive update process from the moved tag
   const initialNewPath = [...newBasePath];
   transaction.update(movedTagRef, { path: initialNewPath, parentId: newParentId });
 
-  // Now, recursively update all descendants
+  // 10. Now, recursively update all descendants
   const childrenQuery = tagsCollection.where('parentId', '==', tagId);
   const childrenSnapshot = await transaction.get(childrenQuery);
   for (const childDoc of childrenSnapshot.docs) {
       await updateRecursively(childDoc.id, initialNewPath);
   }
+  
+  console.log(`Successfully moved ${tagsBeingMoved.length} tags and updated ${affectedCardIds.size} cards`);
 } 

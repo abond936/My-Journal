@@ -63,7 +63,7 @@ const EMPTY_CARD: Card = {
   content: '',
   status: 'draft',
   type: 'story',
-  displayMode: 'inline',
+  displayMode: 'navigate',
   createdAt: Date.now(),
   updatedAt: Date.now(),
   tags: [],
@@ -77,8 +77,6 @@ const EMPTY_CARD: Card = {
   coverImageId: null,
   contentMedia: [],
   galleryMedia: [],
-  inheritedTags: [],
-  tagPathsMap: {},
   coverImage: null,
 };
 
@@ -216,14 +214,31 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     // Strip transient, client-only fields before validating.
     const dataForValidation = dehydrateCardForSave(formState.cardData);
 
-    const result = cardSchema.safeParse(dataForValidation);
+    // For new cards (empty docId), exclude docId from validation since it will be generated
+    const isNewCard = !dataForValidation.docId || dataForValidation.docId === '';
+    const validationData = isNewCard 
+      ? { ...dataForValidation, docId: undefined }
+      : dataForValidation;
+    
+    console.log('[validateForm] Is new card:', isNewCard);
+    console.log('[validateForm] Validation data:', validationData);
+
+    // Use partial schema for new cards to exclude server-generated fields
+    const schemaToUse = isNewCard ? cardSchema.omit({ docId: true, createdAt: true, updatedAt: true }) : cardSchema;
+    const result = schemaToUse.safeParse(validationData);
 
     if (!result.success) {
       const formattedErrors = result.error.flatten().fieldErrors;
       const newErrors: Record<string, string> = {};
       for (const key in formattedErrors) {
         if (formattedErrors[key]) {
-          newErrors[key] = formattedErrors[key]![0];
+          // Provide user-friendly error messages
+          const errorMessage = formattedErrors[key]![0];
+          if (key === 'title' && errorMessage.includes('required')) {
+            newErrors[key] = 'Please enter a title for your card';
+          } else {
+            newErrors[key] = errorMessage;
+          }
         }
       }
       batchStateUpdate({ errors: newErrors });

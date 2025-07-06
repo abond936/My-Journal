@@ -38,6 +38,7 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
   const handleExcerptChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setField('excerpt', e.target.value), [setField]);
   const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => setField('status', e.target.value as Card['status']), [setField]);
   const handleTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => setField('type', e.target.value as Card['type']), [setField]);
+  const handleDisplayModeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => setField('displayMode', e.target.value as Card['displayMode']), [setField]);
   const handleContentChange = useCallback((content: string) => {
     setField('content', content);
     updateContentMedia(extractMediaFromContent(content));
@@ -160,6 +161,19 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
                 <option value="callout">Callout</option>
                 <option value="gallery">Gallery</option>
                 <option value="collection">Collection</option>
+              </select>
+            </div>
+            <div className={styles.selectGroup}>
+              <label htmlFor="display-mode-select" className={styles.selectLabel}>Display Mode</label>
+              <select
+                id="display-mode-select"
+                value={cardData.displayMode}
+                onChange={handleDisplayModeChange}
+                className={clsx(styles.statusSelect, errors.displayMode && styles.inputError)}
+              >
+                <option value="inline">Inline</option>
+                <option value="navigate">Navigate</option>
+                <option value="static">Static</option>
               </select>
             </div>
           </div>

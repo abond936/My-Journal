@@ -83,11 +83,11 @@ export const createUITreeFromDimensions = (tags: Tag[]): TagWithChildren[] => {
   const dimensionalMap = buildDimensionTree(tags);
   
   const dimensions: Record<string, TagWithChildren> = {
-    who: { id: 'dim-who', name: 'Who', children: dimensionalMap.who, dimension: 'who' },
-    what: { id: 'dim-what', name: 'What', children: dimensionalMap.what, dimension: 'what' },
-    when: { id: 'dim-when', name: 'When', children: dimensionalMap.when, dimension: 'when' },
-    where: { id: 'dim-where', name: 'Where', children: dimensionalMap.where, dimension: 'where' },
-    reflection: { id: 'dim-reflection', name: 'Reflection', children: dimensionalMap.reflection, dimension: 'reflection' },
+    who: { docId: 'dim-who', name: 'Who', children: dimensionalMap.who, dimension: 'who' },
+    what: { docId: 'dim-what', name: 'What', children: dimensionalMap.what, dimension: 'what' },
+    when: { docId: 'dim-when', name: 'When', children: dimensionalMap.when, dimension: 'when' },
+    where: { docId: 'dim-where', name: 'Where', children: dimensionalMap.where, dimension: 'where' },
+    reflection: { docId: 'dim-reflection', name: 'Reflection', children: dimensionalMap.reflection, dimension: 'reflection' },
   };
   
   return Object.values(dimensions);

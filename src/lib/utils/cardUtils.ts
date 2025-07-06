@@ -46,7 +46,26 @@ export function transformToCardUpdate(hydratedCard: HydratedCard): CardUpdate {
  * resulting payload matches the Firestore card schema.
  */
 export function dehydrateCardForSave(raw: any): CardUpdate {
-  const { coverImage: _ci, galleryMedia, contentMedia, ...rest } = raw;
+  const { 
+    coverImage: _ci, 
+    galleryMedia, 
+    contentMedia, 
+    // Server-generated fields to exclude
+    docId,
+    title_lowercase,
+    createdAt,
+    updatedAt,
+    filterTags,
+    who,
+    what,
+    when,
+    where,
+    reflection,
+    // Legacy fields to exclude
+    inheritedTags,
+    tagPathsMap,
+    ...rest 
+  } = raw;
 
   const dehydratedGallery = galleryMedia?.map((item: any) => {
     const { media: _m, ...g } = item || {};

@@ -46,11 +46,21 @@ export default function AppShell({ children }: AppShellProps) {
     <div className={styles.appShell}>
       <div className={styles.header}>
         <Navigation 
-            onToggleSidebar={toggleSidebar} 
-            isSidebarOpen={isSidebarOpen}
+            sidebarOpen={isSidebarOpen}
         />
       </div>
       <div className={styles.contentWrapper}>
+        {/* Sidebar toggle button - only show when not on home page */}
+        {pathname !== '/' && (
+          <button
+            className={styles.sidebarToggle}
+            onClick={toggleSidebar}
+            aria-label="Toggle sidebar"
+            aria-expanded={isSidebarOpen}
+          >
+            {isSidebarOpen ? '←' : '→'}
+          </button>
+        )}
         <div className={styles.sidebarWrapper}>
             <GlobalSidebar isOpen={isSidebarOpen} />
         </div>
