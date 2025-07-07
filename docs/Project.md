@@ -4,7 +4,7 @@
 A personal journaling application combining text and media into cards (stories, galleries, Q&A's, quotes or callouts), with dimensional heirarchical tagging for flexible content consumption.  
 
 **Primary Users**
-The primary users are the author (admin) creating the content and his family consuming it.
+The primary users are the author (admin) creating the content and his family consuming it, primarily on mobile, but tablet and desktop..
 
 **Current State**
 - Core functionality exists
@@ -12,7 +12,7 @@ The primary users are the author (admin) creating the content and his family con
 - Further functional buildout and testing required.
 
 **Roadmap**
-- Rationalize harden tag, card, media management
+- Rationalize/harden tag, card, media management
 - Rationalize/build out content navigation/presentation.
 
 Legend:
@@ -29,7 +29,7 @@ Legend:
   - Server-side validation with Zod schemas
   - Client-side state management with React providers
   - Firebase Admin SDK for server operations
-- CSS Modules for styling
+- CSS modules for styling
 - TypeScript throughout
 - Consumption and Administration separated.
 - Data Model (Cards → Tags → Media)
@@ -74,15 +74,15 @@ Legend:
 **Backup**
 ✅ 
 - Scripts
-    codebase - `src/lib/scripts/utils/backup-codebase.ts` a OneDrive .zip file
-    database - `src/lib/scripts/backup-database.ts` a single, timestamped JSON file.
+  - codebase - `src/lib/scripts/utils/backup-codebase.ts` -> OneDrive .zip file
+  - database - `src/lib/scripts/backup-database.ts` -> JSON file
 - Scheduled 
-  - `src/lib/scripts/utils/setup-backup-task.ps1`  Windows Scheduled Task to run at 1am daily
-  - `src/lib/scripts/setup-database-backup-task.ps1` Windows Scheduled Task to run at 2am daily
+  - `src/lib/scripts/utils/setup-backup-task.ps1`  Windows Scheduled Task at 1am daily
+  - `src/lib/scripts/setup-database-backup-task.ps1` Windows Scheduled Task at 2am daily
 - Github backup - `.github/workflows/backup.yml` automatic backup on every push to the `main` branch. This backup is stored as a workflow artifact for 7 days, providing an off-site copy.
 - Cleanup 
-  codebase - stored 7 days
-  database - Automatically cleans up local backups > 5 days.
+  - codebase - stored 7 days
+  - database - Automatically cleans up local backups > 5 days.
 - Recovery 
   - codebase Unzip the file to restore the complete project, run `npm install` to reinstall all dependencies.
   - `npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/restore-database.ts "C:\\Path\\To\\Your\\Backup\\file.json"`
@@ -91,7 +91,7 @@ Legend:
 
 ## **APPLICATION**
 ================================
-- The application is bifuracted into 'content' and 'administration' with the core components wrapped in navigation and providers.
+- The application is separated into 'content' and 'administration' with the core components wrapped in navigation and providers.
 
 ### **Application Structure**
 - Providers - The core layouts are wrapped in providers
@@ -117,7 +117,7 @@ Legend:
 
  `src/lib/` Core application logic, types, and utilities
    `services/` business logic
-   `types/` Zod schemas and TypeScript type definitions. Well-commented, data model's primary documentation
+   `types/` Zod schemas and TypeScript type definitions
    `hooks/` Reusable client-side React hooks
    `utils/` General utility functions (e.g., date formatting, tag manipulation)
 
@@ -134,13 +134,13 @@ Legend:
   - `Media` - `src/lib/types/photo.ts` - Media assets (image, video) stored in Firebase Storage, including metadata like dimensions and paths.
 
 ### **Home Page**
-- Application opens to the home page for login.
+- Application opens to the home page for login
 
 ✅
 - Login
 
 ### **Top Navigation**
-- Top navigation toggles content and admin for the administrator and defaults to content for a user. 
+- Top navigation toggles content and admin for the administrator 
 
 ✅ 
 - content - Available to users and admin
@@ -152,11 +152,10 @@ Legend:
 
 ✅ 
 Heirarchical Tag Display: `GlobalSidebar.tsx` and `TagTree.tsx` 
-⭕2 Filtering - Flesh out filtering
-      - include number of assigned cards (x)
-      - add sort by when, asc/dec
-      - increase indention
-      - make slide in/out on mobile
+Slide in/out on mobile
+⭕2 Filtering
+    - add sort by when, asc/dec
+    - increase indention
 ⭕2 Table of Contents - Add a curated table of contents, essentially pre-built filters.
 
 ### **Content Page**
@@ -171,14 +170,14 @@ Grid View
     - Navigate - Links to dedicated card view page   
   - Infinite scroll pagination - IntersectionObserver
   ⭕2 Fix ghost/error layout issues
-⭕2 Search - add title & content search
+⭕2 Search - Add search
 
 ### **View Card**
 - Clicking a `navigate`card navigates to card detail page `src/app/view/[id]/CardDetailPage.tsx` conditionally rendering card components
 - `src/app/view/[id]/page.tsx` is executed on the server. Inside this page component, the `getCardData` function calls `getCardById(id)` from `src/lib/services/cardService.ts` to fetch the main card's data from Firestore. 
 If the card has children (`childrenIds`), it then calls `getCardsByIds` to fetch them.
 - The fetched `card` and `children` objects are passed as props to the client component `<CardDetailPage />`.
--  The `CardDetailPage` component (`src/components/view/CardDetailPage.tsx`) receives the data and is responsible for rendering the final view in the browser. It does not need to fetch this data itself.
+-  The `CardDetailPage` component (`src/components/view/CardDetailPage.tsx`) receives the data and is responsible for rendering the final view in the browser. 
 
 ✅ 
 - Conditional Render - Render page based on components.
@@ -196,9 +195,7 @@ If the card has children (`childrenIds`), it then calls `getCardsByIds` to fetch
 `src/app/admin/layout.tsx`
 
 ✅
-- navigation
-
-⭕2 - fix page scrolling under navigation bar
+- navigation to Cards, Tags, Media
 
 ### **Card System**
 =======================================
@@ -275,18 +272,18 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
     ⭕2 - Batch upload gallery cards by script
 - Children - Search only (not useful) - ⭕2 - Develop linking modal
 - Delete - Delete card and related media
-- Cancel - Abandon any outstanding edits and return to list. ⭕2 - Add warning if edits.
+- Cancel - Abandon any outstanding edits and return to list. 
 - Save
 
 ### **Tag System**
 ===========================================
 - All cards are assigned multiple, dimensional, and heirarchical tags to enable flexible filtering. 
+- All business logic on the server-side (`tagService`) 
 
 **Tag Data Model**
 ✅ 
 - Collection - `tags` canonical tag data
 - Schema - `src/lib/types/tag.ts`
-
 
 **Tag Administration**
 `/app/admin/tag-admin/page.tsx`
@@ -363,31 +360,27 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
       - return `mediaId` to card for storage and object for immediate display
   - Optimize performance through next/image, caching and lazy loading.
 - Images served to content via Firebase ID/URLs
-- Images sized on the fly `'next/image`
-- OnSave
-  - update media doc to 'active'
-- OnRemove/OnCancel/OnDelete
-  - delete media doc 
+- Images sized on the fly `'next/image` 
 
 **Media Data Model**
 ✅
 - Collection - `media`
 - Schema  - `src/lib/types/photo.ts`
 
-- Local Drive Integration - ⭕2 - Error Handling - If import fails, provide error and option to accept imported or none?
+- Local Drive Integration 
 - Photopicker Integration
 - `imageImportService.ts`
-- Sharp image processing - ⭕2 - face detection and smart crop
+- Sharp image processing  
 - Metadata extraction
 - Unique ID generation
 - Error handling
 ⭕2 Implement `next/image`
 
 **Normalization**
-⭕2 Organize, normalize, edit images pre-import
-    - Create directories - zOriginals, staged, final
+⭕1 Organize, normalize, edit images pre-import
+    - Create directories - zOriginals, staged
     - Move originals to zOriginals
-    - Batch normalize
+    - Batch normalize to staged
       - upscale
       - sharpen
       - white balance
@@ -395,9 +388,8 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
       - auto contrast
       - gamma correction
       - convert format - webP or optimized JPEG
-    - Move to final
-    - Edit and move to final
-    - Restore and replace as needed.
+    - Edit as needed 
+⭕2 - face detection and smart crop
 ⭕2 - Batch clean images from testing before production
 ⭕2 - Batch upload images to cards. 
         - Extract metadata for caption, tags(?)

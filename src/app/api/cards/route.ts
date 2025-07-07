@@ -107,6 +107,7 @@ export async function GET(request: Request) {
     const limit = searchParams.has('limit') ? parseInt(searchParams.get('limit')!, 10) : 10;
     const lastDocId = searchParams.get('lastDocId') || undefined;
     const childrenIds_contains = searchParams.get('childrenIds_contains') || undefined;
+    const hydrationMode = searchParams.get('hydration') || 'full'; // 'full' or 'cover-only'
 
     try {
       const result: PaginatedResult<Card> = await getCards({
@@ -118,6 +119,7 @@ export async function GET(request: Request) {
         childrenIds_contains,
         limit,
         lastDocId,
+        hydrationMode,
       });
 
       return NextResponse.json(result);

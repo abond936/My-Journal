@@ -7,6 +7,7 @@ import sharp from 'sharp';
 import { v4 as uuidv4 } from 'uuid';
 import sizeOf from 'image-size';
 import { uploadFile } from '@/lib/config/firebase/admin';
+import { FirebaseFirestore } from 'firebase-admin';
 
 const ONEDRIVE_ROOT_FOLDER = process.env.ONEDRIVE_ROOT_FOLDER;
 
@@ -189,47 +190,86 @@ export async function updateMediaStatus(mediaId: string, status: Media['status']
   }
 }
 
+// Add retry mechanism
+async function deleteFromStorageWithRetry(storagePath: string, maxRetries = 3): Promise<boolean> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const bucket = admin.storage().bucket();
+      await bucket.file(storagePath).delete();
+      return true;
+    } catch (error) {
+      if (attempt === maxRetries) {
+        console.error(`Failed to delete storage ${storagePath} after ${maxRetries} attempts:`, error);
+        return false;
+      }
+      const delay = Math.pow(2, attempt - 1) * 1000;
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  return false;
+}
+
+// Mark storage file for later deletion
+async function markStorageForLaterDeletion(storagePath: string): Promise<void> {
+  const bucket = admin.storage().bucket();
+  const file = bucket.file(storagePath);
+  
+  try {
+    await file.setMetadata({
+      metadata: {
+        markedForDeletion: 'true',
+        markedAt: Date.now().toString()
+      }
+    });
+  } catch (error) {
+    console.error(`Failed to mark storage file ${storagePath}:`, error);
+  }
+}
+
 /**
  * Deletes a media asset from both Firestore and Firebase Storage.
  *
  * @param mediaId - The ID of the media asset to delete.
+ * @param transaction - Optional Firestore transaction for atomic operations.
  */
-export async function deleteMediaAsset(mediaId: string): Promise<void> {
+export async function deleteMediaAsset(
+  mediaId: string, 
+  transaction?: FirebaseFirestore.Transaction
+): Promise<void> {
   const app = getAdminApp();
   const firestore = app.firestore();
-  const bucket = app.storage().bucket();
-  const mediaRef = firestore.collection('media').doc(mediaId);
+  
+  if (transaction) {
+    // Transaction mode: Only delete Firestore document
+    const mediaRef = firestore.collection('media').doc(mediaId);
+    transaction.delete(mediaRef);
+  } else {
+    // Standalone mode: Try immediate deletion, fallback to marking
+    const mediaRef = firestore.collection('media').doc(mediaId);
 
-  try {
-    // 1. Get the media document to find the storage path
-    const doc = await mediaRef.get();
-    if (!doc.exists) {
-      console.warn(`[deleteMediaAsset] Media document with ID ${mediaId} not found. Skipping deletion.`);
-      return;
-    }
-    const mediaData = doc.data() as Media;
-    const storagePath = mediaData.storagePath;
+    try {
+      const doc = await mediaRef.get();
+      if (!doc.exists) {
+        console.warn(`[deleteMediaAsset] Media document with ID ${mediaId} not found. Skipping deletion.`);
+        return;
+      }
+      
+      const mediaData = doc.data() as Media;
+      const storagePath = mediaData.storagePath;
 
-    // 2. Delete the file from Firebase Storage
-    if (storagePath) {
-      try {
-        await bucket.file(storagePath).delete();
-        console.log(`[deleteMediaAsset] Successfully deleted file ${storagePath} from Storage.`);
-      } catch (storageError: any) {
-        if (storageError.code === 404) {
-          console.warn(`[deleteMediaAsset] File ${storagePath} not found in Storage. It might have been deleted already.`);
-        } else {
-          console.error(`[deleteMediaAsset] Error deleting file ${storagePath} from Storage:`, storageError);
+      if (storagePath) {
+        const success = await deleteFromStorageWithRetry(storagePath);
+        if (!success) {
+          await markStorageForLaterDeletion(storagePath);
         }
       }
+
+      await mediaRef.delete();
+      console.log(`[deleteMediaAsset] Successfully deleted media document with ID ${mediaId}.`);
+
+    } catch (error) {
+      console.error(`[deleteMediaAsset] CRITICAL ERROR during deletion for media ID ${mediaId}:`, error);
+      throw new Error(`Failed to delete media asset ${mediaId}. See server logs for details.`);
     }
-
-    // 3. Delete the Firestore document
-    await mediaRef.delete();
-    console.log(`[deleteMediaAsset] Successfully deleted media document with ID ${mediaId}.`);
-
-  } catch (error) {
-    console.error(`[deleteMediaAsset] CRITICAL ERROR during deletion for media ID ${mediaId}:`, error);
-    throw new Error(`Failed to delete media asset ${mediaId}. See server logs for details.`);
   }
 }

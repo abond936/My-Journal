@@ -44,6 +44,10 @@ export function TagProvider({ children }: { children: ReactNode }) {
     fetcher, 
     {
       fallbackData: [],
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 300000, // 5 minutes
+      focusThrottleInterval: 300000 // 5 minutes
     }
   );
 

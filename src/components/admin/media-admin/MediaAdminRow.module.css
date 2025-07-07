@@ -1,0 +1,219 @@
+.row {
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.2s;
+}
+
+.row:hover {
+  background: var(--background-hover);
+}
+
+.row.selected {
+  background: var(--primary-color-light);
+}
+
+.cell {
+  padding: 0.75rem 0.5rem;
+  vertical-align: middle;
+  border-right: 1px solid var(--border-color);
+}
+
+.cell:last-child {
+  border-right: none;
+}
+
+.checkboxCell {
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  border-right: 1px solid var(--border-color);
+}
+
+/* Status Badge */
+.statusBadge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  display: inline-block;
+  text-align: center;
+  min-width: 60px;
+}
+
+.statusBadge.temporary {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.statusBadge.active {
+  background: #d4edda;
+  color: #155724;
+}
+
+/* Thumbnail */
+.thumbnail {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--background-secondary);
+}
+
+.thumbnailImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Filename */
+.filename {
+  font-weight: 500;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Caption */
+.caption {
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.caption:hover {
+  background: var(--background-hover);
+}
+
+.captionEdit {
+  width: 100%;
+}
+
+.captionInput {
+  width: 100%;
+  padding: 0.25rem;
+  border: 1px solid var(--primary-color);
+  border-radius: 4px;
+  font-size: inherit;
+  background: var(--background-start);
+  color: var(--text-color);
+}
+
+/* Numbers */
+.number {
+  text-align: center;
+  font-family: monospace;
+  color: var(--text-color);
+}
+
+/* Object Position */
+.objectPosition {
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Source Badge */
+.sourceBadge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  display: inline-block;
+  text-align: center;
+  min-width: 50px;
+}
+
+.sourceBadge.local {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.sourceBadge.paste {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+/* Source Path */
+.sourcePath {
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: var(--text-color-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.actionButton {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--background-start);
+  color: var(--text-color);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.actionButton:hover {
+  background: var(--background-hover);
+}
+
+.actionButton.deleteButton {
+  background: #ffebee;
+  color: #c62828;
+  border-color: #ffcdd2;
+}
+
+.actionButton.deleteButton:hover {
+  background: #ffcdd2;
+}
+
+@media (max-width: 768px) {
+  .cell {
+    padding: 0.5rem 0.25rem;
+  }
+
+  .thumbnail {
+    width: 40px;
+    height: 40px;
+  }
+
+  .actions {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .actionButton {
+    min-width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
+  }
+} 

@@ -10,14 +10,14 @@ const db = getFirestore();
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'admin') {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const tagId = params.id;
+    const { id: tagId } = await params;
     const { newParentId } = await request.json();
 
     if (!tagId) {

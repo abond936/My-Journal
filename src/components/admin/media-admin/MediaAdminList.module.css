@@ -1,0 +1,115 @@
+.container {
+  width: 100%;
+}
+
+.bulkActions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--background-secondary);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.bulkButton {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--background-start);
+  color: var(--text-color);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.bulkButton:hover {
+  background: var(--background-hover);
+}
+
+.bulkButton.deleteButton {
+  background: #dc3545;
+  color: white;
+  border-color: #dc3545;
+}
+
+.bulkButton.deleteButton:hover {
+  background: #c82333;
+}
+
+.tableContainer {
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--background-start);
+}
+
+.table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 100%;
+}
+
+.headerCell {
+  position: relative;
+  padding: 0.75rem 0.5rem;
+  background: var(--background-secondary);
+  border-bottom: 2px solid var(--border-color);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-color);
+  text-align: left;
+  user-select: none;
+}
+
+.headerContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.resizeHandle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: transparent;
+  cursor: col-resize;
+  transition: background-color 0.2s;
+}
+
+.resizeHandle:hover {
+  background: var(--primary-color);
+}
+
+.checkboxCell {
+  padding: 0.75rem 0.5rem;
+  background: var(--background-secondary);
+  border-bottom: 2px solid var(--border-color);
+  text-align: center;
+  width: 40px;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-color-secondary);
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .bulkActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tableContainer {
+    font-size: 0.8rem;
+  }
+
+  .headerCell {
+    padding: 0.5rem 0.25rem;
+  }
+} 

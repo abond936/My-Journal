@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { TagProvider } from '@/components/providers/TagProvider';
+import { MediaProvider } from '@/components/providers/MediaProvider';
 import AdminPageWrapper from '@/components/admin/AdminPageWrapper';
 
 export default async function RootAdminLayout({
@@ -20,11 +21,13 @@ export default async function RootAdminLayout({
 
   return (
     <TagProvider>
-      <AdminLayout>
-        <AdminPageWrapper>
-          {children}
-        </AdminPageWrapper>
-      </AdminLayout>
+      <MediaProvider>
+        <AdminLayout>
+          <AdminPageWrapper>
+            {children}
+          </AdminPageWrapper>
+        </AdminLayout>
+      </MediaProvider>
     </TagProvider>
   );
 } 

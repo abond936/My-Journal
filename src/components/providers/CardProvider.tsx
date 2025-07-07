@@ -89,6 +89,19 @@ export const CardProvider = ({ children, collectionId }: CardProviderProps) => {
     return dimensionalMap;
   }, [selectedFilterTagIds, allTags]);
 
+  // Create a fetcher that includes hydration parameter for admin
+  const adminFetcher = useCallback(async (url: string) => {
+    const urlObj = new URL(url, window.location.origin);
+    if (isAdmin) {
+      urlObj.searchParams.set('hydration', 'cover-only');
+    }
+    const response = await fetch(urlObj.toString());
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  }, [isAdmin]);
+
   const {
     data,
     error,
@@ -139,8 +152,14 @@ export const CardProvider = ({ children, collectionId }: CardProviderProps) => {
 
       return `${endpoint}?${params.toString()}`;
     },
-    fetcher,
-    { revalidateFirstPage: false }
+    adminFetcher,
+    { 
+      revalidateFirstPage: true,
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: isAdmin ? 0 : 60000, // No deduping for admin, 1 minute for others
+      focusThrottleInterval: isAdmin ? 0 : 60000 // No throttling for admin, 1 minute for others
+    }
   );
 
   // --- Derived State ---

@@ -39,13 +39,13 @@ import { mediaSchema } from '@/lib/types/photo';
  *       500:
  *         description: Internal server error.
  */
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') {
     return new NextResponse('Forbidden', { status: 403 });
   }
 
-  const mediaId = params.id;
+  const { id: mediaId } = await params;
   if (!mediaId) {
     return NextResponse.json({ message: 'Media ID is required.' }, { status: 400 });
   }
@@ -93,13 +93,13 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
  *       500:
  *         description: Internal server error.
  */
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') {
     return new NextResponse('Forbidden', { status: 403 });
   }
 
-  const mediaId = params.id;
+  const { id: mediaId } = await params;
   if (!mediaId) {
     return NextResponse.json({ message: 'Media ID is required.' }, { status: 400 });
   }

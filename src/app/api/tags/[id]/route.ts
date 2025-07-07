@@ -10,7 +10,7 @@ import { safeToDate } from '@/lib/utils/dateUtils';
 getAdminApp();
 
 interface RouteParams {
-    id: string;
+    id: Promise<string>;
 }
 
 /**

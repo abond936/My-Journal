@@ -5,7 +5,7 @@ import sizeOf from 'image-size';
 import { PickerMedia } from '@/lib/types/photo';
 
 const ONEDRIVE_ROOT_FOLDER = process.env.ONEDRIVE_ROOT_FOLDER;
-const SUPPORTED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif'];
+const SUPPORTED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
 
 // Utility functions for consistent path handling
 const toSystemPath = (p: string) => p.split('/').join(path.sep);

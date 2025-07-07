@@ -71,6 +71,49 @@ async function _hydrateCards(cards: Card[]): Promise<Card[]> {
 }
 
 /**
+ * Hydrates only cover images for cards (for admin list views)
+ * This significantly reduces Firestore reads by not fetching gallery and content media
+ */
+async function _hydrateCoverImagesOnly(cards: Card[]): Promise<Card[]> {
+  if (!cards || cards.length === 0) {
+    return [];
+  }
+
+  // 1. Collect only cover image IDs
+  const coverImageIds = cards
+    .map(card => card.coverImageId)
+    .filter(id => id) as string[];
+
+  if (coverImageIds.length === 0) {
+    return cards; // No cover images to hydrate
+  }
+
+  // 2. Fetch only cover images in batches
+  const mediaMap = new Map<string, Media>();
+  const coverImageIdChunks: string[][] = [];
+  for (let i = 0; i < coverImageIds.length; i += 30) {
+    coverImageIdChunks.push(coverImageIds.slice(i, i + 30));
+  }
+
+  for (const chunk of coverImageIdChunks) {
+    if (chunk.length > 0) {
+      const mediaDocs = await firestore.collection(MEDIA_COLLECTION).where('id', 'in', chunk).get();
+      mediaDocs.forEach(doc => mediaMap.set(doc.id, doc.data() as Media));
+    }
+  }
+  
+  // 3. Inject only cover images back into each card
+  return cards.map(card => {
+    const hydratedCard = { ...card };
+    if (hydratedCard.coverImageId) {
+      hydratedCard.coverImage = mediaMap.get(hydratedCard.coverImageId) || null;
+    }
+    // Leave galleryMedia and contentMedia as dehydrated (just IDs)
+    return hydratedCard;
+  });
+}
+
+/**
  * Creates a new card in Firestore.
  * @param cardData The data for the new card, excluding 'id'.
  * @returns The newly created card with its ID.
@@ -543,28 +586,31 @@ export async function deleteAllCards(): Promise<void> {
 export async function deleteCard(cardId: string): Promise<void> {
     const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
 
+    // First, get the card data to collect media IDs for post-transaction cleanup
+    const cardSnap = await docRef.get();
+    if (!cardSnap.exists) {
+        console.warn(`Card with ID ${cardId} not found for deletion.`);
+        return;
+    }
+    const cardToDelete = cardSnap.data() as Card;
+
+    // Collect media IDs for post-transaction cleanup
+    const mediaToDelete: string[] = [];
+    if (cardToDelete.coverImageId) {
+        mediaToDelete.push(cardToDelete.coverImageId);
+    }
+    if (cardToDelete.galleryMedia) {
+        cardToDelete.galleryMedia.forEach(item => mediaToDelete.push(item.mediaId));
+    }
+    if (cardToDelete.contentMedia) {
+        cardToDelete.contentMedia.forEach(id => mediaToDelete.push(id));
+    }
+
     return firestore.runTransaction(async (transaction) => {
         const docSnap = await transaction.get(docRef);
         if (!docSnap.exists) {
             console.warn(`Card with ID ${cardId} not found for deletion.`);
             return;
-        }
-        const cardToDelete = docSnap.data() as Card;
-
-        // --- Delete Associated Media Assets ---
-        const mediaToDelete = new Set<string>();
-        if (cardToDelete.coverImageId) {
-            mediaToDelete.add(cardToDelete.coverImageId);
-        }
-        if (cardToDelete.galleryMedia) {
-            cardToDelete.galleryMedia.forEach(item => mediaToDelete.add(item.mediaId));
-        }
-        if (cardToDelete.contentMedia) {
-            cardToDelete.contentMedia.forEach(id => mediaToDelete.add(id));
-        }
-
-        for (const mediaId of Array.from(mediaToDelete)) {
-            await deleteMediaAsset(mediaId, transaction);
         }
 
         // Decrement counts for all associated tags if the card was published
@@ -572,8 +618,7 @@ export async function deleteCard(cardId: string): Promise<void> {
             await updateTagCounts(cardToDelete.tags, 'decrement', transaction);
         }
 
-        // --- Clean up parent-child relationships ---
-        // Find all cards that have this card in their childrenIds and remove it
+        // Clean up parent-child relationships
         const parentCardsQuery = firestore.collection(CARDS_COLLECTION)
             .where('childrenIds', 'array-contains', cardId);
         const parentCardsSnapshot = await transaction.get(parentCardsQuery);
@@ -587,8 +632,31 @@ export async function deleteCard(cardId: string): Promise<void> {
             });
         }
 
+        // Delete media documents from Firestore (within transaction)
+        for (const mediaId of mediaToDelete) {
+            await deleteMediaAsset(mediaId, transaction);
+        }
+
         // Delete the card document
         transaction.delete(docRef);
+    }).then(async () => {
+        // Post-transaction: Try immediate storage cleanup for the deleted media
+        // This is outside the transaction, so failures won't affect database integrity
+        for (const mediaId of mediaToDelete) {
+            try {
+                const mediaDoc = await firestore.collection('media').doc(mediaId).get();
+                if (mediaDoc.exists) {
+                    const mediaData = mediaDoc.data() as Media;
+                    
+                    const success = await deleteFromStorageWithRetry(mediaData.storagePath);
+                    if (!success) {
+                        await markStorageForLaterDeletion(mediaData.storagePath);
+                    }
+                }
+            } catch (error) {
+                console.error(`Error processing storage for ${mediaId}:`, error);
+            }
+        }
     });
 }
 
@@ -666,6 +734,7 @@ export async function getCards(options: {
   childrenIds_contains?: string;
   limit?: number;
   lastDocId?: string;
+  hydrationMode?: 'full' | 'cover-only';
 } = {}): Promise<{ items: Card[]; lastDocId?: string; hasMore: boolean }> {
   const { 
     q,
@@ -676,6 +745,7 @@ export async function getCards(options: {
     childrenIds_contains,
     limit = 10,
     lastDocId,
+    hydrationMode = 'full',
   } = options;
 
   let query: FirebaseFirestore.Query = firestore.collection(CARDS_COLLECTION);
@@ -757,8 +827,12 @@ export async function getCards(options: {
     ...doc.data(),
   } as Card));
   
-  // --- ADD THE HYDRATION STEP HERE ---
-  cards = await _hydrateCards(cards);
+  // --- HYDRATION STEP - Use selective hydration based on mode ---
+  if (hydrationMode === 'cover-only') {
+    cards = await _hydrateCoverImagesOnly(cards);
+  } else {
+    cards = await _hydrateCards(cards);
+  }
 
   const lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
   const lastDocIdResult = lastVisible ? lastVisible.id : undefined;

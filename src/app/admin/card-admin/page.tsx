@@ -122,11 +122,11 @@ export default function AdminCardsPage() {
           })
         )
       );
-      mutate(); // Revalidate from server
+      mutate(undefined, { revalidate: true }); // Revalidate from server
     } catch (err) {
       console.error(`Error updating ${field}:`, err);
       alert(`An error occurred while updating ${field}. Reverting changes.`);
-      mutate(); // Revert on error
+      mutate(undefined, { revalidate: true }); // Revert on error
     }
   };
 
@@ -138,11 +138,11 @@ export default function AdminCardsPage() {
     
     try {
       await Promise.all(idsToDelete.map(id => fetch(`/api/cards/${id}`, { method: 'DELETE' })));
-      mutate(); // Revalidate after deleting
+      mutate(undefined, { revalidate: true }); // Revalidate after deleting
     } catch (err) {
       console.error('Error deleting cards:', err);
       alert('An error occurred while deleting cards. Reverting changes.');
-      mutate();
+      mutate(undefined, { revalidate: true });
     }
   };
 
@@ -158,13 +158,27 @@ export default function AdminCardsPage() {
         throw new Error('Failed to update card.');
       }
       // Optimistic update can be tricky, so we revalidate from server
-      await mutate();
+      await mutate(undefined, { revalidate: true });
     } catch (err) {
       console.error(`Error updating card ${cardId}:`, err);
       // It's good practice to inform the user and maybe revert UI changes
       alert(`An error occurred while updating the card. Please refresh and try again.`);
       // Re-fetch data to ensure UI consistency
-      await mutate();
+      await mutate(undefined, { revalidate: true });
+      throw err; // Re-throw to allow caller to handle it
+    }
+  };
+
+  const handleDeleteCard = async (cardId: string) => {
+    try {
+      const response = await fetch(`/api/cards/${cardId}`, { method: 'DELETE' });
+      if (!response.ok) {
+        throw new Error('Failed to delete card.');
+      }
+      // Refresh the list without page reload
+      await mutate(undefined, { revalidate: true });
+    } catch (err) {
+      console.error(`Error deleting card ${cardId}:`, err);
       throw err; // Re-throw to allow caller to handle it
     }
   };
@@ -251,6 +265,7 @@ export default function AdminCardsPage() {
         onSelectAll={handleSelectAll}
         onSaveScrollPosition={onSaveScrollPosition}
         onUpdateCard={handleUpdateCard}
+        onDeleteCard={handleDeleteCard}
       />
 
       {hasMore && (
@@ -265,7 +280,7 @@ export default function AdminCardsPage() {
         isOpen={isBulkTagModalOpen}
         onClose={() => setIsBulkTagModalOpen(false)}
         cardIds={Array.from(selectedCardIds)}
-        onSave={mutate}
+        onSave={() => mutate(undefined, { revalidate: true })}
       />
     </div>
   );

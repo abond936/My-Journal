@@ -4,9 +4,9 @@ import { getCardById, getCardsByIds } from '@/lib/services/cardService';
 import { notFound } from 'next/navigation';
 
 interface CardPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 interface CardPageData {
@@ -39,7 +39,7 @@ async function getCardData(id: string): Promise<CardPageData | null> {
 }
 
 export default async function CardPage({ params }: CardPageProps) {
-  const { id } = params;
+  const { id } = await params;
   const pageData = await getCardData(id);
 
   if (!pageData) {

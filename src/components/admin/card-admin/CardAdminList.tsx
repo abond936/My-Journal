@@ -38,6 +38,7 @@ interface CardAdminListProps {
   onSelectAll: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onSaveScrollPosition: (cardId: string) => void;
   onUpdateCard: (cardId: string, updateData: Partial<Card>) => Promise<void>;
+  onDeleteCard: (cardId: string) => Promise<void>;
 }
 
 // Helper function to get tags for a dimension
@@ -56,6 +57,7 @@ export default function CardAdminList({
   onSelectAll,
   onSaveScrollPosition,
   onUpdateCard,
+  onDeleteCard,
 }: CardAdminListProps) {
   const router = useRouter();
   const isAllSelected = cards.length > 0 && selectedCardIds.size === cards.length;
@@ -225,12 +227,7 @@ export default function CardAdminList({
 
                     if (window.confirm(confirmMessage)) {
                       try {
-                        const deleteResponse = await fetch(`/api/cards/${card.docId}`, { method: 'DELETE' });
-                        if (!deleteResponse.ok) {
-                          throw new Error('Failed to delete card.');
-                        }
-                        // Refresh the list
-                        window.location.reload();
+                        await onDeleteCard(card.docId);
                       } catch (err) {
                         console.error('Deletion error:', err);
                         alert(err instanceof Error ? err.message : 'An unknown error occurred.');

@@ -15,7 +15,8 @@
     "export:csv": "tsx src/lib/scripts/migration/export-to-csv.ts",
     "backfill:tags": "tsx src/lib/scripts/tags/backfill-tag-paths.ts",
     "update:tag-counts": "tsx src/lib/scripts/tags/update-tag-counts.ts",
-    "diagnose:tag": "tsx src/lib/scripts/dev/diagnose-single-tag.ts"
+    "diagnose:tag": "tsx src/lib/scripts/dev/diagnose-single-tag.ts",
+    "normalize:images": "npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/normalize-images.ts"
   },
   "dependencies": {
     "@auth/firebase-adapter": "^2.9.1",

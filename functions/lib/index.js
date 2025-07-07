@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onDemandAggregateCardStats = exports.scheduledAggregateCardStats = void 0;
+exports.onDemandAggregateCardStats = exports.scheduledAggregateCardStats = exports.scheduledCleanupMarkedStorage = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 // Initialize Firebase Admin SDK
@@ -111,4 +111,48 @@ exports.onDemandAggregateCardStats = functions.https
         throw new functions.https.HttpsError("internal", "An internal error occurred while aggregating stats.");
     }
 });
+
+// Storage cleanup function for files marked for deletion
+async function cleanupMarkedStorage() {
+    functions.logger.info("Starting cleanup of storage files marked for deletion...");
+    const bucket = admin.storage().bucket();
+    
+    try {
+        // List all files in the bucket
+        const [files] = await bucket.getFiles();
+        let deletedCount = 0;
+        let errorCount = 0;
+        
+        for (const file of files) {
+            try {
+                const [metadata] = await file.getMetadata();
+                
+                // Check if file is marked for deletion
+                if (metadata.metadata && metadata.metadata.markedForDeletion === 'true') {
+                    functions.logger.info(`Deleting marked file: ${file.name}`);
+                    await file.delete();
+                    deletedCount++;
+                }
+            } catch (error) {
+                functions.logger.error(`Error processing file ${file.name}:`, error);
+                errorCount++;
+            }
+        }
+        
+        functions.logger.info(`Storage cleanup completed. Deleted: ${deletedCount}, Errors: ${errorCount}`);
+    } catch (error) {
+        functions.logger.error("Error during storage cleanup:", error);
+        throw error;
+    }
+}
+
+// 3. Scheduled Storage Cleanup Function (runs daily at 2 AM)
+exports.scheduledCleanupMarkedStorage = functions.pubsub
+    .schedule("0 2 * * *")
+    .onRun(async (context) => {
+    functions.logger.info("Scheduled execution of storage cleanup triggered.");
+    await cleanupMarkedStorage();
+    return null;
+});
+
 //# sourceMappingURL=index.js.map
