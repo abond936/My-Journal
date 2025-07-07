@@ -50,11 +50,17 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
 
   const handleCoverImageChange = useCallback((newCoverImage: Media | null, newPosition?: string) => {
     setField('coverImage', newCoverImage);
-    setField('coverImageId', newCoverImage ? newCoverImage.id : null);
+    setField('coverImageId', newCoverImage ? newCoverImage.docId : null);
     // Only update position if it's explicitly provided.
     // This handles the case where we just change the image but not its position yet.
-    if (newPosition !== undefined) {
-      setField('coverImageObjectPosition', newPosition);
+    if (newPosition !== undefined && newCoverImage) {
+      // Convert percentage position to focal point coordinates
+      const [xPercent, yPercent] = newPosition.split(' ').map(p => parseInt(p));
+      const focalPoint = {
+        x: (xPercent / 100) * newCoverImage.width,
+        y: (yPercent / 100) * newCoverImage.height,
+      };
+      setField('coverImageFocalPoint', focalPoint);
     }
   }, [setField]);
 
@@ -127,7 +133,10 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
           <div className={styles.coverPhotoSection}>
             <CoverPhotoContainer
               coverImage={cardData.coverImage}
-              objectPosition={cardData.coverImageObjectPosition}
+              objectPosition={cardData.coverImageFocalPoint ? 
+                `${(cardData.coverImageFocalPoint.x / (cardData.coverImage?.width || 1)) * 100}% ${(cardData.coverImageFocalPoint.y / (cardData.coverImage?.height || 1)) * 100}%` : 
+                '50% 50%'
+              }
               onChange={handleCoverImageChange}
               isSaving={isSaving}
               error={errors.coverImage}

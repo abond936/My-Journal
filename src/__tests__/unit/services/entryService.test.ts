@@ -60,7 +60,7 @@ describe('Entry Service', () => {
     createdAt: mockDate,
     updatedAt: mockDate,
     date: mockDate,
-    inheritedTags: ['test'],
+
     media: [],
     visibility: 'private',
   };

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import {
   DndContext,
   closestCenter,
@@ -88,11 +89,15 @@ export default function GalleryManager({ galleryMedia, onUpdate, error, classNam
               <SortableItem key={item.mediaId} id={item.mediaId}>
                 <div className={styles.imageItem}>
                   {item.media ? (
-                    <img
+                    <Image
                       src={getDisplayUrl(item.media)}
                       alt={item.media.alt || ''}
                       className={styles.thumbnail}
+                      width={200}
+                      height={150}
+                      sizes="200px"
                       style={{ objectPosition: item.objectPosition }}
+                      priority={false}
                     />
                   ) : (
                     <div className={styles.placeholder}>

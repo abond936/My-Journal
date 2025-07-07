@@ -2,8 +2,10 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Card } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils'; // Corrected import path
+import { getObjectPositionForAspectRatio } from '@/lib/utils/objectPositionUtils';
 import styles from './V2ContentCard.module.css';
 
 // Simple horizontal slider
@@ -13,11 +15,28 @@ import 'swiper/css';
 // --- Card Type Renderers ---
 
 const StoryCardContent: React.FC<{ card: Card }> = ({ card }) => {
+  const objectPosition = card.coverImageFocalPoint && card.coverImage ? 
+    getObjectPositionForAspectRatio(
+      card.coverImageFocalPoint,
+      { width: card.coverImage.width, height: card.coverImage.height },
+      '1/1',
+      400
+    ) : 'center';
+
   return (
     <>
       {card.coverImage && (
         <div className={styles.imageContainer}>
-          <img src={getDisplayUrl(card.coverImage)} alt={card.title} className={styles.image} />
+          <Image 
+            src={getDisplayUrl(card.coverImage)} 
+            alt={card.title} 
+            className={styles.image}
+            width={400}
+            height={300}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            style={{ objectPosition }}
+            priority={false}
+          />
         </div>
       )}
       <div className={styles.content}>
@@ -31,6 +50,13 @@ const StoryCardContent: React.FC<{ card: Card }> = ({ card }) => {
 // NEW: A dedicated renderer for gallery card previews.
 const GalleryCardContent: React.FC<{ card: Card }> = ({ card }) => {
   const hasGallery = card.galleryMedia && card.galleryMedia.length > 0;
+  const objectPosition = card.coverImageFocalPoint && card.coverImage ? 
+    getObjectPositionForAspectRatio(
+      card.coverImageFocalPoint,
+      { width: card.coverImage.width, height: card.coverImage.height },
+      '1/1',
+      400
+    ) : 'center';
 
   return (
     <>
@@ -40,7 +66,15 @@ const GalleryCardContent: React.FC<{ card: Card }> = ({ card }) => {
             {card.galleryMedia?.map(item =>
               item.media ? (
                 <SwiperSlide key={item.mediaId}>
-                  <img src={getDisplayUrl(item.media)} alt={item.media.filename || ''} className={styles.image} />
+                  <Image 
+                    src={getDisplayUrl(item.media)} 
+                    alt={item.media.filename || ''} 
+                    className={styles.image}
+                    width={400}
+                    height={300}
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    priority={false}
+                  />
                 </SwiperSlide>
               ) : null
             )}
@@ -48,7 +82,16 @@ const GalleryCardContent: React.FC<{ card: Card }> = ({ card }) => {
         </div>
       ) : card.coverImage ? (
         <div className={styles.imageContainer}>
-          <img src={getDisplayUrl(card.coverImage)} alt={card.title} className={styles.image} />
+          <Image 
+            src={getDisplayUrl(card.coverImage)} 
+            alt={card.title} 
+            className={styles.image}
+            width={400}
+            height={300}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            style={{ objectPosition }}
+            priority={false}
+          />
         </div>
       ) : null}
       <div className={styles.content}>

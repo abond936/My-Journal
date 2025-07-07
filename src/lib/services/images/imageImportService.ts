@@ -4,7 +4,6 @@ import * as admin from 'firebase-admin';
 import fs from 'fs/promises';
 import path from 'path';
 import sharp from 'sharp';
-import { v4 as uuidv4 } from 'uuid';
 import sizeOf from 'image-size';
 import { uploadFile } from '@/lib/config/firebase/admin';
 import { FirebaseFirestore } from 'firebase-admin';
@@ -36,7 +35,7 @@ async function createMediaAsset(
   const firestore = app.firestore();
   const bucket = app.storage().bucket();
 
-  // 1. Analyze the image and generate a unique ID
+  // 1. Analyze the image and get dimensions
   const image = sharp(fileBuffer);
   const metadata = await image.metadata();
 
@@ -52,10 +51,12 @@ async function createMediaAsset(
     throw new Error('Could not determine image dimensions.');
   }
 
-  const mediaId = uuidv4();
-  const storageFilename = `${mediaId}-${originalFilename}`;
+  // 2. Create Firestore document reference to get docId
+  const mediaRef = firestore.collection('media').doc();
+  const docId = mediaRef.id;
+  const storageFilename = `${docId}-${originalFilename}`;
 
-  // 2. Upload to Firebase Storage
+  // 3. Upload to Firebase Storage
   const storagePath = `images/${storageFilename}`;
   const file = bucket.file(storagePath);
   await file.save(fileBuffer, {
@@ -64,16 +65,16 @@ async function createMediaAsset(
     },
   });
 
-  // 3. Get the permanent public URL
+  // 4. Get the permanent public URL
   const [publicUrl] = await file.getSignedUrl({
     action: 'read',
     expires: '03-09-2491', // A very long expiration date
   });
 
-  // 4. Construct the canonical Media object
+  // 5. Construct the canonical Media object
   const now = Date.now();
   const newMedia: Media = {
-    id: mediaId,
+    docId: docId,
     filename: originalFilename,
     width,
     height,
@@ -88,8 +89,8 @@ async function createMediaAsset(
     updatedAt: now,
   };
 
-  // 5. Save the document to the top-level 'media' collection in Firestore
-  await firestore.collection('media').doc(mediaId).set(newMedia);
+  // 6. Save the document to the top-level 'media' collection in Firestore
+  await mediaRef.set(newMedia);
 
   return newMedia;
 }
@@ -119,7 +120,7 @@ export async function importFromLocalDrive(sourcePath: string): Promise<{ mediaI
     
     // Return the hydrated object that the client expects
     return {
-      mediaId: newMedia.id,
+      mediaId: newMedia.docId,
       media: newMedia,
     };
   } catch (error) {
@@ -153,7 +154,7 @@ export async function importFromBuffer(
 
     // Return the hydrated object that the client expects
     return {
-      mediaId: newMedia.id,
+      mediaId: newMedia.docId,
       media: newMedia,
     };
   } catch (error) {

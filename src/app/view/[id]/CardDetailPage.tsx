@@ -2,12 +2,14 @@
 
 import React, { useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Card } from '@/lib/types/card';
 import { CardProvider, useCardContext } from '@/components/providers/CardProvider';
 import TipTapRenderer from '@/components/common/TipTapRenderer';
 import SwipeableGallery from '@/components/common/SwipeableGallery';
 import styles from './CardDetail.module.css'; // Updated path
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import { getObjectPositionForAspectRatio } from '@/lib/utils/objectPositionUtils';
 import CardGrid from '@/components/view/CardGrid';
 import { useRouter } from 'next/navigation';
 
@@ -72,7 +74,16 @@ const ChildCard = ({ card }: { card: Card }) => {
                         </>
                     )}
                     {media.map((m, i) => (
-                        <img key={i} src={getDisplayUrl(m.media)} alt={m.caption || ''} className={styles.scrollImage} />
+                        <Image 
+                            key={i} 
+                            src={getDisplayUrl(m.media)} 
+                            alt={m.caption || ''} 
+                            className={styles.scrollImage}
+                            width={300}
+                            height={200}
+                            sizes="(max-width: 768px) 200px, 300px"
+                            priority={false}
+                        />
                     ))}
                 </div>
             )}
@@ -80,7 +91,24 @@ const ChildCard = ({ card }: { card: Card }) => {
             {isOpen && (
                 <div className={styles.cardBody}>
                     {card.coverImage &&
-                        <img src={getDisplayUrl(card.coverImage)} alt={card.title || ''} className={styles.coverImage} />
+                        <Image 
+                            src={getDisplayUrl(card.coverImage)} 
+                            alt={card.title || ''} 
+                            className={styles.coverImage}
+                            width={600}
+                            height={400}
+                            sizes="(max-width: 768px) 100vw, 600px"
+                            style={{ 
+                                objectPosition: card.coverImageFocalPoint && card.coverImage ? 
+                                    getObjectPositionForAspectRatio(
+                                        card.coverImageFocalPoint,
+                                        { width: card.coverImage.width, height: card.coverImage.height },
+                                        '3/2',
+                                        600
+                                    ) : 'center'
+                            }}
+                            priority={false}
+                        />
                     }
                     {hasValidContent && <TipTapRenderer content={card.content} />}
                     {media.length > 0 && (
@@ -88,7 +116,15 @@ const ChildCard = ({ card }: { card: Card }) => {
                             <h3>Gallery</h3>
                             <div className={styles.galleryImages}>
                                 {media.map((m, i) => (
-                                    <img key={i} src={getDisplayUrl(m)} alt={m.caption || `Gallery image ${i + 1}`} />
+                                    <Image 
+                                        key={i} 
+                                        src={getDisplayUrl(m)} 
+                                        alt={m.caption || `Gallery image ${i + 1}`}
+                                        width={400}
+                                        height={300}
+                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 400px"
+                                        priority={false}
+                                    />
                                 ))}
                             </div>
                         </div>
@@ -158,11 +194,23 @@ const CardDetailContent = ({ cardData }: { cardData: Card }) => {
       <header className={styles.header}>
         {cardData.type !== 'gallery' && cardData.coverImage && (
           <div className={styles.coverImageContainer}>
-            <img
+            <Image
               src={getDisplayUrl(cardData.coverImage)}
               alt={cardData.title}
               className={styles.coverImage}
-              style={{ objectPosition: cardData.coverImage.objectPosition || 'center' }}
+              width={800}
+              height={600}
+              sizes="(max-width: 768px) 100vw, 800px"
+              style={{ 
+                objectPosition: cardData.coverImageFocalPoint && cardData.coverImage ? 
+                  getObjectPositionForAspectRatio(
+                    cardData.coverImageFocalPoint,
+                    { width: cardData.coverImage.width, height: cardData.coverImage.height },
+                    '4/3',
+                    800
+                  ) : 'center'
+              }}
+              priority={true}
             />
           </div>
         )}

@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Image from 'next/image';
 import { getFolderTree, getFolderContents } from '@/lib/services/images/local/photoService';
 import { Media, TreeNode } from '@/lib/types/photo';
-import { getDisplayUrl } from '@/lib/utils/photoUtils';
-import styles from './PhotoPicker.module.css';
-import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { HydratedGalleryMediaItem } from '@/lib/types/card';
+import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
+import styles from './PhotoPicker.module.css';
 
 interface PhotoPickerProps {
   isOpen: boolean;
@@ -24,35 +25,59 @@ interface PhotoPickerProps {
 interface FolderItemProps {
   node: TreeNode;
   selectedFolder: string | null;
+  expandedFolders: Set<string>;
   onSelect: (folderId: string) => void;
+  onToggle: (folderId: string) => void;
   level?: number;
 }
 
-const FolderItem = ({ node, selectedFolder, onSelect, level = 0 }: FolderItemProps) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+const FolderItem = ({ 
+  node, 
+  selectedFolder, 
+  expandedFolders, 
+  onSelect, 
+  onToggle, 
+  level = 0 
+}: FolderItemProps) => {
   const hasChildren = node.children && node.children.length > 0;
+  const isExpanded = expandedFolders.has(node.id);
+  const isSelected = selectedFolder === node.id;
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect(node.id);
+  };
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (hasChildren) {
+      onToggle(node.id);
+    }
+  };
 
   return (
     <div className={styles.treeNode} style={{ marginLeft: `${level * 8}px` }}>
-      <div className={styles.treeNodeHeader}>
-        {hasChildren && (
-          <button
-            className={styles.treeToggle}
-            onClick={() => setIsExpanded(!isExpanded)}
-            type="button"
-          >
-            {isExpanded ? '▼' : '▶'}
-          </button>
-        )}
-        <div
-          className={`${styles.treeNodeName} ${selectedFolder === node.id ? styles.treeNodeSelected : ''}`}
-          onClick={() => onSelect(node.id)}
-          role="button"
-          tabIndex={0}
-        >
+      <div 
+        className={`${styles.treeNodeHeader} ${isSelected ? styles.treeNodeSelected : ''}`}
+        onClick={handleClick}
+        onDoubleClick={handleDoubleClick}
+        role="button"
+        tabIndex={0}
+        style={{ 
+          backgroundColor: isSelected ? '#f0f0f0' : 'transparent',
+          cursor: 'pointer'
+        }}
+      >
+        <span className={styles.folderIcon}>
+          📁
+        </span>
+        <div className={styles.treeNodeName}>
           {node.name}
         </div>
       </div>
+      
       {hasChildren && isExpanded && (
         <div className={styles.treeChildren}>
           {node.children.map(child => (
@@ -60,7 +85,9 @@ const FolderItem = ({ node, selectedFolder, onSelect, level = 0 }: FolderItemPro
               key={child.id}
               node={child}
               selectedFolder={selectedFolder}
+              expandedFolders={expandedFolders}
               onSelect={onSelect}
+              onToggle={onToggle}
               level={level + 1}
             />
           ))}
@@ -78,20 +105,54 @@ export default function PhotoPicker({
   initialMode = 'single',
 }: PhotoPickerProps) {
   const [folderTree, setFolderTree] = useState<TreeNode[]>([]);
-  const [photos, setPhotos] = useState<Media[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<Media[]>([]);
   const [selectedPhotos, setSelectedPhotos] = useState<Media[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingFolders, setIsLoadingFolders] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mode] = useState<'single' | 'multi'>(initialMode);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+
+  // Check if folder should be auto-collapsed
+  const shouldAutoCollapse = (folderName: string) => {
+    return folderName === 'xNormalized' || 
+           folderName === 'yEdited' || 
+           folderName === 'zOriginals';
+  };
 
   const loadFolderTree = useCallback(async () => {
     try {
-      setIsLoading(true);
+      setIsLoadingFolders(true);
       setError(null);
       const tree = await getFolderTree();
       setFolderTree(tree);
+      
+      // Debug logging
+      console.log('Full tree structure:', JSON.stringify(tree, null, 2));
+      console.log('All folder names:', tree.map(node => node.name));
+      
+      // Initialize expansion state - expand all except processing folders
+      const initialExpanded = new Set<string>();
+      const addToExpanded = (nodes: TreeNode[]) => {
+        nodes.forEach(node => {
+          console.log(`Checking folder: "${node.name}" - shouldAutoCollapse: ${shouldAutoCollapse(node.name)}`);
+          if (!shouldAutoCollapse(node.name)) {
+            initialExpanded.add(node.id);
+            console.log(`Added to expanded: "${node.name}" (${node.id})`);
+          } else {
+            console.log(`NOT added to expanded (auto-collapsed): "${node.name}" (${node.id})`);
+          }
+          if (node.children) {
+            addToExpanded(node.children);
+          }
+        });
+      };
+      addToExpanded(tree);
+      console.log('Final expanded folders:', Array.from(initialExpanded));
+      setExpandedFolders(initialExpanded);
+      
       if (tree.length > 0) {
         setSelectedFolder(tree[0].id);
       }
@@ -99,7 +160,7 @@ export default function PhotoPicker({
       setError('Failed to load folder structure. Please try again.');
       console.error('Error loading folder tree:', err);
     } finally {
-      setIsLoading(false);
+      setIsLoadingFolders(false);
     }
   }, []);
 
@@ -117,6 +178,24 @@ export default function PhotoPicker({
     }
   }, []);
 
+  const handleFolderSelect = useCallback((folderId: string) => {
+    setSelectedFolder(folderId);
+    setSelectedPhotos([]);
+    setError(null);
+  }, []);
+
+  const handleFolderToggle = useCallback((folderId: string) => {
+    setExpandedFolders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(folderId)) {
+        newSet.delete(folderId);
+      } else {
+        newSet.add(folderId);
+      }
+      return newSet;
+    });
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
       setSelectedPhotos([]);
@@ -130,12 +209,6 @@ export default function PhotoPicker({
       loadPhotos(selectedFolder);
     }
   }, [selectedFolder, loadPhotos]);
-
-  const handleFolderSelect = useCallback((folderId: string) => {
-    setSelectedFolder(folderId);
-    setSelectedPhotos([]);
-    setError(null);
-  }, []);
 
   const handleDone = useCallback(async () => {
     if (selectedPhotos.length === 0) return;
@@ -220,14 +293,23 @@ export default function PhotoPicker({
         <div className={styles.content}>
           <div className={styles.albumList}>
             <h3 className={styles.albumTitle}>Albums</h3>
-            {folderTree.map(node => (
-              <FolderItem
-                key={node.id}
-                node={node}
-                selectedFolder={selectedFolder}
-                onSelect={handleFolderSelect}
-              />
-            ))}
+            {isLoadingFolders ? (
+              <div className={styles.loading}>
+                <LoadingSpinner />
+                <p>Loading folders...</p>
+              </div>
+            ) : (
+              folderTree.map(node => (
+                <FolderItem
+                  key={node.id}
+                  node={node}
+                  selectedFolder={selectedFolder}
+                  expandedFolders={expandedFolders}
+                  onSelect={handleFolderSelect}
+                  onToggle={handleFolderToggle}
+                />
+              ))
+            )}
           </div>
 
           <div className={styles.photoGrid}>
@@ -253,11 +335,14 @@ export default function PhotoPicker({
                       role="button"
                       tabIndex={0}
                     >
-                      <img
+                      <Image
                         src={getDisplayUrl(photo)}
                         alt={photo.alt || ''}
                         className={styles.photoImage}
-                        loading="lazy"
+                        width={150}
+                        height={150}
+                        sizes="150px"
+                        priority={false}
                       />
                       {isSelected && (
                         <div className={styles.checkmark} aria-hidden="true">✓</div>

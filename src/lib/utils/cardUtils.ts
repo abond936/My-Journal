@@ -35,7 +35,7 @@ export function transformToCardUpdate(hydratedCard: HydratedCard): CardUpdate {
     tags: hydratedCard.tags,
     childCardIds: hydratedCard.childCardIds,
     coverImageId: hydratedCard.coverImageId,
-    coverImageObjectPosition: hydratedCard.coverImageObjectPosition,
+    coverImageFocalPoint: hydratedCard.coverImageFocalPoint,
     galleryMedia: skinnyGalleryMedia,
     contentMedia,
   };

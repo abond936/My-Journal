@@ -5,8 +5,8 @@ import { z } from 'zod';
 // Defines the canonical metadata for a single media asset in the system.
 // This is the single source of truth, stored in the top-level 'media' collection.
 export const mediaSchema = z.object({
-  // A unique identifier for the media asset, generated on creation.
-  id: z.string(), 
+  // Document identifier - Firestore's immutable docId
+  docId: z.string().min(1, "Document ID is required"),
   
   // The original filename from the source.
   filename: z.string(),

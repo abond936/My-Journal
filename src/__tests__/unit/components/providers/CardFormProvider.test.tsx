@@ -27,8 +27,7 @@ const mockCard: Card = {
   coverImage: null,
   contentMedia: [],
   galleryMedia: [],
-  inheritedTags: [],
-  tagPathsMap: {},
+  
 };
 
 // Mock tags

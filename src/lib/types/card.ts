@@ -37,7 +37,10 @@ export const cardSchema = z.object({
   
   // Cover image reference with position information
   coverImageId: z.string().nullable().optional(),
-  coverImageObjectPosition: z.string().optional(), // e.g., '50% 50%'
+  coverImageFocalPoint: z.object({
+    x: z.number(),
+    y: z.number(),
+  }).optional(), // e.g., { x: 500, y: 375 } - pixel coordinates relative to original image
 
   // References to media assets embedded within the 'content' field.
   contentMedia: z.array(z.string()).optional(),
@@ -73,6 +76,24 @@ export const cardSchema = z.object({
 export type Card = z.infer<typeof cardSchema>;
 export type CardUpdate = Partial<Card>;
 export type GalleryMediaItem = z.infer<typeof galleryMediaItemSchema>;
+
+/**
+ * Centralized validation schema for card updates in API routes.
+ * This ensures consistent validation across all endpoints.
+ * Excludes server-generated fields that should not be updated via API.
+ */
+export const cardUpdateValidationSchema = cardSchema.partial().omit({
+  docId: true,
+  createdAt: true,
+  updatedAt: true,
+  filterTags: true,
+  who: true,
+  what: true,
+  when: true,
+  where: true,
+  reflection: true,
+  title_lowercase: true, // Server-generated
+});
 
 /**
  * Represents a gallery item that has been "hydrated" with the full Media object.

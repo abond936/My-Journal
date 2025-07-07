@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Tag } from '@/lib/types/tag';
 import styles from './ContentCard.module.css';
 
@@ -168,7 +169,15 @@ const ContentCard: React.FC<ContentCardProps> = (props) => {
           {props.galleryMedia.map((image) => (
             <SwiperSlide key={image.id}>
               <div className={styles.imageContainer}>
-                <img src={getDisplayUrl(image)} alt={image.filename || title} className={styles.image} />
+                <Image 
+                  src={getDisplayUrl(image)} 
+                  alt={image.filename || title} 
+                  className={styles.image}
+                  width={400}
+                  height={300}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  priority={false}
+                />
               </div>
             </SwiperSlide>
           ))}
@@ -189,7 +198,15 @@ const ContentCard: React.FC<ContentCardProps> = (props) => {
             return (
               <SwiperSlide key={image.url}>
                 <div className={styles.imageContainer}>
-                  <img src={imageUrl} alt={image.filename || title} className={styles.image} />
+                  <Image 
+                    src={imageUrl} 
+                    alt={image.filename || title} 
+                    className={styles.image}
+                    width={400}
+                    height={300}
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    priority={false}
+                  />
                 </div>
               </SwiperSlide>
             );
@@ -197,7 +214,7 @@ const ContentCard: React.FC<ContentCardProps> = (props) => {
         </Swiper>
       ) : imageUrl ? (
         <div className={styles.imageContainer}>
-          <img 
+          <Image 
             src={
               (props as AlbumCardProps).type === 'album' && (props as any).coverPhoto?.source === 'local'
                 ? `/api/images/local/file?path=${encodeURIComponent(imageUrl)}`
@@ -205,6 +222,10 @@ const ContentCard: React.FC<ContentCardProps> = (props) => {
             }
             alt={title}
             className={styles.image}
+            width={400}
+            height={300}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            priority={false}
           />
         </div>
       ) : null}

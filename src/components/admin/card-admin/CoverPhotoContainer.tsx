@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import styles from './CoverPhotoContainer.module.css';
 import { Media } from '@/lib/types/photo';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
@@ -63,11 +64,15 @@ export default function CoverPhotoContainer({
       ) : coverImage ? (
         <>
           <div className={styles.imageContainer}>
-            <img
+            <Image
               src={getDisplayUrl(coverImage)}
               alt={coverImage.filename || 'Cover image'}
               className={styles.coverImage}
+              width={600}
+              height={400}
+              sizes="(max-width: 768px) 100vw, 600px"
               style={{ objectPosition: objectPosition || '50% 50%' }}
+              priority={false}
             />
             <div className={styles.buttonContainer}>
               <button

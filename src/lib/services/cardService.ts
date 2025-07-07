@@ -1,11 +1,59 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { Card, cardSchema, GalleryMediaItem } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
-import { updateTagCounts, calculateDerivedTagData } from '@/lib/firebase/tagService';
+import { updateTagCountsForCard, calculateDerivedTagData } from '@/lib/firebase/tagService';
 import { getFirestore, FieldPath, FieldValue } from 'firebase-admin/firestore';
 import { deleteMediaAsset } from './images/imageImportService';
 import { extractMediaFromContent, stripContentImageSrc, hydrateContentImageSrc } from '@/lib/utils/cardUtils';
 import { Media } from '@/lib/types/photo';
+
+/**
+ * Retry utility with exponential backoff for critical operations.
+ * @param operation - The operation to retry
+ * @param maxRetries - Maximum number of retry attempts
+ * @param baseDelay - Base delay in milliseconds (will be multiplied by 2^attempt)
+ * @returns Promise that resolves with the operation result
+ */
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> {
+  let lastError: Error;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      
+      // Don't retry on certain error types
+      if (error instanceof Error) {
+        // Don't retry validation errors or permission errors
+        if (error.message.includes('permission') || 
+            error.message.includes('validation') ||
+            error.message.includes('not found')) {
+          throw error;
+        }
+      }
+      
+      // If this was the last attempt, throw the error
+      if (attempt === maxRetries) {
+        console.error(`Operation failed after ${maxRetries + 1} attempts:`, lastError);
+        throw lastError;
+      }
+      
+      // Calculate delay with exponential backoff
+      const delay = baseDelay * Math.pow(2, attempt);
+      console.warn(`Operation failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms:`, lastError.message);
+      
+      // Wait before retrying
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  throw lastError!;
+}
 
 const adminApp = getAdminApp();
 const firestore = adminApp.firestore();
@@ -34,20 +82,22 @@ async function _hydrateCards(cards: Card[]): Promise<Card[]> {
     return cards; // No media to hydrate
   }
 
-  // 2. Fetch all media objects in a single batch query.
+  // 2. Fetch all media objects using direct doc() lookups
   const mediaMap = new Map<string, Media>();
-  // Firestore 'in' queries are limited to 30 items. We must batch the requests.
-  const mediaIdChunks: string[][] = [];
-  const allMediaIds = Array.from(mediaIds);
-  for (let i = 0; i < allMediaIds.length; i += 30) {
-    mediaIdChunks.push(allMediaIds.slice(i, i + 30));
-  }
-
-  for (const chunk of mediaIdChunks) {
-    if (chunk.length > 0) {
-      const mediaDocs = await firestore.collection(MEDIA_COLLECTION).where('id', 'in', chunk).get();
-      mediaDocs.forEach(doc => mediaMap.set(doc.id, doc.data() as Media));
-    }
+  const mediaIdArray = Array.from(mediaIds).filter(id => id && id.trim() !== '');
+  
+  if (mediaIdArray.length > 0) {
+    // Use Promise.all for concurrent lookups
+    const mediaDocs = await Promise.all(
+      mediaIdArray.map(id => firestore.collection(MEDIA_COLLECTION).doc(id).get())
+    );
+    
+    // Build the media map
+    mediaDocs.forEach(doc => {
+      if (doc.exists) {
+        mediaMap.set(doc.id, doc.data() as Media);
+      }
+    });
   }
   
   // 3. Inject the full media objects back into each card.
@@ -88,18 +138,21 @@ async function _hydrateCoverImagesOnly(cards: Card[]): Promise<Card[]> {
     return cards; // No cover images to hydrate
   }
 
-  // 2. Fetch only cover images in batches
+  // 2. Fetch only cover images using direct doc() lookups
   const mediaMap = new Map<string, Media>();
-  const coverImageIdChunks: string[][] = [];
-  for (let i = 0; i < coverImageIds.length; i += 30) {
-    coverImageIdChunks.push(coverImageIds.slice(i, i + 30));
-  }
-
-  for (const chunk of coverImageIdChunks) {
-    if (chunk.length > 0) {
-      const mediaDocs = await firestore.collection(MEDIA_COLLECTION).where('id', 'in', chunk).get();
-      mediaDocs.forEach(doc => mediaMap.set(doc.id, doc.data() as Media));
-    }
+  
+  if (coverImageIds.length > 0) {
+    // Use Promise.all for concurrent lookups
+    const mediaDocs = await Promise.all(
+      coverImageIds.map(id => firestore.collection(MEDIA_COLLECTION).doc(id).get())
+    );
+    
+    // Build the media map
+    mediaDocs.forEach(doc => {
+      if (doc.exists) {
+        mediaMap.set(doc.id, doc.data() as Media);
+      }
+    });
   }
   
   // 3. Inject only cover images back into each card
@@ -153,15 +206,42 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
     updatedAt: Date.now(),
   };
   
-  // Use a transaction to ensure atomicity
-  await firestore.runTransaction(async (transaction) => {
+  // Use a transaction to ensure atomicity with retry logic
+  await withRetry(async () => {
+    return firestore.runTransaction(async (transaction) => {
       // 1. Create the new card document
       transaction.set(docRef, newCard);
 
-      // 2. Increment counts for all associated tags if the card is published
-      if (newCard.status === 'published' && newCard.tags && newCard.tags.length > 0) {
-          await updateTagCounts(newCard.tags, 'increment', transaction);
+      // 2. Update tag counts using centralized function
+      await updateTagCountsForCard(null, newCard, transaction);
+
+      // 3. Collect all media IDs that should be marked as 'active'.
+      const mediaIdsToActivate = new Set<string>();
+      if (newCard.coverImageId) {
+        mediaIdsToActivate.add(newCard.coverImageId);
       }
+      if (newCard.galleryMedia) {
+        newCard.galleryMedia.forEach(item => item.mediaId && mediaIdsToActivate.add(item.mediaId));
+      }
+      if (newCard.contentMedia) {
+        newCard.contentMedia.forEach(id => mediaIdsToActivate.add(id));
+      }
+  
+      // 4. If a coverImageFocalPoint was provided, update it on the media doc.
+      if (newCard.coverImageFocalPoint && newCard.coverImageId) {
+        const coverRef = firestore.collection(MEDIA_COLLECTION).doc(newCard.coverImageId);
+        transaction.update(coverRef, { 
+          objectPosition: `${newCard.coverImageFocalPoint.x} ${newCard.coverImageFocalPoint.y}`, 
+          updatedAt: Date.now() 
+        });
+      }
+  
+      // 5. Update the status of all associated media to 'active'.
+      for (const mediaId of Array.from(mediaIdsToActivate)) {
+        const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
+        transaction.update(mediaRef, { status: 'active', updatedAt: Date.now() });
+      }
+    });
   });
   
   // The created card object needs to be constructed outside the transaction to be returned
@@ -181,7 +261,8 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
     
     const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
     
-    return firestore.runTransaction(async (transaction) => {
+    return withRetry(async () => {
+      return firestore.runTransaction(async (transaction) => {
       const docSnap = await transaction.get(docRef);
       if (!docSnap.exists) {
         throw new Error(`Card with ID ${cardId} not found.`);
@@ -264,52 +345,8 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       
       const { filterTags, dimensionalTags } = await calculateDerivedTagData(finalTags || []);
 
-      // --- Consolidated tag count adjustments (single read phase, then writes) ---
-      const deltaMap: Record<string, number> = {};
-      const applyDelta = (ids: string[], delta: number) => {
-        ids.forEach(id => {
-          deltaMap[id] = (deltaMap[id] || 0) + delta;
-        });
-      };
-
-      if (wasPublished && isPublished) {
-        applyDelta(tagsAdded, +1);
-        applyDelta(tagsRemoved, -1);
-      } else if (!wasPublished && isPublished) {
-        applyDelta(Array.from(newTags), +1);
-      } else if (wasPublished && !isPublished) {
-        applyDelta(Array.from(oldTags), -1);
-      }
-
-      const candidateIds = Object.keys(deltaMap);
-      if (candidateIds.length > 0) {
-        // Read all affected tags once
-        const tagRefs = candidateIds.map(id => firestore.collection('tags').doc(id));
-        const tagDocs = await transaction.getAll(...tagRefs);
-
-        // Include ancestors in deltaMap
-        for (const docSnap of tagDocs) {
-          if (!docSnap.exists) continue;
-          const tagData = docSnap.data() as Tag;
-          const tagId = docSnap.id;
-          const delta = deltaMap[tagId] || 0;
-          if (delta === 0) continue;
-
-          if (Array.isArray(tagData.path)) {
-            tagData.path.forEach(ancestorId => {
-              deltaMap[ancestorId] = (deltaMap[ancestorId] || 0) + delta;
-            });
-          }
-        }
-
-        // Apply all increments/decrements after reads
-        for (const [tid, delta] of Object.entries(deltaMap)) {
-          if (delta !== 0) {
-            const ref = firestore.collection('tags').doc(tid);
-            transaction.update(ref, { cardCount: FieldValue.increment(delta) });
-          }
-        }
-      }
+      // --- Update tag counts using centralized function ---
+      await updateTagCountsForCard(existingData, { ...existingData, ...cleanedUpdate }, transaction);
 
       cleanedUpdate.filterTags = filterTags;
       cleanedUpdate.who = dimensionalTags.who || [];
@@ -344,12 +381,12 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         cleanedUpdate.contentMedia.forEach(id => mediaIdsToActivate.add(id));
       }
   
-      // 6. If a new coverImageObjectPosition was provided, update it on the media doc.
-      const coverImagePosition = cleanedUpdate.coverImageObjectPosition;
+      // 6. If a new coverImageFocalPoint was provided, update it on the media doc.
+      const coverImageFocalPoint = cleanedUpdate.coverImageFocalPoint;
       const coverImageId = cleanedUpdate.coverImageId ?? existingData.coverImageId;
-      if (coverImageId && coverImagePosition) {
+      if (coverImageId && coverImageFocalPoint) {
         const coverRef = firestore.collection(MEDIA_COLLECTION).doc(coverImageId);
-        transaction.update(coverRef, { objectPosition: coverImagePosition, updatedAt: Date.now() });
+        transaction.update(coverRef, { objectPosition: `${coverImageFocalPoint.x} ${coverImageFocalPoint.y}`, updatedAt: Date.now() });
       }
   
       // 7. Update the status of all associated media to 'active'.
@@ -366,6 +403,7 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       }
       return updatedCard;
     });
+  });
 }
 
 /**
@@ -482,62 +520,13 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
     const cardRefs = cardIds.map(id => firestore.collection(CARDS_COLLECTION).doc(id));
     const cardDocs = await transaction.getAll(...cardRefs);
     
-    // 2. Calculate tag count deltas for all affected cards
-    const deltaMap: Record<string, number> = {};
-    
+    // 2. Update tag counts for all affected cards using centralized function
     for (const cardDoc of cardDocs) {
       if (!cardDoc.exists) continue;
       
       const cardData = cardDoc.data() as Card;
-      const oldTags = new Set(cardData.tags || []);
-      const newTags = new Set(tags);
-      
-      // Only process published cards for tag counting
-      if (cardData.status === 'published') {
-        // Calculate tags to remove
-        const tagsRemoved = [...oldTags].filter(t => !newTags.has(t));
-        // Calculate tags to add
-        const tagsAdded = [...newTags].filter(t => !oldTags.has(t));
-        
-        // Apply deltas
-        tagsRemoved.forEach(tagId => {
-          deltaMap[tagId] = (deltaMap[tagId] || 0) - 1;
-        });
-        tagsAdded.forEach(tagId => {
-          deltaMap[tagId] = (deltaMap[tagId] || 0) + 1;
-        });
-      }
-    }
-    
-    // 3. Update tag counts for all affected tags and their ancestors
-    const candidateIds = Object.keys(deltaMap);
-    if (candidateIds.length > 0) {
-      // Read all affected tags to get their paths
-      const tagRefs = candidateIds.map(id => firestore.collection('tags').doc(id));
-      const tagDocs = await transaction.getAll(...tagRefs);
-      
-      // Include ancestors in deltaMap
-      for (const docSnap of tagDocs) {
-        if (!docSnap.exists) continue;
-        const tagData = docSnap.data() as Tag;
-        const tagId = docSnap.id;
-        const delta = deltaMap[tagId] || 0;
-        if (delta === 0) continue;
-        
-        if (Array.isArray(tagData.path)) {
-          tagData.path.forEach(ancestorId => {
-            deltaMap[ancestorId] = (deltaMap[ancestorId] || 0) + delta;
-          });
-        }
-      }
-      
-      // Apply all increments/decrements
-      for (const [tagId, delta] of Object.entries(deltaMap)) {
-        if (delta !== 0) {
-          const ref = firestore.collection('tags').doc(tagId);
-          transaction.update(ref, { cardCount: FieldValue.increment(delta) });
-        }
-      }
+      const newCardData = { ...cardData, tags };
+      await updateTagCountsForCard(cardData, newCardData, transaction);
     }
     
     // 4. Update all cards with new tag data
@@ -606,7 +595,8 @@ export async function deleteCard(cardId: string): Promise<void> {
         cardToDelete.contentMedia.forEach(id => mediaToDelete.push(id));
     }
 
-    return firestore.runTransaction(async (transaction) => {
+    return withRetry(async () => {
+      return firestore.runTransaction(async (transaction) => {
         const docSnap = await transaction.get(docRef);
         if (!docSnap.exists) {
             console.warn(`Card with ID ${cardId} not found for deletion.`);
@@ -615,7 +605,7 @@ export async function deleteCard(cardId: string): Promise<void> {
 
         // Decrement counts for all associated tags if the card was published
         if (cardToDelete.status === 'published' && cardToDelete.tags && cardToDelete.tags.length > 0) {
-            await updateTagCounts(cardToDelete.tags, 'decrement', transaction);
+            await updateTagCountsForCard(cardToDelete, { ...cardToDelete, tags: [] }, transaction);
         }
 
         // Clean up parent-child relationships
@@ -639,6 +629,7 @@ export async function deleteCard(cardId: string): Promise<void> {
 
         // Delete the card document
         transaction.delete(docRef);
+      });
     }).then(async () => {
         // Post-transaction: Try immediate storage cleanup for the deleted media
         // This is outside the transaction, so failures won't affect database integrity
@@ -841,12 +832,4 @@ export async function getCards(options: {
   return { items: cards, lastDocId: lastDocIdResult, hasMore };
 }
 
-/**
- * Retrieves the full set of inherited tags for a given list of direct tags.
- * @param tags - The list of direct tags.
- * @returns The full set of inherited tags for the given list.
- */
-export async function getInheritedTags(tags: string[]): Promise<string[]> {
-  const ancestorTags = await getTagAncestors(tags);
-  return [...new Set([...tags, ...ancestorTags])];
-} 
+ 

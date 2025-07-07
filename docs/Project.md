@@ -191,7 +191,7 @@ If the card has children (`childrenIds`), it then calls `getCardsByIds` to fetch
 
 ## **Administration**
 =======================================
-- Top navigation 'Admin' button navigates to Adminsitration, admin-only CRUD/Bulk editing of cards, tags, and other resources.
+- Top navigation 'Admin' button navigates to Adminsitration, admin-only CRUD/Bulk editing of cards, tags, media and other resources.
 `src/app/admin/layout.tsx`
 
 ✅
@@ -224,16 +224,15 @@ If the card has children (`childrenIds`), it then calls `getCardsByIds` to fetch
 - Filter by Status and Type - `CardProvider` uses the `selectedFilterTagIds` to query `filterTags` map.
 - Bulk Operations - `BulkEditTagsModal.tsx` 
 - CoverIcon, Title, Type, Status
-- Tags - Need more visibility of tags - ⭕2 - SparseTree by dimension?, # by dimension, root only
+- Tags - Root tags by dimension
 - Content - y/n
 - Gallery -  #
 - Children - #
 - Actions
   - Edit button
-  - Delete button - ⭕2 - Check logic of warning. Doesn't seem correct
-  - Add button- `AdminFAB.tsx` 
+  - Delete button 
+  - Add button - `AdminFAB.tsx` 
 - Pagination - Load more... 
-⭕2 - Columns adjustable?
 
 **Card New/Edit** 
 Add new - `/admin/card-admin/new`
@@ -258,10 +257,10 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
   - Rest of content held in HTML
   - Captions default to media object with override stored in card `figure`
 - Tags
-  - `MacroTagSelector`(Tag Component) Modal Selector:
-  - Tag Selection - `Card.tags` - Stores the tags directly assigned by the user.
+  - `MacroTagSelector`- Modal Selector
+  - Tag Selection - `Card.tags` - Stores the tags directly assigned by the user
   - Denormalization - On card save, `cardService` uses `tagService.ts` to calculate and save derived tag data onto the `Card` document.
-    - Tag Inheritance - `Card.inheritedTags` - Flattened array of direct and ancestor tags (e.g., "Paris" -> "France" -> "Europe").
+    - Tag Inheritance - `Card.filterTags` - Map of all inherited tags for efficient querying (e.g., "Paris" -> "France" -> "Europe").
     - Tag Filter - `Card.filterTags`: Stores a map object (`{ "tagId": true, ... }`) of all inherited tags, optimized for fast Firestore `where` queries.
 - Gallery
     - Uses `GalleryManager` and `PhotoPicker` for multi-image selection.
@@ -271,9 +270,10 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
     ⭕2 - Fix caption, focal point editing
     ⭕2 - Batch upload gallery cards by script
 - Children - Search only (not useful) - ⭕2 - Develop linking modal
-- Delete - Delete card and related media
-- Cancel - Abandon any outstanding edits and return to list. 
-- Save
+- Actions
+  - Delete - Delete card, remove tags/recalc, remove from any parents, remove related media
+  - Cancel - Abandon any outstanding edits and return to list. 
+  - Save - Save card, save tags/recalc, add media
 
 ### **Tag System**
 ===========================================
@@ -289,9 +289,9 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
 `/app/admin/tag-admin/page.tsx`
 
 ✅ 
-- Hierarchical View: The page renders all tags in a tree structure using `TagAdminList`
-- Drag-and-Drop Reordering/Reparenting: `SortableTag.tsx`
-- Inline editing `TagAdminRow.tsx`
+- Hierarchical View - The page renders all tags in a tree structure using `TagAdminList`
+- Drag-and-Drop Reordering/Reparenting - `SortableTag.tsx`
+- Inline editing - `TagAdminRow.tsx`
   - OnDelete - User choice of children being promoted or cascade deleted
   - OnMove - ⭕2 - cards update?
 
@@ -343,7 +343,7 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
 
 ⭕3 - Add user management interface
 
-### **IMAGE INTEGRATION**
+### **Image Management**
 =======================================
 
 **Conceptual Architecture**
@@ -358,9 +358,8 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
       - prepare *metadata* 
       - mark 'temporary'
       - return `mediaId` to card for storage and object for immediate display
-  - Optimize performance through next/image, caching and lazy loading.
+  - Optimize performance through `next/image`, caching, auto-sizing and lazy loading.
 - Images served to content via Firebase ID/URLs
-- Images sized on the fly `'next/image` 
 
 **Media Data Model**
 ✅
@@ -372,25 +371,22 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
 - `imageImportService.ts`
 - Sharp image processing  
 - Metadata extraction
-- Unique ID generation
+- Unique ID generation - ⭕2 Refactor to use docId
 - Error handling
 ⭕2 Implement `next/image`
+⭕2 objectPosition for preview card view?
 
 **Normalization**
 ⭕1 Organize, normalize, edit images pre-import
-    - Create directories - zOriginals, staged
+    - 3 directories - zOriginals, yEdited, xNormalized
     - Move originals to zOriginals
-    - Batch normalize to staged
-      - upscale
+    - Copy originals to yEdited
+    - Edit (GIMP - Crop, clean, Topaz - sharpen) as needed 
+    - Copy script to parent folder
+    - Batch normalize to xNormalized
+      - extract metadata to json
       - sharpen
-      - white balance
-      - color balance?
-      - auto contrast
-      - gamma correction
-      - convert format - webP or optimized JPEG
-    - Edit as needed 
-⭕2 - face detection and smart crop
+      - lighting
+      - convert to webP
 ⭕2 - Batch clean images from testing before production
 ⭕2 - Batch upload images to cards. 
-        - Extract metadata for caption, tags(?)
-        - aspect ratio

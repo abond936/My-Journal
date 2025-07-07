@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../auth/[...nextauth]/route';
 import { deleteCard, getCardById, updateCard, getPaginatedCardsByIds } from '@/lib/services/cardService';
-import { Card } from '@/lib/types/card';
+import { Card, cardUpdateValidationSchema } from '@/lib/types/card';
 import { PaginatedResult } from '@/lib/types/services';
 import { withErrorHandler } from '@/lib/middleware/errorHandler';
 import { AppError, ErrorCode } from '@/lib/types/error';
@@ -13,15 +13,8 @@ export const dynamic = 'force-dynamic';
 // Type for params to ensure consistency
 type RouteParams = Promise<{ id: string }>;
 
-// Validation schema for card updates
-const cardUpdateSchema = z.object({
-  title: z.string().optional(),
-  content: z.string().optional(),
-  status: z.enum(['draft', 'published']).optional(),
-  type: z.enum(['story', 'gallery', 'qa', 'quote', 'callout']).optional(),
-  tags: z.array(z.string()).optional(),
-  displayMode: z.enum(['static', 'inline', 'navigate']).optional(),
-}).passthrough();
+// Use centralized validation schema for consistency
+const cardUpdateSchema = cardUpdateValidationSchema;
 
 /**
  * GET a card by ID.

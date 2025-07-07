@@ -40,7 +40,7 @@ export const dynamic = 'force-dynamic';
  *         name: type
  *         schema:
  *           type: string
- *           enum: [story, qa, quote, callout, gallery, all]
+ *           enum: [story, qa, quote, callout, gallery, collection, all]
  *         description: Filter cards by type.
  *       - in: query
  *         name: q

@@ -5,6 +5,7 @@
 // It includes a responsive design that collapses into a hamburger menu on mobile
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
@@ -40,10 +41,14 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
       <div className={`${styles.navContainer} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
         {/* Logo/Home link */}
         <Link href="/" className={styles.logo}>
-          <img 
+          <Image 
             src="/images/uploads/Title.jpg" 
             alt="My Stories - Michael Alan Bond" 
             className={styles.logoImage}
+            width={150}
+            height={75}
+            sizes="150px"
+            priority={true}
           />
         </Link>
 

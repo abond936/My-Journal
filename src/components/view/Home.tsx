@@ -3,6 +3,7 @@
 // Home.tsx - Main landing page component
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useSession, signIn } from 'next-auth/react';
 import styles from '@/components/view/Home.module.css';
@@ -80,17 +81,27 @@ const Home: React.FC = () => {
     <div className={styles.pageWrapper}>
       {/* Top corner graphic */}
       <div className={styles.topCorner}>
-        <img src="/images/uploads/top-corner.png" alt="" />
+        <Image 
+          src="/images/uploads/top-corner.png" 
+          alt="" 
+          width={200}
+          height={200}
+          sizes="200px"
+        />
       </div>
 
       {/* Main content area */}
       <div className={styles.contentWrapper}>
         {/* Title section */}
         <div className={styles.titleSection}>
-          <img 
+          <Image 
             src="/images/uploads/Title.jpg" 
             alt="My Stories - Michael Alan Bond" 
             className={styles.titleImage}
+            width={600}
+            height={300}
+            sizes="(max-width: 768px) 100vw, 600px"
+            priority={true}
           />
         </div>
 
@@ -112,7 +123,13 @@ const Home: React.FC = () => {
 
       {/* Bottom corner graphic */}
       <div className={styles.bottomCorner}>
-        <img src="/images/uploads/bottom-corner.png" alt="" />
+        <Image 
+          src="/images/uploads/bottom-corner.png" 
+          alt="" 
+          width={200}
+          height={200}
+          sizes="200px"
+        />
       </div>
     </div>
   );

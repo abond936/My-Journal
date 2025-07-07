@@ -123,40 +123,7 @@ export async function getTagAncestors(tagIds: string[]): Promise<string[]> {
   return Array.from(ancestors);
 }
 
-/**
- * Calculates all ancestor paths for a given list of tag IDs and returns them as a map.
- * @param tagIds The list of tag IDs to find paths for.
- * @returns A promise that resolves to a map where keys are concatenated path strings.
- */
-export async function getTagPathsMap(tagIds: string[]): Promise<Record<string, boolean>> {
-  if (!tagIds || tagIds.length === 0) {
-    return {};
-  }
 
-  const allTags = await getAllTags();
-  const tagMap = new Map(allTags.map(tag => [tag.docId!, tag]));
-  const pathsMap: Record<string, boolean> = {};
-
-  const findPath = (tagId: string): string[] => {
-    const path: string[] = [];
-    let currentTag = tagMap.get(tagId);
-    while (currentTag) {
-      path.unshift(currentTag.docId!);
-      currentTag = currentTag.parentId ? tagMap.get(currentTag.parentId) : undefined;
-    }
-    return path;
-  };
-
-  for (const tagId of tagIds) {
-    const pathArray = findPath(tagId);
-    if (pathArray.length > 0) {
-      const pathString = pathArray.join('_');
-      pathsMap[pathString] = true;
-    }
-  }
-
-  return pathsMap;
-}
 
 /**
  * Centralized function to calculate all derived tag data for a card.
@@ -548,6 +515,88 @@ export async function updateTagCounts(tagIds: string[], direction: 'increment' |
   for (const tagId of allIdsToUpdate) {
     const tagRef = firestore.collection('tags').doc(tagId);
     transaction.update(tagRef, { cardCount: FieldValue.increment(amount) });
+  }
+}
+
+/**
+ * Centralized function to handle all tag count scenarios for cards.
+ * This consolidates the tag counting logic from createCard, updateCard, and bulkUpdateTags.
+ * 
+ * @param oldCard - The card before changes (null for new cards)
+ * @param newCard - The card after changes
+ * @param transaction - The Firestore transaction to perform updates in
+ */
+export async function updateTagCountsForCard(
+  oldCard: { tags?: string[]; status: string } | null,
+  newCard: { tags?: string[]; status: string },
+  transaction: FirebaseFirestore.Transaction
+): Promise<void> {
+  const oldTags = new Set(oldCard?.tags || []);
+  const newTags = new Set(newCard.tags || []);
+  const wasPublished = oldCard?.status === 'published';
+  const isPublished = newCard.status === 'published';
+  
+  // Only count published cards
+  if (!isPublished && !wasPublished) return;
+  
+  const deltaMap: Record<string, number> = {};
+  
+  if (wasPublished && isPublished) {
+    // Card remains published - only count tag changes
+    const tagsAdded = [...newTags].filter(t => !oldTags.has(t));
+    const tagsRemoved = [...oldTags].filter(t => !newTags.has(t));
+    tagsAdded.forEach(tagId => deltaMap[tagId] = (deltaMap[tagId] || 0) + 1);
+    tagsRemoved.forEach(tagId => deltaMap[tagId] = (deltaMap[tagId] || 0) - 1);
+  } else if (!wasPublished && isPublished) {
+    // Card becomes published - count all new tags
+    newTags.forEach(tagId => deltaMap[tagId] = (deltaMap[tagId] || 0) + 1);
+  } else if (wasPublished && !isPublished) {
+    // Card becomes draft - decrement all old tags
+    oldTags.forEach(tagId => deltaMap[tagId] = (deltaMap[tagId] || 0) - 1);
+  }
+  
+  // Apply deltas with ancestor inclusion
+  await applyTagCountDeltas(deltaMap, transaction);
+}
+
+/**
+ * Helper function to apply tag count deltas including ancestors.
+ * 
+ * @param deltaMap - Map of tag ID to count delta
+ * @param transaction - The Firestore transaction to perform updates in
+ */
+async function applyTagCountDeltas(
+  deltaMap: Record<string, number>,
+  transaction: FirebaseFirestore.Transaction
+): Promise<void> {
+  const candidateIds = Object.keys(deltaMap);
+  if (candidateIds.length === 0) return;
+  
+  // Read all affected tags to get their paths
+  const tagRefs = candidateIds.map(id => firestore.collection('tags').doc(id));
+  const tagDocs = await transaction.getAll(...tagRefs);
+  
+  // Include ancestors in deltaMap
+  for (const docSnap of tagDocs) {
+    if (!docSnap.exists) continue;
+    const tagData = docSnap.data() as Tag;
+    const tagId = docSnap.id;
+    const delta = deltaMap[tagId] || 0;
+    if (delta === 0) continue;
+
+    if (Array.isArray(tagData.path)) {
+      tagData.path.forEach(ancestorId => {
+        deltaMap[ancestorId] = (deltaMap[ancestorId] || 0) + delta;
+      });
+    }
+  }
+
+  // Apply all increments/decrements
+  for (const [tagId, delta] of Object.entries(deltaMap)) {
+    if (delta !== 0) {
+      const ref = firestore.collection('tags').doc(tagId);
+      transaction.update(ref, { cardCount: FieldValue.increment(delta) });
+    }
   }
 }
 

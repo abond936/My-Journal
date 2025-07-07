@@ -2,8 +2,10 @@
 
 // DIAGNOSTIC: Forcing a file refresh to address module resolution issue.
 import React from 'react';
+import Image from 'next/image';
 import { Card } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import { getObjectPositionForAspectRatio } from '@/lib/utils/objectPositionUtils';
 import styles from './CardDetail.module.css';
 import CardGrid from '@/components/view/CardGrid';
 import TipTapRenderer from '@/components/common/TipTapRenderer';
@@ -44,11 +46,23 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) 
       <header className={styles.header}>
         {card.coverImage && (
           <div className={styles.coverImageContainer}>
-            <img
+            <Image
               src={getDisplayUrl(card.coverImage)}
               alt={card.title}
               className={styles.coverImage}
-              style={{ objectPosition: card.coverImage.objectPosition || 'center' }}
+              width={800}
+              height={600}
+              sizes="(max-width: 768px) 100vw, 800px"
+              style={{ 
+                objectPosition: card.coverImageFocalPoint && card.coverImage ? 
+                  getObjectPositionForAspectRatio(
+                    card.coverImageFocalPoint,
+                    { width: card.coverImage.width, height: card.coverImage.height },
+                    '4/3',
+                    800
+                  ) : 'center'
+              }}
+              priority={true}
             />
           </div>
         )}

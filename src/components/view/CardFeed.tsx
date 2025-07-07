@@ -2,9 +2,11 @@
 
 import React, { useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Card } from '@/lib/types/card';
 import styles from './CardFeed.module.css';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import { getObjectPositionForAspectRatio } from '@/lib/utils/objectPositionUtils';
 
 interface CardFeedProps {
   cards: Card[];
@@ -56,11 +58,15 @@ export default function CardFeed({ cards, loading, loadMoreRef, onSaveScrollPosi
                 </button>
                 {card.galleryMedia.map((item, i) => (
                   item.media && (
-                    <img
+                    <Image
                       key={i}
                       src={getDisplayUrl(item.media)} 
                       alt={item.caption || card.title}
                       className={styles.scrollImage}
+                      width={300}
+                      height={200}
+                      sizes="300px"
+                      priority={false}
                     />
                   )
                 ))}
@@ -73,10 +79,23 @@ export default function CardFeed({ cards, loading, loadMoreRef, onSaveScrollPosi
                 </button>
               </div>
             ) : card.coverImage && (
-              <img
+              <Image
                 src={getDisplayUrl(card.coverImage)} 
                 alt={card.title}
                 className={styles.cardImage}
+                width={400}
+                height={300}
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                style={{ 
+                  objectPosition: card.coverImageFocalPoint && card.coverImage ? 
+                    getObjectPositionForAspectRatio(
+                      card.coverImageFocalPoint,
+                      { width: card.coverImage.width, height: card.coverImage.height },
+                      '4/3',
+                      400
+                    ) : 'center'
+                }}
+                priority={false}
               />
             )}
             <div className={styles.cardOverlay}>
