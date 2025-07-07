@@ -34,13 +34,13 @@ export default function MediaAdminRow({
 
   const handleDelete = async () => {
     if (confirm(`Are you sure you want to delete "${media.filename}"?`)) {
-      await deleteMedia(media.id);
+      await deleteMedia(media.docId);
     }
   };
 
   const handleCaptionSave = async () => {
     if (captionValue !== media.caption) {
-      await updateMedia(media.id, { caption: captionValue });
+      await updateMedia(media.docId, { caption: captionValue });
     }
     setIsEditingCaption(false);
   };
@@ -115,6 +115,19 @@ export default function MediaAdminRow({
       case 'height':
         return <div className={styles.number}>{media.height}</div>;
 
+      case 'size':
+        const formatFileSize = (bytes: number) => {
+          if (bytes === 0) return '0 B';
+          const k = 1024;
+          const sizes = ['B', 'KB', 'MB', 'GB'];
+          const i = Math.floor(Math.log(bytes) / Math.log(k));
+          return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        };
+        return <div className={styles.number}>{formatFileSize(media.size || 0)}</div>;
+
+      case 'contentType':
+        return <div className={styles.contentType}>{media.contentType || 'Unknown'}</div>;
+
       case 'objectPosition':
         return (
           <div className={styles.objectPosition} title={media.objectPosition}>
@@ -139,13 +152,6 @@ export default function MediaAdminRow({
       case 'actions':
         return (
           <div className={styles.actions}>
-            <button 
-              onClick={() => setIsEditingCaption(true)}
-              className={styles.actionButton}
-              title="Edit caption"
-            >
-              ✏️
-            </button>
             <button 
               onClick={handleDelete}
               className={`${styles.actionButton} ${styles.deleteButton}`}

@@ -15,7 +15,7 @@ declare module '@tiptap/core' {
         caption?: string;
         width: number;
         height: number;
-        mediaId?: string;
+        docId?: string;
         'data-media-id'?: string;
         'data-media-type'?: string;
       }) => ReturnType;
@@ -46,11 +46,11 @@ export const FigureWithImage = Node.create<FigureWithImageOptions>({
       'data-wrap': { default: 'off' },
       'data-media-id': { default: null },
       'data-media-type': { default: 'content' },
-      mediaId: { 
+      docId: { 
         default: null,
         parseHTML: element => element.getAttribute('data-media-id'),
         renderHTML: attributes => ({
-          'data-media-id': attributes.mediaId
+          'data-media-id': attributes.docId
         })
       }
     };
@@ -77,7 +77,7 @@ export const FigureWithImage = Node.create<FigureWithImageOptions>({
             'data-wrap': element.getAttribute('data-wrap') || 'off',
             'data-media-id': mediaId,
             'data-media-type': element.getAttribute('data-media-type') || 'content',
-            mediaId: mediaId
+            docId: mediaId
           };
         },
       },
@@ -85,7 +85,7 @@ export const FigureWithImage = Node.create<FigureWithImageOptions>({
   },
 
   renderHTML({ HTMLAttributes, node }) {
-    const mediaId = node.attrs.mediaId || node.attrs['data-media-id'];
+    const mediaId = node.attrs.docId || node.attrs['data-media-id'];
     return [
       'figure',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { 

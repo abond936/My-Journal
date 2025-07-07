@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
 
     snapshot.forEach(doc => {
       const data = doc.data() as Media;
-      media.push(data);
+      media.push({ ...data, docId: doc.id });
     });
 
     // Apply client-side filters that can't be done in Firestore

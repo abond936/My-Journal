@@ -173,10 +173,10 @@ const CardDetailContent = ({ cardData }: { cardData: Card }) => {
   const router = useRouter();
 
   const childItems = (children || []).map(child => ({
-    id: child.id,
+    id: child.docId,
     title: child.title,
     description: child.excerpt || child.subtitle || '',
-    href: `/view/${child.id}`,
+    href: `/view/${child.docId}`,
     imageUrl: child.coverImage ? getDisplayUrl(child.coverImage) : undefined,
   }));
 
@@ -245,7 +245,7 @@ const CardDetailContent = ({ cardData }: { cardData: Card }) => {
 
 export default function CardDetailPage({ cardData }: CardDetailPageProps) {
   return (
-    <CardProvider collectionId={cardData.id}>
+    <CardProvider collectionId={cardData.docId}>
       <CardDetailContent cardData={cardData} />
     </CardProvider>
   );

@@ -181,8 +181,8 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
       width: media.width,
       height: media.height,
       alt: media.filename,
-      mediaId: media.id,
-      'data-media-id': media.id,
+      docId: media.docId,
+      'data-media-id': media.docId,
     }).run();
 
     const newContent = editor.getHTML();

@@ -78,6 +78,8 @@ async function createMediaAsset(
     filename: originalFilename,
     width,
     height,
+    size: fileBuffer.length, // File size in bytes
+    contentType: metadata.format ? `image/${metadata.format}` : 'application/octet-stream',
     storageUrl: publicUrl,
     storagePath,
     source,

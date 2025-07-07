@@ -35,3 +35,6 @@ export function getAdminApp() {
 
   return admin.app();
 }
+
+// Export Firestore instance for scripts
+export const adminDb = getAdminApp().firestore();

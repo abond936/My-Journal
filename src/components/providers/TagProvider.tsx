@@ -80,6 +80,7 @@ export function TagProvider({ children }: { children: ReactNode }) {
       }).then(res => res.json());
 
       console.log('Tag update response:', updatedTag);
+      mutate(); // Revalidate the tags list to update UI immediately
       return updatedTag;
     } catch (e) {
       console.error("Failed to update tag", e);

@@ -1,20 +1,23 @@
 .row {
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid #eee;
   transition: background-color 0.2s;
 }
 
 .row:hover {
-  background: var(--background-hover);
+  background: #f9f9f9;
 }
 
 .row.selected {
-  background: var(--primary-color-light);
+  background: #e3f2fd;
 }
 
 .cell {
-  padding: 0.75rem 0.5rem;
+  padding: 0.5rem;
   vertical-align: middle;
-  border-right: 1px solid var(--border-color);
+  border-right: 1px solid #eee;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cell:last-child {
@@ -22,9 +25,10 @@
 }
 
 .checkboxCell {
-  padding: 0.75rem 0.5rem;
+  padding: 0.5rem;
   text-align: center;
-  border-right: 1px solid var(--border-color);
+  border-right: 1px solid #eee;
+  width: 40px;
 }
 
 /* Status Badge */
@@ -115,6 +119,14 @@
   color: var(--text-color);
 }
 
+/* Content Type */
+.contentType {
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: var(--text-color);
+  text-align: center;
+}
+
 /* Object Position */
 .objectPosition {
   font-family: monospace;
@@ -198,7 +210,8 @@
 
 @media (max-width: 768px) {
   .cell {
-    padding: 0.5rem 0.25rem;
+    padding: 0.25rem;
+    font-size: 0.8rem;
   }
 
   .thumbnail {
@@ -215,5 +228,23 @@
     min-width: 28px;
     height: 28px;
     font-size: 0.8rem;
+  }
+
+  .statusBadge,
+  .sourceBadge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+  }
+
+  .filename,
+  .caption,
+  .sourcePath {
+    font-size: 0.8rem;
+  }
+
+  .number,
+  .contentType,
+  .objectPosition {
+    font-size: 0.75rem;
   }
 } 

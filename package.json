@@ -16,7 +16,9 @@
     "backfill:tags": "tsx src/lib/scripts/tags/backfill-tag-paths.ts",
     "update:tag-counts": "tsx src/lib/scripts/tags/update-tag-counts.ts",
     "diagnose:tag": "tsx src/lib/scripts/dev/diagnose-single-tag.ts",
-    "normalize:images": "npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/normalize-images.ts"
+    "normalize:images": "npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/normalize-images.ts",
+    "cleanup:media": "npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/cleanup-media-collection.ts",
+    "backfill:media-metadata": "npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/backfill-media-metadata.ts"
   },
   "dependencies": {
     "@auth/firebase-adapter": "^2.9.1",

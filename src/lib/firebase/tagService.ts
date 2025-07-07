@@ -446,7 +446,7 @@ export async function createTag(tagData: Omit<Tag, 'docId' | 'createdAt' | 'upda
         if (parentData.path) {
           newPath.push(...parentData.path);
         }
-        newPath.push(parentData.docId!); // Add the parent itself to the path
+        newPath.push(parentDoc.id); // Use the document ID instead of parentData.docId
       }
     }
 

@@ -15,6 +15,10 @@ export const mediaSchema = z.object({
   width: z.number(),
   height: z.number(),
   
+  // File metadata
+  size: z.number(), // File size in bytes
+  contentType: z.string(), // MIME type (e.g., 'image/jpeg', 'image/png')
+  
   // Firebase Storage details. The URL is the primary way to access the image.
   storageUrl: z.string(), // Public, permanent URL from Firebase Storage.
   storagePath: z.string(), // The path to the file within the Storage bucket (e.g., 'images/uuid-filename.jpg').

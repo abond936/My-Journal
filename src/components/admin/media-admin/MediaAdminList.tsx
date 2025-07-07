@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Media } from '@/lib/types/photo';
 import { useMedia } from '@/components/providers/MediaProvider';
 import MediaAdminRow from './MediaAdminRow';
+import MediaResizableHeader from './MediaResizableHeader';
 import styles from './MediaAdminList.module.css';
 
 interface ColumnConfig {
@@ -15,17 +16,21 @@ interface ColumnConfig {
   sortable?: boolean;
 }
 
+const MEDIA_COLUMN_WIDTHS_KEY = 'media-admin-column-widths';
+
 const defaultColumns: ColumnConfig[] = [
-  { key: 'status', label: 'Status', width: 80, minWidth: 60, maxWidth: 120 },
-  { key: 'thumbnail', label: 'Icon', width: 80, minWidth: 80, maxWidth: 80 },
-  { key: 'filename', label: 'Filename', width: 200, minWidth: 150, maxWidth: 400, sortable: true },
-  { key: 'caption', label: 'Caption', width: 250, minWidth: 150, maxWidth: 500, sortable: true },
-  { key: 'width', label: 'Width', width: 80, minWidth: 60, maxWidth: 100 },
-  { key: 'height', label: 'Height', width: 80, minWidth: 60, maxWidth: 100 },
-  { key: 'objectPosition', label: 'Object Position', width: 120, minWidth: 100, maxWidth: 150 },
-  { key: 'source', label: 'Source', width: 80, minWidth: 60, maxWidth: 120 },
-  { key: 'sourcePath', label: 'Source Path', width: 300, minWidth: 200, maxWidth: 600, sortable: true },
-  { key: 'actions', label: 'Actions', width: 100, minWidth: 80, maxWidth: 120 },
+  { key: 'status', label: 'Status', width: 100, minWidth: 80, maxWidth: 150 },
+  { key: 'thumbnail', label: 'Icon', width: 100, minWidth: 80, maxWidth: 120 },
+  { key: 'filename', label: 'Filename', width: 250, minWidth: 200, maxWidth: 500, sortable: true },
+  { key: 'caption', label: 'Caption', width: 300, minWidth: 200, maxWidth: 600, sortable: true },
+  { key: 'width', label: 'Width', width: 100, minWidth: 80, maxWidth: 120 },
+  { key: 'height', label: 'Height', width: 100, minWidth: 80, maxWidth: 120 },
+  { key: 'size', label: 'Size', width: 120, minWidth: 100, maxWidth: 150, sortable: true },
+  { key: 'contentType', label: 'Type', width: 120, minWidth: 100, maxWidth: 150 },
+  { key: 'objectPosition', label: 'Object Position', width: 150, minWidth: 120, maxWidth: 200 },
+  { key: 'source', label: 'Source', width: 100, minWidth: 80, maxWidth: 120 },
+  { key: 'sourcePath', label: 'Source Path', width: 400, minWidth: 300, maxWidth: 800, sortable: true },
+  { key: 'actions', label: 'Actions', width: 120, minWidth: 100, maxWidth: 150 },
 ];
 
 export default function MediaAdminList() {
@@ -40,58 +45,34 @@ export default function MediaAdminList() {
 
   const [columns, setColumns] = useState<ColumnConfig[]>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('media-admin-columns');
-      return saved ? JSON.parse(saved) : defaultColumns;
+      const saved = localStorage.getItem(MEDIA_COLUMN_WIDTHS_KEY);
+      if (saved) {
+        const savedWidths = JSON.parse(saved);
+        return defaultColumns.map(col => ({
+          ...col,
+          width: savedWidths[col.key] || col.width
+        }));
+      }
     }
     return defaultColumns;
   });
 
-  const [resizing, setResizing] = useState<{ columnIndex: number; startX: number; startWidth: number } | null>(null);
-
   // Save column configuration to localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('media-admin-columns', JSON.stringify(columns));
+      const widths = columns.reduce((acc, col) => {
+        acc[col.key] = col.width;
+        return acc;
+      }, {} as Record<string, number>);
+      localStorage.setItem(MEDIA_COLUMN_WIDTHS_KEY, JSON.stringify(widths));
     }
   }, [columns]);
 
-  const handleMouseDown = (e: React.MouseEvent, columnIndex: number) => {
-    e.preventDefault();
-    setResizing({
-      columnIndex,
-      startX: e.clientX,
-      startWidth: columns[columnIndex].width,
-    });
-  };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!resizing) return;
-
-    const deltaX = e.clientX - resizing.startX;
-    const newWidth = Math.max(
-      columns[resizing.columnIndex].minWidth,
-      Math.min(columns[resizing.columnIndex].maxWidth, resizing.startWidth + deltaX)
-    );
-
-    setColumns(prev => prev.map((col, index) => 
-      index === resizing.columnIndex ? { ...col, width: newWidth } : col
+  const handleColumnResize = (columnKey: string, newWidth: number) => {
+    setColumns(prev => prev.map(col => 
+      col.key === columnKey ? { ...col, width: newWidth } : col
     ));
   };
-
-  const handleMouseUp = () => {
-    setResizing(null);
-  };
-
-  useEffect(() => {
-    if (resizing) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [resizing]);
 
   const handleBulkDelete = async () => {
     if (selectedMediaIds.length === 0) return;
@@ -101,7 +82,7 @@ export default function MediaAdminList() {
     }
   };
 
-  const totalWidth = columns.reduce((sum, col) => sum + col.width, 0);
+  const totalWidth = columns.reduce((sum, col) => sum + col.width, 0) + 40; // +40 for checkbox column
 
   return (
     <div className={styles.container}>
@@ -134,33 +115,27 @@ export default function MediaAdminList() {
                   onChange={(e) => e.target.checked ? selectAll() : selectNone()}
                 />
               </th>
-              {columns.map((column, index) => (
-                <th 
+              {columns.map((column) => (
+                <MediaResizableHeader
                   key={column.key}
-                  className={styles.headerCell}
-                  style={{ width: column.width }}
+                  width={column.width}
+                  minWidth={column.minWidth}
+                  maxWidth={column.maxWidth}
+                  onResize={(width) => handleColumnResize(column.key, width)}
                 >
-                  <div className={styles.headerContent}>
-                    <span>{column.label}</span>
-                    {index < columns.length - 1 && (
-                      <div
-                        className={styles.resizeHandle}
-                        onMouseDown={(e) => handleMouseDown(e, index)}
-                      />
-                    )}
-                  </div>
-                </th>
+                  {column.label}
+                </MediaResizableHeader>
               ))}
             </tr>
           </thead>
           <tbody>
             {media.map((item) => (
               <MediaAdminRow
-                key={item.id}
+                key={item.docId}
                 media={item}
                 columns={columns}
-                isSelected={selectedMediaIds.includes(item.id)}
-                onToggleSelection={() => toggleMediaSelection(item.id)}
+                isSelected={selectedMediaIds.includes(item.docId)}
+                onToggleSelection={() => toggleMediaSelection(item.docId)}
               />
             ))}
           </tbody>

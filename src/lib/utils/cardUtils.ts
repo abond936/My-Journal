@@ -73,11 +73,7 @@ export function dehydrateCardForSave(raw: any): CardUpdate {
   });
 
   // Ensure contentMedia is always an array before saving.
-  const cleanedContent = Array.isArray(contentMedia)
-    ? contentMedia.map((e: any) => (typeof e === 'string' ? e : e.id))
-    : contentMedia
-      ? [ (typeof contentMedia === 'string' ? contentMedia : contentMedia.id) ]
-      : [];
+  const cleanedContent = Array.isArray(contentMedia) ? contentMedia : [];
 
   const result = {
     ...rest,

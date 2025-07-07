@@ -22,20 +22,7 @@ interface TagContent extends BaseContent {
   onBack?: () => void;
 }
 
-interface EntryContent extends BaseContent {
-  type: 'entry';
-  date?: string;
-  tags?: string[];
-}
-
-interface AlbumContent extends BaseContent {
-  type: 'album';
-  entryCount?: number;
-  date?: string;
-  tags?: string[];
-}
-
-type Content = TagContent | EntryContent | AlbumContent;
+type Content = TagContent;
 
 interface CardGridProps {
   items?: Content[];

@@ -131,7 +131,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
 
       // Refresh the current page to get updated data
       await fetchMedia(currentPage);
-      return media.find(m => m.id === id);
+      return media.find(m => m.docId === id);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('An unknown error occurred');
       setError(error);
@@ -151,7 +151,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Remove from local state
-      setMedia(prev => prev.filter(m => m.id !== id));
+      setMedia(prev => prev.filter(m => m.docId !== id));
       setSelectedMediaIds(prev => prev.filter(selectedId => selectedId !== id));
       
       // Refresh pagination if needed
@@ -198,7 +198,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const selectAll = useCallback(() => {
-    setSelectedMediaIds(media.map(m => m.id));
+    setSelectedMediaIds(media.map(m => m.docId));
   }, [media]);
 
   const selectNone = useCallback(() => {
