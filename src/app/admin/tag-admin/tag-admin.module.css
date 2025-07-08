@@ -200,14 +200,14 @@
   color: #dc3545;
 }
 
-/* Base styles for the tag row wrapper */
+/* Drag and Drop Visual Feedback */
 .rowWrapper {
   position: relative;
   display: flex;
   align-items: center;
   margin-bottom: 0;
   padding: 0 2px;
-  transition: background-color 0.15s ease-in-out;
+  transition: all 0.2s ease;
   line-height: 1;
   font-size: 0.97em;
 }
@@ -220,31 +220,92 @@
   line-height: 1 !important;
 }
 
-.rowWrapper[data-is-dragging='true'] {
+.rowWrapper[data-is-dragging="true"] {
   opacity: 0.5;
   z-index: 1000;
-  background-color: var(--color-background-secondary);
 }
 
 .rowWrapper:hover {
-  background-color: var(--color-background-hover);
+  background-color: rgba(0, 123, 255, 0.05);
 }
 
+/* Drop indicator styles */
+.rowWrapper::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: transparent;
+  transition: background-color 0.2s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.rowWrapper[data-drop-indicator="before"]::before {
+  top: -1px;
+  background: #007bff;
+}
+
+.rowWrapper[data-drop-indicator="after"]::before {
+  bottom: -1px;
+  background: #007bff;
+}
+
+/* Drag handle improvements */
 .dragHandle {
-  cursor: move;
-  padding: 0 2px;
-  color: #666;
+  cursor: grab;
+  padding: 4px 8px;
+  margin-right: 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
   user-select: none;
-  opacity: 0.5;
-  font-size: 0.8em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
 }
 
 .dragHandle:hover {
-  opacity: 1;
+  background-color: rgba(0, 123, 255, 0.1);
 }
 
 .dragHandle:active {
   cursor: grabbing;
+  background-color: rgba(0, 123, 255, 0.2);
+}
+
+/* Valid drop zone highlighting */
+.rowWrapper[data-valid-drop="true"] {
+  background-color: rgba(0, 123, 255, 0.05);
+  border: 1px dashed #007bff;
+  border-radius: 4px;
+}
+
+/* Invalid drop zone indication */
+.rowWrapper[data-valid-drop="false"] {
+  opacity: 0.6;
+  background-color: rgba(220, 53, 69, 0.05);
+}
+
+/* Reparenting visual feedback */
+.rowWrapper[data-reparent-target="true"] {
+  background-color: rgba(40, 167, 69, 0.1);
+  border: 2px solid #28a745;
+  border-radius: 4px;
+  box-shadow: 0 0 8px rgba(40, 167, 69, 0.3);
+}
+
+.rowWrapper[data-reparent-target="true"]::before {
+  display: none; /* Hide drop indicators for reparenting */
+}
+
+/* Enhanced valid drop zone highlighting for reordering */
+.rowWrapper[data-valid-drop="true"]:not([data-reparent-target="true"]) {
+  background-color: rgba(0, 123, 255, 0.05);
+  border: 1px dashed #007bff;
+  border-radius: 4px;
 }
 
 @media (max-width: 768px) {

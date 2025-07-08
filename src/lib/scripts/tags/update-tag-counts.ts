@@ -1,19 +1,21 @@
 #!/usr/bin/env node
 /**
- * Update tag counts based on direct assignments and children's counts
+ * Update tag counts based on unique cards (not tag applications)
  * 
  * This script uses the proper hierarchical counting logic:
- * cardCount = direct assignments + sum of immediate children's cardCounts
+ * cardCount = unique cards that use this tag directly OR any of its descendants
  * 
  * Usage:
  *   npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/tags/update-tag-counts.ts [options]
  * 
  * Options:
  *   --dry-run          Preview changes without making them (shows summary and sample mismatches)
+ *   --apply            Actually apply the changes to fix mismatches
  *   --verbose          Show detailed progress information
  * 
- * Example:
+ * Examples:
  *   npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/tags/update-tag-counts.ts --dry-run
+ *   npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/tags/update-tag-counts.ts --apply
  */
 
 import 'dotenv/config';
@@ -27,7 +29,7 @@ const adminApp = getAdminApp();
 const firestore = adminApp.firestore();
 
 async function dryRunTagCounts() {
-  console.log('🔎 Dry run: Checking tag count accuracy (no changes will be made) ...');
+  console.log('🔎 Dry run: Checking unique card count accuracy (no changes will be made) ...');
 
   // 1. Fetch all tags and build a map
   const tagsCollection = firestore.collection('tags');
@@ -49,46 +51,67 @@ async function dryRunTagCounts() {
 
   // 2. Fetch all published cards and build tag-to-card map
   const publishedCardsSnapshot = await cardsCollection.where('status', '==', 'published').get();
-  const tagToDirectCardCount = new Map<string, number>();
+  const tagToDirectCardIds = new Map<string, Set<string>>();
   publishedCardsSnapshot.forEach(cardDoc => {
     const card = cardDoc.data() as Card;
     if (card.tags && card.tags.length > 0) {
       const uniqueTags = new Set(card.tags);
       uniqueTags.forEach(tagId => {
-        tagToDirectCardCount.set(tagId, (tagToDirectCardCount.get(tagId) || 0) + 1);
+        if (!tagToDirectCardIds.has(tagId)) {
+          tagToDirectCardIds.set(tagId, new Set());
+        }
+        tagToDirectCardIds.get(tagId)!.add(cardDoc.id);
       });
     }
   });
 
-  // 3. Calculate correct hierarchical counts (bottom-up)
+  // 3. Calculate correct unique card counts (bottom-up)
+  const calculatedUniqueCardIds = new Map<string, Set<string>>();
   const calculatedCounts = new Map<string, number>();
-  function computeCount(tagId: string): number {
-    // Direct assignments
-    const direct = tagToDirectCardCount.get(tagId) || 0;
-    // Sum of children's counts
+  
+  function computeUniqueCards(tagId: string): Set<string> {
+    // Direct card assignments
+    const directCardIds = tagToDirectCardIds.get(tagId) || new Set<string>();
+    
+    // Get unique cards from all children
     const tag = tagMap.get(tagId);
-    if (!tag) return direct;
-    let childrenTotal = 0;
-    for (const childId of tag.children) {
-      childrenTotal += computeCount(childId);
+    if (!tag) {
+      calculatedUniqueCardIds.set(tagId, directCardIds);
+      calculatedCounts.set(tagId, directCardIds.size);
+      return directCardIds;
     }
-    const total = direct + childrenTotal;
-    calculatedCounts.set(tagId, total);
-    return total;
+    
+    const allUniqueCardIds = new Set(directCardIds);
+    for (const childId of tag.children) {
+      const childCardIds = computeUniqueCards(childId);
+      childCardIds.forEach(cardId => allUniqueCardIds.add(cardId));
+    }
+    
+    calculatedUniqueCardIds.set(tagId, allUniqueCardIds);
+    calculatedCounts.set(tagId, allUniqueCardIds.size);
+    return allUniqueCardIds;
   }
+  
   // Start from root tags
-  allTags.filter(t => !t.parentId).forEach(t => computeCount(t.docId!));
+  allTags.filter(t => !t.parentId).forEach(t => computeUniqueCards(t.docId!));
 
   // 4. Compare and summarize
   let incorrectCount = 0;
-  const mismatches: { tag: Tag, current: number, expected: number }[] = [];
+  const mismatches: { tag: Tag, current: number, expected: number, sampleCards?: string[] }[] = [];
   allTags.forEach(tag => {
     const expected = calculatedCounts.get(tag.docId!) || 0;
     const current = tag.cardCount || 0;
     if (expected !== current) {
       incorrectCount++;
       if (mismatches.length < 10) {
-        mismatches.push({ tag, current, expected });
+        const uniqueCardIds = calculatedUniqueCardIds.get(tag.docId!) || new Set();
+        const sampleCards = Array.from(uniqueCardIds).slice(0, 3);
+        mismatches.push({ 
+          tag, 
+          current, 
+          expected, 
+          sampleCards: sampleCards.length > 0 ? sampleCards : undefined 
+        });
       }
     }
   });
@@ -101,8 +124,11 @@ async function dryRunTagCounts() {
   } else {
     console.log(`❌ ${incorrectCount} tags have incorrect counts.`);
     console.log('Sample mismatches:');
-    mismatches.forEach(({ tag, current, expected }) => {
+    mismatches.forEach(({ tag, current, expected, sampleCards }) => {
       console.log(`- Tag: ${tag.name} (${tag.docId}) | Current: ${current} | Expected: ${expected}`);
+      if (sampleCards && sampleCards.length > 0) {
+        console.log(`  Sample cards: ${sampleCards.join(', ')}`);
+      }
     });
     if (incorrectCount > mismatches.length) {
       console.log(`...and ${incorrectCount - mismatches.length} more.`);
@@ -113,8 +139,8 @@ async function dryRunTagCounts() {
 
 async function resetTagCounts() {
   console.log('🔄 Starting tag count reset...');
-  console.log('📊 This will recalculate all tag counts using proper hierarchical logic:');
-  console.log('   cardCount = direct assignments + sum of immediate children\'s cardCounts');
+  console.log('📊 This will recalculate all tag counts using unique card logic:');
+  console.log('   cardCount = unique cards that use this tag directly OR any of its descendants');
   console.log('');
 
   try {
@@ -128,7 +154,7 @@ async function resetTagCounts() {
     
     console.log('');
     console.log(`✅ Successfully updated ${processedCount} tags in ${duration.toFixed(2)} seconds`);
-    console.log('🎯 All tag counts have been reset to accurate values');
+    console.log('🎯 All tag counts have been reset to accurate unique card values');
     console.log('');
     console.log('📋 Summary:');
     console.log(`   - Tags processed: ${processedCount}`);
@@ -145,19 +171,21 @@ async function resetTagCounts() {
 const args = process.argv.slice(2);
 const isVerbose = args.includes('--verbose');
 const isDryRun = args.includes('--dry-run');
+const isApply = args.includes('--apply');
 
 if (isDryRun) {
   dryRunTagCounts()
     .then(() => {
       console.log('');
       console.log('📝 Dry run completed. No changes were made.');
+      console.log('💡 To apply changes, run with --apply flag');
       process.exit(0);
     })
     .catch((err) => {
       console.error('💥 Script failed to run:', err);
       process.exit(1);
     });
-} else {
+} else if (isApply) {
   if (isVerbose) {
     console.log('🔍 Verbose mode enabled - showing detailed progress');
   }
@@ -171,4 +199,10 @@ if (isDryRun) {
       console.error('💥 Script failed to run:', err);
       process.exit(1);
     });
+} else {
+  console.log('❌ Please specify either --dry-run or --apply');
+  console.log('Usage:');
+  console.log('  --dry-run    Preview changes without making them');
+  console.log('  --apply      Actually apply the changes');
+  process.exit(1);
 } 

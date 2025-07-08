@@ -45,6 +45,17 @@ export function TagAdminRow({
   const [isAddingChild, setIsAddingChild] = useState(false);
   const [childName, setChildName] = useState('');
 
+  // Check if this is an artificial dimension label
+  const isDimensionLabel = tag.docId?.startsWith('dim-');
+  
+  // Check if this is a top-level parent (first actual tag in a dimension)
+  const isTopLevelParent = depth === 0 && !isDimensionLabel;
+
+  // Hide dimension labels completely
+  if (isDimensionLabel) {
+    return null;
+  }
+
   /**
    * Saves the updated tag name if it has changed.
    */
@@ -97,7 +108,7 @@ export function TagAdminRow({
           ) : (
             <span 
               onClick={() => setIsEditing(true)} 
-              className={styles.tagName}
+              className={`${styles.tagName} ${isTopLevelParent ? styles.topLevelParent : ''}`}
               data-dimension={tag.dimension || 'none'}
             >
               {tag.name}

@@ -130,7 +130,7 @@ function useTagManagement() {
     try {
       // Update all siblings to maintain consistent spacing
       await Promise.all(updates.map(update => 
-        updateTag(update.docId, { order: update.order })
+        updateTag(update.id, { order: update.order })
       ));
       await mutate();
     } catch (err) {

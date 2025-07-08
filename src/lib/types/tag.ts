@@ -23,6 +23,9 @@ export const tagSchema = z.object({
   // This will be maintained by a backend process.
   cardCount: z.number().default(0).optional(),
 
+  // The set of unique card IDs (for unique card counting up the tree)
+  uniqueCardIds: z.array(z.string()).optional(),
+
   // Timestamps
   createdAt: z.any().optional(), // Using any() for now to accommodate Firestore Timestamps
   updatedAt: z.any().optional(), // Using any() for now to accommodate Firestore Timestamps

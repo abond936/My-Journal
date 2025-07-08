@@ -49,11 +49,14 @@
 }
 
 .tagName {
-  display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+}
+
+.tagName:hover {
+  background-color: rgba(0, 123, 255, 0.1);
 }
 
 .cardCount {
@@ -128,4 +131,10 @@
 
 .addChildButton:hover {
   background: var(--medium-gray);
+}
+
+.topLevelParent {
+  font-weight: bold;
+  font-size: 1.1em;
+  color: #2c3e50;
 } 
