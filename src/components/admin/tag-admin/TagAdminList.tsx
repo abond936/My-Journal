@@ -142,9 +142,6 @@ export function TagAdminList({ tagTree, onUpdateTag, onDeleteTag, onCreateTag, o
 
   const handleDragStart = (event: DragEndEvent) => {
     const { active } = event;
-    console.log('🔍 DragStart - active object:', active);
-    console.log('🔍 DragStart - active.id:', active.id);
-    console.log('🔍 DragStart - active.docId:', (active as any).docId);
     setDragState(prev => ({
       ...prev,
       activeId: active.id as string,
@@ -153,11 +150,6 @@ export function TagAdminList({ tagTree, onUpdateTag, onDeleteTag, onCreateTag, o
 
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
-    
-    console.log('🔍 DragOver - active:', active);
-    console.log('🔍 DragOver - over:', over);
-    console.log('🔍 DragOver - active.id:', active.id);
-    console.log('🔍 DragOver - over.id:', over?.id);
     
     if (!over) {
       setDragState(prev => ({
@@ -193,19 +185,6 @@ export function TagAdminList({ tagTree, onUpdateTag, onDeleteTag, onCreateTag, o
     const isSameParent = activeTag.parentId === overTag.parentId;
     const isReparenting = isShiftPressed && activeTag.docId !== overTag.docId;
     
-    // DEBUG: Log parent detection details
-    console.log('🔍 Parent Detection Debug:', {
-      activeTagId: activeTag.docId,
-      activeTagParentId: activeTag.parentId,
-      overTagId: overTag.docId,
-      overTagParentId: overTag.parentId,
-      isSameParent,
-      isReparenting,
-      isShiftPressed,
-      activeTagName: activeTag.name,
-      overTagName: overTag.name
-    });
-    
     // Determine drop indicator position for reordering
     const activeIndex = flattenedTree.findIndex(t => t.docId === active.id);
     const overIndex = flattenedTree.findIndex(t => t.docId === over.id);
@@ -223,12 +202,6 @@ export function TagAdminList({ tagTree, onUpdateTag, onDeleteTag, onCreateTag, o
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    
-    console.log('🔍 DragEnd - active:', active);
-    console.log('🔍 DragEnd - over:', over);
-    console.log('🔍 DragEnd - active.id:', active.id);
-    console.log('🔍 DragEnd - over.id:', over?.id);
-    console.log('🔍 DragEnd - dragState:', dragState);
     
     if (!over) {
       // Reset drag state
@@ -261,21 +234,11 @@ export function TagAdminList({ tagTree, onUpdateTag, onDeleteTag, onCreateTag, o
 
     // Handle reparenting
     if (dragState.isReparenting && dragState.reparentTarget) {
-      console.log('🔍 Calling onReparent with:', {
-        activeId: active.id,
-        overId: over.id
-      });
       onReparent(active.id as string, over.id as string);
     }
     // Handle reordering (same parent)
     else if (activeTag.parentId === overTag.parentId) {
       const placement = dragState.dropIndicator;
-      
-      console.log('🔍 About to call onReorder with:', {
-        activeId: active.id,
-        overId: over.id,
-        placement: placement
-      });
       
       if (placement && active.id !== over.id) {
         onReorder(active.id as string, over.id as string, placement);

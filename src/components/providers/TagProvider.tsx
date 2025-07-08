@@ -72,14 +72,12 @@ export function TagProvider({ children }: { children: ReactNode }) {
 
   const updateTag = useCallback(async (id: string, tagData: Partial<Omit<Tag, 'docId'>>): Promise<Tag | undefined> => {
     try {
-      console.log('Updating tag:', { id, tagData });
       const updatedTag = await fetch(`/api/tags/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(tagData),
       }).then(res => res.json());
 
-      console.log('Tag update response:', updatedTag);
       mutate(); // Revalidate the tags list to update UI immediately
       return updatedTag;
     } catch (e) {

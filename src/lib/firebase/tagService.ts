@@ -672,7 +672,6 @@ export async function updateAllTagCardCounts(): Promise<number> {
     // Process one level at a time, starting with leaf nodes
     const processLevel = async (parentId: string | undefined) => {
       const tagIds = tagsByParent.get(parentId) || [];
-      console.log(`Processing level for parentId: ${parentId || 'root'}, found ${tagIds.length} tags`);
       
       // First, process all children of tags at this level
       for (const tagId of tagIds) {
@@ -684,10 +683,8 @@ export async function updateAllTagCardCounts(): Promise<number> {
       // Then process the tags at this level
       await Promise.all(tagIds.map(async (tagId) => {
         try {
-          console.log(`Updating count for tag: ${tagId}`);
           await updateTagCardCount(tagId);
           processedCount++;
-          console.log(`Successfully updated tag: ${tagId}, total processed: ${processedCount}`);
         } catch (error) {
           console.error(`Failed to update count for tag ${tagId}:`, error);
         }
@@ -799,34 +796,64 @@ export async function updateTagAndDescendantPaths(tagId: string, newParentId: st
   }
   
   // 8. Build the complete tree structure for all descendants
-  const buildUpdatePlan = (currentTagId: string, parentPath: string[]): Array<{tagId: string, path: string[], parentId: string | undefined}> => {
+  const buildUpdatePlan = (currentTagId: string, parentPath: string[], isRootTag: boolean = false): Array<{tagId: string, path: string[], parentId: string | undefined}> => {
     const updates = [];
     const newPath = [...parentPath, currentTagId];
+    
+    // Get the current tag's data to preserve its parent relationship
+    const currentTag = allTags.find(t => t.docId === currentTagId);
     
     // Add this tag to the update plan
     updates.push({
       tagId: currentTagId,
       path: newPath,
-      parentId: newParentId
+      // Only change parentId for the root tag being moved, preserve existing parentId for descendants
+      parentId: isRootTag ? newParentId : currentTag?.parentId
     });
     
     // Find all direct children and add them to the plan
     allTags.forEach(tag => {
       if (tag.parentId === currentTagId) {
-        updates.push(...buildUpdatePlan(tag.docId!, newPath));
+        updates.push(...buildUpdatePlan(tag.docId!, newPath, false)); // false = not the root tag
       }
     });
     
     return updates;
   };
   
-  const updatePlan = buildUpdatePlan(tagId, newBasePath);
+  const updatePlan = buildUpdatePlan(tagId, newBasePath, true); // true = this is the root tag being moved
   
-  console.log(`Moving tag ${tagId} and ${tagsBeingMoved.length - 1} descendants, affecting ${affectedCardIds.size} cards`);
+  // 9. Get all children data BEFORE any writes (to comply with Firestore transaction rules)
+  // First, determine which tags need count updates
+  const tagsToUpdate = new Set<string>();
+  
+  // Add old hierarchy tags
+  oldHierarchyIds.forEach(id => tagsToUpdate.add(id));
+  
+  // Add new hierarchy tags  
+  newHierarchyIds.forEach(id => tagsToUpdate.add(id));
+  
+  // Add moved tags themselves
+  tagsBeingMoved.forEach(id => tagsToUpdate.add(id));
+  
+  // Now get all children data for these tags
+  const childrenData = new Map<string, { uniqueCardIds: string[] }>();
+  for (const tagId of tagsToUpdate) {
+    const childrenSnapshot = await transaction.get(
+      firestore.collection('tags').where('parentId', '==', tagId)
+    );
+    
+    const children = childrenSnapshot.docs.map(doc => ({
+      uniqueCardIds: doc.data().uniqueCardIds || []
+    }));
+    childrenData.set(tagId, { uniqueCardIds: children.flatMap(c => c.uniqueCardIds) });
+  }
+  
+
   
   // PHASE 2: ALL WRITES NOW
   
-  // 9. Update all tags in the move plan
+  // 10. Update all tags in the move plan
   for (const update of updatePlan) {
     const tagRef = tagsCollection.doc(update.tagId);
     transaction.update(tagRef, { 
@@ -835,7 +862,7 @@ export async function updateTagAndDescendantPaths(tagId: string, newParentId: st
     });
   }
   
-  // 10. Update all affected cards with recalculated derived data
+  // 11. Update all affected cards with recalculated derived data
   for (const card of affectedCards) {
     const currentTags = card.data?.tags || [];
     const { filterTags, dimensionalTags } = await calculateDerivedTagData(currentTags);
@@ -851,19 +878,7 @@ export async function updateTagAndDescendantPaths(tagId: string, newParentId: st
     });
   }
   
-  // 11. Recalculate tag counts for affected hierarchies using unique card counting
-  // Get all tags that need count updates (old hierarchy, new hierarchy, and moved tags)
-  const tagsToUpdate = new Set<string>();
-  
-  // Add old hierarchy tags
-  oldHierarchyIds.forEach(id => tagsToUpdate.add(id));
-  
-  // Add new hierarchy tags  
-  newHierarchyIds.forEach(id => tagsToUpdate.add(id));
-  
-  // Add moved tags themselves
-  tagsBeingMoved.forEach(id => tagsToUpdate.add(id));
-  
+  // 12. Recalculate tag counts for affected hierarchies using unique card counting
   // Update each affected tag's count using the new unique card counting logic
   for (const tagId of tagsToUpdate) {
     // Get direct card assignments for this tag
@@ -874,16 +889,11 @@ export async function updateTagAndDescendantPaths(tagId: string, newParentId: st
       }
     }
     
-    // Get children's unique card IDs (from tags being moved, they'll have updated paths)
-    const childrenSnapshot = await transaction.get(
-      firestore.collection('tags').where('parentId', '==', tagId)
-    );
+    // Get children's unique card IDs from pre-fetched data
+    const childrenInfo = childrenData.get(tagId) || { uniqueCardIds: [] };
     
     const allUniqueCardIds = new Set(directCardIds);
-    for (const childDoc of childrenSnapshot.docs) {
-      const childCardIds = childDoc.data().uniqueCardIds || [];
-      childCardIds.forEach(cardId => allUniqueCardIds.add(cardId));
-    }
+    childrenInfo.uniqueCardIds.forEach(cardId => allUniqueCardIds.add(cardId));
     
     // Update the tag with new count and card IDs
     const tagRef = tagsCollection.doc(tagId);
@@ -894,6 +904,5 @@ export async function updateTagAndDescendantPaths(tagId: string, newParentId: st
     });
   }
   
-  console.log(`Successfully moved ${tagsBeingMoved.length} tags and updated ${affectedCardIds.size} cards`);
-  console.log(`Updated counts for ${tagsToUpdate.size} affected tags`);
+
 } 
