@@ -69,6 +69,7 @@ Legend:
   - Role-based access control
   - Session persistence
 
+⭕2 - Testing
 ⭕2 - Hosting: Netlify (primary), with Vercel as backup
 
 **Backup**
@@ -86,8 +87,8 @@ Legend:
 - Recovery 
   - codebase Unzip the file to restore the complete project, run `npm install` to reinstall all dependencies.
   - `npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/restore-database.ts "C:\\Path\\To\\Your\\Backup\\file.json"`
-
-⭕2 - Update backup scripts and automation
+  
+Manual backup - You can run npm run backup:database anytime
 
 ## **APPLICATION**
 ================================
@@ -185,8 +186,8 @@ If the card has children (`childrenIds`), it then calls `getCardsByIds` to fetch
   - Subtitle - If present, render next
   - Cover image - If present, render next
   - Content - If present, render using TipTapRenderer.
-  ⭕2 Gallery - If present, render grid, (design)
-  ⭕2 Children - If present, render next.
+  ⭕2 - Gallery - If present, render grid, (design)
+  ⭕2 - Children - If present, render next.
 ⭕3 User Interaction - add user interaction - Like, comment, sharelink
 
 ## **Administration**
@@ -220,7 +221,7 @@ If the card has children (`childrenIds`), it then calls `getCardsByIds` to fetch
 `/app/admin/card-admin/` 
 
 ✅ 
-- Search by title - ⭕2 - Improve css - Remove blue box
+- Search by title 
 - Filter by Status and Type - `CardProvider` uses the `selectedFilterTagIds` to query `filterTags` map.
 - Bulk Operations - `BulkEditTagsModal.tsx` 
 - CoverIcon, Title, Type, Status
@@ -247,7 +248,7 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
 - Cover Image
   - `CoverPhotoContainer` and `PhotoPicker` to select/upload image.
   - Image used for preview card and view page header.
-  - Paste/Drag - ⭕2 - Fix Paste/Drag to upload image.
+  - Paste/Drag - ⭕1 - Fix Paste/Drag to upload image.
   - Stores references, not the images.
   - Adjusts and stores objectPosition
   - No caption
@@ -293,7 +294,7 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
 - Drag-and-Drop Reordering/Reparenting - `SortableTag.tsx`
 - Inline editing - `TagAdminRow.tsx`
   - OnDelete - User choice of children being promoted or cascade deleted
-  - OnMove - ⭕2 - cards update?
+  - OnMove - Updates parent and order and recalcs tag card counts
 
 
 ### **Question Management**
@@ -371,10 +372,9 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
 - `imageImportService.ts`
 - Sharp image processing  
 - Metadata extraction
-- Unique ID generation - ⭕2 Refactor to use docId
 - Error handling
-⭕2 Implement `next/image`
-⭕2 objectPosition for preview card view?
+- `next/image`
+⭕1 objectPosition for preview card view?
 
 **Normalization**
 ⭕1 Organize, normalize, edit images pre-import
@@ -388,5 +388,4 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
       - sharpen
       - lighting
       - convert to webP
-⭕2 - Batch clean images from testing before production
 ⭕2 - Batch upload images to cards. 

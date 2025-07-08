@@ -16,6 +16,8 @@ const SCROLL_POSITION_KEY = 'adminCardListScrollPos';
 export default function AdminCardsPage() {
   const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(new Set());
   const [isBulkTagModalOpen, setIsBulkTagModalOpen] = useState(false);
+  const [searchInputValue, setSearchInputValue] = useState('');
+  const [isSearchTriggered, setIsSearchTriggered] = useState(false);
 
   const { 
     tags: allTags, 
@@ -77,6 +79,17 @@ export default function AdminCardsPage() {
   useEffect(() => {
     setSelectedCardIds(new Set());
   }, [searchTerm, status, cardType]);
+
+  // Initialize search input value from searchTerm
+  useEffect(() => {
+    setSearchInputValue(searchTerm);
+  }, [searchTerm]);
+
+  // Handle search button click
+  const handleSearch = () => {
+    setSearchTerm(searchInputValue);
+    setIsSearchTriggered(true);
+  };
 
   const onSaveScrollPosition = useCallback((cardId: string) => {
     sessionStorage.setItem('scrollToCardId', cardId);
@@ -193,34 +206,44 @@ export default function AdminCardsPage() {
       </div>
 
       <div className={styles.filterSection}>
-        <input
-          type="text"
-          placeholder="Search by title..."
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-          className={styles.searchBox}
-        />
-        <select
-          value={status}
-          onChange={e => setStatus(e.target.value as typeof status)}
-          className={styles.filterSelect}
-        >
-          <option value="all">All Statuses</option>
-          <option value="draft">Draft</option>
-          <option value="published">Published</option>
-        </select>
-        <select
-          value={cardType}
-          onChange={e => setCardType(e.target.value as typeof cardType)}
-          className={styles.filterSelect}
-        >
-          <option value="all">All Types</option>
-          <option value="story">Story</option>
-          <option value="qa">Q&A</option>
-          <option value="quote">Quote</option>
-          <option value="callout">Callout</option>
-          <option value="gallery">Gallery</option>
-        </select>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <input
+            type="text"
+            placeholder="Search by title..."
+            value={searchInputValue}
+            onChange={e => setSearchInputValue(e.target.value)}
+            className={styles.searchBox}
+            onKeyPress={e => e.key === 'Enter' && handleSearch()}
+          />
+          <button 
+            onClick={handleSearch}
+            className={styles.actionButton}
+            style={{ padding: '0.5rem 1rem' }}
+          >
+            Search
+          </button>
+          <select
+            value={status}
+            onChange={e => setStatus(e.target.value as typeof status)}
+            className={styles.filterSelect}
+          >
+            <option value="all">All Statuses</option>
+            <option value="draft">Draft</option>
+            <option value="published">Published</option>
+          </select>
+          <select
+            value={cardType}
+            onChange={e => setCardType(e.target.value as typeof cardType)}
+            className={styles.filterSelect}
+          >
+            <option value="all">All Types</option>
+            <option value="story">Story</option>
+            <option value="qa">Q&A</option>
+            <option value="quote">Quote</option>
+            <option value="callout">Callout</option>
+            <option value="gallery">Gallery</option>
+          </select>
+        </div>
       </div>
       
       <div className={styles.bulkActions}>

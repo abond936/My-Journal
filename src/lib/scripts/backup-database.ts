@@ -1,17 +1,22 @@
-import * as dotenv from 'dotenv';
-import { resolve } from 'path';
+import { config } from 'dotenv';
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 import fs from 'fs';
 import path from 'path';
-import { getFirestore } from 'firebase-admin/firestore';
-import { getAdminApp } from '@/lib/config/firebase/admin';
 
-// Load environment variables from .env file
-dotenv.config({ path: resolve(process.cwd(), '.env') });
+// Load environment variables
+config();
 
-// Initialize Firebase Admin SDK
-getAdminApp();
+// Initialize Firebase Admin with environment variables
+const app = initializeApp({
+  credential: cert({
+    projectId: process.env.FIREBASE_SERVICE_ACCOUNT_PROJECT_ID,
+    privateKey: process.env.FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    clientEmail: process.env.FIREBASE_SERVICE_ACCOUNT_CLIENT_EMAIL,
+  }),
+});
 
-const db = getFirestore();
+const db = getFirestore(app);
 
 /**
  * Firestore Database Backup Script
@@ -20,12 +25,12 @@ const db = getFirestore();
  * 
  * Output:
  * - Creates a timestamped JSON file in 'C:\\Users\\alanb\\CodeBase Backups'
- * - Includes collections: 'entries', 'albums', 'tags', 'users'
+ * - Includes collections: 'cards', 'tags', 'media'
  */
 async function backupDatabase() {
   console.log('--- Starting Firestore Database Backup ---');
 
-  const collectionsToBackup = ['entries', 'albums', 'tags', 'users'];
+  const collectionsToBackup = ['cards', 'tags', 'media'];
   const backupData: { [key: string]: any[] } = {};
   
   // Set backup directory
