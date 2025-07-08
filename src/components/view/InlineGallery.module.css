@@ -1,0 +1,192 @@
+/* Mobile-first inline gallery styles */
+
+.gallerySection {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.galleryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.galleryTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-color);
+}
+
+.imageCount {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  background: var(--background-secondary);
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+}
+
+.galleryContainer {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Navigation buttons - hidden on mobile, visible on desktop/tablet */
+.navButton {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.navButton:hover {
+  background: rgba(0, 0, 0, 0.9);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.navButton.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.prevButton {
+  left: 8px;
+}
+
+.nextButton {
+  right: 8px;
+}
+
+/* Horizontal scrolling container */
+.scrollContainer {
+  display: flex;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  /* Hide scrollbar on mobile but keep functionality */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.scrollContainer::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+/* Show scrollbar on desktop for better UX */
+@media (min-width: 768px) {
+  .scrollContainer::-webkit-scrollbar {
+    display: block;
+    height: 6px;
+  }
+  
+  .scrollContainer::-webkit-scrollbar-track {
+    background: var(--background-secondary);
+    border-radius: 3px;
+  }
+  
+  .scrollContainer::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+  }
+  
+  .scrollContainer::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+  }
+}
+
+/* Individual image items */
+.imageItem {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 200px; /* Minimum width for mobile */
+  max-width: 300px; /* Maximum width for larger screens */
+}
+
+.imageWrapper {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--background-secondary);
+  aspect-ratio: 3/2;
+}
+
+.galleryImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+.imageWrapper:hover .galleryImage {
+  transform: scale(1.05);
+}
+
+.imageCaption {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+  text-align: center;
+}
+
+/* Responsive adjustments */
+@media (min-width: 768px) {
+  .gallerySection {
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+  }
+  
+  .galleryTitle {
+    font-size: 1.5rem;
+  }
+  
+  .imageItem {
+    min-width: 250px;
+    max-width: 350px;
+  }
+  
+  .navButton {
+    width: 48px;
+    height: 48px;
+    font-size: 1.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .imageItem {
+    min-width: 300px;
+    max-width: 400px;
+  }
+}
+
+/* Focus styles for accessibility */
+.scrollContainer:focus {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.navButton:focus {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+} 

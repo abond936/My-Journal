@@ -263,6 +263,31 @@ export default function AdminCardsPage() {
             <option value="draft">Set to Draft</option>
             <option value="published">Set to Published</option>
           </select>
+          <select
+            onChange={e => handleBulkUpdate('type', e.target.value)}
+            className={styles.filterSelect}
+            defaultValue=""
+            disabled={selectedCardIds.size === 0}
+          >
+            <option value="" disabled>Update Type</option>
+            <option value="story">Set to Story</option>
+            <option value="qa">Set to Q&A</option>
+            <option value="quote">Set to Quote</option>
+            <option value="callout">Set to Callout</option>
+            <option value="gallery">Set to Gallery</option>
+            <option value="collection">Set to Collection</option>
+          </select>
+          <select
+            onChange={e => handleBulkUpdate('displayMode', e.target.value)}
+            className={styles.filterSelect}
+            defaultValue=""
+            disabled={selectedCardIds.size === 0}
+          >
+            <option value="" disabled>Update Display Mode</option>
+            <option value="inline">Set to Inline</option>
+            <option value="navigate">Set to Navigate</option>
+            <option value="static">Set to Static</option>
+          </select>
           <button 
             onClick={() => setIsBulkTagModalOpen(true)} 
             className={styles.actionButton}

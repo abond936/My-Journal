@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Card } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils'; // Corrected import path
 import { getObjectPositionForAspectRatio } from '@/lib/utils/objectPositionUtils';
+import TipTapRenderer from '@/components/common/TipTapRenderer';
 import styles from './V2ContentCard.module.css';
 
 // Simple horizontal slider
@@ -14,7 +15,7 @@ import 'swiper/css';
 
 // --- Card Type Renderers ---
 
-const StoryCardContent: React.FC<{ card: Card }> = ({ card }) => {
+const StoryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => {
   const objectPosition = card.coverImageFocalPoint && card.coverImage ? 
     getObjectPositionForAspectRatio(
       card.coverImageFocalPoint,
@@ -42,13 +43,19 @@ const StoryCardContent: React.FC<{ card: Card }> = ({ card }) => {
       <div className={styles.content}>
         <h3 className={styles.title}>{card.title}</h3>
         {card.excerpt && <p className={styles.description}>{card.excerpt}</p>}
+        {/* Add inline content for inline display mode */}
+        {displayMode === 'inline' && card.content && (
+          <div className={styles.inlineContent}>
+            <TipTapRenderer content={card.content} />
+          </div>
+        )}
       </div>
     </>
   );
 };
 
 // NEW: A dedicated renderer for gallery card previews.
-const GalleryCardContent: React.FC<{ card: Card }> = ({ card }) => {
+const GalleryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => {
   const hasGallery = card.galleryMedia && card.galleryMedia.length > 0;
   const objectPosition = card.coverImageFocalPoint && card.coverImage ? 
     getObjectPositionForAspectRatio(
@@ -101,27 +108,27 @@ const GalleryCardContent: React.FC<{ card: Card }> = ({ card }) => {
   );
 };
 
-const QuoteCardContent: React.FC<{ card: Card }> = ({ card }) => (
+const QuoteCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => (
   <div className={styles.content}>
     <blockquote className={styles.quoteText}>{card.content}</blockquote>
     {card.title && <cite className={styles.quoteCite}>— {card.title}</cite>}
   </div>
 );
 
-const QACardContent: React.FC<{ card: Card }> = ({ card }) => (
+const QACardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => (
   <div className={styles.content}>
     <p className={styles.qaQuestion}>Q: {card.title}</p>
     <p className={styles.qaAnswer}>A: {card.content}</p>
   </div>
 );
 
-const CalloutCardContent: React.FC<{ card: Card }> = ({ card }) => (
+const CalloutCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => (
   <div className={styles.content}>
     <h3 className={styles.calloutText}>{card.title}</h3>
   </div>
 );
 
-const CollectionCardContent: React.FC<{ card: Card }> = ({ card }) => (
+const CollectionCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => (
   <div className={styles.content}>
     <h3 className={styles.title}>{card.title}</h3>
     {card.childrenIds && card.childrenIds.length > 0 && (
@@ -140,32 +147,38 @@ interface V2ContentCardProps {
 }
 
 const V2ContentCard: React.FC<V2ContentCardProps> = ({ card, size = 'medium', onClick }) => {
-  const isInteractive = card.type === 'story' || card.type === 'collection' || card.type === 'gallery';
+  const displayMode = card.displayMode || 'navigate';
+  
+  // Determine if card should be interactive based on display mode
+  const isInteractive = displayMode === 'navigate' && 
+    (card.type === 'story' || card.type === 'collection' || card.type === 'gallery');
+  
   const Wrapper = isInteractive ? Link : 'div';
   const wrapperProps = isInteractive ? { href: `/view/${card.docId}`, onClick } : {};
 
   const cardTypeClass = styles[card.type] || styles.story;
   const sizeClass = styles[size] || styles.medium;
+  const displayModeClass = styles[displayMode] || '';
 
   const renderContent = () => {
     switch (card.type) {
       case 'collection':
       case 'gallery':
-        return <GalleryCardContent card={card} />;
+        return <GalleryCardContent card={card} displayMode={displayMode} />;
       case 'quote':
-        return <QuoteCardContent card={card} />;
+        return <QuoteCardContent card={card} displayMode={displayMode} />;
       case 'qa':
-        return <QACardContent card={card} />;
+        return <QACardContent card={card} displayMode={displayMode} />;
       case 'callout':
-        return <CalloutCardContent card={card} />;
+        return <CalloutCardContent card={card} displayMode={displayMode} />;
       case 'story':
       default:
-        return <StoryCardContent card={card} />;
+        return <StoryCardContent card={card} displayMode={displayMode} />;
     }
   };
 
   return (
-    <Wrapper {...wrapperProps} className={`${styles.card} ${cardTypeClass} ${sizeClass}`}>
+    <Wrapper {...wrapperProps} className={`${styles.card} ${cardTypeClass} ${sizeClass} ${displayModeClass}`}>
       {renderContent()}
     </Wrapper>
   );

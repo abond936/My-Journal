@@ -69,7 +69,9 @@ Legend:
   - Role-based access control
   - Session persistence
 
-⭕2 - Testing
+⭕2 - Heavy code commenting and cleanup
+⭕2 - Directory cleanup
+⭕2 - Testing Plan
 ⭕2 - Hosting: Netlify (primary), with Vercel as backup
 
 **Backup**
@@ -88,7 +90,7 @@ Legend:
   - codebase Unzip the file to restore the complete project, run `npm install` to reinstall all dependencies.
   - `npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/restore-database.ts "C:\\Path\\To\\Your\\Backup\\file.json"`
   
-Manual backup - You can run npm run backup:database anytime
+Manual backup - You can run `npm run backup:database` anytime
 
 ## **APPLICATION**
 ================================
@@ -141,7 +143,7 @@ Manual backup - You can run npm run backup:database anytime
 - Login
 
 ### **Top Navigation**
-- Top navigation toggles content and admin for the administrator 
+- Top navigation toggles content and admin 
 
 ✅ 
 - content - Available to users and admin
@@ -152,8 +154,8 @@ Manual backup - You can run npm run backup:database anytime
 - Left sidebar provides a tabbed table of contents and multi-tag selection for card filtering.
 
 ✅ 
-Heirarchical Tag Display: `GlobalSidebar.tsx` and `TagTree.tsx` 
-Slide in/out on mobile
+- Heirarchical Tag Display: `GlobalSidebar.tsx` and `TagTree.tsx` 
+- Slide in/out on mobile
 ⭕2 Filtering
     - add sort by when, asc/dec
     - increase indention
@@ -163,22 +165,21 @@ Slide in/out on mobile
 - After login, the app defaults to the content page `CardFeed.tsx` and `ContentCard.tsx` displaying:
 
 ✅ 
-Grid View
+- Grid View
   - Responsive grid-based layout
   - Three display modes/styles
     - Static - Display only
     ⭕2 Inline - expands/collapses in place
     - Navigate - Links to dedicated card view page   
   - Infinite scroll pagination - IntersectionObserver
-  ⭕2 Fix ghost/error layout issues
-⭕2 Search - Add search
+  ⭕2 - Fix ghost/error layout issues
+⭕2 - Search - Add search
 
 ### **View Card**
 - Clicking a `navigate`card navigates to card detail page `src/app/view/[id]/CardDetailPage.tsx` conditionally rendering card components
-- `src/app/view/[id]/page.tsx` is executed on the server. Inside this page component, the `getCardData` function calls `getCardById(id)` from `src/lib/services/cardService.ts` to fetch the main card's data from Firestore. 
-If the card has children (`childrenIds`), it then calls `getCardsByIds` to fetch them.
-- The fetched `card` and `children` objects are passed as props to the client component `<CardDetailPage />`.
--  The `CardDetailPage` component (`src/components/view/CardDetailPage.tsx`) receives the data and is responsible for rendering the final view in the browser. 
+- `src/app/view/[id]/page.tsx` is executed on the server, calls `getCardData` which calls `getCardById(id)` from `cardService.ts` to fetch the main card's data from Firestore. 
+If the card has `childrenIds`, it calls `getCardsByIds` to fetch them.
+- The fetched `card` and `children` are passed as props to client component `CardDetailPage` rendering the final view. 
 
 ✅ 
 - Conditional Render - Render page based on components.
@@ -192,7 +193,7 @@ If the card has children (`childrenIds`), it then calls `getCardsByIds` to fetch
 
 ## **Administration**
 =======================================
-- Top navigation 'Admin' button navigates to Adminsitration, admin-only CRUD/Bulk editing of cards, tags, media and other resources.
+- Top navigation `Admin` button navigates to Adminsitration, admin-only CRUD/Bulk editing of cards, tags, media and other resources.
 `src/app/admin/layout.tsx`
 
 ✅
@@ -236,9 +237,9 @@ If the card has children (`childrenIds`), it then calls `getCardsByIds` to fetch
 - Pagination - Load more... 
 
 **Card New/Edit** 
-Add new - `/admin/card-admin/new`
+New - `/admin/card-admin/new`
 Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
-`src/components/admin/card-admin/CardForm.tsx`) is rendered, wrapped in a `CardFormProvider` to manage form state.
+`CardForm.tsx` is rendered, wrapped in `CardFormProvider` to manage form state.
 ✅
 - Title, Subtitle
 - Excerpt - ⭕2 Default excerpt to first x characters, with override
@@ -253,20 +254,19 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
   - Adjusts and stores objectPosition
   - No caption
 - Content
-  - Rich text editing - TipTap
-  - Inline embedded images, store id only
+  - Rich text editing - `TipTap`
+  - Inline embedded images, stores string array of `docId` only
   - Rest of content held in HTML
   - Captions default to media object with override stored in card `figure`
 - Tags
   - `MacroTagSelector`- Modal Selector
   - Tag Selection - `Card.tags` - Stores the tags directly assigned by the user
-  - Denormalization - On card save, `cardService` uses `tagService.ts` to calculate and save derived tag data onto the `Card` document.
-    - Tag Inheritance - `Card.filterTags` - Map of all inherited tags for efficient querying (e.g., "Paris" -> "France" -> "Europe").
-    - Tag Filter - `Card.filterTags`: Stores a map object (`{ "tagId": true, ... }`) of all inherited tags, optimized for fast Firestore `where` queries.
+  - Denormalization - On card save, `cardService` uses `tagService.ts` to calc/save derived tag data onto `Card`.
+    - Tag Filter - `Card.filterTags` - Map of all inherited tags for efficient querying.
 - Gallery
     - Uses `GalleryManager` and `PhotoPicker` for multi-image selection.
     - Drag n drop order
-    - Stores gallery as an array of media IDs.
+    - Stores gallery as an array of `docId`s.
     ⭕2 - Default to media object caption with 'overwrite'.
     ⭕2 - Fix caption, focal point editing
     ⭕2 - Batch upload gallery cards by script
@@ -279,7 +279,7 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
 ### **Tag System**
 ===========================================
 - All cards are assigned multiple, dimensional, and heirarchical tags to enable flexible filtering. 
-- All business logic on the server-side (`tagService`) 
+- All business logic on the server-side in `tagService` 
 
 **Tag Data Model**
 ✅ 
@@ -295,7 +295,6 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
 - Inline editing - `TagAdminRow.tsx`
   - OnDelete - User choice of children being promoted or cascade deleted
   - OnMove - Updates parent and order and recalcs tag card counts
-
 
 ### **Question Management**
 - Questions are prompts for stories.

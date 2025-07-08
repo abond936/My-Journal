@@ -9,6 +9,8 @@ import styles from '@/app/admin/card-admin/card-admin.module.css';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import EditableTitleCell from './EditableTitleCell';
 import EditableDisplayModeCell from './EditableDisplayModeCell';
+import EditableTypeCell from './EditableTypeCell';
+import EditableStatusCell from './EditableStatusCell';
 import ResizableHeader from './ResizableHeader';
 import { getCoreTagsByDimension } from '@/lib/utils/tagDisplay';
 
@@ -165,8 +167,12 @@ export default function CardAdminList({
               <td style={{ width: columnWidths.title }}>
                 <EditableTitleCell card={card} onUpdate={onUpdateCard} />
               </td>
-              <td style={{ width: columnWidths.type }}>{card.type}</td>
-              <td style={{ width: columnWidths.status }}>{card.status}</td>
+              <td style={{ width: columnWidths.type }}>
+                <EditableTypeCell card={card} onUpdate={onUpdateCard} />
+              </td>
+              <td style={{ width: columnWidths.status }}>
+                <EditableStatusCell card={card} onUpdate={onUpdateCard} />
+              </td>
               <td style={{ width: columnWidths.display }}>
                 <EditableDisplayModeCell card={card} onUpdate={onUpdateCard} />
               </td>

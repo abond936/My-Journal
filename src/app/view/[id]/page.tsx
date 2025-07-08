@@ -1,6 +1,7 @@
 import { Card } from '@/lib/types/card';
-import CardDetailPage from '@/components/view/CardDetailPage';
+import CardDetailPage from './CardDetailPage';
 import { getCardById, getCardsByIds } from '@/lib/services/cardService';
+import { serializeCardForClient } from '@/lib/utils/dateUtils';
 import { notFound } from 'next/navigation';
 
 interface CardPageProps {
@@ -51,5 +52,9 @@ export default async function CardPage({ params }: CardPageProps) {
     );
   }
 
-  return <CardDetailPage card={pageData.card} childrenCards={pageData.children} />;
+  // Serialize both card and children data for client components
+  const serializedCard = serializeCardForClient(pageData.card);
+  const serializedChildren = pageData.children.map(child => serializeCardForClient(child));
+
+  return <CardDetailPage card={serializedCard} childrenCards={serializedChildren} />;
 } 

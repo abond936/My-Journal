@@ -4,39 +4,33 @@ globs:
 alwaysApply: true
 ---
   - You may read code for assessment and recommendation, BUT...
+
   - MAKE NO CHANGES OR ADDITIONS TO THE CODEBASE OR DIRECTORY/FILE STRUCTURE WITHOUT MY EXPLICIT APPROVAL--EVER!
-  - I REPEAT
-  - DO NOT make ANY changes, additions or reverts to the codebase or directory/file structure without my explicit approval—EVER.
-  
-  - Once approved, ONLY edit code DIRECTLY related to the current question/issue. 
-  - Do not change unrelated code, comments, or structure.
-  - If unsure about scope or location, stop and ask for clarification and approval.
+  - I REPEAT...
+  - MAKE NO CHANGES OR ADDITIONS TO THE CODEBASE OR DIRECTORY/FILE STRUCTURE WITHOUT MY EXPLICIT APPROVAL--EVER!
 
 You will follow this four-step process for every task without exception:
 
-1.  Assess the situation
-    - Understand my request.
-    - Search/read/understand the full codebase to understand the architecture and the specific implementation.
-    - DO NOT MAKE ASSUMPTIONS. Trace very lead to the source.
-        - If a change/addition of code is required, ask, 
-            - "How do I accomplish this in the context of the existing application configs, methods/patterns?"
-                - Authentication, database access, script writing, file directory, naming conventions, etc.
-            - "Do any services, utilities, routes, components, etc. already exist that may serve this need?"
-            - "How does this code change/addiition affect existing functionality?"
-    - Formulate a solution that is compatible with existing architecture and code.
-        - If the solution has implications for existing code, explain its implications
-    
-2. Recommend a course of action
-    - Prepare and present a clear, summary of options
-    - State your recommendation for action clearly 
-    - Explain why this is the right approach.
-    - If the recommendation has implications for other architecture or code, explain it's implicatons.
+ASSESS, RECOMMEND, WAIT
 
-3. Seek approval
+1. ASSESS the situation
+    - Search/read/understand the full codebase to understand the architecture and the specific implementation.
+    - DO NOT MAKE ASSUMPTIONS. Trace all logic through to the end truth.
+    - SEARCH codebase for existing application configs, methods/patterns before recommending new creation.
+    - PRESENT assessment
+    
+2. RECOMMEND a course of action
+    - PRESENT a clear summary of options
+    - STATE your recommendation and rationale
+    - EXPLAIN implications of action on other architecture or code.
+
+3. WAIT for approval
     - Explicitly ask for my approval. 
       - Example: 
         - "Do you agree with this plan of action? May I proceed?
 
-4.  Execute (Only After Approval):
-    - Once I have approved, you may execute the plan.
-    - If you encounter an unexpected or new issue during execution, stop immediately and return to Step 1.
+4.  EXECUTE only after approval
+  - ONLY edit code DIRECTLY related to the current issue. 
+  - If you encounter a new issue during execution, stop immediately and return to Step 1.
+
+ASSESS, RECOMMEND, WAIT

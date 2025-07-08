@@ -193,6 +193,62 @@
   font-weight: 600;
 }
 
+/* --- Display Mode Styles --- */
+.inline {
+  /* Inline cards show full content and are not clickable */
+  cursor: default;
+}
+
+.inline:hover {
+  transform: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-color: var(--border-color);
+}
+
+.static {
+  /* Static cards are display-only, no interaction */
+  cursor: default;
+}
+
+.static:hover {
+  transform: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-color: var(--border-color);
+}
+
+/* Inline content styles */
+.inlineContent {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.inlineContent :global(p) {
+  margin: 0.5rem 0;
+}
+
+.inlineContent :global(h1),
+.inlineContent :global(h2),
+.inlineContent :global(h3),
+.inlineContent :global(h4),
+.inlineContent :global(h5),
+.inlineContent :global(h6) {
+  margin: 1rem 0 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.inlineContent :global(ul),
+.inlineContent :global(ol) {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.inlineContent :global(li) {
+  margin: 0.25rem 0;
+}
+
 /* --- Collection Card --- */
 .collection {
   justify-content: center;

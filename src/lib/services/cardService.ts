@@ -73,9 +73,9 @@ async function _hydrateCards(cards: Card[]): Promise<Card[]> {
   // 1. Collect all unique media IDs from all cards.
   const mediaIds = new Set<string>();
   for (const card of cards) {
-    if (card.coverImageId) mediaIds.add(card.coverImageId);
-    if (card.galleryMedia) card.galleryMedia.forEach(item => item.mediaId && mediaIds.add(item.mediaId));
-    if (card.contentMedia) card.contentMedia.forEach(id => mediaIds.add(id));
+    if (card.coverImageId && typeof card.coverImageId === 'string') mediaIds.add(card.coverImageId);
+    if (card.galleryMedia) card.galleryMedia.forEach(item => item.mediaId && typeof item.mediaId === 'string' && mediaIds.add(item.mediaId));
+    if (card.contentMedia) card.contentMedia.forEach(id => id && typeof id === 'string' && mediaIds.add(id));
   }
 
   if (mediaIds.size === 0) {

@@ -5,8 +5,6 @@
 This document outlines the plan for evolving the card parent-child system to support:
 - Multiple parents per card
 - Ordered children within each parent
-- Backward compatibility with existing data
-- Gradual migration path
 
 ## Current System
 
@@ -18,12 +16,6 @@ interface Card {
   type: 'story' | 'qa' | 'quote' | 'callout' | 'gallery' | 'collection';
 }
 ```
-
-### Limitations
-1. Cards can only be assigned to one parent
-2. Child ordering is implicit in array order
-3. No direct way to find a card's parent
-4. Moving cards requires full parent-child relationship update
 
 ## Enhanced System
 
@@ -80,6 +72,7 @@ export const cardSchema = z.object({
 ```
 
 2. Update TypeScript types and interfaces where Card type is used
+
 3. Add validation rules for parent-child relationships
 
 ### Phase 2: Service Layer Updates
@@ -221,54 +214,6 @@ function ChildOrderManager({ card, onReorder }) {
 }
 ```
 
-### Phase 4: Data Migration
-
-1. Create migration script:
-```typescript
-async function migrateParentChildRelationships() {
-  const cards = await db.collection('cards').get();
-  const batch = db.batch();
-  let batchCount = 0;
-  
-  for (const cardDoc of cards.docs) {
-    const card = cardDoc.data();
-    if (card.childrenIds?.length) {
-      // For each child, add this card as a parent
-      for (let i = 0; i < card.childrenIds.length; i++) {
-        const childId = card.childrenIds[i];
-        const childRef = db.collection('cards').doc(childId);
-        
-        batch.update(childRef, {
-          parentIds: FieldValue.arrayUnion(card.id),
-          [`parentOrders.${card.id}`]: i,
-          [`parentMetadata.${card.id}`]: {
-            order: i,
-            addedAt: Date.now()
-          }
-        });
-        
-        batchCount++;
-        if (batchCount >= 500) {  // Firestore batch limit
-          await batch.commit();
-          batch = db.batch();
-          batchCount = 0;
-        }
-      }
-    }
-  }
-  
-  if (batchCount > 0) {
-    await batch.commit();
-  }
-}
-```
-
-2. Run migration in stages:
-   - Test on development data
-   - Run on staging environment
-   - Schedule production migration
-   - Verify data integrity after each stage
-
 ### Phase 5: Cleanup
 
 After migration is complete and new system is stable:
@@ -304,20 +249,3 @@ After migration is complete and new system is stable:
    - Performance impact
    - Error recovery
 
-## Rollback Plan
-
-1. Keep `childrenIds` as source of truth during migration
-2. Maintain backup of pre-migration data
-3. Create rollback scripts
-4. Test rollback procedures
-5. Document recovery steps
-
-## Timeline
-
-1. Phase 1 (Schema Update): 1 day
-2. Phase 2 (Service Layer): 2-3 days
-3. Phase 3 (UI Components): 3-4 days
-4. Phase 4 (Migration): 1-2 days
-5. Phase 5 (Cleanup): 1 day
-
-Total: 8-11 days with testing and validation 
