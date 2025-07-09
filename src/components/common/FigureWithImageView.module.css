@@ -3,11 +3,11 @@
   position: relative;
   display: flex; /* Use flexbox for robust alignment */
   flex-direction: column; /* Stack image and caption vertically */
-  margin: 1rem 0;
-  border: 1px solid transparent; /* Border for spacing, transparent by default */
-  border-radius: 4px;
-  padding: 4px;
-  background-color: #f9f9f9;
+  margin: var(--spacing-md) 0;
+  border: var(--border-width-thin) solid transparent; /* Border for spacing, transparent by default */
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-xs);
+  background-color: var(--background-secondary);
   box-sizing: border-box; /* Ensures padding and border are included in the width */
 }
 
@@ -48,13 +48,13 @@
 /* When wrapping is ON, we use floats */
 .figureWrapper[data-wrap="on"].left {
   float: left;
-  margin-right: 1rem;
+  margin-right: var(--spacing-md);
   margin-left: 0;
   margin-top: 0;
 }
 .figureWrapper[data-wrap="on"].right {
   float: right;
-  margin-left: 1rem;
+  margin-left: var(--spacing-md);
   margin-right: 0;
   margin-top: 0;
 }
@@ -66,7 +66,7 @@
 
 /* Fix for subsequent content clearing the float */
 .figureWrapper:has(+ *) {
-  margin-bottom: 1rem;
+  margin-bottom: var(--spacing-md);
 }
 
 /* --- Child Components --- */
@@ -75,40 +75,40 @@
   height: auto; /* Maintain aspect ratio */
   object-fit: cover;
   display: block;
-  border-radius: var(--border-radius);
+  border-radius: var(--border-radius-md);
   max-width: 100%;
 }
 
 .caption {
-  color: #555;
-  font-size: 0.9em;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
   text-align: center;
-  padding: 4px;
-  margin-top: 4px;
-  line-height: 1.4; /* Normal line-height for caption text */
+  padding: var(--spacing-xs);
+  margin-top: var(--spacing-xs);
+  line-height: var(--line-height-normal); /* Normal line-height for caption text */
 }
 
 .caption:focus {
-  outline: 1px solid #007bff;
+  outline: var(--border-width-thin) solid var(--color-accent);
 }
 
 /* --- UI Elements --- */
 .dragHandle {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 24px;
-  height: 24px;
-  background-color: rgba(0, 0, 0, 0.5);
-  color: white;
-  border-radius: 4px;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+  width: var(--spacing-xl);
+  height: var(--spacing-xl);
+  background-color: var(--color-overlay-dark);
+  color: var(--color-light-base);
+  border-radius: var(--border-radius-md);
   cursor: grab;
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.2s;
-  z-index: 10;
+  transition: opacity var(--transition-short);
+  z-index: var(--z-index-content);
 }
 
 .figureWrapper:hover .dragHandle,

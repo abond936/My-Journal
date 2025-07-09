@@ -2,41 +2,41 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
-  border: 2px dashed var(--border-color);
-  border-radius: 0.5rem;
-  background-color: var(--surface-color);
-  transition: all 0.2s ease;
+  padding: var(--spacing-md);
+  border: var(--border-width-medium) dashed var(--color-border-primary);
+  border-radius: var(--border-radius-lg);
+  background-color: var(--background-secondary);
+  transition: all var(--transition-short) ease;
   cursor: pointer;
 }
 
 .container:hover,
 .dragActive {
-  border-color: var(--primary-color);
-  background-color: var(--surface-hover-color);
+  border-color: var(--color-primary);
+  background-color: var(--background-tertiary);
 }
 
 .button {
-  padding: 0.5rem 1rem;
-  background-color: var(--primary-color);
-  color: var(--on-primary-color);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-primary);
+  color: var(--text-on-primary);
   border: none;
-  border-radius: 0.25rem;
-  font-size: 0.875rem;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color var(--transition-short) ease;
 }
 
 .button:hover:not(:disabled) {
-  background-color: var(--primary-hover-color);
+  background-color: var(--color-primary-dark);
 }
 
 .button:disabled {
-  background-color: var(--disabled-color);
+  background-color: var(--color-neutral-200);
   cursor: not-allowed;
 }
 
 .container:focus-within {
-  outline: 2px solid var(--primary-color);
-  outline-offset: 2px;
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: var(--border-width-medium);
 } 

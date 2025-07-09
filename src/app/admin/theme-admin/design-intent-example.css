@@ -1,0 +1,210 @@
+/* Design Intent Usage Examples */
+
+/* Typography Intent Usage */
+h1 {
+  font-size: var(--heading-1-size);
+  font-weight: var(--heading-1-weight);
+  line-height: var(--heading-line-height);
+  color: var(--text-primary-color);
+  margin-bottom: var(--element-margin);
+}
+
+h2 {
+  font-size: var(--heading-2-size);
+  font-weight: var(--heading-2-weight);
+  line-height: var(--heading-line-height);
+  color: var(--text-primary-color);
+  margin-bottom: var(--element-margin);
+}
+
+h3 {
+  font-size: var(--heading-3-size);
+  font-weight: var(--heading-3-weight);
+  line-height: var(--heading-line-height);
+  color: var(--text-primary-color);
+  margin-bottom: var(--text-margin);
+}
+
+h4 {
+  font-size: var(--heading-4-size);
+  font-weight: var(--heading-4-weight);
+  line-height: var(--body-line-height);
+  color: var(--text-primary-color);
+  margin-bottom: var(--text-margin);
+}
+
+p {
+  font-size: var(--body-text-size);
+  font-weight: var(--body-text-weight);
+  line-height: var(--body-line-height);
+  color: var(--text-primary-color);
+  margin-bottom: var(--text-margin);
+}
+
+.caption {
+  font-size: var(--caption-text-size);
+  font-weight: var(--body-text-weight);
+  line-height: var(--body-line-height);
+  color: var(--text-secondary-color);
+}
+
+/* Button Intent Usage */
+.button-primary {
+  background-color: var(--button-primary-background);
+  color: var(--button-primary-text-color);
+  padding: var(--button-primary-padding);
+  border-radius: var(--button-primary-border-radius);
+  border: none;
+  font-size: var(--body-text-size);
+  font-weight: var(--body-text-weight);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.button-secondary {
+  background-color: var(--button-secondary-background);
+  color: var(--button-secondary-text-color);
+  padding: var(--button-secondary-padding);
+  border: 1px solid var(--button-secondary-border-color);
+  border-radius: var(--button-primary-border-radius);
+  font-size: var(--body-text-size);
+  font-weight: var(--body-text-weight);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+/* Card Intent Usage */
+.card {
+  background-color: var(--card-background);
+  border: 1px solid var(--card-border-color);
+  border-radius: var(--card-border-radius);
+  box-shadow: var(--card-shadow);
+  padding: var(--card-padding);
+  margin-bottom: var(--component-margin);
+}
+
+.card-title {
+  font-size: var(--heading-4-size);
+  font-weight: var(--heading-4-weight);
+  color: var(--text-primary-color);
+  margin-bottom: var(--text-margin);
+}
+
+.card-body {
+  font-size: var(--body-text-size);
+  font-weight: var(--body-text-weight);
+  line-height: var(--body-line-height);
+  color: var(--text-primary-color);
+}
+
+/* Input Intent Usage */
+.input {
+  background-color: var(--input-background);
+  border: 1px solid var(--input-border-color);
+  border-radius: var(--input-border-radius);
+  padding: var(--input-padding);
+  font-size: var(--body-text-size);
+  font-weight: var(--body-text-weight);
+  color: var(--text-primary-color);
+  width: 100%;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.2);
+}
+
+/* Navigation Intent Usage */
+.nav {
+  background-color: var(--nav-bg);
+  padding: var(--nav-padding);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-link {
+  color: var(--nav-text);
+  text-decoration: none;
+  padding: var(--text-spacing) var(--element-spacing);
+  border-radius: var(--border-radius-sm);
+  transition: all 0.2s;
+}
+
+.nav-link:hover {
+  background-color: var(--hover);
+}
+
+.nav-link.active {
+  color: var(--nav-text-active);
+  background-color: var(--hover);
+}
+
+/* Tag Intent Usage */
+.tag {
+  background-color: var(--tag-background);
+  color: var(--tag-text-color);
+  padding: var(--tag-padding);
+  border-radius: var(--tag-border-radius);
+  font-size: var(--body-text-small-size);
+  font-weight: var(--body-text-weight);
+  display: inline-block;
+  margin-right: var(--text-margin);
+  margin-bottom: var(--text-margin);
+}
+
+/* Layout Intent Usage */
+.section {
+  margin-bottom: var(--section-margin);
+}
+
+.component {
+  margin-bottom: var(--component-margin);
+}
+
+.element {
+  margin-bottom: var(--element-margin);
+}
+
+/* How to use in your components:
+
+Instead of:
+.card {
+  background: #2d2d2d;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+Use:
+.card {
+  background: var(--card-background);
+  border-radius: var(--card-border-radius);
+  padding: var(--card-padding);
+  box-shadow: var(--card-shadow);
+}
+
+Instead of:
+h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+Use:
+h1 {
+  font-size: var(--heading-1-size);
+  font-weight: var(--heading-1-weight);
+  margin-bottom: var(--element-margin);
+}
+
+This way, when you change the design intent tokens in the theme admin,
+all components using those tokens will automatically update!
+
+The semantic intent tokens reference base tokens:
+--heading-1-size: var(--font-size-3xl)
+--card-background: var(--background-secondary)
+--element-margin: var(--spacing-md)
+
+So changing --heading-1-size from var(--font-size-3xl) to var(--font-size-4xl)
+will make all h1 elements larger without touching the base font size tokens.
+*/ 

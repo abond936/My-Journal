@@ -7,18 +7,18 @@
   width: 100%;
   padding: var(--spacing-sm);
   margin-bottom: var(--spacing-sm);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
+  border: var(--border-width-thin) solid var(--color-border-primary);
+  border-radius: var(--border-radius-md);
   font-size: var(--font-size-base);
 }
 
 .tagList {
-  max-height: 300px;
+  max-height: var(--spacing-4xl);
   overflow-y: auto;
   padding: var(--spacing-xs);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  background: var(--background-color);
+  border: var(--border-width-thin) solid var(--color-border-primary);
+  border-radius: var(--border-radius-md);
+  background: var(--background-primary);
 }
 
 .tagItem {
@@ -32,13 +32,13 @@
 }
 
 .expandButton {
-  width: 24px;
-  height: 24px;
+  width: var(--spacing-xl);
+  height: var(--spacing-xl);
   padding: 0;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  background: var(--background-color);
-  color: var(--text-color);
+  border: var(--border-width-thin) solid var(--color-border-primary);
+  border-radius: var(--border-radius-md);
+  background: var(--background-secondary);
+  color: var(--text-primary);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -47,8 +47,8 @@
 }
 
 .expandButton:hover {
-  background: var(--light-gray);
-  border-color: var(--primary-color);
+  background: var(--background-tertiary);
+  border-color: var(--color-accent-solid);
 }
 
 .expandIcon {
@@ -58,10 +58,10 @@
 
 .tag {
   padding: var(--spacing-xs) var(--spacing-sm);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  background: var(--background-color);
-  color: var(--text-color);
+  border: var(--border-width-thin) solid var(--color-border-primary);
+  border-radius: var(--border-radius-md);
+  background: var(--background-secondary);
+  color: var(--text-primary);
   font-size: var(--font-size-sm);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -70,19 +70,19 @@
 }
 
 .tag:hover {
-  background: var(--light-gray);
-  border-color: var(--primary-color);
+  background: var(--background-tertiary);
+  border-color: var(--color-accent-solid);
 }
 
 .tag.selected {
-  background: var(--primary-color);
-  color: var(--text-light);
-  border-color: var(--primary-color);
+  background: var(--color-accent-solid);
+  color: var(--color-accent-text);
+  border-color: var(--color-accent-solid);
 }
 
 .children {
   margin-left: var(--spacing-md);
-  border-left: 1px solid var(--border-color);
+  border-left: var(--border-width-thin) solid var(--color-border-secondary);
   padding-left: var(--spacing-sm);
 }
 
@@ -90,10 +90,10 @@
 .error {
   padding: var(--spacing-sm);
   text-align: center;
-  color: var(--text-color);
+  color: var(--text-secondary);
   font-size: var(--font-size-sm);
 }
 
 .error {
-  color: var(--dark-gray);
+  color: var(--color-error-text);
 } 

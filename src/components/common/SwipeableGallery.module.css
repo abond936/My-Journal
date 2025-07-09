@@ -4,8 +4,8 @@
   max-width: 1200px;
   margin: 0 auto;
   overflow: hidden;
-  background-color: var(--color-background);
-  border-radius: var(--border-radius);
+  background-color: var(--background-primary);
+  border-radius: var(--border-radius-md);
 }
 
 .imageContainer {
@@ -29,13 +29,13 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(0, 0, 0, 0.5);
-  color: white;
+  background: var(--color-overlay-dark);
+  color: var(--color-accent-text);
   border: none;
-  padding: 1rem 0.75rem;
-  font-size: 2rem;
+  padding: var(--spacing-lg) var(--spacing-md);
+  font-size: var(--font-size-3xl);
   cursor: pointer;
-  z-index: 2;
+  z-index: var(--z-index-content);
   transition: all 0.2s ease-in-out;
   opacity: 0;
 }
@@ -45,7 +45,7 @@
 }
 
 .navButton:hover {
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--color-overlay-dark-hover);
 }
 
 .navButton:disabled {
@@ -55,53 +55,53 @@
 
 .prevButton {
   left: 0;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
 }
 
 .nextButton {
   right: 0;
-  border-radius: 4px 0 0 4px;
+  border-radius: var(--border-radius-sm) 0 0 var(--border-radius-sm);
 }
 
 .caption {
-  padding: 1rem;
-  background: rgba(0, 0, 0, 0.05);
+  padding: var(--spacing-lg);
+  background: var(--color-overlay-light);
   text-align: center;
 }
 
 .caption p {
   margin: 0;
-  font-size: 0.9rem;
-  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
 }
 
 .pagination {
   display: flex;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 1rem;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-lg);
 }
 
 .paginationDot {
-  width: 8px;
-  height: 8px;
+  width: var(--spacing-xs);
+  height: var(--spacing-xs);
   border-radius: 50%;
   border: none;
-  background-color: var(--color-border);
+  background-color: var(--color-border-primary);
   cursor: pointer;
   padding: 0;
   transition: all 0.2s ease-in-out;
 }
 
 .paginationDot.active {
-  background-color: var(--color-primary);
+  background-color: var(--color-accent-solid);
   transform: scale(1.2);
 }
 
 @media (max-width: 768px) {
   .navButton {
     opacity: 1;
-    padding: 0.75rem 0.5rem;
-    font-size: 1.5rem;
+    padding: var(--spacing-md) var(--spacing-sm);
+    font-size: var(--font-size-2xl);
   }
 } 

@@ -1,20 +1,20 @@
 .row {
-  border-bottom: 1px solid #eee;
-  transition: background-color 0.2s;
+  border-bottom: var(--border-width-thin) solid var(--border-color);
+  transition: background-color var(--transition-short);
 }
 
 .row:hover {
-  background: #f9f9f9;
+  background: var(--background-secondary);
 }
 
 .row.selected {
-  background: #e3f2fd;
+  background: hsla(var(--color-primary-hue), 76%, 52%, 0.1);
 }
 
 .cell {
-  padding: 0.5rem;
+  padding: var(--spacing-sm);
   vertical-align: middle;
-  border-right: 1px solid #eee;
+  border-right: var(--border-width-thin) solid var(--border-color);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -25,18 +25,18 @@
 }
 
 .checkboxCell {
-  padding: 0.5rem;
+  padding: var(--spacing-sm);
   text-align: center;
-  border-right: 1px solid #eee;
+  border-right: var(--border-width-thin) solid var(--border-color);
   width: 40px;
 }
 
 /* Status Badge */
 .statusBadge {
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  font-weight: 500;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   text-transform: uppercase;
   display: inline-block;
   text-align: center;
@@ -44,13 +44,13 @@
 }
 
 .statusBadge.temporary {
-  background: #fff3cd;
-  color: #856404;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
 }
 
 .statusBadge.active {
-  background: #d4edda;
-  color: #155724;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
 }
 
 /* Thumbnail */
@@ -60,7 +60,7 @@
   align-items: center;
   width: 60px;
   height: 60px;
-  border-radius: 4px;
+  border-radius: var(--border-radius-sm);
   overflow: hidden;
   background: var(--background-secondary);
 }
@@ -73,7 +73,7 @@
 
 /* Filename */
 .filename {
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   color: var(--text-color);
   white-space: nowrap;
   overflow: hidden;
@@ -89,9 +89,9 @@
   text-overflow: ellipsis;
   max-width: 100%;
   cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 4px;
-  transition: background-color 0.2s;
+  padding: var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+  transition: background-color var(--transition-short);
 }
 
 .caption:hover {
@@ -104,9 +104,9 @@
 
 .captionInput {
   width: 100%;
-  padding: 0.25rem;
-  border: 1px solid var(--primary-color);
-  border-radius: 4px;
+  padding: var(--spacing-xs);
+  border: var(--border-width-thin) solid var(--border-color-interactive);
+  border-radius: var(--border-radius-sm);
   font-size: inherit;
   background: var(--background-start);
   color: var(--text-color);
@@ -122,7 +122,7 @@
 /* Content Type */
 .contentType {
   font-family: monospace;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--text-color);
   text-align: center;
 }
@@ -130,7 +130,7 @@
 /* Object Position */
 .objectPosition {
   font-family: monospace;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   color: var(--text-color);
   white-space: nowrap;
   overflow: hidden;
@@ -140,10 +140,10 @@
 
 /* Source Badge */
 .sourceBadge {
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  font-weight: 500;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   text-transform: uppercase;
   display: inline-block;
   text-align: center;
@@ -151,19 +151,19 @@
 }
 
 .sourceBadge.local {
-  background: #e3f2fd;
-  color: #1976d2;
+  background: var(--tag-source-local-bg);
+  color: var(--tag-source-local-text);
 }
 
 .sourceBadge.paste {
-  background: #f3e5f5;
-  color: #7b1fa2;
+  background: var(--tag-source-paste-bg);
+  color: var(--tag-source-paste-text);
 }
 
 /* Source Path */
 .sourcePath {
   font-family: monospace;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--text-color-secondary);
   white-space: nowrap;
   overflow: hidden;
@@ -174,19 +174,19 @@
 /* Actions */
 .actions {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--spacing-sm);
   justify-content: center;
 }
 
 .actionButton {
-  padding: 0.25rem 0.5rem;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--border-color);
+  border-radius: var(--border-radius-sm);
   background: var(--background-start);
   color: var(--text-color);
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: background-color 0.2s;
+  font-size: var(--font-size-sm);
+  transition: background-color var(--transition-short);
   min-width: 32px;
   height: 32px;
   display: flex;
@@ -199,19 +199,19 @@
 }
 
 .actionButton.deleteButton {
-  background: #ffebee;
-  color: #c62828;
-  border-color: #ffcdd2;
+  background: var(--color-error-bg);
+  color: var(--color-error-text);
+  border-color: var(--color-error-border);
 }
 
 .actionButton.deleteButton:hover {
-  background: #ffcdd2;
+  background: var(--color-error-bg);
 }
 
 @media (max-width: 768px) {
   .cell {
-    padding: 0.25rem;
-    font-size: 0.8rem;
+    padding: var(--spacing-xs);
+    font-size: var(--font-size-xs);
   }
 
   .thumbnail {
@@ -221,13 +221,13 @@
 
   .actions {
     flex-direction: column;
-    gap: 0.25rem;
+    gap: var(--spacing-xs);
   }
 
   .actionButton {
     min-width: 28px;
     height: 28px;
-    font-size: 0.8rem;
+    font-size: var(--font-size-xs);
   }
 
   .statusBadge,
@@ -239,12 +239,12 @@
   .filename,
   .caption,
   .sourcePath {
-    font-size: 0.8rem;
+    font-size: var(--font-size-xs);
   }
 
   .number,
   .contentType,
   .objectPosition {
-    font-size: 0.75rem;
+    font-size: var(--font-size-xs);
   }
 } 

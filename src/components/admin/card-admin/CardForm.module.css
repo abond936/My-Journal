@@ -1,8 +1,8 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  padding: 1.5rem;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg);
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -10,7 +10,7 @@
 .mainContent {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--spacing-lg);
   width: 100%;
 }
 
@@ -20,41 +20,41 @@
 
 .titleInput {
   width: 100%;
-  padding: 0.75rem;
-  font-size: 1.5rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius);
-  background-color: var(--color-background);
+  padding: var(--spacing-sm);
+  font-size: var(--font-size-2xl);
+  border: var(--border-width-thin) solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  background-color: var(--background-primary);
 }
 
 .titleInput:focus {
   outline: none;
-  border-color: var(--color-primary);
+  border-color: var(--color-border-accent);
 }
 
 .subtitleInput {
   width: 100%;
-  padding: 0.5rem;
-  font-size: 1.1rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius);
-  background-color: var(--color-background);
-  margin-top: 0.5rem;
+  padding: var(--spacing-sm);
+  font-size: var(--font-size-lg);
+  border: var(--border-width-thin) solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  background-color: var(--background-primary);
+  margin-top: var(--spacing-sm);
 }
 
 .subtitleInput:focus {
   outline: none;
-  border-color: var(--color-primary);
+  border-color: var(--color-border-accent);
 }
 
 .excerptInput {
   width: 100%;
-  padding: 0.5rem;
-  font-size: 0.9rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius);
-  background-color: var(--color-background);
-  margin-top: 0.5rem;
+  padding: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  border: var(--border-width-thin) solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  background-color: var(--background-primary);
+  margin-top: var(--spacing-sm);
   resize: vertical;
   min-height: 80px;
   font-family: inherit;
@@ -62,7 +62,7 @@
 
 .excerptInput:focus {
   outline: none;
-  border-color: var(--color-primary);
+  border-color: var(--color-border-accent);
 }
 
 .coverPhotoSection {
@@ -71,33 +71,33 @@
 
 .statusSection {
   display: flex;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
   align-items: center;
 }
 
 .statusSelect {
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background-color: white;
-  font-size: 1rem;
+  padding: var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--color-white);
+  font-size: var(--font-size-base);
   min-width: 120px;
   cursor: pointer;
 }
 
 .statusSelect:hover {
-  border-color: #999;
+  border-color: var(--border-color-hover);
 }
 
 .statusSelect:focus {
   outline: none;
-  border-color: #0070f3;
-  box-shadow: 0 0 0 2px rgba(0, 112, 243, 0.1);
+  border-color: var(--border-color-interactive);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
 }
 
 .statusSelect.inputError {
-  border-color: #ff4444;
+  border-color: var(--color-error-border);
 }
 
 .tagsSection {
@@ -117,30 +117,30 @@
 }
 
 .inputError {
-  border-color: var(--color-danger) !important;
+  border-color: var(--color-error-border) !important;
 }
 
 .errorText {
-  color: var(--color-danger);
-  font-size: 0.875rem;
-  margin-top: 0.5rem;
+  color: var(--color-error-text);
+  font-size: var(--font-size-sm);
+  margin-top: var(--spacing-sm);
 }
 
 /* Loading overlay styles */
 .loadingOverlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: var(--z-index-modal-backdrop);
 }
 
 .spinner {
   width: 50px;
   height: 50px;
-  border: 3px solid var(--color-border);
+  border: var(--border-width-thick) solid var(--border-color);
   border-radius: 50%;
   border-top-color: var(--color-primary);
   animation: spin 1s linear infinite;
@@ -155,11 +155,11 @@
 .selectGroup {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--spacing-xs);
 }
 
 .selectLabel {
-  font-size: 0.875rem;
-  color: #666;
-  font-weight: 500;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
 }

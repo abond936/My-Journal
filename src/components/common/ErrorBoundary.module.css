@@ -1,42 +1,42 @@
 .errorContainer {
-  padding: 1.5rem;
-  border-radius: 0.5rem;
-  background-color: var(--error-bg, #fef2f2);
-  border: 1px solid var(--error-border, #fecaca);
-  margin: 1rem 0;
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius-lg);
+  background-color: var(--color-error-bg);
+  border: var(--border-width-thin) solid var(--color-error-border);
+  margin: var(--spacing-md) 0;
 }
 
 .errorContent {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--spacing-md);
 }
 
 .errorTitle {
-  color: var(--error-text, #dc2626);
-  font-size: 1.125rem;
-  font-weight: 500;
+  color: var(--color-error-text);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
   margin: 0;
 }
 
 .errorDetails {
-  background-color: var(--error-details-bg, #fff1f2);
-  border-radius: 0.375rem;
-  padding: 1rem;
+  background-color: var(--color-error-bg);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
 }
 
 .errorDetails summary {
   cursor: pointer;
-  color: var(--error-details-text, #881337);
-  font-weight: 500;
+  color: var(--color-error-text);
+  font-weight: var(--font-weight-medium);
 }
 
 .errorStack {
-  margin: 1rem 0 0;
-  padding: 1rem;
-  background-color: var(--error-stack-bg, #fff);
-  border-radius: 0.25rem;
-  font-size: 0.875rem;
+  margin: var(--spacing-md) 0 0;
+  padding: var(--spacing-md);
+  background-color: var(--background-primary);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
   line-height: 1.5;
   overflow-x: auto;
   white-space: pre-wrap;
@@ -47,22 +47,22 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  border-radius: 0.375rem;
-  background-color: var(--error-button-bg, #dc2626);
-  color: var(--error-button-text, #fff);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--border-radius-md);
+  background-color: var(--color-error-bg);
+  color: var(--color-error-text);
   border: none;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--transition-short);
 }
 
 .retryButton:hover {
-  background-color: var(--error-button-hover-bg, #b91c1c);
+  background-color: var(--color-error-bg);
 }
 
 .retryButton:focus {
-  outline: 2px solid var(--error-button-focus-ring, #ef4444);
-  outline-offset: 2px;
+  outline: var(--border-width-medium) solid var(--color-error-border);
+  outline-offset: var(--border-width-medium);
 } 

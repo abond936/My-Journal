@@ -1,45 +1,45 @@
 .container {
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    padding: 1rem;
-    margin-top: 1.5rem;
-    background-color: var(--color-background-offset);
+    border: var(--border-width-s) solid var(--color-border-primary);
+    border-radius: var(--border-radius-m);
+    padding: var(--space-4);
+    margin-top: var(--space-6);
+    background-color: var(--color-background-secondary);
 }
 
 .searchSection {
     display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
 }
 
 .searchInput {
     flex-grow: 1;
-    padding: 0.5rem;
-    border-radius: var(--border-radius-sm);
-    border: 1px solid var(--color-border);
-    background-color: var(--color-background);
-    color: var(--color-text);
+    padding: var(--space-2);
+    border-radius: var(--border-radius-s);
+    border: var(--border-width-s) solid var(--color-border-primary);
+    background-color: var(--color-background-primary);
+    color: var(--color-text-primary);
 }
 
 .searchInput:focus {
     outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px var(--color-primary-alpha);
+    border-color: var(--color-border-accent);
+    box-shadow: 0 0 0 2px var(--color-shadow-focus);
 }
 
 .searchButton {
-    padding: 0.5rem 1rem;
-    background-color: var(--color-primary);
-    color: var(--color-primary-contrast);
+    padding: var(--space-2) var(--space-4);
+    background-color: var(--color-background-accent);
+    color: var(--color-light-base);
     border: none;
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--border-radius-s);
     cursor: pointer;
 }
 
 .searchResults {
-    margin-top: 1rem;
-    border-top: 1px solid var(--color-border);
-    padding-top: 1rem;
+    margin-top: var(--space-4);
+    border-top: var(--border-width-s) solid var(--color-border-primary);
+    padding-top: var(--space-4);
 }
 
 .searchResults ul {
@@ -52,10 +52,10 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.75rem;
-    border-radius: var(--border-radius-sm);
-    background-color: var(--color-background);
-    margin-bottom: 0.5rem;
+    padding: var(--space-3);
+    border-radius: var(--border-radius-s);
+    background-color: var(--color-background-primary);
+    margin-bottom: var(--space-2);
 }
 
 .resultItem:last-child {
@@ -63,22 +63,22 @@
 }
 
 .addButton {
-    padding: 0.25rem 0.75rem;
-    background-color: var(--color-success);
-    color: var(--color-success-contrast);
+    padding: var(--space-1) var(--space-3);
+    background-color: var(--color-background-success);
+    color: var(--color-light-base);
     border: none;
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--border-radius-s);
     cursor: pointer;
-    font-size: 0.875rem;
-    transition: background-color 0.2s ease;
+    font-size: var(--font-size-xs);
+    transition: background-color var(--transition-short);
 }
 
 .addButton:hover {
-    background-color: var(--color-success-hover);
+    background-color: var(--color-background-success-hover);
 }
 
 .childList {
-    margin-top: 1.5rem;
+    margin-top: var(--space-6);
 }
 
 .childList ul {
@@ -91,12 +91,12 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.75rem;
-    background-color: var(--color-background);
-    border-radius: var(--border-radius-sm);
-    margin-bottom: 0.5rem;
+    padding: var(--space-3);
+    background-color: var(--color-background-primary);
+    border-radius: var(--border-radius-s);
+    margin-bottom: var(--space-2);
     cursor: grab;
-    transition: background-color 0.2s ease;
+    transition: background-color var(--transition-short);
 }
 
 .childItem:last-child {
@@ -108,30 +108,30 @@
 }
 
 .childInfo {
-    font-size: 0.875rem;
+    font-size: var(--font-size-xs);
     color: var(--color-text-secondary);
-    margin-left: 0.5rem;
+    margin-left: var(--space-2);
 }
 
 .removeButton {
-    padding: 0.25rem 0.75rem;
-    background-color: var(--color-danger);
-    color: var(--color-danger-contrast);
+    padding: var(--space-1) var(--space-3);
+    background-color: var(--color-background-error);
+    color: var(--color-light-base);
     border: none;
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--border-radius-s);
     cursor: pointer;
-    font-size: 0.875rem;
-    transition: background-color 0.2s ease;
+    font-size: var(--font-size-xs);
+    transition: background-color var(--transition-short);
 }
 
 .removeButton:hover {
-    background-color: var(--color-danger-hover);
+    background-color: var(--color-background-error-hover);
 }
 
 .error {
-    color: var(--color-danger);
-    margin: 0.5rem 0;
-    font-size: 0.875rem;
+    color: var(--color-text-error);
+    margin: var(--space-2) 0;
+    font-size: var(--font-size-xs);
 }
 
 .sortableItem {
@@ -146,10 +146,10 @@
 /* Loading state */
 .childList p {
     color: var(--color-text-secondary);
-    font-size: 0.875rem;
+    font-size: var(--font-size-xs);
     text-align: center;
-    padding: 1rem;
-    background-color: var(--color-background);
-    border-radius: var(--border-radius-sm);
+    padding: var(--space-4);
+    background-color: var(--color-background-primary);
+    border-radius: var(--border-radius-s);
     margin: 0;
 } 

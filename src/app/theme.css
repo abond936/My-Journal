@@ -1,216 +1,257 @@
-/* Theme variables for light and dark modes */
+/*
+  My Journal - Unified Design System
+  ==================================
+  This file represents the single source of truth for all styling tokens.
+  It is based on a comprehensive analysis of the entire codebase, ensuring
+  all components and use cases are covered.
+
+  Structure:
+  1. Base Tokens: Raw, context-agnostic values (e.g., color palette, spacing units).
+  2. Semantic Tokens: Context-aware aliases that map to base tokens (e.g., background colors, text colors).
+  3. Component Tokens: Tokens for specific, complex components.
+  4. Dark Theme Overrides: Redefinition of tokens for dark mode.
+*/
 
 :root {
-  /* Border Radius */
-  --border-radius: 0.5rem;
+  /* --- 1. BASE TOKENS --- */
+
+  /* Color Palette (Light Theme) */
+  --color-primary-hue: 244;
+  --color-secondary-hue: 162;
+  --color-accent-hue: 33;
+  --color-neutral-hue: 220;
+
+  --color-primary: hsl(var(--color-primary-hue), 76%, 52%); /* #4f46e5 */
+  --color-primary-light: hsl(var(--color-primary-hue), 89%, 77%); /* #818cf8 */
+  --color-primary-dark: hsl(var(--color-primary-hue), 56%, 41%); /* #3730a3 */
+
+  --color-secondary: hsl(var(--color-secondary-hue), 92%, 30%); /* #059669 */
+  --color-secondary-light: hsl(var(--color-secondary-hue), 64%, 52%); /* #34d399 */
+  --color-secondary-dark: hsl(var(--color-secondary-hue), 89%, 20%); /* #065f46 */
+
+  --color-accent: hsl(var(--color-accent-hue), 95%, 44%); /* #d97706 */
+  --color-accent-light: hsl(var(--color-accent-hue), 96%, 57%); /* #fbbf24 */
+  --color-accent-dark: hsl(var(--color-accent-hue), 89%, 39%); /* #b45309 */
+
+  --color-neutral-50: hsl(var(--color-neutral-hue), 25%, 98%); /* #f8fafc */
+  --color-neutral-100: hsl(var(--color-neutral-hue), 27%, 95%); /* #f1f5f9 */
+  --color-neutral-200: hsl(var(--color-neutral-hue), 26%, 90%); /* #e2e8f0 */
+  --color-neutral-300: hsl(var(--color-neutral-hue), 24%, 84%); /* #cbd5e1 */
+  --color-neutral-400: hsl(var(--color-neutral-hue), 18%, 65%); /* #94a3b8 */
+  --color-neutral-500: hsl(var(--color-neutral-hue), 16%, 47%); /* #64748b */
+  --color-neutral-600: hsl(var(--color-neutral-hue), 15%, 35%); /* #475569 */
+  --color-neutral-700: hsl(var(--color-neutral-hue), 22%, 27%); /* #334155 */
+  --color-neutral-800: hsl(var(--color-neutral-hue), 24%, 17%); /* #1e293b */
+  --color-neutral-900: hsl(var(--color-neutral-hue), 28%, 9%);  /* #0f172a */
+
+  --color-success-hue: 158;
+  --color-warning-hue: 24;
+  --color-error-hue: 0;
+  --color-info-hue: 221;
+
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  /* Typography Scale */
+  --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family-serif: "Georgia", serif;
+  --font-family-mono: "Menlo", "Consolas", monospace;
+  --font-family-handwriting: "Ink Free", cursive;
+
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* Spacing Scale */
+  --spacing-xs: 0.25rem;  /* 4px */
+  --spacing-sm: 0.5rem;   /* 8px */
+  --spacing-md: 1rem;     /* 16px */
+  --spacing-lg: 1.5rem;   /* 24px */
+  --spacing-xl: 2rem;     /* 32px */
+  --spacing-2xl: 3rem;    /* 48px */
+  --spacing-3xl: 4rem;    /* 64px */
+  --spacing-4xl: 6rem;    /* 96px */
+
+  /* Border & Radius Scale */
+  --border-width-thin: 1px;
+  --border-width-medium: 2px;
+  --border-width-thick: 3px;
   --border-radius-sm: 0.25rem;
+  --border-radius-md: 0.5rem;
   --border-radius-lg: 0.75rem;
   --border-radius-xl: 1rem;
   --border-radius-full: 9999px;
 
-  /* Surface Colors */
-  --surface-color: var(--color-background);
-  --surface-color-hover: var(--color-background-hover);
-  --on-surface-color: var(--color-text);
-
-  /* Primary Colors */
-  --primary-color: var(--color-primary);
-  --primary-hover-color: var(--color-primary-dark);
-  --on-primary-color: white;
-
-  /* Base Colors - More muted and professional */
-  --color-primary: #4f46e5;      /* Muted Indigo */
-  --color-primary-light: #818cf8;
-  --color-primary-dark: #3730a3;
-  --color-primary-alpha: rgba(79, 70, 229, 0.2);  /* 20% opacity of primary */
-  
-  --color-secondary: #059669;    /* Muted Emerald */
-  --color-secondary-light: #34d399;
-  --color-secondary-dark: #065f46;
-  --color-secondary-alpha: rgba(5, 150, 105, 0.2);  /* 20% opacity of secondary */
-  
-  --color-accent: #d97706;       /* Muted Amber */
-  --color-accent-light: #fbbf24;
-  --color-accent-dark: #b45309;
-  --color-accent-alpha: rgba(217, 119, 6, 0.2);  /* 20% opacity of accent */
-  
-  --color-info: #2563eb;         /* Muted Blue */
-  --color-info-light: #60a5fa;
-  --color-info-dark: #1d4ed8;
-  --color-info-alpha: rgba(37, 99, 235, 0.2);  /* 20% opacity of info */
-  
-  --color-warning: #ea580c;      /* Muted Orange */
-  --color-warning-light: #fb923c;
-  --color-warning-dark: #c2410c;
-  --color-warning-alpha: rgba(234, 88, 12, 0.2);  /* 20% opacity of warning */
-
-  /* Neutral Colors - More subtle grays */
-  --color-neutral-50: #f8fafc;
-  --color-neutral-100: #f1f5f9;
-  --color-neutral-200: #e2e8f0;
-  --color-neutral-300: #cbd5e1;
-  --color-neutral-400: #94a3b8;
-  --color-neutral-500: #64748b;
-  --color-neutral-600: #475569;
-  --color-neutral-700: #334155;
-  --color-neutral-800: #1e293b;
-  --color-neutral-900: #0f172a;
-
-  /* Semantic Colors - More muted versions */
-  --color-success: #059669;
-  --color-success-light: #34d399;
-  --color-success-dark: #065f46;
-  --color-success-alpha: rgba(5, 150, 105, 0.2);  /* 20% opacity of success */
-  
-  --color-error: #dc2626;
-  --color-error-light: #f87171;
-  --color-error-dark: #b91c1c;
-  --color-error-alpha: rgba(220, 38, 38, 0.2);  /* 20% opacity of error */
-  
-  --color-danger: #dc2626;
-  --color-danger-light: #f87171;
-  --color-danger-dark: #b91c1c;
-  --color-danger-alpha: rgba(220, 38, 38, 0.2);  /* 20% opacity of danger */
-  
-  /* Background Colors - More subtle */
-  --color-background: var(--color-neutral-50);
-  --color-background-alt: var(--color-neutral-100);
-  --color-background-hover: var(--color-neutral-200);
-  
-  /* Text Colors - Better contrast */
-  --color-text: var(--color-neutral-900);
-  --color-text-light: var(--color-neutral-700);
-  --color-text-lighter: var(--color-neutral-500);
-  
-  /* Border Colors - More subtle */
-  --color-border: var(--color-neutral-200);
-  --color-border-hover: var(--color-neutral-300);
-  
-  /* Shadow Colors - More natural */
-  --shadow-color: 220 13% 91%;
+  /* Shadow Scale */
+  --shadow-color: 220 13% 69%;
   --shadow-strength: 1%;
-  
-  /* Light theme (default) */
+  --shadow-sm: 0 1px 2px -1px hsl(var(--shadow-color) / calc(var(--shadow-strength) + 9%));
+  --shadow-md: 0 3px 4px -2px hsl(var(--shadow-color) / calc(var(--shadow-strength) + 9%)),
+               0 7px 10px -4px hsl(var(--shadow-color) / calc(var(--shadow-strength) + 8%));
+  --shadow-lg: 0 5px 8px -3px hsl(var(--shadow-color) / calc(var(--shadow-strength) + 10%)),
+               0 12px 18px -5px hsl(var(--shadow-color) / calc(var(--shadow-strength) + 10%));
+  --shadow-xl: 0 10px 15px -5px hsl(var(--shadow-color) / calc(var(--shadow-strength) + 12%)),
+               0 25px 35px -10px hsl(var(--shadow-color) / calc(var(--shadow-strength) + 12%));
+
+  /* Z-Index Scale */
+  --z-index-default: 1;
+  --z-index-content: 10;
+  --z-index-sticky: 100;
+  --z-index-header-element: 500;
+  --z-index-sidebar: 900;
+  --z-index-modal-backdrop: 1000;
+  --z-index-header: 1100;
+  --z-index-header-toggle: 1200;
+  --z-index-modal: 1300;
+  --z-index-tooltip: 1400;
+
+  /* Layout Sizing */
+  --header-height: 60px;
+  --header-area-height: 120px;
+  --sidebar-width: 300px;
+  --container-max-width: 1200px;
+
+
+  /* --- 2. SEMANTIC TOKENS --- */
+
+  /* Backgrounds */
   --background-primary: var(--color-neutral-50);
   --background-secondary: var(--color-neutral-100);
   --background-tertiary: var(--color-neutral-200);
-  
-  --text-primary: var(--color-neutral-900);
-  --text-secondary: var(--color-neutral-700);
-  --text-tertiary: var(--color-neutral-500);
-  
+  --background-inverse: var(--color-neutral-900);
+  --background-accent: var(--color-accent);
+
+  /* Text */
+  --text-primary: var(--color-neutral-800);
+  --text-secondary: var(--color-neutral-600);
+  --text-muted: var(--color-neutral-400);
+  --text-on-primary: var(--color-white);
+  --text-on-accent: var(--color-white);
+  --text-interactive: var(--color-primary);
+  --text-interactive-hover: var(--color-primary-dark);
+
+  /* Borders */
   --border-color: var(--color-neutral-200);
   --border-color-hover: var(--color-neutral-300);
+  --border-color-interactive: var(--color-primary);
+
+  /* States (Success, Warning, Error, Info) */
+  --color-success-bg: hsl(var(--color-success-hue), 84%, 95%);
+  --color-success-text: hsl(var(--color-success-hue), 70%, 25%);
+  --color-success-border: hsl(var(--color-success-hue), 77%, 85%);
+  --color-warning-bg: hsl(var(--color-warning-hue), 100%, 95%);
+  --color-warning-text: hsl(var(--color-warning-hue), 80%, 30%);
+  --color-warning-border: hsl(var(--color-warning-hue), 98%, 87%);
+  --color-error-bg: hsl(var(--color-error-hue), 100%, 97%);
+  --color-error-text: hsl(var(--color-error-hue), 80%, 40%);
+  --color-error-border: hsl(var(--color-error-hue), 95%, 88%);
+  --color-info-bg: hsl(var(--color-info-hue), 100%, 96%);
+  --color-info-text: hsl(var(--color-info-hue), 80%, 40%);
+  --color-info-border: hsl(var(--color-info-hue), 97%, 88%);
+
+
+  /* --- 3. COMPONENT TOKENS --- */
   
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  /* Tags */
+  --tag-person-bg: #e3f2fd;
+  --tag-person-text: #1976d2;
+  --tag-place-bg: #e8f5e9;
+  --tag-place-text: #388e3c;
+  --tag-status-active-bg: #d4edda;
+  --tag-status-active-text: #155724;
+  --tag-status-temp-bg: #fff3cd;
+  --tag-status-temp-text: #856404;
+  --tag-source-local-bg: #e3f2fd;
+  --tag-source-local-text: #1976d2;
+  --tag-source-paste-bg: #f3e5f5;
+  --tag-source-paste-text: #7b1fa2;
   
-  /* Component specific */
-  --card-background: white;
-  --card-border: var(--color-neutral-200);
-  --card-shadow: var(--shadow-sm);
-  
-  --input-background: white;
-  --input-border: var(--color-neutral-300);
-  --input-border-focus: var(--color-primary);
-  
-  --button-primary-bg: var(--color-primary);
-  --button-primary-text: white;
-  --button-primary-hover: var(--color-primary-dark);
-  
-  --button-secondary-bg: var(--color-neutral-200);
-  --button-secondary-text: var(--color-neutral-700);
-  --button-secondary-hover: var(--color-neutral-300);
+  /* Cards */
+  --card-quote-bg: var(--background-primary);
+  --card-quote-icon-color: rgba(51, 65, 85, 0.05);
+  --card-callout-bg: #fffde7;
+  --card-callout-text-color: #333;
+  --card-callout-tack-color-outer: #c62828;
+  --card-callout-tack-color-inner: #f44336;
 }
 
-/* Dark theme */
 [data-theme="dark"] {
-  /* Dark theme colors - More muted and easier on the eyes */
-  --color-primary: #6366f1;      /* Slightly brighter for dark mode */
-  --color-primary-light: #818cf8;
-  --color-primary-dark: #4f46e5;
-  --color-primary-alpha: rgba(100, 102, 241, 0.2);  /* 20% opacity of primary */
+  /* --- DARK THEME OVERRIDES --- */
   
-  --color-secondary: #10b981;    /* Slightly brighter for dark mode */
-  --color-secondary-light: #34d399;
-  --color-secondary-dark: #059669;
-  --color-secondary-alpha: rgba(16, 185, 129, 0.2);  /* 20% opacity of secondary */
-  
-  --color-accent: #f59e0b;       /* Slightly brighter for dark mode */
-  --color-accent-light: #fbbf24;
-  --color-accent-dark: #d97706;
-  --color-accent-alpha: rgba(245, 158, 11, 0.2);  /* 20% opacity of accent */
-  
-  --color-info: #3b82f6;         /* Slightly brighter for dark mode */
-  --color-info-light: #60a5fa;
-  --color-info-dark: #2563eb;
-  --color-info-alpha: rgba(59, 130, 246, 0.2);  /* 20% opacity of info */
-  
-  --color-warning: #f97316;      /* Slightly brighter for dark mode */
-  --color-warning-light: #fb923c;
-  --color-warning-dark: #ea580c;
-  --color-warning-alpha: rgba(249, 115, 22, 0.2);  /* 20% opacity of warning */
+  /* Color Palette (Dark Theme) */
+  --color-primary: hsl(var(--color-primary-hue), 70%, 67%); /* #6366f1 */
+  --color-primary-light: hsl(var(--color-primary-hue), 89%, 77%); /* #818cf8 */
+  --color-primary-dark: hsl(var(--color-primary-hue), 76%, 52%); /* #4f46e5 */
 
-  /* Dark theme neutral colors - More blue-tinted for better contrast */
-  --color-neutral-50: #0f172a;
-  --color-neutral-100: #1e293b;
-  --color-neutral-200: #334155;
-  --color-neutral-300: #475569;
-  --color-neutral-400: #64748b;
-  --color-neutral-500: #94a3b8;
-  --color-neutral-600: #cbd5e1;
-  --color-neutral-700: #e2e8f0;
-  --color-neutral-800: #f1f5f9;
-  --color-neutral-900: #f8fafc;
+  --color-secondary: hsl(var(--color-secondary-hue), 80%, 45%); /* #10b981 */
+  --color-secondary-light: hsl(var(--color-secondary-hue), 64%, 52%); /* #34d399 */
+  --color-secondary-dark: hsl(var(--color-secondary-hue), 92%, 30%); /* #059669 */
 
-  /* Dark theme background colors */
-  --color-background: var(--color-neutral-50);
-  --color-background-alt: var(--color-neutral-100);
-  --color-background-hover: var(--color-neutral-200);
+  --color-accent: hsl(var(--color-accent-hue), 92%, 52%); /* #f59e0b */
+  --color-accent-light: hsl(var(--color-accent-hue), 96%, 57%); /* #fbbf24 */
+  --color-accent-dark: hsl(var(--color-accent-hue), 95%, 44%); /* #d97706 */
+
+  /* Neutral colors are swapped */
+  --color-neutral-50: hsl(var(--color-neutral-hue), 28%, 9%);  /* #0f172a */
+  --color-neutral-100: hsl(var(--color-neutral-hue), 24%, 17%); /* #1e293b */
+  --color-neutral-200: hsl(var(--color-neutral-hue), 22%, 27%); /* #334155 */
+  --color-neutral-300: hsl(var(--color-neutral-hue), 15%, 35%); /* #475569 */
+  --color-neutral-400: hsl(var(--color-neutral-hue), 16%, 47%); /* #64748b */
+  --color-neutral-500: hsl(var(--color-neutral-hue), 18%, 65%); /* #94a3b8 */
+  --color-neutral-600: hsl(var(--color-neutral-hue), 24%, 84%); /* #cbd5e1 */
+  --color-neutral-700: hsl(var(--color-neutral-hue), 26%, 90%); /* #e2e8f0 */
+  --color-neutral-800: hsl(var(--color-neutral-hue), 27%, 95%); /* #f1f5f9 */
+  --color-neutral-900: hsl(var(--color-neutral-hue), 25%, 98%); /* #f8fafc */
   
-  /* Dark theme text colors */
-  --color-text: var(--color-neutral-100);
-  --color-text-light: var(--color-neutral-300);
-  --color-text-lighter: var(--color-neutral-500);
-  
-  /* Dark theme border colors */
-  --color-border: var(--color-neutral-700);
-  --color-border-hover: var(--color-neutral-600);
-  
-  /* Dark theme shadow colors */
-  --shadow-color: 220 13% 91%;
-  --shadow-strength: 1%;
-  
-  --background-primary: var(--color-neutral-900);
-  --background-secondary: var(--color-neutral-800);
-  --background-tertiary: var(--color-neutral-700);
-  
-  --text-primary: var(--color-neutral-50);
-  --text-secondary: var(--color-neutral-300);
-  --text-tertiary: var(--color-neutral-400);
-  
-  --border-color: var(--color-neutral-700);
-  --border-color-hover: var(--color-neutral-600);
-  
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4);
-  
-  /* Component specific */
-  --card-background: var(--color-neutral-800);
-  --card-border: var(--color-neutral-700);
-  --card-shadow: var(--shadow-sm);
-  
-  --input-background: var(--color-neutral-800);
-  --input-border: var(--color-neutral-600);
-  --input-border-focus: var(--color-primary-light);
-  
-  --button-primary-bg: var(--color-primary-dark);
-  --button-primary-text: white;
-  --button-primary-hover: var(--color-primary);
-  
-  --button-secondary-bg: var(--color-neutral-700);
-  --button-secondary-text: var(--color-neutral-200);
-  --button-secondary-hover: var(--color-neutral-600);
+  /* Shadow Scale */
+  --shadow-color: 220 13% 10%;
+  --shadow-strength: 25%;
+
+  /* Semantic Overrides */
+  --background-primary: var(--color-neutral-100);
+  --background-secondary: var(--color-neutral-200);
+  --background-tertiary: var(--color-neutral-300);
+  --background-inverse: var(--color-neutral-50);
+
+  --text-primary: var(--color-neutral-800);
+  --text-secondary: var(--color-neutral-600);
+  --text-muted: var(--color-neutral-500);
+  --text-interactive: var(--color-primary-light);
+  --text-interactive-hover: var(--color-white);
+
+  --border-color: var(--color-neutral-300);
+  --border-color-hover: var(--color-neutral-400);
+
+  /* State Overrides */
+  --color-success-bg: hsl(var(--color-success-hue), 95%, 10%);
+  --color-success-text: hsl(var(--color-success-hue), 80%, 85%);
+  --color-success-border: hsl(var(--color-success-hue), 80%, 25%);
+  --color-warning-bg: hsl(var(--color-warning-hue), 98%, 12%);
+  --color-warning-text: hsl(var(--color-warning-hue), 90%, 80%);
+  --color-warning-border: hsl(var(--color-warning-hue), 85%, 30%);
+  --color-error-bg: hsl(var(--color-error-hue), 90%, 15%);
+  --color-error-text: hsl(var(--color-error-hue), 90%, 85%);
+  --color-error-border: hsl(var(--color-error-hue), 80%, 35%);
+  --color-info-bg: hsl(var(--color-info-hue), 95%, 15%);
+  --color-info-text: hsl(var(--color-info-hue), 90%, 85%);
+  --color-info-border: hsl(var(--color-info-hue), 85%, 35%);
+
+  /* Component Token Overrides */
+  --card-quote-icon-color: rgba(226, 232, 240, 0.1);
+  --card-callout-bg: #3e2723; /* A dark brown for a different feel */
+  --card-callout-text-color: #f5f5f5;
 } 

@@ -3,16 +3,16 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  border-radius: 8px;
-  background-color: #fff;
-  border: 1px solid #e2e8f0;
+  border-radius: var(--border-radius-lg);
+  background-color: var(--background-primary);
+  border: var(--border-width-thin) solid var(--color-border-primary);
 }
 
 .imageContainer {
   position: relative;
   width: 100%;
   aspect-ratio: 16/9;
-  background-color: #f8fafc;
+  background-color: var(--color-background-secondary);
 }
 
 .coverImage {
@@ -28,17 +28,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f8fafc;
+  background-color: var(--color-background-secondary);
 }
 
 .buttonContainer {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
   display: flex;
-  gap: 0.5rem;
+  gap: var(--spacing-xs);
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--transition-short);
 }
 
 .imageContainer:hover .buttonContainer {
@@ -46,103 +46,103 @@
 }
 
 .addButton {
-  padding: 0.75rem 1.5rem;
-  background-color: #3b82f6;
-  color: white;
+  padding: var(--spacing-sm) var(--spacing-xl);
+  background-color: var(--color-accent-solid);
+  color: var(--color-accent-text);
   border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 500;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-short);
 }
 
 .addButton:hover {
-  background-color: #2563eb;
+  background-color: var(--color-accent-solid-hover);
 }
 
 .changeButton {
-  padding: 0.5rem 1rem;
-  background-color: #3b82f6;
-  color: white;
+  padding: var(--spacing-xs) var(--spacing-md);
+  background-color: var(--color-accent-solid);
+  color: var(--color-accent-text);
   border: none;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-short);
 }
 
 .changeButton:hover {
-  background-color: #2563eb;
+  background-color: var(--color-accent-solid-hover);
 }
 
 .removeButton {
-  padding: 0.5rem 1rem;
-  background-color: rgba(0, 0, 0, 0.6);
-  color: white;
+  padding: var(--spacing-xs) var(--spacing-md);
+  background-color: var(--color-overlay-dark);
+  color: var(--color-accent-text);
   border: none;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-short);
 }
 
 .removeButton:hover {
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: var(--color-overlay-dark-hover);
 }
 
 .errorText {
-  color: #dc2626;
-  font-size: 0.875rem;
-  margin-top: 0.5rem;
+  color: var(--color-error-text);
+  font-size: var(--font-size-xs);
+  margin-top: var(--spacing-xs);
 }
 
 .container.error {
-  border-color: #dc2626;
+  border-color: var(--color-error-border);
 }
 
 .placeholderText {
-  color: #94a3b8;
-  font-size: 0.875rem;
-  transition: color 0.2s ease-in-out;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  transition: color var(--transition-short);
 }
 
 .isDragging .placeholderText {
-  color: #3b82f6;
+  color: var(--color-accent-solid);
 }
 
 .error .placeholderText {
-  color: #dc2626;
+  color: var(--color-error-text);
 }
 
 .errorBanner {
-  padding: 0.75rem;
-  background-color: #fee2e2;
-  color: #dc2626;
-  font-size: 0.875rem;
-  border-top: 1px solid #dc2626;
+  padding: var(--spacing-sm);
+  background-color: var(--color-error-background);
+  color: var(--color-error-text);
+  font-size: var(--font-size-xs);
+  border-top: var(--border-width-thin) solid var(--color-error-border);
 }
 
 .repositionControls {
-  padding: 1rem;
-  background-color: #f8fafc;
-  border-top: 1px solid #e2e8f0;
+  padding: var(--spacing-md);
+  background-color: var(--color-background-secondary);
+  border-top: var(--border-width-thin) solid var(--color-border-primary);
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--spacing-sm);
 }
 
 .sliderContainer {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: var(--spacing-md);
 }
 
 .sliderContainer label {
-  font-size: 0.875rem;
-  color: #64748b;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
   width: 80px;
   flex-shrink: 0;
 }
@@ -152,8 +152,8 @@
   height: 6px;
   -webkit-appearance: none;
   appearance: none;
-  background: #e2e8f0;
-  border-radius: 3px;
+  background: var(--color-border-primary);
+  border-radius: var(--border-radius-sm);
   outline: none;
 }
 
@@ -162,42 +162,42 @@
   appearance: none;
   width: 16px;
   height: 16px;
-  background: #3b82f6;
+  background: var(--color-accent-solid);
   border-radius: 50%;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--transition-short);
 }
 
 .slider::-moz-range-thumb {
   width: 16px;
   height: 16px;
-  background: #3b82f6;
+  background: var(--color-accent-solid);
   border-radius: 50%;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--transition-short);
   border: none;
 }
 
 .slider::-webkit-slider-thumb:hover {
-  background: #2563eb;
+  background: var(--color-accent-solid-hover);
 }
 
 .slider::-moz-range-thumb:hover {
-  background: #2563eb;
+  background: var(--color-accent-solid-hover);
 }
 
 .processingContainer {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: var(--spacing-md);
 }
 
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #f8fafc;
-  border-top-color: #3b82f6;
+  border: var(--border-width-medium) solid var(--color-border-primary);
+  border-top-color: var(--color-accent-solid);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }

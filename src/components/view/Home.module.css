@@ -5,7 +5,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background-color: white;
+  background-color: var(--background-primary);
 }
 
 /* Top corner styling */
@@ -66,9 +66,9 @@
 }
 
 .welcomeText {
-  font-size: 1.4rem;
-  line-height: 1.6;
-  color: var(--color-text);
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-loose);
+  color: var(--text-primary);
 }
 
 /* Bottom corner styling */
@@ -130,21 +130,21 @@
 
 .inputField {
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background-color: var(--color-background-offset);
-  color: var(--color-text);
-  font-size: 1rem;
+  padding: var(--spacing-md);
+  border: var(--border-width-thin) solid var(--color-border-primary);
+  border-radius: var(--border-radius-md);
+  background-color: var(--background-secondary);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
 }
 
 .inputField::placeholder {
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
 }
 
 .errorMessage {
-  color: var(--color-error);
-  font-size: 0.9rem;
+  color: var(--color-error-text);
+  font-size: var(--font-size-sm);
   margin-bottom: 0.5rem;
   text-align: center;
 }

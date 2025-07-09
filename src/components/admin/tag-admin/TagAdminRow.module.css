@@ -6,14 +6,14 @@
 .tagContent {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 2px 1px;
-  transition: background-color 0.15s ease;
+  gap: var(--spacing-xs);
+  padding: 2px var(--border-width-thin);
+  transition: background-color var(--transition-short) ease;
   min-height: 22px;
 }
 
 .tagContent:hover {
-  background: var(--light-gray);
+  background: var(--background-secondary);
 }
 
 .expander {
@@ -32,7 +32,7 @@
   justify-content: center;
   width: 8px;
   height: 12px;
-  font-size: 8px;
+  font-size: var(--font-size-xs);
   color: var(--text-color);
   opacity: 0.5;
 }
@@ -50,17 +50,17 @@
 
 .tagName {
   cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 3px;
-  transition: background-color 0.2s;
+  padding: 2px var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+  transition: background-color var(--transition-short);
 }
 
 .tagName:hover {
-  background-color: rgba(0, 123, 255, 0.1);
+  background-color: hsla(var(--color-primary-hue), 76%, 52%, 0.1);
 }
 
 .cardCount {
-  margin-left: 4px;
+  margin-left: var(--spacing-xs);
   font-size: 0.85em;
   color: var(--text-color-secondary);
   opacity: 0.8;
@@ -69,8 +69,8 @@
 .editInput {
   width: 100%;
   font-size: var(--font-size-base);
-  padding: 1px 2px;
-  border: 1px solid var(--primary-color);
+  padding: var(--border-width-thin) 2px;
+  border: var(--border-width-thin) solid var(--border-color-interactive);
   border-radius: var(--border-radius);
   line-height: 1;
 }
@@ -78,14 +78,14 @@
 .actions {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--spacing-xs);
   flex-shrink: 0;
 }
 
 .actionButton {
   all: unset;
   cursor: pointer;
-  padding: 1px 4px;
+  padding: 1px var(--spacing-xs);
   font-size: var(--font-size-base);
   min-width: 20px;
   height: 20px;
@@ -94,7 +94,7 @@
   justify-content: center;
   opacity: 0.5;
   transform: scale(1.8);
-  transition: opacity 0.15s ease;
+  transition: opacity var(--transition-short) ease;
 }
 
 .actionButton:hover {
@@ -105,24 +105,24 @@
   padding: 2px 0;
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--spacing-xs);
   margin-top: 2px;
 }
 
 .addChildInput {
   flex-grow: 1;
-  padding: 1px 2px;
-  border: 1px solid var(--border-color);
+  padding: var(--border-width-thin) 2px;
+  border: var(--border-width-thin) solid var(--border-color);
   border-radius: var(--border-radius);
   font-size: var(--font-size-sm);
   line-height: 1;
 }
 
 .addChildButton {
-  padding: 1px 4px;
-  border: 1px solid var(--border-color);
+  padding: 1px var(--spacing-xs);
+  border: var(--border-width-thin) solid var(--border-color);
   border-radius: var(--border-radius);
-  background: var(--light-gray);
+  background: var(--background-secondary);
   cursor: pointer;
   font-size: var(--font-size-sm);
   flex-shrink: 0;
@@ -130,11 +130,11 @@
 }
 
 .addChildButton:hover {
-  background: var(--medium-gray);
+  background: var(--border-color);
 }
 
 .topLevelParent {
   font-weight: bold;
   font-size: 1.1em;
-  color: #2c3e50;
+  color: var(--text-primary);
 } 

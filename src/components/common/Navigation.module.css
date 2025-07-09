@@ -1,6 +1,6 @@
 .navigation {
-  background: var(--color-background);
-  border-bottom: 1px solid var(--color-border);
+  background: var(--background-primary);
+  border-bottom: var(--border-width-thin) solid var(--border-color);
   width: 100%;
   height: 100%;
   display: flex;
@@ -8,14 +8,14 @@
 }
 
 .navContainer {
-  padding: 0.75rem 1rem;
+  padding: var(--spacing-sm) var(--spacing-md);
   display: flex;
   align-items: center;
   justify-content: flex-end;
   width: 100%;
   height: 100%;
   margin-left: 0;
-  transition: margin-left 0.3s ease;
+  transition: margin-left var(--transition-short) ease;
 }
 
 .navContainer.sidebarOpen {
@@ -23,14 +23,14 @@
 }
 
 .logo {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: var(--color-text-primary);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
   text-decoration: none;
-  transition: color 0.2s ease;
+  transition: color var(--transition-short) ease;
   flex-shrink: 0;
   position: absolute;
-  left: 0rem;
+  left: 0;
   top: 50%;
   transform: translateY(-50%);
   z-index: 1;
@@ -45,25 +45,25 @@
 }
 
 .logo:hover {
-  color: #0070f3;
+  color: var(--color-primary);
 }
 
 .navLinks {
   display: flex;
-  gap: 1.5rem;
+  gap: var(--spacing-lg);
   align-items: center;
 }
 
 .navLink {
-  color: var(--color-text-primary);
+  color: var(--text-primary);
   text-decoration: none;
-  font-size: 1.2rem;
-  transition: color 0.2s ease;
-  padding: 0.35rem;
+  font-size: var(--font-size-xl);
+  transition: color var(--transition-short) ease;
+  padding: var(--spacing-xs);
 }
 
 .navLink:hover {
-  color: #0070f3;
+  color: var(--color-primary);
 }
 
 .menuButton {
@@ -71,38 +71,38 @@
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0.35rem;
-  z-index: 1000;
+  padding: var(--spacing-xs);
+  z-index: var(--z-index-modal-backdrop);
   position: absolute;
-  right: 2rem;
+  right: var(--spacing-xl);
 }
 
 .hamburger {
   display: block;
-  width: 24px;
+  width: var(--spacing-xl);
   height: 3px;
-  background: var(--color-text-primary);
+  background: var(--text-primary);
   position: relative;
-  transition: background 0.2s ease;
+  transition: background var(--transition-short) ease;
 }
 
 .hamburger::before,
 .hamburger::after {
   content: '';
   position: absolute;
-  width: 24px;
+  width: var(--spacing-xl);
   height: 3px;
-  background: var(--color-text-primary);
-  transition: transform 0.2s ease;
+  background: var(--text-primary);
+  transition: transform var(--transition-short) ease;
   left: 0;
 }
 
 .hamburger::before {
-  top: -8px;
+  top: calc(-1 * var(--spacing-sm));
 }
 
 .hamburger::after {
-  bottom: -8px;
+  bottom: calc(-1 * var(--spacing-sm));
 }
 
 .hamburger.open {
@@ -121,7 +121,7 @@
 
 @media (max-width: 768px) {
   .navContainer {
-    padding: 0.75rem 1rem;
+    padding: var(--spacing-sm) var(--spacing-md);
     margin-left: 0 !important; /* Override margin for mobile */
     justify-content: space-between;
   }
@@ -133,7 +133,7 @@
 
   .menuButton {
     display: block;
-    right: 1.5rem;
+    right: var(--spacing-lg);
   }
 
   .navLinks {
@@ -142,12 +142,12 @@
     right: -100%;
     height: 100vh;
     width: 250px;
-    background: var(--color-background);
+    background: var(--background-primary);
     flex-direction: column;
-    padding: 4rem 2rem;
-    transition: right 0.3s ease;
-    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
-    z-index: 999;
+    padding: var(--spacing-3xl) var(--spacing-xl);
+    transition: right var(--transition-short) ease;
+    box-shadow: var(--shadow-md);
+    z-index: var(--z-index-modal-backdrop);
   }
 
   .navLinks.open {
@@ -155,6 +155,6 @@
   }
 
   .navLink {
-    font-size: 1.4rem;
+    font-size: var(--font-size-2xl);
   }
 } 

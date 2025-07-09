@@ -5,9 +5,9 @@
 }
 
 .topNavContainer {
-  padding: 0 1.5rem; /* Match main content padding */
-  border-bottom: 1px solid var(--border);
-  background-color: var(--background-start);
+  padding: 0 var(--spacing-lg);
+  border-bottom: var(--border-width-thin) solid var(--color-border-primary);
+  background-color: var(--background-primary);
 }
 
 .pageContent {
@@ -19,7 +19,7 @@
     flex-direction: column;
     height: 100vh;
     overflow: hidden;
-    padding-top: 120px; /* Account for fixed Navigation height */
+    padding-top: var(--header-area-height);
   }
   
   .contentWrapper {
@@ -31,41 +31,41 @@
   
   .menuToggle {
     position: absolute;
-    top: 10px;
-    z-index: 1200;
-    background-color: var(--background-start);
-    color: var(--foreground);
-    border: 1px solid var(--border);
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
+    top: var(--spacing-sm);
+    z-index: var(--z-index-header-toggle);
+    background-color: var(--background-primary);
+    color: var(--text-primary);
+    border: var(--border-width-thin) solid var(--color-border-primary);
+    border-radius: var(--border-radius-full);
+    width: 40px;  /* TODO: Tokenize magic number */
+    height: 40px; /* TODO: Tokenize magic number */
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
+    font-size: var(--font-size-2xl);
     transition: left 0.3s ease;
   }
   
   .menuToggle.open {
-    left: 310px; /* sidebar width + 10px */
+    left: calc(var(--sidebar-width) + var(--spacing-sm));
   }
   
   .menuToggle.closed {
-    left: 10px;
+    left: var(--spacing-sm);
   }
   
   .sidebar {
-    width: 300px;
-    background-color: var(--background-start);
-    border-right: 1px solid var(--border);
+    width: var(--sidebar-width);
+    background-color: var(--background-primary);
+    border-right: var(--border-width-thin) solid var(--color-border-primary);
     transition: margin-left 0.3s ease;
-    padding: 20px;
+    padding: var(--spacing-lg);
     overflow-y: auto;
   }
   
   .sidebar.closed {
-    margin-left: -300px;
+    margin-left: calc(-1 * var(--sidebar-width));
   }
   
   .sidebar.open {
@@ -81,37 +81,37 @@
   
   .title {
     margin-top: 0;
-    margin-bottom: 1rem;
-    font-size: 1.25rem;
-    font-weight: 600;
+    margin-bottom: var(--spacing-md);
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
   }
   
   .filterControls {
     position: sticky;
     bottom: 0;
-    margin-top: 1rem;
-    padding: 1rem 0;
-    border-top: 1px solid var(--border);
-    background-color: var(--background-start);
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-md) 0;
+    border-top: var(--border-width-thin) solid var(--color-border-primary);
+    background-color: var(--background-primary);
     display: flex;
-    gap: 0.5rem;
+    gap: var(--spacing-sm);
   }
   
   .applyButton, .clearButton {
     flex: 1;
-    padding: 0.5rem;
-    border: 1px solid var(--border);
-    border-radius: 5px;
-    background-color: var(--background-start);
-    color: var(--foreground);
+    padding: var(--spacing-sm);
+    border: var(--border-width-thin) solid var(--color-border-primary);
+    border-radius: var(--border-radius-md);
+    background-color: var(--background-secondary);
+    color: var(--text-primary);
     cursor: pointer;
-    font-size: 1rem;
+    font-size: var(--font-size-base);
   }
   
   .applyButton {
-    background-color: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
+    background-color: var(--color-accent-solid);
+    color: var(--color-accent-text);
+    border-color: var(--color-accent-solid);
   }
   
   .clearButton {

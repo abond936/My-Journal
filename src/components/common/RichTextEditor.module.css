@@ -1,47 +1,47 @@
 .editorContainer {
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 16px;
-  background-color: #fff;
+  border: var(--border-width-thin) solid var(--color-border-primary);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  background-color: var(--background-primary);
   position: relative;
   overflow: hidden;
 }
 
 .editorContainer.error {
-  border-color: var(--color-danger);
+  border-color: var(--color-error-border);
 }
 
 .toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  border-bottom: 1px solid #ccc;
-  padding-bottom: 8px;
-  margin-bottom: 8px;
+  border-bottom: var(--border-width-thin) solid var(--color-border-primary);
+  padding-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
 }
 
 .toolbarGroup {
   display: flex;
-  gap: 4px;
-  margin-right: 16px;
+  gap: var(--spacing-xs);
+  margin-right: var(--spacing-md);
 }
 
 .toolbarButton {
-  padding: 4px 8px;
-  border: 1px solid #ccc;
-  background-color: #f9f9f9;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--color-border-primary);
+  background-color: var(--background-secondary);
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--border-radius-md);
 }
 
 .toolbarButton.active {
-  background-color: #e0e0e0;
-  border-color: #999;
+  background-color: var(--background-tertiary);
+  border-color: var(--color-border-primary);
 }
 
 .toolbarButton.condensed {
-  font-size: 0.85em;
-  font-weight: bold;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
 }
 
 .editorContent {
@@ -64,7 +64,7 @@
 }
 
 .isDisabled {
-  background-color: #f5f5f5;
+  background-color: var(--background-secondary);
   cursor: not-allowed;
 }
 
@@ -74,15 +74,15 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(255, 255, 255, 0.7);
+  background-color: var(--color-overlay-light);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 20;
+  z-index: var(--z-index-content);
 }
 
 .errorText {
-  color: var(--color-danger);
-  font-size: 0.875rem;
-  margin-top: 4px;
+  color: var(--color-error-text);
+  font-size: var(--font-size-sm);
+  margin-top: var(--spacing-xs);
 }

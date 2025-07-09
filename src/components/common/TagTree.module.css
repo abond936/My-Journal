@@ -1,35 +1,35 @@
 .sidebar {
   width: 100%;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
-  padding: 1.5rem 1rem;
+  background-color: var(--background-secondary);
+  border-bottom: var(--border-width-thin) solid var(--color-border-primary);
+  padding: var(--spacing-large) var(--spacing-medium);
   height: 100%;
   overflow-y: auto;
 }
 
 .title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 1.5rem;
-  color: var(--color-text-primary);
-  padding-left: 0.5rem;
+  font-size: var(--heading-2-size);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-large);
+  color: var(--text-primary);
+  padding-left: var(--spacing-small);
 }
 
 .navigation {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--spacing-medium);
 }
 
 .section {
-  padding: 0 1.5rem;
+  padding: 0 var(--spacing-large);
 }
 
 .sectionHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 0;
+  padding: var(--spacing-medium) 0;
   cursor: pointer;
   user-select: none;
   touch-action: manipulation;
@@ -37,14 +37,14 @@
 
 .sectionHeader h3 {
   margin: 0;
-  font-size: 1.2rem;
-  color: #333;
-  font-weight: 600;
+  font-size: var(--heading-3-size);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
 }
 
 .expandIcon {
-  font-size: 0.9rem;
-  color: #666;
+  font-size: var(--body-text-small-size);
+  color: var(--text-secondary);
   transition: transform 0.2s ease;
 }
 
@@ -55,7 +55,7 @@
 .subsectionList {
   list-style: none;
   padding: 0;
-  margin: 0.5rem 0 0 0;
+  margin: var(--spacing-small) 0 0 0;
 }
 
 .subsectionList li {
@@ -64,24 +64,24 @@
 
 .subsectionList a {
   display: block;
-  padding: 0.75rem 1rem;
-  color: #495057;
+  padding: var(--spacing-medium) var(--spacing-medium);
+  color: var(--text-secondary);
   text-decoration: none;
-  font-size: 1rem;
-  border-radius: 8px;
+  font-size: var(--body-text-size);
+  border-radius: var(--border-radius-md);
   transition: background-color 0.2s, color 0.2s;
   touch-action: manipulation;
 }
 
 .subsectionList a:active {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: var(--background-tertiary);
   transform: scale(0.98);
 }
 
 .subsectionList a.active {
-  background-color: #e9ecef;
-  color: #212529;
-  font-weight: 500;
+  background-color: var(--color-border-primary);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-medium);
 }
 
 .categoryButton.active .tagName,
@@ -90,7 +90,7 @@
 }
 
 .topLevel > .categoryHeader > .categoryButton {
-  font-weight: bold;
+  font-weight: var(--font-weight-bold);
 }
 
 .loading,
@@ -99,43 +99,43 @@
 }
 
 .cardCount {
-  margin-left: 4px;
-  font-size: 0.85em;
-  color: var(--text-color-secondary);
+  margin-left: var(--spacing-xs);
+  font-size: var(--caption-text-size);
+  color: var(--text-secondary);
   opacity: 0.8;
 }
 
 /* Desktop adjustments */
 @media (min-width: 768px) {
   .sidebar {
-    width: 280px;
+    width: var(--sidebar-width);
     height: 100vh;
     position: sticky;
     top: 0;
-    border-right: 1px solid #e9ecef;
+    border-right: var(--border-width-thin) solid var(--color-border-primary);
     border-bottom: none;
     overflow-y: auto;
   }
 
   .section {
-    padding: 0 1rem;
+    padding: 0 var(--spacing-medium);
   }
 
   .sectionHeader {
-    padding: 0.5rem 0;
+    padding: var(--spacing-small) 0;
   }
 
   .sectionHeader h3 {
-    font-size: 1.1rem;
+    font-size: var(--heading-3-size);
   }
 
   .subsectionList a {
-    padding: 0.5rem 1rem;
-    font-size: 0.95rem;
+    padding: var(--spacing-small) var(--spacing-medium);
+    font-size: var(--body-text-size);
   }
 
   .subsectionList a:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-    color: #212529;
+    background-color: var(--background-tertiary);
+    color: var(--text-primary);
   }
 } 

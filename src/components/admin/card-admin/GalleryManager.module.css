@@ -1,53 +1,53 @@
 .container {
     width: 100%;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    padding: 1.5rem;
-    margin-top: 1.5rem;
-    background-color: var(--color-background-offset);
+    border: var(--border-width-thin) solid var(--color-border-primary);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-xl);
+    margin-top: var(--spacing-xl);
+    background-color: var(--color-background-secondary);
 }
 
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+    margin-bottom: var(--spacing-md);
 }
 
 .header h3 {
     margin: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--text-color);
+    font-size: var(--font-size-l);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
 }
 
 .addButton {
-    padding: 0.75rem 1.5rem;
-    background-color: var(--primary-color);
-    color: var(--on-primary-color);
+    padding: var(--spacing-sm) var(--spacing-xl);
+    background-color: var(--color-accent-solid);
+    color: var(--color-accent-text);
     border: none;
-    border-radius: 0.25rem;
-    font-size: 0.875rem;
+    border-radius: var(--border-radius-md);
+    font-size: var(--font-size-xs);
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color var(--transition-short);
 }
 
 .addButton:hover {
-    background-color: var(--primary-hover-color);
+    background-color: var(--color-accent-solid-hover);
 }
 
 .imageGrid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
+    gap: var(--spacing-md);
 }
 
 .imageItem {
     position: relative;
     aspect-ratio: 1;
-    border-radius: 0.5rem;
+    border-radius: var(--border-radius-lg);
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-sm);
 }
 
 .thumbnail {
@@ -62,18 +62,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: var(--color-background-offset);
-    border: 1px dashed var(--color-border);
+    background-color: var(--color-background-secondary);
+    border: var(--border-width-thin) dashed var(--color-border-primary);
 }
 
 .controls {
     position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
+    top: var(--spacing-xs);
+    right: var(--spacing-xs);
     display: flex;
-    gap: 0.25rem;
+    gap: var(--spacing-xs);
     opacity: 0;
-    transition: opacity 0.2s;
+    transition: opacity var(--transition-short);
 }
 
 .imageItem:hover .controls {
@@ -87,84 +87,32 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: rgba(0, 0, 0, 0.5);
-    color: white;
+    background-color: var(--color-overlay-dark);
+    color: var(--color-accent-text);
     border: none;
-    border-radius: 0.25rem;
+    border-radius: var(--border-radius-md);
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color var(--transition-short);
 }
 
 .moveButton:hover,
 .removeButton:hover {
-    background-color: rgba(0, 0, 0, 0.7);
-}
-
-.form {
-    padding: 1rem;
-}
-
-.formGroup {
-    margin-bottom: 1rem;
-}
-
-.formGroup label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-    color: var(--text-color);
-}
-
-.input {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid var(--border-color);
-    border-radius: 0.25rem;
-    font-size: 0.875rem;
-    color: var(--text-color);
-    background-color: var(--surface-color);
-}
-
-.input:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px var(--primary-color-light);
-}
-
-.formActions {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 1.5rem;
-}
-
-.saveButton {
-    padding: 0.75rem 1.5rem;
-    background-color: var(--primary-color);
-    color: var(--on-primary-color);
-    border: none;
-    border-radius: 0.25rem;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.saveButton:hover {
-    background-color: var(--primary-hover-color);
+    background-color: var(--color-overlay-dark-hover);
 }
 
 .manageButton {
-    padding: 0.5rem 1rem;
-    background-color: var(--color-primary);
-    color: var(--color-primary-contrast);
+    padding: var(--spacing-xs) var(--spacing-md);
+    background-color: var(--color-accent-solid);
+    color: var(--color-accent-text);
     border: none;
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--border-radius-md);
     cursor: pointer;
 }
 
 .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 1rem;
+    gap: var(--spacing-md);
 }
 
 .thumbnailOverlay {
@@ -173,17 +121,17 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0);
-    transition: background-color 0.2s ease-in-out;
+    background-color: transparent;
+    transition: background-color var(--transition-short);
     display: flex;
     align-items: flex-start;
     justify-content: flex-end;
-    gap: 0.25rem;
-    padding: 0.25rem;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs);
 }
 
 .thumbnail:hover .thumbnailOverlay {
-    background-color: rgba(0, 0, 0, 0.4);
+    background-color: var(--color-overlay-dark);
 }
 
 .thumbnail img {
@@ -196,15 +144,12 @@
     /* This button will be positioned by the flex container */
 }
 
-.removeButton {
-    /* This button will be positioned by the flex container */
-}
-
 /* Styles for the form within the modal */
 .form {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
 }
 
 .formGroup {
@@ -213,28 +158,46 @@
 }
 
 .formGroup label {
-    margin-bottom: 0.5rem;
-    font-weight: 500;
+    margin-bottom: var(--spacing-xs);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
 }
 
 .input {
     width: 100%;
-    padding: 0.75rem;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    background-color: var(--color-background-offset);
-    color: var(--color-text);
-    font-size: 1rem;
+    padding: var(--spacing-sm);
+    border: var(--border-width-thin) solid var(--color-border-primary);
+    border-radius: var(--border-radius-md);
+    background-color: var(--color-background-secondary);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-base);
+}
+
+.input:focus {
+    outline: none;
+    border-color: var(--color-accent-solid-focus);
+    box-shadow: var(--shadow-focus);
 }
 
 .saveButton {
-    padding: 0.75rem;
-    background-color: var(--color-primary);
-    color: var(--color-primary-contrast);
+    padding: var(--spacing-sm);
+    background-color: var(--color-accent-solid);
+    color: var(--color-accent-text);
     border: none;
-    border-radius: var(--border-radius);
+    border-radius: var(--border-radius-md);
     cursor: pointer;
-    font-size: 1rem;
-    margin-top: 1rem;
+    font-size: var(--font-size-base);
+    margin-top: var(--spacing-md);
     align-self: flex-end;
+    transition: background-color var(--transition-short);
+}
+
+.saveButton:hover {
+    background-color: var(--color-accent-solid-hover);
+}
+
+.formActions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: var(--spacing-xl);
 } 

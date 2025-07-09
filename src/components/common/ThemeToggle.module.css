@@ -2,15 +2,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: var(--spacing-2xl);
+  height: var(--spacing-2xl);
   border-radius: 50%;
   background-color: var(--background-secondary);
   color: var(--text-primary);
-  border: 1px solid var(--border-color);
+  border: var(--border-width-thin) solid var(--color-border-primary);
   cursor: pointer;
   transition: all 0.2s ease;
-  padding: 8px;
+  padding: var(--spacing-sm);
 }
 
 .themeToggle:hover {
@@ -20,7 +20,7 @@
 
 .themeToggle:focus {
   outline: none;
-  box-shadow: 0 0 0 2px var(--color-primary);
+  box-shadow: 0 0 0 var(--border-width-medium) var(--color-accent-solid-focus);
 }
 
 .themeToggle svg {
