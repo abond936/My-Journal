@@ -22,38 +22,41 @@
   width: 100%;
   padding: var(--spacing-sm);
   font-size: var(--font-size-2xl);
-  border: var(--border-width-thin) solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  background-color: var(--background-primary);
+  border: var(--border-width-thin) solid var(--input-border-color);
+  border-radius: var(--input-border-radius);
+  background-color: var(--input-background-color);
+  color: var(--text1-color);
 }
 
 .titleInput:focus {
   outline: none;
-  border-color: var(--color-border-accent);
+  border-color: var(--input-border-color-focus);
 }
 
 .subtitleInput {
   width: 100%;
   padding: var(--spacing-sm);
   font-size: var(--font-size-lg);
-  border: var(--border-width-thin) solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  background-color: var(--background-primary);
+  border: var(--border-width-thin) solid var(--input-border-color);
+  border-radius: var(--input-border-radius);
+  background-color: var(--input-background-color);
+  color: var(--text1-color);
   margin-top: var(--spacing-sm);
 }
 
 .subtitleInput:focus {
   outline: none;
-  border-color: var(--color-border-accent);
+  border-color: var(--input-border-color-focus);
 }
 
 .excerptInput {
   width: 100%;
   padding: var(--spacing-sm);
   font-size: var(--font-size-sm);
-  border: var(--border-width-thin) solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  background-color: var(--background-primary);
+  border: var(--border-width-thin) solid var(--input-border-color);
+  border-radius: var(--input-border-radius);
+  background-color: var(--input-background-color);
+  color: var(--text1-color);
   margin-top: var(--spacing-sm);
   resize: vertical;
   min-height: 80px;
@@ -62,7 +65,7 @@
 
 .excerptInput:focus {
   outline: none;
-  border-color: var(--color-border-accent);
+  border-color: var(--input-border-color-focus);
 }
 
 .coverPhotoSection {
@@ -78,26 +81,26 @@
 
 .statusSelect {
   padding: var(--spacing-sm);
-  border: var(--border-width-thin) solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  background-color: var(--color-white);
+  border: var(--border-width-thin) solid var(--input-border-color);
+  border-radius: var(--input-border-radius);
+  background-color: var(--input-background-color);
+  color: var(--text1-color);
   font-size: var(--font-size-base);
   min-width: 120px;
   cursor: pointer;
 }
 
 .statusSelect:hover {
-  border-color: var(--border-color-hover);
+  border-color: var(--input-border-color);
 }
 
 .statusSelect:focus {
-  outline: none;
-  border-color: var(--border-color-interactive);
-  box-shadow: 0 0 0 2px var(--color-primary-light);
+  outline: var(--border-width-medium) solid var(--input-border-color-focus);
+  outline-offset: 1px;
 }
 
 .statusSelect.inputError {
-  border-color: var(--color-error-border);
+  border-color: var(--state-error-border-color);
 }
 
 .tagsSection {
@@ -117,11 +120,11 @@
 }
 
 .inputError {
-  border-color: var(--color-error-border) !important;
+  border-color: var(--state-error-border-color) !important;
 }
 
 .errorText {
-  color: var(--color-error-text);
+  color: var(--state-text-color);
   font-size: var(--font-size-sm);
   margin-top: var(--spacing-sm);
 }
@@ -130,7 +133,7 @@
 .loadingOverlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: hsla(var(--h1), var(--s1), var(--l1), 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -140,9 +143,9 @@
 .spinner {
   width: 50px;
   height: 50px;
-  border: var(--border-width-thick) solid var(--border-color);
+  border: var(--border-width-thick) solid var(--border1-color);
   border-radius: 50%;
-  border-top-color: var(--color-primary);
+  border-top-color: var(--color3);
   animation: spin 1s linear infinite;
 }
 
@@ -160,6 +163,6 @@
 
 .selectLabel {
   font-size: var(--font-size-sm);
-  color: var(--text-secondary);
+  color: var(--text2-color);
   font-weight: var(--font-weight-medium);
 }

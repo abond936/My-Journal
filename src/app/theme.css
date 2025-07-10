@@ -1,21 +1,18 @@
 /*
-  My Journal - Unified Design System
+  Unified Design System
   ==================================
   This file represents the single source of truth for all styling tokens.
-  It is based on a comprehensive analysis of the entire codebase, ensuring
-  all components and use cases are covered.
-
-  Structure:
-  1. Base Tokens: Raw, context-agnostic values (e.g., color palette, spacing units).
-  2. Semantic Tokens: Context-aware aliases that map to base tokens (e.g., background colors, text colors).
-  3. Component Tokens: Tokens for specific, complex components.
-  4. Dark Theme Overrides: Redefinition of tokens for dark mode.
+  It is built on a three-tiered system:
+  1. Base Tokens: Raw, context-agnostic primitive values.
+  2. Semantic Tokens: Context-aware aliases that give purpose to base tokens.
+  3. Component Tokens: Scoped to specific components for targeted styling.
 */
 
 :root {
   /* --- 1. BASE TOKENS --- */
+  /* The raw, foundational values. These should rarely be used directly in components. */
 
-  /* Color Palette (Light Theme) */
+  /* Color Palette (HSL-based for easy manipulation) */
   --color-primary-hue: 244;
   --color-secondary-hue: 162;
   --color-accent-hue: 33;
@@ -52,7 +49,7 @@
   --color-white: #ffffff;
   --color-black: #000000;
 
-  /* Typography Scale */
+  /* Typography */
   --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-family-serif: "Georgia", serif;
   --font-family-mono: "Menlo", "Consolas", monospace;
@@ -76,7 +73,7 @@
   --line-height-normal: 1.5;
   --line-height-relaxed: 1.75;
 
-  /* Spacing Scale */
+  /* Spacing */
   --spacing-xs: 0.25rem;  /* 4px */
   --spacing-sm: 0.5rem;   /* 8px */
   --spacing-md: 1rem;     /* 16px */
@@ -86,7 +83,7 @@
   --spacing-3xl: 4rem;    /* 64px */
   --spacing-4xl: 6rem;    /* 96px */
 
-  /* Border & Radius Scale */
+  /* Borders & Radius */
   --border-width-thin: 1px;
   --border-width-medium: 2px;
   --border-width-thick: 3px;
@@ -96,7 +93,7 @@
   --border-radius-xl: 1rem;
   --border-radius-full: 9999px;
 
-  /* Shadow Scale */
+  /* Shadows */
   --shadow-color: 220 13% 69%;
   --shadow-strength: 1%;
   --shadow-sm: 0 1px 2px -1px hsl(var(--shadow-color) / calc(var(--shadow-strength) + 9%));
@@ -119,37 +116,37 @@
   --z-index-modal: 1300;
   --z-index-tooltip: 1400;
 
-  /* Layout Sizing */
-  --header-height: 60px;
-  --header-area-height: 120px;
-  --sidebar-width: 300px;
-  --container-max-width: 1200px;
-
 
   /* --- 2. SEMANTIC TOKENS --- */
+  /* Context-aware aliases. These should be the most commonly used variables. */
 
   /* Backgrounds */
   --background-primary: var(--color-neutral-50);
   --background-secondary: var(--color-neutral-100);
   --background-tertiary: var(--color-neutral-200);
-  --background-inverse: var(--color-neutral-900);
   --background-accent: var(--color-accent);
+  --background-inverse: var(--color-neutral-900);
 
   /* Text */
   --text-primary: var(--color-neutral-800);
   --text-secondary: var(--color-neutral-600);
   --text-muted: var(--color-neutral-400);
+  --text-accent: var(--color-accent-dark);
   --text-on-primary: var(--color-white);
   --text-on-accent: var(--color-white);
-  --text-interactive: var(--color-primary);
-  --text-interactive-hover: var(--color-primary-dark);
 
   /* Borders */
-  --border-color: var(--color-neutral-200);
-  --border-color-hover: var(--color-neutral-300);
-  --border-color-interactive: var(--color-primary);
+  --border-primary: var(--color-neutral-200);
+  --border-secondary: var(--color-neutral-300);
+  --border-accent: var(--color-accent);
 
-  /* States (Success, Warning, Error, Info) */
+  /* Interactive Elements (Links, Buttons) */
+  --interactive-primary: var(--color-primary);
+  --interactive-primary-hover: var(--color-primary-dark);
+  --interactive-accent: var(--color-accent);
+  --interactive-accent-hover: var(--color-accent-dark);
+
+  /* State Colors (Success, Warning, Error, Info) */
   --color-success-bg: hsl(var(--color-success-hue), 84%, 95%);
   --color-success-text: hsl(var(--color-success-hue), 70%, 25%);
   --color-success-border: hsl(var(--color-success-hue), 77%, 85%);
@@ -165,28 +162,60 @@
 
 
   /* --- 3. COMPONENT TOKENS --- */
+  /* Scoped to specific components for targeted styling. */
+  
+  /* Layout & Navigation */
+  --header-height: 60px;
+  --header-background: var(--background-primary);
+  --header-border-color: var(--border-primary);
+  --header-text-color: var(--text-primary);
+  --sidebar-width: 300px;
+  --sidebar-background: var(--background-primary);
+  --sidebar-border-color: var(--border-primary);
+
+  /* Cards */
+  --card-background: var(--background-secondary);
+  --card-padding: var(--spacing-lg);
+  --card-border-color: var(--border-primary);
+  --card-border-width: var(--border-width-thin);
+  --card-border-radius: var(--border-radius-lg);
+  --card-shadow: var(--shadow-md);
+  --card-shadow-hover: var(--shadow-lg);
+  --card-title-size: var(--font-size-lg);
+  --card-title-weight: var(--font-weight-semibold);
+  --card-title-color: var(--text-primary);
+  --card-excerpt-size: var(--font-size-base);
+  --card-excerpt-color: var(--text-secondary);
+
+  /* Type-Specific Card Overrides */
+  --card-quote-background: var(--background-primary);
+  --card-quote-icon-color: var(--color-neutral-200);
+  --card-callout-background: var(--color-accent-light);
+  --card-callout-text-color: var(--text-on-accent);
   
   /* Tags */
-  --tag-person-bg: #e3f2fd;
-  --tag-person-text: #1976d2;
-  --tag-place-bg: #e8f5e9;
-  --tag-place-text: #388e3c;
-  --tag-status-active-bg: #d4edda;
-  --tag-status-active-text: #155724;
-  --tag-status-temp-bg: #fff3cd;
-  --tag-status-temp-text: #856404;
-  --tag-source-local-bg: #e3f2fd;
-  --tag-source-local-text: #1976d2;
-  --tag-source-paste-bg: #f3e5f5;
-  --tag-source-paste-text: #7b1fa2;
+  --tag-padding: var(--spacing-xs) var(--spacing-sm);
+  --tag-border-radius: var(--border-radius-full);
+  --tag-font-size: var(--font-size-sm);
   
-  /* Cards */
-  --card-quote-bg: var(--background-primary);
-  --card-quote-icon-color: rgba(51, 65, 85, 0.05);
-  --card-callout-bg: #fffde7;
-  --card-callout-text-color: #333;
-  --card-callout-tack-color-outer: #c62828;
-  --card-callout-tack-color-inner: #f44336;
+  /* Dimensional Tag Colors (examples) */
+  --tag-dimension-who-bg: #e3f2fd;
+  --tag-dimension-who-text: #1976d2;
+  --tag-dimension-what-bg: #e8f5e9;
+  --tag-dimension-what-text: #388e3c;
+  --tag-dimension-when-bg: #fff3cd;
+  --tag-dimension-when-text: #856404;
+  --tag-dimension-where-bg: #f3e5f5;
+  --tag-dimension-where-text: #7b1fa2;
+
+  /* Media & Galleries */
+  --image-border-radius: var(--border-radius-md);
+  --image-overlay-color: hsla(var(--color-neutral-hue), 28%, 9%, 0.6);
+  --image-overlay-text-color: var(--color-white);
+  --image-caption-font-size: var(--font-size-sm);
+  --image-caption-color: var(--text-muted);
+  --gallery-padding: var(--spacing-md);
+  --gallery-item-gap: var(--spacing-md);
 }
 
 [data-theme="dark"] {
@@ -205,7 +234,7 @@
   --color-accent-light: hsl(var(--color-accent-hue), 96%, 57%); /* #fbbf24 */
   --color-accent-dark: hsl(var(--color-accent-hue), 95%, 44%); /* #d97706 */
 
-  /* Neutral colors are swapped */
+  /* Neutral colors are swapped for dark mode */
   --color-neutral-50: hsl(var(--color-neutral-hue), 28%, 9%);  /* #0f172a */
   --color-neutral-100: hsl(var(--color-neutral-hue), 24%, 17%); /* #1e293b */
   --color-neutral-200: hsl(var(--color-neutral-hue), 22%, 27%); /* #334155 */
@@ -230,11 +259,12 @@
   --text-primary: var(--color-neutral-800);
   --text-secondary: var(--color-neutral-600);
   --text-muted: var(--color-neutral-500);
-  --text-interactive: var(--color-primary-light);
-  --text-interactive-hover: var(--color-white);
+  --text-accent: var(--color-accent-light);
 
-  --border-color: var(--color-neutral-300);
-  --border-color-hover: var(--color-neutral-400);
+  --border-primary: var(--color-neutral-300);
+  --border-secondary: var(--color-neutral-400);
+
+  --interactive-primary-hover: var(--color-primary-light);
 
   /* State Overrides */
   --color-success-bg: hsl(var(--color-success-hue), 95%, 10%);
@@ -250,8 +280,9 @@
   --color-info-text: hsl(var(--color-info-hue), 90%, 85%);
   --color-info-border: hsl(var(--color-info-hue), 85%, 35%);
 
-  /* Component Token Overrides */
+  /* Component Overrides */
   --card-quote-icon-color: rgba(226, 232, 240, 0.1);
-  --card-callout-bg: #3e2723; /* A dark brown for a different feel */
+  --card-callout-background: #3e2723;
   --card-callout-text-color: #f5f5f5;
+  --image-overlay-color: hsla(var(--color-neutral-hue), 28%, 9%, 0.7);
 } 

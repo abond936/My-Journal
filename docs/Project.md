@@ -1,15 +1,15 @@
 # Project Overview
 
 **Purpose** 
-A personal journaling application combining text and media into cards (stories, galleries, Q&A's, quotes or callouts), with dimensional heirarchical tagging for flexible content consumption.  
+A personal journaling application combining text and media into cards with dimensional heirarchical tagging for flexible content consumption.  
 
 **Primary Users**
-The primary users are the author (admin) creating the content and his family consuming it, primarily on mobile, but tablet and desktop..
+The primary users are the author (admin) creating the content and his family consuming it, primarily on mobile, but tablet and desktop.
 
 **Current State**
 - Core functionality exists
 - Some architectural elements still required
-- Further functional buildout and testing required.
+- Further functional buildout and QA required.
 
 **Roadmap**
 - Rationalize/harden tag, card, media management
@@ -17,7 +17,6 @@ The primary users are the author (admin) creating the content and his family con
 
 Legend:
 - ✅ Implemented
-- 🟡 Operational
 - ⭕ Planned - Priority: 1, 2, 3
 - ❓ Open Question
 
@@ -31,11 +30,11 @@ Legend:
   - Firebase Admin SDK for server operations
 - CSS modules for styling
 - TypeScript throughout
-- Consumption and Administration separated.
+- Consumption and Administration separated
 - Data Model (Cards → Tags → Media)
 - Cards (primary content)
   - Contain text and media, combining legacy entries and albums
-  - Presentation varied with type and styling
+  - Presentation varied per type and styling
 - Tags (hierarchical organization)
   - Dimensional and heirarchical, parent/child relationship
   - Tags denormalized into cards for query performance
@@ -45,8 +44,9 @@ Legend:
   - Referenced in cards by id, hydrated on demand
   - Processed with Sharp
 
-✅
+
 **Frontend**
+✅
   - Next.js 15 App Router
   - React 19
   - TypeScript
@@ -60,6 +60,7 @@ Legend:
   - `zod` - schema validation
 
 **Backend**
+✅
   - Auth.js with Firebase adapter
   - `firebase-admin` SDK for server-side operations
   - Zod for data validation
@@ -69,28 +70,18 @@ Legend:
   - Role-based access control
   - Session persistence
 
-⭕2 - Heavy code commenting and cleanup
-⭕2 - Directory cleanup
-⭕2 - Testing Plan
-⭕2 - Hosting: Netlify (primary), with Vercel as backup
+⭕2 - Comment code 
+⭕2 - Cleanup directory
+⭕2 - QA app
+⭕2 - Host app (Netlify/Vercel)
+
+**Scripting**
+ - `npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json 
 
 **Backup**
 ✅ 
-- Scripts
-  - codebase - `src/lib/scripts/utils/backup-codebase.ts` -> OneDrive .zip file
-  - database - `src/lib/scripts/backup-database.ts` -> JSON file
-- Scheduled 
-  - `src/lib/scripts/utils/setup-backup-task.ps1`  Windows Scheduled Task at 1am daily
-  - `src/lib/scripts/setup-database-backup-task.ps1` Windows Scheduled Task at 2am daily
-- Github backup - `.github/workflows/backup.yml` automatic backup on every push to the `main` branch. This backup is stored as a workflow artifact for 7 days, providing an off-site copy.
-- Cleanup 
-  - codebase - stored 7 days
-  - database - Automatically cleans up local backups > 5 days.
-- Recovery 
-  - codebase Unzip the file to restore the complete project, run `npm install` to reinstall all dependencies.
-  - `npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/restore-database.ts "C:\\Path\\To\\Your\\Backup\\file.json"`
-  
-Manual backup - You can run `npm run backup:database` anytime
+- OneDrive - Windows Scheduled Task at 2am daily, auto awake pc, cleared >5 days, `npm run backup:database`
+- Github - On every push, for 7 days
 
 ## **APPLICATION**
 ================================
@@ -129,8 +120,7 @@ Manual backup - You can run `npm run backup:database` anytime
 - `src/lib/types/` *read directly - fully commented*
 - Zod schemas for all data types
 - Single source of truth
-- Server-side validation
-- Client-side validation
+- Server-side and client-side validation
 - Type checking with TypeScript
   - `Card` - `src/lib/types/card.ts` - Central data entity in the application, containing content, metadata, and references to tags and other cards.
   - `Tag` - `src/lib/types/tag.ts` - Structure for dimensional and hierarchical tags used for organizing and filtering cards.
@@ -168,11 +158,19 @@ Manual backup - You can run `npm run backup:database` anytime
 - Grid View
   - Responsive grid-based layout
   - Three display modes/styles
-    - Static - Display only
-    ⭕2 Inline - expands/collapses in place
-    - Navigate - Links to dedicated card view page   
+    - Static - Display only (Question, Callout, Quote)
+    - Inline - Expands/collapses in place ()
+    - Navigate - Links to dedicated card view page (story, Gallery) 
+    ⭕2 - Horizontal - Horizontal scroll for images or cards
+    ⭕2 - Box w/ overlay
+    ⭕2 - Box w/o overlay
+    ⭕2 - Box w/ 3 titles (stories, galleries, questions)
+        - by dimension
+          - who, what, when, where - colored tag - 3 stories (book), 3 galleries (negative/grid), 3 questions (?), 3 quotes ("), 3 callouts (checkboxes)
+        - by type 
+          - story, gallery, question, quote, callout - colored tag - who (person), what(landscape/cube), when(calendar), where (pin),)
+
   - Infinite scroll pagination - IntersectionObserver
-  ⭕2 - Fix ghost/error layout issues
 ⭕2 - Search - Add search
 
 ### **View Card**
@@ -187,8 +185,11 @@ If the card has `childrenIds`, it calls `getCardsByIds` to fetch them.
   - Subtitle - If present, render next
   - Cover image - If present, render next
   - Content - If present, render using TipTapRenderer.
-  ⭕2 - Gallery - If present, render grid, (design)
-  ⭕2 - Children - If present, render next.
+  - Gallery - If present, render swiper
+    ⭕2 - Change to grid?
+  - Children - If present, render
+  - Related - Display 3 random from filter
+  - Explore - Display 3 random outside filter
 ⭕3 User Interaction - add user interaction - Like, comment, sharelink
 
 ## **Administration**
@@ -197,7 +198,7 @@ If the card has `childrenIds`, it calls `getCardsByIds` to fetch them.
 `src/app/admin/layout.tsx`
 
 ✅
-- navigation to Cards, Tags, Media
+- navigation to Cards, Tags, Media, Theme
 
 ### **Card System**
 =======================================
@@ -336,6 +337,13 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
 
 ✅
 - Light/Dark toggle
+- Admin page
+  - Variables ⭕2 - Rationalize set
+  - Tokens ⭕2 - Reationalize set
+  ⭕2 - Colors
+        - tag dimensions 
+        - card types (colored icons for story, gallery, questions, quote, callout)
+        - 
 
 ⭕2 - MSN Layout style
 

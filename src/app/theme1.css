@@ -1,0 +1,355 @@
+/*
+  Unified Design System (v2)
+  ==========================================
+  This file represents the single source of truth for all styling tokens,
+  built on a hierarchical model and an abstract, HSL-based color palette.
+  The HSL system is used to programmatically generate color variations for
+  light and dark themes.
+
+  Structure:
+  1. Base Tokens: Raw, context-agnostic primitive values.
+  2. Global Element Tokens: Application-wide styles for foundational HTML elements.
+  3. Component Tokens: Scoped styles for specific, reusable components.
+Naming requires a nesting of two concepts: Elements and Properties.
+    - One element's properties are another property's element. 
+    - One property's element is another property's element.
+
+Elements
+  - app - the highest level element
+   - pages are elements, and properties of the app - home, view, admin
+    - components are elements and properties of the page - header, footer, sidebar, container, button, field, 
+     - component elements are the properties of the component - background, text, border, space, shadow
+      - what we call properties are elements and properties of the components - color, font, family, 
+       - metrics are elements and properities of properties - size, weight, height, width, z-index
+        - measures are elements and properties of metrics - rem, px, in, 
+         - values are elements and properties of measures -  a value - number - the lowest level property
+        Properties
+
+*/
+
+/*
+ * =================================================================
+ * DARK THEME (DEFAULT)
+ * =================================================================
+ */
+:root {
+  /* --- 1. BASE TOKENS --- */
+
+  /* Color Palette (HEX-based) */
+  --hex1: #0D0D0D; /* hsl(0, 0%, 5%)      Near Black - Dark BG */
+  --hex2: #F2F2F2; /* hsl(0, 0%, 95%)     Near White - Dark Text */
+  --hex3: #135b96; /* hsl(211, 76%, 33%)  principal*/
+  --hex4: #E6B85A; /* hsl(42, 76%, 62%)   accent*/
+  --hex5: #8A3A0E; /* hsl(20, 80%, 30%)   alt1*/
+  --hex6: #0E3A4A; /* hsl(198, 63%, 18%)  alt2*/
+  --hex7: #2C5A1F; /* hsl(102, 50%, 24%)  alt3*/
+  --hex8: #5A1F4F; /* hsl(311, 49%, 24%)  alt4*/
+  --hex9: #6A4F29; /* hsl(35, 44%, 29%)   alt5*/
+  --hex10: #B08A3E; /* hsl(41, 49%, 47%)  alt6*/
+  --hex11: #059669; /* hsl(160, 94%, 30%) success*/
+  --hex12: #dc2626; /* hsl(0, 71%, 50%)   error*/
+  --hex13: #d97706; /* hsl(34, 96%, 43%)  warning*/
+  --hex14: #2563eb; /* hsl(221, 81%, 55%) info*/
+  /* --color15: */
+  
+  /* Color Palette (HSL-based) */
+  --h1: 0;      /* Near Black */
+  --s1: 0%;
+  --l1: 5%;
+  --h2: 0;      /* Near White */
+  --s2: 0%;
+  --l2: 95%;
+  --h3: 211;    /* principal */
+  --s3: 76%;
+  --l3: 33%;
+  --h4: 42;     /* accent */
+  --s4: 76%;
+  --l4: 62%;
+  --h5: 20;     /* alt1 */
+  --s5: 80%;
+  --l5: 30%;
+  --h6: 198;    /* alt2 */
+  --s6: 63%;
+  --l6: 18%;
+  --h7: 102;    /* alt3 */
+  --s7: 50%;
+  --l7: 24%;
+  --h8: 311;    /* alt4 */
+  --s8: 49%;
+  --l8: 24%;
+  --h9: 35;     /* alt5 */
+  --s9: 44%;
+  --l9: 29%;
+  --h10: 41;    /* alt6 */
+  --s10: 49%;
+  --l10: 47%;
+  --h11: 160;   /* success */
+  --s11: 94%;
+  --l11: 30%;
+  --h12: 0;     /* error */
+  --s12: 71%;
+  --l12: 50%;
+  --h13: 34;    /* warning */
+  --s13: 96%;
+  --l13: 43%;
+  --h14: 221;   /* info */
+  --s14: 81%;
+  --l14: 55%;
+  /* --hue15: */
+  
+  --light-dark-variance: 10%; /* The amount to lighten/darken colors for states */
+
+  /* Base Color Definitions */
+  --color1: hsl(var(--h1), var(--s1), var(--l1));
+  --color1-light: hsl(var(--h1), var(--s1), calc(var(--l1) + var(--light-dark-variance)));
+  --color1-dark: hsl(var(--h1), var(--s1), calc(var(--l1) - var(--light-dark-variance)));
+
+  --color2: hsl(var(--h2), var(--s2), var(--l2));
+  --color2-light: hsl(var(--h2), var(--s2), calc(var(--l2) + var(--light-dark-variance)));
+  --color2-dark: hsl(var(--h2), var(--s2), calc(var(--l2) - var(--light-dark-variance)));
+  
+  --color3: hsl(var(--h3), var(--s3), var(--l3));
+  --color3-light: hsl(var(--h3), var(--s3), calc(var(--l3) + var(--light-dark-variance)));
+  --color3-dark: hsl(var(--h3), var(--s3), calc(var(--l3) - var(--light-dark-variance)));
+
+  /* Grayscale Palette (Dark Theme: Darker shades have lower numbers) */
+  --color1-50:  hsl(var(--h1), var(--s1), 10%);
+  --color1-100: hsl(var(--h1), var(--s1), 15%);
+  --color1-200: hsl(var(--h1), var(--s1), 25%);
+  --color1-300: hsl(var(--h1), var(--s1), 35%);
+  --color1-400: hsl(var(--h1), var(--s1), 45%);
+  --color1-500: hsl(var(--h1), var(--s1), 55%);
+  --color1-600: hsl(var(--h1), var(--s1), 65%);
+  --color1-700: hsl(var(--h1), var(--s1), 75%);
+  --color1-800: hsl(var(--h1), var(--s1), 85%);
+  --color1-900: hsl(var(--h1), var(--s1), 95%);
+
+  /* Breakpoints (Mobile-First) */
+  /* Used for major layout changes, e.g., @media (min-width: var(--breakpoint-md)) */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+
+  /* Typography Scale */
+  --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family-serif: "Georgia", serif;
+  --font-family-handwriting: "Ink Free", cursive;
+
+  /* Fluid Typography */
+  /* clamp(MIN, PREFERRED, MAX) */
+  --font-size1-fluid: clamp(1.5rem, 1rem + 2.5vw, 3rem);      /* ~24px to 48px */
+  --font-size2-fluid: clamp(1.25rem, 0.8rem + 2.25vw, 2.25rem); /* ~20px to 36px */
+  --font-size3-fluid: clamp(1rem, 0.75rem + 1.25vw, 1.5rem);    /* ~16px to 24px */
+
+  /* Fluid Spacing */
+  /* Use for padding, margins, gaps, etc. */
+  --spacing1-fluid: clamp(1rem, 0.5rem + 2.5vw, 2rem);   /* ~16px to 32px */
+  --spacing2-fluid: clamp(2rem, 1rem + 5vw, 4rem);       /* ~32px to 64px */
+  --spacing3-fluid: clamp(4rem, 2rem + 10vw, 8rem);      /* ~64px to 128px */
+
+  /* Static Typography */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+
+  --font-weight-normal: 400;
+  --font-weight-increment: 100;
+  --font-weight-medium: calc(var(--font-weight-normal) + var(--font-weight-increment)); /* 500 */
+  --font-weight-semibold: calc(var(--font-weight-normal) + (2 * var(--font-weight-increment))); /* 600 */
+  --font-weight-bold: calc(var(--font-weight-normal) + (3 * var(--font-weight-increment))); /* 700 */
+
+  --line-height-base: 1.5;
+  --line-height-increment: 0.25;
+  --line-height-tight: calc(var(--line-height-base) - var(--line-height-increment));
+  --line-height-relaxed: calc(var(--line-height-base) + var(--line-height-increment));
+
+  /* Spacing Scale */
+  --spacing-unit: 4px;
+  --spacing-xs: calc(1 * var(--spacing-unit)); 
+  --spacing-sm: calc(2 * var(--spacing-unit));   
+  --spacing-md: calc(4 * var(--spacing-unit));   
+  --spacing-lg: calc(6 * var(--spacing-unit));   
+  --spacing-xl: calc(8 * var(--spacing-unit));   
+  --spacing-2xl: calc(12 * var(--spacing-unit)); 
+  --spacing-3xl: calc(16 * var(--spacing-unit)); 
+  --spacing-4xl: calc(24 * var(--spacing-unit)); 
+
+  /* Border & Radius Scale */
+  /* used generically for all components */
+  --border-width-thin: 1px;
+  --border-width-medium: 2px;
+  --border-width-thick: 3px;
+  
+  --border-radius-sm: 0.25rem;
+  --border-radius-md: 0.5rem;
+  --border-radius-lg: 0.75rem;
+  --border-radius-xl: 1rem;
+  --border-radius-full: 9999px;
+
+  /* Shadow Scale (For Dark Theme) */
+  --shadow-strength: 25%;
+  --shadow-color: hsl(var(--h1) / var(--shadow-strength));
+  --shadow-sm: 0 1px 2px -1px var(--shadow-color);
+  --shadow-md: 0 3px 4px -2px var(--shadow-color),
+               0 7px 10px -4px var(--shadow-color);
+  --shadow-lg: 0 5px 8px -3px var(--shadow-color),
+               0 12px 18px -5px var(--shadow-color);
+  --shadow-xl: 0 10px 15px -5px var(--shadow-color),
+               0 25px 35px -10px var(--shadow-color);
+
+  /* Z-Index Scale */
+  --z-index-default: 1;
+  --z-index-content: 10;
+  --z-index-sticky: 100;
+  --z-index-modal-backdrop: 1000;
+  --z-index-sidebar: 1100;
+  --z-index-header: 1200;
+  --z-index-modal: 1300;
+  --z-index-tooltip: 1400;
+
+  /* --- 2. GLOBAL ELEMENT TOKENS (DARK THEME) --- */
+  
+  /* Layout */
+  --layout-container-max-width: 1200px;
+  --layout-background1-color: var(--color1);      /* Main background */
+  --layout-background2-color: var(--color1-50);   /* Secondary background, e.g., cards */
+
+  /* Borders */
+  --border1-color: var(--color1-100);
+  --border2-color: var(--color1-200);
+
+  /* States */
+  --state-success-background-color: hsl(var(--h11) / 0.15);
+  --state-success-border-color: hsl(var(--h11) );
+  --state-error-background-color: hsl(var(--h12) / 0.15);
+  --state-error-border-color: hsl(var(--h12));
+  --state-warning-background-color: hsl(var(--h13) / 0.15);
+  --state-warning-border-color: hsl(var(--h13));
+  --state-info-background-color: hsl(var(--h14) / 0.15);
+  --state-info-border-color: hsl(var(--h14) );
+  --state-text-color: var(--color1-900);
+
+  /* Typography */
+  --ui: var(--font-weight-normal) var(--font-size-base)/var(--line-height-base) var(--font-family-sans);
+  --text1-color: var(--color1-900); /* Primary text, near white */
+  --text2-color: var(--color1-700); /* Secondary text, light gray */
+
+  --content: var(--font-weight-normal) var(--font-size-base)/var(--line-height-relaxed) var(--font-family-handwriting);
+  --heading1: var(--font-weight-bold) var(--font-size-4xl)/var(--line-height-tight) var(--font-family-sans);
+  --heading2: var(--font-weight-bold) var(--font-size-3xl)/var(--line-height-tight) var(--font-family-sans);
+  --body: var(--font-weight-normal) var(--font-size-base)/var(--line-height-normal) var(--font-family-sans);
+/* do we need more styles for content? */
+
+  /* --- 3. COMPONENT TOKENS --- */
+  
+  /* Header */
+  --header-height: 60px;
+  --header-background-color: var(--layout-background2-color);
+  --header-border-color: var(--border1-color);
+  --header-border-width: var(--border-width-thin);
+
+  /* Button: Solid */
+  --button-solid-background-color: var(--color3);
+  --button-solid-background-color-hover: var(--color3-light);
+  --button-solid-border-color: var(--color3);
+  --button-solid-text-color: var(--color2);
+  
+  /* Button: Outline */
+  --button-outline-background-color: transparent;
+  --button-outline-background-color-hover: hsla(var(--h3), var(--s3), var(--l3), 0.1);
+  --button-outline-border-color: var(--border1-color);
+  --button-outline-text-color: var(--text1-color);
+  --button-outline-border-width: var(--border-width-medium);
+
+  /* Card */
+  --card-background-color: var(--layout-background2-color);
+  --card-padding: var(--spacing-lg);
+  --card-border-color: var(--border2-color);
+  --card-border-width: var(--border-width-medium);
+  --card-border-radius: var(--border-radius-lg);
+  --card-shadow: var(--shadow-sm);
+  --card-shadow-hover: var(--shadow-md);
+  
+  /* Tag */
+  --tag-padding: var(--spacing-xs) var(--spacing-sm);
+  --tag-border-radius: var(--border-radius-full);
+  --tag-font: var(--font-weight-medium) var(--font-size-sm)/1.2 var(--font-family-sans);
+  --tag-who-bg-color: var(--color5);
+  --tag-what-bg-color: var(--color6);
+  --tag-when-bg-color: var(--color7);
+  --tag-where-bg-color: var(--color8);
+  --tag-reflection-bg-color: var(--color9);
+  --tag-text-color: var(--color2);
+  
+  /* Form & Input */
+  --form-label-font: var(--font-weight-medium) var(--font-size-sm)/1 var(--font-family-sans);
+  --form-label-color: var(--text2-color);
+  --input-background-color: var(--color1-50);
+  --input-border-color: var(--border2-color);
+  --input-border-color-focus: var(--color3);
+  --input-text-color: var(--text1-color);
+  --input-border-radius: var(--border-radius-sm);
+  --input-padding: var(--spacing-sm) var(--spacing-md);
+
+  /* Link */
+  --link-text-color: var(--color3); /* Use principal color for links */
+  --link-text-color-hover: var(--color3-light);
+  --link-decoration-hover: underline;
+  
+  /* Disabled State */
+  --disabled-background-color: var(--color1-200);
+  --disabled-text-color: var(--color1-500);
+  --disabled-border-color: var(--color1-200);
+  --disabled-opacity: 0.6;
+}
+
+/*
+ * =================================================================
+ * LIGHT THEME OVERRIDES
+ * =================================================================
+ */
+[data-theme="light"] {
+  /* --- BASE TOKEN OVERRIDES --- */
+
+  /* Grayscale Palette (Light Theme: Lighter shades have lower numbers) */
+  --color1-50:  hsl(var(--h1), var(--s1), 98%);
+  --color1-100: hsl(var(--h1), var(--s1), 95%);
+  --color1-200: hsl(var(--h1), var(--s1), 90%);
+  --color1-300: hsl(var(--h1), var(--s1), 80%);
+  --color1-400: hsl(var(--h1), var(--s1), 70%);
+  --color1-500: hsl(var(--h1), var(--s1), 60%);
+  --color1-600: hsl(var(--h1), var(--s1), 50%);
+  --color1-700: hsl(var(--h1), var(--s1), 40%);
+  --color1-800: hsl(var(--h1), var(--s1), 20%);
+  --color1-900: hsl(var(--h1), var(--s1), 10%);
+  
+  /* Shadow Scale (For Light Theme) */
+  --shadow-strength: 10%;
+  --shadow-color: hsl(var(--h1) / var(--shadow-strength));
+
+  /* --- GLOBAL ELEMENT TOKEN OVERRIDES --- */
+  --layout-background1-color: var(--color2);      /* Main background, near white */
+  --layout-background2-color: var(--color1-50);   /* Secondary background, off white */
+
+  --border1-color: var(--color1-200);
+  --border2-color: var(--color1-300);
+
+  --text1-color: var(--color1-900); /* Primary text, near black */
+  --text2-color: var(--color1-700); /* Secondary text, dark gray */
+
+  /* --- COMPONENT TOKEN OVERRIDES --- */
+  --header-background-color: var(--layout-background1-color);
+
+  --button-solid-background-color-hover: var(--color3-dark);
+  --button-outline-background-color-hover: hsla(var(--h3), var(--s3), var(--l3), 0.1);
+
+  --input-background-color: var(--color2);
+  --input-border-color: var(--border1-color);
+  --input-text-color: var(--text1-color);
+}
