@@ -3,23 +3,23 @@
   align-items: center;
   justify-content: center;
   padding: var(--spacing-md);
-  border: var(--border-width-medium) dashed var(--color-border-primary);
+  border: var(--border-width-medium) dashed var(--border1-color);
   border-radius: var(--border-radius-lg);
-  background-color: var(--background-secondary);
+  background-color: var(--layout-background2-color);
   transition: all var(--transition-short) ease;
   cursor: pointer;
 }
 
 .container:hover,
 .dragActive {
-  border-color: var(--color-primary);
-  background-color: var(--background-tertiary);
+  border-color: var(--color3);
+  background-color: var(--color1-200);
 }
 
 .button {
   padding: var(--spacing-sm) var(--spacing-md);
-  background-color: var(--color-primary);
-  color: var(--text-on-primary);
+  background-color: var(--color3);
+  color: var(--color2);
   border: none;
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-sm);
@@ -28,15 +28,15 @@
 }
 
 .button:hover:not(:disabled) {
-  background-color: var(--color-primary-dark);
+  background-color: var(--color3-dark);
 }
 
 .button:disabled {
-  background-color: var(--color-neutral-200);
+  background-color: var(--disabled-background-color);
   cursor: not-allowed;
 }
 
 .container:focus-within {
-  outline: var(--border-width-medium) solid var(--color-primary);
+  outline: var(--border-width-medium) solid var(--color3);
   outline-offset: var(--border-width-medium);
 } 

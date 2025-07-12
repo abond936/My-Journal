@@ -7,7 +7,7 @@
   border: var(--border-width-thin) solid transparent; /* Border for spacing, transparent by default */
   border-radius: var(--border-radius-md);
   padding: var(--spacing-xs);
-  background-color: var(--background-secondary);
+  background-color: var(--layout-background2-color);
   box-sizing: border-box; /* Ensures padding and border are included in the width */
 }
 
@@ -80,7 +80,7 @@
 }
 
 .caption {
-  color: var(--text-secondary);
+  color: var(--text2-color);
   font-size: var(--font-size-sm);
   text-align: center;
   padding: var(--spacing-xs);
@@ -89,7 +89,7 @@
 }
 
 .caption:focus {
-  outline: var(--border-width-thin) solid var(--color-accent);
+  outline: var(--border-width-thin) solid var(--color3);
 }
 
 /* --- UI Elements --- */
@@ -99,8 +99,8 @@
   right: var(--spacing-sm);
   width: var(--spacing-xl);
   height: var(--spacing-xl);
-  background-color: var(--color-overlay-dark);
-  color: var(--color-light-base);
+  background-color: var(--color1-900);
+  color: var(--color2);
   border-radius: var(--border-radius-md);
   cursor: grab;
   display: flex;

@@ -125,7 +125,7 @@
 
 .title {
   margin: 0;
-  font-size: var(--heading-4-size);
+  font-size: var(--font-size-lg);
   color: var(--text1-color);
   line-height: 1.4;
 }
@@ -136,16 +136,16 @@
 }
 
 .large .title {
-  font-size: var(--heading-2-size);
+  font-size: var(--font-size-2xl);
 }
 
 .small .title {
-  font-size: var(--heading-5-size);
+  font-size: var(--font-size-base);
 }
 
 .description {
   margin: 0;
-  font-size: var(--body-text-small-size);
+  font-size: var(--font-size-sm);
   color: var(--text2-color);
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -160,7 +160,7 @@
 }
 
 .large .description {
-  font-size: var(--body-text-size);
+  font-size: var(--font-size-base);
   -webkit-line-clamp: 3;
 }
 
@@ -170,7 +170,7 @@
 
 /* Tag-specific styles */
 .dimension {
-  font-size: var(--caption-text-size);
+  font-size: var(--font-size-xs);
   color: var(--color4);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -188,7 +188,7 @@
 }
 
 .tag {
-  font-size: var(--caption-text-size);
+  font-size: var(--font-size-xs);
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-sm);
   cursor: pointer;
@@ -201,16 +201,16 @@
 }
 
 .personTag:hover {
-  background-color: #bbdefb;
+  background-color: var(--tag-who-bg-color);
 }
 
 .placeTag {
-  background-color: var(--tag-what-bg-color);
+  background-color: var(--tag-where-bg-color);
   color: var(--tag-text-color);
 }
 
 .placeTag:hover {
-  background-color: #c8e6c9;
+  background-color: var(--tag-where-bg-color);
 }
 
 .overlay .tag {
@@ -225,7 +225,7 @@
 .counts {
   display: flex;
   gap: var(--spacing-md);
-  font-size: var(--body-text-small-size);
+  font-size: var(--font-size-sm);
   color: var(--text2-color);
   margin-top: auto;
 }
@@ -241,7 +241,7 @@
 }
 
 .date {
-  font-size: var(--body-text-small-size);
+  font-size: var(--font-size-sm);
   color: var(--text2-color);
 }
 
@@ -249,10 +249,10 @@
   color: var(--color2);
 }
 
-/* Responsive adjustments */
+/* Responsive Design */
 @media (max-width: var(--breakpoint-lg)) {
   .large {
-    grid-column: span 2;
+    grid-column: span 1;
     grid-row: span 1;
   }
 }
@@ -262,23 +262,25 @@
     grid-column: span 2;
     grid-row: span 1;
   }
-  
+
   .medium, .small {
     grid-column: span 1;
+    grid-row: span 1;
   }
 
   .large .title {
-    font-size: var(--heading-3-size);
+    font-size: var(--font-size-xl);
   }
 
   .large .description {
-    font-size: var(--body-text-size);
+    font-size: var(--font-size-sm);
   }
 }
 
 @media (max-width: var(--breakpoint-sm)) {
   .large, .medium, .small {
     grid-column: span 1;
+    grid-row: span 1;
   }
 
   .content {
@@ -286,44 +288,43 @@
   }
 
   .large .title {
-    font-size: var(--heading-4-size);
+    font-size: var(--font-size-lg);
   }
 }
 
 .card:hover .image {
   transform: scale(1.05);
+  transition: transform var(--transition-short) ease-in-out;
 }
 
-/* Swiper Carousel Styles */
 .swiperContainer {
+  position: relative;
   width: 100%;
   height: 100%;
 }
 
 .swiperContainer .imageContainer {
-  height: 100%; /* Ensure slide's container takes full height */
+  padding-top: 0;
+  height: 100%;
 }
 
 .swiperContainer .swiper-button-next,
 .swiperContainer .swiper-button-prev {
-  color: #fff;
-  background-color: rgba(0, 0, 0, 0.3);
+  color: var(--color2);
+  background: rgba(0, 0, 0, 0.5);
   border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  top: 50%;
-  transform: translateY(-50%);
+  width: var(--spacing-xl);
+  height: var(--spacing-xl);
 }
 
 .swiperContainer .swiper-button-next::after,
 .swiperContainer .swiper-button-prev::after {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--font-size-sm);
 }
 
 .swiperContainer .swiper-pagination-bullet {
-  background-color: #fff;
-  opacity: 0.7;
+  background: var(--color2);
+  opacity: 0.5;
 }
 
 .swiperContainer .swiper-pagination-bullet-active {

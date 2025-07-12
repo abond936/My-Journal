@@ -5,17 +5,17 @@
 
 .sidebar {
   width: var(--sidebar-width-mobile);
-  background: var(--background-secondary);
-  padding: 2rem 1rem;
-  border-right: 1px solid var(--border-color);
+  background: var(--layout-background2-color);
+  padding: var(--spacing-xl) var(--spacing-md);
+  border-right: 1px solid var(--border1-color);
 }
 
 .section h3 {
-  color: var(--text-secondary);
-  font-size: 0.875rem;
+  color: var(--text2-color);
+  font-size: var(--font-size-sm);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 1rem;
+  margin-bottom: var(--spacing-md);
 }
 
 .section ul {
@@ -25,32 +25,32 @@
 }
 
 .section li {
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--spacing-sm);
 }
 
 .section a {
   display: block;
-  padding: 0.5rem 1rem;
-  color: var(--text-primary);
+  padding: var(--spacing-sm) var(--spacing-md);
+  color: var(--text1-color);
   text-decoration: none;
-  border-radius: 4px;
+  border-radius: var(--border-radius-md);
   transition: all 0.2s;
 }
 
 .section a:hover {
-  background: var(--background-tertiary);
+  background: var(--layout-background1-color);
 }
 
 .section a.active {
-  background: var(--background-tertiary);
-  color: var(--text-primary);
+  background: var(--layout-background1-color);
+  color: var(--text1-color);
   font-weight: 500;
 }
 
 .main {
   flex: 1;
-  padding: 2rem;
-  background: var(--background-primary);
+  padding: var(--spacing-xl);
+  background: var(--layout-background1-color);
 }
 
 .header {
@@ -59,21 +59,21 @@
 
 .header h1 {
   margin: 0;
-  color: var(--text-primary);
-  font-size: 1.5rem;
+  color: var(--text1-color);
+  font-size: var(--font-size-2xl);
 }
 
 .container {
-  padding: 2rem;
+  padding: var(--spacing-xl);
   max-width: var(--layout-container-max-width);
   margin: 0 auto;
 }
 
 .unauthorized {
   text-align: center;
-  padding: 4rem;
-  background-color: var(--surface-2);
-  border-radius: 8px;
+  padding: var(--spacing-3xl);
+  background-color: var(--layout-background2-color);
+  border-radius: var(--border-radius-lg);
 }
 
 .unauthorized h1 {
@@ -81,11 +81,11 @@
 }
 
 .unauthorized button {
-  padding: 0.75rem 1.5rem;
-  background-color: var(--primary);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: var(--button-solid-background-color);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--border-radius-md);
   cursor: pointer;
-  font-size: 1rem;
+  font-size: var(--font-size-base);
 } 

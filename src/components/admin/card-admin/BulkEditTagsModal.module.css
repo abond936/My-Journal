@@ -6,7 +6,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: var(--color-overlay-dark);
+  background-color: hsl(var(--h1) / 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -15,7 +15,7 @@
 }
 
 .modalContainer {
-  background-color: var(--background-primary);
+  background-color: var(--layout-background1-color);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-lg);
   padding: var(--spacing-lg);
@@ -29,7 +29,7 @@
 .modalHeader {
   flex-shrink: 0;
   margin-bottom: var(--spacing-md);
-  border-bottom: var(--border-width-thin) solid var(--color-border-primary);
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
   padding-bottom: var(--spacing-md);
 }
 
@@ -51,7 +51,7 @@
 .dimensionColumn h4 {
   position: sticky;
   top: 0;
-  background: var(--background-primary);
+  background: var(--layout-background1-color);
   padding-bottom: var(--spacing-sm);
   z-index: var(--z-index-content);
 }
@@ -66,7 +66,7 @@
   justify-content: flex-end;
   gap: var(--spacing-md);
   padding-top: var(--spacing-md);
-  border-top: var(--border-width-thin) solid var(--color-border-primary);
+  border-top: var(--border-width-thin) solid var(--border1-color);
   margin-top: var(--spacing-md);
 }
 
@@ -78,23 +78,23 @@
 }
 
 .saveButton {
-  background-color: var(--color-accent-solid);
-  color: var(--color-accent-text);
+  background-color: var(--button-solid-background-color);
+  color: var(--button-solid-text-color);
 }
 
 .saveButton:disabled {
-  background-color: var(--color-background-disabled);
+  background-color: var(--button-disabled-background-color);
   cursor: not-allowed;
 }
 
 .cancelButton {
-  background-color: var(--background-secondary);
-  color: var(--text-primary);
-  border-color: var(--color-border-primary);
+  background-color: var(--layout-background2-color);
+  color: var(--text1-color);
+  border-color: var(--border1-color);
 }
 
 .error {
-  color: var(--color-error-text);
+  color: var(--text1-color);
 }
 
 /* Interactive Node Styles */
@@ -139,5 +139,5 @@
 .tagChildren {
   padding-left: calc(16px + var(--spacing-sm)); /* Aligns with checkbox */
   margin-top: var(--spacing-xs);
-  border-left: var(--border-width-thin) solid var(--color-border-secondary);
+  border-left: var(--border-width-thin) solid var(--border2-color);
 } 

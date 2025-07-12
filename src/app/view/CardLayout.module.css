@@ -1,11 +1,11 @@
 .header {
-  background-color: #fff;
-  border-bottom: 1px solid #eaeaea;
-  padding: 1rem 2rem;
+  background-color: var(--layout-background1-color);
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  padding: var(--spacing-md) var(--spacing-xl);
   position: sticky;
   top: 0;
   z-index: 1000;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: var(--shadow-sm);
 }
 
 .headerContent {
@@ -17,9 +17,9 @@
 }
 
 .logo {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #333;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text1-color);
   text-decoration: none;
 }
 
@@ -29,7 +29,7 @@
 }
 
 .main {
-  padding: 1rem;
+  padding: var(--spacing-md);
   max-width: var(--layout-container-max-width);
   margin: 0 auto;
 } 

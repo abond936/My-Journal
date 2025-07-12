@@ -1,8 +1,8 @@
 .errorContainer {
   padding: var(--spacing-lg);
   border-radius: var(--border-radius-lg);
-  background-color: var(--color-error-bg);
-  border: var(--border-width-thin) solid var(--color-error-border);
+  background-color: var(--state-error-background-color);
+  border: var(--border-width-thin) solid var(--state-error-border-color);
   margin: var(--spacing-md) 0;
 }
 
@@ -13,28 +13,28 @@
 }
 
 .errorTitle {
-  color: var(--color-error-text);
+  color: var(--text1-color);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-medium);
   margin: 0;
 }
 
 .errorDetails {
-  background-color: var(--color-error-bg);
+  background-color: var(--state-error-background-color);
   border-radius: var(--border-radius-md);
   padding: var(--spacing-md);
 }
 
 .errorDetails summary {
   cursor: pointer;
-  color: var(--color-error-text);
+  color: var(--text1-color);
   font-weight: var(--font-weight-medium);
 }
 
 .errorStack {
   margin: var(--spacing-md) 0 0;
   padding: var(--spacing-md);
-  background-color: var(--background-primary);
+  background-color: var(--layout-background1-color);
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-sm);
   line-height: 1.5;
@@ -51,18 +51,18 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   border-radius: var(--border-radius-md);
-  background-color: var(--color-error-bg);
-  color: var(--color-error-text);
+  background-color: var(--state-error-background-color);
+  color: var(--text1-color);
   border: none;
   cursor: pointer;
   transition: background-color var(--transition-short);
 }
 
 .retryButton:hover {
-  background-color: var(--color-error-bg);
+  background-color: var(--state-error-background-color);
 }
 
 .retryButton:focus {
-  outline: var(--border-width-medium) solid var(--color-error-border);
+  outline: var(--border-width-medium) solid var(--state-error-border-color);
   outline-offset: var(--border-width-medium);
 } 

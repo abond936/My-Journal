@@ -1,22 +1,22 @@
 .page {
-  padding: 2rem;
+  padding: var(--spacing-xl);
 }
 
 .header {
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #eee;
+  margin-bottom: var(--spacing-xl);
+  padding-bottom: var(--spacing-md);
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
 }
 
 .header h1 {
-  font-size: 2rem;
+  font-size: var(--font-size-2xl);
   margin: 0;
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
+  gap: var(--spacing-lg);
 }
 
 .cardLink {
@@ -24,20 +24,20 @@
   color: inherit;
   display: block;
   overflow: hidden;
-  border-radius: 8px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-  transition: all 0.2s ease-in-out;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-short) ease;
 }
 
 .cardLink:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .card {
   position: relative;
   aspect-ratio: 4 / 3;
-  background-color: #f4f4f4;
+  background-color: var(--layout-background2-color);
 }
 
 .cardImage {
@@ -51,33 +51,33 @@
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 1.5rem;
+  padding: var(--spacing-lg);
   background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
   color: white;
 }
 
 .cardTitle {
-  font-size: 1.25rem;
+  font-size: var(--font-size-xl);
   margin: 0;
 }
 
 .cardSubtitle {
-  font-size: 0.9rem;
-  margin: 0.25rem 0 0;
+  font-size: var(--font-size-sm);
+  margin: var(--spacing-xs) 0 0;
   opacity: 0.9;
 }
 
 .horizontalScroll {
   display: flex;
   overflow-x: auto;
-  padding: 0 2.5rem;
-  gap: 10px;
+  padding: 0 var(--spacing-2xl);
+  gap: var(--spacing-sm);
   position: relative;
   height: 100%;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
   align-items: center;
-  background-color: #f4f4f4;
+  background-color: var(--layout-background2-color);
 }
 
 .horizontalScroll::-webkit-scrollbar {
@@ -96,29 +96,29 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--color1-900);
   color: white;
   border: none;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+  width: var(--spacing-2xl);
+  height: var(--spacing-2xl);
+  border-radius: var(--border-radius-full);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: var(--font-size-xl);
   z-index: 2;
-  transition: background-color 0.2s;
+  transition: background-color var(--transition-short);
 }
 
 .galleryNav:hover {
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--color1-800);
 }
 
 .prevButton {
-  left: 0.5rem;
+  left: var(--spacing-sm);
 }
 
 .nextButton {
-  right: 0.5rem;
+  right: var(--spacing-sm);
 } 

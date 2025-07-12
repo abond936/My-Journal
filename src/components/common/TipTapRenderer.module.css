@@ -1,9 +1,9 @@
 .renderer :global(.ProseMirror) {
-  padding: 1rem;
-  background-color: var(--background-color);
-  color: var(--text-color);
+  padding: var(--spacing-md);
+  background-color: var(--layout-background2-color);
+  color: var(--text1-color);
   font-family: var(--font-family-serif);
-  line-height: 1.7;
+  line-height: var(--line-height-relaxed);
 }
 
 .renderer :global(.ProseMirror:focus) {
@@ -14,32 +14,32 @@
 .renderer :global(h2),
 .renderer :global(h3) {
   font-family: var(--font-family-sans);
-  color: var(--primary-color);
-  margin-top: 1.5em;
-  margin-bottom: 0.5em;
+  color: var(--color3);
+  margin-top: var(--spacing-lg);
+  margin-bottom: var(--spacing-sm);
 }
 
 .renderer :global(p) {
-  margin-bottom: 1em;
+  margin-bottom: var(--spacing-md);
 }
 
 .renderer :global(blockquote) {
-  border-left: 3px solid var(--primary-color-muted);
+  border-left: var(--border-width-thick) solid var(--color3);
   margin-left: 0;
-  padding-left: 1rem;
+  padding-left: var(--spacing-md);
   font-style: italic;
-  color: var(--text-color-muted);
+  color: var(--text2-color);
 }
 
 .renderer :global(img) {
   max-width: 100%;
   height: auto;
-  border-radius: 4px;
+  border-radius: var(--border-radius-sm);
 }
 
 /* Ensure figure styles from the editor are respected */
 .renderer :global(.figure) {
-  margin: 1rem 0;
+  margin: var(--spacing-md) 0;
   display: flex;
   flex-direction: column;
 }
@@ -58,7 +58,7 @@
 
 .renderer :global(figcaption) {
   text-align: center;
-  font-size: 0.9rem;
-  color: var(--text-color-muted);
-  margin-top: 0.5rem;
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+  margin-top: var(--spacing-sm);
 } 

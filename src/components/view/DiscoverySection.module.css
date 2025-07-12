@@ -1,20 +1,20 @@
 /* Discovery Section Styles */
 
 .discoverySection {
-  margin-top: 3rem;
-  padding-top: 2rem;
-  border-top: 1px solid var(--border-color);
+  margin-top: var(--spacing-3xl);
+  padding-top: var(--spacing-xl);
+  border-top: var(--border-width-thin) solid var(--border1-color);
 }
 
 .discoveryTitle {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin: 0 0 1.5rem 0;
-  color: var(--text-color);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  margin: 0 0 var(--spacing-lg) 0;
+  color: var(--text1-color);
 }
 
 .discoveryGroup {
-  margin-bottom: 2rem;
+  margin-bottom: var(--spacing-xl);
 }
 
 .discoveryGroup:last-child {
@@ -22,10 +22,10 @@
 }
 
 .groupTitle {
-  font-size: 1.1rem;
-  font-weight: 500;
-  margin: 0 0 1rem 0;
-  color: var(--text-secondary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  margin: 0 0 var(--spacing-md) 0;
+  color: var(--text2-color);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -35,67 +35,67 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
-  color: var(--text-secondary);
+  padding: var(--spacing-xl);
+  color: var(--text2-color);
 }
 
 .loadingContainer p {
-  margin-top: 1rem;
-  font-size: 0.9rem;
+  margin-top: var(--spacing-md);
+  font-size: var(--font-size-sm);
 }
 
 .errorContainer {
-  padding: 1rem;
-  background-color: var(--background-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
+  padding: var(--spacing-md);
+  background-color: var(--layout-background2-color);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-lg);
+  color: var(--text2-color);
+  font-size: var(--font-size-sm);
 }
 
 /* Card Grid Styles */
 .cardGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
 }
 
 /* Mobile-first responsive design */
 @media (min-width: 768px) {
   .discoverySection {
-    margin-top: 4rem;
-    padding-top: 2.5rem;
+    margin-top: var(--spacing-4xl);
+    padding-top: var(--spacing-2xl);
   }
 
   .discoveryTitle {
-    font-size: 1.75rem;
-    margin-bottom: 2rem;
+    font-size: var(--font-size-3xl);
+    margin-bottom: var(--spacing-xl);
   }
 
   .discoveryGroup {
-    margin-bottom: 2.5rem;
+    margin-bottom: var(--spacing-2xl);
   }
 
   .groupTitle {
-    font-size: 1.2rem;
-    margin-bottom: 1.25rem;
+    font-size: var(--font-size-xl);
+    margin-bottom: var(--spacing-lg);
   }
 
   .cardGrid {
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 1.5rem;
+    gap: var(--spacing-lg);
   }
 }
 
 @media (min-width: 1024px) {
   .discoverySection {
-    margin-top: 5rem;
-    padding-top: 3rem;
+    margin-top: var(--spacing-5xl);
+    padding-top: var(--spacing-3xl);
   }
 
   .discoveryTitle {
-    font-size: 2rem;
-    margin-bottom: 2.5rem;
+    font-size: var(--font-size-4xl);
+    margin-bottom: var(--spacing-2xl);
   }
 } 

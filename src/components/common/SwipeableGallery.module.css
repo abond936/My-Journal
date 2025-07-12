@@ -4,7 +4,7 @@
   max-width: var(--layout-container-max-width);
   margin: 0 auto;
   overflow: hidden;
-  background-color: var(--background-primary);
+  background-color: var(--layout-background1-color);
   border-radius: var(--border-radius-md);
 }
 
@@ -29,8 +29,8 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: var(--color-overlay-dark);
-  color: var(--color-accent-text);
+  background: var(--color1-900);
+  color: var(--color2);
   border: none;
   padding: var(--spacing-lg) var(--spacing-md);
   font-size: var(--font-size-3xl);
@@ -45,7 +45,7 @@
 }
 
 .navButton:hover {
-  background: var(--color-overlay-dark-hover);
+  background: var(--color1-800);
 }
 
 .navButton:disabled {
@@ -65,14 +65,14 @@
 
 .caption {
   padding: var(--spacing-lg);
-  background: var(--color-overlay-light);
+  background: var(--color1-100);
   text-align: center;
 }
 
 .caption p {
   margin: 0;
   font-size: var(--font-size-sm);
-  color: var(--text-primary);
+  color: var(--text1-color);
 }
 
 .pagination {
@@ -87,14 +87,14 @@
   height: var(--spacing-xs);
   border-radius: 50%;
   border: none;
-  background-color: var(--color-border-primary);
+  background-color: var(--border1-color);
   cursor: pointer;
   padding: 0;
   transition: all 0.2s ease-in-out;
 }
 
 .paginationDot.active {
-  background-color: var(--color-accent-solid);
+  background-color: var(--color3);
   transform: scale(1.2);
 }
 

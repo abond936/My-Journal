@@ -2,25 +2,25 @@
   display: flex;
   gap: var(--spacing-md);
   padding: var(--spacing-sm) var(--spacing-md);
-  border-bottom: var(--border-width-thin) solid var(--color-border-primary);
-  background-color: var(--background-secondary);
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  background-color: var(--layout-background2-color);
 }
 
 .tab {
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--border-radius-md);
-  color: var(--text-primary);
+  color: var(--text1-color);
   text-decoration: none;
   font-weight: var(--font-weight-medium);
-  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+  transition: background-color var(--transition-short) ease-in-out, color var(--transition-short) ease-in-out;
 }
 
 .tab:hover {
-  background-color: var(--background-tertiary);
-  color: var(--color-accent-solid-hover);
+  background-color: var(--layout-background3-color);
+  color: var(--button-solid-hover-text-color);
 }
 
 .tab.active {
-  background-color: var(--color-accent-solid);
-  color: var(--color-accent-text);
+  background-color: var(--button-solid-background-color);
+  color: var(--button-solid-text-color);
 } 

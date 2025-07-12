@@ -6,8 +6,8 @@
 
 .topNavContainer {
   padding: 0 var(--spacing-lg);
-  border-bottom: var(--border-width-thin) solid var(--color-border-primary);
-  background-color: var(--background-primary);
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  background-color: var(--layout-background1-color);
 }
 
 .pageContent {
@@ -19,7 +19,7 @@
     flex-direction: column;
     height: 100vh;
     overflow: hidden;
-    padding-top: var(--header-area-height);
+    padding-top: var(--header-height);
   }
   
   .contentWrapper {
@@ -33,18 +33,18 @@
     position: absolute;
     top: var(--spacing-sm);
     z-index: var(--z-index-header-toggle);
-    background-color: var(--background-primary);
-    color: var(--text-primary);
-    border: var(--border-width-thin) solid var(--color-border-primary);
+    background-color: var(--layout-background1-color);
+    color: var(--text1-color);
+    border: var(--border-width-thin) solid var(--border1-color);
     border-radius: var(--border-radius-full);
-    width: 40px;  /* TODO: Tokenize magic number */
-    height: 40px; /* TODO: Tokenize magic number */
+    width: var(--icon-min-width);  /* Tokenized magic number */
+    height: var(--icon-min-width); /* Tokenized magic number */
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: var(--font-size-2xl);
-    transition: left 0.3s ease;
+    transition: left var(--transition-short) ease;
   }
   
   .menuToggle.open {
@@ -57,9 +57,9 @@
   
   .sidebar {
     width: var(--sidebar-width);
-    background-color: var(--background-primary);
-    border-right: var(--border-width-thin) solid var(--color-border-primary);
-    transition: margin-left 0.3s ease;
+    background-color: var(--layout-background1-color);
+    border-right: var(--border-width-thin) solid var(--border1-color);
+    transition: margin-left var(--transition-short) ease;
     padding: var(--spacing-lg);
     overflow-y: auto;
   }
@@ -91,8 +91,8 @@
     bottom: 0;
     margin-top: var(--spacing-md);
     padding: var(--spacing-md) 0;
-    border-top: var(--border-width-thin) solid var(--color-border-primary);
-    background-color: var(--background-primary);
+    border-top: var(--border-width-thin) solid var(--border1-color);
+    background-color: var(--layout-background1-color);
     display: flex;
     gap: var(--spacing-sm);
   }
@@ -100,18 +100,18 @@
   .applyButton, .clearButton {
     flex: 1;
     padding: var(--spacing-sm);
-    border: var(--border-width-thin) solid var(--color-border-primary);
+    border: var(--border-width-thin) solid var(--border1-color);
     border-radius: var(--border-radius-md);
-    background-color: var(--background-secondary);
-    color: var(--text-primary);
+    background-color: var(--layout-background2-color);
+    color: var(--text1-color);
     cursor: pointer;
     font-size: var(--font-size-base);
   }
   
   .applyButton {
-    background-color: var(--color-accent-solid);
-    color: var(--color-accent-text);
-    border-color: var(--color-accent-solid);
+    background-color: var(--button-solid-background-color);
+    color: var(--button-solid-text-color);
+    border-color: var(--button-solid-border-color);
   }
   
   .clearButton {

@@ -5,28 +5,28 @@
   width: var(--spacing-2xl);
   height: var(--spacing-2xl);
   border-radius: 50%;
-  background-color: var(--background-secondary);
-  color: var(--text-primary);
-  border: var(--border-width-thin) solid var(--color-border-primary);
+  background-color: var(--layout-background2-color);
+  color: var(--text1-color);
+  border: var(--border-width-thin) solid var(--border1-color);
   cursor: pointer;
-  transition: all var(--transition-duration) ease;
+  transition: all var(--transition-short) ease;
   padding: var(--spacing-sm);
 }
 
 .themeToggle:hover {
-  background-color: var(--background-tertiary);
+  background-color: var(--layout-background1-color);
   transform: scale(1.05);
 }
 
 .themeToggle:focus {
   outline: none;
-  box-shadow: 0 0 0 var(--border-width-medium) var(--color-accent-solid-focus);
+  box-shadow: 0 0 0 var(--border-width-medium) var(--color3);
 }
 
 .themeToggle svg {
   width: 100%;
   height: 100%;
-  transition: transform var(--transition-duration) ease;
+  transition: transform var(--transition-short) ease;
 }
 
 .themeToggle:hover svg {

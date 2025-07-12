@@ -7,7 +7,7 @@
   width: 100%;
   padding: var(--spacing-sm);
   margin-bottom: var(--spacing-sm);
-  border: var(--border-width-thin) solid var(--color-border-primary);
+  border: var(--border-width-thin) solid var(--border1-color);
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-base);
 }
@@ -16,9 +16,9 @@
   max-height: var(--spacing-4xl);
   overflow-y: auto;
   padding: var(--spacing-xs);
-  border: var(--border-width-thin) solid var(--color-border-primary);
+  border: var(--border-width-thin) solid var(--border1-color);
   border-radius: var(--border-radius-md);
-  background: var(--background-primary);
+  background: var(--layout-background1-color);
 }
 
 .tagItem {
@@ -35,10 +35,10 @@
   width: var(--spacing-xl);
   height: var(--spacing-xl);
   padding: 0;
-  border: var(--border-width-thin) solid var(--color-border-primary);
+  border: var(--border-width-thin) solid var(--border1-color);
   border-radius: var(--border-radius-md);
-  background: var(--background-secondary);
-  color: var(--text-primary);
+  background: var(--layout-background2-color);
+  color: var(--text1-color);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -47,8 +47,8 @@
 }
 
 .expandButton:hover {
-  background: var(--background-tertiary);
-  border-color: var(--color-accent-solid);
+  background: var(--color1-200);
+  border-color: var(--color3);
 }
 
 .expandIcon {
@@ -58,10 +58,10 @@
 
 .tag {
   padding: var(--spacing-xs) var(--spacing-sm);
-  border: var(--border-width-thin) solid var(--color-border-primary);
+  border: var(--border-width-thin) solid var(--border1-color);
   border-radius: var(--border-radius-md);
-  background: var(--background-secondary);
-  color: var(--text-primary);
+  background: var(--layout-background2-color);
+  color: var(--text1-color);
   font-size: var(--font-size-sm);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -70,19 +70,19 @@
 }
 
 .tag:hover {
-  background: var(--background-tertiary);
-  border-color: var(--color-accent-solid);
+  background: var(--color1-200);
+  border-color: var(--color3);
 }
 
 .tag.selected {
-  background: var(--color-accent-solid);
-  color: var(--color-accent-text);
-  border-color: var(--color-accent-solid);
+  background: var(--color3);
+  color: var(--color2);
+  border-color: var(--color3);
 }
 
 .children {
   margin-left: var(--spacing-md);
-  border-left: var(--border-width-thin) solid var(--color-border-secondary);
+  border-left: var(--border-width-thin) solid var(--border2-color);
   padding-left: var(--spacing-sm);
 }
 
@@ -90,10 +90,10 @@
 .error {
   padding: var(--spacing-sm);
   text-align: center;
-  color: var(--text-secondary);
+  color: var(--text2-color);
   font-size: var(--font-size-sm);
 }
 
 .error {
-  color: var(--color-error-text);
+  color: var(--text1-color);
 } 

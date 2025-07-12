@@ -7,12 +7,38 @@ type Theme = 'light' | 'dark';
 interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
+  refreshTheme: () => Promise<void>;
+  isThemeLoading: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('light');
+  const [isThemeLoading, setIsThemeLoading] = useState(false);
+
+  // Load theme data from admin system
+  const loadThemeData = useCallback(async () => {
+    try {
+      setIsThemeLoading(true);
+      const response = await fetch('/api/theme');
+      if (response.ok) {
+        const themeData = await response.json();
+        // Store theme data in a way that can be accessed by CSS
+        // This could be through CSS custom properties or a different mechanism
+        console.log('Theme data loaded:', themeData);
+      }
+    } catch (error) {
+      console.error('Failed to load theme data:', error);
+    } finally {
+      setIsThemeLoading(false);
+    }
+  }, []);
+
+  // Refresh theme from admin system
+  const refreshTheme = useCallback(async () => {
+    await loadThemeData();
+  }, [loadThemeData]);
 
   useEffect(() => {
     // Check for saved theme preference
@@ -27,7 +53,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       setTheme(initialTheme);
       document.documentElement.setAttribute('data-theme', initialTheme);
     }
-  }, []);
+
+    // Load initial theme data
+    loadThemeData();
+  }, [loadThemeData]);
 
   const toggleTheme = useCallback(() => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -36,7 +65,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('theme', newTheme);
   }, [theme]);
 
-  const value = useMemo(() => ({ theme, toggleTheme }), [theme, toggleTheme]);
+  const value = useMemo(() => ({ 
+    theme, 
+    toggleTheme, 
+    refreshTheme, 
+    isThemeLoading 
+  }), [theme, toggleTheme, refreshTheme, isThemeLoading]);
 
   return (
     <ThemeContext.Provider value={value}>

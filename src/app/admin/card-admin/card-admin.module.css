@@ -1,31 +1,31 @@
 /* Basic styles for the entries page */
 .container {
-  padding: 1rem;
+  padding: var(--spacing-md);
   max-width: 100%;
   margin: 0 auto;
 }
 
 .title {
-  font-size: 2rem;
+  font-size: var(--font-size-4xl);
   font-weight: bold;
-  margin-bottom: 1rem;
+  margin-bottom: var(--spacing-md);
 }
 
 /* Header and Stats */
 .header {
-  margin-bottom: 2rem;
+  margin-bottom: var(--spacing-xl);
 }
 
 .headerContent {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--spacing-lg);
 }
 
 .stats {
   display: flex;
-  gap: 1.5rem;
+  gap: var(--spacing-lg);
 }
 
 .statItem {
@@ -35,76 +35,76 @@
 }
 
 .statLabel {
-  font-size: 0.8rem;
-  color: #666;
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
 }
 
 .statValue {
-  font-size: 1.2rem;
+  font-size: var(--font-size-lg);
   font-weight: 600;
 }
 
 /* Filter Section */
 .filterSection {
-  margin-bottom: 2rem;
+  margin-bottom: var(--spacing-xl);
 }
 
 .topFilters {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
 }
 
 .searchBox {
   width: 400px; /* 2x the previous size */
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.9rem;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--border1-color);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
 }
 
 .filterControls {
   display: flex;
-  gap: 1rem;
+  gap: var(--spacing-md);
   margin-left: auto;
 }
 
 .filterSelect {
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.9rem;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--border1-color);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
   min-width: 120px;
 }
 
 .dimensionFilters {
   display: flex;
-  gap: 1rem;
+  gap: var(--spacing-md);
   flex: 1;
 }
 
 .dimensionSelect {
   flex: 1;
-  padding: 0.5rem;
-  border: 1px solid var(--border-color);
-  border-radius: 0.25rem;
-  background: var(--surface-1);
-  color: var(--text-1);
-  font-size: 0.875rem;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--input-background-color);
+  color: var(--text1-color);
+  font-size: var(--font-size-sm);
 }
 
 .dimensionSelect:focus {
   outline: none;
-  border-color: var(--accent-color);
-  box-shadow: 0 0 0 2px var(--accent-color-alpha);
+  border-color: var(--input-focus-border-color);
+  box-shadow: var(--input-focus-shadow);
 }
 
 /* Table Styles */
 .tableContainer {
   overflow-x: auto;
   max-width: 100vw;
-  padding-bottom: 1rem;
+  padding-bottom: var(--spacing-md);
 }
 
 .entriesTable {
@@ -117,27 +117,27 @@
 
 .entriesTable th,
 .entriesTable td {
-  padding: 0.1rem;
+  padding: var(--spacing-xs);
   text-align: left;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border1-color);
   position: relative;
 }
 
 .entriesTable th {
-  background: #f5f5f5;
+  background: var(--layout-background2-color);
   font-weight: 600;
-  color: #333;
+  color: var(--text1-color);
   user-select: none;
 }
 
 .entriesTable tr:hover {
-  background: #f9f9f9;
+  background: var(--layout-background1-color);
 }
 
 /* Cover Image Styles */
 .coverImageCell {
   width: 50px;
-  padding: 0.25rem !important;
+  padding: var(--spacing-xs) !important;
   text-align: center;
 }
 
@@ -145,13 +145,13 @@
   width: 40px;
   height: 40px;
   object-fit: cover;
-  border-radius: 4px;
-  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border1-color);
 }
 
 .noCover {
-  color: var(--text-muted);
-  font-size: 1.2rem;
+  color: var(--text2-color);
+  font-size: var(--font-size-lg);
   display: inline-block;
   line-height: 40px;
 }
@@ -159,59 +159,59 @@
 /* Inline Editing */
 .editingField {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--spacing-sm);
   align-items: center;
 }
 
 .editingField input,
 .editingField select {
   flex: 1;
-  padding: 0.5rem;
-  border: 1px solid #0070f3;
-  border-radius: 4px;
-  font-size: 0.9rem;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--input-focus-border-color);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
 }
 
 .editButtons {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--spacing-sm);
 }
 
 .saveButton,
 .cancelButton {
-  padding: 0.25rem 0.5rem;
+  padding: var(--spacing-xs) var(--spacing-sm);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--border-radius-md);
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
 }
 
 .saveButton {
-  background: #0070f3;
+  background: var(--button-solid-background-color);
   color: white;
 }
 
 .cancelButton {
-  background: #f5f5f5;
-  color: #666;
+  background: var(--layout-background2-color);
+  color: var(--text2-color);
 }
 
 /* Tags */
 .tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem;
-  padding: 0.25rem;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs);
   min-height: 1.5rem;
 }
 
 .tag {
-  font-size: 0.75rem;
-  padding: 0.125rem 0.375rem;
-  background: var(--surface-2);
-  border: 1px solid var(--border-color);
-  border-radius: 0.25rem;
-  color: var(--text-1);
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--layout-background2-color);
+  border: 1px solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  color: var(--text1-color);
   white-space: nowrap;
   max-width: 100%;
   overflow: hidden;
@@ -221,82 +221,82 @@
 /* Action Buttons */
 .actions {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--spacing-sm);
   align-items: center;
 }
 
 .actionButton {
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background: var(--background-color);
-  color: var(--text-color);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border1-color);
+  border-radius: var(--border-radius-md);
+  background: var(--layout-background1-color);
+  color: var(--text1-color);
   cursor: pointer;
-  margin-right: 0.5rem;
+  margin-right: var(--spacing-sm);
   transition: all 0.2s ease;
 }
 
 .actionButton:hover:not(:disabled) {
-  background: var(--hover-color);
+  background: var(--button-outline-background-color-hover);
 }
 
 .actionButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background: var(--surface-1);
+  background: var(--disabled-background-color);
 }
 
 .actionButton.deleteButton {
-  border-color: var(--error-color);
-  color: var(--error-color);
+  border-color: var(--state-error-border-color);
+  color: var(--text1-color);
 }
 
 .actionButton.deleteButton:hover:not(:disabled) {
-  background: var(--error-color);
+  background: var(--state-error-background-color);
   color: white;
 }
 
 .actionButton.deleteButton:disabled {
   opacity: 0.5;
-  border-color: var(--error-color);
-  color: var(--error-color);
+  border-color: var(--state-error-border-color);
+  color: var(--text1-color);
   background: transparent;
 }
 
 .filterSelect:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background: var(--surface-1);
+  background: var(--disabled-background-color);
 }
 
 .editButton,
 .deleteButton {
-  padding: 0.25rem 0.5rem;
+  padding: var(--spacing-xs) var(--spacing-sm);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--border-radius-md);
   cursor: pointer;
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .editButton {
-  background: #0070f3;
+  background: var(--button-solid-background-color);
   color: white;
 }
 
 .deleteButton {
-  color: var(--color-error);
+  color: var(--text1-color);
 }
 
 .deleteButton:hover {
-  color: var(--color-error-dark);
-  background-color: var(--color-error-alpha);
+  color: var(--text1-color);
+  background-color: var(--state-error-background-color);
 }
 
 .errorDot {
-  color: red;
-  margin-right: 8px;
-  font-size: 1.2em;
+  color: var(--text1-color);
+  margin-right: var(--spacing-sm);
+  font-size: var(--font-size-lg);
   cursor: help;
 }
 
@@ -305,29 +305,29 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
-  background: var(--surface-2);
-  border-radius: 0.5rem;
-  margin-bottom: 1rem;
+  padding: var(--spacing-md);
+  background: var(--layout-background2-color);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--spacing-md);
 }
 
 /* Loading States */
 .loading,
 .error,
 .empty {
-  padding: 2rem;
+  padding: var(--spacing-xl);
   text-align: center;
   animation: fadeIn 0.3s ease-in-out;
 }
 
 .error {
-  color: #ff4444;
+  color: var(--text1-color);
 }
 
 .empty {
-  color: #666;
-  background: #f5f5f5;
-  border-radius: 4px;
+  color: var(--text2-color);
+  background: var(--layout-background2-color);
+  border-radius: var(--border-radius-md);
 }
 
 @keyframes fadeIn {
@@ -362,35 +362,35 @@
 .bulkTagActions {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  background: var(--surface-2);
-  border-radius: 0.5rem;
-  margin-bottom: 1rem;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--layout-background2-color);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--spacing-md);
 }
 
 .bulkTagActions .dimensionFilters {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 1rem;
+  gap: var(--spacing-md);
   flex: 1;
 }
 
 .bulkTagActions .dimensionSelect {
   width: 100%;
-  padding: 0.5rem;
-  border: 1px solid var(--border-color);
-  border-radius: 0.25rem;
-  background: var(--surface-1);
-  color: var(--text-1);
-  font-size: 0.875rem;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--input-background-color);
+  color: var(--text1-color);
+  font-size: var(--font-size-sm);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .bulkTagActions .dimensionSelect option {
-  padding: 0.5rem;
+  padding: var(--spacing-sm);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -398,41 +398,41 @@
 
 .bulkTagActions span {
   font-weight: 500;
-  color: var(--text-1);
+  color: var(--text1-color);
 }
 
 .loadMoreContainer {
   display: flex;
   justify-content: center;
-  padding: 1rem;
-  margin-top: 1rem;
+  padding: var(--spacing-md);
+  margin-top: var(--spacing-md);
 }
 
 .loadMoreButton {
-  padding: 0.5rem 1rem;
-  background-color: var(--color-primary);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--button-solid-background-color);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--border-radius-md);
   cursor: pointer;
-  font-size: 1rem;
+  font-size: var(--font-size-base);
   transition: background-color 0.2s;
 }
 
 .loadMoreButton:hover {
-  background-color: var(--color-primary-dark);
+  background-color: var(--button-solid-background-color-hover);
 }
 
 .loadMoreButton:disabled {
-  background-color: var(--color-gray);
+  background-color: var(--disabled-background-color);
   cursor: not-allowed;
 }
 
 /* Styles for Inline Editing */
 .inlineEditInput {
   width: 100%;
-  padding: 4px 6px;
-  border: 1px solid var(--color-primary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--input-focus-border-color);
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-base);
   line-height: 1.4;
@@ -442,17 +442,17 @@
   cursor: pointer;
   display: block;
   width: 100%;
-  min-height: 24px; /* Ensure clickable area */
+  min-height: var(--icon-min-width); /* Ensure clickable area */
 }
 
 .emptyField {
-  color: var(--text-secondary);
+  color: var(--text2-color);
   font-style: italic;
 }
 
 .inlineEditSelect {
   width: 100%;
-  padding: 4px 6px;
+  padding: var(--spacing-xs) var(--spacing-sm);
   border: 1px solid transparent;
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-base);
@@ -462,31 +462,31 @@
 }
 
 .inlineEditSelect:hover {
-  border-color: var(--border-color);
+  border-color: var(--border1-color);
 }
 
 .inlineEditSelect:focus {
-  border-color: var(--color-primary);
-  background-color: var(--color-background);
+  border-color: var(--input-focus-border-color);
+  background-color: var(--input-background-color);
 }
 
 /* Resizable Header Styles */
 .resizableHeader {
   position: relative;
-  background: #f5f5f5;
+  background: var(--layout-background2-color);
   transition: background-color 0.2s;
 }
 
 .resizableHeader.resizing {
-  background: #e0e0e0;
+  background: var(--layout-background1-color);
 }
 
 .resizeHandle {
   position: absolute;
-  right: -2px;
+  right: calc(-1 * var(--spacing-xs));
   top: 0;
   bottom: 0;
-  width: 4px;
+  width: var(--spacing-xs);
   cursor: col-resize;
   background: transparent;
   z-index: 1;
@@ -494,5 +494,5 @@
 
 .resizeHandle:hover,
 .resizing .resizeHandle {
-  background: var(--color-primary);
+  background: var(--button-solid-background-color);
 } 

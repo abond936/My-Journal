@@ -6,11 +6,11 @@
 }
 
 .spinner {
-  border: var(--border-width-medium) solid var(--color-border-primary);
+  border: var(--border-width-medium) solid var(--border1-color);
   width: var(--spacing-2xl);
   height: var(--spacing-2xl);
   border-radius: 50%;
-  border-left-color: var(--color-primary);
+  border-left-color: var(--color3);
 
   animation: spin 1s ease-in-out infinite;
 }

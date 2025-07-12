@@ -1,31 +1,31 @@
 /* Mobile-first inline gallery styles */
 
 .gallerySection {
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--border-color);
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
+  border-top: var(--border-width-thin) solid var(--border1-color);
 }
 
 .galleryHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: var(--spacing-md);
 }
 
 .galleryTitle {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
   margin: 0;
-  color: var(--text-color);
+  color: var(--text1-color);
 }
 
 .imageCount {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  background: var(--background-secondary);
-  padding: 0.25rem 0.75rem;
-  border-radius: 1rem;
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+  background: var(--layout-background2-color);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-full);
 }
 
 .galleryContainer {
@@ -39,26 +39,26 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--color1-900);
   color: white;
   border: none;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  width: var(--spacing-2xl);
+  height: var(--spacing-2xl);
+  border-radius: var(--border-radius-full);
   cursor: pointer;
   z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: var(--font-size-xl);
   font-weight: bold;
-  transition: all 0.2s ease;
+  transition: all var(--transition-short) ease;
   opacity: 0;
   visibility: hidden;
 }
 
 .navButton:hover {
-  background: rgba(0, 0, 0, 0.9);
+  background: var(--color1-800);
   transform: translateY(-50%) scale(1.1);
 }
 
@@ -68,11 +68,11 @@
 }
 
 .prevButton {
-  left: 8px;
+  left: var(--spacing-sm);
 }
 
 .nextButton {
-  right: 8px;
+  right: var(--spacing-sm);
 }
 
 /* Horizontal scrolling container */
@@ -80,8 +80,8 @@
   display: flex;
   overflow-x: auto;
   scroll-behavior: smooth;
-  gap: 1rem;
-  padding: 0.5rem 0;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) 0;
   /* Hide scrollbar on mobile but keep functionality */
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
@@ -99,17 +99,17 @@
   }
   
   .scrollContainer::-webkit-scrollbar-track {
-    background: var(--background-secondary);
+    background: var(--layout-background2-color);
     border-radius: 3px;
   }
   
   .scrollContainer::-webkit-scrollbar-thumb {
-    background: var(--border-color);
+    background: var(--border1-color);
     border-radius: 3px;
   }
   
   .scrollContainer::-webkit-scrollbar-thumb:hover {
-    background: var(--text-secondary);
+    background: var(--text2-color);
   }
 }
 
@@ -118,16 +118,16 @@
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--spacing-sm);
   min-width: 200px; /* Minimum width for mobile */
   max-width: 300px; /* Maximum width for larger screens */
 }
 
 .imageWrapper {
   position: relative;
-  border-radius: 8px;
+  border-radius: var(--border-radius-lg);
   overflow: hidden;
-  background: var(--background-secondary);
+  background: var(--layout-background2-color);
   aspect-ratio: 3/2;
 }
 
@@ -135,7 +135,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.2s ease;
+  transition: transform var(--transition-short) ease;
 }
 
 .imageWrapper:hover .galleryImage {
@@ -143,8 +143,8 @@
 }
 
 .imageCaption {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
   margin: 0;
   line-height: 1.4;
   text-align: center;
@@ -153,12 +153,12 @@
 /* Responsive adjustments */
 @media (min-width: 768px) {
   .gallerySection {
-    margin-top: 2.5rem;
-    padding-top: 2rem;
+    margin-top: var(--spacing-2xl);
+    padding-top: var(--spacing-xl);
   }
   
   .galleryTitle {
-    font-size: 1.5rem;
+    font-size: var(--font-size-2xl);
   }
   
   .imageItem {
@@ -167,9 +167,9 @@
   }
   
   .navButton {
-    width: 48px;
-    height: 48px;
-    font-size: 1.75rem;
+    width: var(--spacing-3xl);
+    height: var(--spacing-3xl);
+    font-size: var(--font-size-2xl);
   }
 }
 
@@ -182,11 +182,11 @@
 
 /* Focus styles for accessibility */
 .scrollContainer:focus {
-  outline: 2px solid var(--accent-color);
+  outline: 2px solid var(--color3);
   outline-offset: 2px;
 }
 
 .navButton:focus {
-  outline: 2px solid var(--accent-color);
+  outline: 2px solid var(--color3);
   outline-offset: 2px;
 } 

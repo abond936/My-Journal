@@ -6,7 +6,7 @@
 
 .searchInput {
   padding: var(--spacing-sm) var(--spacing-sm);
-  border: var(--border-width-thin) solid var(--color-border-primary);
+  border: var(--border-width-thin) solid var(--border1-color);
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-base);
   flex-grow: 1;
@@ -15,9 +15,9 @@
 
 .searchButton {
   padding: var(--spacing-sm) var(--spacing-md);
-  border: var(--border-width-thin) solid var(--color-accent-solid);
-  background-color: var(--color-accent-solid);
-  color: var(--color-accent-text);
+  border: var(--border-width-thin) solid var(--color3);
+  background-color: var(--color3);
+  color: var(--color2);
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-base);
   cursor: pointer;
@@ -25,5 +25,5 @@
 }
 
 .searchButton:hover {
-  background-color: var(--color-accent-solid-hover);
+  background-color: var(--color3-light);
 } 

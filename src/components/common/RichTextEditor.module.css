@@ -1,21 +1,21 @@
 .editorContainer {
-  border: var(--border-width-thin) solid var(--color-border-primary);
+  border: var(--border-width-thin) solid var(--border1-color);
   border-radius: var(--border-radius-md);
   padding: var(--spacing-md);
-  background-color: var(--background-primary);
+  background-color: var(--layout-background2-color);
   position: relative;
   overflow: hidden;
 }
 
 .editorContainer.error {
-  border-color: var(--color-error-border);
+  border-color: var(--state-error-border-color);
 }
 
 .toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  border-bottom: var(--border-width-thin) solid var(--color-border-primary);
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
   padding-bottom: var(--spacing-sm);
   margin-bottom: var(--spacing-sm);
 }
@@ -28,15 +28,15 @@
 
 .toolbarButton {
   padding: var(--spacing-xs) var(--spacing-sm);
-  border: var(--border-width-thin) solid var(--color-border-primary);
-  background-color: var(--background-secondary);
+  border: var(--border-width-thin) solid var(--border1-color);
+  background-color: var(--layout-background1-color);
   cursor: pointer;
   border-radius: var(--border-radius-md);
 }
 
 .toolbarButton.active {
-  background-color: var(--background-tertiary);
-  border-color: var(--color-border-primary);
+  background-color: var(--layout-background2-color);
+  border-color: var(--border1-color);
 }
 
 .toolbarButton.condensed {
@@ -64,7 +64,7 @@
 }
 
 .isDisabled {
-  background-color: var(--background-secondary);
+  background-color: var(--layout-background1-color);
   cursor: not-allowed;
 }
 
@@ -74,7 +74,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: var(--color-overlay-light);
+  background-color: hsla(var(--h1), var(--s1), var(--l1), 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -82,7 +82,7 @@
 }
 
 .errorText {
-  color: var(--color-error-text);
+  color: var(--state-error-border-color);
   font-size: var(--font-size-sm);
   margin-top: var(--spacing-xs);
 }

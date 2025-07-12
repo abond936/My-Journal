@@ -1,35 +1,35 @@
 .sidebar {
   width: 100%;
-  background-color: var(--background-secondary);
-  border-bottom: var(--border-width-thin) solid var(--color-border-primary);
-  padding: var(--spacing-large) var(--spacing-medium);
+  background-color: var(--layout-background2-color);
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  padding: var(--spacing-lg) var(--spacing-md);
   height: 100%;
   overflow-y: auto;
 }
 
 .title {
-  font-size: var(--heading-2-size);
+  font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-semibold);
-  margin-bottom: var(--spacing-large);
-  color: var(--text-primary);
-  padding-left: var(--spacing-small);
+  margin-bottom: var(--spacing-lg);
+  color: var(--text1-color);
+  padding-left: var(--spacing-sm);
 }
 
 .navigation {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-medium);
+  gap: var(--spacing-md);
 }
 
 .section {
-  padding: 0 var(--spacing-large);
+  padding: 0 var(--spacing-lg);
 }
 
 .sectionHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-medium) 0;
+  padding: var(--spacing-md) 0;
   cursor: pointer;
   user-select: none;
   touch-action: manipulation;
@@ -37,15 +37,15 @@
 
 .sectionHeader h3 {
   margin: 0;
-  font-size: var(--heading-3-size);
-  color: var(--text-primary);
+  font-size: var(--font-size-xl);
+  color: var(--text1-color);
   font-weight: var(--font-weight-semibold);
 }
 
 .expandIcon {
-  font-size: var(--body-text-small-size);
-  color: var(--text-secondary);
-  transition: transform var(--transition-duration) ease;
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+  transition: transform var(--transition-short) ease;
 }
 
 .sectionHeader:active .expandIcon {
@@ -55,7 +55,7 @@
 .subsectionList {
   list-style: none;
   padding: 0;
-  margin: var(--spacing-small) 0 0 0;
+  margin: var(--spacing-sm) 0 0 0;
 }
 
 .subsectionList li {
@@ -64,23 +64,23 @@
 
 .subsectionList a {
   display: block;
-  padding: var(--spacing-medium) var(--spacing-medium);
-  color: var(--text-secondary);
+  padding: var(--spacing-md) var(--spacing-md);
+  color: var(--text2-color);
   text-decoration: none;
-  font-size: var(--body-text-size);
+  font-size: var(--font-size-base);
   border-radius: var(--border-radius-md);
-  transition: background-color var(--transition-duration), color var(--transition-duration);
+  transition: background-color var(--transition-short), color var(--transition-short);
   touch-action: manipulation;
 }
 
 .subsectionList a:active {
-  background-color: var(--background-tertiary);
+  background-color: var(--color1-200);
   transform: scale(0.98);
 }
 
 .subsectionList a.active {
-  background-color: var(--color-border-primary);
-  color: var(--text-primary);
+  background-color: var(--border1-color);
+  color: var(--text1-color);
   font-weight: var(--font-weight-medium);
 }
 
@@ -100,8 +100,8 @@
 
 .cardCount {
   margin-left: var(--spacing-xs);
-  font-size: var(--caption-text-size);
-  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
   opacity: 0.8;
 }
 
@@ -112,30 +112,30 @@
     height: 100vh;
     position: sticky;
     top: 0;
-    border-right: var(--border-width-thin) solid var(--color-border-primary);
+    border-right: var(--border-width-thin) solid var(--border1-color);
     border-bottom: none;
     overflow-y: auto;
   }
 
   .section {
-    padding: 0 var(--spacing-medium);
+    padding: 0 var(--spacing-md);
   }
 
   .sectionHeader {
-    padding: var(--spacing-small) 0;
+    padding: var(--spacing-sm) 0;
   }
 
   .sectionHeader h3 {
-    font-size: var(--heading-3-size);
+    font-size: var(--font-size-xl);
   }
 
   .subsectionList a {
-    padding: var(--spacing-small) var(--spacing-medium);
-    font-size: var(--body-text-size);
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-base);
   }
 
   .subsectionList a:hover {
-    background-color: var(--background-tertiary);
-    color: var(--text-primary);
+    background-color: var(--color1-200);
+    color: var(--text1-color);
   }
 } 

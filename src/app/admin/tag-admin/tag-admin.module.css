@@ -1,5 +1,5 @@
 .container {
-  padding: 2rem;
+  padding: var(--spacing-xl);
   max-width: 800px;
   margin: 0;
 }
@@ -8,75 +8,75 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: var(--spacing-xl);
 }
 
 .title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #333;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text1-color);
 }
 
 .controls {
   display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
   flex-wrap: wrap;
 }
 
 .searchInput {
   flex: 1;
   min-width: 200px;
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.9rem;
+  padding: var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
 }
 
 .filterSelect {
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.9rem;
+  padding: var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
   min-width: 150px;
 }
 
 .button {
-  padding: 0.5rem 1rem;
+  padding: var(--spacing-sm) var(--spacing-md);
   border: none;
-  border-radius: 4px;
-  font-size: 0.9rem;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
   cursor: pointer;
-  background: #0070f3;
-  color: white;
+  background: var(--button-solid-background-color);
+  color: var(--button-solid-text-color);
   transition: background-color 0.2s;
 }
 
 .button:hover {
-  background: #0051a8;
+  background: var(--button-solid-background-color-hover);
 }
 
 .button.secondary {
-  background: #f5f5f5;
-  color: #333;
+  background: var(--layout-background2-color);
+  color: var(--text1-color);
 }
 
 .button.secondary:hover {
-  background: #e5e5e5;
+  background: var(--layout-background1-color);
 }
 
 .tagTree {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 1rem;
+  background: var(--layout-background1-color);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-md);
 }
 
 .tagItem {
   display: flex;
   align-items: center;
-  padding: 0.5rem;
-  border-bottom: 1px solid #eee;
+  padding: var(--spacing-sm);
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
 }
 
 .tagItem:last-child {
@@ -87,117 +87,117 @@
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: var(--spacing-md);
 }
 
 .tagName {
-  font-size: 1rem;
-  color: #333;
+  font-size: var(--font-size-base);
+  color: var(--text1-color);
 }
 
 .tagCount {
-  font-size: 0.9rem;
-  color: #666;
-  background: #f5f5f5;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+  background: var(--layout-background2-color);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
 }
 
 .editable {
-  padding: 0.25rem;
-  border: 1px solid transparent;
-  border-radius: 4px;
+  padding: var(--spacing-xs);
+  border: var(--border-width-thin) solid transparent;
+  border-radius: var(--border-radius-sm);
   transition: border-color 0.2s;
 }
 
 .editable:hover {
-  border-color: #ddd;
+  border-color: var(--border1-color);
 }
 
 .editable:focus {
-  border-color: #0070f3;
+  border-color: var(--color3);
   outline: none;
 }
 
 .actions {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--spacing-sm);
 }
 
 .actionButton {
-  padding: 2px 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background: #f5f5f5;
-  color: #333;
-  font-size: 0.97em;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--layout-background2-color);
+  color: var(--text1-color);
+  font-size: var(--font-size-sm);
   cursor: pointer;
   margin-right: 2px;
   transition: background 0.2s, color 0.2s;
 }
 
 .actionButton:hover {
-  background: #e0e0e0;
+  background: var(--layout-background1-color);
 }
 
 .deleteButton {
-  background: #ffeded;
-  color: #b00;
-  border: 1px solid #ffb3b3;
+  background: var(--state-error-background-color);
+  color: var(--state-error-text-color);
+  border: var(--border-width-thin) solid var(--state-error-border-color);
 }
 
 .deleteButton:hover {
-  background: #ffb3b3;
-  color: #fff;
+  background: var(--state-error-background-color-hover);
+  color: var(--state-error-text-color);
 }
 
 .addTagForm {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 1rem;
-  margin-bottom: 2rem;
+  background: var(--layout-background1-color);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
 }
 
 .formGroup {
-  margin-bottom: 1rem;
+  margin-bottom: var(--spacing-md);
 }
 
 .formLabel {
   display: block;
-  font-size: 0.9rem;
-  color: #666;
-  margin-bottom: 0.5rem;
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+  margin-bottom: var(--spacing-sm);
 }
 
 .formInput {
   width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.9rem;
+  padding: var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
 }
 
 .orphanedTags {
-  margin-top: 2rem;
+  margin-top: var(--spacing-xl);
 }
 
 .orphanedTags h3 {
-  font-size: 1.2rem;
-  color: #333;
-  margin-bottom: 1rem;
+  font-size: var(--font-size-lg);
+  color: var(--text1-color);
+  margin-bottom: var(--spacing-md);
 }
 
 .loading {
   text-align: center;
-  padding: 2rem;
-  color: #666;
+  padding: var(--spacing-xl);
+  color: var(--text2-color);
 }
 
 .error {
   text-align: center;
-  padding: 2rem;
-  color: #dc3545;
+  padding: var(--spacing-xl);
+  color: var(--state-error-text-color);
 }
 
 /* Drag and Drop Visual Feedback */
@@ -209,7 +209,7 @@
   padding: 0 2px;
   transition: all 0.2s ease;
   line-height: 1;
-  font-size: 0.97em;
+  font-size: var(--font-size-sm);
 }
 
 .rowWrapper > * {
@@ -226,7 +226,7 @@
 }
 
 .rowWrapper:hover {
-  background-color: rgba(0, 123, 255, 0.05);
+  background-color: hsla(var(--h3), var(--s3), var(--l3), 0.05);
 }
 
 /* Drop indicator styles */
@@ -244,12 +244,12 @@
 
 .rowWrapper[data-drop-indicator="before"]::before {
   top: -1px;
-  background: #007bff;
+  background: var(--color3);
 }
 
 .rowWrapper[data-drop-indicator="after"]::before {
   bottom: -1px;
-  background: #007bff;
+  background: var(--color3);
 }
 
 /* Drag handle improvements */
@@ -310,33 +310,34 @@
 
 @media (max-width: 768px) {
   .container {
-    padding: 1rem;
+    padding: var(--spacing-md);
   }
 
   .header {
     flex-direction: column;
-    gap: 1rem;
     align-items: flex-start;
+    gap: var(--spacing-md);
   }
 
   .controls {
     flex-direction: column;
+    gap: var(--spacing-sm);
   }
 
   .searchInput,
   .filterSelect {
+    min-width: auto;
     width: 100%;
   }
 
   .tagContent {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.5rem;
+    gap: var(--spacing-sm);
   }
 }
 
 .noBullets {
-  list-style: none !important;
-  padding-left: 0 !important;
-  margin-left: 0 !important;
+  list-style: none;
+  padding: 0;
 } 
