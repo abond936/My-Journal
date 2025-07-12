@@ -1,7 +1,7 @@
 .galleryContainer {
   position: relative;
   width: 100%;
-  max-width: 1200px;
+  max-width: var(--layout-container-max-width);
   margin: 0 auto;
   overflow: hidden;
   background-color: var(--background-primary);

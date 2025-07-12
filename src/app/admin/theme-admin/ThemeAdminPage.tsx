@@ -1,934 +1,1254 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useTheme } from '@/components/providers/ThemeProvider';
 import styles from './ThemeAdmin.module.css';
+import { StructuredThemeData, BaseColor, hexToHsl } from '@/lib/types/theme';
 
-interface ThemeVariable {
-  name: string;
-  darkValue: string;
-  lightValue: string;
-  description: string;
-  type: 'color' | 'font' | 'spacing' | 'border' | 'effect' | 'layout' | 'intent';
-}
+// Color Palette Editor Component
+const PaletteColorEditor: React.FC<{
+  color: BaseColor;
+  onColorChange: (id: number, field: keyof BaseColor, value: string) => void;
+  onHslChange: (id: number, h: string, s: string, l: string) => void;
+  darkModeShift: number;
+}> = ({ color, onColorChange, onHslChange, darkModeShift }) => {
 
-// Sample card data for preview
-const sampleCard = {
-  title: "Sample Card Title",
-  excerpt: "This is a sample card with some content to demonstrate how the theme variables affect the appearance of cards throughout the application.",
-  tags: ["Sample", "Theme", "Preview"]
-};
+  const handleHexChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newHex = e.target.value;
+    onColorChange(color.id, 'hex', newHex);
 
-// Card examples for preview
-const cardExamples = [
-  { id: 1, title: 'Story Card', hasImage: true },
-  { id: 2, title: 'Quote Card', hasImage: false },
-  { id: 3, title: 'Gallery Card', hasImage: true },
-  { id: 4, title: 'Collection Card', hasImage: false },
-];
-
-export default function ThemeAdminPage() {
-  const { theme, toggleTheme } = useTheme();
-  const [customTokens, setCustomTokens] = useState<Record<string, string>>({});
-  const [standardFontFamily, setStandardFontFamily] = useState('-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif');
-  const [handwritingFontFamily, setHandwritingFontFamily] = useState('Ink Free, cursive');
-  const [handwritingSlant, setHandwritingSlant] = useState(12);
-
-  // Theme variables organized by category
-  const themeVariables: ThemeVariable[] = [
-    // Core Colors
-    { name: '--background-primary', darkValue: '#1a1a1a', lightValue: '#ffffff', description: 'Main page background', type: 'color' },
-    { name: '--background-secondary', darkValue: '#2d2d2d', lightValue: '#f5f5f5', description: 'Card background', type: 'color' },
-    { name: '--text-primary', darkValue: '#ffffff', lightValue: '#1a1a1a', description: 'Primary text', type: 'color' },
-    { name: '--text-secondary', darkValue: '#cccccc', lightValue: '#666666', description: 'Secondary text', type: 'color' },
-    { name: '--accent', darkValue: '#ff6b35', lightValue: '#ff6b35', description: 'Accent color', type: 'color' },
+    // If it's a valid hex, auto-update HSL
+    if (/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(newHex)) {
+      const { h, s, l } = hexToHsl(newHex);
+      onHslChange(color.id, `${h}`, `${s}%`, `${l}%`);
+    }
+  };
+  
+  const handleHslSliderChange = (component: 'h' | 's' | 'l', value: string) => {
+    const newH = component === 'h' ? value : color.h;
+    const newS = component === 's' ? `${value}%` : color.s;
+    const newL = component === 'l' ? `${value}%` : color.l;
+    onHslChange(color.id, newH, newS, newL);
     
-    // UI Colors
-    { name: '--border', darkValue: '#404040', lightValue: '#e0e0e0', description: 'Border color', type: 'color' },
-    { name: '--input-background', darkValue: '#333333', lightValue: '#ffffff', description: 'Input background', type: 'color' },
-    { name: '--input-border', darkValue: '#ff6b35', lightValue: '#ff6b35', description: 'Input focus border', type: 'color' },
-    { name: '--divider', darkValue: '#404040', lightValue: '#e0e0e0', description: 'Divider color', type: 'color' },
-    { name: '--hover', darkValue: '#404040', lightValue: '#f0f0f0', description: 'Hover state', type: 'color' },
-    
-    // Image Overlays
-    { name: '--overlay-dark', darkValue: 'rgba(0,0,0,0.7)', lightValue: 'rgba(0,0,0,0.7)', description: 'Dark image overlay', type: 'color' },
-    { name: '--overlay-light', darkValue: 'rgba(255,255,255,0.1)', lightValue: 'rgba(255,255,255,0.1)', description: 'Light image overlay', type: 'color' },
-    
-    // Semantic Colors (Admin)
-    { name: '--success', darkValue: '#10b981', lightValue: '#059669', description: 'Success color', type: 'color' },
-    { name: '--error', darkValue: '#ef4444', lightValue: '#dc2626', description: 'Error color', type: 'color' },
-    { name: '--warning', darkValue: '#f59e0b', lightValue: '#d97706', description: 'Warning color', type: 'color' },
-    { name: '--info', darkValue: '#3b82f6', lightValue: '#2563eb', description: 'Info color', type: 'color' },
-    
-    // Alternate Colors (Light versions)
-    { name: '--alt1-light', darkValue: '#C45A1A', lightValue: '#C45A1A', description: 'Alt 1 Light', type: 'color' },
-    { name: '--alt2-light', darkValue: '#1A6B8A', lightValue: '#1A6B8A', description: 'Alt 2 Light', type: 'color' },
-    { name: '--alt3-light', darkValue: '#4A8F32', lightValue: '#4A8F32', description: 'Alt 3 Light', type: 'color' },
-    { name: '--alt4-light', darkValue: '#8A327A', lightValue: '#8A327A', description: 'Alt 4 Light', type: 'color' },
-    { name: '--alt5-light', darkValue: '#9A7A3E', lightValue: '#9A7A3E', description: 'Alt 5 Light', type: 'color' },
-    { name: '--alt6-light', darkValue: '#E6B85A', lightValue: '#E6B85A', description: 'Alt 6 Light', type: 'color' },
-    
-    // Alternate Colors (Dark versions)
-    { name: '--alt1-dark', darkValue: '#8A3A0E', lightValue: '#8A3A0E', description: 'Alt 1 Dark', type: 'color' },
-    { name: '--alt2-dark', darkValue: '#0E3A4A', lightValue: '#0E3A4A', description: 'Alt 2 Dark', type: 'color' },
-    { name: '--alt3-dark', darkValue: '#2C5A1F', lightValue: '#2C5A1F', description: 'Alt 3 Dark', type: 'color' },
-    { name: '--alt4-dark', darkValue: '#5A1F4F', lightValue: '#5A1F4F', description: 'Alt 4 Dark', type: 'color' },
-    { name: '--alt5-dark', darkValue: '#6A4F29', lightValue: '#6A4F29', description: 'Alt 5 Dark', type: 'color' },
-    { name: '--alt6-dark', darkValue: '#B08A3E', lightValue: '#B08A3E', description: 'Alt 6 Dark', type: 'color' },
-  ];
-
-  // Typography Variables
-  const typographyVariables = [
-    { name: '--font-size-xs', value: '0.75rem', description: 'Extra small text (labels, timestamps)', type: 'font' },
-    { name: '--font-size-sm', value: '0.875rem', description: 'Small text (captions, metadata)', type: 'font' },
-    { name: '--font-size-base', value: '1rem', description: 'Base text size', type: 'font' },
-    { name: '--font-size-lg', value: '1.125rem', description: 'Large text (important body)', type: 'font' },
-    { name: '--font-size-xl', value: '1.25rem', description: 'Extra large text (subsection headers)', type: 'font' },
-    { name: '--font-size-2xl', value: '1.5rem', description: '2XL text (section headers)', type: 'font' },
-    { name: '--font-size-3xl', value: '1.875rem', description: '3XL text (page titles)', type: 'font' },
-    { name: '--font-size-4xl', value: '2.25rem', description: '4XL text (hero titles)', type: 'font' },
-    { name: '--line-height-tight', value: '1.25', description: 'Tight line height', type: 'font' },
-    { name: '--line-height-normal', value: '1.5', description: 'Normal line height', type: 'font' },
-    { name: '--line-height-relaxed', value: '1.75', description: 'Relaxed line height', type: 'font' },
-    { name: '--font-weight-normal', value: '400', description: 'Normal font weight', type: 'font' },
-    { name: '--font-weight-medium', value: '500', description: 'Medium font weight', type: 'font' },
-    { name: '--font-weight-semibold', value: '600', description: 'Semibold font weight', type: 'font' },
-    { name: '--font-weight-bold', value: '700', description: 'Bold font weight', type: 'font' },
-  ];
-
-  // Spacing Variables
-  const spacingVariables = [
-    { name: '--spacing-xs', value: '0.25rem', description: 'Extra small spacing (4px)', type: 'spacing' },
-    { name: '--spacing-sm', value: '0.5rem', description: 'Small spacing (8px)', type: 'spacing' },
-    { name: '--spacing-md', value: '1rem', description: 'Medium spacing (16px)', type: 'spacing' },
-    { name: '--spacing-lg', value: '1.5rem', description: 'Large spacing (24px)', type: 'spacing' },
-    { name: '--spacing-xl', value: '2rem', description: 'Extra large spacing (32px)', type: 'spacing' },
-    { name: '--spacing-2xl', value: '3rem', description: '2XL spacing (48px)', type: 'spacing' },
-    { name: '--spacing-3xl', value: '4rem', description: '3XL spacing (64px)', type: 'spacing' },
-    { name: '--spacing-4xl', value: '6rem', description: '4XL spacing (96px)', type: 'spacing' },
-  ];
-
-  // Border & Effect Variables
-  const borderEffectVariables = [
-    { name: '--border-radius-xs', value: '0.25rem', description: 'Extra small border radius', type: 'border' },
-    { name: '--border-radius-sm', value: '0.375rem', description: 'Small border radius', type: 'border' },
-    { name: '--border-radius-md', value: '0.5rem', description: 'Medium border radius', type: 'border' },
-    { name: '--border-radius-lg', value: '0.75rem', description: 'Large border radius', type: 'border' },
-    { name: '--border-radius-xl', value: '1rem', description: 'Extra large border radius', type: 'border' },
-    { name: '--border-radius-full', value: '9999px', description: 'Full border radius (circle)', type: 'border' },
-    { name: '--border-width-thin', value: '1px', description: 'Thin border width', type: 'border' },
-    { name: '--border-width-medium', value: '2px', description: 'Medium border width', type: 'border' },
-    { name: '--border-width-thick', value: '3px', description: 'Thick border width', type: 'border' },
-    { name: '--shadow-sm', value: '0 1px 2px 0 rgb(0 0 0 / 0.05)', description: 'Small shadow', type: 'effect' },
-    { name: '--shadow-md', value: '0 4px 6px -1px rgb(0 0 0 / 0.1)', description: 'Medium shadow', type: 'effect' },
-    { name: '--shadow-lg', value: '0 10px 15px -3px rgb(0 0 0 / 0.1)', description: 'Large shadow', type: 'effect' },
-    { name: '--shadow-xl', value: '0 20px 25px -5px rgb(0 0 0 / 0.1)', description: 'Extra large shadow', type: 'effect' },
-  ];
-
-  // Layout Variables
-  const layoutVariables = [
-    { name: '--container-sm', value: '640px', description: 'Small container width', type: 'layout' },
-    { name: '--container-md', value: '768px', description: 'Medium container width', type: 'layout' },
-    { name: '--container-lg', value: '1024px', description: 'Large container width', type: 'layout' },
-    { name: '--container-xl', value: '1280px', description: 'Extra large container width', type: 'layout' },
-    { name: '--breakpoint-sm', value: '640px', description: 'Small breakpoint', type: 'layout' },
-    { name: '--breakpoint-md', value: '768px', description: 'Medium breakpoint', type: 'layout' },
-    { name: '--breakpoint-lg', value: '1024px', description: 'Large breakpoint', type: 'layout' },
-    { name: '--breakpoint-xl', value: '1280px', description: 'Extra large breakpoint', type: 'layout' },
-  ];
-
-  // Design Intent Variables - Semantic mappings
-  const designIntentVariables = [
-    // Typography Intent - Maps base font sizes to semantic purposes
-    { name: '--heading-1-size', value: 'var(--font-size-3xl)', description: 'Page titles (h1) - 1.875rem', type: 'intent' },
-    { name: '--heading-2-size', value: 'var(--font-size-2xl)', description: 'Section headers (h2) - 1.5rem', type: 'intent' },
-    { name: '--heading-3-size', value: 'var(--font-size-xl)', description: 'Subsection headers (h3) - 1.25rem', type: 'intent' },
-    { name: '--heading-4-size', value: 'var(--font-size-lg)', description: 'Card titles (h4) - 1.125rem', type: 'intent' },
-    { name: '--heading-5-size', value: 'var(--font-size-base)', description: 'Small headings (h5) - 1rem', type: 'intent' },
-    { name: '--heading-6-size', value: 'var(--font-size-sm)', description: 'Smallest headings (h6) - 0.875rem', type: 'intent' },
-    { name: '--body-text-size', value: 'var(--font-size-base)', description: 'Regular body text - 1rem', type: 'intent' },
-    { name: '--body-text-small-size', value: 'var(--font-size-sm)', description: 'Small body text - 0.875rem', type: 'intent' },
-    { name: '--caption-text-size', value: 'var(--font-size-xs)', description: 'Captions, metadata - 0.75rem', type: 'intent' },
-    
-    // Typography Weight Intent
-    { name: '--heading-1-weight', value: 'var(--font-weight-bold)', description: 'Page title weight - 700', type: 'intent' },
-    { name: '--heading-2-weight', value: 'var(--font-weight-semibold)', description: 'Section header weight - 600', type: 'intent' },
-    { name: '--heading-3-weight', value: 'var(--font-weight-semibold)', description: 'Subsection header weight - 600', type: 'intent' },
-    { name: '--heading-4-weight', value: 'var(--font-weight-medium)', description: 'Card title weight - 500', type: 'intent' },
-    { name: '--heading-5-weight', value: 'var(--font-weight-medium)', description: 'Small heading weight - 500', type: 'intent' },
-    { name: '--heading-6-weight', value: 'var(--font-weight-medium)', description: 'Smallest heading weight - 500', type: 'intent' },
-    { name: '--body-text-weight', value: 'var(--font-weight-normal)', description: 'Body text weight - 400', type: 'intent' },
-    
-    // Line Height Intent
-    { name: '--heading-line-height', value: 'var(--line-height-tight)', description: 'Heading line height - 1.25', type: 'intent' },
-    { name: '--body-line-height', value: 'var(--line-height-normal)', description: 'Body text line height - 1.5', type: 'intent' },
-    
-    // Component Intent - Maps base values to component purposes
-    { name: '--card-background', value: 'var(--background-secondary)', description: 'Card background color', type: 'intent' },
-    { name: '--card-border-color', value: 'var(--border)', description: 'Card border color', type: 'intent' },
-    { name: '--card-border-radius', value: 'var(--border-radius-lg)', description: 'Card border radius - 0.75rem', type: 'intent' },
-    { name: '--card-shadow', value: 'var(--shadow-md)', description: 'Card shadow', type: 'intent' },
-    { name: '--card-padding', value: 'var(--spacing-lg)', description: 'Card padding - 1.5rem', type: 'intent' },
-    
-    { name: '--button-primary-background', value: 'var(--accent)', description: 'Primary button background', type: 'intent' },
-    { name: '--button-primary-text-color', value: 'white', description: 'Primary button text color', type: 'intent' },
-    { name: '--button-primary-padding', value: 'var(--spacing-sm) var(--spacing-md)', description: 'Primary button padding - 0.5rem 1rem', type: 'intent' },
-    { name: '--button-primary-border-radius', value: 'var(--border-radius-md)', description: 'Primary button border radius - 0.5rem', type: 'intent' },
-    
-    { name: '--button-secondary-background', value: 'transparent', description: 'Secondary button background', type: 'intent' },
-    { name: '--button-secondary-text-color', value: 'var(--accent)', description: 'Secondary button text color', type: 'intent' },
-    { name: '--button-secondary-border-color', value: 'var(--accent)', description: 'Secondary button border color', type: 'intent' },
-    { name: '--button-secondary-padding', value: 'var(--spacing-sm) var(--spacing-md)', description: 'Secondary button padding - 0.5rem 1rem', type: 'intent' },
-    
-    { name: '--input-background', value: 'var(--input-background)', description: 'Input background color', type: 'intent' },
-    { name: '--input-border-color', value: 'var(--border)', description: 'Input border color', type: 'intent' },
-    { name: '--input-border-radius', value: 'var(--border-radius-md)', description: 'Input border radius - 0.5rem', type: 'intent' },
-    { name: '--input-padding', value: 'var(--spacing-sm) var(--spacing-md)', description: 'Input padding - 0.5rem 1rem', type: 'intent' },
-    
-    { name: '--tag-background', value: 'var(--accent)', description: 'Tag background color', type: 'intent' },
-    { name: '--tag-text-color', value: 'white', description: 'Tag text color', type: 'intent' },
-    { name: '--tag-border-radius', value: 'var(--border-radius-full)', description: 'Tag border radius - 9999px', type: 'intent' },
-    { name: '--tag-padding', value: 'var(--spacing-xs) var(--spacing-sm)', description: 'Tag padding - 0.25rem 0.5rem', type: 'intent' },
-    { name: '--tag-font-size', value: 'var(--font-size-sm)', description: 'Tag font size - 0.875rem', type: 'intent' },
-    
-    // Border width intent tokens
-    { name: '--card-border-width', value: 'var(--border-width-thin)', description: 'Card border width - 1px', type: 'intent' },
-    { name: '--button-border-width', value: 'var(--border-width-medium)', description: 'Button border width - 2px', type: 'intent' },
-    { name: '--input-border-width', value: 'var(--border-width-thin)', description: 'Input border width - 1px', type: 'intent' },
-    { name: '--divider-border-width', value: 'var(--border-width-thin)', description: 'Divider border width - 1px', type: 'intent' },
-    
-    // Layout intent tokens
-    { name: '--sidebar-width', value: 'var(--spacing-4xl)', description: 'Sidebar width - 6rem', type: 'intent' },
-    { name: '--header-height', value: 'var(--spacing-2xl)', description: 'Header height - 3rem', type: 'intent' },
-    { name: '--footer-height', value: 'var(--spacing-xl)', description: 'Footer height - 2rem', type: 'intent' },
-    { name: '--modal-padding', value: 'var(--spacing-lg)', description: 'Modal padding - 1.5rem', type: 'intent' },
-    { name: '--tooltip-padding', value: 'var(--spacing-sm)', description: 'Tooltip padding - 0.5rem', type: 'intent' },
-    
-    // Spacing Intent - Maps base spacing to semantic purposes
-    { name: '--section-margin', value: 'var(--spacing-2xl)', description: 'Section margin - 3rem', type: 'intent' },
-    { name: '--component-margin', value: 'var(--spacing-lg)', description: 'Component margin - 1.5rem', type: 'intent' },
-    { name: '--element-margin', value: 'var(--spacing-md)', description: 'Element margin - 1rem', type: 'intent' },
-    { name: '--text-margin', value: 'var(--spacing-sm)', description: 'Text margin - 0.5rem', type: 'intent' },
-    
-    // Color Intent - Maps base colors to semantic purposes
-    { name: '--text-primary-color', value: 'var(--text-primary)', description: 'Primary text color', type: 'intent' },
-    { name: '--text-secondary-color', value: 'var(--text-secondary)', description: 'Secondary text color', type: 'intent' },
-    { name: '--background-primary-color', value: 'var(--background-primary)', description: 'Primary background color', type: 'intent' },
-    { name: '--background-secondary-color', value: 'var(--background-secondary)', description: 'Secondary background color', type: 'intent' },
-    { name: '--accent-color', value: 'var(--accent)', description: 'Accent color', type: 'intent' },
-  ];
-
-  const handleTokenChange = (tokenName: string, value: string) => {
-    setCustomTokens(prev => ({
-      ...prev,
-      [tokenName]: value
-    }));
-    
-    // Apply to document root for live preview
-    document.documentElement.style.setProperty(tokenName, value);
+    // Convert HSL back to HEX and update
+    const h = parseInt(newH, 10);
+    const s = parseInt(newS, 10);
+    const l = parseInt(newL, 10);
+    const newHex = hslToHex(h, s, l);
+    onColorChange(color.id, 'hex', newHex);
   };
 
-  // Helper function to get dropdown options for design intent tokens
-  const getDropdownOptions = (intentToken: any) => {
-    const tokenName = intentToken.name;
+  const handleAssignmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onColorChange(color.id, 'name', e.target.value);
+  };
+
+  const h = parseInt(color.h, 10);
+  const s = parseInt(color.s, 10);
+  const l = parseInt(color.l, 10);
+
+  // Generate color scale based on HSL values
+  const generateColorScale = (h: number, s: number, l: number, colorId: number, darkModeShift: number = 5) => {
+    const scale = [];
     
-    // Typography size options
-    if (tokenName.includes('size')) {
-      return typographyVariables
-        .filter(v => v.name.includes('font-size'))
-        .map(v => ({ value: v.name, label: `${v.name.replace('--font-size-', '').toUpperCase()} (${v.value})` }));
-    }
-    
-    // Typography weight options
-    if (tokenName.includes('weight')) {
-      return typographyVariables
-        .filter(v => v.name.includes('font-weight'))
-        .map(v => ({ value: v.name, label: `${v.name.replace('--font-weight-', '').toUpperCase()} (${v.value})` }));
-    }
-    
-    // Line height options
-    if (tokenName.includes('line-height')) {
-      return typographyVariables
-        .filter(v => v.name.includes('line-height'))
-        .map(v => ({ value: v.name, label: `${v.name.replace('--line-height-', '').toUpperCase()} (${v.value})` }));
-    }
-    
-    // Spacing options
-    if (tokenName.includes('margin') || tokenName.includes('padding')) {
-      return spacingVariables
-        .map(v => ({ value: v.name, label: `${v.name.replace('--spacing-', '').toUpperCase()} (${v.value})` }));
-    }
-    
-    // Layout options
-    if (tokenName.includes('sidebar-width') || tokenName.includes('header-height') || tokenName.includes('footer-height') || tokenName.includes('modal-padding') || tokenName.includes('tooltip-padding')) {
-      return spacingVariables
-        .map(v => ({ value: v.name, label: `${v.name.replace('--spacing-', '').toUpperCase()} (${v.value})` }));
-    }
-    
-    // Border radius options
-    if (tokenName.includes('border-radius')) {
-      return borderEffectVariables
-        .filter(v => v.name.includes('border-radius'))
-        .map(v => ({ value: v.name, label: `${v.name.replace('--border-radius-', '').toUpperCase()} (${v.value})` }));
-    }
-    
-    // Border width options
-    if (tokenName.includes('border-width')) {
-      return borderEffectVariables
-        .filter(v => v.name.includes('border-width'))
-        .map(v => ({ value: v.name, label: `${v.name.replace('--border-width-', '').toUpperCase()} (${v.value})` }));
-    }
-    
-    // Shadow options
-    if (tokenName.includes('shadow')) {
-      return borderEffectVariables
-        .filter(v => v.name.includes('shadow'))
-        .map(v => ({ value: v.name, label: `${v.name.replace('--shadow-', '').toUpperCase()}` }));
-    }
-    
-    // Color options
-    if (tokenName.includes('color') || tokenName.includes('background')) {
-      const colorOptions = [
-        { value: 'var(--text-primary)', label: 'Text Primary' },
-        { value: 'var(--text-secondary)', label: 'Text Secondary' },
-        { value: 'var(--background-primary)', label: 'Background Primary' },
-        { value: 'var(--background-secondary)', label: 'Background Secondary' },
-        { value: 'var(--accent)', label: 'Accent' },
-        { value: 'var(--border)', label: 'Border' },
-        { value: 'var(--divider)', label: 'Divider' },
-        { value: 'var(--success)', label: 'Success' },
-        { value: 'var(--error)', label: 'Error' },
-        { value: 'var(--warning)', label: 'Warning' },
-        { value: 'var(--info)', label: 'Info' },
-        { value: 'white', label: 'White' },
-        { value: 'transparent', label: 'Transparent' },
+    // Colors 1 and 2 get 10-box spectrum (050-900) - these are base colors
+    if (colorId === 1 || colorId === 2) {
+      const colorSteps = [
+        { value: 50, label: '050' },
+        { value: 100, label: '100' },
+        { value: 200, label: '200' },
+        { value: 300, label: '300' },
+        { value: 400, label: '400' },
+        { value: 500, label: '500' },
+        { value: 600, label: '600' },
+        { value: 700, label: '700' },
+        { value: 800, label: '800' },
+        { value: 900, label: '900' }
       ];
-      return colorOptions;
+      
+      colorSteps.forEach(({ value, label }, index) => {
+        // Calculate lightness based on the step value
+        // 050 = lightest, 900 = darkest (base colors)
+        const adjustedL = Math.max(0, Math.min(100, 95 - (value / 10)));
+        const adjustedS = Math.max(0, Math.min(100, s - Math.abs(index - 5) * 3)); // Reduce saturation at extremes
+        const color = `hsl(${h}, ${adjustedS}%, ${adjustedL}%)`;
+        
+        scale.push({
+          step: value,
+          color,
+          isBase: value === 500, // 500 is the base color
+          label
+        });
+      });
+    } else {
+      // Colors 3-14 get 2-box layout: base (light mode) and calculated dark variation (brighter)
+      const darkL = Math.min(100, l + darkModeShift);
+      
+      scale.push(
+        {
+          step: 0,
+          color: `hsl(${h}, ${s}%, ${l}%)`,
+          isBase: true,
+          label: 'LIGHT'
+        },
+        {
+          step: 1,
+          color: `hsl(${h}, ${s}%, ${darkL}%)`,
+          isBase: false,
+          label: 'DARK'
+        }
+      );
     }
     
-    // Default: return the current value as an option
-    return [{ value: intentToken.value, label: intentToken.value }];
+    return scale;
   };
 
-  const resetToDefault = () => {
-    setCustomTokens({});
-    
-    // Remove custom properties
-    Object.keys(customTokens).forEach(key => {
-      document.documentElement.style.removeProperty(key);
-    });
-  };
+  const colorScale = generateColorScale(h, s, l, color.id, darkModeShift);
 
-  const exportTheme = () => {
-    const themeData = {
-      name: 'Custom Theme',
-      tokens: customTokens,
-      timestamp: new Date().toISOString()
-    };
-    
-    const blob = new Blob([JSON.stringify(themeData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'custom-theme.json';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  if (color.id === 1 || color.id === 2) {
+    // Colors 1-2: Number → Color selection box with hex → 10-box scale → left-justified HSL spinners
+    return (
+      <div className={styles.colorEditor}>
+        {/* Top Row: Number → Color Selection → Color Scale */}
+        <div className={styles.topRow}>
+          <div className={styles.colorNumber}>{color.id}</div>
+          <div className={styles.colorSelection}>
+            <div
+              className={styles.colorBox}
+              style={{ backgroundColor: color.hex }}
+              title={`${color.name}: ${color.hex}`}
+            />
+            <input
+              type="text"
+              value={color.hex}
+              onChange={handleHexChange}
+              className={styles.hexInput}
+              title="HEX color value"
+            />
+          </div>
+          <div className={styles.colorScale}>
+            {colorScale.map(({ step, color: scaleColor, isBase, label }) => (
+              <div key={step} className={styles.scaleItem}>
+                <div
+                  className={`${styles.scaleColor} ${isBase ? styles.scaleColorBase : ''}`}
+                  style={{ backgroundColor: scaleColor }}
+                  title={`${label}: ${scaleColor}`}
+                />
+                <span className={styles.scaleNumber}>{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
 
-  return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h1>Theme Administration</h1>
-        <p>Complete design system configuration with side-by-side light and dark themes</p>
+        {/* Bottom Row: Left-justified HSL Spinners */}
+        <div className={styles.hslSpinnersLeft}>
+          <div className={styles.spinnerGroupInline}>
+            <label>H</label>
+            <input
+              type="number"
+              min="0"
+              max="360"
+              value={isNaN(h) ? 0 : h}
+              onChange={(e) => handleHslSliderChange('h', e.target.value)}
+              className={styles.hslSpinner}
+            />
+          </div>
+          <div className={styles.spinnerGroupInline}>
+            <label>S</label>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              value={isNaN(s) ? 0 : s}
+              onChange={(e) => handleHslSliderChange('s', e.target.value)}
+              className={styles.hslSpinner}
+            />
+          </div>
+          <div className={styles.spinnerGroupInline}>
+            <label>L</label>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              value={isNaN(l) ? 0 : l}
+              onChange={(e) => handleHslSliderChange('l', e.target.value)}
+              className={styles.hslSpinner}
+            />
+          </div>
+        </div>
       </div>
-
-      <div className={styles.mainContent}>
-        {/* Left Sidebar - Variable Controls */}
-        <div className={styles.sidebar}>
-          <div className={styles.sidebarHeader}>
-            <h2>Theme Variables</h2>
-            <div className={styles.sidebarActions}>
-              <button onClick={resetToDefault} className={styles.resetButton}>
-                Reset
-              </button>
-              <button onClick={exportTheme} className={styles.exportButton}>
-                Export
-              </button>
-            </div>
-          </div>
-
-          {/* Colors Section */}
-          <div className={styles.section}>
-            <h3>Colors</h3>
-            <div className={styles.variablesList}>
-              {themeVariables.map((variable) => (
-                <div key={variable.name} className={styles.variableGroup}>
-                  <div className={styles.variableName}>
-                    {variable.name}
-                  </div>
-                  
-                  <div className={styles.variableControls}>
-                    <div className={styles.darkControl}>
-                      <input
-                        type="color"
-                        value={customTokens[`${variable.name}-dark`] || variable.darkValue}
-                        onChange={(e) => handleTokenChange(`${variable.name}-dark`, e.target.value)}
-                        className={styles.colorPicker}
-                      />
-                      <input
-                        type="text"
-                        value={customTokens[`${variable.name}-dark`] || variable.darkValue}
-                        onChange={(e) => handleTokenChange(`${variable.name}-dark`, e.target.value)}
-                        className={styles.hexInput}
-                        placeholder={variable.darkValue}
-                      />
-                    </div>
-                    
-                    <div className={styles.lightControl}>
-                      <input
-                        type="color"
-                        value={customTokens[`${variable.name}-light`] || variable.lightValue}
-                        onChange={(e) => handleTokenChange(`${variable.name}-light`, e.target.value)}
-                        className={styles.colorPicker}
-                      />
-                      <input
-                        type="text"
-                        value={customTokens[`${variable.name}-light`] || variable.lightValue}
-                        onChange={(e) => handleTokenChange(`${variable.name}-light`, e.target.value)}
-                        className={styles.hexInput}
-                        placeholder={variable.lightValue}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Typography Section */}
-          <div className={styles.section}>
-            <h3>Typography</h3>
-            
-            <div className={styles.fontControl}>
-              <label>Standard Font:</label>
-              <input
-                type="text"
-                value={standardFontFamily}
-                onChange={(e) => setStandardFontFamily(e.target.value)}
-                className={styles.fontInput}
-              />
-            </div>
-            
-            <div className={styles.fontControl}>
-              <label>Journal Font:</label>
-              <input
-                type="text"
-                value={handwritingFontFamily}
-                onChange={(e) => setHandwritingFontFamily(e.target.value)}
-                className={styles.fontInput}
-              />
-            </div>
-            
-            <div className={styles.fontControl}>
-              <label>Handwriting Slant: {handwritingSlant}°</label>
-              <input
-                type="range"
-                min="0"
-                max="30"
-                value={handwritingSlant}
-                onChange={(e) => setHandwritingSlant(Number(e.target.value))}
-                className={styles.slantSlider}
-              />
-            </div>
-
-            {/* Font Sizes */}
-            <div className={styles.subsection}>
-              <h4>Font Sizes</h4>
-              <div className={styles.controlsGrid}>
-                {typographyVariables.filter(v => v.name.includes('font-size')).map((variable) => (
-                  <div key={variable.name} className={styles.control}>
-                    <label>{variable.name.replace('--font-size-', '').toUpperCase()}:</label>
-                    <input
-                      type="text"
-                      value={customTokens[variable.name] || variable.value}
-                      onChange={(e) => handleTokenChange(variable.name, e.target.value)}
-                      className={styles.valueInput}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Line Heights */}
-            <div className={styles.subsection}>
-              <h4>Line Heights</h4>
-              <div className={styles.controlsGrid}>
-                {typographyVariables.filter(v => v.name.includes('line-height')).map((variable) => (
-                  <div key={variable.name} className={styles.control}>
-                    <label>{variable.name.replace('--line-height-', '').toUpperCase()}:</label>
-                    <input
-                      type="text"
-                      value={customTokens[variable.name] || variable.value}
-                      onChange={(e) => handleTokenChange(variable.name, e.target.value)}
-                      className={styles.valueInput}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Font Weights */}
-            <div className={styles.subsection}>
-              <h4>Font Weights</h4>
-              <div className={styles.controlsGrid}>
-                {typographyVariables.filter(v => v.name.includes('font-weight')).map((variable) => (
-                  <div key={variable.name} className={styles.control}>
-                    <label>{variable.name.replace('--font-weight-', '').toUpperCase()}:</label>
-                    <input
-                      type="text"
-                      value={customTokens[variable.name] || variable.value}
-                      onChange={(e) => handleTokenChange(variable.name, e.target.value)}
-                      className={styles.valueInput}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Spacing Section */}
-          <div className={styles.section}>
-            <h3>Spacing</h3>
-            <div className={styles.controlsGrid}>
-              {spacingVariables.map((variable) => (
-                <div key={variable.name} className={styles.control}>
-                  <label>{variable.name.replace('--spacing-', '').toUpperCase()}:</label>
-                  <input
-                    type="text"
-                    value={customTokens[variable.name] || variable.value}
-                    onChange={(e) => handleTokenChange(variable.name, e.target.value)}
-                    className={styles.valueInput}
+    );
+  } else {
+    // Colors 3-14: Labels above boxes, hex input under left box, HSL spinners centered under left box
+    return (
+      <div className={styles.colorEditor}>
+        {/* Top Row: Number and Color Scale with labels above */}
+        <div className={styles.topRow}>
+          <div className={styles.numberAndColors}>
+            <div className={styles.colorNumber}>{color.id}</div>
+            <div className={styles.colorScale}>
+              {colorScale.map(({ step, color: scaleColor, isBase, label }) => (
+                <div key={step} className={styles.scaleItem}>
+                  <span className={styles.scaleLabelAbove}>{label}</span>
+                  <div
+                    className={`${styles.scaleColor} ${isBase ? styles.scaleColorBase : ''}`}
+                    style={{ backgroundColor: scaleColor }}
+                    title={`${label}: ${scaleColor}`}
                   />
                 </div>
               ))}
             </div>
           </div>
+        </div>
 
-          {/* Borders & Effects Section */}
-          <div className={styles.section}>
-            <h3>Borders & Effects</h3>
-            
-            {/* Border Radius */}
-            <div className={styles.subsection}>
-              <h4>Border Radius</h4>
-              <div className={styles.controlsGrid}>
-                {borderEffectVariables.filter(v => v.name.includes('border-radius')).map((variable) => (
-                  <div key={variable.name} className={styles.control}>
-                    <label>{variable.name.replace('--border-radius-', '').toUpperCase()}:</label>
-                    <input
-                      type="text"
-                      value={customTokens[variable.name] || variable.value}
-                      onChange={(e) => handleTokenChange(variable.name, e.target.value)}
-                      className={styles.valueInput}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Border Width */}
-            <div className={styles.subsection}>
-              <h4>Border Width</h4>
-              <div className={styles.controlsGrid}>
-                {borderEffectVariables.filter(v => v.name.includes('border-width')).map((variable) => (
-                  <div key={variable.name} className={styles.control}>
-                    <label>{variable.name.replace('--border-width-', '').toUpperCase()}:</label>
-                    <input
-                      type="text"
-                      value={customTokens[variable.name] || variable.value}
-                      onChange={(e) => handleTokenChange(variable.name, e.target.value)}
-                      className={styles.valueInput}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Shadows */}
-            <div className={styles.subsection}>
-              <h4>Shadows</h4>
-              <div className={styles.controlsGrid}>
-                {borderEffectVariables.filter(v => v.name.includes('shadow')).map((variable) => (
-                  <div key={variable.name} className={styles.control}>
-                    <label>{variable.name.replace('--shadow-', '').toUpperCase()}:</label>
-                    <input
-                      type="text"
-                      value={customTokens[variable.name] || variable.value}
-                      onChange={(e) => handleTokenChange(variable.name, e.target.value)}
-                      className={styles.valueInput}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Layout Section */}
-          <div className={styles.section}>
-            <h3>Layout</h3>
-            
-            {/* Container Widths */}
-            <div className={styles.subsection}>
-              <h4>Container Widths</h4>
-              <div className={styles.controlsGrid}>
-                {layoutVariables.filter(v => v.name.includes('container')).map((variable) => (
-                  <div key={variable.name} className={styles.control}>
-                    <label>{variable.name.replace('--container-', '').toUpperCase()}:</label>
-                    <input
-                      type="text"
-                      value={customTokens[variable.name] || variable.value}
-                      onChange={(e) => handleTokenChange(variable.name, e.target.value)}
-                      className={styles.valueInput}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Breakpoints */}
-            <div className={styles.subsection}>
-              <h4>Breakpoints</h4>
-              <div className={styles.controlsGrid}>
-                {layoutVariables.filter(v => v.name.includes('breakpoint')).map((variable) => (
-                  <div key={variable.name} className={styles.control}>
-                    <label>{variable.name.replace('--breakpoint-', '').toUpperCase()}:</label>
-                    <input
-                      type="text"
-                      value={customTokens[variable.name] || variable.value}
-                      onChange={(e) => handleTokenChange(variable.name, e.target.value)}
-                      className={styles.valueInput}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Design Intent Section */}
-          <div className={styles.section}>
-            <h3>Design Intent</h3>
-            <p className={styles.sectionDescription}>
-              Semantic design tokens that map base variables to actual design elements
-            </p>
-            
-            {/* Typography Intent */}
-            <div className={styles.subsection}>
-              <h4>Typography Intent</h4>
-              <div className={styles.controlsGrid}>
-                {designIntentVariables.filter(v => v.name.includes('heading-') || v.name.includes('body-text-') || v.name.includes('caption-text-')).map((variable) => (
-                  <div key={variable.name} className={styles.control}>
-                    <label>{variable.name.replace('--', '').replace(/-/g, ' ').toUpperCase()}:</label>
-                    <select
-                      value={customTokens[variable.name] || variable.value}
-                      onChange={(e) => handleTokenChange(variable.name, e.target.value)}
-                      className={styles.valueInput}
-                    >
-                      {getDropdownOptions(variable).map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Typography Weight Intent */}
-            <div className={styles.subsection}>
-              <h4>Typography Weight Intent</h4>
-              <div className={styles.controlsGrid}>
-                {designIntentVariables.filter(v => v.name.includes('weight') || v.name.includes('line-height')).map((variable) => (
-                  <div key={variable.name} className={styles.control}>
-                    <label>{variable.name.replace('--', '').replace(/-/g, ' ').toUpperCase()}:</label>
-                    <select
-                      value={customTokens[variable.name] || variable.value}
-                      onChange={(e) => handleTokenChange(variable.name, e.target.value)}
-                      className={styles.valueInput}
-                    >
-                      {getDropdownOptions(variable).map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Component Intent */}
-            <div className={styles.subsection}>
-              <h4>Component Intent</h4>
-              <div className={styles.controlsGrid}>
-                {designIntentVariables.filter(v => v.name.includes('card-') || v.name.includes('button-') || v.name.includes('input-') || v.name.includes('tag-')).map((variable) => (
-                  <div key={variable.name} className={styles.control}>
-                    <label>{variable.name.replace('--', '').replace(/-/g, ' ').toUpperCase()}:</label>
-                    <select
-                      value={customTokens[variable.name] || variable.value}
-                      onChange={(e) => handleTokenChange(variable.name, e.target.value)}
-                      className={styles.valueInput}
-                    >
-                      {getDropdownOptions(variable).map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Spacing Intent */}
-            <div className={styles.subsection}>
-              <h4>Spacing Intent</h4>
-              <div className={styles.controlsGrid}>
-                {designIntentVariables.filter(v => v.name.includes('margin')).map((variable) => (
-                  <div key={variable.name} className={styles.control}>
-                    <label>{variable.name.replace('--', '').replace(/-/g, ' ').toUpperCase()}:</label>
-                    <select
-                      value={customTokens[variable.name] || variable.value}
-                      onChange={(e) => handleTokenChange(variable.name, e.target.value)}
-                      className={styles.valueInput}
-                    >
-                      {getDropdownOptions(variable).map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Border Width Intent */}
-            <div className={styles.subsection}>
-              <h4>Border Width Intent</h4>
-              <div className={styles.controlsGrid}>
-                {designIntentVariables.filter(v => v.name.includes('border-width')).map((variable) => (
-                  <div key={variable.name} className={styles.control}>
-                    <label>{variable.name.replace('--', '').replace(/-/g, ' ').toUpperCase()}:</label>
-                    <select
-                      value={customTokens[variable.name] || variable.value}
-                      onChange={(e) => handleTokenChange(variable.name, e.target.value)}
-                      className={styles.valueInput}
-                    >
-                      {getDropdownOptions(variable).map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Layout Intent */}
-            <div className={styles.subsection}>
-              <h4>Layout Intent</h4>
-              <div className={styles.controlsGrid}>
-                {designIntentVariables.filter(v => v.name.includes('sidebar-width') || v.name.includes('header-height') || v.name.includes('footer-height') || v.name.includes('modal-padding') || v.name.includes('tooltip-padding')).map((variable) => (
-                  <div key={variable.name} className={styles.control}>
-                    <label>{variable.name.replace('--', '').replace(/-/g, ' ').toUpperCase()}:</label>
-                    <select
-                      value={customTokens[variable.name] || variable.value}
-                      onChange={(e) => handleTokenChange(variable.name, e.target.value)}
-                      className={styles.valueInput}
-                    >
-                      {getDropdownOptions(variable).map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Color Intent */}
-            <div className={styles.subsection}>
-              <h4>Color Intent</h4>
-              <div className={styles.controlsGrid}>
-                {designIntentVariables.filter(v => v.name.includes('color')).map((variable) => (
-                  <div key={variable.name} className={styles.control}>
-                    <label>{variable.name.replace('--', '').replace(/-/g, ' ').toUpperCase()}:</label>
-                    <select
-                      value={customTokens[variable.name] || variable.value}
-                      onChange={(e) => handleTokenChange(variable.name, e.target.value)}
-                      className={styles.valueInput}
-                    >
-                      {getDropdownOptions(variable).map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ))}
-              </div>
-            </div>
+        {/* Hex Input Row: Only under the left (LIGHT) box */}
+        <div className={styles.hexInputRow}>
+          <div className={styles.hexInputLeft}>
+            <input
+              type="text"
+              value={color.hex}
+              onChange={handleHexChange}
+              className={styles.hexInput}
+              title="HEX color value"
+            />
           </div>
         </div>
 
-        {/* Right Side - Preview Cards */}
-        <div className={styles.previewSection}>
-          <div className={styles.previewHeader}>
-            <h2>Preview Cards</h2>
-            <p>Live preview of all card types in both themes</p>
+        {/* Bottom Row: HSL Spinners left-justified */}
+        <div className={styles.hslSpinnersLeft}>
+          <div className={styles.spinnerGroupInline}>
+            <label>H</label>
+            <input
+              type="number"
+              min="0"
+              max="360"
+              value={isNaN(h) ? 0 : h}
+              onChange={(e) => handleHslSliderChange('h', e.target.value)}
+              className={styles.hslSpinner}
+            />
           </div>
-
-          <div className={styles.previewCards}>
-            {/* Column Headers */}
-            <div className={styles.previewHeaders}>
-              <div className={styles.previewTitleHeader}>Card Type</div>
-              <div className={styles.darkPreviewHeader}>Dark Theme</div>
-              <div className={styles.lightPreviewHeader}>Light Theme</div>
-            </div>
-            
-            {cardExamples.map((cardExample) => (
-              <div key={cardExample.id} className={styles.previewGroup}>
-                <div className={styles.previewTitle}>
-                  {cardExample.title}
-                </div>
-                
-                {/* Dark Theme Card */}
-                <div 
-                  className={styles.themePreview}
-                  style={{
-                    backgroundColor: customTokens['--background-primary-dark'] || '#1a1a1a',
-                    padding: '1rem',
-                    borderRadius: '0.5rem'
-                  }}
-                >
-                  <div 
-                    className={`${styles.previewCard} ${styles.darkTheme}`}
-                    style={{
-                      backgroundColor: customTokens['--background-secondary-dark'] || '#2d2d2d',
-                      color: customTokens['--text-primary-dark'] || '#ffffff',
-                      borderColor: customTokens['--border-dark'] || '#404040',
-                      borderRadius: customTokens['--border-radius-md'] || '0.5rem',
-                      boxShadow: customTokens['--shadow-md'] || '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                      fontSize: customTokens['--font-size-base'] || '1rem',
-                      lineHeight: customTokens['--line-height-normal'] || '1.5'
-                    }}
-                  >
-                    <div className={styles.cardHeader}>
-                      <h4 style={{ 
-                        color: customTokens['--text-primary-dark'] || '#ffffff',
-                        fontSize: customTokens['--font-size-lg'] || '1.125rem'
-                      }}>
-                        {cardExample.title}
-                      </h4>
-                      {cardExample.hasImage && (
-                        <div 
-                          className={styles.cardImage}
-                          style={{
-                            backgroundColor: customTokens['--overlay-dark'] || 'rgba(0,0,0,0.7)'
-                          }}
-                        >
-                          <div 
-                            className={styles.imagePlaceholder}
-                            style={{ color: customTokens['--text-secondary-dark'] || '#cccccc' }}
-                          >
-                            📷
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div 
-                      className={styles.cardContent}
-                      style={{ color: customTokens['--text-primary-dark'] || '#ffffff' }}
-                    >
-                      <p>{sampleCard.excerpt}</p>
-                    </div>
-                    <div 
-                      className={styles.cardFooter}
-                      style={{ color: customTokens['--text-secondary-dark'] || '#cccccc' }}
-                    >
-                      <span className={styles.cardType}>Story</span>
-                      <span className={styles.cardMode}>Dark</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Light Theme Card */}
-                <div 
-                  className={styles.themePreview}
-                  style={{
-                    backgroundColor: customTokens['--background-primary-light'] || '#ffffff',
-                    padding: '1rem',
-                    borderRadius: '0.5rem'
-                  }}
-                >
-                  <div 
-                    className={`${styles.previewCard} ${styles.lightTheme}`}
-                    style={{
-                      backgroundColor: customTokens['--background-secondary-light'] || '#f5f5f5',
-                      color: customTokens['--text-primary-light'] || '#1a1a1a',
-                      borderColor: customTokens['--border-light'] || '#e0e0e0',
-                      borderRadius: customTokens['--border-radius-md'] || '0.5rem',
-                      boxShadow: customTokens['--shadow-md'] || '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                      fontSize: customTokens['--font-size-base'] || '1rem',
-                      lineHeight: customTokens['--line-height-normal'] || '1.5'
-                    }}
-                  >
-                    <div className={styles.cardHeader}>
-                      <h4 style={{ 
-                        color: customTokens['--text-primary-light'] || '#1a1a1a',
-                        fontSize: customTokens['--font-size-lg'] || '1.125rem'
-                      }}>
-                        {cardExample.title}
-                      </h4>
-                      {cardExample.hasImage && (
-                        <div 
-                          className={styles.cardImage}
-                          style={{
-                            backgroundColor: customTokens['--overlay-dark'] || 'rgba(0,0,0,0.7)'
-                          }}
-                        >
-                          <div 
-                            className={styles.imagePlaceholder}
-                            style={{ color: customTokens['--text-secondary-light'] || '#666666' }}
-                          >
-                            📷
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div 
-                      className={styles.cardContent}
-                      style={{ color: customTokens['--text-primary-light'] || '#1a1a1a' }}
-                    >
-                      <p>{sampleCard.excerpt}</p>
-                    </div>
-                    <div 
-                      className={styles.cardFooter}
-                      style={{ color: customTokens['--text-secondary-light'] || '#666666' }}
-                    >
-                      <span className={styles.cardType}>Story</span>
-                      <span className={styles.cardMode}>Light</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className={styles.spinnerGroupInline}>
+            <label>S</label>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              value={isNaN(s) ? 0 : s}
+              onChange={(e) => handleHslSliderChange('s', e.target.value)}
+              className={styles.hslSpinner}
+            />
+          </div>
+          <div className={styles.spinnerGroupInline}>
+            <label>L</label>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              value={isNaN(l) ? 0 : l}
+              onChange={(e) => handleHslSliderChange('l', e.target.value)}
+              className={styles.hslSpinner}
+            />
           </div>
         </div>
       </div>
+    );
+  }
+};
+
+// Helper function to convert HSL to HEX
+const hslToHex = (h: number, s: number, l: number): string => {
+  const sDecimal = s / 100;
+  const lDecimal = l / 100;
+
+  const c = (1 - Math.abs(2 * lDecimal - 1)) * sDecimal;
+  const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+  const m = lDecimal - c / 2;
+  let r = 0, g = 0, b = 0;
+
+  if (0 <= h && h < 60) {
+    r = c; g = x; b = 0;
+  } else if (60 <= h && h < 120) {
+    r = x; g = c; b = 0;
+  } else if (120 <= h && h < 180) {
+    r = 0; g = c; b = x;
+  } else if (180 <= h && h < 240) {
+    r = 0; g = x; b = c;
+  } else if (240 <= h && h < 300) {
+    r = x; g = 0; b = c;
+  } else if (300 <= h && h < 360) {
+    r = c; g = 0; b = x;
+  }
+
+  r = Math.round((r + m) * 255);
+  g = Math.round((g + m) * 255);
+  b = Math.round((b + m) * 255);
+
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+};
+
+// Token Input Component
+const TokenInput: React.FC<{
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: 'text' | 'number';
+}> = ({ label, value, onChange, type = 'text' }) => (
+  <div className={styles.tokenInput}>
+    <label>{label}</label>
+    <input
+      type={type}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  </div>
+);
+
+// Font Size Token Input - Right-justified layout
+const FontSizeTokenInput: React.FC<{
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}> = ({ label, value, onChange }) => (
+  <div className={styles.fontSizeTokenInput}>
+    <label>{label}</label>
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  </div>
+);
+
+// Extended Token Input - Wider input for complex formulas
+const ExtendedTokenInput: React.FC<{
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}> = ({ label, value, onChange }) => (
+  <div className={styles.extendedTokenInput}>
+    <label>{label}</label>
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  </div>
+);
+
+// Color Reference Input - Right-justified layout with validation and preview
+const ColorReferenceInput: React.FC<{
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  colors: any[];
+}> = ({ label, value, onChange, colors }) => {
+  const [isValid, setIsValid] = useState(true);
+  const [previewColor, setPreviewColor] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const validateAndPreview = (inputValue: string) => {
+    if (!inputValue.trim()) {
+      setIsValid(true);
+      setPreviewColor('');
+      setErrorMessage('');
+      return;
+    }
+
+    // Parse input: "1/050" or "3"
+    const parts = inputValue.split('/');
+    const colorNum = parseInt(parts[0], 10);
+    const step = parts[1];
+
+    // Validate color number range
+    if (isNaN(colorNum) || colorNum < 1 || colorNum > 14) {
+      setIsValid(false);
+      setPreviewColor('');
+      setErrorMessage('Color number must be between 1 and 14');
+      return;
+    }
+
+    // Find the color
+    const color = colors.find(c => c.id === colorNum);
+    if (!color) {
+      setIsValid(false);
+      setPreviewColor('');
+      setErrorMessage(`Color ${colorNum} not found in palette`);
+      return;
+    }
+
+    // Validate format based on color type
+    if (colorNum === 1 || colorNum === 2) {
+      // Colors 1-2 need step specification
+      if (!step) {
+        setIsValid(false);
+        setPreviewColor('');
+        setErrorMessage(`Color ${colorNum} requires a step (e.g., "${colorNum}/050")`);
+        return;
+      }
+      
+      const validSteps = ['050', '100', '200', '300', '400', '500', '600', '700', '800', '900'];
+      if (!validSteps.includes(step)) {
+        setIsValid(false);
+        setPreviewColor('');
+        setErrorMessage(`Invalid step "${step}". Valid steps: ${validSteps.join(', ')}`);
+        return;
+      }
+
+      // Generate preview color matching CSS generation logic
+      const h = parseInt(color.h, 10);
+      const s = parseInt(color.s, 10);
+      const stepValue = parseInt(step, 10);
+      
+      let baseLightness;
+      if (colorNum === 1) {
+        // Color1 (background): 050=95%, 100=90%, 200=80%, ..., 900=10%
+        baseLightness = Math.max(0, Math.min(100, 100 - (stepValue / 10)));
+      } else {
+        // Color2 (text): 050=5%, 100=10%, 200=20%, ..., 900=90%
+        baseLightness = Math.max(0, Math.min(100, stepValue / 10));
+      }
+      
+      // Show light theme preview (for simplicity in admin interface)
+      setPreviewColor(`hsl(${h}, ${s}%, ${baseLightness}%)`);
+      setIsValid(true);
+      setErrorMessage('');
+    } else if (colorNum >= 3 && colorNum <= 14) {
+      // Colors 3-14 should not have step specification
+      if (step) {
+        setIsValid(false);
+        setPreviewColor('');
+        setErrorMessage(`Color ${colorNum} should not have a step specification (use just "${colorNum}")`);
+        return;
+      }
+
+      // Generate preview color (base color)
+      const h = parseInt(color.h, 10);
+      const s = parseInt(color.s, 10);
+      const l = parseInt(color.l, 10);
+      setPreviewColor(`hsl(${h}, ${s}%, ${l}%)`);
+      setIsValid(true);
+      setErrorMessage('');
+    } else {
+      setIsValid(false);
+      setPreviewColor('');
+      setErrorMessage('Invalid color reference format');
+    }
+  };
+
+  React.useEffect(() => {
+    validateAndPreview(value);
+  }, [value, colors]);
+
+  return (
+    <div className={styles.colorReferenceInput}>
+      <div className={styles.colorInputRow}>
+        <label>{label}</label>
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value);
+            validateAndPreview(e.target.value);
+          }}
+          className={`${styles.colorInput} ${!isValid ? styles.colorInputError : ''}`}
+          placeholder="1/050 or 3"
+        />
+      </div>
+      {previewColor && (
+        <div 
+          className={styles.colorPreview}
+          style={{ backgroundColor: previewColor }}
+          title={`Preview: ${previewColor}`}
+        />
+      )}
+      {!isValid && (
+        <span className={styles.colorError}>
+          {errorMessage}
+        </span>
+      )}
+    </div>
+  );
+};
+
+// State Color Input - For states with color preview boxes
+const StateColorInput: React.FC<{
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  colors: any[];
+}> = ({ label, value, onChange, colors }) => {
+  const [previewColor, setPreviewColor] = useState('');
+
+  React.useEffect(() => {
+    if (value && colors) {
+      const colorNum = parseInt(value, 10);
+      const color = colors.find(c => c.id === colorNum);
+      if (color) {
+        const h = parseInt(color.h, 10);
+        const s = parseInt(color.s, 10);
+        const l = parseInt(color.l, 10);
+        setPreviewColor(`hsl(${h}, ${s}%, ${l}%)`);
+      } else {
+        setPreviewColor('');
+      }
+    } else {
+      setPreviewColor('');
+    }
+  }, [value, colors]);
+
+  return (
+    <div className={styles.colorReferenceInput}>
+      <div className={styles.colorInputRow}>
+        <label>{label}</label>
+        <input
+          type="number"
+          min="11"
+          max="14"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={styles.colorInput}
+          placeholder="11-14"
+        />
+      </div>
+      {previewColor && (
+        <div 
+          className={styles.colorPreview}
+          style={{ backgroundColor: previewColor }}
+          title={`Preview: ${previewColor}`}
+        />
+      )}
+    </div>
+  );
+};
+
+// Font Weight Input - Right-justified layout for editable values
+const FontWeightInput: React.FC<{
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}> = ({ label, value, onChange }) => (
+  <div className={styles.fontSizeTokenInput}>
+    <label>{label}</label>
+    <input
+      type="number"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  </div>
+);
+
+// Font Weight Display - Right-justified layout for calculated values
+const FontWeightDisplay: React.FC<{
+  label: string;
+  value: string;
+}> = ({ label, value }) => (
+  <div className={styles.fontSizeTokenInput}>
+    <label>{label}</label>
+    <div className={styles.calculatedValue}>
+      {value}
+    </div>
+  </div>
+);
+
+// Font Weight Section with calculation logic
+const FontWeightSection: React.FC<{
+  fontWeights: any;
+  onNormalChange: (value: string) => void;
+  onIncrementChange: (value: string) => void;
+}> = ({ fontWeights, onNormalChange, onIncrementChange }) => {
+  const normal = parseInt(fontWeights?.normal || '400', 10);
+  const increment = parseInt(fontWeights?.increment || '100', 10);
+  
+  const medium = normal + increment;
+  const semibold = normal + (2 * increment);
+  const bold = normal + (3 * increment);
+  
+  return (
+    <div className={styles.tokenSubsection}>
+      <h4>Font Weights</h4>
+      <FontWeightInput 
+        label="Normal" 
+        value={fontWeights?.normal || ''} 
+        onChange={onNormalChange} 
+      />
+      <FontWeightInput 
+        label="Increment" 
+        value={fontWeights?.increment || ''} 
+        onChange={onIncrementChange} 
+      />
+      <FontWeightDisplay 
+        label="Medium" 
+        value={medium.toString()} 
+      />
+      <FontWeightDisplay 
+        label="Semibold" 
+        value={semibold.toString()} 
+      />
+      <FontWeightDisplay 
+        label="Bold" 
+        value={bold.toString()} 
+      />
+    </div>
+  );
+};
+
+// Spacing Multiplier Input - Right-justified layout for multiplier values
+const SpacingMultiplierInput: React.FC<{
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}> = ({ label, value, onChange }) => (
+  <div className={styles.fontSizeTokenInput}>
+    <label>{label}</label>
+    <input
+      type="number"
+      step="0.25"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  </div>
+);
+
+// Spacing Section with calculation logic
+const SpacingSection: React.FC<{
+  spacing: any;
+  onUnitChange: (value: string) => void;
+  onMultiplierChange: (size: string, value: string) => void;
+}> = ({ spacing, onUnitChange, onMultiplierChange }) => {
+  const unit = spacing?.unit || '8px';
+  
+  // Default multipliers if not set
+  const multipliers = {
+    xs: spacing?.xsMultiplier || '0.5',
+    sm: spacing?.smMultiplier || '1',
+    md: spacing?.mdMultiplier || '2',
+    lg: spacing?.lgMultiplier || '3',
+    xl: spacing?.xlMultiplier || '4',
+    '2xl': spacing?.['2xlMultiplier'] || '6',
+    '3xl': spacing?.['3xlMultiplier'] || '8',
+    '4xl': spacing?.['4xlMultiplier'] || '12'
+  };
+  
+  return (
+    <div className={styles.tokenCategory}>
+      <h3>Spacing</h3>
+      <div className={styles.tokenSubsection}>
+        <h4>Base Unit</h4>
+        <FontSizeTokenInput 
+          label="Unit" 
+          value={unit} 
+          onChange={onUnitChange} 
+        />
+      </div>
+      <div className={styles.tokenSubsection}>
+        <h4>Spacing Scale</h4>
+        <SpacingMultiplierInput 
+          label="XS" 
+          value={multipliers.xs} 
+          onChange={(v) => onMultiplierChange('xsMultiplier', v)} 
+        />
+        <SpacingMultiplierInput 
+          label="SM" 
+          value={multipliers.sm} 
+          onChange={(v) => onMultiplierChange('smMultiplier', v)} 
+        />
+        <SpacingMultiplierInput 
+          label="MD" 
+          value={multipliers.md} 
+          onChange={(v) => onMultiplierChange('mdMultiplier', v)} 
+        />
+        <SpacingMultiplierInput 
+          label="LG" 
+          value={multipliers.lg} 
+          onChange={(v) => onMultiplierChange('lgMultiplier', v)} 
+        />
+        <SpacingMultiplierInput 
+          label="XL" 
+          value={multipliers.xl} 
+          onChange={(v) => onMultiplierChange('xlMultiplier', v)} 
+        />
+        <SpacingMultiplierInput 
+          label="2XL" 
+          value={multipliers['2xl']} 
+          onChange={(v) => onMultiplierChange('2xlMultiplier', v)} 
+        />
+        <SpacingMultiplierInput 
+          label="3XL" 
+          value={multipliers['3xl']} 
+          onChange={(v) => onMultiplierChange('3xlMultiplier', v)} 
+        />
+        <SpacingMultiplierInput 
+          label="4XL" 
+          value={multipliers['4xl']} 
+          onChange={(v) => onMultiplierChange('4xlMultiplier', v)} 
+        />
+      </div>
+      <div className={styles.tokenSubsection}>
+        <h4>Fluid Spacing</h4>
+        <FontSizeTokenInput label="FSpc1" value={spacing?.fluidSpacing?.spacing1 || ''} onChange={(v) => onMultiplierChange('fluidSpacing.spacing1', v)} />
+        <FontSizeTokenInput label="FSpc2" value={spacing?.fluidSpacing?.spacing2 || ''} onChange={(v) => onMultiplierChange('fluidSpacing.spacing2', v)} />
+        <FontSizeTokenInput label="FSpc3" value={spacing?.fluidSpacing?.spacing3 || ''} onChange={(v) => onMultiplierChange('fluidSpacing.spacing3', v)} />
+      </div>
+    </div>
+  );
+};
+
+
+
+// Main Theme Admin Component
+export default function ThemeAdminPage() {
+  const [themeData, setThemeData] = useState<StructuredThemeData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('light');
+  const [darkModeShift, setDarkModeShift] = useState(5);
+
+  useEffect(() => {
+    const fetchThemeData = async () => {
+      try {
+        const response = await fetch('/api/theme');
+        if (response.ok) {
+          const data = await response.json();
+          setThemeData(data);
+          setDarkModeShift(data.darkModeShift || 5);
+        }
+      } catch (error) {
+        console.error('Failed to fetch theme data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchThemeData();
+  }, []);
+
+  const handleColorChange = (id: number, field: keyof BaseColor, value: string) => {
+    if (!themeData) return;
+    
+    setThemeData(prev => ({
+      ...prev!,
+      palette: prev!.palette.map(color =>
+        color.id === id ? { ...color, [field]: value } : color
+      )
+    }));
+  };
+
+  const handleHslChange = (id: number, h: string, s: string, l: string) => {
+    if (!themeData) return;
+    
+    setThemeData(prev => ({
+      ...prev!,
+      palette: prev!.palette.map(color =>
+        color.id === id ? { ...color, h, s, l } : color
+      )
+    }));
+  };
+
+  const handleTokenChange = (section: string, key: string, value: string) => {
+    if (!themeData) return;
+
+    setThemeData(prev => ({
+      ...prev!,
+      [section]: {
+        ...prev![section as keyof StructuredThemeData],
+        [key]: value
+      }
+    }));
+  };
+
+  const handleNestedTokenChange = (section: string, subsection: string, key: string, value: string) => {
+    if (!themeData) return;
+
+    setThemeData(prev => ({
+      ...prev!,
+      [section]: {
+        ...prev![section as keyof StructuredThemeData],
+        [subsection]: {
+          ...(prev![section as keyof StructuredThemeData] as any)?.[subsection],
+          [key]: value
+        }
+      }
+    }));
+  };
+
+  const handleDeepNestedTokenChange = (section: string, subsection: string, subsubsection: string, key: string, value: string) => {
+    if (!themeData) return;
+
+    setThemeData(prev => ({
+      ...prev!,
+      [section]: {
+        ...prev![section as keyof StructuredThemeData],
+        [subsection]: {
+          ...(prev![section as keyof StructuredThemeData] as any)?.[subsection],
+          [subsubsection]: {
+            ...((prev![section as keyof StructuredThemeData] as any)?.[subsection] as any)?.[subsubsection],
+            [key]: value
+          }
+        }
+      }
+    }));
+  };
+
+  const toggleTheme = () => {
+    setCurrentTheme(prev => prev === 'light' ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', currentTheme === 'light' ? 'dark' : 'light');
+  };
+
+  const validateThemeData = (data: any): string[] => {
+    const errors: string[] = [];
+    
+    // Validate color references in layout
+    if (data.layout?.background1Color) {
+      if (!isValidColorReference(data.layout.background1Color, data.palette)) {
+        errors.push(`Invalid layout background1Color: ${data.layout.background1Color}`);
+      }
+    }
+    
+    // Validate color references in typography
+    if (data.typography?.textColors?.text1) {
+      if (!isValidColorReference(data.typography.textColors.text1, data.palette)) {
+        errors.push(`Invalid typography text1 color: ${data.typography.textColors.text1}`);
+      }
+    }
+    
+    // Add more validation as needed
+    return errors;
+  };
+
+  const isValidColorReference = (reference: string, palette: any[]): boolean => {
+    if (!reference.trim()) return true; // Empty is valid
+    
+    const parts = reference.split('/');
+    const colorNum = parseInt(parts[0], 10);
+    const step = parts[1];
+    
+    // Validate color number range
+    if (isNaN(colorNum) || colorNum < 1 || colorNum > 14) return false;
+    
+    // Find the color
+    const color = palette.find(c => c.id === colorNum);
+    if (!color) return false;
+    
+    // Validate format based on color type
+    if (colorNum === 1 || colorNum === 2) {
+      if (!step) return false;
+      const validSteps = ['050', '100', '200', '300', '400', '500', '600', '700', '800', '900'];
+      return validSteps.includes(step);
+    } else {
+      return !step; // Colors 3-14 should not have step specification
+    }
+  };
+
+  const saveTheme = async () => {
+    if (!themeData) return;
+    
+    // Validate theme data before saving
+    const validationErrors = validateThemeData(themeData);
+    if (validationErrors.length > 0) {
+      alert(`Cannot save theme due to validation errors:\n${validationErrors.join('\n')}`);
+      return;
+    }
+    
+    setSaving(true);
+    try {
+      const dataToSave = {
+        ...themeData,
+        darkModeShift: darkModeShift
+      };
+      
+      const response = await fetch('/api/theme', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dataToSave)
+      });
+      
+      if (response.ok) {
+        console.log('Theme saved successfully');
+        alert('Theme saved successfully!');
+      } else {
+        const errorText = await response.text();
+        alert(`Failed to save theme: ${errorText}`);
+      }
+    } catch (error) {
+      console.error('Failed to save theme:', error);
+      alert(`Failed to save theme: ${error}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className={styles.centered}>
+        <div>Loading theme data...</div>
+      </div>
+    );
+  }
+
+  if (!themeData) {
+    return (
+      <div className={styles.centered}>
+        <div>Failed to load theme data</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.adminContainer}>
+      <header className={styles.header}>
+        <h1>Theme Administration</h1>
+        <p>Manage your application's design system and color palette</p>
+        <div className={styles.actions}>
+          <button 
+            onClick={saveTheme}
+            disabled={saving}
+            className={styles.saveButton}
+          >
+            {saving ? 'Saving...' : 'Save Theme'}
+          </button>
+        </div>
+      </header>
+
+      <main className={styles.mainContent}>
+        {/* Color Palette Section */}
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2>Color Palette</h2>
+            <div className={styles.paletteControls}>
+              <button 
+                onClick={toggleTheme}
+                className={styles.themeToggleButton}
+              >
+                Switch to {currentTheme === 'light' ? 'Dark' : 'Light'} Theme
+              </button>
+              <div className={styles.lightDarkVariation}>
+                <label>Dark Mode Shift:</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={darkModeShift}
+                  onChange={(e) => setDarkModeShift(parseInt(e.target.value, 10))}
+                  className={styles.variationInput}
+                />
+                <span>%</span>
+              </div>
+            </div>
+          </div>
+          <div className={styles.paletteGrid}>
+            {themeData.palette.map((color) => (
+              <PaletteColorEditor
+                key={color.id}
+                color={color}
+                onColorChange={handleColorChange}
+                onHslChange={handleHslChange}
+                darkModeShift={darkModeShift}
+              />
+            ))}
+          </div>
+        </section>
+
+        {/* All Design Tokens in 4-Column Layout */}
+        <section className={styles.section}>
+          <h2>Design Tokens</h2>
+          <div className={styles.tokenGrid4Column}>
+            {/* Column 1: Typography */}
+            <div className={styles.tokenCategory}>
+              <h3>Typography</h3>
+              
+              <div className={styles.tokenSubsection}>
+                <h4>Font Families</h4>
+                <TokenInput 
+                  label="Sans" 
+                  value={themeData.typography?.fontFamilies?.sans || ''} 
+                  onChange={(v) => handleNestedTokenChange('typography', 'fontFamilies', 'sans', v)} 
+                />
+                <TokenInput 
+                  label="Serif" 
+                  value={themeData.typography?.fontFamilies?.serif || ''} 
+                  onChange={(v) => handleNestedTokenChange('typography', 'fontFamilies', 'serif', v)} 
+                />
+                <TokenInput 
+                  label="Handwriting" 
+                  value={themeData.typography?.fontFamilies?.handwriting || ''} 
+                  onChange={(v) => handleNestedTokenChange('typography', 'fontFamilies', 'handwriting', v)} 
+                />
+              </div>
+
+              <div className={styles.tokenSubsection}>
+                <h4>Text Colors</h4>
+                <ColorReferenceInput label="Text1" value={themeData.typography?.textColors?.text1 || ''} onChange={(v) => handleNestedTokenChange('typography', 'textColors', 'text1', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Text2" value={themeData.typography?.textColors?.text2 || ''} onChange={(v) => handleNestedTokenChange('typography', 'textColors', 'text2', v)} colors={themeData.palette} />
+              </div>
+
+              <div className={styles.tokenSubsection}>
+                <h4>Font Sizes</h4>
+                <FontSizeTokenInput label="XS" value={themeData.typography?.fontSizes?.xs || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', 'xs', v)} />
+                <FontSizeTokenInput label="SM" value={themeData.typography?.fontSizes?.sm || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', 'sm', v)} />
+                <FontSizeTokenInput label="Base" value={themeData.typography?.fontSizes?.base || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', 'base', v)} />
+                <FontSizeTokenInput label="LG" value={themeData.typography?.fontSizes?.lg || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', 'lg', v)} />
+                <FontSizeTokenInput label="XL" value={themeData.typography?.fontSizes?.xl || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', 'xl', v)} />
+                <FontSizeTokenInput label="2XL" value={themeData.typography?.fontSizes?.['2xl'] || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', '2xl', v)} />
+                <FontSizeTokenInput label="3XL" value={themeData.typography?.fontSizes?.['3xl'] || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', '3xl', v)} />
+                <FontSizeTokenInput label="4XL" value={themeData.typography?.fontSizes?.['4xl'] || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', '4xl', v)} />
+              </div>
+
+              <FontWeightSection 
+                fontWeights={themeData.typography?.fontWeights} 
+                onNormalChange={(v) => handleNestedTokenChange('typography', 'fontWeights', 'normal', v)} 
+                onIncrementChange={(v) => handleNestedTokenChange('typography', 'fontWeights', 'increment', v)} 
+              />
+
+              <div className={styles.tokenSubsection}>
+                <h4>Line Heights</h4>
+                <FontSizeTokenInput label="Base" value={themeData.typography?.lineHeights?.base || ''} onChange={(v) => handleNestedTokenChange('typography', 'lineHeights', 'base', v)} />
+                <FontSizeTokenInput label="Increment" value={themeData.typography?.lineHeights?.increment || ''} onChange={(v) => handleNestedTokenChange('typography', 'lineHeights', 'increment', v)} />
+                <FontWeightDisplay label="Tight" value={(() => {
+                  const base = parseFloat(themeData.typography?.lineHeights?.base || '1.5');
+                  const increment = parseFloat(themeData.typography?.lineHeights?.increment || '0.25');
+                  return (base - increment).toString();
+                })()} />
+                <FontWeightDisplay label="Relaxed" value={(() => {
+                  const base = parseFloat(themeData.typography?.lineHeights?.base || '1.5');
+                  const increment = parseFloat(themeData.typography?.lineHeights?.increment || '0.25');
+                  return (base + increment).toString();
+                })()} />
+              </div>
+
+              <div className={styles.tokenSubsection}>
+                <h4>Fluid Sizes</h4>
+                <ExtendedTokenInput label="Fld1" value={themeData.typography?.fluidFontSizes?.size1 || ''} onChange={(v) => handleNestedTokenChange('typography', 'fluidFontSizes', 'size1', v)} />
+                <ExtendedTokenInput label="Fld2" value={themeData.typography?.fluidFontSizes?.size2 || ''} onChange={(v) => handleNestedTokenChange('typography', 'fluidFontSizes', 'size2', v)} />
+                <ExtendedTokenInput label="Fld3" value={themeData.typography?.fluidFontSizes?.size3 || ''} onChange={(v) => handleNestedTokenChange('typography', 'fluidFontSizes', 'size3', v)} />
+              </div>
+
+              <div className={styles.tokenSubsection}>
+                <h4>Breakpoints</h4>
+                <FontSizeTokenInput label="SM" value={themeData.layout?.breakpoints?.sm || ''} onChange={(v) => handleNestedTokenChange('layout', 'breakpoints', 'sm', v)} />
+                <FontSizeTokenInput label="MD" value={themeData.layout?.breakpoints?.md || ''} onChange={(v) => handleNestedTokenChange('layout', 'breakpoints', 'md', v)} />
+                <FontSizeTokenInput label="LG" value={themeData.layout?.breakpoints?.lg || ''} onChange={(v) => handleNestedTokenChange('layout', 'breakpoints', 'lg', v)} />
+                <FontSizeTokenInput label="XL" value={themeData.layout?.breakpoints?.xl || ''} onChange={(v) => handleNestedTokenChange('layout', 'breakpoints', 'xl', v)} />
+              </div>
+
+              <div className={styles.tokenSubsection}>
+                <h4>Z-Index</h4>
+                <FontSizeTokenInput label="Default" value={themeData.zIndex?.default || ''} onChange={(v) => handleTokenChange('zIndex', 'default', v)} />
+                <FontSizeTokenInput label="Content" value={themeData.zIndex?.content || ''} onChange={(v) => handleTokenChange('zIndex', 'content', v)} />
+                <FontSizeTokenInput label="Sticky" value={themeData.zIndex?.sticky || ''} onChange={(v) => handleTokenChange('zIndex', 'sticky', v)} />
+                <FontSizeTokenInput label="Modal Backdrop" value={themeData.zIndex?.modalBackdrop || ''} onChange={(v) => handleTokenChange('zIndex', 'modalBackdrop', v)} />
+                <FontSizeTokenInput label="Sidebar" value={themeData.zIndex?.sidebar || ''} onChange={(v) => handleTokenChange('zIndex', 'sidebar', v)} />
+                <FontSizeTokenInput label="Header" value={themeData.zIndex?.header || ''} onChange={(v) => handleTokenChange('zIndex', 'header', v)} />
+                <FontSizeTokenInput label="Modal" value={themeData.zIndex?.modal || ''} onChange={(v) => handleTokenChange('zIndex', 'modal', v)} />
+                <FontSizeTokenInput label="Tooltip" value={themeData.zIndex?.tooltip || ''} onChange={(v) => handleTokenChange('zIndex', 'tooltip', v)} />
+              </div>
+            </div>
+
+            {/* Column 2: Spacing & Borders */}
+            <div className={styles.tokenCategory}>
+              <h3>Spacing & Borders</h3>
+              
+              <div className={styles.tokenSubsection}>
+                <h4>Spacing Unit</h4>
+                <FontSizeTokenInput 
+                  label="Unit" 
+                  value={themeData.spacing?.unit || ''} 
+                  onChange={(v) => handleTokenChange('spacing', 'unit', v)} 
+                />
+              </div>
+              
+              <div className={styles.tokenSubsection}>
+                <h4>Spacing Scale</h4>
+                <SpacingMultiplierInput 
+                  label="XS" 
+                  value={themeData.spacing?.xsMultiplier || ''} 
+                  onChange={(v) => handleTokenChange('spacing', 'xsMultiplier', v)} 
+                />
+                <SpacingMultiplierInput 
+                  label="SM" 
+                  value={themeData.spacing?.smMultiplier || ''} 
+                  onChange={(v) => handleTokenChange('spacing', 'smMultiplier', v)} 
+                />
+                <SpacingMultiplierInput 
+                  label="MD" 
+                  value={themeData.spacing?.mdMultiplier || ''} 
+                  onChange={(v) => handleTokenChange('spacing', 'mdMultiplier', v)} 
+                />
+                <SpacingMultiplierInput 
+                  label="LG" 
+                  value={themeData.spacing?.lgMultiplier || ''} 
+                  onChange={(v) => handleTokenChange('spacing', 'lgMultiplier', v)} 
+                />
+                <SpacingMultiplierInput 
+                  label="XL" 
+                  value={themeData.spacing?.xlMultiplier || ''} 
+                  onChange={(v) => handleTokenChange('spacing', 'xlMultiplier', v)} 
+                />
+                <SpacingMultiplierInput 
+                  label="2XL" 
+                  value={themeData.spacing?.['2xlMultiplier'] || ''} 
+                  onChange={(v) => handleTokenChange('spacing', '2xlMultiplier', v)} 
+                />
+                <SpacingMultiplierInput 
+                  label="3XL" 
+                  value={themeData.spacing?.['3xlMultiplier'] || ''} 
+                  onChange={(v) => handleTokenChange('spacing', '3xlMultiplier', v)} 
+                />
+                <SpacingMultiplierInput 
+                  label="4XL" 
+                  value={themeData.spacing?.['4xlMultiplier'] || ''} 
+                  onChange={(v) => handleTokenChange('spacing', '4xlMultiplier', v)} 
+                />
+              </div>
+
+              <div className={styles.tokenSubsection}>
+                <h4>Fluid Spacing</h4>
+                <ExtendedTokenInput label="FSpc1" value={themeData.spacing?.fluidSpacing?.spacing1 || ''} onChange={(v) => handleNestedTokenChange('spacing', 'fluidSpacing', 'spacing1', v)} />
+                <ExtendedTokenInput label="FSpc2" value={themeData.spacing?.fluidSpacing?.spacing2 || ''} onChange={(v) => handleNestedTokenChange('spacing', 'fluidSpacing', 'spacing2', v)} />
+                <ExtendedTokenInput label="FSpc3" value={themeData.spacing?.fluidSpacing?.spacing3 || ''} onChange={(v) => handleNestedTokenChange('spacing', 'fluidSpacing', 'spacing3', v)} />
+              </div>
+
+              <div className={styles.tokenSubsection}>
+                <h4>Border Colors</h4>
+                <ColorReferenceInput label="Border1" value={themeData.borders?.colors?.border1 || ''} onChange={(v) => handleNestedTokenChange('borders', 'colors', 'border1', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Border2" value={themeData.borders?.colors?.border2 || ''} onChange={(v) => handleNestedTokenChange('borders', 'colors', 'border2', v)} colors={themeData.palette} />
+              </div>
+
+              <div className={styles.tokenSubsection}>
+                <h4>Border Widths</h4>
+                <FontSizeTokenInput label="Thin" value={themeData.borders?.widths?.thin || ''} onChange={(v) => handleNestedTokenChange('borders', 'widths', 'thin', v)} />
+                <FontSizeTokenInput label="Medium" value={themeData.borders?.widths?.medium || ''} onChange={(v) => handleNestedTokenChange('borders', 'widths', 'medium', v)} />
+                <FontSizeTokenInput label="Thick" value={themeData.borders?.widths?.thick || ''} onChange={(v) => handleNestedTokenChange('borders', 'widths', 'thick', v)} />
+              </div>
+
+              <div className={styles.tokenSubsection}>
+                <h4>Border Radius</h4>
+                <FontSizeTokenInput label="SM" value={themeData.borders?.radius?.sm || ''} onChange={(v) => handleNestedTokenChange('borders', 'radius', 'sm', v)} />
+                <FontSizeTokenInput label="MD" value={themeData.borders?.radius?.md || ''} onChange={(v) => handleNestedTokenChange('borders', 'radius', 'md', v)} />
+                <FontSizeTokenInput label="LG" value={themeData.borders?.radius?.lg || ''} onChange={(v) => handleNestedTokenChange('borders', 'radius', 'lg', v)} />
+                <FontSizeTokenInput label="XL" value={themeData.borders?.radius?.xl || ''} onChange={(v) => handleNestedTokenChange('borders', 'radius', 'xl', v)} />
+                <FontSizeTokenInput label="Full" value={themeData.borders?.radius?.full || ''} onChange={(v) => handleNestedTokenChange('borders', 'radius', 'full', v)} />
+              </div>
+
+              <div className={styles.tokenSubsection}>
+                <h4>Box Shadows</h4>
+                <FontSizeTokenInput label="Strength (Light)" value={themeData.shadows?.strength || ''} onChange={(v) => handleTokenChange('shadows', 'strength', v)} />
+                <FontSizeTokenInput label="Strength (Dark)" value={themeData.shadows?.strengthDark || ''} onChange={(v) => handleTokenChange('shadows', 'strengthDark', v)} />
+                <ExtendedTokenInput label="Color" value={themeData.shadows?.color || ''} onChange={(v) => handleTokenChange('shadows', 'color', v)} />
+                <ExtendedTokenInput label="SM" value={themeData.shadows?.sm || ''} onChange={(v) => handleTokenChange('shadows', 'sm', v)} />
+                <ExtendedTokenInput label="MD" value={themeData.shadows?.md || ''} onChange={(v) => handleTokenChange('shadows', 'md', v)} />
+                <ExtendedTokenInput label="LG" value={themeData.shadows?.lg || ''} onChange={(v) => handleTokenChange('shadows', 'lg', v)} />
+                <ExtendedTokenInput label="XL" value={themeData.shadows?.xl || ''} onChange={(v) => handleTokenChange('shadows', 'xl', v)} />
+              </div>
+
+              <div className={styles.tokenSubsection}>
+                <h4>Tag Dimensions</h4>
+                <ColorReferenceInput label="Who BG" value={themeData.components?.tag?.backgrounds?.who || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'tag', 'backgrounds', 'who', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="What BG" value={themeData.components?.tag?.backgrounds?.what || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'tag', 'backgrounds', 'what', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="When BG" value={themeData.components?.tag?.backgrounds?.when || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'tag', 'backgrounds', 'when', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Where BG" value={themeData.components?.tag?.backgrounds?.where || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'tag', 'backgrounds', 'where', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Reflection BG" value={themeData.components?.tag?.backgrounds?.reflection || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'tag', 'backgrounds', 'reflection', v)} colors={themeData.palette} />
+              </div>
+            </div>
+
+            {/* Column 3: Layout */}
+            <div className={styles.tokenCategory}>
+              <h3>Layout</h3>
+              
+              <div className={styles.tokenSubsection}>
+                <h4>Layout</h4>
+                <FontSizeTokenInput label="Container Max Width" value={themeData.layout?.containerMaxWidth || ''} onChange={(v) => handleTokenChange('layout', 'containerMaxWidth', v)} />
+                <ColorReferenceInput label="Background1" value={themeData.layout?.background1Color || ''} onChange={(v) => handleTokenChange('layout', 'background1Color', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Background2" value={themeData.layout?.background2Color || ''} onChange={(v) => handleTokenChange('layout', 'background2Color', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Border1" value={themeData.layout?.border1Color || ''} onChange={(v) => handleTokenChange('layout', 'border1Color', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Border2" value={themeData.layout?.border2Color || ''} onChange={(v) => handleTokenChange('layout', 'border2Color', v)} colors={themeData.palette} />
+                <FontSizeTokenInput label="Sidebar Width" value={themeData.layout?.sidebarWidth || ''} onChange={(v) => handleTokenChange('layout', 'sidebarWidth', v)} />
+                <FontSizeTokenInput label="Sidebar Width Mobile" value={themeData.layout?.sidebarWidthMobile || ''} onChange={(v) => handleTokenChange('layout', 'sidebarWidthMobile', v)} />
+                <FontSizeTokenInput label="Logo Max Height" value={themeData.layout?.logoMaxHeight || ''} onChange={(v) => handleTokenChange('layout', 'logoMaxHeight', v)} />
+                <FontSizeTokenInput label="Spinner Size" value={themeData.layout?.spinnerSize || ''} onChange={(v) => handleTokenChange('layout', 'spinnerSize', v)} />
+                <FontSizeTokenInput label="Form Min Width" value={themeData.layout?.formMinWidth || ''} onChange={(v) => handleTokenChange('layout', 'formMinWidth', v)} />
+                <FontSizeTokenInput label="Button Min Width" value={themeData.layout?.buttonMinWidth || ''} onChange={(v) => handleTokenChange('layout', 'buttonMinWidth', v)} />
+                <FontSizeTokenInput label="Icon Min Width" value={themeData.layout?.iconMinWidth || ''} onChange={(v) => handleTokenChange('layout', 'iconMinWidth', v)} />
+                <FontSizeTokenInput label="Transition Short" value={themeData.layout?.transitionShort || ''} onChange={(v) => handleTokenChange('layout', 'transitionShort', v)} />
+              </div>
+
+              <div className={styles.tokenSubsection}>
+                <h4>Header</h4>
+                <FontSizeTokenInput label="Height" value={themeData.components?.header?.height || ''} onChange={(v) => handleNestedTokenChange('components', 'header', 'height', v)} />
+                <ColorReferenceInput label="Background" value={themeData.components?.header?.backgroundColor || ''} onChange={(v) => handleNestedTokenChange('components', 'header', 'backgroundColor', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Border Color" value={themeData.components?.header?.borderColor || ''} onChange={(v) => handleNestedTokenChange('components', 'header', 'borderColor', v)} colors={themeData.palette} />
+                <FontSizeTokenInput label="Border Width" value={themeData.components?.header?.borderWidth || ''} onChange={(v) => handleNestedTokenChange('components', 'header', 'borderWidth', v)} />
+              </div>
+
+              <div className={styles.tokenSubsection}>
+                <h4>Input</h4>
+                <ColorReferenceInput label="Background" value={themeData.components?.input?.backgroundColor || ''} onChange={(v) => handleNestedTokenChange('components', 'input', 'backgroundColor', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Border Color" value={themeData.components?.input?.borderColor || ''} onChange={(v) => handleNestedTokenChange('components', 'input', 'borderColor', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Border Focus" value={themeData.components?.input?.borderColorFocus || ''} onChange={(v) => handleNestedTokenChange('components', 'input', 'borderColorFocus', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Text Color" value={themeData.components?.input?.textColor || ''} onChange={(v) => handleNestedTokenChange('components', 'input', 'textColor', v)} colors={themeData.palette} />
+                <FontSizeTokenInput label="Border Radius" value={themeData.components?.input?.borderRadius || ''} onChange={(v) => handleNestedTokenChange('components', 'input', 'borderRadius', v)} />
+                <FontSizeTokenInput label="Padding" value={themeData.components?.input?.padding || ''} onChange={(v) => handleNestedTokenChange('components', 'input', 'padding', v)} />
+              </div>
+
+              <div className={styles.tokenSubsection}>
+                <h4>Card</h4>
+                <ColorReferenceInput label="Background" value={themeData.components?.card?.backgroundColor || ''} onChange={(v) => handleNestedTokenChange('components', 'card', 'backgroundColor', v)} colors={themeData.palette} />
+                <FontSizeTokenInput label="Padding" value={themeData.components?.card?.padding || ''} onChange={(v) => handleNestedTokenChange('components', 'card', 'padding', v)} />
+                <ColorReferenceInput label="Border Color" value={themeData.components?.card?.borderColor || ''} onChange={(v) => handleNestedTokenChange('components', 'card', 'borderColor', v)} colors={themeData.palette} />
+                <FontSizeTokenInput label="Border Width" value={themeData.components?.card?.borderWidth || ''} onChange={(v) => handleNestedTokenChange('components', 'card', 'borderWidth', v)} />
+                <FontSizeTokenInput label="Border Radius" value={themeData.components?.card?.borderRadius || ''} onChange={(v) => handleNestedTokenChange('components', 'card', 'borderRadius', v)} />
+                <ExtendedTokenInput label="Shadow" value={themeData.components?.card?.shadow || ''} onChange={(v) => handleNestedTokenChange('components', 'card', 'shadow', v)} />
+                <ExtendedTokenInput label="Shadow Hover" value={themeData.components?.card?.shadowHover || ''} onChange={(v) => handleNestedTokenChange('components', 'card', 'shadowHover', v)} />
+              </div>
+
+              <div className={styles.tokenSubsection}>
+                <h4>Tag</h4>
+                <FontSizeTokenInput label="Padding" value={themeData.components?.tag?.padding || ''} onChange={(v) => handleNestedTokenChange('components', 'tag', 'padding', v)} />
+                <FontSizeTokenInput label="Border Radius" value={themeData.components?.tag?.borderRadius || ''} onChange={(v) => handleNestedTokenChange('components', 'tag', 'borderRadius', v)} />
+                <FontSizeTokenInput label="Font" value={themeData.components?.tag?.font || ''} onChange={(v) => handleNestedTokenChange('components', 'tag', 'font', v)} />
+                <ColorReferenceInput label="Text Color" value={themeData.components?.tag?.textColor || ''} onChange={(v) => handleNestedTokenChange('components', 'tag', 'textColor', v)} colors={themeData.palette} />
+              </div>
+            </div>
+
+            {/* Column 4: Components */}
+            <div className={styles.tokenCategory}>
+              <h3>Components</h3>
+              
+              <div className={styles.tokenSubsection}>
+                <h4>Link</h4>
+                <ColorReferenceInput label="Text Color" value={themeData.components?.link?.textColor || ''} onChange={(v) => handleNestedTokenChange('components', 'link', 'textColor', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Text Color Hover" value={themeData.components?.link?.textColorHover || ''} onChange={(v) => handleNestedTokenChange('components', 'link', 'textColorHover', v)} colors={themeData.palette} />
+                <FontSizeTokenInput label="Decoration Hover" value={themeData.components?.link?.decorationHover || ''} onChange={(v) => handleNestedTokenChange('components', 'link', 'decorationHover', v)} />
+              </div>
+
+              <div className={styles.tokenSubsection}>
+                <h4>States</h4>
+                <p style={{fontSize: '12px', color: 'var(--text2-color)', marginBottom: '8px'}}>Enter color number (11-14) for each state</p>
+                <StateColorInput label="Success BG" value={themeData.states?.success?.backgroundColor || '11'} onChange={(v) => handleNestedTokenChange('states', 'success', 'backgroundColor', v)} colors={themeData.palette} />
+                <StateColorInput label="Success Border" value={themeData.states?.success?.borderColor || '11'} onChange={(v) => handleNestedTokenChange('states', 'success', 'borderColor', v)} colors={themeData.palette} />
+                <StateColorInput label="Error BG" value={themeData.states?.error?.backgroundColor || '12'} onChange={(v) => handleNestedTokenChange('states', 'error', 'backgroundColor', v)} colors={themeData.palette} />
+                <StateColorInput label="Error Border" value={themeData.states?.error?.borderColor || '12'} onChange={(v) => handleNestedTokenChange('states', 'error', 'borderColor', v)} colors={themeData.palette} />
+                <StateColorInput label="Warning BG" value={themeData.states?.warning?.backgroundColor || '13'} onChange={(v) => handleNestedTokenChange('states', 'warning', 'backgroundColor', v)} colors={themeData.palette} />
+                <StateColorInput label="Warning Border" value={themeData.states?.warning?.borderColor || '13'} onChange={(v) => handleNestedTokenChange('states', 'warning', 'borderColor', v)} colors={themeData.palette} />
+                <StateColorInput label="Info BG" value={themeData.states?.info?.backgroundColor || '14'} onChange={(v) => handleNestedTokenChange('states', 'info', 'backgroundColor', v)} colors={themeData.palette} />
+                <StateColorInput label="Info Border" value={themeData.states?.info?.borderColor || '14'} onChange={(v) => handleNestedTokenChange('states', 'info', 'borderColor', v)} colors={themeData.palette} />
+              </div>
+
+              <div className={styles.tokenSubsection}>
+                <h4>Button - Solid</h4>
+                <ColorReferenceInput label="Background" value={themeData.components?.button?.solid?.backgroundColor || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'solid', 'backgroundColor', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Background Hover" value={themeData.components?.button?.solid?.backgroundColorHover || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'solid', 'backgroundColorHover', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Border" value={themeData.components?.button?.solid?.borderColor || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'solid', 'borderColor', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Text" value={themeData.components?.button?.solid?.textColor || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'solid', 'textColor', v)} colors={themeData.palette} />
+              </div>
+
+              <div className={styles.tokenSubsection}>
+                <h4>Button - Outline</h4>
+                <ColorReferenceInput label="Border" value={themeData.components?.button?.outline?.borderColor || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'outline', 'borderColor', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Text" value={themeData.components?.button?.outline?.textColor || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'outline', 'textColor', v)} colors={themeData.palette} />
+                <FontSizeTokenInput label="Border Width" value={themeData.components?.button?.outline?.borderWidth || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'outline', 'borderWidth', v)} />
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
     </div>
   );
 } 

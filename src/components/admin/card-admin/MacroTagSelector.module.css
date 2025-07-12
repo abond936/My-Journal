@@ -130,7 +130,7 @@
 
 .overlay .container {
   width: 90%;
-  max-width: 1200px;
+  max-width: var(--layout-container-max-width);
   max-height: 80vh;
   overflow-y: auto;
   background-color: white;
@@ -138,7 +138,7 @@
 
 .modalContainer {
   width: 90%;
-  max-width: 1200px;
+  max-width: var(--layout-container-max-width);
   max-height: 80vh;
   overflow-y: auto;
   background-color: white;

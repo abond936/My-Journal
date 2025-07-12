@@ -1,7 +1,7 @@
 .sidebar {
-    width: 300px;
-    background-color: var(--background-primary);
-    border-right: var(--border-width-thin) solid var(--border-color);
+    width: var(--sidebar-width);
+    background-color: var(--layout-background1-color);
+    border-right: var(--border-width-thin) solid var(--border1-color);
     transition: margin-left var(--transition-short) ease-in-out;
     padding: var(--spacing-lg);
     padding-top: var(--header-height);
@@ -12,7 +12,7 @@
   }
   
   .sidebar.closed {
-    margin-left: -300px;
+    margin-left: calc(-1 * var(--sidebar-width));
   }
   
   .sidebar.open {
@@ -24,7 +24,7 @@
     margin-bottom: var(--spacing-md);
     font-size: var(--font-size-xl);
     font-weight: var(--font-weight-semibold);
-    color: var(--text-primary);
+    color: var(--text1-color);
   }
 
   .navigation {
@@ -35,8 +35,8 @@
   .filterControls {
     margin-top: var(--spacing-md);
     padding: var(--spacing-md) 0 0 0;
-    border-top: var(--border-width-thin) solid var(--border-color);
-    background-color: var(--background-primary);
+    border-top: var(--border-width-thin) solid var(--border1-color);
+    background-color: var(--layout-background1-color);
     display: flex;
     gap: var(--spacing-sm);
   }
@@ -44,18 +44,18 @@
   .applyButton, .clearButton {
     flex: 1;
     padding: var(--spacing-sm);
-    border: var(--border-width-thin) solid var(--border-color);
+    border: var(--border-width-thin) solid var(--border1-color);
     border-radius: var(--border-radius-md);
-    background-color: var(--background-primary);
-    color: var(--text-primary);
+    background-color: var(--layout-background1-color);
+    color: var(--text1-color);
     cursor: pointer;
     font-size: var(--font-size-base);
   }
   
   .applyButton {
-    background-color: var(--color-primary);
-    color: var(--text-on-primary);
-    border-color: var(--color-primary);
+    background-color: var(--color3);
+    color: var(--color2);
+    border-color: var(--color3);
   }
   
   .clearButton {

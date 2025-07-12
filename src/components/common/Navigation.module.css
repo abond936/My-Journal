@@ -1,6 +1,6 @@
 .navigation {
-  background: var(--background-primary);
-  border-bottom: var(--border-width-thin) solid var(--border-color);
+  background: var(--layout-background1-color);
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
   width: 100%;
   height: 100%;
   display: flex;
@@ -19,13 +19,13 @@
 }
 
 .navContainer.sidebarOpen {
-    margin-left: 300px;
+    margin-left: var(--sidebar-width);
 }
 
 .logo {
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
-  color: var(--text-primary);
+  color: var(--text1-color);
   text-decoration: none;
   transition: color var(--transition-short) ease;
   flex-shrink: 0;
@@ -38,14 +38,14 @@
 
 .logoImage {
   height: 100%; /* Make logo image fill the header height */
-  max-height: 50px; /* But don't let it get too big */
+  max-height: var(--logo-max-height); /* But don't let it get too big */
   width: auto;
   padding-top: 0;
   object-fit: contain;
 }
 
 .logo:hover {
-  color: var(--color-primary);
+  color: var(--color3);
 }
 
 .navLinks {
@@ -55,7 +55,7 @@
 }
 
 .navLink {
-  color: var(--text-primary);
+  color: var(--text1-color);
   text-decoration: none;
   font-size: var(--font-size-xl);
   transition: color var(--transition-short) ease;
@@ -63,7 +63,7 @@
 }
 
 .navLink:hover {
-  color: var(--color-primary);
+  color: var(--color3);
 }
 
 .menuButton {
@@ -81,7 +81,7 @@
   display: block;
   width: var(--spacing-xl);
   height: 3px;
-  background: var(--text-primary);
+  background: var(--text1-color);
   position: relative;
   transition: background var(--transition-short) ease;
 }
@@ -92,7 +92,7 @@
   position: absolute;
   width: var(--spacing-xl);
   height: 3px;
-  background: var(--text-primary);
+  background: var(--text1-color);
   transition: transform var(--transition-short) ease;
   left: 0;
 }
@@ -119,7 +119,7 @@
   bottom: 0;
 }
 
-@media (max-width: 768px) {
+@media (max-width: var(--breakpoint-md)) {
   .navContainer {
     padding: var(--spacing-sm) var(--spacing-md);
     margin-left: 0 !important; /* Override margin for mobile */
@@ -141,8 +141,8 @@
     top: 0;
     right: -100%;
     height: 100vh;
-    width: 250px;
-    background: var(--background-primary);
+    width: var(--sidebar-width-mobile);
+    background: var(--layout-background1-color);
     flex-direction: column;
     padding: var(--spacing-3xl) var(--spacing-xl);
     transition: right var(--transition-short) ease;

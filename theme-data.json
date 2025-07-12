@@ -1,0 +1,305 @@
+{
+  "palette": [
+    {
+      "id": 1,
+      "hex": "#F2F2F2",
+      "h": "0",
+      "s": "0%",
+      "l": "95%",
+      "name": "background"
+    },
+    {
+      "id": 2,
+      "hex": "#0D0D0D",
+      "h": "0",
+      "s": "0%",
+      "l": "5%",
+      "name": "text"
+    },
+    {
+      "id": 3,
+      "hex": "#135b96",
+      "h": "211",
+      "s": "76%",
+      "l": "33%",
+      "name": "principal"
+    },
+    {
+      "id": 4,
+      "hex": "#E6B85A",
+      "h": "42",
+      "s": "76%",
+      "l": "62%",
+      "name": "accent"
+    },
+    {
+      "id": 5,
+      "hex": "#8A3A0E",
+      "h": "20",
+      "s": "80%",
+      "l": "30%",
+      "name": "alt1"
+    },
+    {
+      "id": 6,
+      "hex": "#0E3A4A",
+      "h": "198",
+      "s": "63%",
+      "l": "18%",
+      "name": "alt2"
+    },
+    {
+      "id": 7,
+      "hex": "#2C5A1F",
+      "h": "102",
+      "s": "50%",
+      "l": "24%",
+      "name": "alt3"
+    },
+    {
+      "id": 8,
+      "hex": "#5A1F4F",
+      "h": "311",
+      "s": "49%",
+      "l": "24%",
+      "name": "alt4"
+    },
+    {
+      "id": 9,
+      "hex": "#6A4F29",
+      "h": "35",
+      "s": "44%",
+      "l": "29%",
+      "name": "alt5"
+    },
+    {
+      "id": 10,
+      "hex": "#B08A3E",
+      "h": "41",
+      "s": "49%",
+      "l": "47%",
+      "name": "alt6"
+    },
+    {
+      "id": 11,
+      "hex": "#059669",
+      "h": "160",
+      "s": "94%",
+      "l": "30%",
+      "name": "success"
+    },
+    {
+      "id": 12,
+      "hex": "#dc2626",
+      "h": "0",
+      "s": "71%",
+      "l": "50%",
+      "name": "error"
+    },
+    {
+      "id": 13,
+      "hex": "#d97706",
+      "h": "34",
+      "s": "96%",
+      "l": "43%",
+      "name": "warning"
+    },
+    {
+      "id": 14,
+      "hex": "#2563eb",
+      "h": "221",
+      "s": "81%",
+      "l": "55%",
+      "name": "info"
+    }
+  ],
+  "darkModeShift": 5,
+  "typography": {
+    "textColors": {
+      "text1": "2/900",
+      "text2": "2/700"
+    },
+    "fontFamilies": {
+      "sans": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "serif": "\"Georgia\", serif",
+      "handwriting": "\"Ink Free\", cursive"
+    },
+    "fontSizes": {
+      "xs": "0.75rem",
+      "sm": "0.875rem",
+      "base": "1rem",
+      "lg": "1.125rem",
+      "xl": "1.25rem",
+      "2xl": "1.5rem",
+      "3xl": "1.875rem",
+      "4xl": "2.25rem"
+    },
+    "fluidFontSizes": {
+      "size1": "clamp(1.5rem, 1rem + 2.5vw, 3rem)",
+      "size2": "clamp(1.25rem, 0.8rem + 2.25vw, 2.25rem)",
+      "size3": "clamp(1rem, 0.75rem + 1.25vw, 1.5rem)"
+    },
+    "fontWeights": {
+      "normal": "400",
+      "increment": "100"
+    },
+    "lineHeights": {
+      "base": "1.5",
+      "increment": "0.25",
+      "tight": "1.25",
+      "relaxed": "1.75"
+    }
+  },
+  "spacing": {
+    "unit": "4px",
+    "xs": "1",
+    "sm": "2", 
+    "md": "4",
+    "lg": "6",
+    "xl": "8",
+    "2xl": "12",
+    "3xl": "16",
+    "4xl": "24",
+    "fluidSpacing": {
+      "spacing1": "clamp(1rem, 0.5rem + 2.5vw, 2rem)",
+      "spacing2": "clamp(2rem, 1rem + 5vw, 4rem)",
+      "spacing3": "clamp(4rem, 2rem + 10vw, 8rem)"
+    }
+  },
+  "borders": {
+    "colors": {
+      "border1": "1/200",
+      "border2": "1/300"
+    },
+    "widths": {
+      "thin": "1px",
+      "medium": "2px",
+      "thick": "3px"
+    },
+    "radius": {
+      "sm": "0.25rem",
+      "md": "0.5rem",
+      "lg": "0.75rem",
+      "xl": "1rem",
+      "full": "9999px"
+    }
+  },
+  "shadows": {
+    "strength": "10%",
+    "strengthDark": "25%",
+    "color": "hsl(var(--h2) / var(--shadow-strength))",
+    "sm": "0 1px 2px -1px var(--shadow-color)",
+    "md": "0 3px 4px -2px var(--shadow-color), 0 7px 10px -4px var(--shadow-color)",
+    "lg": "0 5px 8px -3px var(--shadow-color), 0 12px 18px -5px var(--shadow-color)",
+    "xl": "0 10px 15px -5px var(--shadow-color), 0 25px 35px -10px var(--shadow-color)"
+  },
+  "zIndex": {
+    "default": "1",
+    "content": "10",
+    "sticky": "100",
+    "modalBackdrop": "1000",
+    "sidebar": "1100",
+    "header": "1200",
+    "modal": "1300",
+    "tooltip": "1400"
+  },
+  "layout": {
+    "containerMaxWidth": "1200px",
+    "background1Color": "1/050",
+    "background2Color": "1/100",
+    "border1Color": "1/200",
+    "border2Color": "1/300",
+    "sidebarWidth": "300px",
+    "sidebarWidthMobile": "250px",
+    "logoMaxHeight": "50px",
+    "spinnerSize": "50px",
+    "formMinWidth": "120px",
+    "buttonMinWidth": "60px",
+    "iconMinWidth": "24px",
+    "transitionShort": "0.2s",
+    "breakpoints": {
+      "sm": "640px",
+      "md": "768px",
+      "lg": "1024px",
+      "xl": "1280px"
+    }
+  },
+  "states": {
+    "success": {
+      "backgroundColor": "11",
+      "borderColor": "11"
+    },
+    "error": {
+      "backgroundColor": "12",
+      "borderColor": "12"
+    },
+    "warning": {
+      "backgroundColor": "13",
+      "borderColor": "13"
+    },
+    "info": {
+      "backgroundColor": "14",
+      "borderColor": "14"
+    }
+  },
+  "components": {
+    "header": {
+      "height": "60px",
+      "backgroundColor": "1/050",
+      "borderColor": "1/200",
+      "borderWidth": "border/width/thin"
+    },
+    "button": {
+      "solid": {
+        "backgroundColor": "3",
+        "backgroundColorHover": "3",
+        "borderColor": "3",
+        "textColor": "1/050"
+      },
+      "outline": {
+        "backgroundColor": "transparent",
+        "backgroundColorHover": "hsla(var(--h3), var(--s3), var(--l3), 0.1)",
+        "borderColor": "1/200",
+        "textColor": "2/900",
+        "borderWidth": "border/width/medium"
+      }
+    },
+    "card": {
+      "backgroundColor": "1/100",
+      "padding": "spacing/lg",
+      "borderColor": "1/300",
+      "borderWidth": "border/width/medium",
+      "borderRadius": "border/radius/lg",
+      "shadow": "shadow/sm",
+      "shadowHover": "shadow/md"
+    },
+    "tag": {
+      "padding": "spacing/xs spacing/sm",
+      "borderRadius": "border/radius/full",
+      "fontWeight": "font/weight/medium",
+      "fontSize": "font/size/sm",
+      "fontFamily": "font/family/sans",
+      "textColor": "1/050",
+      "backgrounds": {
+        "who": "5",
+        "what": "6",
+        "when": "7",
+        "where": "8",
+        "reflection": "9"
+      }
+    },
+    "link": {
+      "textColor": "3",
+      "textColorHover": "3",
+      "decorationHover": "underline"
+    },
+    "input": {
+      "backgroundColor": "1/050",
+      "borderColor": "1/200",
+      "borderColorFocus": "3",
+      "textColor": "2/900",
+      "borderRadius": "border/radius/sm",
+      "padding": "spacing/sm spacing/md"
+    }
+  }
+} 

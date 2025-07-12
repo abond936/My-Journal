@@ -37,35 +37,35 @@ Elements
 
   /* Color Palette (HEX-based) */
   --hex1: #0D0D0D; /* hsl(0, 0%, 5%)      Near Black - Dark BG */
-  --hex2: #F2F2F2; /* hsl(0, 0%, 95%)     Near White - Dark Text */
-  --hex3: #135b96; /* hsl(211, 76%, 33%)  principal*/
-  --hex4: #E6B85A; /* hsl(42, 76%, 62%)   accent*/
-  --hex5: #8A3A0E; /* hsl(20, 80%, 30%)   alt1*/
-  --hex6: #0E3A4A; /* hsl(198, 63%, 18%)  alt2*/
-  --hex7: #2C5A1F; /* hsl(102, 50%, 24%)  alt3*/
-  --hex8: #5A1F4F; /* hsl(311, 49%, 24%)  alt4*/
-  --hex9: #6A4F29; /* hsl(35, 44%, 29%)   alt5*/
-  --hex10: #B08A3E; /* hsl(41, 49%, 47%)  alt6*/
-  --hex11: #059669; /* hsl(160, 94%, 30%) success*/
-  --hex12: #dc2626; /* hsl(0, 71%, 50%)   error*/
-  --hex13: #d97706; /* hsl(34, 96%, 43%)  warning*/
-  --hex14: #2563eb; /* hsl(221, 81%, 55%) info*/
+  --hex2: #F2F2F2; /* hsl(0, 0%, 95%)      Near White - Light BG */
+  --hex3: #135b96; /* hsl(211, 76%, 33%)      principal */
+  --hex4: #E6B85A; /* hsl(42, 76%, 62%)      accent */
+  --hex5: #8A3A0E; /* hsl(20, 80%, 30%)      alt1 */
+  --hex6: #0E3A4A; /* hsl(198, 63%, 18%)      alt2 */
+  --hex7: #2C5A1F; /* hsl(102, 50%, 24%)      alt3 */
+  --hex8: #5A1F4F; /* hsl(311, 49%, 24%)      alt4 */
+  --hex9: #6A4F29; /* hsl(35, 44%, 29%)      alt5 */
+  --hex10: #B08A3E; /* hsl(41, 49%, 47%)      alt6 */
+  --hex11: #059669; /* hsl(160, 94%, 30%)      success */
+  --hex12: #dc2626; /* hsl(0, 71%, 50%)      error */
+  --hex13: #d97706; /* hsl(34, 96%, 43%)      warning */
+  --hex14: #2563eb; /* hsl(221, 81%, 55%)      info */
   /* --color15: */
   
   /* Color Palette (HSL-based) */
-  --h1: 0;      /* Near Black */
+  --h1: 0;    /* Near Black - Dark BG */
   --s1: 0%;
   --l1: 5%;
-  --h2: 0;      /* Near White */
+  --h2: 0;    /* Near White - Light BG */
   --s2: 0%;
   --l2: 95%;
   --h3: 211;    /* principal */
   --s3: 76%;
   --l3: 33%;
-  --h4: 42;     /* accent */
+  --h4: 42;    /* accent */
   --s4: 76%;
   --l4: 62%;
-  --h5: 20;     /* alt1 */
+  --h5: 20;    /* alt1 */
   --s5: 80%;
   --l5: 30%;
   --h6: 198;    /* alt2 */
@@ -77,108 +77,62 @@ Elements
   --h8: 311;    /* alt4 */
   --s8: 49%;
   --l8: 24%;
-  --h9: 35;     /* alt5 */
+  --h9: 35;    /* alt5 */
   --s9: 44%;
   --l9: 29%;
   --h10: 41;    /* alt6 */
   --s10: 49%;
   --l10: 47%;
-  --h11: 160;   /* success */
+  --h11: 160;    /* success */
   --s11: 94%;
   --l11: 30%;
-  --h12: 0;     /* error */
+  --h12: 0;    /* error */
   --s12: 71%;
   --l12: 50%;
   --h13: 34;    /* warning */
   --s13: 96%;
   --l13: 43%;
-  --h14: 221;   /* info */
+  --h14: 221;    /* info */
   --s14: 81%;
   --l14: 55%;
   /* --hue15: */
   
+  --is-light-theme: 0; /* 0 = dark theme, 1 = light theme (mathematical conditional) */
   --light-dark-variance: 5%; /* The amount to lighten/darken colors for states */
 
   /* Base Color Definitions */
-  --color1: hsl(var(--h1), var(--s1), var(--l1));
-  --color1-light: hsl(var(--h1), var(--s1), calc(var(--l1) + var(--light-dark-variance)));
-  --color1-dark: hsl(var(--h1), var(--s1), calc(var(--l1) - var(--light-dark-variance)));
-
-  --color2: hsl(var(--h2), var(--s2), var(--l2));
-  --color2-light: hsl(var(--h2), var(--s2), calc(var(--l2) + var(--light-dark-variance)));
-  --color2-dark: hsl(var(--h2), var(--s2), calc(var(--l2) - var(--light-dark-variance)));
-  
-  --color3: hsl(var(--h3), var(--s3), var(--l3));
-  --color3-light: hsl(var(--h3), var(--s3), calc(var(--l3) + var(--light-dark-variance)));
-  --color3-dark: hsl(var(--h3), var(--s3), calc(var(--l3) - var(--light-dark-variance)));
-
-  --color4: hsl(var(--h4), var(--s4), var(--l4));
-  --color4-light: hsl(var(--h4), var(--s4), calc(var(--l4) + var(--light-dark-variance)));
-  --color4-dark: hsl(var(--h4), var(--s4), calc(var(--l4) - var(--light-dark-variance)));
-
-  --color5: hsl(var(--h5), var(--s5), var(--l5));
-  --color5-light: hsl(var(--h5), var(--s5), calc(var(--l5) + var(--light-dark-variance)));
-  --color5-dark: hsl(var(--h5), var(--s5), calc(var(--l5) - var(--light-dark-variance)));
-
-  --color6: hsl(var(--h6), var(--s6), var(--l6));
-  --color6-light: hsl(var(--h6), var(--s6), calc(var(--l6) + var(--light-dark-variance)));
-  --color6-dark: hsl(var(--h6), var(--s6), calc(var(--l6) - var(--light-dark-variance)));
-
-  --color7: hsl(var(--h7), var(--s7), var(--l7));
-  --color7-light: hsl(var(--h7), var(--s7), calc(var(--l7) + var(--light-dark-variance)));
-  --color7-dark: hsl(var(--h7), var(--s7), calc(var(--l7) - var(--light-dark-variance)));
-
-  --color8: hsl(var(--h8), var(--s8), var(--l8));
-  --color8-light: hsl(var(--h8), var(--s8), calc(var(--l8) + var(--light-dark-variance)));
-  --color8-dark: hsl(var(--h8), var(--s8), calc(var(--l8) - var(--light-dark-variance)));
-
-  --color9: hsl(var(--h9), var(--s9), var(--l9));
-  --color9-light: hsl(var(--h9), var(--s9), calc(var(--l9) + var(--light-dark-variance)));
-  --color9-dark: hsl(var(--h9), var(--s9), calc(var(--l9) - var(--light-dark-variance)));
-
-  --color10: hsl(var(--h10), var(--s10), var(--l10));
-  --color10-light: hsl(var(--h10), var(--s10), calc(var(--l10) + var(--light-dark-variance)));
-  --color10-dark: hsl(var(--h10), var(--s10), calc(var(--l10) - var(--light-dark-variance)));
-
-  --color11: hsl(var(--h11), var(--s11), var(--l11));
-  --color11-light: hsl(var(--h11), var(--s11), calc(var(--l11) + var(--light-dark-variance)));
-  --color11-dark: hsl(var(--h11), var(--s11), calc(var(--l11) - var(--light-dark-variance)));
-
-  --color12: hsl(var(--h12), var(--s12), var(--l12));
-  --color12-light: hsl(var(--h12), var(--s12), calc(var(--l12) + var(--light-dark-variance)));
-  --color12-dark: hsl(var(--h12), var(--s12), calc(var(--l12) - var(--light-dark-variance)));
-
-  --color13: hsl(var(--h13), var(--s13), var(--l13));
-  --color13-light: hsl(var(--h13), var(--s13), calc(var(--l13) + var(--light-dark-variance)));
-  --color13-dark: hsl(var(--h13), var(--s13), calc(var(--l13) - var(--light-dark-variance)));
-
-  --color14: hsl(var(--h14), var(--s14), var(--l14));
-  --color14-light: hsl(var(--h14), var(--s14), calc(var(--l14) + var(--light-dark-variance)));
-  --color14-dark: hsl(var(--h14), var(--s14), calc(var(--l14) - var(--light-dark-variance)));
-
-  /* Grayscale Palette (Dark Theme: Darker shades have lower numbers) */
-  --color1-050: hsl(var(--h1), var(--s1), 10%);
-  --color1-100: hsl(var(--h1), var(--s1), 15%);
-  --color1-200: hsl(var(--h1), var(--s1), 25%);
-  --color1-300: hsl(var(--h1), var(--s1), 35%);
-  --color1-400: hsl(var(--h1), var(--s1), 45%);
-  --color1-500: hsl(var(--h1), var(--s1), 55%);
-  --color1-600: hsl(var(--h1), var(--s1), 65%);
-  --color1-700: hsl(var(--h1), var(--s1), 75%);
-  --color1-800: hsl(var(--h1), var(--s1), 85%);
-  --color1-900: hsl(var(--h1), var(--s1), 95%);
-
-  /* Color2 Palette (Near White scale) */
-  --color2-050: hsl(var(--h2), var(--s2), 98%);
-  --color2-100: hsl(var(--h2), var(--s2), 95%);
-  --color2-200: hsl(var(--h2), var(--s2), 90%);
-  --color2-300: hsl(var(--h2), var(--s2), 80%);
-  --color2-400: hsl(var(--h2), var(--s2), 70%);
-  --color2-500: hsl(var(--h2), var(--s2), 60%);
-  --color2-600: hsl(var(--h2), var(--s2), 50%);
-  --color2-700: hsl(var(--h2), var(--s2), 40%);
-  --color2-800: hsl(var(--h2), var(--s2), 20%);
-  --color2-900: hsl(var(--h2), var(--s2), 10%);
+  --color1-050: hsl(var(--h1), var(--s1), 90%);
+  --color1-100: hsl(var(--h1), var(--s1), 85%);
+  --color1-200: hsl(var(--h1), var(--s1), 75%);
+  --color1-300: hsl(var(--h1), var(--s1), 65%);
+  --color1-400: hsl(var(--h1), var(--s1), 55%);
+  --color1-500: hsl(var(--h1), var(--s1), 45%);
+  --color1-600: hsl(var(--h1), var(--s1), 35%);
+  --color1-700: hsl(var(--h1), var(--s1), 25%);
+  --color1-800: hsl(var(--h1), var(--s1), 15%);
+  --color1-900: hsl(var(--h1), var(--s1), 5%);
+  --color2-050: hsl(var(--h2), var(--s2), 90%);
+  --color2-100: hsl(var(--h2), var(--s2), 85%);
+  --color2-200: hsl(var(--h2), var(--s2), 75%);
+  --color2-300: hsl(var(--h2), var(--s2), 65%);
+  --color2-400: hsl(var(--h2), var(--s2), 55%);
+  --color2-500: hsl(var(--h2), var(--s2), 45%);
+  --color2-600: hsl(var(--h2), var(--s2), 35%);
+  --color2-700: hsl(var(--h2), var(--s2), 25%);
+  --color2-800: hsl(var(--h2), var(--s2), 15%);
+  --color2-900: hsl(var(--h2), var(--s2), 5%);
+  --color3: hsl(var(--h3), var(--s3), calc(var(--l3) + (var(--light-dark-variance) * (1 - var(--is-light-theme)))));
+  --color4: hsl(var(--h4), var(--s4), calc(var(--l4) + (var(--light-dark-variance) * (1 - var(--is-light-theme)))));
+  --color5: hsl(var(--h5), var(--s5), calc(var(--l5) + (var(--light-dark-variance) * (1 - var(--is-light-theme)))));
+  --color6: hsl(var(--h6), var(--s6), calc(var(--l6) + (var(--light-dark-variance) * (1 - var(--is-light-theme)))));
+  --color7: hsl(var(--h7), var(--s7), calc(var(--l7) + (var(--light-dark-variance) * (1 - var(--is-light-theme)))));
+  --color8: hsl(var(--h8), var(--s8), calc(var(--l8) + (var(--light-dark-variance) * (1 - var(--is-light-theme)))));
+  --color9: hsl(var(--h9), var(--s9), calc(var(--l9) + (var(--light-dark-variance) * (1 - var(--is-light-theme)))));
+  --color10: hsl(var(--h10), var(--s10), calc(var(--l10) + (var(--light-dark-variance) * (1 - var(--is-light-theme)))));
+  --color11: hsl(var(--h11), var(--s11), calc(var(--l11) + (var(--light-dark-variance) * (1 - var(--is-light-theme)))));
+  --color12: hsl(var(--h12), var(--s12), calc(var(--l12) + (var(--light-dark-variance) * (1 - var(--is-light-theme)))));
+  --color13: hsl(var(--h13), var(--s13), calc(var(--l13) + (var(--light-dark-variance) * (1 - var(--is-light-theme)))));
+  --color14: hsl(var(--h14), var(--s14), calc(var(--l14) + (var(--light-dark-variance) * (1 - var(--is-light-theme)))));
 
   /* Breakpoints (Mobile-First) */
   /* Used for major layout changes, e.g., @media (min-width: var(--breakpoint-md)) */
@@ -194,15 +148,15 @@ Elements
 
   /* Fluid Typography */
   /* clamp(MIN, PREFERRED, MAX) */
-  --font-size1-fluid: clamp(1.5rem, 1rem + 2.5vw, 3rem);      /* ~24px to 48px */
-  --font-size2-fluid: clamp(1.25rem, 0.8rem + 2.25vw, 2.25rem); /* ~20px to 36px */
-  --font-size3-fluid: clamp(1rem, 0.75rem + 1.25vw, 1.5rem);    /* ~16px to 24px */
+  --font-size1-fluid: clamp(1.5rem, 1rem + 2.5vw, 3rem);
+  --font-size2-fluid: clamp(1.25rem, 0.8rem + 2.25vw, 2.25rem);
+  --font-size3-fluid: clamp(1rem, 0.75rem + 1.25vw, 1.5rem);
 
   /* Fluid Spacing */
   /* Use for padding, margins, gaps, etc. */
-  --spacing1-fluid: clamp(1rem, 0.5rem + 2.5vw, 2rem);   /* ~16px to 32px */
-  --spacing2-fluid: clamp(2rem, 1rem + 5vw, 4rem);       /* ~32px to 64px */
-  --spacing3-fluid: clamp(4rem, 2rem + 10vw, 8rem);      /* ~64px to 128px */
+  --spacing1-fluid: clamp(1rem, 0.5rem + 2.5vw, 2rem);
+  --spacing2-fluid: clamp(2rem, 1rem + 5vw, 4rem);
+  --spacing3-fluid: clamp(4rem, 2rem + 10vw, 8rem);
 
   /* Static Typography */
   --font-size-xs: 0.75rem;
@@ -252,12 +206,9 @@ Elements
   --shadow-strength: 25%;
   --shadow-color: hsl(var(--h1) / var(--shadow-strength));
   --shadow-sm: 0 1px 2px -1px var(--shadow-color);
-  --shadow-md: 0 3px 4px -2px var(--shadow-color),
-               0 7px 10px -4px var(--shadow-color);
-  --shadow-lg: 0 5px 8px -3px var(--shadow-color),
-               0 12px 18px -5px var(--shadow-color);
-  --shadow-xl: 0 10px 15px -5px var(--shadow-color),
-               0 25px 35px -10px var(--shadow-color);
+  --shadow-md: 0 3px 4px -2px var(--shadow-color), 0 7px 10px -4px var(--shadow-color);
+  --shadow-lg: 0 5px 8px -3px var(--shadow-color), 0 12px 18px -5px var(--shadow-color);
+  --shadow-xl: 0 10px 15px -5px var(--shadow-color), 0 25px 35px -10px var(--shadow-color);
 
   /* Z-Index Scale */
   --z-index-default: 1;
@@ -273,8 +224,8 @@ Elements
   
   /* Layout */
   --layout-container-max-width: 1200px;
-  --layout-background1-color: var(--color1);      /* Main background */
-  --layout-background2-color: var(--color1-050);   /* Secondary background, e.g., cards */
+  --layout-background1-color: var(--color1);
+  --layout-background2-color: var(--color1-050);
 
   /* Borders */
   --border1-color: var(--color1-100);
@@ -293,8 +244,8 @@ Elements
 
   /* Typography */
   --ui: var(--font-weight-normal) var(--font-size-base)/var(--line-height-base) var(--font-family-sans);
-  --text1-color: var(--color1-900); /* Primary text, near white */
-  --text2-color: var(--color1-700); /* Secondary text, light gray */
+  --text1-color: var(--color1-900);
+  --text2-color: var(--color1-700);
 
   --content: var(--font-weight-normal) var(--font-size-base)/var(--line-height-relaxed) var(--font-family-handwriting);
   --heading1: var(--font-weight-bold) var(--font-size-4xl)/var(--line-height-tight) var(--font-family-sans);
@@ -306,36 +257,36 @@ Elements
   
   /* Header */
   --header-height: 60px;
-  --header-background-color: var(--layout-background2-color);
-  --header-border-color: var(--border1-color);
-  --header-border-width: var(--border-width-thin);
+  --header-background-color: var(--color1-050);
+  --header-border-color: var(--color1-100);
+  --header-border-width: 1px;
 
   /* Button: Solid */
   --button-solid-background-color: var(--color3);
-  --button-solid-background-color-hover: var(--color3-light);
+  --button-solid-background-color-hover: var(--color3);
   --button-solid-border-color: var(--color3);
   --button-solid-text-color: var(--color2);
   
   /* Button: Outline */
   --button-outline-background-color: transparent;
   --button-outline-background-color-hover: hsla(var(--h3), var(--s3), var(--l3), 0.1);
-  --button-outline-border-color: var(--border1-color);
-  --button-outline-text-color: var(--text1-color);
-  --button-outline-border-width: var(--border-width-medium);
+  --button-outline-border-color: var(--color1-100);
+  --button-outline-text-color: var(--color1-900);
+  --button-outline-border-width: 2px;
 
   /* Card */
-  --card-background-color: var(--layout-background2-color);
-  --card-padding: var(--spacing-lg);
-  --card-border-color: var(--border2-color);
-  --card-border-width: var(--border-width-medium);
-  --card-border-radius: var(--border-radius-lg);
-  --card-shadow: var(--shadow-sm);
-  --card-shadow-hover: var(--shadow-md);
+  --card-background-color: var(--color1-050);
+  --card-padding: 24px;
+  --card-border-color: var(--color1-200);
+  --card-border-width: 2px;
+  --card-border-radius: 0.75rem;
+  --card-shadow: 0 1px 2px -1px var(--shadow-color);
+  --card-shadow-hover: 0 3px 4px -2px var(--shadow-color), 0 7px 10px -4px var(--shadow-color);
   
   /* Tag */
-  --tag-padding: var(--spacing-xs) var(--spacing-sm);
-  --tag-border-radius: var(--border-radius-full);
-  --tag-font: var(--font-weight-medium) var(--font-size-sm)/1.2 var(--font-family-sans);
+  --tag-padding: 4px 8px;
+  --tag-border-radius: 9999px;
+  --tag-font: 500 0.875rem/1.2 var(--font-family-sans);
   --tag-who-bg-color: var(--color5);
   --tag-what-bg-color: var(--color6);
   --tag-when-bg-color: var(--color7);
@@ -347,15 +298,15 @@ Elements
   --form-label-font: var(--font-weight-medium) var(--font-size-sm)/1 var(--font-family-sans);
   --form-label-color: var(--text2-color);
   --input-background-color: var(--color1-050);
-  --input-border-color: var(--border2-color);
+  --input-border-color: var(--color1-200);
   --input-border-color-focus: var(--color3);
-  --input-text-color: var(--text1-color);
-  --input-border-radius: var(--border-radius-sm);
-  --input-padding: var(--spacing-sm) var(--spacing-md);
+  --input-text-color: var(--color1-900);
+  --input-border-radius: 0.25rem;
+  --input-padding: 8px 16px;
 
   /* Link */
-  --link-text-color: var(--color3); /* Use principal color for links */
-  --link-text-color-hover: var(--color3-light);
+  --link-text-color: var(--color3);
+  --link-text-color-hover: var(--color3);
   --link-decoration-hover: underline;
   
   /* Disabled State */
@@ -372,6 +323,9 @@ Elements
  */
 [data-theme="light"] {
   /* --- BASE TOKEN OVERRIDES --- */
+
+  /* Mathematical Conditional: Activate light theme calculations */
+  --is-light-theme: 1;
 
   /* Grayscale Palette (Light Theme: Lighter shades have lower numbers) */
   --color1-050: hsl(var(--h1), var(--s1), 98%);
@@ -402,7 +356,7 @@ Elements
   /* --- COMPONENT TOKEN OVERRIDES --- */
   --header-background-color: var(--layout-background1-color);
 
-  --button-solid-background-color-hover: var(--color3-dark);
+  /* Note: Colors 3-14 now use mathematical conditional logic and don't need manual overrides */
   --button-outline-background-color-hover: hsla(var(--h3), var(--s3), var(--l3), 0.1);
 
   --input-background-color: var(--color2);

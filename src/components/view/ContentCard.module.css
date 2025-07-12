@@ -1,33 +1,33 @@
 .card {
   display: block;
-  background-color: var(--background-secondary);
+  background-color: var(--layout-background2-color);
   border-radius: var(--border-radius-lg);
   overflow: hidden;
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  transition: transform var(--transition-short) ease-in-out, box-shadow var(--transition-short) ease-in-out;
   text-decoration: none;
-  color: var(--text-primary);
-  border: var(--border-width-thin) solid var(--color-border-primary);
+  color: var(--text1-color);
+  border: var(--border-width-thin) solid var(--border1-color);
   position: relative;
 }
 
 .card:hover {
   transform: translateY(-5px);
   box-shadow: var(--shadow-lg);
-  border-color: var(--color-accent-solid-hover);
+  border-color: var(--color4-light);
 }
 
 /* Type-specific styles */
 .card.tag {
-  background-color: var(--background-primary);
-  border-color: var(--color-accent-solid);
+  background-color: var(--layout-background1-color);
+  border-color: var(--color4);
 }
 
 .card.entry {
-  background-color: var(--background-secondary);
+  background-color: var(--layout-background2-color);
 }
 
 .card.album {
-  background-color: var(--background-tertiary);
+  background-color: var(--layout-background2-color);
 }
 
 /* Size variations */
@@ -74,7 +74,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: var(--background-secondary);
+  background-color: var(--layout-background2-color);
 }
 
 /* Overlay layout */
@@ -105,7 +105,7 @@
   left: 0;
   right: 0;
   padding: var(--spacing-lg);
-  color: var(--color-accent-text);
+  color: var(--color2);
   z-index: 2;
   background: none;
   display: flex;
@@ -126,12 +126,12 @@
 .title {
   margin: 0;
   font-size: var(--heading-4-size);
-  color: var(--text-primary);
+  color: var(--text1-color);
   line-height: 1.4;
 }
 
 .overlay .title {
-  color: var(--color-accent-text);
+  color: var(--color2);
   margin-bottom: var(--spacing-sm);
 }
 
@@ -146,7 +146,7 @@
 .description {
   margin: 0;
   font-size: var(--body-text-small-size);
-  color: var(--text-secondary);
+  color: var(--text2-color);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -155,7 +155,7 @@
 }
 
 .overlay .description {
-  color: var(--color-accent-text-secondary);
+  color: var(--color2);
   margin-top: var(--spacing-sm);
 }
 
@@ -171,13 +171,13 @@
 /* Tag-specific styles */
 .dimension {
   font-size: var(--caption-text-size);
-  color: var(--color-accent-solid);
+  color: var(--color4);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .overlay .dimension {
-  color: var(--color-accent-text-secondary);
+  color: var(--color2);
 }
 
 .tags {
@@ -192,12 +192,12 @@
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-sm);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--transition-short);
 }
 
 .personTag {
-  background-color: #e3f2fd;
-  color: #1976d2;
+  background-color: var(--tag-who-bg-color);
+  color: var(--tag-text-color);
 }
 
 .personTag:hover {
@@ -205,8 +205,8 @@
 }
 
 .placeTag {
-  background-color: #e8f5e9;
-  color: #388e3c;
+  background-color: var(--tag-what-bg-color);
+  color: var(--tag-text-color);
 }
 
 .placeTag:hover {
@@ -215,7 +215,7 @@
 
 .overlay .tag {
   background-color: rgba(255, 255, 255, 0.2);
-  color: var(--color-accent-text);
+  color: var(--color2);
 }
 
 .overlay .tag:hover {
@@ -226,12 +226,12 @@
   display: flex;
   gap: var(--spacing-md);
   font-size: var(--body-text-small-size);
-  color: var(--text-secondary);
+  color: var(--text2-color);
   margin-top: auto;
 }
 
 .overlay .counts {
-  color: var(--color-accent-text-secondary);
+  color: var(--color2);
 }
 
 .count {
@@ -242,22 +242,22 @@
 
 .date {
   font-size: var(--body-text-small-size);
-  color: var(--text-secondary);
+  color: var(--text2-color);
 }
 
 .overlay .date {
-  color: var(--color-accent-text-secondary);
+  color: var(--color2);
 }
 
 /* Responsive adjustments */
-@media (max-width: 1024px) {
+@media (max-width: var(--breakpoint-lg)) {
   .large {
     grid-column: span 2;
     grid-row: span 1;
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: var(--breakpoint-md)) {
   .large {
     grid-column: span 2;
     grid-row: span 1;
@@ -276,7 +276,7 @@
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: var(--breakpoint-sm)) {
   .large, .medium, .small {
     grid-column: span 1;
   }

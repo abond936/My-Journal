@@ -45,7 +45,7 @@
 .expandIcon {
   font-size: var(--body-text-small-size);
   color: var(--text-secondary);
-  transition: transform 0.2s ease;
+  transition: transform var(--transition-duration) ease;
 }
 
 .sectionHeader:active .expandIcon {
@@ -69,7 +69,7 @@
   text-decoration: none;
   font-size: var(--body-text-size);
   border-radius: var(--border-radius-md);
-  transition: background-color 0.2s, color 0.2s;
+  transition: background-color var(--transition-duration), color var(--transition-duration);
   touch-action: manipulation;
 }
 
@@ -106,7 +106,7 @@
 }
 
 /* Desktop adjustments */
-@media (min-width: 768px) {
+@media (min-width: var(--breakpoint-md)) {
   .sidebar {
     width: var(--sidebar-width);
     height: 100vh;

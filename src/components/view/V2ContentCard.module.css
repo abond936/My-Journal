@@ -2,21 +2,21 @@
 .card {
   display: flex;
   flex-direction: column;
-  background-color: var(--background-secondary);
+  background-color: var(--layout-background2-color);
   border-radius: var(--border-radius-lg);
   overflow: hidden;
   text-decoration: none;
-  color: var(--text-primary);
-  border: var(--border-width-thin) solid var(--color-border-primary);
+  color: var(--text1-color);
+  border: var(--border-width-thin) solid var(--border1-color);
   position: relative;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform var(--transition-short) ease, box-shadow var(--transition-short) ease;
   aspect-ratio: 1 / 1;
 }
 
 .card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-md);
-  border-color: var(--color-accent-solid-hover);
+  border-color: var(--color4-light);
 }
 
 /* --- Size Variations --- */
@@ -28,7 +28,7 @@
 }
 
 /* On larger screens, these will be controlled by a parent grid */
-@media (min-width: 768px) {
+@media (min-width: var(--breakpoint-md)) {
   .small { width: auto; }
   .medium { width: auto; }
   .large { width: auto; }
@@ -67,7 +67,7 @@
 
 .description {
   font-size: var(--body-text-small-size);
-  color: var(--text-secondary);
+  color: var(--text2-color);
   line-height: 1.5;
   margin: 0;
 }
@@ -75,12 +75,12 @@
 /* --- Story & Gallery --- */
 .story .content {
   justify-content: flex-end;
-  color: var(--color-accent-text);
+  color: var(--text1-color);
   background: var(--gradient-bottom-overlay);
 }
 
 .story .title, .story .description {
-  color: var(--color-accent-text);
+  color: var(--text1-color);
 }
 
 .gallery .content {
@@ -94,7 +94,7 @@
 }
 
 .gallery .title {
-  color: var(--color-accent-text);
+  color: var(--text1-color);
 }
 
 .swiperContainer {
@@ -107,22 +107,22 @@
 }
 
 .overlayContent .title {
-  color: var(--color-accent-text);
+  color: var(--text1-color);
 }
 
 /* --- Quote Card --- */
 .quote {
-  background-color: var(--background-primary);
+  background-color: var(--layout-background1-color);
   justify-content: center;
 }
 .quote::before {
   content: '"';
   position: absolute;
-  top: -10px;
-  left: 10px;
+  top: calc(-1 * var(--spacing-sm));
+  left: var(--spacing-sm);
   font-size: 10rem;
   font-weight: bold;
-  color: var(--color-text-primary-translucent);
+  color: var(--color1-300);
   z-index: 1;
 }
 .quote .content {
@@ -136,23 +136,23 @@
 }
 .quoteCite {
   font-size: var(--body-text-small-size);
-  color: var(--text-secondary);
+  color: var(--text2-color);
   text-align: right;
   margin-top: var(--spacing-md);
 }
 
 /* --- Q&A Card --- */
 .qa {
-  background-color: var(--background-primary);
+  background-color: var(--layout-background1-color);
 }
 .qa::before {
   content: '?';
   position: absolute;
   top: 0;
-  right: 15px;
+  right: var(--spacing-sm);
   font-size: 8rem;
   font-weight: bold;
-  color: var(--color-text-primary-translucent);
+  color: var(--color1-300);
   z-index: 1;
 }
 .qa .content {
@@ -171,7 +171,7 @@
 /* --- Callout Card --- */
 .callout {
   background-color: #fffde7; /* A light yellow for a sticky-note feel */
-  color: #333;
+  color: var(--text1-color);
   justify-content: center;
   align-items: center;
   text-align: center;
@@ -179,14 +179,14 @@
 .callout::before { /* The 'tack' */
   content: '';
   position: absolute;
-  top: 10px;
+  top: var(--spacing-sm);
   left: 50%;
   transform: translateX(-50%);
-  width: 16px;
-  height: 16px;
+  width: var(--spacing-md);
+  height: var(--spacing-md);
   border-radius: 50%;
   background: radial-gradient(circle, #f44336 40%, #c62828 100%);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  box-shadow: var(--shadow-sm);
 }
 .calloutText {
   font-size: var(--heading-3-size);
@@ -202,7 +202,7 @@
 .inline:hover {
   transform: none;
   box-shadow: var(--shadow-sm);
-  border-color: var(--color-border-primary);
+  border-color: var(--border1-color);
 }
 
 .static {
@@ -213,7 +213,7 @@
 .static:hover {
   transform: none;
   box-shadow: var(--shadow-sm);
-  border-color: var(--color-border-primary);
+  border-color: var(--border1-color);
 }
 
 /* Inline content styles */
@@ -221,7 +221,7 @@
   margin-top: var(--spacing-md);
   font-size: var(--body-text-small-size);
   line-height: 1.6;
-  color: var(--text-primary);
+  color: var(--text1-color);
 }
 
 .inlineContent :global(p) {
@@ -253,7 +253,7 @@
 .collection {
   justify-content: center;
   align-items: center;
-  background-color: var(--background-tertiary);
+  background-color: var(--layout-background2-color);
 }
 .collection::before, .collection::after {
   content: '';
@@ -262,11 +262,11 @@
   top: 0;
   width: 100%;
   height: 100%;
-  background-color: var(--background-secondary);
-  border: 1px solid var(--border-color);
+  background-color: var(--layout-background2-color);
+  border: 1px solid var(--border1-color);
   border-radius: var(--card-border-radius);
   z-index: -1;
-  transition: transform 0.2s ease;
+  transition: transform var(--transition-short) ease;
 }
 .collection:hover::before { transform: rotate(-6deg); }
 .collection:hover::after { transform: rotate(6deg); }
@@ -279,6 +279,6 @@
 
 .collectionCount {
   font-size: var(--body-text-small-size);
-  color: var(--text-secondary);
+  color: var(--text2-color);
   margin-top: var(--spacing-xs);
 } 

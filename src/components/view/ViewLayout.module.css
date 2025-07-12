@@ -4,47 +4,47 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: var(--background-primary);
+  background-color: var(--layout-background1-color);
 }
 
 .contentWrapper {
   display: flex;
   flex: 1;
   position: relative;
-  margin-top: 120px; /* Account for navigation height */
+  margin-top: calc(var(--header-height) * 2); /* Account for navigation height */
 }
 
 .menuToggle {
   position: fixed;
-  left: 1rem;
-  top: calc(50% + 60px); /* Adjust for navigation height */
+  left: var(--spacing-md);
+  top: calc(50% + var(--header-height)); /* Adjust for navigation height */
   transform: translateY(-50%);
   z-index: 100;
-  background: var(--background-primary);
-  border: var(--border-width-thin) solid var(--color-border-primary);
+  background: var(--layout-background1-color);
+  border: var(--border-width-thin) solid var(--border1-color);
   border-radius: 50%;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: var(--spacing-xl);
+  height: var(--spacing-xl);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all var(--transition-short) ease;
 }
 
 .menuToggle:hover {
-  background: var(--background-tertiary);
+  background: var(--layout-background2-color);
 }
 
 .sidebar {
   position: fixed;
   left: 0;
-  top: 120px; /* Start below navigation */
+  top: calc(var(--header-height) * 2); /* Start below navigation */
   bottom: 0;
-  width: 250px;
-  background: var(--background-primary);
-  border-right: var(--border-width-thin) solid var(--color-border-primary);
-  transition: transform 0.3s ease;
+  width: var(--sidebar-width-mobile);
+  background: var(--layout-background1-color);
+  border-right: var(--border-width-thin) solid var(--border1-color);
+  transition: transform var(--transition-short) ease;
   z-index: 90;
   overflow-y: auto;
 }
@@ -63,21 +63,21 @@
   flex-direction: column;
   overflow-y: auto;
   position: relative;
-  height: calc(100vh - 60px); /* Adjust based on Navigation height */
-  transition: margin-left 0.3s ease;
+  height: calc(100vh - var(--header-height)); /* Adjust based on Navigation height */
+  transition: margin-left var(--transition-short) ease;
   margin-left: 0;
 }
 
 .mainContentOpen {
-  margin-left: 250px; /* Same as sidebar width */
+  margin-left: var(--sidebar-width-mobile); /* Same as sidebar width */
 }
 
 .topNavContainer {
   position: sticky;
   top: 0;
-  background-color: var(--background-primary);
+  background-color: var(--layout-background1-color);
   z-index: 10;
-  border-bottom: var(--border-width-thin) solid var(--color-border-primary);
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
 }
 
 .pageContent {
@@ -86,18 +86,18 @@
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
+@media (max-width: var(--breakpoint-md)) {
   .mainContent {
     margin-left: 0;
-    padding: 1rem;
+    padding: var(--spacing-md);
   }
 
   .sidebar.open + .mainContent {
-    margin-left: 250px;
+    margin-left: var(--sidebar-width-mobile);
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: var(--breakpoint-sm)) {
   .sidebar {
     width: 100%;
   }
@@ -107,6 +107,6 @@
   }
 
   .menuToggle {
-    left: 0.5rem;
+    left: var(--spacing-sm);
   }
 } 
