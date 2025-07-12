@@ -1,0 +1,37 @@
+/*
+  TEST CSS GENERATION - Generated from theme data
+  ==========================================
+  This is a test file to verify CSS generation works correctly
+*/
+
+:root {
+  /* Test Font Sizes */
+  --font-size-5xl: 3rem;
+  --font-size-6xl: 3.75rem;
+  
+  /* Test Gradients */
+  --gradient-bottom-overlay: linear-gradient(transparent, rgba(0,0,0,0.7));
+  --gradient-bottom-overlay-strong: linear-gradient(transparent, rgba(0,0,0,0.9));
+  
+  /* Sample of other variables */
+  --font-size-base: 1rem;
+  --spacing-md: NaNpx;
+  --color3: hsl(211, 76%, 33%);
+}
+
+/* Test usage examples */
+.test-5xl {
+  font-size: var(--font-size-5xl);
+}
+
+.test-6xl {
+  font-size: var(--font-size-6xl);
+}
+
+.test-gradient {
+  background: var(--gradient-bottom-overlay);
+}
+
+.test-gradient-strong {
+  background: var(--gradient-bottom-overlay-strong);
+}

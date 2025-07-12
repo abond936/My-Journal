@@ -2,83 +2,138 @@
 
 import React, { useState, useEffect } from 'react';
 import styles from './ThemeAdmin.module.css';
-import { StructuredThemeData, BaseColor, hexToHsl } from '@/lib/types/theme';
+import { StructuredThemeData, BaseColor, ThemeColor, hexToHsl } from '@/lib/types/theme';
 
 // Color Palette Editor Component
 const PaletteColorEditor: React.FC<{
-  color: BaseColor;
-  onColorChange: (id: number, field: keyof BaseColor, value: string) => void;
-  onHslChange: (id: number, h: string, s: string, l: string) => void;
+  color: BaseColor | ThemeColor;
+  onColorChange: (id: number, field: keyof BaseColor | keyof ThemeColor, value: string, variant?: 'light' | 'dark') => void;
+  onHslChange: (id: number, h: string, s: string, l: string, variant?: 'light' | 'dark') => void;
   darkModeShift: number;
 }> = ({ color, onColorChange, onHslChange, darkModeShift }) => {
 
-  const handleHexChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newHex = e.target.value;
-    onColorChange(color.id, 'hex', newHex);
+  const isThemeColor = (color: BaseColor | ThemeColor): color is ThemeColor => {
+    return 'light' in color && 'dark' in color;
+  };
 
-    // If it's a valid hex, auto-update HSL
-    if (/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(newHex)) {
-      const { h, s, l } = hexToHsl(newHex);
-      onHslChange(color.id, `${h}`, `${s}%`, `${l}%`);
+  const handleHexChange = (e: React.ChangeEvent<HTMLInputElement>, variant?: 'light' | 'dark') => {
+    const newHex = e.target.value;
+    
+    if (isThemeColor(color)) {
+      onColorChange(color.id, 'hex', newHex, variant);
+      
+      // For colors 1 and 2, also update HSL values when hex is valid
+      if (/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(newHex)) {
+        const { h, s, l } = hexToHsl(newHex);
+        onHslChange(color.id, `${h}`, `${s}%`, `${l}%`, variant);
+      }
+    } else {
+      onColorChange(color.id, 'hex', newHex);
+      
+      // If it's a valid hex, auto-update HSL
+      if (/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(newHex)) {
+        const { h, s, l } = hexToHsl(newHex);
+        onHslChange(color.id, `${h}`, `${s}%`, `${l}%`);
+      }
     }
   };
   
-  const handleHslSliderChange = (component: 'h' | 's' | 'l', value: string) => {
-    const newH = component === 'h' ? value : color.h;
-    const newS = component === 's' ? `${value}%` : color.s;
-    const newL = component === 'l' ? `${value}%` : color.l;
-    onHslChange(color.id, newH, newS, newL);
-    
-    // Convert HSL back to HEX and update
-    const h = parseInt(newH, 10);
-    const s = parseInt(newS, 10);
-    const l = parseInt(newL, 10);
-    const newHex = hslToHex(h, s, l);
-    onColorChange(color.id, 'hex', newHex);
+  const handleHslSliderChange = (component: 'h' | 's' | 'l', value: string, variant?: 'light' | 'dark') => {
+    if (isThemeColor(color)) {
+      const variantData = variant === 'light' ? color.light : color.dark;
+      const newH = component === 'h' ? value : variantData.h;
+      const newS = component === 's' ? `${value}%` : variantData.s;
+      const newL = component === 'l' ? `${value}%` : variantData.l;
+      onHslChange(color.id, newH, newS, newL, variant);
+      
+      // Convert HSL back to HEX and update
+      const h = parseInt(newH, 10);
+      const s = parseInt(newS, 10);
+      const l = parseInt(newL, 10);
+      const newHex = hslToHex(h, s, l);
+      onColorChange(color.id, 'hex', newHex, variant);
+    } else {
+      const newH = component === 'h' ? value : color.h;
+      const newS = component === 's' ? `${value}%` : color.s;
+      const newL = component === 'l' ? `${value}%` : color.l;
+      onHslChange(color.id, newH, newS, newL);
+      
+      // Convert HSL back to HEX and update
+      const h = parseInt(newH, 10);
+      const s = parseInt(newS, 10);
+      const l = parseInt(newL, 10);
+      const newHex = hslToHex(h, s, l);
+      onColorChange(color.id, 'hex', newHex);
+    }
   };
 
   const handleAssignmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onColorChange(color.id, 'name', e.target.value);
   };
 
-  const h = parseInt(color.h, 10);
-  const s = parseInt(color.s, 10);
-  const l = parseInt(color.l, 10);
+  if (isThemeColor(color)) {
+    // Colors 1-2: ThemeColor with light/dark variants
 
-  // Generate color scale based on HSL values
-  const generateColorScale = (h: number, s: number, l: number, colorId: number, darkModeShift: number = 5) => {
-    const scale = [];
-    
-    // Colors 1 and 2 get 10-box spectrum (050-900) - these are base colors
-    if (colorId === 1 || colorId === 2) {
-      const colorSteps = [
-        { value: 50, label: '050' },
-        { value: 100, label: '100' },
-        { value: 200, label: '200' },
-        { value: 300, label: '300' },
-        { value: 400, label: '400' },
-        { value: 500, label: '500' },
-        { value: 600, label: '600' },
-        { value: 700, label: '700' },
-        { value: 800, label: '800' },
-        { value: 900, label: '900' }
-      ];
+    return (
+      <div className={styles.colorEditor}>
+        {/* Top Row: Number and Color Scale with labels above */}
+        <div className={styles.topRow}>
+          <div className={styles.numberAndColors}>
+            <div className={styles.colorNumber}>{color.id}</div>
+            <div className={styles.colorScale}>
+              <div className={styles.scaleItem}>
+                <span className={styles.scaleLabelAbove}>LIGHT</span>
+                <div
+                  className={styles.scaleColor}
+                  style={{ backgroundColor: color.light.hex }}
+                  title={`Light ${color.name}: ${color.light.hex}`}
+                />
+              </div>
+              <div className={styles.scaleItem}>
+                <span className={styles.scaleLabelAbove}>DARK</span>
+                <div
+                  className={styles.scaleColor}
+                  style={{ backgroundColor: color.dark.hex }}
+                  title={`Dark ${color.name}: ${color.dark.hex}`}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Hex Input Row: Two hex inputs centered under the boxes */}
+        <div className={`${styles.hexInputRow} ${styles.hexInputRowTheme}`}>
+          <div className={styles.hexInputLeft}>
+            <input
+              type="text"
+              value={color.light.hex}
+              onChange={(e) => handleHexChange(e, 'light')}
+              className={styles.hexInput}
+              title="Light variant HEX color value"
+            />
+          </div>
+          <div className={styles.hexInputRight}>
+            <input
+              type="text"
+              value={color.dark.hex}
+              onChange={(e) => handleHexChange(e, 'dark')}
+              className={styles.hexInput}
+              title="Dark variant HEX color value"
+            />
+          </div>
+        </div>
+      </div>
+    );
+  } else {
+    // Colors 3-14: Original BaseColor behavior
+    const h = parseInt(color.h, 10);
+    const s = parseInt(color.s, 10);
+    const l = parseInt(color.l, 10);
+
+    // Generate color scale based on HSL values
+    const generateColorScale = (h: number, s: number, l: number, colorId: number, darkModeShift: number = 5) => {
+      const scale = [];
       
-      colorSteps.forEach(({ value, label }, index) => {
-        // Calculate lightness based on the step value
-        // 050 = lightest, 900 = darkest (base colors)
-        const adjustedL = Math.max(0, Math.min(100, 95 - (value / 10)));
-        const adjustedS = Math.max(0, Math.min(100, s - Math.abs(index - 5) * 3)); // Reduce saturation at extremes
-        const color = `hsl(${h}, ${adjustedS}%, ${adjustedL}%)`;
-        
-        scale.push({
-          step: value,
-          color,
-          isBase: value === 500, // 500 is the base color
-          label
-        });
-      });
-    } else {
       // Colors 3-14 get 2-box layout: base (light mode) and calculated dark variation (brighter)
       const darkL = Math.min(100, l + darkModeShift);
       
@@ -96,87 +151,12 @@ const PaletteColorEditor: React.FC<{
           label: 'DARK'
         }
       );
-    }
-    
-    return scale;
-  };
+      
+      return scale;
+    };
 
-  const colorScale = generateColorScale(h, s, l, color.id, darkModeShift);
+    const colorScale = generateColorScale(h, s, l, color.id, darkModeShift);
 
-  if (color.id === 1 || color.id === 2) {
-    // Colors 1-2: Number → Color selection box with hex → 10-box scale → left-justified HSL spinners
-    return (
-      <div className={styles.colorEditor}>
-        {/* Top Row: Number → Color Selection → Color Scale */}
-        <div className={styles.topRow}>
-          <div className={styles.colorNumber}>{color.id}</div>
-          <div className={styles.colorSelection}>
-            <div
-              className={styles.colorBox}
-              style={{ backgroundColor: color.hex }}
-              title={`${color.name}: ${color.hex}`}
-            />
-            <input
-              type="text"
-              value={color.hex}
-              onChange={handleHexChange}
-              className={styles.hexInput}
-              title="HEX color value"
-            />
-          </div>
-          <div className={styles.colorScale}>
-            {colorScale.map(({ step, color: scaleColor, isBase, label }) => (
-              <div key={step} className={styles.scaleItem}>
-                <div
-                  className={`${styles.scaleColor} ${isBase ? styles.scaleColorBase : ''}`}
-                  style={{ backgroundColor: scaleColor }}
-                  title={`${label}: ${scaleColor}`}
-                />
-                <span className={styles.scaleNumber}>{label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Bottom Row: Left-justified HSL Spinners */}
-        <div className={styles.hslSpinnersLeft}>
-          <div className={styles.spinnerGroupInline}>
-            <label>H</label>
-            <input
-              type="number"
-              min="0"
-              max="360"
-              value={isNaN(h) ? 0 : h}
-              onChange={(e) => handleHslSliderChange('h', e.target.value)}
-              className={styles.hslSpinner}
-            />
-          </div>
-          <div className={styles.spinnerGroupInline}>
-            <label>S</label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              value={isNaN(s) ? 0 : s}
-              onChange={(e) => handleHslSliderChange('s', e.target.value)}
-              className={styles.hslSpinner}
-            />
-          </div>
-          <div className={styles.spinnerGroupInline}>
-            <label>L</label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              value={isNaN(l) ? 0 : l}
-              onChange={(e) => handleHslSliderChange('l', e.target.value)}
-              className={styles.hslSpinner}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  } else {
     // Colors 3-14: Labels above boxes, hex input under left box, HSL spinners centered under left box
     return (
       <div className={styles.colorEditor}>
@@ -720,26 +700,56 @@ export default function ThemeAdminPage() {
     fetchThemeData();
   }, []);
 
-  const handleColorChange = (id: number, field: keyof BaseColor, value: string) => {
+  const handleColorChange = (id: number, field: keyof BaseColor | keyof ThemeColor, value: string, variant?: 'light' | 'dark') => {
     if (!themeData) return;
     
-    setThemeData(prev => ({
-      ...prev!,
-      palette: prev!.palette.map(color =>
-        color.id === id ? { ...color, [field]: value } : color
-      )
-    }));
+    setThemeData(prev => {
+      const newData = { ...prev! };
+      
+      // Handle theme colors (1 and 2)
+      if (id === 1 || id === 2) {
+        const themeColor = newData.themeColors.find(color => color.id === id);
+        if (themeColor && variant) {
+          if (field === 'hex') {
+            themeColor[variant].hex = value;
+          } else if (field === 'name') {
+            themeColor.name = value;
+          }
+        }
+      } else {
+        // Handle regular palette colors (3-14)
+        newData.palette = newData.palette.map(color =>
+          color.id === id ? { ...color, [field]: value } : color
+        );
+      }
+      
+      return newData;
+    });
   };
 
-  const handleHslChange = (id: number, h: string, s: string, l: string) => {
+  const handleHslChange = (id: number, h: string, s: string, l: string, variant?: 'light' | 'dark') => {
     if (!themeData) return;
     
-    setThemeData(prev => ({
-      ...prev!,
-      palette: prev!.palette.map(color =>
-        color.id === id ? { ...color, h, s, l } : color
-      )
-    }));
+    setThemeData(prev => {
+      const newData = { ...prev! };
+      
+      // Handle theme colors (1 and 2)
+      if (id === 1 || id === 2) {
+        const themeColor = newData.themeColors.find(color => color.id === id);
+        if (themeColor && variant) {
+          themeColor[variant].h = h;
+          themeColor[variant].s = s;
+          themeColor[variant].l = l;
+        }
+      } else {
+        // Handle regular palette colors (3-14)
+        newData.palette = newData.palette.map(color =>
+          color.id === id ? { ...color, h, s, l } : color
+        );
+      }
+      
+      return newData;
+    });
   };
 
   const handleTokenChange = (section: string, key: string, value: string) => {
@@ -934,7 +944,18 @@ export default function ThemeAdminPage() {
             </div>
           </div>
           <div className={styles.paletteGrid}>
-            {themeData.palette.map((color) => (
+            {/* Render theme colors (1 and 2) first */}
+            {themeData.themeColors?.map((color) => (
+              <PaletteColorEditor
+                key={color.id}
+                color={color}
+                onColorChange={handleColorChange}
+                onHslChange={handleHslChange}
+                darkModeShift={darkModeShift}
+              />
+            ))}
+            {/* Render regular palette colors (3-14) - filter out colors 1 and 2 */}
+            {themeData.palette.filter(color => color.id > 2).map((color) => (
               <PaletteColorEditor
                 key={color.id}
                 color={color}
@@ -989,6 +1010,8 @@ export default function ThemeAdminPage() {
                 <FontSizeTokenInput label="2XL" value={themeData.typography?.fontSizes?.['2xl'] || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', '2xl', v)} />
                 <FontSizeTokenInput label="3XL" value={themeData.typography?.fontSizes?.['3xl'] || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', '3xl', v)} />
                 <FontSizeTokenInput label="4XL" value={themeData.typography?.fontSizes?.['4xl'] || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', '4xl', v)} />
+                <FontSizeTokenInput label="5XL" value={themeData.typography?.fontSizes?.['5xl'] || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', '5xl', v)} />
+                <FontSizeTokenInput label="6XL" value={themeData.typography?.fontSizes?.['6xl'] || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', '6xl', v)} />
               </div>
 
               <FontWeightSection 
@@ -1038,6 +1061,12 @@ export default function ThemeAdminPage() {
                 <FontSizeTokenInput label="Header" value={themeData.zIndex?.header || ''} onChange={(v) => handleTokenChange('zIndex', 'header', v)} />
                 <FontSizeTokenInput label="Modal" value={themeData.zIndex?.modal || ''} onChange={(v) => handleTokenChange('zIndex', 'modal', v)} />
                 <FontSizeTokenInput label="Tooltip" value={themeData.zIndex?.tooltip || ''} onChange={(v) => handleTokenChange('zIndex', 'tooltip', v)} />
+              </div>
+
+              <div className={styles.tokenSubsection}>
+                <h4>Gradients</h4>
+                <ExtendedTokenInput label="Bottom Overlay" value={themeData.gradients?.bottomOverlay || ''} onChange={(v) => handleTokenChange('gradients', 'bottomOverlay', v)} />
+                <ExtendedTokenInput label="Bottom Overlay Strong" value={themeData.gradients?.bottomOverlayStrong || ''} onChange={(v) => handleTokenChange('gradients', 'bottomOverlayStrong', v)} />
               </div>
             </div>
 

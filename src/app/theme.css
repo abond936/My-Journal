@@ -1,60 +1,128 @@
 /*
-  Unified Design System
-  ==================================
-  This file represents the single source of truth for all styling tokens.
-  It is built on a three-tiered system:
+  Unified Design System (v2) - Light First Approach
+  ==========================================
+  This file represents the single source of truth for all styling tokens,
+  built on a hierarchical model and an abstract, HSL-based color palette.
+  The HSL system is used to programmatically generate color variations for
+  light and dark themes.
+
+  APPROACH:
+  - Colors are assigned semantic names and adapt their lightness based on theme context
+  - Mathematical conditional logic handles automatic light/dark theme switching
+  - Color scales are generated programmatically for consistent theming
+
+  Structure:
   1. Base Tokens: Raw, context-agnostic primitive values.
-  2. Semantic Tokens: Context-aware aliases that give purpose to base tokens.
-  3. Component Tokens: Scoped to specific components for targeted styling.
+  2. Global Element Tokens: Application-wide styles for foundational HTML elements.
+  3. Component Tokens: Scoped styles for specific, reusable components.
 */
 
+/*
+ * =================================================================
+ * LIGHT THEME (DEFAULT)
+ * =================================================================
+ */
 :root {
   /* --- 1. BASE TOKENS --- */
-  /* The raw, foundational values. These should rarely be used directly in components. */
 
-  /* Color Palette (HSL-based for easy manipulation) */
-  --color-primary-hue: 244;
-  --color-secondary-hue: 162;
-  --color-accent-hue: 33;
-  --color-neutral-hue: 220;
+  /* Color Palette (HEX-based) */
+  --hex1: #F2F2F2; /* background */
+  --hex2: #0D0D0D; /* text */
+  --hex3: #135b96; /* principal */
+  --hex4: #E6B85A; /* accent */
+  --hex5: #8A3A0E; /* alt1 */
+  --hex6: #0E3A4A; /* alt2 */
+  --hex7: #2C5A1F; /* alt3 */
+  --hex8: #5A1F4F; /* alt4 */
+  --hex9: #6A4F29; /* alt5 */
+  --hex10: #B08A3E; /* alt6 */
+  --hex11: #059669; /* success */
+  --hex12: #dc2626; /* error */
+  --hex13: #d97706; /* warning */
+  --hex14: #2563eb; /* info */
+  /* --color15: */
+  
+  /* Color Palette (HSL-based) */
+  --h3: 211; /* principal */
+  --s3: 76%;
+  --l3: 33%;
+  --h4: 42; /* accent */
+  --s4: 76%;
+  --l4: 62%;
+  --h5: 20; /* alt1 */
+  --s5: 80%;
+  --l5: 30%;
+  --h6: 198; /* alt2 */
+  --s6: 63%;
+  --l6: 18%;
+  --h7: 102; /* alt3 */
+  --s7: 50%;
+  --l7: 24%;
+  --h8: 311; /* alt4 */
+  --s8: 49%;
+  --l8: 24%;
+  --h9: 35; /* alt5 */
+  --s9: 44%;
+  --l9: 29%;
+  --h10: 41; /* alt6 */
+  --s10: 49%;
+  --l10: 47%;
+  --h11: 160; /* success */
+  --s11: 94%;
+  --l11: 30%;
+  --h12: 0; /* error */
+  --s12: 71%;
+  --l12: 50%;
+  --h13: 34; /* warning */
+  --s13: 96%;
+  --l13: 43%;
+  --h14: 221; /* info */
+  --s14: 81%;
+  --l14: 55%;
+  /* --hue15: */
 
-  --color-primary: hsl(var(--color-primary-hue), 76%, 52%); /* #4f46e5 */
-  --color-primary-light: hsl(var(--color-primary-hue), 89%, 77%); /* #818cf8 */
-  --color-primary-dark: hsl(var(--color-primary-hue), 56%, 41%); /* #3730a3 */
+  /* Theme Colors (Light/Dark Mode) */
+  --color1-light: hsl(0, 0%, 100%);
+  --color1-dark: hsl(0, 0%, 10%);
+  --color2-light: hsl(0, 0%, 10%);
+  --color2-dark: hsl(0, 0%, 90%);
 
-  --color-secondary: hsl(var(--color-secondary-hue), 92%, 30%); /* #059669 */
-  --color-secondary-light: hsl(var(--color-secondary-hue), 64%, 52%); /* #34d399 */
-  --color-secondary-dark: hsl(var(--color-secondary-hue), 89%, 20%); /* #065f46 */
+  /* Base Color Definitions (Colors 3-14) */
+  --color3: hsl(var(--h3), var(--s3), var(--l3));
+  --color4: hsl(var(--h4), var(--s4), var(--l4));
+  --color5: hsl(var(--h5), var(--s5), var(--l5));
+  --color6: hsl(var(--h6), var(--s6), var(--l6));
+  --color7: hsl(var(--h7), var(--s7), var(--l7));
+  --color8: hsl(var(--h8), var(--s8), var(--l8));
+  --color9: hsl(var(--h9), var(--s9), var(--l9));
+  --color10: hsl(var(--h10), var(--s10), var(--l10));
+  --color11: hsl(var(--h11), var(--s11), var(--l11));
+  --color12: hsl(var(--h12), var(--s12), var(--l12));
+  --color13: hsl(var(--h13), var(--s13), var(--l13));
+  --color14: hsl(var(--h14), var(--s14), var(--l14));
 
-  --color-accent: hsl(var(--color-accent-hue), 95%, 44%); /* #d97706 */
-  --color-accent-light: hsl(var(--color-accent-hue), 96%, 57%); /* #fbbf24 */
-  --color-accent-dark: hsl(var(--color-accent-hue), 89%, 39%); /* #b45309 */
+  /* Breakpoints (Mobile-First) */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
 
-  --color-neutral-50: hsl(var(--color-neutral-hue), 25%, 98%); /* #f8fafc */
-  --color-neutral-100: hsl(var(--color-neutral-hue), 27%, 95%); /* #f1f5f9 */
-  --color-neutral-200: hsl(var(--color-neutral-hue), 26%, 90%); /* #e2e8f0 */
-  --color-neutral-300: hsl(var(--color-neutral-hue), 24%, 84%); /* #cbd5e1 */
-  --color-neutral-400: hsl(var(--color-neutral-hue), 18%, 65%); /* #94a3b8 */
-  --color-neutral-500: hsl(var(--color-neutral-hue), 16%, 47%); /* #64748b */
-  --color-neutral-600: hsl(var(--color-neutral-hue), 15%, 35%); /* #475569 */
-  --color-neutral-700: hsl(var(--color-neutral-hue), 22%, 27%); /* #334155 */
-  --color-neutral-800: hsl(var(--color-neutral-hue), 24%, 17%); /* #1e293b */
-  --color-neutral-900: hsl(var(--color-neutral-hue), 28%, 9%);  /* #0f172a */
-
-  --color-success-hue: 158;
-  --color-warning-hue: 24;
-  --color-error-hue: 0;
-  --color-info-hue: 221;
-
-  --color-white: #ffffff;
-  --color-black: #000000;
-
-  /* Typography */
+  /* Typography Scale */
   --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-family-serif: "Georgia", serif;
-  --font-family-mono: "Menlo", "Consolas", monospace;
   --font-family-handwriting: "Ink Free", cursive;
 
+  /* Fluid Typography */
+  --font-size1-fluid: clamp(1.5rem, 1rem + 2.5vw, 3rem);
+  --font-size2-fluid: clamp(1.25rem, 0.8rem + 2.25vw, 2.25rem);
+  --font-size3-fluid: clamp(1rem, 0.75rem + 1.25vw, 1.5rem);
+
+  /* Fluid Spacing */
+  --spacing1-fluid: clamp(1rem, 0.5rem + 2.5vw, 2rem);
+  --spacing2-fluid: clamp(2rem, 1rem + 5vw, 4rem);
+  --spacing3-fluid: clamp(4rem, 2rem + 10vw, 8rem);
+
+  /* Static Typography */
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-base: 1rem;
@@ -63,226 +131,200 @@
   --font-size-2xl: 1.5rem;
   --font-size-3xl: 1.875rem;
   --font-size-4xl: 2.25rem;
+  --font-size-5xl: 3rem;
+  --font-size-6xl: 3.75rem;
 
   --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
+  --font-weight-increment: 100;
+  --font-weight-medium: calc(var(--font-weight-normal) + var(--font-weight-increment));
+  --font-weight-semibold: calc(var(--font-weight-normal) + (2 * var(--font-weight-increment)));
+  --font-weight-bold: calc(var(--font-weight-normal) + (3 * var(--font-weight-increment)));
 
-  --line-height-tight: 1.25;
-  --line-height-normal: 1.5;
-  --line-height-relaxed: 1.75;
+  --line-height-base: 1.5;
+  --line-height-increment: 0.25;
+  --line-height-tight: calc(var(--line-height-base) - var(--line-height-increment));
+  --line-height-relaxed: calc(var(--line-height-base) + var(--line-height-increment));
 
-  /* Spacing */
-  --spacing-xs: 0.25rem;  /* 4px */
-  --spacing-sm: 0.5rem;   /* 8px */
-  --spacing-md: 1rem;     /* 16px */
-  --spacing-lg: 1.5rem;   /* 24px */
-  --spacing-xl: 2rem;     /* 32px */
-  --spacing-2xl: 3rem;    /* 48px */
-  --spacing-3xl: 4rem;    /* 64px */
-  --spacing-4xl: 6rem;    /* 96px */
+  /* Spacing Scale */
+  --spacing-unit: 4px;
+  --spacing-xs: calc(1 * var(--spacing-unit));
+  --spacing-sm: calc(2 * var(--spacing-unit));
+  --spacing-md: calc(4 * var(--spacing-unit));
+  --spacing-lg: calc(6 * var(--spacing-unit));
+  --spacing-xl: calc(8 * var(--spacing-unit));
+  --spacing-2xl: calc(12 * var(--spacing-unit));
+  --spacing-3xl: calc(16 * var(--spacing-unit));
+  --spacing-4xl: calc(24 * var(--spacing-unit));
 
-  /* Borders & Radius */
+  /* Border & Radius Scale */
   --border-width-thin: 1px;
   --border-width-medium: 2px;
   --border-width-thick: 3px;
+  
   --border-radius-sm: 0.25rem;
   --border-radius-md: 0.5rem;
   --border-radius-lg: 0.75rem;
   --border-radius-xl: 1rem;
   --border-radius-full: 9999px;
 
-  /* Shadows */
-  --shadow-color: 220 13% 69%;
-  --shadow-strength: 1%;
-  --shadow-sm: 0 1px 2px -1px hsl(var(--shadow-color) / calc(var(--shadow-strength) + 9%));
-  --shadow-md: 0 3px 4px -2px hsl(var(--shadow-color) / calc(var(--shadow-strength) + 9%)),
-               0 7px 10px -4px hsl(var(--shadow-color) / calc(var(--shadow-strength) + 8%));
-  --shadow-lg: 0 5px 8px -3px hsl(var(--shadow-color) / calc(var(--shadow-strength) + 10%)),
-               0 12px 18px -5px hsl(var(--shadow-color) / calc(var(--shadow-strength) + 10%));
-  --shadow-xl: 0 10px 15px -5px hsl(var(--shadow-color) / calc(var(--shadow-strength) + 12%)),
-               0 25px 35px -10px hsl(var(--shadow-color) / calc(var(--shadow-strength) + 12%));
+  /* Shadow Scale (For Light Theme) */
+  --shadow-strength: 10%;
+  --shadow-color: hsl(var(--h2) / var(--shadow-strength));
+  --shadow-sm: 0 1px 2px -1px var(--shadow-color);
+  --shadow-md: 0 3px 4px -2px var(--shadow-color), 0 7px 10px -4px var(--shadow-color);
+  --shadow-lg: 0 5px 8px -3px var(--shadow-color), 0 12px 18px -5px var(--shadow-color);
+  --shadow-xl: 0 10px 15px -5px var(--shadow-color), 0 25px 35px -10px var(--shadow-color);
 
   /* Z-Index Scale */
   --z-index-default: 1;
   --z-index-content: 10;
   --z-index-sticky: 100;
-  --z-index-header-element: 500;
-  --z-index-sidebar: 900;
   --z-index-modal-backdrop: 1000;
-  --z-index-header: 1100;
-  --z-index-header-toggle: 1200;
+  --z-index-sidebar: 1100;
+  --z-index-header: 1200;
   --z-index-modal: 1300;
   --z-index-tooltip: 1400;
 
-
-  /* --- 2. SEMANTIC TOKENS --- */
-  /* Context-aware aliases. These should be the most commonly used variables. */
-
-  /* Backgrounds */
-  --background-primary: var(--color-neutral-50);
-  --background-secondary: var(--color-neutral-100);
-  --background-tertiary: var(--color-neutral-200);
-  --background-accent: var(--color-accent);
-  --background-inverse: var(--color-neutral-900);
-
-  /* Text */
-  --text-primary: var(--color-neutral-800);
-  --text-secondary: var(--color-neutral-600);
-  --text-muted: var(--color-neutral-400);
-  --text-accent: var(--color-accent-dark);
-  --text-on-primary: var(--color-white);
-  --text-on-accent: var(--color-white);
+  /* --- 2. GLOBAL ELEMENT TOKENS (LIGHT THEME) --- */
+  
+  /* Global Body Background */
+  --body-background-color: var(--color1-light);
+  
+  /* Layout */
+  --layout-container-max-width: 1200px;
+  --layout-background1-color: var(--color1-light);
+  --layout-background2-color: var(--color1-light);
+  --sidebar-width: 300px;
+  --sidebar-width-mobile: 250px;
+  --logo-max-height: 50px;
+  --spinner-size: 50px;
+  --form-min-width: 120px;
+  --button-min-width: 60px;
+  --icon-min-width: 24px;
+  --transition-short: 0.2s;
 
   /* Borders */
-  --border-primary: var(--color-neutral-200);
-  --border-secondary: var(--color-neutral-300);
-  --border-accent: var(--color-accent);
+  --border1-color: hsl(0, 0%, 60%);
+  --border2-color: hsl(0, 0%, 50%);
 
-  /* Interactive Elements (Links, Buttons) */
-  --interactive-primary: var(--color-primary);
-  --interactive-primary-hover: var(--color-primary-dark);
-  --interactive-accent: var(--color-accent);
-  --interactive-accent-hover: var(--color-accent-dark);
+  /* States */
+  --state-success-background-color: hsl(var(--h11) / 0.15);
+  --state-success-border-color: var(--color11);
+  --state-error-background-color: hsl(var(--h12) / 0.15);
+  --state-error-border-color: var(--color12);
+  --state-warning-background-color: hsl(var(--h13) / 0.15);
+  --state-warning-border-color: var(--color13);
+  --state-info-background-color: hsl(var(--h14) / 0.15);
+  --state-info-border-color: var(--color14);
 
-  /* State Colors (Success, Warning, Error, Info) */
-  --color-success-bg: hsl(var(--color-success-hue), 84%, 95%);
-  --color-success-text: hsl(var(--color-success-hue), 70%, 25%);
-  --color-success-border: hsl(var(--color-success-hue), 77%, 85%);
-  --color-warning-bg: hsl(var(--color-warning-hue), 100%, 95%);
-  --color-warning-text: hsl(var(--color-warning-hue), 80%, 30%);
-  --color-warning-border: hsl(var(--color-warning-hue), 98%, 87%);
-  --color-error-bg: hsl(var(--color-error-hue), 100%, 97%);
-  --color-error-text: hsl(var(--color-error-hue), 80%, 40%);
-  --color-error-border: hsl(var(--color-error-hue), 95%, 88%);
-  --color-info-bg: hsl(var(--color-info-hue), 100%, 96%);
-  --color-info-text: hsl(var(--color-info-hue), 80%, 40%);
-  --color-info-border: hsl(var(--color-info-hue), 97%, 88%);
-
+  /* Typography */
+  --text1-color: var(--color2-light);
+  --text2-color: var(--color2-light);
 
   /* --- 3. COMPONENT TOKENS --- */
-  /* Scoped to specific components for targeted styling. */
   
-  /* Layout & Navigation */
+  /* Header */
   --header-height: 60px;
-  --header-background: var(--background-primary);
-  --header-border-color: var(--border-primary);
-  --header-text-color: var(--text-primary);
-  --sidebar-width: 300px;
-  --sidebar-background: var(--background-primary);
-  --sidebar-border-color: var(--border-primary);
+  --header-background-color: var(--color1-light);
+  --header-border-color: var(--border1-color);
+  --header-border-width: var(--border-width-thin);
 
-  /* Cards */
-  --card-background: var(--background-secondary);
-  --card-padding: var(--spacing-lg);
-  --card-border-color: var(--border-primary);
-  --card-border-width: var(--border-width-thin);
-  --card-border-radius: var(--border-radius-lg);
-  --card-shadow: var(--shadow-md);
-  --card-shadow-hover: var(--shadow-lg);
-  --card-title-size: var(--font-size-lg);
-  --card-title-weight: var(--font-weight-semibold);
-  --card-title-color: var(--text-primary);
-  --card-excerpt-size: var(--font-size-base);
-  --card-excerpt-color: var(--text-secondary);
-
-  /* Type-Specific Card Overrides */
-  --card-quote-background: var(--background-primary);
-  --card-quote-icon-color: var(--color-neutral-200);
-  --card-callout-background: var(--color-accent-light);
-  --card-callout-text-color: var(--text-on-accent);
+  /* Button: Solid */
+  --button-solid-background-color: var(--color3);
+  --button-solid-background-color-hover: var(--color3);
+  --button-solid-border-color: var(--color3);
+  --button-solid-text-color: var(--color1-light);
   
-  /* Tags */
+  /* Button: Outline */
+  --button-outline-background-color: transparent;
+  --button-outline-background-color-hover: hsla(var(--h3), var(--s3), var(--l3), 0.1);
+  --button-outline-border-color: var(--border1-color);
+  --button-outline-text-color: var(--color2-light);
+  --button-outline-border-width: var(--border-width-medium);
+
+  /* Card */
+  --card-background-color: var(--color1-light);
+  --card-padding: var(--spacing-lg);
+  --card-border-color: var(--border1-color);
+  --card-border-width: var(--border-width-medium);
+  --card-border-radius: var(--border-radius-lg);
+  --card-shadow: var(--shadow-sm);
+  --card-shadow-hover: var(--shadow-md);
+  
+  /* Tag */
   --tag-padding: var(--spacing-xs) var(--spacing-sm);
   --tag-border-radius: var(--border-radius-full);
+  --tag-font-weight: var(--font-weight-medium);
   --tag-font-size: var(--font-size-sm);
+  --tag-font-family: var(--font-family-sans);
+  --tag-text-color: var(--color1-light);
+  --tag-who-bg-color: var(--color5);
+  --tag-what-bg-color: var(--color6);
+  --tag-when-bg-color: var(--color7);
+  --tag-where-bg-color: var(--color8);
+  --tag-reflection-bg-color: var(--color9);
   
-  /* Dimensional Tag Colors (examples) */
-  --tag-dimension-who-bg: #e3f2fd;
-  --tag-dimension-who-text: #1976d2;
-  --tag-dimension-what-bg: #e8f5e9;
-  --tag-dimension-what-text: #388e3c;
-  --tag-dimension-when-bg: #fff3cd;
-  --tag-dimension-when-text: #856404;
-  --tag-dimension-where-bg: #f3e5f5;
-  --tag-dimension-where-text: #7b1fa2;
+  /* Form & Input */
+  --input-background-color: var(--color1-light);
+  --input-border-color: var(--border1-color);
+  --input-border-color-focus: var(--color3);
+  --input-text-color: var(--color2-light);
+  --input-border-radius: var(--border-radius-sm);
+  --input-padding: var(--spacing-sm) var(--spacing-md);
 
-  /* Media & Galleries */
-  --image-border-radius: var(--border-radius-md);
-  --image-overlay-color: hsla(var(--color-neutral-hue), 28%, 9%, 0.6);
-  --image-overlay-text-color: var(--color-white);
-  --image-caption-font-size: var(--font-size-sm);
-  --image-caption-color: var(--text-muted);
-  --gallery-padding: var(--spacing-md);
-  --gallery-item-gap: var(--spacing-md);
+  /* Link */
+  --link-text-color: var(--color3);
+  --link-text-color-hover: var(--color3);
+  --link-decoration-hover: underline;
+
+  /* Gradients */
+  --gradient-bottom-overlay: linear-gradient(transparent, rgba(0,0,0,0.7));
+  --gradient-bottom-overlay-strong: linear-gradient(transparent, rgba(0,0,0,0.9));
 }
 
+/*
+ * =================================================================
+ * DARK THEME OVERRIDES
+ * =================================================================
+ */
 [data-theme="dark"] {
-  /* --- DARK THEME OVERRIDES --- */
-  
-  /* Color Palette (Dark Theme) */
-  --color-primary: hsl(var(--color-primary-hue), 70%, 67%); /* #6366f1 */
-  --color-primary-light: hsl(var(--color-primary-hue), 89%, 77%); /* #818cf8 */
-  --color-primary-dark: hsl(var(--color-primary-hue), 76%, 52%); /* #4f46e5 */
+  /* --- BASE TOKEN OVERRIDES --- */
 
-  --color-secondary: hsl(var(--color-secondary-hue), 80%, 45%); /* #10b981 */
-  --color-secondary-light: hsl(var(--color-secondary-hue), 64%, 52%); /* #34d399 */
-  --color-secondary-dark: hsl(var(--color-secondary-hue), 92%, 30%); /* #059669 */
-
-  --color-accent: hsl(var(--color-accent-hue), 92%, 52%); /* #f59e0b */
-  --color-accent-light: hsl(var(--color-accent-hue), 96%, 57%); /* #fbbf24 */
-  --color-accent-dark: hsl(var(--color-accent-hue), 95%, 44%); /* #d97706 */
-
-  /* Neutral colors are swapped for dark mode */
-  --color-neutral-50: hsl(var(--color-neutral-hue), 28%, 9%);  /* #0f172a */
-  --color-neutral-100: hsl(var(--color-neutral-hue), 24%, 17%); /* #1e293b */
-  --color-neutral-200: hsl(var(--color-neutral-hue), 22%, 27%); /* #334155 */
-  --color-neutral-300: hsl(var(--color-neutral-hue), 15%, 35%); /* #475569 */
-  --color-neutral-400: hsl(var(--color-neutral-hue), 16%, 47%); /* #64748b */
-  --color-neutral-500: hsl(var(--color-neutral-hue), 18%, 65%); /* #94a3b8 */
-  --color-neutral-600: hsl(var(--color-neutral-hue), 24%, 84%); /* #cbd5e1 */
-  --color-neutral-700: hsl(var(--color-neutral-hue), 26%, 90%); /* #e2e8f0 */
-  --color-neutral-800: hsl(var(--color-neutral-hue), 27%, 95%); /* #f1f5f9 */
-  --color-neutral-900: hsl(var(--color-neutral-hue), 25%, 98%); /* #f8fafc */
-  
-  /* Shadow Scale */
-  --shadow-color: 220 13% 10%;
+  /* Shadow Scale (For Dark Theme) */
   --shadow-strength: 25%;
+  --shadow-color: hsl(var(--h1) / var(--shadow-strength));
 
-  /* Semantic Overrides */
-  --background-primary: var(--color-neutral-100);
-  --background-secondary: var(--color-neutral-200);
-  --background-tertiary: var(--color-neutral-300);
-  --background-inverse: var(--color-neutral-50);
+  /* --- GLOBAL ELEMENT TOKEN OVERRIDES --- */
+  --body-background-color: var(--color1-dark);         /* Body background */
+  --layout-background1-color: var(--color1-dark);      /* Main background */
+  --layout-background2-color: var(--color1-dark);      /* Secondary background */
 
-  --text-primary: var(--color-neutral-800);
-  --text-secondary: var(--color-neutral-600);
-  --text-muted: var(--color-neutral-500);
-  --text-accent: var(--color-accent-light);
+  --border1-color: hsl(0, 0%, 25%);
+  --border2-color: hsl(0, 0%, 35%);
 
-  --border-primary: var(--color-neutral-300);
-  --border-secondary: var(--color-neutral-400);
+  --text1-color: var(--color2-dark); /* Primary text */
+  --text2-color: var(--color2-dark); /* Secondary text */
 
-  --interactive-primary-hover: var(--color-primary-light);
+  /* --- COMPONENT TOKEN OVERRIDES --- */
+  --header-background-color: var(--layout-background2-color);
 
-  /* State Overrides */
-  --color-success-bg: hsl(var(--color-success-hue), 95%, 10%);
-  --color-success-text: hsl(var(--color-success-hue), 80%, 85%);
-  --color-success-border: hsl(var(--color-success-hue), 80%, 25%);
-  --color-warning-bg: hsl(var(--color-warning-hue), 98%, 12%);
-  --color-warning-text: hsl(var(--color-warning-hue), 90%, 80%);
-  --color-warning-border: hsl(var(--color-warning-hue), 85%, 30%);
-  --color-error-bg: hsl(var(--color-error-hue), 90%, 15%);
-  --color-error-text: hsl(var(--color-error-hue), 90%, 85%);
-  --color-error-border: hsl(var(--color-error-hue), 80%, 35%);
-  --color-info-bg: hsl(var(--color-info-hue), 95%, 15%);
-  --color-info-text: hsl(var(--color-info-hue), 90%, 85%);
-  --color-info-border: hsl(var(--color-info-hue), 85%, 35%);
+  --input-background-color: var(--color1-dark);
+  --input-border-color: var(--border2-color);
+  --input-text-color: var(--text1-color);
+  
+  --card-background-color: var(--color1-dark);
+}
 
-  /* Component Overrides */
-  --card-quote-icon-color: rgba(226, 232, 240, 0.1);
-  --card-callout-background: #3e2723;
-  --card-callout-text-color: #f5f5f5;
-  --image-overlay-color: hsla(var(--color-neutral-hue), 28%, 9%, 0.7);
-} 
+/*
+ * =================================================================
+ * GLOBAL ELEMENT STYLES
+ * =================================================================
+ */
+
+/* Body Background - Prevents white showing through */
+body {
+  background-color: var(--body-background-color);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}

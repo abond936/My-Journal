@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Card } from '@/lib/types/card';
-import styles from './CardFeed.module.css';
+import styles from './CardFeedV2.module.css';
 import V2ContentCard from './V2ContentCard';
 
 interface CardFeedProps {

@@ -39,7 +39,9 @@ const sampleThemeData = {
       xl: '1.25rem',
       '2xl': '1.5rem',
       '3xl': '1.875rem',
-      '4xl': '2.25rem'
+      '4xl': '2.25rem',
+      '5xl': '3rem',
+      '6xl': '3.75rem'
     },
     fontWeights: {
       normal: '400',
@@ -61,14 +63,14 @@ const sampleThemeData = {
   },
   spacing: {
     unit: '4px',
-    xs: '4px',
-    sm: '8px',
-    md: '16px',
-    lg: '24px',
-    xl: '32px',
-    '2xl': '48px',
-    '3xl': '64px',
-    '4xl': '96px',
+    xsMultiplier: '1',
+    smMultiplier: '2',
+    mdMultiplier: '4',
+    lgMultiplier: '6',
+    xlMultiplier: '8',
+    '2xlMultiplier': '12',
+    '3xlMultiplier': '16',
+    '4xlMultiplier': '24',
     fluidSpacing: {
       spacing1: 'clamp(1rem, 0.5rem + 2.5vw, 2rem)',
       spacing2: 'clamp(2rem, 1rem + 5vw, 4rem)',
@@ -76,6 +78,10 @@ const sampleThemeData = {
     }
   },
   borders: {
+    colors: {
+      border1: '1/200',
+      border2: '1/300'
+    },
     widths: {
       thin: '1px',
       medium: '2px',
@@ -90,8 +96,9 @@ const sampleThemeData = {
     }
   },
   shadows: {
-    strength: '25%',
-    color: 'hsl(var(--h1) / var(--shadow-strength))',
+    strength: '10%',
+    strengthDark: '25%',
+    color: 'hsl(var(--h2) / var(--shadow-strength))',
     sm: '0 1px 2px -1px var(--shadow-color)',
     md: '0 3px 4px -2px var(--shadow-color), 0 7px 10px -4px var(--shadow-color)',
     lg: '0 5px 8px -3px var(--shadow-color), 0 12px 18px -5px var(--shadow-color)',
@@ -109,10 +116,18 @@ const sampleThemeData = {
   },
   layout: {
     containerMaxWidth: '1200px',
-    background1Color: '1',
-    background2Color: '1/050',
-    border1Color: '1/100',
-    border2Color: '1/200',
+    background1Color: '1/050',
+    background2Color: '1/100',
+    border1Color: '1/200',
+    border2Color: '1/300',
+    sidebarWidth: '300px',
+    sidebarWidthMobile: '250px',
+    logoMaxHeight: '50px',
+    spinnerSize: '50px',
+    formMinWidth: '120px',
+    buttonMinWidth: '60px',
+    iconMinWidth: '24px',
+    transitionShort: '0.2s',
     breakpoints: {
       sm: '640px',
       md: '768px',
@@ -177,6 +192,28 @@ const sampleThemeData = {
       textColorHover: '3',
       decorationHover: 'underline'
     }
+  },
+  states: {
+    success: {
+      backgroundColor: '11',
+      borderColor: '11'
+    },
+    error: {
+      backgroundColor: '12',
+      borderColor: '12'
+    },
+    warning: {
+      backgroundColor: '13',
+      borderColor: '13'
+    },
+    info: {
+      backgroundColor: '14',
+      borderColor: '14'
+    }
+  },
+  gradients: {
+    bottomOverlay: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
+    bottomOverlayStrong: 'linear-gradient(transparent, rgba(0,0,0,0.9))'
   },
   darkModeShift: 5
 };
@@ -297,7 +334,7 @@ Elements
   
   cssContent += `  /* --hue15: */
   
-  --is-light-theme: 0; /* 0 = dark theme, 1 = light theme (mathematical conditional) */
+  --is-light-theme: 1; /* 1 = light theme, 0 = dark theme (mathematical conditional) */
   --light-dark-variance: ${darkModeShift}%; /* The amount to lighten/darken colors for states */
 
   /* Base Color Definitions */
@@ -343,6 +380,8 @@ Elements
   --font-size-2xl: ${sampleThemeData.typography.fontSizes['2xl']};
   --font-size-3xl: ${sampleThemeData.typography.fontSizes['3xl']};
   --font-size-4xl: ${sampleThemeData.typography.fontSizes['4xl']};
+  --font-size-5xl: ${sampleThemeData.typography.fontSizes['5xl']};
+  --font-size-6xl: ${sampleThemeData.typography.fontSizes['6xl']};
 
   --font-weight-normal: ${sampleThemeData.typography.fontWeights.normal};
   --font-weight-increment: ${sampleThemeData.typography.fontWeights.increment};
@@ -357,14 +396,14 @@ Elements
 
   /* Spacing Scale */
   --spacing-unit: ${sampleThemeData.spacing.unit};
-  --spacing-xs: calc(1 * var(--spacing-unit)); 
-  --spacing-sm: calc(2 * var(--spacing-unit));   
-  --spacing-md: calc(4 * var(--spacing-unit));   
-  --spacing-lg: calc(6 * var(--spacing-unit));   
-  --spacing-xl: calc(8 * var(--spacing-unit));   
-  --spacing-2xl: calc(12 * var(--spacing-unit)); 
-  --spacing-3xl: calc(16 * var(--spacing-unit)); 
-  --spacing-4xl: calc(24 * var(--spacing-unit)); 
+  --spacing-xs: calc(${sampleThemeData.spacing.xsMultiplier} * var(--spacing-unit)); 
+  --spacing-sm: calc(${sampleThemeData.spacing.smMultiplier} * var(--spacing-unit));   
+  --spacing-md: calc(${sampleThemeData.spacing.mdMultiplier} * var(--spacing-unit));   
+  --spacing-lg: calc(${sampleThemeData.spacing.lgMultiplier} * var(--spacing-unit));   
+  --spacing-xl: calc(${sampleThemeData.spacing.xlMultiplier} * var(--spacing-unit));   
+  --spacing-2xl: calc(${sampleThemeData.spacing['2xlMultiplier']} * var(--spacing-unit)); 
+  --spacing-3xl: calc(${sampleThemeData.spacing['3xlMultiplier']} * var(--spacing-unit)); 
+  --spacing-4xl: calc(${sampleThemeData.spacing['4xlMultiplier']} * var(--spacing-unit)); 
 
   /* Border & Radius Scale */
   /* used generically for all components */
@@ -402,6 +441,14 @@ Elements
   --layout-container-max-width: ${sampleThemeData.layout.containerMaxWidth};
   --layout-background1-color: ${resolveColorReference(sampleThemeData.layout.background1Color, sampleThemeData.palette)};
   --layout-background2-color: ${resolveColorReference(sampleThemeData.layout.background2Color, sampleThemeData.palette)};
+  --layout-sidebar-width: ${sampleThemeData.layout.sidebarWidth};
+  --layout-sidebar-width-mobile: ${sampleThemeData.layout.sidebarWidthMobile};
+  --layout-logo-max-height: ${sampleThemeData.layout.logoMaxHeight};
+  --layout-spinner-size: ${sampleThemeData.layout.spinnerSize};
+  --layout-form-min-width: ${sampleThemeData.layout.formMinWidth};
+  --layout-button-min-width: ${sampleThemeData.layout.buttonMinWidth};
+  --layout-icon-min-width: ${sampleThemeData.layout.iconMinWidth};
+  --layout-transition-short: ${sampleThemeData.layout.transitionShort};
 
   /* Borders */
   --border1-color: ${resolveColorReference(sampleThemeData.layout.border1Color, sampleThemeData.palette)};
@@ -485,6 +532,10 @@ Elements
   --link-text-color-hover: ${resolveColorReference(sampleThemeData.components.link.textColorHover, sampleThemeData.palette)};
   --link-decoration-hover: ${sampleThemeData.components.link.decorationHover};
   
+  /* Gradients */
+  --gradient-bottom-overlay: ${sampleThemeData.gradients.bottomOverlay};
+  --gradient-bottom-overlay-strong: ${sampleThemeData.gradients.bottomOverlayStrong};
+  
   /* Disabled State */
   --disabled-background-color: var(--color1-200);
   --disabled-text-color: var(--color1-500);
@@ -500,8 +551,8 @@ Elements
 [data-theme="light"] {
   /* --- BASE TOKEN OVERRIDES --- */
 
-  /* Mathematical Conditional: Activate light theme calculations */
-  --is-light-theme: 1;
+  /* Mathematical Conditional: Activate dark theme calculations */
+  --is-light-theme: 0;
 
   /* Grayscale Palette (Light Theme: Lighter shades have lower numbers) */
   --color1-050: hsl(var(--h1), var(--s1), 98%);

@@ -17,6 +17,26 @@ export interface BaseColor {
 }
 
 /**
+ * Represents a theme color with light and dark mode variants
+ */
+export interface ThemeColor {
+  id: number;
+  name: string;
+  light: {
+    hex: string;
+    h: string;
+    s: string;
+    l: string;
+  };
+  dark: {
+    hex: string;
+    h: string;
+    s: string;
+    l: string;
+  };
+}
+
+/**
  * Typography tokens
  */
 export interface TypographyTokens {
@@ -38,6 +58,8 @@ export interface TypographyTokens {
     '2xl': string;
     '3xl': string;
     '4xl': string;
+    '5xl': string;
+    '6xl': string;
   };
   fluidFontSizes: {
     size1: string;
@@ -83,6 +105,10 @@ export interface SpacingTokens {
  * Border and radius tokens
  */
 export interface BorderTokens {
+  colors: {
+    border1: string;
+    border2: string;
+  };
   widths: {
     thin: string;
     medium: string;
@@ -122,6 +148,14 @@ export interface ZIndexTokens {
   header: string;
   modal: string;
   tooltip: string;
+}
+
+/**
+ * Gradient tokens
+ */
+export interface GradientTokens {
+  bottomOverlay: string;
+  bottomOverlayStrong: string;
 }
 
 /**
@@ -186,7 +220,9 @@ export interface ComponentTokens {
   tag: {
     padding: string;
     borderRadius: string;
-    font: string;
+    fontWeight: string;
+    fontSize: string;
+    fontFamily: string;
     textColor: string;
     backgrounds: {
       who: string;
@@ -238,6 +274,7 @@ export interface StateTokens {
  */
 export interface StructuredThemeData {
   palette: BaseColor[];
+  themeColors: ThemeColor[]; // Colors 1 and 2 with light/dark variants
   typography: TypographyTokens;
   spacing: SpacingTokens;
   borders: BorderTokens;
@@ -246,6 +283,7 @@ export interface StructuredThemeData {
   layout: LayoutTokens;
   components: ComponentTokens;
   states: StateTokens;
+  gradients: GradientTokens;
 }
 
 /**

@@ -113,6 +113,40 @@
       "name": "info"
     }
   ],
+  "themeColors": [
+    {
+      "id": 1,
+      "name": "background",
+      "light": {
+        "hex": "#FFFFFF",
+        "h": "0",
+        "s": "0%",
+        "l": "100%"
+      },
+      "dark": {
+        "hex": "#1A1A1A",
+        "h": "0",
+        "s": "0%",
+        "l": "10%"
+      }
+    },
+    {
+      "id": 2,
+      "name": "text",
+      "light": {
+        "hex": "#1A1A1A",
+        "h": "0",
+        "s": "0%",
+        "l": "10%"
+      },
+      "dark": {
+        "hex": "#E6E6E6",
+        "h": "0",
+        "s": "0%",
+        "l": "90%"
+      }
+    }
+  ],
   "darkModeShift": 5,
   "typography": {
     "textColors": {
@@ -132,7 +166,9 @@
       "xl": "1.25rem",
       "2xl": "1.5rem",
       "3xl": "1.875rem",
-      "4xl": "2.25rem"
+      "4xl": "2.25rem",
+      "5xl": "3rem",
+      "6xl": "3.75rem"
     },
     "fluidFontSizes": {
       "size1": "clamp(1.5rem, 1rem + 2.5vw, 3rem)",
@@ -153,7 +189,7 @@
   "spacing": {
     "unit": "4px",
     "xs": "1",
-    "sm": "2", 
+    "sm": "2",
     "md": "4",
     "lg": "6",
     "xl": "8",
@@ -301,5 +337,9 @@
       "borderRadius": "border/radius/sm",
       "padding": "spacing/sm spacing/md"
     }
+  },
+  "gradients": {
+    "bottomOverlay": "linear-gradient(transparent, rgba(0,0,0,0.7))",
+    "bottomOverlayStrong": "linear-gradient(transparent, rgba(0,0,0,0.9))"
   }
-} 
+}

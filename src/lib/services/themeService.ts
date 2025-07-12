@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
-import { BaseColor, StructuredThemeData, TypographyTokens, SpacingTokens, BorderTokens, ShadowTokens, ZIndexTokens, LayoutTokens, ComponentTokens, StateTokens } from '@/lib/types/theme';
+import { BaseColor, StructuredThemeData, TypographyTokens, SpacingTokens, BorderTokens, ShadowTokens, ZIndexTokens, LayoutTokens, ComponentTokens, StateTokens, GradientTokens, ThemeColor } from '@/lib/types/theme';
 
 /**
  * Server-side theme service for reading and writing theme data from JSON and generating CSS
@@ -26,6 +26,7 @@ export const getThemeData = async (): Promise<StructuredThemeData & { darkModeSh
     // On error, return a default structure to prevent crashes
     return {
       palette: [],
+      themeColors: [],
       darkModeShift: 5,
       typography: {} as TypographyTokens,
       spacing: {} as SpacingTokens,
@@ -35,6 +36,7 @@ export const getThemeData = async (): Promise<StructuredThemeData & { darkModeSh
       layout: {} as LayoutTokens,
       components: {} as ComponentTokens,
       states: {} as StateTokens,
+      gradients: {} as GradientTokens,
     };
   }
 };
@@ -171,7 +173,7 @@ const resolveTokenReference = (reference: string, themeData: StructuredThemeData
       if (subParts.length === 2) {
         const [type, size] = subParts;
         if (type === 'size') {
-          const validSizes = ['xs', 'sm', 'base', 'lg', 'xl', '2xl', '3xl', '4xl'];
+          const validSizes = ['xs', 'sm', 'base', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl'];
           if (validSizes.includes(size)) {
             return `var(--font-size-${size})`;
           }
@@ -204,61 +206,18 @@ const resolveTokenReference = (reference: string, themeData: StructuredThemeData
 };
 
 /**
- * Helper function to generate color scale CSS variables for light-first approach
+ * Helper function to generate simplified theme color CSS variables
  */
-const generateColorScaleCSS = (color: BaseColor, darkModeShift: number = 5): string => {
-  const { id, h, s, l } = color;
-  const hVal = parseInt(h, 10);
-  const sVal = parseInt(s.replace('%', ''), 10);
-  const lVal = parseInt(l.replace('%', ''), 10);
-  
+const generateThemeColorCSS = (themeColors: ThemeColor[]): string => {
   let css = '';
   
-  // Colors 1 and 2 get 10-box spectrum (050-900)
-  if (id === 1 || id === 2) {
-    const colorSteps = [
-      { value: 50, label: '050' },
-      { value: 100, label: '100' },
-      { value: 200, label: '200' },
-      { value: 300, label: '300' },
-      { value: 400, label: '400' },
-      { value: 500, label: '500' },
-      { value: 600, label: '600' },
-      { value: 700, label: '700' },
-      { value: 800, label: '800' },
-      { value: 900, label: '900' }
-    ];
-    
-    colorSteps.forEach(({ value, label }) => {
-      // Mathematical conditional approach for consistent theme switching
-      let baseLightness;
-      if (id === 1) {
-        // Color1 (background): 050=95%, 100=90%, 200=80%, ..., 900=10%
-        baseLightness = Math.max(0, Math.min(100, 100 - (value / 10)));
-      } else {
-        // Color2 (text): 050=5%, 100=10%, 200=20%, ..., 900=90%
-        baseLightness = Math.max(0, Math.min(100, value / 10));
-      }
-      
-      // Use mathematical conditional for consistent theme switching
-      // In dark mode, colors 1 and 2 should swap their lightness behavior
-      let calculation;
-      if (id === 1) {
-        // Color1: In dark mode, darker steps should become lighter
-        calculation = `calc(${baseLightness}% + (var(--light-dark-variance) * var(--is-dark-theme) * ${baseLightness < 50 ? 2 : -2}))`;
-      } else {
-        // Color2: In dark mode, lighter steps should become darker  
-        calculation = `calc(${baseLightness}% + (var(--light-dark-variance) * var(--is-dark-theme) * ${baseLightness > 50 ? -2 : 2}))`;
-      }
-      
-      css += `  --color${id}-${label}: hsl(var(--h${id}), var(--s${id}), ${calculation});\n`;
-    });
-  } else {
-    // Colors 3-14 get mathematical conditional logic
-    // Base color lightness is used for light mode
-    // Dark mode adds brightness adjustment using --is-dark-theme to make colors stand out
-    css += `  --color${id}: hsl(var(--h${id}), var(--s${id}), calc(var(--l${id}) + (var(--light-dark-variance) * var(--is-dark-theme))));\n`;
-  }
+  // Generate theme color variables (colors 1 and 2)
+  themeColors.forEach(color => {
+    // Light mode variables
+    css += `  --color${color.id}-light: hsl(${color.light.h}, ${color.light.s}, ${color.light.l});\n`;
+    // Dark mode variables  
+    css += `  --color${color.id}-dark: hsl(${color.dark.h}, ${color.dark.s}, ${color.dark.l});\n`;
+  });
   
   return css;
 };
@@ -273,7 +232,7 @@ export const saveThemeData = async (themeData: StructuredThemeData & { darkModeS
     await fs.writeFile(jsonPath, JSON.stringify(themeData, null, 2), 'utf-8');
     
     // Generate CSS file
-    const cssPath = path.join(process.cwd(), 'src', 'app', 'theme1.css');
+    const cssPath = path.join(process.cwd(), 'src', 'app', 'theme.css');
     const darkModeShift = themeData.darkModeShift || 5;
     
     // Generate CSS content with light-first approach
@@ -317,24 +276,31 @@ export const saveThemeData = async (themeData: StructuredThemeData & { darkModeS
   /* Color Palette (HSL-based) */
 `;
 
-    // Generate HSL component definitions
+    // Generate HSL component definitions for colors 3-14
     themeData.palette.forEach(color => {
-      cssContent += `  --h${color.id}: ${color.h}; /* ${color.name} */\n`;
-      cssContent += `  --s${color.id}: ${color.s};\n`;
-      cssContent += `  --l${color.id}: ${color.l};\n`;
+      if (color.id > 2) { // Only colors 3-14 get HSL components
+        cssContent += `  --h${color.id}: ${color.h}; /* ${color.name} */\n`;
+        cssContent += `  --s${color.id}: ${color.s};\n`;
+        cssContent += `  --l${color.id}: ${color.l};\n`;
+      }
     });
     
     cssContent += `  /* --hue15: */
-  
-  --is-dark-theme: 0; /* 0 = light theme, 1 = dark theme */
-  --light-dark-variance: ${darkModeShift}%; /* The amount to brighten colors in dark mode */
 
-  /* Base Color Definitions */
+  /* Theme Colors (Light/Dark Mode) */
 `;
 
-    // Generate base color definitions and scales
+    // Generate theme color variables (colors 1 and 2)
+    cssContent += generateThemeColorCSS(themeData.themeColors || []);
+
+    // Generate base color definitions for colors 3-14
+    cssContent += `
+  /* Base Color Definitions (Colors 3-14) */
+`;
     themeData.palette.forEach(color => {
-      cssContent += generateColorScaleCSS(color, darkModeShift);
+      if (color.id > 2) { // Only colors 3-14 get base color definitions
+        cssContent += `  --color${color.id}: hsl(var(--h${color.id}), var(--s${color.id}), var(--l${color.id}));\n`;
+      }
     });
 
     // Add the rest of the CSS structure
@@ -369,6 +335,8 @@ export const saveThemeData = async (themeData: StructuredThemeData & { darkModeS
   --font-size-2xl: ${themeData.typography.fontSizes['2xl']};
   --font-size-3xl: ${themeData.typography.fontSizes['3xl']};
   --font-size-4xl: ${themeData.typography.fontSizes['4xl']};
+  --font-size-5xl: ${themeData.typography.fontSizes['5xl']};
+  --font-size-6xl: ${themeData.typography.fontSizes['6xl']};
 
   --font-weight-normal: ${themeData.typography.fontWeights.normal};
   --font-weight-increment: ${themeData.typography.fontWeights.increment};
@@ -425,8 +393,8 @@ export const saveThemeData = async (themeData: StructuredThemeData & { darkModeS
   
   /* Layout */
   --layout-container-max-width: ${themeData.layout.containerMaxWidth};
-  --layout-background1-color: ${resolveTokenReference(themeData.layout.background1Color, themeData)};
-  --layout-background2-color: ${resolveTokenReference(themeData.layout.background2Color, themeData)};
+  --layout-background1-color: var(--color1-light);
+  --layout-background2-color: var(--color1-light);
   --sidebar-width: ${themeData.layout.sidebarWidth};
   --sidebar-width-mobile: ${themeData.layout.sidebarWidthMobile};
   --logo-max-height: ${themeData.layout.logoMaxHeight};
@@ -437,8 +405,8 @@ export const saveThemeData = async (themeData: StructuredThemeData & { darkModeS
   --transition-short: ${themeData.layout.transitionShort};
 
   /* Borders */
-  --border1-color: ${resolveTokenReference(themeData.borders.colors.border1, themeData)};
-  --border2-color: ${resolveTokenReference(themeData.borders.colors.border2, themeData)};
+  --border1-color: hsl(0, 0%, 60%);
+  --border2-color: hsl(0, 0%, 50%);
 
   /* States */
   --state-success-background-color: hsl(var(--h${themeData.states.success.backgroundColor}) / 0.15);
@@ -451,8 +419,8 @@ export const saveThemeData = async (themeData: StructuredThemeData & { darkModeS
   --state-info-border-color: ${resolveTokenReference(themeData.states.info.borderColor, themeData)};
 
   /* Typography */
-  --text1-color: ${resolveTokenReference(themeData.typography.textColors.text1, themeData)};
-  --text2-color: ${resolveTokenReference(themeData.typography.textColors.text2, themeData)};
+  --text1-color: var(--color2-light);
+  --text2-color: var(--color2-light);
 
   /* --- 3. COMPONENT TOKENS --- */
   
@@ -509,6 +477,10 @@ export const saveThemeData = async (themeData: StructuredThemeData & { darkModeS
   --link-text-color: ${resolveTokenReference(themeData.components.link.textColor, themeData)};
   --link-text-color-hover: ${resolveTokenReference(themeData.components.link.textColorHover, themeData)};
   --link-decoration-hover: ${resolveTokenReference(themeData.components.link.decorationHover, themeData)};
+
+  /* Gradients */
+  --gradient-bottom-overlay: ${themeData.gradients.bottomOverlay};
+  --gradient-bottom-overlay-strong: ${themeData.gradients.bottomOverlayStrong};
 }
 
 /*
@@ -519,29 +491,28 @@ export const saveThemeData = async (themeData: StructuredThemeData & { darkModeS
 [data-theme="dark"] {
   /* --- BASE TOKEN OVERRIDES --- */
 
-  /* Mathematical Conditional: Activate dark theme calculations */
-  --is-dark-theme: 1;
-  
   /* Shadow Scale (For Dark Theme) */
   --shadow-strength: ${themeData.shadows.strengthDark};
   --shadow-color: hsl(var(--h1) / var(--shadow-strength));
 
   /* --- GLOBAL ELEMENT TOKEN OVERRIDES --- */
-  --layout-background1-color: var(--color2);      /* Main background, near black */
-  --layout-background2-color: var(--color1-050);  /* Secondary background, dark gray */
+  --layout-background1-color: var(--color1-dark);      /* Main background */
+  --layout-background2-color: var(--color1-dark);      /* Secondary background */
 
-  --border1-color: var(--color1-100);
-  --border2-color: var(--color1-200);
+  --border1-color: hsl(0, 0%, 25%);
+  --border2-color: hsl(0, 0%, 35%);
 
-  --text1-color: var(--color1-900); /* Primary text, near white */
-  --text2-color: var(--color1-700); /* Secondary text, light gray */
+  --text1-color: var(--color2-dark); /* Primary text */
+  --text2-color: var(--color2-dark); /* Secondary text */
 
   /* --- COMPONENT TOKEN OVERRIDES --- */
   --header-background-color: var(--layout-background2-color);
 
-  --input-background-color: var(--color1-050);
+  --input-background-color: var(--color1-dark);
   --input-border-color: var(--border2-color);
   --input-text-color: var(--text1-color);
+  
+  --card-background-color: var(--color1-dark);
 }
 `;
 

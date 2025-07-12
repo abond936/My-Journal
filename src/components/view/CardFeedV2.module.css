@@ -52,7 +52,7 @@
   left: 0;
   right: 0;
   padding: var(--spacing-lg);
-  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+  background: var(--gradient-bottom-overlay-strong);
   color: white;
 }
 

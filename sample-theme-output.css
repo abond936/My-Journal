@@ -97,7 +97,7 @@ Elements
   --l14: 55%;
   /* --hue15: */
   
-  --is-light-theme: 0; /* 0 = dark theme, 1 = light theme (mathematical conditional) */
+  --is-light-theme: 1; /* 1 = light theme, 0 = dark theme (mathematical conditional) */
   --light-dark-variance: 5%; /* The amount to lighten/darken colors for states */
 
   /* Base Color Definitions */
@@ -167,6 +167,8 @@ Elements
   --font-size-2xl: 1.5rem;
   --font-size-3xl: 1.875rem;
   --font-size-4xl: 2.25rem;
+  --font-size-5xl: 3rem;
+  --font-size-6xl: 3.75rem;
 
   --font-weight-normal: 400;
   --font-weight-increment: 100;
@@ -203,8 +205,8 @@ Elements
   --border-radius-full: 9999px;
 
   /* Shadow Scale (For Dark Theme) */
-  --shadow-strength: 25%;
-  --shadow-color: hsl(var(--h1) / var(--shadow-strength));
+  --shadow-strength: 10%;
+  --shadow-color: hsl(var(--h2) / var(--shadow-strength));
   --shadow-sm: 0 1px 2px -1px var(--shadow-color);
   --shadow-md: 0 3px 4px -2px var(--shadow-color), 0 7px 10px -4px var(--shadow-color);
   --shadow-lg: 0 5px 8px -3px var(--shadow-color), 0 12px 18px -5px var(--shadow-color);
@@ -224,12 +226,20 @@ Elements
   
   /* Layout */
   --layout-container-max-width: 1200px;
-  --layout-background1-color: var(--color1);
-  --layout-background2-color: var(--color1-050);
+  --layout-background1-color: var(--color1-050);
+  --layout-background2-color: var(--color1-100);
+  --layout-sidebar-width: 300px;
+  --layout-sidebar-width-mobile: 250px;
+  --layout-logo-max-height: 50px;
+  --layout-spinner-size: 50px;
+  --layout-form-min-width: 120px;
+  --layout-button-min-width: 60px;
+  --layout-icon-min-width: 24px;
+  --layout-transition-short: 0.2s;
 
   /* Borders */
-  --border1-color: var(--color1-100);
-  --border2-color: var(--color1-200);
+  --border1-color: var(--color1-200);
+  --border2-color: var(--color1-300);
 
   /* States */
   --state-success-background-color: hsl(var(--h11) / 0.15);
@@ -309,6 +319,10 @@ Elements
   --link-text-color-hover: var(--color3);
   --link-decoration-hover: underline;
   
+  /* Gradients */
+  --gradient-bottom-overlay: linear-gradient(transparent, rgba(0,0,0,0.7));
+  --gradient-bottom-overlay-strong: linear-gradient(transparent, rgba(0,0,0,0.9));
+  
   /* Disabled State */
   --disabled-background-color: var(--color1-200);
   --disabled-text-color: var(--color1-500);
@@ -324,8 +338,8 @@ Elements
 [data-theme="light"] {
   /* --- BASE TOKEN OVERRIDES --- */
 
-  /* Mathematical Conditional: Activate light theme calculations */
-  --is-light-theme: 1;
+  /* Mathematical Conditional: Activate dark theme calculations */
+  --is-light-theme: 0;
 
   /* Grayscale Palette (Light Theme: Lighter shades have lower numbers) */
   --color1-050: hsl(var(--h1), var(--s1), 98%);

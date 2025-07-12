@@ -135,8 +135,8 @@
 
 .variationInput:focus {
   outline: none;
-  border-color: var(--button-primary-background-color);
-  box-shadow: 0 0 0 2px var(--button-primary-background-color-alpha);
+  border-color: var(--button-solid-background-color);
+  box-shadow: 0 0 0 2px hsla(var(--h3), var(--s3), var(--l3), 0.2);
 }
 
 .subsection {
@@ -214,8 +214,8 @@
 }
 
 .colorBox:hover {
-  border-color: var(--button-primary-background-color);
-  box-shadow: 0 0 0 2px var(--button-primary-background-color-alpha);
+  border-color: var(--button-solid-background-color);
+  box-shadow: 0 0 0 2px hsla(var(--h3), var(--s3), var(--l3), 0.2);
 }
 
 .hexInput {
@@ -237,8 +237,8 @@
 
 .hexInput:focus {
   outline: none;
-  border-color: var(--button-primary-background-color);
-  box-shadow: 0 0 0 2px var(--button-primary-background-color-alpha);
+  border-color: var(--button-solid-background-color);
+  box-shadow: 0 0 0 2px hsla(var(--h3), var(--s3), var(--l3), 0.2);
 }
 
 /* Expanded Color Scale */
@@ -269,8 +269,8 @@
 }
 
 .scaleColorSmall:hover {
-  border-color: var(--button-primary-background-color);
-  box-shadow: 0 0 0 1px var(--button-primary-background-color-alpha);
+  border-color: var(--button-solid-background-color);
+  box-shadow: 0 0 0 1px hsla(var(--h3), var(--s3), var(--l3), 0.2);
 }
 
 .hexInputSmall {
@@ -288,8 +288,8 @@
 
 .hexInputSmall:focus {
   outline: none;
-  border-color: var(--button-primary-background-color);
-  box-shadow: 0 0 0 1px var(--button-primary-background-color-alpha);
+  border-color: var(--button-solid-background-color);
+  box-shadow: 0 0 0 1px hsla(var(--h3), var(--s3), var(--l3), 0.2);
 }
 
 /* Left-justified HSL Spinners for colors 1-2 */
@@ -324,7 +324,71 @@
 }
 
 .hexInputLeft {
-  margin-left: 60px; /* Position under the left (LIGHT) box */
+  flex: 1;
+  margin-left: 60px; /* Align with the left color box */
+}
+
+.hexInputRight {
+  flex: 1;
+  margin-left: var(--spacing-md);
+}
+
+/* Hex input positioning for colors 3-14 (under left box only) */
+.hexInputRow {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: var(--spacing-sm);
+  margin-left: 60px; /* Align with the left color box */
+}
+
+.hexInputLeft {
+  flex: 1;
+  margin-left: 60px; /* Align with the left color box */
+}
+
+.hexInputRight {
+  flex: 1;
+  margin-left: var(--spacing-md);
+}
+
+/* For colors 1 and 2, center the hex inputs under the two boxes */
+.hexInputRowTheme {
+  justify-content: center !important;
+  margin-left: 0 !important;
+  gap: 8px !important; /* Same gap as color boxes */
+  width: 3.5in !important; /* Same width as color scale */
+}
+
+/* For colors 3-14, hide the right hex input */
+.hexInputRow .hexInputRight {
+  display: none;
+}
+
+/* For colors 1 and 2, show both hex inputs */
+.hexInputRowTheme .hexInputRight {
+  display: block !important;
+}
+
+.hslSpinnersRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  margin-top: calc(var(--spacing-md) * 0.75); /* Reduced by 25% */
+}
+
+.hslSpinnersRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+}
+
+.hslLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text2-color);
+  margin-bottom: var(--spacing-xs);
 }
 
 /* HSL Spinners left-justified under left box for colors 3-14 */
@@ -336,6 +400,11 @@
   margin-top: var(--spacing-md);
   margin-left: 25px; /* Align with color number */
   padding-left: 60px; /* Offset to align under the left box */
+}
+
+/* Hex input positioning for colors 3-14 - align under left box */
+.hexInputRow .hexInputLeft {
+  margin-left: 60px; /* Align with the left color box */
 }
 
 /* Inline spinner groups for colors 3-14 */
@@ -365,21 +434,21 @@
   height: calc(40px * 1.5); /* Same height as all other boxes */
 }
 
-/* 2-box layout for other colors - both boxes same size */
+/* 2-box layout for colors 1-2 and 3-14 - consistent sizing */
 .colorScale:has(.scaleItem:nth-child(2):last-child) {
   width: 3.5in;
   gap: 8px; /* Add gap between the two boxes */
-  justify-content: center; /* Center the two boxes */
+  justify-content: flex-start; /* Left-align the boxes */
 }
 
 .colorScale:has(.scaleItem:nth-child(2):last-child) .scaleColor {
-  height: calc(72px * 1.5); /* Increased by 50% - same size as base */
+  height: calc(72px * 1.5); /* Consistent height for all 2-box layouts */
   border-radius: var(--border-radius-sm);
   width: 120px; /* Fixed width for consistency */
 }
 
 .colorScale:has(.scaleItem:nth-child(2):last-child) .scaleColorBase {
-  height: calc(72px * 1.5); /* Increased by 50% - same size as light */
+  height: calc(72px * 1.5); /* Consistent height for all 2-box layouts */
   border-radius: var(--border-radius-sm);
   width: 120px; /* Fixed width for consistency */
 }
@@ -395,7 +464,7 @@
   width: 100%;
   height: calc(40px * 1.5); /* Same height as base (500 level) */
   border: var(--border-width-thin) solid var(--border1-color);
-  border-radius: var(--border-radius-xs);
+  border-radius: var(--border-radius-sm);
   cursor: pointer;
   transition: border-color 0.2s ease;
 }
@@ -411,17 +480,17 @@
 }
 
 .scaleColor:hover {
-  border-color: var(--button-primary-background-color);
+  border-color: var(--button-solid-background-color);
 }
 
 .scaleColorBase {
   height: calc(40px * 1.5); /* Same height as all other boxes */
   border: var(--border-width-thin) solid var(--border1-color);
-  border-radius: var(--border-radius-xs);
+  border-radius: var(--border-radius-sm);
 }
 
 .scaleColorBase:hover {
-  border-color: var(--button-primary-background-color-hover);
+  border-color: var(--button-solid-background-color-hover);
 }
 
 .scaleNumber {
@@ -471,7 +540,7 @@
 .hexInputCenter:focus {
   outline: none;
   border-color: var(--input-border-color-focus);
-  box-shadow: 0 0 0 2px var(--color3-light);
+  box-shadow: 0 0 0 2px hsla(var(--h3), var(--s3), var(--l3), 0.2);
 }
 
 /* HEX input below center box for 11-box layout - same format as 3-box */
@@ -493,7 +562,7 @@
 .hexInputCenter11:focus {
   outline: none;
   border-color: var(--input-border-color-focus);
-  box-shadow: 0 0 0 2px var(--color3-light);
+  box-shadow: 0 0 0 2px hsla(var(--h3), var(--s3), var(--l3), 0.2);
 }
 
 /* Vertical HSL Spinners on the right */
@@ -653,7 +722,7 @@
 .tokenInput input:focus {
   outline: none;
   border-color: var(--input-border-color-focus);
-  box-shadow: 0 0 0 2px var(--color3-light);
+  box-shadow: 0 0 0 2px hsla(var(--h3), var(--s3), var(--l3), 0.2);
 }
 
 /* Add 4-column layout for design tokens */
@@ -665,8 +734,8 @@
 }
 
 .tokenCategory {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: var(--card-background-color);
+  border: 1px solid var(--border1-color);
   border-radius: 8px;
   padding: 1rem;
 }
@@ -675,8 +744,8 @@
   margin: 0 0 1rem 0;
   font-size: 1.1rem;
   font-weight: 600;
-  color: var(--color-text-primary);
-  border-bottom: 1px solid var(--color-border);
+  color: var(--text1-color);
+  border-bottom: 1px solid var(--border1-color);
   padding-bottom: 0.5rem;
 }
 
@@ -692,7 +761,7 @@
   margin: 0 0 0.5rem 0;
   font-size: 0.9rem;
   font-weight: 700;
-  color: var(--color-text-primary);
+  color: var(--text1-color);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -728,7 +797,7 @@
 .fontSizeTokenInput input:focus {
   outline: none;
   border-color: var(--input-border-color-focus);
-  box-shadow: 0 0 0 2px var(--color3-light);
+  box-shadow: 0 0 0 2px hsla(var(--h3), var(--s3), var(--l3), 0.2);
 }
 
 /* Extended Token Input - Wider for complex formulas */
@@ -763,7 +832,7 @@
 .extendedTokenInput input:focus {
   outline: none;
   border-color: var(--input-border-color-focus);
-  box-shadow: 0 0 0 2px var(--color3-light);
+  box-shadow: 0 0 0 2px hsla(var(--h3), var(--s3), var(--l3), 0.2);
 }
 
 /* Calculated Value Display - styled like input but read-only */
@@ -771,8 +840,8 @@
   padding: var(--input-padding);
   border: var(--border-width-thin) solid var(--input-border-color);
   border-radius: var(--input-border-radius);
-  background-color: var(--color-surface);
-  color: var(--color-text-secondary);
+  background-color: var(--card-background-color);
+  color: var(--text2-color);
   font-family: var(--font-family-sans);
   font-size: var(--font-size-sm);
   width: 80px;
@@ -825,12 +894,12 @@
 .colorInput:focus {
   outline: none;
   border-color: var(--input-border-color-focus);
-  box-shadow: 0 0 0 2px var(--color3-light);
+  box-shadow: 0 0 0 2px hsla(var(--h3), var(--s3), var(--l3), 0.2);
 }
 
 .colorInputError {
-  border-color: var(--color-error);
-  background-color: var(--color-error-bg);
+  border-color: var(--state-error-border-color);
+  background-color: var(--state-error-background-color);
 }
 
 .colorPreview {
@@ -843,7 +912,7 @@
 
 .colorError {
   font-size: var(--font-size-xs);
-  color: var(--color-error);
+  color: var(--state-error-border-color);
   margin-top: var(--spacing-xs);
   text-align: left;
   max-width: 120px;
@@ -961,11 +1030,16 @@
     width: 100%;
   }
   
-  .hslSpinnersHorizontal {
+    .hslSpinnersHorizontal {
     width: 100%;
     justify-content: space-between;
   }
-  
+
+  .hslSpinnersRow {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
   .hslSpinner {
     width: 60px;
   }
