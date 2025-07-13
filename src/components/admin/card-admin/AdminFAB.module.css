@@ -6,8 +6,8 @@
 }
 
 .fab {
-  width: 56px;  /* TODO: Tokenize magic number */
-  height: 56px; /* TODO: Tokenize magic number */
+  width: var(--spacing-2xl);
+  height: var(--spacing-2xl);
   border-radius: var(--border-radius-full);
   background-color: var(--button-solid-background-color);
   color: var(--button-solid-text-color);
@@ -18,7 +18,7 @@
   justify-content: center;
   font-size: var(--font-size-2xl);
   box-shadow: var(--shadow-md);
-  transition: transform 0.2s ease-in-out;
+  transition: transform var(--transition-short) ease-in-out;
 }
 
 .fab:hover {
@@ -31,7 +31,7 @@
 
 .fabOptions {
   position: absolute;
-  bottom: 70px; /* TODO: Tokenize magic number */
+  bottom: calc(var(--spacing-2xl) + var(--spacing-sm));
   right: 0;
   display: flex;
   flex-direction: column;

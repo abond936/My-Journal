@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTheme } from '@/components/providers/ThemeProvider';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
 import styles from './Navigation.module.css';
 
@@ -22,6 +23,7 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
   const [mounted, setMounted] = useState(false);
 
   const pathname = usePathname();
+  const { theme } = useTheme();
 
   useEffect(() => {
     setMounted(true);
@@ -42,12 +44,12 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
         {/* Logo/Home link */}
         <Link href="/" className={styles.logo}>
           <Image 
-            src="/images/uploads/Title.jpg" 
+            src={`/images/uploads/Title-${theme === 'dark' ? 'dark' : 'light'}.png`}
             alt="My Stories - Michael Alan Bond" 
             className={styles.logoImage}
-            width={150}
-            height={75}
-            sizes="150px"
+            width={225}
+            height={113}
+            sizes="225px"
             priority={true}
           />
         </Link>

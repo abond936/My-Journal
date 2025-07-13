@@ -11,7 +11,7 @@
   align-items: center;
   justify-content: center;
   z-index: var(--z-index-modal-backdrop);
-  backdrop-filter: blur(4px); /* TODO: Tokenize? */
+  backdrop-filter: blur(var(--spacing-xs));
 }
 
 .modalContainer {
@@ -111,18 +111,21 @@
 .collapseButton {
   all: unset;
   cursor: pointer;
-  width: 16px; /* TODO: Tokenize */
-  height: 16px; /* TODO: Tokenize */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--spacing-sm);
+  height: var(--spacing-sm);
   font-size: var(--font-size-xs);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  opacity: 0.6; /* TODO: Tokenize */
+  opacity: 0.6;
 }
 
 .collapseButton:hover {
-  opacity: 1; /* TODO: Tokenize */
+  opacity: 1;
 }
 
 .interactiveNode input[type="checkbox"] {
@@ -137,7 +140,7 @@
 }
 
 .tagChildren {
-  padding-left: calc(16px + var(--spacing-sm)); /* Aligns with checkbox */
+  padding-left: calc(var(--spacing-sm) + var(--spacing-sm));
   margin-top: var(--spacing-xs);
   border-left: var(--border-width-thin) solid var(--border2-color);
 } 

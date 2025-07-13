@@ -23,23 +23,22 @@
   }
   
   .sidebarToggle {
-    position: fixed;
-    left: var(--spacing-md);
-    top: calc(var(--header-height) + var(--spacing-md));
-    z-index: var(--z-index-header-toggle);
-    background: var(--layout-background1-color);
-    color: var(--text1-color);
-    border: var(--border-width-thin) solid var(--border1-color);
-    border-radius: var(--border-radius-full);
-    width: var(--spacing-xl);
-    height: var(--spacing-xl);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: var(--font-size-lg);
-    transition: all var(--transition-short) ease;
-  }
+  position: fixed;
+  left: var(--spacing-md);
+  top: calc(var(--header-height) + var(--spacing-md));
+  z-index: var(--z-index-sidebar);
+  background: var(--layout-background1-color);
+  color: var(--text1-color);
+  border: none;
+  width: var(--spacing-2xl);
+  height: var(--spacing-2xl);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-3xl);
+  transition: all var(--transition-short) ease;
+}
   
   .sidebarToggle:hover {
     background: var(--layout-background2-color);

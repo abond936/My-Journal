@@ -61,9 +61,11 @@ export default function AppShell({ children }: AppShellProps) {
             {isSidebarOpen ? '←' : '→'}
           </button>
         )}
-        <div className={styles.sidebarWrapper}>
+        {pathname !== '/' && (
+          <div className={styles.sidebarWrapper}>
             <GlobalSidebar isOpen={isSidebarOpen} />
-        </div>
+          </div>
+        )}
         <main className={styles.mainContent}>
           {children}
         </main>

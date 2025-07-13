@@ -67,7 +67,7 @@
 
 .welcomeText {
   font-size: var(--font-size-xl);
-  line-height: var(--line-height-loose);
+  line-height: var(--line-height-relaxed);
   color: var(--text1-color);
 }
 

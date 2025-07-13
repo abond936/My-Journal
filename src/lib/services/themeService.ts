@@ -8,6 +8,44 @@ import { BaseColor, StructuredThemeData, TypographyTokens, SpacingTokens, Border
  */
 
 /**
+ * Converts a HEX color to HSL components.
+ * This utility matches the frontend hexToHsl function exactly.
+ */
+const hexToHsl = (hex: string): { h: number; s: number; l: number } => {
+  // Remove the hash if present
+  const cleanHex = hex.replace('#', '');
+  
+  // Convert hex to RGB
+  const r = parseInt(cleanHex.substr(0, 2), 16) / 255;
+  const g = parseInt(cleanHex.substr(2, 2), 16) / 255;
+  const b = parseInt(cleanHex.substr(4, 2), 16) / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+
+  return {
+    h: Math.round(h * 360),
+    s: Math.round(s * 100),
+    l: Math.round(l * 100)
+  };
+};
+
+/**
  * Reads theme data from the JSON file
  */
 export const getThemeData = async (): Promise<StructuredThemeData & { darkModeShift?: number }> => {
@@ -48,26 +86,28 @@ const generateColorScales = (themeColors: ThemeColor[]): string => {
   let css = '';
   
   themeColors.forEach(color => {
-    const lightL = parseInt(color.light.l, 10);
+    // Use HEX values and convert to HSL, matching the interface exactly
+    const lightHsl = hexToHsl(color.light.hex);
+    const lightL = lightHsl.l;
     
     if (color.id === 1) {
-      // Color 1 (Background): 100=lightest, 200=medium, 300=darkest
-      const step1 = Math.max(0, lightL - 10); // 10% darker
-      const step2 = Math.max(0, lightL - 20); // 20% darker
-      
-      css += `  /* Color ${color.id} Light Mode Scale */\n`;
-      css += `  --color${color.id}-100: hsl(${color.light.h}, ${color.light.s}, ${color.light.l});\n`;
-      css += `  --color${color.id}-200: hsl(${color.light.h}, ${color.light.s}, ${step1}%);\n`;
-      css += `  --color${color.id}-300: hsl(${color.light.h}, ${color.light.s}, ${step2}%);\n`;
-    } else if (color.id === 2) {
-      // Color 2 (Text): 100=lightest, 200=medium, 300=darkest
+      // Color 1 (Background): 100=darkest, 200=medium, 300=lightest (consistent layering)
       const step1 = Math.min(100, lightL + 10); // 10% lighter
       const step2 = Math.min(100, lightL + 20); // 20% lighter
       
       css += `  /* Color ${color.id} Light Mode Scale */\n`;
-      css += `  --color${color.id}-100: hsl(${color.light.h}, ${color.light.s}, ${color.light.l});\n`;
-      css += `  --color${color.id}-200: hsl(${color.light.h}, ${color.light.s}, ${step1}%);\n`;
-      css += `  --color${color.id}-300: hsl(${color.light.h}, ${color.light.s}, ${step2}%);\n`;
+      css += `  --color${color.id}-100: hsl(${lightHsl.h}, ${lightHsl.s}%, ${lightHsl.l}%);\n`;
+      css += `  --color${color.id}-200: hsl(${lightHsl.h}, ${lightHsl.s}%, ${step1}%);\n`;
+      css += `  --color${color.id}-300: hsl(${lightHsl.h}, ${lightHsl.s}%, ${step2}%);\n`;
+    } else if (color.id === 2) {
+      // Color 2 (Text): 100=lightest, 200=medium, 300=darkest (consistent layering)
+      const step1 = Math.max(0, lightL - 10); // 10% darker
+      const step2 = Math.max(0, lightL - 20); // 20% darker
+      
+      css += `  /* Color ${color.id} Light Mode Scale */\n`;
+      css += `  --color${color.id}-100: hsl(${lightHsl.h}, ${lightHsl.s}%, ${lightHsl.l}%);\n`;
+      css += `  --color${color.id}-200: hsl(${lightHsl.h}, ${lightHsl.s}%, ${step1}%);\n`;
+      css += `  --color${color.id}-300: hsl(${lightHsl.h}, ${lightHsl.s}%, ${step2}%);\n`;
     }
   });
   
@@ -81,26 +121,28 @@ const generateDarkModeColorScales = (themeColors: ThemeColor[]): string => {
   let css = '';
   
   themeColors.forEach(color => {
-    const darkL = parseInt(color.dark.l, 10);
+    // Use HEX values and convert to HSL, matching the interface exactly
+    const darkHsl = hexToHsl(color.dark.hex);
+    const darkL = darkHsl.l;
     
     if (color.id === 1) {
-      // Color 1 (Background): 100=lightest, 200=medium, 300=darkest
+      // Color 1 (Background): 100=darkest, 200=medium, 300=lightest (consistent layering)
       const step1 = Math.min(100, darkL + 10); // 10% lighter
       const step2 = Math.min(100, darkL + 20); // 20% lighter
       
       css += `  /* Color ${color.id} Dark Mode Scale */\n`;
-      css += `  --color${color.id}-100: hsl(${color.dark.h}, ${color.dark.s}, ${color.dark.l});\n`;
-      css += `  --color${color.id}-200: hsl(${color.dark.h}, ${color.dark.s}, ${step1}%);\n`;
-      css += `  --color${color.id}-300: hsl(${color.dark.h}, ${color.dark.s}, ${step2}%);\n`;
+      css += `  --color${color.id}-100: hsl(${darkHsl.h}, ${darkHsl.s}%, ${darkHsl.l}%);\n`;
+      css += `  --color${color.id}-200: hsl(${darkHsl.h}, ${darkHsl.s}%, ${step1}%);\n`;
+      css += `  --color${color.id}-300: hsl(${darkHsl.h}, ${darkHsl.s}%, ${step2}%);\n`;
     } else if (color.id === 2) {
-      // Color 2 (Text): 100=lightest, 200=medium, 300=darkest
+      // Color 2 (Text): 100=lightest, 200=medium, 300=darkest (consistent layering)
       const step1 = Math.max(0, darkL - 10); // 10% darker
       const step2 = Math.max(0, darkL - 20); // 20% darker
       
       css += `  /* Color ${color.id} Dark Mode Scale */\n`;
-      css += `  --color${color.id}-100: hsl(${color.dark.h}, ${color.dark.s}, ${color.dark.l});\n`;
-      css += `  --color${color.id}-200: hsl(${color.dark.h}, ${color.dark.s}, ${step1}%);\n`;
-      css += `  --color${color.id}-300: hsl(${color.dark.h}, ${color.dark.s}, ${step2}%);\n`;
+      css += `  --color${color.id}-100: hsl(${darkHsl.h}, ${darkHsl.s}%, ${darkHsl.l}%);\n`;
+      css += `  --color${color.id}-200: hsl(${darkHsl.h}, ${darkHsl.s}%, ${step1}%);\n`;
+      css += `  --color${color.id}-300: hsl(${darkHsl.h}, ${darkHsl.s}%, ${step2}%);\n`;
     }
   });
   
@@ -127,8 +169,8 @@ export const saveThemeData = async (themeData: StructuredThemeData & { darkModeS
   built on a simplified 3-shade color system for theme colors 1 and 2.
   
   APPROACH:
-  - Color 1: Background (100=lightest, 200=medium, 300=darkest)
-  - Color 2: Text/Foreground (100=lightest, 200=medium, 300=darkest)
+  - Color 1: Background (100=darkest, 200=medium, 300=lightest) - consistent layering
+  - Color 2: Text/Foreground (100=lightest, 200=medium, 300=darkest) - consistent layering
   - Colors 3-14: Semantic colors with single values
   - Automatic light/dark mode switching with appropriate shade mapping
 
@@ -320,7 +362,7 @@ export const saveThemeData = async (themeData: StructuredThemeData & { darkModeS
   --button-solid-background-color: var(--color3);
   --button-solid-background-color-hover: var(--color3);
   --button-solid-border-color: var(--color3);
-  --button-solid-text-color: var(--color1-100);
+  --button-solid-text-color: white;
   
   /* Button: Outline */
   --button-outline-background-color: transparent;
@@ -407,6 +449,18 @@ export const saveThemeData = async (themeData: StructuredThemeData & { darkModeS
   --input-text-color: var(--text1-color);
   
   --card-background-color: var(--color1-200);
+}
+
+/*
+ * =================================================================
+ * GLOBAL ELEMENT STYLES
+ * =================================================================
+ */
+
+/* Apply body background color globally */
+body {
+  background-color: var(--body-background-color);
+  color: var(--text1-color);
 }
 `;
 

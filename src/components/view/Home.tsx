@@ -6,11 +6,13 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useSession, signIn } from 'next-auth/react';
+import { useTheme } from '@/components/providers/ThemeProvider';
 import styles from '@/components/view/Home.module.css';
 
 const Home: React.FC = () => {
   const router = useRouter();
   const { data: session, status } = useSession();
+  const { theme } = useTheme();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -95,7 +97,7 @@ const Home: React.FC = () => {
         {/* Title section */}
         <div className={styles.titleSection}>
           <Image 
-            src="/images/uploads/Title.jpg" 
+            src={`/images/uploads/Title-${theme === 'dark' ? 'dark' : 'light'}.png`}
             alt="My Stories - Michael Alan Bond" 
             className={styles.titleImage}
             width={600}

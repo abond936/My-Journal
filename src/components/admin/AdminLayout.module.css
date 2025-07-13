@@ -32,7 +32,7 @@
   .menuToggle {
     position: absolute;
     top: var(--spacing-sm);
-    z-index: var(--z-index-header-toggle);
+    z-index: var(--z-index-sidebar);
     background-color: var(--layout-background1-color);
     color: var(--text1-color);
     border: var(--border-width-thin) solid var(--border1-color);
@@ -58,7 +58,6 @@
   .sidebar {
     width: var(--sidebar-width);
     background-color: var(--layout-background1-color);
-    border-right: var(--border-width-thin) solid var(--border1-color);
     transition: margin-left var(--transition-short) ease;
     padding: var(--spacing-lg);
     overflow-y: auto;

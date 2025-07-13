@@ -5,8 +5,8 @@
   built on a simplified 3-shade color system for theme colors 1 and 2.
   
   APPROACH:
-  - Color 1: Background (100=lightest, 200=medium, 300=darkest)
-  - Color 2: Text/Foreground (100=lightest, 200=medium, 300=darkest)
+  - Color 1: Background (100=darkest, 200=medium, 300=lightest) - consistent layering
+  - Color 2: Text/Foreground (100=lightest, 200=medium, 300=darkest) - consistent layering
   - Colors 3-14: Semantic colors with single values
   - Automatic light/dark mode switching with appropriate shade mapping
 
@@ -80,13 +80,13 @@
 
   /* Theme Colors 3-Shade Scales (Light Mode) */
   /* Color 1 Light Mode Scale */
-  --color1-100: hsl(0, 0%, 100%);
-  --color1-200: hsl(0, 0%, 90%);
-  --color1-300: hsl(0, 0%, 80%);
+  --color1-100: hsl(0, 0%, 85%);
+  --color1-200: hsl(0, 0%, 95%);
+  --color1-300: hsl(0, 0%, 100%);
   /* Color 2 Light Mode Scale */
   --color2-100: hsl(0, 0%, 10%);
-  --color2-200: hsl(0, 0%, 20%);
-  --color2-300: hsl(0, 0%, 30%);
+  --color2-200: hsl(0, 0%, 0%);
+  --color2-300: hsl(0, 0%, 0%);
 
   /* Base Color Definitions (Colors 3-14) */
   --color3: hsl(var(--h3), var(--s3), var(--l3));
@@ -195,7 +195,7 @@
   --layout-background2-color: var(--color1-200);
   --sidebar-width: 300px;
   --sidebar-width-mobile: 250px;
-  --logo-max-height: 50px;
+  --logo-max-height: 120px;
   --spinner-size: 50px;
   --form-min-width: 120px;
   --button-min-width: 60px;
@@ -223,7 +223,7 @@
   /* --- 3. COMPONENT TOKENS --- */
   
   /* Header */
-  --header-height: 60px;
+  --header-height: 120px;
   --header-background-color: var(--color1-100);
   --header-border-color: var(--border1-color);
   --header-border-width: var(--border-width-thin);
@@ -232,7 +232,7 @@
   --button-solid-background-color: var(--color3);
   --button-solid-background-color-hover: var(--color3);
   --button-solid-border-color: var(--color3);
-  --button-solid-text-color: var(--color1-100);
+  --button-solid-text-color: white;
   
   /* Button: Outline */
   --button-outline-background-color: transparent;
@@ -299,9 +299,9 @@
   --color1-200: hsl(0, 0%, 20%);
   --color1-300: hsl(0, 0%, 30%);
   /* Color 2 Dark Mode Scale */
-  --color2-100: hsl(0, 0%, 90%);
-  --color2-200: hsl(0, 0%, 80%);
-  --color2-300: hsl(0, 0%, 70%);
+  --color2-100: hsl(0, 0%, 100%);
+  --color2-200: hsl(0, 0%, 90%);
+  --color2-300: hsl(0, 0%, 80%);
 
   /* --- GLOBAL ELEMENT TOKEN OVERRIDES --- */
   --body-background-color: var(--color1-100);
@@ -322,4 +322,16 @@
   --input-text-color: var(--text1-color);
   
   --card-background-color: var(--color1-200);
+}
+
+/*
+ * =================================================================
+ * GLOBAL ELEMENT STYLES
+ * =================================================================
+ */
+
+/* Apply body background color globally */
+body {
+  background-color: var(--body-background-color);
+  color: var(--text1-color);
 }

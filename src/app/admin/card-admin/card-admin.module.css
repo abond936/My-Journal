@@ -76,6 +76,14 @@
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-sm);
   min-width: 120px;
+  background: var(--input-background-color);
+  color: var(--text1-color);
+}
+
+.filterSelect option {
+  background: var(--input-background-color);
+  color: var(--text1-color);
+  padding: var(--spacing-sm);
 }
 
 .dimensionFilters {
@@ -112,7 +120,7 @@
   min-width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  background: white;
+  background: var(--layout-background1-color);
 }
 
 .entriesTable th,
@@ -121,6 +129,7 @@
   text-align: left;
   border-bottom: 1px solid var(--border1-color);
   position: relative;
+  color: var(--text1-color);
 }
 
 .entriesTable th {
@@ -459,6 +468,7 @@
   line-height: 1.4;
   background-color: transparent;
   cursor: pointer;
+  color: var(--text1-color);
 }
 
 .inlineEditSelect:hover {

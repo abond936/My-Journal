@@ -77,15 +77,27 @@ const PaletteColorEditor: React.FC<{
       try {
         const { h, s, l } = hexToHsl(baseHex);
         
-        // Simple: take the base color and lighten it by 2 steps
-        const step1 = Math.min(100, l + 10); // 10% lighter
-        const step2 = Math.min(100, l + 20); // 20% lighter
-        
-        return {
-          '100': `hsl(${h}, ${s}%, ${l}%)`,      // Original color
-          '200': `hsl(${h}, ${s}%, ${step1}%)`,  // 10% lighter
-          '300': `hsl(${h}, ${s}%, ${step2}%)`   // 20% lighter
-        };
+        if (isBackground) {
+          // Background colors (Color 1): 100=darkest, 200=medium, 300=lightest
+          const step1 = Math.min(100, l + 10); // 10% lighter
+          const step2 = Math.min(100, l + 20); // 20% lighter
+          
+          return {
+            '100': `hsl(${h}, ${s}%, ${l}%)`,      // Original color (darkest)
+            '200': `hsl(${h}, ${s}%, ${step1}%)`,  // 10% lighter
+            '300': `hsl(${h}, ${s}%, ${step2}%)`   // 20% lighter (lightest)
+          };
+        } else {
+          // Text colors (Color 2): 100=lightest, 200=medium, 300=darkest
+          const step1 = Math.max(0, l - 10); // 10% darker
+          const step2 = Math.max(0, l - 20); // 20% darker
+          
+          return {
+            '100': `hsl(${h}, ${s}%, ${l}%)`,      // Original color (lightest)
+            '200': `hsl(${h}, ${s}%, ${step1}%)`,  // 10% darker
+            '300': `hsl(${h}, ${s}%, ${step2}%)`   // 20% darker (darkest)
+          };
+        }
       } catch (error) {
         console.error('Error generating shade colors:', error);
         // Fallback to basic colors
@@ -1256,6 +1268,7 @@ export default function ThemeAdminPage() {
               <div className={styles.tokenSubsection}>
                 <h4>Layout</h4>
                 <FontSizeTokenInput label="Container Max Width" value={themeData.layout?.containerMaxWidth || ''} onChange={(v) => handleTokenChange('layout', 'containerMaxWidth', v)} />
+                <ColorReferenceInput label="Body Background" value={themeData.layout?.bodyBackgroundColor || 'color1-100'} onChange={(v) => handleTokenChange('layout', 'bodyBackgroundColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
                 <ColorReferenceInput label="Background1" value={themeData.layout?.background1Color || ''} onChange={(v) => handleTokenChange('layout', 'background1Color', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
                 <ColorReferenceInput label="Background2" value={themeData.layout?.background2Color || ''} onChange={(v) => handleTokenChange('layout', 'background2Color', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
                 <ColorReferenceInput label="Border1" value={themeData.layout?.border1Color || ''} onChange={(v) => handleTokenChange('layout', 'border1Color', v)} colors={themeData.palette} themeColors={themeData.themeColors} />

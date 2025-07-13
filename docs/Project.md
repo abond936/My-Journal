@@ -131,6 +131,7 @@ Legend:
 
 ✅
 - Login
+⭕2 - SVG Logo
 
 ### **Top Navigation**
 - Top navigation toggles content and admin 
@@ -338,14 +339,7 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
 ✅
 - Light/Dark toggle
 - Admin page
-  - Variables ⭕2 - Rationalize set
-  - Tokens ⭕2 - Reationalize set
-  ⭕2 - Colors
-        - tag dimensions 
-        - card types (colored icons for story, gallery, questions, quote, callout)
-        - 
-
-⭕2 - MSN Layout style
+- MSN Layout style
 
 ### **User Management**
 

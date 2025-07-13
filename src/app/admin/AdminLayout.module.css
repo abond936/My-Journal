@@ -7,7 +7,6 @@
   width: var(--sidebar-width-mobile);
   background: var(--layout-background2-color);
   padding: var(--spacing-xl) var(--spacing-md);
-  border-right: 1px solid var(--border1-color);
 }
 
 .section h3 {

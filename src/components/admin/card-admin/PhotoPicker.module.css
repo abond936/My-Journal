@@ -1,7 +1,7 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: hsla(var(--h1), var(--s1), var(--l1), 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -9,9 +9,9 @@
 }
 
 .container {
-  background-color: white;
+  background-color: var(--layout-background1-color);
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px hsla(var(--h1), var(--s1), var(--l1), 0.1);
   width: 90%;
   max-width: var(--layout-container-max-width);
   height: 90vh;
@@ -22,11 +22,11 @@
 
 .header {
   padding: 1rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: white;
+  background-color: var(--layout-background1-color);
 }
 
 .title {
@@ -39,35 +39,35 @@
   background: none;
   border: none;
   font-size: 1.5rem;
-  color: #6b7280;
+  color: var(--text2-color);
   cursor: pointer;
   padding: 0.5rem;
   line-height: 1;
 }
 
 .closeButton:hover {
-  color: #374151;
+  color: var(--text1-color);
 }
 
 .content {
   flex: 1;
   display: flex;
   overflow: hidden;
-  background-color: white;
+  background-color: var(--layout-background1-color);
 }
 
 .albumList {
   width: 350px;
-  border-right: 1px solid #e5e7eb;
+  border-right: var(--border-width-thin) solid var(--border1-color);
   padding: 1rem;
   overflow-y: auto;
-  background-color: #f9fafb;
+  background-color: var(--layout-background2-color);
 }
 
 .albumTitle {
   font-weight: 500;
   margin-bottom: 1rem;
-  color: #374151;
+  color: var(--text1-color);
 }
 
 .treeNode {
@@ -85,7 +85,7 @@
   border: none;
   padding: 0.125rem;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--text2-color);
   font-size: 0.75rem;
   line-height: 1;
   display: flex;
@@ -104,11 +104,11 @@
 }
 
 .treeNodeName:hover {
-  background-color: #f3f4f6;
+  background-color: var(--layout-background2-color);
 }
 
 .treeNodeSelected {
-  background-color: #e9f5ff;
+  background-color: var(--color4-light);
   font-weight: 500;
 }
 
@@ -120,7 +120,7 @@
   flex: 1;
   padding: 1rem;
   overflow-y: auto;
-  background-color: white;
+  background-color: var(--layout-background1-color);
 }
 
 .grid {
@@ -136,18 +136,18 @@
   cursor: pointer;
   border-radius: 4px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px hsla(var(--h1), var(--s1), var(--l1), 0.1);
   transition: transform 0.2s, box-shadow 0.2s;
   border: 2px solid transparent;
 }
 
 .photoItem:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px hsla(var(--h1), var(--s1), var(--l1), 0.1);
 }
 
 .photoItemSelected {
-  border-color: #0070f3;
+  border-color: var(--color3);
 }
 
 .checkmark {
@@ -156,8 +156,8 @@
   right: 5px;
   width: 20px;
   height: 20px;
-  background-color: #0070f3;
-  color: white;
+  background-color: var(--color3);
+  color: var(--layout-background1-color);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -176,7 +176,7 @@
 .loading {
   padding: 2rem;
   text-align: center;
-  color: #6b7280;
+  color: var(--text2-color);
 }
 
 .error {
@@ -195,7 +195,7 @@
 .retryButton {
   padding: 0.5rem 1rem;
   background-color: var(--color-danger);
-  color: white;
+  color: var(--layout-background1-color);
   border: none;
   border-radius: var(--border-radius);
   cursor: pointer;
@@ -208,17 +208,17 @@
 }
 
 .noContent {
-  color: #888;
+  color: var(--text2-color);
   padding: 2rem;
   text-align: center;
-  background-color: #f9fafb;
+  background-color: var(--layout-background2-color);
   border-radius: 4px;
   margin: 1rem;
 }
 
 .footer {
   padding: 1rem;
-  border-top: 1px solid #eee;
+  border-top: var(--border-width-thin) solid var(--border2-color);
   display: flex;
   justify-content: flex-end;
 }
@@ -226,8 +226,8 @@
 .doneButton {
   padding: 0.75rem 1.5rem;
   border: none;
-  background-color: #0070f3;
-  color: white;
+  background-color: var(--color3);
+  color: var(--layout-background1-color);
   border-radius: 4px;
   cursor: pointer;
   font-size: 1rem;
@@ -235,10 +235,10 @@
 }
 
 .doneButton:hover {
-  background-color: #0052cc;
+  background-color: var(--color3-dark);
 }
 
 .doneButton:disabled {
-  background-color: #ccc;
+  background-color: var(--border1-color);
   cursor: not-allowed;
 } 

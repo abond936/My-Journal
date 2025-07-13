@@ -1,7 +1,6 @@
 .sidebar {
     width: var(--sidebar-width);
     background-color: var(--layout-background1-color);
-    border-right: var(--border-width-thin) solid var(--border1-color);
     transition: margin-left var(--transition-short) ease-in-out;
     padding: var(--spacing-lg);
     padding-top: var(--header-height);
@@ -33,13 +32,15 @@
   }
   
   .filterControls {
-    margin-top: var(--spacing-md);
-    padding: var(--spacing-md) 0 0 0;
-    border-top: var(--border-width-thin) solid var(--border1-color);
-    background-color: var(--layout-background1-color);
-    display: flex;
-    gap: var(--spacing-sm);
-  }
+  margin-top: auto;
+  padding: var(--spacing-md) 0 0 0;
+  background-color: var(--layout-background1-color);
+  display: flex;
+  gap: var(--spacing-sm);
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+}
   
   .applyButton, .clearButton {
     flex: 1;
@@ -50,12 +51,13 @@
     color: var(--text1-color);
     cursor: pointer;
     font-size: var(--font-size-base);
+    min-height: 40px;
   }
   
   .applyButton {
-    background-color: var(--color3);
-    color: var(--color2);
-    border-color: var(--color3);
+    background-color: var(--button-solid-background-color);
+    color: var(--button-solid-text-color);
+    border-color: var(--button-solid-border-color);
   }
   
   .clearButton {

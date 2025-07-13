@@ -11,34 +11,34 @@
   align-items: center;
   gap: var(--spacing-md);
   padding: var(--spacing-md);
-  background: var(--background-secondary);
+  background: var(--layout-background2-color);
   border-radius: var(--border-radius-md);
   margin-bottom: var(--spacing-md);
 }
 
 .bulkButton {
   padding: var(--spacing-sm) var(--spacing-md);
-  border: var(--border-width-thin) solid var(--border-color);
+  border: var(--border-width-thin) solid var(--border1-color);
   border-radius: var(--border-radius-sm);
-  background: var(--background-start);
-  color: var(--text-color);
+  background: var(--layout-background1-color);
+  color: var(--text1-color);
   cursor: pointer;
   font-size: var(--font-size-sm);
   transition: background-color var(--transition-short);
 }
 
 .bulkButton:hover {
-  background: var(--background-hover);
+  background: var(--layout-background2-color);
 }
 
 .bulkButton.deleteButton {
-  background: var(--color-error-bg);
-  color: var(--text-on-primary);
-  border-color: var(--color-error-border);
+  background: var(--state-error-background-color);
+  color: var(--state-error-text-color);
+  border-color: var(--state-error-border-color);
 }
 
 .bulkButton.deleteButton:hover {
-  background: var(--color-error-bg);
+  background: var(--state-error-background-color);
 }
 
 /* Table Styles */
@@ -60,26 +60,26 @@
 .table td {
   padding: var(--spacing-sm);
   text-align: left;
-  border-bottom: var(--border-width-thin) solid var(--border-color);
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
   position: relative;
 }
 
 .table th {
-  background: var(--background-secondary);
+  background: var(--layout-background2-color);
   font-weight: var(--font-weight-semibold);
   color: var(--text1-color);
   user-select: none;
 }
 
 .table tr:hover {
-  background: var(--background-secondary);
+  background: var(--layout-background2-color);
 }
 
 .headerCell {
   position: relative;
   padding: var(--spacing-sm);
-  background: var(--background-secondary);
-  border-bottom: var(--border-width-thin) solid var(--border-color);
+  background: var(--layout-background2-color);
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
   font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-sm);
   color: var(--text1-color);
@@ -100,28 +100,28 @@
   right: 0;
   top: 0;
   bottom: 0;
-  width: 6px;
+  width: var(--spacing-xs);
   background: transparent;
   cursor: col-resize;
   transition: background-color var(--transition-short);
 }
 
 .resizeHandle:hover {
-  background: var(--color-primary);
+  background: var(--color1);
 }
 
 .checkboxCell {
   padding: var(--spacing-sm);
-  background: var(--background-secondary);
-  border-bottom: var(--border-width-thin) solid var(--border-color);
+  background: var(--layout-background2-color);
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
   text-align: center;
-  width: 40px;
+  width: var(--spacing-xl);
 }
 
 .emptyState {
   text-align: center;
   padding: var(--spacing-2xl);
-  color: var(--text-color-secondary);
+  color: var(--text2-color);
   font-style: italic;
 }
 

@@ -7,10 +7,13 @@
   border-radius: 50%;
   background-color: var(--layout-background2-color);
   color: var(--text1-color);
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
   cursor: pointer;
   transition: all var(--transition-short) ease;
   padding: var(--spacing-sm);
+  font-size: var(--font-size-2xl);
 }
 
 .themeToggle:hover {

@@ -43,7 +43,6 @@
   bottom: 0;
   width: var(--sidebar-width-mobile);
   background: var(--layout-background1-color);
-  border-right: var(--border-width-thin) solid var(--border1-color);
   transition: transform var(--transition-short) ease;
   z-index: 90;
   overflow-y: auto;

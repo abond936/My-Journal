@@ -1,20 +1,20 @@
 .row {
-  border-bottom: var(--border-width-thin) solid var(--border-color);
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
   transition: background-color var(--transition-short);
 }
 
 .row:hover {
-  background: var(--background-secondary);
+  background: var(--layout-background2-color);
 }
 
 .row.selected {
-  background: hsla(var(--color-primary-hue), 76%, 52%, 0.1);
+  background: hsla(var(--h1), var(--s1), var(--l1), 0.1);
 }
 
 .cell {
   padding: var(--spacing-sm);
   vertical-align: middle;
-  border-right: var(--border-width-thin) solid var(--border-color);
+  border-right: var(--border-width-thin) solid var(--border1-color);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -27,8 +27,8 @@
 .checkboxCell {
   padding: var(--spacing-sm);
   text-align: center;
-  border-right: var(--border-width-thin) solid var(--border-color);
-  width: 40px;
+  border-right: var(--border-width-thin) solid var(--border1-color);
+  width: var(--spacing-xl);
 }
 
 /* Status Badge */
@@ -40,17 +40,17 @@
   text-transform: uppercase;
   display: inline-block;
   text-align: center;
-  min-width: 60px;
+  min-width: var(--spacing-2xl);
 }
 
 .statusBadge.temporary {
-  background: var(--color-warning-bg);
-  color: var(--color-warning-text);
+  background: var(--state-warning-background-color);
+  color: var(--state-warning-text-color);
 }
 
 .statusBadge.active {
-  background: var(--color-success-bg);
-  color: var(--color-success-text);
+  background: var(--state-success-background-color);
+  color: var(--state-success-text-color);
 }
 
 /* Thumbnail */
@@ -58,11 +58,11 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 60px;
-  height: 60px;
+  width: var(--spacing-2xl);
+  height: var(--spacing-2xl);
   border-radius: var(--border-radius-sm);
   overflow: hidden;
-  background: var(--background-secondary);
+  background: var(--layout-background2-color);
 }
 
 .thumbnailImage {
@@ -74,7 +74,7 @@
 /* Filename */
 .filename {
   font-weight: var(--font-weight-medium);
-  color: var(--text-color);
+  color: var(--text1-color);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -83,7 +83,7 @@
 
 /* Caption */
 .caption {
-  color: var(--text-color);
+  color: var(--text1-color);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -95,7 +95,7 @@
 }
 
 .caption:hover {
-  background: var(--background-hover);
+  background: var(--layout-background2-color);
 }
 
 .captionEdit {
@@ -105,25 +105,25 @@
 .captionInput {
   width: 100%;
   padding: var(--spacing-xs);
-  border: var(--border-width-thin) solid var(--border-color-interactive);
+  border: var(--border-width-thin) solid var(--border1-color);
   border-radius: var(--border-radius-sm);
   font-size: inherit;
-  background: var(--background-start);
-  color: var(--text-color);
+  background: var(--layout-background1-color);
+  color: var(--text1-color);
 }
 
 /* Numbers */
 .number {
   text-align: center;
   font-family: monospace;
-  color: var(--text-color);
+  color: var(--text1-color);
 }
 
 /* Content Type */
 .contentType {
   font-family: monospace;
   font-size: var(--font-size-sm);
-  color: var(--text-color);
+  color: var(--text1-color);
   text-align: center;
 }
 
@@ -131,7 +131,7 @@
 .objectPosition {
   font-family: monospace;
   font-size: var(--font-size-sm);
-  color: var(--text-color);
+  color: var(--text1-color);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -147,7 +147,7 @@
   text-transform: uppercase;
   display: inline-block;
   text-align: center;
-  min-width: 50px;
+  min-width: var(--spacing-xl);
 }
 
 .sourceBadge.local {
@@ -164,7 +164,7 @@
 .sourcePath {
   font-family: monospace;
   font-size: var(--font-size-sm);
-  color: var(--text-color-secondary);
+  color: var(--text2-color);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -180,32 +180,32 @@
 
 .actionButton {
   padding: var(--spacing-xs) var(--spacing-sm);
-  border: var(--border-width-thin) solid var(--border-color);
+  border: var(--border-width-thin) solid var(--border1-color);
   border-radius: var(--border-radius-sm);
-  background: var(--background-start);
-  color: var(--text-color);
+  background: var(--layout-background1-color);
+  color: var(--text1-color);
   cursor: pointer;
   font-size: var(--font-size-sm);
   transition: background-color var(--transition-short);
-  min-width: 32px;
-  height: 32px;
+  min-width: var(--spacing-lg);
+  height: var(--spacing-lg);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .actionButton:hover {
-  background: var(--background-hover);
+  background: var(--layout-background2-color);
 }
 
 .actionButton.deleteButton {
-  background: var(--color-error-bg);
-  color: var(--color-error-text);
-  border-color: var(--color-error-border);
+  background: var(--state-error-background-color);
+  color: var(--state-error-text-color);
+  border-color: var(--state-error-border-color);
 }
 
 .actionButton.deleteButton:hover {
-  background: var(--color-error-bg);
+  background: var(--state-error-background-color);
 }
 
 @media (max-width: 768px) {
@@ -215,8 +215,8 @@
   }
 
   .thumbnail {
-    width: 40px;
-    height: 40px;
+    width: var(--spacing-xl);
+    height: var(--spacing-xl);
   }
 
   .actions {
@@ -225,15 +225,15 @@
   }
 
   .actionButton {
-    min-width: 28px;
-    height: 28px;
+    min-width: var(--spacing-md);
+    height: var(--spacing-md);
     font-size: var(--font-size-xs);
   }
 
   .statusBadge,
   .sourceBadge {
-    font-size: 0.7rem;
-    padding: 0.2rem 0.4rem;
+    font-size: var(--font-size-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
   }
 
   .filename,
