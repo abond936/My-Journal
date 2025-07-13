@@ -55,9 +55,6 @@ export default function CardsPage() {
   
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <h1>My Stories</h1>
-      </header>
       <CardFeedV2 
         cards={cards} 
         loading={isLoading}

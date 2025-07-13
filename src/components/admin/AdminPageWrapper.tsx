@@ -21,11 +21,9 @@ export default function AdminPageWrapper({ children }: AdminPageWrapperProps) {
   }
 
   return (
-    <div className={styles.layout}>
-      <div className={styles.mainContent}>
-        <div className={styles.pageContent}>
-          {children}
-        </div>
+    <div style={{ width: '100%' }}>
+      <div className={styles.pageContent}>
+        {children}
       </div>
       <AdminFAB />
     </div>

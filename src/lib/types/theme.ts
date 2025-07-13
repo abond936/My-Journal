@@ -162,6 +162,7 @@ export interface GradientTokens {
  */
 export interface LayoutTokens {
   containerMaxWidth: string;
+  bodyFontFamily: string;
   bodyBackgroundColor: string;
   background1Color: string;
   background2Color: string;

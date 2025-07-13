@@ -138,21 +138,21 @@
       "text2": "color2-200"
     },
     "fontFamilies": {
-      "sans": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "sans": "\"Ink Free\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
       "serif": "\"Georgia\", serif",
       "handwriting": "\"Ink Free\", cursive"
     },
     "fontSizes": {
-      "xs": "0.75rem",
-      "sm": "0.875rem",
-      "base": "1rem",
-      "lg": "1.125rem",
-      "xl": "1.25rem",
-      "2xl": "1.5rem",
-      "3xl": "1.875rem",
-      "4xl": "2.25rem",
-      "5xl": "3rem",
-      "6xl": "3.75rem"
+      "xs": "0.875rem",
+      "sm": "1rem",
+      "base": "1.125rem",
+      "lg": "1.25rem",
+      "xl": "1.5rem",
+      "2xl": "1.875rem",
+      "3xl": "2.5rem",
+      "4xl": "3rem",
+      "5xl": "3.75rem",
+      "6xl": "4rem"
     },
     "fluidFontSizes": {
       "size1": "clamp(1.5rem, 1rem + 2.5vw, 3rem)",
@@ -193,7 +193,8 @@
     "xlMultiplier": "8",
     "2xlMultiplier": "12",
     "3xlMultiplier": "16",
-    "4xlMultiplier": "24"
+    "4xlMultiplier": "24",
+    "mdMultiplier": "4"
   },
   "borders": {
     "colors": {
@@ -234,6 +235,7 @@
   },
   "layout": {
     "containerMaxWidth": "1200px",
+    "bodyFontFamily": "font-family-sans",
     "bodyBackgroundColor": "color1-100",
     "background1Color": "color1-100",
     "background2Color": "color1-200",

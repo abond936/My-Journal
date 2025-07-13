@@ -14,10 +14,8 @@ export default function ViewLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <main style={{ flex: 1, overflowY: 'auto' }}>
-        {children}
-      </main>
+    <div style={{ width: '100%' }}>
+      {children}
     </div>
   );
 } 

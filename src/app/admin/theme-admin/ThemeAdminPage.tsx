@@ -994,10 +994,9 @@ export default function ThemeAdminPage() {
 
   return (
     <div className={styles.adminContainer}>
-      <header className={styles.header}>
-        <h1>Theme Administration</h1>
-        <p>Manage your application's design system and color palette</p>
-        <div className={styles.actions}>
+      <div className={styles.header}>
+        <div className={styles.headerContent}>
+          <h1 className={styles.title}>Theme Management</h1>
           <button 
             onClick={saveTheme}
             disabled={saving}
@@ -1006,7 +1005,7 @@ export default function ThemeAdminPage() {
             {saving ? 'Saving...' : 'Save Theme'}
           </button>
         </div>
-      </header>
+      </div>
 
       <main className={styles.mainContent}>
         {/* Color Palette Section */}
@@ -1268,6 +1267,7 @@ export default function ThemeAdminPage() {
               <div className={styles.tokenSubsection}>
                 <h4>Layout</h4>
                 <FontSizeTokenInput label="Container Max Width" value={themeData.layout?.containerMaxWidth || ''} onChange={(v) => handleTokenChange('layout', 'containerMaxWidth', v)} />
+                <TokenInput label="Body Font Family" value={themeData.layout?.bodyFontFamily || ''} onChange={(v) => handleTokenChange('layout', 'bodyFontFamily', v)} />
                 <ColorReferenceInput label="Body Background" value={themeData.layout?.bodyBackgroundColor || 'color1-100'} onChange={(v) => handleTokenChange('layout', 'bodyBackgroundColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
                 <ColorReferenceInput label="Background1" value={themeData.layout?.background1Color || ''} onChange={(v) => handleTokenChange('layout', 'background1Color', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
                 <ColorReferenceInput label="Background2" value={themeData.layout?.background2Color || ''} onChange={(v) => handleTokenChange('layout', 'background2Color', v)} colors={themeData.palette} themeColors={themeData.themeColors} />

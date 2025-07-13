@@ -9,9 +9,9 @@
   width: var(--spacing-2xl);
   height: var(--spacing-2xl);
   border-radius: var(--border-radius-full);
-  background-color: var(--button-solid-background-color);
-  color: var(--button-solid-text-color);
-  border: none;
+  background-color: transparent;
+  color: var(--text1-color);
+  border: 2px solid var(--text1-color);
   cursor: pointer;
   display: flex;
   align-items: center;

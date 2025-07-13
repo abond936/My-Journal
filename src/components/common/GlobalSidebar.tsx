@@ -62,8 +62,8 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
         />
       </nav>
       <div className={styles.filterControls}>
-        <button onClick={handleApplyFilters} className={styles.applyButton}>Apply</button>
-        <button onClick={handleClearFilters} className={styles.clearButton}>Clear</button>
+        <button onClick={handleApplyFilters} className={styles.applyButton} style={{ backgroundColor: 'red', color: 'white' }}>Apply</button>
+        <button onClick={handleClearFilters} className={styles.clearButton} style={{ backgroundColor: 'blue', color: 'white' }}>Clear</button>
       </div>
     </div>
   );

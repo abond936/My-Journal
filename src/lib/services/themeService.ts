@@ -321,6 +321,7 @@ export const saveThemeData = async (themeData: StructuredThemeData & { darkModeS
   
   /* Layout */
   --layout-container-max-width: ${themeData.layout.containerMaxWidth};
+  --body-font-family: var(--${themeData.layout.bodyFontFamily});
   --layout-background1-color: var(--color1-100);
   --layout-background2-color: var(--color1-200);
   --sidebar-width: ${themeData.layout.sidebarWidth};
@@ -461,6 +462,7 @@ export const saveThemeData = async (themeData: StructuredThemeData & { darkModeS
 body {
   background-color: var(--body-background-color);
   color: var(--text1-color);
+  font-family: var(--body-font-family);
 }
 `;
 

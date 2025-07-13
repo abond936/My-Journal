@@ -17,7 +17,6 @@ export default function CardFeedV2({ cards, loading, loadMoreRef, onSaveScrollPo
   if (loading) {
     return (
       <div className={styles.page}>
-        <header className={styles.header}><h1>My Stories</h1></header>
         <main>Loading...</main>
       </div>
     );

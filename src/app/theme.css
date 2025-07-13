@@ -109,7 +109,7 @@
   --breakpoint-xl: 1280px;
 
   /* Typography Scale */
-  --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family-sans: "Ink Free", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-family-serif: "Georgia", serif;
   --font-family-handwriting: "Ink Free", cursive;
 
@@ -124,16 +124,16 @@
   --spacing3-fluid: clamp(4rem, 2rem + 10vw, 8rem);
 
   /* Static Typography */
-  --font-size-xs: 0.75rem;
-  --font-size-sm: 0.875rem;
-  --font-size-base: 1rem;
-  --font-size-lg: 1.125rem;
-  --font-size-xl: 1.25rem;
-  --font-size-2xl: 1.5rem;
-  --font-size-3xl: 1.875rem;
-  --font-size-4xl: 2.25rem;
-  --font-size-5xl: 3rem;
-  --font-size-6xl: 3.75rem;
+  --font-size-xs: 0.875rem;
+  --font-size-sm: 1rem;
+  --font-size-base: 1.125rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+  --font-size-2xl: 1.875rem;
+  --font-size-3xl: 2.5rem;
+  --font-size-4xl: 3rem;
+  --font-size-5xl: 3.75rem;
+  --font-size-6xl: 4rem;
 
   --font-weight-normal: 400;
   --font-weight-medium: 500;
@@ -191,6 +191,7 @@
   
   /* Layout */
   --layout-container-max-width: 1200px;
+  --body-font-family: var(--font-family-sans);
   --layout-background1-color: var(--color1-100);
   --layout-background2-color: var(--color1-200);
   --sidebar-width: 300px;
@@ -334,4 +335,5 @@
 body {
   background-color: var(--body-background-color);
   color: var(--text1-color);
+  font-family: var(--body-font-family);
 }
