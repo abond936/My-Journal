@@ -29,7 +29,7 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: var(--color1-900);
+  background: var(--color1-300);
   color: var(--color2);
   border: none;
   padding: var(--spacing-lg) var(--spacing-md);
@@ -45,7 +45,7 @@
 }
 
 .navButton:hover {
-  background: var(--color1-800);
+  background: var(--color1-200);
 }
 
 .navButton:disabled {

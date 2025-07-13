@@ -12,7 +12,7 @@
 }
 
 .modal {
-    background-color: var(--color-background-primary);
+    background-color: var(--layout-background1-color);
     padding: var(--spacing-2xl);
     border-radius: var(--border-radius-md);
     width: 90%;
@@ -37,7 +37,7 @@
     border: none;
     font-size: var(--font-size-xl);
     cursor: pointer;
-    color: var(--color-text-primary);
+    color: var(--text1-color);
 }
 
 .body {

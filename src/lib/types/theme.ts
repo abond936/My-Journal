@@ -75,7 +75,6 @@ export interface TypographyTokens {
   };
   lineHeights: {
     base: string;
-    increment: string;
     tight: string;
     relaxed: string;
   };

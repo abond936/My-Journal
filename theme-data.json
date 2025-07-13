@@ -1,22 +1,6 @@
 {
   "palette": [
     {
-      "id": 1,
-      "hex": "#F2F2F2",
-      "h": "0",
-      "s": "0%",
-      "l": "95%",
-      "name": "background"
-    },
-    {
-      "id": 2,
-      "hex": "#0D0D0D",
-      "h": "0",
-      "s": "0%",
-      "l": "5%",
-      "name": "text"
-    },
-    {
       "id": 3,
       "hex": "#135b96",
       "h": "211",
@@ -150,8 +134,8 @@
   "darkModeShift": 5,
   "typography": {
     "textColors": {
-      "text1": "2/900",
-      "text2": "2/700"
+      "text1": "color2-300",
+      "text2": "color2-200"
     },
     "fontFamilies": {
       "sans": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
@@ -177,11 +161,13 @@
     },
     "fontWeights": {
       "normal": "400",
-      "increment": "100"
+      "increment": "100",
+      "medium": "500",
+      "semibold": "600",
+      "bold": "700"
     },
     "lineHeights": {
       "base": "1.5",
-      "increment": "0.25",
       "tight": "1.25",
       "relaxed": "1.75"
     }
@@ -200,12 +186,19 @@
       "spacing1": "clamp(1rem, 0.5rem + 2.5vw, 2rem)",
       "spacing2": "clamp(2rem, 1rem + 5vw, 4rem)",
       "spacing3": "clamp(4rem, 2rem + 10vw, 8rem)"
-    }
+    },
+    "xsMultiplier": "1",
+    "smMultiplier": "2",
+    "lgMultiplier": "6",
+    "xlMultiplier": "8",
+    "2xlMultiplier": "12",
+    "3xlMultiplier": "16",
+    "4xlMultiplier": "24"
   },
   "borders": {
     "colors": {
-      "border1": "1/200",
-      "border2": "1/300"
+      "border1": "color1-200",
+      "border2": "color1-300"
     },
     "widths": {
       "thin": "1px",
@@ -241,10 +234,10 @@
   },
   "layout": {
     "containerMaxWidth": "1200px",
-    "background1Color": "1/050",
-    "background2Color": "1/100",
-    "border1Color": "1/200",
-    "border2Color": "1/300",
+    "background1Color": "color1-100",
+    "background2Color": "color1-200",
+    "border1Color": "color1-200",
+    "border2Color": "color1-300",
     "sidebarWidth": "300px",
     "sidebarWidthMobile": "250px",
     "logoMaxHeight": "50px",
@@ -262,48 +255,48 @@
   },
   "states": {
     "success": {
-      "backgroundColor": "11",
-      "borderColor": "11"
+      "backgroundColor": "color11",
+      "borderColor": "color11"
     },
     "error": {
-      "backgroundColor": "12",
-      "borderColor": "12"
+      "backgroundColor": "color12",
+      "borderColor": "color12"
     },
     "warning": {
-      "backgroundColor": "13",
-      "borderColor": "13"
+      "backgroundColor": "color13",
+      "borderColor": "color13"
     },
     "info": {
-      "backgroundColor": "14",
-      "borderColor": "14"
+      "backgroundColor": "color14",
+      "borderColor": "color14"
     }
   },
   "components": {
     "header": {
       "height": "60px",
-      "backgroundColor": "1/050",
-      "borderColor": "1/200",
+      "backgroundColor": "color1-100",
+      "borderColor": "color1-200",
       "borderWidth": "border/width/thin"
     },
     "button": {
       "solid": {
-        "backgroundColor": "3",
-        "backgroundColorHover": "3",
-        "borderColor": "3",
-        "textColor": "1/050"
+        "backgroundColor": "color3",
+        "backgroundColorHover": "color3",
+        "borderColor": "color3",
+        "textColor": "color1-100"
       },
       "outline": {
         "backgroundColor": "transparent",
         "backgroundColorHover": "hsla(var(--h3), var(--s3), var(--l3), 0.1)",
-        "borderColor": "1/200",
-        "textColor": "2/900",
+        "borderColor": "color1-200",
+        "textColor": "color2-300",
         "borderWidth": "border/width/medium"
       }
     },
     "card": {
-      "backgroundColor": "1/100",
+      "backgroundColor": "color1-200",
       "padding": "spacing/lg",
-      "borderColor": "1/300",
+      "borderColor": "color1-200",
       "borderWidth": "border/width/medium",
       "borderRadius": "border/radius/lg",
       "shadow": "shadow/sm",
@@ -315,25 +308,25 @@
       "fontWeight": "font/weight/medium",
       "fontSize": "font/size/sm",
       "fontFamily": "font/family/sans",
-      "textColor": "1/050",
+      "textColor": "color1-100",
       "backgrounds": {
-        "who": "5",
-        "what": "6",
-        "when": "7",
-        "where": "8",
-        "reflection": "9"
+        "who": "color5",
+        "what": "color6",
+        "when": "color7",
+        "where": "color8",
+        "reflection": "color9"
       }
     },
     "link": {
-      "textColor": "3",
-      "textColorHover": "3",
+      "textColor": "color3",
+      "textColorHover": "color3",
       "decorationHover": "underline"
     },
     "input": {
-      "backgroundColor": "1/050",
-      "borderColor": "1/200",
-      "borderColorFocus": "3",
-      "textColor": "2/900",
+      "backgroundColor": "color1-100",
+      "borderColor": "color1-200",
+      "borderColorFocus": "color3",
+      "textColor": "color2-300",
       "borderRadius": "border/radius/sm",
       "padding": "spacing/sm spacing/md"
     }

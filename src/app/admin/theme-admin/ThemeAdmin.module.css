@@ -196,6 +196,107 @@
   margin-top: 5px; /* Align with color boxes */
 }
 
+/* Main Color Boxes Row: Light and Dark with labels above */
+.mainColorBoxesRow {
+  display: flex;
+  gap: var(--spacing-md);
+  margin-bottom: calc(var(--spacing-md) * 0.75);
+}
+
+.colorBoxContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.colorBoxWithShades {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+}
+
+.shadeBoxesContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.shadeBox {
+  width: 60px;
+  height: calc(36px * 1.5);
+  border: 2px solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--card-shadow);
+  position: relative;
+}
+
+/* Add a subtle inner border for very light colors */
+.shadeBox::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  right: 1px;
+  bottom: 1px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: calc(var(--border-radius-sm) - 1px);
+  pointer-events: none;
+}
+
+.shadeBox:hover {
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-1px);
+}
+
+.mainBoxWithLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.shadeBoxWithLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.shadeLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text2-color);
+  text-align: center;
+}
+
+.colorBoxLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text2-color);
+  margin-bottom: var(--spacing-xs);
+  text-align: center;
+}
+
+.mainColorBox {
+  width: 120px;
+  height: calc(72px * 1.5);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--card-shadow);
+}
+
+.mainColorBox:hover {
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-1px);
+}
+
+
+
 /* Color selection area for colors 1-2 */
 .colorSelection {
   display: flex;
@@ -203,6 +304,8 @@
   align-items: center;
   gap: var(--spacing-xs);
 }
+
+
 
 .colorBox {
   width: 60px;

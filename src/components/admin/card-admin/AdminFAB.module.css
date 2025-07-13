@@ -9,8 +9,8 @@
   width: 56px;  /* TODO: Tokenize magic number */
   height: 56px; /* TODO: Tokenize magic number */
   border-radius: var(--border-radius-full);
-  background-color: var(--color-accent-solid);
-  color: var(--color-accent-text);
+  background-color: var(--button-solid-background-color);
+  color: var(--button-solid-text-color);
   border: none;
   cursor: pointer;
   display: flex;
@@ -44,10 +44,10 @@
   align-items: center;
   gap: var(--spacing-sm);
   padding: var(--spacing-sm) var(--spacing-md);
-  background-color: var(--background-primary);
+  background-color: var(--layout-background1-color);
   border-radius: var(--border-radius-full);
   text-decoration: none;
-  color: var(--text-primary);
+  color: var(--text1-color);
   box-shadow: var(--shadow-md);
   transition: transform 0.2s ease-in-out;
 }

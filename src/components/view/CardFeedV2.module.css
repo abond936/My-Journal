@@ -96,7 +96,7 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: var(--color1-900);
+  background: var(--color1-300);
   color: white;
   border: none;
   width: var(--spacing-2xl);
@@ -112,7 +112,7 @@
 }
 
 .galleryNav:hover {
-  background: var(--color1-800);
+  background: var(--color1-200);
 }
 
 .prevButton {

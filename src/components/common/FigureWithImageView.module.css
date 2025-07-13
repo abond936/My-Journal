@@ -99,7 +99,7 @@
   right: var(--spacing-sm);
   width: var(--spacing-xl);
   height: var(--spacing-xl);
-  background-color: var(--color1-900);
+  background-color: var(--color1-300);
   color: var(--color2);
   border-radius: var(--border-radius-md);
   cursor: grab;

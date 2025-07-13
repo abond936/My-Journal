@@ -4,15 +4,15 @@
   display: flex;
   flex-direction: column;
   border-radius: var(--border-radius-lg);
-  background-color: var(--background-primary);
-  border: var(--border-width-thin) solid var(--color-border-primary);
+  background-color: var(--layout-background1-color);
+  border: var(--border-width-thin) solid var(--border1-color);
 }
 
 .imageContainer {
   position: relative;
   width: 100%;
   aspect-ratio: 16/9;
-  background-color: var(--color-background-secondary);
+  background-color: var(--layout-background2-color);
 }
 
 .coverImage {
@@ -28,7 +28,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--color-background-secondary);
+  background-color: var(--layout-background2-color);
 }
 
 .buttonContainer {
@@ -47,8 +47,8 @@
 
 .addButton {
   padding: var(--spacing-sm) var(--spacing-xl);
-  background-color: var(--color-accent-solid);
-  color: var(--color-accent-text);
+  background-color: var(--button-solid-background-color);
+  color: var(--button-solid-text-color);
   border: none;
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-base);
@@ -58,13 +58,13 @@
 }
 
 .addButton:hover {
-  background-color: var(--color-accent-solid-hover);
+  background-color: var(--button-solid-background-color-hover);
 }
 
 .changeButton {
   padding: var(--spacing-xs) var(--spacing-md);
-  background-color: var(--color-accent-solid);
-  color: var(--color-accent-text);
+  background-color: var(--button-solid-background-color);
+  color: var(--button-solid-text-color);
   border: none;
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-xs);
@@ -74,13 +74,13 @@
 }
 
 .changeButton:hover {
-  background-color: var(--color-accent-solid-hover);
+  background-color: var(--button-solid-background-color-hover);
 }
 
 .removeButton {
   padding: var(--spacing-xs) var(--spacing-md);
-  background-color: var(--color-overlay-dark);
-  color: var(--color-accent-text);
+  background-color: var(--state-error-background-color);
+  color: var(--text1-color);
   border: none;
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-xs);
@@ -90,45 +90,45 @@
 }
 
 .removeButton:hover {
-  background-color: var(--color-overlay-dark-hover);
+  background-color: var(--state-error-border-color);
 }
 
 .errorText {
-  color: var(--color-error-text);
+  color: var(--state-error-border-color);
   font-size: var(--font-size-xs);
   margin-top: var(--spacing-xs);
 }
 
 .container.error {
-  border-color: var(--color-error-border);
+  border-color: var(--state-error-border-color);
 }
 
 .placeholderText {
-  color: var(--color-text-tertiary);
+  color: var(--text2-color);
   font-size: var(--font-size-xs);
   transition: color var(--transition-short);
 }
 
 .isDragging .placeholderText {
-  color: var(--color-accent-solid);
+  color: var(--button-solid-background-color);
 }
 
 .error .placeholderText {
-  color: var(--color-error-text);
+  color: var(--state-error-border-color);
 }
 
 .errorBanner {
   padding: var(--spacing-sm);
-  background-color: var(--color-error-background);
-  color: var(--color-error-text);
+  background-color: var(--state-error-background-color);
+  color: var(--state-error-border-color);
   font-size: var(--font-size-xs);
-  border-top: var(--border-width-thin) solid var(--color-error-border);
+  border-top: var(--border-width-thin) solid var(--state-error-border-color);
 }
 
 .repositionControls {
   padding: var(--spacing-md);
-  background-color: var(--color-background-secondary);
-  border-top: var(--border-width-thin) solid var(--color-border-primary);
+  background-color: var(--layout-background2-color);
+  border-top: var(--border-width-thin) solid var(--border1-color);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
@@ -142,7 +142,7 @@
 
 .sliderContainer label {
   font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
+  color: var(--text2-color);
   width: 80px;
   flex-shrink: 0;
 }
@@ -152,7 +152,7 @@
   height: 6px;
   -webkit-appearance: none;
   appearance: none;
-  background: var(--color-border-primary);
+  background: var(--border1-color);
   border-radius: var(--border-radius-sm);
   outline: none;
 }
@@ -162,7 +162,7 @@
   appearance: none;
   width: 16px;
   height: 16px;
-  background: var(--color-accent-solid);
+  background: var(--button-solid-background-color);
   border-radius: 50%;
   cursor: pointer;
   transition: background-color var(--transition-short);
@@ -171,7 +171,7 @@
 .slider::-moz-range-thumb {
   width: 16px;
   height: 16px;
-  background: var(--color-accent-solid);
+  background: var(--button-solid-background-color);
   border-radius: 50%;
   cursor: pointer;
   transition: background-color var(--transition-short);
@@ -179,11 +179,11 @@
 }
 
 .slider::-webkit-slider-thumb:hover {
-  background: var(--color-accent-solid-hover);
+  background: var(--button-solid-background-color-hover);
 }
 
 .slider::-moz-range-thumb:hover {
-  background: var(--color-accent-solid-hover);
+  background: var(--button-solid-background-color-hover);
 }
 
 .processingContainer {
@@ -196,8 +196,8 @@
 .spinner {
   width: 40px;
   height: 40px;
-  border: var(--border-width-medium) solid var(--color-border-primary);
-  border-top-color: var(--color-accent-solid);
+  border: var(--border-width-medium) solid var(--border1-color);
+  border-top-color: var(--button-solid-background-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }

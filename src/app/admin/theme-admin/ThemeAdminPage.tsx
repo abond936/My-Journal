@@ -72,36 +72,113 @@ const PaletteColorEditor: React.FC<{
   };
 
   if (isThemeColor(color)) {
-    // Colors 1-2: ThemeColor with light/dark variants
+    // Generate 3-shade color scales matching theme service exactly
+    const generateShadeColors = (baseHex: string, isBackground: boolean) => {
+      try {
+        const { h, s, l } = hexToHsl(baseHex);
+        
+        // Simple: take the base color and lighten it by 2 steps
+        const step1 = Math.min(100, l + 10); // 10% lighter
+        const step2 = Math.min(100, l + 20); // 20% lighter
+        
+        return {
+          '100': `hsl(${h}, ${s}%, ${l}%)`,      // Original color
+          '200': `hsl(${h}, ${s}%, ${step1}%)`,  // 10% lighter
+          '300': `hsl(${h}, ${s}%, ${step2}%)`   // 20% lighter
+        };
+      } catch (error) {
+        console.error('Error generating shade colors:', error);
+        // Fallback to basic colors
+        return {
+          '100': baseHex,
+          '200': baseHex,
+          '300': baseHex
+        };
+      }
+    };
+
+    // Generate shades for each hex color
+    const lightShades = generateShadeColors(color.light.hex, color.id === 1);
+    const darkShades = generateShadeColors(color.dark.hex, color.id === 1);
+    
+    console.log(`Rendering theme color ${color.id}:`, { lightShades, darkShades });
 
     return (
       <div className={styles.colorEditor}>
-        {/* Top Row: Number and Color Scale with labels above */}
+        {/* Top Row: Number */}
         <div className={styles.topRow}>
           <div className={styles.numberAndColors}>
             <div className={styles.colorNumber}>{color.id}</div>
-            <div className={styles.colorScale}>
-              <div className={styles.scaleItem}>
-                <span className={styles.scaleLabelAbove}>LIGHT</span>
+          </div>
+        </div>
+
+        {/* Main Color Boxes Row: Light and Dark with labels above */}
+        <div className={styles.mainColorBoxesRow}>
+          <div className={styles.colorBoxContainer}>
+            <label className={styles.colorBoxLabel}>Light</label>
+            <div className={styles.colorBoxWithShades}>
+              <div className={styles.mainBoxWithLabel}>
                 <div
-                  className={styles.scaleColor}
+                  className={styles.mainColorBox}
                   style={{ backgroundColor: color.light.hex }}
-                  title={`Light ${color.name}: ${color.light.hex}`}
+                  title={`Light: ${color.light.hex}`}
                 />
+                <span className={styles.shadeLabel}>100</span>
               </div>
-              <div className={styles.scaleItem}>
-                <span className={styles.scaleLabelAbove}>DARK</span>
+              <div className={styles.shadeBoxesContainer}>
+                <div className={styles.shadeBoxWithLabel}>
+                  <div
+                    className={styles.shadeBox}
+                    style={{ backgroundColor: lightShades['200'] }}
+                    title={`Light 200: ${lightShades['200']}`}
+                  />
+                  <span className={styles.shadeLabel}>200</span>
+                </div>
+                <div className={styles.shadeBoxWithLabel}>
+                  <div
+                    className={styles.shadeBox}
+                    style={{ backgroundColor: lightShades['300'] }}
+                    title={`Light 300: ${lightShades['300']}`}
+                  />
+                  <span className={styles.shadeLabel}>300</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className={styles.colorBoxContainer}>
+            <label className={styles.colorBoxLabel}>Dark</label>
+            <div className={styles.colorBoxWithShades}>
+              <div className={styles.mainBoxWithLabel}>
                 <div
-                  className={styles.scaleColor}
+                  className={styles.mainColorBox}
                   style={{ backgroundColor: color.dark.hex }}
-                  title={`Dark ${color.name}: ${color.dark.hex}`}
+                  title={`Dark: ${color.dark.hex}`}
                 />
+                <span className={styles.shadeLabel}>100</span>
+              </div>
+              <div className={styles.shadeBoxesContainer}>
+                <div className={styles.shadeBoxWithLabel}>
+                  <div
+                    className={styles.shadeBox}
+                    style={{ backgroundColor: darkShades['200'] }}
+                    title={`Dark 200: ${darkShades['200']}`}
+                  />
+                  <span className={styles.shadeLabel}>200</span>
+                </div>
+                <div className={styles.shadeBoxWithLabel}>
+                  <div
+                    className={styles.shadeBox}
+                    style={{ backgroundColor: darkShades['300'] }}
+                    title={`Dark 300: ${darkShades['300']}`}
+                  />
+                  <span className={styles.shadeLabel}>300</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Hex Input Row: Two hex inputs centered under the boxes */}
+        {/* Hex Input Row: Two hex inputs for light/dark variants */}
         <div className={`${styles.hexInputRow} ${styles.hexInputRowTheme}`}>
           <div className={styles.hexInputLeft}>
             <input
@@ -122,6 +199,8 @@ const PaletteColorEditor: React.FC<{
             />
           </div>
         </div>
+
+
       </div>
     );
   } else {
@@ -319,7 +398,8 @@ const ColorReferenceInput: React.FC<{
   value: string;
   onChange: (value: string) => void;
   colors: any[];
-}> = ({ label, value, onChange, colors }) => {
+  themeColors?: any[];
+}> = ({ label, value, onChange, colors, themeColors = [] }) => {
   const [isValid, setIsValid] = useState(true);
   const [previewColor, setPreviewColor] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -332,26 +412,44 @@ const ColorReferenceInput: React.FC<{
       return;
     }
 
-    // Parse input: "1/050" or "3"
-    const parts = inputValue.split('/');
-    const colorNum = parseInt(parts[0], 10);
-    const step = parts[1];
+    // Parse input: "color1-100" or "color3"
+    const colorMatch = inputValue.match(/^color(\d+)(?:-(\d+))?$/);
+    if (!colorMatch) {
+      setIsValid(false);
+      setPreviewColor('');
+      setErrorMessage('Invalid format. Use "color1-100" for theme colors or "color3" for palette colors');
+      return;
+    }
+
+    const colorNum = parseInt(colorMatch[1], 10);
+    const step = colorMatch[2];
 
     // Validate color number range
-    if (isNaN(colorNum) || colorNum < 1 || colorNum > 14) {
+    if (colorNum < 1 || colorNum > 14) {
       setIsValid(false);
       setPreviewColor('');
       setErrorMessage('Color number must be between 1 and 14');
       return;
     }
 
-    // Find the color
-    const color = colors.find(c => c.id === colorNum);
-    if (!color) {
-      setIsValid(false);
-      setPreviewColor('');
-      setErrorMessage(`Color ${colorNum} not found in palette`);
-      return;
+    // Find the color - check themeColors first for colors 1-2, then palette for colors 3-14
+    let color;
+    if (colorNum === 1 || colorNum === 2) {
+      color = themeColors.find(c => c.id === colorNum);
+      if (!color) {
+        setIsValid(false);
+        setPreviewColor('');
+        setErrorMessage(`Color ${colorNum} not found in theme colors`);
+        return;
+      }
+    } else {
+      color = colors.find(c => c.id === colorNum);
+      if (!color) {
+        setIsValid(false);
+        setPreviewColor('');
+        setErrorMessage(`Color ${colorNum} not found in palette`);
+        return;
+      }
     }
 
     // Validate format based on color type
@@ -360,11 +458,11 @@ const ColorReferenceInput: React.FC<{
       if (!step) {
         setIsValid(false);
         setPreviewColor('');
-        setErrorMessage(`Color ${colorNum} requires a step (e.g., "${colorNum}/050")`);
+        setErrorMessage(`Color ${colorNum} requires a step (e.g., "color${colorNum}-100")`);
         return;
       }
       
-      const validSteps = ['050', '100', '200', '300', '400', '500', '600', '700', '800', '900'];
+      const validSteps = ['100', '200', '300'];
       if (!validSteps.includes(step)) {
         setIsValid(false);
         setPreviewColor('');
@@ -379,11 +477,11 @@ const ColorReferenceInput: React.FC<{
       
       let baseLightness;
       if (colorNum === 1) {
-        // Color1 (background): 050=95%, 100=90%, 200=80%, ..., 900=10%
-        baseLightness = Math.max(0, Math.min(100, 100 - (stepValue / 10)));
+        // Color1 (background): 100=100%, 200=95%, 300=90%
+        baseLightness = Math.max(0, Math.min(100, 105 - (stepValue / 20)));
       } else {
-        // Color2 (text): 050=5%, 100=10%, 200=20%, ..., 900=90%
-        baseLightness = Math.max(0, Math.min(100, stepValue / 10));
+        // Color2 (text): 100=20%, 200=15%, 300=10%
+        baseLightness = Math.max(0, Math.min(100, 25 - (stepValue / 20)));
       }
       
       // Show light theme preview (for simplicity in admin interface)
@@ -395,7 +493,7 @@ const ColorReferenceInput: React.FC<{
       if (step) {
         setIsValid(false);
         setPreviewColor('');
-        setErrorMessage(`Color ${colorNum} should not have a step specification (use just "${colorNum}")`);
+        setErrorMessage(`Color ${colorNum} should not have a step specification (use just "color${colorNum}")`);
         return;
       }
 
@@ -429,7 +527,7 @@ const ColorReferenceInput: React.FC<{
             validateAndPreview(e.target.value);
           }}
           className={`${styles.colorInput} ${!isValid ? styles.colorInputError : ''}`}
-          placeholder="1/050 or 3"
+          placeholder="color1-100 or color3"
         />
       </div>
       {previewColor && (
@@ -459,7 +557,14 @@ const StateColorInput: React.FC<{
 
   React.useEffect(() => {
     if (value && colors) {
-      const colorNum = parseInt(value, 10);
+      // Handle both old numeric format and new color format
+      let colorNum;
+      if (value.startsWith('color')) {
+        colorNum = parseInt(value.replace('color', ''), 10);
+      } else {
+        colorNum = parseInt(value, 10);
+      }
+      
       const color = colors.find(c => c.id === colorNum);
       if (color) {
         const h = parseInt(color.h, 10);
@@ -479,13 +584,11 @@ const StateColorInput: React.FC<{
       <div className={styles.colorInputRow}>
         <label>{label}</label>
         <input
-          type="number"
-          min="11"
-          max="14"
+          type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className={styles.colorInput}
-          placeholder="11-14"
+          placeholder="color11-color14"
         />
       </div>
       {previewColor && (
@@ -515,60 +618,7 @@ const FontWeightInput: React.FC<{
   </div>
 );
 
-// Font Weight Display - Right-justified layout for calculated values
-const FontWeightDisplay: React.FC<{
-  label: string;
-  value: string;
-}> = ({ label, value }) => (
-  <div className={styles.fontSizeTokenInput}>
-    <label>{label}</label>
-    <div className={styles.calculatedValue}>
-      {value}
-    </div>
-  </div>
-);
 
-// Font Weight Section with calculation logic
-const FontWeightSection: React.FC<{
-  fontWeights: any;
-  onNormalChange: (value: string) => void;
-  onIncrementChange: (value: string) => void;
-}> = ({ fontWeights, onNormalChange, onIncrementChange }) => {
-  const normal = parseInt(fontWeights?.normal || '400', 10);
-  const increment = parseInt(fontWeights?.increment || '100', 10);
-  
-  const medium = normal + increment;
-  const semibold = normal + (2 * increment);
-  const bold = normal + (3 * increment);
-  
-  return (
-    <div className={styles.tokenSubsection}>
-      <h4>Font Weights</h4>
-      <FontWeightInput 
-        label="Normal" 
-        value={fontWeights?.normal || ''} 
-        onChange={onNormalChange} 
-      />
-      <FontWeightInput 
-        label="Increment" 
-        value={fontWeights?.increment || ''} 
-        onChange={onIncrementChange} 
-      />
-      <FontWeightDisplay 
-        label="Medium" 
-        value={medium.toString()} 
-      />
-      <FontWeightDisplay 
-        label="Semibold" 
-        value={semibold.toString()} 
-      />
-      <FontWeightDisplay 
-        label="Bold" 
-        value={bold.toString()} 
-      />
-    </div>
-  );
-};
 
 // Spacing Multiplier Input - Right-justified layout for multiplier values
 const SpacingMultiplierInput: React.FC<{
@@ -805,46 +855,75 @@ export default function ThemeAdminPage() {
   const validateThemeData = (data: any): string[] => {
     const errors: string[] = [];
     
-    // Validate color references in layout
-    if (data.layout?.background1Color) {
-      if (!isValidColorReference(data.layout.background1Color, data.palette)) {
-        errors.push(`Invalid layout background1Color: ${data.layout.background1Color}`);
-      }
-    }
+    console.log('Validating theme data:', data);
     
-    // Validate color references in typography
-    if (data.typography?.textColors?.text1) {
-      if (!isValidColorReference(data.typography.textColors.text1, data.palette)) {
-        errors.push(`Invalid typography text1 color: ${data.typography.textColors.text1}`);
+    // Helper function to validate color references recursively
+    const validateColorReferences = (obj: any, path: string = '') => {
+      if (!obj || typeof obj !== 'object') return;
+      
+      for (const [key, value] of Object.entries(obj)) {
+        const currentPath = path ? `${path}.${key}` : key;
+        
+        if (typeof value === 'string') {
+          // Only check strings that look like color references (start with "color")
+          if (value.match(/^color\d+(-\d+)?$/)) {
+            console.log(`Checking color reference at ${currentPath}:`, value);
+            if (!isValidColorReference(value, data.palette, data.themeColors || [])) {
+              errors.push(`Invalid color reference at ${currentPath}: ${value}`);
+            }
+          }
+        } else if (typeof value === 'object' && value !== null) {
+          validateColorReferences(value, currentPath);
+        }
       }
-    }
+    };
     
-    // Add more validation as needed
+    // Validate all color references in the theme data
+    validateColorReferences(data);
+    
     return errors;
   };
 
-  const isValidColorReference = (reference: string, palette: any[]): boolean => {
+  const isValidColorReference = (reference: string, palette: any[], themeColors: any[]): boolean => {
     if (!reference.trim()) return true; // Empty is valid
     
-    const parts = reference.split('/');
-    const colorNum = parseInt(parts[0], 10);
-    const step = parts[1];
-    
-    // Validate color number range
-    if (isNaN(colorNum) || colorNum < 1 || colorNum > 14) return false;
-    
-    // Find the color
-    const color = palette.find(c => c.id === colorNum);
-    if (!color) return false;
-    
-    // Validate format based on color type
-    if (colorNum === 1 || colorNum === 2) {
-      if (!step) return false;
-      const validSteps = ['050', '100', '200', '300', '400', '500', '600', '700', '800', '900'];
-      return validSteps.includes(step);
-    } else {
-      return !step; // Colors 3-14 should not have step specification
+    // Check for theme color format: "color1-200", "color2-100", etc.
+    const themeColorMatch = reference.match(/^color(\d+)-(\d+)$/);
+    if (themeColorMatch) {
+      const colorNum = parseInt(themeColorMatch[1], 10);
+      const step = themeColorMatch[2];
+      
+      // Validate color number range
+      if (colorNum < 1 || colorNum > 14) return false;
+      
+      // For colors 1 and 2, check themeColors array
+      if (colorNum === 1 || colorNum === 2) {
+        const color = themeColors.find(c => c.id === colorNum);
+        if (!color) return false;
+        
+        // Validate step for colors 1 and 2 (3-shade system)
+        const validSteps = ['100', '200', '300'];
+        return validSteps.includes(step);
+      } else {
+        // Colors 3-14 should not have step specification
+        return false;
+      }
     }
+    
+    // Check for palette color format: "color3", "color4", etc. (colors 3-14)
+    const paletteColorMatch = reference.match(/^color(\d+)$/);
+    if (paletteColorMatch) {
+      const colorNum = parseInt(paletteColorMatch[1], 10);
+      
+      // Only colors 3-14 can use this format
+      if (colorNum < 3 || colorNum > 14) return false;
+      
+      // Find the color in palette array
+      const color = palette.find(c => c.id === colorNum);
+      return !!color;
+    }
+    
+    return false;
   };
 
   const saveTheme = async () => {
@@ -996,8 +1075,8 @@ export default function ThemeAdminPage() {
 
               <div className={styles.tokenSubsection}>
                 <h4>Text Colors</h4>
-                <ColorReferenceInput label="Text1" value={themeData.typography?.textColors?.text1 || ''} onChange={(v) => handleNestedTokenChange('typography', 'textColors', 'text1', v)} colors={themeData.palette} />
-                <ColorReferenceInput label="Text2" value={themeData.typography?.textColors?.text2 || ''} onChange={(v) => handleNestedTokenChange('typography', 'textColors', 'text2', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Text1" value={themeData.typography?.textColors?.text1 || ''} onChange={(v) => handleNestedTokenChange('typography', 'textColors', 'text1', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
+                <ColorReferenceInput label="Text2" value={themeData.typography?.textColors?.text2 || ''} onChange={(v) => handleNestedTokenChange('typography', 'textColors', 'text2', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
               </div>
 
               <div className={styles.tokenSubsection}>
@@ -1014,26 +1093,19 @@ export default function ThemeAdminPage() {
                 <FontSizeTokenInput label="6XL" value={themeData.typography?.fontSizes?.['6xl'] || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', '6xl', v)} />
               </div>
 
-              <FontWeightSection 
-                fontWeights={themeData.typography?.fontWeights} 
-                onNormalChange={(v) => handleNestedTokenChange('typography', 'fontWeights', 'normal', v)} 
-                onIncrementChange={(v) => handleNestedTokenChange('typography', 'fontWeights', 'increment', v)} 
-              />
+              <div className={styles.tokenSubsection}>
+                <h4>Font Weights</h4>
+                <FontWeightInput label="Normal" value={themeData.typography?.fontWeights?.normal || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontWeights', 'normal', v)} />
+                <FontWeightInput label="Medium" value={themeData.typography?.fontWeights?.medium || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontWeights', 'medium', v)} />
+                <FontWeightInput label="Semibold" value={themeData.typography?.fontWeights?.semibold || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontWeights', 'semibold', v)} />
+                <FontWeightInput label="Bold" value={themeData.typography?.fontWeights?.bold || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontWeights', 'bold', v)} />
+              </div>
 
               <div className={styles.tokenSubsection}>
                 <h4>Line Heights</h4>
                 <FontSizeTokenInput label="Base" value={themeData.typography?.lineHeights?.base || ''} onChange={(v) => handleNestedTokenChange('typography', 'lineHeights', 'base', v)} />
-                <FontSizeTokenInput label="Increment" value={themeData.typography?.lineHeights?.increment || ''} onChange={(v) => handleNestedTokenChange('typography', 'lineHeights', 'increment', v)} />
-                <FontWeightDisplay label="Tight" value={(() => {
-                  const base = parseFloat(themeData.typography?.lineHeights?.base || '1.5');
-                  const increment = parseFloat(themeData.typography?.lineHeights?.increment || '0.25');
-                  return (base - increment).toString();
-                })()} />
-                <FontWeightDisplay label="Relaxed" value={(() => {
-                  const base = parseFloat(themeData.typography?.lineHeights?.base || '1.5');
-                  const increment = parseFloat(themeData.typography?.lineHeights?.increment || '0.25');
-                  return (base + increment).toString();
-                })()} />
+                <FontSizeTokenInput label="Tight" value={themeData.typography?.lineHeights?.tight || ''} onChange={(v) => handleNestedTokenChange('typography', 'lineHeights', 'tight', v)} />
+                <FontSizeTokenInput label="Relaxed" value={themeData.typography?.lineHeights?.relaxed || ''} onChange={(v) => handleNestedTokenChange('typography', 'lineHeights', 'relaxed', v)} />
               </div>
 
               <div className={styles.tokenSubsection}>
@@ -1136,8 +1208,8 @@ export default function ThemeAdminPage() {
 
               <div className={styles.tokenSubsection}>
                 <h4>Border Colors</h4>
-                <ColorReferenceInput label="Border1" value={themeData.borders?.colors?.border1 || ''} onChange={(v) => handleNestedTokenChange('borders', 'colors', 'border1', v)} colors={themeData.palette} />
-                <ColorReferenceInput label="Border2" value={themeData.borders?.colors?.border2 || ''} onChange={(v) => handleNestedTokenChange('borders', 'colors', 'border2', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Border1" value={themeData.borders?.colors?.border1 || ''} onChange={(v) => handleNestedTokenChange('borders', 'colors', 'border1', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
+                <ColorReferenceInput label="Border2" value={themeData.borders?.colors?.border2 || ''} onChange={(v) => handleNestedTokenChange('borders', 'colors', 'border2', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
               </div>
 
               <div className={styles.tokenSubsection}>
@@ -1169,11 +1241,11 @@ export default function ThemeAdminPage() {
 
               <div className={styles.tokenSubsection}>
                 <h4>Tag Dimensions</h4>
-                <ColorReferenceInput label="Who BG" value={themeData.components?.tag?.backgrounds?.who || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'tag', 'backgrounds', 'who', v)} colors={themeData.palette} />
-                <ColorReferenceInput label="What BG" value={themeData.components?.tag?.backgrounds?.what || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'tag', 'backgrounds', 'what', v)} colors={themeData.palette} />
-                <ColorReferenceInput label="When BG" value={themeData.components?.tag?.backgrounds?.when || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'tag', 'backgrounds', 'when', v)} colors={themeData.palette} />
-                <ColorReferenceInput label="Where BG" value={themeData.components?.tag?.backgrounds?.where || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'tag', 'backgrounds', 'where', v)} colors={themeData.palette} />
-                <ColorReferenceInput label="Reflection BG" value={themeData.components?.tag?.backgrounds?.reflection || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'tag', 'backgrounds', 'reflection', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Who BG" value={themeData.components?.tag?.backgrounds?.who || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'tag', 'backgrounds', 'who', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
+                <ColorReferenceInput label="What BG" value={themeData.components?.tag?.backgrounds?.what || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'tag', 'backgrounds', 'what', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
+                <ColorReferenceInput label="When BG" value={themeData.components?.tag?.backgrounds?.when || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'tag', 'backgrounds', 'when', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
+                <ColorReferenceInput label="Where BG" value={themeData.components?.tag?.backgrounds?.where || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'tag', 'backgrounds', 'where', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
+                <ColorReferenceInput label="Reflection BG" value={themeData.components?.tag?.backgrounds?.reflection || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'tag', 'backgrounds', 'reflection', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
               </div>
             </div>
 
@@ -1184,10 +1256,10 @@ export default function ThemeAdminPage() {
               <div className={styles.tokenSubsection}>
                 <h4>Layout</h4>
                 <FontSizeTokenInput label="Container Max Width" value={themeData.layout?.containerMaxWidth || ''} onChange={(v) => handleTokenChange('layout', 'containerMaxWidth', v)} />
-                <ColorReferenceInput label="Background1" value={themeData.layout?.background1Color || ''} onChange={(v) => handleTokenChange('layout', 'background1Color', v)} colors={themeData.palette} />
-                <ColorReferenceInput label="Background2" value={themeData.layout?.background2Color || ''} onChange={(v) => handleTokenChange('layout', 'background2Color', v)} colors={themeData.palette} />
-                <ColorReferenceInput label="Border1" value={themeData.layout?.border1Color || ''} onChange={(v) => handleTokenChange('layout', 'border1Color', v)} colors={themeData.palette} />
-                <ColorReferenceInput label="Border2" value={themeData.layout?.border2Color || ''} onChange={(v) => handleTokenChange('layout', 'border2Color', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Background1" value={themeData.layout?.background1Color || ''} onChange={(v) => handleTokenChange('layout', 'background1Color', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
+                <ColorReferenceInput label="Background2" value={themeData.layout?.background2Color || ''} onChange={(v) => handleTokenChange('layout', 'background2Color', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
+                <ColorReferenceInput label="Border1" value={themeData.layout?.border1Color || ''} onChange={(v) => handleTokenChange('layout', 'border1Color', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
+                <ColorReferenceInput label="Border2" value={themeData.layout?.border2Color || ''} onChange={(v) => handleTokenChange('layout', 'border2Color', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
                 <FontSizeTokenInput label="Sidebar Width" value={themeData.layout?.sidebarWidth || ''} onChange={(v) => handleTokenChange('layout', 'sidebarWidth', v)} />
                 <FontSizeTokenInput label="Sidebar Width Mobile" value={themeData.layout?.sidebarWidthMobile || ''} onChange={(v) => handleTokenChange('layout', 'sidebarWidthMobile', v)} />
                 <FontSizeTokenInput label="Logo Max Height" value={themeData.layout?.logoMaxHeight || ''} onChange={(v) => handleTokenChange('layout', 'logoMaxHeight', v)} />
@@ -1201,26 +1273,26 @@ export default function ThemeAdminPage() {
               <div className={styles.tokenSubsection}>
                 <h4>Header</h4>
                 <FontSizeTokenInput label="Height" value={themeData.components?.header?.height || ''} onChange={(v) => handleNestedTokenChange('components', 'header', 'height', v)} />
-                <ColorReferenceInput label="Background" value={themeData.components?.header?.backgroundColor || ''} onChange={(v) => handleNestedTokenChange('components', 'header', 'backgroundColor', v)} colors={themeData.palette} />
-                <ColorReferenceInput label="Border Color" value={themeData.components?.header?.borderColor || ''} onChange={(v) => handleNestedTokenChange('components', 'header', 'borderColor', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Background" value={themeData.components?.header?.backgroundColor || ''} onChange={(v) => handleNestedTokenChange('components', 'header', 'backgroundColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
+                <ColorReferenceInput label="Border Color" value={themeData.components?.header?.borderColor || ''} onChange={(v) => handleNestedTokenChange('components', 'header', 'borderColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
                 <FontSizeTokenInput label="Border Width" value={themeData.components?.header?.borderWidth || ''} onChange={(v) => handleNestedTokenChange('components', 'header', 'borderWidth', v)} />
               </div>
 
               <div className={styles.tokenSubsection}>
                 <h4>Input</h4>
-                <ColorReferenceInput label="Background" value={themeData.components?.input?.backgroundColor || ''} onChange={(v) => handleNestedTokenChange('components', 'input', 'backgroundColor', v)} colors={themeData.palette} />
-                <ColorReferenceInput label="Border Color" value={themeData.components?.input?.borderColor || ''} onChange={(v) => handleNestedTokenChange('components', 'input', 'borderColor', v)} colors={themeData.palette} />
-                <ColorReferenceInput label="Border Focus" value={themeData.components?.input?.borderColorFocus || ''} onChange={(v) => handleNestedTokenChange('components', 'input', 'borderColorFocus', v)} colors={themeData.palette} />
-                <ColorReferenceInput label="Text Color" value={themeData.components?.input?.textColor || ''} onChange={(v) => handleNestedTokenChange('components', 'input', 'textColor', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Background" value={themeData.components?.input?.backgroundColor || ''} onChange={(v) => handleNestedTokenChange('components', 'input', 'backgroundColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
+                <ColorReferenceInput label="Border Color" value={themeData.components?.input?.borderColor || ''} onChange={(v) => handleNestedTokenChange('components', 'input', 'borderColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
+                <ColorReferenceInput label="Border Focus" value={themeData.components?.input?.borderColorFocus || ''} onChange={(v) => handleNestedTokenChange('components', 'input', 'borderColorFocus', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
+                <ColorReferenceInput label="Text Color" value={themeData.components?.input?.textColor || ''} onChange={(v) => handleNestedTokenChange('components', 'input', 'textColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
                 <FontSizeTokenInput label="Border Radius" value={themeData.components?.input?.borderRadius || ''} onChange={(v) => handleNestedTokenChange('components', 'input', 'borderRadius', v)} />
                 <FontSizeTokenInput label="Padding" value={themeData.components?.input?.padding || ''} onChange={(v) => handleNestedTokenChange('components', 'input', 'padding', v)} />
               </div>
 
               <div className={styles.tokenSubsection}>
                 <h4>Card</h4>
-                <ColorReferenceInput label="Background" value={themeData.components?.card?.backgroundColor || ''} onChange={(v) => handleNestedTokenChange('components', 'card', 'backgroundColor', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Background" value={themeData.components?.card?.backgroundColor || ''} onChange={(v) => handleNestedTokenChange('components', 'card', 'backgroundColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
                 <FontSizeTokenInput label="Padding" value={themeData.components?.card?.padding || ''} onChange={(v) => handleNestedTokenChange('components', 'card', 'padding', v)} />
-                <ColorReferenceInput label="Border Color" value={themeData.components?.card?.borderColor || ''} onChange={(v) => handleNestedTokenChange('components', 'card', 'borderColor', v)} colors={themeData.palette} />
+                                  <ColorReferenceInput label="Border Color" value={themeData.components?.card?.borderColor || ''} onChange={(v) => handleNestedTokenChange('components', 'card', 'borderColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
                 <FontSizeTokenInput label="Border Width" value={themeData.components?.card?.borderWidth || ''} onChange={(v) => handleNestedTokenChange('components', 'card', 'borderWidth', v)} />
                 <FontSizeTokenInput label="Border Radius" value={themeData.components?.card?.borderRadius || ''} onChange={(v) => handleNestedTokenChange('components', 'card', 'borderRadius', v)} />
                 <ExtendedTokenInput label="Shadow" value={themeData.components?.card?.shadow || ''} onChange={(v) => handleNestedTokenChange('components', 'card', 'shadow', v)} />
@@ -1232,7 +1304,7 @@ export default function ThemeAdminPage() {
                 <FontSizeTokenInput label="Padding" value={themeData.components?.tag?.padding || ''} onChange={(v) => handleNestedTokenChange('components', 'tag', 'padding', v)} />
                 <FontSizeTokenInput label="Border Radius" value={themeData.components?.tag?.borderRadius || ''} onChange={(v) => handleNestedTokenChange('components', 'tag', 'borderRadius', v)} />
                 <FontSizeTokenInput label="Font" value={themeData.components?.tag?.font || ''} onChange={(v) => handleNestedTokenChange('components', 'tag', 'font', v)} />
-                <ColorReferenceInput label="Text Color" value={themeData.components?.tag?.textColor || ''} onChange={(v) => handleNestedTokenChange('components', 'tag', 'textColor', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Text Color" value={themeData.components?.tag?.textColor || ''} onChange={(v) => handleNestedTokenChange('components', 'tag', 'textColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
               </div>
             </div>
 
@@ -1242,8 +1314,8 @@ export default function ThemeAdminPage() {
               
               <div className={styles.tokenSubsection}>
                 <h4>Link</h4>
-                <ColorReferenceInput label="Text Color" value={themeData.components?.link?.textColor || ''} onChange={(v) => handleNestedTokenChange('components', 'link', 'textColor', v)} colors={themeData.palette} />
-                <ColorReferenceInput label="Text Color Hover" value={themeData.components?.link?.textColorHover || ''} onChange={(v) => handleNestedTokenChange('components', 'link', 'textColorHover', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Text Color" value={themeData.components?.link?.textColor || ''} onChange={(v) => handleNestedTokenChange('components', 'link', 'textColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
+                <ColorReferenceInput label="Text Color Hover" value={themeData.components?.link?.textColorHover || ''} onChange={(v) => handleNestedTokenChange('components', 'link', 'textColorHover', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
                 <FontSizeTokenInput label="Decoration Hover" value={themeData.components?.link?.decorationHover || ''} onChange={(v) => handleNestedTokenChange('components', 'link', 'decorationHover', v)} />
               </div>
 
@@ -1262,16 +1334,16 @@ export default function ThemeAdminPage() {
 
               <div className={styles.tokenSubsection}>
                 <h4>Button - Solid</h4>
-                <ColorReferenceInput label="Background" value={themeData.components?.button?.solid?.backgroundColor || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'solid', 'backgroundColor', v)} colors={themeData.palette} />
-                <ColorReferenceInput label="Background Hover" value={themeData.components?.button?.solid?.backgroundColorHover || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'solid', 'backgroundColorHover', v)} colors={themeData.palette} />
-                <ColorReferenceInput label="Border" value={themeData.components?.button?.solid?.borderColor || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'solid', 'borderColor', v)} colors={themeData.palette} />
-                <ColorReferenceInput label="Text" value={themeData.components?.button?.solid?.textColor || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'solid', 'textColor', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Background" value={themeData.components?.button?.solid?.backgroundColor || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'solid', 'backgroundColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
+                <ColorReferenceInput label="Background Hover" value={themeData.components?.button?.solid?.backgroundColorHover || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'solid', 'backgroundColorHover', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
+                <ColorReferenceInput label="Border" value={themeData.components?.button?.solid?.borderColor || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'solid', 'borderColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
+                <ColorReferenceInput label="Text" value={themeData.components?.button?.solid?.textColor || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'solid', 'textColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
               </div>
 
               <div className={styles.tokenSubsection}>
                 <h4>Button - Outline</h4>
-                <ColorReferenceInput label="Border" value={themeData.components?.button?.outline?.borderColor || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'outline', 'borderColor', v)} colors={themeData.palette} />
-                <ColorReferenceInput label="Text" value={themeData.components?.button?.outline?.textColor || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'outline', 'textColor', v)} colors={themeData.palette} />
+                <ColorReferenceInput label="Border" value={themeData.components?.button?.outline?.borderColor || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'outline', 'borderColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
+                <ColorReferenceInput label="Text" value={themeData.components?.button?.outline?.textColor || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'outline', 'textColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
                 <FontSizeTokenInput label="Border Width" value={themeData.components?.button?.outline?.borderWidth || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'outline', 'borderWidth', v)} />
               </div>
             </div>

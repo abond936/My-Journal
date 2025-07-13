@@ -83,7 +83,7 @@
 }
 
 .saveButton:disabled {
-  background-color: var(--button-disabled-background-color);
+  background-color: var(--disabled-background-color);
   cursor: not-allowed;
 }
 

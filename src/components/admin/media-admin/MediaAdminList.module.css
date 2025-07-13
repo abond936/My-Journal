@@ -53,7 +53,7 @@
   min-width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  background: var(--background-primary);
+  background: var(--layout-background1-color);
 }
 
 .table th,
@@ -67,7 +67,7 @@
 .table th {
   background: var(--background-secondary);
   font-weight: var(--font-weight-semibold);
-  color: var(--text-primary);
+  color: var(--text1-color);
   user-select: none;
 }
 
@@ -82,7 +82,7 @@
   border-bottom: var(--border-width-thin) solid var(--border-color);
   font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-sm);
-  color: var(--text-primary);
+  color: var(--text1-color);
   text-align: left;
   user-select: none;
 }

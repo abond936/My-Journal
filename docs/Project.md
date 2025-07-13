@@ -76,8 +76,8 @@ Legend:
 ⭕2 - Host app (Netlify/Vercel)
 
 **Scripting**
- - `npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json 
-
+ - `npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json` 
+`
 **Backup**
 ✅ 
 - OneDrive - Windows Scheduled Task at 2am daily, auto awake pc, cleared >5 days, `npm run backup:database`

@@ -1,120 +1,14 @@
-import { promises as fs } from 'fs';
-import * as path from 'path';
-import { BaseColor, StructuredThemeData, TypographyTokens, SpacingTokens, BorderTokens, ShadowTokens, ZIndexTokens, LayoutTokens, ComponentTokens, StateTokens, GradientTokens, ThemeColor } from '@/lib/types/theme';
+const fs = require('fs').promises;
+const path = require('path');
 
-/**
- * Server-side theme service for reading and writing theme data from JSON and generating CSS
- * This file contains server-only operations and should not be imported by client components
- */
-
-/**
- * Reads theme data from the JSON file
- */
-export const getThemeData = async (): Promise<StructuredThemeData & { darkModeShift?: number }> => {
+async function regenerateThemeCSS() {
   try {
+    console.log('Regenerating theme CSS...');
+    
+    // Read theme data from JSON file
     const jsonPath = path.join(process.cwd(), 'theme-data.json');
     const jsonContent = await fs.readFile(jsonPath, 'utf-8');
     const themeData = JSON.parse(jsonContent);
-    
-    // Ensure we have the darkModeShift property
-    return {
-      ...themeData,
-      darkModeShift: themeData.darkModeShift || 5
-    };
-  } catch (error) {
-    console.error('Failed to read theme JSON file:', error);
-    // On error, return a default structure to prevent crashes
-    return {
-      palette: [],
-      themeColors: [],
-      darkModeShift: 5,
-      typography: {} as TypographyTokens,
-      spacing: {} as SpacingTokens,
-      borders: {} as BorderTokens,
-      shadows: {} as ShadowTokens,
-      zIndex: {} as ZIndexTokens,
-      layout: {} as LayoutTokens,
-      components: {} as ComponentTokens,
-      states: {} as StateTokens,
-      gradients: {} as GradientTokens,
-    };
-  }
-};
-
-/**
- * Helper function to generate 3-shade color scales for theme colors
- */
-const generateColorScales = (themeColors: ThemeColor[]): string => {
-  let css = '';
-  
-  themeColors.forEach(color => {
-    const lightL = parseInt(color.light.l, 10);
-    
-    if (color.id === 1) {
-      // Color 1 (Background): 100=lightest, 200=medium, 300=darkest
-      const step1 = Math.max(0, lightL - 10); // 10% darker
-      const step2 = Math.max(0, lightL - 20); // 20% darker
-      
-      css += `  /* Color ${color.id} Light Mode Scale */\n`;
-      css += `  --color${color.id}-100: hsl(${color.light.h}, ${color.light.s}, ${color.light.l});\n`;
-      css += `  --color${color.id}-200: hsl(${color.light.h}, ${color.light.s}, ${step1}%);\n`;
-      css += `  --color${color.id}-300: hsl(${color.light.h}, ${color.light.s}, ${step2}%);\n`;
-    } else if (color.id === 2) {
-      // Color 2 (Text): 100=lightest, 200=medium, 300=darkest
-      const step1 = Math.min(100, lightL + 10); // 10% lighter
-      const step2 = Math.min(100, lightL + 20); // 20% lighter
-      
-      css += `  /* Color ${color.id} Light Mode Scale */\n`;
-      css += `  --color${color.id}-100: hsl(${color.light.h}, ${color.light.s}, ${color.light.l});\n`;
-      css += `  --color${color.id}-200: hsl(${color.light.h}, ${color.light.s}, ${step1}%);\n`;
-      css += `  --color${color.id}-300: hsl(${color.light.h}, ${color.light.s}, ${step2}%);\n`;
-    }
-  });
-  
-  return css;
-};
-
-/**
- * Helper function to generate dark mode color scale overrides
- */
-const generateDarkModeColorScales = (themeColors: ThemeColor[]): string => {
-  let css = '';
-  
-  themeColors.forEach(color => {
-    const darkL = parseInt(color.dark.l, 10);
-    
-    if (color.id === 1) {
-      // Color 1 (Background): 100=lightest, 200=medium, 300=darkest
-      const step1 = Math.min(100, darkL + 10); // 10% lighter
-      const step2 = Math.min(100, darkL + 20); // 20% lighter
-      
-      css += `  /* Color ${color.id} Dark Mode Scale */\n`;
-      css += `  --color${color.id}-100: hsl(${color.dark.h}, ${color.dark.s}, ${color.dark.l});\n`;
-      css += `  --color${color.id}-200: hsl(${color.dark.h}, ${color.dark.s}, ${step1}%);\n`;
-      css += `  --color${color.id}-300: hsl(${color.dark.h}, ${color.dark.s}, ${step2}%);\n`;
-    } else if (color.id === 2) {
-      // Color 2 (Text): 100=lightest, 200=medium, 300=darkest
-      const step1 = Math.max(0, darkL - 10); // 10% darker
-      const step2 = Math.max(0, darkL - 20); // 20% darker
-      
-      css += `  /* Color ${color.id} Dark Mode Scale */\n`;
-      css += `  --color${color.id}-100: hsl(${color.dark.h}, ${color.dark.s}, ${color.dark.l});\n`;
-      css += `  --color${color.id}-200: hsl(${color.dark.h}, ${color.dark.s}, ${step1}%);\n`;
-      css += `  --color${color.id}-300: hsl(${color.dark.h}, ${color.dark.s}, ${step2}%);\n`;
-    }
-  });
-  
-  return css;
-};
-
-/**
- * Saves theme data to JSON file and generates CSS with simplified 3-shade approach
- */
-export const saveThemeData = async (themeData: StructuredThemeData & { darkModeShift?: number }): Promise<void> => {
-  try {
-    // Save to JSON file
-    const jsonPath = path.join(process.cwd(), 'theme-data.json');
-    await fs.writeFile(jsonPath, JSON.stringify(themeData, null, 2), 'utf-8');
     
     // Generate CSS file
     const cssPath = path.join(process.cwd(), 'src', 'app', 'theme.css');
@@ -176,7 +70,28 @@ export const saveThemeData = async (themeData: StructuredThemeData & { darkModeS
 `;
 
     // Generate 3-shade color scales for theme colors (1 and 2)
-    cssContent += generateColorScales(themeData.themeColors || []);
+    if (themeData.themeColors) {
+      themeData.themeColors.forEach(color => {
+        // Color 1 Light Mode Scale (Background)
+        if (color.id === 1) {
+          const h = parseInt(color.light.h, 10);
+          const s = parseInt(color.light.s, 10);
+          cssContent += `  /* Color ${color.id} Light Mode Scale (Background) */\n`;
+          cssContent += `  --color${color.id}-100: hsl(${h}, ${s}%, 100%);\n`;
+          cssContent += `  --color${color.id}-200: hsl(${h}, ${s}%, 95%);\n`;
+          cssContent += `  --color${color.id}-300: hsl(${h}, ${s}%, 90%);\n`;
+        }
+        // Color 2 Light Mode Scale (Text)
+        else if (color.id === 2) {
+          const h = parseInt(color.light.h, 10);
+          const s = parseInt(color.light.s, 10);
+          cssContent += `  /* Color ${color.id} Light Mode Scale (Text) */\n`;
+          cssContent += `  --color${color.id}-100: hsl(${h}, ${s}%, 20%);\n`;
+          cssContent += `  --color${color.id}-200: hsl(${h}, ${s}%, 15%);\n`;
+          cssContent += `  --color${color.id}-300: hsl(${h}, ${s}%, 10%);\n`;
+        }
+      });
+    }
 
     // Generate base color definitions for colors 3-14
     cssContent += `
@@ -256,7 +171,7 @@ export const saveThemeData = async (themeData: StructuredThemeData & { darkModeS
 
   /* Shadow Scale (For Light Theme) */
   --shadow-strength: ${themeData.shadows.strength};
-  --shadow-color: ${themeData.shadows.color};
+  --shadow-color: hsl(0, 0%, var(--shadow-strength));
   --shadow-sm: ${themeData.shadows.sm};
   --shadow-md: ${themeData.shadows.md};
   --shadow-lg: ${themeData.shadows.lg};
@@ -295,14 +210,14 @@ export const saveThemeData = async (themeData: StructuredThemeData & { darkModeS
   --border2-color: var(--color1-300);
 
   /* States */
-  --state-success-background-color: hsl(var(--h${themeData.states.success.backgroundColor.replace('color', '')}) / 0.15);
-  --state-success-border-color: var(--color${themeData.states.success.borderColor.replace('color', '')});
-  --state-error-background-color: hsl(var(--h${themeData.states.error.backgroundColor.replace('color', '')}) / 0.15);
-  --state-error-border-color: var(--color${themeData.states.error.borderColor.replace('color', '')});
-  --state-warning-background-color: hsl(var(--h${themeData.states.warning.backgroundColor.replace('color', '')}) / 0.15);
-  --state-warning-border-color: var(--color${themeData.states.warning.borderColor.replace('color', '')});
-  --state-info-background-color: hsl(var(--h${themeData.states.info.backgroundColor.replace('color', '')}) / 0.15);
-  --state-info-border-color: var(--color${themeData.states.info.borderColor.replace('color', '')});
+  --state-success-background-color: hsl(var(--h11) / 0.15);
+  --state-success-border-color: var(--color11);
+  --state-error-background-color: hsl(var(--h12) / 0.15);
+  --state-error-border-color: var(--color12);
+  --state-warning-background-color: hsl(var(--h13) / 0.15);
+  --state-warning-border-color: var(--color13);
+  --state-info-background-color: hsl(var(--h14) / 0.15);
+  --state-info-border-color: var(--color14);
 
   /* Typography */
   --text1-color: var(--color2-300);
@@ -311,7 +226,7 @@ export const saveThemeData = async (themeData: StructuredThemeData & { darkModeS
   /* --- 3. COMPONENT TOKENS --- */
   
   /* Header */
-  --header-height: ${themeData.components.header.height};
+  --header-height: 60px;
   --header-background-color: var(--color1-100);
   --header-border-color: var(--border1-color);
   --header-border-width: var(--border-width-thin);
@@ -345,11 +260,11 @@ export const saveThemeData = async (themeData: StructuredThemeData & { darkModeS
   --tag-font-size: var(--font-size-sm);
   --tag-font-family: var(--font-family-sans);
   --tag-text-color: var(--color1-100);
-  --tag-who-bg-color: var(--color${themeData.components.tag.backgrounds.who.replace('color', '')});
-  --tag-what-bg-color: var(--color${themeData.components.tag.backgrounds.what.replace('color', '')});
-  --tag-when-bg-color: var(--color${themeData.components.tag.backgrounds.when.replace('color', '')});
-  --tag-where-bg-color: var(--color${themeData.components.tag.backgrounds.where.replace('color', '')});
-  --tag-reflection-bg-color: var(--color${themeData.components.tag.backgrounds.reflection.replace('color', '')});
+  --tag-who-bg-color: var(--color5);
+  --tag-what-bg-color: var(--color6);
+  --tag-when-bg-color: var(--color7);
+  --tag-where-bg-color: var(--color8);
+  --tag-reflection-bg-color: var(--color9);
   
   /* Form & Input */
   --input-background-color: var(--color1-100);
@@ -379,13 +294,34 @@ export const saveThemeData = async (themeData: StructuredThemeData & { darkModeS
 
   /* Shadow Scale (For Dark Theme) */
   --shadow-strength: ${themeData.shadows.strengthDark};
-  --shadow-color: hsl(var(--h1) / var(--shadow-strength));
+  --shadow-color: hsl(0, 0%, var(--shadow-strength));
 
   /* Theme Colors 3-Shade Scales (Dark Mode) */
 `;
 
     // Generate dark mode color scale overrides
-    cssContent += generateDarkModeColorScales(themeData.themeColors || []);
+    if (themeData.themeColors) {
+      themeData.themeColors.forEach(color => {
+        // Color 1 Dark Mode Scale (Background)
+        if (color.id === 1) {
+          const h = parseInt(color.dark.h, 10);
+          const s = parseInt(color.dark.s, 10);
+          cssContent += `  /* Color ${color.id} Dark Mode Scale (Background) */\n`;
+          cssContent += `  --color${color.id}-100: hsl(${h}, ${s}%, 10%);\n`;
+          cssContent += `  --color${color.id}-200: hsl(${h}, ${s}%, 15%);\n`;
+          cssContent += `  --color${color.id}-300: hsl(${h}, ${s}%, 20%);\n`;
+        }
+        // Color 2 Dark Mode Scale (Text)
+        else if (color.id === 2) {
+          const h = parseInt(color.dark.h, 10);
+          const s = parseInt(color.dark.s, 10);
+          cssContent += `  /* Color ${color.id} Dark Mode Scale (Text) */\n`;
+          cssContent += `  --color${color.id}-100: hsl(${h}, ${s}%, 90%);\n`;
+          cssContent += `  --color${color.id}-200: hsl(${h}, ${s}%, 85%);\n`;
+          cssContent += `  --color${color.id}-300: hsl(${h}, ${s}%, 80%);\n`;
+        }
+      });
+    }
 
     cssContent += `
   /* --- GLOBAL ELEMENT TOKEN OVERRIDES --- */
@@ -412,9 +348,11 @@ export const saveThemeData = async (themeData: StructuredThemeData & { darkModeS
 
     // Write the CSS file
     await fs.writeFile(cssPath, cssContent, 'utf-8');
-    console.log('Theme data saved to JSON and CSS generated successfully');
+    console.log('Theme CSS regenerated successfully!');
+    
   } catch (error) {
-    console.error('Failed to save theme data:', error);
-    throw error;
+    console.error('Error regenerating theme CSS:', error);
   }
-}; 
+}
+
+regenerateThemeCSS(); 

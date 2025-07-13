@@ -170,7 +170,7 @@
 
 /* --- Callout Card --- */
 .callout {
-  background-color: var(--color2-100); /* A light yellow for a sticky-note feel */
+  background-color: var(--color1-200); /* A light background for a sticky-note feel */
   color: var(--text1-color);
   justify-content: center;
   align-items: center;

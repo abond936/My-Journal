@@ -13,7 +13,7 @@
 }
 
 .content {
-  background-color: var(--color-background-primary);
+  background-color: var(--layout-background1-color);
   padding: var(--spacing-2xl);
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-lg);
@@ -26,15 +26,15 @@
   width: 40px;
   height: 40px;
   margin: 0 auto var(--spacing-md);
-  border: var(--border-width-medium) solid var(--color-border-primary);
+  border: var(--border-width-medium) solid var(--border1-color);
   border-radius: 50%;
-  border-top-color: var(--color-accent-solid);
+  border-top-color: var(--button-solid-background-color);
   animation: spin 1s linear infinite;
 }
 
 .message {
   margin: 0;
-  color: var(--color-text-primary);
+  color: var(--text1-color);
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
 }

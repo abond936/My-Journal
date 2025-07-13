@@ -1,15 +1,14 @@
 /*
-  Unified Design System (v2) - Light First Approach
+  Unified Design System (v2) - Simplified 3-Shade Approach
   ==========================================
   This file represents the single source of truth for all styling tokens,
-  built on a hierarchical model and an abstract, HSL-based color palette.
-  The HSL system is used to programmatically generate color variations for
-  light and dark themes.
-
+  built on a simplified 3-shade color system for theme colors 1 and 2.
+  
   APPROACH:
-  - Colors are assigned semantic names and adapt their lightness based on theme context
-  - Mathematical conditional logic handles automatic light/dark theme switching
-  - Color scales are generated programmatically for consistent theming
+  - Color 1: Background (100=lightest, 200=medium, 300=darkest)
+  - Color 2: Text/Foreground (100=lightest, 200=medium, 300=darkest)
+  - Colors 3-14: Semantic colors with single values
+  - Automatic light/dark mode switching with appropriate shade mapping
 
   Structure:
   1. Base Tokens: Raw, context-agnostic primitive values.
@@ -26,8 +25,6 @@
   /* --- 1. BASE TOKENS --- */
 
   /* Color Palette (HEX-based) */
-  --hex1: #F2F2F2; /* background */
-  --hex2: #0D0D0D; /* text */
   --hex3: #135b96; /* principal */
   --hex4: #E6B85A; /* accent */
   --hex5: #8A3A0E; /* alt1 */
@@ -81,11 +78,15 @@
   --l14: 55%;
   /* --hue15: */
 
-  /* Theme Colors (Light/Dark Mode) */
-  --color1-light: hsl(0, 0%, 100%);
-  --color1-dark: hsl(0, 0%, 10%);
-  --color2-light: hsl(0, 0%, 10%);
-  --color2-dark: hsl(0, 0%, 90%);
+  /* Theme Colors 3-Shade Scales (Light Mode) */
+  /* Color 1 Light Mode Scale */
+  --color1-100: hsl(0, 0%, 100%);
+  --color1-200: hsl(0, 0%, 90%);
+  --color1-300: hsl(0, 0%, 80%);
+  /* Color 2 Light Mode Scale */
+  --color2-100: hsl(0, 0%, 10%);
+  --color2-200: hsl(0, 0%, 20%);
+  --color2-300: hsl(0, 0%, 30%);
 
   /* Base Color Definitions (Colors 3-14) */
   --color3: hsl(var(--h3), var(--s3), var(--l3));
@@ -135,15 +136,13 @@
   --font-size-6xl: 3.75rem;
 
   --font-weight-normal: 400;
-  --font-weight-increment: 100;
-  --font-weight-medium: calc(var(--font-weight-normal) + var(--font-weight-increment));
-  --font-weight-semibold: calc(var(--font-weight-normal) + (2 * var(--font-weight-increment)));
-  --font-weight-bold: calc(var(--font-weight-normal) + (3 * var(--font-weight-increment)));
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
 
   --line-height-base: 1.5;
-  --line-height-increment: 0.25;
-  --line-height-tight: calc(var(--line-height-base) - var(--line-height-increment));
-  --line-height-relaxed: calc(var(--line-height-base) + var(--line-height-increment));
+  --line-height-tight: 1.25;
+  --line-height-relaxed: 1.75;
 
   /* Spacing Scale */
   --spacing-unit: 4px;
@@ -188,12 +187,12 @@
   /* --- 2. GLOBAL ELEMENT TOKENS (LIGHT THEME) --- */
   
   /* Global Body Background */
-  --body-background-color: var(--color1-light);
+  --body-background-color: var(--color1-100);
   
   /* Layout */
   --layout-container-max-width: 1200px;
-  --layout-background1-color: var(--color1-light);
-  --layout-background2-color: var(--color1-light);
+  --layout-background1-color: var(--color1-100);
+  --layout-background2-color: var(--color1-200);
   --sidebar-width: 300px;
   --sidebar-width-mobile: 250px;
   --logo-max-height: 50px;
@@ -203,9 +202,9 @@
   --icon-min-width: 24px;
   --transition-short: 0.2s;
 
-  /* Borders */
-  --border1-color: hsl(0, 0%, 60%);
-  --border2-color: hsl(0, 0%, 50%);
+  /* Borders - Using color1 shades */
+  --border1-color: var(--color1-200);
+  --border2-color: var(--color1-300);
 
   /* States */
   --state-success-background-color: hsl(var(--h11) / 0.15);
@@ -218,14 +217,14 @@
   --state-info-border-color: var(--color14);
 
   /* Typography */
-  --text1-color: var(--color2-light);
-  --text2-color: var(--color2-light);
+  --text1-color: var(--color2-300);
+  --text2-color: var(--color2-200);
 
   /* --- 3. COMPONENT TOKENS --- */
   
   /* Header */
   --header-height: 60px;
-  --header-background-color: var(--color1-light);
+  --header-background-color: var(--color1-100);
   --header-border-color: var(--border1-color);
   --header-border-width: var(--border-width-thin);
 
@@ -233,17 +232,17 @@
   --button-solid-background-color: var(--color3);
   --button-solid-background-color-hover: var(--color3);
   --button-solid-border-color: var(--color3);
-  --button-solid-text-color: var(--color1-light);
+  --button-solid-text-color: var(--color1-100);
   
   /* Button: Outline */
   --button-outline-background-color: transparent;
   --button-outline-background-color-hover: hsla(var(--h3), var(--s3), var(--l3), 0.1);
   --button-outline-border-color: var(--border1-color);
-  --button-outline-text-color: var(--color2-light);
+  --button-outline-text-color: var(--color2-300);
   --button-outline-border-width: var(--border-width-medium);
 
   /* Card */
-  --card-background-color: var(--color1-light);
+  --card-background-color: var(--color1-200);
   --card-padding: var(--spacing-lg);
   --card-border-color: var(--border1-color);
   --card-border-width: var(--border-width-medium);
@@ -257,7 +256,7 @@
   --tag-font-weight: var(--font-weight-medium);
   --tag-font-size: var(--font-size-sm);
   --tag-font-family: var(--font-family-sans);
-  --tag-text-color: var(--color1-light);
+  --tag-text-color: var(--color1-100);
   --tag-who-bg-color: var(--color5);
   --tag-what-bg-color: var(--color6);
   --tag-when-bg-color: var(--color7);
@@ -265,10 +264,10 @@
   --tag-reflection-bg-color: var(--color9);
   
   /* Form & Input */
-  --input-background-color: var(--color1-light);
+  --input-background-color: var(--color1-100);
   --input-border-color: var(--border1-color);
   --input-border-color-focus: var(--color3);
-  --input-text-color: var(--color2-light);
+  --input-text-color: var(--color2-300);
   --input-border-radius: var(--border-radius-sm);
   --input-padding: var(--spacing-sm) var(--spacing-md);
 
@@ -294,37 +293,33 @@
   --shadow-strength: 25%;
   --shadow-color: hsl(var(--h1) / var(--shadow-strength));
 
+  /* Theme Colors 3-Shade Scales (Dark Mode) */
+  /* Color 1 Dark Mode Scale */
+  --color1-100: hsl(0, 0%, 10%);
+  --color1-200: hsl(0, 0%, 20%);
+  --color1-300: hsl(0, 0%, 30%);
+  /* Color 2 Dark Mode Scale */
+  --color2-100: hsl(0, 0%, 90%);
+  --color2-200: hsl(0, 0%, 80%);
+  --color2-300: hsl(0, 0%, 70%);
+
   /* --- GLOBAL ELEMENT TOKEN OVERRIDES --- */
-  --body-background-color: var(--color1-dark);         /* Body background */
-  --layout-background1-color: var(--color1-dark);      /* Main background */
-  --layout-background2-color: var(--color1-dark);      /* Secondary background */
+  --body-background-color: var(--color1-100);
+  --layout-background1-color: var(--color1-100);
+  --layout-background2-color: var(--color1-200);
 
-  --border1-color: hsl(0, 0%, 25%);
-  --border2-color: hsl(0, 0%, 35%);
+  --border1-color: var(--color1-200);
+  --border2-color: var(--color1-300);
 
-  --text1-color: var(--color2-dark); /* Primary text */
-  --text2-color: var(--color2-dark); /* Secondary text */
+  --text1-color: var(--color2-300);
+  --text2-color: var(--color2-200);
 
   /* --- COMPONENT TOKEN OVERRIDES --- */
-  --header-background-color: var(--layout-background2-color);
+  --header-background-color: var(--color1-100);
 
-  --input-background-color: var(--color1-dark);
-  --input-border-color: var(--border2-color);
+  --input-background-color: var(--color1-100);
+  --input-border-color: var(--border1-color);
   --input-text-color: var(--text1-color);
   
-  --card-background-color: var(--color1-dark);
-}
-
-/*
- * =================================================================
- * GLOBAL ELEMENT STYLES
- * =================================================================
- */
-
-/* Body Background - Prevents white showing through */
-body {
-  background-color: var(--body-background-color);
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
+  --card-background-color: var(--color1-200);
 }
