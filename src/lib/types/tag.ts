@@ -18,6 +18,9 @@ export const tagSchema = z.object({
   
   order: z.number().optional(),
   description: z.string().optional(),
+
+  /** When false, this tag is collapsed by default in the Explore tag tree. When true or undefined, expanded. */
+  defaultExpanded: z.boolean().optional(),
   
   // The number of cards directly or indirectly using this tag.
   // This will be maintained by a backend process.

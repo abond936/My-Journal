@@ -1,6 +1,7 @@
 # My Journal - Content Strategy & Architecture
 
 ## **Overall Strategy Summary**
+This strategy creates a **personal knowledge graph with narrative flexibility** - not just a news feed, but a curated storytelling platform with organic discovery capabilities that adapts to both the content creator's vision and the reader's exploration preferences. 
 
 ### **Content Architecture**
 - **Swiss Army Knife Cards:** Any card can be content, collection, or both
@@ -8,9 +9,10 @@
 - **Manual Control:** All content mixing and display logic controlled by you
 
 ### **Navigation System**
-- **Tabbed Sidebar:** Collections (curated) | Explore (tags) | All (unfiltered)
-- **Tab Persistence:** Remembers active tab across page refreshes
-- **Collection Ordering:** Manual drag & drop for TOC curation
+- **Dimension Tabs:** All | Who | What | When | Where | Reflection | Collections
+- **Tab Persistence:** Remembers active dimension across page refreshes
+- **Collections Tab:** Lists cards with children, grouped by dimension (who/what/when/where/reflection)
+- **Collection Ordering:** Manual drag & drop for TOC curation (⭕2 planned)
 
 ### **Content Discovery Strategy**
 - **Bottom of Every Card:** Children + 3 filtered + 3 random exploration
@@ -25,14 +27,13 @@
 
 ### **Content Types & Display**
 - **Stories:** Navigate mode (full articles)
-- **Galleries:** Inline (≤3 images) or Navigate (>3 images)
-- **QAs:** Inline (short) or Navigate (long)
-- **Quotes/Callouts:** Always inline
+- **Galleries:** Inline (≤5 images) or Navigate (>5 images)
+- **Questions:** Navigate 
+- **Quotes** Always inline
 - **Collections:** Any card with children becomes a collection
 
 ### **Key Innovation**
 - **Dual Navigation:** Curated collections for narrative control + tag filtering for organic discovery
-- **Smart Mixing:** Content type and length determine display mode automatically
 - **Exploration Balance:** Children maintain story flow, random content encourages discovery
 
 ## **Implementation Phases**
@@ -42,10 +43,11 @@
 - Add horizontal story slides for related content
 - Improve inline gallery functionality
 
-### **Phase 2: Tabbed Navigation System**
-- Add Collections | Explore | All tabs to sidebar
-- Implement tab persistence
-- Create Table of Contents for collections
+### **Phase 2: Tabbed Navigation System** ✅
+- Dimension tabs (All | Who | What | When | Where | Reflection | Collections)
+- Tab persistence
+- Collections grouped by dimension
+- ⭕2 Table of Contents: drag & drop ordering for collections
 
 ### **Phase 3: Smart Content Mixing**
 - Implement automatic display mode logic
@@ -56,39 +58,6 @@
 - Add drag & drop ordering for collections
 - Implement collection metadata (child counts)
 - Create admin interface for collection curation
-
-## **Technical Architecture**
-
-### **Display Mode Logic**
-```typescript
-// Text-based logic
-if (content.length < 200) → displayMode: 'inline'
-if (content.length >= 200) → displayMode: 'navigate'
-
-// Image-based logic  
-if (galleryMedia.length <= 3) → displayMode: 'inlineGallery' (clickable to navigate)
-if (galleryMedia.length > 3) → displayMode: 'navigate'
-```
-
-### **Content Discovery Logic**
-```typescript
-// At bottom of every card
-const bottomContent = [
-  ...card.children,           // Hierarchical (parent/child)
-  ...getFilteredCards(3),     // Tag-based (current filter)
-  ...getRandomCards(3)        // Exploration (outside filter)
-];
-```
-
-### **Navigation State Management**
-```typescript
-// Tab-based filtering
-switch (activeTab) {
-  case 'collections': return getCollectionCards(selectedCollection);
-  case 'explore': return getTagFilteredCards(selectedTags);
-  case 'all': return getAllCards();
-}
-```
 
 ## **User Experience Goals**
 
@@ -161,13 +130,3 @@ switch (activeTab) {
 - Performance optimization for large content libraries
 - Efficient content indexing and retrieval
 - Caching strategies for improved performance
-
-### **Accessibility**
-- Screen reader compatibility
-- Keyboard navigation support
-- High contrast mode support
-- Mobile accessibility compliance
-
----
-
-This strategy creates a **personal knowledge graph with narrative flexibility** - not just a news feed, but a curated storytelling platform with organic discovery capabilities that adapts to both the content creator's vision and the reader's exploration preferences. 

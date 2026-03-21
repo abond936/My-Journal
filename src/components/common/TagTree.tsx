@@ -3,35 +3,34 @@
 import React, { useState, useEffect } from 'react';
 import styles from './TagTree.module.css';
 import { TagWithChildren } from '@/components/providers/TagProvider';
+import { getDefaultExpandedTagIds } from '@/lib/utils/tagUtils';
 
 interface TagTreeProps {
   tree: TagWithChildren[];
   onSelectionChange: (tagId: string, isSelected: boolean) => void;
   selectedTags: string[];
   loading?: boolean;
+  emptyMessage?: string;
+  /** When provided (and user is admin), shows control to set default expand state */
+  onSetDefaultExpanded?: (tagId: string, expanded: boolean) => void;
+  showDefaultExpandControl?: boolean;
 }
 
-const getAllParentTagIds = (tree: TagWithChildren[]): Set<string> => {
-  const parentIds = new Set<string>();
-  const traverse = (nodes: TagWithChildren[]) => {
-    nodes.forEach(node => {
-      if (node.children && node.children.length > 0) {
-        parentIds.add(node.docId);
-        traverse(node.children);
-      }
-    });
-  };
-  traverse(tree);
-  return parentIds;
-};
-
-export default function TagTree({ tree, onSelectionChange, selectedTags, loading }: TagTreeProps) {
+export default function TagTree({
+  tree,
+  onSelectionChange,
+  selectedTags,
+  loading,
+  emptyMessage = 'No tags available.',
+  onSetDefaultExpanded,
+  showDefaultExpandControl = false,
+}: TagTreeProps) {
   const [expandedTags, setExpandedTags] = useState<Set<string>>(new Set());
 
-  // Expand all tags by default when the tree is first loaded
+  // Set initial expanded state based on tag.defaultExpanded (collapsed when false)
   useEffect(() => {
     if (tree.length > 0) {
-      setExpandedTags(getAllParentTagIds(tree));
+      setExpandedTags(getDefaultExpandedTagIds(tree));
     }
   }, [tree]);
 
@@ -50,6 +49,8 @@ export default function TagTree({ tree, onSelectionChange, selectedTags, loading
   const renderTag = (tag: TagWithChildren, level: number = 0) => {
     const isExpanded = expandedTags.has(tag.docId);
     const isSelected = selectedTags.includes(tag.docId);
+    const hasChildren = tag.children && tag.children.length > 0;
+    const isDefaultExpanded = tag.defaultExpanded !== false;
 
     return (
       <div
@@ -62,14 +63,29 @@ export default function TagTree({ tree, onSelectionChange, selectedTags, loading
             className={styles.expandButton}
             onClick={() => toggleTag(tag.docId)}
             aria-expanded={isExpanded}
-            disabled={tag.children.length === 0}
+            disabled={!hasChildren}
           >
-            {tag.children.length > 0 && (
+            {hasChildren && (
               <span className={styles.expandIcon}>
                 {isExpanded ? '▼' : '►'}
               </span>
             )}
           </button>
+          
+          {showDefaultExpandControl && hasChildren && onSetDefaultExpanded && (
+            <button
+              type="button"
+              className={styles.defaultExpandButton}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSetDefaultExpanded(tag.docId!, !isDefaultExpanded);
+              }}
+              title={isDefaultExpanded ? 'Collapse by default' : 'Expand by default'}
+              aria-label={isDefaultExpanded ? 'Set collapsed by default' : 'Set expanded by default'}
+            >
+              {isDefaultExpanded ? '⊟' : '⊞'}
+            </button>
+          )}
           
           <input
             type="checkbox"
@@ -101,7 +117,7 @@ export default function TagTree({ tree, onSelectionChange, selectedTags, loading
     return <div className={styles.loading}>Loading tags...</div>;
   }
   if (!tree || tree.length === 0) {
-    return <div className={styles.loading}>No tags available.</div>;
+    return <div className={styles.loading}>{emptyMessage}</div>;
   }
 
   return (

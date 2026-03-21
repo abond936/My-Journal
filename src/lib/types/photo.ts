@@ -44,22 +44,22 @@ export const mediaSchema = z.object({
 
 export type Media = z.infer<typeof mediaSchema>;
 
-// No longer needed
-/*
-export const pickerMediaSchema = z.object({
-  // In the context of the picker, the ID is a temporary identifier, usually the sourcePath.
-  id: z.string(),
-  filename: z.string(),
-  width: z.number(),
-  height: z.number(),
-  // The key piece of information needed to perform the actual import.
-  sourcePath: z.string(),
-  // A temporary URL for rendering the image preview in the picker.
-  storageUrl: z.string(),
-});
+/** Local folder browser / picker preview item (not persisted as Media until import). */
+export interface PickerMedia {
+  id: string;
+  filename: string;
+  width: number;
+  height: number;
+  sourcePath: string;
+  storageUrl: string;
+}
 
-export type PickerMedia = z.infer<typeof pickerMediaSchema>; 
-*/
+/** Directory tree node for local image folder browser API. */
+export interface TreeNode {
+  id: string;
+  name: string;
+  children: TreeNode[];
+}
 
 // Obsolete, replaced by Media
 // export type PhotoMetadata = Media & {

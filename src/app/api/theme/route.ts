@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getThemeData, saveThemeData } from '@/lib/services/themeService';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth/authOptions';
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);

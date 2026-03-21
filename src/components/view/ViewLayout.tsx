@@ -42,7 +42,17 @@ export default function ViewLayout({
         </button>
 
         <div className={`${styles.sidebar} ${sidebarOpen ? styles.open : styles.closed}`}>
-          <TagTree tree={tree} onTagSelect={onTagSelect} selectedTags={selectedTags} loading={loading} />
+          <TagTree
+            tree={tree}
+            selectedTags={selectedTags}
+            loading={loading}
+            onSelectionChange={(tagId, isSelected) => {
+              const wasSelected = selectedTags.includes(tagId);
+              if (isSelected !== wasSelected) {
+                onTagSelect(tagId);
+              }
+            }}
+          />
         </div>
 
         <main className={`${styles.mainContent} ${sidebarOpen ? styles.mainContentOpen : ''}`}>

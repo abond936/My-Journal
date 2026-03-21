@@ -3,7 +3,11 @@ import { Card, cardSchema, GalleryMediaItem } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 import { updateTagCountsForCard, calculateDerivedTagData } from '@/lib/firebase/tagService';
 import { getFirestore, FieldPath, FieldValue } from 'firebase-admin/firestore';
-import { deleteMediaAsset } from './images/imageImportService';
+import {
+  deleteMediaAsset,
+  deleteFromStorageWithRetry,
+  markStorageForLaterDeletion,
+} from './images/imageImportService';
 import { extractMediaFromContent, stripContentImageSrc, hydrateContentImageSrc } from '@/lib/utils/cardUtils';
 import { Media } from '@/lib/types/photo';
 
@@ -190,6 +194,7 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
   const newCard: Card = {
     ...validatedData,
     docId: docRef.id,
+    status: validatedData.status ?? 'draft',
     title_lowercase: validatedData.title?.toLowerCase() || '',
     content: cleanedContent,
     tags: selectedTags, // ensure tags is not undefined
@@ -498,6 +503,64 @@ export async function getPaginatedCardsByIds(
   const hasMore = endIndex < ids.length;
 
   return { items, lastDocId: newLastDocId, hasMore };
+}
+
+/**
+ * Fetches a paginated list of a collection's child cards.
+ * A collection is any card with childrenIds.
+ */
+export async function getCardsByCollectionId(
+  collectionId: string,
+  options: {
+    limit?: number;
+    lastDocId?: string;
+    hydrationMode?: 'full' | 'cover-only';
+  } = {}
+): Promise<{ items: Card[]; lastDocId?: string; hasMore: boolean }> {
+  const collectionCard = await getCardById(collectionId);
+  if (!collectionCard || !collectionCard.childrenIds || collectionCard.childrenIds.length === 0) {
+    return { items: [], hasMore: false };
+  }
+
+  const { limit = 10, lastDocId, hydrationMode = 'full' } = options;
+  const result = await getPaginatedCardsByIds(collectionCard.childrenIds, { limit, lastDocId });
+
+  if (hydrationMode === 'cover-only') {
+    result.items = await _hydrateCoverImagesOnly(result.items);
+  } else {
+    result.items = await _hydrateCards(result.items);
+  }
+
+  return result;
+}
+
+/** Max cards to scan when listing collections (cards with children) */
+const COLLECTIONS_LIST_LIMIT = 500;
+
+/**
+ * Fetches cards that have children (collections).
+ * Firestore cannot query "array length > 0", so we fetch and filter in memory.
+ */
+export async function getCollectionCards(
+  status: Card['status'] | 'all' = 'published',
+  options: { limit?: number; hydrationMode?: 'full' | 'cover-only' } = {}
+): Promise<Card[]> {
+  let query: FirebaseFirestore.Query = firestore.collection(CARDS_COLLECTION);
+
+  if (status && status !== 'all') {
+    query = query.where('status', '==', status);
+  }
+  query = query.orderBy('createdAt', 'desc').limit(options.limit ?? COLLECTIONS_LIST_LIMIT);
+
+  const snapshot = await query.get();
+  const cards: Card[] = snapshot.docs
+    .map(doc => ({ docId: doc.id, ...doc.data() } as Card))
+    .filter(card => card.childrenIds && card.childrenIds.length > 0);
+
+  if (options.hydrationMode === 'cover-only') {
+    return _hydrateCoverImagesOnly(cards);
+  }
+  return _hydrateCards(cards);
 }
 
 /**

@@ -1,12 +1,17 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth/authOptions';
 import { getCardsByIds } from '@/lib/services/cardService';
 import { Card } from '@/lib/types/card';
+
+// Card types that can be filtered (excludes 'collection' for discovery)
+const CARD_TYPES = ['story', 'qa', 'quote', 'callout', 'gallery'] as const;
+type CardTypeFilter = typeof CARD_TYPES[number] | 'all';
 
 // In-memory cache for card IDs
 let cardIdCache: {
   allCardIds: string[];
+  cardIdsByType: Record<string, string[]>;
   cardIdsByDimension: {
     who: Record<string, string[]>;
     what: Record<string, string[]>;
@@ -27,13 +32,20 @@ async function updateCardIdCache() {
   const firestore = getFirestore();
   
   try {
-    // Get all published card IDs
+    // Get all published card IDs (include type for card-type filtering)
     const snapshot = await firestore.collection('cards')
       .where('status', '==', 'published')
-      .select('docId', 'who', 'what', 'when', 'where', 'reflection')
       .get();
     
     const allCardIds: string[] = [];
+    const cardIdsByType: Record<string, string[]> = {
+      story: [],
+      qa: [],
+      quote: [],
+      callout: [],
+      gallery: [],
+      collection: []
+    };
     const cardIdsByDimension = {
       who: {} as Record<string, string[]>,
       what: {} as Record<string, string[]>,
@@ -45,7 +57,12 @@ async function updateCardIdCache() {
     snapshot.docs.forEach(doc => {
       const data = doc.data();
       const cardId = doc.id;
+      const cardType = (data.type as string) || 'story';
       allCardIds.push(cardId);
+      
+      if (cardIdsByType[cardType]) {
+        cardIdsByType[cardType].push(cardId);
+      }
       
       // Organize by dimensional tags
       ['who', 'what', 'when', 'where', 'reflection'].forEach(dimension => {
@@ -61,6 +78,7 @@ async function updateCardIdCache() {
     
     cardIdCache = {
       allCardIds,
+      cardIdsByType,
       cardIdsByDimension,
       lastUpdated: Date.now()
     };
@@ -84,7 +102,8 @@ function getRandomCardIds(
     where?: string[];
     reflection?: string[];
   },
-  excludeIds: string[] = []
+  excludeIds: string[] = [],
+  type?: CardTypeFilter
 ): string[] {
   if (!cardIdCache) {
     throw new Error('Card ID cache not initialized');
@@ -109,6 +128,12 @@ function getRandomCardIds(
   } else {
     // Use all cards
     availableCardIds = [...cardIdCache.allCardIds];
+  }
+  
+  // Filter by card type if specified
+  if (type && type !== 'all' && cardIdCache.cardIdsByType[type]) {
+    const typeSet = new Set(cardIdCache.cardIdsByType[type]);
+    availableCardIds = availableCardIds.filter(id => typeSet.has(id));
   }
   
   // Filter out excluded IDs
@@ -178,13 +203,16 @@ export async function GET(request: Request) {
     if (whereTags && whereTags.length > 0) dimensionalTags.where = whereTags;
     if (reflectionTags && reflectionTags.length > 0) dimensionalTags.reflection = reflectionTags;
 
+    const typeParam = searchParams.get('type') as CardTypeFilter | null;
+    const type = typeParam && CARD_TYPES.includes(typeParam as typeof CARD_TYPES[number]) ? typeParam : undefined;
+
     // Update cache if needed
     if (!cardIdCache || Date.now() - cardIdCache.lastUpdated > CACHE_DURATION) {
       await updateCardIdCache();
     }
     
     // Get random card IDs from cache
-    const randomCardIds = getRandomCardIds(count, dimensionalTags, excludeIds);
+    const randomCardIds = getRandomCardIds(count, dimensionalTags, excludeIds, type || 'all');
     
     if (randomCardIds.length === 0) {
       return NextResponse.json([]);

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createCard, getCards } from '@/lib/services/cardService';
+import { createCard, getCards, getCardsByCollectionId, getCollectionCards } from '@/lib/services/cardService';
 import { Card } from '@/lib/types/card';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth/authOptions';
 import { PaginatedResult } from '@/lib/types/services';
 import { cardSchema } from '@/lib/types/card';
 
@@ -107,9 +107,29 @@ export async function GET(request: Request) {
     const limit = searchParams.has('limit') ? parseInt(searchParams.get('limit')!, 10) : 10;
     const lastDocId = searchParams.get('lastDocId') || undefined;
     const childrenIds_contains = searchParams.get('childrenIds_contains') || undefined;
-    const hydrationMode = searchParams.get('hydration') || 'full'; // 'full' or 'cover-only'
+    const collectionId = searchParams.get('collectionId') || undefined;
+    const collectionsOnly = searchParams.get('collectionsOnly') === 'true';
+    const hydrationParam = searchParams.get('hydration');
+    const hydrationMode: 'full' | 'cover-only' =
+      hydrationParam === 'cover-only' ? 'cover-only' : 'full';
 
     try {
+      // List cards that are collections (have children)
+      if (collectionsOnly) {
+        const collectionCards = await getCollectionCards(status, { hydrationMode });
+        return NextResponse.json({ items: collectionCards, hasMore: false });
+      }
+
+      // Fetch a specific collection's children (paginated)
+      if (collectionId) {
+        const result = await getCardsByCollectionId(collectionId, {
+          limit,
+          lastDocId,
+          hydrationMode,
+        });
+        return NextResponse.json(result);
+      }
+
       const result: PaginatedResult<Card> = await getCards({
         q,
         status,

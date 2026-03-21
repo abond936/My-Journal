@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import JournalImage from '@/components/common/JournalImage';
 import { Tag } from '@/lib/types/tag';
 import styles from './ContentCard.module.css';
 
@@ -12,7 +13,8 @@ import { Pagination, Navigation } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
-import { PhotoMetadata } from '@/lib/types/photo';
+import type { Media } from '@/lib/types/photo';
+import { getDisplayUrl } from '@/lib/utils/photoUtils';
 
 interface BaseCardProps {
   id: string;
@@ -37,12 +39,12 @@ interface EntryCardProps extends BaseCardProps {
   date?: string;
   tags?: string[];
   cardType?: 'story' | 'qa' | 'quote' | 'callout' | 'gallery' | 'collection';
-  galleryMedia?: PhotoMetadata[];
+  galleryMedia?: Media[];
 }
 
 interface AlbumCardProps extends BaseCardProps {
   type: 'album';
-  images?: PhotoMetadata[];
+  images?: Media[];
   entryCount?: number;
   date?: string;
   tags?: string[];
@@ -149,12 +151,6 @@ const ContentCard: React.FC<ContentCardProps> = (props) => {
     return props.type === 'entry' && (props as EntryCardProps).cardType === 'gallery';
   };
 
-  const getDisplayUrl = (image: PhotoMetadata): string => {
-    return image.source === 'local' 
-      ? `/api/images/local/file?path=${encodeURIComponent(image.url)}` 
-      : image.url;
-  };
-
   return (
     <Link href={href} className={`${styles.card} ${styles[type]} ${styles[size]}`}>
       {isGalleryEntry(props) && props.galleryMedia && props.galleryMedia.length > 0 ? (
@@ -167,9 +163,9 @@ const ContentCard: React.FC<ContentCardProps> = (props) => {
           className={styles.swiperContainer}
         >
           {props.galleryMedia.map((image) => (
-            <SwiperSlide key={image.id}>
+            <SwiperSlide key={image.docId}>
               <div className={styles.imageContainer}>
-                <Image 
+                <JournalImage 
                   src={getDisplayUrl(image)} 
                   alt={image.filename || title} 
                   className={styles.image}
@@ -192,13 +188,11 @@ const ContentCard: React.FC<ContentCardProps> = (props) => {
           className={styles.swiperContainer}
         >
           {props.images.map((image) => {
-            const imageUrl = image.source === 'local' 
-              ? `/api/images/local/file?path=${encodeURIComponent(image.url)}` 
-              : image.url;
+            const imageUrl = getDisplayUrl(image);
             return (
-              <SwiperSlide key={image.url}>
+              <SwiperSlide key={image.docId}>
                 <div className={styles.imageContainer}>
-                  <Image 
+                  <JournalImage 
                     src={imageUrl} 
                     alt={image.filename || title} 
                     className={styles.image}
@@ -214,7 +208,7 @@ const ContentCard: React.FC<ContentCardProps> = (props) => {
         </Swiper>
       ) : imageUrl ? (
         <div className={styles.imageContainer}>
-          <Image 
+          <JournalImage 
             src={
               (props as AlbumCardProps).type === 'album' && (props as any).coverPhoto?.source === 'local'
                 ? `/api/images/local/file?path=${encodeURIComponent(imageUrl)}`

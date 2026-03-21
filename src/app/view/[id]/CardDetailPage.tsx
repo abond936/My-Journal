@@ -2,7 +2,7 @@
 
 // DIAGNOSTIC: Forcing a file refresh to address module resolution issue.
 import React from 'react';
-import Image from 'next/image';
+import JournalImage from '@/components/common/JournalImage';
 import { Card } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import { getObjectPositionForAspectRatio } from '@/lib/utils/objectPositionUtils';
@@ -47,7 +47,7 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) 
       <header className={styles.header}>
         {card.coverImage && (
           <div className={styles.coverImageContainer}>
-            <Image
+            <JournalImage
               src={getDisplayUrl(card.coverImage)}
               alt={card.title}
               className={styles.coverImage}
@@ -55,13 +55,17 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) 
               height={600}
               sizes="(max-width: 768px) 100vw, 800px"
               style={{ 
-                objectPosition: card.coverImageFocalPoint && card.coverImage ? 
-                  getObjectPositionForAspectRatio(
-                    card.coverImageFocalPoint,
-                    { width: card.coverImage.width, height: card.coverImage.height },
-                    '4/3',
-                    800
-                  ) : 'center'
+                objectPosition: card.coverImageFocalPoint && card.coverImage
+                  ? getObjectPositionForAspectRatio(
+                      {
+                        x: card.coverImageFocalPoint.x ?? 0,
+                        y: card.coverImageFocalPoint.y ?? 0,
+                      },
+                      { width: card.coverImage.width, height: card.coverImage.height },
+                      '4/3',
+                      800
+                    )
+                  : 'center'
               }}
               priority={true}
             />

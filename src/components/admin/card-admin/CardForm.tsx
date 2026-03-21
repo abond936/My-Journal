@@ -209,7 +209,7 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
 
           <div className={styles.gallerySection}>
             <GalleryManager
-              galleryMedia={cardData.galleryMedia || []}
+              galleryMedia={(cardData.galleryMedia || []) as HydratedGalleryMediaItem[]}
               onUpdate={handleGalleryUpdate}
               error={errors.galleryMedia}
             />

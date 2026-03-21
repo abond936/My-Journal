@@ -7,7 +7,7 @@
 }
 
 .title {
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-3xl);
   font-weight: var(--font-weight-semibold);
   margin-bottom: var(--spacing-lg);
   color: var(--text1-color);
@@ -36,7 +36,7 @@
 
 .sectionHeader h3 {
   margin: 0;
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-2xl);
   color: var(--text1-color);
   font-weight: var(--font-weight-semibold);
 }
@@ -66,7 +66,7 @@
   padding: var(--spacing-md) var(--spacing-md);
   color: var(--text2-color);
   text-decoration: none;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-lg);
   border-radius: var(--border-radius-md);
   transition: background-color var(--transition-short), color var(--transition-short);
   touch-action: manipulation;
@@ -127,6 +127,18 @@
   cursor: default;
 }
 
+.defaultExpandButton {
+  all: unset;
+  cursor: pointer;
+  font-size: 0.75rem;
+  opacity: 0.6;
+  padding: 0 2px;
+  line-height: 1;
+}
+.defaultExpandButton:hover {
+  opacity: 1;
+}
+
 .tagHeader {
   display: flex;
   align-items: center;
@@ -140,11 +152,11 @@
 .tagName {
   cursor: pointer;
   color: var(--text1-color);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
 }
 
 .children {
-  margin-left: var(--spacing-sm);
+  margin-left: var(--spacing-base);
 }
 
 .tagItem {

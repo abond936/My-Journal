@@ -31,7 +31,7 @@ echo Source folder: %SOURCE_FOLDER%
 echo Destination folder: %DEST_FOLDER%
 echo.
 
-cd /d "C:\Users\alanb\my-journal"
+cd /d "%~dp0"
 npm run normalize:images "%ORIGINAL_DIR%\%SOURCE_FOLDER%" "%ORIGINAL_DIR%\%DEST_FOLDER%"
 
 echo.

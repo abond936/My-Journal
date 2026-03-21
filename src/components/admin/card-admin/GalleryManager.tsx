@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import Image from 'next/image';
+import JournalImage from '@/components/common/JournalImage';
 import {
   DndContext,
   closestCenter,
@@ -89,9 +89,9 @@ export default function GalleryManager({ galleryMedia, onUpdate, error, classNam
               <SortableItem key={item.mediaId} id={item.mediaId}>
                 <div className={styles.imageItem}>
                   {item.media ? (
-                    <Image
+                    <JournalImage
                       src={getDisplayUrl(item.media)}
-                      alt={item.media.alt || ''}
+                      alt={item.media.caption || item.media.filename || ''}
                       className={styles.thumbnail}
                       width={200}
                       height={150}

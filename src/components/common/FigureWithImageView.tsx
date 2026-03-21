@@ -1,7 +1,7 @@
 import React from 'react';
 import { NodeViewWrapper, NodeViewContent } from '@tiptap/react';
 import { NodeSelection } from 'prosemirror-state';
-import Image from 'next/image';
+import JournalImage from '@/components/common/JournalImage';
 import styles from './FigureWithImageView.module.css';
 
 export const FigureWithImageView = ({ node, updateAttributes, editor, selected, getPos }) => {
@@ -49,7 +49,7 @@ export const FigureWithImageView = ({ node, updateAttributes, editor, selected, 
       </div>
       
       <div onClick={selectNodeManually} className={styles.imageContainer}>
-        <Image
+        <JournalImage
           src={src}
           alt={alt}
           width={width}

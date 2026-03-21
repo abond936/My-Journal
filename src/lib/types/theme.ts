@@ -85,6 +85,15 @@ export interface TypographyTokens {
  */
 export interface SpacingTokens {
   unit: string;
+  /** Optional scale multipliers (theme admin UI); computed pixel steps may live in xs–4xl */
+  xsMultiplier?: string;
+  smMultiplier?: string;
+  mdMultiplier?: string;
+  lgMultiplier?: string;
+  xlMultiplier?: string;
+  '2xlMultiplier'?: string;
+  '3xlMultiplier'?: string;
+  '4xlMultiplier'?: string;
   xs: string;
   sm: string;
   md: string;
@@ -221,6 +230,8 @@ export interface ComponentTokens {
   tag: {
     padding: string;
     borderRadius: string;
+    /** Optional shorthand used by theme admin UI */
+    font?: string;
     fontWeight: string;
     fontSize: string;
     fontFamily: string;

@@ -28,7 +28,7 @@ export default function AdminCardsPage() {
     cards,
     error,
     isLoading,
-    isLoadingMore,
+    loadingMore,
     hasMore,
     loadMore,
     mutate,
@@ -136,6 +136,7 @@ export default function AdminCardsPage() {
         )
       );
       mutate(undefined, { revalidate: true }); // Revalidate from server
+      setSelectedCardIds(new Set()); // Clear selections after successful update
     } catch (err) {
       console.error(`Error updating ${field}:`, err);
       alert(`An error occurred while updating ${field}. Reverting changes.`);
@@ -318,8 +319,8 @@ export default function AdminCardsPage() {
 
       {hasMore && (
         <div className={styles.loadMoreContainer}>
-          <button onClick={loadMore} disabled={isLoadingMore} className={styles.loadMoreButton}>
-            {isLoadingMore ? 'Loading...' : 'Load More'}
+          <button onClick={loadMore} disabled={loadingMore} className={styles.loadMoreButton}>
+            {loadingMore ? 'Loading...' : 'Load More'}
           </button>
         </div>
       )}
@@ -328,7 +329,10 @@ export default function AdminCardsPage() {
         isOpen={isBulkTagModalOpen}
         onClose={() => setIsBulkTagModalOpen(false)}
         cardIds={Array.from(selectedCardIds)}
-        onSave={() => mutate(undefined, { revalidate: true })}
+        onSave={async () => {
+          await mutate(undefined, { revalidate: true });
+          setSelectedCardIds(new Set()); // Clear selections after successful tag update
+        }}
       />
     </div>
   );

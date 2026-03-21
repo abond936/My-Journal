@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import Image from 'next/image';
+import JournalImage from '@/components/common/JournalImage';
 import { HydratedGalleryMediaItem } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import styles from './SwipeableGallery.module.css';
@@ -88,7 +88,7 @@ export default function SwipeableGallery({ media, initialIndex = 0 }: SwipeableG
           ‹
         </button>
         
-        <Image
+        <JournalImage
           src={getDisplayUrl(currentItem.media)}
           alt={currentItem.caption || ''}
           className={styles.galleryImage}

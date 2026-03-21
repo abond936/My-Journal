@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { searchCards } from '@/lib/services/cardService';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../../auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth/authOptions';
 import { Card } from '@/lib/types/card';
 import { PaginatedResult } from '@/lib/types/services';
 

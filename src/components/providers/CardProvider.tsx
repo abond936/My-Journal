@@ -1,7 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useCallback, useMemo, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
+import useSWR from 'swr';
 import useSWRInfinite, { SWRInfiniteResponse } from 'swr/infinite';
 import { usePathname } from 'next/navigation';
 import { Card } from '@/lib/types/card';
@@ -12,6 +13,7 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export type CardFilterType = 'all' | 'story' | 'qa' | 'quote' | 'callout' | 'gallery';
 export type CardStatus = 'all' | 'draft' | 'published';
+export type ActiveDimension = 'all' | 'who' | 'what' | 'when' | 'where' | 'reflection' | 'collections';
 
 export interface ICardContext {
   // Filter state
@@ -19,12 +21,17 @@ export interface ICardContext {
   cardType: CardFilterType;
   searchTerm: string;
   status: CardStatus;
+  activeDimension: ActiveDimension;
+  collectionId: string | null;
+  collectionCards: Card[]; // Flat list of collection parent cards
 
   // Filter actions
   toggleTag: (tagId: string) => void;
   setCardType: (type: CardFilterType) => void;
   setSearchTerm: (term: string) => void;
   setStatus: (status: CardStatus) => void;
+  setActiveDimension: (dim: ActiveDimension) => void;
+  setCollectionId: (id: string | null) => void;
   clearFilters: () => void;
   setPageLimit: (limit: number) => void;
   
@@ -39,14 +46,16 @@ export interface ICardContext {
   isValidating: boolean;
 }
 
+const DIMENSION_STORAGE_KEY = 'myjournal-active-dimension';
+const COLLECTION_STORAGE_KEY = 'myjournal-collection-id';
+
 const CardContext = createContext<ICardContext | undefined>(undefined);
 
 interface CardProviderProps {
   children: ReactNode;
-  collectionId?: string; // For TOC/Curated view
 }
 
-export const CardProvider = ({ children, collectionId }: CardProviderProps) => {
+export const CardProvider = ({ children }: CardProviderProps) => {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'admin';
   const pathname = usePathname();
@@ -57,9 +66,32 @@ export const CardProvider = ({ children, collectionId }: CardProviderProps) => {
   // --- Local Filter State ---
   const [cardType, setCardType] = useState<CardFilterType>('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [status, setStatus] = useState<CardStatus>('all'); // Always default to 'all' for admin pages
-  const [pageLimit, setPageLimit] = useState(20); // Default limit for cards
-  
+  const [status, setStatus] = useState<CardStatus>('all');
+  const [pageLimit, setPageLimit] = useState(20);
+  const [activeDimension, setActiveDimensionState] = useState<ActiveDimension>(() => {
+    if (typeof window === 'undefined') return 'all';
+    return (sessionStorage.getItem(DIMENSION_STORAGE_KEY) as ActiveDimension) || 'all';
+  });
+  const [collectionId, setCollectionIdState] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return sessionStorage.getItem(COLLECTION_STORAGE_KEY) || null;
+  });
+
+  const setActiveDimension = useCallback((dim: ActiveDimension) => {
+    setActiveDimensionState(dim);
+    if (typeof window !== 'undefined') sessionStorage.setItem(DIMENSION_STORAGE_KEY, dim);
+    if (dim !== 'collections') setCollectionIdState(null);
+    if (dim !== 'collections' && typeof window !== 'undefined') sessionStorage.removeItem(COLLECTION_STORAGE_KEY);
+  }, []);
+
+  const setCollectionId = useCallback((id: string | null) => {
+    setCollectionIdState(id);
+    if (typeof window !== 'undefined') {
+      if (id) sessionStorage.setItem(COLLECTION_STORAGE_KEY, id);
+      else sessionStorage.removeItem(COLLECTION_STORAGE_KEY);
+    }
+  }, []);
+
   // Define which paths should trigger card fetching
   const activePaths = ['/view', '/admin/card-admin', '/search'];
   const isFetchActive = activePaths.some(path => pathname.startsWith(path));
@@ -102,6 +134,23 @@ export const CardProvider = ({ children, collectionId }: CardProviderProps) => {
     return response.json();
   }, [isAdmin]);
 
+  // Fetch collection list when Collections dimension is active with no selection
+  const shouldFetchCollections =
+    isFetchActive && activeDimension === 'collections' && !collectionId;
+  const collectionsUrl = shouldFetchCollections
+    ? `/api/cards?collectionsOnly=true&status=${isAdmin ? 'all' : 'published'}`
+    : null;
+  const { data: collectionListData, isLoading: collectionsLoading } = useSWR<{ items: Card[] }>(
+    collectionsUrl,
+    (url) => {
+      const urlObj = new URL(url, window.location.origin);
+      if (isAdmin) urlObj.searchParams.set('hydration', 'cover-only');
+      return fetch(urlObj.toString()).then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.statusText))));
+    },
+    { revalidateOnFocus: false }
+  );
+  const collectionCards = collectionListData?.items ?? [];
+
   const {
     data,
     error,
@@ -112,43 +161,33 @@ export const CardProvider = ({ children, collectionId }: CardProviderProps) => {
     isValidating,
   } = useSWRInfinite<PaginatedResult<Card>>(
     (pageIndex, previousPageData) => {
-      // Stop fetching if we're not on an active path
       if (!isFetchActive) return null;
-
-      // Handle end of data for pagination
       if (previousPageData && !previousPageData.hasMore) return null;
 
-      // TODO: Implement collectionId fetching logic here
+      // Collections dimension with no selection: main feed shows collection list (handled by collectionCards)
+      if (activeDimension === 'collections' && !collectionId) return null;
+
+      const endpoint = '/api/cards';
+      const params = new URLSearchParams({ limit: String(pageLimit) });
+      params.set('status', status);
+
+      // Fetch a specific collection's children
       if (collectionId) {
-        // This will be implemented next. For now, it does nothing.
-        return null; 
+        params.set('collectionId', collectionId);
+        if (pageIndex > 0 && previousPageData?.lastDocId) {
+          params.set('lastDocId', previousPageData.lastDocId);
+        }
+        if (isAdmin) params.set('hydration', 'cover-only');
+        return `${endpoint}?${params.toString()}`;
       }
 
-      // --- Build Query for Filtered Card List ---
-      const endpoint = '/api/cards';
-      const params = new URLSearchParams({
-        limit: String(pageLimit),
-      });
-      
-      params.set('status', status);
-        
-      // Send dimensional tags instead of flat tags array
+      // Explore / All: normal filtered list
       Object.entries(dimensionalTags).forEach(([dimension, tagIds]) => {
-        if (tagIds && tagIds.length > 0) {
-          params.set(dimension, tagIds.join(','));
-        }
+        if (tagIds && tagIds.length > 0) params.set(dimension, tagIds.join(','));
       });
-      
-      if (searchTerm && searchTerm.trim() !== '') {
-        params.set('q', searchTerm);
-      }
-      if (cardType && cardType !== 'all') {
-        params.set('type', cardType);
-      }
-      
-      if (pageIndex > 0 && previousPageData?.lastDocId) {
-        params.set('lastDocId', previousPageData.lastDocId);
-      }
+      if (searchTerm?.trim()) params.set('q', searchTerm);
+      if (cardType && cardType !== 'all') params.set('type', cardType);
+      if (pageIndex > 0 && previousPageData?.lastDocId) params.set('lastDocId', previousPageData.lastDocId);
 
       return `${endpoint}?${params.toString()}`;
     },
@@ -163,10 +202,18 @@ export const CardProvider = ({ children, collectionId }: CardProviderProps) => {
   );
 
   // --- Derived State ---
-  const isLoading = swrLoading && !data;
+  const paginatedCards = useMemo(
+    () => (Array.isArray(data) ? data : []).filter(Boolean).flatMap((page) => page.items) || [],
+    [data]
+  );
+  const cards = useMemo(() => {
+    if (activeDimension === 'collections' && !collectionId) return collectionCards;
+    return paginatedCards;
+  }, [activeDimension, collectionId, collectionCards, paginatedCards]);
+  const isCollectionsListMode = activeDimension === 'collections' && !collectionId;
+  const isLoading = isCollectionsListMode ? collectionsLoading : (swrLoading && !data);
   const loadingMore = swrLoading && size > 1;
-  const cards = useMemo(() => (Array.isArray(data) ? data : []).filter(Boolean).flatMap(page => page.items) || [], [data]);
-  const hasMore = data?.[data.length - 1]?.hasMore ?? false;
+  const hasMore = isCollectionsListMode ? false : (data?.[data.length - 1]?.hasMore ?? false);
   
   const loadMore = useCallback(() => {
     if (!swrLoading && hasMore) {
@@ -190,33 +237,61 @@ export const CardProvider = ({ children, collectionId }: CardProviderProps) => {
     setCardType('all');
     setSearchTerm('');
     setStatus(isAdmin ? 'all' : 'published');
-  }, [isAdmin, setFilterTags]);
+    setCollectionId(null);
+  }, [isAdmin, setFilterTags, setCollectionId]);
 
-  const value = useMemo(() => ({
-    // State
-    cards,
-    error,
-    isLoading,
-    loadingMore,
-    hasMore,
-    selectedTags: selectedFilterTagIds,
-    cardType,
-    searchTerm,
-    status,
-    isValidating,
-    // Actions
-    loadMore,
-    mutate,
-    toggleTag,
-    setCardType,
-    setSearchTerm,
-    setStatus,
-    clearFilters,
-    setPageLimit,
-  }), [
-    cards, error, isLoading, loadingMore, hasMore, selectedFilterTagIds, cardType, searchTerm, status, isValidating,
-    loadMore, mutate, toggleTag, setCardType, setSearchTerm, setStatus, clearFilters, setPageLimit,
-  ]);
+  const value = useMemo(
+    () => ({
+      cards,
+      error,
+      isLoading,
+      loadingMore,
+      hasMore,
+      selectedTags: selectedFilterTagIds,
+      cardType,
+      searchTerm,
+      status,
+      activeDimension,
+      collectionId,
+      collectionCards,
+      loadMore,
+      mutate,
+      toggleTag,
+      setCardType,
+      setSearchTerm,
+      setStatus,
+      setActiveDimension,
+      setCollectionId,
+      clearFilters,
+      setPageLimit,
+      isValidating,
+    }),
+    [
+      cards,
+      error,
+      isLoading,
+      loadingMore,
+      hasMore,
+      selectedFilterTagIds,
+      cardType,
+      searchTerm,
+      status,
+      activeDimension,
+      collectionId,
+      collectionCards,
+      loadMore,
+      mutate,
+      toggleTag,
+      setCardType,
+      setSearchTerm,
+      setStatus,
+      setActiveDimension,
+      setCollectionId,
+      clearFilters,
+      setPageLimit,
+      isValidating,
+    ]
+  );
 
   return <CardContext.Provider value={value}>{children}</CardContext.Provider>;
 };

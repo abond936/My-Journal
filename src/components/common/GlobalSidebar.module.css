@@ -4,11 +4,12 @@
     transition: margin-left var(--transition-short) ease-in-out;
     padding: var(--spacing-lg);
     padding-top: calc(var(--header-height) - var(--spacing-2xl));
-    padding-bottom: 0;
+    padding-bottom: var(--spacing-md);
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    height: 100%; /* Ensure it takes full height of its container */
+    height: 100%;
+    min-height: 0; /* Allow flex children to shrink */
   }
   
   .sidebar.closed {
@@ -27,22 +28,251 @@
     color: var(--text1-color);
   }
 
+  .collectionBack {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .collectionBackButton {
+    padding: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    font-family: var(--body-font-family);
+    background: transparent;
+    border: var(--border-width-thin) solid var(--border1-color);
+    border-radius: var(--border-radius-md);
+    color: var(--text1-color);
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+  }
+
+  .collectionBackButton:hover {
+    background-color: var(--layout-background2-color);
+  }
+
+  .collectionGroups {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .collectionGroup {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+
+  .collectionGroupLabel {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text2-color);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .collectionList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .collectionList li {
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .collectionItem {
+    display: block;
+    width: 100%;
+    padding: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    font-family: var(--body-font-family);
+    text-align: left;
+    background: transparent;
+    border: var(--border-width-thin) solid var(--border1-color);
+    border-radius: var(--border-radius-md);
+    color: var(--text1-color);
+    cursor: pointer;
+    transition: background-color var(--transition-short);
+  }
+
+  .collectionItem:hover {
+    background-color: var(--layout-background2-color);
+  }
+
+  .collectionCount {
+    margin-left: var(--spacing-xs);
+    font-size: var(--font-size-xs);
+    color: var(--text2-color);
+  }
+
+  .collectionEmpty {
+    padding: var(--spacing-md);
+    font-size: var(--font-size-sm);
+    color: var(--text2-color);
+  }
+
+  .activeFilters {
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-sm) 0;
+    border-bottom: var(--border-width-thin) solid var(--border1-color);
+  }
+
+  .activeFiltersLabel {
+    display: block;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    color: var(--text2-color);
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .activeFiltersChips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+  }
+
+  .filterChip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: 2px var(--spacing-sm);
+    font-size: var(--font-size-xs);
+    background-color: var(--button-solid-background-color);
+    color: var(--button-solid-text-color);
+    border: var(--border-width-thin) solid var(--button-solid-border-color);
+    border-radius: var(--border-radius-md);
+    max-width: 100%;
+  }
+
+  .filterChipRemove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    min-width: 18px;
+    height: 18px;
+    font-size: 1rem;
+    line-height: 1;
+    background: transparent;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    border-radius: 2px;
+  }
+
+  .filterChipRemove:hover {
+    background-color: rgba(0, 0, 0, 0.15);
+  }
+
+  .dimensionTabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .dimensionTab {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-xs);
+    font-family: var(--body-font-family);
+    background: transparent;
+    border: var(--border-width-thin) solid var(--border1-color);
+    border-radius: var(--border-radius-md);
+    color: var(--text2-color);
+    cursor: pointer;
+    transition: background-color var(--transition-short), color var(--transition-short), border-color var(--transition-short);
+  }
+
+  .dimensionTab:hover {
+    background-color: var(--layout-background2-color);
+    color: var(--text1-color);
+  }
+
+  .dimensionTabActive {
+    background-color: var(--button-solid-background-color);
+    color: var(--button-solid-text-color);
+    border-color: var(--button-solid-border-color);
+  }
+
+  .tagSearch {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .tagSearchInput {
+    width: 100%;
+    padding: var(--spacing-sm);
+    font-size: var(--font-size-base);
+    font-family: var(--body-font-family);
+    border: var(--border-width-thin) solid var(--border1-color);
+    border-radius: var(--border-radius-md);
+    background-color: var(--layout-background1-color);
+    color: var(--text1-color);
+  }
+
+  .tagSearchInput::placeholder {
+    color: var(--text2-color);
+    opacity: 0.8;
+  }
+
+  .typeFilter {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .typeFilterLabel {
+    display: block;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text2-color);
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .typeSelect {
+    width: 100%;
+    padding: var(--spacing-sm);
+    font-size: var(--font-size-base);
+    font-family: var(--body-font-family);
+    border: var(--border-width-thin) solid var(--border1-color);
+    border-radius: var(--border-radius-md);
+    background-color: var(--layout-background1-color);
+    color: var(--text1-color);
+    cursor: pointer;
+  }
+
+  .typeSelectPlaceholder {
+    width: 100%;
+    padding: var(--spacing-sm);
+    font-size: var(--font-size-base);
+    font-family: var(--body-font-family);
+    border: var(--border-width-thin) solid var(--border1-color);
+    border-radius: var(--border-radius-md);
+    background-color: var(--layout-background1-color);
+    color: var(--text1-color);
+  }
+
+  .loadingPlaceholder {
+    font-size: var(--font-size-sm);
+    color: var(--text2-color);
+    padding: var(--spacing-md);
+  }
+
   .navigation {
-    flex-grow: 1; /* Allows this area to fill available space */
-    overflow-y: auto; /* Add scroll only to the tag tree area if it overflows */
-    margin-bottom: var(--spacing-md); /* Add space above the buttons */
+    flex: 1 1 0; /* Grow and shrink, allow shrinking below content */
+    min-height: 0; /* Required for flex child to scroll when space is limited */
+    overflow-y: auto;
+    margin-bottom: var(--spacing-md);
   }
   
   .filterControls {
-  margin-top: auto;
-  padding: var(--spacing-md) 0 var(--spacing-md) 0;
-  background-color: var(--layout-background1-color);
-  display: flex;
-  gap: var(--spacing-sm);
-  border-top: var(--border-width-thin) solid var(--border1-color);
-  position: relative;
-  z-index: 100;
-}
+    flex-shrink: 0; /* Never shrink - always keep buttons visible */
+    margin-top: auto;
+    padding: var(--spacing-md) 0 var(--spacing-md) 0;
+    background-color: var(--layout-background1-color);
+    display: flex;
+    gap: var(--spacing-sm);
+    border-top: var(--border-width-thin) solid var(--border1-color);
+    position: relative;
+    z-index: 100;
+  }
   
   .applyButton, .clearButton {
     flex: 1;

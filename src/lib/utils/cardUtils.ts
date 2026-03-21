@@ -1,4 +1,55 @@
-import { HydratedCard, CardUpdate, GalleryMediaItem } from '@/lib/types/card';
+import { Card, CardUpdate } from '@/lib/types/card';
+
+const DIMENSIONS = ['who', 'what', 'when', 'where', 'reflection'] as const;
+
+/**
+ * Groups collection cards by dimension (who, what, when, where, reflection).
+ * A collection appears in every dimension group it has tags for (Option B).
+ * Uncategorized: collections with no tags in any dimension.
+ * Within each group, sorted by title A-Z.
+ */
+export function groupCollectionsByDimension(cards: Card[]): Record<string, Card[]> {
+  const groups: Record<string, Card[]> = {
+    who: [],
+    what: [],
+    when: [],
+    where: [],
+    reflection: [],
+    uncategorized: [],
+  };
+
+  for (const card of cards) {
+    const hasAnyTag =
+      (card.who?.length ?? 0) > 0 ||
+      (card.what?.length ?? 0) > 0 ||
+      (card.when?.length ?? 0) > 0 ||
+      (card.where?.length ?? 0) > 0 ||
+      (card.reflection?.length ?? 0) > 0;
+
+    if (!hasAnyTag) {
+      groups.uncategorized.push(card);
+      continue;
+    }
+
+    for (const dim of DIMENSIONS) {
+      const tags = card[dim];
+      if (tags && tags.length > 0) {
+        groups[dim].push(card);
+      }
+    }
+  }
+
+  // Sort each group by title A-Z
+  for (const key of Object.keys(groups)) {
+    groups[key].sort((a, b) => {
+      const titleA = (a.title || a.subtitle || 'Untitled').toLowerCase();
+      const titleB = (b.title || b.subtitle || 'Untitled').toLowerCase();
+      return titleA.localeCompare(titleB);
+    });
+  }
+
+  return groups;
+}
 import { Media } from '@/lib/types/photo';
 import { Node } from 'prosemirror-model';
 import { Editor } from '@tiptap/react';
@@ -19,11 +70,12 @@ export function extractMediaFromContent(html: string | null | undefined): string
   return Array.from(ids);
 }
 
-export function transformToCardUpdate(hydratedCard: HydratedCard): CardUpdate {
-  const skinnyGalleryMedia = hydratedCard.galleryMedia.map(item => ({
+export function transformToCardUpdate(hydratedCard: Card): CardUpdate {
+  const skinnyGalleryMedia = (hydratedCard.galleryMedia ?? []).map(item => ({
     mediaId: item.mediaId,
     caption: item.caption,
     objectPosition: item.objectPosition,
+    order: item.order,
   }));
 
   const contentMedia = extractMediaFromContent(hydratedCard.content);
@@ -33,7 +85,7 @@ export function transformToCardUpdate(hydratedCard: HydratedCard): CardUpdate {
     status: hydratedCard.status,
     content: hydratedCard.content,
     tags: hydratedCard.tags,
-    childCardIds: hydratedCard.childCardIds,
+    childrenIds: hydratedCard.childrenIds,
     coverImageId: hydratedCard.coverImageId,
     coverImageFocalPoint: hydratedCard.coverImageFocalPoint,
     galleryMedia: skinnyGalleryMedia,

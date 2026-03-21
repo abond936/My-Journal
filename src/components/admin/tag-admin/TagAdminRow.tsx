@@ -123,6 +123,16 @@ export function TagAdminRow({
         
         {/* Action Buttons */}
         <div className={styles.actions}>
+          {hasChildren && (
+            <button
+              onClick={() => onUpdateTag(tag.docId!, { defaultExpanded: tag.defaultExpanded === false })}
+              className={styles.actionButton}
+              title={tag.defaultExpanded === false ? 'Collapsed by default in Explore (click to expand)' : 'Expanded by default in Explore (click to collapse)'}
+              aria-label={tag.defaultExpanded === false ? 'Set expanded by default' : 'Set collapsed by default'}
+            >
+              {tag.defaultExpanded === false ? '⊞' : '⊟'}
+            </button>
+          )}
           <button onClick={() => setIsAddingChild(p => !p)} className={styles.actionButton}>+</button>
           <button onClick={() => onDeleteTag(tag.docId!)} className={styles.actionButton}>×</button>
         </div>

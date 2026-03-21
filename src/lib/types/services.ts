@@ -1,7 +1,8 @@
-import { DocumentSnapshot } from 'firebase-admin/firestore';
-
 export interface PaginatedResult<T> {
   items: T[];
-  lastDoc?: any;
+  /** Cursor id for pagination (matches cardService responses) */
+  lastDocId?: string;
+  /** Legacy Firestore snapshot cursor; prefer lastDocId */
+  lastDoc?: unknown;
   hasMore: boolean;
 } 

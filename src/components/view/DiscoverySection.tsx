@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '@/lib/types/card';
 import V2ContentCard from './V2ContentCard';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { useCardContext } from '@/components/providers/CardProvider';
 import styles from './DiscoverySection.module.css';
 
 interface DiscoverySectionProps {
@@ -18,6 +19,7 @@ interface DiscoveryData {
 }
 
 export default function DiscoverySection({ currentCard, childrenCards }: DiscoverySectionProps) {
+  const { cardType } = useCardContext();
   const [discoveryData, setDiscoveryData] = useState<DiscoveryData>({
     children: childrenCards,
     filtered: [],
@@ -32,8 +34,6 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
       setError(null);
 
       try {
-        // Get current card's tags for filtering
-        const currentTags = currentCard.tags || [];
         const excludeIds = [currentCard.docId, ...childrenCards.map(c => c.docId)];
 
         // Fetch filtered cards (same tags as current card)
@@ -41,8 +41,9 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
           count: '3',
           exclude: excludeIds.join(',')
         });
-
-        // Add dimensional tags for filtering
+        if (cardType && cardType !== 'all') {
+          filteredParams.set('type', cardType);
+        }
         if (currentCard.who && currentCard.who.length > 0) {
           filteredParams.set('who', currentCard.who.join(','));
         }
@@ -59,11 +60,14 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
           filteredParams.set('reflection', currentCard.reflection.join(','));
         }
 
-        // Fetch random cards (different tags)
+        // Fetch random cards (different tags, same card type filter)
         const randomParams = new URLSearchParams({
           count: '3',
           exclude: excludeIds.join(',')
         });
+        if (cardType && cardType !== 'all') {
+          randomParams.set('type', cardType);
+        }
 
         // Make parallel requests
         const [filteredResponse, randomResponse] = await Promise.all([
@@ -104,7 +108,7 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
     };
 
     fetchDiscoveryData();
-  }, [currentCard, childrenCards]);
+  }, [currentCard, childrenCards, cardType]);
 
   if (loading) {
     return (

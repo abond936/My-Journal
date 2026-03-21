@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { Tag } from '@/lib/types/tag';
+import type { TagWithChildren } from '@/components/providers/TagProvider';
 import { TagAdminRow } from './TagAdminRow';
 import { DndContext, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverEvent, UniqueIdentifier, closestCenter } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -68,7 +69,7 @@ function SortableTag({
 }
 
 interface TagAdminListProps {
-  tagTree: Tag[];
+  tagTree: TagWithChildren[];
   onUpdateTag: (id: string, tagData: Partial<Omit<Tag, 'docId'>>) => Promise<Tag | undefined>;
   onDeleteTag: (id: string) => Promise<void>;
   onCreateTag: (tagData: Omit<Tag, 'docId' | 'createdAt' | 'updatedAt'>) => Promise<Tag | undefined>;
@@ -121,13 +122,13 @@ export function TagAdminList({ tagTree, onUpdateTag, onDeleteTag, onCreateTag, o
   }, []);
 
   const flattenedTree = useMemo(() => {
-    const flattened: (Tag & { depth: number, children?: Tag[] })[] = [];
-    const traverse = (nodes: Tag[] | undefined, depth: number) => {
+    const flattened: (TagWithChildren & { depth: number })[] = [];
+    const traverse = (nodes: TagWithChildren[] | undefined, depth: number) => {
       if (!nodes) return;
       for (const node of nodes) {
         flattened.push({ ...node, depth });
-        if (!collapsedNodes.has(node.docId!) && node.children) {
-          traverse(node.children as Tag[], depth + 1);
+        if (!collapsedNodes.has(node.docId!) && node.children?.length) {
+          traverse(node.children, depth + 1);
         }
       }
     };
@@ -179,7 +180,10 @@ export function TagAdminList({ tagTree, onUpdateTag, onDeleteTag, onCreateTag, o
     }
 
     // Check if Shift key is pressed for reparenting mode
-    const isShiftPressed = event.activatorEvent?.shiftKey || false;
+    const ae = event.activatorEvent;
+    const isShiftPressed = Boolean(
+      ae && 'shiftKey' in ae && (ae as MouseEvent | KeyboardEvent).shiftKey
+    );
     
     // Check if this is a valid drop (same parent for reordering)
     const isSameParent = activeTag.parentId === overTag.parentId;

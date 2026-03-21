@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import JournalImage from '@/components/common/JournalImage';
 import { Card } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils'; // Corrected import path
 import { getObjectPositionForAspectRatio } from '@/lib/utils/objectPositionUtils';
@@ -16,19 +16,24 @@ import 'swiper/css';
 // --- Card Type Renderers ---
 
 const StoryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => {
-  const objectPosition = card.coverImageFocalPoint && card.coverImage ? 
-    getObjectPositionForAspectRatio(
-      card.coverImageFocalPoint,
-      { width: card.coverImage.width, height: card.coverImage.height },
-      '1/1',
-      400
-    ) : 'center';
+  const objectPosition =
+    card.coverImageFocalPoint && card.coverImage
+      ? getObjectPositionForAspectRatio(
+          {
+            x: card.coverImageFocalPoint.x ?? 0,
+            y: card.coverImageFocalPoint.y ?? 0,
+          },
+          { width: card.coverImage.width, height: card.coverImage.height },
+          '1/1',
+          400
+        )
+      : 'center';
 
   return (
     <>
       {card.coverImage && (
         <div className={styles.imageContainer}>
-          <Image 
+          <JournalImage 
             src={getDisplayUrl(card.coverImage)} 
             alt={card.title} 
             className={styles.image}
@@ -57,13 +62,18 @@ const StoryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card,
 // NEW: A dedicated renderer for gallery card previews.
 const GalleryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => {
   const hasGallery = card.galleryMedia && card.galleryMedia.length > 0;
-  const objectPosition = card.coverImageFocalPoint && card.coverImage ? 
-    getObjectPositionForAspectRatio(
-      card.coverImageFocalPoint,
-      { width: card.coverImage.width, height: card.coverImage.height },
-      '1/1',
-      400
-    ) : 'center';
+  const objectPosition =
+    card.coverImageFocalPoint && card.coverImage
+      ? getObjectPositionForAspectRatio(
+          {
+            x: card.coverImageFocalPoint.x ?? 0,
+            y: card.coverImageFocalPoint.y ?? 0,
+          },
+          { width: card.coverImage.width, height: card.coverImage.height },
+          '1/1',
+          400
+        )
+      : 'center';
 
   return (
     <>
@@ -73,7 +83,7 @@ const GalleryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ car
             {card.galleryMedia?.map(item =>
               item.media ? (
                 <SwiperSlide key={item.mediaId}>
-                  <Image 
+                  <JournalImage 
                     src={getDisplayUrl(item.media)} 
                     alt={item.media.filename || ''} 
                     className={styles.image}
@@ -89,7 +99,7 @@ const GalleryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ car
         </div>
       ) : card.coverImage ? (
         <div className={styles.imageContainer}>
-          <Image 
+          <JournalImage 
             src={getDisplayUrl(card.coverImage)} 
             alt={card.title} 
             className={styles.image}
@@ -153,12 +163,10 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({ card, size = 'medium', on
   const isInteractive = displayMode === 'navigate' && 
     (card.type === 'story' || card.type === 'collection' || card.type === 'gallery');
   
-  const Wrapper = isInteractive ? Link : 'div';
-  const wrapperProps = isInteractive ? { href: `/view/${card.docId}`, onClick } : {};
-
   const cardTypeClass = styles[card.type] || styles.story;
   const sizeClass = styles[size] || styles.medium;
   const displayModeClass = styles[displayMode] || '';
+  const className = `${styles.card} ${cardTypeClass} ${sizeClass} ${displayModeClass}`;
 
   const renderContent = () => {
     switch (card.type) {
@@ -177,11 +185,15 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({ card, size = 'medium', on
     }
   };
 
-  return (
-    <Wrapper {...wrapperProps} className={`${styles.card} ${cardTypeClass} ${sizeClass} ${displayModeClass}`}>
-      {renderContent()}
-    </Wrapper>
-  );
+  if (isInteractive) {
+    return (
+      <Link href={`/view/${card.docId}`} className={className} onClick={onClick}>
+        {renderContent()}
+      </Link>
+    );
+  }
+
+  return <div className={className}>{renderContent()}</div>;
 };
 
 export default V2ContentCard; 

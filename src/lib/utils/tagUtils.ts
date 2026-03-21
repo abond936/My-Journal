@@ -94,6 +94,64 @@ export const createUITreeFromDimensions = (tags: Tag[]): TagWithChildren[] => {
 };
 
 /**
+ * Gets the set of tag IDs that should be expanded by default.
+ * A tag is expanded if it has children and defaultExpanded !== false.
+ * @param tree - The tag tree
+ * @returns Set of tag IDs to expand initially
+ */
+export const getDefaultExpandedTagIds = (tree: TagWithChildren[]): Set<string> => {
+  const expanded = new Set<string>();
+  const traverse = (nodes: TagWithChildren[]) => {
+    nodes.forEach((node) => {
+      if (node.children && node.children.length > 0) {
+        if (node.defaultExpanded !== false) {
+          expanded.add(node.docId!);
+          traverse(node.children);
+        }
+      }
+    });
+  };
+  traverse(tree);
+  return expanded;
+};
+
+/**
+ * Filters a tag tree by search term. Keeps nodes that match or have matching descendants.
+ * @param node - A tag node with children
+ * @param search - Search string (case-insensitive match on tag name)
+ * @returns Filtered node or null if no match in this branch
+ */
+export const filterTreeBySearch = (
+  node: TagWithChildren,
+  search: string
+): TagWithChildren | null => {
+  const searchLower = search?.trim().toLowerCase() ?? '';
+  const childResults = node.children
+    .map((c) => filterTreeBySearch(c, search))
+    .filter((r): r is TagWithChildren => r !== null);
+  const selfMatches =
+    !searchLower || (node.name?.toLowerCase().includes(searchLower) ?? false);
+  if (selfMatches || childResults.length > 0) {
+    return { ...node, children: childResults };
+  }
+  return null;
+};
+
+/**
+ * Filters an array of tag trees by search term.
+ */
+export const filterTreesBySearch = (
+  trees: TagWithChildren[],
+  search: string
+): TagWithChildren[] => {
+  const searchTrimmed = search?.trim() ?? '';
+  if (!searchTrimmed) return trees;
+  return trees
+    .map((root) => filterTreeBySearch(root, searchTrimmed))
+    .filter((r): r is TagWithChildren => r !== null);
+};
+
+/**
  * Builds a partial tag tree containing only the specified tags and their direct parents.
  * @param allTags - A flat array of all tags.
  * @param selectedTagIds - An array of IDs for the tags that should be included in the tree.

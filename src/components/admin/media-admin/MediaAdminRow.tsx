@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import Image from 'next/image';
+import JournalImage from '@/components/common/JournalImage';
 import { Media } from '@/lib/types/photo';
 import { useMedia } from '@/components/providers/MediaProvider';
 import styles from './MediaAdminRow.module.css';
@@ -62,7 +62,7 @@ export default function MediaAdminRow({
       case 'thumbnail':
         return (
           <div className={styles.thumbnail}>
-            <Image 
+            <JournalImage 
               src={media.storageUrl} 
               alt={media.filename}
               width={60}

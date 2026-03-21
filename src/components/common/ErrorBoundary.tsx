@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppError, isAppError } from '@/lib/types/error';
+import { AppError, ErrorCode, isAppError } from '@/lib/types/error';
 import styles from './ErrorBoundary.module.css';
 
 interface Props {
@@ -160,7 +160,7 @@ export function useErrorBoundary() {
     if (!error) return null;
     if (isAppError(error)) return error;
     return new AppError(
-      'INTERNAL_ERROR',
+      ErrorCode.INTERNAL_ERROR,
       error.message,
       { originalError: error }
     );

@@ -1,5 +1,3 @@
-import { PhotoMetadata } from '@/lib/types/photo';
-
 /**
  * Generates the correct display URL for a photo based on its metadata.
  * This centralizes the logic for handling different photo sources in the future.

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import Image from 'next/image';
+import JournalImage from '@/components/common/JournalImage';
 import styles from './CoverPhotoContainer.module.css';
 import { Media } from '@/lib/types/photo';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
@@ -64,7 +64,7 @@ export default function CoverPhotoContainer({
       ) : coverImage ? (
         <>
           <div className={styles.imageContainer}>
-            <Image
+            <JournalImage
               src={getDisplayUrl(coverImage)}
               alt={coverImage.filename || 'Cover image'}
               className={styles.coverImage}

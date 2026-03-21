@@ -7,41 +7,6 @@ import { TagAdminList } from '@/components/admin/tag-admin/TagAdminList';
 import styles from './tag-admin.module.css';
 import { buildTagTree } from '@/lib/utils/tagUtils';
 
-// This function can remain as it is, it's a pure utility for converting a flat list to a tree
-const buildTagTree = (tags: Tag[]): TagWithChildren[] => {
-  const tagMap = new Map();
-  const rootTags: TagWithChildren[] = [];
-
-  if (!tags) return [];
-
-  // It's critical to create a deep copy to avoid mutating the source array (from SWR or state)
-  const tagsCopy = JSON.parse(JSON.stringify(tags));
-
-  tagsCopy.forEach((tag: Tag) => {
-    tagMap.set(tag.docId, { ...tag, children: [] });
-  });
-
-  tagsCopy.forEach((tag: Tag) => {
-    const tagNode = tagMap.get(tag.docId);
-    if (tagNode) {
-      if (tag.parentId && tagMap.has(tag.parentId)) {
-        const parentNode = tagMap.get(tag.parentId);
-        parentNode?.children.push(tagNode);
-      } else {
-        rootTags.push(tagNode);
-      }
-    }
-  });
-
-  const sortTags = (tagNodes: TagWithChildren[]) => {
-    tagNodes.sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name));
-    tagNodes.forEach(t => sortTags(t.children));
-  };
-
-  sortTags(rootTags);
-  return rootTags;
-};
-
 // --- Core UI Logic Hook ---
 function useTagManagement() {
   const { tags: swrTags, createTag, updateTag, deleteTag, loading, error: swrError, mutate } = useTag();

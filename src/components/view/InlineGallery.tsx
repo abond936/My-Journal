@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useCallback } from 'react';
-import Image from 'next/image';
+import JournalImage from '@/components/common/JournalImage';
 import { HydratedGalleryMediaItem } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import styles from './InlineGallery.module.css';
@@ -90,7 +90,7 @@ export default function InlineGallery({ media, title = "Gallery" }: InlineGaller
           {validMedia.map((item, index) => (
             <div key={item.mediaId} className={styles.imageItem}>
               <div className={styles.imageWrapper}>
-                <Image
+                <JournalImage
                   src={getDisplayUrl(item.media)}
                   alt={item.caption || `Image ${index + 1}`}
                   className={styles.galleryImage}

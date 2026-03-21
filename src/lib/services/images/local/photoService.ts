@@ -1,6 +1,7 @@
-import { PhotoMetadata, TreeNode } from '@/lib/types/photo';
-import { SourceCollection } from '@/lib/types/album';
-import { Photo } from '@/lib/types/photo';
+import { PickerMedia, TreeNode } from '@/lib/types/photo';
+
+/** Legacy OneDrive collections shape (no dedicated types module yet). */
+export type SourceCollection = Record<string, unknown>;
 
 export const getFolderTree = async (): Promise<TreeNode[]> => {
   const response = await fetch('/api/images/local/folder-tree');
@@ -10,7 +11,7 @@ export const getFolderTree = async (): Promise<TreeNode[]> => {
   return response.json();
 };
 
-export const getFolderContents = async (folderPath: string): Promise<Photo[]> => {
+export const getFolderContents = async (folderPath: string): Promise<PickerMedia[]> => {
   const response = await fetch('/api/images/local/folder-contents', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

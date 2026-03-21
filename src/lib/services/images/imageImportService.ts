@@ -5,8 +5,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import sharp from 'sharp';
 import sizeOf from 'image-size';
-import { uploadFile } from '@/lib/config/firebase/admin';
-import { FirebaseFirestore } from 'firebase-admin';
+import type { Transaction } from 'firebase-admin/firestore';
 
 const ONEDRIVE_ROOT_FOLDER = process.env.ONEDRIVE_ROOT_FOLDER;
 
@@ -193,8 +192,8 @@ export async function updateMediaStatus(mediaId: string, status: Media['status']
   }
 }
 
-// Add retry mechanism
-async function deleteFromStorageWithRetry(storagePath: string, maxRetries = 3): Promise<boolean> {
+// Add retry mechanism (exported for post-transaction storage cleanup, e.g. deleteCard)
+export async function deleteFromStorageWithRetry(storagePath: string, maxRetries = 3): Promise<boolean> {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const bucket = admin.storage().bucket();
@@ -213,7 +212,7 @@ async function deleteFromStorageWithRetry(storagePath: string, maxRetries = 3): 
 }
 
 // Mark storage file for later deletion
-async function markStorageForLaterDeletion(storagePath: string): Promise<void> {
+export async function markStorageForLaterDeletion(storagePath: string): Promise<void> {
   const bucket = admin.storage().bucket();
   const file = bucket.file(storagePath);
   
@@ -237,7 +236,7 @@ async function markStorageForLaterDeletion(storagePath: string): Promise<void> {
  */
 export async function deleteMediaAsset(
   mediaId: string, 
-  transaction?: FirebaseFirestore.Transaction
+  transaction?: Transaction
 ): Promise<void> {
   const app = getAdminApp();
   const firestore = app.firestore();

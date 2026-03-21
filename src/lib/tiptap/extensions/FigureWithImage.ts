@@ -6,19 +6,22 @@ export interface FigureWithImageOptions {
   HTMLAttributes: Record<string, any>;
 }
 
+/** Attributes passed to `setFigureWithImage` (node attrs, not extension options). */
+export type SetFigureWithImageAttrs = {
+  src: string;
+  alt?: string;
+  caption?: string;
+  width: number;
+  height: number;
+  docId?: string;
+  'data-media-id'?: string;
+  'data-media-type'?: string;
+};
+
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     figureWithImage: {
-      setFigureWithImage: (options: { 
-        src: string; 
-        alt?: string; 
-        caption?: string;
-        width: number;
-        height: number;
-        docId?: string;
-        'data-media-id'?: string;
-        'data-media-type'?: string;
-      }) => ReturnType;
+      setFigureWithImage: (options: SetFigureWithImageAttrs) => ReturnType;
       setFigureSize: (size: 'small' | 'medium' | 'large') => ReturnType;
       setFigureAlignment: (alignment: 'left' | 'center' | 'right') => ReturnType;
       setFigureWrap: (wrap: 'on' | 'off') => ReturnType;
@@ -109,10 +112,20 @@ export const FigureWithImage = Node.create<FigureWithImageOptions>({
 
   addCommands() {
     return {
-      setFigureWithImage: (options: FigureWithImageOptions) => ({ tr, dispatch }) => {
-        const { selection } = tr;
-
-        const node = this.type.create(options);
+      setFigureWithImage: (options: SetFigureWithImageAttrs) => ({ tr, dispatch }) => {
+        const mediaId = options.docId ?? options['data-media-id'] ?? null;
+        const node = this.type.create({
+          src: options.src,
+          alt: options.alt ?? null,
+          width: options.width,
+          height: options.height,
+          docId: mediaId,
+          'data-media-id': mediaId,
+          'data-media-type': options['data-media-type'] ?? 'content',
+          'data-size': 'medium',
+          'data-alignment': 'left',
+          'data-wrap': 'off',
+        });
         if (dispatch) {
           tr.replaceSelectionWith(node);
         }

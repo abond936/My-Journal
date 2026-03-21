@@ -62,8 +62,9 @@ async function checkTagIdConsistency(): Promise<ConsistencyReport> {
     
     allTags.forEach(tag => {
       tagIdMap.set(tag.docId!, tag);
-      if (tag.id && tag.id !== tag.docId) {
-        legacyIdMap.set(tag.id, tag);
+      const legacyId = (tag as Tag & { id?: string }).id;
+      if (legacyId && legacyId !== tag.docId) {
+        legacyIdMap.set(legacyId, tag);
       }
     });
 

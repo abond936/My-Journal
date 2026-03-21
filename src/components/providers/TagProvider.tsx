@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useMemo, ReactNode, useCallback, useState } from 'react';
-import useSWR, { SWRMutator } from 'swr';
+import useSWR, { type KeyedMutator } from 'swr';
 import { useSession } from 'next-auth/react';
 import { Tag } from '@/lib/types/tag';
 import { buildTagTree } from '@/lib/utils/tagUtils';
@@ -30,7 +30,7 @@ export interface TagContextType {
   getTagPath: (id: string) => Tag[];
   masterTree: TagWithChildren[];
   dimensionTree: Record<string, TagWithChildren[]>;
-  mutate: SWRMutator<Tag[], any>;
+  mutate: KeyedMutator<Tag[]>;
 }
 
 const TagContext = createContext<TagContextType | undefined>(undefined);

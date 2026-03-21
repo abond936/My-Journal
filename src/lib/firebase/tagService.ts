@@ -525,14 +525,14 @@ export async function updateTagCounts(tagIds: string[], direction: 'increment' |
  * @param transaction - The Firestore transaction to perform updates in
  */
 export async function updateTagCountsForCard(
-  oldCard: { tags?: string[]; status: string } | null,
-  newCard: { tags?: string[]; status: string },
+  oldCard: { tags?: string[]; status?: string } | null,
+  newCard: { tags?: string[]; status?: string },
   transaction: FirebaseFirestore.Transaction
 ): Promise<void> {
   const oldTags = new Set(oldCard?.tags || []);
   const newTags = new Set(newCard.tags || []);
-  const wasPublished = oldCard?.status === 'published';
-  const isPublished = newCard.status === 'published';
+  const wasPublished = (oldCard?.status ?? 'draft') === 'published';
+  const isPublished = (newCard.status ?? 'draft') === 'published';
   
   // Only count published cards
   if (!isPublished && !wasPublished) return;

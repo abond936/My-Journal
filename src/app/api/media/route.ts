@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import type { Query } from 'firebase-admin/firestore';
+import { authOptions } from '@/lib/auth/authOptions';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { Media } from '@/lib/types/photo';
 
@@ -24,8 +25,8 @@ export async function GET(request: NextRequest) {
     const firestore = app.firestore();
     const mediaRef = firestore.collection('media');
 
-    // Build query
-    let query = mediaRef;
+    // Build query (CollectionReference is a Query; .where returns Query)
+    let query: Query = mediaRef;
 
     // Apply filters
     if (status && status !== 'all') {

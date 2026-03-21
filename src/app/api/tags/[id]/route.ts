@@ -1,7 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { getAdminApp } from '@/lib/config/firebase/admin';
-import { authOptions } from '../../auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth/authOptions';
 import { getTagById, updateTag, deleteTag } from '@/lib/firebase/tagService';
 import { Tag } from '@/lib/types/tag';
 import { safeToDate } from '@/lib/utils/dateUtils';
@@ -9,9 +9,7 @@ import { safeToDate } from '@/lib/utils/dateUtils';
 // Initialize Firebase Admin
 getAdminApp();
 
-interface RouteParams {
-    id: Promise<string>;
-}
+type RouteParams = Promise<{ id: string }>;
 
 /**
  * @swagger

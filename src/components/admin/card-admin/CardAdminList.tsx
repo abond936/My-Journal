@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import Image from 'next/image';
+import JournalImage from '@/components/common/JournalImage';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
@@ -152,7 +152,7 @@ export default function CardAdminList({
               </td>
               <td className={styles.coverImageCell} style={{ width: columnWidths.cover }}>
                 {card.coverImage ? (
-                  <Image 
+                  <JournalImage 
                     src={getDisplayUrl(card.coverImage)} 
                     alt="Cover"
                     className={styles.coverThumbnail}

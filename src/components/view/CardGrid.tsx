@@ -62,11 +62,17 @@ const CardGrid: React.FC<CardGridProps> = ({
     );
   }
 
-  // Assign random sizes to items if not specified
-  const itemsWithSizes = items.map(item => ({
-    ...item,
-    size: item.size || ['large', 'medium', 'small', 'wide'][Math.floor(Math.random() * 4)] as 'large' | 'medium' | 'small' | 'wide'
-  }));
+  // Assign deterministic sizes to items if not specified (ContentCard tag mode: no "wide")
+  // Uses index to avoid Math.random() which causes hydration mismatch (server vs client differ)
+  const sizeOptions = ['large', 'medium', 'small'] as const;
+  const itemsWithSizes = items.map((item, idx) => {
+    const pick = item.size
+      ? item.size === 'wide'
+        ? 'large'
+        : item.size
+      : sizeOptions[idx % sizeOptions.length];
+    return { ...item, size: pick };
+  });
 
   return (
     <div className={styles.gridContainer}>

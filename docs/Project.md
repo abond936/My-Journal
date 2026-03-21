@@ -12,7 +12,7 @@ The primary users are the author (admin) creating the content and his family con
 - Further functional buildout and QA required.
 
 **Roadmap**
-- Rationalize/harden tag, card, media management
+
 - Rationalize/build out content navigation/presentation.
 
 Legend:
@@ -43,7 +43,7 @@ Legend:
   - Imported from external sources to db for stability.
   - Referenced in cards by id, hydrated on demand
   - Processed with Sharp
-
+- Theme (centralized CSS)
 
 **Frontend**
 ✅
@@ -70,8 +70,9 @@ Legend:
   - Role-based access control
   - Session persistence
 
-⭕2 - Comment code 
+⭕2 - Comment code
 ⭕2 - Cleanup directory
+⭕2 - Address ESLint violations (~100+; build uses ignoreDuringBuilds; run `npm run lint` locally)
 ⭕2 - QA app
 ⭕2 - Host app (Netlify/Vercel)
 
@@ -93,9 +94,9 @@ Legend:
   - TagProvider - Manages tag data and operations globally
   - CardProvider - Manages card data, filtering, and pagination
 - Layouts 
-- AppShell: Main layout wrapper providing navigation and structure
-- ViewLayout: Handles the main (content) interface
-- AdminLayout: Manages the admin interface
+  - AppShell: Main layout wrapper providing navigation and structure
+  - ViewLayout: Handles the main (content) interface
+  - AdminLayout: Manages the admin interface
 
 ### **Directory Structure**
  `src/app/`  Next.js App Router
@@ -131,7 +132,7 @@ Legend:
 
 ✅
 - Login
-⭕2 - SVG Logo
+- SVG Logo
 
 ### **Top Navigation**
 - Top navigation toggles content and admin 
@@ -142,15 +143,16 @@ Legend:
 - theme toggle
 
 ### **Left Sidebar Navigation**
-- Left sidebar provides a tabbed table of contents and multi-tag selection for card filtering.
+- Left sidebar provides dimension tabs and tag selection for card filtering.
 
 ✅ 
-- Heirarchical Tag Display: `GlobalSidebar.tsx` and `TagTree.tsx` 
+- Dimension tabs: All | Who | What | When | Where | Reflection | Collections
+- Collections tab: Cards with children, grouped by dimension (who/what/when/where/reflection), sorted A–Z
+- Hierarchical Tag Display: `GlobalSidebar.tsx` and `TagTree.tsx`
+- Discovery filtered by card type and active dimension
 - Slide in/out on mobile
-⭕2 Filtering
-    - add sort by when, asc/dec
-    - increase indention
-⭕2 Table of Contents - Add a curated table of contents, essentially pre-built filters.
+⭕2 Filtering: sort by when asc/desc, increase indentation
+⭕2 Table of Contents: drag & drop ordering for collections
 
 ### **Content Page**
 - After login, the app defaults to the content page `CardFeed.tsx` and `ContentCard.tsx` displaying:
@@ -158,20 +160,43 @@ Legend:
 ✅ 
 - Grid View
   - Responsive grid-based layout
-  - Three display modes/styles
-    - Static - Display only (Question, Callout, Quote)
+  - 3 display modes/styles
+    - Static - Display only (Question, Quote)
     - Inline - Expands/collapses in place ()
     - Navigate - Links to dedicated card view page (story, Gallery) 
-    ⭕2 - Horizontal - Horizontal scroll for images or cards
-    ⭕2 - Box w/ overlay
-    ⭕2 - Box w/o overlay
+  - 4 card types:
+    - Story Card
+      - Title - Bottom ⭕2 - Increase font size
+      - Overlay
+
+    - Gallery Card
+      - Title - Top
+      - Excerpt
+      - Inline expansion
+      ⭕2 - Horizontal Image slider 1/5
+        - Edit pics, normalize, upload
+        - Mom first
+
+    - Question Card
+      - Background
+      - Question Mark
+
+    - Quote Card
+      - Dad book
+      - Notion quotes
+      - Grandfather book
+
+- Random cards
+  - 3 related
+  - 3 unrelated
+  - After story/gallery
+  - In feed
+
     ⭕2 - Box w/ 3 titles (stories, galleries, questions)
         - by dimension
-          - who, what, when, where - colored tag - 3 stories (book), 3 galleries (negative/grid), 3 questions (?), 3 quotes ("), 3 callouts (checkboxes)
+          - who, what, when, where - colored tag - 3 stories (book), 3 galleries (negative/grid), 3 questions (?), 3 quotes (")
         - by type 
-          - story, gallery, question, quote, callout - colored tag - who (person), what(landscape/cube), when(calendar), where (pin),)
-
-  - Infinite scroll pagination - IntersectionObserver
+          - story, gallery, question, quote, colored tag - who (person), what(landscape/cube), when(calendar), where (pin)
 ⭕2 - Search - Add search
 
 ### **View Card**
@@ -189,8 +214,8 @@ If the card has `childrenIds`, it calls `getCardsByIds` to fetch them.
   - Gallery - If present, render swiper
     ⭕2 - Change to grid?
   - Children - If present, render
-  - Related - Display 3 random from filter
-  - Explore - Display 3 random outside filter
+  - Related - Display 3 random from filter  ⭕2 - Change box size
+  - Explore - Display 3 random outside filter  ⭕2 -Change box size
 ⭕3 User Interaction - add user interaction - Like, comment, sharelink
 
 ## **Administration**

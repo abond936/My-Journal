@@ -1,6 +1,3 @@
-import { Entry } from '@/lib/types/entry';
-import { Tag } from '@/lib/types/tag';
-
 interface CacheConfig {
   ttl: number;  // Time to live in seconds
   maxSize: number;  // Maximum number of items

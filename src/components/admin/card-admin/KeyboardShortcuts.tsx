@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useCardForm } from '@/components/providers/CardFormProvider';
 
 interface KeyboardShortcutsProps {
@@ -9,7 +9,13 @@ interface KeyboardShortcutsProps {
 }
 
 export default function KeyboardShortcuts({ onSave, onCancel }: KeyboardShortcutsProps) {
-  const { formState: { isDirty } } = useCardForm();
+  const { formState } = useCardForm();
+  const isDirty = useMemo(
+    () =>
+      JSON.stringify(formState.cardData) !==
+      JSON.stringify(formState.lastSavedState.cardData),
+    [formState.cardData, formState.lastSavedState.cardData]
+  );
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
