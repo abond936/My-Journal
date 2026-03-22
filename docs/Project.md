@@ -15,10 +15,20 @@ The primary users are the author (admin) creating the content and his family con
 
 - Rationalize/build out content navigation/presentation.
 
+**Strategic Directions** ❓
+- **Standalone story journal** – Current path. Users import/copy images; full control. Market: journalers, memory keepers, families. Import friction acceptable for curated storytelling.
+- **Photo app overlay** – Add organizational layer (cards, WHO tags) on top of Apple Photos or Google Photos; images stay in place. Cards-only overlay: ~2–4 weeks (Google, web); ~4–8 weeks (Apple, native). See overlay feasibility discussion.
+
 Legend:
 - ✅ Implemented
 - ⭕ Planned - Priority: 1, 2, 3
 - ❓ Open Question
+
+**Reference Documents**
+- `ImageArchitecture.md` – Image lifecycle, storage, hydration
+- `MediaCardReconciliation.md` – Diagnose/repair card-media inconsistencies
+- `RelationshipImputation.md` – People hierarchy; derive family relationships from primitives
+- `ContentStrategy.md` – Content discovery, navigation, images-first workflow
 
 ## **Technical**
 =====================================
@@ -77,8 +87,13 @@ Legend:
 ⭕2 - Host app (Netlify/Vercel)
 
 **Scripting**
- - `npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json` 
-`
+ - `npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json`
+ - Key scripts: `npm run reconcile:media-cards` (diagnose/fix card-media), `npm run cleanup:media` (validate refs, activate media), `npm run diagnose:cover` (cover image by card title) 
+
+**Firebase Setup**
+- Credentials live in `.env`: `FIREBASE_SERVICE_ACCOUNT_PROJECT_ID`, `FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY`, `FIREBASE_SERVICE_ACCOUNT_CLIENT_EMAIL`, `FIREBASE_STORAGE_BUCKET_URL`
+- Scripts must load `.env` before importing Firebase. Use `-r dotenv/config` (and `DOTENV_CONFIG_PATH=.env` if needed) so env vars are available when `admin.ts` initializes
+
 **Backup**
 ✅ 
 - OneDrive - Windows Scheduled Task at 2am daily, auto awake pc, cleared >5 days, `npm run backup:database`
@@ -294,9 +309,9 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
     - Uses `GalleryManager` and `PhotoPicker` for multi-image selection.
     - Drag n drop order
     - Stores gallery as an array of `docId`s.
+    ✅ Import Folder as Card – `ImportFolderModal`, folder tree picker, normalization (yEdited→xNormalized), duplicate detection (overwrite/cancel).
     ⭕2 - Default to media object caption with 'overwrite'.
     ⭕2 - Fix caption, focal point editing
-    ⭕2 - Batch upload gallery cards by script
 - Children - Search only (not useful) - ⭕2 - Develop linking modal
 - Actions
   - Delete - Delete card, remove tags/recalc, remove from any parents, remove related media
@@ -322,6 +337,26 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
 - Inline editing - `TagAdminRow.tsx`
   - OnDelete - User choice of children being promoted or cascade deleted
   - OnMove - Updates parent and order and recalcs tag card counts
+
+**Card-Level vs Image-Level Tags** ⭕3
+- Tags currently reside at the card level only; no per-image tags.
+- **Need:** In gallery cards, different images may feature different people. WHO varies most at the image level. A family album card might have images of Mom+Kids, Dad+Grandma, or just the dog—card-level WHO loses that granularity.
+- **Roll-up (image → card):**
+  - **WHO only** – Union of people across all images rolls up to the card. Card's WHO = "who appears in this album."
+  - WHAT, WHEN, WHERE do *not* roll up—multiple images would mean multiple moments/places; rolling up would be noisy and incoherent.
+- **Roll-down (card → image):**
+  - Card's WHAT, WHEN, WHERE can roll down as defaults for each image.
+  - Card's WHO can roll down as default; images may override with image-specific WHO.
+- **Filtering:** "Show cards with Mom" = card WHO contains Mom **or** any image-level WHO contains Mom.
+- **Face Recognition Options:**
+  - **Cloud APIs:** Azure Face, AWS Rekognition, Google Cloud Vision (detection; recognition requires custom face DB). Integrate to suggest/auto-populate WHO at image level; faces map to person tags.
+  - **Client-side:** face-api.js (TensorFlow.js). Runs in browser, no uploads; lower accuracy than cloud.
+  - **Apple/Google Photos:** Native face recognition; would require overlay integration to leverage.
+
+**People Hierarchy (WHO dimension)** ⭕3
+- See `RelationshipImputation.md` – derive family relationships from minimal primitives (`parent_of`, `spouse_of`).
+- Store only primitives; compute uncle, cousin, step-parent, etc. via inference rules.
+- Maps to WHO dimension; supports "photos of Grandma" or "stories about Mom's side."
 
 ### **Question Management**
 - Questions are prompts for stories.
@@ -402,6 +437,10 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
 - `next/image`
 ⭕1 objectPosition for preview card view?
 
+**Media-Card Reconciliation** ✅
+- See `MediaCardReconciliation.md`. Run `npm run reconcile:media-cards` to diagnose card-media inconsistencies (empty galleries, orphaned media, orphaned refs).
+- ⭕ Orphaned media (100+): Likely cause—`cleanup:media` stripped refs when `validateMediaReference` failed (storage path, bucket, or ID mismatch). Run reconcile to re-link where `sourcePath` matches `importedFromFolder`.
+
 **Normalization**
 ⭕1 Organize, normalize, edit images pre-import
     - 3 directories - zOriginals, yEdited, xNormalized
@@ -414,4 +453,27 @@ Edit - `src/app/admin/card-admin/[id]/CardAdminClientPage.tsx`
       - sharpen
       - lighting
       - convert to webP
-⭕2 - Batch upload images to cards. 
+⭕2 - Batch upload images to cards.
+
+## **Other Ideas & UX Improvements**
+=======================================
+*(In no particular order)*
+
+**Tags**
+- ⭕ Add tags on the fly – Currently tags must be created in Tag Admin first; allow creating/assigning tags inline when tagging a card.
+
+**Editing**
+- ⭕ Edit from card view – Edit everything directly from the content/card view, not only from Admin.
+- ⭕ Exit edit page – Pressing Cancel to leave is awkward; consider alternative (e.g. Back, X, or auto-save with "Done").
+
+**Navigation**
+- ⭕ Chronological tree – Provide tree in chron order (Year / Month / What) for browsing.
+- ⭕ Back button – When view page is scrolled down and back up, Back button doesn't fully display. Consider sticky/fixed so it doesn't scroll with page (always visible for exit).
+
+**Content View**
+- ⭕ Alternate content view (mosaic) – Emulate Apple/Google Photos mosaic layout.
+- ⭕ Gallery display – On mobile, galleries scroll left-right. In page view, images may not fit containers well. Mosaic may be better for page view to see all images; keep swipe for feed/cards.
+- ⭕ Discover More – Reduce font size (currently larger than Gallery title, equal to page title). Reduce tile size? Reduce count to 2?
+
+**Card Titling**
+- ⭕ Reconsider titling – Some cards include dates (Aquarium 2018, Aquarium 2008), some do not (Appalachian State). Consistent approach? Show tags as overlay on cards?

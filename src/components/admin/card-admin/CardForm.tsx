@@ -51,16 +51,17 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
   const handleCoverImageChange = useCallback((newCoverImage: Media | null, newPosition?: string) => {
     setField('coverImage', newCoverImage);
     setField('coverImageId', newCoverImage ? newCoverImage.docId : null);
-    // Only update position if it's explicitly provided.
-    // This handles the case where we just change the image but not its position yet.
-    if (newPosition !== undefined && newCoverImage) {
-      // Convert percentage position to focal point coordinates
-      const [xPercent, yPercent] = newPosition.split(' ').map(p => parseInt(p));
+    if (newCoverImage && newPosition !== undefined) {
+      const parts = newPosition.trim().split(/\s+/);
+      const xPercent = parseFloat(parts[0] ?? '50') || 50;
+      const yPercent = parseFloat(parts[1] ?? '50') || 50;
       const focalPoint = {
         x: (xPercent / 100) * newCoverImage.width,
         y: (yPercent / 100) * newCoverImage.height,
       };
       setField('coverImageFocalPoint', focalPoint);
+    } else if (!newCoverImage) {
+      setField('coverImageFocalPoint', undefined);
     }
   }, [setField]);
 

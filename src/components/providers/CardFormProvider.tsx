@@ -98,7 +98,12 @@ interface FormProviderProps {
  */
 export function CardFormProvider({ children, initialCard, allTags, onSave }: FormProviderProps) {
   const [formState, setFormState] = useState<FormState>(() => {
-    const card = initialCard ? { ...EMPTY_CARD, ...initialCard } : EMPTY_CARD;
+    const card = initialCard ? {
+      ...EMPTY_CARD,
+      ...initialCard,
+      ...(initialCard.coverImageId != null && { coverImageId: initialCard.coverImageId }),
+      ...(initialCard.coverImage != null && { coverImage: initialCard.coverImage }),
+    } : EMPTY_CARD;
     return {
       cardData: card,
       isSaving: false,
@@ -120,12 +125,18 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
             prevContentLength: prevState.cardData.content?.length,
             newContentLength: initialCard.content?.length
           });
+          const mergedCard = {
+            ...EMPTY_CARD,
+            ...initialCard,
+            ...(initialCard.coverImageId != null && { coverImageId: initialCard.coverImageId }),
+            ...(initialCard.coverImage != null && { coverImage: initialCard.coverImage }),
+          };
           return {
             ...prevState,
-            cardData: { ...EMPTY_CARD, ...initialCard },
+            cardData: mergedCard,
             errors: {},
             lastSavedState: {
-              cardData: { ...EMPTY_CARD, ...initialCard }
+              cardData: mergedCard
             }
           };
         }
@@ -267,12 +278,18 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
   }, [formState.cardData, validateForm, batchStateUpdate, onSave]);
 
   const resetForm = useCallback(() => {
+    const card = initialCard ? {
+      ...EMPTY_CARD,
+      ...initialCard,
+      ...(initialCard.coverImageId != null && { coverImageId: initialCard.coverImageId }),
+      ...(initialCard.coverImage != null && { coverImage: initialCard.coverImage }),
+    } : EMPTY_CARD;
     setFormState({
-      cardData: initialCard || EMPTY_CARD,
+      cardData: card,
       isSaving: false,
       errors: {},
       lastSavedState: {
-        cardData: initialCard || EMPTY_CARD,
+        cardData: card,
       },
     });
   }, [initialCard]);

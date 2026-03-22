@@ -61,8 +61,66 @@ async function withRetry<T>(
 
 const adminApp = getAdminApp();
 const firestore = adminApp.firestore();
+const bucket = adminApp.storage().bucket();
 const CARDS_COLLECTION = 'cards';
 const MEDIA_COLLECTION = 'media';
+
+/** V4 signed URLs max out at 7 days. Use 6 days to stay under the limit. */
+const SIGNED_URL_EXPIRY_MS = 6 * 24 * 60 * 60 * 1000;
+
+/**
+ * Derives focal point (pixel coords) from media.objectPosition.
+ * Handles "50% 50%" (percentage) and legacy "400 300" (pixel) formats.
+ */
+function deriveFocalPointFromObjectPosition(
+  objectPosition: string,
+  width: number,
+  height: number
+): { x: number; y: number } {
+  const parts = objectPosition.trim().split(/\s+/);
+  const a = parseInt(parts[0] ?? '50', 10);
+  const b = parseInt(parts[1] ?? '50', 10);
+  if (isNaN(a) || isNaN(b)) {
+    return { x: width / 2, y: height / 2 };
+  }
+  // If string contains '%' or both values are 0-100, treat as percentage
+  const isPercent = objectPosition.includes('%') || (a <= 100 && b <= 100);
+  if (isPercent) {
+    return {
+      x: (a / 100) * width,
+      y: (b / 100) * height,
+    };
+  }
+  return {
+    x: Math.max(0, Math.min(width, a)),
+    y: Math.max(0, Math.min(height, b)),
+  };
+}
+
+/**
+ * Replaces each media's storageUrl with a fresh v4 signed URL.
+ * Called during hydration so clients receive working URLs without storing them long-term.
+ */
+async function _refreshMediaStorageUrls(mediaMap: Map<string, Media>): Promise<void> {
+  if (mediaMap.size === 0) return;
+
+  const expiry = new Date(Date.now() + SIGNED_URL_EXPIRY_MS);
+  const refreshPromises = Array.from(mediaMap.entries()).map(async ([id, media]) => {
+    if (!media?.storagePath) return;
+    try {
+      const file = bucket.file(media.storagePath);
+      const [url] = await file.getSignedUrl({
+        action: 'read',
+        expires: expiry,
+        version: 'v4',
+      });
+      media.storageUrl = url;
+    } catch (err) {
+      console.warn(`[cardService] Failed to refresh signed URL for media ${id}:`, err);
+    }
+  });
+  await Promise.all(refreshPromises);
+}
 
 /**
  * Hydrates an array of cards with their full Media objects.
@@ -103,12 +161,23 @@ async function _hydrateCards(cards: Card[]): Promise<Card[]> {
       }
     });
   }
+
+  // 2b. Replace stored storageUrls with fresh v4 signed URLs (7-day max; private, cost-efficient)
+  await _refreshMediaStorageUrls(mediaMap);
   
   // 3. Inject the full media objects back into each card.
   return cards.map(card => {
     const hydratedCard = { ...card };
     if (hydratedCard.coverImageId) {
       hydratedCard.coverImage = mediaMap.get(hydratedCard.coverImageId) || null;
+      // Derive coverImageFocalPoint from media when card lacks it (legacy cards or never-set)
+      if (hydratedCard.coverImage && !hydratedCard.coverImageFocalPoint) {
+        hydratedCard.coverImageFocalPoint = deriveFocalPointFromObjectPosition(
+          hydratedCard.coverImage.objectPosition || '50% 50%',
+          hydratedCard.coverImage.width,
+          hydratedCard.coverImage.height
+        );
+      }
     }
     if (hydratedCard.galleryMedia) {
       hydratedCard.galleryMedia = hydratedCard.galleryMedia.map(item => ({
@@ -158,12 +227,22 @@ async function _hydrateCoverImagesOnly(cards: Card[]): Promise<Card[]> {
       }
     });
   }
+
+  // 2b. Replace stored storageUrls with fresh v4 signed URLs
+  await _refreshMediaStorageUrls(mediaMap);
   
   // 3. Inject only cover images back into each card
   return cards.map(card => {
     const hydratedCard = { ...card };
     if (hydratedCard.coverImageId) {
       hydratedCard.coverImage = mediaMap.get(hydratedCard.coverImageId) || null;
+      if (hydratedCard.coverImage && !hydratedCard.coverImageFocalPoint) {
+        hydratedCard.coverImageFocalPoint = deriveFocalPointFromObjectPosition(
+          hydratedCard.coverImage.objectPosition || '50% 50%',
+          hydratedCard.coverImage.width,
+          hydratedCard.coverImage.height
+        );
+      }
     }
     // Leave galleryMedia and contentMedia as dehydrated (just IDs)
     return hydratedCard;
@@ -296,12 +375,17 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       const updatePayload: Partial<Card> = {
         ...cardData,
         content: sanitizedContent,
-        coverImageId: cardData.coverImageId || null,
-        galleryMedia: dehydratedGalleryMedia,
+        ...('coverImageId' in cardData ? { coverImageId: cardData.coverImageId ?? null } : {}),
+        ...('galleryMedia' in cardData ? { galleryMedia: dehydratedGalleryMedia } : {}),
         contentMedia: contentMediaIds,
         updatedAt: Date.now(),
       };
-  
+
+      // Preserve existing cover when galleryMedia is updated but coverImageId was omitted from payload
+      if ('galleryMedia' in cardData && !('coverImageId' in cardData) && existingData.coverImageId) {
+        updatePayload.coverImageId = existingData.coverImageId;
+      }
+
       // Remove transient fields that shouldn't be saved.
       delete updatePayload.coverImage;
   
@@ -369,12 +453,17 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         transaction.update(mediaRef, { caption });
       }
 
-      // 3. Update the card document with the new data.
+      // 3. When cover is cleared, also remove orphaned coverImageFocalPoint
+      if (cleanedUpdate.coverImageId === null) {
+        cleanedUpdate.coverImageFocalPoint = FieldValue.delete() as unknown as Card['coverImageFocalPoint'];
+      }
+
+      // 4. Update the card document with the new data.
       transaction.update(docRef, cleanedUpdate);
   
-      // 4. Tag counts were already adjusted earlier.
+      // 5. Tag counts were already adjusted earlier.
 
-      // 5. Collect all media IDs that should be marked as 'active'.
+      // 6. Collect all media IDs that should be marked as 'active'.
       const mediaIdsToActivate = new Set<string>();
       if (cleanedUpdate.coverImageId) {
         mediaIdsToActivate.add(cleanedUpdate.coverImageId);
@@ -386,7 +475,7 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         cleanedUpdate.contentMedia.forEach(id => mediaIdsToActivate.add(id));
       }
   
-      // 6. If a new coverImageFocalPoint was provided, update it on the media doc.
+      // 7. If a new coverImageFocalPoint was provided, update it on the media doc.
       const coverImageFocalPoint = cleanedUpdate.coverImageFocalPoint;
       const coverImageId = cleanedUpdate.coverImageId ?? existingData.coverImageId;
       if (coverImageId && coverImageFocalPoint) {
@@ -394,7 +483,7 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         transaction.update(coverRef, { objectPosition: `${coverImageFocalPoint.x} ${coverImageFocalPoint.y}`, updatedAt: Date.now() });
       }
   
-      // 7. Update the status of all associated media to 'active'.
+      // 8. Update the status of all associated media to 'active'.
       for (const mediaId of Array.from(mediaIdsToActivate)) {
         const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
         transaction.update(mediaRef, { status: 'active', updatedAt: Date.now() });
@@ -712,6 +801,26 @@ export async function deleteCard(cardId: string): Promise<void> {
             }
         }
     });
+}
+
+/**
+ * Finds a card that was imported from the given folder path.
+ * @param importedFromFolder - The folder path stored when the card was created
+ * @returns The card if found, null otherwise
+ */
+export async function findCardByImportedFolder(
+  importedFromFolder: string
+): Promise<Card | null> {
+  const snapshot = await firestore
+    .collection(CARDS_COLLECTION)
+    .where('importedFromFolder', '==', importedFromFolder)
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) return null;
+  const doc = snapshot.docs[0];
+  const data = doc.data() as Card;
+  return { ...data, docId: doc.id };
 }
 
 /**

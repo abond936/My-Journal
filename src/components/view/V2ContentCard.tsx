@@ -17,7 +17,7 @@ import 'swiper/css';
 
 const StoryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => {
   const objectPosition =
-    card.coverImageFocalPoint && card.coverImage
+    card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
       ? getObjectPositionForAspectRatio(
           {
             x: card.coverImageFocalPoint.x ?? 0,
@@ -60,10 +60,11 @@ const StoryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card,
 };
 
 // NEW: A dedicated renderer for gallery card previews.
+// Uses cover image for feed thumbnail when set; otherwise first gallery image.
 const GalleryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => {
   const hasGallery = card.galleryMedia && card.galleryMedia.length > 0;
   const objectPosition =
-    card.coverImageFocalPoint && card.coverImage
+    card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
       ? getObjectPositionForAspectRatio(
           {
             x: card.coverImageFocalPoint.x ?? 0,
@@ -77,7 +78,20 @@ const GalleryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ car
 
   return (
     <>
-      {hasGallery ? (
+      {card.coverImage ? (
+        <div className={styles.imageContainer}>
+          <JournalImage 
+            src={getDisplayUrl(card.coverImage)} 
+            alt={card.title} 
+            className={styles.image}
+            width={400}
+            height={300}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            style={{ objectPosition }}
+            priority={false}
+          />
+        </div>
+      ) : hasGallery ? (
         <div className={styles.imageContainer}>
           <Swiper spaceBetween={0} slidesPerView={1} className={styles.swiperContainer}>
             {card.galleryMedia?.map(item =>
@@ -96,19 +110,6 @@ const GalleryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ car
               ) : null
             )}
           </Swiper>
-        </div>
-      ) : card.coverImage ? (
-        <div className={styles.imageContainer}>
-          <JournalImage 
-            src={getDisplayUrl(card.coverImage)} 
-            alt={card.title} 
-            className={styles.image}
-            width={400}
-            height={300}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            style={{ objectPosition }}
-            priority={false}
-          />
         </div>
       ) : null}
       <div className={styles.content}>

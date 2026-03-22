@@ -62,6 +62,9 @@ export const cardSchema = z.object({
   // For 'collection' type cards, this lists the IDs of child cards.
   childrenIds: z.array(z.string()).optional(),
 
+  /** When set, this card was created by folder import; used to detect duplicates. */
+  importedFromFolder: z.string().optional(),
+
   // Timestamps
   createdAt: z.number(),
   updatedAt: z.number(),

@@ -13,6 +13,71 @@ const ONEDRIVE_ROOT_FOLDER = process.env.ONEDRIVE_ROOT_FOLDER;
 const toSystemPath = (p: string) => p.split('/').join(path.sep);
 const toDatabasePath = (p: string) => p.split(path.sep).join('/');
 
+const SUPPORTED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.tif'];
+
+/**
+ * Reads caption from metadata, if available.
+ * 1. Looks for sidecar .json (normalize-images or extract-metadata output)
+ * 2. Otherwise attempts to read from embedded EXIF/IPTC via Sharp
+ * @param fullPath - Absolute path to the image file
+ * @returns Caption string or empty string if none found
+ */
+export async function readMetadataCaption(fullPath: string): Promise<string> {
+  try {
+    // 1. Check for sidecar JSON (same base name, .json extension)
+    const ext = path.extname(fullPath);
+    const basePath = fullPath.slice(0, -ext.length);
+    const jsonPath = `${basePath}.json`;
+
+    try {
+      const jsonContent = await fs.readFile(jsonPath, 'utf-8');
+      const data = JSON.parse(jsonContent) as Record<string, unknown>;
+
+      // normalize-images: flat { description, title, subject, comments }
+      // extract-image-metadata: { extracted: { Title, Subject, Comments } }
+      const extracted = data.extracted as Record<string, unknown> | undefined;
+      const flat = data as Record<string, unknown>;
+
+      const candidates = [
+        flat.description,
+        flat.title,
+        flat.subject,
+        flat.comments,
+        extracted?.Title,
+        extracted?.Subject,
+        extracted?.Comments,
+      ].filter((v): v is string => typeof v === 'string' && v.trim().length > 0);
+
+      if (candidates.length > 0) {
+        return candidates[0].trim();
+      }
+    } catch {
+      // No JSON or invalid - continue to embedded metadata
+    }
+
+    // 2. Try embedded metadata via Sharp
+    const fileBuffer = await fs.readFile(fullPath);
+    const image = sharp(fileBuffer);
+    const metadata = await image.metadata();
+
+    if (metadata.exif) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const ExifReader = require('exif-reader');
+        const exif = ExifReader(metadata.exif);
+        const desc = exif?.ImageDescription?.description || exif?.Exif?.UserComment?.description;
+        if (typeof desc === 'string' && desc.trim()) return desc.trim();
+      } catch {
+        // exif-reader parse failed
+      }
+    }
+
+    return '';
+  } catch {
+    return '';
+  }
+}
+
 /**
  * Creates a new media asset in the system. This is the central function for all image imports.
  * It handles file processing, uploading to Storage, and creating the canonical document in Firestore.
@@ -28,7 +93,8 @@ async function createMediaAsset(
   originalFilename: string, 
   source: Media['source'], 
   sourcePath: string,
-  status: Media['status'] = 'temporary'
+  status: Media['status'] = 'temporary',
+  captionOverride?: string
 ): Promise<Media> {
   const app = getAdminApp();
   const firestore = app.firestore();
@@ -64,10 +130,11 @@ async function createMediaAsset(
     },
   });
 
-  // 4. Get the permanent public URL
+  // 4. Get signed URL (v4, 7-day max). Stored URL is only used until next hydration which injects fresh URLs.
   const [publicUrl] = await file.getSignedUrl({
     action: 'read',
-    expires: '03-09-2491', // A very long expiration date
+    expires: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), // 6 days (v4 max is 7)
+    version: 'v4',
   });
 
   // 5. Construct the canonical Media object
@@ -85,7 +152,7 @@ async function createMediaAsset(
     sourcePath,
     status,
     objectPosition: '50% 50%',
-    caption: '', 
+    caption: captionOverride ?? '', 
     createdAt: now,
     updatedAt: now,
   };
@@ -96,13 +163,22 @@ async function createMediaAsset(
   return newMedia;
 }
 
+export interface ImportFromLocalOptions {
+  /** If true, reads caption from sidecar .json or embedded metadata */
+  readMetadata?: boolean;
+}
+
 /**
  * Imports an image from the local filesystem. Reads the file and passes it to the central creator function.
  *
  * @param sourcePath - The relative path of the image from the local drive root.
+ * @param options - Optional: readMetadata to populate caption from JSON or EXIF
  * @returns A promise that resolves with the new Media object, structured for client-side use.
  */
-export async function importFromLocalDrive(sourcePath: string): Promise<{ mediaId: string; media: Media }> {
+export async function importFromLocalDrive(
+  sourcePath: string,
+  options?: ImportFromLocalOptions
+): Promise<{ mediaId: string; media: Media }> {
   if (!ONEDRIVE_ROOT_FOLDER) {
     throw new Error('ONEDRIVE_ROOT_FOLDER environment variable not set');
   }
@@ -116,8 +192,20 @@ export async function importFromLocalDrive(sourcePath: string): Promise<{ mediaI
     const fileBuffer = await fs.readFile(fullPath);
     const filename = path.basename(fullPath);
 
+    let caption: string | undefined;
+    if (options?.readMetadata) {
+      caption = await readMetadataCaption(fullPath);
+    }
+
     // Create the raw media asset
-    const newMedia = await createMediaAsset(fileBuffer, filename, 'local', sourcePath, 'temporary');
+    const newMedia = await createMediaAsset(
+      fileBuffer,
+      filename,
+      'local',
+      sourcePath,
+      'temporary',
+      caption || undefined
+    );
     
     // Return the hydrated object that the client expects
     return {

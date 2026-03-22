@@ -2,6 +2,19 @@
   display: flex;
   flex-direction: column;
   width: 100%;
+  font-family: var(--body-font-family);
+}
+
+.simplifiedLayout input,
+.simplifiedLayout select,
+.simplifiedLayout textarea,
+.simplifiedLayout button,
+.simplifiedLayout label,
+.simplifiedLayout h1,
+.simplifiedLayout h2,
+.simplifiedLayout h3,
+.simplifiedLayout a {
+  font-family: inherit;
 }
 
 .topNavContainer {

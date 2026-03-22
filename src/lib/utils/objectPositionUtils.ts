@@ -19,42 +19,50 @@ interface ContainerDimensions {
 }
 
 /**
- * Calculate object-position percentage for a given focal point and container
+ * Calculate object-position percentage to center a focal point in the container.
+ * Uses the formula from https://odland.dev/2023/02/26/cropping-images-with-css-while-keeping-a-focal-point-in-the-center/
  * @param focalPoint - Pixel coordinates of the focal point relative to original image
  * @param originalImage - Dimensions of the original image
  * @param targetContainer - Dimensions of the target container
- * @returns CSS object-position string (e.g., "25% 75%")
+ * @returns CSS object-position string (e.g., "50% 50%")
  */
 export function calculateObjectPosition(
   focalPoint: FocalPoint,
   originalImage: ImageDimensions,
   targetContainer: ContainerDimensions
 ): string {
-  // Convert focal point to percentages of original image
-  const focalXPercent = (focalPoint.x / originalImage.width) * 100;
-  const focalYPercent = (focalPoint.y / originalImage.height) * 100;
-  
-  // Calculate how much the image needs to be scaled to fit the container
   const scaleX = targetContainer.width / originalImage.width;
   const scaleY = targetContainer.height / originalImage.height;
   const scale = Math.max(scaleX, scaleY); // object-fit: cover uses the larger scale
-  
-  // Calculate the scaled image dimensions
-  const scaledImageWidth = originalImage.width * scale;
-  const scaledImageHeight = originalImage.height * scale;
-  
-  // Calculate how much the scaled image extends beyond the container
-  const overflowX = scaledImageWidth - targetContainer.width;
-  const overflowY = scaledImageHeight - targetContainer.height;
-  
-  // Calculate the object-position percentages
-  const objectX = (focalXPercent * scale - (overflowX / 2)) / targetContainer.width * 100;
-  const objectY = (focalYPercent * scale - (overflowY / 2)) / targetContainer.height * 100;
-  
-  // Clamp values to valid range
-  const clampedX = Math.max(0, Math.min(100, objectX));
-  const clampedY = Math.max(0, Math.min(100, objectY));
-  
+
+  const scaledWidth = originalImage.width * scale;
+  const scaledHeight = originalImage.height * scale;
+
+  // Focal point as fraction of original image (0–1)
+  const focalXFraction = originalImage.width > 0 ? focalPoint.x / originalImage.width : 0.5;
+  const focalYFraction = originalImage.height > 0 ? focalPoint.y / originalImage.height : 0.5;
+
+  // Offset needed to place focal point at container center:
+  // pos = 0.5 * container - focalFraction * scaledImage
+  const posX = 0.5 * targetContainer.width - focalXFraction * scaledWidth;
+  const posY = 0.5 * targetContainer.height - focalYFraction * scaledHeight;
+
+  // object-position percentage: pos / (container - scaledImage)
+  const denomX = targetContainer.width - scaledWidth;
+  const denomY = targetContainer.height - scaledHeight;
+  let percentX = 50;
+  let percentY = 50;
+  if (Math.abs(denomX) > 1e-6) {
+    percentX = (posX / denomX) * 100;
+  }
+  if (Math.abs(denomY) > 1e-6) {
+    percentY = (posY / denomY) * 100;
+  }
+
+  // Clamp to 0–100 (keeps image edges from entering container)
+  const clampedX = Math.max(0, Math.min(100, percentX));
+  const clampedY = Math.max(0, Math.min(100, percentY));
+
   return `${clampedX}% ${clampedY}%`;
 }
 

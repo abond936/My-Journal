@@ -5,6 +5,15 @@
   padding: var(--spacing-lg);
   max-width: var(--layout-container-max-width);
   margin: 0 auto;
+  font-family: var(--body-font-family);
+}
+
+.form input,
+.form select,
+.form textarea,
+.form button,
+.form label {
+  font-family: inherit;
 }
 
 .mainContent {
@@ -60,7 +69,6 @@
   margin-top: var(--spacing-sm);
   resize: vertical;
   min-height: 80px;
-  font-family: inherit;
 }
 
 .excerptInput:focus {

@@ -76,6 +76,7 @@
 .toolbarSection label {
   margin-right: var(--spacing-sm);
   font-size: var(--font-size-sm);
+  color: var(--text1-color);
 }
 
 .buttonGroup {
@@ -83,7 +84,8 @@
 }
 
 .toolbarButton {
-  background-color: transparent;
+  background-color: var(--layout-background1-color);
+  color: var(--text1-color);
   border: var(--border-width-thin) solid var(--border1-color);
   padding: var(--spacing-xs) var(--spacing-sm);
   font-size: var(--font-size-sm);
@@ -93,8 +95,8 @@
 }
 
 .toolbarButton.active {
-  background-color: var(--color3-light);
-  color: var(--color3-dark);
+  background-color: var(--color3);
+  color: white;
   border-color: var(--color3);
 }
 
@@ -108,6 +110,6 @@
 }
 
 .dangerButton:hover {
-  background-color: var(--color12-light);
-  color: var(--color12-dark);
+  background-color: var(--color12);
+  color: white;
 } 

@@ -28,12 +28,15 @@ export default function CoverPhotoContainer({
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [horizontalPosition, setHorizontalPosition] = useState(50);
   const [verticalPosition, setVerticalPosition] = useState(50);
+  const [portraitError, setPortraitError] = useState<string | null>(null);
 
   useEffect(() => {
     if (objectPosition) {
-      const [x, y] = objectPosition.split(' ').map(pos => parseInt(pos));
-      setHorizontalPosition(x || 50);
-      setVerticalPosition(y || 50);
+      const parts = objectPosition.trim().split(/\s+/);
+      const x = parseFloat(parts[0] ?? '50') || 50;
+      const y = parseFloat(parts[1] ?? '50') || 50;
+      setHorizontalPosition(Math.round(x));
+      setVerticalPosition(Math.round(y));
     } else {
       setHorizontalPosition(50);
       setVerticalPosition(50);
@@ -42,7 +45,7 @@ export default function CoverPhotoContainer({
 
   const handlePhotoSelect = (media: Media) => {
     setIsPickerOpen(false);
-    onChange(media);
+    onChange(media, '50% 50%');
   };
 
   const handleRemovePhoto = useCallback(() => {
@@ -53,7 +56,7 @@ export default function CoverPhotoContainer({
     onChange(coverImage, `${horizontal}% ${vertical}%`);
   }, [onChange, coverImage]);
   
-  const displayError = error;
+  const displayError = error || portraitError;
 
   return (
     <div className={`${styles.container} ${className || ''} ${displayError ? styles.error : ''}`}>
@@ -69,9 +72,12 @@ export default function CoverPhotoContainer({
               alt={coverImage.filename || 'Cover image'}
               className={styles.coverImage}
               width={600}
-              height={400}
+              height={450}
               sizes="(max-width: 768px) 100vw, 600px"
-              style={{ objectPosition: objectPosition || '50% 50%' }}
+              style={{
+                objectPosition: objectPosition || '50% 50%',
+                objectFit: 'cover',
+              }}
               priority={false}
             />
             <div className={styles.buttonContainer}>
@@ -143,7 +149,7 @@ export default function CoverPhotoContainer({
         <PhotoPicker
           isOpen={isPickerOpen}
           onSelect={handlePhotoSelect}
-          onClose={() => setIsPickerOpen(false)}
+          onClose={() => { setIsPickerOpen(false); setPortraitError(null); }}
           initialMode="single"
         />
       )}

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTag } from '@/components/providers/TagProvider';
 import { useCardContext } from '@/components/providers/CardProvider';
 import { Card } from '@/lib/types/card';
@@ -10,12 +11,15 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { buildDimensionTree } from '@/lib/utils/tagUtils';
 import CardAdminList from '@/components/admin/card-admin/CardAdminList';
 import BulkEditTagsModal from '@/components/admin/card-admin/BulkEditTagsModal';
+import ImportFolderModal from '@/components/admin/card-admin/ImportFolderModal';
 
 const SCROLL_POSITION_KEY = 'adminCardListScrollPos';
 
 export default function AdminCardsPage() {
+  const router = useRouter();
   const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(new Set());
   const [isBulkTagModalOpen, setIsBulkTagModalOpen] = useState(false);
+  const [isImportFolderModalOpen, setIsImportFolderModalOpen] = useState(false);
   const [searchInputValue, setSearchInputValue] = useState('');
   const [isSearchTriggered, setIsSearchTriggered] = useState(false);
 
@@ -204,6 +208,13 @@ export default function AdminCardsPage() {
     <div className={styles.container}>
       <div className={styles.header}>
         <h1 className={styles.title}>Cards Management</h1>
+        <button
+          type="button"
+          className={styles.actionButton}
+          onClick={() => setIsImportFolderModalOpen(true)}
+        >
+          Import Folder
+        </button>
       </div>
 
       <div className={styles.filterSection}>
@@ -332,6 +343,16 @@ export default function AdminCardsPage() {
         onSave={async () => {
           await mutate(undefined, { revalidate: true });
           setSelectedCardIds(new Set()); // Clear selections after successful tag update
+        }}
+      />
+
+      <ImportFolderModal
+        isOpen={isImportFolderModalOpen}
+        onClose={() => setIsImportFolderModalOpen(false)}
+        onSuccess={async (cardId) => {
+          await mutate(undefined, { revalidate: true });
+          setIsImportFolderModalOpen(false);
+          router.push(`/admin/card-admin/${cardId}/edit`);
         }}
       />
     </div>

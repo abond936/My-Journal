@@ -6,13 +6,16 @@
 }
 
 .title {
-  font-size: var(--font-size-4xl);
-  font-weight: bold;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
   margin-bottom: var(--spacing-md);
 }
 
 /* Header and Stats */
 .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: var(--spacing-xl);
 }
 

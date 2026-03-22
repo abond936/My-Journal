@@ -2,7 +2,7 @@
   padding: var(--spacing-md);
   background-color: var(--layout-background2-color);
   color: var(--text1-color);
-  font-family: var(--font-family-serif);
+  font-family: var(--body-font-family);
   line-height: var(--line-height-relaxed);
 }
 

@@ -121,10 +121,11 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     return dimensionalMap;
   }, [selectedFilterTagIds, allTags]);
 
-  // Create a fetcher that includes hydration parameter for admin
+  // Hydration: admin list needs only covers (saves reads); content feed needs full (galleries, content images)
+  const needsFullHydration = pathname?.startsWith('/view') || pathname?.startsWith('/search');
   const adminFetcher = useCallback(async (url: string) => {
     const urlObj = new URL(url, window.location.origin);
-    if (isAdmin) {
+    if (isAdmin && !needsFullHydration) {
       urlObj.searchParams.set('hydration', 'cover-only');
     }
     const response = await fetch(urlObj.toString());
@@ -132,19 +133,19 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     return response.json();
-  }, [isAdmin]);
+  }, [isAdmin, needsFullHydration]);
 
   // Fetch collection list when Collections dimension is active with no selection
   const shouldFetchCollections =
     isFetchActive && activeDimension === 'collections' && !collectionId;
   const collectionsUrl = shouldFetchCollections
-    ? `/api/cards?collectionsOnly=true&status=${isAdmin ? 'all' : 'published'}`
+    ? `/api/cards?collectionsOnly=true&status=${isAdmin ? 'all' : 'published'}${isAdmin && !needsFullHydration ? '&hydration=cover-only' : ''}`
     : null;
   const { data: collectionListData, isLoading: collectionsLoading } = useSWR<{ items: Card[] }>(
     collectionsUrl,
     (url) => {
       const urlObj = new URL(url, window.location.origin);
-      if (isAdmin) urlObj.searchParams.set('hydration', 'cover-only');
+      if (isAdmin && !needsFullHydration) urlObj.searchParams.set('hydration', 'cover-only');
       return fetch(urlObj.toString()).then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.statusText))));
     },
     { revalidateOnFocus: false }
@@ -177,7 +178,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
         if (pageIndex > 0 && previousPageData?.lastDocId) {
           params.set('lastDocId', previousPageData.lastDocId);
         }
-        if (isAdmin) params.set('hydration', 'cover-only');
+        if (isAdmin && !needsFullHydration) params.set('hydration', 'cover-only');
         return `${endpoint}?${params.toString()}`;
       }
 
@@ -188,6 +189,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       if (searchTerm?.trim()) params.set('q', searchTerm);
       if (cardType && cardType !== 'all') params.set('type', cardType);
       if (pageIndex > 0 && previousPageData?.lastDocId) params.set('lastDocId', previousPageData.lastDocId);
+      if (isAdmin && !needsFullHydration) params.set('hydration', 'cover-only');
 
       return `${endpoint}?${params.toString()}`;
     },

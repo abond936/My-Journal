@@ -146,7 +146,7 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
   }
   
   return (
-    <div>
+    <div className={styles.editPage}>
       <div className={styles.formHeader}>
         <h1>{cardId ? 'Edit Card' : 'Create New Card'}</h1>
         <div className={styles.actions}>

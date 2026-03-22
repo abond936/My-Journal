@@ -16,9 +16,12 @@
     "backfill:tags": "tsx src/lib/scripts/tags/backfill-tag-paths.ts",
     "update:tag-counts": "tsx src/lib/scripts/tags/update-tag-counts.ts",
     "diagnose:tag": "tsx src/lib/scripts/dev/diagnose-single-tag.ts",
-    "normalize:images": "npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/normalize-images.ts",
-    "cleanup:media": "npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/cleanup-media-collection.ts",
-    "backfill:media-metadata": "npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/backfill-media-metadata.ts"
+    "diagnose:cover": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/dev/diagnose-cover-image.ts",
+    "normalize:images": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/normalize-images.ts",
+    "cleanup:media": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/cleanup-media-collection.ts",
+    "reconcile:media-cards": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/reconcile-media-cards.ts",
+    "backfill:media-metadata": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/backfill-media-metadata.ts",
+    "regenerate:storage-urls": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/regenerate-storage-urls.ts"
   },
   "dependencies": {
     "@auth/firebase-adapter": "^2.9.1",

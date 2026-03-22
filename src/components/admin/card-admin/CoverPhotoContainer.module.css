@@ -8,11 +8,17 @@
   border: var(--border-width-thin) solid var(--border1-color);
 }
 
+/* 4:3 aspect ratio to match view page; user sets focal point based on this preview */
 .imageContainer {
   position: relative;
-  width: 100%;
-  aspect-ratio: 16/9;
+  width: 600px;
+  min-width: 200px;
+  max-width: 100%;
+  aspect-ratio: 4 / 3;
+  flex-shrink: 0;
+  align-self: center;
   background-color: var(--layout-background2-color);
+  overflow: hidden;
 }
 
 .coverImage {

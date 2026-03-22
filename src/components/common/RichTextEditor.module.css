@@ -5,6 +5,7 @@
   background-color: var(--layout-background2-color);
   position: relative;
   overflow: hidden;
+  font-family: var(--body-font-family);
 }
 
 .editorContainer.error {
@@ -30,6 +31,7 @@
   padding: var(--spacing-xs) var(--spacing-sm);
   border: var(--border-width-thin) solid var(--border1-color);
   background-color: var(--layout-background1-color);
+  color: var(--text1-color);
   cursor: pointer;
   border-radius: var(--border-radius-md);
 }
@@ -37,6 +39,7 @@
 .toolbarButton.active {
   background-color: var(--layout-background2-color);
   border-color: var(--border1-color);
+  color: var(--text1-color);
 }
 
 .toolbarButton.condensed {
@@ -49,6 +52,7 @@
   outline: none;
   height: auto;
   overflow: visible;
+  font-family: var(--body-font-family);
 }
 
 .editorContent > div {
@@ -57,8 +61,10 @@
   min-height: inherit;
 }
 
-/* Add ProseMirror-specific height management */
-.editorContent :global(.ProseMirror) {
+/* ProseMirror / TipTap editor content */
+.editorContent :global(.ProseMirror),
+.editorContent :global(.tiptap) {
+  font-family: inherit;
   min-height: 200px;
   overflow: visible;
 }

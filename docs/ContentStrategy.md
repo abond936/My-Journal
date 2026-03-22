@@ -59,6 +59,68 @@ This strategy creates a **personal knowledge graph with narrative flexibility** 
 - Implement collection metadata (child counts)
 - Create admin interface for collection curation
 
+## **Images-First & Content Creation Workflow**
+
+### **Problem Statement**
+The current content/admin bifurcation is card-centric: users create a card first, then add images via PhotoPicker or paste/drop. Imported images not yet assigned to cards are invisible except in Media Admin as a table. The path from a large bank of files to organized content involves significant manual work—create cards, add tags, select cover, assign gallery and inline images—which may deter adoption.
+
+### **Current Flow**
+- **Card-first:** Create card → Add cover → Add gallery → Add content → Add tags
+- **Image sources:**
+  - **PhotoPicker:** Local folder tree → select → import on-the-fly → assign to cover/gallery. Images only exist in Firestore when assigned to a card
+  - **Media Admin:** Table of imported media only. Filters (status, source, dimensions). Bulk delete only. No "create card from selection" or "assign to card"
+
+### **Friction Points**
+1. No single visual workspace for images—split between local (PhotoPicker) and Firestore (Media Admin table)
+2. Creating cards from images requires many steps: Card Admin → New → form → PhotoPicker
+3. Media Admin is table-centric, not visual
+4. No "images → card" path: e.g., select images → create gallery card → pick cover
+5. Bulk tag editing is card-centric and list-based, not image-centric or visual
+
+### **Strategic Directions**
+
+#### **1. Images-First Visual Workspace**
+A dedicated workspace that surfaces all imported media in a **grid/masonry** layout. From there: multi-select → "Create card from selection" (gallery), "Add to existing card", "Assign tags". Flow: Browse grid → Select images → "Create gallery card" → Card created with selection as gallery, first image as cover (editable) → Minimal form (title, type) → Save draft → Refine later.
+
+#### **2. Media Admin as Visual Workspace**
+Add a **grid view** (masonry) toggle alongside the table. Multi-select with actions: "Create card from selection", "Add to card". Add an **"Unassigned"** filter (media not used as cover, in gallery, or in content) so orphaned media is visible.
+
+#### **3. Import + Assign Flow**
+During import (PhotoPicker or bulk import): **"Create card from this batch"** as a first-class option. After import, prompt: "Create gallery card?" → Yes → Card with all imported images in gallery, first as cover. **Folder-based import:** "Create card from folder" → Import entire folder → Card with folder name as title, all images in gallery.
+
+#### **4. Progressive Disclosure for Card Creation**
+**Quick add:** Select images → Create card (title only, or title + type) → Save as draft. Refinement later. Lowers the barrier to get images into cards.
+
+#### **5. Unified Picker: Local + Firestore**
+PhotoPicker currently shows only local files. Add tabs or filters: "From computer" (local) | "Already imported" (Firestore). Picking from Firestore reuses existing media without re-import.
+
+#### **6. Bridge Content and Admin**
+An "Organize" mode or view that feels like the content feed but with organize actions (create card, add to card, tag). Reduces the sense of switching between two apps.
+
+### **Recommended Implementation Phases**
+
+#### **Phase A: Quick Wins**
+1. **Media Admin – Visual grid + "Create card from selection"**
+   - Add grid view and multi-select
+   - Action: "Create card from selection" → Opens minimal card form with gallery pre-filled, first image as cover
+   - Optional: "Unassigned" filter for orphaned media
+2. **PhotoPicker – "Create card from selection"**
+   - After selecting images in multi-select mode, offer "Create gallery card" before closing
+   - If chosen, create draft card with those images in gallery and first as cover
+
+#### **Phase B: Deeper Integration**
+3. **Unified media picker** – Local + Firestore in one place
+4. **Folder-based import** – "Create card from folder" for batch workflows
+5. **Metadata/tag hints** – When creating cards from selection, suggest tags from extracted metadata (IPTC, XMP, etc.)
+
+### **What Remains Manual**
+- Narrative content (stories, captions)
+- Tag choices (even with suggestions)
+- Focal points and gallery order
+- Collection structure and child cards
+
+The primary lever is the **image → card** path: making it trivial to go from a pile of images to a gallery card in one or two actions, then refine later.
+
 ## **User Experience Goals**
 
 ### **Mobile-First News Feed**
@@ -119,6 +181,10 @@ This strategy creates a **personal knowledge graph with narrative flexibility** 
 - Mobile usability scores
 
 ## **Future Considerations**
+
+### **Card-Level vs Image-Level Tags**
+- See Project.md → Tag System → Card-Level vs Image-Level Tags.
+- WHO at image level; roll-up/roll-down logic; face recognition options.
 
 ### **Advanced Features**
 - Content recommendations based on reading history

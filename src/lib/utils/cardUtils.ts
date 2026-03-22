@@ -130,6 +130,8 @@ export function dehydrateCardForSave(raw: any): CardUpdate {
   const result = {
     ...rest,
     content: raw.content, // Explicitly preserve content
+    // Ensure coverImageId is never omitted (undefined drops in JSON.stringify); prevents cover revert when saving tags
+    ...(raw.coverImageId !== undefined ? { coverImageId: raw.coverImageId ?? null } : {}),
     ...(dehydratedGallery ? { galleryMedia: dehydratedGallery } : {}),
     ...(cleanedContent ? { contentMedia: cleanedContent } : {}),
   } as CardUpdate;

@@ -12,7 +12,6 @@ interface CardFeedProps {
   onSaveScrollPosition: () => void;
 }
 
-// Rename the component to CardFeedV2
 export default function CardFeedV2({ cards, loading, loadMoreRef, onSaveScrollPosition }: CardFeedProps) {
   if (loading) {
     return (

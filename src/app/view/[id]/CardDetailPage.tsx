@@ -55,7 +55,7 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) 
               height={600}
               sizes="(max-width: 768px) 100vw, 800px"
               style={{ 
-                objectPosition: card.coverImageFocalPoint && card.coverImage
+                objectPosition: card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
                   ? getObjectPositionForAspectRatio(
                       {
                         x: card.coverImageFocalPoint.x ?? 0,

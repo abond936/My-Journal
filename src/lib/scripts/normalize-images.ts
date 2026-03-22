@@ -451,7 +451,7 @@ async function normalizeImages(sourceFolder: string, destinationFolder: string):
     
   } catch (error) {
     console.error('Error during normalization:', (error as Error).message);
-    process.exit(1);
+    throw error; // Re-throw for programmatic use; CLI main() will process.exit
   }
 }
 
