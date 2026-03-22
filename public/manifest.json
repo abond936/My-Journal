@@ -1,0 +1,16 @@
+{
+  "name": "My Digital Memoir",
+  "short_name": "Memoir",
+  "description": "A personal digital memoir with stories and photos",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0070f3",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}
