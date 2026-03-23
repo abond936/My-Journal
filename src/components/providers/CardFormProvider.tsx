@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Card, CardUpdate, cardSchema, GalleryMediaItem, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 import { Media } from '@/lib/types/photo';
@@ -37,15 +37,16 @@ interface FormContextValue {
   
   // Field Updates
   setField: (field: keyof CardUpdate, value: any) => void;
+  updateCoverImage: (media: Media | null, focalPoint?: { x: number; y: number }) => void;
   updateTags: (newTags: Tag[]) => void;
   updateChildIds: (newChildIds: string[]) => void;
   
   // Form Actions
-  handleSave: () => Promise<void>;
+  handleSave: (overrides?: Partial<CardUpdate>) => Promise<void>;
   resetForm: () => void;
   
   // Validation
-  validateForm: () => boolean;
+  validateForm: (dataToValidate?: CardUpdate) => boolean;
 
   // Content Media
   updateContentMedia: (mediaIds: string[]) => void;
@@ -149,6 +150,10 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     setFormState(prev => ({ ...prev, ...updates }));
   }, []);
 
+  // Ref ensures handleSave always reads latest cardData (avoids stale closure if user clicks Remove then Save quickly)
+  const cardDataRef = useRef<CardUpdate>(formState.cardData);
+  cardDataRef.current = formState.cardData;
+
   const setField = useCallback((field: keyof CardUpdate, value: any) => {
     if (!formState.cardData) return;
 
@@ -171,6 +176,18 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       });
     }
   }, [formState.cardData]);
+
+  const updateCoverImage = useCallback((media: Media | null, focalPoint?: { x: number; y: number }) => {
+    setFormState(prev => ({
+      ...prev,
+      cardData: {
+        ...prev.cardData,
+        coverImage: media,
+        coverImageId: media ? media.docId : null,
+        coverImageFocalPoint: media && focalPoint ? focalPoint : undefined,
+      },
+    }));
+  }, []);
 
   const updateTags = useCallback((newTags: Tag[]) => {
     const tagIds = newTags.map(t => t.docId);
@@ -208,9 +225,10 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     }
   }, [formState.cardData]);
 
-  const validateForm = useCallback(() => {
+  const validateForm = useCallback((dataToValidate?: CardUpdate) => {
+    const sourceData = dataToValidate ?? formState.cardData;
     // Strip transient, client-only fields before validating.
-    const dataForValidation = dehydrateCardForSave(formState.cardData);
+    const dataForValidation = dehydrateCardForSave(sourceData);
 
     // For new cards (empty docId), exclude docId from validation since it will be generated
     const isNewCard = !dataForValidation.docId || dataForValidation.docId === '';
@@ -248,15 +266,17 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     return true;
   }, [formState.cardData, batchStateUpdate]);
 
-  const handleSave = useCallback(async () => {
-    if (!validateForm()) {
+  const handleSave = useCallback(async (overrides?: Partial<CardUpdate>) => {
+    const dataToSave = overrides ? { ...formState.cardData, ...overrides } : formState.cardData;
+
+    if (!validateForm(dataToSave)) {
       return;
     }
 
     batchStateUpdate({ isSaving: true });
 
     try {
-      let payload = dehydrateCardForSave(formState.cardData);
+      let payload = dehydrateCardForSave(dataToSave);
 
       // Remove derived fields – server will regenerate
       delete (payload as any).filterTags;
@@ -268,14 +288,14 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       batchStateUpdate({
         isSaving: false,
         lastSavedState: {
-          cardData: formState.cardData
+          cardData: dataToSave
         }
       });
     } catch (error) {
       console.error('[handleSave] Error during save:', error);
       batchStateUpdate({ isSaving: false });
     }
-  }, [formState.cardData, validateForm, batchStateUpdate, onSave]);
+  }, [validateForm, batchStateUpdate, onSave]);
 
   const resetForm = useCallback(() => {
     const card = initialCard ? {
@@ -298,6 +318,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     formState,
     allTags,
     setField,
+    updateCoverImage,
     updateTags,
     updateChildIds,
     updateContentMedia,
@@ -308,6 +329,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     formState, 
     allTags, 
     setField,
+    updateCoverImage,
     updateTags,
     updateChildIds,
     updateContentMedia,

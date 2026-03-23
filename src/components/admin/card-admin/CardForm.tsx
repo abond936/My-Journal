@@ -26,6 +26,7 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
     formState: { cardData, isSaving, errors },
     allTags,
     setField,
+    updateCoverImage,
     handleSave,
     updateContentMedia,
   } = useCardForm();
@@ -49,8 +50,6 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
   }, [setField]);
 
   const handleCoverImageChange = useCallback((newCoverImage: Media | null, newPosition?: string) => {
-    setField('coverImage', newCoverImage);
-    setField('coverImageId', newCoverImage ? newCoverImage.docId : null);
     if (newCoverImage && newPosition !== undefined) {
       const parts = newPosition.trim().split(/\s+/);
       const xPercent = parseFloat(parts[0] ?? '50') || 50;
@@ -59,11 +58,11 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
         x: (xPercent / 100) * newCoverImage.width,
         y: (yPercent / 100) * newCoverImage.height,
       };
-      setField('coverImageFocalPoint', focalPoint);
-    } else if (!newCoverImage) {
-      setField('coverImageFocalPoint', undefined);
+      updateCoverImage(newCoverImage, focalPoint);
+    } else {
+      updateCoverImage(newCoverImage);
     }
-  }, [setField]);
+  }, [updateCoverImage]);
 
   const handleGalleryUpdate = useCallback((newGallery: HydratedGalleryMediaItem[]) => {
     setField('galleryMedia', newGallery);
@@ -80,7 +79,9 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
 
   const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    await handleSave();
+    const editorContent = editorRef.current?.getContent();
+    const overrides = editorContent !== undefined ? { content: editorContent } : undefined;
+    await handleSave(overrides);
   }, [handleSave]);
 
   const handleAddImageToContent = useCallback(() => {

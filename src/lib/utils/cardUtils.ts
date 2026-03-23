@@ -130,10 +130,12 @@ export function dehydrateCardForSave(raw: any): CardUpdate {
   const result = {
     ...rest,
     content: raw.content, // Explicitly preserve content
-    // Ensure coverImageId is never omitted (undefined drops in JSON.stringify); prevents cover revert when saving tags
-    ...(raw.coverImageId !== undefined ? { coverImageId: raw.coverImageId ?? null } : {}),
-    ...(dehydratedGallery ? { galleryMedia: dehydratedGallery } : {}),
-    ...(cleanedContent ? { contentMedia: cleanedContent } : {}),
+    // Always include coverImageId so removals persist. null = clear, omit would mean "don't change"
+    coverImageId: raw.coverImageId ?? null,
+    // Always include tags and galleryMedia when present (including empty arrays) so removals persist
+    ...(Array.isArray(raw.tags) ? { tags: raw.tags } : {}),
+    ...(Array.isArray(dehydratedGallery) ? { galleryMedia: dehydratedGallery } : {}),
+    ...(Array.isArray(cleanedContent) ? { contentMedia: cleanedContent } : {}),
   } as CardUpdate;
 
   return result;

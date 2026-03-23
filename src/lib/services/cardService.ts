@@ -372,6 +372,8 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       
       const contentMediaIds = sanitizedContent ? extractMediaFromContent(sanitizedContent) : [];
       
+      // Update contract: Fields present in payload overwrite stored values.
+      // null = clear, omit = leave unchanged. No server-side "preserve" logic.
       const updatePayload: Partial<Card> = {
         ...cardData,
         content: sanitizedContent,
@@ -380,11 +382,6 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         contentMedia: contentMediaIds,
         updatedAt: Date.now(),
       };
-
-      // Preserve existing cover when galleryMedia is updated but coverImageId was omitted from payload
-      if ('galleryMedia' in cardData && !('coverImageId' in cardData) && existingData.coverImageId) {
-        updatePayload.coverImageId = existingData.coverImageId;
-      }
 
       // Remove transient fields that shouldn't be saved.
       delete updatePayload.coverImage;
@@ -453,9 +450,11 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         transaction.update(mediaRef, { caption });
       }
 
-      // 3. When cover is cleared, also remove orphaned coverImageFocalPoint
-      if (cleanedUpdate.coverImageId === null) {
+      // 3. When cover is cleared, use FieldValue.delete() so Firestore actually removes the fields
+      const isClearingCover = cleanedUpdate.coverImageId === null || cleanedUpdate.coverImageId === undefined;
+      if (isClearingCover) {
         cleanedUpdate.coverImageFocalPoint = FieldValue.delete() as unknown as Card['coverImageFocalPoint'];
+        cleanedUpdate.coverImageId = FieldValue.delete() as unknown as Card['coverImageId'];
       }
 
       // 4. Update the card document with the new data.
@@ -465,7 +464,7 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
 
       // 6. Collect all media IDs that should be marked as 'active'.
       const mediaIdsToActivate = new Set<string>();
-      if (cleanedUpdate.coverImageId) {
+      if (!isClearingCover && cleanedUpdate.coverImageId && typeof cleanedUpdate.coverImageId === 'string') {
         mediaIdsToActivate.add(cleanedUpdate.coverImageId);
       }
       if (cleanedUpdate.galleryMedia) {
@@ -475,12 +474,14 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         cleanedUpdate.contentMedia.forEach(id => mediaIdsToActivate.add(id));
       }
   
-      // 7. If a new coverImageFocalPoint was provided, update it on the media doc.
-      const coverImageFocalPoint = cleanedUpdate.coverImageFocalPoint;
-      const coverImageId = cleanedUpdate.coverImageId ?? existingData.coverImageId;
-      if (coverImageId && coverImageFocalPoint) {
-        const coverRef = firestore.collection(MEDIA_COLLECTION).doc(coverImageId);
-        transaction.update(coverRef, { objectPosition: `${coverImageFocalPoint.x} ${coverImageFocalPoint.y}`, updatedAt: Date.now() });
+      // 7. If a new coverImageFocalPoint was provided (and we're not clearing cover), update the media doc.
+      if (!isClearingCover) {
+        const coverImageFocalPoint = cleanedUpdate.coverImageFocalPoint;
+        const coverImageId = cleanedUpdate.coverImageId ?? existingData.coverImageId;
+        if (coverImageId && typeof coverImageId === 'string' && coverImageFocalPoint && 'x' in coverImageFocalPoint && 'y' in coverImageFocalPoint) {
+          const coverRef = firestore.collection(MEDIA_COLLECTION).doc(coverImageId);
+          transaction.update(coverRef, { objectPosition: `${coverImageFocalPoint.x} ${coverImageFocalPoint.y}`, updatedAt: Date.now() });
+        }
       }
   
       // 8. Update the status of all associated media to 'active'.
@@ -652,8 +653,12 @@ export async function getCollectionCards(
   return _hydrateCards(cards);
 }
 
+/** Firestore transaction getAll limit is 500. Use smaller chunks for tag count updates. */
+const BULK_UPDATE_TAGS_CHUNK_SIZE = 400;
+
 /**
  * Updates the tags for a list of cards in a batch operation.
+ * Chunks into multiple transactions to stay under Firestore limits (500 docs per transaction).
  * @param cardIds - The IDs of the cards to update.
  * @param tags - The new array of tag IDs to set for all cards.
  * @returns A promise that resolves when the batch update is complete.
@@ -663,40 +668,38 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
     return;
   }
 
-  // Calculate all derived tag data using centralized function
   const { filterTags, dimensionalTags } = await calculateDerivedTagData(tags);
 
-  // Use a transaction to ensure atomicity of tag count updates and card updates
-  await firestore.runTransaction(async (transaction) => {
-    // 1. Read all affected cards to get their current tags
-    const cardRefs = cardIds.map(id => firestore.collection(CARDS_COLLECTION).doc(id));
-    const cardDocs = await transaction.getAll(...cardRefs);
-    
-    // 2. Update tag counts for all affected cards using centralized function
-    for (const cardDoc of cardDocs) {
-      if (!cardDoc.exists) continue;
-      
-      const cardData = cardDoc.data() as Card;
-      const newCardData = { ...cardData, tags };
-      await updateTagCountsForCard(cardData, newCardData, transaction);
-    }
-    
-    // 4. Update all cards with new tag data
-    for (const cardId of cardIds) {
-      const cardRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
-      transaction.update(cardRef, { 
-        tags,
-        filterTags,
-        // Populate dimensional arrays
-        who: dimensionalTags.who || [],
-        what: dimensionalTags.what || [],
-        when: dimensionalTags.when || [],
-        where: dimensionalTags.where || [],
-        reflection: dimensionalTags.reflection || [],
-        updatedAt: Date.now(),
-      });
-    }
-  });
+  for (let i = 0; i < cardIds.length; i += BULK_UPDATE_TAGS_CHUNK_SIZE) {
+    const chunk = cardIds.slice(i, i + BULK_UPDATE_TAGS_CHUNK_SIZE);
+
+    await firestore.runTransaction(async (transaction) => {
+      const cardRefs = chunk.map(id => firestore.collection(CARDS_COLLECTION).doc(id));
+      const cardDocs = await transaction.getAll(...cardRefs);
+
+      for (const cardDoc of cardDocs) {
+        if (!cardDoc.exists) continue;
+
+        const cardData = cardDoc.data() as Card;
+        const newCardData = { ...cardData, tags };
+        await updateTagCountsForCard(cardData, newCardData, transaction);
+      }
+
+      for (const cardId of chunk) {
+        const cardRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
+        transaction.update(cardRef, {
+          tags,
+          filterTags,
+          who: dimensionalTags.who || [],
+          what: dimensionalTags.what || [],
+          when: dimensionalTags.when || [],
+          where: dimensionalTags.where || [],
+          reflection: dimensionalTags.reflection || [],
+          updatedAt: Date.now(),
+        });
+      }
+    });
+  }
 }
 
 /**
