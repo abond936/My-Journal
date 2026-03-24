@@ -28,9 +28,23 @@
 
 .modalHeader {
   flex-shrink: 0;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
   border-bottom: var(--border-width-thin) solid var(--border1-color);
   padding-bottom: var(--spacing-md);
+}
+
+.helpText {
+  flex-shrink: 0;
+  margin: 0 0 var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+  line-height: 1.45;
+  max-width: 52rem;
+}
+
+.helpText strong {
+  font-weight: var(--font-weight-semibold);
+  color: var(--text1-color);
 }
 
 .interactiveColumns {

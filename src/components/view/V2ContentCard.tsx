@@ -6,6 +6,7 @@ import JournalImage from '@/components/common/JournalImage';
 import { Card } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils'; // Corrected import path
 import { getObjectPositionForAspectRatio } from '@/lib/utils/objectPositionUtils';
+import { getEffectiveGalleryObjectPosition } from '@/lib/utils/galleryObjectPosition';
 import TipTapRenderer from '@/components/common/TipTapRenderer';
 import styles from './V2ContentCard.module.css';
 
@@ -104,6 +105,7 @@ const GalleryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ car
                     width={400}
                     height={300}
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    style={{ objectPosition: getEffectiveGalleryObjectPosition(item, item.media) }}
                     priority={false}
                   />
                 </SwiperSlide>

@@ -6,6 +6,7 @@ import { getFolderTree } from '@/lib/services/images/local/photoService';
 import type { TreeNode } from '@/lib/types/photo';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import styles from './PhotoPicker.module.css';
+import importStyles from './ImportFolderModal.module.css';
 
 interface FolderItemProps {
   node: TreeNode;
@@ -70,7 +71,17 @@ interface PreviewResult {
   imageCount: number;
   willNormalize: boolean;
   title: string;
+  maxImages?: number;
 }
+
+interface BatchPreviewSubdir {
+  folderPath: string;
+  importSourcePath: string;
+  imageCount: number;
+  title: string;
+}
+
+type ImportMode = 'single' | 'batch';
 
 export default function ImportFolderModal({
   isOpen,
@@ -78,11 +89,24 @@ export default function ImportFolderModal({
   onSuccess,
 }: ImportFolderModalProps) {
   const router = useRouter();
+  const [mode, setMode] = useState<ImportMode>('single');
+  const [importAsCard, setImportAsCard] = useState(true);
   const [folderTree, setFolderTree] = useState<TreeNode[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [preview, setPreview] = useState<PreviewResult | null>(null);
+  const [batchPreview, setBatchPreview] = useState<{
+    subdirs: BatchPreviewSubdir[];
+    totalSubdirs: number;
+    totalImages: number;
+  } | null>(null);
+  const [batchResult, setBatchResult] = useState<{
+    totalImported: number;
+    totalSkipped: number;
+    totalFailed: number;
+  } | null>(null);
   const [isLoadingFolders, setIsLoadingFolders] = useState(true);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [isLoadingBatchPreview, setIsLoadingBatchPreview] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
@@ -124,13 +148,39 @@ export default function ImportFolderModal({
     if (isOpen) {
       setError(null);
       setPreview(null);
+      setBatchPreview(null);
+      setBatchResult(null);
       setDuplicateInfo(null);
       loadFolderTree();
     }
   }, [isOpen, loadFolderTree]);
 
   useEffect(() => {
-    if (selectedFolder) {
+    if (mode === 'batch' && selectedFolder) {
+      setIsLoadingBatchPreview(true);
+      setBatchPreview(null);
+      setBatchResult(null);
+      fetch('/api/import/batch/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rootPath: selectedFolder }),
+      })
+        .then(async (res) => {
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || data.message || 'Batch preview failed');
+          return data;
+        })
+        .then((data) => setBatchPreview(data))
+        .catch((err) => setError(err instanceof Error ? err.message : 'Batch preview failed'))
+        .finally(() => setIsLoadingBatchPreview(false));
+    } else {
+      setBatchPreview(null);
+      setBatchResult(null);
+    }
+  }, [mode, selectedFolder]);
+
+  useEffect(() => {
+    if (mode === 'single' && selectedFolder) {
       setIsLoadingPreview(true);
       setPreview(null);
       setPreviewError(null);
@@ -160,7 +210,7 @@ export default function ImportFolderModal({
       setPreview(null);
       setPreviewError(null);
     }
-  }, [selectedFolder]);
+  }, [mode, selectedFolder]);
 
   const handleFolderSelect = useCallback((folderId: string) => {
     setSelectedFolder(folderId);
@@ -189,6 +239,7 @@ export default function ImportFolderModal({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             folderPath: selectedFolder,
+            mediaOnly: !importAsCard,
             ...(overwriteCardId && { overwriteCardId }),
           }),
         });
@@ -209,10 +260,11 @@ export default function ImportFolderModal({
         }
 
         onClose();
-        if (onSuccess) {
-          onSuccess(result.cardId);
+        if (importAsCard && result.cardId) {
+          if (onSuccess) onSuccess(result.cardId);
+          else router.push(`/admin/card-admin/${result.cardId}/edit`);
         } else {
-          router.push(`/admin/card-admin/${result.cardId}/edit`);
+          router.push('/admin/media-admin');
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Import failed');
@@ -221,8 +273,37 @@ export default function ImportFolderModal({
         setIsImporting(false);
       }
     },
-    [selectedFolder, onClose, onSuccess, router]
+    [selectedFolder, importAsCard, onClose, onSuccess, router]
   );
+
+  const doBatchImport = useCallback(async () => {
+    if (!selectedFolder) return;
+    try {
+      setIsImporting(true);
+      setError(null);
+      setBatchResult(null);
+      const response = await fetch('/api/import/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rootPath: selectedFolder }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || data.message || 'Batch import failed');
+      }
+      const result = await response.json();
+      setBatchResult({
+        totalImported: result.totalImported,
+        totalSkipped: result.totalSkipped,
+        totalFailed: result.totalFailed,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Batch import failed');
+      console.error(err);
+    } finally {
+      setIsImporting(false);
+    }
+  }, [selectedFolder, router]);
 
   const handleImport = useCallback(() => doImport(), [doImport]);
 
@@ -240,7 +321,7 @@ export default function ImportFolderModal({
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.container} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
-          <h2 className={styles.title}>Import Folder as Card</h2>
+          <h2 className={styles.title}>Import</h2>
           <button
             onClick={onClose}
             className={styles.closeButton}
@@ -253,9 +334,29 @@ export default function ImportFolderModal({
 
         <div className={styles.content}>
           <div className={styles.albumList}>
-            <h3 className={styles.albumTitle}>Select Folder</h3>
+            <div className={importStyles.modeTabs}>
+              <button
+                type="button"
+                className={`${importStyles.modeTab} ${mode === 'single' ? importStyles.active : ''}`}
+                onClick={() => setMode('single')}
+              >
+                Single folder
+              </button>
+              <button
+                type="button"
+                className={`${importStyles.modeTab} ${mode === 'batch' ? importStyles.active : ''}`}
+                onClick={() => setMode('batch')}
+              >
+                Batch (all subdirs)
+              </button>
+            </div>
+            <h3 className={styles.albumTitle}>
+              {mode === 'single' ? 'Select Folder' : 'Select Root Folder'}
+            </h3>
             <p style={{ fontSize: '0.75rem', color: 'var(--text2-color)', marginBottom: '0.5rem' }}>
-              Select the album folder (with yEdited/xNormalized) or a folder with images.
+              {mode === 'single'
+                ? 'Album folder (with yEdited/xNormalized) or folder with images.'
+                : 'Root folder to search for all xNormalized subdirs.'}
             </p>
             {isLoadingFolders ? (
               <div className={styles.loading}>
@@ -278,7 +379,38 @@ export default function ImportFolderModal({
 
           <div className={styles.photoGrid}>
             <div className={styles.noContent}>
-              {selectedFolder ? (
+              {mode === 'batch' ? (
+                selectedFolder ? (
+                  isLoadingBatchPreview ? (
+                    <p>Scanning for xNormalized subdirs...</p>
+                  ) : batchPreview ? (
+                    <>
+                      <div className={importStyles.batchPreview}>
+                        <ul className={importStyles.batchPreviewList}>
+                          {batchPreview.subdirs.map((s) => (
+                            <li key={s.folderPath} className={importStyles.batchPreviewItem}>
+                              <span>{s.title}</span>
+                              <span>{s.imageCount} images</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className={importStyles.batchSummary}>
+                        {batchPreview.totalSubdirs} subdirs, {batchPreview.totalImages} images total
+                      </div>
+                      {batchResult && (
+                        <div className={importStyles.batchResult}>
+                          Imported: {batchResult.totalImported} | Skipped (duplicates): {batchResult.totalSkipped} | Failed: {batchResult.totalFailed}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p>No xNormalized subdirs found under this root.</p>
+                  )
+                ) : (
+                  <p>Select a root folder</p>
+                )
+              ) : selectedFolder ? (
                 isLoadingPreview ? (
                   <p>Checking folder...</p>
                 ) : previewError ? (
@@ -287,16 +419,41 @@ export default function ImportFolderModal({
                   preview.imageCount > 0 ? (
                     <>
                       <p><strong>{preview.imageCount}</strong> image{preview.imageCount !== 1 ? 's' : ''} will be imported</p>
-                      <p style={{ fontSize: '0.875rem', color: 'var(--text2-color)', marginTop: '0.5rem' }}>
-                        Card title: &quot;{preview.title}&quot;
-                      </p>
+                      <div className={importStyles.importTypeRow}>
+                        <label>
+                          <input
+                            type="radio"
+                            checked={importAsCard}
+                            onChange={() => setImportAsCard(true)}
+                          />
+                          {' '}As card (gallery)
+                        </label>
+                        <label>
+                          <input
+                            type="radio"
+                            checked={!importAsCard}
+                            onChange={() => setImportAsCard(false)}
+                          />
+                          {' '}Images only (no card)
+                        </label>
+                      </div>
+                      {importAsCard && (
+                        <p style={{ fontSize: '0.875rem', color: 'var(--text2-color)', marginTop: '0.5rem' }}>
+                          Card title: &quot;{preview.title}&quot;
+                        </p>
+                      )}
+                      {preview.maxImages && preview.imageCount > preview.maxImages && (
+                        <p style={{ fontSize: '0.875rem', color: 'var(--color-danger)', marginTop: '0.5rem', fontWeight: 500 }}>
+                          Too many images. Maximum is {preview.maxImages}. Split or increase IMPORT_FOLDER_MAX_IMAGES.
+                        </p>
+                      )}
                       {preview.willNormalize && (
                         <p style={{ fontSize: '0.875rem', color: 'var(--color3)', marginTop: '0.5rem' }}>
                           Will normalize yEdited → xNormalized before import
                         </p>
                       )}
                       <p style={{ fontSize: '0.875rem', color: 'var(--text2-color)', marginTop: '0.25rem' }}>
-                        Metadata (captions) imported when available from .json or image properties.
+                        Metadata (captions) imported when available. Duplicates skipped when importing images only.
                       </p>
                     </>
                   ) : (
@@ -350,12 +507,41 @@ export default function ImportFolderModal({
               </button>
             </div>
           </div>
+        ) : mode === 'batch' ? (
+          <div className={styles.footer}>
+            <button
+              onClick={doBatchImport}
+              className={styles.doneButton}
+              disabled={
+                !selectedFolder ||
+                !batchPreview ||
+                batchPreview.totalSubdirs === 0 ||
+                isImporting
+              }
+              type="button"
+            >
+              {isImporting ? (
+                <>
+                  <LoadingSpinner />
+                  <span>Importing...</span>
+                </>
+              ) : (
+                'Import all as images'
+              )}
+            </button>
+          </div>
         ) : (
           <div className={styles.footer}>
             <button
               onClick={handleImport}
               className={styles.doneButton}
-              disabled={!selectedFolder || !preview || preview.imageCount === 0 || isImporting}
+              disabled={
+                !selectedFolder ||
+                !preview ||
+                preview.imageCount === 0 ||
+                isImporting ||
+                (preview.maxImages != null && preview.imageCount > preview.maxImages)
+              }
               type="button"
             >
               {isImporting ? (
@@ -363,8 +549,10 @@ export default function ImportFolderModal({
                   <LoadingSpinner />
                   <span>Importing{preview?.willNormalize ? ' (normalizing...)' : ''}...</span>
                 </>
-              ) : (
+              ) : importAsCard ? (
                 'Import as Card'
+              ) : (
+                'Import images only'
               )}
             </button>
           </div>

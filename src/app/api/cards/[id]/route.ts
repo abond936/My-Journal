@@ -154,9 +154,6 @@ export async function PATCH(
 
     // Parse and validate the request body
     const body = await request.json();
-    if ('coverImageId' in body) {
-      console.log('[PATCH /api/cards] coverImageId in payload:', body.coverImageId);
-    }
     const validatedData = cardUpdateSchema.parse(body);
 
     const existingCard = await getCardById(id);

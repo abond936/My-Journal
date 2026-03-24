@@ -70,13 +70,31 @@ export function extractMediaFromContent(html: string | null | undefined): string
   return Array.from(ids);
 }
 
+/** Removes the <figure> element for the given mediaId from content HTML. */
+export function removeMediaFromContent(html: string | null | undefined, mediaId: string): string {
+  if (!html || typeof html !== 'string') return html || '';
+  const escaped = mediaId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return html.replace(
+    new RegExp(
+      `<figure[^>]*data-media-id=["']${escaped}["'][^>]*>[\\s\\S]*?<\\/figure>`,
+      'gi'
+    ),
+    ''
+  ).replace(/\n\s*\n\s*\n/g, '\n\n');
+}
+
 export function transformToCardUpdate(hydratedCard: Card): CardUpdate {
-  const skinnyGalleryMedia = (hydratedCard.galleryMedia ?? []).map(item => ({
-    mediaId: item.mediaId,
-    caption: item.caption,
-    objectPosition: item.objectPosition,
-    order: item.order,
-  }));
+  const skinnyGalleryMedia = (hydratedCard.galleryMedia ?? []).map(item => {
+    const trimmed = item.objectPosition?.trim();
+    return {
+      mediaId: item.mediaId,
+      order: item.order,
+      ...(Object.prototype.hasOwnProperty.call(item, 'caption')
+        ? { caption: item.caption ?? '' }
+        : {}),
+      ...(trimmed ? { objectPosition: trimmed } : {}),
+    };
+  });
 
   const contentMedia = extractMediaFromContent(hydratedCard.content);
 
@@ -121,7 +139,19 @@ export function dehydrateCardForSave(raw: any): CardUpdate {
 
   const dehydratedGallery = galleryMedia?.map((item: any) => {
     const { media: _m, ...g } = item || {};
-    return g;
+    let out = { ...g };
+    const trimmed = typeof out.objectPosition === 'string' ? out.objectPosition.trim() : '';
+    if (!trimmed) {
+      const { objectPosition: _op, ...rest } = out;
+      out = rest;
+    } else {
+      out = { ...out, objectPosition: trimmed };
+    }
+    if (!Object.prototype.hasOwnProperty.call(out, 'caption') || out.caption === undefined) {
+      const { caption: _c, ...rest } = out;
+      out = rest;
+    }
+    return out;
   });
 
   // Ensure contentMedia is always an array before saving.

@@ -7,6 +7,7 @@ dotenv.config({ path: resolve(process.cwd(), '.env.local') });
 
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { Media } from '@/lib/types/photo';
+import { getPublicStorageUrl } from '@/lib/utils/storageUrl';
 
 const MEDIA_COLLECTION = 'media';
 
@@ -22,8 +23,6 @@ interface RegenerateReport {
 async function regenerateStorageUrls(dryRun: boolean = false): Promise<RegenerateReport> {
   const adminApp = getAdminApp();
   const firestore = adminApp.firestore();
-  const storage = adminApp.storage();
-  const bucket = storage.bucket();
 
   const report: RegenerateReport = {
     totalMediaDocs: 0,
@@ -36,7 +35,7 @@ async function regenerateStorageUrls(dryRun: boolean = false): Promise<Regenerat
 
   const startTime = Date.now();
 
-  console.log('🚀 Regenerating storage URLs (v4 signed URLs)...');
+  console.log('🚀 Regenerating storage URLs (public URLs from storagePath)...');
   if (dryRun) {
     console.log('⚠️  DRY RUN MODE: No changes will be written to the database.');
   }
@@ -76,20 +75,7 @@ async function regenerateStorageUrls(dryRun: boolean = false): Promise<Regenerat
             return { mediaId: mediaData.docId, status: 'error' as const, reason: errorMsg };
           }
 
-          const file = bucket.file(mediaData.storagePath);
-          const [exists] = await file.exists();
-
-          if (!exists) {
-            const errorMsg = `Storage file not found for media ${mediaData.docId}: ${mediaData.storagePath}`;
-            report.errors.push(errorMsg);
-            return { mediaId: mediaData.docId, status: 'error' as const, reason: errorMsg };
-          }
-
-          const [newUrl] = await file.getSignedUrl({
-            action: 'read',
-            expires: '03-09-2491',
-            version: 'v4',
-          });
+          const newUrl = getPublicStorageUrl(mediaData.storagePath);
 
           if (dryRun) {
             console.log(`  🔍 [DRY RUN] Would update media ${mediaData.docId}: ${mediaData.filename}`);
@@ -158,7 +144,7 @@ async function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes('--dry-run');
 
-  console.log('🔧 Regenerate Storage URLs (v4)');
+  console.log('🔧 Regenerate Storage URLs (public)');
   console.log('================================');
   console.log('');
   console.log('📋 Configuration:');

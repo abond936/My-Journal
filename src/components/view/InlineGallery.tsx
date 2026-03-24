@@ -4,6 +4,10 @@ import React, { useState, useRef, useCallback } from 'react';
 import JournalImage from '@/components/common/JournalImage';
 import { HydratedGalleryMediaItem } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import {
+  getEffectiveGalleryCaption,
+  getEffectiveGalleryObjectPosition,
+} from '@/lib/utils/galleryObjectPosition';
 import styles from './InlineGallery.module.css';
 
 interface InlineGalleryProps {
@@ -87,24 +91,31 @@ export default function InlineGallery({ media, title = "Gallery" }: InlineGaller
           role="region"
           aria-label="Image gallery"
         >
-          {validMedia.map((item, index) => (
-            <div key={item.mediaId} className={styles.imageItem}>
-              <div className={styles.imageWrapper}>
-                <JournalImage
-                  src={getDisplayUrl(item.media)}
-                  alt={item.caption || `Image ${index + 1}`}
-                  className={styles.galleryImage}
-                  width={300}
-                  height={200}
-                  sizes="(max-width: 768px) 200px, 300px"
-                  priority={index < 2} // Prioritize first 2 images
-                />
+          {validMedia.map((item, index) => {
+            const displayCaption = getEffectiveGalleryCaption(item, item.media);
+            return (
+              <div key={item.mediaId} className={styles.imageItem}>
+                <div className={styles.imageWrapper}>
+                  <JournalImage
+                    src={getDisplayUrl(item.media)}
+                    alt={displayCaption.trim() ? displayCaption : `Image ${index + 1}`}
+                    className={styles.galleryImage}
+                    width={300}
+                    height={200}
+                    sizes="(max-width: 768px) 200px, 300px"
+                    style={{
+                      objectFit: 'cover',
+                      objectPosition: getEffectiveGalleryObjectPosition(item, item.media),
+                    }}
+                    priority={index < 2} // Prioritize first 2 images
+                  />
+                </div>
+                {displayCaption.trim() ? (
+                  <p className={styles.imageCaption}>{displayCaption}</p>
+                ) : null}
               </div>
-              {item.caption && (
-                <p className={styles.imageCaption}>{item.caption}</p>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

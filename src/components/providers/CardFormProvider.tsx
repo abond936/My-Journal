@@ -99,12 +99,14 @@ interface FormProviderProps {
  */
 export function CardFormProvider({ children, initialCard, allTags, onSave }: FormProviderProps) {
   const [formState, setFormState] = useState<FormState>(() => {
-    const card = initialCard ? {
-      ...EMPTY_CARD,
-      ...initialCard,
-      ...(initialCard.coverImageId != null && { coverImageId: initialCard.coverImageId }),
-      ...(initialCard.coverImage != null && { coverImage: initialCard.coverImage }),
-    } : EMPTY_CARD;
+    const card = initialCard
+      ? {
+          ...EMPTY_CARD,
+          ...initialCard,
+          coverImageId: initialCard.coverImageId ?? null,
+          coverImage: initialCard.coverImage ?? null,
+        }
+      : EMPTY_CARD;
     return {
       cardData: card,
       isSaving: false,
@@ -120,17 +122,11 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       // Only update if this is the first load or if the initialCard.docId has changed
       setFormState(prevState => {
         if (!prevState.cardData.docId || prevState.cardData.docId !== initialCard.docId) {
-          console.log('[CardFormProvider] Updating form state with new initialCard', {
-            prevId: prevState.cardData.docId,
-            newId: initialCard.docId,
-            prevContentLength: prevState.cardData.content?.length,
-            newContentLength: initialCard.content?.length
-          });
           const mergedCard = {
             ...EMPTY_CARD,
             ...initialCard,
-            ...(initialCard.coverImageId != null && { coverImageId: initialCard.coverImageId }),
-            ...(initialCard.coverImage != null && { coverImage: initialCard.coverImage }),
+            coverImageId: initialCard.coverImageId ?? null,
+            coverImage: initialCard.coverImage ?? null,
           };
           return {
             ...prevState,
@@ -227,20 +223,20 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
 
   const validateForm = useCallback((dataToValidate?: CardUpdate) => {
     const sourceData = dataToValidate ?? formState.cardData;
+    // Determine new vs existing BEFORE dehydrate—dehydrate strips docId
+    const docId = sourceData.docId ?? (sourceData as { id?: string }).id;
+    const isNewCard = !docId || docId === '';
+
     // Strip transient, client-only fields before validating.
     const dataForValidation = dehydrateCardForSave(sourceData);
-
-    // For new cards (empty docId), exclude docId from validation since it will be generated
-    const isNewCard = !dataForValidation.docId || dataForValidation.docId === '';
-    const validationData = isNewCard 
+    const validationData = isNewCard
       ? { ...dataForValidation, docId: undefined }
       : dataForValidation;
-    
-    console.log('[validateForm] Is new card:', isNewCard);
-    console.log('[validateForm] Validation data:', validationData);
 
-    // Use partial schema for new cards to exclude server-generated fields
-    const schemaToUse = isNewCard ? cardSchema.omit({ docId: true, createdAt: true, updatedAt: true }) : cardSchema;
+    // Use partial schema for updates; omit server-generated fields for new cards
+    const schemaToUse = isNewCard
+      ? cardSchema.partial().omit({ docId: true, createdAt: true, updatedAt: true })
+      : cardSchema.partial();
     const result = schemaToUse.safeParse(validationData);
 
     if (!result.success) {
@@ -298,12 +294,14 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
   }, [validateForm, batchStateUpdate, onSave]);
 
   const resetForm = useCallback(() => {
-    const card = initialCard ? {
-      ...EMPTY_CARD,
-      ...initialCard,
-      ...(initialCard.coverImageId != null && { coverImageId: initialCard.coverImageId }),
-      ...(initialCard.coverImage != null && { coverImage: initialCard.coverImage }),
-    } : EMPTY_CARD;
+    const card = initialCard
+      ? {
+          ...EMPTY_CARD,
+          ...initialCard,
+          coverImageId: initialCard.coverImageId ?? null,
+          coverImage: initialCard.coverImage ?? null,
+        }
+      : EMPTY_CARD;
     setFormState({
       cardData: card,
       isSaving: false,

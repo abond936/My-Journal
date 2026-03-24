@@ -4,10 +4,26 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { Tag } from '@/lib/types/tag';
 import type { TagWithChildren } from '@/components/providers/TagProvider';
 import { TagAdminRow } from './TagAdminRow';
-import { DndContext, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverEvent, UniqueIdentifier, closestCenter } from '@dnd-kit/core';
+import { DndContext, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverEvent, closestCenter } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import styles from '@/app/admin/tag-admin/tag-admin.module.css';
+
+function flattenDimensionTree(
+  roots: TagWithChildren[] | undefined,
+  collapsedNodes: Set<string>,
+  depth: number
+): (TagWithChildren & { depth: number })[] {
+  const out: (TagWithChildren & { depth: number })[] = [];
+  if (!roots?.length) return out;
+  for (const node of roots) {
+    out.push({ ...node, depth });
+    if (!collapsedNodes.has(node.docId!) && node.children?.length) {
+      out.push(...flattenDimensionTree(node.children, collapsedNodes, depth + 1));
+    }
+  }
+  return out;
+}
 
 /**
  * A wrapper component that makes its children draggable and provides visual feedback.
@@ -121,20 +137,17 @@ export function TagAdminList({ tagTree, onUpdateTag, onDeleteTag, onCreateTag, o
     };
   }, []);
 
-  const flattenedTree = useMemo(() => {
-    const flattened: (TagWithChildren & { depth: number })[] = [];
-    const traverse = (nodes: TagWithChildren[] | undefined, depth: number) => {
-      if (!nodes) return;
-      for (const node of nodes) {
-        flattened.push({ ...node, depth });
-        if (!collapsedNodes.has(node.docId!) && node.children?.length) {
-          traverse(node.children, depth + 1);
-        }
-      }
-    };
-    traverse(tagTree, 0);
-    return flattened;
-  }, [tagTree, collapsedNodes]);
+  const columns = useMemo(
+    () =>
+      tagTree.map(dim => ({
+        id: dim.docId!,
+        title: dim.name,
+        rows: flattenDimensionTree(dim.children, collapsedNodes, 0),
+      })),
+    [tagTree, collapsedNodes]
+  );
+
+  const flattenedTree = useMemo(() => columns.flatMap(col => col.rows), [columns]);
 
   const sortedIds = useMemo(() => flattenedTree.map(tag => tag.docId!), [flattenedTree]);
   const tagMap = useMemo(() => new Map(flattenedTree.map(tag => [tag.docId!, tag])), [flattenedTree]);
@@ -179,15 +192,20 @@ export function TagAdminList({ tagTree, onUpdateTag, onDeleteTag, onCreateTag, o
       return;
     }
 
-    // Check if Shift key is pressed for reparenting mode
+    // Reparenting: Shift held on pointer *or* tracked from keyboard (activator alone misses Shift-after-mousedown)
     const ae = event.activatorEvent;
-    const isShiftPressed = Boolean(
+    const shiftFromActivator = Boolean(
       ae && 'shiftKey' in ae && (ae as MouseEvent | KeyboardEvent).shiftKey
     );
-    
-    // Check if this is a valid drop (same parent for reordering)
-    const isSameParent = activeTag.parentId === overTag.parentId;
-    const isReparenting = isShiftPressed && activeTag.docId !== overTag.docId;
+    const reparentMode = isShiftPressed || shiftFromActivator;
+
+    const sameParentId = (activeTag.parentId || '') === (overTag.parentId || '');
+    const sameRootDimension =
+      !activeTag.parentId &&
+      !overTag.parentId &&
+      (activeTag.dimension || '') === (overTag.dimension || '');
+    const isSameParent = sameParentId && (activeTag.parentId ? true : sameRootDimension);
+    const isReparenting = reparentMode && activeTag.docId !== overTag.docId;
     
     // Determine drop indicator position for reordering
     const activeIndex = flattenedTree.findIndex(t => t.docId === active.id);
@@ -241,7 +259,10 @@ export function TagAdminList({ tagTree, onUpdateTag, onDeleteTag, onCreateTag, o
       onReparent(active.id as string, over.id as string);
     }
     // Handle reordering (same parent)
-    else if (activeTag.parentId === overTag.parentId) {
+    else if (
+      (activeTag.parentId || '') === (overTag.parentId || '') &&
+      (activeTag.parentId || (activeTag.dimension || '') === (overTag.dimension || ''))
+    ) {
       const placement = dragState.dropIndicator;
       
       if (placement && active.id !== over.id) {
@@ -295,19 +316,32 @@ export function TagAdminList({ tagTree, onUpdateTag, onDeleteTag, onCreateTag, o
         onDragOver={handleDragOver}
       >
         <SortableContext items={sortedIds} strategy={verticalListSortingStrategy}>
-          {flattenedTree.map(tag => (
-            <SortableTag key={tag.docId} tag={tag} dragState={dragState}>
-              <TagAdminRow
-                tag={tag}
-                depth={tag.depth}
-                onUpdateTag={onUpdateTag}
-                onDeleteTag={onDeleteTag}
-                onCreateTag={onCreateTag}
-                isCollapsed={collapsedNodes.has(tag.docId!)}
-                onToggleCollapse={handleToggleCollapse}
-              />
-            </SortableTag>
-          ))}
+          <div className={styles.dimensionGrid}>
+            {columns.map(col => (
+              <section key={col.id} className={styles.dimensionColumn}>
+                <h2 className={styles.dimensionColumnHeading}>{col.title}</h2>
+                <div className={styles.dimensionColumnScroll}>
+                  {col.rows.length === 0 ? (
+                    <p className={styles.dimensionColumnEmpty}>No tags yet</p>
+                  ) : (
+                    col.rows.map(tag => (
+                      <SortableTag key={tag.docId} tag={tag} dragState={dragState}>
+                        <TagAdminRow
+                          tag={tag}
+                          depth={tag.depth}
+                          onUpdateTag={onUpdateTag}
+                          onDeleteTag={onDeleteTag}
+                          onCreateTag={onCreateTag}
+                          isCollapsed={collapsedNodes.has(tag.docId!)}
+                          onToggleCollapse={handleToggleCollapse}
+                        />
+                      </SortableTag>
+                    ))
+                  )}
+                </div>
+              </section>
+            ))}
+          </div>
         </SortableContext>
       </DndContext>
     </div>

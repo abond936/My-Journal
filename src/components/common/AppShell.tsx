@@ -12,7 +12,7 @@ interface AppShellProps {
 }
 
 export default function AppShell({ children }: AppShellProps) {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const pathname = usePathname();
   const [isSidebarOpen, setSidebarOpen] = useState(pathname !== '/');
 
@@ -35,6 +35,12 @@ export default function AppShell({ children }: AppShellProps) {
   const toggleSidebar = () => {
     setSidebarOpen(prev => !prev);
   };
+
+  // Avoid transitional overlap between intro page and authenticated shell
+  // while session status is still resolving.
+  if (status === 'loading') {
+    return null;
+  }
   
   // If unauthenticated, render children directly (e.g., the login page)
   if (!isAuthenticated) {

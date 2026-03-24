@@ -8,7 +8,8 @@ import {
   deleteFromStorageWithRetry,
   markStorageForLaterDeletion,
 } from './images/imageImportService';
-import { extractMediaFromContent, stripContentImageSrc, hydrateContentImageSrc } from '@/lib/utils/cardUtils';
+import { extractMediaFromContent, stripContentImageSrc, hydrateContentImageSrc, removeMediaFromContent } from '@/lib/utils/cardUtils';
+import { getPublicStorageUrl } from '@/lib/utils/storageUrl';
 import { Media } from '@/lib/types/photo';
 
 /**
@@ -65,8 +66,6 @@ const bucket = adminApp.storage().bucket();
 const CARDS_COLLECTION = 'cards';
 const MEDIA_COLLECTION = 'media';
 
-/** V4 signed URLs max out at 7 days. Use 6 days to stay under the limit. */
-const SIGNED_URL_EXPIRY_MS = 6 * 24 * 60 * 60 * 1000;
 
 /**
  * Derives focal point (pixel coords) from media.objectPosition.
@@ -98,28 +97,100 @@ function deriveFocalPointFromObjectPosition(
 }
 
 /**
- * Replaces each media's storageUrl with a fresh v4 signed URL.
- * Called during hydration so clients receive working URLs without storing them long-term.
+ * Sets each media's storageUrl to the permanent public URL (derived from storagePath).
+ * Requires Firebase Storage rules to allow public read for the images path.
  */
-async function _refreshMediaStorageUrls(mediaMap: Map<string, Media>): Promise<void> {
-  if (mediaMap.size === 0) return;
-
-  const expiry = new Date(Date.now() + SIGNED_URL_EXPIRY_MS);
-  const refreshPromises = Array.from(mediaMap.entries()).map(async ([id, media]) => {
-    if (!media?.storagePath) return;
-    try {
-      const file = bucket.file(media.storagePath);
-      const [url] = await file.getSignedUrl({
-        action: 'read',
-        expires: expiry,
-        version: 'v4',
-      });
-      media.storageUrl = url;
-    } catch (err) {
-      console.warn(`[cardService] Failed to refresh signed URL for media ${id}:`, err);
+function _applyPublicStorageUrls(mediaMap: Map<string, Media>): void {
+  mediaMap.forEach((media) => {
+    if (media?.storagePath) {
+      media.storageUrl = getPublicStorageUrl(media.storagePath);
     }
   });
-  await Promise.all(refreshPromises);
+}
+
+/** Returns the set of media IDs referenced by a card (cover, gallery, content). */
+function getMediaIdsFromCard(card: {
+  coverImageId?: string | null;
+  galleryMedia?: { mediaId?: string }[];
+  contentMedia?: string[];
+}): Set<string> {
+  const ids = new Set<string>();
+  if (card.coverImageId) ids.add(card.coverImageId);
+  card.galleryMedia?.forEach(item => item.mediaId && ids.add(item.mediaId));
+  (card.contentMedia ?? []).forEach(id => id && ids.add(id));
+  return ids;
+}
+
+/** Finds card IDs that reference the given mediaId. Uses referencedByCardIds if present, else scans (lazy backfill). */
+export async function getCardsReferencingMedia(mediaId: string): Promise<string[]> {
+  const mediaDoc = await firestore.collection(MEDIA_COLLECTION).doc(mediaId).get();
+  if (!mediaDoc.exists) return [];
+  const data = mediaDoc.data();
+  const refs = data?.referencedByCardIds as string[] | undefined;
+  if (Array.isArray(refs) && refs.length > 0) return [...refs];
+
+  const cardIds = new Set<string>();
+  const [coverSnap, contentSnap] = await Promise.all([
+    firestore.collection(CARDS_COLLECTION).where('coverImageId', '==', mediaId).get(),
+    firestore.collection(CARDS_COLLECTION).where('contentMedia', 'array-contains', mediaId).get(),
+  ]);
+  coverSnap.docs.forEach(d => cardIds.add(d.id));
+  contentSnap.docs.forEach(d => cardIds.add(d.id));
+
+  const allCardsSnap = await firestore.collection(CARDS_COLLECTION).get();
+  allCardsSnap.docs.forEach(doc => {
+    const card = doc.data() as Card;
+    if (card.galleryMedia?.some(g => g.mediaId === mediaId)) cardIds.add(doc.id);
+  });
+
+  const ids = Array.from(cardIds);
+  if (ids.length > 0) {
+    await firestore.collection(MEDIA_COLLECTION).doc(mediaId).update({
+      referencedByCardIds: ids,
+      updatedAt: Date.now(),
+    });
+  }
+  return ids;
+}
+
+/** Removes a media reference from a card (cover, gallery, or content). */
+export async function removeMediaReferenceFromCard(cardId: string, mediaId: string): Promise<void> {
+  const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
+  const snap = await docRef.get();
+  if (!snap.exists) return;
+  const card = snap.data() as Card;
+
+  if (card.coverImageId === mediaId) {
+    await docRef.update({
+      coverImageId: FieldValue.delete(),
+      coverImageFocalPoint: FieldValue.delete(),
+      coverImage: FieldValue.delete(),
+      updatedAt: Date.now(),
+    });
+  } else if (card.galleryMedia?.some(g => g.mediaId === mediaId)) {
+    const newGallery = card.galleryMedia.filter(g => g.mediaId !== mediaId);
+    await docRef.update({
+      galleryMedia: newGallery,
+      updatedAt: Date.now(),
+    });
+  } else {
+    const newContent = removeMediaFromContent(card.content, mediaId);
+    const newContentMedia = (card.contentMedia ?? []).filter(id => id !== mediaId);
+    await docRef.update({
+      content: newContent,
+      contentMedia: newContentMedia,
+      updatedAt: Date.now(),
+    });
+  }
+}
+
+/** Deletes media and removes its references from all cards (Option B). */
+export async function deleteMediaWithCardCleanup(mediaId: string): Promise<void> {
+  const cardIds = await getCardsReferencingMedia(mediaId);
+  for (const cardId of cardIds) {
+    await removeMediaReferenceFromCard(cardId, mediaId);
+  }
+  await deleteMediaAsset(mediaId);
 }
 
 /**
@@ -162,8 +233,8 @@ async function _hydrateCards(cards: Card[]): Promise<Card[]> {
     });
   }
 
-  // 2b. Replace stored storageUrls with fresh v4 signed URLs (7-day max; private, cost-efficient)
-  await _refreshMediaStorageUrls(mediaMap);
+  // 2b. Set storageUrl to permanent public URL (derived from storagePath)
+  _applyPublicStorageUrls(mediaMap);
   
   // 3. Inject the full media objects back into each card.
   return cards.map(card => {
@@ -178,6 +249,8 @@ async function _hydrateCards(cards: Card[]): Promise<Card[]> {
           hydratedCard.coverImage.height
         );
       }
+    } else {
+      hydratedCard.coverImage = null;
     }
     if (hydratedCard.galleryMedia) {
       hydratedCard.galleryMedia = hydratedCard.galleryMedia.map(item => ({
@@ -228,8 +301,8 @@ async function _hydrateCoverImagesOnly(cards: Card[]): Promise<Card[]> {
     });
   }
 
-  // 2b. Replace stored storageUrls with fresh v4 signed URLs
-  await _refreshMediaStorageUrls(mediaMap);
+  // 2b. Set storageUrl to permanent public URL (derived from storagePath)
+  _applyPublicStorageUrls(mediaMap);
   
   // 3. Inject only cover images back into each card
   return cards.map(card => {
@@ -243,6 +316,8 @@ async function _hydrateCoverImagesOnly(cards: Card[]): Promise<Card[]> {
           hydratedCard.coverImage.height
         );
       }
+    } else {
+      hydratedCard.coverImage = null;
     }
     // Leave galleryMedia and contentMedia as dehydrated (just IDs)
     return hydratedCard;
@@ -320,10 +395,14 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
         });
       }
   
-      // 5. Update the status of all associated media to 'active'.
+      // 5. Update the status of all associated media to 'active' and add this card to referencedByCardIds.
       for (const mediaId of Array.from(mediaIdsToActivate)) {
         const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
-        transaction.update(mediaRef, { status: 'active', updatedAt: Date.now() });
+        transaction.update(mediaRef, {
+          status: 'active',
+          updatedAt: Date.now(),
+          referencedByCardIds: FieldValue.arrayUnion(docRef.id),
+        });
       }
     });
   });
@@ -345,8 +424,9 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
     
     const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
     
+    let isClearingCover = false;
     return withRetry(async () => {
-      return firestore.runTransaction(async (transaction) => {
+      await firestore.runTransaction(async (transaction) => {
       const docSnap = await transaction.get(docRef);
       if (!docSnap.exists) {
         throw new Error(`Card with ID ${cardId} not found.`);
@@ -357,29 +437,23 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
   
       // --- Start Firestore Batch Write ---
   
-      // Capture gallery caption changes to update later (writes must come after all reads)
-      const captionUpdates: { mediaId: string; caption: string }[] = [];
-      const dehydratedGalleryMedia = cardData.galleryMedia?.map(item => {
-        if (item.media && item.caption !== item.media.caption) {
-          captionUpdates.push({ mediaId: item.mediaId, caption: item.caption });
-        }
-        const { media, ...rest } = item;
-        return rest;
-      }) || [];
+      const dehydratedGalleryMedia =
+        cardData.galleryMedia?.map(item => {
+          const { media, ...rest } = item;
+          return rest;
+        }) || [];
       
-      // Sanitize content HTML and derive content media IDs.
+      // Sanitize content HTML and derive content media IDs. Only when content is in payload.
       const sanitizedContent = cardData.content ? stripContentImageSrc(cardData.content) : cardData.content;
-      
       const contentMediaIds = sanitizedContent ? extractMediaFromContent(sanitizedContent) : [];
       
       // Update contract: Fields present in payload overwrite stored values.
-      // null = clear, omit = leave unchanged. No server-side "preserve" logic.
+      // null = clear, omit = leave unchanged. Preserve contentMedia when content is omitted (e.g. bulk tag update).
       const updatePayload: Partial<Card> = {
         ...cardData,
-        content: sanitizedContent,
+        ...('content' in cardData ? { content: sanitizedContent, contentMedia: contentMediaIds } : {}),
         ...('coverImageId' in cardData ? { coverImageId: cardData.coverImageId ?? null } : {}),
         ...('galleryMedia' in cardData ? { galleryMedia: dehydratedGalleryMedia } : {}),
-        contentMedia: contentMediaIds,
         updatedAt: Date.now(),
       };
 
@@ -444,21 +518,47 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       // 1. Update tag counts before any writes (requires reads first)
       //   (already executed above)
 
-      // 2. Apply gallery caption updates captured earlier
-      for (const { mediaId, caption } of captionUpdates) {
+      // 2. Maintain referencedByCardIds on media docs
+      const clearingCover = ('coverImageId' in cardData) && (cardData.coverImageId === null || cardData.coverImageId === undefined);
+      const oldMediaIds = getMediaIdsFromCard(existingData);
+      const newCover = clearingCover ? null : (('coverImageId' in cardData ? cardData.coverImageId : existingData.coverImageId) ?? null);
+      const newGalleryMedia = cleanedUpdate.galleryMedia ?? existingData.galleryMedia;
+      const newContentMedia = 'content' in cardData
+        ? contentMediaIds
+        : (existingData.contentMedia ?? extractMediaFromContent(existingData.content ?? ''));
+      const newMediaIds = new Set<string>();
+      if (newCover) newMediaIds.add(newCover);
+      newGalleryMedia?.forEach(g => g.mediaId && newMediaIds.add(g.mediaId));
+      newContentMedia.forEach(id => newMediaIds.add(id));
+      const mediaRemoved = [...oldMediaIds].filter(id => !newMediaIds.has(id));
+      const mediaAdded = [...newMediaIds].filter(id => !oldMediaIds.has(id));
+      for (const mediaId of mediaRemoved) {
         const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
-        transaction.update(mediaRef, { caption });
+        transaction.update(mediaRef, {
+          referencedByCardIds: FieldValue.arrayRemove(cardId),
+          updatedAt: Date.now(),
+        });
+      }
+      for (const mediaId of mediaAdded) {
+        const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
+        transaction.update(mediaRef, {
+          referencedByCardIds: FieldValue.arrayUnion(cardId),
+          updatedAt: Date.now(),
+        });
       }
 
-      // 3. When cover is cleared, use FieldValue.delete() so Firestore actually removes the fields
-      const isClearingCover = cleanedUpdate.coverImageId === null || cleanedUpdate.coverImageId === undefined;
+      // 3. When cover is cleared, remove from main payload. Apply via direct update after transaction
+      //    (transaction-based writes were not persisting; direct update works).
+      isClearingCover = clearingCover;
       if (isClearingCover) {
-        cleanedUpdate.coverImageFocalPoint = FieldValue.delete() as unknown as Card['coverImageFocalPoint'];
-        cleanedUpdate.coverImageId = FieldValue.delete() as unknown as Card['coverImageId'];
+        delete cleanedUpdate.coverImageId;
+        delete cleanedUpdate.coverImageFocalPoint;
       }
 
       // 4. Update the card document with the new data.
-      transaction.update(docRef, cleanedUpdate);
+      if (Object.keys(cleanedUpdate).length > 0) {
+        transaction.update(docRef, cleanedUpdate);
+      }
   
       // 5. Tag counts were already adjusted earlier.
 
@@ -490,14 +590,23 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         transaction.update(mediaRef, { status: 'active', updatedAt: Date.now() });
       }
   
-      // Return the full, hydrated card by calling the trusted getCardById function.
-      // Note: getCardById is called outside the transaction to get the final hydrated state.
+      return null; // Signal completion; we fetch after transaction
+    });
+
+      // Cover clear: use FieldValue.delete() to remove fields and any legacy embedded coverImage.
+      if (isClearingCover) {
+        await docRef.update({
+          coverImageId: FieldValue.delete(),
+          coverImageFocalPoint: FieldValue.delete(),
+          coverImage: FieldValue.delete(),
+        });
+      }
+
       const updatedCard = await getCardById(cardId);
       if (!updatedCard) {
         throw new Error(`Failed to fetch updated card with ID ${cardId}`);
       }
       return updatedCard;
-    });
   });
 }
 

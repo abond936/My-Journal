@@ -1,7 +1,16 @@
 .container {
   padding: var(--spacing-xl);
-  max-width: 800px;
+  max-width: 100%;
   margin: 0;
+  box-sizing: border-box;
+}
+
+.pageHeading {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  color: var(--text1-color);
+  margin: 0 0 var(--spacing-md);
 }
 
 .header {
@@ -340,4 +349,59 @@
 .noBullets {
   list-style: none;
   padding: 0;
-} 
+}
+
+/* Tag admin: one scrollable column per dimension */
+.dimensionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--spacing-md);
+  /* stretch (grid default) so every column matches the tallest in the row */
+  align-items: stretch;
+  width: 100%;
+}
+
+.dimensionColumn {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--layout-background1-color);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.dimensionColumnHeading {
+  margin: 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text1-color);
+  border-bottom: var(--border-width-medium) solid var(--border1-color);
+  background: var(--layout-background2-color);
+}
+
+/* Grows to fill column so short dimensions (e.g. Reflection) match sibling height; cap overall scroll area */
+.dimensionColumnScroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: min(157.5vh, 1620px);
+  overflow-y: auto;
+  padding: var(--spacing-xs) 0;
+}
+
+.dimensionColumnEmpty {
+  margin: 0;
+  padding: var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .dimensionGrid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import JournalImage from '@/components/common/JournalImage';
 import { HydratedGalleryMediaItem } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import { getEffectiveGalleryCaption } from '@/lib/utils/galleryObjectPosition';
 import styles from './SwipeableGallery.module.css';
 
 interface SwipeableGalleryProps {
@@ -72,6 +73,8 @@ export default function SwipeableGallery({ media, initialIndex = 0 }: SwipeableG
   const currentItem = media[currentIndex];
   if (!currentItem) return null;
 
+  const displayCaption = getEffectiveGalleryCaption(currentItem, currentItem.media);
+
   return (
     <div className={styles.galleryContainer}>
       <div 
@@ -107,11 +110,11 @@ export default function SwipeableGallery({ media, initialIndex = 0 }: SwipeableG
         </button>
       </div>
 
-      {currentItem.caption && (
+      {displayCaption.trim() ? (
         <div className={styles.caption}>
-          <p>{currentItem.caption}</p>
+          <p>{displayCaption}</p>
         </div>
-      )}
+      ) : null}
 
       <div className={styles.pagination}>
         {media.map((_, index) => (

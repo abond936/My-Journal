@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import styles from './AdminLayout.module.css';
@@ -22,9 +22,7 @@ export default function AdminPageWrapper({ children }: AdminPageWrapperProps) {
 
   return (
     <div style={{ width: '100%' }}>
-      <div className={styles.pageContent}>
-        {children}
-      </div>
+      <div className={styles.pageContent}>{children}</div>
       <AdminFAB />
     </div>
   );

@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTag } from '@/components/providers/TagProvider';
 import { Tag, TagWithChildren } from '@/lib/types/tag';
 import styles from './MacroTagSelector.module.css';
 import { buildSparseTagTree, createUITreeFromDimensions } from '@/lib/utils/tagUtils';
 import clsx from 'clsx';
-import { useCardForm } from '@/components/providers/CardFormProvider';
+import TagPickerDimensionColumn from '@/components/admin/card-admin/TagPickerDimensionColumn';
 
 interface MacroTagSelectorProps {
   selectedTags: Tag[];
@@ -18,6 +18,8 @@ interface MacroTagSelectorProps {
 
 export default function MacroTagSelector({ selectedTags, allTags, onChange, error, className }: MacroTagSelectorProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { tags: providerTags } = useTag();
+  const effectiveAllTags = providerTags.length > 0 ? providerTags : allTags;
 
   const handleSave = (newSelection: string[]) => {
     onChange(newSelection);
@@ -32,9 +34,9 @@ export default function MacroTagSelector({ selectedTags, allTags, onChange, erro
 
   // Build the sparse tree of selected tags and their ancestors
   const selectedTagTree = useMemo(() => {
-    if (!allTags || selectedTagIds.length === 0) return [];
-    return buildSparseTagTree(allTags, selectedTagIds);
-  }, [allTags, selectedTagIds]);
+    if (!effectiveAllTags?.length || selectedTagIds.length === 0) return [];
+    return buildSparseTagTree(effectiveAllTags, selectedTagIds);
+  }, [effectiveAllTags, selectedTagIds]);
 
   // Organize the sparse tree by dimension
   const dimensionalSelectedTree = useMemo(() => {
@@ -184,19 +186,13 @@ function ExpandedView({ initialSelection, onSave, onCancel, className }: Expande
         
         <div className={styles.interactiveColumns}>
           {dimensionalTree.map(dimension => (
-            <div key={dimension.docId} className={styles.dimensionColumn}>
-              <h4>{dimension.name}</h4>
-              <div className={styles.interactiveTree}>
-                {dimension.children.map(root => (
-                  <InteractiveTagNode
-                    key={root.docId}
-                    node={root}
-                    selection={currentSelection}
-                    onChange={handleTagChange}
-                  />
-                ))}
-              </div>
-            </div>
+            <TagPickerDimensionColumn
+              key={dimension.docId}
+              dimension={dimension}
+              selection={currentSelection}
+              onSelectionChange={handleTagChange}
+              checkboxIdPrefix="tag"
+            />
           ))}
         </div>
         <div className={styles.actions}>
@@ -207,58 +203,3 @@ function ExpandedView({ initialSelection, onSave, onCancel, className }: Expande
     </div>
   );
 }
-
-// --- Recursive Interactive Node Component ---
-
-interface InteractiveTagNodeProps {
-  node: TagWithChildren;
-  selection: Set<string>;
-  onChange: (tagId: string, selected: boolean) => void;
-}
-
-function InteractiveTagNode({ node, selection, onChange }: InteractiveTagNodeProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-
-  const isSelected = selection.has(node.docId);
-
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(node.docId, e.target.checked);
-  };
-
-  const hasChildren = node.children && node.children.length > 0;
-
-  return (
-    <div className={styles.interactiveNode}>
-      <div className={styles.nodeControl}>
-        {hasChildren && (
-          <button
-            type="button"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className={styles.collapseButton}
-          >
-            {isCollapsed ? '►' : '▼'}
-          </button>
-        )}
-        <input
-          type="checkbox"
-          id={`tag-${node.docId}`}
-          checked={isSelected}
-          onChange={handleCheckboxChange}
-        />
-        <label htmlFor={`tag-${node.docId}`}>{node.name}</label>
-      </div>
-      {!isCollapsed && hasChildren && (
-        <div className={styles.tagChildren}>
-          {node.children.map(child => (
-            <InteractiveTagNode
-              key={child.docId}
-              node={child}
-              selection={selection}
-              onChange={onChange}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-} 

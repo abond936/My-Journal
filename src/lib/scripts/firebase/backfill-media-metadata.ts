@@ -18,7 +18,7 @@ interface BackfillReport {
   processingTime: number;
 }
 
-async function backfillMediaMetadata(dryRun: boolean = false): Promise<BackfillReport> {
+export async function backfillMediaMetadata(dryRun: boolean = false): Promise<BackfillReport> {
   const adminApp = getAdminApp();
   const firestore = adminApp.firestore();
   const storage = adminApp.storage();
@@ -230,7 +230,9 @@ async function main() {
   }
 }
 
-// Run the script
-main();
-
-export { backfillMediaMetadata }; 
+if (require.main === module) {
+  main().catch(e => {
+    console.error(e);
+    process.exit(1);
+  });
+} 

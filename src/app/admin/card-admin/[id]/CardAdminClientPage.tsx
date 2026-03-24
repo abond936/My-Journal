@@ -18,7 +18,8 @@ interface CardAdminClientPageProps {
   cardId: string | null;
 }
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+const fetcher = (url: string) =>
+  fetch(url, { cache: 'no-store', credentials: 'same-origin' }).then((res) => res.json());
 
 export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps) {
   const router = useRouter();
@@ -56,6 +57,7 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cardData),
+        cache: 'no-store',
       });
 
       const savedData = await response.json();
@@ -64,16 +66,15 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
         throw new Error('Failed to save the card.');
       }
 
-      // Update individual card cache immediately
+      // Update cache with server response; skip revalidate to avoid stale refetch overwriting
       mutateCard(savedData, false);
-      
-      // Update all list/search caches with new card data without re-fetching
-      globalMutate((key) => {
-        if (typeof key === 'string' && key.startsWith('/api/cards?')) {
-          return true; // Update this cache
-        }
-        return false; // Don't update other caches
-      }, undefined, false);
+
+      // Invalidate list/search caches and revalidate so they refetch fresh data
+      globalMutate(
+        (key) => typeof key === 'string' && key.startsWith('/api/cards?'),
+        undefined,
+        { revalidate: true }
+      );
       
       // If a new card was created, navigate to its new edit page.
       if (!cardId) {

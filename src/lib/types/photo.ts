@@ -40,6 +40,9 @@ export const mediaSchema = z.object({
   // Timestamps for creation and last update.
   createdAt: z.number(),
   updatedAt: z.number(),
+
+  /** Card IDs that reference this media (cover, gallery, or content). Denormalized for fast delete and unassigned filter. */
+  referencedByCardIds: z.array(z.string()).optional(),
 });
 
 export type Media = z.infer<typeof mediaSchema>;

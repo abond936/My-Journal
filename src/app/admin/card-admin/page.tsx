@@ -10,14 +10,22 @@ import styles from './card-admin.module.css';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { buildDimensionTree } from '@/lib/utils/tagUtils';
 import CardAdminList from '@/components/admin/card-admin/CardAdminList';
+import CardAdminGrid from '@/components/admin/card-admin/CardAdminGrid';
 import BulkEditTagsModal from '@/components/admin/card-admin/BulkEditTagsModal';
 import ImportFolderModal from '@/components/admin/card-admin/ImportFolderModal';
 
 const SCROLL_POSITION_KEY = 'adminCardListScrollPos';
+const CARD_VIEW_MODE_KEY = 'card-admin-view-mode';
+type ViewMode = 'grid' | 'table';
 
 export default function AdminCardsPage() {
   const router = useRouter();
   const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window === 'undefined') return 'grid';
+    const saved = localStorage.getItem(CARD_VIEW_MODE_KEY);
+    return (saved === 'table' ? 'table' : 'grid') as ViewMode;
+  });
   const [isBulkTagModalOpen, setIsBulkTagModalOpen] = useState(false);
   const [isImportFolderModalOpen, setIsImportFolderModalOpen] = useState(false);
   const [searchInputValue, setSearchInputValue] = useState('');
@@ -54,6 +62,12 @@ export default function AdminCardsPage() {
       setPageLimit(20);
     };
   }, [setPageLimit]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(CARD_VIEW_MODE_KEY, viewMode);
+    }
+  }, [viewMode]);
 
   const dimensionalTree = useMemo(() => {
     if (!allTags) return {};
@@ -217,6 +231,28 @@ export default function AdminCardsPage() {
         </button>
       </div>
 
+      <div className={styles.viewToggleBar}>
+        <span className={styles.viewToggleLabel}>View:</span>
+        <span className={styles.viewToggleButtonGroup}>
+          <button
+            type="button"
+            className={`${styles.viewToggleButton} ${viewMode === 'grid' ? styles.viewToggleActive : ''}`}
+            onClick={() => setViewMode('grid')}
+            aria-pressed={viewMode === 'grid'}
+          >
+            Grid
+          </button>
+          <button
+            type="button"
+            className={`${styles.viewToggleButton} ${viewMode === 'table' ? styles.viewToggleActive : ''}`}
+            onClick={() => setViewMode('table')}
+            aria-pressed={viewMode === 'table'}
+          >
+            Table
+          </button>
+        </span>
+      </div>
+
       <div className={styles.filterSection}>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <input
@@ -317,16 +353,29 @@ export default function AdminCardsPage() {
         </div>
       </div>
 
-      <CardAdminList
-        cards={cards}
-        selectedCardIds={selectedCardIds}
-        allTags={allTags || []}
-        onSelectCard={handleSelectCard}
-        onSelectAll={handleSelectAll}
-        onSaveScrollPosition={onSaveScrollPosition}
-        onUpdateCard={handleUpdateCard}
-        onDeleteCard={handleDeleteCard}
-      />
+      {viewMode === 'grid' ? (
+        <CardAdminGrid
+          cards={cards}
+          selectedCardIds={selectedCardIds}
+          allTags={allTags || []}
+          onSelectCard={handleSelectCard}
+          onSelectAll={handleSelectAll}
+          onSaveScrollPosition={onSaveScrollPosition}
+          onUpdateCard={handleUpdateCard}
+          onDeleteCard={handleDeleteCard}
+        />
+      ) : (
+        <CardAdminList
+          cards={cards}
+          selectedCardIds={selectedCardIds}
+          allTags={allTags || []}
+          onSelectCard={handleSelectCard}
+          onSelectAll={handleSelectAll}
+          onSaveScrollPosition={onSaveScrollPosition}
+          onUpdateCard={handleUpdateCard}
+          onDeleteCard={handleDeleteCard}
+        />
+      )}
 
       {hasMore && (
         <div className={styles.loadMoreContainer}>

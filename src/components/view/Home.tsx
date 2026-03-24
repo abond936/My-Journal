@@ -2,7 +2,7 @@
 
 // Home.tsx - Main landing page component
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useSession, signIn } from 'next-auth/react';
@@ -11,7 +11,7 @@ import styles from '@/components/view/Home.module.css';
 
 const Home: React.FC = () => {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const { theme } = useTheme();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -34,9 +34,11 @@ const Home: React.FC = () => {
     }
   };
   
-  const handleEnter = () => {
-    router.push('/view');
-  };
+  useEffect(() => {
+    if (status === 'authenticated') {
+      router.replace('/view');
+    }
+  }, [status, router]);
 
   const renderLoginForm = () => (
     <form onSubmit={handleSignIn} className={styles.loginForm}>
@@ -63,18 +65,6 @@ const Home: React.FC = () => {
     </form>
   );
 
-  const renderWelcomeMessage = () => (
-    <>
-      <p className={styles.welcomeText}>
-        Welcome back, {session?.user?.name}.<br />
-        Ready to continue your story?
-      </p>
-      <button onClick={handleEnter} className={styles.enterButton}>
-        Enter
-      </button>
-    </>
-  );
-  
   const renderLoading = () => (
     <p className={styles.welcomeText}>Loading...</p>
   );
@@ -110,7 +100,7 @@ const Home: React.FC = () => {
         {/* Welcome/Login Section */}
         <section className={styles.welcomeSection}>
           {status === 'loading' && renderLoading()}
-          {status === 'authenticated' && renderWelcomeMessage()}
+          {status === 'authenticated' && renderLoading()}
           {status === 'unauthenticated' && (
             <>
               <p className={styles.welcomeText}>

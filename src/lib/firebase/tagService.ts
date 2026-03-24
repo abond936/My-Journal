@@ -430,23 +430,37 @@ export async function createTag(tagData: Omit<Tag, 'docId' | 'createdAt' | 'upda
     }
 
     const newPath: string[] = [];
-    
-    // If tag has a parent, build its path and inherit its dimension.
+
     if (tagData.parentId) {
       const parentDoc = await firestore.collection(TAGS_COLLECTION).doc(tagData.parentId).get();
-      if (parentDoc.exists) {
-        const parentData = parentDoc.data() as Tag;
-        // Inherit dimension if not specified
-        if (!tagData.dimension && parentData.dimension) {
-          tagData.dimension = parentData.dimension;
-        }
-        // Build the new path from the parent's path
-        if (parentData.path) {
-          newPath.push(...parentData.path);
-        }
-        newPath.push(parentDoc.id); // Use the document ID instead of parentData.docId
+      if (!parentDoc.exists) {
+        throw new Error('Parent tag not found');
       }
+      const parentData = parentDoc.data() as Tag;
+      if (!tagData.dimension && parentData.dimension) {
+        tagData.dimension = parentData.dimension;
+      }
+      if (parentData.path) {
+        newPath.push(...parentData.path);
+      }
+      newPath.push(parentDoc.id);
+    } else if (!tagData.dimension) {
+      throw new Error('Root tags require a dimension');
     }
+
+    // Append after existing siblings (avoids new tags sorting to the top when order ties at 0)
+    const allTags = await getAllTags();
+    const wantParentId = tagData.parentId || '';
+    const siblings = allTags.filter(t => {
+      const p = t.parentId || '';
+      if (p !== wantParentId) return false;
+      if (!tagData.parentId) {
+        return t.dimension === tagData.dimension;
+      }
+      return true;
+    });
+    const maxOrder = siblings.reduce((m, t) => Math.max(m, t.order ?? 0), 0);
+    tagData.order = maxOrder + 1;
 
     // Create the tag
     const tagRef = firestore.collection(TAGS_COLLECTION).doc();

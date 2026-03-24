@@ -6,12 +6,15 @@ import { Media } from '@/lib/types/photo';
 interface MediaListResponse {
   media: Media[];
   pagination: {
-    page: number;
+    page?: number;
     limit: number;
-    total: number;
-    totalPages: number;
+    total: number | null;
+    totalPages: number | null;
+    seekMode?: boolean;
     hasNext: boolean;
     hasPrev: boolean;
+    nextCursor?: string | null;
+    prevCursor?: string | null;
   };
 }
 
@@ -21,6 +24,8 @@ interface MediaFilters {
   dimensions: string;
   hasCaption: string;
   search: string;
+  /** all | unassigned | assigned — unassigned/assigned use seek pagination (forward-only). */
+  assignment: string;
 }
 
 interface MediaContextType {
@@ -62,6 +67,7 @@ const defaultFilters: MediaFilters = {
   dimensions: 'all',
   hasCaption: 'all',
   search: '',
+  assignment: 'all',
 };
 
 export function MediaProvider({ children }: { children: React.ReactNode }) {
@@ -70,41 +76,78 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<Error | null>(null);
   const [pagination, setPagination] = useState<MediaListResponse['pagination'] | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [prevCursor, setPrevCursor] = useState<string | null>(null);
+  const [cursorStack, setCursorStack] = useState<(string | null)[]>([]);
   const [filters, setFilters] = useState<MediaFilters>(defaultFilters);
   const [selectedMediaIds, setSelectedMediaIds] = useState<string[]>([]);
 
-  const buildQueryString = useCallback((page: number, filters: MediaFilters) => {
+  const buildQueryString = useCallback((
+    filters: MediaFilters,
+    opts?: { cursor?: string; prevCursor?: string }
+  ) => {
     const params = new URLSearchParams();
-    params.append('page', page.toString());
     params.append('limit', '50');
-    
+    if (opts?.cursor) params.append('cursor', opts.cursor);
+    if (opts?.prevCursor) params.append('prevCursor', opts.prevCursor);
+
     if (filters.status !== 'all') params.append('status', filters.status);
     if (filters.source !== 'all') params.append('source', filters.source);
     if (filters.dimensions !== 'all') params.append('dimensions', filters.dimensions);
     if (filters.hasCaption !== 'all') params.append('hasCaption', filters.hasCaption);
     if (filters.search) params.append('search', filters.search);
-    
+    if (filters.assignment !== 'all') params.append('assignment', filters.assignment);
+
     return params.toString();
   }, []);
 
   const fetchMedia = useCallback(async (page = 1, newFilters?: Partial<MediaFilters>) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const updatedFilters = { ...filters, ...newFilters };
-      const queryString = buildQueryString(page, updatedFilters);
-      
+      const useSeekAssignment =
+        updatedFilters.assignment === 'unassigned' || updatedFilters.assignment === 'assigned';
+      let opts: { cursor?: string; prevCursor?: string } | undefined;
+
+      if (page === 1 || newFilters) {
+        opts = undefined;
+      } else if (useSeekAssignment) {
+        if (page > currentPage && nextCursor) {
+          opts = { cursor: nextCursor };
+        } else {
+          opts = undefined;
+        }
+      } else if (page > currentPage && nextCursor) {
+        opts = { cursor: nextCursor };
+      } else if (page < currentPage && prevCursor) {
+        opts = { prevCursor };
+      } else if (page === currentPage && page >= 2 && cursorStack[page - 2]) {
+        opts = { cursor: cursorStack[page - 2]! };
+      }
+
+      const queryString = buildQueryString(updatedFilters, opts);
       const response = await fetch(`/api/media?${queryString}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch media: ${response.statusText}`);
       }
-      
+
       const data: MediaListResponse = await response.json();
       setMedia(data.media);
-      setPagination(data.pagination);
+      setPagination({ ...data.pagination, page });
       setCurrentPage(page);
-      
+      setNextCursor(data.pagination.nextCursor);
+      setPrevCursor(data.pagination.prevCursor);
+
+      if (page === 1 || newFilters) {
+        setCursorStack(data.pagination.nextCursor ? [data.pagination.nextCursor] : []);
+      } else if (page > currentPage && data.pagination.nextCursor) {
+        setCursorStack((prev) => [...prev, data.pagination.nextCursor!]);
+      } else if (page < currentPage) {
+        setCursorStack((prev) => prev.slice(0, -1));
+      }
+
       if (newFilters) {
         setFilters(updatedFilters);
       }
@@ -115,7 +158,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [filters, buildQueryString]);
+  }, [filters, buildQueryString, currentPage, nextCursor, prevCursor, cursorStack]);
 
   const updateMedia = useCallback(async (id: string, updates: Partial<Media>): Promise<Media | undefined> => {
     try {
@@ -166,20 +209,44 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   }, [fetchMedia, currentPage, pagination, media.length]);
 
   const deleteMultipleMedia = useCallback(async (ids: string[]) => {
+    if (ids.length === 0) return;
+
+    const CONCURRENT_DELETES = 5;
+    const deletedIds: string[] = [];
+
     try {
-      // Delete each media item sequentially
-      for (const id of ids) {
-        await deleteMedia(id);
+      for (let i = 0; i < ids.length; i += CONCURRENT_DELETES) {
+        const chunk = ids.slice(i, i + CONCURRENT_DELETES);
+        const results = await Promise.allSettled(
+          chunk.map(async (id) => {
+            const response = await fetch(`/api/images/${id}`, { method: 'DELETE' });
+            if (!response.ok) throw new Error(`Failed to delete ${id}`);
+            return id;
+          })
+        );
+        results.forEach((r) => {
+          if (r.status === 'fulfilled' && r.value) deletedIds.push(r.value);
+          else if (r.status === 'rejected')
+            setError(r.reason instanceof Error ? r.reason : new Error(String(r.reason)));
+        });
       }
-      
-      // Clear selection after bulk delete
-      setSelectedMediaIds([]);
+
+      if (deletedIds.length > 0) {
+        setMedia((prev) => prev.filter((m) => !deletedIds.includes(m.docId)));
+        setSelectedMediaIds((prev) => prev.filter((id) => !deletedIds.includes(id)));
+
+        if (pagination && media.length <= deletedIds.length && currentPage > 1) {
+          await fetchMedia(currentPage - 1);
+        } else {
+          await fetchMedia(currentPage);
+        }
+      }
     } catch (err) {
       const error = err instanceof Error ? err : new Error('An unknown error occurred');
       setError(error);
       console.error('Error deleting multiple media:', error);
     }
-  }, [deleteMedia]);
+  }, [fetchMedia, currentPage, pagination, media.length]);
 
   const setFilter = useCallback((key: keyof MediaFilters, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -187,7 +254,11 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
 
   const clearFilters = useCallback(() => {
     setFilters(defaultFilters);
-  }, []);
+    setCursorStack([]);
+    setNextCursor(null);
+    setPrevCursor(null);
+    void fetchMedia(1, defaultFilters);
+  }, [fetchMedia]);
 
   const toggleMediaSelection = useCallback((id: string) => {
     setSelectedMediaIds(prev => 

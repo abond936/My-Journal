@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
-import { deleteMediaAsset, updateMediaStatus } from '@/lib/services/images/imageImportService';
+import { patchMediaDocument } from '@/lib/services/images/imageImportService';
+import { deleteMediaWithCardCleanup } from '@/lib/services/cardService';
 import { mediaSchema } from '@/lib/types/photo';
 
 /**
@@ -51,18 +52,46 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 
   try {
-    const body = await request.json();
-    const status = body.status;
+    const body = await request.json() as Record<string, unknown>;
 
-    // Validate the status against the schema's enum
-    const statusValidation = mediaSchema.shape.status.safeParse(status);
-    if (!statusValidation.success) {
-      return NextResponse.json({ message: 'Invalid status provided.', issues: statusValidation.error.issues }, { status: 400 });
+    const hasStatus = 'status' in body && body.status !== undefined;
+    const hasCaption = 'caption' in body;
+    const hasObjectPosition = 'objectPosition' in body && body.objectPosition !== undefined;
+
+    if (!hasStatus && !hasCaption && !hasObjectPosition) {
+      return NextResponse.json(
+        { message: 'Provide at least one of: status, caption, objectPosition.' },
+        { status: 400 }
+      );
     }
 
-    await updateMediaStatus(mediaId, status);
+    const patch: { status?: 'temporary' | 'active'; caption?: string; objectPosition?: string } = {};
 
-    return NextResponse.json({ message: `Media asset ${mediaId} status updated to ${status}.` });
+    if (hasStatus) {
+      const statusValidation = mediaSchema.shape.status.safeParse(body.status);
+      if (!statusValidation.success) {
+        return NextResponse.json(
+          { message: 'Invalid status provided.', issues: statusValidation.error.issues },
+          { status: 400 }
+        );
+      }
+      patch.status = statusValidation.data;
+    }
+
+    if (hasCaption) {
+      patch.caption = typeof body.caption === 'string' ? body.caption : '';
+    }
+
+    if (hasObjectPosition) {
+      if (typeof body.objectPosition !== 'string' || !body.objectPosition.trim()) {
+        return NextResponse.json({ message: 'objectPosition must be a non-empty string.' }, { status: 400 });
+      }
+      patch.objectPosition = body.objectPosition.trim();
+    }
+
+    await patchMediaDocument(mediaId, patch);
+
+    return NextResponse.json({ message: `Media asset ${mediaId} updated.` });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error(`Error updating media status for ${mediaId}:`, errorMessage);
@@ -105,7 +134,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   }
 
   try {
-    await deleteMediaAsset(mediaId);
+    await deleteMediaWithCardCleanup(mediaId);
     return NextResponse.json({ message: `Media asset ${mediaId} deleted successfully.` });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';

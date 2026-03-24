@@ -49,6 +49,45 @@
   color: var(--text1-color);
 }
 
+.sourceTabs {
+  display: flex;
+  gap: 0;
+  padding: 0 1rem;
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  background-color: var(--layout-background2-color);
+}
+
+.sourceTab {
+  padding: 0.65rem 1.25rem;
+  border: none;
+  background: transparent;
+  color: var(--text2-color);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+}
+
+.sourceTab:hover {
+  color: var(--text1-color);
+}
+
+.sourceTabActive {
+  color: var(--text1-color);
+  border-bottom-color: var(--color3);
+}
+
+.sourceHint {
+  margin: 0;
+  padding: 0.5rem 1rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--text2-color);
+  line-height: 1.4;
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  background-color: var(--layout-background1-color);
+}
+
 .content {
   flex: 1;
   display: flex;
@@ -66,8 +105,29 @@
 
 .albumTitle {
   font-weight: 500;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   color: var(--text1-color);
+}
+
+.treeToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.treeToolButton {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: 4px;
+  background: var(--layout-background1-color);
+  color: var(--text1-color);
+  cursor: pointer;
+}
+
+.treeToolButton:hover {
+  background: var(--layout-background2-color);
 }
 
 .treeNode {
@@ -131,7 +191,7 @@
 }
 
 .photoItem {
-  position: relative;
+  position: relative; /* anchor checkmark + library caption */
   aspect-ratio: 1;
   cursor: pointer;
   border-radius: 4px;
@@ -241,4 +301,97 @@
 .doneButton:disabled {
   background-color: var(--border1-color);
   cursor: not-allowed;
-} 
+}
+
+.libraryPanel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background-color: var(--layout-background1-color);
+}
+
+.libraryToolbar {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  flex-shrink: 0;
+}
+
+.librarySearchInput {
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem 0.75rem;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: 4px;
+  font-size: 0.875rem;
+  background: var(--input-background-color);
+  color: var(--text1-color);
+}
+
+.librarySearchButton {
+  padding: 0.5rem 1rem;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: 4px;
+  background: var(--layout-background2-color);
+  color: var(--text1-color);
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.librarySearchButton:hover {
+  background: var(--layout-background1-color);
+}
+
+.libraryGrid {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+  align-content: start;
+}
+
+.libraryCaption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.25rem 0.35rem;
+  font-size: 0.6875rem;
+  color: var(--layout-background1-color);
+  background: linear-gradient(transparent, hsla(0, 0%, 0%, 0.75));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.libraryLoadMoreWrap {
+  padding: 0.75rem 1rem 1rem;
+  display: flex;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.libraryLoadMore {
+  padding: 0.5rem 1.25rem;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: 4px;
+  background: var(--layout-background2-color);
+  color: var(--text1-color);
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.libraryLoadMore:hover:not(:disabled) {
+  background: var(--layout-background1-color);
+}
+
+.libraryLoadMore:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}

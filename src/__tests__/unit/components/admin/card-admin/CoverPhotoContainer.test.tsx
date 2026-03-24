@@ -14,13 +14,29 @@ jest.mock('next/image', () => {
 describe('CoverPhotoContainer', () => {
   const mockOnChange = jest.fn();
   const mockMedia: Media = {
-    id: 'test-media-1',
-    url: 'test.jpg',
-    alt: 'Test image',
-    type: 'image',
+    docId: 'test-media-1',
+    filename: 'test.jpg',
     width: 100,
     height: 100,
+    size: 1024,
+    contentType: 'image/jpeg',
+    storageUrl: 'https://example.com/test.jpg',
+    storagePath: 'images/test-media-1-test.jpg',
+    source: 'paste',
+    sourcePath: 'upload://test.jpg',
+    createdAt: 0,
+    updatedAt: 0,
   };
+
+  const renderWithProps = (props: Partial<React.ComponentProps<typeof CoverPhotoContainer>> = {}) =>
+    render(
+      <CoverPhotoContainer
+        coverImage={null}
+        onChange={mockOnChange}
+        isSaving={false}
+        {...props}
+      />
+    );
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -28,35 +44,20 @@ describe('CoverPhotoContainer', () => {
   });
 
   it('renders empty state correctly', () => {
-    render(
-      <CoverPhotoContainer
-        coverImage={null}
-        onChange={mockOnChange}
-      />
-    );
+    renderWithProps();
 
     expect(screen.getByText(/drag and drop/i)).toBeInTheDocument();
   });
 
   it('renders existing image correctly', () => {
-    render(
-      <CoverPhotoContainer
-        coverImage={mockMedia}
-        onChange={mockOnChange}
-      />
-    );
+    renderWithProps({ coverImage: mockMedia });
 
-    expect(screen.getByAltText('Test image')).toBeInTheDocument();
+    expect(screen.getByAltText('test.jpg')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /remove/i })).toBeInTheDocument();
   });
 
   it('handles image removal', async () => {
-    render(
-      <CoverPhotoContainer
-        coverImage={mockMedia}
-        onChange={mockOnChange}
-      />
-    );
+    renderWithProps({ coverImage: mockMedia });
 
     const removeButton = screen.getByRole('button', { name: /remove/i });
     await userEvent.click(removeButton);
@@ -67,38 +68,19 @@ describe('CoverPhotoContainer', () => {
   it('handles file drop', async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve(mockMedia),
+      json: () => Promise.resolve({ mediaId: mockMedia.docId, media: mockMedia }),
     });
 
-    render(
-      <CoverPhotoContainer
-        coverImage={null}
-        onChange={mockOnChange}
-      />
-    );
+    const { container } = renderWithProps();
 
     const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-    const dropzone = screen.getByText(/drag and drop/i);
-
-    Object.defineProperty(dropzone, 'getBoundingClientRect', {
-      value: () => ({
-        bottom: 100,
-        height: 100,
-        left: 0,
-        right: 100,
-        top: 0,
-        width: 100,
-        x: 0,
-        y: 0,
-        toJSON: () => {},
-      }),
-    });
-
-    await userEvent.upload(dropzone, file);
+    const input = container.querySelector('input[type="file"]');
+    expect(input).toBeInTheDocument();
+    await userEvent.upload(input!, file);
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
-        '/api/images/upload',
+        '/api/images/browser',
         expect.objectContaining({
           method: 'POST',
           body: expect.any(FormData),
@@ -107,82 +89,73 @@ describe('CoverPhotoContainer', () => {
     });
 
     await waitFor(() => {
-      expect(mockOnChange).toHaveBeenCalledWith(mockMedia);
+      expect(mockOnChange).toHaveBeenCalledWith(mockMedia, '50% 50%');
     });
   });
 
   it('handles upload error', async () => {
     (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Upload failed'));
 
-    render(
-      <CoverPhotoContainer
-        coverImage={null}
-        onChange={mockOnChange}
-      />
-    );
+    const { container } = renderWithProps();
 
     const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-    const dropzone = screen.getByText(/drag and drop/i);
+    const input = container.querySelector('input[type="file"]');
+    await userEvent.upload(input!, file);
 
-    await userEvent.upload(dropzone, file);
-
-    expect(await screen.findByText(/failed to upload/i)).toBeInTheDocument();
+    expect(await screen.findByText(/upload failed/i)).toBeInTheDocument();
   });
 
   it('shows loading state during upload', async () => {
-    let resolveUpload: (value: any) => void;
+    let resolveUpload: (value: unknown) => void;
     const uploadPromise = new Promise(resolve => {
       resolveUpload = resolve;
     });
 
     (global.fetch as jest.Mock).mockImplementationOnce(() => uploadPromise);
 
-    render(
-      <CoverPhotoContainer
-        coverImage={null}
-        onChange={mockOnChange}
-      />
-    );
+    const { container } = renderWithProps();
 
     const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-    const dropzone = screen.getByText(/drag and drop/i);
-
-    await userEvent.upload(dropzone, file);
+    const input = container.querySelector('input[type="file"]');
+    await userEvent.upload(input!, file);
 
     expect(screen.getByText(/uploading/i)).toBeInTheDocument();
 
     resolveUpload!({
       ok: true,
-      json: () => Promise.resolve(mockMedia),
+      json: () => Promise.resolve({ mediaId: mockMedia.docId, media: mockMedia }),
     });
   });
 
   it('shows error state', () => {
-    render(
-      <CoverPhotoContainer
-        coverImage={null}
-        onChange={mockOnChange}
-        error="Invalid image"
-      />
-    );
+    renderWithProps({ error: 'Invalid image' });
 
     expect(screen.getByText('Invalid image')).toBeInTheDocument();
   });
 
   it('handles drag events', async () => {
-    render(
-      <CoverPhotoContainer
-        coverImage={null}
-        onChange={mockOnChange}
-      />
-    );
+    renderWithProps();
 
-    const dropzone = screen.getByText(/drag and drop/i);
+    const dropzone = screen.getByTestId('cover-dropzone');
+    const file = new File(['x'], 'test.jpg', { type: 'image/jpeg' });
 
-    fireEvent.dragEnter(dropzone);
-    expect(screen.getByText(/drop the image here/i)).toBeInTheDocument();
+    fireEvent.dragEnter(dropzone, {
+      dataTransfer: {
+        types: ['Files'],
+        items: [{ kind: 'file', type: 'image/jpeg', getAsFile: () => file }],
+      },
+    });
 
-    fireEvent.dragLeave(dropzone);
-    expect(screen.getByText(/drag and drop/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/drop the image here/i)).toBeInTheDocument();
+    });
+
+    fireEvent.dragLeave(dropzone, {
+      dataTransfer: { types: [] },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/drag and drop/i)).toBeInTheDocument();
+    });
   });
 }); 

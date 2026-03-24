@@ -7,9 +7,10 @@ import styles from './AdminNavTabs.module.css';
 
 const tabs = [
   { name: 'Cards', href: '/admin/card-admin' },
-  { name: 'Tags', href: '/admin/tag-admin' },
   { name: 'Media', href: '/admin/media-admin' },
+  { name: 'Tags', href: '/admin/tag-admin' },
   { name: 'Theme', href: '/admin/theme-admin' },
+  { name: 'Maintenance', href: '/admin/maintenance' },
 ];
 
 export default function AdminNavTabs() {

@@ -67,9 +67,20 @@ function useTagManagement() {
       return;
     }
 
-    // Get ALL siblings for this parent
+    if (!activeTag.parentId && (activeTag.dimension || '') !== (overTag.dimension || '')) {
+      console.log('Cannot reorder: root tags are in different dimensions');
+      return;
+    }
+
+    // Get ALL siblings for this parent (roots are scoped by dimension, not all parentId-less tags)
     const allSiblings = currentTags
-      .filter(t => t.parentId === activeTag.parentId)
+      .filter(t => {
+        if ((t.parentId || '') !== (activeTag.parentId || '')) return false;
+        if (!activeTag.parentId) {
+          return (t.dimension || '') === (activeTag.dimension || '');
+        }
+        return true;
+      })
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
     // Remove active tag from the array
@@ -165,8 +176,12 @@ function AdminTagsPageContent() {
 
   return (
     <div className={styles.container}>
-      <h1>Tag Management</h1>
-      <p>Drag and drop to reorder or reparent tags. Use the `+` button to add a child tag.</p>
+      <h1 className={styles.pageHeading}>Tag Management</h1>
+      <p>
+        Drag tags by the handle to <strong>reorder</strong> within the same parent. Hold{' '}
+        <strong>Shift</strong> while dragging to <strong>reparent</strong> (drop onto the new parent). Use
+        the <code>+</code> button to add a child tag.
+      </p>
 
       {loading && <p>Loading tags...</p>}
       {error && <p className={styles.error}>{error.toString()}</p>}

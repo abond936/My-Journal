@@ -10,9 +10,36 @@ import { getAdminApp } from '@/lib/config/firebase/admin';
 dotenv.config({ path: resolve(process.cwd(), '.env.local') });
 dotenv.config({ path: resolve(process.cwd(), '.env') });
 
-async function diagnoseCoverImage(searchTitle: string) {
+export interface CoverDiagnosticCard {
+  cardId: string;
+  title: string;
+  coverImageId: string | null;
+  coverImageFocalPoint: unknown;
+  media?: {
+    docId: string;
+    filename: string;
+    width: number;
+    height: number;
+    storagePath: string | null;
+    hasStorageUrl: boolean;
+    objectPosition: string | null;
+    warnings: string[];
+  };
+  mediaNotFound?: boolean;
+  noCover?: boolean;
+}
+
+export interface CoverDiagnosticResult {
+  searchTitle: string;
+  cards: CoverDiagnosticCard[];
+  error?: string;
+}
+
+/**
+ * Returns structured diagnostic data for cover images of cards matching the given title.
+ */
+export async function diagnoseCoverImage(searchTitle: string): Promise<CoverDiagnosticResult> {
   const title = searchTitle || 'High School Graduation';
-  console.log(`\nSearching for card with title containing: "${title}"\n`);
 
   try {
     getAdminApp();
@@ -29,62 +56,123 @@ async function diagnoseCoverImage(searchTitle: string) {
     docs = [...snapshot.docs];
 
     if (docs.length === 0) {
-      console.log(`No cards found with prefix "${title}". Trying exact title match...`);
       const exactSnapshot = await firestore
         .collection('cards')
         .where('title', '==', title)
         .limit(5)
         .get();
       if (exactSnapshot.empty) {
-        console.log(`No cards found. The card may not exist or the title may differ.`);
-        return;
+        return { searchTitle: title, cards: [] };
       }
       docs = [...exactSnapshot.docs];
     }
 
+    const cards: CoverDiagnosticCard[] = [];
+
     for (const doc of docs) {
       const cardData = doc.data();
       const cardId = doc.id;
-      console.log('========================================');
-      console.log(`Card ID: ${cardId}`);
-      console.log(`Title: ${cardData.title}`);
-      console.log('----------------------------------------');
-      console.log(`coverImageId: ${cardData.coverImageId ?? '(null/undefined)'}`);
-      console.log(`coverImageFocalPoint: ${cardData.coverImageFocalPoint ? JSON.stringify(cardData.coverImageFocalPoint) : '(null/undefined)'}`);
-      console.log('----------------------------------------');
 
-      if (cardData.coverImageId) {
-        const mediaDoc = await firestore.collection('media').doc(cardData.coverImageId).get();
-        if (mediaDoc.exists) {
-          const media = mediaDoc.data();
-          console.log('Media document EXISTS:');
-          console.log(`  - docId: ${media?.docId}`);
-          console.log(`  - filename: ${media?.filename}`);
-          console.log(`  - width: ${media?.width}`);
-          console.log(`  - height: ${media?.height}`);
-          console.log(`  - storagePath: ${media?.storagePath ?? '(missing)'}`);
-          console.log(`  - storageUrl: ${media?.storageUrl ? '(set)' : '(missing/empty)'}`);
-          console.log(`  - objectPosition: ${media?.objectPosition ?? '(not set)'}`);
-
-          if (!media?.storagePath) {
-            console.log('\n  ⚠️  WARNING: storagePath is missing - signed URL generation will fail');
-          }
-          if (!media?.width || !media?.height) {
-            console.log('\n  ⚠️  WARNING: width/height missing - focal point calc may fail');
-          }
-        } else {
-          console.log('Media document NOT FOUND (orphaned reference)');
-        }
-      } else {
-        console.log('No coverImageId - card has no cover image assigned');
+      if (!cardData.coverImageId) {
+        cards.push({
+          cardId,
+          title: cardData.title ?? '',
+          coverImageId: null,
+          coverImageFocalPoint: cardData.coverImageFocalPoint ?? null,
+          noCover: true,
+        });
+        continue;
       }
-      console.log('');
+
+      const mediaDoc = await firestore.collection('media').doc(cardData.coverImageId).get();
+      if (!mediaDoc.exists) {
+        cards.push({
+          cardId,
+          title: cardData.title ?? '',
+          coverImageId: cardData.coverImageId,
+          coverImageFocalPoint: cardData.coverImageFocalPoint ?? null,
+          mediaNotFound: true,
+        });
+        continue;
+      }
+
+      const media = mediaDoc.data();
+      const warnings: string[] = [];
+      if (!media?.storagePath) {
+        warnings.push('storagePath is missing - signed URL generation will fail');
+      }
+      if (!media?.width || !media?.height) {
+        warnings.push('width/height missing - focal point calc may fail');
+      }
+
+      cards.push({
+        cardId,
+        title: cardData.title ?? '',
+        coverImageId: cardData.coverImageId,
+        coverImageFocalPoint: cardData.coverImageFocalPoint ?? null,
+        media: {
+          docId: media?.docId ?? mediaDoc.id,
+          filename: media?.filename ?? '',
+          width: media?.width ?? 0,
+          height: media?.height ?? 0,
+          storagePath: media?.storagePath ?? null,
+          hasStorageUrl: !!(media?.storageUrl),
+          objectPosition: media?.objectPosition ?? null,
+          warnings,
+        },
+      });
     }
+
+    return { searchTitle: title, cards };
   } catch (error) {
-    console.error('Error:', error);
-    process.exit(1);
+    const message = error instanceof Error ? error.message : String(error);
+    return { searchTitle: title, cards: [], error: message };
   }
 }
 
-const searchTitle = process.argv[2] || 'High School Graduation';
-diagnoseCoverImage(searchTitle).then(() => process.exit(0));
+function formatForCli(result: CoverDiagnosticResult): string {
+  const lines: string[] = [`\nSearching for card with title containing: "${result.searchTitle}"\n`];
+  if (result.error) {
+    lines.push(`Error: ${result.error}\n`);
+    return lines.join('\n');
+  }
+  for (const c of result.cards) {
+    lines.push('========================================');
+    lines.push(`Card ID: ${c.cardId}`);
+    lines.push(`Title: ${c.title}`);
+    lines.push('----------------------------------------');
+    lines.push(`coverImageId: ${c.coverImageId ?? '(null/undefined)'}`);
+    lines.push(`coverImageFocalPoint: ${c.coverImageFocalPoint ? JSON.stringify(c.coverImageFocalPoint) : '(null/undefined)'}`);
+    lines.push('----------------------------------------');
+    if (c.noCover) {
+      lines.push('No coverImageId - card has no cover image assigned');
+    } else if (c.mediaNotFound) {
+      lines.push('Media document NOT FOUND (orphaned reference)');
+    } else if (c.media) {
+      lines.push('Media document EXISTS:');
+      lines.push(`  - docId: ${c.media.docId}`);
+      lines.push(`  - filename: ${c.media.filename}`);
+      lines.push(`  - width: ${c.media.width}`);
+      lines.push(`  - height: ${c.media.height}`);
+      lines.push(`  - storagePath: ${c.media.storagePath ?? '(missing)'}`);
+      lines.push(`  - storageUrl: ${c.media.hasStorageUrl ? '(set)' : '(missing/empty)'}`);
+      lines.push(`  - objectPosition: ${c.media.objectPosition ?? '(not set)'}`);
+      c.media.warnings.forEach(w => lines.push(`\n  ⚠️  WARNING: ${w}`));
+    }
+    lines.push('');
+  }
+  return lines.join('\n');
+}
+
+if (require.main === module) {
+  const searchTitle = process.argv[2] || 'High School Graduation';
+  diagnoseCoverImage(searchTitle)
+    .then(result => {
+      console.log(formatForCli(result));
+      process.exit(result.error ? 1 : 0);
+    })
+    .catch(err => {
+      console.error('Error:', err);
+      process.exit(1);
+    });
+}

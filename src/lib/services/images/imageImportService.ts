@@ -1,5 +1,6 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { Media } from '@/lib/types/photo';
+import { getPublicStorageUrl } from '@/lib/utils/storageUrl';
 import * as admin from 'firebase-admin';
 import fs from 'fs/promises';
 import path from 'path';
@@ -14,6 +15,24 @@ const toSystemPath = (p: string) => p.split('/').join(path.sep);
 const toDatabasePath = (p: string) => p.split(path.sep).join('/');
 
 const SUPPORTED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.tif'];
+
+/**
+ * Finds an existing media document by sourcePath (for duplicate detection).
+ * @param sourcePath - The relative path used when importing (database format, forward slashes)
+ * @returns The existing Media doc if found, null otherwise
+ */
+export async function findMediaBySourcePath(sourcePath: string): Promise<Media | null> {
+  const app = getAdminApp();
+  const firestore = app.firestore();
+  const snapshot = await firestore
+    .collection('media')
+    .where('sourcePath', '==', sourcePath)
+    .limit(1)
+    .get();
+  if (snapshot.empty) return null;
+  const doc = snapshot.docs[0];
+  return { ...doc.data(), docId: doc.id } as Media;
+}
 
 /**
  * Reads caption from metadata, if available.
@@ -130,12 +149,8 @@ async function createMediaAsset(
     },
   });
 
-  // 4. Get signed URL (v4, 7-day max). Stored URL is only used until next hydration which injects fresh URLs.
-  const [publicUrl] = await file.getSignedUrl({
-    action: 'read',
-    expires: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), // 6 days (v4 max is 7)
-    version: 'v4',
-  });
+  // 4. Build permanent public URL (no expiration; requires Storage rules for public read)
+  const storageUrl = getPublicStorageUrl(storagePath);
 
   // 5. Construct the canonical Media object
   const now = Date.now();
@@ -146,7 +161,7 @@ async function createMediaAsset(
     height,
     size: fileBuffer.length, // File size in bytes
     contentType: metadata.format ? `image/${metadata.format}` : 'application/octet-stream',
-    storageUrl: publicUrl,
+    storageUrl,
     storagePath,
     source,
     sourcePath,
@@ -166,28 +181,48 @@ async function createMediaAsset(
 export interface ImportFromLocalOptions {
   /** If true, reads caption from sidecar .json or embedded metadata */
   readMetadata?: boolean;
+  /** If true, skip import when a media doc with same sourcePath already exists; return existing */
+  skipIfExists?: boolean;
+}
+
+export interface ImportFromLocalResult {
+  mediaId: string;
+  media: Media;
+  /** True when an existing media doc was returned (duplicate skipped) */
+  skipped?: boolean;
 }
 
 /**
  * Imports an image from the local filesystem. Reads the file and passes it to the central creator function.
  *
  * @param sourcePath - The relative path of the image from the local drive root.
- * @param options - Optional: readMetadata to populate caption from JSON or EXIF
- * @returns A promise that resolves with the new Media object, structured for client-side use.
+ * @param options - Optional: readMetadata, skipIfExists (skip duplicate by sourcePath)
+ * @returns A promise that resolves with the new or existing Media object.
  */
 export async function importFromLocalDrive(
   sourcePath: string,
   options?: ImportFromLocalOptions
-): Promise<{ mediaId: string; media: Media }> {
+): Promise<ImportFromLocalResult> {
   if (!ONEDRIVE_ROOT_FOLDER) {
     throw new Error('ONEDRIVE_ROOT_FOLDER environment variable not set');
   }
 
   try {
+    if (options?.skipIfExists) {
+      const existing = await findMediaBySourcePath(sourcePath);
+      if (existing) {
+        return {
+          mediaId: existing.docId,
+          media: existing,
+          skipped: true,
+        };
+      }
+    }
+
     // Convert database path (with forward slashes) to system path
     const normalizedSourcePath = toSystemPath(sourcePath);
     const fullPath = path.join(ONEDRIVE_ROOT_FOLDER, normalizedSourcePath);
-    
+
     // Read and process the file
     const fileBuffer = await fs.readFile(fullPath);
     const filename = path.basename(fullPath);
@@ -206,7 +241,7 @@ export async function importFromLocalDrive(
       'temporary',
       caption || undefined
     );
-    
+
     // Return the hydrated object that the client expects
     return {
       mediaId: newMedia.docId,
@@ -278,6 +313,48 @@ export async function updateMediaStatus(mediaId: string, status: Media['status']
     console.error(`[updateMediaStatus] CRITICAL ERROR during status update for media ID ${mediaId}:`, error);
     throw new Error(`Failed to update status for media asset ${mediaId}. See server logs for details.`);
   }
+}
+
+type MediaPatchFields = Partial<Pick<Media, 'status' | 'caption' | 'objectPosition'>>;
+
+/**
+ * Partial update for media metadata (admin). At least one of status, caption, or objectPosition must be provided.
+ */
+export async function patchMediaDocument(mediaId: string, updates: MediaPatchFields): Promise<void> {
+  const app = getAdminApp();
+  const firestore = app.firestore();
+  const mediaRef = firestore.collection('media').doc(mediaId);
+
+  const doc = await mediaRef.get();
+  if (!doc.exists) {
+    throw new Error(`Media document with ID ${mediaId} not found.`);
+  }
+
+  const hasField =
+    updates.status !== undefined ||
+    updates.caption !== undefined ||
+    updates.objectPosition !== undefined;
+  if (!hasField) {
+    throw new Error('No valid fields to update.');
+  }
+
+  const payload: Record<string, unknown> = { updatedAt: Date.now() };
+
+  if (updates.status !== undefined) {
+    payload.status = updates.status;
+  }
+  if (updates.caption !== undefined) {
+    payload.caption = updates.caption;
+  }
+  if (updates.objectPosition !== undefined) {
+    const trimmed = updates.objectPosition.trim();
+    if (!trimmed) {
+      throw new Error('objectPosition cannot be empty.');
+    }
+    payload.objectPosition = trimmed;
+  }
+
+  await mediaRef.update(payload);
 }
 
 // Add retry mechanism (exported for post-transaction storage cleanup, e.g. deleteCard)

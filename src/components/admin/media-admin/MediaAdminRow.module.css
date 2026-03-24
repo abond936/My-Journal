@@ -128,6 +128,14 @@
 }
 
 /* Object Position */
+.objectPositionCell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+  min-width: 0;
+}
+
 .objectPosition {
   font-family: monospace;
   font-size: var(--font-size-sm);
@@ -136,6 +144,109 @@
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+}
+
+.focalEditButton {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--layout-background1-color);
+  color: var(--text1-color);
+  cursor: pointer;
+}
+
+.focalEditButton:hover {
+  background: var(--layout-background2-color);
+}
+
+.focalForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm);
+  max-width: 32rem;
+}
+
+.focalFormIntro {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+  line-height: 1.4;
+}
+
+.focalPreview {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  background: var(--layout-background2-color);
+  border: var(--border-width-thin) solid var(--border1-color);
+}
+
+.focalPreviewImage {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.focalSliderRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.focalSliderRow label {
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+}
+
+.focalSlider {
+  width: 100%;
+  accent-color: var(--button-solid-background-color);
+}
+
+.focalFormHint {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+}
+
+.focalFormHint code {
+  font-size: 0.9em;
+}
+
+.focalFormActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+}
+
+.focalCancelButton,
+.focalSaveButton {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.focalCancelButton {
+  border: var(--border-width-thin) solid var(--border1-color);
+  background: var(--layout-background1-color);
+  color: var(--text1-color);
+}
+
+.focalSaveButton {
+  border: none;
+  background: var(--button-solid-background-color);
+  color: var(--button-solid-text-color);
+}
+
+.focalSaveButton:hover {
+  background: var(--button-solid-background-color-hover);
 }
 
 /* Source Badge */

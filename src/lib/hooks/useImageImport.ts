@@ -49,46 +49,50 @@ export function useImageImport({ onSuccess, onError, onSettled }: UseImageImport
   const importImages = useCallback(async (files: File[]) => {
     setIsImporting(true);
     
-    const initialFileStates: UploadingFileState[] = files.map((file) => ({
-      id: `${Date.now()}-${file.name}`,
+    const initialFileStates: UploadingFileState[] = files.map((file, idx) => ({
+      id: `${Date.now()}-${idx}-${file.name}`,
       file,
       status: 'pending',
     }));
     setUploadingFiles(initialFileStates);
 
-    const uploadPromises = initialFileStates.map(async (fileState) => {
-      setUploadingFiles(prev => prev.map(f => f.id === fileState.id ? { ...f, status: 'uploading' } : f));
+    const CONCURRENT_UPLOADS = 5;
+    for (let i = 0; i < initialFileStates.length; i += CONCURRENT_UPLOADS) {
+      const chunk = initialFileStates.slice(i, i + CONCURRENT_UPLOADS);
+      await Promise.allSettled(
+        chunk.map(async (fileState) => {
+          setUploadingFiles(prev => prev.map(f => f.id === fileState.id ? { ...f, status: 'uploading' } : f));
 
-      try {
-        const formData = new FormData();
-        formData.append('file', fileState.file);
+          try {
+            const formData = new FormData();
+            formData.append('file', fileState.file);
 
-        const response = await fetch('/api/images/browser', {
-          method: 'POST',
-          body: formData,
-        });
+            const response = await fetch('/api/images/browser', {
+              method: 'POST',
+              body: formData,
+            });
 
-        const result = await response.json();
+            const result = await response.json();
 
-        if (!response.ok) {
-          throw new Error(result.error || 'Failed to upload image.');
-        }
-        
-        const newMedia = result as Media;
+            if (!response.ok) {
+              throw new Error(result.error || 'Failed to upload image.');
+            }
 
-        setUploadingFiles(prev => prev.map(f => f.id === fileState.id ? { ...f, status: 'success', media: newMedia } : f));
-        
-        onSuccess?.(newMedia);
-        return { success: true, media: newMedia };
-      } catch (err) {
-        const error = err instanceof Error ? err : new Error('An unknown error occurred');
-        setUploadingFiles(prev => prev.map(f => f.id === fileState.id ? { ...f, status: 'error', error: error.message } : f));
-        onError?.(error, fileState.file);
-        return { success: false, error };
-      }
-    });
+            const newMedia = result as Media;
 
-    await Promise.allSettled(uploadPromises);
+            setUploadingFiles(prev => prev.map(f => f.id === fileState.id ? { ...f, status: 'success', media: newMedia } : f));
+
+            onSuccess?.(newMedia);
+            return { success: true, media: newMedia };
+          } catch (err) {
+            const error = err instanceof Error ? err : new Error('An unknown error occurred');
+            setUploadingFiles(prev => prev.map(f => f.id === fileState.id ? { ...f, status: 'error', error: error.message } : f));
+            onError?.(error, fileState.file);
+            return { success: false, error };
+          }
+        })
+      );
+    }
 
     setIsImporting(false);
     onSettled?.();

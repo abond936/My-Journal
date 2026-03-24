@@ -114,6 +114,115 @@
   color: var(--text1-color);
 }
 
+.nodeGutter {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+.collapseSpacer {
+  display: inline-block;
+  width: var(--spacing-lg);
+  height: var(--spacing-lg);
+  flex-shrink: 0;
+}
+
+.addChildIconButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: var(--spacing-lg);
+  height: var(--spacing-lg);
+  padding: 0;
+  font-size: var(--font-size-lg);
+  line-height: 1;
+  color: var(--text2-color);
+  border-radius: var(--border-radius-sm);
+}
+
+.addChildIconButton:hover {
+  color: var(--button-solid-background-color);
+  background: var(--layout-background2-color);
+}
+
+.addTagBlock {
+  margin-bottom: var(--spacing-sm);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: var(--border-width-thin) dashed var(--border2-color);
+}
+
+.addTagLabel {
+  display: block;
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+  margin-bottom: var(--spacing-xs);
+}
+
+.addTagRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  align-items: center;
+}
+
+.addTagInput {
+  flex: 1 1 100px;
+  min-width: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+  background: var(--layout-background1-color);
+  color: var(--text1-color);
+}
+
+.addTagButton {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  background: var(--button-solid-background-color);
+  color: var(--button-solid-text-color);
+  white-space: nowrap;
+}
+
+.addTagButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.addTagCancel {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  background: var(--layout-background1-color);
+  color: var(--text1-color);
+}
+
+.addTagChildPanel {
+  margin-bottom: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: var(--layout-background1-color);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+}
+
+.addTagChildHeading {
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+  margin-bottom: var(--spacing-xs);
+}
+
+.addTagError {
+  font-size: var(--font-size-sm);
+  color: var(--state-error-text-color);
+  margin: 0 0 var(--spacing-sm);
+}
+
 /* Styles for the expanded overlay */
 .overlay {
   position: fixed;

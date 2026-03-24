@@ -56,16 +56,32 @@ export function TagProvider({ children }: { children: ReactNode }) {
 
   const createTag = useCallback(async (tagData: Omit<Tag, 'docId'>): Promise<Tag | undefined> => {
     try {
-      const newTag = await fetch('/api/tags', {
+      const res = await fetch('/api/tags', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(tagData),
-      }).then(res => res.json());
-
-      mutate(); // Revalidate the tags list
-      return newTag;
+      });
+      let data: unknown = null;
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
+      }
+      if (!res.ok) {
+        const errObj = data as { error?: string } | null;
+        const msg =
+          errObj && typeof errObj.error === 'string'
+            ? errObj.error
+            : res.status === 409
+              ? 'Tag with this name already exists'
+              : 'Failed to create tag';
+        console.error('createTag failed:', msg);
+        return undefined;
+      }
+      await mutate();
+      return data as Tag;
     } catch (e) {
-      console.error("Failed to create tag", e);
+      console.error('Failed to create tag', e);
       return undefined;
     }
   }, [mutate]);

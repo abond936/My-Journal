@@ -24,7 +24,7 @@ export default function PhotoPicker({
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('/api/images/upload', {
+      const response = await fetch('/api/images/browser', {
         method: 'POST',
         body: formData,
       });

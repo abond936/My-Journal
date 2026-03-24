@@ -1,9 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import JournalImage from '@/components/common/JournalImage';
+import EditModal from '@/components/admin/card-admin/EditModal';
 import { Media } from '@/lib/types/photo';
 import { useMedia } from '@/components/providers/MediaProvider';
+import { parseObjectPositionToPercents } from '@/lib/utils/parseObjectPositionPercent';
 import styles from './MediaAdminRow.module.css';
 
 interface ColumnConfig {
@@ -31,6 +34,20 @@ export default function MediaAdminRow({
   const { deleteMedia, updateMedia } = useMedia();
   const [isEditingCaption, setIsEditingCaption] = useState(false);
   const [captionValue, setCaptionValue] = useState(media.caption || '');
+  const [focalModalOpen, setFocalModalOpen] = useState(false);
+  const [focalH, setFocalH] = useState(50);
+  const [focalV, setFocalV] = useState(50);
+
+  useEffect(() => {
+    setCaptionValue(media.caption || '');
+  }, [media.docId, media.caption]);
+
+  useEffect(() => {
+    if (!focalModalOpen) return;
+    const { horizontal, vertical } = parseObjectPositionToPercents(media.objectPosition);
+    setFocalH(horizontal);
+    setFocalV(vertical);
+  }, [focalModalOpen, media.docId, media.objectPosition]);
 
   const handleDelete = async () => {
     if (confirm(`Are you sure you want to delete "${media.filename}"?`)) {
@@ -69,6 +86,10 @@ export default function MediaAdminRow({
               height={60}
               className={styles.thumbnailImage}
               sizes="60px"
+              style={{
+                objectFit: 'cover',
+                objectPosition: media.objectPosition || '50% 50%',
+              }}
             />
           </div>
         );
@@ -128,12 +149,23 @@ export default function MediaAdminRow({
       case 'contentType':
         return <div className={styles.contentType}>{media.contentType || 'Unknown'}</div>;
 
-      case 'objectPosition':
+      case 'objectPosition': {
+        const display = (media.objectPosition || '50% 50%').trim();
         return (
-          <div className={styles.objectPosition} title={media.objectPosition}>
-            {media.objectPosition}
+          <div className={styles.objectPositionCell}>
+            <span className={styles.objectPosition} title={display}>
+              {display}
+            </span>
+            <button
+              type="button"
+              className={styles.focalEditButton}
+              onClick={() => setFocalModalOpen(true)}
+            >
+              Edit focal
+            </button>
           </div>
         );
+      }
 
       case 'source':
         return (
@@ -167,24 +199,99 @@ export default function MediaAdminRow({
     }
   };
 
+  const focalPreviewPosition = `${focalH}% ${focalV}%`;
+
+  const handleFocalSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await updateMedia(media.docId, { objectPosition: focalPreviewPosition });
+    setFocalModalOpen(false);
+  };
+
   return (
-    <tr className={`${styles.row} ${isSelected ? styles.selected : ''}`}>
-      <td className={styles.checkboxCell}>
-        <input
-          type="checkbox"
-          checked={isSelected}
-          onChange={onToggleSelection}
-        />
-      </td>
-      {columns.map((column) => (
-        <td 
-          key={column.key}
-          className={styles.cell}
-          style={{ width: column.width }}
-        >
-          {renderCell(column)}
+    <>
+      <tr className={`${styles.row} ${isSelected ? styles.selected : ''}`}>
+        <td className={styles.checkboxCell}>
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={onToggleSelection}
+          />
         </td>
-      ))}
-    </tr>
+        {columns.map((column) => (
+          <td 
+            key={column.key}
+            className={styles.cell}
+            style={{ width: column.width }}
+          >
+            {renderCell(column)}
+          </td>
+        ))}
+      </tr>
+
+      {typeof document !== 'undefined' &&
+        createPortal(
+          <EditModal
+            isOpen={focalModalOpen}
+            onClose={() => setFocalModalOpen(false)}
+            title={`Default focal: ${media.filename}`}
+          >
+            <form onSubmit={handleFocalSave} className={styles.focalForm}>
+              <p className={styles.focalFormIntro}>
+                This is the default crop focal for this asset. Gallery slots inherit it unless you override them on the card.
+              </p>
+              <div className={styles.focalPreview}>
+                <JournalImage
+                  src={media.storageUrl}
+                  alt=""
+                  width={480}
+                  height={360}
+                  className={styles.focalPreviewImage}
+                  sizes="(max-width: 520px) 100vw, 480px"
+                  style={{
+                    objectFit: 'cover',
+                    objectPosition: focalPreviewPosition,
+                  }}
+                />
+              </div>
+              <div className={styles.focalSliderRow}>
+                <label htmlFor={`focal-h-${media.docId}`}>Horizontal</label>
+                <input
+                  id={`focal-h-${media.docId}`}
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={focalH}
+                  onChange={e => setFocalH(Number(e.target.value))}
+                  className={styles.focalSlider}
+                />
+              </div>
+              <div className={styles.focalSliderRow}>
+                <label htmlFor={`focal-v-${media.docId}`}>Vertical</label>
+                <input
+                  id={`focal-v-${media.docId}`}
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={focalV}
+                  onChange={e => setFocalV(Number(e.target.value))}
+                  className={styles.focalSlider}
+                />
+              </div>
+              <p className={styles.focalFormHint}>
+                Saved as <code>{focalPreviewPosition}</code>
+              </p>
+              <div className={styles.focalFormActions}>
+                <button type="button" className={styles.focalCancelButton} onClick={() => setFocalModalOpen(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className={styles.focalSaveButton}>
+                  Save
+                </button>
+              </div>
+            </form>
+          </EditModal>,
+          document.body
+        )}
+    </>
   );
 } 

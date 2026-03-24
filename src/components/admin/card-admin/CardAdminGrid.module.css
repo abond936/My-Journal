@@ -1,0 +1,167 @@
+.container {
+  padding: 0;
+  max-width: 100%;
+}
+
+.selectAllRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) 0 var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+}
+
+.selectAllRow input {
+  cursor: pointer;
+}
+
+.selectAllLabel {
+  user-select: none;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--layout-background1-color);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color var(--transition-short), box-shadow var(--transition-short);
+}
+
+.cell:hover {
+  border-color: var(--color3);
+  box-shadow: var(--shadow-sm);
+}
+
+.cell.selected {
+  border-color: var(--color1);
+  box-shadow: 0 0 0 2px var(--color1);
+}
+
+.checkboxWrap {
+  position: absolute;
+  top: var(--spacing-xs);
+  left: var(--spacing-xs);
+  z-index: 2;
+}
+
+.checkboxWrap input {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--color1);
+}
+
+.deleteBtn {
+  position: absolute;
+  top: var(--spacing-xs);
+  right: var(--spacing-xs);
+  z-index: 2;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  background: var(--layout-background2-color);
+  cursor: pointer;
+  font-size: 0.875rem;
+  opacity: 0.8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.deleteBtn:hover {
+  opacity: 1;
+  background: var(--state-error-background-color);
+}
+
+.thumbnailWrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--layout-background2-color);
+}
+
+.thumbnail {
+  object-fit: cover;
+}
+
+.noCover {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+  background: var(--layout-background2-color);
+}
+
+.badges {
+  position: absolute;
+  bottom: var(--spacing-xs);
+  left: var(--spacing-xs);
+  right: var(--spacing-xs);
+  display: flex;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+.typeBadge,
+.statusBadge {
+  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+  font-size: 10px;
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+}
+
+.statusBadge.draft {
+  background: var(--state-warning-background-color);
+  color: var(--state-warning-text-color);
+}
+
+.statusBadge.published {
+  background: var(--state-success-background-color);
+  color: var(--state-success-text-color);
+}
+
+.title {
+  padding: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text1-color);
+  word-break: break-word;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.emptyState {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--text2-color);
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+}

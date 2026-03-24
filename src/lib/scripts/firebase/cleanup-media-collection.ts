@@ -23,6 +23,17 @@ function extractMediaFromContent(html: string | null | undefined): string[] {
 const MEDIA_COLLECTION = 'media';
 const CARDS_COLLECTION = 'cards';
 
+/** Firestore batch limit is 500 operations per commit. */
+const FIRESTORE_BATCH_LIMIT = 500;
+
+function chunk<T>(arr: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
+}
+
 interface CleanupReport {
   totalMediaDocs: number;
   mediaResetToTemporary: number;
@@ -34,7 +45,7 @@ interface CleanupReport {
   errors: string[];
 }
 
-async function cleanupMediaCollection(dryRun: boolean = false): Promise<CleanupReport> {
+export async function cleanupMediaCollection(dryRun: boolean = false): Promise<CleanupReport> {
   const adminApp = getAdminApp();
   const firestore = adminApp.firestore();
   const storage = adminApp.storage();
@@ -63,11 +74,15 @@ async function cleanupMediaCollection(dryRun: boolean = false): Promise<CleanupR
     report.totalMediaDocs = mediaSnapshot.size;
     
     if (!dryRun) {
-      const mediaBatch = firestore.batch();
-      mediaSnapshot.docs.forEach(doc => {
-        mediaBatch.update(doc.ref, { status: 'temporary', updatedAt: Date.now() });
-      });
-      await mediaBatch.commit();
+      const docChunks = chunk(mediaSnapshot.docs, FIRESTORE_BATCH_LIMIT);
+      for (let i = 0; i < docChunks.length; i++) {
+        const mediaBatch = firestore.batch();
+        docChunks[i].forEach(doc => {
+          mediaBatch.update(doc.ref, { status: 'temporary', updatedAt: Date.now() });
+        });
+        await mediaBatch.commit();
+        console.log(`   Batch ${i + 1}/${docChunks.length}: reset ${docChunks[i].length} media docs`);
+      }
       report.mediaResetToTemporary = mediaSnapshot.size;
       console.log(`✅ Reset ${mediaSnapshot.size} media docs to temporary status`);
     } else {
@@ -165,12 +180,17 @@ async function cleanupMediaCollection(dryRun: boolean = false): Promise<CleanupR
     // Step 3: Activate valid media
     console.log('📋 Step 3: Activating valid media...');
     if (!dryRun && mediaToActivate.size > 0) {
-      const activateBatch = firestore.batch();
-      for (const mediaId of mediaToActivate) {
-        const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
-        activateBatch.update(mediaRef, { status: 'active', updatedAt: Date.now() });
+      const mediaIds = Array.from(mediaToActivate);
+      const idChunks = chunk(mediaIds, FIRESTORE_BATCH_LIMIT);
+      for (let i = 0; i < idChunks.length; i++) {
+        const activateBatch = firestore.batch();
+        for (const mediaId of idChunks[i]) {
+          const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
+          activateBatch.update(mediaRef, { status: 'active', updatedAt: Date.now() });
+        }
+        await activateBatch.commit();
+        console.log(`   Batch ${i + 1}/${idChunks.length}: activated ${idChunks[i].length} media docs`);
       }
-      await activateBatch.commit();
       report.mediaActivated = mediaToActivate.size;
       console.log(`✅ Activated ${mediaToActivate.size} media docs`);
     } else {
@@ -180,12 +200,16 @@ async function cleanupMediaCollection(dryRun: boolean = false): Promise<CleanupR
     // Step 4: Update cards with cleaned media references
     console.log('📋 Step 4: Updating cards with cleaned media references...');
     if (!dryRun && cardUpdates.length > 0) {
-      const cardBatch = firestore.batch();
-      for (const { cardId, updates } of cardUpdates) {
-        const cardRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
-        cardBatch.update(cardRef, { ...updates, updatedAt: Date.now() });
+      const updateChunks = chunk(cardUpdates, FIRESTORE_BATCH_LIMIT);
+      for (let i = 0; i < updateChunks.length; i++) {
+        const cardBatch = firestore.batch();
+        for (const { cardId, updates } of updateChunks[i]) {
+          const cardRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
+          cardBatch.update(cardRef, { ...updates, updatedAt: Date.now() });
+        }
+        await cardBatch.commit();
+        console.log(`   Batch ${i + 1}/${updateChunks.length}: updated ${updateChunks[i].length} cards`);
       }
-      await cardBatch.commit();
       console.log(`✅ Updated ${cardUpdates.length} cards`);
     } else {
       console.log(`[DRY RUN] Would update ${cardUpdates.length} cards`);
@@ -313,7 +337,9 @@ async function main() {
   }
 }
 
-// Run the script
-main();
-
-export { cleanupMediaCollection }; 
+if (require.main === module) {
+  main().catch(e => {
+    console.error(e);
+    process.exit(1);
+  });
+} 

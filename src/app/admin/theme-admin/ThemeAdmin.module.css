@@ -19,8 +19,9 @@
 }
 
 .title {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
   margin-bottom: 0;
   color: var(--text1-color);
 }

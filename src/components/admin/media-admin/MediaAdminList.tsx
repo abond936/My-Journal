@@ -39,8 +39,7 @@ export default function MediaAdminList() {
     selectedMediaIds, 
     toggleMediaSelection, 
     selectAll, 
-    selectNone,
-    deleteMultipleMedia 
+    selectNone 
   } = useMedia();
 
   const [columns, setColumns] = useState<ColumnConfig[]>(() => {
@@ -74,35 +73,10 @@ export default function MediaAdminList() {
     ));
   };
 
-  const handleBulkDelete = async () => {
-    if (selectedMediaIds.length === 0) return;
-    
-    if (confirm(`Are you sure you want to delete ${selectedMediaIds.length} media item(s)?`)) {
-      await deleteMultipleMedia(selectedMediaIds);
-    }
-  };
-
   const totalWidth = columns.reduce((sum, col) => sum + col.width, 0) + 40; // +40 for checkbox column
 
   return (
     <div className={styles.container}>
-      {/* Bulk Actions */}
-      <div className={styles.bulkActions}>
-        {selectedMediaIds.length > 0 ? (
-          <>
-            <span>{selectedMediaIds.length} item(s) selected</span>
-            <button onClick={selectNone} className={styles.bulkButton}>
-              Clear Selection
-            </button>
-            <button onClick={handleBulkDelete} className={`${styles.bulkButton} ${styles.deleteButton}`}>
-              Delete Selected
-            </button>
-          </>
-        ) : (
-          <span>No items selected</span>
-        )}
-      </div>
-
       {/* Table */}
       <div className={styles.tableContainer}>
         <table className={styles.table} style={{ width: totalWidth }}>

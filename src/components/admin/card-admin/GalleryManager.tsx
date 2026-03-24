@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import JournalImage from '@/components/common/JournalImage';
 import {
   DndContext,
@@ -22,6 +22,12 @@ import styles from './GalleryManager.module.css';
 import { SortableItem } from './SortableItem';
 import EditModal from './EditModal';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { parseObjectPositionToPercents } from '@/lib/utils/parseObjectPositionPercent';
+import {
+  getEffectiveGalleryCaption,
+  getEffectiveGalleryObjectPosition,
+  gallerySlotHasCaptionOverride,
+} from '@/lib/utils/galleryObjectPosition';
 
 interface GalleryManagerProps {
   galleryMedia: HydratedGalleryMediaItem[];
@@ -35,7 +41,12 @@ export default function GalleryManager({ galleryMedia, onUpdate, error, classNam
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   const handleMultiPhotoSelect = (newItems: HydratedGalleryMediaItem[]) => {
-    onUpdate([...galleryMedia, ...newItems]);
+    const base = galleryMedia.length;
+    const reindexed = newItems.map((item, i) => ({
+      ...item,
+      order: base + i,
+    }));
+    onUpdate([...galleryMedia, ...reindexed]);
     setIsPickerOpen(false);
   };
 
@@ -91,12 +102,18 @@ export default function GalleryManager({ galleryMedia, onUpdate, error, classNam
                   {item.media ? (
                     <JournalImage
                       src={getDisplayUrl(item.media)}
-                      alt={item.media.caption || item.media.filename || ''}
+                      alt={
+                        getEffectiveGalleryCaption(item, item.media) ||
+                        item.media.filename ||
+                        ''
+                      }
                       className={styles.thumbnail}
                       width={200}
                       height={150}
                       sizes="200px"
-                      style={{ objectPosition: item.objectPosition }}
+                      style={{
+                        objectPosition: getEffectiveGalleryObjectPosition(item, item.media),
+                      }}
                       priority={false}
                     />
                   ) : (
@@ -159,37 +176,147 @@ interface GalleryItemFormProps {
 }
 
 function GalleryItemForm({ item, onSave }: GalleryItemFormProps) {
-  const [caption, setCaption] = useState(item.caption || '');
-  const [objectPosition, setObjectPosition] = useState(item.objectPosition || '50% 50%');
+  const [caption, setCaption] = useState('');
+  const [horizontalPosition, setHorizontalPosition] = useState(50);
+  const [verticalPosition, setVerticalPosition] = useState(50);
+  const [hasFocalOverride, setHasFocalOverride] = useState(false);
+  const [hasCaptionOverride, setHasCaptionOverride] = useState(false);
+
+  useEffect(() => {
+    const capOverride = gallerySlotHasCaptionOverride(item);
+    setHasCaptionOverride(capOverride);
+    setCaption(capOverride ? (item.caption ?? '') : (item.media?.caption ?? ''));
+
+    const inherited = parseObjectPositionToPercents(item.media?.objectPosition);
+    const stored = item.objectPosition?.trim();
+    if (stored) {
+      setHasFocalOverride(true);
+      const { horizontal, vertical } = parseObjectPositionToPercents(item.objectPosition);
+      setHorizontalPosition(horizontal);
+      setVerticalPosition(vertical);
+    } else {
+      setHasFocalOverride(false);
+      setHorizontalPosition(inherited.horizontal);
+      setVerticalPosition(inherited.vertical);
+    }
+  }, [item.mediaId, item.caption, item.objectPosition, item.media?.objectPosition, item.media?.caption]);
+
+  const objectPosition = `${horizontalPosition}% ${verticalPosition}%`;
+
+  const handleSliderH = (v: number) => {
+    setHasFocalOverride(true);
+    setHorizontalPosition(v);
+  };
+
+  const handleSliderV = (v: number) => {
+    setHasFocalOverride(true);
+    setVerticalPosition(v);
+  };
+
+  const handleResetFocalToMediaDefault = () => {
+    setHasFocalOverride(false);
+    const { horizontal, vertical } = parseObjectPositionToPercents(item.media?.objectPosition);
+    setHorizontalPosition(horizontal);
+    setVerticalPosition(vertical);
+  };
+
+  const handleCaptionChange = (value: string) => {
+    setHasCaptionOverride(true);
+    setCaption(value);
+  };
+
+  const handleResetCaptionToMediaDefault = () => {
+    setHasCaptionOverride(false);
+    setCaption(item.media?.caption ?? '');
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({ ...item, caption, objectPosition });
+    const { objectPosition: _op, caption: _cap, ...rest } = item;
+    onSave({
+      ...rest,
+      ...(hasCaptionOverride ? { caption } : {}),
+      ...(hasFocalOverride ? { objectPosition } : {}),
+    });
   };
 
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
+      {item.media ? (
+        <div className={styles.focalPreview}>
+          <JournalImage
+            src={getDisplayUrl(item.media)}
+            alt=""
+            className={styles.focalPreviewImage}
+            width={480}
+            height={360}
+            sizes="(max-width: 520px) 100vw, 480px"
+            style={{
+              objectFit: 'cover',
+              objectPosition,
+            }}
+          />
+        </div>
+      ) : null}
+
       <div className={styles.formGroup}>
-        <label htmlFor="caption">Caption</label>
-        <input
-          type="text"
-          id="caption"
+        <label htmlFor="gallery-caption">Caption</label>
+        <textarea
+          id="gallery-caption"
           value={caption}
-          onChange={(e) => setCaption(e.target.value)}
-          className={styles.input}
+          onChange={e => setCaption(e.target.value)}
+          className={styles.textarea}
+          rows={3}
+          placeholder="Optional; shown under the image on the card"
         />
       </div>
+
       <div className={styles.formGroup}>
-        <label htmlFor="objectPosition">Focal Point (Object Position)</label>
-        <input
-          type="text"
-          id="objectPosition"
-          value={objectPosition}
-          onChange={(e) => setObjectPosition(e.target.value)}
-          className={styles.input}
-        />
-        <small>Use CSS object-position values (e.g., '50% 50%', 'center top', '25% 75%')</small>
+        <span className={styles.focalLabel}>Focal point (crop preview)</span>
+        <p className={styles.focalInheritHint}>
+          {hasFocalOverride
+            ? 'This card overrides the media default for this slot only.'
+            : 'Using the media default. Move a slider to set a per-card override, or edit default focal in Media Admin.'}
+        </p>
+        <div className={styles.sliderRow}>
+          <label htmlFor="gallery-focal-h">Horizontal</label>
+          <input
+            id="gallery-focal-h"
+            type="range"
+            min={0}
+            max={100}
+            value={horizontalPosition}
+            onChange={e => handleSliderH(Number(e.target.value))}
+            className={styles.slider}
+          />
+        </div>
+        <div className={styles.sliderRow}>
+          <label htmlFor="gallery-focal-v">Vertical</label>
+          <input
+            id="gallery-focal-v"
+            type="range"
+            min={0}
+            max={100}
+            value={verticalPosition}
+            onChange={e => handleSliderV(Number(e.target.value))}
+            className={styles.slider}
+          />
+        </div>
+        <div className={styles.focalActions}>
+          <button
+            type="button"
+            className={styles.resetFocalButton}
+            onClick={handleResetFocalToMediaDefault}
+            disabled={!hasFocalOverride}
+          >
+            Use media default
+          </button>
+        </div>
+        <p className={styles.focalHint}>
+          Preview / override value: <code>{objectPosition}</code>
+        </p>
       </div>
+
       <div className={styles.formActions}>
         <button type="submit" className={styles.saveButton}>
           Save Changes

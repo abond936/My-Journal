@@ -9,6 +9,7 @@ import { Media } from '@/lib/types/photo';
 import ImageToolbar from './ImageToolbar';
 import styles from './RichTextEditor.module.css';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import { getImageFileFromDataTransfer } from '@/lib/utils/clipboardImage';
 import clsx from 'clsx';
 import { useCardForm } from '@/components/providers/CardFormProvider';
 
@@ -134,16 +135,18 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
     editorProps: {
       attributes: { class: clsx(styles.editor, className, { [styles.isDisabled]: isDisabled }) },
       handleDrop: (view, event, slice, moved) => {
-        if (!moved && event.dataTransfer?.files?.length && event.dataTransfer.files[0].type.startsWith('image/')) {
+        if (moved) return false;
+        const file = getImageFileFromDataTransfer(event.dataTransfer);
+        if (file) {
           event.preventDefault();
-          handleImageUpload(event.dataTransfer.files[0]);
+          handleImageUpload(file);
           return true;
         }
         return false;
       },
       handlePaste: (view, event) => {
-        const file = event.clipboardData?.files[0];
-        if (file && file.type.startsWith('image/')) {
+        const file = getImageFileFromDataTransfer(event.clipboardData);
+        if (file) {
           event.preventDefault();
           handleImageUpload(file);
           return true;
@@ -168,9 +171,15 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
       formData.append('file', file);
       const response = await fetch('/api/images/browser', { method: 'POST', body: formData });
       if (!response.ok) throw new Error('Upload failed');
-      const newMedia: Media = await response.json();
+      const data = await response.json();
+      const newMedia: Media = data.media ?? data;
+      if (!newMedia?.docId) throw new Error('Invalid upload response');
       insertImage(newMedia);
-    } finally { setIsProcessingImage(false); }
+    } catch (e) {
+      console.error('Image upload failed:', e);
+    } finally {
+      setIsProcessingImage(false);
+    }
   };
 
   const insertImage = useCallback((media: Media) => {

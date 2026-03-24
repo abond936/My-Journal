@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useDropzone } from 'react-dropzone';
 import JournalImage from '@/components/common/JournalImage';
 import styles from './CoverPhotoContainer.module.css';
 import { Media } from '@/lib/types/photo';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import { getImageFileFromDataTransfer } from '@/lib/utils/clipboardImage';
 import PhotoPicker from '@/components/admin/card-admin/PhotoPicker';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -29,6 +31,48 @@ export default function CoverPhotoContainer({
   const [horizontalPosition, setHorizontalPosition] = useState(50);
   const [verticalPosition, setVerticalPosition] = useState(50);
   const [portraitError, setPortraitError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const pasteAreaRef = useRef<HTMLDivElement>(null);
+
+  const uploadFile = useCallback(
+    async (file: File) => {
+      setUploadError(null);
+      setIsUploading(true);
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch('/api/images/browser', { method: 'POST', body: formData });
+        if (!response.ok) throw new Error('Upload failed');
+        const data = await response.json();
+        const media: Media = data.media ?? data;
+        if (!media?.docId) throw new Error('Invalid response');
+        onChange(media, '50% 50%');
+      } catch (err) {
+        setUploadError(err instanceof Error ? err.message : 'Failed to upload image');
+      } finally {
+        setIsUploading(false);
+      }
+    },
+    [onChange]
+  );
+
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      const file = acceptedFiles[0];
+      if (file) uploadFile(file);
+    },
+    [uploadFile]
+  );
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.tiff', '.tif'] },
+    maxFiles: 1,
+    multiple: false,
+    disabled: isSaving || isUploading,
+    noClick: true,
+  });
 
   useEffect(() => {
     if (objectPosition) {
@@ -43,6 +87,20 @@ export default function CoverPhotoContainer({
     }
   }, [objectPosition]);
 
+  useEffect(() => {
+    const el = pasteAreaRef.current;
+    if (!el) return;
+    const onPaste = (e: ClipboardEvent) => {
+      const file = getImageFileFromDataTransfer(e.clipboardData);
+      if (file) {
+        e.preventDefault();
+        uploadFile(file);
+      }
+    };
+    el.addEventListener('paste', onPaste);
+    return () => el.removeEventListener('paste', onPaste);
+  }, [uploadFile]);
+
   const handlePhotoSelect = (media: Media) => {
     setIsPickerOpen(false);
     onChange(media, '50% 50%');
@@ -56,17 +114,35 @@ export default function CoverPhotoContainer({
     onChange(coverImage, `${horizontal}% ${vertical}%`);
   }, [onChange, coverImage]);
   
-  const displayError = error || portraitError;
+  const displayError = error || portraitError || uploadError;
 
   return (
-    <div className={`${styles.container} ${className || ''} ${displayError ? styles.error : ''}`}>
+    <div
+      ref={pasteAreaRef}
+      tabIndex={isSaving || isUploading ? -1 : 0}
+      role="group"
+      aria-label="Cover image: drop, paste, or browse"
+      className={`${styles.pasteTargetWrap} ${className || ''}`}
+    >
+      <div
+        {...getRootProps({
+          className: `${styles.container} ${displayError ? styles.error : ''} ${isDragActive ? styles.containerDragActive : ''}`,
+        })}
+        data-testid="cover-dropzone"
+      >
+        <input {...getInputProps()} />
       {isSaving ? (
         <div className={styles.placeholder}>
           <LoadingSpinner />
         </div>
       ) : coverImage ? (
         <>
-          <div className={styles.imageContainer}>
+          <div className={styles.imageContainer} style={{ position: 'relative' }}>
+            {isDragActive && (
+              <div className={styles.dropOverlay}>
+                Drop to replace cover
+              </div>
+            )}
             <JournalImage
               src={getDisplayUrl(coverImage)}
               alt={coverImage.filename || 'Cover image'}
@@ -134,16 +210,32 @@ export default function CoverPhotoContainer({
           </div>
         </>
       ) : (
-        <div className={styles.placeholder}>
-          <button
-            onClick={() => setIsPickerOpen(true)}
-            className={styles.addButton}
-            type="button"
-          >
-            Add Cover Photo
-          </button>
+        <div
+          className={`${styles.placeholder} ${isDragActive ? styles.placeholderDragActive : ''}`}
+          style={{ cursor: isUploading ? 'wait' : 'pointer', outline: 'none' }}
+        >
+          {isUploading ? (
+            <>
+              <LoadingSpinner />
+              <span>Uploading...</span>
+            </>
+          ) : (
+            <>
+              <p className={styles.dropHint}>
+                {isDragActive ? 'Drop the image here' : 'Drag and drop or paste image'}
+              </p>
+              <button
+                onClick={(e) => { e.stopPropagation(); setIsPickerOpen(true); }}
+                className={styles.addButton}
+                type="button"
+              >
+                Or browse folders
+              </button>
+            </>
+          )}
         </div>
       )}
+      </div>
 
       {isPickerOpen && (
         <PhotoPicker
@@ -153,7 +245,7 @@ export default function CoverPhotoContainer({
           initialMode="single"
         />
       )}
-      
+
       {displayError && <p className={styles.errorText}>{displayError}</p>}
     </div>
   );

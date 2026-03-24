@@ -2,18 +2,22 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '@/lib/types/card';
-import { Tag, TagWithChildren } from '@/lib/types/tag';
 import { useTag } from '@/components/providers/TagProvider';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import styles from './BulkEditTagsModal.module.css';
-import { buildSparseTagTree, createUITreeFromDimensions } from '@/lib/utils/tagUtils';
-import clsx from 'clsx';
+import { createUITreeFromDimensions } from '@/lib/utils/tagUtils';
+import TagPickerDimensionColumn from '@/components/admin/card-admin/TagPickerDimensionColumn';
 
-// --- Helper Functions ---
-const getCommonTagIds = (cards: Card[]): string[] => {
+/** Union of all tags on the selected cards — initial check state for bulk replace. */
+const getUnionTagIds = (cards: Card[]): string[] => {
   if (!cards || cards.length === 0) return [];
-  const allTags = cards.map(c => c.tags || []);
-  return allTags.reduce((a, b) => a.filter(c => b.includes(c)));
+  const u = new Set<string>();
+  for (const c of cards) {
+    for (const t of c.tags || []) {
+      u.add(t);
+    }
+  }
+  return Array.from(u);
 };
 
 // --- Main Component ---
@@ -31,29 +35,43 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
   const [cards, setCards] = useState<Card[]>([]);
   const [currentSelection, setCurrentSelection] = useState<Set<string>>(new Set());
 
-  // Fetch full card data when the modal opens
-  useEffect(() => {
-    if (isOpen && cardIds.length > 0) {
-      const fetchCards = async () => {
-        setIsLoading(true);
-        try {
-          const params = new URLSearchParams();
-          cardIds.forEach(id => params.append('id', id));
-          const response = await fetch(`/api/cards/by-ids?${params.toString()}`);
+  /** Stable key so we do not refetch / reset when the parent passes a new `cardIds` array each render. */
+  const cardIdsKey = useMemo(
+    () => [...new Set(cardIds)].sort().join('\u001e'),
+    [cardIds.join('\u001e')]
+  );
 
-          if (!response.ok) throw new Error('Failed to fetch selected cards.');
-          const fetchedCards: Card[] = await response.json();
-          setCards(fetchedCards);
-          setCurrentSelection(new Set(getCommonTagIds(fetchedCards)));
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'An unknown error occurred.');
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      fetchCards();
+  // Fetch full card data when the modal opens or the selected id set changes
+  useEffect(() => {
+    if (!isOpen) {
+      setError(null);
+      setCards([]);
+      setCurrentSelection(new Set());
+      return;
     }
-  }, [isOpen, cardIds]);
+    const ids = cardIdsKey ? cardIdsKey.split('\u001e') : [];
+    if (ids.length === 0) return;
+
+    const fetchCards = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const params = new URLSearchParams();
+        ids.forEach(id => params.append('id', id));
+        const response = await fetch(`/api/cards/by-ids?${params.toString()}`);
+
+        if (!response.ok) throw new Error('Failed to fetch selected cards.');
+        const fetchedCards: Card[] = await response.json();
+        setCards(fetchedCards);
+        setCurrentSelection(new Set(getUnionTagIds(fetchedCards)));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    void fetchCards();
+  }, [isOpen, cardIdsKey]);
 
   const dimensionalTree = useMemo(() => {
     if (!allTags) return [];
@@ -97,7 +115,11 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
     <div className={styles.overlay}>
       <div className={styles.modalContainer}>
         <h2 className={styles.modalHeader}>Edit Tags for {cardIds.length} Cards</h2>
-        
+        <p className={styles.helpText}>
+          All tags that appear on any selected card start checked. Saving sets <strong>every</strong> selected card to
+          this exact tag list—uncheck to remove from all, check to add to all.
+        </p>
+
         {isLoading || tagsLoading ? (
           <LoadingSpinner />
         ) : error ? (
@@ -105,19 +127,13 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
         ) : (
           <div className={styles.interactiveColumns}>
             {dimensionalTree.map(dimension => (
-              <div key={dimension.docId} className={styles.dimensionColumn}>
-                <h4>{dimension.name}</h4>
-                <div className={styles.interactiveTree}>
-                  {dimension.children.map(root => (
-                    <InteractiveTagNode
-                      key={root.docId}
-                      node={root}
-                      selection={currentSelection}
-                      onChange={handleTagChange}
-                    />
-                  ))}
-                </div>
-              </div>
+              <TagPickerDimensionColumn
+                key={dimension.docId}
+                dimension={dimension}
+                selection={currentSelection}
+                onSelectionChange={handleTagChange}
+                checkboxIdPrefix="bulk-tag"
+              />
             ))}
           </div>
         )}
@@ -132,51 +148,3 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
     </div>
   );
 }
-
-// --- Recursive Interactive Node Component ---
-interface InteractiveTagNodeProps {
-  node: TagWithChildren;
-  selection: Set<string>;
-  onChange: (tagId: string, selected: boolean) => void;
-}
-
-function InteractiveTagNode({ node, selection, onChange }: InteractiveTagNodeProps) {
-  const [isCollapsed, setIsCollapsed] = useState(true);
-  const isSelected = selection.has(node.docId);
-  const hasChildren = node.children && node.children.length > 0;
-
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(node.docId, e.target.checked);
-  };
-
-  return (
-    <div className={styles.interactiveNode}>
-      <div className={styles.nodeControl}>
-        {hasChildren && (
-          <button type="button" onClick={() => setIsCollapsed(!isCollapsed)} className={styles.collapseButton}>
-            {isCollapsed ? '►' : '▼'}
-          </button>
-        )}
-        <input
-          type="checkbox"
-          id={`bulk-tag-${node.docId}`}
-          checked={isSelected}
-          onChange={handleCheckboxChange}
-        />
-        <label htmlFor={`bulk-tag-${node.docId}`}>{node.name}</label>
-      </div>
-      {!isCollapsed && hasChildren && (
-        <div className={styles.tagChildren}>
-          {node.children.map(child => (
-            <InteractiveTagNode
-              key={child.docId}
-              node={child}
-              selection={selection}
-              onChange={onChange}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-} 
