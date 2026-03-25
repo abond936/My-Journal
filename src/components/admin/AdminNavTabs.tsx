@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React from 'react';
 import Link from 'next/link';
@@ -9,7 +9,9 @@ const tabs = [
   { name: 'Cards', href: '/admin/card-admin' },
   { name: 'Media', href: '/admin/media-admin' },
   { name: 'Tags', href: '/admin/tag-admin' },
+  { name: 'Questions', href: '/admin/question-admin' },
   { name: 'Theme', href: '/admin/theme-admin' },
+  { name: 'Users', href: '/admin/journal-users' },
   { name: 'Maintenance', href: '/admin/maintenance' },
 ];
 
@@ -33,3 +35,4 @@ export default function AdminNavTabs() {
     </nav>
   );
 } 
+

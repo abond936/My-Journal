@@ -23,7 +23,8 @@
     "reconcile:media-cards": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/reconcile-media-cards.ts",
     "remove:legacy-cover": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/remove-legacy-cover-image.ts",
     "backfill:media-metadata": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/backfill-media-metadata.ts",
-    "regenerate:storage-urls": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/regenerate-storage-urls.ts"
+    "regenerate:storage-urls": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/regenerate-storage-urls.ts",
+    "seed:journal-users": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/seed-journal-users.ts"
   },
   "dependencies": {
     "@auth/firebase-adapter": "^2.9.1",
@@ -36,6 +37,7 @@
     "@tiptap/react": "^2.14.0",
     "@tiptap/starter-kit": "^2.12.0",
     "@uiw/react-md-editor": "^4.0.6",
+    "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "commander": "^14.0.0",
     "csv-parse": "^5.6.0",
@@ -65,6 +67,7 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/archiver": "^6.0.3",
+    "@types/bcryptjs": "^2.4.6",
     "@types/dotenv": "^6.1.1",
     "@types/jest": "^29.5.14",
     "@types/jsdom": "^21.1.7",

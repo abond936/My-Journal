@@ -212,6 +212,15 @@ An "Organize" mode or view that feels like the content feed but with organize ac
   - All API routes secured at the edge
   - Role-based access control
   - Session persistence
+  - **Journal access:** Firestore `journal_users` (bcrypt passwords), NextAuth Credentials; admin APIs `/api/admin/journal-users`; seed `npm run seed:journal-users`; legacy env login when no row exists for that username (see rollout plan below).
+  - **Question bank (MVP):** Firestore `questions`, `questionService.ts`, admin APIs `/api/admin/questions` and `/api/admin/questions/[id]` (incl. `create-card`); card delete unlinks IDs from questions in `cardService`.
+
+**Auth rollout plan (agreed)**
+- During build/content phase, keep using current env-based login (`ADMIN_EMAIL` / `ADMIN_PASSWORD`) so work can continue without user provisioning.
+- At go-live prep, run `npm run seed:journal-users` once to create the single admin in Firestore (`journal_users`) when that collection is empty.
+- After seed, manage access in Admin > Users (`/admin/journal-users`): create viewer accounts, set/reset passwords, enable/disable access.
+- Operating rule: one admin (author), all other accounts are viewers.
+- Share access by sending site URL + username/password directly to each viewer.
 
 ⭕2 - Comment code
 ⭕2 - Cleanup directory
@@ -490,7 +499,7 @@ If the card has `childrenIds`, it calls `getCardsByIds` to fetch them.
 `src/app/admin/layout.tsx`
 
 ✅
-- navigation to Cards, Tags, Media, Theme, Maintenance
+- navigation to Cards, Media, Tags, Questions, Theme, Users, Maintenance
 ⭕2 - Separate Content/Admin is awkward. 
 ⭕2 - Maintenance scripts are not helpful.
 
@@ -745,34 +754,67 @@ When cards and media get out of sync, use reconciliation scripts. See MediaCardR
 - Steven child_of Scot → **William cousin_of Steven**
 - Mark spouse_of Robin, Robin parent_of Wesley, ¬Mark parent_of Wesley → **Mark step_parent_of Wesley**
 
-❓ I just saw an app Mylio that orgainzes photos. It had an interesting way of doing years. It was a grid of years with an image, and events that happened in that year. Made me think we should redo our presentation of when--grid of years, who--grid of people, what--Birthdays, Holidays, Weddings, Vacations, etc, where--a map with pins
-Also, need to tag visually, selecting images and assigning tags.
+⭕2 **Visual tagging:** Select images and assign tags in bulk (see Media Admin / card workflows).
 
 ### **Question Management**
 - Questions are prompts for stories.
 
-✅
-- None
+✅ **MVP (implemented)**
+- Firestore collection `questions`; types in `src/lib/types/question.ts`, service in `src/lib/services/questionService.ts`
+- Admin UI: **Admin → Questions** → `/admin/question-admin`
+- APIs (admin-only): `GET/POST /api/admin/questions`, `PATCH/DELETE /api/admin/questions/[id]`, link card `POST`, unlink `PUT`; `POST .../create-card` creates a draft `qa` or `story` card from the prompt and links usage
+- List/filter in UI: text, tags (substring), used vs unused
+- Manual link/unlink to existing card IDs; **Create card** for new drafts
+- **Cleanup:** deleting a card removes its id from every question’s `usedByCardIds` (and refreshes `usageCount`)
 
-⭕3
-- Question collection
-- Question listing and filtering
-- Question creation and editing
-- Answer management
-- Basic analytics
-- Question template
-- Answer validation
-- User feedback
-- Tagged?
-- Grouped?
+⭕3 **Post-MVP (still open)**
+- Answer workflow beyond cards, analytics, templates, validation, viewer feedback, auto-grouping
 
-❓ 
-- Selecting a question from list creates a card
-- Many questions are already part of stories
-  - Create those stories in the db
-  - Mark as selected
-  - If deleted, remove from 'used'
-- Do we group short questions?
+❓ *(Historical; MVP resolved below)*
+- Selecting a question creates a card — **yes** via Create card + `create-card` route.
+- Existing stories: use **Link card** with the card’s doc id.
+- Card deleted — **handled** in `deleteCard` + `unlinkCardFromAllQuestions`.
+- Group short questions — **no** in MVP; use question `tags` first.
+
+#### MVP Question Management (proposed and approved)
+
+**Goal**
+- Keep this lightweight: maintain a reusable question bank and track whether a question has already been used to produce a story/QA card.
+
+**Scope (MVP)**
+- Single admin authors/manages questions.
+- Viewers do not manage questions directly.
+- Questions can be linked to cards to mark usage.
+
+**Data model (MVP)**
+- Collection: `questions`
+- Fields:
+  - `prompt` (string, required)
+  - `prompt_lowercase` (string, indexed/search helper)
+  - `tags` (string[]; optional)
+  - `usedByCardIds` (string[]; optional)
+  - `usageCount` (number; derived/convenience)
+  - `createdAt`, `updatedAt` (number timestamps)
+
+**Admin workflow (MVP)**
+- List/filter questions: by text, tags, and used/unused.
+- Create/edit questions.
+- "Create card from question" action:
+  - Creates a new card prefilled from `prompt` (default type `qa` or `story` as chosen in UI).
+  - Adds card ID to `usedByCardIds` and updates `usageCount`.
+- Manual link/unlink between question and card (for existing stories already in DB).
+
+**Rules**
+- A question may map to zero, one, or many cards.
+- "Used" means `usedByCardIds.length > 0`.
+- If a linked card is deleted, remove that ID from `usedByCardIds` (cleanup hook or maintenance script).
+- No automatic grouping in MVP; use tags for organization first.
+
+**Out of scope (post-MVP)**
+- Viewer submissions/feedback flows.
+- Rich analytics dashboard.
+- Advanced answer validation/scoring.
+- Auto-clustering/grouping of short questions.
 
 ### **Gallery Style Management**
 - Gallery styles are selectable styles for gallery cards
@@ -792,7 +834,11 @@ Also, need to tag visually, selecting images and assigning tags.
 
 ### **User Management**
 
-⭕3 - Add user management interface
+✅ **Journal users (implemented)**
+- Firestore `journal_users`; `src/lib/auth/journalUsersFirestore.ts`; `authorize` in `authOptions.ts` (DB first, legacy env only when no row for that username)
+- Admin **Users** tab → `/admin/journal-users`; APIs `/api/admin/journal-users`, `/api/admin/journal-users/[id]`
+- Viewers only from UI/API; single admin rule; seed script `npm run seed:journal-users`
+- Login redirect: `/?callbackUrl=/admin` supported in `Home.tsx` (wrapped in `Suspense` on the home page)
 
 ### **Image Management**
 =======================================
@@ -1240,9 +1286,11 @@ Before deleting media:
 
 ### Phase C: Dimension Views, Mobile, Polish
 
+**Item 15 (removed):** Alternate **Perspective** browse modes (sidebar Feed | Who | What | …) were **removed**; filtering via Explore + future **feed sort** (asc / desc / random) covers the same capability without a parallel UI.
+
 | Order | Item | Priority | See |
 |-------|------|----------|-----|
-| 15 | Dimension views: When=by year, Where=map, Who=people grid | 2 | Mylio note, Navigation |
+| 15 | *(open)* — e.g. feed sort (created asc/desc/random), mobile polish | 2 | Left Sidebar Navigation |
 | 16 | Mobile: Bottom nav, dimension/tag sheet | 2 | Responsive Strategy, Navigation |
 | 17 | Table of Contents: drag & drop for collections | 2 | Navigation System |
 | 18 | Collection metadata (child counts), admin curation | 2 | Navigation System |
@@ -1257,4 +1305,4 @@ Before deleting media:
 | 22 | Child strategy, linking modal | 2 | Card Data Model |
 | 23 | Search (tags), sort by when | 2 | Content Page, Left Sidebar |
 | 24 | Face recognition, Relationship imputation | 3 | Tag System |
-| 25 | Question management, User management | 3 | Question Management, User Management |
+| 25 | ✅ Question management (MVP), journal user management | Done | `/admin/question-admin`, `/admin/journal-users`, `questionService`, `journalUsersFirestore`, seed script |

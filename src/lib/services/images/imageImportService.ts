@@ -315,10 +315,10 @@ export async function updateMediaStatus(mediaId: string, status: Media['status']
   }
 }
 
-type MediaPatchFields = Partial<Pick<Media, 'status' | 'caption' | 'objectPosition'>>;
+type MediaPatchFields = Partial<Pick<Media, 'status' | 'caption' | 'objectPosition' | 'whoTagIds'>>;
 
 /**
- * Partial update for media metadata (admin). At least one of status, caption, or objectPosition must be provided.
+ * Partial update for media metadata (admin). At least one supported field must be provided.
  */
 export async function patchMediaDocument(mediaId: string, updates: MediaPatchFields): Promise<void> {
   const app = getAdminApp();
@@ -333,7 +333,8 @@ export async function patchMediaDocument(mediaId: string, updates: MediaPatchFie
   const hasField =
     updates.status !== undefined ||
     updates.caption !== undefined ||
-    updates.objectPosition !== undefined;
+    updates.objectPosition !== undefined ||
+    updates.whoTagIds !== undefined;
   if (!hasField) {
     throw new Error('No valid fields to update.');
   }
@@ -352,6 +353,12 @@ export async function patchMediaDocument(mediaId: string, updates: MediaPatchFie
       throw new Error('objectPosition cannot be empty.');
     }
     payload.objectPosition = trimmed;
+  }
+  if (updates.whoTagIds !== undefined) {
+    if (!Array.isArray(updates.whoTagIds)) {
+      throw new Error('whoTagIds must be an array of tag IDs.');
+    }
+    payload.whoTagIds = updates.whoTagIds.filter((id): id is string => typeof id === 'string');
   }
 
   await mediaRef.update(payload);

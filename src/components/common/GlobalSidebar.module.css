@@ -28,6 +28,65 @@
     color: var(--text1-color);
   }
 
+  .sidebarSection {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .sectionHeading {
+    margin: 0 0 var(--spacing-xs) 0;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text1-color);
+    line-height: 1.3;
+  }
+
+  .dimensionsBlock {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .dimensionsLabel {
+    display: block;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text2-color);
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .searchBlock {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .searchTagsLabel {
+    display: block;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text2-color);
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .compactControl {
+    width: 100%;
+    padding: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    font-family: var(--body-font-family);
+    border: var(--border-width-thin) solid var(--border1-color);
+    border-radius: var(--border-radius-md);
+    background-color: var(--layout-background1-color);
+    color: var(--text1-color);
+    box-sizing: border-box;
+  }
+
+  select.compactControl {
+    cursor: pointer;
+  }
+
+  .sortHint {
+    margin: var(--spacing-xs) 0 0 0;
+    font-size: var(--font-size-xs);
+    color: var(--text2-color);
+    line-height: 1.4;
+  }
+
   .collectionBack {
     margin-bottom: var(--spacing-md);
   }
@@ -113,14 +172,13 @@
   .activeFilters {
     margin-bottom: var(--spacing-md);
     padding: var(--spacing-sm) 0;
-    border-bottom: var(--border-width-thin) solid var(--border1-color);
   }
 
   .activeFiltersLabel {
     display: block;
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-medium);
-    color: var(--text2-color);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text1-color);
     margin-bottom: var(--spacing-xs);
   }
 
@@ -168,7 +226,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-xs);
-    margin-bottom: var(--spacing-sm);
+    margin-bottom: 0;
   }
 
   .dimensionTab {
@@ -192,50 +250,6 @@
     background-color: var(--button-solid-background-color);
     color: var(--button-solid-text-color);
     border-color: var(--button-solid-border-color);
-  }
-
-  .tagSearch {
-    margin-bottom: var(--spacing-md);
-  }
-
-  .tagSearchInput {
-    width: 100%;
-    padding: var(--spacing-sm);
-    font-size: var(--font-size-base);
-    font-family: var(--body-font-family);
-    border: var(--border-width-thin) solid var(--border1-color);
-    border-radius: var(--border-radius-md);
-    background-color: var(--layout-background1-color);
-    color: var(--text1-color);
-  }
-
-  .tagSearchInput::placeholder {
-    color: var(--text2-color);
-    opacity: 0.8;
-  }
-
-  .typeFilter {
-    margin-bottom: var(--spacing-md);
-  }
-
-  .typeFilterLabel {
-    display: block;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-    color: var(--text2-color);
-    margin-bottom: var(--spacing-xs);
-  }
-
-  .typeSelect {
-    width: 100%;
-    padding: var(--spacing-sm);
-    font-size: var(--font-size-base);
-    font-family: var(--body-font-family);
-    border: var(--border-width-thin) solid var(--border1-color);
-    border-radius: var(--border-radius-md);
-    background-color: var(--layout-background1-color);
-    color: var(--text1-color);
-    cursor: pointer;
   }
 
   .typeSelectPlaceholder {

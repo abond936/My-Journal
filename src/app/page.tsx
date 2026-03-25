@@ -2,8 +2,13 @@
 // This is the entry point for our application
 // We're using the Home component as our landing page
 
+import { Suspense } from 'react';
 import Home from '@/components/view/Home';
 
 export default function Page() {
-  return <Home />;
+  return (
+    <Suspense fallback={null}>
+      <Home />
+    </Suspense>
+  );
 }

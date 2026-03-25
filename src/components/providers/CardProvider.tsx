@@ -15,6 +15,9 @@ export type CardFilterType = 'all' | 'story' | 'qa' | 'quote' | 'callout' | 'gal
 export type CardStatus = 'all' | 'draft' | 'published';
 export type ActiveDimension = 'all' | 'who' | 'what' | 'when' | 'where' | 'reflection' | 'collections';
 
+/** Main feed ordering. `random` shuffles cards loaded so far (same pages as newest). */
+export type FeedSortOrder = 'newest' | 'oldest' | 'random';
+
 export interface ICardContext {
   // Filter state
   selectedTags: string[];
@@ -24,6 +27,7 @@ export interface ICardContext {
   activeDimension: ActiveDimension;
   collectionId: string | null;
   collectionCards: Card[]; // Flat list of collection parent cards
+  feedSort: FeedSortOrder;
 
   // Filter actions
   toggleTag: (tagId: string) => void;
@@ -32,6 +36,7 @@ export interface ICardContext {
   setStatus: (status: CardStatus) => void;
   setActiveDimension: (dim: ActiveDimension) => void;
   setCollectionId: (id: string | null) => void;
+  setFeedSort: (order: FeedSortOrder) => void;
   clearFilters: () => void;
   setPageLimit: (limit: number) => void;
   
@@ -48,6 +53,25 @@ export interface ICardContext {
 
 const DIMENSION_STORAGE_KEY = 'myjournal-active-dimension';
 const COLLECTION_STORAGE_KEY = 'myjournal-collection-id';
+const FEED_SORT_KEY = 'myjournal-feed-sort';
+
+const FEED_SORT_VALUES = new Set<string>(['newest', 'oldest', 'random']);
+
+function readStoredFeedSort(): FeedSortOrder {
+  if (typeof window === 'undefined') return 'newest';
+  const raw = sessionStorage.getItem(FEED_SORT_KEY);
+  if (!raw || !FEED_SORT_VALUES.has(raw)) return 'newest';
+  return raw as FeedSortOrder;
+}
+
+function shuffleCards<T extends { docId?: string }>(items: T[]): T[] {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
 
 const CardContext = createContext<ICardContext | undefined>(undefined);
 
@@ -76,6 +100,12 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     if (typeof window === 'undefined') return null;
     return sessionStorage.getItem(COLLECTION_STORAGE_KEY) || null;
   });
+  const [feedSort, setFeedSortState] = useState<FeedSortOrder>(() => readStoredFeedSort());
+
+  const setFeedSort = useCallback((order: FeedSortOrder) => {
+    setFeedSortState(order);
+    if (typeof window !== 'undefined') sessionStorage.setItem(FEED_SORT_KEY, order);
+  }, []);
 
   const setActiveDimension = useCallback((dim: ActiveDimension) => {
     setActiveDimensionState(dim);
@@ -190,6 +220,9 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       if (cardType && cardType !== 'all') params.set('type', cardType);
       if (pageIndex > 0 && previousPageData?.lastDocId) params.set('lastDocId', previousPageData.lastDocId);
       if (isAdmin && !needsFullHydration) params.set('hydration', 'cover-only');
+      if (!searchTerm?.trim()) {
+        params.set('sort', feedSort === 'oldest' ? 'oldest' : 'newest');
+      }
 
       return `${endpoint}?${params.toString()}`;
     },
@@ -208,10 +241,15 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     () => (Array.isArray(data) ? data : []).filter(Boolean).flatMap((page) => page.items) || [],
     [data]
   );
+  const orderedPaginatedCards = useMemo(() => {
+    if (feedSort !== 'random') return paginatedCards;
+    if (collectionId) return paginatedCards;
+    return shuffleCards(paginatedCards);
+  }, [paginatedCards, feedSort, collectionId]);
   const cards = useMemo(() => {
     if (activeDimension === 'collections' && !collectionId) return collectionCards;
-    return paginatedCards;
-  }, [activeDimension, collectionId, collectionCards, paginatedCards]);
+    return orderedPaginatedCards;
+  }, [activeDimension, collectionId, collectionCards, orderedPaginatedCards]);
   const isCollectionsListMode = activeDimension === 'collections' && !collectionId;
   const isLoading = isCollectionsListMode ? collectionsLoading : (swrLoading && !data);
   const loadingMore = swrLoading && size > 1;
@@ -240,7 +278,8 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     setSearchTerm('');
     setStatus(isAdmin ? 'all' : 'published');
     setCollectionId(null);
-  }, [isAdmin, setFilterTags, setCollectionId]);
+    setFeedSort('newest');
+  }, [isAdmin, setFilterTags, setCollectionId, setFeedSort]);
 
   const value = useMemo(
     () => ({
@@ -256,6 +295,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       activeDimension,
       collectionId,
       collectionCards,
+      feedSort,
       loadMore,
       mutate,
       toggleTag,
@@ -264,6 +304,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       setStatus,
       setActiveDimension,
       setCollectionId,
+      setFeedSort,
       clearFilters,
       setPageLimit,
       isValidating,
@@ -281,6 +322,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       activeDimension,
       collectionId,
       collectionCards,
+      feedSort,
       loadMore,
       mutate,
       toggleTag,
@@ -289,6 +331,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       setStatus,
       setActiveDimension,
       setCollectionId,
+      setFeedSort,
       clearFilters,
       setPageLimit,
       isValidating,

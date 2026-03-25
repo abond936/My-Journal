@@ -2,15 +2,27 @@
 
 // Home.tsx - Main landing page component
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession, signIn } from 'next-auth/react';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import styles from '@/components/view/Home.module.css';
 
+function safeCallbackPath(raw: string | null): string {
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//')) {
+    return '/view';
+  }
+  return raw;
+}
+
 const Home: React.FC = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const afterLogin = useMemo(
+    () => safeCallbackPath(searchParams.get('callbackUrl')),
+    [searchParams]
+  );
   const { status } = useSession();
   const { theme } = useTheme();
   const [username, setUsername] = useState('');
@@ -30,15 +42,15 @@ const Home: React.FC = () => {
     if (result?.error) {
       setError('Invalid credentials. Please try again.');
     } else if (result?.ok) {
-      router.push('/view');
+      router.push(afterLogin);
     }
   };
   
   useEffect(() => {
     if (status === 'authenticated') {
-      router.replace('/view');
+      router.replace(afterLogin);
     }
-  }, [status, router]);
+  }, [status, router, afterLogin]);
 
   const renderLoginForm = () => (
     <form onSubmit={handleSignIn} className={styles.loginForm}>

@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useTag } from '@/components/providers/TagProvider';
-import { useCardContext } from '@/components/providers/CardProvider';
+import { useCardContext, type FeedSortOrder } from '@/components/providers/CardProvider';
 import TagTree from '@/components/common/TagTree';
 import { filterTreesBySearch } from '@/lib/utils/tagUtils';
 import { groupCollectionsByDimension } from '@/lib/utils/cardUtils';
@@ -15,11 +15,10 @@ interface GlobalSidebarProps {
 
 export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
   const [mounted, setMounted] = useState(false);
-
-  const { 
-    tags, 
-    loading: tagsLoading, 
-    selectedFilterTagIds, 
+  const {
+    tags,
+    loading: tagsLoading,
+    selectedFilterTagIds,
     setFilterTags,
     dimensionTree,
     masterTree,
@@ -36,6 +35,9 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     collectionId,
     setCollectionId,
     collectionCards,
+    feedSort,
+    setFeedSort,
+    clearFilters,
   } = useCardContext();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'admin';
@@ -46,7 +48,6 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     },
     [updateTag]
   );
-
 
   const cardTypeLabels: Record<string, string> = {
     story: 'Story',
@@ -99,7 +100,6 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     [dimensionTreeForTab, tagSearch]
   );
 
-
   const handleSelectionChange = (tagId: string, isSelected: boolean) => {
     const newSelection = isSelected
       ? (selectedFilterTagIds.includes(tagId) ? selectedFilterTagIds : [...selectedFilterTagIds, tagId])
@@ -107,86 +107,25 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     setFilterTags(newSelection);
   };
 
-  const handleClearFilters = () => {
-    setFilterTags([]);
-    setCardType('all');
-    setCollectionId(null);
+  const handleClearFiltersClick = () => {
+    clearFilters();
     if (activeDimension === 'collections') setActiveDimension('all');
   };
 
   return (
     <div className={`${styles.sidebar} ${isOpen ? styles.open : styles.closed}`}>
       <h2 className={styles.title}>Explore</h2>
-      {mounted && isTagMode && hasActiveFilters && (
-        <div className={styles.activeFilters}>
-          <span className={styles.activeFiltersLabel}>Active:</span>
-          <div className={styles.activeFiltersChips}>
-            {cardType !== 'all' && (
-              <span className={styles.filterChip}>
-                {cardTypeLabels[cardType] ?? cardType}
-                <button
-                  type="button"
-                  onClick={removeCardTypeFilter}
-                  className={styles.filterChipRemove}
-                  aria-label={`Remove ${cardTypeLabels[cardType] ?? cardType} filter`}
-                >
-                  ×
-                </button>
-              </span>
-            )}
-            {selectedFilterTagIds.map(tagId => {
-              const tagName = tags?.find(t => t.docId === tagId)?.name ?? tagId;
-              return (
-                <span key={tagId} className={styles.filterChip}>
-                  {tagName}
-                  <button
-                    type="button"
-                    onClick={() => removeTagFilter(tagId)}
-                    className={styles.filterChipRemove}
-                    aria-label={`Remove ${tagName} filter`}
-                  >
-                    ×
-                  </button>
-                </span>
-              );
-            })}
-          </div>
-        </div>
-      )}
       {mounted && (
         <>
-          <div className={styles.dimensionTabs}>
-            {DIMENSION_TABS.map(({ id, label }) => (
-              <button
-                key={id}
-                type="button"
-                className={`${styles.dimensionTab} ${activeDimension === id ? styles.dimensionTabActive : ''}`}
-                onClick={() => setActiveDimension(id)}
-                aria-pressed={activeDimension === id}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
           {isTagMode ? (
             <>
-              <div className={styles.tagSearch}>
-                <input
-                  type="search"
-                  placeholder="Search tags..."
-                  value={tagSearch}
-                  onChange={e => setTagSearch(e.target.value)}
-                  className={styles.tagSearchInput}
-                  aria-label="Search tags"
-                />
-              </div>
-              <div className={styles.typeFilter}>
-                <label htmlFor="card-type-filter" className={styles.typeFilterLabel}>Card type</label>
+              <div className={styles.sidebarSection}>
+                <h3 className={styles.sectionHeading}>Card type</h3>
                 <select
                   id="card-type-filter"
                   value={cardType}
                   onChange={e => setCardType(e.target.value as typeof cardType)}
-                  className={styles.typeSelect}
+                  className={styles.compactControl}
                   aria-label="Filter by card type"
                 >
                   <option value="all">All Types</option>
@@ -197,6 +136,104 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                   <option value="gallery">Gallery</option>
                 </select>
               </div>
+
+              <div className={styles.sidebarSection}>
+                <h3 className={styles.sectionHeading}>Tags</h3>
+                <div className={styles.dimensionsBlock}>
+                  <span className={styles.dimensionsLabel} id="dimensions-label">
+                    Dimensions
+                  </span>
+                  <div
+                    className={styles.dimensionTabs}
+                    role="tablist"
+                    aria-labelledby="dimensions-label"
+                  >
+                    {DIMENSION_TABS.map(({ id, label }) => (
+                      <button
+                        key={id}
+                        type="button"
+                        role="tab"
+                        aria-selected={activeDimension === id}
+                        className={`${styles.dimensionTab} ${activeDimension === id ? styles.dimensionTabActive : ''}`}
+                        onClick={() => setActiveDimension(id)}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={styles.searchBlock}>
+                  <label htmlFor="tag-search-input" className={styles.searchTagsLabel}>
+                    Search tags
+                  </label>
+                  <input
+                    id="tag-search-input"
+                    type="search"
+                    placeholder="Type to filter…"
+                    value={tagSearch}
+                    onChange={e => setTagSearch(e.target.value)}
+                    className={styles.compactControl}
+                    aria-label="Search tags in tree"
+                  />
+                </div>
+
+                {hasActiveFilters && (
+                  <div className={styles.activeFilters}>
+                    <span className={styles.activeFiltersLabel}>Active</span>
+                    <div className={styles.activeFiltersChips}>
+                      {cardType !== 'all' && (
+                        <span className={styles.filterChip}>
+                          {cardTypeLabels[cardType] ?? cardType}
+                          <button
+                            type="button"
+                            onClick={removeCardTypeFilter}
+                            className={styles.filterChipRemove}
+                            aria-label={`Remove ${cardTypeLabels[cardType] ?? cardType} filter`}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      )}
+                      {selectedFilterTagIds.map(tagId => {
+                        const tagName = tags?.find(t => t.docId === tagId)?.name ?? tagId;
+                        return (
+                          <span key={tagId} className={styles.filterChip}>
+                            {tagName}
+                            <button
+                              type="button"
+                              onClick={() => removeTagFilter(tagId)}
+                              className={styles.filterChipRemove}
+                              aria-label={`Remove ${tagName} filter`}
+                            >
+                              ×
+                            </button>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.sidebarSection}>
+                <h3 className={styles.sectionHeading}>Sort by</h3>
+                <select
+                  id="feed-sort-select"
+                  value={feedSort}
+                  onChange={e => setFeedSort(e.target.value as FeedSortOrder)}
+                  className={styles.compactControl}
+                  aria-label="Sort card feed"
+                >
+                  <option value="newest">Newest first</option>
+                  <option value="oldest">Oldest first</option>
+                  <option value="random">Random</option>
+                </select>
+                <p className={styles.sortHint}>
+                  Title search uses alphabetical order. Random shuffles cards loaded so far.
+                </p>
+              </div>
+
               <nav className={styles.navigation}>
                 <TagTree
                   tree={filteredTagTree}
@@ -214,60 +251,82 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
               </nav>
             </>
           ) : (
-            <nav className={styles.navigation}>
-              {collectionId ? (
-                <div className={styles.collectionBack}>
-                  <button
-                    type="button"
-                    className={styles.collectionBackButton}
-                    onClick={() => setCollectionId(null)}
-                    aria-label="Back to collections list"
-                  >
-                    ← Back to collections
-                  </button>
+            <>
+              <div className={styles.dimensionsBlock}>
+                <div className={styles.dimensionTabs} role="tablist" aria-label="Dimensions">
+                  {DIMENSION_TABS.map(({ id, label }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      role="tab"
+                      aria-selected={activeDimension === id}
+                      className={`${styles.dimensionTab} ${activeDimension === id ? styles.dimensionTabActive : ''}`}
+                      onClick={() => setActiveDimension(id)}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
-              ) : (
-                <div className={styles.collectionGroups}>
-                  {collectionCards.length === 0 ? (
-                    <div className={styles.collectionEmpty}>No collections yet.</div>
-                  ) : (
-                    DIMENSION_GROUP_ORDER.map(dimKey => {
-                      const cardsInGroup = collectionsByDimension[dimKey] ?? [];
-                      if (cardsInGroup.length === 0) return null;
-                      const groupLabel =
-                        dimKey === 'uncategorized' ? 'Uncategorized' : dimKey.charAt(0).toUpperCase() + dimKey.slice(1);
-                      return (
-                        <div key={dimKey} className={styles.collectionGroup}>
-                          <div className={styles.collectionGroupLabel}>{groupLabel}</div>
-                          <ul className={styles.collectionList}>
-                            {cardsInGroup.map(card => (
-                              <li key={card.docId}>
-                                <button
-                                  type="button"
-                                  className={styles.collectionItem}
-                                  onClick={() => setCollectionId(card.docId!)}
-                                >
-                                  {card.title || card.subtitle || 'Untitled'}
-                                  {card.childrenIds && (
-                                    <span className={styles.collectionCount}>({card.childrenIds.length})</span>
-                                  )}
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              )}
-            </nav>
+              </div>
+              <nav className={styles.navigation}>
+                {collectionId ? (
+                  <div className={styles.collectionBack}>
+                    <button
+                      type="button"
+                      className={styles.collectionBackButton}
+                      onClick={() => setCollectionId(null)}
+                      aria-label="Back to collections list"
+                    >
+                      ← Back to collections
+                    </button>
+                  </div>
+                ) : (
+                  <div className={styles.collectionGroups}>
+                    {collectionCards.length === 0 ? (
+                      <div className={styles.collectionEmpty}>No collections yet.</div>
+                    ) : (
+                      DIMENSION_GROUP_ORDER.map(dimKey => {
+                        const cardsInGroup = collectionsByDimension[dimKey] ?? [];
+                        if (cardsInGroup.length === 0) return null;
+                        const groupLabel =
+                          dimKey === 'uncategorized'
+                            ? 'Uncategorized'
+                            : dimKey.charAt(0).toUpperCase() + dimKey.slice(1);
+                        return (
+                          <div key={dimKey} className={styles.collectionGroup}>
+                            <div className={styles.collectionGroupLabel}>{groupLabel}</div>
+                            <ul className={styles.collectionList}>
+                              {cardsInGroup.map(card => (
+                                <li key={card.docId}>
+                                  <button
+                                    type="button"
+                                    className={styles.collectionItem}
+                                    onClick={() => setCollectionId(card.docId!)}
+                                  >
+                                    {card.title || card.subtitle || 'Untitled'}
+                                    {card.childrenIds && (
+                                      <span className={styles.collectionCount}>({card.childrenIds.length})</span>
+                                    )}
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </nav>
+            </>
           )}
           <div className={styles.filterControls}>
-            <button onClick={handleClearFilters} className={styles.clearButton}>Clear filters</button>
+            <button type="button" onClick={handleClearFiltersClick} className={styles.clearButton}>
+              Clear filters
+            </button>
           </div>
         </>
       )}
     </div>
   );
-} 
+}

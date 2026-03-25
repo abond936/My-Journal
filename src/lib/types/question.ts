@@ -1,24 +1,31 @@
-interface Question {
-// Core Properties
-//  id: string;
-//  text: string;
-// type: 'story' | 'reflection';
-// tags: string[];
-// createdAt: Date;
-// updatedAt: Date;
+﻿import { z } from 'zod';
 
-  // Planned Properties
-  // category: string;        //  For organization
-  // difficulty: number;      //  For progression
-  // usageCount: number;      //  For popularity
-  // lastUsed: Date;         //  For recency
-  // isCustom: boolean;      //  To distinguish user-created
-  // authorId?: string;      //  For custom questions
-  
-  // Answer Tracking
-  // answeredEntries: {      //  Track which entries answer this question
-  //   entryId: string;
-  //   answeredAt: Date;
-  // }[];
-  // isAnswered: boolean;    //  Quick check if question has been answered
-}
+export const questionSchema = z.object({
+  docId: z.string().min(1),
+  prompt: z.string().min(1),
+  prompt_lowercase: z.string().min(1),
+  tags: z.array(z.string()).default([]),
+  usedByCardIds: z.array(z.string()).default([]),
+  usageCount: z.number().int().nonnegative().default(0),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+});
+
+export const createQuestionSchema = z.object({
+  prompt: z.string().min(1).max(500),
+  tags: z.array(z.string().min(1).max(80)).optional(),
+});
+
+export const updateQuestionSchema = z
+  .object({
+    prompt: z.string().min(1).max(500).optional(),
+    tags: z.array(z.string().min(1).max(80)).optional(),
+  })
+  .refine(data => data.prompt !== undefined || data.tags !== undefined, {
+    message: 'At least one field is required',
+  });
+
+export type Question = z.infer<typeof questionSchema>;
+export type CreateQuestionInput = z.infer<typeof createQuestionSchema>;
+export type UpdateQuestionInput = z.infer<typeof updateQuestionSchema>;
+

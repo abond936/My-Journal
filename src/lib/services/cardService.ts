@@ -1,8 +1,12 @@
-import { getAdminApp } from '@/lib/config/firebase/admin';
+﻿import { getAdminApp } from '@/lib/config/firebase/admin';
 import { Card, cardSchema, GalleryMediaItem } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
-import { updateTagCountsForCard, calculateDerivedTagData } from '@/lib/firebase/tagService';
-import { getFirestore, FieldPath, FieldValue } from 'firebase-admin/firestore';
+import {
+  updateTagCountsForCard,
+  mergeDerivedTagsWithImageWho,
+  mergeDerivedTagsForCardRecord,
+} from '@/lib/firebase/tagService';
+import { getFirestore, FieldPath, FieldValue, Transaction } from 'firebase-admin/firestore';
 import {
   deleteMediaAsset,
   deleteFromStorageWithRetry,
@@ -11,6 +15,7 @@ import {
 import { extractMediaFromContent, stripContentImageSrc, hydrateContentImageSrc, removeMediaFromContent } from '@/lib/utils/cardUtils';
 import { getPublicStorageUrl } from '@/lib/utils/storageUrl';
 import { Media } from '@/lib/types/photo';
+import { unlinkCardFromAllQuestions } from '@/lib/services/questionService';
 
 /**
  * Retry utility with exponential backoff for critical operations.
@@ -121,6 +126,22 @@ function getMediaIdsFromCard(card: {
   return ids;
 }
 
+/** Reads `whoTagIds` from each media doc inside a Firestore transaction. */
+async function buildMediaWhoMapInTransaction(
+  transaction: Transaction,
+  mediaIds: Set<string>
+): Promise<Map<string, string[] | undefined>> {
+  const map = new Map<string, string[] | undefined>();
+  for (const mid of mediaIds) {
+    const snap = await transaction.get(firestore.collection(MEDIA_COLLECTION).doc(mid));
+    if (snap.exists) {
+      const w = (snap.data() as Media).whoTagIds;
+      if (w && w.length > 0) map.set(mid, w);
+    }
+  }
+  return map;
+}
+
 /** Finds card IDs that reference the given mediaId. Uses referencedByCardIds if present, else scans (lazy backfill). */
 export async function getCardsReferencingMedia(mediaId: string): Promise<string[]> {
   const mediaDoc = await firestore.collection(MEDIA_COLLECTION).doc(mediaId).get();
@@ -151,6 +172,28 @@ export async function getCardsReferencingMedia(mediaId: string): Promise<string[
     });
   }
   return ids;
+}
+
+/**
+ * Recomputes filterTags + dimensional tag arrays for every card that references `mediaId`
+ * (after image-level WHO changes on that media).
+ */
+export async function recalculateDerivedTagsForCardsUsingMedia(mediaId: string): Promise<void> {
+  const cardIds = await getCardsReferencingMedia(mediaId);
+  for (const cardId of cardIds) {
+    const snap = await firestore.collection(CARDS_COLLECTION).doc(cardId).get();
+    if (!snap.exists) continue;
+    const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(snap.data());
+    await firestore.collection(CARDS_COLLECTION).doc(cardId).update({
+      filterTags,
+      who: dimensionalTags.who || [],
+      what: dimensionalTags.what || [],
+      when: dimensionalTags.when || [],
+      where: dimensionalTags.where || [],
+      reflection: dimensionalTags.reflection || [],
+      updatedAt: Date.now(),
+    });
+  }
 }
 
 /** Removes a media reference from a card (cover, gallery, or content). */
@@ -336,38 +379,43 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
   // Validate and apply defaults using Zod
   const validatedData = cardSchema.partial().parse(cardData);
 
-  // Calculate all derived tag data using centralized function
   const selectedTags = validatedData.tags || [];
-  const { filterTags, dimensionalTags } = await calculateDerivedTagData(selectedTags);
 
   // --- Content sanitation ---
   const rawContent = validatedData.content ?? '';
   const cleanedContent = stripContentImageSrc(rawContent);
   const contentMediaIds = extractMediaFromContent(cleanedContent);
 
-  const newCard: Card = {
-    ...validatedData,
-    docId: docRef.id,
-    status: validatedData.status ?? 'draft',
-    title_lowercase: validatedData.title?.toLowerCase() || '',
-    content: cleanedContent,
-    tags: selectedTags, // ensure tags is not undefined
-    contentMedia: contentMediaIds, // always an array even if empty
-    galleryMedia: validatedData.galleryMedia || [], // ensure arrays are not undefined
-    filterTags,
-    // Populate dimensional arrays
-    who: dimensionalTags.who || [],
-    what: dimensionalTags.what || [],
-    when: dimensionalTags.when || [],
-    where: dimensionalTags.where || [],
-    reflection: dimensionalTags.reflection || [],
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-  };
-  
   // Use a transaction to ensure atomicity with retry logic
   await withRetry(async () => {
     return firestore.runTransaction(async (transaction) => {
+      const mediaIdsForTags = getMediaIdsFromCard({
+        coverImageId: validatedData.coverImageId ?? undefined,
+        galleryMedia: validatedData.galleryMedia,
+        contentMedia: contentMediaIds,
+      });
+      const mediaWhoMap = await buildMediaWhoMapInTransaction(transaction, mediaIdsForTags);
+      const { filterTags, dimensionalTags } = await mergeDerivedTagsWithImageWho(selectedTags, mediaWhoMap);
+
+      const newCard: Card = {
+        ...validatedData,
+        docId: docRef.id,
+        status: validatedData.status ?? 'draft',
+        title_lowercase: validatedData.title?.toLowerCase() || '',
+        content: cleanedContent,
+        tags: selectedTags,
+        contentMedia: contentMediaIds,
+        galleryMedia: validatedData.galleryMedia || [],
+        filterTags,
+        who: dimensionalTags.who || [],
+        what: dimensionalTags.what || [],
+        when: dimensionalTags.when || [],
+        where: dimensionalTags.where || [],
+        reflection: dimensionalTags.reflection || [],
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
       // 1. Create the new card document
       transaction.set(docRef, newCard);
 
@@ -484,7 +532,7 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       
 
   
-      // If no fields remain after cleaning, nothing to update – return current data
+      // If no fields remain after cleaning, nothing to update â€“ return current data
       if (Object.keys(cleanedUpdate).length === 0) {
         return existingData;
       }
@@ -502,23 +550,7 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
 
       // Prepare derived tag data (reads) BEFORE any writes to comply with Firestore transaction rules
       const finalTags = ('tags' in cleanedUpdate) ? (cleanedUpdate.tags ?? existingData.tags) : existingData.tags;
-      
-      const { filterTags, dimensionalTags } = await calculateDerivedTagData(finalTags || []);
 
-      // --- Update tag counts using centralized function ---
-      await updateTagCountsForCard(existingData, { ...existingData, ...cleanedUpdate }, transaction);
-
-      cleanedUpdate.filterTags = filterTags;
-      cleanedUpdate.who = dimensionalTags.who || [];
-      cleanedUpdate.what = dimensionalTags.what || [];
-      cleanedUpdate.when = dimensionalTags.when || [];
-      cleanedUpdate.where = dimensionalTags.where || [];
-      cleanedUpdate.reflection = dimensionalTags.reflection || [];
-  
-      // 1. Update tag counts before any writes (requires reads first)
-      //   (already executed above)
-
-      // 2. Maintain referencedByCardIds on media docs
       const clearingCover = ('coverImageId' in cardData) && (cardData.coverImageId === null || cardData.coverImageId === undefined);
       const oldMediaIds = getMediaIdsFromCard(existingData);
       const newCover = clearingCover ? null : (('coverImageId' in cardData ? cardData.coverImageId : existingData.coverImageId) ?? null);
@@ -530,6 +562,21 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       if (newCover) newMediaIds.add(newCover);
       newGalleryMedia?.forEach(g => g.mediaId && newMediaIds.add(g.mediaId));
       newContentMedia.forEach(id => newMediaIds.add(id));
+
+      const mediaWhoMap = await buildMediaWhoMapInTransaction(transaction, newMediaIds);
+      const { filterTags, dimensionalTags } = await mergeDerivedTagsWithImageWho(finalTags || [], mediaWhoMap);
+
+      // --- Update tag counts using centralized function ---
+      await updateTagCountsForCard(existingData, { ...existingData, ...cleanedUpdate }, transaction);
+
+      cleanedUpdate.filterTags = filterTags;
+      cleanedUpdate.who = dimensionalTags.who || [];
+      cleanedUpdate.what = dimensionalTags.what || [];
+      cleanedUpdate.when = dimensionalTags.when || [];
+      cleanedUpdate.where = dimensionalTags.where || [];
+      cleanedUpdate.reflection = dimensionalTags.reflection || [];
+
+      // Maintain referencedByCardIds on media docs
       const mediaRemoved = [...oldMediaIds].filter(id => !newMediaIds.has(id));
       const mediaAdded = [...newMediaIds].filter(id => !oldMediaIds.has(id));
       for (const mediaId of mediaRemoved) {
@@ -777,8 +824,6 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
     return;
   }
 
-  const { filterTags, dimensionalTags } = await calculateDerivedTagData(tags);
-
   for (let i = 0; i < cardIds.length; i += BULK_UPDATE_TAGS_CHUNK_SIZE) {
     const chunk = cardIds.slice(i, i + BULK_UPDATE_TAGS_CHUNK_SIZE);
 
@@ -794,7 +839,14 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
         await updateTagCountsForCard(cardData, newCardData, transaction);
       }
 
-      for (const cardId of chunk) {
+      for (const cardDoc of cardDocs) {
+        if (!cardDoc.exists) continue;
+        const cardId = cardDoc.id;
+        const cardData = cardDoc.data() as Card;
+        const mediaIds = getMediaIdsFromCard(cardData);
+        const mediaWhoMap = await buildMediaWhoMapInTransaction(transaction, mediaIds);
+        const { filterTags, dimensionalTags } = await mergeDerivedTagsWithImageWho(tags, mediaWhoMap);
+
         const cardRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
         transaction.update(cardRef, {
           tags,
@@ -895,6 +947,8 @@ export async function deleteCard(cardId: string): Promise<void> {
         transaction.delete(docRef);
       });
     }).then(async () => {
+        await unlinkCardFromAllQuestions(cardId);
+
         // Post-transaction: Try immediate storage cleanup for the deleted media
         // This is outside the transaction, so failures won't affect database integrity
         for (const mediaId of mediaToDelete) {
@@ -1010,6 +1064,8 @@ export async function getCards(options: {
   limit?: number;
   lastDocId?: string;
   hydrationMode?: 'full' | 'cover-only';
+  /** When `q` is set, title prefix search uses `orderBy('title')` and this is ignored. */
+  sort?: 'newest' | 'oldest';
 } = {}): Promise<{ items: Card[]; lastDocId?: string; hasMore: boolean }> {
   const { 
     q,
@@ -1021,6 +1077,7 @@ export async function getCards(options: {
     limit = 10,
     lastDocId,
     hydrationMode = 'full',
+    sort = 'newest',
   } = options;
 
   let query: FirebaseFirestore.Query = firestore.collection(CARDS_COLLECTION);
@@ -1082,9 +1139,10 @@ export async function getCards(options: {
     query = query.where('childrenIds', 'array-contains', childrenIds_contains);
   }
 
-  // Apply sorting
+  // Apply sorting (title search uses range on title + orderBy title)
   if (!q) {
-    query = query.orderBy('createdAt', 'desc');
+    const direction = sort === 'oldest' ? 'asc' : 'desc';
+    query = query.orderBy('createdAt', direction);
   }
 
   // Apply pagination
@@ -1117,3 +1175,5 @@ export async function getCards(options: {
 }
 
  
+
+

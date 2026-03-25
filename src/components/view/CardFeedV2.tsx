@@ -24,17 +24,15 @@ export default function CardFeedV2({ cards, loading, loadMoreRef, onSaveScrollPo
   return (
     <main className={styles.grid}>
       {cards.map(card => (
-        <V2ContentCard 
-          key={card.docId} 
+        <V2ContentCard
+          key={card.docId}
           card={card}
-          // All cards will be 'medium' for now.
-          size="medium" 
-          onClick={onSaveScrollPosition} 
+          size="medium"
+          onClick={onSaveScrollPosition}
         />
       ))}
-      
-      {/* This element is critical for infinite scrolling and must be preserved. */}
+
       <div ref={loadMoreRef} />
     </main>
   );
-} 
+}

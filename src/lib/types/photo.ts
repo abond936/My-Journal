@@ -43,6 +43,9 @@ export const mediaSchema = z.object({
 
   /** Card IDs that reference this media (cover, gallery, or content). Denormalized for fast delete and unassigned filter. */
   referencedByCardIds: z.array(z.string()).optional(),
+
+  /** Person tags for this image only (WHO dimension). Rolled into parent card `who` / `filterTags` for discovery. */
+  whoTagIds: z.array(z.string()).optional(),
 });
 
 export type Media = z.infer<typeof mediaSchema>;

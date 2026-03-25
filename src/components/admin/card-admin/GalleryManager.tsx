@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import JournalImage from '@/components/common/JournalImage';
+import { useTag } from '@/components/providers/TagProvider';
+import TagPickerDimensionColumn from '@/components/admin/card-admin/TagPickerDimensionColumn';
 import {
   DndContext,
   closestCenter,
@@ -176,11 +178,26 @@ interface GalleryItemFormProps {
 }
 
 function GalleryItemForm({ item, onSave }: GalleryItemFormProps) {
+  const { dimensionTree } = useTag();
+  const whoRoots = dimensionTree.who ?? [];
+
   const [caption, setCaption] = useState('');
   const [horizontalPosition, setHorizontalPosition] = useState(50);
   const [verticalPosition, setVerticalPosition] = useState(50);
   const [hasFocalOverride, setHasFocalOverride] = useState(false);
   const [hasCaptionOverride, setHasCaptionOverride] = useState(false);
+  const [whoSelection, setWhoSelection] = useState<Set<string>>(() => new Set());
+  const [whoSaveError, setWhoSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const handleWhoSelectionChange = useCallback((tagId: string, selected: boolean) => {
+    setWhoSelection(prev => {
+      const next = new Set(prev);
+      if (selected) next.add(tagId);
+      else next.delete(tagId);
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     const capOverride = gallerySlotHasCaptionOverride(item);
@@ -200,6 +217,12 @@ function GalleryItemForm({ item, onSave }: GalleryItemFormProps) {
       setVerticalPosition(inherited.vertical);
     }
   }, [item.mediaId, item.caption, item.objectPosition, item.media?.objectPosition, item.media?.caption]);
+
+  useEffect(() => {
+    const ids = item.media?.whoTagIds ?? [];
+    setWhoSelection(new Set(ids));
+    setWhoSaveError(null);
+  }, [item.mediaId, item.media?.whoTagIds]);
 
   const objectPosition = `${horizontalPosition}% ${verticalPosition}%`;
 
@@ -230,11 +253,39 @@ function GalleryItemForm({ item, onSave }: GalleryItemFormProps) {
     setCaption(item.media?.caption ?? '');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setWhoSaveError(null);
+    const whoArr = [...whoSelection];
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/images/${item.mediaId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ whoTagIds: whoArr }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(typeof data.message === 'string' ? data.message : res.statusText);
+      }
+    } catch (err) {
+      setWhoSaveError(err instanceof Error ? err.message : 'Could not save people on this image.');
+      setSaving(false);
+      return;
+    }
+    setSaving(false);
+
     const { objectPosition: _op, caption: _cap, ...rest } = item;
     onSave({
       ...rest,
+      ...(item.media
+        ? {
+            media: {
+              ...item.media,
+              whoTagIds: whoArr,
+            },
+          }
+        : {}),
       ...(hasCaptionOverride ? { caption } : {}),
       ...(hasFocalOverride ? { objectPosition } : {}),
     });
@@ -258,6 +309,29 @@ function GalleryItemForm({ item, onSave }: GalleryItemFormProps) {
           />
         </div>
       ) : null}
+
+      <div className={`${styles.formGroup} ${styles.whoSection}`}>
+        <span className={styles.whoSectionLabel}>People in this image</span>
+        <p className={styles.whoHint}>
+          WHO tags here apply to this photo only. They roll into the card’s people filters and Explore. Card-level tags in the form still apply to the whole card.
+        </p>
+        {whoSaveError ? <p className={styles.whoError}>{whoSaveError}</p> : null}
+        <div className={styles.whoColumns}>
+          {whoRoots.length === 0 ? (
+            <p className={styles.whoEmpty}>No WHO tags in the library yet. Add people in Tag Admin.</p>
+          ) : (
+            whoRoots.map(root => (
+              <TagPickerDimensionColumn
+                key={root.docId}
+                dimension={root}
+                selection={whoSelection}
+                onSelectionChange={handleWhoSelectionChange}
+                checkboxIdPrefix={`gallery-who-${item.mediaId}-${root.docId}-`}
+              />
+            ))
+          )}
+        </div>
+      </div>
 
       <div className={styles.formGroup}>
         <label htmlFor="gallery-caption">Caption</label>
@@ -318,8 +392,8 @@ function GalleryItemForm({ item, onSave }: GalleryItemFormProps) {
       </div>
 
       <div className={styles.formActions}>
-        <button type="submit" className={styles.saveButton}>
-          Save Changes
+        <button type="submit" className={styles.saveButton} disabled={saving}>
+          {saving ? 'Saving…' : 'Save Changes'}
         </button>
       </div>
     </form>

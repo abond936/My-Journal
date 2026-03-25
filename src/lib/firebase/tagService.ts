@@ -1,10 +1,44 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { Tag, OrganizedTags } from '@/lib/types/tag';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, type DocumentData, type Transaction } from 'firebase-admin/firestore';
 
 const adminApp = getAdminApp();
 const firestore = adminApp.firestore();
 const TAGS_COLLECTION = 'tags';
+const MEDIA_COLLECTION = 'media';
+
+function collectMediaIdsFromCardData(cardData: DocumentData | undefined): Set<string> {
+  const ids = new Set<string>();
+  if (!cardData) return ids;
+  if (cardData.coverImageId) ids.add(cardData.coverImageId as string);
+  const gm = cardData.galleryMedia as { mediaId?: string }[] | undefined;
+  gm?.forEach(g => g.mediaId && ids.add(g.mediaId));
+  const cm = cardData.contentMedia as string[] | undefined;
+  cm?.forEach(id => id && ids.add(id));
+  return ids;
+}
+
+/**
+ * Derives filterTags + dimensional arrays from card.tags and image-level `whoTagIds` on referenced media.
+ * Pass `transaction` when called inside a Firestore transaction so reads participate in the same attempt.
+ */
+export async function mergeDerivedTagsForCardRecord(
+  cardData: DocumentData | undefined,
+  transaction?: Transaction
+): Promise<{ filterTags: Record<string, boolean>; dimensionalTags: OrganizedTags }> {
+  const directTags = (cardData?.tags as string[] | undefined) || [];
+  const mediaIds = collectMediaIdsFromCardData(cardData);
+  const mediaWhoMap = new Map<string, string[] | undefined>();
+  for (const mid of mediaIds) {
+    const ref = firestore.collection(MEDIA_COLLECTION).doc(mid);
+    const snap = transaction ? await transaction.get(ref) : await ref.get();
+    if (snap.exists) {
+      const w = (snap.data() as { whoTagIds?: string[] })?.whoTagIds;
+      if (w && w.length > 0) mediaWhoMap.set(mid, w);
+    }
+  }
+  return mergeDerivedTagsWithImageWho(directTags, mediaWhoMap);
+}
 
 /**
  * Fetches all tags directly from Firestore.
@@ -170,6 +204,41 @@ export async function calculateDerivedTagData(directTagIds: string[]): Promise<{
 }
 
 /**
+ * Merges card-assigned tags with WHO tags stored on referenced media (cover, gallery, content).
+ * Image WHO rolls into `filterTags` and `dimensionalTags.who` per Project.md; other dimensions stay card-only.
+ */
+export async function mergeDerivedTagsWithImageWho(
+  directCardTagIds: string[],
+  mediaWhoByMediaId: Map<string, string[] | undefined>
+): Promise<{ filterTags: Record<string, boolean>; dimensionalTags: OrganizedTags }> {
+  const base = await calculateDerivedTagData(directCardTagIds || []);
+  const imageWhoFlat = [...mediaWhoByMediaId.values()]
+    .filter(Array.isArray)
+    .flat() as string[];
+  if (imageWhoFlat.length === 0) {
+    return base;
+  }
+
+  const uniqueImageWho = [...new Set(imageWhoFlat)];
+  const imageAncestors = await getTagAncestors(uniqueImageWho);
+
+  const filterTags: Record<string, boolean> = { ...base.filterTags };
+  for (const id of [...uniqueImageWho, ...imageAncestors]) {
+    filterTags[id] = true;
+  }
+
+  const mergedWho = [...new Set([...(base.dimensionalTags.who || []), ...uniqueImageWho])];
+
+  return {
+    filterTags,
+    dimensionalTags: {
+      ...base.dimensionalTags,
+      who: mergedWho,
+    },
+  };
+}
+
+/**
  * Finds all cards that use a specific tag (directly or via inheritance).
  * Used when a tag's dimension or hierarchy changes.
  * 
@@ -232,10 +301,8 @@ export async function updateCardsForTagChange(tagId: string): Promise<void> {
           }
 
           const cardData = cardDoc.data();
-          const directTags = cardData?.tags || [];
 
-          // Recalculate derived data using the centralized function
-          const { filterTags, dimensionalTags } = await calculateDerivedTagData(directTags);
+          const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(cardData);
 
           // Update the card
           await firestore.collection('cards').doc(cardId).update({
@@ -375,9 +442,12 @@ export async function deleteTag(docId: string): Promise<void> {
           const updatedTags = currentTags.filter((tagId: string) => !tagsToDelete.includes(tagId));
           
           if (updatedTags.length !== currentTags.length) {
-            // Recalculate derived tag data
-            const { filterTags, dimensionalTags } = await calculateDerivedTagData(updatedTags);
-            
+            const mergedCardPayload = { ...cardData, tags: updatedTags };
+            const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(
+              mergedCardPayload,
+              transaction
+            );
+
             // Update the card
             transaction.update(cardRef, {
               tags: updatedTags,
@@ -878,9 +948,8 @@ export async function updateTagAndDescendantPaths(tagId: string, newParentId: st
   
   // 11. Update all affected cards with recalculated derived data
   for (const card of affectedCards) {
-    const currentTags = card.data?.tags || [];
-    const { filterTags, dimensionalTags } = await calculateDerivedTagData(currentTags);
-    
+    const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(card.data, transaction);
+
     transaction.update(card.ref, {
       filterTags,
       who: dimensionalTags.who,

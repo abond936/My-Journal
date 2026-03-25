@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
 import { patchMediaDocument } from '@/lib/services/images/imageImportService';
-import { deleteMediaWithCardCleanup } from '@/lib/services/cardService';
+import { deleteMediaWithCardCleanup, recalculateDerivedTagsForCardsUsingMedia } from '@/lib/services/cardService';
 import { mediaSchema } from '@/lib/types/photo';
 
 /**
@@ -57,15 +57,21 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const hasStatus = 'status' in body && body.status !== undefined;
     const hasCaption = 'caption' in body;
     const hasObjectPosition = 'objectPosition' in body && body.objectPosition !== undefined;
+    const hasWhoTagIds = 'whoTagIds' in body && body.whoTagIds !== undefined;
 
-    if (!hasStatus && !hasCaption && !hasObjectPosition) {
+    if (!hasStatus && !hasCaption && !hasObjectPosition && !hasWhoTagIds) {
       return NextResponse.json(
-        { message: 'Provide at least one of: status, caption, objectPosition.' },
+        { message: 'Provide at least one of: status, caption, objectPosition, whoTagIds.' },
         { status: 400 }
       );
     }
 
-    const patch: { status?: 'temporary' | 'active'; caption?: string; objectPosition?: string } = {};
+    const patch: {
+      status?: 'temporary' | 'active';
+      caption?: string;
+      objectPosition?: string;
+      whoTagIds?: string[];
+    } = {};
 
     if (hasStatus) {
       const statusValidation = mediaSchema.shape.status.safeParse(body.status);
@@ -89,7 +95,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       patch.objectPosition = body.objectPosition.trim();
     }
 
+    if (hasWhoTagIds) {
+      if (!Array.isArray(body.whoTagIds)) {
+        return NextResponse.json({ message: 'whoTagIds must be an array of strings.' }, { status: 400 });
+      }
+      patch.whoTagIds = body.whoTagIds.filter((id): id is string => typeof id === 'string');
+    }
+
     await patchMediaDocument(mediaId, patch);
+
+    if (hasWhoTagIds) {
+      await recalculateDerivedTagsForCardsUsingMedia(mediaId);
+    }
 
     return NextResponse.json({ message: `Media asset ${mediaId} updated.` });
   } catch (error) {

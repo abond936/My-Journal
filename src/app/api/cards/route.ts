@@ -112,6 +112,9 @@ export async function GET(request: Request) {
     const hydrationParam = searchParams.get('hydration');
     const hydrationMode: 'full' | 'cover-only' =
       hydrationParam === 'cover-only' ? 'cover-only' : 'full';
+    const sortRaw = searchParams.get('sort');
+    const sort: 'newest' | 'oldest' | undefined =
+      sortRaw === 'oldest' ? 'oldest' : sortRaw === 'newest' ? 'newest' : undefined;
 
     try {
       // List cards that are collections (have children)
@@ -140,6 +143,7 @@ export async function GET(request: Request) {
         limit,
         lastDocId,
         hydrationMode,
+        ...(sort ? { sort } : {}),
       });
 
       return NextResponse.json(result);

@@ -3,6 +3,11 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { FirestoreAdapter } from '@auth/firebase-adapter';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { getFirestore } from 'firebase-admin/firestore';
+import {
+  authorizeJournalUserCredentials,
+  hasJournalUserWithUsername,
+  normalizeJournalUsername,
+} from '@/lib/auth/journalUsersFirestore';
 
 const app = getAdminApp();
 const db = getFirestore(app);
@@ -16,20 +21,47 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        const isAdminUser =
-          credentials?.username === process.env.ADMIN_EMAIL &&
-          credentials?.password === process.env.ADMIN_PASSWORD;
+        const username = credentials?.username?.trim() ?? '';
+        const password = credentials?.password ?? '';
 
-        if (isAdminUser) {
+        if (!username || !password) {
+          return null;
+        }
+
+        const fromDb = await authorizeJournalUserCredentials(username, password);
+        if (fromDb) {
+          const emailLocal = `${fromDb.username}@journal.local`;
           return {
-            id: 'admin',
-            name: process.env.ADMIN_EMAIL,
-            email: process.env.ADMIN_EMAIL,
-            role: 'admin',
+            id: fromDb.docId,
+            name: fromDb.displayName,
+            email: emailLocal,
+            role: fromDb.role,
           };
         }
 
-        return null;
+        const legacyEmail = process.env.ADMIN_EMAIL?.trim() ?? '';
+        const legacyPassword = process.env.ADMIN_PASSWORD ?? '';
+        const legacyMatch =
+          !!legacyEmail &&
+          !!legacyPassword &&
+          normalizeJournalUsername(username) === normalizeJournalUsername(legacyEmail) &&
+          password === legacyPassword;
+
+        if (!legacyMatch) {
+          return null;
+        }
+
+        const journalRowExists = await hasJournalUserWithUsername(legacyEmail);
+        if (journalRowExists) {
+          return null;
+        }
+
+        return {
+          id: 'admin',
+          name: legacyEmail,
+          email: legacyEmail,
+          role: 'admin',
+        };
       },
     }),
   ],
@@ -49,7 +81,11 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session?.user) {
-        (session.user as { role?: string }).role = token.role as string | undefined;
+        const u = session.user as { role?: string; id?: string };
+        u.role = token.role as string | undefined;
+        if (token.sub) {
+          u.id = token.sub;
+        }
       }
       return session;
     },

@@ -157,6 +157,45 @@
     flex-direction: column;
 }
 
+.whoSection {
+    border-top: var(--border-width-thin) solid var(--border1-color);
+    padding-top: var(--spacing-md);
+}
+
+.whoSectionLabel {
+    font-weight: var(--font-weight-semibold);
+    color: var(--text1-color);
+    margin-bottom: var(--spacing-xs);
+}
+
+.whoHint {
+    margin: 0 0 var(--spacing-sm) 0;
+    font-size: var(--font-size-sm);
+    color: var(--text2-color);
+    line-height: 1.45;
+}
+
+.whoError {
+    margin: 0 0 var(--spacing-sm) 0;
+    font-size: var(--font-size-sm);
+    color: var(--state-error-color, #c00);
+}
+
+.whoEmpty {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--text2-color);
+}
+
+.whoColumns {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    max-height: min(50vh, 320px);
+    overflow-y: auto;
+    padding-right: var(--spacing-xs);
+}
+
 .formGroup label {
     margin-bottom: var(--spacing-xs);
     font-weight: var(--font-weight-medium);
@@ -194,6 +233,11 @@
 
 .saveButton:hover {
     background-color: var(--button-solid-background-color-hover);
+}
+
+.saveButton:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
 }
 
 .formActions {
