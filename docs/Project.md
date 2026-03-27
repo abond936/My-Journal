@@ -690,7 +690,7 @@ Execution notes (material only)
 - Keep card references canonical (`coverImageId`, `galleryMedia`, `contentMedia`); no embedded cover objects.
 - **Tags (target):** Media and cards use the **same** tagging mechanism; **no** automatic inheritance or merge between them. Card `filterTags` should eventually reflect **card-assigned tags only** (retire merging image-level tags into the card on save; today some image `whoTagIds` logic still merges—migrate off).
 
-**Deferred — merge to `main` (note for later):** Active integration work has been pushed on branch **`feature/card-edit-foundation`** (`origin`). When ready for production/default branch, open a **PR** into `main` or merge locally and push—whichever matches the repo workflow. Confirm CI/build and env (Firebase, `AUTH_SECRET`, journal seed) before release.
+**Git workflow (current rule):** Commit directly to **`main`** and push to `origin/main`. Do not use feature branches or PR merge flow unless explicitly requested for a specific task.
 
 ---
 
