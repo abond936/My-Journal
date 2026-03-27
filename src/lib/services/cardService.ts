@@ -1,9 +1,8 @@
-﻿import { getAdminApp } from '@/lib/config/firebase/admin';
+import { getAdminApp } from '@/lib/config/firebase/admin';
 import { Card, cardSchema, GalleryMediaItem } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 import {
   updateTagCountsForCard,
-  mergeDerivedTagsWithImageWho,
   mergeDerivedTagsForCardRecord,
 } from '@/lib/firebase/tagService';
 import { getFirestore, FieldPath, FieldValue, Transaction } from 'firebase-admin/firestore';
@@ -126,20 +125,47 @@ function getMediaIdsFromCard(card: {
   return ids;
 }
 
-/** Reads `whoTagIds` from each media doc inside a Firestore transaction. */
-async function buildMediaWhoMapInTransaction(
-  transaction: Transaction,
-  mediaIds: Set<string>
-): Promise<Map<string, string[] | undefined>> {
-  const map = new Map<string, string[] | undefined>();
-  for (const mid of mediaIds) {
-    const snap = await transaction.get(firestore.collection(MEDIA_COLLECTION).doc(mid));
-    if (snap.exists) {
-      const w = (snap.data() as Media).whoTagIds;
-      if (w && w.length > 0) map.set(mid, w);
+function normalizeChildrenIds(childrenIds: unknown, selfId?: string): string[] {
+  if (!Array.isArray(childrenIds)) return [];
+  const seen = new Set<string>();
+  for (const raw of childrenIds) {
+    if (typeof raw !== 'string') continue;
+    const id = raw.trim();
+    if (!id) continue;
+    if (selfId && id === selfId) continue;
+    seen.add(id);
+  }
+  return Array.from(seen);
+}
+
+async function wouldCreateCycle(
+  transaction: FirebaseFirestore.Transaction,
+  parentId: string,
+  childId: string
+): Promise<boolean> {
+  if (parentId === childId) return true;
+
+  const queue: string[] = [childId];
+  const visited = new Set<string>();
+
+  while (queue.length > 0) {
+    const currentId = queue.shift()!;
+    if (visited.has(currentId)) continue;
+    visited.add(currentId);
+
+    const currentRef = firestore.collection(CARDS_COLLECTION).doc(currentId);
+    const currentSnap = await transaction.get(currentRef);
+    if (!currentSnap.exists) continue;
+    const current = currentSnap.data() as Card;
+    const children = normalizeChildrenIds(current.childrenIds);
+
+    if (children.includes(parentId)) return true;
+    for (const nextId of children) {
+      if (!visited.has(nextId)) queue.push(nextId);
     }
   }
-  return map;
+
+  return false;
 }
 
 /** Finds card IDs that reference the given mediaId. Uses referencedByCardIds if present, else scans (lazy backfill). */
@@ -172,28 +198,6 @@ export async function getCardsReferencingMedia(mediaId: string): Promise<string[
     });
   }
   return ids;
-}
-
-/**
- * Recomputes filterTags + dimensional tag arrays for every card that references `mediaId`
- * (after image-level WHO changes on that media).
- */
-export async function recalculateDerivedTagsForCardsUsingMedia(mediaId: string): Promise<void> {
-  const cardIds = await getCardsReferencingMedia(mediaId);
-  for (const cardId of cardIds) {
-    const snap = await firestore.collection(CARDS_COLLECTION).doc(cardId).get();
-    if (!snap.exists) continue;
-    const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(snap.data());
-    await firestore.collection(CARDS_COLLECTION).doc(cardId).update({
-      filterTags,
-      who: dimensionalTags.who || [],
-      what: dimensionalTags.what || [],
-      when: dimensionalTags.when || [],
-      where: dimensionalTags.where || [],
-      reflection: dimensionalTags.reflection || [],
-      updatedAt: Date.now(),
-    });
-  }
 }
 
 /** Removes a media reference from a card (cover, gallery, or content). */
@@ -389,13 +393,22 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
   // Use a transaction to ensure atomicity with retry logic
   await withRetry(async () => {
     return firestore.runTransaction(async (transaction) => {
-      const mediaIdsForTags = getMediaIdsFromCard({
-        coverImageId: validatedData.coverImageId ?? undefined,
-        galleryMedia: validatedData.galleryMedia,
-        contentMedia: contentMediaIds,
-      });
-      const mediaWhoMap = await buildMediaWhoMapInTransaction(transaction, mediaIdsForTags);
-      const { filterTags, dimensionalTags } = await mergeDerivedTagsWithImageWho(selectedTags, mediaWhoMap);
+      const normalizedChildren = normalizeChildrenIds(validatedData.childrenIds);
+      const parentDetachUpdates = new Map<string, string[]>();
+
+      for (const childId of normalizedChildren) {
+        const parentQuery = firestore
+          .collection(CARDS_COLLECTION)
+          .where('childrenIds', 'array-contains', childId);
+        const parentSnap = await transaction.get(parentQuery);
+        for (const parentDoc of parentSnap.docs) {
+          const parentData = parentDoc.data() as Card;
+          const updatedChildren = normalizeChildrenIds(parentData.childrenIds).filter(id => id !== childId);
+          parentDetachUpdates.set(parentDoc.id, updatedChildren);
+        }
+      }
+
+      const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord({ tags: selectedTags });
 
       const newCard: Card = {
         ...validatedData,
@@ -404,6 +417,7 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
         title_lowercase: validatedData.title?.toLowerCase() || '',
         content: cleanedContent,
         tags: selectedTags,
+        childrenIds: normalizedChildren,
         contentMedia: contentMediaIds,
         galleryMedia: validatedData.galleryMedia || [],
         filterTags,
@@ -418,6 +432,12 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
 
       // 1. Create the new card document
       transaction.set(docRef, newCard);
+
+      // 1b. Enforce single-parent across all existing parents of each child.
+      for (const [parentId, updatedChildren] of parentDetachUpdates.entries()) {
+        const parentRef = firestore.collection(CARDS_COLLECTION).doc(parentId);
+        transaction.update(parentRef, { childrenIds: updatedChildren, updatedAt: Date.now() });
+      }
 
       // 2. Update tag counts using centralized function
       await updateTagCountsForCard(null, newCard, transaction);
@@ -536,6 +556,32 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       if (Object.keys(cleanedUpdate).length === 0) {
         return existingData;
       }
+
+      const parentDetachUpdates = new Map<string, string[]>();
+      if ('childrenIds' in cleanedUpdate) {
+        const normalizedChildren = normalizeChildrenIds(cleanedUpdate.childrenIds, cardId);
+        cleanedUpdate.childrenIds = normalizedChildren;
+
+        for (const childId of normalizedChildren) {
+          const hasCycle = await wouldCreateCycle(transaction, cardId, childId);
+          if (hasCycle) {
+            throw new Error(`Cannot set child ${childId}; this would create a cycle.`);
+          }
+        }
+
+        for (const childId of normalizedChildren) {
+          const parentQuery = firestore
+            .collection(CARDS_COLLECTION)
+            .where('childrenIds', 'array-contains', childId);
+          const parentSnap = await transaction.get(parentQuery);
+          for (const parentDoc of parentSnap.docs) {
+            if (parentDoc.id === cardId) continue;
+            const parentData = parentDoc.data() as Card;
+            const updatedChildren = normalizeChildrenIds(parentData.childrenIds).filter(id => id !== childId);
+            parentDetachUpdates.set(parentDoc.id, updatedChildren);
+          }
+        }
+      }
   
       // Determine tag changes and prepare derived tag data BEFORE any writes
       const oldTags = new Set(existingData.tags || []);
@@ -563,8 +609,7 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       newGalleryMedia?.forEach(g => g.mediaId && newMediaIds.add(g.mediaId));
       newContentMedia.forEach(id => newMediaIds.add(id));
 
-      const mediaWhoMap = await buildMediaWhoMapInTransaction(transaction, newMediaIds);
-      const { filterTags, dimensionalTags } = await mergeDerivedTagsWithImageWho(finalTags || [], mediaWhoMap);
+      const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord({ tags: finalTags || [] });
 
       // --- Update tag counts using centralized function ---
       await updateTagCountsForCard(existingData, { ...existingData, ...cleanedUpdate }, transaction);
@@ -575,6 +620,11 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       cleanedUpdate.when = dimensionalTags.when || [];
       cleanedUpdate.where = dimensionalTags.where || [];
       cleanedUpdate.reflection = dimensionalTags.reflection || [];
+
+      for (const [parentId, updatedChildren] of parentDetachUpdates.entries()) {
+        const parentRef = firestore.collection(CARDS_COLLECTION).doc(parentId);
+        transaction.update(parentRef, { childrenIds: updatedChildren, updatedAt: Date.now() });
+      }
 
       // Maintain referencedByCardIds on media docs
       const mediaRemoved = [...oldMediaIds].filter(id => !newMediaIds.has(id));
@@ -843,9 +893,7 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
         if (!cardDoc.exists) continue;
         const cardId = cardDoc.id;
         const cardData = cardDoc.data() as Card;
-        const mediaIds = getMediaIdsFromCard(cardData);
-        const mediaWhoMap = await buildMediaWhoMapInTransaction(transaction, mediaIds);
-        const { filterTags, dimensionalTags } = await mergeDerivedTagsWithImageWho(tags, mediaWhoMap);
+        const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord({ tags });
 
         const cardRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
         transaction.update(cardRef, {

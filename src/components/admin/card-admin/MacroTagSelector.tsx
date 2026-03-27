@@ -12,21 +12,47 @@ interface MacroTagSelectorProps {
   selectedTags: Tag[];
   allTags: Tag[];
   onChange: (newIds: string[]) => void;
+  onSaveSelection?: (newIds: string[]) => void | Promise<void>;
   error?: string;
   className?: string;
+  startExpanded?: boolean;
+  onRequestClose?: () => void;
 }
 
-export default function MacroTagSelector({ selectedTags, allTags, onChange, error, className }: MacroTagSelectorProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+export default function MacroTagSelector({
+  selectedTags,
+  allTags,
+  onChange,
+  onSaveSelection,
+  error,
+  className,
+  startExpanded = false,
+  onRequestClose,
+}: MacroTagSelectorProps) {
+  const [isExpanded, setIsExpanded] = useState(startExpanded);
+  const [saving, setSaving] = useState(false);
   const { tags: providerTags } = useTag();
   const effectiveAllTags = providerTags.length > 0 ? providerTags : allTags;
 
-  const handleSave = (newSelection: string[]) => {
+  const handleSave = async (newSelection: string[]) => {
     onChange(newSelection);
+    if (onSaveSelection) {
+      setSaving(true);
+      try {
+        await onSaveSelection(newSelection);
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
     setIsExpanded(false);
   };
 
   const handleCancel = () => {
+    if (startExpanded && onRequestClose) {
+      onRequestClose();
+      return;
+    }
     setIsExpanded(false);
   };
 
@@ -57,6 +83,7 @@ export default function MacroTagSelector({ selectedTags, allTags, onChange, erro
         initialSelection={selectedTagIds}
         onSave={handleSave}
         onCancel={handleCancel}
+        saving={saving}
       />
     );
   }
@@ -112,12 +139,13 @@ function TagNode({ node }: { node: TagWithChildren }) {
 
 interface ExpandedViewProps {
   initialSelection: string[];
-  onSave: (newSelection: string[]) => void;
+  onSave: (newSelection: string[]) => void | Promise<void>;
   onCancel: () => void;
+  saving?: boolean;
   className?: string;
 }
 
-function ExpandedView({ initialSelection, onSave, onCancel, className }: ExpandedViewProps) {
+function ExpandedView({ initialSelection, onSave, onCancel, saving = false, className }: ExpandedViewProps) {
   const { tags } = useTag();
   const [currentSelection, setCurrentSelection] = useState<Set<string>>(new Set(initialSelection));
 
@@ -157,8 +185,8 @@ function ExpandedView({ initialSelection, onSave, onCancel, className }: Expande
     });
   };
 
-  const handleSaveClick = () => {
-    onSave(Array.from(currentSelection));
+  const handleSaveClick = async () => {
+    await onSave(Array.from(currentSelection));
   };
 
   return (
@@ -196,8 +224,10 @@ function ExpandedView({ initialSelection, onSave, onCancel, className }: Expande
           ))}
         </div>
         <div className={styles.actions}>
-          <button onClick={onCancel} className={styles.cancelButton}>Cancel</button>
-          <button onClick={handleSaveClick} className={styles.saveButton}>Save</button>
+          <button onClick={onCancel} className={styles.cancelButton} disabled={saving}>Cancel</button>
+          <button onClick={() => void handleSaveClick()} className={styles.saveButton} disabled={saving}>
+            {saving ? 'Saving…' : 'Save'}
+          </button>
         </div>
       </div>
     </div>

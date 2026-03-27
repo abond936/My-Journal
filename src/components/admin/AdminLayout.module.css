@@ -21,6 +21,9 @@
   padding: 0 var(--spacing-lg);
   border-bottom: var(--border-width-thin) solid var(--border1-color);
   background-color: var(--layout-background1-color);
+  position: sticky;
+  top: 0;
+  z-index: 60;
 }
 
 .pageContent {

@@ -26,6 +26,12 @@ interface MediaFilters {
   search: string;
   /** all | unassigned | assigned — unassigned/assigned use seek pagination (forward-only). */
   assignment: string;
+  /** any | who | what | when | where | reflection */
+  tagDimension: string;
+  /** all | unassigned | match */
+  tagMode: string;
+  /** Tag ID (used when tagMode=match) */
+  tagValue: string;
 }
 
 interface MediaContextType {
@@ -46,6 +52,8 @@ interface MediaContextType {
   updateMedia: (id: string, updates: Partial<Media>) => Promise<Media | undefined>;
   deleteMedia: (id: string) => Promise<void>;
   deleteMultipleMedia: (ids: string[]) => Promise<void>;
+  /** Bulk edit media tags using add|replace|remove semantics. */
+  bulkApplyTags: (mediaIds: string[], tags: string[], mode?: 'add' | 'replace' | 'remove') => Promise<void>;
   
   // Filter actions
   setFilter: (key: keyof MediaFilters, value: string) => void;
@@ -68,6 +76,9 @@ const defaultFilters: MediaFilters = {
   hasCaption: 'all',
   search: '',
   assignment: 'all',
+  tagDimension: 'any',
+  tagMode: 'all',
+  tagValue: '',
 };
 
 export function MediaProvider({ children }: { children: React.ReactNode }) {
@@ -97,6 +108,9 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     if (filters.hasCaption !== 'all') params.append('hasCaption', filters.hasCaption);
     if (filters.search) params.append('search', filters.search);
     if (filters.assignment !== 'all') params.append('assignment', filters.assignment);
+    if (filters.tagDimension !== 'any') params.append('tagDimension', filters.tagDimension);
+    if (filters.tagMode !== 'all') params.append('tagMode', filters.tagMode);
+    if (filters.tagValue) params.append('tagValue', filters.tagValue);
 
     return params.toString();
   }, []);
@@ -248,6 +262,30 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     }
   }, [fetchMedia, currentPage, pagination, media.length]);
 
+  const bulkApplyTags = useCallback(
+    async (mediaIds: string[], tags: string[], mode: 'add' | 'replace' | 'remove' = 'add') => {
+      if (mediaIds.length === 0) return;
+      setError(null);
+      try {
+        const response = await fetch('/api/admin/media/tags', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mediaIds, tags, mode }),
+        });
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(typeof data.message === 'string' ? data.message : response.statusText);
+        }
+        await fetchMedia(currentPage);
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        setError(error);
+        throw error;
+      }
+    },
+    [fetchMedia, currentPage]
+  );
+
   const setFilter = useCallback((key: keyof MediaFilters, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   }, []);
@@ -292,6 +330,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     updateMedia,
     deleteMedia,
     deleteMultipleMedia,
+    bulkApplyTags,
     setFilter,
     clearFilters,
     selectedMediaIds,

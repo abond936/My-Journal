@@ -38,9 +38,9 @@
 
 .logoImage {
   height: 100%;
-  max-height: var(--logo-max-height);
+  max-height: calc(var(--logo-max-height) * 0.5);
   width: auto;
-  padding-top: var(--spacing-lg);
+  padding-top: var(--spacing-sm);
   object-fit: contain;
 }
 
@@ -179,11 +179,13 @@
   }
 
   .logoImage {
-    display: none;
+    display: block;
+    max-height: calc(var(--logo-max-height) * 0.5);
+    padding-top: var(--spacing-sm);
   }
 
   .logoIcon {
-    display: inline-block;
+    display: none;
   }
 
   .logo {

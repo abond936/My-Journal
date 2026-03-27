@@ -1,7 +1,9 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
+import { calculateDerivedTagData } from '@/lib/firebase/tagService';
 import { Media } from '@/lib/types/photo';
 import { getPublicStorageUrl } from '@/lib/utils/storageUrl';
 import * as admin from 'firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import fs from 'fs/promises';
 import path from 'path';
 import sharp from 'sharp';
@@ -170,6 +172,12 @@ async function createMediaAsset(
     caption: captionOverride ?? '', 
     createdAt: now,
     updatedAt: now,
+    hasTags: false,
+    hasWho: false,
+    hasWhat: false,
+    hasWhen: false,
+    hasWhere: false,
+    hasReflection: false,
   };
 
   // 6. Save the document to the top-level 'media' collection in Firestore
@@ -315,7 +323,29 @@ export async function updateMediaStatus(mediaId: string, status: Media['status']
   }
 }
 
-type MediaPatchFields = Partial<Pick<Media, 'status' | 'caption' | 'objectPosition' | 'whoTagIds'>>;
+type MediaPatchFields = Partial<Pick<Media, 'status' | 'caption' | 'objectPosition' | 'whoTagIds' | 'tags'>>;
+
+async function applyTagFieldsToPayload(
+  payload: Record<string, unknown>,
+  tagIds: string[]
+): Promise<void> {
+  const raw = tagIds.filter((id): id is string => typeof id === 'string');
+  const { filterTags, dimensionalTags } = await calculateDerivedTagData(raw);
+  payload.tags = raw;
+  payload.filterTags = filterTags;
+  payload.who = dimensionalTags.who ?? [];
+  payload.what = dimensionalTags.what ?? [];
+  payload.when = dimensionalTags.when ?? [];
+  payload.where = dimensionalTags.where ?? [];
+  payload.reflection = dimensionalTags.reflection ?? [];
+  payload.hasTags = raw.length > 0;
+  payload.hasWho = (dimensionalTags.who ?? []).length > 0;
+  payload.hasWhat = (dimensionalTags.what ?? []).length > 0;
+  payload.hasWhen = (dimensionalTags.when ?? []).length > 0;
+  payload.hasWhere = (dimensionalTags.where ?? []).length > 0;
+  payload.hasReflection = (dimensionalTags.reflection ?? []).length > 0;
+  payload.whoTagIds = FieldValue.delete();
+}
 
 /**
  * Partial update for media metadata (admin). At least one supported field must be provided.
@@ -334,7 +364,8 @@ export async function patchMediaDocument(mediaId: string, updates: MediaPatchFie
     updates.status !== undefined ||
     updates.caption !== undefined ||
     updates.objectPosition !== undefined ||
-    updates.whoTagIds !== undefined;
+    updates.whoTagIds !== undefined ||
+    updates.tags !== undefined;
   if (!hasField) {
     throw new Error('No valid fields to update.');
   }
@@ -354,11 +385,16 @@ export async function patchMediaDocument(mediaId: string, updates: MediaPatchFie
     }
     payload.objectPosition = trimmed;
   }
-  if (updates.whoTagIds !== undefined) {
+  if (updates.tags !== undefined) {
+    if (!Array.isArray(updates.tags)) {
+      throw new Error('tags must be an array of tag IDs.');
+    }
+    await applyTagFieldsToPayload(payload, updates.tags);
+  } else if (updates.whoTagIds !== undefined) {
     if (!Array.isArray(updates.whoTagIds)) {
       throw new Error('whoTagIds must be an array of tag IDs.');
     }
-    payload.whoTagIds = updates.whoTagIds.filter((id): id is string => typeof id === 'string');
+    await applyTagFieldsToPayload(payload, updates.whoTagIds);
   }
 
   await mediaRef.update(payload);

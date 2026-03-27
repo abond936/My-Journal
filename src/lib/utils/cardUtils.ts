@@ -162,8 +162,9 @@ export function dehydrateCardForSave(raw: any): CardUpdate {
     content: raw.content, // Explicitly preserve content
     // Always include coverImageId so removals persist. null = clear, omit would mean "don't change"
     coverImageId: raw.coverImageId ?? null,
-    // Always include tags and galleryMedia when present (including empty arrays) so removals persist
+    // Always include tags/children/gallery/contentMedia when present (including empty arrays) so removals persist
     ...(Array.isArray(raw.tags) ? { tags: raw.tags } : {}),
+    ...(Array.isArray(raw.childrenIds) ? { childrenIds: raw.childrenIds } : {}),
     ...(Array.isArray(dehydratedGallery) ? { galleryMedia: dehydratedGallery } : {}),
     ...(Array.isArray(cleanedContent) ? { contentMedia: cleanedContent } : {}),
   } as CardUpdate;

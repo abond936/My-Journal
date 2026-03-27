@@ -22,7 +22,7 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: var(--spacing-md);
 }
 
@@ -65,7 +65,7 @@
 .thumbnailWrap {
   position: relative;
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
   background: var(--layout-background2-color);
 }
@@ -104,6 +104,37 @@
   overflow: hidden;
 }
 
+.tagSummary {
+  padding: 0 var(--spacing-sm) var(--spacing-sm);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.tagChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  border: var(--border-width-thin) solid var(--border1-color);
+  background: var(--layout-background2-color);
+  color: var(--text1-color);
+  white-space: nowrap;
+}
+
+.tagMore {
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+  align-self: center;
+}
+
+.noTags {
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+  font-style: italic;
+}
+
 .emptyState {
   text-align: center;
   padding: var(--spacing-2xl);
@@ -113,6 +144,6 @@
 
 @media (max-width: 768px) {
   .grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   }
 }

@@ -280,6 +280,21 @@
   /* Gradients */
   --gradient-bottom-overlay: linear-gradient(transparent, rgba(0,0,0,0.7));
   --gradient-bottom-overlay-strong: linear-gradient(transparent, rgba(0,0,0,0.9));
+
+  /* Global scrollbar colors */
+  --scrollbar-track-color: var(--layout-background2-color);
+  --scrollbar-thumb-color: var(--border2-color);
+  --scrollbar-thumb-hover-color: var(--text2-color);
+
+  /* Lightbox */
+  --lightbox-overlay-background-color: hsl(var(--h2) / 0.9);
+  --lightbox-control-background-color: hsl(var(--h1) / 0.8);
+  --lightbox-control-border-color: hsl(var(--h2) / 0.35);
+  --lightbox-control-text-color: var(--color2-100);
+  --lightbox-caption-text-color: var(--color2-100);
+
+  /* Native control hinting */
+  color-scheme: light;
 }
 
 /*
@@ -323,6 +338,21 @@
   --input-text-color: var(--text1-color);
   
   --card-background-color: var(--color1-200);
+
+  /* Global scrollbar colors (dark mode) */
+  --scrollbar-track-color: var(--layout-background1-color);
+  --scrollbar-thumb-color: var(--color1-300);
+  --scrollbar-thumb-hover-color: var(--text2-color);
+
+  /* Lightbox (dark mode) */
+  --lightbox-overlay-background-color: hsl(var(--h1) / 0.92);
+  --lightbox-control-background-color: hsl(var(--h1) / 0.72);
+  --lightbox-control-border-color: hsl(var(--h2) / 0.55);
+  --lightbox-control-text-color: var(--color2-100);
+  --lightbox-caption-text-color: var(--color2-100);
+
+  /* Native control hinting */
+  color-scheme: dark;
 }
 
 /*
@@ -336,4 +366,29 @@ body {
   background-color: var(--body-background-color);
   color: var(--text1-color);
   font-family: var(--body-font-family);
+}
+
+/* Global scrollbar styling */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb-color) var(--scrollbar-track-color);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track-color);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb-color);
+  border-radius: var(--border-radius-full);
+  border: 2px solid var(--scrollbar-track-color);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover-color);
 }

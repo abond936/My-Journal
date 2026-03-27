@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import type { CollectionReference, Query } from 'firebase-admin/firestore';
+import type { CollectionReference, Query, QuerySnapshot } from 'firebase-admin/firestore';
 import { authOptions } from '@/lib/auth/authOptions';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { Media } from '@/lib/types/photo';
 import { applyPublicStorageUrls } from '@/lib/utils/storageUrl';
-import { seekMediaByAssignment } from '@/lib/utils/mediaAssignmentSeek';
+import { isMediaAssigned, mediaMatchesDimensions, mediaMatchesSearch, seekMediaByAssignment } from '@/lib/utils/mediaAssignmentSeek';
 
 function buildBaseQuery(
   mediaRef: CollectionReference,
@@ -34,6 +34,92 @@ function buildBaseQuery(
   return baseQuery;
 }
 
+const SEEK_BATCH = 80;
+
+function getDimensionIds(item: Media, dimension: string): string[] {
+  switch (dimension) {
+    case 'who':
+      return [...(item.who ?? []), ...(item.whoTagIds ?? [])];
+    case 'what':
+      return item.what ?? [];
+    case 'when':
+      return item.when ?? [];
+    case 'where':
+      return item.where ?? [];
+    case 'reflection':
+      return item.reflection ?? [];
+    default:
+      return item.tags ?? item.whoTagIds ?? [];
+  }
+}
+
+function mediaMatchesTagFilter(
+  item: Media,
+  tagDimension: string | null,
+  tagMode: string | null,
+  tagValue: string | null
+): boolean {
+  if (!tagMode || tagMode === 'all') return true;
+  const dim = (tagDimension || 'any').toLowerCase();
+  const ids = getDimensionIds(item, dim);
+  if (tagMode === 'unassigned') {
+    return ids.length === 0;
+  }
+  if (tagMode === 'match' && tagValue) {
+    if (dim === 'any') {
+      return Boolean(item.filterTags?.[tagValue]) || ids.includes(tagValue);
+    }
+    return ids.includes(tagValue);
+  }
+  return true;
+}
+
+async function seekMediaWithPredicates(
+  baseQuery: Query,
+  firestore: FirebaseFirestore.Firestore,
+  limit: number,
+  startAfterDocId: string | null,
+  predicate: (item: Media) => boolean
+): Promise<{ media: Media[]; nextScanCursor: string | null; hasNext: boolean }> {
+  const matched: Media[] = [];
+  let q: Query = baseQuery.orderBy('createdAt', 'desc').limit(SEEK_BATCH);
+  if (startAfterDocId) {
+    const cd = await firestore.collection('media').doc(startAfterDocId).get();
+    if (cd.exists) q = baseQuery.orderBy('createdAt', 'desc').startAfter(cd).limit(SEEK_BATCH);
+  }
+
+  let lastSnap: QuerySnapshot | null = null;
+  let examinedInLastSnap = 0;
+
+  outer: while (matched.length < limit) {
+    const snap = await q.get();
+    lastSnap = snap;
+    examinedInLastSnap = 0;
+    if (snap.empty) break;
+
+    for (const doc of snap.docs) {
+      examinedInLastSnap++;
+      const row: Media = { ...(doc.data() as Media), docId: doc.id };
+      if (!predicate(row)) continue;
+      matched.push(row);
+      if (matched.length >= limit) break outer;
+    }
+
+    if (snap.docs.length < SEEK_BATCH) break;
+    q = baseQuery.orderBy('createdAt', 'desc').startAfter(snap.docs[snap.docs.length - 1]!).limit(SEEK_BATCH);
+  }
+
+  const lastBatchFull = !!lastSnap && lastSnap.docs.length === SEEK_BATCH;
+  const stoppedMidBatch = !!lastSnap && examinedInLastSnap < lastSnap.docs.length;
+  const hasNext = !!lastSnap && !lastSnap.empty && (lastBatchFull || stoppedMidBatch);
+  let nextScanCursor: string | null = null;
+  if (hasNext && lastSnap && examinedInLastSnap > 0) {
+    nextScanCursor = lastSnap.docs[examinedInLastSnap - 1]!.id;
+  }
+
+  return { media: matched, nextScanCursor, hasNext };
+}
+
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') {
@@ -51,11 +137,48 @@ export async function GET(request: NextRequest) {
     const hasCaption = searchParams.get('hasCaption');
     const search = searchParams.get('search');
     const assignment = searchParams.get('assignment') || 'all';
+    const tagDimension = searchParams.get('tagDimension');
+    const tagMode = searchParams.get('tagMode');
+    const tagValue = searchParams.get('tagValue');
 
     const app = getAdminApp();
     const firestore = app.firestore();
     const mediaRef = firestore.collection('media');
     const baseQuery = buildBaseQuery(mediaRef, status, source, hasCaption);
+
+    const shouldUseTagSeek = !!tagMode && tagMode !== 'all';
+
+    if (shouldUseTagSeek) {
+      const predicate = (row: Media) => {
+        if (assignment === 'assigned' && !isMediaAssigned(row)) return false;
+        if (assignment === 'unassigned' && isMediaAssigned(row)) return false;
+        if (!mediaMatchesDimensions(row, dimensions)) return false;
+        if (!mediaMatchesSearch(row, search)) return false;
+        if (!mediaMatchesTagFilter(row, tagDimension, tagMode, tagValue)) return false;
+        return true;
+      };
+      const { media, nextScanCursor, hasNext } = await seekMediaWithPredicates(
+        baseQuery,
+        firestore,
+        limit,
+        cursor,
+        predicate
+      );
+      const mediaWithUrls = applyPublicStorageUrls(media);
+      return NextResponse.json({
+        media: mediaWithUrls,
+        pagination: {
+          limit,
+          total: null,
+          totalPages: null,
+          seekMode: true,
+          hasNext,
+          hasPrev: false,
+          nextCursor: hasNext ? nextScanCursor : null,
+          prevCursor: null,
+        },
+      });
+    }
 
     // Assignment filter: sequential scan (referencedByCardIds not queryable as "empty")
     if (assignment === 'unassigned' || assignment === 'assigned') {

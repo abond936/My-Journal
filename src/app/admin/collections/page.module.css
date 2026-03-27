@@ -1,0 +1,149 @@
+.container {
+  padding: var(--spacing-md);
+}
+
+.stickyTop {
+  position: sticky;
+  top: var(--admin-tabs-height, 0px);
+  z-index: 55;
+  background: var(--layout-background1-color);
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  padding-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.intro {
+  color: var(--text2-color);
+  margin-bottom: var(--spacing-md);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+}
+
+.panel {
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  background: var(--layout-background1-color);
+  min-height: 28rem;
+}
+
+.input {
+  width: 100%;
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--input-background-color);
+  color: var(--text1-color);
+}
+
+.hint {
+  margin: 0 0 var(--spacing-sm);
+  color: var(--text2-color);
+  font-size: var(--font-size-sm);
+}
+
+.treeList,
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.treeList {
+  padding-left: var(--spacing-sm);
+}
+
+.treeNode {
+  margin-bottom: var(--spacing-sm);
+}
+
+.nodeDropZone,
+.unparentDropZone {
+  border-radius: var(--border-radius-sm);
+}
+
+.dropTargetActive {
+  outline: 2px solid var(--button-solid-border-color);
+  background: color-mix(in srgb, var(--button-solid-background-color) 12%, transparent);
+}
+
+.nodeRow,
+.listRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
+.nodeRow {
+  border: var(--border-width-thin) dashed transparent;
+  border-radius: var(--border-radius-sm);
+  padding: 2px var(--spacing-xs);
+}
+
+.nodeActions {
+  display: flex;
+  gap: var(--spacing-xs);
+  align-items: center;
+}
+
+.nodeTitle {
+  color: var(--text1-color);
+}
+
+.nodeMeta {
+  color: var(--text2-color);
+  font-size: var(--font-size-xs);
+}
+
+.smallButton {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--layout-background2-color);
+  color: var(--text1-color);
+  cursor: pointer;
+}
+
+.smallButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.listRowWrap {
+  margin-bottom: var(--spacing-xs);
+}
+
+.listRow {
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--layout-background2-color);
+}
+
+.dragHint {
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+}
+
+.draggingStatus {
+  margin-top: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+}
+
+.error {
+  color: var(--state-error-text-color);
+  margin-bottom: var(--spacing-sm);
+}
+
+@media (max-width: 980px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}

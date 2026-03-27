@@ -1,9 +1,9 @@
 .renderer :global(.ProseMirror) {
-  padding: var(--spacing-md);
-  background-color: var(--layout-background2-color);
+  padding: calc(var(--spacing-md) - var(--font-size-sm)) var(--spacing-md);
+  background-color: var(--layout-background1-color);
   color: var(--text1-color);
   font-family: var(--body-font-family);
-  line-height: var(--line-height-relaxed);
+  line-height: var(--line-height-normal);
 }
 
 .renderer :global(.ProseMirror:focus) {
@@ -14,13 +14,15 @@
 .renderer :global(h2),
 .renderer :global(h3) {
   font-family: var(--font-family-sans);
-  color: var(--color3);
-  margin-top: var(--spacing-lg);
-  margin-bottom: var(--spacing-sm);
+  color: var(--text1-color);
+  margin-top: var(--spacing-md);
+  margin-bottom: var(--spacing-xs);
+  font-weight: var(--font-weight-bold);
 }
 
 .renderer :global(p) {
-  margin-bottom: var(--spacing-md);
+  margin-top: 0;
+  margin-bottom: var(--spacing-sm);
 }
 
 .renderer :global(blockquote) {

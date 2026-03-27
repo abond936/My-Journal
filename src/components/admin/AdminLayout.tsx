@@ -13,7 +13,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <AdminDesktopOnlyGate>
       <div className={styles.simplifiedLayout}>
-        <div className={styles.topNavContainer}>
+        <div className={styles.topNavContainer} id="admin-tabs-bar">
           <AdminNavTabs />
         </div>
         <div className={styles.pageContent}>{children}</div>

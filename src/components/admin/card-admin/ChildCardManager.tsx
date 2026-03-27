@@ -91,7 +91,11 @@ export default function ChildCardManager({
   };
 
   const sensors = useSensors(
-    useSensor(PointerSensor)
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 6,
+      },
+    })
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -176,6 +180,8 @@ export default function ChildCardManager({
                       </span>
                       <button
                         type="button"
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
                         onClick={() => handleRemove(child.docId)}
                         className={styles.removeButton}
                       >

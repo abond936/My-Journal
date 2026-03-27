@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { JournalUserPublic } from '@/lib/auth/journalUsersFirestore';
 import styles from './journal-users.module.css';
 
@@ -29,6 +29,25 @@ export default function JournalUsersAdminPage() {
   const [passwordById, setPasswordById] = useState<Record<string, string>>({});
   const [rowBusy, setRowBusy] = useState<string | null>(null);
   const [rowError, setRowError] = useState<string | null>(null);
+
+  const stickyTopRef = useRef<HTMLDivElement | null>(null);
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const tabsEl = document.getElementById('admin-tabs-bar');
+      const stickyEl = stickyTopRef.current;
+      if (!tabsEl || !stickyEl) return;
+      const tabsHeight = tabsEl.getBoundingClientRect().height;
+      const stickyHeight = stickyEl.getBoundingClientRect().height;
+
+      document.documentElement.style.setProperty('--admin-tabs-height', `${tabsHeight}px`);
+      document.documentElement.style.setProperty('--admin-table-header-top', `${tabsHeight + stickyHeight}px`);
+    };
+
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
 
   const load = useCallback(async () => {
     setListError(null);
@@ -115,12 +134,14 @@ export default function JournalUsersAdminPage() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.pageHeading}>Journal users</h1>
-      <p className={styles.intro}>
-        You are the only admin. Create viewer accounts here, then share your site URL plus username and password.
-        Run <code>npm run seed:journal-users</code> once (with an empty <code>journal_users</code> collection) to
-        move the admin account from env vars into Firestore.
-      </p>
+      <div className={styles.stickyTop} ref={stickyTopRef}>
+        <h1 className={styles.pageHeading}>User Management</h1>
+        <p className={styles.intro}>
+          You are the only admin. Create viewer accounts here, then share your site URL plus username and password.
+          Run <code>npm run seed:journal-users</code> once (with an empty <code>journal_users</code> collection) to
+          move the admin account from env vars into Firestore.
+        </p>
+      </div>
 
       {listError && <div className={styles.error}>{listError}</div>}
 

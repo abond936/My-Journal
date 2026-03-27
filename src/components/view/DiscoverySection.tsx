@@ -176,7 +176,7 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
 
       {hasRandom && (
         <div className={styles.discoveryGroup}>
-          <h3 className={styles.groupTitle}>Explore More</h3>
+          <h3 className={`${styles.groupTitle} ${styles.exploreGroupTitle}`}>Explore More</h3>
           <div className={styles.cardGrid}>
             {discoveryData.random.map(card => (
               <V2ContentCard

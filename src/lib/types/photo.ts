@@ -44,7 +44,25 @@ export const mediaSchema = z.object({
   /** Card IDs that reference this media (cover, gallery, or content). Denormalized for fast delete and unassigned filter. */
   referencedByCardIds: z.array(z.string()).optional(),
 
-  /** Person tags for this image only (WHO dimension). Rolled into parent card `who` / `filterTags` for discovery. */
+  /**
+   * Tags assigned to this media only (same tag library as cards). Derived `filterTags` + dimensional arrays
+   * are computed on write; they do not merge onto parent cards.
+   */
+  tags: z.array(z.string()).optional(),
+  filterTags: z.record(z.boolean()).optional(),
+  who: z.array(z.string()).optional(),
+  what: z.array(z.string()).optional(),
+  when: z.array(z.string()).optional(),
+  where: z.array(z.string()).optional(),
+  reflection: z.array(z.string()).optional(),
+  hasTags: z.boolean().optional(),
+  hasWho: z.boolean().optional(),
+  hasWhat: z.boolean().optional(),
+  hasWhen: z.boolean().optional(),
+  hasWhere: z.boolean().optional(),
+  hasReflection: z.boolean().optional(),
+
+  /** @deprecated Use `tags`. Still read for legacy docs until backfilled. */
   whoTagIds: z.array(z.string()).optional(),
 });
 

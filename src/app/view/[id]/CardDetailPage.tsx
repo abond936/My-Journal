@@ -1,6 +1,5 @@
 'use client';
 
-// DIAGNOSTIC: Forcing a file refresh to address module resolution issue.
 import React from 'react';
 import JournalImage from '@/components/common/JournalImage';
 import { Card } from '@/lib/types/card';
@@ -44,7 +43,7 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) 
           ← Back
         </button>
       </div>
-      <header className={styles.header}>
+      <header className={`${styles.header} ${!card.subtitle ? styles.noSubtitle : ''}`}>
         {card.coverImage && (
           <div className={styles.coverImageContainer}>
             <JournalImage
@@ -71,7 +70,7 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) 
             />
           </div>
         )}
-        <h1 className={styles.title}>{card.title}</h1>
+        <h1 className={`${styles.title} ${card.subtitle ? styles.titleWithSubtitle : ''}`}>{card.title}</h1>
         {card.subtitle && <p className={styles.subtitle}>{card.subtitle}</p>}
       </header>
 

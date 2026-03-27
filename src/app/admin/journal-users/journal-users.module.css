@@ -1,7 +1,7 @@
 .container {
   padding: var(--spacing-md);
-  max-width: 1100px;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
 }
 
 .pageHeading {
@@ -17,6 +17,16 @@
   line-height: 1.5;
   margin: 0 0 var(--spacing-lg);
   max-width: 720px;
+}
+
+.stickyTop {
+  position: sticky;
+  top: var(--admin-tabs-height, 0px);
+  z-index: 55;
+  background: var(--layout-background1-color);
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  padding-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
 }
 
 .section {
@@ -125,6 +135,10 @@
 .table th {
   font-weight: var(--font-weight-semibold);
   color: var(--text2-color);
+  position: sticky;
+  top: var(--admin-table-header-top, 0px);
+  z-index: 70;
+  background: var(--layout-background1-color);
 }
 
 .rowDisabled {

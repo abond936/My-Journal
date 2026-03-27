@@ -6,6 +6,7 @@ import JournalImage from '@/components/common/JournalImage';
 import EditModal from '@/components/admin/card-admin/EditModal';
 import { Media } from '@/lib/types/photo';
 import { useMedia } from '@/components/providers/MediaProvider';
+import { useTag } from '@/components/providers/TagProvider';
 import { parseObjectPositionToPercents } from '@/lib/utils/parseObjectPositionPercent';
 import styles from './MediaAdminRow.module.css';
 
@@ -32,6 +33,7 @@ export default function MediaAdminRow({
   onToggleSelection 
 }: MediaAdminRowProps) {
   const { deleteMedia, updateMedia } = useMedia();
+  const { tags } = useTag();
   const [isEditingCaption, setIsEditingCaption] = useState(false);
   const [captionValue, setCaptionValue] = useState(media.caption || '');
   const [focalModalOpen, setFocalModalOpen] = useState(false);
@@ -82,10 +84,10 @@ export default function MediaAdminRow({
             <JournalImage 
               src={media.storageUrl} 
               alt={media.filename}
-              width={60}
-              height={60}
+              width={96}
+              height={96}
               className={styles.thumbnailImage}
-              sizes="60px"
+              sizes="96px"
               style={{
                 objectFit: 'cover',
                 objectPosition: media.objectPosition || '50% 50%',
@@ -173,6 +175,28 @@ export default function MediaAdminRow({
             {media.source}
           </span>
         );
+
+      case 'tagSummary': {
+        const tagNameMap = new Map(tags.filter(t => t.docId).map(tag => [tag.docId as string, tag.name]));
+        const names = (media.tags || [])
+          .map(id => tagNameMap.get(id))
+          .filter((name): name is string => Boolean(name));
+        if (names.length === 0) {
+          return <span className={styles.noTags}>No direct tags</span>;
+        }
+        const visible = names.slice(0, 4);
+        const more = names.length - visible.length;
+        return (
+          <div className={styles.tagSummary}>
+            {visible.map(name => (
+              <span key={name} className={styles.tagChip}>
+                {name}
+              </span>
+            ))}
+            {more > 0 ? <span className={styles.tagMore}>+{more}</span> : null}
+          </div>
+        );
+      }
 
       case 'sourcePath':
         return (

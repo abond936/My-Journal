@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
 import { patchMediaDocument } from '@/lib/services/images/imageImportService';
-import { deleteMediaWithCardCleanup, recalculateDerivedTagsForCardsUsingMedia } from '@/lib/services/cardService';
+import { deleteMediaWithCardCleanup } from '@/lib/services/cardService';
 import { mediaSchema } from '@/lib/types/photo';
 
 /**
@@ -58,10 +58,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const hasCaption = 'caption' in body;
     const hasObjectPosition = 'objectPosition' in body && body.objectPosition !== undefined;
     const hasWhoTagIds = 'whoTagIds' in body && body.whoTagIds !== undefined;
+    const hasTags = 'tags' in body && body.tags !== undefined;
 
-    if (!hasStatus && !hasCaption && !hasObjectPosition && !hasWhoTagIds) {
+    if (!hasStatus && !hasCaption && !hasObjectPosition && !hasWhoTagIds && !hasTags) {
       return NextResponse.json(
-        { message: 'Provide at least one of: status, caption, objectPosition, whoTagIds.' },
+        { message: 'Provide at least one of: status, caption, objectPosition, tags, whoTagIds.' },
         { status: 400 }
       );
     }
@@ -71,6 +72,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       caption?: string;
       objectPosition?: string;
       whoTagIds?: string[];
+      tags?: string[];
     } = {};
 
     if (hasStatus) {
@@ -95,6 +97,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       patch.objectPosition = body.objectPosition.trim();
     }
 
+    if (hasTags) {
+      if (!Array.isArray(body.tags)) {
+        return NextResponse.json({ message: 'tags must be an array of strings.' }, { status: 400 });
+      }
+      patch.tags = body.tags.filter((id): id is string => typeof id === 'string');
+    }
+
     if (hasWhoTagIds) {
       if (!Array.isArray(body.whoTagIds)) {
         return NextResponse.json({ message: 'whoTagIds must be an array of strings.' }, { status: 400 });
@@ -103,10 +112,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     await patchMediaDocument(mediaId, patch);
-
-    if (hasWhoTagIds) {
-      await recalculateDerivedTagsForCardsUsingMedia(mediaId);
-    }
 
     return NextResponse.json({ message: `Media asset ${mediaId} updated.` });
   } catch (error) {

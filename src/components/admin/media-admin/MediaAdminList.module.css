@@ -61,6 +61,9 @@
   padding: var(--spacing-sm);
   text-align: left;
   border-bottom: var(--border-width-thin) solid var(--border1-color);
+}
+
+.table td {
   position: relative;
 }
 
@@ -76,7 +79,9 @@
 }
 
 .headerCell {
-  position: relative;
+  position: sticky;
+  top: var(--media-admin-table-header-top, 0px);
+  z-index: 80;
   padding: var(--spacing-sm);
   background: var(--layout-background2-color);
   border-bottom: var(--border-width-thin) solid var(--border1-color);
@@ -111,6 +116,9 @@
 }
 
 .checkboxCell {
+  position: sticky;
+  top: var(--media-admin-table-header-top, 0px);
+  z-index: 80;
   padding: var(--spacing-sm);
   background: var(--layout-background2-color);
   border-bottom: var(--border-width-thin) solid var(--border1-color);

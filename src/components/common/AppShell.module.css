@@ -3,6 +3,7 @@
     flex-direction: column;
     height: 100vh;
     overflow: hidden;
+    overflow-x: hidden;
     position: relative;
   }
 
@@ -47,6 +48,7 @@
     flex: 1;
     padding-top: var(--header-height);
     overflow: hidden;
+    overflow-x: hidden;
     position: relative;
     z-index: 1;
   }
@@ -54,18 +56,18 @@
   .sidebarToggle {
   position: fixed;
   left: var(--spacing-md);
-  top: calc(var(--header-height) + var(--spacing-md));
+  top: calc(var(--header-height) + var(--spacing-xs));
   z-index: var(--z-index-sidebar);
   background: var(--layout-background1-color);
   color: var(--text1-color);
   border: none;
-  width: var(--spacing-2xl);
-  height: var(--spacing-2xl);
+  width: var(--spacing-xl);
+  height: var(--spacing-xl);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--font-size-3xl);
+  font-size: var(--font-size-xl);
   transition: all var(--transition-short) ease;
 }
   
@@ -76,24 +78,83 @@
   
   .sidebarWrapper {
     height: 100%; /* Make sidebar wrapper take full viewport height */
+    width: 0;
+    overflow: hidden;
+    transition: width var(--transition-short) ease;
     position: relative;
     z-index: var(--z-index-modal-backdrop);
+  }
+
+  .sidebarWrapperOpen {
+    width: var(--sidebar-width);
+  }
+
+  .sidebarWrapperClosed {
+    width: 0;
+  }
+
+  .sidebarBackdrop {
+    display: none;
   }
   
   .mainContent {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: var(--spacing-lg);
+    min-width: 0;
   }
   
   /* On small screens, the main content takes the full width */
   @media (max-width: var(--breakpoint-md)) {
+    .contentWrapper {
+      overflow: visible;
+    }
+
     .mainContent {
       width: 100%;
     }
     
     .sidebarToggle {
       display: none; /* Hide toggle button on mobile */
+    }
+
+    .sidebarWrapper {
+      position: fixed;
+      top: var(--header-height);
+      left: 0;
+      bottom: 0;
+      height: auto;
+      width: 0;
+      z-index: var(--z-index-sidebar);
+      transition: width var(--transition-short) ease;
+    }
+
+    .sidebarWrapperOpen {
+      width: min(86vw, var(--sidebar-width));
+    }
+
+    .sidebarWrapperClosed {
+      width: 0;
+    }
+
+    .sidebarBackdrop {
+      position: fixed;
+      top: var(--header-height);
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.38);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition-short) ease;
+      z-index: calc(var(--z-index-sidebar) - 1);
+      display: block;
+    }
+
+    .sidebarBackdropOpen {
+      opacity: 1;
+      pointer-events: auto;
     }
 
     .appShell::before,

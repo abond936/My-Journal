@@ -1,20 +1,20 @@
 /* Discovery Section Styles */
 
 .discoverySection {
-  margin-top: var(--spacing-3xl);
-  padding-top: var(--spacing-xl);
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-md);
   border-top: var(--border-width-thin) solid var(--border1-color);
 }
 
 .discoveryTitle {
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-semibold);
-  margin: 0 0 var(--spacing-lg) 0;
+  margin: 0 0 var(--spacing-sm) 0;
   color: var(--text1-color);
 }
 
 .discoveryGroup {
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-md);
 }
 
 .discoveryGroup:last-child {
@@ -22,12 +22,14 @@
 }
 
 .groupTitle {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
-  margin: 0 0 var(--spacing-md) 0;
+  margin: 0 0 var(--spacing-sm) 0;
   color: var(--text2-color);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+}
+
+.exploreGroupTitle {
+  font-size: var(--font-size-base);
 }
 
 .loadingContainer {
@@ -64,22 +66,26 @@
 /* Mobile-first responsive design */
 @media (min-width: 768px) {
   .discoverySection {
-    margin-top: var(--spacing-4xl);
-    padding-top: var(--spacing-2xl);
+    margin-top: var(--spacing-xl);
+    padding-top: var(--spacing-md);
   }
 
   .discoveryTitle {
-    font-size: var(--font-size-3xl);
-    margin-bottom: var(--spacing-xl);
+    font-size: var(--font-size-2xl);
+    margin-bottom: var(--spacing-sm);
   }
 
   .discoveryGroup {
-    margin-bottom: var(--spacing-2xl);
+    margin-bottom: var(--spacing-md);
   }
 
   .groupTitle {
-    font-size: var(--font-size-xl);
-    margin-bottom: var(--spacing-lg);
+    font-size: var(--font-size-base);
+    margin-bottom: var(--spacing-md);
+  }
+
+  .exploreGroupTitle {
+    font-size: var(--font-size-base);
   }
 
   .cardGrid {
@@ -90,12 +96,16 @@
 
 @media (min-width: 1024px) {
   .discoverySection {
-    margin-top: var(--spacing-5xl);
-    padding-top: var(--spacing-3xl);
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-md);
   }
 
   .discoveryTitle {
-    font-size: var(--font-size-4xl);
-    margin-bottom: var(--spacing-2xl);
+    font-size: var(--font-size-2xl);
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .exploreGroupTitle {
+    font-size: var(--font-size-base);
   }
 } 

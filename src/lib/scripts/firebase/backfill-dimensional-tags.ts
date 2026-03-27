@@ -7,10 +7,12 @@ dotenv.config({ path: resolve(process.cwd(), '.env') });
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { organizeTagsByDimension, calculateDerivedTagData } from '@/lib/firebase/tagService';
 import { Card } from '@/lib/types/card';
+import { Media } from '@/lib/types/photo';
 
 const adminApp = getAdminApp();
 const firestore = adminApp.firestore();
 const CARDS_COLLECTION = 'cards';
+const MEDIA_COLLECTION = 'media';
 
 interface BackfillOptions {
   dryRun?: boolean;
@@ -23,6 +25,10 @@ interface BackfillResult {
   processedCards: number;
   updatedCards: number;
   skippedCards: number;
+  totalMedia: number;
+  processedMedia: number;
+  updatedMedia: number;
+  skippedMedia: number;
   errors: string[];
   processingTime: number;
 }
@@ -44,6 +50,10 @@ export async function backfillDimensionalTags(options: BackfillOptions = {}): Pr
     processedCards: 0,
     updatedCards: 0,
     skippedCards: 0,
+    totalMedia: 0,
+    processedMedia: 0,
+    updatedMedia: 0,
+    skippedMedia: 0,
     errors: [],
     processingTime: 0
   };
@@ -167,6 +177,89 @@ export async function backfillDimensionalTags(options: BackfillOptions = {}): Pr
       console.log('');
     }
 
+    // Process media in batches
+    const mediaSnapshot = await firestore.collection(MEDIA_COLLECTION).get();
+    const allMedia = mediaSnapshot.docs.map(doc => ({
+      docId: doc.id,
+      ...doc.data()
+    } as Media));
+    result.totalMedia = allMedia.length;
+    console.log('');
+    console.log(`🖼️ Found ${result.totalMedia} media docs to process`);
+
+    const mediaBatches = [];
+    for (let i = 0; i < allMedia.length; i += batchSize) {
+      mediaBatches.push(allMedia.slice(i, i + batchSize));
+    }
+
+    for (let batchIndex = 0; batchIndex < mediaBatches.length; batchIndex++) {
+      const batch = mediaBatches[batchIndex];
+      console.log(`🖼️ Processing media batch ${batchIndex + 1}/${mediaBatches.length} (${batch.length} docs)`);
+
+      const batchPromises = batch.map(async (m) => {
+        try {
+          result.processedMedia++;
+          const directTags = (m.tags && m.tags.length > 0 ? m.tags : (m.whoTagIds || [])) as string[];
+
+          if (!directTags || directTags.length === 0) {
+            const hasAnyPresenceField =
+              typeof m.hasTags === 'boolean' ||
+              typeof m.hasWho === 'boolean' ||
+              typeof m.hasWhat === 'boolean' ||
+              typeof m.hasWhen === 'boolean' ||
+              typeof m.hasWhere === 'boolean' ||
+              typeof m.hasReflection === 'boolean';
+            if (hasAnyPresenceField) {
+              result.skippedMedia++;
+              return;
+            }
+            if (!dryRun) {
+              await firestore.collection(MEDIA_COLLECTION).doc(m.docId).update({
+                hasTags: false,
+                hasWho: false,
+                hasWhat: false,
+                hasWhen: false,
+                hasWhere: false,
+                hasReflection: false,
+                updatedAt: Date.now(),
+              });
+            }
+            result.updatedMedia++;
+            return;
+          }
+
+          const { filterTags, dimensionalTags } = await calculateDerivedTagData(directTags);
+          const payload = {
+            tags: directTags,
+            filterTags,
+            who: dimensionalTags.who || [],
+            what: dimensionalTags.what || [],
+            when: dimensionalTags.when || [],
+            where: dimensionalTags.where || [],
+            reflection: dimensionalTags.reflection || [],
+            hasTags: directTags.length > 0,
+            hasWho: (dimensionalTags.who || []).length > 0,
+            hasWhat: (dimensionalTags.what || []).length > 0,
+            hasWhen: (dimensionalTags.when || []).length > 0,
+            hasWhere: (dimensionalTags.where || []).length > 0,
+            hasReflection: (dimensionalTags.reflection || []).length > 0,
+            updatedAt: Date.now(),
+          };
+
+          if (!dryRun) {
+            await firestore.collection(MEDIA_COLLECTION).doc(m.docId).update(payload);
+          }
+          result.updatedMedia++;
+        } catch (error) {
+          const errorMsg = `Failed to process media ${m.docId}: ${error}`;
+          console.error(`  ❌ ${errorMsg}`);
+          result.errors.push(errorMsg);
+        }
+      });
+
+      await Promise.all(batchPromises);
+    }
+
     result.processingTime = Date.now() - startTime;
 
     // Final summary
@@ -176,6 +269,10 @@ export async function backfillDimensionalTags(options: BackfillOptions = {}): Pr
     console.log(`   Processed: ${result.processedCards}`);
     console.log(`   Updated: ${result.updatedCards}`);
     console.log(`   Skipped: ${result.skippedCards}`);
+    console.log(`   Total media: ${result.totalMedia}`);
+    console.log(`   Processed media: ${result.processedMedia}`);
+    console.log(`   Updated media: ${result.updatedMedia}`);
+    console.log(`   Skipped media: ${result.skippedMedia}`);
     console.log(`   Errors: ${result.errors.length}`);
     console.log(`   Processing time: ${(result.processingTime / 1000).toFixed(2)}s`);
 

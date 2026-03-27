@@ -27,8 +27,13 @@ export function SortableItem({ id, children }: SortableItemProps) {
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className={styles.sortableItem}>
-      {children}
+    <div ref={setNodeRef} style={style} className={styles.sortableItem}>
+      <div className={styles.dragHandle} {...attributes} {...listeners} aria-label="Drag to reorder child card">
+        ::
+      </div>
+      <div className={styles.sortableContent}>
+        {children}
+      </div>
     </div>
   );
 } 

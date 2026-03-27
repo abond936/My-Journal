@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import React, { useLayoutEffect, useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTag } from '@/components/providers/TagProvider';
 import { useCardContext } from '@/components/providers/CardProvider';
@@ -76,6 +76,21 @@ export default function AdminCardsPage() {
 
   // --- Scroll Restoration ---
   const prevIsValidating = useRef(true);
+  const stickyTopRef = useRef<HTMLDivElement | null>(null);
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const tabsEl = document.getElementById('admin-tabs-bar');
+      const stickyEl = stickyTopRef.current;
+      if (!tabsEl || !stickyEl) return;
+      const tabsHeight = tabsEl.getBoundingClientRect().height;
+      document.documentElement.style.setProperty('--admin-tabs-height', `${tabsHeight}px`);
+    };
+
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
   
   useEffect(() => {
     if (prevIsValidating.current && !isValidating) {
@@ -220,136 +235,138 @@ export default function AdminCardsPage() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Cards Management</h1>
-        <button
-          type="button"
-          className={styles.actionButton}
-          onClick={() => setIsImportFolderModalOpen(true)}
-        >
-          Import Folder
-        </button>
-      </div>
-
-      <div className={styles.viewToggleBar}>
-        <span className={styles.viewToggleLabel}>View:</span>
-        <span className={styles.viewToggleButtonGroup}>
+      <div className={styles.stickyTop} ref={stickyTopRef}>
+        <div className={styles.header}>
+          <h1 className={styles.title}>Cards Management</h1>
           <button
             type="button"
-            className={`${styles.viewToggleButton} ${viewMode === 'grid' ? styles.viewToggleActive : ''}`}
-            onClick={() => setViewMode('grid')}
-            aria-pressed={viewMode === 'grid'}
-          >
-            Grid
-          </button>
-          <button
-            type="button"
-            className={`${styles.viewToggleButton} ${viewMode === 'table' ? styles.viewToggleActive : ''}`}
-            onClick={() => setViewMode('table')}
-            aria-pressed={viewMode === 'table'}
-          >
-            Table
-          </button>
-        </span>
-      </div>
-
-      <div className={styles.filterSection}>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <input
-            type="text"
-            placeholder="Search by title..."
-            value={searchInputValue}
-            onChange={e => setSearchInputValue(e.target.value)}
-            className={styles.searchBox}
-            onKeyPress={e => e.key === 'Enter' && handleSearch()}
-          />
-          <button 
-            onClick={handleSearch}
             className={styles.actionButton}
-            style={{ padding: '0.5rem 1rem' }}
+            onClick={() => setIsImportFolderModalOpen(true)}
           >
-            Search
+            Import Folder
           </button>
-          <select
-            value={status}
-            onChange={e => setStatus(e.target.value as typeof status)}
-            className={styles.filterSelect}
-          >
-            <option value="all">All Statuses</option>
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
-          </select>
-          <select
-            value={cardType}
-            onChange={e => setCardType(e.target.value as typeof cardType)}
-            className={styles.filterSelect}
-          >
-            <option value="all">All Types</option>
-            <option value="story">Story</option>
-            <option value="qa">Q&A</option>
-            <option value="quote">Quote</option>
-            <option value="callout">Callout</option>
-            <option value="gallery">Gallery</option>
-          </select>
         </div>
-      </div>
-      
-      <div className={styles.bulkActions}>
-        <span>
-          {selectedCardIds.size === 0 
-            ? "No cards selected" 
-            : `${selectedCardIds.size} cards selected`}
-        </span>
-        <div className={styles.actions}>
-          <select
-            onChange={e => handleBulkUpdate('status', e.target.value)}
-            className={styles.filterSelect}
-            defaultValue=""
-            disabled={selectedCardIds.size === 0}
-          >
-            <option value="" disabled>Update Status</option>
-            <option value="draft">Set to Draft</option>
-            <option value="published">Set to Published</option>
-          </select>
-          <select
-            onChange={e => handleBulkUpdate('type', e.target.value)}
-            className={styles.filterSelect}
-            defaultValue=""
-            disabled={selectedCardIds.size === 0}
-          >
-            <option value="" disabled>Update Type</option>
-            <option value="story">Set to Story</option>
-            <option value="qa">Set to Q&A</option>
-            <option value="quote">Set to Quote</option>
-            <option value="callout">Set to Callout</option>
-            <option value="gallery">Set to Gallery</option>
-            <option value="collection">Set to Collection</option>
-          </select>
-          <select
-            onChange={e => handleBulkUpdate('displayMode', e.target.value)}
-            className={styles.filterSelect}
-            defaultValue=""
-            disabled={selectedCardIds.size === 0}
-          >
-            <option value="" disabled>Update Display Mode</option>
-            <option value="inline">Set to Inline</option>
-            <option value="navigate">Set to Navigate</option>
-            <option value="static">Set to Static</option>
-          </select>
-          <button 
-            onClick={() => setIsBulkTagModalOpen(true)} 
-            className={styles.actionButton}
-            disabled={selectedCardIds.size === 0}
-          >
-            Edit Tags
-          </button>
-          <button 
-            onClick={handleBulkDelete} 
-            className={`${styles.actionButton} ${styles.deleteButton}`}
-            disabled={selectedCardIds.size === 0}
-          >
-            Delete Selected
-          </button>
+
+        <div className={styles.viewToggleBar}>
+          <span className={styles.viewToggleLabel}>View:</span>
+          <span className={styles.viewToggleButtonGroup}>
+            <button
+              type="button"
+              className={`${styles.viewToggleButton} ${viewMode === 'grid' ? styles.viewToggleActive : ''}`}
+              onClick={() => setViewMode('grid')}
+              aria-pressed={viewMode === 'grid'}
+            >
+              Grid
+            </button>
+            <button
+              type="button"
+              className={`${styles.viewToggleButton} ${viewMode === 'table' ? styles.viewToggleActive : ''}`}
+              onClick={() => setViewMode('table')}
+              aria-pressed={viewMode === 'table'}
+            >
+              Table
+            </button>
+          </span>
+        </div>
+
+        <div className={styles.filterSection}>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <input
+              type="text"
+              placeholder="Search by title..."
+              value={searchInputValue}
+              onChange={e => setSearchInputValue(e.target.value)}
+              className={styles.searchBox}
+              onKeyPress={e => e.key === 'Enter' && handleSearch()}
+            />
+            <button 
+              onClick={handleSearch}
+              className={styles.actionButton}
+              style={{ padding: '0.5rem 1rem' }}
+            >
+              Search
+            </button>
+            <select
+              value={status}
+              onChange={e => setStatus(e.target.value as typeof status)}
+              className={styles.filterSelect}
+            >
+              <option value="all">All Statuses</option>
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+            </select>
+            <select
+              value={cardType}
+              onChange={e => setCardType(e.target.value as typeof cardType)}
+              className={styles.filterSelect}
+            >
+              <option value="all">All Types</option>
+              <option value="story">Story</option>
+              <option value="qa">Q&A</option>
+              <option value="quote">Quote</option>
+              <option value="callout">Callout</option>
+              <option value="gallery">Gallery</option>
+            </select>
+          </div>
+        </div>
+        
+        <div className={styles.bulkActions}>
+          <span>
+            {selectedCardIds.size === 0 
+              ? "No cards selected" 
+              : `${selectedCardIds.size} cards selected`}
+          </span>
+          <div className={styles.actions}>
+            <select
+              onChange={e => handleBulkUpdate('status', e.target.value)}
+              className={styles.filterSelect}
+              defaultValue=""
+              disabled={selectedCardIds.size === 0}
+            >
+              <option value="" disabled>Update Status</option>
+              <option value="draft">Set to Draft</option>
+              <option value="published">Set to Published</option>
+            </select>
+            <select
+              onChange={e => handleBulkUpdate('type', e.target.value)}
+              className={styles.filterSelect}
+              defaultValue=""
+              disabled={selectedCardIds.size === 0}
+            >
+              <option value="" disabled>Update Type</option>
+              <option value="story">Set to Story</option>
+              <option value="qa">Set to Q&A</option>
+              <option value="quote">Set to Quote</option>
+              <option value="callout">Set to Callout</option>
+              <option value="gallery">Set to Gallery</option>
+              <option value="collection">Set to Collection</option>
+            </select>
+            <select
+              onChange={e => handleBulkUpdate('displayMode', e.target.value)}
+              className={styles.filterSelect}
+              defaultValue=""
+              disabled={selectedCardIds.size === 0}
+            >
+              <option value="" disabled>Update Display Mode</option>
+              <option value="inline">Set to Inline</option>
+              <option value="navigate">Set to Navigate</option>
+              <option value="static">Set to Static</option>
+            </select>
+            <button 
+              onClick={() => setIsBulkTagModalOpen(true)} 
+              className={styles.actionButton}
+              disabled={selectedCardIds.size === 0}
+            >
+              Edit Tags
+            </button>
+            <button 
+              onClick={handleBulkDelete} 
+              className={`${styles.actionButton} ${styles.deleteButton}`}
+              disabled={selectedCardIds.size === 0}
+            >
+              Delete Selected
+            </button>
+          </div>
         </div>
       </div>
 

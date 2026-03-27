@@ -68,9 +68,18 @@ export default function AppShell({ children }: AppShellProps) {
           </button>
         )}
         {pathname !== '/' && (
-          <div className={styles.sidebarWrapper}>
+          <>
+            <div
+              className={`${styles.sidebarBackdrop} ${isSidebarOpen ? styles.sidebarBackdropOpen : ''}`}
+              onClick={() => setSidebarOpen(false)}
+              aria-hidden={!isSidebarOpen}
+            />
+            <div
+              className={`${styles.sidebarWrapper} ${isSidebarOpen ? styles.sidebarWrapperOpen : styles.sidebarWrapperClosed}`}
+            >
             <GlobalSidebar isOpen={isSidebarOpen} />
-          </div>
+            </div>
+          </>
         )}
         <main className={styles.mainContent}>
           {children}

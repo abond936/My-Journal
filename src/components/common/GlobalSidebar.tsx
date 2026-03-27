@@ -15,6 +15,11 @@ interface GlobalSidebarProps {
 
 export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
   const [mounted, setMounted] = useState(false);
+  const [browseMode, setBrowseMode] = useState<'freeform' | 'curated'>(() => {
+    if (typeof window === 'undefined') return 'freeform';
+    const saved = sessionStorage.getItem('myjournal-sidebar-browse-mode');
+    return saved === 'curated' ? 'curated' : 'freeform';
+  });
   const {
     tags,
     loading: tagsLoading,
@@ -75,7 +80,6 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     { id: 'when', label: 'When' },
     { id: 'where', label: 'Where' },
     { id: 'reflection', label: 'Reflection' },
-    { id: 'collections', label: 'Collections' },
   ] as const;
 
   const dimensionTreeForTab =
@@ -85,7 +89,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
         ? masterTree
         : (dimensionTree[activeDimension] ?? []);
 
-  const isCollectionsMode = activeDimension === 'collections';
+  const isCollectionsMode = browseMode === 'curated';
   const isTagMode = !isCollectionsMode;
 
   const collectionsByDimension = useMemo(
@@ -109,7 +113,27 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
 
   const handleClearFiltersClick = () => {
     clearFilters();
-    if (activeDimension === 'collections') setActiveDimension('all');
+    if (browseMode === 'curated') {
+      setCollectionId(null);
+      setActiveDimension('collections');
+      return;
+    }
+    setActiveDimension('all');
+  };
+
+  const handleSetBrowseMode = (nextMode: 'freeform' | 'curated') => {
+    setBrowseMode(nextMode);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('myjournal-sidebar-browse-mode', nextMode);
+    }
+    if (nextMode === 'curated') {
+      setActiveDimension('collections');
+      return;
+    }
+    if (activeDimension === 'collections') {
+      setCollectionId(null);
+      setActiveDimension('all');
+    }
   };
 
   return (
@@ -117,6 +141,26 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
       <h2 className={styles.title}>Explore</h2>
       {mounted && (
         <>
+          <div className={styles.modeTabs} role="tablist" aria-label="Browsing mode">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={browseMode === 'freeform'}
+              className={`${styles.modeTab} ${browseMode === 'freeform' ? styles.modeTabActive : ''}`}
+              onClick={() => handleSetBrowseMode('freeform')}
+            >
+              Freeform
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={browseMode === 'curated'}
+              className={`${styles.modeTab} ${browseMode === 'curated' ? styles.modeTabActive : ''}`}
+              onClick={() => handleSetBrowseMode('curated')}
+            >
+              Curated
+            </button>
+          </div>
           {isTagMode ? (
             <>
               <div className={styles.sidebarSection}>

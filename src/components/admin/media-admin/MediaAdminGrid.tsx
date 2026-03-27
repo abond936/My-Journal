@@ -4,16 +4,24 @@ import React from 'react';
 import JournalImage from '@/components/common/JournalImage';
 import { Media } from '@/lib/types/photo';
 import { useMedia } from '@/components/providers/MediaProvider';
+import { useTag } from '@/components/providers/TagProvider';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import styles from './MediaAdminGrid.module.css';
 
 interface MediaAdminGridCellProps {
   media: Media;
+  tagNameMap: Map<string, string>;
   isSelected: boolean;
   onToggleSelection: () => void;
 }
 
-function MediaAdminGridCell({ media, isSelected, onToggleSelection }: MediaAdminGridCellProps) {
+function MediaAdminGridCell({ media, tagNameMap, isSelected, onToggleSelection }: MediaAdminGridCellProps) {
+  const directTagNames = (media.tags || [])
+    .map(id => tagNameMap.get(id))
+    .filter((name): name is string => Boolean(name));
+  const visibleTagNames = directTagNames.slice(0, 3);
+  const hiddenCount = Math.max(0, directTagNames.length - visibleTagNames.length);
+
   return (
     <div
       className={`${styles.cell} ${isSelected ? styles.selected : ''}`}
@@ -55,12 +63,28 @@ function MediaAdminGridCell({ media, isSelected, onToggleSelection }: MediaAdmin
       <div className={styles.filename} title={media.filename}>
         {media.filename}
       </div>
+      <div className={styles.tagSummary} title={directTagNames.join(', ') || 'No direct tags'}>
+        {visibleTagNames.length > 0 ? (
+          <>
+            {visibleTagNames.map(name => (
+              <span key={name} className={styles.tagChip}>
+                {name}
+              </span>
+            ))}
+            {hiddenCount > 0 ? <span className={styles.tagMore}>+{hiddenCount}</span> : null}
+          </>
+        ) : (
+          <span className={styles.noTags}>No direct tags</span>
+        )}
+      </div>
     </div>
   );
 }
 
 export default function MediaAdminGrid() {
   const { media, selectedMediaIds, toggleMediaSelection, selectAll, selectNone } = useMedia();
+  const { tags } = useTag();
+  const tagNameMap = new Map(tags.filter(t => t.docId).map(tag => [tag.docId as string, tag.name]));
 
   return (
     <div className={styles.container}>
@@ -80,6 +104,7 @@ export default function MediaAdminGrid() {
           <MediaAdminGridCell
             key={item.docId}
             media={item}
+            tagNameMap={tagNameMap}
             isSelected={selectedMediaIds.includes(item.docId)}
             onToggleSelection={() => toggleMediaSelection(item.docId)}
           />

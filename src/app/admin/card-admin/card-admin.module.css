@@ -5,6 +5,16 @@
   margin: 0 auto;
 }
 
+.stickyTop {
+  position: sticky;
+  top: var(--admin-tabs-height, 0px);
+  z-index: 55;
+  background: var(--layout-background1-color);
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  padding-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
 .title {
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-semibold);

@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import JournalImage from '@/components/common/JournalImage';
 import { useTag } from '@/components/providers/TagProvider';
-import TagPickerDimensionColumn from '@/components/admin/card-admin/TagPickerDimensionColumn';
+import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
 import {
   DndContext,
   closestCenter,
@@ -178,26 +178,16 @@ interface GalleryItemFormProps {
 }
 
 function GalleryItemForm({ item, onSave }: GalleryItemFormProps) {
-  const { dimensionTree } = useTag();
-  const whoRoots = dimensionTree.who ?? [];
+  const { tags: allTags } = useTag();
 
   const [caption, setCaption] = useState('');
   const [horizontalPosition, setHorizontalPosition] = useState(50);
   const [verticalPosition, setVerticalPosition] = useState(50);
   const [hasFocalOverride, setHasFocalOverride] = useState(false);
   const [hasCaptionOverride, setHasCaptionOverride] = useState(false);
-  const [whoSelection, setWhoSelection] = useState<Set<string>>(() => new Set());
-  const [whoSaveError, setWhoSaveError] = useState<string | null>(null);
+  const [mediaTagIds, setMediaTagIds] = useState<string[]>([]);
+  const [tagSaveError, setTagSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-
-  const handleWhoSelectionChange = useCallback((tagId: string, selected: boolean) => {
-    setWhoSelection(prev => {
-      const next = new Set(prev);
-      if (selected) next.add(tagId);
-      else next.delete(tagId);
-      return next;
-    });
-  }, []);
 
   useEffect(() => {
     const capOverride = gallerySlotHasCaptionOverride(item);
@@ -219,10 +209,11 @@ function GalleryItemForm({ item, onSave }: GalleryItemFormProps) {
   }, [item.mediaId, item.caption, item.objectPosition, item.media?.objectPosition, item.media?.caption]);
 
   useEffect(() => {
-    const ids = item.media?.whoTagIds ?? [];
-    setWhoSelection(new Set(ids));
-    setWhoSaveError(null);
-  }, [item.mediaId, item.media?.whoTagIds]);
+    const m = item.media;
+    const ids = m?.tags?.length ? m.tags : (m?.whoTagIds ?? []);
+    setMediaTagIds(ids);
+    setTagSaveError(null);
+  }, [item.mediaId, item.media?.tags, item.media?.whoTagIds]);
 
   const objectPosition = `${horizontalPosition}% ${verticalPosition}%`;
 
@@ -255,21 +246,21 @@ function GalleryItemForm({ item, onSave }: GalleryItemFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setWhoSaveError(null);
-    const whoArr = [...whoSelection];
+    setTagSaveError(null);
+    const tagsPayload = [...mediaTagIds];
     setSaving(true);
     try {
       const res = await fetch(`/api/images/${item.mediaId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ whoTagIds: whoArr }),
+        body: JSON.stringify({ tags: tagsPayload }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error(typeof data.message === 'string' ? data.message : res.statusText);
       }
     } catch (err) {
-      setWhoSaveError(err instanceof Error ? err.message : 'Could not save people on this image.');
+      setTagSaveError(err instanceof Error ? err.message : 'Could not save tags on this image.');
       setSaving(false);
       return;
     }
@@ -282,7 +273,8 @@ function GalleryItemForm({ item, onSave }: GalleryItemFormProps) {
         ? {
             media: {
               ...item.media,
-              whoTagIds: whoArr,
+              tags: tagsPayload,
+              whoTagIds: undefined,
             },
           }
         : {}),
@@ -290,6 +282,8 @@ function GalleryItemForm({ item, onSave }: GalleryItemFormProps) {
       ...(hasFocalOverride ? { objectPosition } : {}),
     });
   };
+
+  const selectedTagObjects = allTags.filter(t => t.docId && mediaTagIds.includes(t.docId));
 
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
@@ -311,26 +305,16 @@ function GalleryItemForm({ item, onSave }: GalleryItemFormProps) {
       ) : null}
 
       <div className={`${styles.formGroup} ${styles.whoSection}`}>
-        <span className={styles.whoSectionLabel}>People in this image</span>
+        <span className={styles.whoSectionLabel}>Tags on this image</span>
         <p className={styles.whoHint}>
-          WHO tags here apply to this photo only. They roll into the card’s people filters and Explore. Card-level tags in the form still apply to the whole card.
+          Same tag library as cards. Tags apply to this media only—they do not merge onto the parent card.
         </p>
-        {whoSaveError ? <p className={styles.whoError}>{whoSaveError}</p> : null}
-        <div className={styles.whoColumns}>
-          {whoRoots.length === 0 ? (
-            <p className={styles.whoEmpty}>No WHO tags in the library yet. Add people in Tag Admin.</p>
-          ) : (
-            whoRoots.map(root => (
-              <TagPickerDimensionColumn
-                key={root.docId}
-                dimension={root}
-                selection={whoSelection}
-                onSelectionChange={handleWhoSelectionChange}
-                checkboxIdPrefix={`gallery-who-${item.mediaId}-${root.docId}-`}
-              />
-            ))
-          )}
-        </div>
+        {tagSaveError ? <p className={styles.whoError}>{tagSaveError}</p> : null}
+        <MacroTagSelector
+          selectedTags={selectedTagObjects}
+          allTags={allTags}
+          onChange={setMediaTagIds}
+        />
       </div>
 
       <div className={styles.formGroup}>
@@ -338,7 +322,7 @@ function GalleryItemForm({ item, onSave }: GalleryItemFormProps) {
         <textarea
           id="gallery-caption"
           value={caption}
-          onChange={e => setCaption(e.target.value)}
+          onChange={e => handleCaptionChange(e.target.value)}
           className={styles.textarea}
           rows={3}
           placeholder="Optional; shown under the image on the card"

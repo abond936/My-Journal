@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useLayoutEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useTag, TagProvider, TagWithChildren } from '@/components/providers/TagProvider';
 import { Tag } from '@/lib/types/tag';
 import { TagAdminList } from '@/components/admin/tag-admin/TagAdminList';
@@ -174,14 +174,32 @@ function AdminTagsPageContent() {
     handleReparent,
   } = useTagManagement();
 
+  const stickyTopRef = useRef<HTMLDivElement | null>(null);
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const tabsEl = document.getElementById('admin-tabs-bar');
+      const stickyEl = stickyTopRef.current;
+      if (!tabsEl || !stickyEl) return;
+      const tabsHeight = tabsEl.getBoundingClientRect().height;
+      document.documentElement.style.setProperty('--admin-tabs-height', `${tabsHeight}px`);
+    };
+
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
+
   return (
     <div className={styles.container}>
-      <h1 className={styles.pageHeading}>Tag Management</h1>
-      <p>
-        Drag tags by the handle to <strong>reorder</strong> within the same parent. Hold{' '}
-        <strong>Shift</strong> while dragging to <strong>reparent</strong> (drop onto the new parent). Use
-        the <code>+</code> button to add a child tag.
-      </p>
+      <div className={styles.stickyTop} ref={stickyTopRef}>
+        <h1 className={styles.pageHeading}>Tag Management</h1>
+        <p className={styles.intro}>
+          Drag tags by the handle to <strong>reorder</strong> within the same parent. Hold{' '}
+          <strong>Shift</strong> while dragging to <strong>reparent</strong> (drop onto the new parent). Use
+          the <code>+</code> button to add a child tag.
+        </p>
+      </div>
 
       {loading && <p>Loading tags...</p>}
       {error && <p className={styles.error}>{error.toString()}</p>}

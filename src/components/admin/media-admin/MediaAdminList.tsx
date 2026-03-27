@@ -20,7 +20,7 @@ const MEDIA_COLUMN_WIDTHS_KEY = 'media-admin-column-widths';
 
 const defaultColumns: ColumnConfig[] = [
   { key: 'status', label: 'Status', width: 100, minWidth: 80, maxWidth: 150 },
-  { key: 'thumbnail', label: 'Icon', width: 100, minWidth: 80, maxWidth: 120 },
+  { key: 'thumbnail', label: 'Icon', width: 160, minWidth: 130, maxWidth: 240 },
   { key: 'filename', label: 'Filename', width: 250, minWidth: 200, maxWidth: 500, sortable: true },
   { key: 'caption', label: 'Caption', width: 300, minWidth: 200, maxWidth: 600, sortable: true },
   { key: 'width', label: 'Width', width: 100, minWidth: 80, maxWidth: 120 },
@@ -29,6 +29,7 @@ const defaultColumns: ColumnConfig[] = [
   { key: 'contentType', label: 'Type', width: 120, minWidth: 100, maxWidth: 150 },
   { key: 'objectPosition', label: 'Object Position', width: 150, minWidth: 120, maxWidth: 200 },
   { key: 'source', label: 'Source', width: 100, minWidth: 80, maxWidth: 120 },
+  { key: 'tagSummary', label: 'Tags', width: 280, minWidth: 220, maxWidth: 520 },
   { key: 'sourcePath', label: 'Source Path', width: 400, minWidth: 300, maxWidth: 800, sortable: true },
   { key: 'actions', label: 'Actions', width: 120, minWidth: 100, maxWidth: 150 },
 ];

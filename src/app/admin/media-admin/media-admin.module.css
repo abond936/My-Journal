@@ -12,6 +12,48 @@
   margin: 0 0 var(--spacing-md);
 }
 
+.stickyTop {
+  position: sticky;
+  top: var(--admin-tabs-height, 0px);
+  z-index: 55; /* above table content, below admin tabs */
+  background: var(--layout-background1-color);
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
+}
+
+.stickyTop h1 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  color: var(--text1-color);
+  margin: 0 0 var(--spacing-md);
+}
+
+.stickyTop p {
+  margin: 0 0 var(--spacing-md);
+  color: var(--text2-color);
+  font-size: var(--font-size-sm);
+}
+
+.stickyControls {
+  /* Inner section inside the stickyTop wrapper. */
+  position: static;
+  background: transparent;
+  border-bottom: none;
+}
+
+.stickyControls .viewToggleBar {
+  margin-bottom: var(--spacing-md);
+}
+
+.stickyControls .filters {
+  margin-bottom: var(--spacing-md);
+}
+
+.stickyControls .toolbar {
+  margin-bottom: var(--spacing-md);
+  border-radius: 0;
+}
+
 .filters {
   display: flex;
   gap: var(--spacing-md);
@@ -353,4 +395,17 @@
     flex-direction: column;
     gap: var(--spacing-sm);
   }
-} 
+}
+
+.bulkTagHint {
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+  margin: 0 0 var(--spacing-md) 0;
+  line-height: 1.45;
+}
+
+.bulkTagFooter {
+  margin-top: var(--spacing-lg);
+  display: flex;
+  justify-content: flex-end;
+}
