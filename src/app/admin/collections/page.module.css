@@ -63,8 +63,21 @@
 }
 
 .nodeDropZone,
-.unparentDropZone {
+.unparentDropZone,
+.treeRootDropZone {
   border-radius: var(--border-radius-sm);
+}
+
+.treeRootDropZone {
+  min-height: 8rem;
+  border: var(--border-width-thin) dashed var(--border1-color);
+  padding: var(--spacing-sm);
+}
+
+.emptyTreeHint {
+  margin: 0 0 var(--spacing-sm);
+  color: var(--text2-color);
+  font-size: var(--font-size-sm);
 }
 
 .dropTargetActive {

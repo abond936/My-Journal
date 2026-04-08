@@ -1,0 +1,12 @@
+﻿ZZ_TEST
+	WHO
+		Alan Bond
+		Sandra Bond
+	WHAT
+		Events
+			Birthday
+	WHERE
+		United States
+			Georgia
+				Atlanta
+

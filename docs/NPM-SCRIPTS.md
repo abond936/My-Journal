@@ -15,7 +15,7 @@ Run from the repo root. Most maintenance scripts need Firebase Admin env vars (s
 | `npm run diagnose:tag` | Debug single tag |
 | `npm run diagnose:cover` | Cover image diagnostic |
 | `npm run test:clear-cover` | Dev cover clear test |
-| `npm run normalize:images` | Local image normalization pipeline |
+| `npm run normalize:images` | Local WebP + JSON normalization (`src/lib/scripts/normalize-images.ts`). Args: `<sourceDir> <destDir>`; append `-- --card-export-only` to process only `*__X.*` files (same rule as admin folder import). See `normalize-images-README.md` and `docs/IMPORT-REFERENCE.md`. |
 | `npm run cleanup:media` | Firebase media collection cleanup |
 | `npm run reconcile:media-cards` | Diagnose/reconcile media ↔ card references |
 | `npm run remove:legacy-cover` | Remove legacy cover fields |

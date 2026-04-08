@@ -15,7 +15,14 @@ const galleryMediaItemSchema = z.object({
 
 /**
  * Schema for a card in the system.
- * A card is the primary content unit, representing a story, Q&A, quote, etc.
+ * A card is the primary content unit (story, gallery, Q&A, etc.).
+ *
+ * **Parent / child (structural “collection”):** Any card may have `childrenIds`. A card with
+ * at least one child id is a structural collection parent. `type: 'collection'` is optional
+ * legacy/presentation; listing and curated APIs key off `childrenIds` / `curatedRoot`, not type.
+ *
+ * **`curatedRoot`:** Top-level slot in Curated browsing when true, even with zero children.
+ * Set from Admin → Collections (`/admin/collections`) via tree-root drop—not from the tag sidebar.
  */
 export const cardSchema = z.object({
   // Document identifier - Firestore's immutable docId
@@ -30,7 +37,7 @@ export const cardSchema = z.object({
   // The content field stores HTML with embedded media references.
   content: z.string().default(''),
   
-  // Card type and status controls visibility and behavior
+  // Card type: drives feed/view rendering. `collection` is optional legacy; any type may have childrenIds.
   type: z.enum(['story', 'qa', 'quote', 'callout', 'gallery', 'collection']).default('story'),
   status: z.enum(['draft', 'published']).default('draft'),
   displayMode: z.enum(['inline', 'navigate', 'static']).default('navigate'),
@@ -59,8 +66,10 @@ export const cardSchema = z.object({
   tags: z.array(z.string()).optional(),
   filterTags: z.record(z.boolean()).optional(),
   
-  // For 'collection' type cards, this lists the IDs of child cards.
+  // Ordered child card doc ids. Any card type may have children; order defines narrative/TOC sequence.
   childrenIds: z.array(z.string()).optional(),
+  // Top-level curated root for sidebar/API listing (getCollectionCards) even when childrenIds is empty.
+  curatedRoot: z.boolean().optional(),
 
   /** When set, this card was created by folder import; used to detect duplicates. */
   importedFromFolder: z.string().optional(),

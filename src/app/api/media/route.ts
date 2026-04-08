@@ -6,6 +6,11 @@ import { getAdminApp } from '@/lib/config/firebase/admin';
 import { Media } from '@/lib/types/photo';
 import { applyPublicStorageUrls } from '@/lib/utils/storageUrl';
 import { isMediaAssigned, mediaMatchesDimensions, mediaMatchesSearch, seekMediaByAssignment } from '@/lib/utils/mediaAssignmentSeek';
+import {
+  type DimensionalTagIdMap,
+  dimensionalTagMapHasFilters,
+  parseDimensionalTagParamsFromSearchParams,
+} from '@/lib/utils/tagUtils';
 
 function buildBaseQuery(
   mediaRef: CollectionReference,
@@ -70,6 +75,23 @@ function mediaMatchesTagFilter(
       return Boolean(item.filterTags?.[tagValue]) || ids.includes(tagValue);
     }
     return ids.includes(tagValue);
+  }
+  return true;
+}
+
+/** Aligns with getCards dimensional filtering: intra-dimension OR, inter-dimension AND. */
+function mediaMatchesDimensionalTags(item: Media, dt: DimensionalTagIdMap): boolean {
+  if (!dimensionalTagMapHasFilters(dt)) return true;
+
+  const dims: (keyof DimensionalTagIdMap)[] = ['who', 'what', 'when', 'where', 'reflection'];
+  for (const dim of dims) {
+    const selected = dt[dim];
+    if (!selected?.length) continue;
+    const idsOnMedia = getDimensionIds(item, dim);
+    const ok = selected.some(
+      (tid) => idsOnMedia.includes(tid) || Boolean(item.filterTags?.[tid])
+    );
+    if (!ok) return false;
   }
   return true;
 }
@@ -140,21 +162,28 @@ export async function GET(request: NextRequest) {
     const tagDimension = searchParams.get('tagDimension');
     const tagMode = searchParams.get('tagMode');
     const tagValue = searchParams.get('tagValue');
+    const dimensionalTags = parseDimensionalTagParamsFromSearchParams(searchParams);
+    const hasDimensionalTagSeek = dimensionalTagMapHasFilters(dimensionalTags);
 
     const app = getAdminApp();
     const firestore = app.firestore();
     const mediaRef = firestore.collection('media');
     const baseQuery = buildBaseQuery(mediaRef, status, source, hasCaption);
 
-    const shouldUseTagSeek = !!tagMode && tagMode !== 'all';
+    const shouldUseLegacyTagSeek = !!tagMode && tagMode !== 'all';
 
-    if (shouldUseTagSeek) {
+    if (hasDimensionalTagSeek || shouldUseLegacyTagSeek) {
       const predicate = (row: Media) => {
         if (assignment === 'assigned' && !isMediaAssigned(row)) return false;
         if (assignment === 'unassigned' && isMediaAssigned(row)) return false;
         if (!mediaMatchesDimensions(row, dimensions)) return false;
         if (!mediaMatchesSearch(row, search)) return false;
-        if (!mediaMatchesTagFilter(row, tagDimension, tagMode, tagValue)) return false;
+        if (hasDimensionalTagSeek) {
+          if (!mediaMatchesDimensionalTags(row, dimensionalTags)) return false;
+        }
+        if (shouldUseLegacyTagSeek) {
+          if (!mediaMatchesTagFilter(row, tagDimension, tagMode, tagValue)) return false;
+        }
         return true;
       };
       const { media, nextScanCursor, hasNext } = await seekMediaWithPredicates(

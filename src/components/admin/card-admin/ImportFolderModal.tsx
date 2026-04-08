@@ -449,7 +449,8 @@ export default function ImportFolderModal({
                       )}
                       {preview.willNormalize && (
                         <p style={{ fontSize: '0.875rem', color: 'var(--color3)', marginTop: '0.5rem' }}>
-                          Will normalize yEdited → xNormalized before import
+                          Images will be WebP-optimized in memory during import (no local xNormalized folder). Only
+                          files named like <code>…__X.jpg</code> are included.
                         </p>
                       )}
                       <p style={{ fontSize: '0.875rem', color: 'var(--text2-color)', marginTop: '0.25rem' }}>
@@ -457,7 +458,10 @@ export default function ImportFolderModal({
                       </p>
                     </>
                   ) : (
-                    <p>No images found. Select a folder with yEdited, xNormalized, or images.</p>
+                    <p>
+                      No matching images. Use files whose names end with <code>__X</code> before the extension (e.g.{' '}
+                      <code>photo__X.jpg</code>) in the folder, or under <code>yEdited</code> / <code>xNormalized</code>.
+                    </p>
                   )
                 ) : (
                   <p>Could not read folder</p>
@@ -547,7 +551,7 @@ export default function ImportFolderModal({
               {isImporting ? (
                 <>
                   <LoadingSpinner />
-                  <span>Importing{preview?.willNormalize ? ' (normalizing...)' : ''}...</span>
+                  <span>Importing{preview?.willNormalize ? ' (optimizing...)' : ''}...</span>
                 </>
               ) : importAsCard ? (
                 'Import as Card'

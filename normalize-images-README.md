@@ -1,73 +1,79 @@
 # Image Normalization Script
 
-This script processes images from a source folder, optimizes them, and saves them to a destination folder with extracted metadata. The implementation lives in `src/lib/scripts/normalize-images.ts`.
+This script processes images from a **source** folder, optimizes them, and writes **WebP** plus **JSON metadata** files to a **destination** folder. Implementation: `src/lib/scripts/normalize-images.ts`.
+
+**App import note:** When you use **Import folder as card** in the admin UI, the server **does not** require this script for basic import—it reads `__X`-marked files, optimizes **in memory**, and uploads to Firebase. Use this CLI when you still want **local** WebP + JSON artifacts (e.g. backup, inspection, or captions before upload).
 
 ## Usage
 
-### Option 1: Batch file (recommended when working in a photo folder)
+### Option 1: Batch file
 
-Place `normalize-images.bat` in your project root. Run from your album folder (the folder containing `yEdited` and `xNormalized`):
+`normalize-images.bat` lives in the **project root**. Run from the folder that contains your **source** subfolder (often your album directory):
 
 ```batch
 normalize-images.bat yEdited xNormalized
 ```
 
-Or with explicit paths:
+Or explicit folders:
+
 ```batch
 normalize-images.bat "My Photos" "Optimized Photos"
 ```
 
+Optional third argument — only files with the **`__X`** export marker (same as app import):
+
+```batch
+normalize-images.bat "My Photos" "Optimized Photos" --card-export-only
+```
+
 ### Option 2: npm script
 
-From the project directory:
+From the **project root**:
 
 ```bash
 npm run normalize:images <source-folder> <destination-folder>
 ```
 
-### Example
+Optional: **`--card-export-only`** (must appear **after** `--` so npm forwards it):
 
 ```bash
-# From project directory with full paths
-npm run normalize:images "C:\path\to\yEdited" "C:\path\to\xNormalized"
-
-# From folder containing yEdited/xNormalized subfolders (using batch file)
-normalize-images.bat yEdited xNormalized
+npm run normalize:images "C:\path\to\source" "C:\path\to\out" -- --card-export-only
 ```
+
+### `__X` marker (card export only mode)
+
+Filenames must end with **`__X`** immediately before the extension—e.g. `vacation-01__X.jpg`. Two underscores, **uppercase X**. With `--card-export-only`, all other images in the source folder are skipped.
 
 ## What it does
 
-1. **Scans source folder** for image files (jpg, jpeg, png, gif, bmp, tiff, tif, webp)
-2. **Extracts metadata** from each image (EXIF, IPTC, XMP)
-3. **Auto-detects characteristics**:
-   - Orientation (landscape/portrait)
-   - Low-light conditions (high ISO, slow shutter, wide aperture)
-   - Noise levels (based on file size vs dimensions)
-4. **Applies optimization preset** based on detected characteristics
-5. **Converts to WebP** with quality settings
-6. **Saves optimized image** to destination folder
-7. **Saves metadata** as JSON file alongside each image
+1. **Scans** the source folder for images (jpg, jpeg, png, gif, bmp, tiff, tif, webp)—optionally restricted to `__X` files.
+2. **Extracts metadata** (EXIF, IPTC, XMP) per file.
+3. **Auto-detects** characteristics (orientation, low-light heuristics, noise heuristics).
+4. **Applies** an optimization preset and **converts to WebP**.
+5. **Writes** optimized images and **JSON** sidecars into the destination folder.
 
 ## Output
 
-For each input image `photo.jpg`, you'll get:
-- `photo.webp` - Optimized WebP image
-- `photo.json` - Extracted metadata
+For each input `photo.jpg`:
+
+- `photo.webp` — optimized WebP  
+- `photo.json` — extracted metadata (used by the app’s caption reader when present next to the source file; see `readMetadataCaption` in `imageImportService.ts`)
 
 ## Features
 
-- **Auto-detection**: Automatically detects image characteristics and applies appropriate optimization presets
-- **Metadata extraction**: Date/time, GPS, description, comments, title, subject, tags
-- **Optimization presets**: Landscape, portrait, low-light, noise reduction
-- **Format conversion**: All images converted to WebP for better compression
-- **Size optimization**: Resizes large images (max 1920x1080)
+- Auto-detection presets: landscape, portrait, low-light, noise reduction  
+- Max dimension cap (1920×1080, fit inside)  
+- **`--card-export-only`** aligns with **folder import** rules in the app (`docs/IMPORT-REFERENCE.md`)
 
 ## Requirements
 
-- Node.js
-- Sharp library (already installed in this project)
+- Node.js  
+- Sharp (project dependency)
 
 ## Related
 
-- `create-photo-folders.bat` - Creates xNormalized, yEdited, zOriginals folder structure
-- `extract-metadata-improved.bat` - Extract metadata only (no optimization); see METADATA_EXTRACTION_README.md
+- **`docs/IMPORT-REFERENCE.md`** — `__X` rule, env vars, cardseed vs `seedCards.ts`  
+- **`docs/Project.md`** — product workflow, `IMPORT_FOLDER_MAX_IMAGES`, digiKam pipeline  
+- **`docs/NPM-SCRIPTS.md`** — script index  
+- **`METADATA_EXTRACTION_README.md`** — metadata-only extraction (no WebP)  
+- **`create-photo-folders.bat`** — optional z/y/x layout (legacy); many workflows now use a **single folder** + `__X` naming  

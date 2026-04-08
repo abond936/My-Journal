@@ -834,7 +834,8 @@ export async function getCardsByCollectionId(
 const COLLECTIONS_LIST_LIMIT = 500;
 
 /**
- * Fetches cards that have children (collections).
+ * Fetches cards that are curated collections.
+ * A card qualifies if it has children or is explicitly marked as a curated root.
  * Firestore cannot query "array length > 0", so we fetch and filter in memory.
  */
 export async function getCollectionCards(
@@ -851,7 +852,7 @@ export async function getCollectionCards(
   const snapshot = await query.get();
   const cards: Card[] = snapshot.docs
     .map(doc => ({ docId: doc.id, ...doc.data() } as Card))
-    .filter(card => card.childrenIds && card.childrenIds.length > 0);
+    .filter(card => (card.childrenIds && card.childrenIds.length > 0) || card.curatedRoot === true);
 
   if (options.hydrationMode === 'cover-only') {
     return _hydrateCoverImagesOnly(cards);

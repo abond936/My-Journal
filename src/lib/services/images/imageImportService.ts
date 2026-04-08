@@ -2,6 +2,7 @@ import { getAdminApp } from '@/lib/config/firebase/admin';
 import { calculateDerivedTagData } from '@/lib/firebase/tagService';
 import { Media } from '@/lib/types/photo';
 import { getPublicStorageUrl } from '@/lib/utils/storageUrl';
+import { normalizeBufferToWebp } from '@/lib/services/images/inMemoryWebpNormalize';
 import * as admin from 'firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import fs from 'fs/promises';
@@ -191,6 +192,11 @@ export interface ImportFromLocalOptions {
   readMetadata?: boolean;
   /** If true, skip import when a media doc with same sourcePath already exists; return existing */
   skipIfExists?: boolean;
+  /**
+   * If true, WebP-optimize in memory (rotate, resize cap, quality) then upload—no xNormalized folder on disk.
+   * Used for folder import workflows; `sourcePath` still points at the original file for dedup.
+   */
+  normalizeInMemory?: boolean;
 }
 
 export interface ImportFromLocalResult {
@@ -232,12 +238,18 @@ export async function importFromLocalDrive(
     const fullPath = path.join(ONEDRIVE_ROOT_FOLDER, normalizedSourcePath);
 
     // Read and process the file
-    const fileBuffer = await fs.readFile(fullPath);
-    const filename = path.basename(fullPath);
+    let fileBuffer = await fs.readFile(fullPath);
+    let filename = path.basename(fullPath);
 
     let caption: string | undefined;
     if (options?.readMetadata) {
       caption = await readMetadataCaption(fullPath);
+    }
+
+    if (options?.normalizeInMemory) {
+      const { webpBuffer } = await normalizeBufferToWebp(fileBuffer);
+      fileBuffer = webpBuffer;
+      filename = `${path.parse(filename).name}.webp`;
     }
 
     // Create the raw media asset
@@ -398,6 +410,58 @@ export async function patchMediaDocument(mediaId: string, updates: MediaPatchFie
   }
 
   await mediaRef.update(payload);
+}
+
+/**
+ * Replaces the binary content of an existing media asset in place.
+ * Keeps media doc ID and references stable while refreshing metadata fields.
+ */
+export async function replaceMediaAssetContent(
+  mediaId: string,
+  fileBuffer: Buffer,
+  originalFilename: string
+): Promise<void> {
+  const app = getAdminApp();
+  const firestore = app.firestore();
+  const bucket = app.storage().bucket();
+  const mediaRef = firestore.collection('media').doc(mediaId);
+
+  const mediaSnap = await mediaRef.get();
+  if (!mediaSnap.exists) {
+    throw new Error(`Media document with ID ${mediaId} not found.`);
+  }
+
+  const existing = mediaSnap.data() as Media;
+  if (!existing.storagePath) {
+    throw new Error(`Media document with ID ${mediaId} has no storagePath.`);
+  }
+
+  const image = sharp(fileBuffer);
+  const metadata = await image.metadata();
+  let { width, height } = metadata as { width?: number; height?: number };
+  if (!width || !height) {
+    const dims = sizeOf(fileBuffer);
+    width = dims.width;
+    height = dims.height;
+  }
+  if (!width || !height) {
+    throw new Error('Could not determine replacement image dimensions.');
+  }
+
+  const contentType = metadata.format ? `image/${metadata.format}` : 'application/octet-stream';
+  const storageFile = bucket.file(existing.storagePath);
+  await storageFile.save(fileBuffer, {
+    metadata: { contentType },
+  });
+
+  await mediaRef.update({
+    filename: originalFilename || existing.filename,
+    width,
+    height,
+    size: fileBuffer.length,
+    contentType,
+    updatedAt: Date.now(),
+  });
 }
 
 // Add retry mechanism (exported for post-transaction storage cleanup, e.g. deleteCard)

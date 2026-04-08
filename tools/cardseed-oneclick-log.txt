@@ -1,0 +1,30 @@
+﻿START 2026-03-31T14:44:09
+TOP|C:\users\alanb\onedrive\pictures\zMomDadPics\1930s
+TOP_DONE|C:\users\alanb\onedrive\pictures\zMomDadPics\1930s
+TOP|C:\users\alanb\onedrive\pictures\zMomDadPics\1934
+SKIP_EMPTY|C:\users\alanb\onedrive\pictures\zMomDadPics\1934
+TOP|C:\users\alanb\onedrive\pictures\zMomDadPics\1940
+TOP_DONE|C:\users\alanb\onedrive\pictures\zMomDadPics\1940
+TOP|C:\users\alanb\onedrive\pictures\zMomDadPics\1941
+TOP_DONE|C:\users\alanb\onedrive\pictures\zMomDadPics\1941
+TOP|C:\users\alanb\onedrive\pictures\zMomDadPics\1950x
+SKIP_EMPTY|C:\users\alanb\onedrive\pictures\zMomDadPics\1950x
+TOP|C:\users\alanb\onedrive\pictures\zMomDadPics\1953
+TOP_DONE|C:\users\alanb\onedrive\pictures\zMomDadPics\1953
+TOP|C:\users\alanb\onedrive\pictures\zMomDadPics\1970s
+TOP_DONE|C:\users\alanb\onedrive\pictures\zMomDadPics\1970s
+TOP|C:\users\alanb\onedrive\pictures\zMomDadPics\1994
+TOP_DONE|C:\users\alanb\onedrive\pictures\zMomDadPics\1994
+TOP|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob
+TOP_DONE|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob
+TOP|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra
+TOP_DONE|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra
+TOP|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra
+TOP_DONE|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra
+TOP|C:\users\alanb\onedrive\pictures\zMomDadPics\Brothers - Edited
+TOP_DONE|C:\users\alanb\onedrive\pictures\zMomDadPics\Brothers - Edited
+TOP|C:\users\alanb\onedrive\pictures\zMomDadPics\Dad
+TOP_DONE|C:\users\alanb\onedrive\pictures\zMomDadPics\Dad
+TOP|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids
+TOP_DONE|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids
+DONE 2026-03-31T15:09:06

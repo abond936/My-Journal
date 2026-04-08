@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import JournalImage from '@/components/common/JournalImage';
 import EditModal from '@/components/admin/card-admin/EditModal';
@@ -32,13 +32,15 @@ export default function MediaAdminRow({
   isSelected, 
   onToggleSelection 
 }: MediaAdminRowProps) {
-  const { deleteMedia, updateMedia } = useMedia();
+  const { deleteMedia, updateMedia, fetchMedia, currentPage } = useMedia();
   const { tags } = useTag();
   const [isEditingCaption, setIsEditingCaption] = useState(false);
   const [captionValue, setCaptionValue] = useState(media.caption || '');
   const [focalModalOpen, setFocalModalOpen] = useState(false);
   const [focalH, setFocalH] = useState(50);
   const [focalV, setFocalV] = useState(50);
+  const [replacing, setReplacing] = useState(false);
+  const replaceInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setCaptionValue(media.caption || '');
@@ -67,6 +69,35 @@ export default function MediaAdminRow({
   const handleCaptionCancel = () => {
     setCaptionValue(media.caption || '');
     setIsEditingCaption(false);
+  };
+
+  const handleReplaceClick = () => {
+    replaceInputRef.current?.click();
+  };
+
+  const handleReplaceFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setReplacing(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await fetch(`/api/images/${media.docId}/replace`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(typeof data.message === 'string' ? data.message : 'Failed to replace image');
+      }
+      await fetchMedia(currentPage);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to replace image';
+      alert(message);
+    } finally {
+      setReplacing(false);
+      event.target.value = '';
+    }
   };
 
   const renderCell = (column: ColumnConfig) => {
@@ -208,10 +239,26 @@ export default function MediaAdminRow({
       case 'actions':
         return (
           <div className={styles.actions}>
+            <input
+              ref={replaceInputRef}
+              type="file"
+              accept="image/*"
+              className={styles.hiddenFileInput}
+              onChange={handleReplaceFileChange}
+            />
+            <button
+              onClick={handleReplaceClick}
+              className={styles.actionButton}
+              title="Replace image file"
+              disabled={replacing}
+            >
+              {replacing ? '...' : '↺'}
+            </button>
             <button 
               onClick={handleDelete}
               className={`${styles.actionButton} ${styles.deleteButton}`}
               title="Delete"
+              disabled={replacing}
             >
               🗑️
             </button>

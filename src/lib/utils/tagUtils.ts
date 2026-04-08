@@ -179,4 +179,63 @@ export const buildSparseTagTree = (allTags: Tag[], selectedTagIds: string[]): Ta
 
   // Now, build a tree from only the included tags
   return buildTagTree(Array.from(includedTags.values()));
-}; 
+};
+
+const DIMENSION_KEYS = ['who', 'what', 'when', 'where', 'reflection'] as const;
+
+export type DimensionalTagIdMap = Partial<Record<(typeof DIMENSION_KEYS)[number], string[]>>;
+
+const EMPTY_DIMENSIONAL_MAP: DimensionalTagIdMap = {};
+
+/**
+ * Maps sidebar / global selected tag ids into per-dimension id lists (same grouping as CardProvider → /api/cards).
+ * Tags without a known dimension are ignored. Returns a stable empty singleton when nothing applies.
+ */
+export function groupSelectedTagIdsByDimension(
+  selectedTagIds: string[],
+  allTags: Tag[]
+): DimensionalTagIdMap {
+  if (!selectedTagIds.length) return EMPTY_DIMENSIONAL_MAP;
+
+  const out: DimensionalTagIdMap = {};
+  const dimSet = new Set<string>(DIMENSION_KEYS);
+
+  for (const tagId of selectedTagIds) {
+    const tag = allTags.find((t) => t.docId === tagId);
+    if (tag?.docId && tag.dimension && dimSet.has(tag.dimension)) {
+      const d = tag.dimension as (typeof DIMENSION_KEYS)[number];
+      if (!out[d]) out[d] = [];
+      out[d]!.push(tag.docId);
+    }
+  }
+
+  return Object.keys(out).length > 0 ? out : EMPTY_DIMENSIONAL_MAP;
+}
+
+/** Append who/what/when/where/reflection query params (comma-separated ids) when non-empty. */
+export function appendDimensionalTagQueryParams(
+  dimensional: DimensionalTagIdMap,
+  params: URLSearchParams
+): void {
+  for (const key of DIMENSION_KEYS) {
+    const ids = dimensional[key];
+    if (ids?.length) params.set(key, ids.join(','));
+  }
+}
+
+/** Parse dimensional tag filters from request search params (same shape as GET /api/cards). */
+export function parseDimensionalTagParamsFromSearchParams(
+  searchParams: URLSearchParams
+): DimensionalTagIdMap {
+  const out: DimensionalTagIdMap = {};
+  for (const key of DIMENSION_KEYS) {
+    const raw = searchParams.get(key);
+    const ids = raw?.split(',').map((s) => s.trim()).filter(Boolean);
+    if (ids?.length) out[key] = ids;
+  }
+  return Object.keys(out).length > 0 ? out : EMPTY_DIMENSIONAL_MAP;
+}
+
+export function dimensionalTagMapHasFilters(map: DimensionalTagIdMap): boolean {
+  return DIMENSION_KEYS.some((k) => (map[k]?.length ?? 0) > 0);
+} 

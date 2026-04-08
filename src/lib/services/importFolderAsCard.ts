@@ -6,7 +6,7 @@ import {
   updateCard,
   findCardByImportedFolder,
 } from '@/lib/services/cardService';
-import { normalizeImages } from '@/lib/scripts/normalize-images';
+import { isCardExportMarkedFilename } from '@/lib/services/images/inMemoryWebpNormalize';
 import type { GalleryMediaItem } from '@/lib/types/card';
 
 const ONEDRIVE_ROOT_FOLDER = process.env.ONEDRIVE_ROOT_FOLDER;
@@ -24,12 +24,23 @@ const CONCURRENT_IMPORTS = 5;
 const toSystemPath = (p: string) => p.split('/').join(path.sep);
 const toDbPath = (p: string) => p.split(path.sep).join('/');
 
+/** Only files whose basename ends with `__X` before extension (card export marker). */
+function filterMarkedImageFilenames(filenames: string[]): string[] {
+  return filenames
+    .filter((n) => SUPPORTED_EXTENSIONS.includes(path.extname(n).toLowerCase()))
+    .filter(isCardExportMarkedFilename)
+    .sort((a, b) => a.localeCompare(b));
+}
+
 async function importChunk(
   items: { path: string; order: number }[]
 ): Promise<{ galleryMedia: GalleryMediaItem[]; failedPaths: string[] }> {
   const results = await Promise.allSettled(
     items.map(async ({ path: relativeImagePath, order }) => {
-      const { mediaId } = await importFromLocalDrive(relativeImagePath, { readMetadata: true });
+      const { mediaId } = await importFromLocalDrive(relativeImagePath, {
+        readMetadata: true,
+        normalizeInMemory: true,
+      });
       return { mediaId, order };
     })
   );
@@ -99,35 +110,40 @@ export async function getImportFolderPreview(
   if (subdirs.includes('yEdited')) {
     const yEditedFull = path.join(fullPath, 'yEdited');
     const yEntries = await fs.readdir(yEditedFull, { withFileTypes: true });
-    const count = yEntries.filter(
-      (e) =>
-        e.isFile() &&
-        SUPPORTED_EXTENSIONS.includes(path.extname(e.name).toLowerCase())
-    ).length;
-    const importSourcePath = toDbPath(path.join(normalizedPath, 'xNormalized'));
+    const names = yEntries.filter((e) => e.isFile()).map((e) => e.name);
+    const marked = filterMarkedImageFilenames(names);
+    const importSourcePath = toDbPath(path.join(normalizedPath, 'yEdited'));
     const title = path.basename(normalizedPath) || 'Untitled';
-    return withMax({ importSourcePath, imageCount: count, willNormalize: true, title });
+    return withMax({
+      importSourcePath,
+      imageCount: marked.length,
+      willNormalize: marked.length > 0,
+      title,
+    });
   }
 
   if (subdirs.includes('xNormalized')) {
     const xNormFull = path.join(fullPath, 'xNormalized');
     const xEntries = await fs.readdir(xNormFull, { withFileTypes: true });
-    const count = xEntries.filter(
-      (e) =>
-        e.isFile() &&
-        SUPPORTED_EXTENSIONS.includes(path.extname(e.name).toLowerCase())
-    ).length;
+    const names = xEntries.filter((e) => e.isFile()).map((e) => e.name);
+    const marked = filterMarkedImageFilenames(names);
     const importSourcePath = toDbPath(path.join(normalizedPath, 'xNormalized'));
     const title = path.basename(normalizedPath) || 'Untitled';
-    return withMax({ importSourcePath, imageCount: count, willNormalize: false, title });
+    return withMax({
+      importSourcePath,
+      imageCount: marked.length,
+      willNormalize: marked.length > 0,
+      title,
+    });
   }
 
   if (imageFilesInFolder.length > 0) {
     const title = path.basename(normalizedPath) || 'Untitled';
+    const marked = filterMarkedImageFilenames(imageFilesInFolder.map((e) => e.name));
     return withMax({
       importSourcePath: selectedFolderPath,
-      imageCount: imageFilesInFolder.length,
-      willNormalize: false,
+      imageCount: marked.length,
+      willNormalize: marked.length > 0,
       title,
     });
   }
@@ -141,8 +157,8 @@ export async function getImportFolderPreview(
 }
 
 /**
- * Runs normalization (yEdited -> xNormalized) when the selected folder has that structure.
- * Returns the path to import from (xNormalized or the folder with images).
+ * Resolves which directory to read image files from.
+ * WebP optimization runs in memory on import—no yEdited → xNormalized disk write.
  */
 async function resolveImportSource(
   selectedFolderPath: string
@@ -169,29 +185,22 @@ async function resolveImportSource(
       SUPPORTED_EXTENSIONS.includes(path.extname(e.name).toLowerCase())
   );
 
-  // If selected folder has yEdited, normalize to xNormalized and import from xNormalized
   if (subdirs.includes('yEdited')) {
     const yEditedFull = path.join(fullPath, 'yEdited');
-    const xNormalizedFull = path.join(fullPath, 'xNormalized');
-
     try {
       await fs.access(yEditedFull);
     } catch {
       throw new Error(`yEdited folder not found or not accessible: ${selectedFolderPath}/yEdited`);
     }
-
-    await normalizeImages(yEditedFull, xNormalizedFull);
-    const importSourcePath = toDbPath(path.join(normalizedPath, 'xNormalized'));
+    const importSourcePath = toDbPath(path.join(normalizedPath, 'yEdited'));
     return { importSourcePath, normalized: true };
   }
 
-  // If selected folder has xNormalized as child (user selected parent)
   if (subdirs.includes('xNormalized')) {
     const importSourcePath = toDbPath(path.join(normalizedPath, 'xNormalized'));
     return { importSourcePath, normalized: false };
   }
 
-  // Selected folder has images directly
   if (imageFiles.length > 0) {
     return { importSourcePath: selectedFolderPath, normalized: false };
   }
@@ -202,8 +211,8 @@ async function resolveImportSource(
 }
 
 /**
- * Imports all images from a folder as a gallery card.
- * - Runs normalization when folder has yEdited subfolder
+ * Imports all `__X`-marked images from a folder as a gallery card.
+ * - WebP optimization in memory during upload (no xNormalized on disk)
  * - Card title from folder name
  * - First image as cover
  * - Captions from metadata when available
@@ -221,22 +230,26 @@ export async function importFolderAsCard(
 
   const fullImportPath = path.join(ONEDRIVE_ROOT_FOLDER, toSystemPath(importSourcePath));
   const entries = await fs.readdir(fullImportPath, { withFileTypes: true });
-  const imageFiles = entries
-    .filter(
-      (e) =>
-        e.isFile() &&
-        SUPPORTED_EXTENSIONS.includes(path.extname(e.name).toLowerCase())
-    )
-    .map((e) => e.name)
-    .sort((a, b) => a.localeCompare(b));
+  const imageFiles = filterMarkedImageFilenames(
+    entries
+      .filter(
+        (e) =>
+          e.isFile() &&
+          SUPPORTED_EXTENSIONS.includes(path.extname(e.name).toLowerCase())
+      )
+      .map((e) => e.name)
+  );
 
   if (imageFiles.length === 0) {
-    throw new Error(`No supported image files found in folder: ${importSourcePath}`);
+    throw new Error(
+      `No images matching the __X export marker in folder: ${importSourcePath}. ` +
+        `Use names like photo__X.jpg (two underscores and uppercase X before the extension).`
+    );
   }
 
   if (imageFiles.length > IMPORT_FOLDER_MAX_IMAGES) {
     throw new Error(
-      `Folder has ${imageFiles.length} images; maximum is ${IMPORT_FOLDER_MAX_IMAGES}. ` +
+      `Folder has ${imageFiles.length} marked images; maximum is ${IMPORT_FOLDER_MAX_IMAGES}. ` +
         `Split into smaller folders or set IMPORT_FOLDER_MAX_IMAGES.`
     );
   }
@@ -339,14 +352,15 @@ export async function importFolderAsMediaOnly(
 
   const fullImportPath = path.join(ONEDRIVE_ROOT_FOLDER, toSystemPath(importSourcePath));
   const entries = await fs.readdir(fullImportPath, { withFileTypes: true });
-  const imageFiles = entries
-    .filter(
-      (e) =>
-        e.isFile() &&
-        SUPPORTED_EXTENSIONS.includes(path.extname(e.name).toLowerCase())
-    )
-    .map((e) => e.name)
-    .sort((a, b) => a.localeCompare(b));
+  const imageFiles = filterMarkedImageFilenames(
+    entries
+      .filter(
+        (e) =>
+          e.isFile() &&
+          SUPPORTED_EXTENSIONS.includes(path.extname(e.name).toLowerCase())
+      )
+      .map((e) => e.name)
+  );
 
   if (imageFiles.length === 0) {
     return {
@@ -361,7 +375,7 @@ export async function importFolderAsMediaOnly(
 
   if (imageFiles.length > IMPORT_FOLDER_MAX_IMAGES) {
     throw new Error(
-      `Folder has ${imageFiles.length} images; maximum is ${IMPORT_FOLDER_MAX_IMAGES}. ` +
+      `Folder has ${imageFiles.length} marked images; maximum is ${IMPORT_FOLDER_MAX_IMAGES}. ` +
         `Split into smaller folders or set IMPORT_FOLDER_MAX_IMAGES.`
     );
   }
@@ -376,7 +390,11 @@ export async function importFolderAsMediaOnly(
     const chunk = items.slice(i, i + CONCURRENT_IMPORTS);
     const results = await Promise.allSettled(
       chunk.map((sourcePath) =>
-        importFromLocalDrive(sourcePath, { readMetadata: true, skipIfExists: true })
+        importFromLocalDrive(sourcePath, {
+          readMetadata: true,
+          skipIfExists: true,
+          normalizeInMemory: true,
+        })
       )
     );
     results.forEach((r, idx) => {
@@ -411,8 +429,8 @@ export interface DiscoveredSubdir {
 }
 
 /**
- * Recursively finds all subdirectories under root that contain xNormalized (or have images directly).
- * Returns the list of folders that can be imported.
+ * Recursively finds subdirs under root that contain `__X`-marked images
+ * (flat folder, or xNormalized / yEdited child folders).
  */
 export async function discoverNormalizedSubdirs(
   rootPath: string
@@ -423,7 +441,6 @@ export async function discoverNormalizedSubdirs(
 
   const trimmedPath = rootPath.trim().replace(/^\/+/, '');
   const normalizedPath = toSystemPath(trimmedPath);
-  const fullRoot = path.join(ONEDRIVE_ROOT_FOLDER, normalizedPath);
 
   const result: DiscoveredSubdir[] = [];
 
@@ -437,11 +454,14 @@ export async function discoverNormalizedSubdirs(
     }
 
     const subdirs = entries.filter((e) => e.isDirectory()).map((e) => e.name);
-    const imageFiles = entries.filter(
-      (e) =>
-        e.isFile() &&
-        SUPPORTED_EXTENSIONS.includes(path.extname(e.name).toLowerCase())
-    );
+    const imageNamesHere = entries
+      .filter(
+        (e) =>
+          e.isFile() &&
+          SUPPORTED_EXTENSIONS.includes(path.extname(e.name).toLowerCase())
+      )
+      .map((e) => e.name);
+    const markedHere = filterMarkedImageFilenames(imageNamesHere);
 
     if (subdirs.includes('xNormalized')) {
       const xNormPath = path.join(currentRelative, 'xNormalized');
@@ -449,11 +469,8 @@ export async function discoverNormalizedSubdirs(
       let count = 0;
       try {
         const xEntries = await fs.readdir(xNormFull, { withFileTypes: true });
-        count = xEntries.filter(
-          (e) =>
-            e.isFile() &&
-            SUPPORTED_EXTENSIONS.includes(path.extname(e.name).toLowerCase())
-        ).length;
+        const xNames = xEntries.filter((e) => e.isFile()).map((e) => e.name);
+        count = filterMarkedImageFilenames(xNames).length;
       } catch {
         /* skip */
       }
@@ -469,16 +486,35 @@ export async function discoverNormalizedSubdirs(
       return;
     }
 
-    if (subdirs.includes('yEdited') && !subdirs.includes('xNormalized')) {
+    if (subdirs.includes('yEdited')) {
+      const yPath = path.join(currentRelative, 'yEdited');
+      const yFull = path.join(ONEDRIVE_ROOT_FOLDER, toSystemPath(yPath));
+      let count = 0;
+      try {
+        const yEntries = await fs.readdir(yFull, { withFileTypes: true });
+        const yNames = yEntries.filter((e) => e.isFile()).map((e) => e.name);
+        count = filterMarkedImageFilenames(yNames).length;
+      } catch {
+        /* skip */
+      }
+      if (count > 0) {
+        const parentName = path.basename(toSystemPath(currentRelative)) || 'Untitled';
+        result.push({
+          folderPath: toDbPath(currentRelative),
+          importSourcePath: toDbPath(yPath),
+          imageCount: count,
+          title: parentName,
+        });
+      }
       return;
     }
 
-    if (imageFiles.length > 0 && !subdirs.includes('xNormalized') && !subdirs.includes('yEdited')) {
+    if (markedHere.length > 0) {
       const parentName = path.basename(toSystemPath(currentRelative)) || 'Untitled';
       result.push({
         folderPath: toDbPath(currentRelative),
         importSourcePath: toDbPath(currentRelative),
-        imageCount: imageFiles.length,
+        imageCount: markedHere.length,
         title: parentName,
       });
       return;

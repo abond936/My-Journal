@@ -1,0 +1,367 @@
+﻿START 2026-03-31T14:33:14 dirs=332 mode=cmd-timeout
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\1930s\The Bakers
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\1940\First Job Bob 1940
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\1941\Ita Bena - Mar
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\1953\High School Graduation - Bob Bond
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\1970s\1974\Birthday Bob 40 1974
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\1970s\Greenville Country Club
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\1970s\Nell's House
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\1994\Birthday Bob 60 1984
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\02 Parents\BobMargaret
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\02 Parents\BobMargaretNell
+PROGRESS 2026-03-31T14:33:16 dirsProcessed=10 ok=0 fail=10 timeout=10
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\02 Parents\BobNell
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\02 Parents\George
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\02 Parents\Hammond
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\02 Parents\Hammond\Jim
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\02 Parents\Hammond\JimMarsha
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\02 Parents\Hammond\Marsha
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\02 Parents\Hammond\Marsha\Andrea
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\02 Parents\Hammond\Marsha\Caroline
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\02 Parents\Hammond\Marsha\William
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\02 Parents\Hammond\Nell
+PROGRESS 2026-03-31T14:33:18 dirsProcessed=20 ok=0 fail=20 timeout=20
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\02 Parents\Hammond\Toby
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\02 Parents\Itta Bena
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\02 Parents\Itta Bena\Texas and Mississippi Trip
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\02 Parents\Margaret\Baker
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\02 Parents\Margaret\Early
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\02 Parents\Margaret\Funeral
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\02 Parents\Margaret\House
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\02 Parents\Margaret\Misc
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\03 Other\Clemson Golf
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\03 Other\Jaguar
+PROGRESS 2026-03-31T14:33:19 dirsProcessed=30 ok=0 fail=30 timeout=30
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\03 Other\Motorcycle Accident
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\03 Other\Navy
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\03 Other\NightSchool
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\03 Other\Portraits
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\03 Other\Tennis
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\03 Other\zMisc
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\03 Other\zzFuneral
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\01 Parents Parents\Maternal
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\01 Parents Parents\Paternal
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\02 Parents\Dora\Early
+PROGRESS 2026-03-31T14:33:21 dirsProcessed=40 ok=0 fail=40 timeout=40
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\02 Parents\Dora\Family
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\02 Parents\Dora\Ford
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\02 Parents\Dora\General
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\02 Parents\Dora\Grandkids
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\02 Parents\Dora\Sandra
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\02 Parents\Dora\School
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\02 Parents\Dora\Travel
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\02 Parents\Ed\De Soto
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\02 Parents\Ed\Family
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\02 Parents\Ed\General
+PROGRESS 2026-03-31T14:33:23 dirsProcessed=50 ok=0 fail=50 timeout=50
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\02 Parents\Ed\Grandchildren
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\02 Parents\Ed\Great Grandchildren
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\02 Parents\Ed\Studebaker
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\02 Parents\EdDora
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\02 Parents\EdMildred\General
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\02 Parents\EdMildred\Wedding Day
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\02 Parents\Mildred
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\02 Parents\SandraDora
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\02 Parents\SandraEd
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\02 Parents\SandraMildred
+PROGRESS 2026-03-31T14:33:25 dirsProcessed=60 ok=0 fail=60 timeout=60
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Airport
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Beach - Daytona
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Beach - Virginia Beach
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Birthday
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Bob Pics
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Car
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Cousins
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Easter\Easter 1
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Easter\Easter 11
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Easter\Easter 12
+PROGRESS 2026-03-31T14:33:26 dirsProcessed=70 ok=0 fail=70 timeout=70
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Easter\Easter 13
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Easter\Easter 2
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Easter\Easter 3
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Easter\Easter 4
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Easter\Easter 5
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Easter\Easter 6
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Easter\Easter 7
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Easter\Easter 8
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Girl Scout
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Graduation
+PROGRESS 2026-03-31T14:33:29 dirsProcessed=80 ok=0 fail=80 timeout=80
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Illinois
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Military Reservation
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Miscellaneous
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Piedmont Park
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Portraits
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Same Dress
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\School\1st
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\School\2nd
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\School\3rd
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\School\4th
+PROGRESS 2026-03-31T14:33:30 dirsProcessed=90 ok=0 fail=90 timeout=90
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\School\5th
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\School\6th
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\School\High School
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\03 Other\Senior Picnic
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\a1Sandra\Album
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\25th
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\50th
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\50th\Cruise
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\60th\B&S
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\60th\Boys
+PROGRESS 2026-03-31T14:33:31 dirsProcessed=100 ok=0 fail=100 timeout=100
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\61st
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Atlanta
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Bicycle
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Business\Bond Textile Building
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Business\Bond Textile Christmas Party
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Business\Bond Textile Snow
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Business\Bond Transmission\Airport Rd
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Business\Bond Transmission\E North St
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Business\Bond Transmission\Laurens Rd
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Business\Craftec
+PROGRESS 2026-03-31T14:33:32 dirsProcessed=110 ok=0 fail=110 timeout=110
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Business\eAward
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Business\Evergreen
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Business\Evergreen\Party
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Business\Frontage Road
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Business\India
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Business\Machinery
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Business\Moffat Bearing
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Business\New Careers
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Business\Pedal and Racquet
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Business\Thrifty
+PROGRESS 2026-03-31T14:33:36 dirsProcessed=120 ok=0 fail=120 timeout=120
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Cascade
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Christmas 1956
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Christmas 1957
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Christmas 1958
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Christmas 1960
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Christmas 1961
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Christmas 1962
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Christmas 1963
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Christmas 1964
+PROGRESS 2026-03-31T14:33:38 dirsProcessed=130 ok=0 fail=130 timeout=130
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Christmas 1965
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Christmas 1966
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Christmas 1967
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Christmas 1972
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Christmas 1974
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Country Club
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Parkins Mill\2
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Parkins Mill\3
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Parkins Mill\4
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Parkins Mill\5
+PROGRESS 2026-03-31T14:33:39 dirsProcessed=140 ok=0 fail=140 timeout=140
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Parkins Mill\6
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Parkins Mill\7
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Parkins Mill\8
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Parkins Mill\Christmas 1976
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Parkins Mill\Christmas 1980
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Parkins Mill\Christmas 1981
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Christmas\Parkins Mill\Christmas 1982
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Clemson Football
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Clemson Football\Peach Bowl
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Cleveland
+PROGRESS 2026-03-31T14:33:42 dirsProcessed=150 ok=0 fail=150 timeout=150
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Country Club Dr
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Country Club Dr\Hot Tub
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Dance Club
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Easter\Easter 1962
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Easter\Easter 1964
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Easter\Easter 1965
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Easter\Easter 1966
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Easter\Easter 1967
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Family
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Fishing
+PROGRESS 2026-03-31T14:33:43 dirsProcessed=160 ok=0 fail=160 timeout=160
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Friends
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Grandkids
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Grandkids\Bob
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Grandkids\Sandra
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Greenhill
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Greenhill\Snow
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Halloween Party
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Hartwell
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Hartwell\Houseboat
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Hippie Party
+PROGRESS 2026-03-31T14:33:45 dirsProcessed=170 ok=0 fail=170 timeout=170
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Homes\Childress Dr
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Homes\Cleveland St
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Homes\Country Club Dr
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Homes\Creighton St
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Homes\First
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Homes\Keller Blvd
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Homes\Keller Blvd\Keller Blvd Construction
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Homes\Parkins Mill Rd
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Jacksonville
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Nell's House
+PROGRESS 2026-03-31T14:33:47 dirsProcessed=180 ok=0 fail=180 timeout=180
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Operation
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Parkins Mill
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Pets\Maddie
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Pets\Suki
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Pets\Tasha
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Pool
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Portraits
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Sandston
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Sorority
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Thanksgiving
+PROGRESS 2026-03-31T14:33:49 dirsProcessed=190 ok=0 fail=190 timeout=190
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Acapulco
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Aircraft Carrier
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Amsterdam
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Beach
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Beech Mountain
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Beech Mountain 2
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Buggy
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Cape Canaveral
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Chicago
+PROGRESS 2026-03-31T14:33:51 dirsProcessed=200 ok=0 fail=200 timeout=200
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Cruise
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Deep Sea Fishing
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Disney World
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Disney World\Disney World 2
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Egypt
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\England
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Falls
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\France
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\France\Paris
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Gatlinburg
+PROGRESS 2026-03-31T14:33:53 dirsProcessed=210 ok=0 fail=210 timeout=210
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Germany
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Hawaii
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Helen GA
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Hilton Head
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Italy
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Italy\North Italy
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Italy\Rome
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Italy\Venice
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Monte Carlo
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Nantahala
+PROGRESS 2026-03-31T14:33:56 dirsProcessed=220 ok=0 fail=220 timeout=220
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\New York
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Okeefenokee
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Postcards
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Six Flags
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\State Park
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Switzerland
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Virgin Islands
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Virgin Islands - Sailboat
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Washington DC
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\West
+PROGRESS 2026-03-31T14:33:59 dirsProcessed=230 ok=0 fail=230 timeout=230
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Williamsburg
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\Worlds Fair
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\YMCA Camp
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Travel\zGeneral
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Virgina Ave 57
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\BobSandra\Wedding
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\Brothers - Edited
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\Dad
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\1Alan\0
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\1Alan\1
+PROGRESS 2026-03-31T14:34:00 dirsProcessed=240 ok=0 fail=240 timeout=240
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\1Alan\2
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\1Alan\3
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\1Alan\4
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\1Alan\5
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\1Alan\7
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\1Alan\8
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\1Alan\Bday
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\1Alan\Car First
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\1Alan\Circus
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\1Alan\Family
+PROGRESS 2026-03-31T14:34:01 dirsProcessed=250 ok=0 fail=250 timeout=250
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\1Alan\Football
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\1Alan\Golf
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\1Alan\Graduation\BS
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\1Alan\Graduation\BS\Car
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\1Alan\Graduation\HS
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\1Alan\Graduation\HS\Car
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\1Alan\Graduation\MA
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\1Alan\Halloween
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\1Alan\Portraits
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\1Alan\Wedding
+PROGRESS 2026-03-31T14:34:03 dirsProcessed=260 ok=0 fail=260 timeout=260
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\1Alan\zMisc
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\2Scot\0
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\2Scot\1
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\2Scot\2
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\2Scot\6
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\2Scot\Basketball
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\2Scot\Bday
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\2Scot\Car
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\2Scot\Clemson
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\2Scot\Family
+PROGRESS 2026-03-31T14:34:04 dirsProcessed=270 ok=0 fail=270 timeout=270
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\2Scot\Football
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\2Scot\Freedom Weekend Aloft
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\2Scot\Graduation - Clemson
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\2Scot\Graduation - High School
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\2Scot\Portraits
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\2Scot\Prom
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\2Scot\Running
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\2Scot\Wedding
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\2Scot\zMisc
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\0
+PROGRESS 2026-03-31T14:34:06 dirsProcessed=280 ok=0 fail=280 timeout=280
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\1
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\9
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\Birthday
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\Birthday\1
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\Birthday\12
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\Birthday\13
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\Birthday\15
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\Birthday\18
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\Birthday\19
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\Birthday\6
+PROGRESS 2026-03-31T14:34:07 dirsProcessed=290 ok=0 fail=290 timeout=290
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\Birthday\8
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\Birthday\XX
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\Clemson
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\Family
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\Football
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\Girls
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\Golf Cart
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\Graduation - Clemson
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\Graduation - High School
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\Newton
+PROGRESS 2026-03-31T14:34:09 dirsProcessed=300 ok=0 fail=300 timeout=300
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\Patricia & Cesar
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\Portraits
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\Skiing
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\Wedding
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\3Greg\zMisc
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\4Mark\2
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\4Mark\4
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\4Mark\Basketball
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\4Mark\Birthday
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\4Mark\Birthday\15
+PROGRESS 2026-03-31T14:34:11 dirsProcessed=310 ok=0 fail=310 timeout=310
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\4Mark\Birthday\8
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\4Mark\Citadel
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\4Mark\Citadel\Summerall Guard
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\4Mark\Donna
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\4Mark\Family
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\4Mark\Family\Emily
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\4Mark\Football
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\4Mark\Graduation - Citadel
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\4Mark\Graduation - High School
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\4Mark\Portraits
+PROGRESS 2026-03-31T14:34:12 dirsProcessed=320 ok=0 fail=320 timeout=320
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\4Mark\zMisc
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\5ASGM
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\5ASGM\Creighton
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\5ASGM\Creighton\Bathtub
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\5ASGM\Creighton\Bathtub\Originals
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\5ASGM\Creighton\Bench
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\5ASGM\Creighton\Bench\Originals
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\5ASGM\Creighton\Cammoflage
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\5ASGM\Creighton\White Shirts
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\5ASGM\Creighton\White Shirts\Originals
+PROGRESS 2026-03-31T14:34:14 dirsProcessed=330 ok=0 fail=330 timeout=330
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\5ASGM\Woodbine Terrace
+TIMEOUT|C:\users\alanb\onedrive\pictures\zMomDadPics\zKids\5ASGM\Woodbine Terrace\ShortsSuspenders
+DONE 2026-03-31T14:34:15 dirs=332 processed=332 ok=0 fail=332 timeout=332

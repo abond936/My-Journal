@@ -4,6 +4,7 @@ import sharp from 'sharp';
 import fs from 'fs/promises';
 import { Stats } from 'fs';
 import path from 'path';
+import { isCardExportMarkedFilename } from '@/lib/services/images/inMemoryWebpNormalize';
 
 // Types
 interface ImageMetadata {
@@ -393,11 +394,18 @@ async function processImage(inputPath: string, outputPath: string): Promise<bool
 }
 
 // Main processing function
-async function normalizeImages(sourceFolder: string, destinationFolder: string): Promise<void> {
+async function normalizeImages(
+  sourceFolder: string,
+  destinationFolder: string,
+  options?: { cardExportOnly?: boolean }
+): Promise<void> {
   try {
     console.log(`Starting image normalization...`);
     console.log(`Source: ${sourceFolder}`);
     console.log(`Destination: ${destinationFolder}`);
+    if (options?.cardExportOnly) {
+      console.log('Filter: only files with basename suffix __X (card export marker)');
+    }
     console.log('');
     
     // Ensure destination folder exists
@@ -410,10 +418,13 @@ async function normalizeImages(sourceFolder: string, destinationFolder: string):
     // Get all image files from source folder
     const files = await fs.readdir(sourceFolder);
     const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.tif', '.webp'];
-    const imageFiles = files.filter(file => {
+    let imageFiles = files.filter(file => {
       const ext = path.extname(file).toLowerCase();
       return imageExtensions.includes(ext);
     });
+    if (options?.cardExportOnly) {
+      imageFiles = imageFiles.filter(isCardExportMarkedFilename);
+    }
     
     console.log(`Found ${imageFiles.length} image files to process`);
     console.log('');
@@ -458,39 +469,38 @@ async function normalizeImages(sourceFolder: string, destinationFolder: string):
 // CLI interface
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
-  
-  if (args.length !== 2) {
-    console.log('Usage: npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/normalize-images.ts <source-folder> <destination-folder>');
+  const cardExportOnly = args.includes('--card-export-only');
+  const positional = args.filter((a) => !a.startsWith('--'));
+
+  if (positional.length !== 2) {
+    console.log('Usage: npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/normalize-images.ts <source-folder> <destination-folder> [--card-export-only]');
+    console.log('');
+    console.log('Options:');
+    console.log('  --card-export-only   Only process files whose basename ends with __X before the extension');
     console.log('');
     console.log('Examples:');
-    console.log('  # Run from project directory with full paths:');
-    console.log('  npm run normalize:images "C:\\path\\to\\yEdited" "C:\\path\\to\\xNormalized"');
-    console.log('');
-    console.log('  # Run from any directory with relative paths:');
-    console.log('  npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/normalize-images.ts yEdited xNormalized');
-    console.log('');
-    console.log('  # Run from folder containing yEdited/xNormalized subfolders:');
-    console.log('  npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/normalize-images.ts yEdited xNormalized');
+    console.log('  npm run normalize:images "C:\\path\\to\\source" "C:\\path\\to\\out"');
+    console.log('  npm run normalize:images "C:\\path\\to\\source" "C:\\path\\to\\out" -- --card-export-only');
     console.log('');
     console.log('This will:');
-    console.log('  - Process all images from source folder');
+    console.log('  - Process images from source folder');
     console.log('  - Output optimized WebP images to destination folder');
     console.log('  - Extract metadata and save as JSON files');
     console.log('  - Auto-detect and apply optimization presets');
     process.exit(1);
   }
-  
-  const [sourceFolder, destinationFolder] = args;
-  
+
+  const [sourceFolder, destinationFolder] = positional;
+
   // Resolve paths relative to current working directory
   const resolvedSourceFolder = path.resolve(sourceFolder);
   const resolvedDestinationFolder = path.resolve(destinationFolder);
-  
+
   console.log(`Current working directory: ${process.cwd()}`);
   console.log(`Resolved source folder: ${resolvedSourceFolder}`);
   console.log(`Resolved destination folder: ${resolvedDestinationFolder}`);
   console.log('');
-  
+
   // Validate source folder exists
   try {
     await fs.access(resolvedSourceFolder);
@@ -499,9 +509,9 @@ async function main(): Promise<void> {
     console.error(`Make sure the folder exists relative to: ${process.cwd()}`);
     process.exit(1);
   }
-  
+
   // Start processing
-  normalizeImages(resolvedSourceFolder, resolvedDestinationFolder);
+  await normalizeImages(resolvedSourceFolder, resolvedDestinationFolder, { cardExportOnly });
 }
 
 // Run if called directly
@@ -516,5 +526,5 @@ export {
   normalizeImages,
   extractMetadata,
   detectImageCharacteristics,
-  optimizeImage
+  optimizeImage,
 }; 

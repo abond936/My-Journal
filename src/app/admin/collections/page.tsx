@@ -91,6 +91,20 @@ function UnparentDropZone({ className, children }: UnparentDropZoneProps) {
   );
 }
 
+interface TreeRootDropZoneProps {
+  className: string;
+  children: React.ReactNode;
+}
+
+function TreeRootDropZone({ className, children }: TreeRootDropZoneProps) {
+  const { setNodeRef, isOver } = useDroppable({ id: 'tree-root' });
+  return (
+    <div ref={setNodeRef} className={`${className} ${isOver ? styles.dropTargetActive : ''}`}>
+      {children}
+    </div>
+  );
+}
+
 export default function CollectionsAdminPage() {
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
@@ -155,8 +169,9 @@ export default function CollectionsAdminPage() {
   const rootedCollections = useMemo(
     () =>
       cards.filter(card => {
+        if (parentByChild.has(card.docId)) return false;
         const children = normalizeChildren(card.childrenIds);
-        return children.length > 0 && !parentByChild.has(card.docId);
+        return children.length > 0 || card.curatedRoot === true;
       }),
     [cards, parentByChild]
   );
@@ -175,11 +190,11 @@ export default function CollectionsAdminPage() {
     });
   }, [cards, parentByChild, childIdSet, search]);
 
-  const patchChildren = async (parentId: string, nextChildren: string[]) => {
-    const res = await fetch(`/api/cards/${parentId}`, {
+  const patchCard = async (cardId: string, payload: Partial<Card>) => {
+    const res = await fetch(`/api/cards/${cardId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ childrenIds: nextChildren }),
+      body: JSON.stringify(payload),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -197,7 +212,8 @@ export default function CollectionsAdminPage() {
     setSaving(true);
     setError(null);
     try {
-      await patchChildren(parentId, nextChildren);
+      await patchCard(parentId, { childrenIds: nextChildren });
+      await patchCard(childId, { curatedRoot: false });
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to attach child');
@@ -215,7 +231,7 @@ export default function CollectionsAdminPage() {
     setSaving(true);
     setError(null);
     try {
-      await patchChildren(parentId, nextChildren);
+      await patchCard(parentId, { childrenIds: nextChildren });
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to detach child');
@@ -239,20 +255,42 @@ export default function CollectionsAdminPage() {
     setDraggingCardId(cardId);
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const childId = parseCardId(event.active.id);
     const overId = event.over?.id ?? null;
     setDraggingCardId(null);
     if (!childId || !overId || saving) return;
 
     if (overId === 'unparented') {
-      void handleDetachChild(childId);
+      await handleDetachChild(childId);
+      return;
+    }
+
+    if (overId === 'tree-root') {
+      setSaving(true);
+      setError(null);
+      try {
+        const currentParentId = parentByChild.get(childId);
+        if (currentParentId) {
+          const currentParent = cardById.get(currentParentId);
+          if (currentParent) {
+            const nextChildren = normalizeChildren(currentParent.childrenIds).filter(id => id !== childId);
+            await patchCard(currentParentId, { childrenIds: nextChildren });
+          }
+        }
+        await patchCard(childId, { curatedRoot: true });
+        await load();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to set curated root');
+      } finally {
+        setSaving(false);
+      }
       return;
     }
 
     const parentId = parseParentId(overId);
     if (!parentId) return;
-    void handleAttachChild(childId, parentId);
+    await handleAttachChild(childId, parentId);
   };
 
   const renderTreeNode = (node: Card, seen: Set<string> = new Set()) => {
@@ -318,9 +356,14 @@ export default function CollectionsAdminPage() {
             <section className={styles.panel}>
               <h2>Curated Tree</h2>
               <p className={styles.hint}>Drag cards onto a card to set parent/child.</p>
-              <ul className={styles.treeList}>
-                {rootedCollections.map(root => renderTreeNode(root))}
-              </ul>
+              <TreeRootDropZone className={styles.treeRootDropZone}>
+                {rootedCollections.length === 0 ? (
+                  <p className={styles.emptyTreeHint}>Drop a card here to start your curated tree.</p>
+                ) : null}
+                <ul className={styles.treeList}>
+                  {rootedCollections.map(root => renderTreeNode(root))}
+                </ul>
+              </TreeRootDropZone>
             </section>
 
             <section className={styles.panel}>

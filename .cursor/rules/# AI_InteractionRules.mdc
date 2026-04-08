@@ -1,36 +1,42 @@
 ---
-description: 
+description: Mandatory AI operating rules — process, approval, grounding, scope
 globs: 
 alwaysApply: true
 ---
-  - You may read code for assessment and recommendation, BUT...
 
-  - MAKE NO CHANGES OR ADDITIONS TO THE CODEBASE OR DIRECTORY/FILE STRUCTURE WITHOUT MY EXPLICIT APPROVAL--EVER!
-  - I REPEAT...
-  - MAKE NO CHANGES OR ADDITIONS TO THE CODEBASE OR DIRECTORY/FILE STRUCTURE WITHOUT MY EXPLICIT APPROVAL--EVER!
+# No Changes Without Approval
 
-You will follow this four-step process for every task without exception:
+MAKE NO CHANGES OR ADDITIONS TO THE CODEBASE, DOCUMENTS, OR DIRECTORY/FILE STRUCTURE WITHOUT EXPLICIT APPROVAL—EVER.
+If approval text is absent or ambiguous, do not edit. Ask.
 
-ASSESS, RECOMMEND, WAIT
+# Ground Every Task in Product and Code Reality
 
-1. ASSESS the situation
-    - Search/read/understand the full codebase to understand the architecture and the specific implementation.
-    - DO NOT MAKE ASSUMPTIONS. Trace all logic through to the end truth.
-    - SEARCH codebase for existing application configs, methods/patterns before recommending new creation.
-    - PRESENT assessment
-    
-2. RECOMMEND a course of action
-    - PRESENT a clear summary of options
-    - STATE your recommendation and rationale
-    - EXPLAIN implications of action on other architecture or code.
+Before any recommendation:
+1. Read `docs/Project.md` — understand the intent, principles, and features of the affected area.
+2. Read the relevant source code — trace actual behavior, do not assume.
+3. Search for existing patterns/configs before proposing new ones.
 
-3. WAIT for approval
-    - Explicitly ask for my approval. 
-      - Example: 
-        - "Do you agree with this plan of action? May I proceed?
+Every recommendation must tie to: product capability, architecture correctness, runtime behavior, or delivery risk. If a proposed change does not advance one of these, do not propose it.
 
-4.  EXECUTE only after approval
-  - ONLY edit code DIRECTLY related to the current issue. 
-  - If you encounter a new issue during execution, stop immediately and return to Step 1.
+# Substantive Work Only
 
-ASSESS, RECOMMEND, WAIT
+Do not propose cosmetic, editorial, or formatting changes unless explicitly requested.
+Do not rewrite, compress, or reorganize existing content unless explicitly requested.
+Do not remove reference content (directory maps, contracts, decision records) without explicit approval.
+
+# Process: ASSESS → RECOMMEND → WAIT → EXECUTE
+
+**Author** provides what (outcome, constraints, scope). **AI** provides how (options, approach, implications).
+
+1. **ASSESS** — Read Project.md + relevant code. Present findings grounded in product intent and actual implementation.
+2. **RECOMMEND** — State options, recommendation, rationale, and impact on other systems. Label each item SUBSTANTIVE or EDITORIAL. Maximum 3 items per pass unless author sets a different limit.
+3. **WAIT** — Ask: "Do you approve this exact edit set? May I proceed?" Do not edit until explicit approval naming specific items.
+4. **EXECUTE** — Edit only approved items, only in approved scope. Apply in-file so author sees diff. After applying, state exactly what changed. If a new issue appears outside scope, stop and return to Step 1.
+
+# Failure Recovery
+
+If AI edits outside approved scope or makes unapproved changes:
+- Stop immediately.
+- Offer to restore/revert the unapproved changes before any new work.
+
+ASSESS → RECOMMEND → WAIT → EXECUTE

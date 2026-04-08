@@ -2,7 +2,7 @@
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useMedia } from '@/components/providers/MediaProvider';
+import { useMedia, type MediaFilters } from '@/components/providers/MediaProvider';
 import { useTag } from '@/components/providers/TagProvider';
 import MediaAdminList from '@/components/admin/media-admin/MediaAdminList';
 import MediaAdminGrid from '@/components/admin/media-admin/MediaAdminGrid';
@@ -16,7 +16,6 @@ type ViewMode = 'grid' | 'table';
 export default function MediaAdminContent() {
   const router = useRouter();
   const { 
-    media, 
     loading, 
     error, 
     pagination,
@@ -26,7 +25,6 @@ export default function MediaAdminContent() {
     fetchMedia,
     currentPage,
     selectedMediaIds,
-    selectAll,
     selectNone,
     deleteMultipleMedia,
     setSelectedMediaIds,
@@ -84,7 +82,6 @@ export default function MediaAdminContent() {
     if (selectedMediaIds.length === 0) return;
     setIsCreatingCard(true);
     try {
-      const mediaMap = new Map(media.map(m => [m.docId, m]));
       const galleryMedia = selectedMediaIds
         .map((mediaId, order) => ({
           mediaId,
@@ -126,8 +123,8 @@ export default function MediaAdminContent() {
     }
   };
 
-  const handleFilterChange = (key: string, value: string) => {
-    setFilter(key as any, value);
+  const handleFilterChange = (key: keyof MediaFilters, value: string) => {
+    setFilter(key, value);
     fetchMedia(1, { [key]: value });
   };
 
@@ -135,23 +132,6 @@ export default function MediaAdminContent() {
     setFilter('search', search);
     fetchMedia(1, { search });
   };
-
-  const handleTagFilterChange = (tagDimension: string, tagMode: string, tagValue: string) => {
-    setFilter('tagDimension', tagDimension);
-    setFilter('tagMode', tagMode);
-    setFilter('tagValue', tagValue);
-    void fetchMedia(1, { tagDimension, tagMode, tagValue });
-  };
-
-  const tagDimension = filters.tagDimension || 'any';
-  const tagMode = filters.tagMode || 'all';
-  const tagValue = filters.tagValue || '';
-
-  const dimensionFilteredTags = allTags.filter(tag => {
-    if (!tag.docId) return false;
-    if (tagDimension === 'any') return true;
-    return (tag.dimension || '').toLowerCase() === tagDimension;
-  });
 
   const stickyTopRef = useRef<HTMLDivElement | null>(null);
 
@@ -175,13 +155,16 @@ export default function MediaAdminContent() {
     measure();
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
-  }, [selectedMediaIds.length, loading, error, filters.tagDimension, filters.tagMode, filters.tagValue, viewMode]);
+  }, [selectedMediaIds.length, loading, error, viewMode]);
 
   return (
     <div className={styles.container}>
       <div className={styles.stickyTop} ref={stickyTopRef}>
         <h1>Media Management</h1>
-        <p>Manage media assets with filtering, search, and bulk operations.</p>
+        <p>
+          Manage media with the filters below. <strong>Tag filtering</strong> uses the{' '}
+          <strong>left sidebar</strong> (same tree as Cards / view)—multi-select tags there to narrow this list.
+        </p>
 
         {/* View toggle - prominent, always visible */}
         <div className={styles.viewToggleBar}>
@@ -280,56 +263,6 @@ export default function MediaAdminContent() {
               className={styles.searchInput}
             />
           </div>
-
-          <div className={styles.filterGroup}>
-            <label>Tag dimension:</label>
-            <select
-              value={tagDimension}
-              onChange={(e) => handleTagFilterChange(e.target.value, tagMode, '')}
-            >
-              <option value="any">Any</option>
-              <option value="who">Who</option>
-              <option value="what">What</option>
-              <option value="when">When</option>
-              <option value="where">Where</option>
-              <option value="reflection">Reflection</option>
-            </select>
-          </div>
-
-          <div className={styles.filterGroup}>
-            <label>Tag filter:</label>
-            <select
-              value={tagMode}
-              onChange={(e) =>
-                handleTagFilterChange(
-                  tagDimension,
-                  e.target.value,
-                  e.target.value === 'match' ? tagValue : ''
-                )
-              }
-            >
-              <option value="all">All</option>
-              <option value="unassigned">Unassigned</option>
-              <option value="match">Matches tag</option>
-            </select>
-          </div>
-
-          {tagMode === 'match' && (
-            <div className={styles.filterGroup}>
-              <label>Tag value:</label>
-              <select
-                value={tagValue}
-                onChange={(e) => handleTagFilterChange(tagDimension, tagMode, e.target.value)}
-              >
-                <option value="">Select tag…</option>
-                {dimensionFilteredTags.map(tag => (
-                  <option key={tag.docId} value={tag.docId}>
-                    {tag.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
 
           <button onClick={clearFilters} className={styles.clearButton}>
             Clear Filters

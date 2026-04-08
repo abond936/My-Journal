@@ -120,15 +120,23 @@ This will test:
 - File system operations
 - Path operations
 
+## Integration with app import (captions)
+
+The journal app’s **`readMetadataCaption`** (see `src/lib/services/images/imageImportService.ts`) looks for a **sidecar JSON** next to each image file (same base name as the image), then falls back to embedded EXIF. That matches the JSON written by **`normalize-images`** / extraction scripts when files sit on the path under **`ONEDRIVE_ROOT_FOLDER`**.
+
+- After editing metadata in **digiKam** or similar, **regenerate** sidecars if you rely on JSON rather than embedded fields.
+- **Folder import** in admin only ingests files whose names end with **`__X`** before the extension (e.g. `photo__X.jpg`). See **`docs/IMPORT-REFERENCE.md`**.
+
 ## Next Steps
 
 After extraction:
 
 1. **Review** the generated JSON files
 2. **Complete** the manual entry fields (Who, What, When, Where, Story)
-3. **Use** the JSON files when uploading images to your system
+3. **Use** the JSON files when uploading images to your system (or run **folder import** with `__X`-marked files and sidecars beside them)
 
 ## Related Scripts
 
-- `create-photo-folders.bat` - Creates xNormalized, yEdited, zOriginals folder structure
-- `normalize-images.bat` - Runs image normalization (see normalize-images-README.md)
+- `create-photo-folders.bat` - Optional legacy layout (xNormalized, yEdited, zOriginals)
+- `normalize-images.bat` / `normalize-images-README.md` - WebP + JSON sidecars; optional `--card-export-only` for `__X`-marked files only
+- `docs/IMPORT-REFERENCE.md` - `__X` marker, in-memory app import, cardseed vs `seedCards.ts`

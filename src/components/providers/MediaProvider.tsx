@@ -1,7 +1,15 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
+import { usePathname } from 'next/navigation';
 import { Media } from '@/lib/types/photo';
+import { useCardContext } from '@/components/providers/CardProvider';
+import { useTag } from '@/components/providers/TagProvider';
+import {
+  appendDimensionalTagQueryParams,
+  dimensionalTagMapHasFilters,
+  groupSelectedTagIdsByDimension,
+} from '@/lib/utils/tagUtils';
 
 interface MediaListResponse {
   media: Media[];
@@ -18,7 +26,7 @@ interface MediaListResponse {
   };
 }
 
-interface MediaFilters {
+export interface MediaFilters {
   status: string;
   source: string;
   dimensions: string;
@@ -26,12 +34,6 @@ interface MediaFilters {
   search: string;
   /** all | unassigned | assigned — unassigned/assigned use seek pagination (forward-only). */
   assignment: string;
-  /** any | who | what | when | where | reflection */
-  tagDimension: string;
-  /** all | unassigned | match */
-  tagMode: string;
-  /** Tag ID (used when tagMode=match) */
-  tagValue: string;
 }
 
 interface MediaContextType {
@@ -76,12 +78,22 @@ const defaultFilters: MediaFilters = {
   hasCaption: 'all',
   search: '',
   assignment: 'all',
-  tagDimension: 'any',
-  tagMode: 'all',
-  tagValue: '',
 };
 
 export function MediaProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isMediaAdminRoute = Boolean(pathname?.startsWith('/admin/media-admin'));
+
+  const { selectedTags } = useCardContext();
+  const { tags: allTags } = useTag();
+
+  const dimensionalTagMap = useMemo(
+    () => groupSelectedTagIdsByDimension(selectedTags, allTags),
+    [selectedTags, allTags]
+  );
+
+  const dimensionalTagKey = useMemo(() => JSON.stringify(dimensionalTagMap), [dimensionalTagMap]);
+
   const [media, setMedia] = useState<Media[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -94,7 +106,8 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const [selectedMediaIds, setSelectedMediaIds] = useState<string[]>([]);
 
   const buildQueryString = useCallback((
-    filters: MediaFilters,
+    mediaFilters: MediaFilters,
+    dimMap: ReturnType<typeof groupSelectedTagIdsByDimension>,
     opts?: { cursor?: string; prevCursor?: string }
   ) => {
     const params = new URLSearchParams();
@@ -102,15 +115,13 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     if (opts?.cursor) params.append('cursor', opts.cursor);
     if (opts?.prevCursor) params.append('prevCursor', opts.prevCursor);
 
-    if (filters.status !== 'all') params.append('status', filters.status);
-    if (filters.source !== 'all') params.append('source', filters.source);
-    if (filters.dimensions !== 'all') params.append('dimensions', filters.dimensions);
-    if (filters.hasCaption !== 'all') params.append('hasCaption', filters.hasCaption);
-    if (filters.search) params.append('search', filters.search);
-    if (filters.assignment !== 'all') params.append('assignment', filters.assignment);
-    if (filters.tagDimension !== 'any') params.append('tagDimension', filters.tagDimension);
-    if (filters.tagMode !== 'all') params.append('tagMode', filters.tagMode);
-    if (filters.tagValue) params.append('tagValue', filters.tagValue);
+    if (mediaFilters.status !== 'all') params.append('status', mediaFilters.status);
+    if (mediaFilters.source !== 'all') params.append('source', mediaFilters.source);
+    if (mediaFilters.dimensions !== 'all') params.append('dimensions', mediaFilters.dimensions);
+    if (mediaFilters.hasCaption !== 'all') params.append('hasCaption', mediaFilters.hasCaption);
+    if (mediaFilters.search) params.append('search', mediaFilters.search);
+    if (mediaFilters.assignment !== 'all') params.append('assignment', mediaFilters.assignment);
+    appendDimensionalTagQueryParams(dimMap, params);
 
     return params.toString();
   }, []);
@@ -121,13 +132,15 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const updatedFilters = { ...filters, ...newFilters };
-      const useSeekAssignment =
+      const assignmentSeek =
         updatedFilters.assignment === 'unassigned' || updatedFilters.assignment === 'assigned';
+      const tagSeek = dimensionalTagMapHasFilters(dimensionalTagMap);
+      const useSeekPagination = assignmentSeek || tagSeek;
       let opts: { cursor?: string; prevCursor?: string } | undefined;
 
       if (page === 1 || newFilters) {
         opts = undefined;
-      } else if (useSeekAssignment) {
+      } else if (useSeekPagination) {
         if (page > currentPage && nextCursor) {
           opts = { cursor: nextCursor };
         } else {
@@ -141,7 +154,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         opts = { cursor: cursorStack[page - 2]! };
       }
 
-      const queryString = buildQueryString(updatedFilters, opts);
+      const queryString = buildQueryString(updatedFilters, dimensionalTagMap, opts);
       const response = await fetch(`/api/media?${queryString}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch media: ${response.statusText}`);
@@ -172,7 +185,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [filters, buildQueryString, currentPage, nextCursor, prevCursor, cursorStack]);
+  }, [filters, buildQueryString, currentPage, nextCursor, prevCursor, cursorStack, dimensionalTagMap]);
 
   const updateMedia = useCallback(async (id: string, updates: Partial<Media>): Promise<Media | undefined> => {
     try {
@@ -314,10 +327,12 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     setSelectedMediaIds([]);
   }, []);
 
-  // Initial fetch
+  // Load / refresh list only on Media admin (avoid fetching on every sidebar change while on Card admin, etc.).
   useEffect(() => {
-    fetchMedia(1);
-  }, []); // Only run on mount
+    if (!isMediaAdminRoute) return;
+    void fetchMedia(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchMedia identity changes with cursors/stack; dimensionalTagKey is the intended trigger
+  }, [dimensionalTagKey, isMediaAdminRoute]);
 
   const value: MediaContextType = {
     media,

@@ -1,0 +1,19 @@
+-api
+NoDups
+-m
+-overwrite_original
+-ext
+jpg
+-ext
+jpeg
+-ext
+png
+-ext
+tif
+-ext
+tiff
+-ext
+webp
+-XMP-lr:HierarchicalSubject+=cardseed|a1bob-02-parents-hammond
+-XMP-dc:Subject+=cardseed/a1bob-02-parents-hammond
+C:\users\alanb\onedrive\pictures\zMomDadPics\a1Bob\02 Parents\Hammond

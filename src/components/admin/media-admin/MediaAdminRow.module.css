@@ -319,6 +319,10 @@
   justify-content: center;
 }
 
+.hiddenFileInput {
+  display: none;
+}
+
 .actionButton {
   padding: var(--spacing-xs) var(--spacing-sm);
   border: var(--border-width-thin) solid var(--border1-color);
