@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import type { CollectionReference, Query, QuerySnapshot } from 'firebase-admin/firestore';
+import type { CollectionReference, Firestore, Query, QuerySnapshot } from 'firebase-admin/firestore';
 import { authOptions } from '@/lib/auth/authOptions';
 import { getAdminApp } from '@/lib/config/firebase/admin';
+import { isTypesenseConfigured } from '@/lib/config/typesense';
 import { Media } from '@/lib/types/photo';
 import { applyPublicStorageUrls } from '@/lib/utils/storageUrl';
 import { isMediaAssigned, mediaMatchesDimensions, mediaMatchesSearch, seekMediaByAssignment } from '@/lib/utils/mediaAssignmentSeek';
+import {
+  ensureMediaCollection,
+  searchMediaTypesense,
+} from '@/lib/services/typesenseMediaService';
 import {
   type DimensionalTagIdMap,
   dimensionalTagMapHasFilters,
@@ -51,8 +56,6 @@ function getDimensionIds(item: Media, dimension: string): string[] {
       return item.when ?? [];
     case 'where':
       return item.where ?? [];
-    case 'reflection':
-      return item.reflection ?? [];
     default:
       return item.tags ?? [];
   }
@@ -83,7 +86,7 @@ function mediaMatchesTagFilter(
 function mediaMatchesDimensionalTags(item: Media, dt: DimensionalTagIdMap): boolean {
   if (!dimensionalTagMapHasFilters(dt)) return true;
 
-  const dims: (keyof DimensionalTagIdMap)[] = ['who', 'what', 'when', 'where', 'reflection'];
+  const dims: (keyof DimensionalTagIdMap)[] = ['who', 'what', 'when', 'where'];
   for (const dim of dims) {
     const selected = dt[dim];
     if (!selected?.length) continue;
@@ -142,6 +145,22 @@ async function seekMediaWithPredicates(
   return { media: matched, nextScanCursor, hasNext };
 }
 
+async function fetchMediaByIdsInOrder(firestore: Firestore, ids: string[]): Promise<Media[]> {
+  if (ids.length === 0) return [];
+  const byId = new Map<string, Media>();
+  const BATCH = 30;
+  for (let i = 0; i < ids.length; i += BATCH) {
+    const chunk = ids.slice(i, i + BATCH);
+    const snaps = await Promise.all(chunk.map((id) => firestore.collection('media').doc(id).get()));
+    for (const s of snaps) {
+      if (s.exists) {
+        byId.set(s.id, { ...(s.data() as Media), docId: s.id });
+      }
+    }
+  }
+  return ids.map((id) => byId.get(id)).filter((m): m is Media => Boolean(m));
+}
+
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') {
@@ -171,6 +190,63 @@ export async function GET(request: NextRequest) {
     const baseQuery = buildBaseQuery(mediaRef, status, source, hasCaption);
 
     const shouldUseLegacyTagSeek = !!tagMode && tagMode !== 'all';
+
+    const searchTrimmed = search?.trim() ?? '';
+    if (searchTrimmed.length > 0 && !isTypesenseConfigured()) {
+      return NextResponse.json(
+        {
+          message:
+            'Text search for media requires Typesense (TYPESENSE_HOST and TYPESENSE_API_KEY). Configure Typesense or clear the search box.',
+          code: 'SEARCH_UNAVAILABLE',
+        },
+        { status: 503 }
+      );
+    }
+
+    const wantTypesense =
+      isTypesenseConfigured() &&
+      !shouldUseLegacyTagSeek &&
+      (searchTrimmed.length > 0 ||
+        hasDimensionalTagSeek ||
+        assignment === 'unassigned' ||
+        assignment === 'assigned');
+
+    if (wantTypesense) {
+      const listPage = Math.max(1, parseInt(searchParams.get('listPage') || '1', 10) || 1);
+      await ensureMediaCollection();
+      const tsResult = await searchMediaTypesense({
+        query: searchTrimmed.length > 0 ? searchTrimmed : '*',
+        page: listPage,
+        perPage: limit,
+        status,
+        source,
+        dimensions,
+        hasCaption,
+        assignment,
+        dimensionalTags,
+      });
+
+      const media = await fetchMediaByIdsInOrder(firestore, tsResult.docIds);
+      const mediaWithUrls = applyPublicStorageUrls(media);
+
+      return NextResponse.json({
+        media: mediaWithUrls,
+        pagination: {
+          limit,
+          total: tsResult.found,
+          totalPages: Math.max(1, Math.ceil(tsResult.found / limit)),
+          seekMode: true,
+          engine: 'typesense',
+          listPage: tsResult.page,
+          hasNext: tsResult.hasNext,
+          hasPrev: tsResult.page > 1,
+          nextCursor: null,
+          prevCursor: null,
+          nextListPage: tsResult.hasNext ? tsResult.page + 1 : null,
+          prevListPage: tsResult.page > 1 ? tsResult.page - 1 : null,
+        },
+      });
+    }
 
     if (hasDimensionalTagSeek || shouldUseLegacyTagSeek) {
       const predicate = (row: Media) => {

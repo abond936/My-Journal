@@ -47,7 +47,10 @@ export const buildTagTree = (tags: Tag[]): TagWithChildren[] => {
  */
 const groupTreeByDimension = (tree: TagWithChildren[]): Record<string, TagWithChildren[]> => {
   const dimensionMap: Record<string, TagWithChildren[]> = {
-    who: [], what: [], when: [], where: [], reflection: [],
+    who: [],
+    what: [],
+    when: [],
+    where: [],
   };
 
   tree.forEach(rootNode => {
@@ -87,7 +90,6 @@ export const createUITreeFromDimensions = (tags: Tag[]): TagWithChildren[] => {
     what: { docId: 'dim-what', name: 'What', children: dimensionalMap.what, dimension: 'what' },
     when: { docId: 'dim-when', name: 'When', children: dimensionalMap.when, dimension: 'when' },
     where: { docId: 'dim-where', name: 'Where', children: dimensionalMap.where, dimension: 'where' },
-    reflection: { docId: 'dim-reflection', name: 'Reflection', children: dimensionalMap.reflection, dimension: 'reflection' },
   };
   
   return Object.values(dimensions);
@@ -195,7 +197,7 @@ export const buildSparseTagTree = (allTags: Tag[], selectedTagIds: string[]): Ta
   return buildTagTree(Array.from(includedTags.values()));
 };
 
-const DIMENSION_KEYS = ['who', 'what', 'when', 'where', 'reflection'] as const;
+export const DIMENSION_KEYS = ['who', 'what', 'when', 'where'] as const;
 
 export type DimensionalTagIdMap = Partial<Record<(typeof DIMENSION_KEYS)[number], string[]>>;
 
@@ -216,8 +218,11 @@ export function groupSelectedTagIdsByDimension(
 
   for (const tagId of selectedTagIds) {
     const tag = allTags.find((t) => t.docId === tagId);
-    if (tag?.docId && tag.dimension && dimSet.has(tag.dimension)) {
-      const d = tag.dimension as (typeof DIMENSION_KEYS)[number];
+    if (!tag?.docId || !tag.dimension) continue;
+    const normalized =
+      String(tag.dimension) === 'reflection' ? 'what' : tag.dimension;
+    if (dimSet.has(normalized)) {
+      const d = normalized as (typeof DIMENSION_KEYS)[number];
       if (!out[d]) out[d] = [];
       out[d]!.push(tag.docId);
     }
@@ -226,7 +231,7 @@ export function groupSelectedTagIdsByDimension(
   return Object.keys(out).length > 0 ? out : EMPTY_DIMENSIONAL_MAP;
 }
 
-/** Append who/what/when/where/reflection query params (comma-separated ids) when non-empty. */
+/** Append who/what/when/where query params (comma-separated ids) when non-empty. */
 export function appendDimensionalTagQueryParams(
   dimensional: DimensionalTagIdMap,
   params: URLSearchParams
@@ -235,6 +240,21 @@ export function appendDimensionalTagQueryParams(
     const ids = dimensional[key];
     if (ids?.length) params.set(key, ids.join(','));
   }
+}
+
+/** Union tag ids per dimension (OR within dimension). Combine with API semantics: AND across dimensions. */
+export function mergeDimensionalTagMaps(
+  ...maps: DimensionalTagIdMap[]
+): DimensionalTagIdMap {
+  const out: DimensionalTagIdMap = {};
+  for (const key of DIMENSION_KEYS) {
+    const set = new Set<string>();
+    for (const m of maps) {
+      for (const id of m[key] ?? []) set.add(id);
+    }
+    if (set.size) out[key] = [...set];
+  }
+  return Object.keys(out).length > 0 ? out : EMPTY_DIMENSIONAL_MAP;
 }
 
 /** Parse dimensional tag filters from request search params (same shape as GET /api/cards). */

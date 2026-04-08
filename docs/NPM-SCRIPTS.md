@@ -22,5 +22,13 @@ Run from the repo root. Most maintenance scripts need Firebase Admin env vars (s
 | `npm run backfill:media-metadata` | Backfill media metadata |
 | `npm run regenerate:storage-urls` | Regenerate Storage URLs on media docs |
 | `npm run seed:journal-users` | Seed `journal_users` for auth |
+| `npm run sync:typesense` | Firestore cards → Typesense `cards` collection |
+| `npm run sync:typesense:fresh` | Same, drop `cards` index first (`--fresh`) |
+| `npm run sync:typesense:media` | Firestore media → Typesense `media` collection (search/facets for `/api/media`) |
+| `npm run sync:typesense:media:fresh` | Same, drop media index first (`--fresh`) |
 
-**HTTP maintenance API** (admin-auth only): `POST` routes under `/api/admin/maintenance/` (`reconcile`, `cleanup`, `backfill`, `diagnose-cover`) remain available for tooling or manual calls; the **Maintenance** admin page was removed in favor of this document + CLI.
+**HTTP maintenance API** (admin-auth only): `POST` routes under `/api/admin/maintenance/` (`reconcile`, `cleanup`, `backfill`, `diagnose-cover`) for tooling or manual calls while there is no Maintenance admin UI. Same operations are often easier via `npm run …` from a machine with Firebase Admin env.
+
+Example — **reconcile** (`src/app/api/admin/maintenance/reconcile/route.ts`): JSON body `{ "action": "diagnose" | "fix", "dryRun"?: true, "cardTitleFilter"?: string, "checkStorage"?: true }`. Diagnose-only returns `{ report }`; fix returns `{ report, after }`. Implementation: `src/lib/scripts/firebase/reconcile-media-cards.ts`.
+
+**Parked:** restore an admin **Maintenance Management** page that wraps these endpoints (see `Project.md` → Administration → Maintenance Management).

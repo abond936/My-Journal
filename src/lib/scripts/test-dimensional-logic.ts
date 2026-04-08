@@ -35,18 +35,16 @@ async function testDimensionalLogic() {
     console.log(`   What: [${(card.what || []).join(', ')}]`);
     console.log(`   When: [${(card.when || []).join(', ')}]`);
     console.log(`   Where: [${(card.where || []).join(', ')}]`);
-    console.log(`   Reflection: [${(card.reflection || []).join(', ')}]`);
     console.log('');
 
     // Test the backfill script's logic
     console.log('🔍 Testing backfill script logic:');
-    const backfillCondition = card.who && card.what && card.when && card.where && card.reflection;
-    console.log(`   card.who && card.what && card.when && card.where && card.reflection = ${backfillCondition}`);
+    const backfillCondition = card.who && card.what && card.when && card.where;
+    console.log(`   card.who && card.what && card.when && card.where = ${backfillCondition}`);
     console.log(`   card.who exists: ${!!card.who}`);
     console.log(`   card.what exists: ${!!card.what}`);
     console.log(`   card.when exists: ${!!card.when}`);
     console.log(`   card.where exists: ${!!card.where}`);
-    console.log(`   card.reflection exists: ${!!card.reflection}`);
     console.log('');
 
     // Test the organizeTagsByDimension function
@@ -59,7 +57,6 @@ async function testDimensionalLogic() {
       console.log(`     What: [${organized.what.join(', ')}]`);
       console.log(`     When: [${organized.when.join(', ')}]`);
       console.log(`     Where: [${organized.where.join(', ')}]`);
-      console.log(`     Reflection: [${organized.reflection.join(', ')}]`);
     } else {
       console.log('❌ Card has no tags to test');
     }

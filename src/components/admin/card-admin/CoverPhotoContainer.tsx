@@ -17,6 +17,8 @@ interface CoverPhotoContainerProps {
   error?: string;
   className?: string;
   isSaving: boolean;
+  /** Narrow Library tab in photo picker to media matching these card tags. */
+  filterTagIds?: string[];
 }
 
 export default function CoverPhotoContainer({ 
@@ -25,7 +27,8 @@ export default function CoverPhotoContainer({
   onChange,
   error,
   className,
-  isSaving
+  isSaving,
+  filterTagIds,
 }: CoverPhotoContainerProps) {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [horizontalPosition, setHorizontalPosition] = useState(50);
@@ -243,6 +246,7 @@ export default function CoverPhotoContainer({
           onSelect={handlePhotoSelect}
           onClose={() => { setIsPickerOpen(false); setPortraitError(null); }}
           initialMode="single"
+          filterTagIds={filterTagIds}
         />
       )}
 

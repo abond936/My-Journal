@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useRef, useCallback, useState } from 'react';
+import React, { useRef, useCallback, useState, useMemo } from 'react';
 import { Card, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { Media } from '@/lib/types/photo';
-import { extractMediaFromContent } from '@/lib/utils/cardUtils';
+import { extractMediaFromContent, generateExcerpt } from '@/lib/utils/cardUtils';
 import CoverPhotoContainer from '@/components/admin/card-admin/CoverPhotoContainer';
 import GalleryManager from '@/components/admin/card-admin/GalleryManager';
 import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
@@ -37,6 +37,13 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
   const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setField('title', e.target.value), [setField]);
   const handleSubtitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setField('subtitle', e.target.value), [setField]);
   const handleExcerptChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setField('excerpt', e.target.value), [setField]);
+  const isExcerptAuto = cardData.excerptAuto !== false;
+  const autoExcerptPreview = useMemo(() => generateExcerpt(cardData.content), [cardData.content]);
+  const handleExcerptAutoToggle = useCallback(() => {
+    const newAuto = !isExcerptAuto;
+    setField('excerptAuto', newAuto);
+    if (newAuto) setField('excerpt', null);
+  }, [isExcerptAuto, setField]);
   const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => setField('status', e.target.value as Card['status']), [setField]);
   const handleTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => setField('type', e.target.value as Card['type']), [setField]);
   const handleDisplayModeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => setField('displayMode', e.target.value as Card['displayMode']), [setField]);
@@ -104,6 +111,7 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
           onSelect={handlePhotoSelectForContent}
           onClose={() => setIsPhotoPickerOpen(false)}
           initialMode="single"
+          filterTagIds={cardData.tags ?? []}
         />
       )}
       <form id="card-form" onSubmit={handleSubmit} className={styles.form}>
@@ -123,13 +131,29 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
               placeholder="Subtitle (optional)"
               className={styles.subtitleInput}
             />
-            <textarea
-              value={cardData.excerpt || ''}
-              onChange={handleExcerptChange}
-              placeholder="Excerpt (optional) - Brief summary of the card content"
-              className={styles.excerptInput}
-              rows={3}
-            />
+            <div className={styles.excerptSection}>
+              <label className={styles.excerptToggle}>
+                <input
+                  type="checkbox"
+                  checked={isExcerptAuto}
+                  onChange={handleExcerptAutoToggle}
+                />
+                <span className={styles.excerptToggleLabel}>Auto-generate from content</span>
+              </label>
+              {isExcerptAuto ? (
+                <div className={styles.excerptPreview}>
+                  {autoExcerptPreview || 'Excerpt will be generated from content when saved.'}
+                </div>
+              ) : (
+                <textarea
+                  value={cardData.excerpt || ''}
+                  onChange={handleExcerptChange}
+                  placeholder="Write a custom excerpt…"
+                  className={styles.excerptInput}
+                  rows={3}
+                />
+              )}
+            </div>
           </div>
 
           <div className={styles.coverPhotoSection}>
@@ -142,6 +166,7 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
               onChange={handleCoverImageChange}
               isSaving={isSaving}
               error={errors.coverImage}
+              filterTagIds={cardData.tags ?? []}
             />
           </div>
 
@@ -171,7 +196,6 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
                 <option value="quote">Quote</option>
                 <option value="callout">Callout</option>
                 <option value="gallery">Gallery</option>
-                <option value="collection">Collection</option>
               </select>
             </div>
             <div className={styles.selectGroup}>
@@ -214,6 +238,7 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
               galleryMedia={(cardData.galleryMedia || []) as HydratedGalleryMediaItem[]}
               onUpdate={handleGalleryUpdate}
               error={errors.galleryMedia}
+              filterTagIds={cardData.tags ?? []}
             />
           </div>
 

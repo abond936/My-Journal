@@ -88,14 +88,30 @@ export function TagProvider({ children }: { children: ReactNode }) {
 
   const updateTag = useCallback(async (id: string, tagData: Partial<Omit<Tag, 'docId'>>): Promise<Tag | undefined> => {
     try {
-      const updatedTag = await fetch(`/api/tags/${id}`, {
+      const res = await fetch(`/api/tags/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(tagData),
-      }).then(res => res.json());
-
-      mutate(); // Revalidate the tags list to update UI immediately
-      return updatedTag;
+      });
+      let data: unknown = null;
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
+      }
+      if (!res.ok) {
+        const errObj = data as { error?: string } | null;
+        const msg =
+          errObj && typeof errObj.error === 'string'
+            ? errObj.error
+            : res.status === 409
+              ? 'Tag with this name already exists'
+              : 'Failed to update tag';
+        console.error('updateTag failed:', msg);
+        return undefined;
+      }
+      await mutate();
+      return data as Tag;
     } catch (e) {
       console.error("Failed to update tag", e);
       return undefined;
@@ -138,7 +154,7 @@ export function TagProvider({ children }: { children: ReactNode }) {
 
   // Build dimensionTree: for each dimension, include the full subtree rooted at each tag with that dimension
   const dimensionTree = useMemo(() => {
-    const dims = ['who', 'what', 'when', 'where', 'reflection'];
+    const dims = ['who', 'what', 'when', 'where'];
     const result: Record<string, TagWithChildren[]> = {};
     // Build the full tree once
     const fullTree = buildTagTree(tags || []);

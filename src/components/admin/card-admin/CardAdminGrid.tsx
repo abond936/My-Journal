@@ -5,7 +5,9 @@ import JournalImage from '@/components/common/JournalImage';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
+import { DirectDimensionChipsRow } from '@/components/admin/common/DirectDimensionChips';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import { getCoreTagsByDimension } from '@/lib/utils/tagDisplay';
 import styles from './CardAdminGrid.module.css';
 
 interface CardAdminGridProps {
@@ -22,12 +24,21 @@ interface CardAdminGridProps {
 interface CardAdminGridCellProps {
   card: Card;
   isSelected: boolean;
+  tagNameMap: Map<string, string>;
   onSelect: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }
 
-function CardAdminGridCell({ card, isSelected, onSelect, onEdit, onDelete }: CardAdminGridCellProps) {
+function CardAdminGridCell({
+  card,
+  isSelected,
+  tagNameMap,
+  onSelect,
+  onEdit,
+  onDelete,
+}: CardAdminGridCellProps) {
+  const core = getCoreTagsByDimension(card);
   return (
     <div
       id={`card-${card.docId}`}
@@ -85,6 +96,7 @@ function CardAdminGridCell({ card, isSelected, onSelect, onEdit, onDelete }: Car
       <div className={styles.title} title={card.title}>
         {card.title || 'Untitled'}
       </div>
+      <DirectDimensionChipsRow core={core} tagNameMap={tagNameMap} />
     </div>
   );
 }
@@ -96,10 +108,14 @@ export default function CardAdminGrid({
   onSelectAll,
   onSaveScrollPosition,
   onDeleteCard,
-  allTags: _allTags,
+  allTags,
 }: CardAdminGridProps) {
   const router = useRouter();
   const isAllSelected = cards.length > 0 && selectedCardIds.size === cards.length;
+  const tagNameMap = React.useMemo(
+    () => new Map(allTags.filter((t) => t.docId).map((t) => [t.docId as string, t.name])),
+    [allTags]
+  );
 
   const handleEdit = (cardId: string) => {
     onSaveScrollPosition(cardId);
@@ -147,6 +163,7 @@ export default function CardAdminGrid({
             key={card.docId}
             card={card}
             isSelected={selectedCardIds.has(card.docId)}
+            tagNameMap={tagNameMap}
             onSelect={() => onSelectCard(card.docId)}
             onEdit={() => handleEdit(card.docId)}
             onDelete={() => handleDelete(card)}

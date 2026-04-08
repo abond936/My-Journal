@@ -67,7 +67,10 @@ export default function MacroTagSelector({
   // Organize the sparse tree by dimension
   const dimensionalSelectedTree = useMemo(() => {
     const dimensions: Record<string, TagWithChildren[]> = {
-      who: [], what: [], when: [], where: [], reflection: []
+      who: [],
+      what: [],
+      when: [],
+      where: [],
     };
     selectedTagTree.forEach(rootNode => {
       if (rootNode.dimension && dimensions[rootNode.dimension]) {
@@ -173,7 +176,10 @@ function ExpandedView({ initialSelection, onSave, onCancel, saving = false, clas
   // Organize the sparse tree by dimension (same logic as main component)
   const dimensionalSelectedTree = useMemo(() => {
     const dimensions: Record<string, TagWithChildren[]> = {
-      who: [], what: [], when: [], where: [], reflection: []
+      who: [],
+      what: [],
+      when: [],
+      where: [],
     };
     selectedTagTree.forEach(rootNode => {
       if (rootNode.dimension && dimensions[rootNode.dimension]) {

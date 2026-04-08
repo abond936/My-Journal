@@ -392,7 +392,6 @@ export const saveThemeData = async (themeData: StructuredThemeData & { darkModeS
   --tag-what-bg-color: var(--color${themeData.components.tag.backgrounds.what.replace('color', '')});
   --tag-when-bg-color: var(--color${themeData.components.tag.backgrounds.when.replace('color', '')});
   --tag-where-bg-color: var(--color${themeData.components.tag.backgrounds.where.replace('color', '')});
-  --tag-reflection-bg-color: var(--color${themeData.components.tag.backgrounds.reflection.replace('color', '')});
   
   /* Form & Input */
   --input-background-color: var(--color1-100);

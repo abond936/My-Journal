@@ -26,7 +26,6 @@ function useTagManagement() {
       what: { docId: 'dim-what', name: 'What', children: [] },
       when: { docId: 'dim-when', name: 'When', children: [] },
       where: { docId: 'dim-where', name: 'Where', children: [] },
-      reflection: { docId: 'dim-reflection', name: 'Reflection', children: [] },
     };
     const uncategorized: TagWithChildren = { docId: 'dim-uncategorized', name: 'Uncategorized', children: [] };
 

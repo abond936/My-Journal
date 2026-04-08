@@ -41,7 +41,6 @@ async function processBatch(cards: FirebaseFirestore.QueryDocumentSnapshot<Card>
       console.log(`   What: [${dimensionalTags.what.join(', ')}]`);
       console.log(`   When: [${dimensionalTags.when.join(', ')}]`);
       console.log(`   Where: [${dimensionalTags.where.join(', ')}]`);
-      console.log(`   Reflection: [${dimensionalTags.reflection.join(', ')}]`);
     }
 
     const updatePayload = {
@@ -50,7 +49,6 @@ async function processBatch(cards: FirebaseFirestore.QueryDocumentSnapshot<Card>
       what:       dimensionalTags.what,
       when:       dimensionalTags.when,
       where:      dimensionalTags.where,
-      reflection: dimensionalTags.reflection,
       updatedAt:  Date.now(),
     } as Partial<Card>;
 

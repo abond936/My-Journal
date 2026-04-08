@@ -141,6 +141,13 @@ export async function PUT(request: NextRequest, { params }: { params: RouteParam
         if (error instanceof Error && error.message.includes('not found')) {
             return new NextResponse('Tag not found', { status: 404 });
         }
+
+        if (error instanceof Error && error.message.includes('Tag with this name already exists')) {
+            return new NextResponse(JSON.stringify({ error: 'Tag with this name already exists' }), {
+                status: 409,
+                headers: { 'Content-Type': 'application/json' },
+            });
+        }
         
         return new NextResponse('Internal server error', { status: 500 });
     }
@@ -212,6 +219,13 @@ export async function PATCH(request: NextRequest, { params }: { params: RoutePar
         // Handle specific error for tag not found
         if (error instanceof Error && error.message.includes('not found')) {
             return new NextResponse('Tag not found', { status: 404 });
+        }
+
+        if (error instanceof Error && error.message.includes('Tag with this name already exists')) {
+            return new NextResponse(JSON.stringify({ error: 'Tag with this name already exists' }), {
+                status: 409,
+                headers: { 'Content-Type': 'application/json' },
+            });
         }
         
         return new NextResponse('Internal server error', { status: 500 });

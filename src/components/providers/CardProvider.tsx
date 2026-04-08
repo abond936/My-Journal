@@ -13,7 +13,7 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export type CardFilterType = 'all' | 'story' | 'qa' | 'quote' | 'callout' | 'gallery';
 export type CardStatus = 'all' | 'draft' | 'published';
-export type ActiveDimension = 'all' | 'who' | 'what' | 'when' | 'where' | 'reflection' | 'collections';
+export type ActiveDimension = 'all' | 'who' | 'what' | 'when' | 'where' | 'collections';
 
 /** Main feed ordering. `random` shuffles cards loaded so far (same pages as newest). */
 export type FeedSortOrder = 'newest' | 'oldest' | 'random';
@@ -57,6 +57,13 @@ const FEED_SORT_KEY = 'myjournal-feed-sort';
 
 const FEED_SORT_VALUES = new Set<string>(['newest', 'oldest', 'random']);
 
+function normalizeStoredActiveDimension(raw: string | null): ActiveDimension {
+  if (!raw) return 'all';
+  if (raw === 'reflection') return 'what';
+  const allowed: ActiveDimension[] = ['all', 'who', 'what', 'when', 'where', 'collections'];
+  return (allowed as string[]).includes(raw) ? (raw as ActiveDimension) : 'all';
+}
+
 function readStoredFeedSort(): FeedSortOrder {
   if (typeof window === 'undefined') return 'newest';
   const raw = sessionStorage.getItem(FEED_SORT_KEY);
@@ -94,7 +101,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   const [pageLimit, setPageLimit] = useState(20);
   const [activeDimension, setActiveDimensionState] = useState<ActiveDimension>(() => {
     if (typeof window === 'undefined') return 'all';
-    return (sessionStorage.getItem(DIMENSION_STORAGE_KEY) as ActiveDimension) || 'all';
+    return normalizeStoredActiveDimension(sessionStorage.getItem(DIMENSION_STORAGE_KEY));
   });
   const [collectionId, setCollectionIdState] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
@@ -135,16 +142,16 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       what?: string[];
       when?: string[];
       where?: string[];
-      reflection?: string[];
     } = {};
     
     selectedFilterTagIds.forEach(tagId => {
       const tag = allTags.find(t => t.docId === tagId);
       if (tag && tag.dimension) {
-        if (!dimensionalMap[tag.dimension]) {
-          dimensionalMap[tag.dimension] = [];
+        const dim = String(tag.dimension) === 'reflection' ? 'what' : tag.dimension;
+        if (!dimensionalMap[dim]) {
+          dimensionalMap[dim] = [];
         }
-        dimensionalMap[tag.dimension]!.push(tagId);
+        dimensionalMap[dim]!.push(tagId);
       }
     });
     

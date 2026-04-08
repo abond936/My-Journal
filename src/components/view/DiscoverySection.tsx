@@ -56,9 +56,6 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
         if (currentCard.where && currentCard.where.length > 0) {
           filteredParams.set('where', currentCard.where.join(','));
         }
-        if (currentCard.reflection && currentCard.reflection.length > 0) {
-          filteredParams.set('reflection', currentCard.reflection.join(','));
-        }
 
         // Fetch random cards (different tags, same card type filter)
         const randomParams = new URLSearchParams({

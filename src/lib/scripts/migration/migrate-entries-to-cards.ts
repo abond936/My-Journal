@@ -149,7 +149,6 @@ async function migrateEntriesToCards() {
         what: [],
         when: [],
         where: [],
-        reflection: [],
       };
       
       console.log(`- Transforming Entry ID: ${entryDoc.id} -> Card Title: ${newCard.title}`);

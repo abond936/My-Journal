@@ -4,10 +4,12 @@ import React, { useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import JournalImage from '@/components/common/JournalImage';
 import EditModal from '@/components/admin/card-admin/EditModal';
+import { DirectDimensionChipCell } from '@/components/admin/common/DirectDimensionChips';
 import { Media } from '@/lib/types/photo';
 import { useMedia } from '@/components/providers/MediaProvider';
 import { useTag } from '@/components/providers/TagProvider';
 import { parseObjectPositionToPercents } from '@/lib/utils/parseObjectPositionPercent';
+import { getCoreTagsByDimension } from '@/lib/utils/tagDisplay';
 import styles from './MediaAdminRow.module.css';
 
 interface ColumnConfig {
@@ -34,6 +36,14 @@ export default function MediaAdminRow({
 }: MediaAdminRowProps) {
   const { deleteMedia, updateMedia, fetchMedia, currentPage } = useMedia();
   const { tags } = useTag();
+  const tagNameMap = React.useMemo(
+    () => new Map(tags.filter((t) => t.docId).map((t) => [t.docId as string, t.name])),
+    [tags]
+  );
+  const core = React.useMemo(
+    () => getCoreTagsByDimension(media),
+    [media.docId, media.tags, media.who, media.what, media.when, media.where]
+  );
   const [isEditingCaption, setIsEditingCaption] = useState(false);
   const [captionValue, setCaptionValue] = useState(media.caption || '');
   const [focalModalOpen, setFocalModalOpen] = useState(false);
@@ -207,27 +217,45 @@ export default function MediaAdminRow({
           </span>
         );
 
-      case 'tagSummary': {
-        const tagNameMap = new Map(tags.filter(t => t.docId).map(tag => [tag.docId as string, tag.name]));
-        const names = (media.tags || [])
-          .map(id => tagNameMap.get(id))
-          .filter((name): name is string => Boolean(name));
-        if (names.length === 0) {
-          return <span className={styles.noTags}>No direct tags</span>;
-        }
-        const visible = names.slice(0, 4);
-        const more = names.length - visible.length;
+      case 'who':
         return (
-          <div className={styles.tagSummary}>
-            {visible.map(name => (
-              <span key={name} className={styles.tagChip}>
-                {name}
-              </span>
-            ))}
-            {more > 0 ? <span className={styles.tagMore}>+{more}</span> : null}
-          </div>
+          <DirectDimensionChipCell
+            ids={core.who}
+            tagNameMap={tagNameMap}
+            dimension="who"
+            variant="table"
+          />
         );
-      }
+
+      case 'what':
+        return (
+          <DirectDimensionChipCell
+            ids={core.what}
+            tagNameMap={tagNameMap}
+            dimension="what"
+            variant="table"
+          />
+        );
+
+      case 'when':
+        return (
+          <DirectDimensionChipCell
+            ids={core.when}
+            tagNameMap={tagNameMap}
+            dimension="when"
+            variant="table"
+          />
+        );
+
+      case 'where':
+        return (
+          <DirectDimensionChipCell
+            ids={core.where}
+            tagNameMap={tagNameMap}
+            dimension="where"
+            variant="table"
+          />
+        );
 
       case 'sourcePath':
         return (

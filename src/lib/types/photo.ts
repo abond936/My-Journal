@@ -54,13 +54,11 @@ export const mediaSchema = z.object({
   what: z.array(z.string()).optional(),
   when: z.array(z.string()).optional(),
   where: z.array(z.string()).optional(),
-  reflection: z.array(z.string()).optional(),
   hasTags: z.boolean().optional(),
   hasWho: z.boolean().optional(),
   hasWhat: z.boolean().optional(),
   hasWhen: z.boolean().optional(),
   hasWhere: z.boolean().optional(),
-  hasReflection: z.boolean().optional(),
 
 });
 

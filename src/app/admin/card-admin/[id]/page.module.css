@@ -58,6 +58,27 @@
   cursor: not-allowed;
 }
 
+.duplicateButton {
+  padding: 0.75rem 1.5rem;
+  background-color: transparent;
+  color: var(--text1-color);
+  border: 1px solid var(--border1-color);
+  border-radius: var(--border-radius-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.duplicateButton:hover:not(:disabled) {
+  background-color: var(--button-outline-background-color-hover);
+  border-color: var(--border2-color);
+}
+
+.duplicateButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .cancelButton {
   padding: 0.75rem 1.5rem;
   background-color: transparent;

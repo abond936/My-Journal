@@ -4,7 +4,6 @@ import { authOptions } from '@/lib/auth/authOptions';
 import { getCardsByIds } from '@/lib/services/cardService';
 import { Card } from '@/lib/types/card';
 
-// Card types that can be filtered (excludes 'collection' for discovery)
 const CARD_TYPES = ['story', 'qa', 'quote', 'callout', 'gallery'] as const;
 type CardTypeFilter = typeof CARD_TYPES[number] | 'all';
 
@@ -17,7 +16,6 @@ let cardIdCache: {
     what: Record<string, string[]>;
     when: Record<string, string[]>;
     where: Record<string, string[]>;
-    reflection: Record<string, string[]>;
   };
   lastUpdated: number;
 } | null = null;
@@ -43,15 +41,13 @@ async function updateCardIdCache() {
       qa: [],
       quote: [],
       callout: [],
-      gallery: [],
-      collection: []
+      gallery: []
     };
     const cardIdsByDimension = {
       who: {} as Record<string, string[]>,
       what: {} as Record<string, string[]>,
       when: {} as Record<string, string[]>,
       where: {} as Record<string, string[]>,
-      reflection: {} as Record<string, string[]>
     };
     
     snapshot.docs.forEach(doc => {
@@ -65,7 +61,7 @@ async function updateCardIdCache() {
       }
       
       // Organize by dimensional tags
-      ['who', 'what', 'when', 'where', 'reflection'].forEach(dimension => {
+      ['who', 'what', 'when', 'where'].forEach(dimension => {
         const tags = data[dimension] || [];
         tags.forEach((tagId: string) => {
           if (!cardIdsByDimension[dimension][tagId]) {
@@ -100,7 +96,6 @@ function getRandomCardIds(
     what?: string[];
     when?: string[];
     where?: string[];
-    reflection?: string[];
   },
   excludeIds: string[] = [],
   type?: CardTypeFilter
@@ -182,26 +177,22 @@ export async function GET(request: Request) {
       what?: string[];
       when?: string[];
       where?: string[];
-      reflection?: string[];
     } = {};
     
     const whoParam = searchParams.get('who');
     const whatParam = searchParams.get('what');
     const whenParam = searchParams.get('when');
     const whereParam = searchParams.get('where');
-    const reflectionParam = searchParams.get('reflection');
     
     const whoTags = whoParam ? whoParam.split(',').filter(tag => tag && tag.trim()) : undefined;
     const whatTags = whatParam ? whatParam.split(',').filter(tag => tag && tag.trim()) : undefined;
     const whenTags = whenParam ? whenParam.split(',').filter(tag => tag && tag.trim()) : undefined;
     const whereTags = whereParam ? whereParam.split(',').filter(tag => tag && tag.trim()) : undefined;
-    const reflectionTags = reflectionParam ? reflectionParam.split(',').filter(tag => tag && tag.trim()) : undefined;
     
     if (whoTags && whoTags.length > 0) dimensionalTags.who = whoTags;
     if (whatTags && whatTags.length > 0) dimensionalTags.what = whatTags;
     if (whenTags && whenTags.length > 0) dimensionalTags.when = whenTags;
     if (whereTags && whereTags.length > 0) dimensionalTags.where = whereTags;
-    if (reflectionTags && reflectionTags.length > 0) dimensionalTags.reflection = reflectionTags;
 
     const typeParam = searchParams.get('type') as CardTypeFilter | null;
     const type = typeParam && CARD_TYPES.includes(typeParam as typeof CARD_TYPES[number]) ? typeParam : undefined;

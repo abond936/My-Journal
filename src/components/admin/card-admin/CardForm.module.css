@@ -58,6 +58,35 @@
   border-color: var(--input-border-color-focus);
 }
 
+.excerptSection {
+  margin-top: var(--spacing-sm);
+}
+
+.excerptToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  cursor: pointer;
+  margin-bottom: var(--spacing-xs);
+}
+
+.excerptToggleLabel {
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+}
+
+.excerptPreview {
+  width: 100%;
+  padding: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  border: var(--border-width-thin) dashed var(--border1-color);
+  border-radius: var(--input-border-radius);
+  background-color: var(--layout-background2-color);
+  color: var(--text2-color);
+  min-height: 80px;
+  font-style: italic;
+}
+
 .excerptInput {
   width: 100%;
   padding: var(--spacing-sm);
@@ -66,7 +95,6 @@
   border-radius: var(--input-border-radius);
   background-color: var(--input-background-color);
   color: var(--text1-color);
-  margin-top: var(--spacing-sm);
   resize: vertical;
   min-height: 80px;
 }

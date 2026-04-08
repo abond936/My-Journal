@@ -359,7 +359,6 @@ export default function AdminCardsPage() {
               <option value="quote">Set to Quote</option>
               <option value="callout">Set to Callout</option>
               <option value="gallery">Set to Gallery</option>
-              <option value="collection">Set to Collection</option>
             </select>
             <select
               onChange={e => handleBulkUpdate('displayMode', e.target.value)}

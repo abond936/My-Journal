@@ -47,6 +47,7 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
   );
   
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [isDuplicating, setIsDuplicating] = React.useState(false);
 
   const handleSave = async (cardData: CardUpdate) => {
     try {
@@ -123,6 +124,27 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
     }
   };
 
+  const handleDuplicate = async () => {
+    if (!cardId) return;
+    if (!window.confirm('Create a copy of this card? The duplicate will be saved as a draft.')) return;
+
+    setIsDuplicating(true);
+    try {
+      const response = await fetch(`/api/cards/${cardId}/duplicate`, { method: 'POST' });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to duplicate card.');
+      }
+      const newCard = await response.json();
+      router.push(`/admin/card-admin/${newCard.docId}/edit`);
+    } catch (err) {
+      console.error('Duplicate error:', err);
+      alert(err instanceof Error ? err.message : 'An unknown error occurred.');
+    } finally {
+      setIsDuplicating(false);
+    }
+  };
+
   const handleBack = () => {
     if (!cardId) {
       if (!window.confirm('Are you sure you want to leave? Any unsaved changes will be lost.')) {
@@ -148,14 +170,24 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
         <h1>{cardId ? 'Edit Card' : 'Create New Card'}</h1>
         <div className={styles.actions}>
           {cardId && (
-            <button
-              type="button"
-              onClick={handleDelete}
-              className={styles.deleteOutlineButton}
-              disabled={isDeleting}
-            >
-              {isDeleting ? 'Deleting...' : 'Delete'}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={handleDelete}
+                className={styles.deleteOutlineButton}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+              <button
+                type="button"
+                onClick={handleDuplicate}
+                className={styles.duplicateButton}
+                disabled={isDuplicating}
+              >
+                {isDuplicating ? 'Duplicating...' : 'Duplicate'}
+              </button>
+            </>
           )}
           <button 
             type="button" 

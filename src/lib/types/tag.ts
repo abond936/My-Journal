@@ -9,7 +9,7 @@ export const tagSchema = z.object({
   docId: z.string().optional(),
   name: z.string(),
   
-  dimension: z.enum(['who', 'what', 'when', 'where', 'reflection']).optional(),
+  dimension: z.enum(['who', 'what', 'when', 'where']).optional(),
   
   parentId: z.string().optional(),
   
@@ -54,5 +54,4 @@ export interface OrganizedTags {
   what: string[];
   when: string[];
   where: string[];
-  reflection: string[];
 } 

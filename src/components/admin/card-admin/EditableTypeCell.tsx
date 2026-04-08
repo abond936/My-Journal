@@ -32,7 +32,6 @@ export default function EditableTypeCell({ card, onUpdate }: EditableTypeCellPro
       <option value="quote">Quote</option>
       <option value="callout">Callout</option>
       <option value="gallery">Gallery</option>
-      <option value="collection">Collection</option>
     </select>
   );
 } 

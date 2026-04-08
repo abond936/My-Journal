@@ -400,7 +400,7 @@
   background: var(--layout-background2-color);
 }
 
-/* Grows to fill column so short dimensions (e.g. Reflection) match sibling height; cap overall scroll area */
+/* Grows to fill column so short dimensions match sibling height; cap overall scroll area */
 .dimensionColumnScroll {
   flex: 1 1 auto;
   min-height: 0;

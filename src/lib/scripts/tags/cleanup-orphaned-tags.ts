@@ -11,7 +11,7 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 interface Tag {
   id: string;
   name: string;
-  dimension: 'who' | 'what' | 'when' | 'where' | 'reflection';
+  dimension: 'who' | 'what' | 'when' | 'where';
   parentId: string | null;
   ancestorTags: string[];
   order: number;

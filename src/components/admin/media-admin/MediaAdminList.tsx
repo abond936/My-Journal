@@ -29,7 +29,10 @@ const defaultColumns: ColumnConfig[] = [
   { key: 'contentType', label: 'Type', width: 120, minWidth: 100, maxWidth: 150 },
   { key: 'objectPosition', label: 'Object Position', width: 150, minWidth: 120, maxWidth: 200 },
   { key: 'source', label: 'Source', width: 100, minWidth: 80, maxWidth: 120 },
-  { key: 'tagSummary', label: 'Tags', width: 280, minWidth: 220, maxWidth: 520 },
+  { key: 'who', label: 'Who', width: 150, minWidth: 100, maxWidth: 280 },
+  { key: 'what', label: 'What', width: 150, minWidth: 100, maxWidth: 280 },
+  { key: 'when', label: 'When', width: 150, minWidth: 100, maxWidth: 280 },
+  { key: 'where', label: 'Where', width: 150, minWidth: 100, maxWidth: 280 },
   { key: 'sourcePath', label: 'Source Path', width: 400, minWidth: 300, maxWidth: 800, sortable: true },
   { key: 'actions', label: 'Actions', width: 120, minWidth: 100, maxWidth: 150 },
 ];

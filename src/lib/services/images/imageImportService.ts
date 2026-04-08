@@ -1,6 +1,11 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { calculateDerivedTagData } from '@/lib/firebase/tagService';
 import { Media } from '@/lib/types/photo';
+import {
+  removeMediaFromTypesense,
+  syncMediaToTypesense,
+  syncMediaToTypesenseById,
+} from '@/lib/services/typesenseMediaService';
 import { getPublicStorageUrl } from '@/lib/utils/storageUrl';
 import { normalizeBufferToWebp } from '@/lib/services/images/inMemoryWebpNormalize';
 import * as admin from 'firebase-admin';
@@ -177,11 +182,12 @@ async function createMediaAsset(
     hasWhat: false,
     hasWhen: false,
     hasWhere: false,
-    hasReflection: false,
   };
 
   // 6. Save the document to the top-level 'media' collection in Firestore
   await mediaRef.set(newMedia);
+
+  void syncMediaToTypesense(newMedia);
 
   return newMedia;
 }
@@ -327,6 +333,7 @@ export async function updateMediaStatus(mediaId: string, status: Media['status']
       status: status,
       updatedAt: Date.now(),
     });
+    void syncMediaToTypesenseById(mediaId);
     console.log(`[updateMediaStatus] Successfully updated status for media ID ${mediaId} to "${status}".`);
   } catch (error) {
     console.error(`[updateMediaStatus] CRITICAL ERROR during status update for media ID ${mediaId}:`, error);
@@ -348,13 +355,11 @@ async function applyTagFieldsToPayload(
   payload.what = dimensionalTags.what ?? [];
   payload.when = dimensionalTags.when ?? [];
   payload.where = dimensionalTags.where ?? [];
-  payload.reflection = dimensionalTags.reflection ?? [];
   payload.hasTags = raw.length > 0;
   payload.hasWho = (dimensionalTags.who ?? []).length > 0;
   payload.hasWhat = (dimensionalTags.what ?? []).length > 0;
   payload.hasWhen = (dimensionalTags.when ?? []).length > 0;
   payload.hasWhere = (dimensionalTags.where ?? []).length > 0;
-  payload.hasReflection = (dimensionalTags.reflection ?? []).length > 0;
 }
 
 /**
@@ -402,6 +407,7 @@ export async function patchMediaDocument(mediaId: string, updates: MediaPatchFie
   }
 
   await mediaRef.update(payload);
+  void syncMediaToTypesenseById(mediaId);
 }
 
 /**
@@ -454,6 +460,7 @@ export async function replaceMediaAssetContent(
     contentType,
     updatedAt: Date.now(),
   });
+  void syncMediaToTypesenseById(mediaId);
 }
 
 // Add retry mechanism (exported for post-transaction storage cleanup, e.g. deleteCard)
@@ -531,6 +538,7 @@ export async function deleteMediaAsset(
       }
 
       await mediaRef.delete();
+      void removeMediaFromTypesense(mediaId);
       console.log(`[deleteMediaAsset] Successfully deleted media document with ID ${mediaId}.`);
 
     } catch (error) {

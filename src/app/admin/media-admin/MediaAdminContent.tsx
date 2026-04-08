@@ -161,10 +161,14 @@ export default function MediaAdminContent() {
     <div className={styles.container}>
       <div className={styles.stickyTop} ref={stickyTopRef}>
         <h1>Media Management</h1>
-        <p>
-          Manage media with the filters below. <strong>Tag filtering</strong> uses the{' '}
-          <strong>left sidebar</strong> (same tree as Cards / view)—multi-select tags there to narrow this list.
-        </p>
+        <div className={styles.tagPrimarySection}>
+          <p className={styles.tagPrimaryLabel}>Tag filter (primary)</p>
+          <p className={styles.tagPrimaryText}>
+            Use the <strong>left sidebar</strong> tag tree (same as Cards / view). Multi-select dimensional tags
+            first to narrow the library; assignment and tag filters use Typesense when configured for faster
+            results.
+          </p>
+        </div>
 
         {/* View toggle - prominent, always visible */}
         <div className={styles.viewToggleBar}>
@@ -189,7 +193,21 @@ export default function MediaAdminContent() {
           </span>
         </div>
 
-        {/* Filters */}
+        <div className={styles.searchRow}>
+          <div className={styles.filterGroup}>
+            <label htmlFor="media-admin-search">Search (filename, caption, path, tag names)</label>
+            <input
+              id="media-admin-search"
+              type="search"
+              placeholder="Requires Typesense when non-empty…"
+              value={filters.search}
+              onChange={(e) => handleSearch(e.target.value)}
+              className={styles.searchInputWide}
+            />
+          </div>
+        </div>
+
+        {/* Secondary filters */}
         <div className={styles.filters}>
           <div className={styles.filterGroup}>
             <label>Status:</label>
@@ -251,17 +269,6 @@ export default function MediaAdminContent() {
               <option value="unassigned">Unassigned (not on any card)</option>
               <option value="assigned">Assigned (cover, gallery, or content)</option>
             </select>
-          </div>
-
-          <div className={styles.filterGroup}>
-            <label>Search:</label>
-            <input
-              type="text"
-              placeholder="Search filename, caption, or path..."
-              value={filters.search}
-              onChange={(e) => handleSearch(e.target.value)}
-              className={styles.searchInput}
-            />
           </div>
 
           <button onClick={clearFilters} className={styles.clearButton}>

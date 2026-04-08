@@ -119,6 +119,7 @@ The primary users are the author (admin) creating the content and his family con
 
 ✅ **Search Index (Typesense)** - Typesense Cloud integrated. Full-text search across title, subtitle, excerpt, content, and tag names. Weighted relevance ranking. Debounced search-as-you-type in admin card list. Falls back to Firestore prefix search if Typesense unavailable. Config: `src/lib/config/typesense.ts`. Service: `src/lib/services/typesenseService.ts`. Sync: `npm run sync:typesense` / `sync:typesense:fresh`.
 ✅ **Typesense Auto-Sync** - Automatic upsert/delete in `cardService.ts`. `createCard` and `updateCard` fire-and-forget sync to Typesense (resolves tag names, strips HTML). `deleteCard` removes from index post-transaction. No manual `sync:typesense` needed for card CRUD.
+✅ **Typesense Media Index** - `typesenseMediaService.ts`; `GET /api/media` uses Typesense when `search` is non-empty, dimensional tag filters, or assignment is assigned/unassigned (if `TYPESENSE_*` set). Text search without Typesense returns **503 SEARCH_UNAVAILABLE**. Sync on media CRUD (`imageImportService`) and when cards add/remove media refs (`cardService`). Bulk backfill: `npm run sync:typesense:media` / `sync:typesense:media:fresh`. Typesense collection name **`media`** (same cluster as `cards`).
 
 ✅ **Authorization** - Auth.js - with Firebase adapter
     - Role-based access control
@@ -418,6 +419,7 @@ The primary users are the author (admin) creating the content and his family con
 ✅ **Question Management** - CRUD and create-card linkage workflow.
 ✅ **User Management** - Users model and admin user workflow.
 ✅ **Theme Management** - Set parameters for colors, fonts, etc.
+🔵 **Maintenance Management** - Admin UI over existing secured maintenance APIs (`POST /api/admin/maintenance/*`: reconcile, cleanup, backfill, diagnose-cover). A Maintenance tab existed previously and was removed; restore when in-app diagnose/fix outweighs CLI + manual HTTP. Today: `docs/NPM-SCRIPTS.md` and `npm run …` scripts.
 
 ⭕3 **Admin SWR Deduping** - Revisit `CardProvider` `dedupingInterval: 0` for admin — restore bounded deduping to cut duplicate `/api/cards` requests where safe.
 ✅ **Scripts** - `package.json` scripts for migrations, reconciliation, one-off repairs, and emergencies. Detail in TECHNICAL > Scripts.
@@ -444,7 +446,6 @@ The primary users are the author (admin) creating the content and his family con
 ✅ **Table View** - Pagination, load more.
 ✅ **Search by Title** - Filter by status and type via `CardProvider` `selectedFilterTagIds`. Bulk operations via `BulkEditTagsModal.tsx`.
 
-⭕2 **Live Search** - Can Search by Title work as typed without 'enter'? Move to right of "All Types" filter.
 ⭕2 **Tag Overlay** - Show tags as overlay on cards in admin grid view?
 ✅ **Add Button** - `AdminFAB.tsx`. New (`/admin/card-admin/new`), Edit (`CardAdminClientPage.tsx`). `CardForm.tsx` wrapped in `CardFormProvider`.
 ✅ **Title, Subtitle, Excerpt** - All default empty.
@@ -457,18 +458,19 @@ The primary users are the author (admin) creating the content and his family con
 ✅ **Gallery** - `GalleryManager` + `PhotoPicker`, drag-and-drop order. `galleryMedia[]` stores `mediaId`, `order`, optional per-slot `caption`/`objectPosition`.
 
 📐 **Excerpt Default** - Default empty.
-⭕2 **Excerpt UI** - Implement auto excerpt UI/logic (empty default, checkbox + N characters, override).
+✅ **Excerpt UI** - Auto-generate toggle on card form. When on, excerpt is computed from content (150 chars, word boundary). Manual override via toggle off. `excerptAuto` field on card schema; server recomputes on save when content changes.
 
 ✅ **Import Folder as Card** – `ImportFolderModal`, folder tree picker, **`__X`-marked files only**, in-memory WebP optimize + upload (no xNormalized on disk), duplicate detection (overwrite/cancel). Mass-import / digiKam prep: **Authoring pipeline — digiKam → mass import** (under Strategic Direction).
 ✅ **Caption and Focal** - Inherit from media by default; optional per-slot override in the gallery edit modal.
 ✅ **Children** - `childrenIds` attaches ordered child cards. Deep nesting allowed; cycles and self-parent blocked in `cardService`; single-parent constraint enforced on move.
-⭕2 **Children Picker** - Replace search-only UX with query-driven picker (tags, type, title, date range) for attaching children at corpus scale (1000+ cards). Reconcile with TOC / collections ⭕2.
+✅ **Children Picker (edit UI)** - Card edit view: reorder/remove children and open child edit links; attach/reparent in Collections admin (`ChildCardManager` → link to `/admin/collections`). Structural assembly stays in TOC/collections work ⭕2.
+⭕2 **Card Linkage** - Non-hierarchical "See Also" cross-references via `linkedCardIds: string[]` (many-to-many, unordered). Surfaces in reader view alongside tag-affinity related cards. Distinct from parent-child (`childrenIds`) and question→card linkage. Deferred until after import.
 ✅ **Actions** - Delete (remove tags/recalc, remove from parents, remove related media), Cancel (abandon edits, return to list), Save (save tags/recalc, add media).
 
 ⭕2 **Dirty State Tracking** - Track form changes in `CardFormProvider` (initial vs. current state) so Back can warn on unsaved edits for existing cards too.
-⭕2 **Content Versioning** - Firestore overwrites on save; no previous version to revert to. For a curated archive where content is irreplaceable narrative, accidental destructive edits = permanent loss. Options: (a) pre-save snapshot to `card_versions` subcollection, (b) soft delete with 30-day trash recovery, (c) "duplicate card" action for manual safety copy before risky edits. Start with (c) as near-term mitigation; implement (a) before mass content authoring.
-⭕2 **Remove Legacy Type** - Remove legacy `collection` type before first import.
-⭕2 **Authoring Discovery** - Filter-based discovery of both cards and media when editing; scalable child-card picker (replace search-only) for 1000+ cards — tags, type, title, date, etc. Aligned with TOC/collections work.
+✅ **Content Versioning (Phase 1)** - "Duplicate Card" action implemented. Creates a draft copy of any card (content, tags, media refs, gallery) via `POST /api/cards/[id]/duplicate`. Button on card edit page header. Next phase: pre-save snapshot to `card_versions` subcollection before mass content authoring.
+✅ **Remove Legacy Type** - Removed legacy `collection` type. Zero cards used it; removed from schema and all 8 code files.
+✅ **Authoring Discovery (media in edit)** - PhotoPicker **Library** tab: same non-tag query filters as Media admin (`/api/media`: status, source, shape, caption, on-cards), debounced text search, **in-modal dimensional tag filter** (`MacroTagSelector`, independent of left sidebar; OR within dimension, AND across dimensions, merged with optional **Match card tags** from the current card). `filterTagIds` wired from `CardForm` → cover/gallery/content picker. Card discovery: admin card list + Collections for structure.
 
 ---
 
@@ -504,7 +506,8 @@ The primary users are the author (admin) creating the content and his family con
 🔵 **Video** - Support on **cover**, **inline (body)**, and **gallery** like stills—as far as product parity allows. **Size / “normalization”** (typical approach): **server-side transcoding** (e.g. FFmpeg) to a max resolution/bitrate and web-friendly format—same *class* of work as image normalization; not automatic in-app today.
 📐 **Entry Paths** - Two import paths: (1) **Import → Card** — import from source as card + images concurrently, assign tags from folder/metadata, edit after. (2) **Import → Bank → Card** — bulk import images with tags into the bank unassigned, then create cards and assign from the bank.
 📐 **Source Adapter Architecture** - The existing service layer (import, process, return mediaId) is the right shape for multiple source adapters. Current: local filesystem (hard drives / OneDrive mirror). Future adapters add alongside, not replacing, the local drive path.
-⭕2 **Media Search Index (Typesense)** - Add Typesense collection for media. Expected scale: 5000–6000 images in wave 1, 10,000+ in wave 2. Current Firestore queries + in-memory filtering will degrade. Enable cross-field search (caption, filename, tag names, source path) and faceted filtering. Same pattern as card index.
+✅ **Media Search Index (Typesense)** - Typesense `media` collection: single searchable field (filename, caption, source path, tag names); facets for status, source, shape, has caption, **assigned**, dimensional tag ids (who/what/when/where). `listPage` pagination for TS-backed queries. **Operational:** run `npm run sync:typesense:media` after enabling Typesense or bulk-importing media outside API paths that auto-sync. **Verified:** sync completed successfully against current Firestore (e.g. 13 media indexed in dev—re-run after mass import).
+  ✅ **Media assigned + Typesense on unlink** - `removeMediaReferenceFromCard` (`cardService.ts`): if the card actually references the media (structured refs or body HTML), updates the card, then **`referencedByCardIds` `arrayRemove(cardId)`** on the media doc, **`syncMediaToTypesenseById`**, and **`syncCardToTypesense`** for the affected card. Used by `deleteMediaWithCardCleanup` (admin media delete). Together with **createCard** / **updateCard**, this is the assumed **add / change / delete** behavior—see **Cross-entity sync**. For exceptional drift only, use **`reconcile:media-cards`** (diagnose/fix) or Typesense bulk sync scripts.
 ⭕2 **Browser Upload** - Replace or supplement server-side folder read (`ONEDRIVE_ROOT_FOLDER`) with browser-based upload flow. Required for hosted deployment where the server has no local filesystem access.
 🔵 **Google Photos Adapter** - Import from Google Photos API. Most accessible cloud photo API. Requires OAuth consent, album/media listing, download-and-process flow.
 🔵 **OneDrive Adapter** - Import from OneDrive via Microsoft Graph API. Similar shape to Google Photos adapter.
@@ -544,7 +547,8 @@ The primary users are the author (admin) creating the content and his family con
 ✅ **Replace** - File edited from source and replaced. After editing, upload the new file via **Media admin** replace on that row. **API:** `POST /api/images/{id}/replace` → `replaceMediaAssetContent` in `imageImportService.ts`. Same Firestore **media** doc id and **storage path**; **width/height/size** refresh; **cover**, **gallery**, and **content** references on cards **unchanged** (no re-linking). *Caveat:* Same public URL shape can mean **browser or CDN caching**—if a thumbnail looks stale after replace, treat cache-bust or URL strategy as a follow-up.
 ✅ **Tagging** - Aim for the **same assignment mechanism** as cards (**shared modal**) where practical; **bulk** tagging in Media admin is the primary day-to-day workflow. **Today:** cards — `BulkEditTagsModal`; media — `PATCH /api/images/{id}` (tags / `whoTagIds`, caption, focal) and Media admin **bulk** modes (add / replace / remove). 
 ✅ **Direction:** no inheritance between card and media tags; separate card `filterTags` from image-level tags and retire merge-on-save—**Tag Management** 
-  ⭕2 - Post-import aggregation UX: bulk add selected banked media to a card gallery and/or create new card from multi-select in Media admin (beyond per-card PhotoPicker alone).
+  ✅ **Post-import aggregation (create card)** - Media admin multi-select → **Create card from selection**: draft `gallery` card (`POST /api/cards`), `coverImageId` + ordered `galleryMedia`, navigate to edit (`MediaAdminContent`).
+  ⭕2 **Append to existing card gallery** - Bulk add selected banked media to another card's gallery from Media admin (deferred).
 
 📐 **Assignment Model** - References only; hydrated from media at read time. No embedded media objects.
   - **Cover** → `coverImageId`, `coverImageFocalPoint` (single image)
@@ -564,13 +568,24 @@ The primary users are the author (admin) creating the content and his family con
 ✅ **Optimization** - `next/image`
 ✅ **Firebase Storage:** `images/{docId}-{filename}`
 ✅ **storageUrl:** Permanent public URL (format: `https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{encodedPath}?alt=media`). Set from `storagePath` at card hydration and in Media API. No expiration or refresh. Requires Firebase Storage rules for public read (see below).
-✅ **referencedByCardIds:** Denormalized array of card IDs that reference this media. Maintained on createCard, updateCard. Used for delete (remove refs from cards, then delete) and unassigned filter. Lazy backfill for legacy media.
+✅ **referencedByCardIds:** Denormalized array of card IDs that reference this media. Maintained on **createCard**, **updateCard** (transaction), and **removeMediaReferenceFromCard** (media delete cleanup path). Used for delete (remove refs from cards, then delete) and unassigned filter. Lazy backfill for legacy media.
+
+📐 **Cross-entity sync** — Firestore is authoritative; Typesense and denormalized fields follow these entry points:
+
+| Relationship | Primary maintenance |
+|--------------|---------------------|
+| Card ↔ media `referencedByCardIds` | `createCard` / `updateCard` (transaction `arrayUnion` / `arrayRemove`); `removeMediaReferenceFromCard` + `deleteMediaWithCardCleanup` |
+| Card ↔ Typesense | `syncCardToTypesense` after create/update paths; `removeCardFromTypesense` on card delete |
+| Media ↔ Typesense | `syncMediaToTypesenseById` / `syncMediaToTypesense` on media writes; `removeMediaFromTypesense` on media delete |
+| Card ↔ tag `cardCount` (and ancestors) | `updateTagCountsForCard` inside card transactions (tag changes, publish state, `deleteCard`) |
+| Card ↔ questions | `unlinkCardFromAllQuestions` after `deleteCard`; link/unlink APIs update `usedByCardIds` + `usageCount` |
+| Drift / bulk repair | Ad hoc: `npm run sync:typesense` / `sync:typesense:media`; `npm run reconcile:media-cards`; other scripts under `src/lib/scripts/`. Not a separate product backlog item—normal CRUD paths above own day-to-day consistency. |
 ✅ **No temporary/active.** All imported media is in the bank. Track **where assigned** (cover, gallery, content) for filtering; unassigned is valid.
 
   **"Unassigned" Query:** - Uses `referencedByCardIds` on media + `GET /api/media?assignment=unassigned|assigned` (sequential scan; see `mediaAssignmentSeek.ts`).
   **Firebase Console → Storage → Rules** - (required for public URLs)
     Adjust `allow write` if you use different auth requirements. No `storage.rules` file in this repo—rules are managed in the Console.
-⭕1 **Orphaned Media** - Clean up orphaned media (100+). Can leave them if normalized. Else, delete and re-import normalized.
+✅ **Orphaned Media** - Deleted 136 orphaned media (95.7 MB). All were local-source with no card references. Source files remain on disk for re-import via digiKam pipeline with fresh normalization and tags.
 ✅ **Delete checks card refs** - Yes; OnDelete flow removes card references before deleting media.
 
 **Normalization**
@@ -605,9 +620,7 @@ The primary users are the author (admin) creating the content and his family con
   - See `METADATA_EXTRACTION_README.md` and `normalize-images-README.md`
 
   **Media-Card Reconciliation**
-  When cards and media get out of sync, use reconciliation scripts. See MediaCardReconciliation.md. Run `npm run reconcile:media-cards -- --diagnose`.
-  ⭕2 - Design media-card flow so they don't get out of sync.
-  ⭕2 - Reconcile/Update Image/Card relationships/data integrity.
+  **Add / change / delete** for card–media edges is maintained by production paths (**Cross-entity sync** table in Media Management). When investigating **exceptional** drift (legacy data, manual DB edits): **CLI** — `npm run reconcile:media-cards -- --diagnose` (optional `--fix`, `--fix --dry-run`, `--card "Title"`); source `src/lib/scripts/firebase/reconcile-media-cards.ts`. **HTTP** (admin session) — `POST /api/admin/maintenance/reconcile` with JSON `action`: `diagnose` | `fix`, optional `dryRun`, `cardTitleFilter`, `checkStorage`. **Index** — `docs/NPM-SCRIPTS.md`.
   ⭕3 - **Import pipeline job:** **Async queue/worker** for large folder import (normalize + writes) complementing `IMPORT_FOLDER_MAX_IMAGES` and serverless timeouts.
   ⭕3 - **Import metadata precedence:** Prefer **embedded XMP/IPTC** read **at import** for captions/keywords; use **JSON sidecars** as optional/supplementary when files are authoritative on disk.
 
@@ -626,21 +639,21 @@ The primary users are the author (admin) creating the content and his family con
 - **Universal tagging** - All media and cards tagged for filtering using the same dimensional/hierarchical library.
 
 ✅ **Tag Data Model** - Firestore `tags` collection. Schema: `src/lib/types/tag.ts`. Service: `tagService`.
-✅ **Dimensional** - Who, What, When, Where (Reflection merged into What as `what/Themes/...`).
-⭕1 **Consolidate Reflection** - Merge Reflection dimension into What as `what/Themes/...` subtree. Update `dimension` field on all Reflection tags in Firestore from `'reflection'` to `'what'`, reparent under a new "Themes" root in What, remove `'reflection'` from the dimension enum in `tag.ts`, and update all UI/code references (sidebar tabs, dimension maps, backfill scripts).
-⭕1 **N/A Sentinel Tags** - Create root-level "N/A" tag in each dimension (who, what, when, where). Allows explicit "doesn't apply" marking to distinguish from "not yet tagged." Needed before import so bulk-tagged items can be marked complete. Supports completeness queries: a card/media is complete when every dimension has at least one tag (including N/A).
-⭕2 **Completeness Indicator** - Show dimension coverage badges in admin card/media list (green = has tag, amber = missing). Simple check: does each dimension have at least one tag? Drives tagging discipline during authoring sprints without enforcing at save time.
+✅ **Dimensional** - Who, What, When, Where (Reflection subtree lives under What as `what/Reflections/...`).
+✅ **Consolidate Reflection** - Former `reflection` dimension removed from schema and UI. Tags reparented under a What root **Reflections**; cards/media no longer store a `reflection` field. One-time Firestore migration: `npm run tags:consolidate-reflection` (use `--dry-run` first).
+✅ **N/A Sentinel Tags (`zNA`)** - One root per dimension named **`zNA`** (same display/stored string in who, what, when, where). Explicit “doesn’t apply” vs “not yet tagged.” **Uniqueness:** root tag names are unique **per dimension** only (four `zNA` roots allowed); child names are unique **among siblings** (case-insensitive after trim). Seed missing roots: `npm run tags:seed-zna`. Supports completeness: a card/media is complete when every dimension has at least one tag (including `zNA`).
+✅ **Admin dimension at a glance (v1)** - **Direct tags only** (intersection of `tags` with each dimensional array), aligned across **card table** (existing four columns), **media table** (four Who/What/When/Where columns replacing a single Tags column), and **card + media grid** (four equal chips per row: first tag name truncated, `+n` for more in that dimension; native `title` / `aria-label` lists all direct tags per dimension). Card edit view keeps existing empty-dimension header emphasis. **Deferred:** green/amber completeness dots; stronger hover/popover typography (readability pass later). Implementation: `getCoreTagsByDimension`, `DirectDimensionChips` (`src/components/admin/common/`).
 ✅ **Hierarchical** - Parent/child nesting (e.g. Father → Mother; Son → Daughter).
 ✅ **Universal** - Media and cards use the same tagging mechanism.
-📐 **Authoring Vocabulary** - Mirror the same dimensional paths in digiKam keywords and the app tag tree so import/mapping stays predictable. Four scene dimensions on media (Who, What, When, Where); card-level arc/theme tags for narrative framing. Key conventions:
+📐 **Authoring Vocabulary** - Mirror the same dimensional paths in digiKam keywords and the app tag tree so import/mapping stays predictable. Four scene dimensions on media (Who, What, When, Where); card-level arc/theme tags for narrative framing. **N/A sentinel:** use root tag **`zNA`** in each dimension in the app (and align digiKam keywords to the same label per dimension path). Key conventions:
   - **When** — `when/date/…` chronological, sortable (`yyyymmdd`, `00` for unknown). No `when/stage` (stage is who-dependent; infer from who + date). Season out of scope.
-  - **What** — Three buckets: `what/event/…` (occasions/milestones), `what/activity/…` (what people are doing), `what/theme/…` (long-running domains). Overlap: milestones → event; school defaults to theme; add event for specific ceremonies.
+  - **What** — Includes `what/Reflections/…` for reflective / journal-style themes (card-centric; not used for media scene tags). Other buckets: `what/event/…` (occasions/milestones), `what/activity/…` (what people are doing), plus long-running domains under What as needed. Overlap: milestones → event; school defaults to theme; add event for specific ceremonies.
   - **Who** — People as stable tag identities (display names). Groups optional (`who/group/…`). Subject vs also-present encoding TBD. Kinship graph is ⭕3 under Relationship Tagging.
   - **Where** — Administrative nesting (country → state → county → city), skip levels when irrelevant. Venues, domestic labels, natural settings as children. GPS/EXIF may seed on import; author refines in Tag admin.
-📐 **Life-Arc Tree vs What and Reflection** - **Decided:** Merge Reflection into What as `what/Themes/...` subtree. Remove `reflection` dimension. Theme/reflective tags are inherently card-centric (you'd never tag a photo with "Wisdom/Advice") but don't need special enforcement — self-enforcing by content. Four dimensions remain: Who, What, When, Where.
+📐 **Life-Arc Tree vs What and Reflection** - **Decided:** Merge Reflection into What as `what/Reflections/...` subtree. Remove `reflection` dimension. Reflective tags are inherently card-centric (poor fit for media scene tags) — self-enforcing by content. Four dimensions remain: Who, What, When, Where.
 
 ✅ **Tag Administration** - `/app/admin/tag-admin/page.tsx`.
-✅ **Hierarchical View** - The page renders all tags in a 5-column tree structure using `TagAdminList`
+✅ **Hierarchical View** - The page renders all tags in a 4-column tree structure using `TagAdminList`
 ✅ **Drag-and-Drop** -  Reordering/Reparenting - `SortableTag.tsx`
 ✅ **Inline Editing** - `TagAdminRow.tsx`
 ✅ **OnDelete** - User choice of children being promoted or cascade deleted
@@ -683,7 +696,7 @@ The primary users are the author (admin) creating the content and his family con
 ✅ **OnDelete** - Card delete removes its ID from every question's usedByCardIdsand refreshesusageCountvia cardService.
 ✅ **Create Card** - Create card from question prompt (default type `qa` or `story`). Adds card ID to `usedByCardIds` and updates `usageCount`.
 ✅ **Link/Unlink** - Manual link/unlink between question and existing card IDs. A question may map to zero, one, or many cards.
-❓ **Pre-Tag Questions** - Pre-tag questions for use on card? WHO/Father, WHAT/Reflection, Childhood, etc.
+❓ **Pre-Tag Questions** - Pre-tag questions for use on card? WHO/Father, WHAT/Reflections, Childhood, etc.
 ⭕2 **Assigned** - Mark questions "Assigned/Unassigned" (only doable if assigned to card, not if inline) `usedByCardIds.length > 0`.
 🔵 **Answer Workflow** - Answer workflow beyond cards, analytics, templates, validation, viewer feedback, auto-grouping.
 🔵 **Auto-Clustering** - Auto-clustering/grouping of short questions.
@@ -803,31 +816,32 @@ The primary users are the author (admin) creating the content and his family con
 
 ### Administration
 - ⭕3 **Admin SWR Deduping** - Revisit `CardProvider` `dedupingInterval: 0` for admin.
+- 🔵 **Maintenance Management** - Admin UI for maintenance APIs (parked); use `docs/NPM-SCRIPTS.md` and CLI today.
 
 ### Card Management
 - ⭕2 **Card Edit Mosaic** - Mosaic layout for gallery manager in card edit.
-- ⭕2 **Live Search** - Search by Title as typed without 'enter'.
 - ⭕2 **Tag Overlay** - Show tags as overlay on cards in admin grid view.
-- ⭕2 **Excerpt UI** - Implement auto excerpt UI/logic (empty default, checkbox + N, override).
-- ⭕2 **Children Picker** - Query-driven picker for attaching children at corpus scale (1000+ cards).
-- ⭕2 **Remove Legacy Type** - Remove legacy `collection` type before first import.
-- ⭕2 **Authoring Discovery** - Filter-based discovery of cards and media when editing.
+- ✅ **Excerpt UI** - Auto-generate toggle; manual override. `excerptAuto` field on card schema.
+- ✅ **Children Picker (edit UI)** - Reorder/remove + Collections link; attach in Collections admin.
+- ⭕2 **Card Linkage** - `linkedCardIds` "See Also"; deferred until after import.
+- ✅ **Remove Legacy Type** - Removed. Zero cards used it; cleaned from schema + 8 code files.
+- ✅ **Authoring Discovery (media in edit)** - PhotoPicker Library: `/api/media` filters, in-modal tag filter (sidebar-independent) + optional match card tags, debounced search.
 - ⭕2 **Dirty State Tracking** - Warn on unsaved edits for existing cards.
-- ⭕2 **Content Versioning** - Pre-save snapshots to `card_versions` subcollection. Near-term: "duplicate card" action.
+- ✅ **Content Versioning (Phase 1)** - "Duplicate Card" action implemented. Next: pre-save snapshots.
 
 ### Collections Management
 - ⭕2 **TOC & Ordering** - Manual sibling reordering via drag-and-drop TOC. One tree UI for reparenting and ordering.
 
 ### Media Management
-- ⭕1 **Orphaned Media** - Clean up orphaned media (100+).
+- ✅ **Orphaned Media** - Deleted 136 orphaned media. Source files on disk for re-import.
 - ⭕2 **Post-Import Maintenance** - Cropping, cleanup, sharpening via replace-in-place.
-- ⭕2 **Post-Import Aggregation** - Bulk add selected banked media to a card gallery or create new card from multi-select.
-- ⭕2 **Media-Card Flow** - Design media-card flow so they don't get out of sync.
-- ⭕2 **Reconcile Integrity** - Reconcile/update image/card relationships/data integrity.
+- ✅ **Post-Import Aggregation (create card)** - Media admin multi-select creates draft gallery card and opens edit.
+- ⭕2 **Append to existing card gallery** - Bulk add selection to another card's gallery (deferred).
 - ⭕3 **Rename photo.ts** - Rename `src/lib/types/photo.ts` to `media.ts` throughout.
 - ⭕3 **Import Pipeline Job** - Async queue/worker for large folder import.
 - ⭕3 **Import Metadata Precedence** - Prefer embedded XMP/IPTC at import; JSON sidecars as supplementary.
-- ⭕2 **Media Search Index (Typesense)** - Typesense for media at scale (5000–10,000+ images).
+- ✅ **Media Search Index (Typesense)** - Implemented; `npm run sync:typesense:media` for backfill. Dev sync verified OK.
+- ✅ **Media assigned on unlink** - `removeMediaReferenceFromCard` updates `referencedByCardIds`, media Typesense, and card Typesense (see Cross-entity sync).
 - ⭕2 **Browser Upload** - Replace/supplement server-side folder read with browser-based upload for hosted deployment.
 - 🔵 **Google Photos Adapter** - Import from Google Photos API.
 - 🔵 **OneDrive Adapter** - Import from OneDrive via Microsoft Graph API.
@@ -835,15 +849,15 @@ The primary users are the author (admin) creating the content and his family con
 
 ### Tag Management
 - ✅ **Tag Typeahead Search** - Search input in tag assignment modals. Filters all dimension columns as typed.
-- ⭕1 **Consolidate Reflection** - Merge Reflection into What as `what/Themes/...`. Remove `reflection` dimension.
-- ⭕1 **N/A Sentinel Tags** - Root-level N/A tag per dimension for explicit "doesn't apply."
-- ⭕2 **Completeness Indicator** - Dimension coverage badges in admin lists.
+- ✅ **Consolidate Reflection** - Reflection subtree under What (`what/Reflections/...`); `reflection` dimension removed from product and schema.
+- ✅ **N/A Sentinel (`zNA`)** - Root `zNA` per dimension; `npm run tags:seed-zna`; per-dimension root uniqueness (see Tag Management).
+- ✅ **Admin dimension at a glance** - Four columns (media table) + four chips (card/media grids); direct-only + `+n`; hover titles for full per-dimension lists. (Green/amber badges + font polish later.)
 - ⭕3 **Single TagProvider** - Remove nested `TagProvider` under admin.
 - ⭕3 **Tag Tree Counts** - Add `mediaCount` on tag docs + UI `(x/y)`.
 - ⭕3 **Tag Recomp** - Schedule or queue recomputation for hierarchical counts.
 - ⭕3 **Unified Tag Edges** - Treat assignments as `(subjectType, subjectId, tagId)`.
 - ⭕3 **Face Recognition** - Add face recognition (cloud APIs, client-side, or native photos integration).
-- 📐 **Life-Arc Tree vs What and Reflection** - **Decided:** Merge into What as Themes subtree. Four dimensions: Who, What, When, Where.
+- 📐 **Life-Arc Tree vs What and Reflection** - **Decided:** Merge into What as Reflections subtree. Four dimensions: Who, What, When, Where.
 
 ### Question Management
 - ⭕2 **Assigned** - Mark questions "Assigned/Unassigned" based on `usedByCardIds.length > 0`.
@@ -880,7 +894,7 @@ The primary users are the author (admin) creating the content and his family con
 *Sequenced by dependency: what gates what on the path from personal use → mass import → family hosting.*
 
 **Open Questions to resolve before starting:**
-- ✅ **Life-Arc Tree vs What and Reflection** — Decided: merge Reflection into What as Themes subtree. Four dimensions.
+- ✅ **Life-Arc Tree vs What and Reflection** — Decided: merge Reflection into What as Reflections subtree. Four dimensions.
 - ✅ **digiKam Tag Alignment** — Decided: digiKam is source of truth. Blocked until tagging complete.
 - ❓ **Excerpt Display** — Decide before Phase 3 (affects reader view).
 - ❓ **Progressive Children** — Investigate in Phase 0 if causing visible lag.
@@ -891,24 +905,25 @@ The primary users are the author (admin) creating the content and his family con
 - ✅ **Search Index (Typesense)** — Technical. Implemented.
 - ✅ **Typesense Auto-Sync** — Technical. Auto-upsert/delete wired into `cardService`.
 - ✅ **Tag Typeahead** — Tags. Search input filters dimension columns as typed in all tag modals.
-- ⭕1 **Consolidate Reflection** — Tags. Merge Reflection into What as Themes subtree, remove dimension.
-- ⭕1 **N/A Sentinel Tags** — Tags. Root-level N/A per dimension before import.
-- ⭕1 **Orphaned Media** — Media. Clean up existing media before adding 1000+ more.
-- ⭕2 **Remove Legacy Type** — Card Mgmt. Clean up `collection` type before import creates cards with it.
+- ✅ **Consolidate Reflection** — Tags. Reflections under What; `reflection` dimension removed (`npm run tags:consolidate-reflection`).
+- ✅ **N/A Sentinel (`zNA`)** — Tags. Root `zNA` per dimension; seed script before import if missing.
+- ✅ **Orphaned Media** — Media. Deleted 136 orphaned; source files remain for re-import.
+- ✅ **Remove Legacy Type** — Card Mgmt. Removed. Zero cards used it; cleaned from schema + 8 code files.
 
 ### Phase 2 — Admin Productivity
 *After import, you'll edit hundreds of cards. Make bulk authoring viable.*
 
-- ⭕2 **Content Versioning** — Card Mgmt. Safety net before mass editing. Start with "duplicate card" action.
-- ⭕2 **Live Search** — Card Mgmt. Find cards by title as typed.
-- ⭕2 **Excerpt UI** — Card Mgmt. Needed for feed display of imported cards.
-- ⭕2 **Children Picker** — Card Mgmt. Query-driven picker for 1000+ cards.
-- ⭕2 **Authoring Discovery** — Card Mgmt. Filter-based discovery of cards and media when editing.
-- ⭕2 **Post-Import Aggregation** — Media. Bulk add banked media to cards.
-- ⭕2 **Reconcile Integrity** — Media. Fix relationships after import.
-- ⭕2 **Media-Card Flow** — Media. Design flow so they don't get out of sync.
-- ⭕2 **Media Search Index (Typesense)** — Media. Typesense for media at scale (5000–10,000+ images).
-- ⭕2 **Completeness Indicator** — Tags. Dimension coverage badges in admin lists.
+- ✅ **Content Versioning (Phase 1)** — Card Mgmt. "Duplicate Card" action. Next: pre-save snapshots.
+- ✅ **Excerpt UI** — Card Mgmt. Auto-generate toggle with manual override.
+- ✅ **Children Picker (edit UI)** — Card Mgmt. Reorder/remove + Collections link; attach in Collections admin.
+- ⭕2 **Card Linkage** — Card Mgmt. `linkedCardIds` "See Also"; deferred until after import.
+- ✅ **Authoring Discovery (media in edit)** — Card Mgmt. PhotoPicker Library aligned with `/api/media`; in-modal tag filter + optional match card tags.
+- ✅ **Post-Import Aggregation (create card)** — Media. Multi-select → new draft gallery card; opens edit.
+- ⭕2 **Append to existing card gallery** — Media. Add selection to an existing card's gallery (deferred).
+- ✅ **Media–card relationship maintenance** — Assumed: `createCard` / `updateCard` / `removeMediaReferenceFromCard` / delete paths + **Cross-entity sync**; `reconcile:media-cards` for exceptional drift only (not backlog).
+- ✅ **Media Search Index (Typesense)** — Media. Implemented; bulk `npm run sync:typesense:media` (verified).
+- ✅ **Media assigned on unlink** — Media. `removeMediaReferenceFromCard` + Typesense for card and media (see Media Management / Cross-entity sync).
+- ✅ **Admin dimension at a glance** — Tags/Media/Card admin. Four dimension columns (media list) + matching grid chips; direct-only + `+n`; tooltips for lists. (Amber/green badges + typography TBD.)
 
 ### Phase 3 — Reader Experience
 *Prepare for family hosting. Make the app ready for non-admin users.*
@@ -975,3 +990,4 @@ The primary users are the author (admin) creating the content and his family con
 - 🔵 **Multi-Author** — Strategic. Parked.
 - 🔵 **Relationship Tagging** — Tags. Parked.
 - 🔵 **Video** — Media. Parked.
+- 🔵 **Maintenance Management** — Administration. In-app maintenance UI (parked).

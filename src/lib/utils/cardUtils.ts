@@ -1,9 +1,35 @@
 import { Card, CardUpdate } from '@/lib/types/card';
 
-const DIMENSIONS = ['who', 'what', 'when', 'where', 'reflection'] as const;
+const DIMENSIONS = ['who', 'what', 'when', 'where'] as const;
+
+const EXCERPT_MAX_LENGTH = 150;
+
+/** Strips HTML tags and entities, returning plain text. */
+export function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Generates an excerpt from HTML content by stripping tags and truncating at a word boundary. */
+export function generateExcerpt(html: string | null | undefined, maxLength = EXCERPT_MAX_LENGTH): string {
+  if (!html) return '';
+  const plain = stripHtml(html);
+  if (plain.length <= maxLength) return plain;
+  const truncated = plain.slice(0, maxLength);
+  const lastSpace = truncated.lastIndexOf(' ');
+  return (lastSpace > maxLength * 0.6 ? truncated.slice(0, lastSpace) : truncated) + '…';
+}
 
 /**
- * Groups collection cards by dimension (who, what, when, where, reflection).
+ * Groups collection cards by dimension (who, what, when, where).
  * A collection appears in every dimension group it has tags for (Option B).
  * Uncategorized: collections with no tags in any dimension.
  * Within each group, sorted by title A-Z.
@@ -14,7 +40,6 @@ export function groupCollectionsByDimension(cards: Card[]): Record<string, Card[
     what: [],
     when: [],
     where: [],
-    reflection: [],
     uncategorized: [],
   };
 
@@ -23,8 +48,7 @@ export function groupCollectionsByDimension(cards: Card[]): Record<string, Card[
       (card.who?.length ?? 0) > 0 ||
       (card.what?.length ?? 0) > 0 ||
       (card.when?.length ?? 0) > 0 ||
-      (card.where?.length ?? 0) > 0 ||
-      (card.reflection?.length ?? 0) > 0;
+      (card.where?.length ?? 0) > 0;
 
     if (!hasAnyTag) {
       groups.uncategorized.push(card);
@@ -130,7 +154,6 @@ export function dehydrateCardForSave(raw: any): CardUpdate {
     what,
     when,
     where,
-    reflection,
     // Legacy fields to exclude
     inheritedTags,
     tagPathsMap,

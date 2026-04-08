@@ -39,7 +39,6 @@ async function fixTagDimensions() {
       what: 0,
       when: 0,
       where: 0,
-      reflection: 0,
       undefined: 0
     };
 
@@ -206,7 +205,7 @@ function suggestDimension(tag: Tag): string | undefined {
   if (whatPatterns.some(pattern => name.includes(pattern))) return 'what';
   if (whenPatterns.some(pattern => name.includes(pattern))) return 'when';
   if (wherePatterns.some(pattern => name.includes(pattern))) return 'where';
-  if (reflectionPatterns.some(pattern => name.includes(pattern))) return 'reflection';
+  if (reflectionPatterns.some(pattern => name.includes(pattern))) return 'what';
   
   // If no pattern matches, return undefined (user will need to set manually)
   return undefined;

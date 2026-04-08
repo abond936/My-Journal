@@ -25,29 +25,28 @@ async function debugTagDimensions() {
 
     console.log(`✅ Found ${tagsSnapshot.size} tags\n`);
 
-    const dimensionCounts = {
+    const dimensionCounts: Record<string, number> = {
       who: 0,
       what: 0,
       when: 0,
       where: 0,
-      reflection: 0,
-      undefined: 0
+      undefined: 0,
     };
 
-    const tagsByDimension = {
-      who: [] as string[],
-      what: [] as string[],
-      when: [] as string[],
-      where: [] as string[],
-      reflection: [] as string[],
-      undefined: [] as string[]
+    const tagsByDimension: Record<string, string[]> = {
+      who: [],
+      what: [],
+      when: [],
+      where: [],
+      undefined: [],
     };
 
     for (const doc of tagsSnapshot.docs) {
       const tag = doc.data();
-      const dimension = tag.dimension || 'undefined';
-      
-      dimensionCounts[dimension]++;
+      const dimension = (tag.dimension as string) || 'undefined';
+
+      dimensionCounts[dimension] = (dimensionCounts[dimension] ?? 0) + 1;
+      if (!tagsByDimension[dimension]) tagsByDimension[dimension] = [];
       tagsByDimension[dimension].push(`${tag.name} (${doc.id})`);
     }
 

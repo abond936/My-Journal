@@ -15,7 +15,7 @@ interface BaseContent {
 
 interface TagContent extends BaseContent {
   type: 'tag';
-  dimension?: 'who' | 'what' | 'when' | 'where' | 'reflection';
+  dimension?: 'who' | 'what' | 'when' | 'where';
   entryCount?: number;
   albumCount?: number;
   parentId?: string;

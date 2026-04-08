@@ -1,4 +1,4 @@
-export type TagDimension = 'who' | 'what' | 'when' | 'where' | 'reflection';
+export type TagDimension = 'who' | 'what' | 'when' | 'where';
 
 /**
  * How many tag levels under each dimension header stay expanded initially.

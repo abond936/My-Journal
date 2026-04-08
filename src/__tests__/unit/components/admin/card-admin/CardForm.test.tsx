@@ -78,7 +78,6 @@ const mockCard: Card = {
   what: [],
   when: [],
   where: [],
-  reflection: [],
   childrenIds: [],
   filterTags: {},
   coverImageId: null,

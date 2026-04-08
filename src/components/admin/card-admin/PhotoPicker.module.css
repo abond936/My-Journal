@@ -312,6 +312,114 @@
   background-color: var(--layout-background1-color);
 }
 
+.libraryTagSection {
+  padding: 0.65rem 1rem;
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  background-color: var(--layout-background2-color);
+  flex-shrink: 0;
+  max-height: min(38vh, 320px);
+  overflow-y: auto;
+}
+
+.libraryTagSectionLabel {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text2-color);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin: 0 0 0.25rem;
+}
+
+.libraryTagSectionHint {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text2-color);
+  line-height: 1.35;
+}
+
+.libraryMacroTagSelector {
+  margin-top: 0;
+}
+
+.libraryTagSectionMatchRow {
+  margin-top: 0.5rem;
+}
+
+.libraryFilters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem 0.75rem;
+  padding: 0.65rem 1rem;
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  background-color: var(--layout-background2-color);
+  flex-shrink: 0;
+}
+
+.libraryFilterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.libraryFilterGroup label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text2-color);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.libraryFilterSelect {
+  padding: 0.35rem 0.5rem;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  background: var(--input-background-color);
+  color: var(--text1-color);
+  max-width: 140px;
+}
+
+.libraryMatchTags {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  color: var(--text1-color);
+  cursor: pointer;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.libraryMatchTags input {
+  cursor: pointer;
+}
+
+.libraryClearFilters {
+  margin-left: auto;
+  padding: 0.35rem 0.65rem;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: 4px;
+  background: var(--layout-background1-color);
+  color: var(--text1-color);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.libraryClearFilters:hover {
+  background: var(--button-outline-background-color-hover);
+}
+
+.libraryHint {
+  margin: 0;
+  padding: 0.35rem 1rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text2-color);
+  line-height: 1.35;
+  flex-shrink: 0;
+}
+
 .libraryToolbar {
   display: flex;
   gap: 0.5rem;

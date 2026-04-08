@@ -79,7 +79,6 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     { id: 'what', label: 'What' },
     { id: 'when', label: 'When' },
     { id: 'where', label: 'Where' },
-    { id: 'reflection', label: 'Reflection' },
   ] as const;
 
   const dimensionTreeForTab =
@@ -97,7 +96,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     [collectionCards]
   );
 
-  const DIMENSION_GROUP_ORDER = ['who', 'what', 'when', 'where', 'reflection', 'uncategorized'] as const;
+  const DIMENSION_GROUP_ORDER = ['who', 'what', 'when', 'where', 'uncategorized'] as const;
 
   const filteredTagTree = useMemo(
     () => filterTreesBySearch(dimensionTreeForTab, tagSearch),

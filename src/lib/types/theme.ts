@@ -241,7 +241,6 @@ export interface ComponentTokens {
       what: string;
       when: string;
       where: string;
-      reflection: string;
     };
   };
   input: {

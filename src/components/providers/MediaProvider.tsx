@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { Media } from '@/lib/types/photo';
 import { useCardContext } from '@/components/providers/CardProvider';
@@ -19,6 +19,11 @@ interface MediaListResponse {
     total: number | null;
     totalPages: number | null;
     seekMode?: boolean;
+    /** Present when listing uses Typesense (`GET /api/media`). */
+    engine?: 'typesense' | 'firestore';
+    listPage?: number;
+    nextListPage?: number | null;
+    prevListPage?: number | null;
     hasNext: boolean;
     hasPrev: boolean;
     nextCursor?: string | null;
@@ -104,16 +109,20 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const [cursorStack, setCursorStack] = useState<(string | null)[]>([]);
   const [filters, setFilters] = useState<MediaFilters>(defaultFilters);
   const [selectedMediaIds, setSelectedMediaIds] = useState<string[]>([]);
+  const lastMediaEngineRef = useRef<'typesense' | 'firestore' | null>(null);
 
   const buildQueryString = useCallback((
     mediaFilters: MediaFilters,
     dimMap: ReturnType<typeof groupSelectedTagIdsByDimension>,
-    opts?: { cursor?: string; prevCursor?: string }
+    opts?: { cursor?: string; prevCursor?: string; listPage?: number }
   ) => {
     const params = new URLSearchParams();
     params.append('limit', '50');
     if (opts?.cursor) params.append('cursor', opts.cursor);
     if (opts?.prevCursor) params.append('prevCursor', opts.prevCursor);
+    if (opts?.listPage !== undefined && opts.listPage > 1) {
+      params.set('listPage', String(opts.listPage));
+    }
 
     if (mediaFilters.status !== 'all') params.append('status', mediaFilters.status);
     if (mediaFilters.source !== 'all') params.append('source', mediaFilters.source);
@@ -136,10 +145,13 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         updatedFilters.assignment === 'unassigned' || updatedFilters.assignment === 'assigned';
       const tagSeek = dimensionalTagMapHasFilters(dimensionalTagMap);
       const useSeekPagination = assignmentSeek || tagSeek;
-      let opts: { cursor?: string; prevCursor?: string } | undefined;
+      const typesensePaging = lastMediaEngineRef.current === 'typesense';
+      let opts: { cursor?: string; prevCursor?: string; listPage?: number } | undefined;
 
       if (page === 1 || newFilters) {
         opts = undefined;
+      } else if (typesensePaging && page > 1) {
+        opts = { listPage: page };
       } else if (useSeekPagination) {
         if (page > currentPage && nextCursor) {
           opts = { cursor: nextCursor };
@@ -157,10 +169,24 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       const queryString = buildQueryString(updatedFilters, dimensionalTagMap, opts);
       const response = await fetch(`/api/media?${queryString}`);
       if (!response.ok) {
-        throw new Error(`Failed to fetch media: ${response.statusText}`);
+        const errBody = await response.json().catch(() => ({})) as {
+          message?: string;
+          code?: string;
+        };
+        if (response.status === 503 && errBody.code === 'SEARCH_UNAVAILABLE') {
+          throw new Error(
+            typeof errBody.message === 'string'
+              ? errBody.message
+              : 'Media search requires Typesense. Clear search or configure TYPESENSE_* env vars.'
+          );
+        }
+        throw new Error(
+          typeof errBody.message === 'string' ? errBody.message : `Failed to fetch media: ${response.statusText}`
+        );
       }
 
       const data: MediaListResponse = await response.json();
+      lastMediaEngineRef.current = data.pagination.engine ?? 'firestore';
       setMedia(data.media);
       setPagination({ ...data.pagination, page });
       setCurrentPage(page);
@@ -304,6 +330,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const clearFilters = useCallback(() => {
+    lastMediaEngineRef.current = null;
     setFilters(defaultFilters);
     setCursorStack([]);
     setNextCursor(null);

@@ -34,6 +34,53 @@
   font-size: var(--font-size-sm);
 }
 
+.tagPrimarySection {
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--layout-background2-color);
+  border-radius: var(--border-radius-md);
+  border: var(--border-width-thin) solid var(--border1-color);
+}
+
+.tagPrimaryLabel {
+  margin: 0 0 var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text2-color);
+}
+
+.tagPrimaryText {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text1-color);
+  line-height: var(--line-height-relaxed);
+}
+
+.searchRow {
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--layout-background2-color);
+  border-radius: var(--border-radius-md);
+}
+
+.searchRow .filterGroup {
+  flex: 1;
+  max-width: 100%;
+}
+
+.searchInputWide {
+  padding: var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+  background: var(--input-background-color);
+  color: var(--text1-color);
+  width: 100%;
+  max-width: 560px;
+}
+
 .stickyControls {
   /* Inner section inside the stickyTop wrapper. */
   position: static;

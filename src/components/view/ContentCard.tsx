@@ -27,7 +27,7 @@ interface BaseCardProps {
 
 interface TagCardProps extends BaseCardProps {
   type: 'tag';
-  dimension?: 'who' | 'what' | 'when' | 'where' | 'reflection';
+  dimension?: 'who' | 'what' | 'when' | 'where';
   entryCount?: number;
   albumCount?: number;
   parentId?: string;
@@ -38,7 +38,7 @@ interface EntryCardProps extends BaseCardProps {
   type: 'entry';
   date?: string;
   tags?: string[];
-  cardType?: 'story' | 'qa' | 'quote' | 'callout' | 'gallery' | 'collection';
+  cardType?: 'story' | 'qa' | 'quote' | 'callout' | 'gallery';
   galleryMedia?: Media[];
 }
 

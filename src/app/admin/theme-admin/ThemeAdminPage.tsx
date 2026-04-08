@@ -1256,7 +1256,6 @@ export default function ThemeAdminPage() {
                 <ColorReferenceInput label="What BG" value={themeData.components?.tag?.backgrounds?.what || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'tag', 'backgrounds', 'what', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
                 <ColorReferenceInput label="When BG" value={themeData.components?.tag?.backgrounds?.when || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'tag', 'backgrounds', 'when', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
                 <ColorReferenceInput label="Where BG" value={themeData.components?.tag?.backgrounds?.where || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'tag', 'backgrounds', 'where', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <ColorReferenceInput label="Reflection BG" value={themeData.components?.tag?.backgrounds?.reflection || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'tag', 'backgrounds', 'reflection', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
               </div>
             </div>
 

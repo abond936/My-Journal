@@ -5,6 +5,7 @@ import { resolve } from 'path';
 dotenv.config({ path: resolve(process.cwd(), '.env') });
 
 import { getAdminApp } from '@/lib/config/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
 
 const adminApp = getAdminApp();
 const firestore = adminApp.firestore();
@@ -64,7 +65,7 @@ async function resetDimensionalTags() {
         what: [],
         when: [], // This will be recalculated when tags are updated
         where: [],
-        reflection: [],
+        reflection: FieldValue.delete(),
         updatedAt: Date.now()
       });
       updateCount++;

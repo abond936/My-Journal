@@ -141,16 +141,6 @@ const CalloutCardContent: React.FC<{ card: Card; displayMode: string }> = ({ car
   </div>
 );
 
-const CollectionCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => (
-  <div className={styles.content}>
-    <h3 className={styles.title}>{card.title}</h3>
-    {card.childrenIds && card.childrenIds.length > 0 && (
-      <div className={styles.collectionCount}>{card.childrenIds.length} items</div>
-    )}
-  </div>
-);
-
-
 // --- Main V2 Component ---
 
 interface V2ContentCardProps {
@@ -164,7 +154,7 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({ card, size = 'medium', on
   
   // Determine if card should be interactive based on display mode
   const isInteractive = displayMode === 'navigate' && 
-    (card.type === 'story' || card.type === 'collection' || card.type === 'gallery');
+    (card.type === 'story' || card.type === 'gallery');
   
   const cardTypeClass = styles[card.type] || styles.story;
   const sizeClass = styles[size] || styles.medium;
@@ -173,7 +163,6 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({ card, size = 'medium', on
 
   const renderContent = () => {
     switch (card.type) {
-      case 'collection':
       case 'gallery':
         return <GalleryCardContent card={card} displayMode={displayMode} />;
       case 'quote':

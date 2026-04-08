@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
         console.error('API Error creating tag:', error);
         
         // Handle specific error for duplicate names
-        if (error instanceof Error && error.message === 'Tag with this name already exists') {
+        if (error instanceof Error && error.message.includes('Tag with this name already exists')) {
             return new NextResponse(JSON.stringify({ error: 'Tag with this name already exists' }), {
                 status: 409,
                 headers: { 'Content-Type': 'application/json' },

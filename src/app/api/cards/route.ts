@@ -42,7 +42,7 @@ export const dynamic = 'force-dynamic';
  *         name: type
  *         schema:
  *           type: string
- *           enum: [story, qa, quote, callout, gallery, collection, all]
+ *           enum: [story, qa, quote, callout, gallery, all]
  *         description: Filter cards by type.
  *       - in: query
  *         name: q
@@ -76,20 +76,17 @@ export async function GET(request: Request) {
       what?: string[];
       when?: string[];
       where?: string[];
-      reflection?: string[];
     } = {};
     
     const whoTags = searchParams.get('who')?.split(',').filter(tag => tag.trim());
     const whatTags = searchParams.get('what')?.split(',').filter(tag => tag.trim());
     const whenTags = searchParams.get('when')?.split(',').filter(tag => tag.trim());
     const whereTags = searchParams.get('where')?.split(',').filter(tag => tag.trim());
-    const reflectionTags = searchParams.get('reflection')?.split(',').filter(tag => tag.trim());
     
     if (whoTags && whoTags.length > 0) dimensionalTags.who = whoTags;
     if (whatTags && whatTags.length > 0) dimensionalTags.what = whatTags;
     if (whenTags && whenTags.length > 0) dimensionalTags.when = whenTags;
     if (whereTags && whereTags.length > 0) dimensionalTags.where = whereTags;
-    if (reflectionTags && reflectionTags.length > 0) dimensionalTags.reflection = reflectionTags;
 
     let status = searchParams.get('status') as Card['status'] | 'all' | null;
     if (!status) {

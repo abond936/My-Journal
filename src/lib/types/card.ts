@@ -18,8 +18,8 @@ const galleryMediaItemSchema = z.object({
  * A card is the primary content unit (story, gallery, Q&A, etc.).
  *
  * **Parent / child (structural “collection”):** Any card may have `childrenIds`. A card with
- * at least one child id is a structural collection parent. `type: 'collection'` is optional
- * legacy/presentation; listing and curated APIs key off `childrenIds` / `curatedRoot`, not type.
+ * at least one child id is a structural collection parent. Listing and curated APIs key off
+ * `childrenIds` / `curatedRoot`, not type.
  *
  * **`curatedRoot`:** Top-level slot in Curated browsing when true, even with zero children.
  * Set from Admin → Collections (`/admin/collections`) via tree-root drop—not from the tag sidebar.
@@ -32,13 +32,14 @@ export const cardSchema = z.object({
   title: z.string().default(''),
   title_lowercase: z.string().default(''),
   subtitle: z.string().optional().nullable(),
-  excerpt: z.string().optional().nullable(),     //default to first 100 characters
+  excerpt: z.string().optional().nullable(),
+  excerptAuto: z.boolean().optional(),
   
   // The content field stores HTML with embedded media references.
   content: z.string().default(''),
   
-  // Card type: drives feed/view rendering. `collection` is optional legacy; any type may have childrenIds.
-  type: z.enum(['story', 'qa', 'quote', 'callout', 'gallery', 'collection']).default('story'),
+  // Card type: drives feed/view rendering. Any type may have childrenIds for structural collections.
+  type: z.enum(['story', 'qa', 'quote', 'callout', 'gallery']).default('story'),
   status: z.enum(['draft', 'published']).default('draft'),
   displayMode: z.enum(['inline', 'navigate', 'static']).default('navigate'),
   
@@ -55,12 +56,11 @@ export const cardSchema = z.object({
   // An array of objects defining the gallery's content and structure.
   galleryMedia: z.array(galleryMediaItemSchema).optional(),
   
-  // The 5 tag dimensions
+  // Dimensional tag ids (derived from assigned tags + ancestors)
   who: z.array(z.string()).optional(),
   what: z.array(z.string()).optional(),
   when: z.array(z.string()).optional(),
   where: z.array(z.string()).optional(),
-  reflection: z.array(z.string()).optional(),
 
   // Direct tag assignments and optimized query structure
   tags: z.array(z.string()).optional(),
@@ -103,7 +103,6 @@ export const cardUpdateValidationSchema = cardSchema.partial().omit({
   what: true,
   when: true,
   where: true,
-  reflection: true,
   title_lowercase: true, // Server-generated
 });
 

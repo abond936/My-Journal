@@ -34,7 +34,6 @@ async function debugDimensionalFiltering() {
       console.log(`   What: [${(card.what || []).join(', ')}]`);
       console.log(`   When: [${(card.when || []).join(', ')}]`);
       console.log(`   Where: [${(card.where || []).join(', ')}]`);
-      console.log(`   Reflection: [${(card.reflection || []).join(', ')}]`);
       console.log('');
     }
 
@@ -53,7 +52,6 @@ async function debugDimensionalFiltering() {
     console.log(`  What: [${organized.what.join(', ')}]`);
     console.log(`  When: [${organized.when.join(', ')}]`);
     console.log(`  Where: [${organized.where.join(', ')}]`);
-    console.log(`  Reflection: [${organized.reflection.join(', ')}]`);
     console.log('');
 
     // 3. Test a specific dimensional filter query

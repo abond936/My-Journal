@@ -6,79 +6,26 @@
     background-color: var(--layout-background2-color);
 }
 
-.searchSection {
-    display: flex;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
+.hint {
+    font-size: var(--font-size-sm);
+    color: var(--text2-color);
+    margin: 0 0 var(--spacing-md) 0;
+    line-height: 1.5;
 }
 
-.searchInput {
-    flex-grow: 1;
-    padding: var(--spacing-sm);
-    border-radius: var(--border-radius-sm);
-    border: var(--border-width-thin) solid var(--border1-color);
-    background-color: var(--input-background-color);
-    color: var(--text1-color);
+.collectionsLink {
+    color: var(--color3);
+    font-weight: var(--font-weight-medium);
+    text-decoration: underline;
+    text-underline-offset: 2px;
 }
 
-.searchInput:focus {
-    outline: none;
-    border-color: var(--color3);
-    box-shadow: 0 0 0 2px hsla(var(--h3), var(--s3), var(--l3), 0.1);
-}
-
-.searchButton {
-    padding: var(--spacing-sm) var(--spacing-md);
-    background-color: var(--button-solid-background-color);
-    color: var(--button-solid-text-color);
-    border: none;
-    border-radius: var(--border-radius-sm);
-    cursor: pointer;
-}
-
-.searchResults {
-    margin-top: var(--spacing-md);
-    border-top: var(--border-width-thin) solid var(--border1-color);
-    padding-top: var(--spacing-md);
-}
-
-.searchResults ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.resultItem {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--spacing-sm);
-    border-radius: var(--border-radius-sm);
-    background-color: var(--layout-background1-color);
-    margin-bottom: var(--spacing-sm);
-}
-
-.resultItem:last-child {
-    margin-bottom: 0;
-}
-
-.addButton {
-    padding: var(--spacing-xs) var(--spacing-sm);
-    background-color: var(--state-success-background-color);
-    color: var(--state-success-text-color);
-    border: none;
-    border-radius: var(--border-radius-sm);
-    cursor: pointer;
-    font-size: var(--font-size-xs);
-    transition: background-color var(--transition-short);
-}
-
-.addButton:hover {
-    background-color: var(--state-success-background-color-hover);
+.collectionsLink:hover {
+    color: hsl(var(--h3), var(--s3), 35%);
 }
 
 .childList {
-    margin-top: var(--spacing-xl);
+    margin-top: var(--spacing-md);
 }
 
 .childList ul {
@@ -95,7 +42,6 @@
     background-color: var(--layout-background1-color);
     border-radius: var(--border-radius-sm);
     margin-bottom: var(--spacing-sm);
-    cursor: grab;
     transition: background-color var(--transition-short);
 }
 
@@ -107,10 +53,28 @@
     background-color: var(--layout-background2-color);
 }
 
+.childTitleRow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--spacing-xs);
+    min-width: 0;
+}
+
+.childEditLink {
+    color: var(--text1-color);
+    font-weight: var(--font-weight-medium);
+    text-decoration: none;
+}
+
+.childEditLink:hover {
+    text-decoration: underline;
+    color: var(--color3);
+}
+
 .childInfo {
     font-size: var(--font-size-xs);
     color: var(--text2-color);
-    margin-left: var(--spacing-sm);
 }
 
 .removeButton {
@@ -122,6 +86,7 @@
     cursor: pointer;
     font-size: var(--font-size-xs);
     transition: background-color var(--transition-short);
+    flex-shrink: 0;
 }
 
 .removeButton:hover {
@@ -138,7 +103,7 @@
     display: flex;
     align-items: stretch;
     gap: var(--spacing-xs);
-    touch-action: none; /* For better mobile drag-and-drop experience */
+    touch-action: none;
 }
 
 .sortableItem:active {
@@ -168,9 +133,9 @@
 
 .sortableContent {
     flex: 1;
+    min-width: 0;
 }
 
-/* Loading state */
 .childList p {
     color: var(--text2-color);
     font-size: var(--font-size-xs);
@@ -179,4 +144,4 @@
     background-color: var(--layout-background1-color);
     border-radius: var(--border-radius-sm);
     margin: 0;
-} 
+}

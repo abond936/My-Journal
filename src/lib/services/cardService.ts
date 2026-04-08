@@ -11,11 +11,15 @@ import {
   deleteFromStorageWithRetry,
   markStorageForLaterDeletion,
 } from './images/imageImportService';
-import { extractMediaFromContent, stripContentImageSrc, hydrateContentImageSrc, removeMediaFromContent } from '@/lib/utils/cardUtils';
+import { extractMediaFromContent, stripContentImageSrc, hydrateContentImageSrc, removeMediaFromContent, generateExcerpt } from '@/lib/utils/cardUtils';
 import { getPublicStorageUrl } from '@/lib/utils/storageUrl';
 import { Media } from '@/lib/types/photo';
 import { unlinkCardFromAllQuestions } from '@/lib/services/questionService';
 import { syncCardToTypesense, removeCardFromTypesense } from '@/lib/services/typesenseService';
+import {
+  removeMediaFromTypesense,
+  syncMediaToTypesenseById,
+} from '@/lib/services/typesenseMediaService';
 
 /**
  * Retry utility with exponential backoff for critical operations.
@@ -208,6 +212,12 @@ export async function removeMediaReferenceFromCard(cardId: string, mediaId: stri
   if (!snap.exists) return;
   const card = snap.data() as Card;
 
+  const structuredRefs = getMediaIdsFromCard(card).has(mediaId);
+  const inBodyHtml = extractMediaFromContent(card.content ?? '').includes(mediaId);
+  if (!structuredRefs && !inBodyHtml) {
+    return;
+  }
+
   if (card.coverImageId === mediaId) {
     await docRef.update({
       coverImageId: FieldValue.delete(),
@@ -229,6 +239,21 @@ export async function removeMediaReferenceFromCard(cardId: string, mediaId: stri
       contentMedia: newContentMedia,
       updatedAt: Date.now(),
     });
+  }
+
+  const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
+  const mediaSnap = await mediaRef.get();
+  if (mediaSnap.exists) {
+    await mediaRef.update({
+      referencedByCardIds: FieldValue.arrayRemove(cardId),
+      updatedAt: Date.now(),
+    });
+    void syncMediaToTypesenseById(mediaId);
+  }
+
+  const updatedCard = await getCardById(cardId);
+  if (updatedCard) {
+    void syncCardToTypesense(updatedCard);
   }
 }
 
@@ -411,12 +436,15 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
 
       const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord({ tags: selectedTags });
 
+      const autoExcerpt = validatedData.excerptAuto ? generateExcerpt(cleanedContent) : undefined;
+
       const newCard: Card = {
         ...validatedData,
         docId: docRef.id,
         status: validatedData.status ?? 'draft',
         title_lowercase: validatedData.title?.toLowerCase() || '',
         content: cleanedContent,
+        ...(validatedData.excerptAuto ? { excerpt: autoExcerpt || null } : {}),
         tags: selectedTags,
         childrenIds: normalizedChildren,
         contentMedia: contentMediaIds,
@@ -426,7 +454,6 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
         what: dimensionalTags.what || [],
         when: dimensionalTags.when || [],
         where: dimensionalTags.where || [],
-        reflection: dimensionalTags.reflection || [],
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
@@ -482,6 +509,10 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
 
   void syncCardToTypesense(finalCard);
 
+  for (const mediaId of getMediaIdsFromCard(finalCard)) {
+    void syncMediaToTypesenseById(mediaId);
+  }
+
   return finalCard;
 }
 
@@ -494,6 +525,12 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
 export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'docId'>>): Promise<Card> {
     
     const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
+
+    const preSnap = await docRef.get();
+    if (!preSnap.exists) {
+      throw new Error(`Card with ID ${cardId} not found.`);
+    }
+    const preMediaIds = getMediaIdsFromCard({ ...preSnap.data(), docId: preSnap.id } as Card);
     
     let isClearingCover = false;
     return withRetry(async () => {
@@ -518,6 +555,14 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       const sanitizedContent = cardData.content ? stripContentImageSrc(cardData.content) : cardData.content;
       const contentMediaIds = sanitizedContent ? extractMediaFromContent(sanitizedContent) : [];
       
+      // Auto-excerpt: recompute when excerptAuto is on and content changed
+      const effectiveContent = sanitizedContent ?? existingData.content;
+      const shouldAutoExcerpt = cardData.excerptAuto === true
+        || (cardData.excerptAuto === undefined && existingData.excerptAuto === true);
+      const autoExcerptFields = (shouldAutoExcerpt && 'content' in cardData)
+        ? { excerpt: generateExcerpt(effectiveContent) || null }
+        : {};
+
       // Update contract: Fields present in payload overwrite stored values.
       // null = clear, omit = leave unchanged. Preserve contentMedia when content is omitted (e.g. bulk tag update).
       const updatePayload: Partial<Card> = {
@@ -525,6 +570,7 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         ...('content' in cardData ? { content: sanitizedContent, contentMedia: contentMediaIds } : {}),
         ...('coverImageId' in cardData ? { coverImageId: cardData.coverImageId ?? null } : {}),
         ...('galleryMedia' in cardData ? { galleryMedia: dehydratedGalleryMedia } : {}),
+        ...autoExcerptFields,
         updatedAt: Date.now(),
       };
 
@@ -622,7 +668,6 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       cleanedUpdate.what = dimensionalTags.what || [];
       cleanedUpdate.when = dimensionalTags.when || [];
       cleanedUpdate.where = dimensionalTags.where || [];
-      cleanedUpdate.reflection = dimensionalTags.reflection || [];
 
       for (const [parentId, updatedChildren] of parentDetachUpdates.entries()) {
         const parentRef = firestore.collection(CARDS_COLLECTION).doc(parentId);
@@ -708,6 +753,12 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       }
 
       void syncCardToTypesense(updatedCard);
+
+      const postMediaIds = getMediaIdsFromCard(updatedCard);
+      const syncMediaIds = new Set([...preMediaIds, ...postMediaIds]);
+      for (const mediaId of syncMediaIds) {
+        void syncMediaToTypesenseById(mediaId);
+      }
 
       return updatedCard;
   });
@@ -910,12 +961,40 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
           what: dimensionalTags.what || [],
           when: dimensionalTags.when || [],
           where: dimensionalTags.where || [],
-          reflection: dimensionalTags.reflection || [],
           updatedAt: Date.now(),
         });
       }
     });
   }
+}
+
+/**
+ * Creates a duplicate of an existing card as a draft.
+ * Copies content, tags, media references, and gallery but not children or curatedRoot.
+ * The new card goes through full createCard() to get proper tag counts, Typesense sync, etc.
+ */
+export async function duplicateCard(sourceCardId: string): Promise<Card> {
+  const source = await getCardById(sourceCardId);
+  if (!source) {
+    throw new Error(`Card with ID ${sourceCardId} not found.`);
+  }
+
+  const newCardData: Partial<Omit<Card, 'docId' | 'createdAt' | 'updatedAt' | 'filterTags'>> = {
+    title: `Copy of ${source.title}`,
+    subtitle: source.subtitle,
+    excerpt: source.excerpt,
+    content: source.content,
+    type: source.type,
+    status: 'draft',
+    displayMode: source.displayMode,
+    coverImageId: source.coverImageId,
+    coverImageFocalPoint: source.coverImageFocalPoint,
+    galleryMedia: source.galleryMedia?.map(({ media, ...rest }) => rest) ?? [],
+    contentMedia: source.contentMedia,
+    tags: source.tags ?? [],
+  };
+
+  return createCard(newCardData);
 }
 
 /**
@@ -1004,6 +1083,9 @@ export async function deleteCard(cardId: string): Promise<void> {
     }).then(async () => {
         await unlinkCardFromAllQuestions(cardId);
         void removeCardFromTypesense(cardId);
+        for (const mediaId of mediaToDelete) {
+          void removeMediaFromTypesense(mediaId);
+        }
 
         // Post-transaction: Try immediate storage cleanup for the deleted media
         // This is outside the transaction, so failures won't affect database integrity
@@ -1114,7 +1196,6 @@ export async function getCards(options: {
     what?: string[];
     when?: string[];
     where?: string[];
-    reflection?: string[];
   };
   childrenIds_contains?: string;
   limit?: number;
@@ -1170,7 +1251,7 @@ export async function getCards(options: {
 
   // Filter by dimensional tags
   if (dimensionalTags) {
-    const { who, what, when, where, reflection } = dimensionalTags;
+    const { who, what, when, where } = dimensionalTags;
     
     // Apply dimensional filtering with intra-dimension OR logic and inter-dimension AND logic
     if (who && who.length > 0) {
@@ -1184,9 +1265,6 @@ export async function getCards(options: {
     }
     if (where && where.length > 0) {
       query = query.where('where', 'array-contains-any', where);
-    }
-    if (reflection && reflection.length > 0) {
-      query = query.where('reflection', 'array-contains-any', reflection);
     }
   }
 

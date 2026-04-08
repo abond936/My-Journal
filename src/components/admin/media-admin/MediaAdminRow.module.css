@@ -282,36 +282,6 @@
   max-width: 100%;
 }
 
-.tagSummary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-xs);
-}
-
-.tagChip {
-  display: inline-flex;
-  align-items: center;
-  padding: 1px var(--spacing-xs);
-  border-radius: var(--border-radius-sm);
-  border: var(--border-width-thin) solid var(--border1-color);
-  background: var(--layout-background2-color);
-  color: var(--text1-color);
-  font-size: var(--font-size-xs);
-  white-space: nowrap;
-}
-
-.tagMore {
-  font-size: var(--font-size-xs);
-  color: var(--text2-color);
-  align-self: center;
-}
-
-.noTags {
-  font-size: var(--font-size-xs);
-  color: var(--text2-color);
-  font-style: italic;
-}
-
 /* Actions */
 .actions {
   display: flex;

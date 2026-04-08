@@ -34,7 +34,7 @@ interface BackfillResult {
 }
 
 /**
- * Backfills dimensional tag arrays (who, what, when, where, reflection) and filterTags for all existing cards.
+ * Backfills dimensional tag arrays (who, what, when, where) and filterTags for all existing cards.
  * This script takes the existing flat tags array and organizes it by dimension, and calculates inherited tags.
  */
 export async function backfillDimensionalTags(options: BackfillOptions = {}): Promise<BackfillResult> {
@@ -106,7 +106,6 @@ export async function backfillDimensionalTags(options: BackfillOptions = {}): Pr
               card.what && card.what.length > 0 && 
               card.when && card.when.length > 0 && 
               card.where && card.where.length > 0 && 
-              card.reflection && card.reflection.length > 0 &&
               card.filterTags && Object.keys(card.filterTags).length > 0) {
             result.skippedCards++;
             return { cardId: card.docId, status: 'skipped', reason: 'Already has dimensional arrays and filterTags populated' };
@@ -138,7 +137,6 @@ export async function backfillDimensionalTags(options: BackfillOptions = {}): Pr
             console.log(`     What: [${dimensionalTags.what.join(', ')}]`);
             console.log(`     When: [${dimensionalTags.when.join(', ')}]`);
             console.log(`     Where: [${dimensionalTags.where.join(', ')}]`);
-            console.log(`     Reflection: [${dimensionalTags.reflection.join(', ')}]`);
             result.updatedCards++;
             return { cardId: card.docId, status: 'would_update', dimensionalTags, filterTags };
           }
@@ -151,7 +149,6 @@ export async function backfillDimensionalTags(options: BackfillOptions = {}): Pr
             what: dimensionalTags.what || [],
             when: dimensionalTags.when || [],
             where: dimensionalTags.where || [],
-            reflection: dimensionalTags.reflection || [],
             updatedAt: Date.now()
           });
 
@@ -207,8 +204,7 @@ export async function backfillDimensionalTags(options: BackfillOptions = {}): Pr
               typeof m.hasWho === 'boolean' ||
               typeof m.hasWhat === 'boolean' ||
               typeof m.hasWhen === 'boolean' ||
-              typeof m.hasWhere === 'boolean' ||
-              typeof m.hasReflection === 'boolean';
+              typeof m.hasWhere === 'boolean';
             if (hasAnyPresenceField) {
               result.skippedMedia++;
               return;
@@ -220,7 +216,6 @@ export async function backfillDimensionalTags(options: BackfillOptions = {}): Pr
                 hasWhat: false,
                 hasWhen: false,
                 hasWhere: false,
-                hasReflection: false,
                 updatedAt: Date.now(),
               });
             }
@@ -236,13 +231,11 @@ export async function backfillDimensionalTags(options: BackfillOptions = {}): Pr
             what: dimensionalTags.what || [],
             when: dimensionalTags.when || [],
             where: dimensionalTags.where || [],
-            reflection: dimensionalTags.reflection || [],
             hasTags: directTags.length > 0,
             hasWho: (dimensionalTags.who || []).length > 0,
             hasWhat: (dimensionalTags.what || []).length > 0,
             hasWhen: (dimensionalTags.when || []).length > 0,
             hasWhere: (dimensionalTags.where || []).length > 0,
-            hasReflection: (dimensionalTags.reflection || []).length > 0,
             updatedAt: Date.now(),
           };
 

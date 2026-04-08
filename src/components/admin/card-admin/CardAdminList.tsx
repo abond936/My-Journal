@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import JournalImage from '@/components/common/JournalImage';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/lib/types/card';
-import { Tag } from '@/lib/types/tag';
+import type { Tag } from '@/lib/types/tag';
 import styles from '@/app/admin/card-admin/card-admin.module.css';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import EditableTitleCell from './EditableTitleCell';
@@ -29,7 +29,6 @@ const DEFAULT_COLUMN_WIDTHS = {
   what: 150,
   when: 150,
   where: 150,
-  reflection: 150,
   actions: 120
 };
 
@@ -43,14 +42,6 @@ interface CardAdminListProps {
   onUpdateCard: (cardId: string, updateData: Partial<Card>) => Promise<void>;
   onDeleteCard: (cardId: string) => Promise<void>;
 }
-
-// Helper function to get tags for a dimension
-const getDimensionTags = (card: Card, dimension: 'who' | 'what' | 'when' | 'where' | 'reflection', allTags: Tag[]) => {
-  const dimensionTagIds = card[dimension] || [];
-  return dimensionTagIds
-    .map(id => allTags.find(t => t.docId === id))
-    .filter((tag): tag is Tag => tag !== undefined);
-};
 
 export default function CardAdminList({
   cards,
@@ -132,9 +123,6 @@ export default function CardAdminList({
             <ResizableHeader width={columnWidths.where} onResize={(w) => handleColumnResize('where', w)}>
               Where
             </ResizableHeader>
-            <ResizableHeader width={columnWidths.reflection} onResize={(w) => handleColumnResize('reflection', w)}>
-              Reflection
-            </ResizableHeader>
             <ResizableHeader width={columnWidths.actions} onResize={(w) => handleColumnResize('actions', w)}>
               Actions
             </ResizableHeader>
@@ -198,9 +186,6 @@ export default function CardAdminList({
                       </td>
                       <td style={{ width: columnWidths.where }}>
                         <div className={styles.tags}>{render(core.where)}</div>
-                      </td>
-                      <td style={{ width: columnWidths.reflection }}>
-                        <div className={styles.tags}>{render(core.reflection)}</div>
                       </td>
                     </>
                   );

@@ -36,9 +36,11 @@ interface GalleryManagerProps {
   onUpdate: (newGallery: HydratedGalleryMediaItem[]) => void;
   error?: string;
   className?: string;
+  /** Narrow Library tab in photo picker to media matching these card tags. */
+  filterTagIds?: string[];
 }
 
-export default function GalleryManager({ galleryMedia, onUpdate, error, className }: GalleryManagerProps) {
+export default function GalleryManager({ galleryMedia, onUpdate, error, className, filterTagIds }: GalleryManagerProps) {
   const [editingItem, setEditingItem] = useState<HydratedGalleryMediaItem | null>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
@@ -165,6 +167,7 @@ export default function GalleryManager({ galleryMedia, onUpdate, error, classNam
           onMultiSelect={handleMultiPhotoSelect}
           onClose={() => setIsPickerOpen(false)}
           initialMode="multi"
+          filterTagIds={filterTagIds}
         />
       )}
     </div>

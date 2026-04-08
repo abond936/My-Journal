@@ -6,6 +6,37 @@ const adminApp = getAdminApp();
 const firestore = adminApp.firestore();
 const TAGS_COLLECTION = 'tags';
 
+function normalizeTagNameForUniqueness(name: string): string {
+  return name.trim().toLowerCase();
+}
+
+/**
+ * True if another tag already uses this display name in the same tree slot:
+ * - **Roots** (no parent): same `dimension` + same name (case-insensitive) — e.g. four roots all named `zNA`, one per dimension.
+ * - **Children**: same `parentId` + same name among siblings (case-insensitive).
+ */
+function isTagNameTakenBySiblingOrRootDimension(
+  allTags: Tag[],
+  opts: { name: string; parentId?: string | null; dimension?: Tag['dimension'] },
+  excludeDocId?: string
+): boolean {
+  const norm = normalizeTagNameForUniqueness(opts.name);
+  const wantParent = (opts.parentId ?? '').toString().trim();
+
+  return allTags.some((t) => {
+    if (excludeDocId && t.docId === excludeDocId) return false;
+    if (normalizeTagNameForUniqueness(t.name || '') !== norm) return false;
+
+    const tParent = (t.parentId ?? '').toString().trim();
+    if (!wantParent) {
+      const dim = opts.dimension;
+      if (!dim) return false;
+      return !tParent && t.dimension === dim;
+    }
+    return tParent === wantParent;
+  });
+}
+
 /**
  * Derives filterTags + dimensional arrays from **card-assigned tags only**.
  * Media tags are separate and do not roll onto the card (see Project.md / Phase B).
@@ -51,7 +82,6 @@ export async function organizeTagsByDimension(tagIds: string[]): Promise<Organiz
       what: [],
       when: [],
       where: [],
-      reflection: []
     };
   }
 
@@ -65,7 +95,6 @@ export async function organizeTagsByDimension(tagIds: string[]): Promise<Organiz
       what: [],
       when: [],
       where: [],
-      reflection: []
     };
 
     // Helper to resolve a tag's dimension. If the tag itself doesn't have a dimension,
@@ -74,7 +103,8 @@ export async function organizeTagsByDimension(tagIds: string[]): Promise<Organiz
       let current = tagMap.get(tagId);
       while (current) {
         if (current.dimension) {
-          const dim = current.dimension.toLowerCase() as keyof OrganizedTags;
+          const raw = current.dimension.toLowerCase();
+          const dim = (raw === 'reflection' ? 'what' : raw) as keyof OrganizedTags;
           if (organizedTags.hasOwnProperty(dim)) {
             return dim;
           }
@@ -101,7 +131,6 @@ export async function organizeTagsByDimension(tagIds: string[]): Promise<Organiz
       what: [],
       when: [],
       where: [],
-      reflection: []
     };
   }
 }
@@ -149,7 +178,7 @@ export async function calculateDerivedTagData(directTagIds: string[]): Promise<{
   if (!directTagIds || directTagIds.length === 0) {
     return {
       filterTags: {},
-      dimensionalTags: { who: [], what: [], when: [], where: [], reflection: [] }
+      dimensionalTags: { who: [], what: [], when: [], where: [] }
     };
   }
 
@@ -254,7 +283,6 @@ export async function updateCardsForTagChange(tagId: string): Promise<void> {
             what: dimensionalTags.what,
             when: dimensionalTags.when,
             where: dimensionalTags.where,
-            reflection: dimensionalTags.reflection,
             updatedAt: FieldValue.serverTimestamp()
           });
 
@@ -311,6 +339,32 @@ export async function updateTag(docId: string, tagData: Partial<Omit<Tag, 'docId
     const doc = await tagRef.get();
     if (!doc.exists) {
       throw new Error(`Tag with ID ${docId} not found`);
+    }
+
+    const existing = doc.data() as Tag;
+
+    const nextName = tagData.name !== undefined ? tagData.name : existing.name;
+    const nextParentId = tagData.parentId !== undefined ? tagData.parentId : existing.parentId;
+    const nextDimension = tagData.dimension !== undefined ? tagData.dimension : existing.dimension;
+
+    if (
+      tagData.name !== undefined ||
+      tagData.parentId !== undefined ||
+      tagData.dimension !== undefined
+    ) {
+      if (!nextName || typeof nextName !== 'string') {
+        throw new Error('Tag name is required');
+      }
+      const allTags = await getAllTags();
+      if (
+        isTagNameTakenBySiblingOrRootDimension(
+          allTags,
+          { name: nextName, parentId: nextParentId, dimension: nextDimension },
+          docId
+        )
+      ) {
+        throw new Error('Tag with this name already exists');
+      }
     }
 
     // Prepare update data
@@ -399,7 +453,6 @@ export async function deleteTag(docId: string): Promise<void> {
               what: dimensionalTags.what,
               when: dimensionalTags.when,
               where: dimensionalTags.where,
-              reflection: dimensionalTags.reflection,
               updatedAt: FieldValue.serverTimestamp()
             });
             
@@ -433,15 +486,6 @@ export async function deleteTag(docId: string): Promise<void> {
  */
 export async function createTag(tagData: Omit<Tag, 'docId' | 'createdAt' | 'updatedAt' | 'path'>): Promise<Tag> {
   try {
-    // Check for duplicate tag name (case-insensitive)
-    const querySnapshot = await firestore.collection(TAGS_COLLECTION)
-      .where('name', '==', tagData.name)
-      .get();
-    
-    if (!querySnapshot.empty) {
-      throw new Error('Tag with this name already exists');
-    }
-
     const newPath: string[] = [];
 
     if (tagData.parentId) {
@@ -461,8 +505,19 @@ export async function createTag(tagData: Omit<Tag, 'docId' | 'createdAt' | 'upda
       throw new Error('Root tags require a dimension');
     }
 
-    // Append after existing siblings (avoids new tags sorting to the top when order ties at 0)
     const allTags = await getAllTags();
+
+    if (
+      isTagNameTakenBySiblingOrRootDimension(allTags, {
+        name: tagData.name,
+        parentId: tagData.parentId,
+        dimension: tagData.dimension,
+      })
+    ) {
+      throw new Error('Tag with this name already exists');
+    }
+
+    // Append after existing siblings (avoids new tags sorting to the top when order ties at 0)
     const wantParentId = tagData.parentId || '';
     const siblings = allTags.filter(t => {
       const p = t.parentId || '';
@@ -899,7 +954,6 @@ export async function updateTagAndDescendantPaths(tagId: string, newParentId: st
       what: dimensionalTags.what,
       when: dimensionalTags.when,
       where: dimensionalTags.where,
-      reflection: dimensionalTags.reflection,
       updatedAt: FieldValue.serverTimestamp()
     });
   }
