@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from './TagTree.module.css';
 import { TagWithChildren } from '@/components/providers/TagProvider';
-import { getDefaultExpandedTagIds } from '@/lib/utils/tagUtils';
+import { getDefaultExpandedTagIds, getAllExpandableTagIds } from '@/lib/utils/tagUtils';
 
 interface TagTreeProps {
   tree: TagWithChildren[];
@@ -11,6 +11,7 @@ interface TagTreeProps {
   selectedTags: string[];
   loading?: boolean;
   emptyMessage?: string;
+  forceExpandAll?: boolean;
   /** When provided (and user is admin), shows control to set default expand state */
   onSetDefaultExpanded?: (tagId: string, expanded: boolean) => void;
   showDefaultExpandControl?: boolean;
@@ -22,6 +23,7 @@ export default function TagTree({
   selectedTags,
   loading,
   emptyMessage = 'No tags available.',
+  forceExpandAll = false,
   onSetDefaultExpanded,
   showDefaultExpandControl = false,
 }: TagTreeProps) {
@@ -30,9 +32,9 @@ export default function TagTree({
   // Set initial expanded state based on tag.defaultExpanded (collapsed when false)
   useEffect(() => {
     if (tree.length > 0) {
-      setExpandedTags(getDefaultExpandedTagIds(tree));
+      setExpandedTags(forceExpandAll ? getAllExpandableTagIds(tree) : getDefaultExpandedTagIds(tree));
     }
-  }, [tree]);
+  }, [tree, forceExpandAll]);
 
   const toggleTag = (tagId: string) => {
     setExpandedTags(prev => {

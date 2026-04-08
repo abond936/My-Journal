@@ -284,6 +284,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                   selectedTags={selectedFilterTagIds}
                   onSelectionChange={handleSelectionChange}
                   loading={tagsLoading}
+                  forceExpandAll={!!tagSearch.trim()}
                   onSetDefaultExpanded={handleSetDefaultExpanded}
                   showDefaultExpandControl={isAdmin}
                   emptyMessage={

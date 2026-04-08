@@ -15,7 +15,7 @@
     "export:csv": "tsx src/lib/scripts/migration/export-to-csv.ts",
     "backfill:tags": "tsx src/lib/scripts/tags/backfill-tag-paths.ts",
     "update:tag-counts": "tsx src/lib/scripts/tags/update-tag-counts.ts",
-    "diagnose:tag": "tsx src/lib/scripts/dev/diagnose-single-tag.ts",
+    "diagnose:tag": "tsx src/lib/scripts/dev/diagnose-tags.ts",
     "diagnose:cover": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/dev/diagnose-cover-image.ts",
     "test:clear-cover": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/dev/test-clear-cover-direct.ts",
     "normalize:images": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/normalize-images.ts",
@@ -24,7 +24,8 @@
     "remove:legacy-cover": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/remove-legacy-cover-image.ts",
     "backfill:media-metadata": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/backfill-media-metadata.ts",
     "regenerate:storage-urls": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/regenerate-storage-urls.ts",
-    "seed:journal-users": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/seed-journal-users.ts"
+    "seed:journal-users": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/seed-journal-users.ts",
+    "backup:database": "tsx src/lib/scripts/firebase/backup-firestore.ts"
   },
   "dependencies": {
     "@auth/firebase-adapter": "^2.9.1",

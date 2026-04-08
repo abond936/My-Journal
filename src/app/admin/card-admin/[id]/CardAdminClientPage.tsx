@@ -123,17 +123,13 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
     }
   };
 
-  const handleCancel = () => {
-    // If we have a card ID, it means we're editing an existing card, so we can just navigate away
-    if (cardId) {
-      router.push('/admin/card-admin');
-      return;
+  const handleBack = () => {
+    if (!cardId) {
+      if (!window.confirm('Are you sure you want to leave? Any unsaved changes will be lost.')) {
+        return;
+      }
     }
-
-    // For new cards, confirm before leaving
-    if (window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
-      router.push('/admin/card-admin');
-    }
+    router.back();
   };
 
   const isLoading = isCardLoading || areTagsLoading;
@@ -163,10 +159,10 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
           )}
           <button 
             type="button" 
-            onClick={handleCancel}
+            onClick={handleBack}
             className={styles.cancelButton}
           >
-            Cancel
+            Back
           </button>
           <button 
             type="submit" 

@@ -5,11 +5,10 @@
     padding: var(--spacing-lg);
     padding-top: calc(var(--header-height) - var(--spacing-2xl));
     padding-bottom: var(--spacing-md);
-    overflow: hidden;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     height: 100%;
-    min-height: 0; /* Allow flex children to shrink */
   }
   
   .sidebar.closed {
@@ -294,9 +293,6 @@
   }
 
   .navigation {
-    flex: 1 1 0; /* Grow and shrink, allow shrinking below content */
-    min-height: 0; /* Required for flex child to scroll when space is limited */
-    overflow-y: auto;
     margin-bottom: var(--spacing-md);
   }
   

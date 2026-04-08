@@ -99,6 +99,20 @@ export const createUITreeFromDimensions = (tags: Tag[]): TagWithChildren[] => {
  * @param tree - The tag tree
  * @returns Set of tag IDs to expand initially
  */
+export const getAllExpandableTagIds = (tree: TagWithChildren[]): Set<string> => {
+  const expanded = new Set<string>();
+  const traverse = (nodes: TagWithChildren[]) => {
+    nodes.forEach((node) => {
+      if (node.children && node.children.length > 0) {
+        expanded.add(node.docId!);
+        traverse(node.children);
+      }
+    });
+  };
+  traverse(tree);
+  return expanded;
+};
+
 export const getDefaultExpandedTagIds = (tree: TagWithChildren[]): Set<string> => {
   const expanded = new Set<string>();
   const traverse = (nodes: TagWithChildren[]) => {
