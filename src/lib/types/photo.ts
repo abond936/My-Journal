@@ -62,8 +62,6 @@ export const mediaSchema = z.object({
   hasWhere: z.boolean().optional(),
   hasReflection: z.boolean().optional(),
 
-  /** @deprecated Use `tags`. Still read for legacy docs until backfilled. */
-  whoTagIds: z.array(z.string()).optional(),
 });
 
 export type Media = z.infer<typeof mediaSchema>;

@@ -57,12 +57,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const hasStatus = 'status' in body && body.status !== undefined;
     const hasCaption = 'caption' in body;
     const hasObjectPosition = 'objectPosition' in body && body.objectPosition !== undefined;
-    const hasWhoTagIds = 'whoTagIds' in body && body.whoTagIds !== undefined;
     const hasTags = 'tags' in body && body.tags !== undefined;
 
-    if (!hasStatus && !hasCaption && !hasObjectPosition && !hasWhoTagIds && !hasTags) {
+    if (!hasStatus && !hasCaption && !hasObjectPosition && !hasTags) {
       return NextResponse.json(
-        { message: 'Provide at least one of: status, caption, objectPosition, tags, whoTagIds.' },
+        { message: 'Provide at least one of: status, caption, objectPosition, tags.' },
         { status: 400 }
       );
     }
@@ -71,7 +70,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       status?: 'temporary' | 'active';
       caption?: string;
       objectPosition?: string;
-      whoTagIds?: string[];
       tags?: string[];
     } = {};
 
@@ -102,13 +100,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         return NextResponse.json({ message: 'tags must be an array of strings.' }, { status: 400 });
       }
       patch.tags = body.tags.filter((id): id is string => typeof id === 'string');
-    }
-
-    if (hasWhoTagIds) {
-      if (!Array.isArray(body.whoTagIds)) {
-        return NextResponse.json({ message: 'whoTagIds must be an array of strings.' }, { status: 400 });
-      }
-      patch.whoTagIds = body.whoTagIds.filter((id): id is string => typeof id === 'string');
     }
 
     await patchMediaDocument(mediaId, patch);

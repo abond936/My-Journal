@@ -13,6 +13,7 @@ interface TagPickerDimensionColumnProps {
   selection: Set<string>;
   onSelectionChange: (tagId: string, selected: boolean) => void;
   checkboxIdPrefix: string;
+  forceExpandAll?: boolean;
 }
 
 export default function TagPickerDimensionColumn({
@@ -20,6 +21,7 @@ export default function TagPickerDimensionColumn({
   selection,
   onSelectionChange,
   checkboxIdPrefix,
+  forceExpandAll = false,
 }: TagPickerDimensionColumnProps) {
   const { createTag } = useTag();
   const dimensionKey = dimension.dimension as TagDimension;
@@ -153,6 +155,7 @@ export default function TagPickerDimensionColumn({
             dimensionKey={dimensionKey}
             checkboxIdPrefix={checkboxIdPrefix}
             onRequestAddChild={requestAddChild}
+            forceExpandAll={forceExpandAll}
           />
         ))}
       </div>
@@ -168,6 +171,7 @@ interface TagPickerInteractiveTagNodeProps {
   dimensionKey: string;
   checkboxIdPrefix: string;
   onRequestAddChild: (id: string, name: string) => void;
+  forceExpandAll?: boolean;
 }
 
 function TagPickerInteractiveTagNode({
@@ -178,11 +182,13 @@ function TagPickerInteractiveTagNode({
   dimensionKey,
   checkboxIdPrefix,
   onRequestAddChild,
+  forceExpandAll = false,
 }: TagPickerInteractiveTagNodeProps) {
   const expandLevels = getTagTreeExpandLevelsForDimension(dimensionKey);
   const [isCollapsed, setIsCollapsed] = useState(() => depth >= expandLevels);
   const isSelected = selection.has(node.docId);
   const hasChildren = node.children && node.children.length > 0;
+  const effectiveCollapsed = forceExpandAll ? false : isCollapsed;
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(node.docId, e.target.checked);
@@ -200,7 +206,7 @@ function TagPickerInteractiveTagNode({
               onClick={() => setIsCollapsed(!isCollapsed)}
               className={styles.collapseButton}
             >
-              {isCollapsed ? '►' : '▼'}
+              {effectiveCollapsed ? '►' : '▼'}
             </button>
           ) : (
             <span className={styles.collapseSpacer} aria-hidden />
@@ -223,7 +229,7 @@ function TagPickerInteractiveTagNode({
         />
         <label htmlFor={checkboxId}>{node.name}</label>
       </div>
-      {!isCollapsed && hasChildren && (
+      {!effectiveCollapsed && hasChildren && (
         <div className={styles.tagChildren}>
           {node.children.map(child => (
             <TagPickerInteractiveTagNode
@@ -235,6 +241,7 @@ function TagPickerInteractiveTagNode({
               dimensionKey={dimensionKey}
               checkboxIdPrefix={checkboxIdPrefix}
               onRequestAddChild={onRequestAddChild}
+              forceExpandAll={forceExpandAll}
             />
           ))}
         </div>

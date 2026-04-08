@@ -5,7 +5,7 @@ import { Card } from '@/lib/types/card';
 import { useTag } from '@/components/providers/TagProvider';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import styles from './BulkEditTagsModal.module.css';
-import { createUITreeFromDimensions } from '@/lib/utils/tagUtils';
+import { createUITreeFromDimensions, filterTreesBySearch } from '@/lib/utils/tagUtils';
 import TagPickerDimensionColumn from '@/components/admin/card-admin/TagPickerDimensionColumn';
 
 /** Union of all tags on the selected cards — initial check state for bulk replace. */
@@ -34,6 +34,7 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
   const [error, setError] = useState<string | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
   const [currentSelection, setCurrentSelection] = useState<Set<string>>(new Set());
+  const [searchTerm, setSearchTerm] = useState('');
 
   /** Stable key so we do not refetch / reset when the parent passes a new `cardIds` array each render. */
   const cardIdsKey = useMemo(
@@ -47,6 +48,7 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
       setError(null);
       setCards([]);
       setCurrentSelection(new Set());
+      setSearchTerm('');
       return;
     }
     const ids = cardIdsKey ? cardIdsKey.split('\u001e') : [];
@@ -77,6 +79,15 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
     if (!allTags) return [];
     return createUITreeFromDimensions(allTags);
   }, [allTags]);
+
+  const filteredDimensionalTree = useMemo(() => {
+    const search = searchTerm.trim();
+    if (!search) return dimensionalTree;
+    return dimensionalTree.map(dim => ({
+      ...dim,
+      children: filterTreesBySearch(dim.children, search),
+    }));
+  }, [dimensionalTree, searchTerm]);
 
   const handleSaveChanges = async () => {
     setIsLoading(true);
@@ -120,19 +131,40 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
           this exact tag list—uncheck to remove from all, check to add to all.
         </p>
 
+        <div className={styles.searchBar}>
+          <input
+            type="text"
+            placeholder="Search tags…"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className={styles.searchInput}
+          />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => setSearchTerm('')}
+              className={styles.searchClear}
+              aria-label="Clear search"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
         {isLoading || tagsLoading ? (
           <LoadingSpinner />
         ) : error ? (
           <div className={styles.error}>{error}</div>
         ) : (
           <div className={styles.interactiveColumns}>
-            {dimensionalTree.map(dimension => (
+            {filteredDimensionalTree.map(dimension => (
               <TagPickerDimensionColumn
                 key={dimension.docId}
                 dimension={dimension}
                 selection={currentSelection}
                 onSelectionChange={handleTagChange}
                 checkboxIdPrefix="bulk-tag"
+                forceExpandAll={!!searchTerm.trim()}
               />
             ))}
           </div>

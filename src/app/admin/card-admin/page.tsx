@@ -29,7 +29,7 @@ export default function AdminCardsPage() {
   const [isBulkTagModalOpen, setIsBulkTagModalOpen] = useState(false);
   const [isImportFolderModalOpen, setIsImportFolderModalOpen] = useState(false);
   const [searchInputValue, setSearchInputValue] = useState('');
-  const [isSearchTriggered, setIsSearchTriggered] = useState(false);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { 
     tags: allTags, 
@@ -113,16 +113,23 @@ export default function AdminCardsPage() {
     setSelectedCardIds(new Set());
   }, [searchTerm, status, cardType]);
 
-  // Initialize search input value from searchTerm
   useEffect(() => {
     setSearchInputValue(searchTerm);
   }, [searchTerm]);
 
-  // Handle search button click
-  const handleSearch = () => {
-    setSearchTerm(searchInputValue);
-    setIsSearchTriggered(true);
-  };
+  const handleSearchInput = useCallback((value: string) => {
+    setSearchInputValue(value);
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      setSearchTerm(value);
+    }, 300);
+  }, [setSearchTerm]);
+
+  useEffect(() => {
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
+  }, []);
 
   const onSaveScrollPosition = useCallback((cardId: string) => {
     sessionStorage.setItem('scrollToCardId', cardId);
@@ -273,19 +280,32 @@ export default function AdminCardsPage() {
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <input
               type="text"
-              placeholder="Search by title..."
+              placeholder="Search cards..."
               value={searchInputValue}
-              onChange={e => setSearchInputValue(e.target.value)}
+              onChange={e => handleSearchInput(e.target.value)}
               className={styles.searchBox}
-              onKeyPress={e => e.key === 'Enter' && handleSearch()}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+                  setSearchTerm(searchInputValue);
+                }
+              }}
             />
-            <button 
-              onClick={handleSearch}
-              className={styles.actionButton}
-              style={{ padding: '0.5rem 1rem' }}
-            >
-              Search
-            </button>
+            {searchInputValue && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+                  setSearchInputValue('');
+                  setSearchTerm('');
+                }}
+                className={styles.actionButton}
+                style={{ padding: '0.5rem 0.75rem', lineHeight: 1 }}
+                aria-label="Clear search"
+              >
+                ✕
+              </button>
+            )}
             <select
               value={status}
               onChange={e => setStatus(e.target.value as typeof status)}

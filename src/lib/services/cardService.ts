@@ -15,6 +15,7 @@ import { extractMediaFromContent, stripContentImageSrc, hydrateContentImageSrc, 
 import { getPublicStorageUrl } from '@/lib/utils/storageUrl';
 import { Media } from '@/lib/types/photo';
 import { unlinkCardFromAllQuestions } from '@/lib/services/questionService';
+import { syncCardToTypesense, removeCardFromTypesense } from '@/lib/services/typesenseService';
 
 /**
  * Retry utility with exponential backoff for critical operations.
@@ -479,6 +480,8 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
   const finalCard = await getCardById(docRef.id);
   if (!finalCard) throw new Error("Failed to create or retrieve card.");
 
+  void syncCardToTypesense(finalCard);
+
   return finalCard;
 }
 
@@ -703,6 +706,9 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       if (!updatedCard) {
         throw new Error(`Failed to fetch updated card with ID ${cardId}`);
       }
+
+      void syncCardToTypesense(updatedCard);
+
       return updatedCard;
   });
 }
@@ -997,6 +1003,7 @@ export async function deleteCard(cardId: string): Promise<void> {
       });
     }).then(async () => {
         await unlinkCardFromAllQuestions(cardId);
+        void removeCardFromTypesense(cardId);
 
         // Post-transaction: Try immediate storage cleanup for the deleted media
         // This is outside the transaction, so failures won't affect database integrity

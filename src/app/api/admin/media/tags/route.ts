@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     for (const id of ids) {
       const doc = await firestore.collection('media').doc(id).get();
       const data = doc.data() as Media | undefined;
-      const existingTags = (data?.tags?.length ? data.tags : (data?.whoTagIds ?? []))
+      const existingTags = (data?.tags ?? [])
         .filter((t): t is string => typeof t === 'string');
 
       let nextTags: string[];

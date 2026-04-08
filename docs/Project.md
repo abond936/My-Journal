@@ -117,7 +117,8 @@ The primary users are the author (admin) creating the content and his family con
 - Server-side and client-side validation
 - Type checking with TypeScript
 
-⭕1 **Search Index (Typesense)** - Firestore has no full-text search; current client-side load-and-filter is already slow and will break at import scale (1000+ cards). Implement Typesense as a read-optimized search replica alongside Firestore. Create `searchService.ts` to index card data on create/update/delete. Replace client-side filtering with index queries for title search, tag filtering, and feed rendering. Provides: instant search-as-you-type, fuzzy matching, faceted filtering (type + tag + date simultaneously). Run one-time backfill script for existing cards. **Pre-import priority.**
+✅ **Search Index (Typesense)** - Typesense Cloud integrated. Full-text search across title, subtitle, excerpt, content, and tag names. Weighted relevance ranking. Debounced search-as-you-type in admin card list. Falls back to Firestore prefix search if Typesense unavailable. Config: `src/lib/config/typesense.ts`. Service: `src/lib/services/typesenseService.ts`. Sync: `npm run sync:typesense` / `sync:typesense:fresh`.
+✅ **Typesense Auto-Sync** - Automatic upsert/delete in `cardService.ts`. `createCard` and `updateCard` fire-and-forget sync to Typesense (resolves tag names, strips HTML). `deleteCard` removes from index post-transaction. No manual `sync:typesense` needed for card CRUD.
 
 ✅ **Authorization** - Auth.js - with Firebase adapter
     - Role-based access control
@@ -173,7 +174,6 @@ The primary users are the author (admin) creating the content and his family con
 ✅ **Maintenance Scripts** - Active operational scripts: `reconcile:media-cards`, `regenerate:storage-urls`, `cleanup:media`, `backup-database`, `backfill:media-metadata`, `seed:journal-users`.
 
 ⭕2 **Script Cleanup** - 86 script files under `src/lib/scripts/`; many are obsolete migration, debug, or test scripts not wired into `package.json`. Review and prune.
-✅ **Broken Reference** - Fixed: `diagnose:tag` now points to `diagnose-tags.ts`.
 
 📘 **Script Index** - `docs/NPM-SCRIPTS.md`.
 📘 **Import Reference** - `docs/IMPORT-REFERENCE.md`.
@@ -191,7 +191,6 @@ The primary users are the author (admin) creating the content and his family con
 ✅ **Database** - Windows Scheduled Task at 2am daily, auto awake pc, cleared >5 days. Script files exist (`backup-database.ts`, `backup-firestore.ts`) but are not wired into `package.json`.
 ✅ **Repo** - Github - On every push, for 7 days
     - Commit directly to **`main`** and push to `origin/main`. Do not use feature branches or PR merge flow unless explicitly requested for a specific task.
-✅ **Database Script** - Wired `backup-firestore.ts` into `package.json` as `backup:database`. Verify Windows Scheduled Task references `npm run backup:database`.
 ⭕2 **Operational** - Ensure both backups are operational and verified end-to-end.
 
 
@@ -281,12 +280,10 @@ The primary users are the author (admin) creating the content and his family con
 ✅ **Sort by** - Random | Oldest | Newest on filtered card feed.
 
 ⭕2 **Tag Tree Counts** - Fix numbering and add media counts "(x/y)" on tag tree nodes.
-✅ **Search Tags Fix** - Fixed: search filter worked but results were hidden under collapsed parents. Added `forceExpandAll` prop to TagTree; when search is active, all ancestor nodes expand to reveal matches.
 ⭕2 **Sort / Group** - Add user-selectable sort/group by event, Who, What, When, Where so multi-constraint filters do not devolve into an incoherent mix across unrelated occasions.
 ⭕2 **Curated Completeness** - Fix 500-recent-cards scan in `getCollectionCards` so Curated mode lists all collection parents at scale, not a truncated subset.
 ⭕2 **Collection Metadata** - Implement collection metadata (child counts).
 ⭕2 **Chron Tree** - Provide tree in chronological order (Year / Month / What) for browsing.
-✅ **Sidebar Scroll** - Fixed: entire sidebar panel now scrolls as one unit. Changed `.sidebar` from `overflow: hidden` to `overflow-y: auto` and removed isolated scroll container from `.navigation`.
 ⭕3 **Mobile Filter UX** - Tune type/tag filter UX on mobile. Layout reference: `--header-height` 60px; mobile filter drawer `--sidebar-width-mobile` 250px (`theme.css`).
 
 ❓ **500-Card Limit** - `getCollectionCards` in `cardService` queries the 500 most recent cards by `createdAt` and filters in memory for parents/curated roots. Older collection parents are missed. Root cause is the query design, not a deliberate product limit. Fix tracked under ⭕2 **Curated Completeness**.
@@ -468,7 +465,6 @@ The primary users are the author (admin) creating the content and his family con
 ⭕2 **Children Picker** - Replace search-only UX with query-driven picker (tags, type, title, date range) for attaching children at corpus scale (1000+ cards). Reconcile with TOC / collections ⭕2.
 ✅ **Actions** - Delete (remove tags/recalc, remove from parents, remove related media), Cancel (abandon edits, return to list), Save (save tags/recalc, add media).
 
-✅ **Exit Edit** - Renamed Cancel to Back, uses `router.back()`. New cards still prompt before leaving.
 ⭕2 **Dirty State Tracking** - Track form changes in `CardFormProvider` (initial vs. current state) so Back can warn on unsaved edits for existing cards too.
 ⭕2 **Content Versioning** - Firestore overwrites on save; no previous version to revert to. For a curated archive where content is irreplaceable narrative, accidental destructive edits = permanent loss. Options: (a) pre-save snapshot to `card_versions` subcollection, (b) soft delete with 30-day trash recovery, (c) "duplicate card" action for manual safety copy before risky edits. Start with (c) as near-term mitigation; implement (a) before mass content authoring.
 ⭕2 **Remove Legacy Type** - Remove legacy `collection` type before first import.
@@ -508,6 +504,7 @@ The primary users are the author (admin) creating the content and his family con
 🔵 **Video** - Support on **cover**, **inline (body)**, and **gallery** like stills—as far as product parity allows. **Size / “normalization”** (typical approach): **server-side transcoding** (e.g. FFmpeg) to a max resolution/bitrate and web-friendly format—same *class* of work as image normalization; not automatic in-app today.
 📐 **Entry Paths** - Two import paths: (1) **Import → Card** — import from source as card + images concurrently, assign tags from folder/metadata, edit after. (2) **Import → Bank → Card** — bulk import images with tags into the bank unassigned, then create cards and assign from the bank.
 📐 **Source Adapter Architecture** - The existing service layer (import, process, return mediaId) is the right shape for multiple source adapters. Current: local filesystem (hard drives / OneDrive mirror). Future adapters add alongside, not replacing, the local drive path.
+⭕2 **Media Search Index (Typesense)** - Add Typesense collection for media. Expected scale: 5000–6000 images in wave 1, 10,000+ in wave 2. Current Firestore queries + in-memory filtering will degrade. Enable cross-field search (caption, filename, tag names, source path) and faceted filtering. Same pattern as card index.
 ⭕2 **Browser Upload** - Replace or supplement server-side folder read (`ONEDRIVE_ROOT_FOLDER`) with browser-based upload flow. Required for hosted deployment where the server has no local filesystem access.
 🔵 **Google Photos Adapter** - Import from Google Photos API. Most accessible cloud photo API. Requires OAuth consent, album/media listing, download-and-process flow.
 🔵 **OneDrive Adapter** - Import from OneDrive via Microsoft Graph API. Similar shape to Google Photos adapter.
@@ -515,7 +512,7 @@ The primary users are the author (admin) creating the content and his family con
 
 📐 **Authoring Pipeline (digiKam → mass import)** - Organize folders/tags in digiKam; one leaf folder → one card; tags follow dimensional branches (WHO, WHAT, etc.); phased import with verification; post-import refinement via GIMP/Topaz + replace-in-place. See `IMPORT_FOLDER_MAX_IMAGES` for folder size cap.
 
-❓ **digiKam Tag Alignment** - How to align the in-app tag tree with digiKam's structure?
+📐 **digiKam Tag Alignment** - **Decided:** digiKam is the source of truth for the tag tree. Process: (1) Finish tagging in digiKam. (2) Export digiKam's full tag tree (tab-indented). (3) Diff against app's Firestore tree — produce adds, removes, moves. (4) Update app tree to match digiKam. (5) Build XMP import: read `lr:hierarchicalSubject` from files, parse `WHO|Robert Bond` → dimension + path, look up tag ID in aligned tree, assign to media. (6) Log unmatched tags for review. Blocked until digiKam tagging is complete.
 ⭕2 **Post-Import Maintenance** - Cropping, cleanup, sharpening in GIMP/Topaz after import. Use replace-in-place in Media admin to preserve media IDs and card references.
 
 🔵 **Multi-Author** 
@@ -611,7 +608,6 @@ The primary users are the author (admin) creating the content and his family con
   When cards and media get out of sync, use reconciliation scripts. See MediaCardReconciliation.md. Run `npm run reconcile:media-cards -- --diagnose`.
   ⭕2 - Design media-card flow so they don't get out of sync.
   ⭕2 - Reconcile/Update Image/Card relationships/data integrity.
-  ✅ **No temporary/active status** - Resolved. Everything imported is in the bank.
   ⭕3 - **Import pipeline job:** **Async queue/worker** for large folder import (normalize + writes) complementing `IMPORT_FOLDER_MAX_IMAGES` and serverless timeouts.
   ⭕3 - **Import metadata precedence:** Prefer **embedded XMP/IPTC** read **at import** for captions/keywords; use **JSON sidecars** as optional/supplementary when files are authoritative on disk.
 
@@ -630,18 +626,18 @@ The primary users are the author (admin) creating the content and his family con
 - **Universal tagging** - All media and cards tagged for filtering using the same dimensional/hierarchical library.
 
 ✅ **Tag Data Model** - Firestore `tags` collection. Schema: `src/lib/types/tag.ts`. Service: `tagService`.
-✅ **Dimensional** - Who, What, When, Where, Reflection.
-⭕1 **Consolidate Reflection** - Merge Reflection dimension into What.
+✅ **Dimensional** - Who, What, When, Where (Reflection merged into What as `what/Themes/...`).
+⭕1 **Consolidate Reflection** - Merge Reflection dimension into What as `what/Themes/...` subtree. Update `dimension` field on all Reflection tags in Firestore from `'reflection'` to `'what'`, reparent under a new "Themes" root in What, remove `'reflection'` from the dimension enum in `tag.ts`, and update all UI/code references (sidebar tabs, dimension maps, backfill scripts).
+⭕1 **N/A Sentinel Tags** - Create root-level "N/A" tag in each dimension (who, what, when, where). Allows explicit "doesn't apply" marking to distinguish from "not yet tagged." Needed before import so bulk-tagged items can be marked complete. Supports completeness queries: a card/media is complete when every dimension has at least one tag (including N/A).
+⭕2 **Completeness Indicator** - Show dimension coverage badges in admin card/media list (green = has tag, amber = missing). Simple check: does each dimension have at least one tag? Drives tagging discipline during authoring sprints without enforcing at save time.
 ✅ **Hierarchical** - Parent/child nesting (e.g. Father → Mother; Son → Daughter).
 ✅ **Universal** - Media and cards use the same tagging mechanism.
-⭕1 **Remove Tag Inheritance** - Tags do not copy between card and media; each record's tags stand alone.
-
 📐 **Authoring Vocabulary** - Mirror the same dimensional paths in digiKam keywords and the app tag tree so import/mapping stays predictable. Four scene dimensions on media (Who, What, When, Where); card-level arc/theme tags for narrative framing. Key conventions:
   - **When** — `when/date/…` chronological, sortable (`yyyymmdd`, `00` for unknown). No `when/stage` (stage is who-dependent; infer from who + date). Season out of scope.
   - **What** — Three buckets: `what/event/…` (occasions/milestones), `what/activity/…` (what people are doing), `what/theme/…` (long-running domains). Overlap: milestones → event; school defaults to theme; add event for specific ceremonies.
   - **Who** — People as stable tag identities (display names). Groups optional (`who/group/…`). Subject vs also-present encoding TBD. Kinship graph is ⭕3 under Relationship Tagging.
   - **Where** — Administrative nesting (country → state → county → city), skip levels when irrelevant. Venues, domestic labels, natural settings as children. GPS/EXIF may seed on import; author refines in Tag admin.
-❓ **Life-Arc Tree vs What and Reflection** - Card-level life themes (ancestry, childhood, education, career) need a dedicated tree. Should Reflection be renamed/expanded (e.g. Themes / Arc / Life & meaning), or add a new dimension? Relationship to `what/theme/…`: replacement, parent/child, or orthogonal?
+📐 **Life-Arc Tree vs What and Reflection** - **Decided:** Merge Reflection into What as `what/Themes/...` subtree. Remove `reflection` dimension. Theme/reflective tags are inherently card-centric (you'd never tag a photo with "Wisdom/Advice") but don't need special enforcement — self-enforcing by content. Four dimensions remain: Who, What, When, Where.
 
 ✅ **Tag Administration** - `/app/admin/tag-admin/page.tsx`.
 ✅ **Hierarchical View** - The page renders all tags in a 5-column tree structure using `TagAdminList`
@@ -650,7 +646,7 @@ The primary users are the author (admin) creating the content and his family con
 ✅ **OnDelete** - User choice of children being promoted or cascade deleted
 ✅ **OnMove** - Updates parent and order and recalcs tag card counts
 ✅ **Real-time** Edit tag and bulk tag modals: create root or child tags per dimension (`TagPickerDimensionColumn`, `POST /api/tags`). 
-⭕1 **Tag Typeahead Search** - Add type-to-search for tag assignment (like digiKam's tag search). Far faster than navigating a large tree when the user knows the tag name. Autocomplete against the full tag library, filtering as typed. Apply to both card and media tag assignment modals.
+✅ **Tag Typeahead Search** - Search input added to tag assignment modals (MacroTagSelector expanded view and BulkEditTagsModal). Filters all dimension columns as typed using `filterTreesBySearch`. Matching branches auto-expand. Works in card edit, gallery edit, bulk media, and bulk card tag flows.
 
 📐 **Card Tags vs Media Tags**
 ✅ **Same mechanism:** Assign tags to a card and assign tags to a media document using the same flow and data shape as cards (shared tag-assignment modal, e.g. `MacroTagSelector` pattern). Use the same dimensional/hierarchical tag library; no special-case fields in the product model unless legacy migration requires it temporarily.
@@ -658,7 +654,6 @@ The primary users are the author (admin) creating the content and his family con
 ✅ **v1 Authoring** Building and curating content cards must support **tag/query-based discovery of both cards and media** in admin (not one surface only)—pick gallery images, body embeds, and **related or child cards** from **filtered** sets, not only flat lists.
 ✅ **Human Authoring** You may still choose a **story-level** tag set on the card (what the post is about) and **frame-level** tags on images (who/what/when/where for that photo)—but nothing syncs unless you tag it yourself.
 ✅ **Bulk** Bulk tagging in Media admin is a high priority (multi-select + apply tags)—more day-to-day value than bulk on cards.
-⭕1 **Tag Merging** - Today, gallery editing can persist `whoTagIds` on media and server logic can merge image WHO into **card** derived tags; that contradicts this model and should be **removed once media uses full parallel tagging**.
 ⭕3 **Single TagProvider:** Remove nested `TagProvider` under admin so one tag tree fetch serves GlobalSidebar + admin (avoid duplicate `/api/tags` work).
 ⭕3 **Tag Tree Counts** - Add `mediaCount` on tag docs + UI `(x/y)` (cards vs media); align maintenance with recalc/jobs so counts stay trustworthy alongside incremental `cardCount` fixes.
 ⭕3 **Tag Recomp** - Schedule or queue recomputation for hierarchical counts (and media side) vs relying on `FieldValue.increment` alone when semantics are “unique per subtree.”
@@ -753,7 +748,8 @@ The primary users are the author (admin) creating the content and his family con
 - ⭕ **ESLint** - Address ESLint violations.
 - ⭕ **Quality** - QA app.
 - ⭕2 **Directory** - Cleanup directory.
-- ⭕1 **Search Index (Typesense)** - Implement Typesense as read-optimized search replica. Pre-import priority.
+- ✅ **Search Index (Typesense)** - Implemented. Full-text search across all card fields.
+- ✅ **Typesense Auto-Sync** - Auto-upsert/delete on card save via `cardService`.
 
 ### Frontend
 - ⭕2 **Unused Dependencies** - Remove unused packages; evaluate `react-photo-album` and `framer-motion` before removing.
@@ -761,10 +757,8 @@ The primary users are the author (admin) creating the content and his family con
 
 ### Scripts
 - ⭕2 **Script Cleanup** - 86 script files under `src/lib/scripts/`; many obsolete. Review and prune.
-- ✅ **Broken Reference** - Fixed.
 
 ### Backup
-- ✅ **Database Script** - Wired as `backup:database`.
 - ⭕2 **Operational** - Ensure both backups are operational and verified end-to-end.
 
 ### Application
@@ -780,12 +774,10 @@ The primary users are the author (admin) creating the content and his family con
 
 ### Left Navigation
 - ⭕2 **Tag Tree Counts** - Fix numbering and add media counts "(x/y)" on tag tree nodes.
-- ✅ **Search Tags Fix** - Fixed.
 - ⭕2 **Sort / Group** - Sort/group results by event, Who, What, When, Where for multi-constraint filters.
 - ⭕2 **Curated Completeness** - Fix 500-recent-cards scan so Curated mode lists all collection parents at scale.
 - ⭕2 **Collection Metadata** - Implement collection metadata (child counts).
 - ⭕2 **Chron Tree** - Provide tree in chronological order (Year / Month / What) for browsing.
-- ✅ **Sidebar Scroll** - Fixed.
 - ⭕3 **Mobile Filter UX** - Tune type/tag filter UX on mobile.
 
 ### Content
@@ -820,7 +812,6 @@ The primary users are the author (admin) creating the content and his family con
 - ⭕2 **Children Picker** - Query-driven picker for attaching children at corpus scale (1000+ cards).
 - ⭕2 **Remove Legacy Type** - Remove legacy `collection` type before first import.
 - ⭕2 **Authoring Discovery** - Filter-based discovery of cards and media when editing.
-- ✅ **Exit Edit** - Fixed. Renamed Cancel to Back.
 - ⭕2 **Dirty State Tracking** - Warn on unsaved edits for existing cards.
 - ⭕2 **Content Versioning** - Pre-save snapshots to `card_versions` subcollection. Near-term: "duplicate card" action.
 
@@ -836,22 +827,23 @@ The primary users are the author (admin) creating the content and his family con
 - ⭕3 **Rename photo.ts** - Rename `src/lib/types/photo.ts` to `media.ts` throughout.
 - ⭕3 **Import Pipeline Job** - Async queue/worker for large folder import.
 - ⭕3 **Import Metadata Precedence** - Prefer embedded XMP/IPTC at import; JSON sidecars as supplementary.
+- ⭕2 **Media Search Index (Typesense)** - Typesense for media at scale (5000–10,000+ images).
 - ⭕2 **Browser Upload** - Replace/supplement server-side folder read with browser-based upload for hosted deployment.
 - 🔵 **Google Photos Adapter** - Import from Google Photos API.
 - 🔵 **OneDrive Adapter** - Import from OneDrive via Microsoft Graph API.
-- ❓ **digiKam Tag Alignment** - How to align the in-app tag tree with digiKam's structure?
+- 📐 **digiKam Tag Alignment** - Decided: digiKam is source of truth. Diff + sync app tree, then import XMP tags. Blocked until tagging complete.
 
 ### Tag Management
-- ⭕1 **Tag Typeahead Search** - Type-to-search for tag assignment (like digiKam). Autocomplete against full tag library.
-- ⭕1 **Consolidate Reflection** - Merge Reflection dimension into What.
-- ⭕1 **Remove Tag Inheritance** - Tags do not copy between card and media.
-- ⭕1 **Tag Merging** - Remove `whoTagIds` merge into card derived tags.
+- ✅ **Tag Typeahead Search** - Search input in tag assignment modals. Filters all dimension columns as typed.
+- ⭕1 **Consolidate Reflection** - Merge Reflection into What as `what/Themes/...`. Remove `reflection` dimension.
+- ⭕1 **N/A Sentinel Tags** - Root-level N/A tag per dimension for explicit "doesn't apply."
+- ⭕2 **Completeness Indicator** - Dimension coverage badges in admin lists.
 - ⭕3 **Single TagProvider** - Remove nested `TagProvider` under admin.
 - ⭕3 **Tag Tree Counts** - Add `mediaCount` on tag docs + UI `(x/y)`.
 - ⭕3 **Tag Recomp** - Schedule or queue recomputation for hierarchical counts.
 - ⭕3 **Unified Tag Edges** - Treat assignments as `(subjectType, subjectId, tagId)`.
 - ⭕3 **Face Recognition** - Add face recognition (cloud APIs, client-side, or native photos integration).
-- ❓ **Life-Arc Tree vs What and Reflection** - Dedicated tree for card-level life themes? Rename Reflection or new dimension?
+- 📐 **Life-Arc Tree vs What and Reflection** - **Decided:** Merge into What as Themes subtree. Four dimensions: Who, What, When, Where.
 
 ### Question Management
 - ⭕2 **Assigned** - Mark questions "Assigned/Unassigned" based on `usedByCardIds.length > 0`.
@@ -875,8 +867,6 @@ The primary users are the author (admin) creating the content and his family con
 - ❓ **Progressive Children** - Can the card display before fetching/rendering children?
 - ❓ **Excerpt Display** - Should excerpt render on the view page between subtitle and cover?
 - ❓ **Related Count** - Reduce size/number of Related and Explore More cards?
-- ❓ **digiKam Tag Alignment** - How to align the in-app tag tree with digiKam's structure?
-- ❓ **Life-Arc Tree vs What and Reflection** - Dedicated tree for card-level life themes? Rename Reflection or new dimension?
 - ❓ **Pre-Tag Questions** - Pre-tag questions for use on card?
 - ❓ **Credential Delivery** - How to send user credentials to new users?
 - 🔵 **Multi-Author** - Shared media, author-scoped cards, tag namespaces, cross-author comments. Parked until single-author and tagging are stable.
@@ -890,28 +880,19 @@ The primary users are the author (admin) creating the content and his family con
 *Sequenced by dependency: what gates what on the path from personal use → mass import → family hosting.*
 
 **Open Questions to resolve before starting:**
-- ❓ **Life-Arc Tree vs What and Reflection** — Decide before Phase 1 (impacts tag dimension structure for digiKam import).
-- ❓ **digiKam Tag Alignment** — Decide before Phase 1 (same reason).
+- ✅ **Life-Arc Tree vs What and Reflection** — Decided: merge Reflection into What as Themes subtree. Four dimensions.
+- ✅ **digiKam Tag Alignment** — Decided: digiKam is source of truth. Blocked until tagging complete.
 - ❓ **Excerpt Display** — Decide before Phase 3 (affects reader view).
 - ❓ **Progressive Children** — Investigate in Phase 0 if causing visible lag.
-
-### Phase 0 — Bugs & Breakage
-*Small, broken things. Fix before active use.*
-
-- ✅ **Sidebar Scroll** — Left Nav. Fixed.
-- ✅ **Search Tags Fix** — Left Nav. Fixed.
-- ✅ **Broken Reference** — Scripts. Fixed.
-- ✅ **Exit Edit** — Card Mgmt. Fixed.
-- ✅ **Database Script** — Backup. Wired as `backup:database`.
 
 ### Phase 1 — Pre-Import
 *Must complete before mass import from digiKam. Clean data model + search that scales.*
 
-- ⭕1 **Search Index (Typesense)** — Technical. Current search breaks at scale. Implement before importing 1000+ cards.
-- ⭕1 **Tag Typeahead** — Tags. Type-to-search for tag assignment. Tree navigation unworkable at scale.
-- ⭕1 **Remove Tag Inheritance** — Tags. Clean tag model before import.
-- ⭕1 **Tag Merging** — Tags. Remove `whoTagIds` merge before import pollutes data.
-- ⭕1 **Consolidate Reflection** — Tags. Settle dimension structure before building digiKam tag tree.
+- ✅ **Search Index (Typesense)** — Technical. Implemented.
+- ✅ **Typesense Auto-Sync** — Technical. Auto-upsert/delete wired into `cardService`.
+- ✅ **Tag Typeahead** — Tags. Search input filters dimension columns as typed in all tag modals.
+- ⭕1 **Consolidate Reflection** — Tags. Merge Reflection into What as Themes subtree, remove dimension.
+- ⭕1 **N/A Sentinel Tags** — Tags. Root-level N/A per dimension before import.
 - ⭕1 **Orphaned Media** — Media. Clean up existing media before adding 1000+ more.
 - ⭕2 **Remove Legacy Type** — Card Mgmt. Clean up `collection` type before import creates cards with it.
 
@@ -926,6 +907,8 @@ The primary users are the author (admin) creating the content and his family con
 - ⭕2 **Post-Import Aggregation** — Media. Bulk add banked media to cards.
 - ⭕2 **Reconcile Integrity** — Media. Fix relationships after import.
 - ⭕2 **Media-Card Flow** — Media. Design flow so they don't get out of sync.
+- ⭕2 **Media Search Index (Typesense)** — Media. Typesense for media at scale (5000–10,000+ images).
+- ⭕2 **Completeness Indicator** — Tags. Dimension coverage badges in admin lists.
 
 ### Phase 3 — Reader Experience
 *Prepare for family hosting. Make the app ready for non-admin users.*

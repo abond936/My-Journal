@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useTag } from '@/components/providers/TagProvider';
 import { Tag, TagWithChildren } from '@/lib/types/tag';
 import styles from './MacroTagSelector.module.css';
-import { buildSparseTagTree, createUITreeFromDimensions } from '@/lib/utils/tagUtils';
+import { buildSparseTagTree, createUITreeFromDimensions, filterTreesBySearch } from '@/lib/utils/tagUtils';
 import clsx from 'clsx';
 import TagPickerDimensionColumn from '@/components/admin/card-admin/TagPickerDimensionColumn';
 
@@ -148,11 +148,21 @@ interface ExpandedViewProps {
 function ExpandedView({ initialSelection, onSave, onCancel, saving = false, className }: ExpandedViewProps) {
   const { tags } = useTag();
   const [currentSelection, setCurrentSelection] = useState<Set<string>>(new Set(initialSelection));
+  const [searchTerm, setSearchTerm] = useState('');
 
   const dimensionalTree = useMemo(() => {
     if (!tags) return [];
     return createUITreeFromDimensions(tags);
   }, [tags]);
+
+  const filteredDimensionalTree = useMemo(() => {
+    const search = searchTerm.trim();
+    if (!search) return dimensionalTree;
+    return dimensionalTree.map(dim => ({
+      ...dim,
+      children: filterTreesBySearch(dim.children, search),
+    }));
+  }, [dimensionalTree, searchTerm]);
 
   // Build sparse tree showing selected tags and their ancestors
   const selectedTagTree = useMemo(() => {
@@ -193,8 +203,28 @@ function ExpandedView({ initialSelection, onSave, onCancel, saving = false, clas
     <div className={clsx(styles.overlay, className)}>
       <div className={styles.modalContainer}>
         <h2 className={styles.modalHeader}>Edit Tags</h2>
+
+        <div className={styles.searchBar}>
+          <input
+            type="text"
+            placeholder="Search tags…"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className={styles.searchInput}
+            autoFocus
+          />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => setSearchTerm('')}
+              className={styles.searchClear}
+              aria-label="Clear search"
+            >
+              ✕
+            </button>
+          )}
+        </div>
         
-        {/* Tree Display Section */}
         {selectedTagTree.length > 0 && (
           <div className={styles.treeDisplaySection}>
             <h3>Selected Tags</h3>
@@ -213,13 +243,14 @@ function ExpandedView({ initialSelection, onSave, onCancel, saving = false, clas
         )}
         
         <div className={styles.interactiveColumns}>
-          {dimensionalTree.map(dimension => (
+          {filteredDimensionalTree.map(dimension => (
             <TagPickerDimensionColumn
               key={dimension.docId}
               dimension={dimension}
               selection={currentSelection}
               onSelectionChange={handleTagChange}
               checkboxIdPrefix="tag"
+              forceExpandAll={!!searchTerm.trim()}
             />
           ))}
         </div>

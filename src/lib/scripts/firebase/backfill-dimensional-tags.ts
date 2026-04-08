@@ -199,7 +199,7 @@ export async function backfillDimensionalTags(options: BackfillOptions = {}): Pr
       const batchPromises = batch.map(async (m) => {
         try {
           result.processedMedia++;
-          const directTags = (m.tags && m.tags.length > 0 ? m.tags : (m.whoTagIds || [])) as string[];
+          const directTags = (m.tags || []) as string[];
 
           if (!directTags || directTags.length === 0) {
             const hasAnyPresenceField =

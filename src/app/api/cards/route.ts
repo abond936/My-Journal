@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
-import { createCard, getCards, getCardsByCollectionId, getCollectionCards } from '@/lib/services/cardService';
+import { createCard, getCards, getCardsByIds, getCardsByCollectionId, getCollectionCards } from '@/lib/services/cardService';
 import { Card } from '@/lib/types/card';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
 import { PaginatedResult } from '@/lib/types/services';
 import { cardSchema } from '@/lib/types/card';
+import { isTypesenseConfigured } from '@/lib/config/typesense';
+import { searchCards } from '@/lib/services/typesenseService';
 
 export const dynamic = 'force-dynamic';
 
@@ -131,6 +133,29 @@ export async function GET(request: Request) {
           hydrationMode,
         });
         return NextResponse.json(result);
+      }
+
+      if (q?.trim() && isTypesenseConfigured()) {
+        try {
+          const searchResult = await searchCards({
+            query: q.trim(),
+            type: type !== 'all' ? type : undefined,
+            status: status !== 'all' ? status : undefined,
+            perPage: limit,
+          });
+
+          if (searchResult.docIds.length === 0) {
+            return NextResponse.json({ items: [], hasMore: false } as PaginatedResult<Card>);
+          }
+
+          const items = await getCardsByIds(searchResult.docIds);
+          return NextResponse.json({
+            items,
+            hasMore: searchResult.totalFound > searchResult.docIds.length,
+          } as PaginatedResult<Card>);
+        } catch (tsError) {
+          console.warn('Typesense search failed, falling back to Firestore:', tsError);
+        }
       }
 
       const result: PaginatedResult<Card> = await getCards({

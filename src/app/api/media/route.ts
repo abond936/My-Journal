@@ -44,7 +44,7 @@ const SEEK_BATCH = 80;
 function getDimensionIds(item: Media, dimension: string): string[] {
   switch (dimension) {
     case 'who':
-      return [...(item.who ?? []), ...(item.whoTagIds ?? [])];
+      return item.who ?? [];
     case 'what':
       return item.what ?? [];
     case 'when':
@@ -54,7 +54,7 @@ function getDimensionIds(item: Media, dimension: string): string[] {
     case 'reflection':
       return item.reflection ?? [];
     default:
-      return item.tags ?? item.whoTagIds ?? [];
+      return item.tags ?? [];
   }
 }
 

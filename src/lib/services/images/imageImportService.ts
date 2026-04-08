@@ -4,7 +4,6 @@ import { Media } from '@/lib/types/photo';
 import { getPublicStorageUrl } from '@/lib/utils/storageUrl';
 import { normalizeBufferToWebp } from '@/lib/services/images/inMemoryWebpNormalize';
 import * as admin from 'firebase-admin';
-import { FieldValue } from 'firebase-admin/firestore';
 import fs from 'fs/promises';
 import path from 'path';
 import sharp from 'sharp';
@@ -335,7 +334,7 @@ export async function updateMediaStatus(mediaId: string, status: Media['status']
   }
 }
 
-type MediaPatchFields = Partial<Pick<Media, 'status' | 'caption' | 'objectPosition' | 'whoTagIds' | 'tags'>>;
+type MediaPatchFields = Partial<Pick<Media, 'status' | 'caption' | 'objectPosition' | 'tags'>>;
 
 async function applyTagFieldsToPayload(
   payload: Record<string, unknown>,
@@ -356,7 +355,6 @@ async function applyTagFieldsToPayload(
   payload.hasWhen = (dimensionalTags.when ?? []).length > 0;
   payload.hasWhere = (dimensionalTags.where ?? []).length > 0;
   payload.hasReflection = (dimensionalTags.reflection ?? []).length > 0;
-  payload.whoTagIds = FieldValue.delete();
 }
 
 /**
@@ -376,7 +374,6 @@ export async function patchMediaDocument(mediaId: string, updates: MediaPatchFie
     updates.status !== undefined ||
     updates.caption !== undefined ||
     updates.objectPosition !== undefined ||
-    updates.whoTagIds !== undefined ||
     updates.tags !== undefined;
   if (!hasField) {
     throw new Error('No valid fields to update.');
@@ -402,11 +399,6 @@ export async function patchMediaDocument(mediaId: string, updates: MediaPatchFie
       throw new Error('tags must be an array of tag IDs.');
     }
     await applyTagFieldsToPayload(payload, updates.tags);
-  } else if (updates.whoTagIds !== undefined) {
-    if (!Array.isArray(updates.whoTagIds)) {
-      throw new Error('whoTagIds must be an array of tag IDs.');
-    }
-    await applyTagFieldsToPayload(payload, updates.whoTagIds);
   }
 
   await mediaRef.update(payload);

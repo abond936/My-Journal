@@ -209,11 +209,9 @@ function GalleryItemForm({ item, onSave }: GalleryItemFormProps) {
   }, [item.mediaId, item.caption, item.objectPosition, item.media?.objectPosition, item.media?.caption]);
 
   useEffect(() => {
-    const m = item.media;
-    const ids = m?.tags?.length ? m.tags : (m?.whoTagIds ?? []);
-    setMediaTagIds(ids);
+    setMediaTagIds(item.media?.tags ?? []);
     setTagSaveError(null);
-  }, [item.mediaId, item.media?.tags, item.media?.whoTagIds]);
+  }, [item.mediaId, item.media?.tags]);
 
   const objectPosition = `${horizontalPosition}% ${verticalPosition}%`;
 
@@ -274,7 +272,6 @@ function GalleryItemForm({ item, onSave }: GalleryItemFormProps) {
             media: {
               ...item.media,
               tags: tagsPayload,
-              whoTagIds: undefined,
             },
           }
         : {}),
