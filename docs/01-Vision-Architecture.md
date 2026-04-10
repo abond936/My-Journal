@@ -114,7 +114,7 @@ The primary users are the author (admin) creating the content and his family con
   - **Quality** - QA app.
 ⭕2 **Future**
   - **Performance** - Possibilities captured from engineering review.
-  - **Tenant ID** - Not implemented for v1. If multi-tenancy is needed for commercial SaaS (Model C), add `tenantId` to cards, media, tags, questions, and journal_users; apply tenant filters to all queries/rules. See `docs/06-Strategic-Direction.md`.
+  - **Tenant ID** - Not implemented for v1. If multi-tenancy is needed for commercial SaaS (Model C), add `tenantId` to cards, media, tags, questions, and journal_users; apply tenant filters to all queries/rules.
   - **Storage Abstraction** - Wrap storage operations in `storageService.ts` (upload/delete/getUrl) to reduce migration scope and enable cache-busting on replaced images.
   - **Testing**
   - **Error Monitoring / Observability**
