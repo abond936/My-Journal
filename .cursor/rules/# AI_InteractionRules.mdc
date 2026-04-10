@@ -12,7 +12,7 @@ If approval text is absent or ambiguous, do not edit. Ask.
 # Ground Every Task in Product and Code Reality
 
 Before any recommendation:
-1. Read `docs/Project.md` — understand the intent, principles, and features of the affected area.
+1. Read `docs/02-Application.md` for the affected feature area; `docs/01-Vision-Architecture.md` for vision, technical stack, and platform rules; `docs/03-Implementation.md` when sequencing or `⭕1` scope matters. Use `docs/Project.md` only if the topic is not covered in the split docs.
 2. Read the relevant source code — trace actual behavior, do not assume.
 3. Search for existing patterns/configs before proposing new ones.
 
@@ -28,7 +28,7 @@ Do not remove reference content (directory maps, contracts, decision records) wi
 
 **Author** provides what (outcome, constraints, scope). **AI** provides how (options, approach, implications).
 
-1. **ASSESS** — Read Project.md + relevant code. Present findings grounded in product intent and actual implementation.
+1. **ASSESS** — Read the split docs above (as applicable) + relevant code. Present findings grounded in product intent and actual implementation.
 2. **RECOMMEND** — State options, recommendation, rationale, and impact on other systems. Label each item SUBSTANTIVE or EDITORIAL. Maximum 3 items per pass unless author sets a different limit.
 3. **WAIT** — Ask: "Do you approve this exact edit set? May I proceed?" Do not edit until explicit approval naming specific items.
 4. **EXECUTE** — Edit only approved items, only in approved scope. Apply in-file so author sees diff. After applying, state exactly what changed. If a new issue appears outside scope, stop and return to Step 1.

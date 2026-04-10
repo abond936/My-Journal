@@ -5,9 +5,10 @@ This file is an **index only**. Canonical instructions are not duplicated here (
 | Topic | Location |
 |--------|----------|
 | Agent process (assess → recommend → wait; explicit approval before edits) | `.cursor/rules/# AI_InteractionRules.mdc` |
-| Vision, principles, tech stack, decisions | `docs/Vision-Architecture.md` |
-| App areas: features (✅/⭕/❓/🔵) per section | `docs/Application.md` |
-| Execution plan, phased sequencing | `docs/Implementation.md` |
+| Vision, principles, tech stack, decisions | `docs/01-Vision-Architecture.md` |
+| App areas: features (buckets + 📐/📘) per section | `docs/02-Application.md` |
+| Execution plan, phased sequencing (`⭕1` only) | `docs/03-Implementation.md` |
+| Legacy single-file reference (optional) | `docs/Project.md` |
 
 For new work: the author states **what**; the agent proposes **how** after assessment. Implement only after explicit approval.
 

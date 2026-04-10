@@ -6,7 +6,10 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 | Doc | Purpose |
 |-----|--------|
-| [`docs/Project.md`](docs/Project.md) | Canonical product plan, backlog, governance |
+| [`docs/01-Vision-Architecture.md`](docs/01-Vision-Architecture.md) | Vision, principles, stack, decisions |
+| [`docs/02-Application.md`](docs/02-Application.md) | Feature inventory by area (✅/⭕/❓/🔵) |
+| [`docs/03-Implementation.md`](docs/03-Implementation.md) | Phased execution plan |
+| [`docs/Project.md`](docs/Project.md) | Extended product narrative (optional depth) |
 | [`docs/IMPORT-REFERENCE.md`](docs/IMPORT-REFERENCE.md) | **`__X` folder import**, in-memory normalize, env vars, cardseed vs `seedCards` |
 | [`docs/NPM-SCRIPTS.md`](docs/NPM-SCRIPTS.md) | npm maintenance scripts |
 | [`normalize-images-README.md`](normalize-images-README.md) | Local `normalize-images` CLI + `--card-export-only` |

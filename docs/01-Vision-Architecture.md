@@ -1,6 +1,6 @@
 # VISION & ARCHITECTURE
 
-**See also:** `Application.md` · `Implementation.md`
+**See also:** `02-Application.md` · `03-Implementation.md`
 
 Legend:
 ✅`Implemented`
@@ -14,9 +14,9 @@ Legend:
 ## Document Governance
 
 - **Three-Document Model** - Project documentation is split across three files in `docs/`:
-  - `Vision-Architecture.md` — Product vision, principles, technical stack, data models, decisions. Stable; changes rarely.
-  - `Application.md` — Each app area: *Features* grouped under `✅ Complete`, `⭕1 Planned`, `⭕2 Future`, `❓ Open` (plus standalone 📐 / 📘). Changes when features ship or are planned.
-  - `Implementation.md` — Execution plan and phased sequencing. Changes when priorities shift.
+  - `01-Vision-Architecture.md` — Product vision, principles, technical stack, data models, decisions. Stable; changes rarely.
+  - `02-Application.md` — Each app area: *Features* grouped under `✅ Complete`, `⭕1 Planned`, `⭕2 Future`, `❓ Open` (plus standalone 📐 / 📘). Changes when features ship or are planned.
+  - `03-Implementation.md` — Execution plan and phased sequencing (`⭕1` only). Changes when priorities shift.
 - **AI Behavior** - AI process, approval, and execution rules live in `.cursor/rules/# AI_InteractionRules.mdc`.
 - **Author** - Provides direction, constraints, and priorities--not implementation details.
 - **AI/Engineering** - Proposes how to build, designs flows, and recommends technical approaches.
@@ -33,7 +33,7 @@ Legend:
 
 ### Content Placement
 - **Placement Discipline** - Record each subject in its owning section. Everything about Story cards belongs under Story card features, not mentioned in Tags or Navigation. Everything about tags belongs under Tag Management, not mentioned in Navigation. Centralizes subjects for clarity and prevents drift.
-- **One Fact, One Home** - Each fact lives in exactly one document. `Application.md` describes *what exists today* and *what's planned per area*. `Implementation.md` describes *when to do it* (sequencing). When a planned item ships, update its status in `Application.md` and remove it from `Implementation.md`.
+- **One Fact, One Home** - Each fact lives in exactly one document. `02-Application.md` describes *what exists today* and *what's planned per area*. `03-Implementation.md` describes *when to do it* (sequencing). When a planned item ships, update its status in `02-Application.md` and remove it from `03-Implementation.md`.
 
 ---
 

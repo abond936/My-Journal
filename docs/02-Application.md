@@ -1,6 +1,6 @@
 # APPLICATION
 
-**See also:** `Vision-Architecture.md` · `Implementation.md`
+**See also:** `01-Vision-Architecture.md` · `03-Implementation.md`
 
 Legend:
 ✅`Implemented`
@@ -166,60 +166,26 @@ Legend:
 
 *Features*
 ✅ **Complete**
-- **Default** - After login, defaults to content page 
-- **Grid View** - Responsive grid-based layout
-- **Card Types** - 5 card types:
-  - 1. `Story Card` - 
-        **Feed:** - Title, cover, content, and/or gallery. Navigate to /view.
-          📐 **Titling** - Bottom/overlay as implemented through v1.
-          📐 **Excerpt** - Do not render excerpt on story cards in the feed.
-  - 2. `Gallery Card`- Title, cover, content, and gallery. Limited story.
-        - **Feed:** Navigate or Inline (horizontal Swiper on the grid) — **cover is first slide** when set; gallery slots with the same `mediaId` as the cover are **deduped** (`V2ContentCard`). Swipe/drag between slides.
-  - 3. `Question Card` - Questions as if from family. No Cover, Title (question), Content (answer), Gallery. 
-        - **Feed:** - Navigate or Inline
-          - **Navigate:** *Title* = question; *excerpt* = feed teaser when set (full answer only on detail). - **No cover:** large centered `?` watermark + centered text. **With cover:** full-bleed hero + bottom gradient (story-like). 
-          - **Detail:** kicker "Question", title, section "Answer" + TipTap body.
-          - **Inline:** not a link. Optional cover + overlay; **TipTap answer** on tile. No cover: watermark + left-aligned stack for long body.
-          - **Static:** not a link. Question + **excerpt** only (no body on tile).
-          - Short questions may still be embedded in other narrative content where appropriate (optional pattern; not limited to this type).
-  - 4. `Quote Card` - Topically related quotes. No Cover, Title, Content
-        - **Title** = short label (topic, source, or hook)—**not** the full quotation. 
-        - **Content** (TipTap) = quote text. 
-        - **Attribution** = **`subtitle` preferred**, else **`excerpt`**; rendered right-aligned with an em dash (`—`) prepended when the string does not already start with a dash character.
-        - **Feed:** Quote watermark centered on the tile, Title + blockquote + `<cite>`.
-        - **Detail:** Title in header; **subtitle omitted under title** (reserved for attribution). Body in `<blockquote>`; attribution in `<footer><cite>` below.
-  - 5. `Callout Card` - Summary / emphasis on a topic. No Cover, Title, Content (bullets)
-        - **Feed:** **Pushpin** raster watermark (`public/images/pushpin.svg`) as a full-card overlay in `V2ContentCard` (`calloutPinOverlay` / `calloutPinWatermark`): centered on the tile, mirrored (`scaleX(-1)`), tilted **−30°**, raised ~¼ in from center, sized with a fluid `clamp` (~25% larger than the first shipped size). Same opacity tier as the `?` watermark (**0.3**). Theme token **`--card-watermark-raster-filter`** in `theme.css`: `none` in light mode, **`invert(1)`** in dark mode so the pin reads on dark tiles. Flat `layout-background1-color`; light hover. **TipTap** `surface="transparent"`. **Title**, **excerpt**, body for **inline** / **navigate**; **static** = title + excerpt when no body on tile.
-        - **Detail:** Same shell as other types (title, optional subtitle, TipTap)—no separate callout chrome.
-- **Display Modes** - 3 display modes/styles
-    1. Static - Display only (Quote, Callout; Question when the answer is short)
-    2. Inline - Swipes left/right (Gallery <5 images)
-    3. Navigate - Dedicated card view (Story, Gallery, Question). 
-      📐 **Horizontal Open** - Prefer horizontal card-open behavior on mobile for long-form cards to reduce open/close friction.
-- **Main feed / gallery**
-- **Header:** menu (left), title (center), **search** (right).
-- **Search row** directly under header. Mockup placeholder copy may suggest multimodal search—**aspirational**; near-term search stays what the product can index (e.g. title, tags, captions).
-- **Horizontal type chips** (e.g. all media vs "film" / strips): maps to **card-type** (and later **video**) filtering; complements dense mobile UX without replacing the tag sidebar/drawer.
-- **In-content card links (@)** - TipTap `CardMention` + `CardMentionList`; type `@` in rich text to search cards (`/api/cards`); stored as `span[data-type="cardMention"][data-card-id]`; `TipTapRenderer` navigates to `/view/[id]` on click or keyboard when focused.
+- **Feed** - `CardFeedV2` → `V2ContentCard` (`src/components/view/`). Responsive grid on `/view` after login.
+- **Linking rule** - Feed tile links to `/view/[id]` only when `displayMode === 'navigate'` and `type` is `story`, `gallery`, or `qa`. Other types/modes render a non-link tile (`V2ContentCard.tsx` `isInteractive`).
+- **Schema** - `type`: `story` | `gallery` | `qa` | `quote` | `callout`; `displayMode`: `static` | `inline` | `navigate` (`src/lib/types/card.ts`). Collection structure = `childrenIds` on any type, not a separate `type`.
+- **Detail** - `CardDetailPage.tsx` and view components in `src/components/view/` (TipTap, gallery, discovery blocks).
+- **Feed chrome** - Header, search row, type chips; `@` card mentions via `CardMention` / `TipTapRenderer`.
+
+📐 **Product vs code** - v1 intent: omit story excerpt on feed/detail; `StoryCardContent` still renders `excerpt` when the field is set—clear data or add a guard when enforcing.
+📐 **Horizontal open** - Prefer horizontal open for long-form on mobile where the reader implements it.
 
 ⭕1 **Planned**
-- **Card Content** - Assess need for Title, Subtitle, Excerpt and Content
-- **Questions** - Get questions from Word doc, card games on Amazon
-- **Quotes** - Get quotes from Dad book, Notion quotes, Grandfather book
-- **Quote Card** - Use Content for both quote and attribution. 
+- **Card Content** - Assess Title, Subtitle, Excerpt, Content.
+- **Questions / Quotes** - Source material (Word, books, Notion).
+- **Quote Card** - Attribution modeling (e.g. Content vs subtitle/excerpt).
 
 ⭕2 **Future**
-- **Bundle / images:** Route-level **code splitting** for heavy admin/editor paths; pass on `next/image` loading/priority for feed performance.
-- **Gallery slider polish** — Optional feed pagination (e.g. 1/n dots), visible prev/next on desktop; horizontal "child card" rails (aggregated strips) — aligns with **Feed Types**.
-- **Question Content** - Get questions from Word doc, card games on Amazon.
-- **Quote Content** - Get quotes from Dad book, Notion quotes, Grandfather book.
-- **Bundle / Images** - Route-level code splitting for heavy admin/editor paths; tune `next/image` loading/priority for feed performance.
-- **Feed Types** - Devise different feed layouts: pane with teaser, related stories horizontal scroll, galleries horizontal scroll, small thumbnails horizontal scroll.
-- **Display Strategy** - **v1:** One presentation per card type in reader surfaces; for stories, the single style is as implemented today (e.g. title overlay on cover in feed) with **no excerpt** in feed or detail. **Post-v1:** Varied, selectable feed and view layouts per type and context (optional excerpt stacks, subtitle ordering, tags/kicker/overlay, gallery/story stacks like "YouTube-style" teasers). Component architecture should allow new variants without rewriting the feed/view core.
+- **Bundle / `next/image`** - Code-split heavy routes; tuning feed image priority.
+- **Gallery slider polish** — Dots, desktop arrows, child rails (see **Feed Types**).
+- **Feed Types** / **Display Strategy** - Alternate layouts post-v1.
 
-📘 `src/components/view/CardFeedV2.tsx`
-📘 `src/components/view/V2ContentCard.tsx`
-📘 `src/components/view/ContentCard.tsx` (CardGrid / legacy tag tiles)
+📘 `src/components/view/CardFeedV2.tsx` · `V2ContentCard.tsx` · `ContentCard.tsx` (legacy / CardGrid)
 
 ---
 
@@ -282,7 +248,6 @@ Legend:
 ⭕2 **Future**
 - **Maintenance Management** - Admin UI over existing secured maintenance APIs (`POST /api/admin/maintenance/*`: reconcile, cleanup, backfill, diagnose-cover). A Maintenance tab existed previously and was removed; restore when in-app diagnose/fix outweighs CLI + manual HTTP. Today: `docs/NPM-SCRIPTS.md` and `npm run …` scripts.
 - **Admin SWR Deduping** - Revisit `CardProvider` `dedupingInterval: 0` for admin — restore bounded deduping to cut duplicate `/api/cards` requests where safe.
-- **Quote Management** - ??
 
 📘 **Script Index** - `docs/NPM-SCRIPTS.md`.
 📘 **Import Reference** - `docs/IMPORT-REFERENCE.md`.
@@ -299,30 +264,11 @@ Legend:
 
 *Features*
 ✅ **Complete**
-- **Server-side** - All business logic on the server-side (`cardService`) 
-- **Denormalized** - The data model is denormalized to support complex filtering
-- **Card Data Model** - Firestore `cards` collection. Schema: `src/lib/types/card.ts` (`cardSchema` / `Card`).
-- **Grid View** - Click to edit, pagination (`/app/admin/card-admin/`).
-- **Table View** - Pagination, load more.
-- **Search by Title** - Filter by status and type via `CardProvider` `selectedFilterTagIds`. Bulk operations via `BulkEditTagsModal.tsx`.
-- **Add Button** - `AdminFAB.tsx`. New (`/admin/card-admin/new`), Edit (`CardAdminClientPage.tsx`). `CardForm.tsx` wrapped in `CardFormProvider`.
-- **Title, Subtitle, Excerpt** - All default empty.
-- **Type** - `story`, `gallery`, `qa`, `quote`, `callout`.
-- **Status** - `draft`, `published`.
-- **Display Mode** - `static`, `inline`, `navigate`.
-- **Cover Image** - `CoverPhotoContainer` + `PhotoPicker`. Paste/drag, `objectPosition`. No caption.
-- **Content** - Rich text editing, Inline embedded images, Captions default to media object with override, @ card links** (see Content Page).
-- **Tags** - `MacroTagSelector` modal. `Card.tags` stores user-assigned tags. On save, `cardService` derives `filterTags` from card-assigned tags and tag-tree ancestors (not from image tags).
-- **Gallery** - `GalleryManager` + `PhotoPicker`, drag-and-drop order. `galleryMedia[]` stores `mediaId`, `order`, optional per-slot `caption`/`objectPosition`.
-- **Excerpt** - Default empty.Auto-generate toggle on card form. When on, excerpt is computed from content (150 chars, word boundary). Manual override via toggle off. `excerptAuto` field on card schema; server recomputes on save when content changes.
-- **Import Folder as Card** – `ImportFolderModal`, folder tree picker, **`__X`-marked files only**, in-memory WebP optimize + upload (no xNormalized on disk), duplicate detection (overwrite/cancel). Mass-import / digiKam prep: **Authoring pipeline — digiKam → mass import** (under Strategic Direction).
-- **Caption and Focal** - Inherit from media by default; optional per-slot override in the gallery edit modal.
-- **Children** - `childrenIds` attaches ordered child cards. Deep nesting allowed; cycles and self-parent blocked in `cardService`; single-parent constraint enforced on move.
-- **Children Picker (edit UI)** - Card edit view: reorder/remove children and open child edit links; attach/reparent in Collections admin (`ChildCardManager` → link to `/admin/collections`). Structural assembly stays in TOC/collections work.
-- **Actions** - Delete (remove tags/recalc, remove from parents, remove related media), Cancel (abandon edits, return to list), Save (save tags/recalc, add media).
-- **Dirty State Tracking** -
-- **Versioning** - Manual "Duplicate Card" action implemented. Creates a draft copy of any card (content, tags, media refs, gallery) via `POST /api/cards/[id]/duplicate`. Button on card edit page header. Next phase: pre-save snapshot to `card_versions` subcollection before mass content authoring.
-- **Authoring Discovery** - PhotoPicker **Library** tab: same non-tag query filters as Media admin (`/api/media`: status, source, shape, caption, on-cards), debounced text search, **in-modal dimensional tag filter** (`MacroTagSelector`, independent of left sidebar; OR within dimension, AND across dimensions, merged with optional **Match card tags** from the current card). `filterTagIds` wired from `CardForm` → cover/gallery/content picker. Card discovery: admin card list + Collections for structure.
+- **Service & schema** - Firestore `cards`; `src/lib/services/cardService.ts`; `src/lib/types/card.ts` (`cardSchema`). Denormalized fields for filtering; business rules server-side.
+- **Admin surfaces** - `src/app/admin/card-admin/` (grid/table, `CardForm` + `CardFormProvider`, `AdminFAB`, search/filter via `CardProvider`, `BulkEditTagsModal`).
+- **Fields** - Types `story|gallery|qa|quote|callout`; status; `displayMode`; cover + `PhotoPicker` / `CoverPhotoContainer`; `galleryMedia`; TipTap `content` + embedded media + `@` mentions (see Content Page); `MacroTagSelector`; excerpt + auto (`excerptAuto`); `childrenIds` + picker UI; dirty leave/duplicate flows (`persistableSnapshotsEqual`, `confirmLeaveIfDirty`, `POST /api/cards/[id]/duplicate`).
+- **Import** - Folder-as-card (`ImportFolderModal`, `__X` files, caps) — details in `docs/IMPORT-REFERENCE.md`.
+- **Discovery in edit** - PhotoPicker Library tab mirrors Media list filters + in-modal tag dimensions (`filterTagIds` from `CardForm`).
 
 ⭕2 **Future**
 - **Card Edit Mosaic** - Mosaic layout for gallery manager in card edit (align with Apple/Google Photos-style browsing).
@@ -365,61 +311,18 @@ Legend:
 
 *Features*
 ✅ **Complete**
-- **Media Search Index** - Typesense `media` collection: single searchable field (filename, caption, source path, tag names); facets for status, source, shape, has caption, **assigned**, dimensional tag ids (who/what/when/where). 
-- **Local Drive** - Current implementation sources from *local drive* (mirrored from OneDrive)
-- **Import Folder as Card**
-    - Requires `ONEDRIVE_ROOT_FOLDER` in `.env` (server filesystem path)
-    - `IMPORT_FOLDER_MAX_IMAGES` (default 50): max **marked** images **per folder import** to reduce **serverless timeout** risk—override via env or longer-running/self-hosted contexts. **Not** a hard product limit on how many images a card may hold in the abstract. **Authoring:** if leaf folders often **hit** this cap, **split folders** further (see **Authoring pipeline — digiKam → mass import**).
-    - **Card export marker:** Only files whose basename ends with **`__X`** immediately before the extension are imported (e.g. `IMG_0001__X.jpg`). Two underscores and **uppercase X**—not `__x`.
-    - **No local xNormalized write:** Folder import reads source files, **WebP-optimizes in memory** (`normalizeBufferToWebp` → `importFromLocalDrive` with `normalizeInMemory`), uploads to Firebase Storage. Legacy folders may still use `yEdited` or `xNormalized` **as read paths**; disk is **not** used for a new normalized output tree.
-- **Optimization** - Optimize performance through `next/image`, caching, auto-sizing and lazy loading.
-- **References** - Images served to content via Firebase ID/URLs
-- **Filter** - Multi-dimensional filter.
-- **Replace** - File edited from source and replaced. After editing, upload the new file via **Media admin** replace on that row. **API:** `POST /api/images/{id}/replace` → `replaceMediaAssetContent` in `imageImportService.ts`. Same Firestore **media** doc id and **storage path**; **width/height/size** refresh; **cover**, **gallery**, and **content** references on cards **unchanged** (no re-linking). *Caveat:* Same public URL shape can mean **browser or CDN caching**—if a thumbnail looks stale after replace, treat cache-bust or URL strategy as a follow-up.
-- **Tagging** - Same assignment mechanism** as cards (**shared modal**); **bulk** tagging in Media admin is the primary day-to-day workflow. **Today:** cards — `BulkEditTagsModal`; media — `PATCH /api/images/{id}` (tags / `whoTagIds`, caption, focal) and Media admin **bulk** modes (add / replace / remove). 
-- **Post-import aggregation (create card)** - Media admin multi-select → **Create card from selection**: draft `gallery` card (`POST /api/cards`), `coverImageId` + ordered `galleryMedia`, navigate to edit (`MediaAdminContent`).
-
-- **Media Data Model**
-    - Collection - `media`. One doc per image
-    - Schema  - `src/lib/types/photo.ts`
-- **referencedByCardIds:** Denormalized array of card IDs that reference this media. Maintained on **createCard**, **updateCard** (transaction), and **removeMediaReferenceFromCard** (media delete cleanup path). Used for delete (remove refs from cards, then delete) and unassigned filter. Lazy backfill for legacy media.
-- **Normalization**
-  Organize, normalize, edit images pre-import
-    - All versions of images in 1 directory 
-    - Edit (GIMP - Crop, clean, Topaz - sharpen) as needed 
-    - Rename final appending "__X"
-    - Import files ending in "__X"
-      - normalize to Firebase--sharpen, lighting, convert to webP
-      - extract metadata to Firebase
-  
-- **Media Workflow** - [Source]→[Import]→[Firebase Storage+Firestore]→[API Hydration]→[Client Display]
-
-- **Import Entry Points**
-  - `imageImportService.ts` — central import (PhotoPicker, paste/drop, local drive)
-  - Creates Media doc in Firestore, uploads to Firebase Storage
-  - Folder Import - `importFolderAsCard()` — filter `*__X.*`, `importFromLocalDrive(..., { normalizeInMemory: true })`, build gallery + cover
-
-- **Display**
-  - `JournalImage` — next/image with unoptimized (avoids 403 from Firebase)
-  - `getDisplayUrl(photo)` — storageUrl → url → transparent pixel fallback
-  - **Cover aspect ratios:** Edit/view 4:3; feed thumbnail 1:1
-  - **Focal point:** Pixel coords {x, y}; converted to object-position per aspect ratio
-
-- **Pre-Import Scripts** (Local Filesystem)
-  - `create-photo-folders.bat` — xNormalized, yEdited, zOriginals
-  - `normalize-images.bat` / `npm run normalize:images` — optimize, extract metadata to JSON, convert to WebP. Optional: `--card-export-only` (after destination arg) to process only `__X`-marked filenames.
-  - `extract-metadata-improved.bat` — metadata only
-  - See `METADATA_EXTRACTION_README.md` and `normalize-images-README.md`
-
-  - **Media-Card Reconciliation**
-  **Add / change / delete** for card–media edges is maintained by production paths (**Cross-entity sync** table in Media Management). When investigating **exceptional** drift (legacy data, manual DB edits): **CLI** — `npm run reconcile:media-cards -- --diagnose` (optional `--fix`, `--fix --dry-run`, `--card "Title"`); source `src/lib/scripts/firebase/reconcile-media-cards.ts`. **HTTP** (admin session) — `POST /api/admin/maintenance/reconcile` with JSON `action`: `diagnose` | `fix`, optional `dryRun`, `cardTitleFilter`, `checkStorage`. **Index** — `docs/NPM-SCRIPTS.md`.
+- **Core** - Firestore `media` collection; types in `src/lib/types/photo.ts`; import/process/`replace` in `src/lib/services/imageImportService.ts` (and related APIs). Display: `JournalImage`, `getDisplayUrl` (`src/lib/utils/photoUtils.ts`).
+- **Search** - Typesense `media` index + facets (sync scripts in `docs/NPM-SCRIPTS.md`).
+- **Import paths** - Local drive / PhotoPicker / paste-drop via `imageImportService.ts`; folder-as-card (`__X` marker, `IMPORT_FOLDER_MAX_IMAGES`, `ONEDRIVE_ROOT_FOLDER`) — full rules in `docs/IMPORT-REFERENCE.md` and `normalize-images-README.md`.
+- **Card edges** - `referencedByCardIds` maintained on create/update/delete paths; unassigned filter + `mediaAssignmentSeek.ts`. Drift repair: `npm run reconcile:media-cards`, maintenance HTTP — see `docs/NPM-SCRIPTS.md`.
+- **Admin** - Multi-dimensional filter, replace-in-place (`POST /api/images/{id}/replace`), tagging (`PATCH /api/images/{id}`), bulk modes, multi-select → draft gallery card (`MediaAdminContent`).
 
 ⭕1 **Planned**
 - **Temporary/Active.** Remove this status. No longer required. All imported media is in the bank. Track **where assigned** (cover, gallery, content) for filtering; unassigned is valid.
 - **"Unassigned" Query:** - Uses `referencedByCardIds` on media + `GET /api/media?assignment=unassigned|assigned` (sequential scan; see `mediaAssignmentSeek.ts`).
 
 ⭕2 **Future**
-- ****Rename**" - `src/lib/types/photo.ts` → `media.ts` throughout
+- **Rename types module** - `src/lib/types/photo.ts` → `media.ts` (throughout)
 - **Append to Gallery** - Bulk add selected banked media to another **existing** card's gallery from Media admin (parked). **Today** images still reach cards after import via **Create card from selection** (draft gallery + edit), **PhotoPicker** / gallery in card edit, **inline images** in rich text, and **replace-in-place** on media rows—no need to block on this bulk-append flow.
 - **Video** - Support on **cover**, **inline (body)**, and **gallery** like stills—as far as product parity allows. **Size / "normalization"** (typical approach): **server-side transcoding** (e.g. FFmpeg) to a max resolution/bitrate and web-friendly format—same *class* of work as image normalization; not automatic in-app today.
 - **Browser Upload** - Replace or supplement server-side folder read (`ONEDRIVE_ROOT_FOLDER`) with browser-based upload flow. Required for hosted deployment where the server has no local filesystem access.
@@ -429,15 +332,7 @@ Legend:
 - **Post-Import Maintenance** - Cropping, cleanup, sharpening in GIMP/Topaz after import. Use replace-in-place in Media admin to preserve media IDs and card references.
 - **Import pipeline job** - **Async queue/worker** for large folder import (normalize + writes) complementing `IMPORT_FOLDER_MAX_IMAGES` and serverless timeouts.
 - **Import metadata precedence** - Prefer **embedded XMP/IPTC** read **at import** for captions/keywords; use **JSON sidecars** as optional/supplementary when files are authoritative on disk.
-- **Multi-Author** 
-    - More than one author (e.g. parent and child) each maintains a voice, 
-    - **Shared/Overlapping** - Image pool shared across authors.
-    - **Intertwined** - Intertwined reader experiences.
-    - **Cross-author Comments** on each other's cards/images.
-    - **Contrast with today:** The app is optimized for **one authoring admin** and **family readers**; a second author currently implies a **separate instance** (duplicate media, separate cards/captions/tags).
-    - **Architectural challenges** 
-        - Identity and roles; **author-scoped** card documents vs shared **media** library and **deduplication**; **tag namespaces** or "lens" so the same pixels do not force one global meaning (e.g. childhood/parents/grandparents are **viewer-relative**); permissions; **merged vs parallel** feeds; **comment** threads, notifications, and moderation.
-    - **Comparison to large social products:** Overlapping primitives (multi-user, comments, feeds) exist elsewhere; this product remains **private**, **curated**, and **archival/narrative**—not a goal to replicate public-scale engagement mechanics.
+- **Multi-Author** — Second author voice, shared media pool, intertwined feeds, cross-author comments. **Today:** one admin author + family readers; another author ⇒ separate instance. **Hard problems:** identity/roles, author-scoped cards vs shared media/dedup, tag “lens,” merged vs parallel feeds, moderation. Stays **private / curated / archival**—not public social scale.
    
 📐 **Entry Paths** - Two import paths: (1) **Import → Card** — import from source as card + images concurrently, assign tags from folder/metadata, edit after. (2) **Import → Bank → Card** — bulk import images with tags into the bank unassigned, then create cards and assign from the bank.
 📐 **Source Adapter Architecture** - The existing service layer (import, process, return mediaId) is the right shape for multiple source adapters. Current: local filesystem (hard drives / OneDrive mirror). Future adapters add alongside, not replacing, the local drive path.
@@ -477,25 +372,10 @@ Legend:
 
 *Features*
 ✅ **Complete**
-- **Tag Data Model** - Firestore `tags` collection. Schema: `src/lib/types/tag.ts`. Service: `tagService`.
-- **Dimensional** - Who, What, When, Where (Reflection subtree lives under What as `what/Reflections/...`).
-- **Consolidate Reflection** - Former `reflection` dimension removed from schema and UI. Tags reparented under a What root **Reflections**; cards/media no longer store a `reflection` field. One-time Firestore migration: `npm run tags:consolidate-reflection` (use `--dry-run` first).
-- **N/A Sentinel Tags (`zNA`)** - One root per dimension named **`zNA`** (same display/stored string in who, what, when, where). Explicit "doesn't apply" vs "not yet tagged." **Uniqueness:** root tag names are unique **per dimension** only (four `zNA` roots allowed); child names are unique **among siblings** (case-insensitive after trim). Seed missing roots: `npm run tags:seed-zna`. Supports completeness: a card/media is complete when every dimension has at least one tag (including `zNA`).
-- **Admin dimension at a glance (v1)** - **Direct tags only** (intersection of `tags` with each dimensional array), aligned across **card table** (existing four columns), **media table** (four Who/What/When/Where columns replacing a single Tags column), and **card + media grid** (four equal chips per row: first tag name truncated, `+n` for more in that dimension; native `title` / `aria-label` lists all direct tags per dimension). Card edit view keeps existing empty-dimension header emphasis. **Deferred:** green/amber completeness dots; stronger hover/popover typography (readability pass later). Implementation: `getCoreTagsByDimension`, `DirectDimensionChips` (`src/components/admin/common/`).
-- **Hierarchical** - Parent/child nesting (e.g. Father → Mother; Son → Daughter).
-- **Universal** - Media and cards use the same tagging mechanism.
-- **Tag Administration** - `/app/admin/tag-admin/page.tsx`.
-- **Hierarchical View** - Page renders all tags in a 4-column tree structure using `TagAdminList`
-- **Drag-and-Drop** -  Reordering/Reparenting - `SortableTag.tsx`
-- **Inline Editing** - `TagAdminRow.tsx`
-- **OnDelete** - User choice of children being promoted or cascade deleted
-- **OnMove** - Updates parent and order and recalcs tag card counts
-- **Real-time** Edit tag and bulk tag modals: create root or child tags per dimension (`TagPickerDimensionColumn`, `POST /api/tags`). 
-- **Tag Typeahead Search** - Search input added to tag assignment modals (MacroTagSelector expanded view and BulkEditTagsModal). Filters all dimension columns as typed using `filterTreesBySearch`. Matching branches auto-expand. Works in card edit, gallery edit, bulk media, and bulk card tag flows.
-- **Card Tags vs Media Tags** - Same mechanism. Assign tags to a card and assign tags to a media document using the same flow and data shape as cards (shared tag-assignment modal, e.g. `MacroTagSelector` pattern). Use the same dimensional/hierarchical tag library; no special-case fields in the product model unless legacy migration requires it temporarily.
-- **v1 Authoring** Building and curating content cards must support **tag/query-based discovery of both cards and media** in admin (not one surface only)—pick gallery images, body embeds, and **related or child cards** from **filtered** sets, not only flat lists.
-- **Human Authoring** You may still choose a **story-level** tag set on the card (what the post is about) and **frame-level** tags on images (who/what/when/where for that photo)—but nothing syncs unless you tag it yourself.
-- **Bulk** Bulk tagging in Media admin is a high priority (multi-select + apply tags)—more day-to-day value than bulk on cards.
+- **Model & service** - Firestore `tags`; `src/lib/types/tag.ts`; `tagService`. Dimensions Who / What / When / Where; Reflections under What; `zNA` sentinels per dimension; migrations `tags:consolidate-reflection`, `tags:seed-zna`.
+- **Admin UI** - `/admin/tag-admin`, `TagAdminList`, DnD (`SortableTag`), inline rows, delete/move with count recalc, modals + `POST /api/tags`, typeahead in pickers (`filterTreesBySearch`).
+- **Usage** - Same assignment UX on cards and media (`MacroTagSelector` pattern). Card `filterTags` derived on save in `cardService` (not from image tags). At-a-glance: `getCoreTagsByDimension`, `DirectDimensionChips` on card/media tables and grids.
+- **Authoring stance** - Card-level vs frame-level tags are independent; bulk media tagging is primary day-to-day.
 
 ⭕2 **Future**
 - **Single TagProvider:** Remove nested `TagProvider` under admin so one tag tree fetch serves GlobalSidebar + admin (avoid duplicate `/api/tags` work).

@@ -1,6 +1,6 @@
 # IMPLEMENTATION
 
-**See also:** `Vision-Architecture.md` · `Application.md`
+**See also:** `01-Vision-Architecture.md` · `02-Application.md`
 
 Legend:
 ✅`Implemented`
@@ -20,7 +20,7 @@ Legend:
 
 ## Execution Plan
 
-*Sequenced by dependency: what gates what on the path from personal use → mass import → family hosting. This document tracks only `⭕1 Planned` execution items from `Application.md`.*
+*Sequenced by dependency: what gates what on the path from personal use → mass import → family hosting. This document tracks only `⭕1 Planned` execution items from `02-Application.md`.*
 
 **Open questions to resolve before starting:**
 *(None blocking curated sidebar listing; legacy data needs index deploy + backfill once per environment.)*
@@ -34,24 +34,31 @@ Legend:
 ### Phase 3 — Reader experience
 ⭕1 **Planned**
 
-*Content & reader*
-- **Related Count** — View Page. Size/count of Related / Explore More.
-
 *Tags & navigation*
-- **Sort / Group** — Left Nav. Coherent multi-filter ordering.
-- **Coherence** — Content. Grouping/sort with Sort/Group.
+- **Sort / Group** — Left Nav. Multi-filter ordering (pairs with Content **Display Types**).
 
-*Theme & media (hosting enablers)*
-- **CSS Tokenization** — Theme. Full token coverage for reader polish.
+*Content & reader*
+- **Display Types** — Verify per-type + `displayMode` behaviors in reader (`V2ContentCard` / `CardDetailPage`).
+- **Suggestions** — Freeform discover blocks (children + filtered + random).
+- **Related Count** — View page: size/count of Related / Explore More.
+
+*Theme*
+- **CSS Tokenization** — Token coverage via `theme.css`.
 
 ### Phase 4 — Scale & polish
 ⭕1 **Planned**
 
-*Technical & platform*
-- **Code / ESLint / QA** — Technical. Comments, lint, QA pass.
+*Content (authoring / copy)*
+- **Card Content** — Title, Subtitle, Excerpt, Content assessment.
+- **Questions / Quotes** — Source material into app.
+- **Quote Card** — Attribution modeling.
 
-*Questions & media hygiene*
-- **No temporary/active.** — Media. Remove status; assignment-based filtering only.
+*Media hygiene*
+- **Temporary/Active** — Remove legacy status; assignment-based filtering only (`02-Application.md` Media).
+- **Unassigned query** — `referencedByCardIds` + `GET /api/media?assignment=…` (`mediaAssignmentSeek.ts`).
+
+*Technical & platform*
+- **Code / ESLint / QA** — Comments, lint, QA pass (`01-Vision-Architecture.md` Backend).
 
 ❓ **Open**
 - *(None currently.)*
