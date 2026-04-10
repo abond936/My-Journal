@@ -6,12 +6,10 @@ import { Card } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import { getObjectPositionForAspectRatio } from '@/lib/utils/objectPositionUtils';
 import styles from './CardDetail.module.css';
-import CardGrid from '@/components/view/CardGrid';
 import TipTapRenderer from '@/components/common/TipTapRenderer';
 import InlineGallery from '@/components/view/InlineGallery';
 import DiscoverySection from '@/components/view/DiscoverySection';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { formatQuoteAttribution } from '@/lib/utils/cardUtils';
 
 interface CardDetailPageProps {
   card: Card;
@@ -19,31 +17,15 @@ interface CardDetailPageProps {
 }
 
 const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) => {
-  const router = useRouter();
-
-  const childItems = (childrenCards || []).map(child => ({
-    id: child.docId,
-    title: child.title,
-    description: child.excerpt || child.subtitle || '',
-    href: `/view/${child.docId}`,
-    imageUrl: child.coverImage ? getDisplayUrl(child.coverImage) : undefined,
-    // The CardGrid component might need more properties, but this is a start.
-  }));
-
-
+  const isQa = card.type === 'qa';
+  const isQuote = card.type === 'quote';
+  const quoteAttribution = isQuote ? formatQuoteAttribution(card.subtitle, card.excerpt) : '';
 
   return (
     <article className={styles.container}>
-      <div className={styles.backButtonContainer}>
-        <button 
-          onClick={() => router.back()} 
-          className={styles.backButton}
-          aria-label="Go back"
-        >
-          ← Back
-        </button>
-      </div>
-      <header className={`${styles.header} ${!card.subtitle ? styles.noSubtitle : ''}`}>
+      <header
+        className={`${styles.header} ${!card.subtitle || isQuote ? styles.noSubtitle : ''}`}
+      >
         {card.coverImage && (
           <div className={styles.coverImageContainer}>
             <JournalImage
@@ -70,15 +52,33 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) 
             />
           </div>
         )}
-        <h1 className={`${styles.title} ${card.subtitle ? styles.titleWithSubtitle : ''}`}>{card.title}</h1>
-        {card.subtitle && <p className={styles.subtitle}>{card.subtitle}</p>}
+        {isQa ? <p className={styles.detailKicker}>Question</p> : null}
+        <h1
+          className={`${styles.title} ${card.subtitle && !isQuote ? styles.titleWithSubtitle : ''}`}
+        >
+          {card.title}
+        </h1>
+        {card.subtitle && !isQuote ? <p className={styles.subtitle}>{card.subtitle}</p> : null}
       </header>
 
       {card.content && (
-        <section className={styles.content}>
-          <TipTapRenderer content={card.content} />
+        <section className={styles.content} aria-label={isQa ? 'Answer' : undefined}>
+          {isQa ? <h2 className={styles.qaAnswerHeading}>Answer</h2> : null}
+          {isQuote ? (
+            <blockquote className={styles.quoteDetailQuote}>
+              <TipTapRenderer content={card.content} />
+            </blockquote>
+          ) : (
+            <TipTapRenderer content={card.content} />
+          )}
         </section>
       )}
+
+      {isQuote && quoteAttribution ? (
+        <footer className={styles.quoteDetailFooter}>
+          <cite className={styles.quoteDetailCite}>{quoteAttribution}</cite>
+        </footer>
+      ) : null}
 
       {/* Inline Gallery */}
       {card.galleryMedia && card.galleryMedia.length > 0 && (

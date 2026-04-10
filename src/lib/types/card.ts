@@ -71,6 +71,12 @@ export const cardSchema = z.object({
   // Top-level curated root for sidebar/API listing (getCollectionCards) even when childrenIds is empty.
   curatedRoot: z.boolean().optional(),
 
+  /**
+   * Denormalized: true when `(childrenIds?.length > 0) || curatedRoot === true`. Maintained only on the
+   * server so `getCollectionCards` can query Firestore; do not set via API (omitted from update schema).
+   */
+  curatedNavEligible: z.boolean().optional(),
+
   /** When set, this card was created by folder import; used to detect duplicates. */
   importedFromFolder: z.string().optional(),
 
@@ -104,6 +110,7 @@ export const cardUpdateValidationSchema = cardSchema.partial().omit({
   when: true,
   where: true,
   title_lowercase: true, // Server-generated
+  curatedNavEligible: true,
 });
 
 /**

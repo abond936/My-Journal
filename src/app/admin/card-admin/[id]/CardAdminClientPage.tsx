@@ -11,6 +11,7 @@ import styles from './page.module.css';
 import { useCardContext } from '@/components/providers/CardProvider';
 import { PaginatedResult } from '@/lib/types/services';
 import { CardFormProvider } from '@/components/providers/CardFormProvider';
+import CardEditPageChrome from './CardEditPageChrome';
 
 const UPDATED_CARD_KEY = 'updatedCardState';
 
@@ -145,15 +146,6 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
     }
   };
 
-  const handleBack = () => {
-    if (!cardId) {
-      if (!window.confirm('Are you sure you want to leave? Any unsaved changes will be lost.')) {
-        return;
-      }
-    }
-    router.back();
-  };
-
   const isLoading = isCardLoading || areTagsLoading;
 
   if (isLoading) {
@@ -166,53 +158,19 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
   
   return (
     <div className={styles.editPage}>
-      <div className={styles.formHeader}>
-        <h1>{cardId ? 'Edit Card' : 'Create New Card'}</h1>
-        <div className={styles.actions}>
-          {cardId && (
-            <>
-              <button
-                type="button"
-                onClick={handleDelete}
-                className={styles.deleteOutlineButton}
-                disabled={isDeleting}
-              >
-                {isDeleting ? 'Deleting...' : 'Delete'}
-              </button>
-              <button
-                type="button"
-                onClick={handleDuplicate}
-                className={styles.duplicateButton}
-                disabled={isDuplicating}
-              >
-                {isDuplicating ? 'Duplicating...' : 'Duplicate'}
-              </button>
-            </>
-          )}
-          <button 
-            type="button" 
-            onClick={handleBack}
-            className={styles.cancelButton}
-          >
-            Back
-          </button>
-          <button 
-            type="submit" 
-            form="card-form" 
-            className={styles.submitButton}
-          >
-            {cardId ? 'Save' : 'Create Card'}
-          </button>
-        </div>
-      </div>
       <CardFormProvider
-        initialCard={card}
+        initialCard={card ?? null}
         allTags={tagsData || []}
         onSave={handleSave}
       >
-        <CardForm
+        <CardEditPageChrome
+          cardId={cardId}
           onDelete={handleDelete}
+          onDuplicate={handleDuplicate}
+          isDeleting={isDeleting}
+          isDuplicating={isDuplicating}
         />
+        <CardForm />
       </CardFormProvider>
     </div>
   );

@@ -94,17 +94,12 @@ const mockTags: Tag[] = [
 ];
 
 describe('CardForm', () => {
-  const mockOnDelete = jest.fn();
   const mockOnSave = jest.fn();
 
   const renderCardForm = () => {
     return render(
       <CardFormProvider initialCard={mockCard} allTags={mockTags} onSave={mockOnSave}>
-        <CardForm
-          initialCard={mockCard}
-          allTags={mockTags}
-          onDelete={mockOnDelete}
-        />
+        <CardForm />
       </CardFormProvider>
     );
   };

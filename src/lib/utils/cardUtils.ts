@@ -4,6 +4,20 @@ const DIMENSIONS = ['who', 'what', 'when', 'where'] as const;
 
 const EXCERPT_MAX_LENGTH = 150;
 
+/**
+ * Quote card attribution for feed/detail: prefer `subtitle`, else `excerpt`.
+ * Prefixes an em dash when the string does not already start with a dash character.
+ */
+export function formatQuoteAttribution(
+  subtitle: string | null | undefined,
+  excerpt: string | null | undefined
+): string {
+  const raw = subtitle?.trim() || excerpt?.trim() || '';
+  if (!raw) return '';
+  if (/^[\u2014\u2013\u2012\u2015\-–—]\s*/.test(raw)) return raw;
+  return `\u2014 ${raw}`;
+}
+
 /** Strips HTML tags and entities, returning plain text. */
 export function stripHtml(html: string): string {
   return html
@@ -193,6 +207,32 @@ export function dehydrateCardForSave(raw: any): CardUpdate {
   } as CardUpdate;
 
   return result;
+}
+
+/** Recursively sort object keys so JSON.stringify is stable for comparison. */
+function sortKeysDeep(value: unknown): unknown {
+  if (value === null || typeof value !== 'object') {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map(sortKeysDeep);
+  }
+  const obj = value as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const k of Object.keys(obj).sort()) {
+    out[k] = sortKeysDeep(obj[k]);
+  }
+  return out;
+}
+
+/**
+ * True if two card states would persist the same payload (after dehydrate).
+ * Ignores transient/hydrated fields (cover object, gallery media blobs, etc.).
+ */
+export function persistableSnapshotsEqual(a: CardUpdate, b: CardUpdate): boolean {
+  const da = sortKeysDeep(dehydrateCardForSave(a));
+  const db = sortKeysDeep(dehydrateCardForSave(b));
+  return JSON.stringify(da) === JSON.stringify(db);
 }
 
 /**

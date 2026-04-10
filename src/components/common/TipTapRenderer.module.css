@@ -6,6 +6,18 @@
   line-height: var(--line-height-normal);
 }
 
+.rendererTransparent :global(.ProseMirror) {
+  padding: 0;
+  background-color: transparent;
+}
+
+/* Avoid a second vertical “bar” inside quote/callout tiles when body uses blockquote */
+.rendererTransparent :global(blockquote) {
+  border-left: none;
+  margin-left: 0;
+  padding-left: 0;
+}
+
 .renderer :global(.ProseMirror:focus) {
   outline: none;
 }
@@ -63,4 +75,22 @@
   font-size: var(--font-size-sm);
   color: var(--text2-color);
   margin-top: var(--spacing-sm);
+}
+
+.renderer :global(.card-inline-link) {
+  cursor: pointer;
+  color: var(--color3, #2563eb);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.renderer :global(.card-inline-link:focus-visible) {
+  outline: 2px solid var(--color3, #2563eb);
+  outline-offset: 2px;
+}
+
+.renderer :global(.card-inline-link--broken) {
+  color: var(--text2-color);
+  text-decoration: line-through;
+  cursor: default;
 } 

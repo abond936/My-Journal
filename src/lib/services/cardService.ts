@@ -143,6 +143,17 @@ function normalizeChildrenIds(childrenIds: unknown, selfId?: string): string[] {
   return Array.from(seen);
 }
 
+/**
+ * True when this card should appear in curated collection lists (denormalized; server-maintained).
+ * Matches legacy `getCollectionCards` filter: has at least one child or `curatedRoot === true`.
+ */
+export function computeCuratedNavEligible(card: Pick<Card, 'childrenIds' | 'curatedRoot'>): boolean {
+  const children = normalizeChildrenIds(card.childrenIds);
+  return children.length > 0 || card.curatedRoot === true;
+}
+
+type ParentChildrenAdjust = { childrenIds: string[]; curatedRoot: boolean };
+
 async function wouldCreateCycle(
   transaction: FirebaseFirestore.Transaction,
   parentId: string,
@@ -398,6 +409,53 @@ async function _hydrateCoverImagesOnly(cards: Card[]): Promise<Card[]> {
 }
 
 /**
+ * For gallery cards with no cover, hydrate only the first gallery slide so feed-style tiles can show a thumbnail.
+ */
+async function _hydrateFirstGallerySlideWhereNoCover(cards: Card[]): Promise<Card[]> {
+  if (!cards?.length) {
+    return cards;
+  }
+
+  const ids = new Set<string>();
+  for (const card of cards) {
+    if (!card.coverImage && card.galleryMedia?.[0]?.mediaId) {
+      ids.add(card.galleryMedia[0].mediaId);
+    }
+  }
+
+  if (ids.size === 0) {
+    return cards;
+  }
+
+  const mediaMap = new Map<string, Media>();
+  const mediaDocs = await Promise.all(
+    Array.from(ids).map(id => firestore.collection(MEDIA_COLLECTION).doc(id).get())
+  );
+  mediaDocs.forEach(doc => {
+    if (doc.exists) {
+      mediaMap.set(doc.id, doc.data() as Media);
+    }
+  });
+  _applyPublicStorageUrls(mediaMap);
+
+  return cards.map(card => {
+    if (card.coverImage || !card.galleryMedia?.[0]?.mediaId) {
+      return card;
+    }
+    const media = mediaMap.get(card.galleryMedia[0].mediaId);
+    if (!media) {
+      return card;
+    }
+    return {
+      ...card,
+      galleryMedia: card.galleryMedia.map((item, i) =>
+        i === 0 ? { ...item, media } : item
+      ),
+    };
+  });
+}
+
+/**
  * Creates a new card in Firestore.
  * @param cardData The data for the new card, excluding 'id'.
  * @returns The newly created card with its ID.
@@ -408,6 +466,7 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
 
   // Validate and apply defaults using Zod
   const validatedData = cardSchema.partial().parse(cardData);
+  delete (validatedData as Partial<Card>).curatedNavEligible;
 
   const selectedTags = validatedData.tags || [];
 
@@ -420,7 +479,7 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
   await withRetry(async () => {
     return firestore.runTransaction(async (transaction) => {
       const normalizedChildren = normalizeChildrenIds(validatedData.childrenIds);
-      const parentDetachUpdates = new Map<string, string[]>();
+      const parentDetachUpdates = new Map<string, ParentChildrenAdjust>();
 
       for (const childId of normalizedChildren) {
         const parentQuery = firestore
@@ -430,7 +489,10 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
         for (const parentDoc of parentSnap.docs) {
           const parentData = parentDoc.data() as Card;
           const updatedChildren = normalizeChildrenIds(parentData.childrenIds).filter(id => id !== childId);
-          parentDetachUpdates.set(parentDoc.id, updatedChildren);
+          parentDetachUpdates.set(parentDoc.id, {
+            childrenIds: updatedChildren,
+            curatedRoot: parentData.curatedRoot === true,
+          });
         }
       }
 
@@ -456,15 +518,26 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
         where: dimensionalTags.where || [],
         createdAt: Date.now(),
         updatedAt: Date.now(),
+        curatedNavEligible: computeCuratedNavEligible({
+          childrenIds: normalizedChildren,
+          curatedRoot: validatedData.curatedRoot === true,
+        }),
       };
 
       // 1. Create the new card document
       transaction.set(docRef, newCard);
 
       // 1b. Enforce single-parent across all existing parents of each child.
-      for (const [parentId, updatedChildren] of parentDetachUpdates.entries()) {
+      for (const [parentId, adjust] of parentDetachUpdates.entries()) {
         const parentRef = firestore.collection(CARDS_COLLECTION).doc(parentId);
-        transaction.update(parentRef, { childrenIds: updatedChildren, updatedAt: Date.now() });
+        transaction.update(parentRef, {
+          childrenIds: adjust.childrenIds,
+          curatedNavEligible: computeCuratedNavEligible({
+            childrenIds: adjust.childrenIds,
+            curatedRoot: adjust.curatedRoot,
+          }),
+          updatedAt: Date.now(),
+        });
       }
 
       // 2. Update tag counts using centralized function
@@ -576,6 +649,7 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
 
       // Remove transient fields that shouldn't be saved.
       delete updatePayload.coverImage;
+      delete updatePayload.curatedNavEligible;
   
       // Validate the incoming partial data against the card schema.
       const validatedUpdate = cardSchema.partial().parse(updatePayload);
@@ -606,7 +680,7 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         return existingData;
       }
 
-      const parentDetachUpdates = new Map<string, string[]>();
+      const parentDetachUpdates = new Map<string, ParentChildrenAdjust>();
       if ('childrenIds' in cleanedUpdate) {
         const normalizedChildren = normalizeChildrenIds(cleanedUpdate.childrenIds, cardId);
         cleanedUpdate.childrenIds = normalizedChildren;
@@ -627,7 +701,10 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
             if (parentDoc.id === cardId) continue;
             const parentData = parentDoc.data() as Card;
             const updatedChildren = normalizeChildrenIds(parentData.childrenIds).filter(id => id !== childId);
-            parentDetachUpdates.set(parentDoc.id, updatedChildren);
+            parentDetachUpdates.set(parentDoc.id, {
+              childrenIds: updatedChildren,
+              curatedRoot: parentData.curatedRoot === true,
+            });
           }
         }
       }
@@ -669,9 +746,28 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       cleanedUpdate.when = dimensionalTags.when || [];
       cleanedUpdate.where = dimensionalTags.where || [];
 
-      for (const [parentId, updatedChildren] of parentDetachUpdates.entries()) {
+      const finalChildrenForNav = 'childrenIds' in cleanedUpdate
+        ? cleanedUpdate.childrenIds!
+        : normalizeChildrenIds(existingData.childrenIds, cardId);
+      const finalCuratedRootForNav =
+        'curatedRoot' in cleanedUpdate
+          ? cleanedUpdate.curatedRoot === true
+          : existingData.curatedRoot === true;
+      cleanedUpdate.curatedNavEligible = computeCuratedNavEligible({
+        childrenIds: finalChildrenForNav,
+        curatedRoot: finalCuratedRootForNav,
+      });
+
+      for (const [parentId, adjust] of parentDetachUpdates.entries()) {
         const parentRef = firestore.collection(CARDS_COLLECTION).doc(parentId);
-        transaction.update(parentRef, { childrenIds: updatedChildren, updatedAt: Date.now() });
+        transaction.update(parentRef, {
+          childrenIds: adjust.childrenIds,
+          curatedNavEligible: computeCuratedNavEligible({
+            childrenIds: adjust.childrenIds,
+            curatedRoot: adjust.curatedRoot,
+          }),
+          updatedAt: Date.now(),
+        });
       }
 
       // Maintain referencedByCardIds on media docs
@@ -788,7 +884,15 @@ export async function getCardById(id: string): Promise<Card | null> {
  * @param ids - An array of card IDs to retrieve.
  * @returns An array of found cards.
  */
-export async function getCardsByIds(ids: string[]): Promise<Card[]> {
+export type GetCardsByIdsOptions = {
+  /** `cover-only`: fewer Firestore reads; enough for discovery thumbnails. Default `full`. */
+  hydrationMode?: 'full' | 'cover-only';
+};
+
+export async function getCardsByIds(
+  ids: string[],
+  options?: GetCardsByIdsOptions
+): Promise<Card[]> {
   if (!ids || ids.length === 0) {
     return [];
   }
@@ -816,6 +920,12 @@ export async function getCardsByIds(ids: string[]): Promise<Card[]> {
   // Preserve the original order of IDs
   const cardMap = new Map(cards.map(c => [c.docId, c]));
   const orderedCards = ids.map(id => cardMap.get(id)).filter((c): c is Card => !!c);
+
+  const mode = options?.hydrationMode ?? 'full';
+  if (mode === 'cover-only') {
+    const withCovers = await _hydrateCoverImagesOnly(orderedCards);
+    return _hydrateFirstGallerySlideWhereNoCover(withCovers);
+  }
 
   return await _hydrateCards(orderedCards);
 }
@@ -892,14 +1002,16 @@ const COLLECTIONS_LIST_LIMIT = 500;
 
 /**
  * Fetches cards that are curated collections.
- * A card qualifies if it has children or is explicitly marked as a curated root.
- * Firestore cannot query "array length > 0", so we fetch and filter in memory.
+ * Uses denormalized `curatedNavEligible` (maintained in create/update/delete) so we query by flag
+ * instead of scanning recent cards. Requires composite indexes and a one-time backfill for legacy docs.
  */
 export async function getCollectionCards(
   status: Card['status'] | 'all' = 'published',
   options: { limit?: number; hydrationMode?: 'full' | 'cover-only' } = {}
 ): Promise<Card[]> {
-  let query: FirebaseFirestore.Query = firestore.collection(CARDS_COLLECTION);
+  let query: FirebaseFirestore.Query = firestore
+    .collection(CARDS_COLLECTION)
+    .where('curatedNavEligible', '==', true);
 
   if (status && status !== 'all') {
     query = query.where('status', '==', status);
@@ -907,9 +1019,7 @@ export async function getCollectionCards(
   query = query.orderBy('createdAt', 'desc').limit(options.limit ?? COLLECTIONS_LIST_LIMIT);
 
   const snapshot = await query.get();
-  const cards: Card[] = snapshot.docs
-    .map(doc => ({ docId: doc.id, ...doc.data() } as Card))
-    .filter(card => (card.childrenIds && card.childrenIds.length > 0) || card.curatedRoot === true);
+  const cards: Card[] = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Card));
 
   if (options.hydrationMode === 'cover-only') {
     return _hydrateCoverImagesOnly(cards);
@@ -1066,9 +1176,13 @@ export async function deleteCard(cardId: string): Promise<void> {
         for (const parentDoc of parentCardsSnapshot.docs) {
             const parentData = parentDoc.data() as Card;
             const updatedChildrenIds = (parentData.childrenIds || []).filter(id => id !== cardId);
-            transaction.update(parentDoc.ref, { 
+            transaction.update(parentDoc.ref, {
+              childrenIds: updatedChildrenIds,
+              curatedNavEligible: computeCuratedNavEligible({
                 childrenIds: updatedChildrenIds,
-                updatedAt: Date.now()
+                curatedRoot: parentData.curatedRoot === true,
+              }),
+              updatedAt: Date.now(),
             });
         }
 

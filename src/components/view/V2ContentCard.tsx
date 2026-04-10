@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
 import JournalImage from '@/components/common/JournalImage';
 import { Card } from '@/lib/types/card';
@@ -8,11 +8,22 @@ import { getDisplayUrl } from '@/lib/utils/photoUtils'; // Corrected import path
 import { getObjectPositionForAspectRatio } from '@/lib/utils/objectPositionUtils';
 import { getEffectiveGalleryObjectPosition } from '@/lib/utils/galleryObjectPosition';
 import TipTapRenderer from '@/components/common/TipTapRenderer';
+import { formatQuoteAttribution } from '@/lib/utils/cardUtils';
 import styles from './V2ContentCard.module.css';
 
 // Simple horizontal slider
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
+
+/** Canonical media id for the card cover (for deduping gallery slides). */
+function getCoverMediaId(card: Card): string | undefined {
+  if (card.coverImageId) return card.coverImageId;
+  const c = card.coverImage;
+  if (c && typeof c === 'object' && 'docId' in c && typeof (c as { docId?: string }).docId === 'string') {
+    return (c as { docId: string }).docId;
+  }
+  return undefined;
+}
 
 // --- Card Type Renderers ---
 
@@ -60,10 +71,95 @@ const StoryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card,
   );
 };
 
-// NEW: A dedicated renderer for gallery card previews.
-// Uses cover image for feed thumbnail when set; otherwise first gallery image.
+// Gallery feed: Swiper with cover as first slide when set; gallery items omit any row whose mediaId matches cover (dedupe).
 const GalleryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => {
-  const hasGallery = card.galleryMedia && card.galleryMedia.length > 0;
+  const coverId = useMemo(() => getCoverMediaId(card), [card]);
+
+  const gallerySlides = useMemo(() => {
+    const items = (card.galleryMedia ?? []).filter((item) => item.media);
+    if (!coverId) return items;
+    return items.filter((item) => item.mediaId !== coverId);
+  }, [card.galleryMedia, coverId]);
+
+  const coverObjectPosition =
+    card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
+      ? getObjectPositionForAspectRatio(
+          {
+            x: card.coverImageFocalPoint.x ?? 0,
+            y: card.coverImageFocalPoint.y ?? 0,
+          },
+          { width: card.coverImage.width, height: card.coverImage.height },
+          '1/1',
+          400
+        )
+      : 'center';
+
+  const hasCoverSlide = Boolean(card.coverImage);
+  const showSwiper = hasCoverSlide || gallerySlides.length > 0;
+
+  return (
+    <>
+      {showSwiper ? (
+        <div className={styles.imageContainer}>
+          <Swiper spaceBetween={0} slidesPerView={1} className={styles.swiperContainer}>
+            {hasCoverSlide && card.coverImage ? (
+              <SwiperSlide key={`cover-${card.docId}`}>
+                <JournalImage
+                  src={getDisplayUrl(card.coverImage)}
+                  alt={card.title}
+                  className={styles.image}
+                  width={400}
+                  height={300}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  style={{ objectPosition: coverObjectPosition }}
+                  priority={false}
+                />
+              </SwiperSlide>
+            ) : null}
+            {gallerySlides.map((item) => (
+              <SwiperSlide key={item.mediaId}>
+                <JournalImage
+                  src={getDisplayUrl(item.media!)}
+                  alt={item.media!.filename || card.title}
+                  className={styles.image}
+                  width={400}
+                  height={300}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  style={{ objectPosition: getEffectiveGalleryObjectPosition(item, item.media!) }}
+                  priority={false}
+                />
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        </div>
+      ) : null}
+      <div className={styles.content}>
+        <h3 className={styles.title}>{card.title}</h3>
+      </div>
+    </>
+  );
+};
+
+/**
+ * Quote feed tile: **Title** = short label (not the full quotation). **Content** = quote (TipTap).
+ * **Attribution** = `subtitle` preferred, else `excerpt` (em dash added by `formatQuoteAttribution` when missing).
+ */
+const QuoteCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card }) => {
+  const attribution = formatQuoteAttribution(card.subtitle, card.excerpt);
+  return (
+    <div className={styles.content}>
+      {card.title ? <h3 className={styles.quoteCardTitle}>{card.title}</h3> : null}
+      {card.content ? (
+        <blockquote className={styles.quoteBody}>
+          <TipTapRenderer content={card.content} surface="transparent" />
+        </blockquote>
+      ) : null}
+      {attribution ? <cite className={styles.quoteCite}>{attribution}</cite> : null}
+    </div>
+  );
+};
+
+const QACardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => {
   const objectPosition =
     card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
       ? getObjectPositionForAspectRatio(
@@ -77,13 +173,53 @@ const GalleryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ car
         )
       : 'center';
 
+  if (displayMode === 'inline') {
+    return (
+      <>
+        {card.coverImage && (
+          <div className={styles.imageContainer}>
+            <JournalImage
+              src={getDisplayUrl(card.coverImage)}
+              alt={card.title}
+              className={styles.image}
+              width={400}
+              height={300}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              style={{ objectPosition }}
+              priority={false}
+            />
+          </div>
+        )}
+        <div className={styles.content}>
+          <h3 className={styles.qaQuestion}>{card.title}</h3>
+          {card.excerpt && <p className={styles.qaTeaser}>{card.excerpt}</p>}
+          {card.content && (
+            <div className={styles.inlineContent}>
+              <TipTapRenderer content={card.content} surface="transparent" />
+            </div>
+          )}
+        </div>
+      </>
+    );
+  }
+
+  if (displayMode === 'static') {
+    return (
+      <div className={styles.content}>
+        <h3 className={styles.qaQuestion}>{card.title}</h3>
+        {card.excerpt ? <p className={styles.qaTeaser}>{card.excerpt}</p> : null}
+      </div>
+    );
+  }
+
+  // navigate — question + optional excerpt teaser; optional cover hero like story
   return (
     <>
-      {card.coverImage ? (
+      {card.coverImage && (
         <div className={styles.imageContainer}>
-          <JournalImage 
-            src={getDisplayUrl(card.coverImage)} 
-            alt={card.title} 
+          <JournalImage
+            src={getDisplayUrl(card.coverImage)}
+            alt={card.title}
             className={styles.image}
             width={400}
             height={300}
@@ -92,54 +228,32 @@ const GalleryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ car
             priority={false}
           />
         </div>
-      ) : hasGallery ? (
-        <div className={styles.imageContainer}>
-          <Swiper spaceBetween={0} slidesPerView={1} className={styles.swiperContainer}>
-            {card.galleryMedia?.map(item =>
-              item.media ? (
-                <SwiperSlide key={item.mediaId}>
-                  <JournalImage 
-                    src={getDisplayUrl(item.media)} 
-                    alt={item.media.filename || ''} 
-                    className={styles.image}
-                    width={400}
-                    height={300}
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    style={{ objectPosition: getEffectiveGalleryObjectPosition(item, item.media) }}
-                    priority={false}
-                  />
-                </SwiperSlide>
-              ) : null
-            )}
-          </Swiper>
-        </div>
-      ) : null}
+      )}
       <div className={styles.content}>
-        <h3 className={styles.title}>{card.title}</h3>
+        <h3 className={styles.qaQuestion}>{card.title}</h3>
+        {card.excerpt ? <p className={styles.qaTeaser}>{card.excerpt}</p> : null}
       </div>
     </>
   );
 };
 
-const QuoteCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => (
-  <div className={styles.content}>
-    <blockquote className={styles.quoteText}>{card.content}</blockquote>
-    {card.title && <cite className={styles.quoteCite}>— {card.title}</cite>}
-  </div>
-);
+const CalloutCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => {
+  const showBody =
+    card.content && (displayMode === 'inline' || displayMode === 'navigate');
+  const hasExcerpt = Boolean(card.excerpt?.trim());
 
-const QACardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => (
-  <div className={styles.content}>
-    <p className={styles.qaQuestion}>Q: {card.title}</p>
-    <p className={styles.qaAnswer}>A: {card.content}</p>
-  </div>
-);
-
-const CalloutCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => (
-  <div className={styles.content}>
-    <h3 className={styles.calloutText}>{card.title}</h3>
-  </div>
-);
+  return (
+    <div className={styles.content}>
+      <h3 className={styles.calloutTitle}>{card.title}</h3>
+      {hasExcerpt ? <p className={styles.calloutExcerpt}>{card.excerpt}</p> : null}
+      {showBody ? (
+        <div className={`${styles.inlineContent} ${styles.calloutBody}`}>
+          <TipTapRenderer content={card.content} surface="transparent" />
+        </div>
+      ) : null}
+    </div>
+  );
+};
 
 // --- Main V2 Component ---
 
@@ -153,13 +267,20 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({ card, size = 'medium', on
   const displayMode = card.displayMode || 'navigate';
   
   // Determine if card should be interactive based on display mode
-  const isInteractive = displayMode === 'navigate' && 
-    (card.type === 'story' || card.type === 'gallery');
-  
+  const isInteractive =
+    displayMode === 'navigate' &&
+    (card.type === 'story' || card.type === 'gallery' || card.type === 'qa');
+
   const cardTypeClass = styles[card.type] || styles.story;
   const sizeClass = styles[size] || styles.medium;
   const displayModeClass = styles[displayMode] || '';
-  const className = `${styles.card} ${cardTypeClass} ${sizeClass} ${displayModeClass}`;
+  const qaWithCoverClass =
+    card.type === 'qa' &&
+    card.coverImage &&
+    (displayMode === 'navigate' || displayMode === 'inline')
+      ? styles.qaWithCover
+      : '';
+  const className = `${styles.card} ${cardTypeClass} ${sizeClass} ${displayModeClass} ${qaWithCoverClass}`.trim();
 
   const renderContent = () => {
     switch (card.type) {
@@ -170,7 +291,21 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({ card, size = 'medium', on
       case 'qa':
         return <QACardContent card={card} displayMode={displayMode} />;
       case 'callout':
-        return <CalloutCardContent card={card} displayMode={displayMode} />;
+        return (
+          <>
+            <CalloutCardContent card={card} displayMode={displayMode} />
+            <div className={styles.calloutPinOverlay} aria-hidden>
+              <img
+                src="/images/pushpin.svg"
+                alt=""
+                width={458}
+                height={443}
+                className={styles.calloutPinWatermark}
+                decoding="async"
+              />
+            </div>
+          </>
+        );
       case 'story':
       default:
         return <StoryCardContent card={card} displayMode={displayMode} />;

@@ -1,10 +1,9 @@
 'use client';
 
 // Navigation.tsx - Main navigation component
-// This component provides the primary navigation for the application
 // It includes a responsive design that collapses into a hamburger menu on mobile
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -18,6 +17,28 @@ interface NavigationProps {
   sidebarOpen?: boolean;
 }
 
+function useReaderBackTarget(pathname: string | null): { showBack: boolean; backHref: string } {
+  return useMemo(() => {
+    if (!pathname || pathname === '/') {
+      return { showBack: false, backHref: '/view' };
+    }
+    if (pathname.startsWith('/admin')) {
+      return { showBack: false, backHref: '/view' };
+    }
+    const onMainReaderFeed = pathname === '/view';
+    if (onMainReaderFeed) {
+      return { showBack: false, backHref: '/view' };
+    }
+    if (pathname.startsWith('/view/')) {
+      return { showBack: true, backHref: '/view' };
+    }
+    if (pathname === '/search') {
+      return { showBack: true, backHref: '/view' };
+    }
+    return { showBack: true, backHref: '/view' };
+  }, [pathname]);
+}
+
 const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -27,6 +48,7 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
   const { theme } = useTheme();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'admin';
+  const { showBack, backHref } = useReaderBackTarget(pathname);
 
   useEffect(() => {
     setMounted(true);
@@ -71,36 +93,49 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
   return (
     <nav ref={navRef} className={`${styles.navigation} ${className || ''}`}>
       <div className={`${styles.navContainer} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
-        <Link href="/view" className={styles.logo}>
-          <Image 
-            src={`/images/uploads/Title-${theme === 'dark' ? 'dark' : 'light'}.png`}
-            alt="My Stories - Michael Alan Bond" 
-            className={styles.logoImage}
-            width={225}
-            height={113}
-            sizes="(max-width: 768px) 40px, 225px"
-            priority={true}
-          />
-          <span className={styles.logoIcon} aria-hidden="true">📖</span>
-        </Link>
+        <div className={styles.leftSlot}>
+          {showBack ? (
+            <Link href={backHref} className={styles.backLink}>
+              ← Back
+            </Link>
+          ) : (
+            <span className={styles.edgeSpacer} aria-hidden />
+          )}
+        </div>
 
-        <button 
-          className={styles.menuButton}
-          onClick={toggleMenu}
-          aria-label="Toggle menu"
-          aria-expanded={isMenuOpen}
-        >
-          <span className={`${styles.hamburger} ${isMenuOpen ? styles.open : ''}`}></span>
-        </button>
+        <div className={styles.centerSlot}>
+          <Link href="/view" className={styles.logo}>
+            <Image
+              src={`/images/uploads/Title-${theme === 'dark' ? 'dark' : 'light'}.png`}
+              alt="My Stories - Michael Alan Bond"
+              className={styles.logoImage}
+              width={225}
+              height={113}
+              sizes="(max-width: 768px) 160px, 225px"
+              priority={true}
+            />
+            <span className={styles.logoIcon} aria-hidden="true">
+              📖
+            </span>
+          </Link>
+        </div>
+
+        <div className={styles.rightSlot}>
+          <button
+            type="button"
+            className={styles.menuButton}
+            onClick={toggleMenu}
+            aria-label="Toggle menu"
+            aria-expanded={isMenuOpen}
+          >
+            <span className={`${styles.hamburger} ${isMenuOpen ? styles.open : ''}`} />
+          </button>
+        </div>
 
         <div className={`${styles.navLinks} ${isMenuOpen ? styles.open : ''}`}>
           <Link
             href="/view"
-            className={`${styles.navLink} ${
-              pathname === '/view'
-                ? styles.active
-                : ''
-            }`}
+            className={`${styles.navLink} ${pathname === '/view' ? styles.active : ''}`}
           >
             Content
           </Link>
@@ -108,9 +143,7 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
             <span className={styles.adminLinksDesktopOnly}>
               <Link
                 href="/admin/card-admin"
-                className={`${styles.navLink} ${
-                  pathname?.startsWith('/admin') ? styles.active : ''
-                }`}
+                className={`${styles.navLink} ${pathname?.startsWith('/admin') ? styles.active : ''}`}
               >
                 Admin
               </Link>
@@ -141,4 +174,4 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
   );
 };
 
-export default Navigation; 
+export default Navigation;

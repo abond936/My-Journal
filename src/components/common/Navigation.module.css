@@ -10,15 +10,62 @@
   padding: var(--spacing-sm) var(--spacing-md);
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   width: 100%;
   height: 100%;
   margin-left: 0;
   position: relative;
+  gap: var(--spacing-sm);
 }
 
 .navContainer.sidebarOpen {
   margin-left: 0;
+}
+
+.leftSlot,
+.rightSlot {
+  flex: 0 0 auto;
+  min-width: 5rem;
+  display: flex;
+  align-items: center;
+}
+
+.leftSlot {
+  justify-content: flex-start;
+}
+
+.rightSlot {
+  justify-content: flex-end;
+}
+
+.centerSlot {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 0;
+}
+
+.edgeSpacer {
+  display: inline-block;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.backLink {
+  color: var(--text1-color);
+  text-decoration: none;
+  font-size: var(--font-size-base);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-sm);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.backLink:hover {
+  background: var(--layout-background2-color);
 }
 
 .logo {
@@ -27,20 +74,18 @@
   transition: color var(--transition-short) ease;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--spacing-sm);
-  position: fixed;
-  left: var(--spacing-md);
-  top: 0;
-  height: var(--header-height);
-  transform: none;
+  position: static;
+  height: auto;
+  max-height: var(--header-height);
   z-index: calc(var(--z-index-header) + 1);
 }
 
 .logoImage {
-  height: 100%;
-  max-height: calc(var(--logo-max-height) * 0.5);
   width: auto;
-  padding-top: var(--spacing-sm);
+  max-height: calc(var(--logo-max-height) * 0.42);
+  height: auto;
   object-fit: contain;
 }
 
@@ -93,12 +138,15 @@
 }
 
 .menuButton {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
   background: none;
   border: none;
   cursor: pointer;
   padding: var(--spacing-xs);
-  /* Above fixed logo so the control stays clickable on mid-width viewports */
   z-index: calc(var(--z-index-header) + 2);
 }
 
@@ -175,26 +223,24 @@
   .navContainer {
     padding: var(--spacing-sm) var(--spacing-md);
     margin-left: 0 !important;
-    justify-content: space-between;
+  }
+
+  .leftSlot,
+  .rightSlot {
+    min-width: 3rem;
   }
 
   .logoImage {
-    display: block;
-    max-height: calc(var(--logo-max-height) * 0.5);
-    padding-top: var(--spacing-sm);
+    max-height: calc(var(--logo-max-height) * 0.36);
   }
 
   .logoIcon {
     display: none;
   }
 
-  .logo {
-    position: static;
-    left: auto;
-    top: auto;
-    height: 100%;
-    transform: none;
-    z-index: var(--z-index-content);
+  .backLink {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-sm);
   }
 
   .navLinks {

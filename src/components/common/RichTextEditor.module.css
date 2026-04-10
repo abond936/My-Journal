@@ -25,6 +25,14 @@
   display: flex;
   gap: var(--spacing-xs);
   margin-right: var(--spacing-md);
+  align-items: center;
+}
+
+.toolbarHint {
+  font-size: 0.75rem;
+  color: var(--text2-color, #666);
+  user-select: none;
+  margin-left: var(--spacing-xs);
 }
 
 .toolbarButton {
@@ -67,6 +75,13 @@
   font-family: inherit;
   min-height: 200px;
   overflow: visible;
+}
+
+.editorContent :global(.card-inline-link) {
+  cursor: pointer;
+  color: var(--color3, #2563eb);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .isDisabled {

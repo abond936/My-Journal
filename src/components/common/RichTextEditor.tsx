@@ -4,6 +4,7 @@ import React, { useState, useCallback, useEffect, useImperativeHandle, forwardRe
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { FigureWithImage } from '@/lib/tiptap/extensions/FigureWithImage';
+import { CardMention } from '@/lib/tiptap/extensions/CardMention';
 import Link from '@tiptap/extension-link';
 import { Media } from '@/lib/types/photo';
 import ImageToolbar from './ImageToolbar';
@@ -22,6 +23,8 @@ interface RichTextEditorProps {
   error?: string;
   onAddImage?: () => void;
   onImageDelete?: (mediaId: string) => void;
+  /** When set, this card is omitted from @ card-link suggestions (avoid self-link). */
+  currentCardId?: string;
 }
 
 export interface RichTextEditorRef {
@@ -38,7 +41,8 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
   isDisabled = false,
   error,
   onAddImage,
-  onImageDelete
+  onImageDelete,
+  currentCardId,
 }, ref) => {
   const { updateContentMedia } = useCardForm();
   const [content, setContent] = useState(initialContent);
@@ -116,7 +120,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
   }, [content, onChange, updateContentMedia, onContentMediaChange, extractMediaIds]);
 
   const editor = useEditor({
-    extensions: [ StarterKit, FigureWithImage, Link ],
+    extensions: [StarterKit, FigureWithImage, Link, CardMention],
     content: content,
     editable: !isDisabled,
     immediatelyRender: false,
@@ -162,6 +166,17 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
       editor.commands.setContent(initialContent, false);
     }
   }, [initialContent, editor, content]);
+
+  useEffect(() => {
+    if (!editor) return;
+    const storage = editor.storage as {
+      cardMention?: { excludeCardId?: string };
+    };
+    if (!storage.cardMention) {
+      storage.cardMention = {};
+    }
+    storage.cardMention.excludeCardId = currentCardId;
+  }, [editor, currentCardId]);
 
   const handleImageUpload = async (file: File) => {
     if (isDisabled || isProcessingImage) return;
@@ -222,6 +237,9 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
           <button onMouseDown={(e) => handleToolbarButtonPress(e, () => editor.chain().toggleHeading({ level: 2 }).run())} type="button" className={clsx(styles.toolbarButton, { [styles.active]: editor.isActive('heading', { level: 2 }) })}>H2</button>
           <button onMouseDown={(e) => handleToolbarButtonPress(e, () => editor.chain().toggleBlockquote().run())} type="button" className={clsx(styles.toolbarButton, { [styles.active]: editor.isActive('blockquote') })}>”</button>
           <button onMouseDown={(e) => { e.preventDefault(); onAddImage?.(); }} type="button" className={styles.toolbarButton}>+Img</button>
+          <span className={styles.toolbarHint} title="Type @ to insert a link to another card">
+            @ card
+          </span>
         </div>
         {editor.isActive('figureWithImage') && selectedNode && <ImageToolbar editor={editor} onAction={handleToolbarAction} />}
       </div>

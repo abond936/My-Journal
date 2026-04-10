@@ -55,6 +55,16 @@
   font-size: var(--font-size-sm);
 }
 
+.extrasLoadingRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-height: 3rem;
+  margin-top: var(--spacing-md);
+  color: var(--text2-color);
+  font-size: var(--font-size-sm);
+}
+
 /* Card Grid Styles */
 .cardGrid {
   display: grid;

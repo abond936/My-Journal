@@ -47,6 +47,11 @@ export default function AppShell({ children }: AppShellProps) {
     return <>{children}</>;
   }
 
+  // Home splash (including post-login redirect): no header/sidebar until main app routes
+  if (pathname === '/') {
+    return <>{children}</>;
+  }
+
   // If authenticated, render the full application shell
   return (
     <div className={styles.appShell}>

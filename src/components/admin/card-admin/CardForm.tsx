@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useCallback, useState, useMemo } from 'react';
+import React, { useRef, useCallback, useState, useMemo, useEffect } from 'react';
 import { Card, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { Media } from '@/lib/types/photo';
 import { extractMediaFromContent, generateExcerpt } from '@/lib/utils/cardUtils';
@@ -17,11 +17,7 @@ import clsx from 'clsx';
 import PhotoPicker from '@/components/admin/card-admin/PhotoPicker';
 import LoadingOverlay from '@/components/admin/card-admin/LoadingOverlay';
 
-interface CardFormProps {
-  onDelete?: () => Promise<void>;
-}
-
-const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
+const CardForm: React.FC = () => {
   const {
     formState: { cardData, isSaving, errors },
     allTags,
@@ -29,9 +25,16 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
     updateCoverImage,
     handleSave,
     updateContentMedia,
+    registerEditorContentGetter,
   } = useCardForm();
 
   const editorRef = useRef<RichTextEditorRef>(null);
+
+  useEffect(() => {
+    return registerEditorContentGetter(
+      () => editorRef.current?.getContent() ?? (cardData.content ?? '')
+    );
+  }, [registerEditorContentGetter, cardData.content]);
   const [isPhotoPickerOpen, setIsPhotoPickerOpen] = useState(false);
   
   const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setField('title', e.target.value), [setField]);
@@ -224,6 +227,7 @@ const CardForm: React.FC<CardFormProps> = ({ onDelete }) => {
 
           <div className={styles.editorSection}>
             <RichTextEditor
+              currentCardId={cardData.docId}
               ref={editorRef}
               initialContent={cardData.content}
               onChange={handleContentChange}

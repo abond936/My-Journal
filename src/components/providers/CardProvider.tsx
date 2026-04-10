@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import useSWR from 'swr';
 import useSWRInfinite, { SWRInfiniteResponse } from 'swr/infinite';
@@ -87,7 +87,7 @@ interface CardProviderProps {
 }
 
 export const CardProvider = ({ children }: CardProviderProps) => {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const isAdmin = session?.user?.role === 'admin';
   const pathname = usePathname();
 
@@ -97,7 +97,8 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   // --- Local Filter State ---
   const [cardType, setCardType] = useState<CardFilterType>('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [status, setStatus] = useState<CardStatus>('all');
+  // Default published so pre-session and non-admin requests never send status=all (403 on API).
+  const [status, setStatus] = useState<CardStatus>('published');
   const [pageLimit, setPageLimit] = useState(20);
   const [activeDimension, setActiveDimensionState] = useState<ActiveDimension>(() => {
     if (typeof window === 'undefined') return 'all';
@@ -128,6 +129,19 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       else sessionStorage.removeItem(COLLECTION_STORAGE_KEY);
     }
   }, []);
+
+  const hasAppliedSessionStatusDefault = useRef(false);
+  useEffect(() => {
+    if (sessionStatus === 'loading') return;
+    if (sessionStatus === 'unauthenticated') {
+      hasAppliedSessionStatusDefault.current = false;
+      setStatus('published');
+      return;
+    }
+    if (hasAppliedSessionStatusDefault.current) return;
+    hasAppliedSessionStatusDefault.current = true;
+    setStatus(session?.user?.role === 'admin' ? 'all' : 'published');
+  }, [sessionStatus, session?.user?.role]);
 
   // Define which paths should trigger card fetching
   const activePaths = ['/view', '/admin/card-admin', '/search'];

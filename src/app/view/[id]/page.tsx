@@ -29,7 +29,7 @@ async function getCardData(id: string): Promise<CardPageData | null> {
     // 2. Fetch the children if they exist
     let children: Card[] = [];
     if (card.childrenIds && card.childrenIds.length > 0) {
-      children = await getCardsByIds(card.childrenIds);
+      children = await getCardsByIds(card.childrenIds, { hydrationMode: 'cover-only' });
     }
     
     return { card, children };

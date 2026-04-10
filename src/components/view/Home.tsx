@@ -83,18 +83,7 @@ const Home: React.FC = () => {
 
   return (
     <div className={styles.pageWrapper}>
-      {/* Top corner graphic */}
-      <div className={styles.topCorner}>
-        <Image 
-          src="/images/uploads/top-corner.png" 
-          alt="" 
-          width={200}
-          height={200}
-          sizes="200px"
-        />
-      </div>
-
-      {/* Main content area */}
+      {/* Main content area — centered title + login; no upper-left chrome until authenticated */}
       <div className={styles.contentWrapper}>
         {/* Title section */}
         <div className={styles.titleSection}>

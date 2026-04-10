@@ -4,8 +4,11 @@ import React, { createContext, useContext, useState, useCallback, useMemo, useEf
 import { Card, CardUpdate, cardSchema, GalleryMediaItem, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 import { Media } from '@/lib/types/photo';
-import { ZodError } from 'zod';
-import { extractMediaFromContent, dehydrateCardForSave } from '@/lib/utils/cardUtils';
+import {
+  extractMediaFromContent,
+  dehydrateCardForSave,
+  persistableSnapshotsEqual,
+} from '@/lib/utils/cardUtils';
 
 /**
  * FormState Interface
@@ -50,6 +53,13 @@ interface FormContextValue {
 
   // Content Media
   updateContentMedia: (mediaIds: string[]) => void;
+
+  /** True when persistable fields differ from last successful save (or initial load). */
+  isDirty: boolean;
+  /** If dirty, prompts; returns true when navigation should proceed. */
+  confirmLeaveIfDirty: () => boolean;
+  /** RichTextEditor registers latest HTML getter so leave/dirty matches TipTap buffer. */
+  registerEditorContentGetter: (getter: () => string) => () => void;
 }
 
 /**
@@ -149,6 +159,54 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
   // Ref ensures handleSave always reads latest cardData (avoids stale closure if user clicks Remove then Save quickly)
   const cardDataRef = useRef<CardUpdate>(formState.cardData);
   cardDataRef.current = formState.cardData;
+
+  const editorContentGetterRef = useRef<(() => string) | null>(null);
+
+  const registerEditorContentGetter = useCallback((getter: () => string) => {
+    editorContentGetterRef.current = getter;
+    return () => {
+      editorContentGetterRef.current = null;
+    };
+  }, []);
+
+  const mergeEditorContentInto = useCallback((base: CardUpdate): CardUpdate => {
+    const fn = editorContentGetterRef.current;
+    if (!fn) return base;
+    try {
+      const html = fn();
+      if (html === base.content) return base;
+      return {
+        ...base,
+        content: html,
+        contentMedia: extractMediaFromContent(html),
+      };
+    } catch {
+      return base;
+    }
+  }, []);
+
+  const isDirty = useMemo(() => {
+    const current = mergeEditorContentInto(formState.cardData);
+    return !persistableSnapshotsEqual(current, formState.lastSavedState.cardData);
+  }, [formState.cardData, formState.lastSavedState.cardData, mergeEditorContentInto]);
+
+  const confirmLeaveIfDirty = useCallback(() => {
+    const current = mergeEditorContentInto(cardDataRef.current);
+    if (persistableSnapshotsEqual(current, formState.lastSavedState.cardData)) {
+      return true;
+    }
+    return window.confirm('You have unsaved changes. Leave without saving?');
+  }, [formState.lastSavedState.cardData, mergeEditorContentInto]);
+
+  useEffect(() => {
+    if (!isDirty) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [isDirty]);
 
   const setField = useCallback((field: keyof CardUpdate, value: any) => {
     if (!formState.cardData) return;
@@ -262,36 +320,38 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     return true;
   }, [formState.cardData, batchStateUpdate]);
 
-  const handleSave = useCallback(async (overrides?: Partial<CardUpdate>) => {
-    const dataToSave = overrides ? { ...formState.cardData, ...overrides } : formState.cardData;
+  const handleSave = useCallback(
+    async (overrides?: Partial<CardUpdate>) => {
+      const merged = mergeEditorContentInto(formState.cardData);
+      const dataToSave = overrides ? { ...merged, ...overrides } : merged;
 
-    if (!validateForm(dataToSave)) {
-      return;
-    }
+      if (!validateForm(dataToSave)) {
+        return;
+      }
 
-    batchStateUpdate({ isSaving: true });
+      batchStateUpdate({ isSaving: true });
 
-    try {
-      let payload = dehydrateCardForSave(dataToSave);
+      try {
+        const payload = dehydrateCardForSave(dataToSave);
 
-      // Remove derived fields – server will regenerate
-      delete (payload as any).filterTags;
+        // Remove derived fields – server will regenerate
+        delete (payload as any).filterTags;
 
-      // Save to backend
-      await onSave(payload);
+        await onSave(payload);
 
-      // Update last saved state
-      batchStateUpdate({
-        isSaving: false,
-        lastSavedState: {
-          cardData: dataToSave
-        }
-      });
-    } catch (error) {
-      console.error('[handleSave] Error during save:', error);
-      batchStateUpdate({ isSaving: false });
-    }
-  }, [validateForm, batchStateUpdate, onSave]);
+        batchStateUpdate({
+          isSaving: false,
+          lastSavedState: {
+            cardData: dataToSave,
+          },
+        });
+      } catch (error) {
+        console.error('[handleSave] Error during save:', error);
+        batchStateUpdate({ isSaving: false });
+      }
+    },
+    [validateForm, batchStateUpdate, onSave, formState.cardData, mergeEditorContentInto]
+  );
 
   const resetForm = useCallback(() => {
     const card = initialCard
@@ -312,29 +372,38 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     });
   }, [initialCard]);
 
-  const contextValue = useMemo(() => ({
-    formState,
-    allTags,
-    setField,
-    updateCoverImage,
-    updateTags,
-    updateChildIds,
-    updateContentMedia,
-    handleSave,
-    resetForm,
-    validateForm,
-  }), [
-    formState, 
-    allTags, 
-    setField,
-    updateCoverImage,
-    updateTags,
-    updateChildIds,
-    updateContentMedia,
-    handleSave,
-    resetForm,
-    validateForm,
-  ]);
+  const contextValue = useMemo(
+    () => ({
+      formState,
+      allTags,
+      setField,
+      updateCoverImage,
+      updateTags,
+      updateChildIds,
+      updateContentMedia,
+      handleSave,
+      resetForm,
+      validateForm,
+      isDirty,
+      confirmLeaveIfDirty,
+      registerEditorContentGetter,
+    }),
+    [
+      formState,
+      allTags,
+      setField,
+      updateCoverImage,
+      updateTags,
+      updateChildIds,
+      updateContentMedia,
+      handleSave,
+      resetForm,
+      validateForm,
+      isDirty,
+      confirmLeaveIfDirty,
+      registerEditorContentGetter,
+    ]
+  );
 
   return <FormContext.Provider value={contextValue}>{children}</FormContext.Provider>;
 }

@@ -12,34 +12,28 @@ interface DiscoverySectionProps {
   childrenCards: Card[];
 }
 
-interface DiscoveryData {
-  children: Card[];
-  filtered: Card[];
-  random: Card[];
-}
-
 export default function DiscoverySection({ currentCard, childrenCards }: DiscoverySectionProps) {
   const { cardType } = useCardContext();
-  const [discoveryData, setDiscoveryData] = useState<DiscoveryData>({
-    children: childrenCards,
-    filtered: [],
-    random: []
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [filtered, setFiltered] = useState<Card[]>([]);
+  const [random, setRandom] = useState<Card[]>([]);
+  const [extrasLoading, setExtrasLoading] = useState(true);
+  const [extrasError, setExtrasError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchDiscoveryData = async () => {
-      setLoading(true);
-      setError(null);
+    let cancelled = false;
+
+    const fetchExtras = async () => {
+      setExtrasLoading(true);
+      setExtrasError(null);
+      setFiltered([]);
+      setRandom([]);
 
       try {
         const excludeIds = [currentCard.docId, ...childrenCards.map(c => c.docId)];
 
-        // Fetch filtered cards (same tags as current card)
         const filteredParams = new URLSearchParams({
           count: '3',
-          exclude: excludeIds.join(',')
+          exclude: excludeIds.join(','),
         });
         if (cardType && cardType !== 'all') {
           filteredParams.set('type', cardType);
@@ -57,22 +51,19 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
           filteredParams.set('where', currentCard.where.join(','));
         }
 
-        // Fetch random cards (different tags, same card type filter)
         const randomParams = new URLSearchParams({
           count: '3',
-          exclude: excludeIds.join(',')
+          exclude: excludeIds.join(','),
         });
         if (cardType && cardType !== 'all') {
           randomParams.set('type', cardType);
         }
 
-        // Make parallel requests
         const [filteredResponse, randomResponse] = await Promise.all([
           fetch(`/api/cards/random?${filteredParams.toString()}`),
-          fetch(`/api/cards/random?${randomParams.toString()}`)
+          fetch(`/api/cards/random?${randomParams.toString()}`),
         ]);
 
-        // Check responses individually for better error handling
         if (!filteredResponse.ok) {
           const errorText = await filteredResponse.text();
           console.error('Filtered cards API error:', filteredResponse.status, errorText);
@@ -87,29 +78,43 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
 
         const [filteredCards, randomCards] = await Promise.all([
           filteredResponse.json(),
-          randomResponse.json()
+          randomResponse.json(),
         ]);
 
-        setDiscoveryData({
-          children: childrenCards,
-          filtered: filteredCards,
-          random: randomCards
-        });
-
+        if (!cancelled) {
+          setFiltered(filteredCards);
+          setRandom(randomCards);
+        }
       } catch (err) {
         console.error('Error fetching discovery data:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load discovery data');
+        if (!cancelled) {
+          setExtrasError(err instanceof Error ? err.message : 'Failed to load related content');
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setExtrasLoading(false);
+        }
       }
     };
 
-    fetchDiscoveryData();
+    fetchExtras();
+    return () => {
+      cancelled = true;
+    };
   }, [currentCard, childrenCards, cardType]);
 
-  if (loading) {
+  const hasChildren = childrenCards.length > 0;
+  const hasFiltered = filtered.length > 0;
+  const hasRandom = random.length > 0;
+
+  if (!hasChildren && !extrasLoading && !hasFiltered && !hasRandom && !extrasError) {
+    return null;
+  }
+
+  if (!hasChildren && extrasLoading) {
     return (
       <section className={styles.discoverySection}>
+        <h2 className={styles.discoveryTitle}>Discover More</h2>
         <div className={styles.loadingContainer}>
           <LoadingSpinner />
           <p>Loading related content...</p>
@@ -118,73 +123,73 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
     );
   }
 
-  if (error) {
+  if (!hasChildren && extrasError && !hasFiltered && !hasRandom) {
     return (
       <section className={styles.discoverySection}>
+        <h2 className={styles.discoveryTitle}>Discover More</h2>
         <div className={styles.errorContainer}>
-          <p>Unable to load related content: {error}</p>
+          <p>Unable to load related content: {extrasError}</p>
         </div>
       </section>
     );
   }
 
-  // Check if we have any content to show
-  const hasChildren = discoveryData.children.length > 0;
-  const hasFiltered = discoveryData.filtered.length > 0;
-  const hasRandom = discoveryData.random.length > 0;
-
-  if (!hasChildren && !hasFiltered && !hasRandom) {
-    return null; // Don't show empty discovery section
-  }
-
   return (
     <section className={styles.discoverySection}>
       <h2 className={styles.discoveryTitle}>Discover More</h2>
-      
+
       {hasChildren && (
         <div className={styles.discoveryGroup}>
           <h3 className={styles.groupTitle}>Related Content</h3>
           <div className={styles.cardGrid}>
-            {discoveryData.children.map(card => (
-              <V2ContentCard
-                key={card.docId}
-                card={card}
-                size="medium"
-              />
+            {childrenCards.map(card => (
+              <V2ContentCard key={card.docId} card={card} size="medium" />
             ))}
           </div>
         </div>
       )}
 
-      {hasFiltered && (
+      {extrasError && hasChildren && (
+        <div className={styles.errorContainer} role="alert">
+          <p>Unable to load suggestions (similar / explore): {extrasError}</p>
+        </div>
+      )}
+
+      {(extrasLoading || hasFiltered) && (
         <div className={styles.discoveryGroup}>
           <h3 className={styles.groupTitle}>Similar Topics</h3>
-          <div className={styles.cardGrid}>
-            {discoveryData.filtered.map(card => (
-              <V2ContentCard
-                key={card.docId}
-                card={card}
-                size="medium"
-              />
-            ))}
-          </div>
+          {extrasLoading && !hasFiltered ? (
+            <div className={styles.extrasLoadingRow}>
+              <LoadingSpinner />
+              <span>Loading similar topics…</span>
+            </div>
+          ) : hasFiltered ? (
+            <div className={styles.cardGrid}>
+              {filtered.map(card => (
+                <V2ContentCard key={card.docId} card={card} size="medium" />
+              ))}
+            </div>
+          ) : null}
         </div>
       )}
 
-      {hasRandom && (
+      {(extrasLoading || hasRandom) && (
         <div className={styles.discoveryGroup}>
           <h3 className={`${styles.groupTitle} ${styles.exploreGroupTitle}`}>Explore More</h3>
-          <div className={styles.cardGrid}>
-            {discoveryData.random.map(card => (
-              <V2ContentCard
-                key={card.docId}
-                card={card}
-                size="medium"
-              />
-            ))}
-          </div>
+          {extrasLoading && !hasRandom ? (
+            <div className={styles.extrasLoadingRow}>
+              <LoadingSpinner />
+              <span>Loading explore suggestions…</span>
+            </div>
+          ) : hasRandom ? (
+            <div className={styles.cardGrid}>
+              {random.map(card => (
+                <V2ContentCard key={card.docId} card={card} size="medium" />
+              ))}
+            </div>
+          ) : null}
         </div>
       )}
     </section>
   );
-} 
+}

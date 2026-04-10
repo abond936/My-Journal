@@ -292,6 +292,12 @@
   --lightbox-control-text-color: var(--color2-100);
   --lightbox-caption-text-color: var(--color2-100);
 
+  /*
+   * Raster watermarks on flat tiles (e.g. callout pushpin): artwork is dark-on-transparent.
+   * Light mode: text1 is dark on layout-background1 (~light gray) — same as “?” using color + opacity.
+   */
+  --card-watermark-raster-filter: none;
+
   /* Native control hinting */
   color-scheme: light;
 }
@@ -349,6 +355,12 @@
   --lightbox-control-border-color: hsl(var(--h2) / 0.55);
   --lightbox-control-text-color: var(--color2-100);
   --lightbox-caption-text-color: var(--color2-100);
+
+  /*
+   * Dark mode: text1 is light on dark layout-background1. Invert dark raster + same opacity
+   * as .qa watermark so the pin matches the “?” (not dark-on-dark).
+   */
+  --card-watermark-raster-filter: invert(1);
 
   /* Native control hinting */
   color-scheme: dark;
