@@ -51,6 +51,22 @@
   .large { width: auto; }
 }
 
+/* Fill a fixed-width parent (e.g. horizontal discovery rail). Overrides .small % width. */
+.fullWidth {
+  width: 100% !important;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.fullWidth .title {
+  font-size: var(--font-size-base);
+}
+
+.fullWidth .description {
+  font-size: var(--font-size-xs);
+  line-height: 1.35;
+}
+
 /* --- Content & Image Styles --- */
 .content {
   padding: var(--spacing-lg);

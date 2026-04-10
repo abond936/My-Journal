@@ -1,20 +1,20 @@
 /* Discovery Section Styles */
 
 .discoverySection {
-  margin-top: var(--spacing-xl);
-  padding-top: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-sm);
   border-top: var(--border-width-thin) solid var(--border1-color);
 }
 
 .discoveryTitle {
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-xl);
   font-weight: var(--font-weight-semibold);
-  margin: 0 0 var(--spacing-sm) 0;
+  margin: 0 0 var(--spacing-xs) 0;
   color: var(--text1-color);
 }
 
 .discoveryGroup {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
 }
 
 .discoveryGroup:last-child {
@@ -22,14 +22,14 @@
 }
 
 .groupTitle {
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  margin: 0 0 var(--spacing-sm) 0;
+  margin: 0 0 var(--spacing-xs) 0;
   color: var(--text2-color);
 }
 
 .exploreGroupTitle {
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
 }
 
 .loadingContainer {
@@ -37,17 +37,17 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-xl);
+  padding: var(--spacing-lg);
   color: var(--text2-color);
 }
 
 .loadingContainer p {
-  margin-top: var(--spacing-md);
+  margin-top: var(--spacing-sm);
   font-size: var(--font-size-sm);
 }
 
 .errorContainer {
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm);
   background-color: var(--layout-background2-color);
   border: var(--border-width-thin) solid var(--border1-color);
   border-radius: var(--border-radius-lg);
@@ -59,63 +59,61 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  min-height: 3rem;
-  margin-top: var(--spacing-md);
+  min-height: 2.5rem;
+  margin-top: var(--spacing-xs);
   color: var(--text2-color);
   font-size: var(--font-size-sm);
 }
 
-/* Card Grid Styles */
-.cardGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--spacing-md);
-  margin-top: var(--spacing-md);
+/* Horizontal rails: compact tiles, swipe on narrow viewports */
+.cardRail {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: var(--spacing-sm);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 2px;
+  padding: 2px 0 8px;
+  margin-top: var(--spacing-xs);
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Mobile-first responsive design */
+.cardRailCell {
+  flex: 0 0 clamp(128px, 34vw, 188px);
+  width: clamp(128px, 34vw, 188px);
+  scroll-snap-align: start;
+}
+
 @media (min-width: 768px) {
   .discoverySection {
-    margin-top: var(--spacing-xl);
-    padding-top: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-sm);
   }
 
   .discoveryTitle {
-    font-size: var(--font-size-2xl);
-    margin-bottom: var(--spacing-sm);
+    font-size: var(--font-size-xl);
+    margin-bottom: var(--spacing-xs);
   }
 
   .discoveryGroup {
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
   }
 
   .groupTitle {
-    font-size: var(--font-size-base);
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-xs);
   }
 
-  .exploreGroupTitle {
-    font-size: var(--font-size-base);
-  }
-
-  .cardGrid {
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: var(--spacing-lg);
+  .cardRailCell {
+    flex: 0 0 clamp(148px, 22vw, 200px);
+    width: clamp(148px, 22vw, 200px);
   }
 }
 
 @media (min-width: 1024px) {
   .discoverySection {
-    margin-top: var(--spacing-lg);
-    padding-top: var(--spacing-md);
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-sm);
   }
-
-  .discoveryTitle {
-    font-size: var(--font-size-2xl);
-    margin-bottom: var(--spacing-sm);
-  }
-
-  .exploreGroupTitle {
-    font-size: var(--font-size-base);
-  }
-} 
+}

@@ -260,10 +260,12 @@ const CalloutCardContent: React.FC<{ card: Card; displayMode: string }> = ({ car
 interface V2ContentCardProps {
   card: Card;
   size?: 'small' | 'medium' | 'large';
+  /** When true, card stretches to parent width (use with fixed-width rail cells). */
+  fullWidth?: boolean;
   onClick?: () => void;
 }
 
-const V2ContentCard: React.FC<V2ContentCardProps> = ({ card, size = 'medium', onClick }) => {
+const V2ContentCard: React.FC<V2ContentCardProps> = ({ card, size = 'medium', fullWidth = false, onClick }) => {
   const displayMode = card.displayMode || 'navigate';
   
   // Determine if card should be interactive based on display mode
@@ -280,7 +282,7 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({ card, size = 'medium', on
     (displayMode === 'navigate' || displayMode === 'inline')
       ? styles.qaWithCover
       : '';
-  const className = `${styles.card} ${cardTypeClass} ${sizeClass} ${displayModeClass} ${qaWithCoverClass}`.trim();
+  const className = `${styles.card} ${cardTypeClass} ${sizeClass} ${displayModeClass} ${qaWithCoverClass} ${fullWidth ? styles.fullWidth : ''}`.trim();
 
   const renderContent = () => {
     switch (card.type) {

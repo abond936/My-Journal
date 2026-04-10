@@ -141,9 +141,11 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
       {hasChildren && (
         <div className={styles.discoveryGroup}>
           <h3 className={styles.groupTitle}>Related Content</h3>
-          <div className={styles.cardGrid}>
+          <div className={styles.cardRail} role="list" aria-label="Related content">
             {childrenCards.map(card => (
-              <V2ContentCard key={card.docId} card={card} size="medium" />
+              <div key={card.docId} className={styles.cardRailCell} role="listitem">
+                <V2ContentCard card={card} size="small" fullWidth />
+              </div>
             ))}
           </div>
         </div>
@@ -164,9 +166,11 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
               <span>Loading similar topics…</span>
             </div>
           ) : hasFiltered ? (
-            <div className={styles.cardGrid}>
+            <div className={styles.cardRail} role="list" aria-label="Similar topics">
               {filtered.map(card => (
-                <V2ContentCard key={card.docId} card={card} size="medium" />
+                <div key={card.docId} className={styles.cardRailCell} role="listitem">
+                  <V2ContentCard card={card} size="small" fullWidth />
+                </div>
               ))}
             </div>
           ) : null}
@@ -182,9 +186,11 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
               <span>Loading explore suggestions…</span>
             </div>
           ) : hasRandom ? (
-            <div className={styles.cardGrid}>
+            <div className={styles.cardRail} role="list" aria-label="Explore more">
               {random.map(card => (
-                <V2ContentCard key={card.docId} card={card} size="medium" />
+                <div key={card.docId} className={styles.cardRailCell} role="listitem">
+                  <V2ContentCard card={card} size="small" fullWidth />
+                </div>
               ))}
             </div>
           ) : null}
