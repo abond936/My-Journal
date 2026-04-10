@@ -4,8 +4,7 @@
 
 Legend:
 ✅`Implemented`
-⭕`Planned (1/2/3)`
-🔵`Parked`
+⭕`Planned (1/2)`
 ❓`Open`
 📐`Decision`
 📘`Resource`
@@ -16,7 +15,7 @@ Legend:
 
 - **Three-Document Model** - Project documentation is split across three files in `docs/`:
   - `Vision-Architecture.md` — Product vision, principles, technical stack, data models, decisions. Stable; changes rarely.
-  - `Application.md` — Each app area with ✅, ⭕, ❓, 🔵 all together per section. Changes when features ship or are planned.
+  - `Application.md` — Each app area: *Features* grouped under `✅ Complete`, `⭕1 Planned`, `⭕2 Future`, `❓ Open` (plus standalone 📐 / 📘). Changes when features ship or are planned.
   - `Implementation.md` — Execution plan and phased sequencing. Changes when priorities shift.
 - **AI Behavior** - AI process, approval, and execution rules live in `.cursor/rules/# AI_InteractionRules.mdc`.
 - **Author** - Provides direction, constraints, and priorities--not implementation details.
@@ -28,7 +27,9 @@ Legend:
 - **Formatting**
     - Headings are **bold**. Subheadings are *italic*.
     - Intent/Principles bullets start with a **bold** 1–2 word subject, then short descriptive text.
-    - Features are preceded by ✅, ⭕, 📐, ❓, 📘, or 🔵, followed by a **bold** 1–2 word title + " - " + short descriptive text.
+    - Under each *Features* block, organize status items into these buckets in order as plain status headings (no list bullet): `✅ Complete`, `⭕1 Planned`, `⭕2 Future`, `❓ Open`.
+    - Items under each status heading are plain bullets (`-`) beginning with a **bold** 1–2 word title + " - " + short descriptive text.
+    - Keep `📐` and `📘` as standalone feature bullets outside status buckets.
 
 ### Content Placement
 - **Placement Discipline** - Record each subject in its owning section. Everything about Story cards belongs under Story card features, not mentioned in Tags or Navigation. Everything about tags belongs under Tag Management, not mentioned in Navigation. Centralizes subjects for clarity and prevents drift.
@@ -82,45 +83,56 @@ The primary users are the author (admin) creating the content and his family con
 - **Services** - Use managed services pragmatically (Firebase/Auth.js/Next.js).
 
 *Features*
-✅ **Next.js 15** - App Router, All API routes secured at the edge
-✅ **React 19**
-✅ **TypeScript**
-✅ **`firebase-admin`** - SDK for server-side operations
-✅ **Zod** - schema validation
+✅ **Complete**
+  - **Next.js 15** - App Router, all API routes secured at the edge.
+  - **React 19**
+  - **TypeScript**
+  - **`firebase-admin`** - SDK for server-side operations.
+  - **Zod** - Schema validation.
+  - **Directory Structure**
+    - `src/app/` Next.js App Router
+      - `api/` API route handlers
+      - `admin/` content management interface
+      - `view/` content consumption interface
+      - `layout.tsx` root layout with global providers
+    - `src/components/` reusable React components
+      - `common/` generic shared components
+      - `view/` content-view components
+      - `admin/` admin components
+    - `src/lib/` core logic, types, and utilities
+      - `services/` business logic
+      - `types/` Zod schemas and TypeScript definitions
+      - `hooks/` reusable client hooks
+      - `utils/` general utilities (date formatting, tag manipulation)
+  - **Data Models** - `src/lib/types/` (read directly; fully commented).
+  - **Typesense** - Full-text search for cards/media with CRUD sync and Firestore fallback.
+  - **Auth.js** - Firebase adapter, role-based access control, session persistence, app wrapper `AuthProvider`.
+⭕1 **Planned**
+  - **Code** - Comment code.
+  - **Directory** - Cleanup directory.
+  - **ESLint** - Address ESLint violations.
+  - **Quality** - QA app.
+⭕2 **Future**
+  - **Performance** - Possibilities captured from engineering review.
+  - **Tenant ID** - Not implemented for v1. If multi-tenancy is needed for commercial SaaS (Model C), add `tenantId` to cards, media, tags, questions, and journal_users; apply tenant filters to all queries/rules. See `docs/06-Strategic-Direction.md`.
+  - **Storage Abstraction** - Wrap storage operations in `storageService.ts` (upload/delete/getUrl) to reduce migration scope and enable cache-busting on replaced images.
+  - **Testing**
+  - **Error Monitoring / Observability**
+  - **Caching Strategy**
+  - **Sharing**
+  - **Content Versioning / History**
+  - **Hosting**
+  - **Commercial Model** - Self-hosted, single tenant, multi-tenant:
+    - **Tenant ID**
+    - **Auth Upgrade**
+    - **Source Adapters**
+    - **Web vs. Mobile** - PWA, React Native, Capacitor; camera capture is important.
 📐 **Denormalized Read** - Keep denormalized read patterns where Firestore query limits demand it.
 📐 **Script-Heavy** - Keep script-heavy maintenance available while admin UX matures.
-⭕ **Code** - Comment code.
-⭕ **ESLint** - Address ESLint violations.
-⭕ **Quality** - QA app.
-🔵 **Performance** - Possibilities captured from engineering review.
-✅ **Directory Structure**
- `src/app/`  Next.js App Router
-   `api/` API route handlers
-   `admin/` content management interface
-   `view/` content consumption interface
-   `layout.tsx`  root layout, which includes global providers
-
- `src/components/` Reusable React components
-   `common/` Generic components used across the app 
-   `view/` Components specific to the content viewing experience
-   `admin/` Components specific for the admin interface 
-
- `src/lib/` Core application logic, types, and utilities
-   `services/` business logic
-   `types/` Zod schemas and TypeScript type definitions
-   `hooks/` Reusable client-side React hooks
-   `utils/` General utility functions (e.g., date formatting, tag manipulation)
-    ⭕2 **Directory** - Cleanup directory.
-✅ **Data Models** - `src/lib/types/` *read directly - fully commented*
-✅ **Typesense** - Full-text search for cards and media. Auto-syncs on CRUD. Falls back to Firestore if unavailable.
-✅ **Auth.js** - w/Firebase adapter, role-based access control, session persistence, app wrapper AuthProvider.
-    📐 **Auth in Buildout** - During build/content phase, keep using current env-based login (`ADMIN_EMAIL` / `ADMIN_PASSWORD`) so work can continue without user provisioning.
-    📐 **Auth at Rollout** - At go-live prep, run `npm run seed:journal-users` once to create the single admin in Firestore (`journal_users`) when that collection is empty.
-    📐 **Post Seed** - After seed, manage access in Admin > Users (`/admin/journal-users`): create viewer accounts, set/reset passwords, enable/disable access.
-    📐 **One Admin** - One admin (author), all other accounts are viewers.
-
-🔵 **Tenant ID** - Not implemented for v1. If multi-tenancy is needed for commercial SaaS (Model C), `tenantId` would be added to cards, media, tags, questions, and journal_users. Every query and security rule would need a tenant filter. Document the scope now; implement only if demand justifies it. See `docs/06-Strategic-Direction.md`.
-🔵 **Storage Abstraction** - Firebase Storage APIs are currently called directly in multiple places (`imageImportService.ts`, upload functions, URL generation). Create a single `storageService.ts` module wrapping all storage operations (upload, delete, getUrl). Reduces future migration scope (Cloudflare R2, S3) to one file. Also enables cache-busting for replaced images (append version hash to URL).
+📐 **Auth in Buildout** - During build/content phase, keep using env-based login (`ADMIN_EMAIL` / `ADMIN_PASSWORD`) so work can continue without user provisioning.
+📐 **Auth at Rollout** - At go-live prep, run `npm run seed:journal-users` once to create the single admin in Firestore (`journal_users`) when that collection is empty.
+📐 **Post Seed** - After seed, manage access in Admin > Users (`/admin/journal-users`): create viewer accounts, set/reset passwords, enable/disable access.
+📐 **One Admin** - One admin (author), all other accounts are viewers.
 
 ### **Frontend**
 
@@ -132,14 +144,16 @@ The primary users are the author (admin) creating the content and his family con
 - **UI Alignment** - Align UI behavior with **validated server contracts** (types/schemas); the client does not override server authority on writes. Clear **presentation and client-state** boundaries; business rules stay in services/API layer.
 
 *Features*
-✅ **Theme** - CSS modules for styling, global `theme.css` and `fonts.css`
-✅ **Rich Text Editing** - `@tiptap/react` rich text editing
-✅ **Media Selection** - PhotoPicker for media selection (admin modal picker and simple upload)
-✅ **Galleries** - GalleryManager and Swiper for galleries
-✅ **Image Optimization** - `next/image` via `JournalImage` wrapper 
-✅ **DragnDrop** - `@dnd-kit/core` and `@dnd-kit/sortable`
-✅ **Data Fetching** - `SWR` for client-side data fetching and caching 
-⭕2 **Unused Dependencies** - Remove unused packages from `package.json`: `react-markdown`, `@uiw/react-md-editor`, `@minoru/react-dnd-treeview`. Evaluate `react-photo-album` (photo grid/mosaic layouts) and `framer-motion` (animation/transitions) for potential use before removing.
+✅ **Complete**
+  - **Theme** - CSS modules for styling, global `theme.css` and `fonts.css`.
+  - **Rich Text Editing** - `@tiptap/react`.
+  - **Media Selection** - PhotoPicker for admin modal picker and simple upload.
+  - **Galleries** - GalleryManager and Swiper.
+  - **Image Optimization** - `next/image` via `JournalImage`.
+  - **Drag and Drop** - `@dnd-kit/core` and `@dnd-kit/sortable`.
+  - **Data Fetching** - `SWR` for client-side fetching and caching.
+⭕2 **Future**
+  - **Unused Dependencies** - Remove unused packages from `package.json`: `react-markdown`, `@uiw/react-md-editor`, `@minoru/react-dnd-treeview`. Evaluate `react-photo-album` and `framer-motion` before removing.
 
 ### **Scripts**
 
@@ -150,11 +164,13 @@ The primary users are the author (admin) creating the content and his family con
 - **Reuse** - Develop and organize for reuse.
 
 *Features*
-✅ **Syntax** - `npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json`
-✅ **Firebase Setup** - Credentials live in `.env`:
-✅ **.env** - Scripts must load `.env` before importing Firebase. Use `-r dotenv/config` (and `DOTENV_CONFIG_PATH=.env` if needed) so env vars are available when `admin.ts` initializes
-✅ **Maintenance Scripts** - Active operational scripts: `reconcile:media-cards`, `regenerate:storage-urls`, `cleanup:media`, `backup-database`, `backfill:media-metadata`, `seed:journal-users`.
-⭕2 **Script Cleanup** - 86 script files under `src/lib/scripts/`; many are obsolete migration, debug, or test scripts not wired into `package.json`. Review and prune.
+✅ **Complete**
+  - **Syntax** - `npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json`.
+  - **Firebase Setup** - Credentials live in `.env`.
+  - **.env** - Scripts load `.env` before importing Firebase (`-r dotenv/config`, optionally `DOTENV_CONFIG_PATH=.env`) so env vars are available when `admin.ts` initializes.
+  - **Maintenance Scripts** - Active scripts: `reconcile:media-cards`, `regenerate:storage-urls`, `cleanup:media`, `backup-database`, `backfill:media-metadata`, `seed:journal-users`.
+⭕2 **Future**
+  - **Script Cleanup** - 86 script files under `src/lib/scripts/`; many are obsolete migration/debug/test scripts not wired into `package.json`. Review and prune.
 📘 **Script Index** - `docs/NPM-SCRIPTS.md`.
 📘 **Import Reference** - `docs/IMPORT-REFERENCE.md`.
 
@@ -168,7 +184,9 @@ The primary users are the author (admin) creating the content and his family con
 - **Verified** - Backup integrity is confirmed after each run.
 
 *Features*
-✅ **Database** - Windows Scheduled Task at 2am daily, auto awake pc, cleared >5 days. Script files exist (`backup-database.ts`, `backup-firestore.ts`) but are not wired into `package.json`.
-✅ **Repo** - Github - On every push, for 7 days
+✅ **Complete**
+  - **Database** - Windows Scheduled Task at 2am daily, auto-awake PC, cleared after >5 days. Script files exist (`backup-database.ts`, `backup-firestore.ts`) but are not wired into `package.json`.
+  - **Repo** - GitHub backup on every push for 7 days.
     - Commit directly to **`main`** and push to `origin/main`. Do not use feature branches or PR merge flow unless explicitly requested for a specific task.
-⭕2 **Operational** - Ensure both backups are operational and verified end-to-end.
+⭕2 **Future**
+  - **Operational** - Ensure both backups are operational and verified end-to-end.
