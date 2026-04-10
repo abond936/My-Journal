@@ -109,8 +109,7 @@ The primary users are the author (admin) creating the content and his family con
     ⭕2 **Directory** - Cleanup directory.
 ✅ **Data Models** - Zod schemas, server-side and client-side validation, Type checking with TypeScript, - `src/lib/types/` *read directly - fully commented*
 ✅ **Search Index (Typesense)** - Typesense Cloud integrated. Full-text search across title, subtitle, excerpt, content, and tag names. Weighted relevance ranking. Debounced search-as-you-type in admin card list. Falls back to Firestore prefix search if Typesense unavailable. Config: `src/lib/config/typesense.ts`. Service: `src/lib/services/typesenseService.ts`. Sync: `npm run sync:typesense` / `sync:typesense:fresh`.
-✅ **Typesense Auto-Sync** - Automatic upsert/delete in `cardService.ts`. `createCard` and `updateCard` fire-and-forget sync to Typesense (resolves tag names, strips HTML). `deleteCard` removes from index post-transaction. No manual `sync:typesense` needed for card CRUD.
-✅ **Typesense Media Index** - `typesenseMediaService.ts`; `GET /api/media` uses Typesense when `search` is non-empty, dimensional tag filters, or assignment is assigned/unassigned (if `TYPESENSE_*` set). Text search without Typesense returns **503 SEARCH_UNAVAILABLE**. Sync on media CRUD (`imageImportService`) and when cards add/remove media refs (`cardService`). Bulk backfill: `npm run sync:typesense:media` / `sync:typesense:media:fresh`. Typesense collection name **`media`** (same cluster as `cards`).
+✅ **Typesense** - Full-text search for cards and media. Auto-syncs on CRUD. Falls back to Firestore if unavailable.
 ✅ **Authorization** - Auth.js w/Firebase adapter, role-based access control, session persistence, app wrapped in AuthProvider.
     📐 **Auth in Buildout** - During build/content phase, keep using current env-based login (`ADMIN_EMAIL` / `ADMIN_PASSWORD`) so work can continue without user provisioning.
     📐 **Auth at Rollout** - At go-live prep, run `npm run seed:journal-users` once to create the single admin in Firestore (`journal_users`) when that collection is empty.
@@ -223,8 +222,7 @@ The primary users are the author (admin) creating the content and his family con
 
 *Features*
 ✅ **Login Page** - Application opens to home page with login form and SVG logo.
-
-✅ **Home Layout** - `AppShell` + `Home` / `Home.module.css`. **Route `/`:** centered title image, welcome copy, login form, bottom-corner graphic — **no** top `Navigation` and **no** filter sidebar (whether logged out **or** authenticated while the splash/redirect runs). **After navigation to main app** (`/view`, `/view/[id]`, `/search`, `/admin/*`, …): full shell with fixed header + sidebar toggle (hidden on `/` only). Post-login redirect targets `/view` (or `callbackUrl`).
+✅ **Home Layout**  - Login splash with logo; no nav bar. Redirects to /view after login.
 
 ### **Top Navigation**
 
@@ -238,7 +236,7 @@ The primary users are the author (admin) creating the content and his family con
 - **Minimal** - Space saving
 
 *Features*
-✅ **Reader header (`Navigation.tsx`)** - Three-column bar: **← Back** (left) on reader drill-in routes (`/view/[id]`, `/search`, etc.) linking to `/view`; **no** Back on main feed `/view` or on `/admin/*`. **Center:** title image (links to `/view`). **Right:** hamburger with Content, admin links when role allows, theme toggle, sign out.
+✅ **Header** - Centered logo, contextual Back button, hamburger menu (content/admin/theme/signout).
 ✅ **Logo** - Same title artwork as home; compact height in header (`Navigation.module.css`).
 ✅ **Hamburger** - Dropdown menu with content links (all users), admin links (admin only), and theme toggle.
 ✅ **Redesign (shipped)** - Centered logo, contextual Back in header; duplicate in-page Back removed from card detail (`CardDetailPage.tsx` — use header only).
@@ -315,7 +313,7 @@ The primary users are the author (admin) creating the content and his family con
         - Title - Top, Excerpt, Inline expansion
         - ✅ **Feed:** horizontal Swiper on the grid — **cover is first slide** when set; gallery slots with the same `mediaId` as the cover are **deduped** (`V2ContentCard`). Swipe/drag between slides.
 ✅ 3. `Question Card` - Questions as if from family (`V2ContentCard` + `CardDetailPage`).
-        - **Navigate:** `Link` to `/view/[id]`. **Title** = question; **excerpt** = feed teaser when set (full answer only on detail). **No cover:** large centered `?` watermark (`--text1-color`, ~30% opacity) + centered text. **With cover:** full-bleed hero + bottom gradient (story-like). **Detail:** kicker “Question”, title, section “Answer” + TipTap body.
+        - **Navigate:** *Title* = question; *excerpt* = feed teaser when set (full answer only on detail). **No cover:** large centered `?` watermark + centered text. **With cover:** full-bleed hero + bottom gradient (story-like). **Detail:** kicker “Question”, title, section “Answer” + TipTap body.
         - **Inline:** not a link. Optional cover + overlay; **TipTap answer** on tile. No cover: watermark + left-aligned stack for long body.
         - **Static:** not a link. Question + **excerpt** only (no body on tile).
         - Short questions may still be embedded in other narrative content where appropriate (optional pattern; not limited to this type).
@@ -631,7 +629,6 @@ The primary users are the author (admin) creating the content and his family con
 ✅ **OnMove** - Updates parent and order and recalcs tag card counts
 ✅ **Real-time** Edit tag and bulk tag modals: create root or child tags per dimension (`TagPickerDimensionColumn`, `POST /api/tags`). 
 ✅ **Tag Typeahead Search** - Search input added to tag assignment modals (MacroTagSelector expanded view and BulkEditTagsModal). Filters all dimension columns as typed using `filterTreesBySearch`. Matching branches auto-expand. Works in card edit, gallery edit, bulk media, and bulk card tag flows.
-
 ✅ **Card Tags vs Media Tags** - Same mechanism. Assign tags to a card and assign tags to a media document using the same flow and data shape as cards (shared tag-assignment modal, e.g. `MacroTagSelector` pattern). Use the same dimensional/hierarchical tag library; no special-case fields in the product model unless legacy migration requires it temporarily.
 ✅ **v1 Authoring** Building and curating content cards must support **tag/query-based discovery of both cards and media** in admin (not one surface only)—pick gallery images, body embeds, and **related or child cards** from **filtered** sets, not only flat lists.
 ✅ **Human Authoring** You may still choose a **story-level** tag set on the card (what the post is about) and **frame-level** tags on images (who/what/when/where for that photo)—but nothing syncs unless you tag it yourself.
@@ -644,7 +641,6 @@ The primary users are the author (admin) creating the content and his family con
     - **Cloud APIs:** Azure Face, AWS Rekognition, Google Cloud Vision (detection; recognition requires custom face DB). Integrate to suggest/auto-populate WHO at image level; faces map to person tags.
     - **Client-side:** face-api.js (TensorFlow.js). Runs in browser, no uploads; lower accuracy than cloud.
     - **Apple/Google Photos:** Native face recognition; would require overlay integration to leverage.
-
 🔵 **Relationship Tagging** - Derive family relationships from minimal primitives (`parent_of`, `spouse_of`); compute uncle, cousin, step-parent, etc. via inference rules. Maps to WHO dimension. Large surface (graph storage, validation, remarriage/step edges). Park until parallel media tagging and bulk Media-admin UX are in place. Detail regenerable.
 
 ---
@@ -652,22 +648,20 @@ The primary users are the author (admin) creating the content and his family con
 ### **Question Management**
 
 *Intent*
-- Grandfather/Father journal-like questions
+- **Journal-like** - Grandfather/Father journal-like questions
 
 *Principles*
-- Use questions as prompts for stories.
-- Accommodate short and long answers.
-- Only if app commercialized extend admin to analysis.
+- **Prompts** - Use questions as prompts for stories.
+- **Flexible** - Accommodate short and long answers.
 
 *Features*
 ✅ **Data Model** - Firestore `questions` collection. Schema: `src/lib/types/question.ts`. Service: `questionService.ts`.
 ✅ **UI** - `/admin/question-admin`.
 ✅ **APIs** - Admin-only CRUD (`/api/admin/questions`, `/api/admin/questions/[id]`), link/unlink card, create-card from prompt.
 ✅ **Filter** - List/filter in UI: text, tags (substring), used vs unused.
-✅ **OnDelete** - Card delete removes its ID from every question's usedByCardIdsand refreshesusageCountvia cardService.
 ✅ **Create Card** - Create card from question prompt (default type `qa` or `story`). Adds card ID to `usedByCardIds` and updates `usageCount`.
 ✅ **Link/Unlink** - Manual link/unlink between question and existing card IDs. A question may map to zero, one, or many cards.
-❓ **Pre-Tag Questions** - Pre-tag questions for use on card? WHO/Father, WHAT/Reflections, Childhood, etc.
+⭕2 **Pre-Tag Questions** - Pre-tag questions for use on card. WHO/Father, WHAT/Reflections, Childhood, etc.
 ⭕2 **Assigned** - Mark questions "Assigned/Unassigned" (only doable if assigned to card, not if inline) `usedByCardIds.length > 0`.
 🔵 **Answer Workflow** - Answer workflow beyond cards, analytics, templates, validation, viewer feedback, auto-grouping.
 🔵 **Auto-Clustering** - Auto-clustering/grouping of short questions.
@@ -675,7 +669,7 @@ The primary users are the author (admin) creating the content and his family con
 ### **User Management**
 
 *Intent*
-- Offer access to users with credentials.
+- **Access Control** - Control access to the app.
 
 *Principles*
 - **Credential-based** - Password entry via NextAuth Credentials provider.
@@ -683,22 +677,21 @@ The primary users are the author (admin) creating the content and his family con
 
 *Features*
 ✅ **Data Model** - Firestore `journal_users` collection. Schema: `src/lib/auth/journalUsersFirestore.ts`.
-🔵 **Rename Collection** - Rename all uses of `journal_users` to `users`.
 ✅ **Authentication** - `authorize` in `authOptions.ts` (DB first, legacy env fallback when no row for that username). Bcrypt passwords.
 ✅ **Admin View** - Users tab at `/admin/journal-users`. APIs: `/api/admin/journal-users`, `/api/admin/journal-users/[id]`.
 ✅ **Roles** - Viewers only from UI/API; single admin rule. Seed script: `npm run seed:journal-users`.
 ✅ **Login Redirect** - `/?callbackUrl=/admin` supported in `Home.tsx` (wrapped in `Suspense`).
-❓ **Credential Delivery** - How to send user credentials to new users?
-
+⭕2 **Credential Delivery** - Send username and password to new users?
+🔵 **Rename Collection** - Rename all uses of `journal_users` to `users`.
 ---
 
 ### **Theme Management**
 
 *Intent*
-- Allow customizable light and dark modes
+- **Custom Themes** - Allow customizable light and dark modes
 
 *Principles*
-- Provide detailed control.
+- **User-Controllable** - Provide detailed control.
 
 *Features*
 ✅ **Light/Dark Toggle** - Theme toggle in top navigation.
@@ -710,10 +703,10 @@ The primary users are the author (admin) creating the content and his family con
 ### **Gallery Management**
 
 *Intent*
-- Allow customizable gallery styles
+- **Custom Styles** -  Allow customizable gallery styles
 
 *Principles*
-- Provide tokenizable styles for gallery layouts
+- **Tokenizable** - Provide tokenizable styles for gallery layouts
 
 *Features*
 🔵 **Gallery Styles** - Devise preconfigured card styles for selection — masonry, mosaic, etc.
@@ -726,113 +719,6 @@ The primary users are the author (admin) creating the content and his family con
 - **Architecture** - Core architecture (cards, media, tags) in place.
 - **v1 Refinements** - Lock and solidify v1.
 - **Content** - Prepare content for import.
-
-### **Planned & Open Summary**
-*(Mirrors inline ⭕, ⭕2/3, ❓, and 🔵 in the body: same wording and priority as owning sections. Grouped below by **function** for scanning.)*
-
-### Technical & platform
-- ⭕ **Code** - Comment code.
-- ⭕ **ESLint** - Address ESLint violations.
-- ⭕ **Quality** - QA app.
-- ⭕2 **Directory** - Cleanup directory.
-- 🔵 **Performance** - Possibilities captured from engineering review.
-- 🔵 **Tenant ID** - Not implemented for v1; document scope for commercial SaaS (`docs/06-Strategic-Direction.md`).
-- 🔵 **Storage Abstraction** - Single `storageService.ts` wrapping uploads/URLs; eases R2/S3 migration and cache-busting.
-- ✅ **Search Index (Typesense)** - Full-text cards; debounced admin search; Firestore fallback if unavailable.
-- ✅ **Typesense Auto-Sync** - Upsert/delete on card save via `cardService`.
-- ✅ **Typesense Media Index** - `media` collection; `GET /api/media` when configured; sync on media/card paths; `npm run sync:typesense:media` for backfill.
-- ⭕2 **Unused Dependencies** - Remove `react-markdown`, `@uiw/react-md-editor`, `@minoru/react-dnd-treeview`; evaluate `react-photo-album` and `framer-motion` before removing.
-- ⭕2 **Script Cleanup** - 86 script files under `src/lib/scripts/`; many obsolete. Review and prune.
-- ⭕2 **Operational** - Ensure both backups are operational and verified end-to-end.
-
-### Tags & navigation
-- ⭕2 **Tag Tree Counts** - Fix numbering and add media counts "(x/y)" on tag tree nodes.
-- ⭕2 **Sort / Group** - Sort/group by event, Who, What, When, Where for multi-constraint filters.
-- ✅ **Curated Completeness** - `curatedNavEligible` query + indexes + backfill (see Left Nav features body).
-- ⭕2 **Collection Metadata** - Collection metadata (child counts).
-- ⭕2 **Chron Tree** - Tree in chronological order (Year / Month / What).
-- ⭕3 **Mobile Filter UX** - Tune type/tag filter UX on mobile (`--header-height`, `--sidebar-width-mobile` in `theme.css`).
-- ✅ **Tag Typeahead Search** - Modals filter dimension columns as typed; branches expand.
-- ✅ **Consolidate Reflection** - What / `what/Reflections/...`; migration `tags:consolidate-reflection`.
-- ✅ **N/A Sentinel Tags (`zNA`)** - One root per dimension; `tags:seed-zna`; per-dimension root uniqueness.
-- ✅ **Admin dimension at a glance (v1)** - Four columns / four chips; direct tags + `+n`; deferred green/amber dots.
-- ⭕3 **Single TagProvider** - Remove nested `TagProvider` under admin; one `/api/tags` tree.
-- ⭕3 **Tag Tree Counts (model/UI)** - `mediaCount` on tag docs + UI `(x/y)`; align with recalc/jobs.
-- ⭕3 **Tag Recomp** - Queue recomputation for hierarchical / unique-per-subtree semantics.
-- ⭕3 **Unified tag edges (conceptual)** - Treat assignments as `(subjectType, subjectId, tagId)`; denormalized reads stay on Card/Media.
-- 🔵 **Face Recognition** - Cloud APIs, client-side, or native photos integration options.
-- 🔵 **Relationship Tagging** - Kinship from primitives; park until bulk media UX stable.
-
-### Content & reader experience
-- ⭕2 **Coherence** - Predictable grouping/sort for multi-tag filters (overlaps Sort/Group).
-- ⭕2 **Card Cues** - Small type badge on compact cards (`Story`, `Q&A`, `Gallery`, `Callout`, `Quote`).
-- ⭕2 **Gallery slider polish** - Feed dots/arrows; horizontal child-card rails (with Feed Types).
-- ✅ **Question feed & detail** - Navigate / inline / static QA behavior; excerpt teaser; detail Q/A labels (`CardDetailPage`).
-- ⭕2 **Question Content** - Get questions from Word doc, card games on Amazon.
-- ⭕2 **Quote Content** - Get quotes from Dad book, Notion quotes, Grandfather book.
-- ✅ **Quote feed & detail** - Title + TipTap quote + `formatQuoteAttribution`; detail blockquote + footer cite.
-- ⭕3 **Bundle / Images** - Route-level code splitting; tune `next/image` loading/priority for feed.
-- ⭕3 **Feed Types** - Different feed layouts (teaser pane, horizontal related/galleries/thumbnails).
-- 🔵 **Display Strategy** - v1 single reader layout per type; stories omit excerpt in feed and detail; post-v1 multi-style feed/view per type.
-- ⭕3 **Feed hydration tiers** - Optional cover-only first paint on `/view`; defer full hydration until open or below fold.
-- ⭕2 **View Mosaic** - View-page gallery mosaic (replace swiper-only if needed).
-- ✅ **Progressive children** - Related Content immediate; similar/explore async with loaders; child cards cover-only hydration on `/view/[id]`.
-- ❓ **Related Count** - Reduce size/number of Related and Explore More cards?
-- 🔵 **Social Features** - Like, comment, sharelink — out of scope until revisited.
-
-### Administration & authoring
-- ⭕2 **Split Validation** - Validate the current split model against author workflow friction in real use.
-- ⭕2 **Edit on the Fly** - Admin-only entry points from content surfaces (quick edits and/or deep-link to full editor).
-- 🔵 **Accessibility** - 16px/18px body, WCAG AA, 44px tap targets, caption→`alt`, keyboard nav, `prefers-reduced-motion`, Lighthouse baseline.
-- ⭕3 **Admin SWR Deduping** - Revisit `CardProvider` `dedupingInterval: 0` for admin; restore bounded deduping where safe.
-- 🔵 **Maintenance Management** - Admin UI over `POST /api/admin/maintenance/*`; today CLI + `docs/NPM-SCRIPTS.md`.
-- ⭕2 **Card Edit Mosaic** - Mosaic gallery manager in card edit (Apple/Google Photos–style).
-- ✅ **Dimension tags in admin list** - Card table view shows core tags by Who/What/When/Where columns (`CardAdminList`, `getCoreTagsByDimension`).
-- ✅ **Excerpt** - Auto-generate from content (150 chars); manual override; `excerptAuto` on schema.
-- ✅ **Children Picker (edit UI)** - Reorder/remove children; attach/reparent via Collections admin.
-- ⭕2 **Card Linkage** - `linkedCardIds` "See Also"; deferred until after import.
-- ✅ **Dirty State Tracking** - Dehydrated snapshot diff + editor getter; confirm on leave; `beforeunload` (see Card Management body).
-- ✅ **Content Versioning (Phase 1)** - Duplicate Card via API; next: pre-save snapshots to `card_versions`.
-- ✅ **Authoring Discovery (media in edit)** - PhotoPicker Library: `/api/media` filters, in-modal dimensional tag filter, optional match card tags.
-- ⭕2 **TOC & Ordering** - DnD TOC for sibling order and reparenting; reconcile parent/child after TOC exists.
-
-### Media & imports
-- 🔵 **Video** - Cover, inline, gallery parity; server-side transcoding class of work.
-- ⭕2 **Browser Upload** - Browser upload flow for hosted deployment (no server filesystem).
-- ⭕2 **Post-Import Maintenance** - GIMP/Topaz + replace-in-place.
-- 🔵 **Append to Gallery** - Bulk append banked media to an existing card's gallery from Media admin (parked; post-import paths already cover getting images onto cards—see Media Management body).
-- ⭕1 **No temporary/active.** - Remove this status; all media in bank; track where assigned (cover, gallery, content); unassigned valid.
-- ⭕3 **Rename photo.ts** - Rename `src/lib/types/photo.ts` → `media.ts` throughout.
-- ⭕3 **Import pipeline job** - Async queue/worker for large folder import + `IMPORT_FOLDER_MAX_IMAGES` / serverless timeouts.
-- ⭕3 **Import metadata precedence** - Prefer embedded XMP/IPTC at import; JSON sidecars supplementary.
-- ✅ **Media Search Index (Typesense)** - `media` collection; facets; operational backfill `sync:typesense:media`.
-- ✅ **Media assigned + Typesense on unlink** - `removeMediaReferenceFromCard` maintains `referencedByCardIds` and indexes (see Cross-entity sync).
-- ✅ **Post-import aggregation (create card)** - Multi-select → draft gallery card + navigate to edit.
-- 🔵 **Google Photos Adapter** - OAuth, list, download-and-process.
-- 🔵 **OneDrive Adapter** - Microsoft Graph; same shape as Google adapter.
-- 🔵 **Apple iCloud** - Restricted API; export + local/browser upload; lowest priority.
-- 🔵 **Multi-Author** - Shared pool, author-scoped cards, tag namespaces, comments — separate instance today; large architecture surface.
-
-### Questions, users, theme & gallery
-- ⭕2 **Assigned** - Assigned/Unassigned when `usedByCardIds.length > 0` (not inline-only).
-- ❓ **Pre-Tag Questions** - Pre-tag questions for use on card? WHO/Father, WHAT/Reflections, etc.
-- 🔵 **Answer Workflow** - Beyond cards: analytics, templates, validation, feedback.
-- 🔵 **Auto-Clustering** - Grouping of short questions.
-- ⭕1 **Rename Collection** - Rename `journal_users` → `users` everywhere.
-- ❓ **Credential Delivery** - How to send credentials to new users?
-- ⭕2 **CSS Tokenization** - Tokenize app CSS via `theme.css` variables.
-- 🔵 **Gallery Styles** - Preconfigured card styles (masonry, mosaic, etc.).
-
-## Open Questions (summary list)
-*(Mirrors inline ❓ in the body.)*
-
-- ❓ **Related Count** - Reduce size/number of Related and Explore More cards?
-- ❓ **Pre-Tag Questions** - Pre-tag questions for use on card?
-- ❓ **Credential Delivery** - How to send user credentials to new users?
-- 🔵 **Multi-Author** - Shared media, author-scoped cards, tag namespaces, cross-author comments. Parked until single-author and tagging are stable.
-- 🔵 **Relationship Tagging** - Kinship imputation from primitives. Parked until parallel media tagging and bulk UX are in place.
-- 🔵 **Video** - Support on cover, inline, and gallery like stills. Server-side transcoding.
-- 🔵 **Display Strategy** - v1: one reader layout per card type; stories hide excerpt in feed and detail. Post-v1: varied feed/view presentations per type (optional excerpts, stacks, chrome). See Content Page body.
 
 ---
 
@@ -850,7 +736,7 @@ The primary users are the author (admin) creating the content and his family con
 *Complete*
 
 ### Phase 3 — Reader experience
-*Family hosting readiness. Grouped by function.*
+*Complete*
 
 *Content & reader*
 - ⭕2 **View Mosaic** — View Page. Gallery mosaic for readers.
