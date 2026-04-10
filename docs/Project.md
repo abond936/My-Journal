@@ -107,15 +107,13 @@ The primary users are the author (admin) creating the content and his family con
    `hooks/` Reusable client-side React hooks
    `utils/` General utility functions (e.g., date formatting, tag manipulation)
     ⭕2 **Directory** - Cleanup directory.
-✅ **Data Models** - Zod schemas, server-side and client-side validation, Type checking with TypeScript, - `src/lib/types/` *read directly - fully commented*
-✅ **Search Index (Typesense)** - Typesense Cloud integrated. Full-text search across title, subtitle, excerpt, content, and tag names. Weighted relevance ranking. Debounced search-as-you-type in admin card list. Falls back to Firestore prefix search if Typesense unavailable. Config: `src/lib/config/typesense.ts`. Service: `src/lib/services/typesenseService.ts`. Sync: `npm run sync:typesense` / `sync:typesense:fresh`.
+✅ **Data Models** - `src/lib/types/` *read directly - fully commented*
 ✅ **Typesense** - Full-text search for cards and media. Auto-syncs on CRUD. Falls back to Firestore if unavailable.
-✅ **Authorization** - Auth.js w/Firebase adapter, role-based access control, session persistence, app wrapped in AuthProvider.
+✅ **Auth.js** - w/Firebase adapter, role-based access control, session persistence, app wrapper AuthProvider.
     📐 **Auth in Buildout** - During build/content phase, keep using current env-based login (`ADMIN_EMAIL` / `ADMIN_PASSWORD`) so work can continue without user provisioning.
     📐 **Auth at Rollout** - At go-live prep, run `npm run seed:journal-users` once to create the single admin in Firestore (`journal_users`) when that collection is empty.
     📐 **Post Seed** - After seed, manage access in Admin > Users (`/admin/journal-users`): create viewer accounts, set/reset passwords, enable/disable access.
     📐 **One Admin** - One admin (author), all other accounts are viewers.
-    📐 **Share Access** - Share access by sending site URL + username/password directly to each viewer.
 
 🔵 **Tenant ID** - Not implemented for v1. If multi-tenancy is needed for commercial SaaS (Model C), `tenantId` would be added to cards, media, tags, questions, and journal_users. Every query and security rule would need a tenant filter. Document the scope now; implement only if demand justifies it. See `docs/06-Strategic-Direction.md`.
 🔵 **Storage Abstraction** - Firebase Storage APIs are currently called directly in multiple places (`imageImportService.ts`, upload functions, URL generation). Create a single `storageService.ts` module wrapping all storage operations (upload, delete, getUrl). Reduces future migration scope (Cloudflare R2, S3) to one file. Also enables cache-busting for replaced images (append version hash to URL).
@@ -134,9 +132,9 @@ The primary users are the author (admin) creating the content and his family con
 ✅ **Rich Text Editing** - `@tiptap/react` rich text editing
 ✅ **Media Selection** - PhotoPicker for media selection (admin modal picker and simple upload)
 ✅ **Galleries** - GalleryManager and Swiper for galleries
-✅ **Image Optimization** - `next/image` via `JournalImage` wrapper (`unoptimized` flag for Firebase Storage URLs)
+✅ **Image Optimization** - `next/image` via `JournalImage` wrapper 
 ✅ **DragnDrop** - `@dnd-kit/core` and `@dnd-kit/sortable`
-✅ **Data Fetching** - `SWR` for client-side data fetching and caching (`CardProvider`, `TagProvider`, admin pages)
+✅ **Data Fetching** - `SWR` for client-side data fetching and caching 
 ⭕2 **Unused Dependencies** - Remove unused packages from `package.json`: `react-markdown`, `@uiw/react-md-editor`, `@minoru/react-dnd-treeview`. Evaluate `react-photo-album` (photo grid/mosaic layouts) and `framer-motion` (animation/transitions) for potential use before removing.
 
 ### **Scripts**
@@ -150,10 +148,6 @@ The primary users are the author (admin) creating the content and his family con
 *Features*
 ✅ **Syntax** - `npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json`
 ✅ **Firebase Setup** - Credentials live in `.env`:
-    - `FIREBASE_SERVICE_ACCOUNT_PROJECT_ID`, 
-    - `FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY`, 
-    - `FIREBASE_SERVICE_ACCOUNT_CLIENT_EMAIL`, 
-    - `FIREBASE_STORAGE_BUCKET_URL`
 ✅ **.env** - Scripts must load `.env` before importing Firebase. Use `-r dotenv/config` (and `DOTENV_CONFIG_PATH=.env` if needed) so env vars are available when `admin.ts` initializes
 ✅ **Maintenance Scripts** - Active operational scripts: `reconcile:media-cards`, `regenerate:storage-urls`, `cleanup:media`, `backup-database`, `backfill:media-metadata`, `seed:journal-users`.
 ⭕2 **Script Cleanup** - 86 script files under `src/lib/scripts/`; many are obsolete migration, debug, or test scripts not wired into `package.json`. Review and prune.
