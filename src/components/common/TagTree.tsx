@@ -98,11 +98,9 @@ export default function TagTree({
           />
           <label htmlFor={`tag-${tag.docId}`} className={styles.tagName}>
             {tag.name}
-            {tag.cardCount !== undefined && (
-              <span className={styles.cardCount}>
-                ({tag.cardCount})
-              </span>
-            )}
+            <span className={styles.cardCount}>
+              ({tag.cardCount ?? 0}/{tag.mediaCount ?? 0})
+            </span>
           </label>
         </div>
 

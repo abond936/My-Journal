@@ -1,5 +1,6 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { Tag, OrganizedTags } from '@/lib/types/tag';
+import type { Media } from '@/lib/types/photo';
 import { FieldValue, type DocumentData, type Transaction } from 'firebase-admin/firestore';
 
 const adminApp = getAdminApp();
@@ -423,6 +424,13 @@ export async function deleteTag(docId: string): Promise<void> {
     }
     
     console.log(`Found ${affectedCardIds.size} cards affected by tag deletion`);
+
+    const affectedMediaIds = new Set<string>();
+    for (const tagId of tagsToDelete) {
+      const mediaSnap = await firestore.collection('media').where('tags', 'array-contains', tagId).get();
+      mediaSnap.docs.forEach((d) => affectedMediaIds.add(d.id));
+    }
+    console.log(`Found ${affectedMediaIds.size} media items affected by tag deletion`);
     
     // Use a transaction to ensure atomicity
     await firestore.runTransaction(async (transaction) => {
@@ -464,6 +472,33 @@ export async function deleteTag(docId: string): Promise<void> {
           }
         }
       }
+
+      for (const mediaId of affectedMediaIds) {
+        const mediaRef = firestore.collection('media').doc(mediaId);
+        const mediaDoc = await transaction.get(mediaRef);
+        if (!mediaDoc.exists) continue;
+        const mediaData = mediaDoc.data() as Media;
+        const currentTags = mediaData.tags || [];
+        const updatedTags = currentTags.filter((tid: string) => !tagsToDelete.includes(tid));
+        if (updatedTags.length === currentTags.length) continue;
+
+        await updateTagCountsForMedia(currentTags, updatedTags, transaction);
+        const { filterTags, dimensionalTags } = await calculateDerivedTagData(updatedTags);
+        transaction.update(mediaRef, {
+          tags: updatedTags,
+          filterTags,
+          who: dimensionalTags.who ?? [],
+          what: dimensionalTags.what ?? [],
+          when: dimensionalTags.when ?? [],
+          where: dimensionalTags.where ?? [],
+          hasTags: updatedTags.length > 0,
+          hasWho: (dimensionalTags.who ?? []).length > 0,
+          hasWhat: (dimensionalTags.what ?? []).length > 0,
+          hasWhen: (dimensionalTags.when ?? []).length > 0,
+          hasWhere: (dimensionalTags.where ?? []).length > 0,
+          updatedAt: Date.now(),
+        });
+      }
       
       // Delete all tag descendants
       tagsToDelete.forEach(tagId => {
@@ -472,7 +507,7 @@ export async function deleteTag(docId: string): Promise<void> {
       });
     });
     
-    console.log(`Successfully deleted ${tagsToDelete.length} tags and updated ${affectedCardIds.size} cards`);
+    console.log(`Successfully deleted ${tagsToDelete.length} tags and updated ${affectedCardIds.size} cards, ${affectedMediaIds.size} media`);
   } catch (error) {
     console.error(`Error deleting tag ${docId}:`, error);
     throw new Error(`Failed to delete tag: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -537,6 +572,7 @@ export async function createTag(tagData: Omit<Tag, 'docId' | 'createdAt' | 'upda
       ...tagData,
       path: newPath, // Save the calculated path
       cardCount: 0, // Ensure new tags start with a count of 0
+      mediaCount: 0,
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     };
@@ -599,6 +635,32 @@ export async function updateTagCounts(tagIds: string[], direction: 'increment' |
 }
 
 /**
+ * Media tag assignments: increment/decrement `mediaCount` on the tag and its ancestors (same shape as card deltas).
+ */
+export async function updateTagCountsForMedia(
+  oldTags: string[] | undefined,
+  newTags: string[] | undefined,
+  transaction: FirebaseFirestore.Transaction
+): Promise<void> {
+  const oldSet = new Set(oldTags || []);
+  const newSet = new Set(newTags || []);
+  const deltaMap: Record<string, number> = {};
+
+  for (const tagId of newSet) {
+    if (!oldSet.has(tagId)) {
+      deltaMap[tagId] = (deltaMap[tagId] || 0) + 1;
+    }
+  }
+  for (const tagId of oldSet) {
+    if (!newSet.has(tagId)) {
+      deltaMap[tagId] = (deltaMap[tagId] || 0) - 1;
+    }
+  }
+
+  await applyTagCountDeltas(deltaMap, transaction, 'mediaCount');
+}
+
+/**
  * Centralized function to handle all tag count scenarios for cards.
  * This consolidates the tag counting logic from createCard, updateCard, and bulkUpdateTags.
  * 
@@ -636,7 +698,7 @@ export async function updateTagCountsForCard(
   }
   
   // Apply deltas with ancestor inclusion
-  await applyTagCountDeltas(deltaMap, transaction);
+  await applyTagCountDeltas(deltaMap, transaction, 'cardCount');
 }
 
 /**
@@ -647,7 +709,8 @@ export async function updateTagCountsForCard(
  */
 async function applyTagCountDeltas(
   deltaMap: Record<string, number>,
-  transaction: FirebaseFirestore.Transaction
+  transaction: FirebaseFirestore.Transaction,
+  countField: 'cardCount' | 'mediaCount' = 'cardCount'
 ): Promise<void> {
   const candidateIds = Object.keys(deltaMap);
   if (candidateIds.length === 0) return;
@@ -675,7 +738,7 @@ async function applyTagCountDeltas(
   for (const [tagId, delta] of Object.entries(deltaMap)) {
     if (delta !== 0) {
       const ref = firestore.collection('tags').doc(tagId);
-      transaction.update(ref, { cardCount: FieldValue.increment(delta) });
+      transaction.update(ref, { [countField]: FieldValue.increment(delta) });
     }
   }
 }
@@ -778,6 +841,92 @@ export async function updateAllTagCardCounts(): Promise<number> {
     return processedCount;
   } catch (error) {
     console.error('Error updating all tag card counts:', error);
+    throw error;
+  }
+}
+
+/**
+ * Like `updateTagCardCount`, but for **media** `tags[]` (unique media per subtree).
+ */
+export async function updateTagMediaCount(tagId: string): Promise<number> {
+  try {
+    const directSnapshot = await firestore
+      .collection('media')
+      .where('tags', 'array-contains', tagId)
+      .get();
+
+    const directMediaIds = new Set(directSnapshot.docs.map((doc) => doc.id));
+
+    const childrenSnapshot = await firestore.collection('tags').where('parentId', '==', tagId).get();
+
+    const allUniqueMediaIds = new Set(directMediaIds);
+    for (const childDoc of childrenSnapshot.docs) {
+      const childMediaIds = childDoc.data().uniqueMediaIds || [];
+      childMediaIds.forEach((mediaId: string) => allUniqueMediaIds.add(mediaId));
+    }
+
+    const totalCount = allUniqueMediaIds.size;
+
+    await firestore.collection('tags').doc(tagId).update({
+      mediaCount: totalCount,
+      uniqueMediaIds: Array.from(allUniqueMediaIds),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+
+    return totalCount;
+  } catch (error) {
+    console.error(`Error updating media count for tag ${tagId}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Recomputes `mediaCount` / `uniqueMediaIds` for all tags (bottom-up).
+ */
+export async function updateAllTagMediaCounts(): Promise<number> {
+  try {
+    const tagsSnapshot = await firestore.collection('tags').get();
+    const allTags = tagsSnapshot.docs.map((doc) => ({
+      docId: doc.id,
+      parentId: doc.data().parentId,
+    }));
+
+    const tagsByParent = new Map<string | undefined, string[]>();
+    allTags.forEach((tag) => {
+      const parentId = tag.parentId;
+      if (!tagsByParent.has(parentId)) {
+        tagsByParent.set(parentId, []);
+      }
+      tagsByParent.get(parentId)!.push(tag.docId);
+    });
+
+    let processedCount = 0;
+
+    const processLevel = async (parentId: string | undefined) => {
+      const tagIds = tagsByParent.get(parentId) || [];
+
+      for (const tagId of tagIds) {
+        if (tagsByParent.has(tagId)) {
+          await processLevel(tagId);
+        }
+      }
+
+      await Promise.all(
+        tagIds.map(async (tagId) => {
+          try {
+            await updateTagMediaCount(tagId);
+            processedCount++;
+          } catch (error) {
+            console.error(`Failed to update media count for tag ${tagId}:`, error);
+          }
+        })
+      );
+    };
+
+    await processLevel(null);
+    return processedCount;
+  } catch (error) {
+    console.error('Error updating all tag media counts:', error);
     throw error;
   }
 }

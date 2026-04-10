@@ -148,10 +148,8 @@ Legend:
 - **Curated or FreeForm** - Author-ordered or user-explored.
 - **Display types (enforced)** - Story → navigate; gallery → navigate or inline; Q&A → navigate or inline; callout → static; quote → static. Coerced in `createCard` / `updateCard` (`cardDisplayMode.ts`); admin pickers in `CardForm` / `EditableDisplayModeCell`. Reader feed linking: `V2ContentCard` (`navigate` + story | gallery | qa only).
 
-⭕1 **Planned**
-- **Suggestions** - Free form only--Children + 3 filtered + 3 random. 
-
 ⭕2 **Future**
+- **Card Cues** - Show small type badge on compact cards (`Story`, `Q&A`, `Gallery`, `Callout`, `Quote`).
 
 ---
 
@@ -171,6 +169,7 @@ Legend:
 - **Schema** - `type`: `story` | `gallery` | `qa` | `quote` | `callout`; `displayMode`: `static` | `inline` | `navigate` (`src/lib/types/card.ts`). Collection structure = `childrenIds` on any type, not a separate `type`.
 - **Detail** - `CardDetailPage.tsx` and view components in `src/components/view/` (TipTap, gallery, discovery blocks).
 - **Feed chrome** - Header, search row, type chips; `@` card mentions via `CardMention` / `TipTapRenderer`.
+- **Suggestions (detail)** - Children from server; Similar / Explore via `/api/cards/random` (`count=3`, tag dimensions from current card). `DiscoverySection`: horizontal scroll rails, compact `V2ContentCard` (`small` + `fullWidth`).
 
 📐 **Product vs code** - v1 intent: omit story excerpt on feed/detail; `StoryCardContent` still renders `excerpt` when the field is set—clear data or add a guard when enforcing.
 📐 **Horizontal open** - Prefer horizontal open for long-form on mobile where the reader implements it.
@@ -377,9 +376,9 @@ Legend:
 - **Usage** - Same assignment UX on cards and media (`MacroTagSelector` pattern). Card `filterTags` derived on save in `cardService` (not from image tags). At-a-glance: `getCoreTagsByDimension`, `DirectDimensionChips` on card/media tables and grids.
 - **Authoring stance** - Card-level vs frame-level tags are independent; bulk media tagging is primary day-to-day.
 - **Single TagProvider** - One root `TagProvider` in `src/app/layout.tsx`; admin no longer nests extra providers (`admin/layout.tsx`, `tag-admin/page.tsx`).
+- **Tag tree counts (cards/media)** - `cardCount` + `mediaCount` on tag docs; UI `(cards/media)` in `TagAdminRow` and sidebar `TagTree`. Incremental: `updateTagCountsForCard`, `updateTagCountsForMedia` (media PATCH + delete + `deleteTag` strips tags from affected media). Full recompute: `updateAllTagCardCounts` + `updateAllTagMediaCounts` via `npm run update:tag-counts -- --apply`.
 
 ⭕1 **Planned**
-- **Tag Tree Counts (model/UI)** - Add `mediaCount` on tag docs + UI `(x/y)` (cards vs media); align maintenance with recalc/jobs so counts stay trustworthy alongside incremental `cardCount` fixes.
 - **Tag Recomp** - Schedule or queue recomputation for hierarchical counts (and media side) vs relying on `FieldValue.increment` alone when semantics are "unique per subtree."
 
 ⭕2 **Future**

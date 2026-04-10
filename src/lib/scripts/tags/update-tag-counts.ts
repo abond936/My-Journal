@@ -23,7 +23,7 @@ import { getAdminApp } from '@/lib/config/firebase/admin';
 import { Card } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 
-import { updateAllTagCardCounts } from '@/lib/firebase/tagService';
+import { updateAllTagCardCounts, updateAllTagMediaCounts } from '@/lib/firebase/tagService';
 
 const adminApp = getAdminApp();
 const firestore = adminApp.firestore();
@@ -147,19 +147,20 @@ async function resetTagCounts() {
     const startTime = Date.now();
     
     // Use the proper function from tagService that implements bottom-up hierarchical counting
-    const processedCount = await updateAllTagCardCounts();
-    
+    const processedCards = await updateAllTagCardCounts();
+    const processedMedia = await updateAllTagMediaCounts();
+
     const endTime = Date.now();
     const duration = (endTime - startTime) / 1000;
     
     console.log('');
-    console.log(`✅ Successfully updated ${processedCount} tags in ${duration.toFixed(2)} seconds`);
-    console.log('🎯 All tag counts have been reset to accurate unique card values');
+    console.log(`✅ Card counts: ${processedCards} tags · Media counts: ${processedMedia} tags (${duration.toFixed(2)}s total)`);
+    console.log('🎯 cardCount and mediaCount reset to hierarchical unique totals');
     console.log('');
     console.log('📋 Summary:');
-    console.log(`   - Tags processed: ${processedCount}`);
+    console.log(`   - Tags processed (cards): ${processedCards}`);
+    console.log(`   - Tags processed (media): ${processedMedia}`);
     console.log(`   - Time taken: ${duration.toFixed(2)}s`);
-    console.log(`   - Average: ${(processedCount / duration).toFixed(2)} tags/second`);
 
   } catch (error) {
     console.error('❌ An error occurred during the tag count reset:', error);

@@ -112,11 +112,9 @@ export function TagAdminRow({
               data-dimension={tag.dimension || 'none'}
             >
               {tag.name}
-              {tag.cardCount !== undefined && (
-                <span className={styles.cardCount}>
-                  ({tag.cardCount})
-                </span>
-              )}
+              <span className={styles.cardCount}>
+                ({tag.cardCount ?? 0}/{tag.mediaCount ?? 0})
+              </span>
             </span>
           )}
         </div>

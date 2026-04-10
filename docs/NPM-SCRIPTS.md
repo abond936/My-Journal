@@ -11,7 +11,7 @@ Run from the repo root. Most maintenance scripts need Firebase Admin env vars (s
 | `npm run backup-codebase` | Local codebase backup utility |
 | `npm run export:csv` | Export data to CSV |
 | `npm run backfill:tags` | Tag path backfill (`src/lib/scripts/tags/backfill-tag-paths.ts`) |
-| `npm run update:tag-counts` | Recalculate tag counts |
+| `npm run update:tag-counts -- --apply` | Recalculate hierarchical `cardCount` and `mediaCount` on all tags (`--dry-run` to preview) |
 | `npm run diagnose:tag` | Debug single tag |
 | `npm run diagnose:cover` | Cover image diagnostic |
 | `npm run test:clear-cover` | Dev cover clear test |

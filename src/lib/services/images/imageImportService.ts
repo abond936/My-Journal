@@ -1,5 +1,5 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
-import { calculateDerivedTagData } from '@/lib/firebase/tagService';
+import { calculateDerivedTagData, updateTagCountsForMedia } from '@/lib/firebase/tagService';
 import { Media } from '@/lib/types/photo';
 import {
   removeMediaFromTypesense,
@@ -384,6 +384,41 @@ export async function patchMediaDocument(mediaId: string, updates: MediaPatchFie
     throw new Error('No valid fields to update.');
   }
 
+  if (updates.tags !== undefined) {
+    if (!Array.isArray(updates.tags)) {
+      throw new Error('tags must be an array of tag IDs.');
+    }
+    const newTags = updates.tags.filter((id): id is string => typeof id === 'string');
+
+    await firestore.runTransaction(async (tx) => {
+      const snap = await tx.get(mediaRef);
+      if (!snap.exists) {
+        throw new Error(`Media document with ID ${mediaId} not found.`);
+      }
+      const oldTags = (snap.data() as Media).tags || [];
+      await updateTagCountsForMedia(oldTags, newTags, tx);
+
+      const payload: Record<string, unknown> = { updatedAt: Date.now() };
+      if (updates.status !== undefined) {
+        payload.status = updates.status;
+      }
+      if (updates.caption !== undefined) {
+        payload.caption = updates.caption;
+      }
+      if (updates.objectPosition !== undefined) {
+        const trimmed = updates.objectPosition.trim();
+        if (!trimmed) {
+          throw new Error('objectPosition cannot be empty.');
+        }
+        payload.objectPosition = trimmed;
+      }
+      await applyTagFieldsToPayload(payload, newTags);
+      tx.update(mediaRef, payload);
+    });
+    void syncMediaToTypesenseById(mediaId);
+    return;
+  }
+
   const payload: Record<string, unknown> = { updatedAt: Date.now() };
 
   if (updates.status !== undefined) {
@@ -398,12 +433,6 @@ export async function patchMediaDocument(mediaId: string, updates: MediaPatchFie
       throw new Error('objectPosition cannot be empty.');
     }
     payload.objectPosition = trimmed;
-  }
-  if (updates.tags !== undefined) {
-    if (!Array.isArray(updates.tags)) {
-      throw new Error('tags must be an array of tag IDs.');
-    }
-    await applyTagFieldsToPayload(payload, updates.tags);
   }
 
   await mediaRef.update(payload);
@@ -512,23 +541,37 @@ export async function deleteMediaAsset(
   const app = getAdminApp();
   const firestore = app.firestore();
   
+  const mediaRef = firestore.collection('media').doc(mediaId);
+
   if (transaction) {
-    // Transaction mode: Only delete Firestore document
-    const mediaRef = firestore.collection('media').doc(mediaId);
+    const snap = await transaction.get(mediaRef);
+    if (snap.exists) {
+      const tags = (snap.data() as Media).tags || [];
+      if (tags.length > 0) {
+        await updateTagCountsForMedia(tags, [], transaction);
+      }
+    }
     transaction.delete(mediaRef);
   } else {
-    // Standalone mode: Try immediate deletion, fallback to marking
-    const mediaRef = firestore.collection('media').doc(mediaId);
-
     try {
       const doc = await mediaRef.get();
       if (!doc.exists) {
         console.warn(`[deleteMediaAsset] Media document with ID ${mediaId} not found. Skipping deletion.`);
         return;
       }
-      
+
       const mediaData = doc.data() as Media;
       const storagePath = mediaData.storagePath;
+
+      await firestore.runTransaction(async (tx) => {
+        const snap = await tx.get(mediaRef);
+        if (!snap.exists) return;
+        const tags = (snap.data() as Media).tags || [];
+        if (tags.length > 0) {
+          await updateTagCountsForMedia(tags, [], tx);
+        }
+        tx.delete(mediaRef);
+      });
 
       if (storagePath) {
         const success = await deleteFromStorageWithRetry(storagePath);
@@ -537,10 +580,8 @@ export async function deleteMediaAsset(
         }
       }
 
-      await mediaRef.delete();
       void removeMediaFromTypesense(mediaId);
       console.log(`[deleteMediaAsset] Successfully deleted media document with ID ${mediaId}.`);
-
     } catch (error) {
       console.error(`[deleteMediaAsset] CRITICAL ERROR during deletion for media ID ${mediaId}:`, error);
       throw new Error(`Failed to delete media asset ${mediaId}. See server logs for details.`);

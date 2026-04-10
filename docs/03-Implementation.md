@@ -76,12 +76,6 @@ Legend:
 
 
 
-*Content (`02-Application.md`)*
-
-- **Suggestions** - Free form only--Children + 3 filtered + 3 random. 
-
-
-
 *View Page (`02-Application.md`)*
 
 - **Related Count** - Reduce size/number of Related and Explore More cards?
@@ -119,7 +113,6 @@ Legend:
 
 *Tag Management (`02-Application.md`)*
 
-- **Tag Tree Counts (model/UI)** - Add `mediaCount` on tag docs + UI `(x/y)` (cards vs media); align maintenance with recalc/jobs so counts stay trustworthy alongside incremental `cardCount` fixes.
 - **Tag Recomp** - Schedule or queue recomputation for hierarchical counts (and media side) vs relying on `FieldValue.increment` alone when semantics are "unique per subtree."
 
 
