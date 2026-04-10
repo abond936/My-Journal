@@ -16,6 +16,7 @@ import { useCardForm } from '@/components/providers/CardFormProvider';
 import clsx from 'clsx';
 import PhotoPicker from '@/components/admin/card-admin/PhotoPicker';
 import LoadingOverlay from '@/components/admin/card-admin/LoadingOverlay';
+import { getAllowedDisplayModes, normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 
 const CardForm: React.FC = () => {
   const {
@@ -48,7 +49,14 @@ const CardForm: React.FC = () => {
     if (newAuto) setField('excerpt', null);
   }, [isExcerptAuto, setField]);
   const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => setField('status', e.target.value as Card['status']), [setField]);
-  const handleTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => setField('type', e.target.value as Card['type']), [setField]);
+  const handleTypeChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const nextType = e.target.value as Card['type'];
+      setField('type', nextType);
+      setField('displayMode', normalizeDisplayModeForType(nextType, cardData.displayMode));
+    },
+    [setField, cardData.displayMode]
+  );
   const handleDisplayModeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => setField('displayMode', e.target.value as Card['displayMode']), [setField]);
   const handleContentChange = useCallback((content: string) => {
     setField('content', content);
@@ -86,6 +94,11 @@ const CardForm: React.FC = () => {
     const tagIds = new Set(cardData.tags || []);
     return allTags.filter(tag => tagIds.has(tag.docId));
   }, [cardData.tags, allTags]);
+
+  const allowedDisplayModes = useMemo(
+    () => getAllowedDisplayModes(cardData.type ?? 'story'),
+    [cardData.type]
+  );
 
   const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -205,13 +218,15 @@ const CardForm: React.FC = () => {
               <label htmlFor="display-mode-select" className={styles.selectLabel}>Display Mode</label>
               <select
                 id="display-mode-select"
-                value={cardData.displayMode}
+                value={normalizeDisplayModeForType(cardData.type ?? 'story', cardData.displayMode)}
                 onChange={handleDisplayModeChange}
                 className={clsx(styles.statusSelect, errors.displayMode && styles.inputError)}
               >
-                <option value="inline">Inline</option>
-                <option value="navigate">Navigate</option>
-                <option value="static">Static</option>
+                {allowedDisplayModes.map((mode) => (
+                  <option key={mode} value={mode}>
+                    {mode === 'inline' ? 'Inline' : mode === 'navigate' ? 'Navigate' : 'Static'}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

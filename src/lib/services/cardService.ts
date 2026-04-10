@@ -12,6 +12,7 @@ import {
   markStorageForLaterDeletion,
 } from './images/imageImportService';
 import { extractMediaFromContent, stripContentImageSrc, hydrateContentImageSrc, removeMediaFromContent, generateExcerpt } from '@/lib/utils/cardUtils';
+import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 import { getPublicStorageUrl } from '@/lib/utils/storageUrl';
 import { Media } from '@/lib/types/photo';
 import { unlinkCardFromAllQuestions } from '@/lib/services/questionService';
@@ -500,9 +501,12 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
 
       const autoExcerpt = validatedData.excerptAuto ? generateExcerpt(cleanedContent) : undefined;
 
+      const cardType = validatedData.type ?? 'story';
       const newCard: Card = {
         ...validatedData,
         docId: docRef.id,
+        type: cardType,
+        displayMode: normalizeDisplayModeForType(cardType, validatedData.displayMode),
         status: validatedData.status ?? 'draft',
         title_lowercase: validatedData.title?.toLowerCase() || '',
         content: cleanedContent,
@@ -672,9 +676,15 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       };
   
       const cleanedUpdate = removeUndefinedDeep(validatedUpdate);
-      
 
-  
+      const mergedType = (cleanedUpdate.type ?? existingData.type) as Card['type'];
+      const rawDisplay =
+        cleanedUpdate.displayMode !== undefined ? cleanedUpdate.displayMode : existingData.displayMode;
+      const coercedDisplay = normalizeDisplayModeForType(mergedType, rawDisplay);
+      if (coercedDisplay !== rawDisplay) {
+        cleanedUpdate.displayMode = coercedDisplay;
+      }
+
       // If no fields remain after cleaning, nothing to update â€“ return current data
       if (Object.keys(cleanedUpdate).length === 0) {
         return existingData;

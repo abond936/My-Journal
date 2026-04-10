@@ -124,6 +124,7 @@ Legend:
 - **Collection Metadata** - Implement collection metadata (child counts).
 - **Chron Tree** - Provide tree in chronological order (Year / Month / What) for browsing.
 - **Mobile Filter UX** - Tune type/tag filter UX on mobile. Layout reference: `--header-height` 60px; mobile filter drawer `--sidebar-width-mobile` 250px (`theme.css`).
+- **Tree UI** - Emulate mobile with buttons for who, what, when, where
 
 ---
 
@@ -145,13 +146,12 @@ Legend:
 - **Main Feed** - Mixed content types with seamless transitions between related content.
 - **Mobile-First** - Touch scrolling, responsive design, news feed feel.
 - **Curated or FreeForm** - Author-ordered or user-explored.
+- **Display types (enforced)** - Story → navigate; gallery → navigate or inline; Q&A → navigate or inline; callout → static; quote → static. Coerced in `createCard` / `updateCard` (`cardDisplayMode.ts`); admin pickers in `CardForm` / `EditableDisplayModeCell`. Reader feed linking: `V2ContentCard` (`navigate` + story | gallery | qa only).
 
 ⭕1 **Planned**
-- **Display Types** - Verify behaviors. Stories: Navigate. Galleries: Navigate or Inline. Questions: Navigate or Static. Quotes: Static. Callouts: Static.
 - **Suggestions** - Free form only--Children + 3 filtered + 3 random. 
 
 ⭕2 **Future**
-- **Card Cues** - Show small type badge on compact cards (`Story`, `Q&A`, `Gallery`, `Callout`, `Quote`).
 
 ---
 
@@ -376,11 +376,13 @@ Legend:
 - **Admin UI** - `/admin/tag-admin`, `TagAdminList`, DnD (`SortableTag`), inline rows, delete/move with count recalc, modals + `POST /api/tags`, typeahead in pickers (`filterTreesBySearch`).
 - **Usage** - Same assignment UX on cards and media (`MacroTagSelector` pattern). Card `filterTags` derived on save in `cardService` (not from image tags). At-a-glance: `getCoreTagsByDimension`, `DirectDimensionChips` on card/media tables and grids.
 - **Authoring stance** - Card-level vs frame-level tags are independent; bulk media tagging is primary day-to-day.
+- **Single TagProvider** - One root `TagProvider` in `src/app/layout.tsx`; admin no longer nests extra providers (`admin/layout.tsx`, `tag-admin/page.tsx`).
 
-⭕2 **Future**
-- **Single TagProvider:** Remove nested `TagProvider` under admin so one tag tree fetch serves GlobalSidebar + admin (avoid duplicate `/api/tags` work).
+⭕1 **Planned**
 - **Tag Tree Counts (model/UI)** - Add `mediaCount` on tag docs + UI `(x/y)` (cards vs media); align maintenance with recalc/jobs so counts stay trustworthy alongside incremental `cardCount` fixes.
 - **Tag Recomp** - Schedule or queue recomputation for hierarchical counts (and media side) vs relying on `FieldValue.increment` alone when semantics are "unique per subtree."
+
+⭕2 **Future**
 - **Unified tag edges (conceptual):** Treat assignments as **(subjectType, subjectId, tagId)** even if denormalized on `Card` / `Media` for reads—eases counts, digiKam mapping, migrations. (??)
 - **Face Recognition** - Options:
     - **Cloud APIs:** Azure Face, AWS Rekognition, Google Cloud Vision (detection; recognition requires custom face DB). Integrate to suggest/auto-populate WHO at image level; faces map to person tags.

@@ -9,6 +9,7 @@ import {
   dehydrateCardForSave,
   persistableSnapshotsEqual,
 } from '@/lib/utils/cardUtils';
+import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 
 /**
  * FormState Interface
@@ -104,19 +105,25 @@ interface FormProviderProps {
   onSave: (cardData: CardUpdate) => Promise<void>;
 }
 
+function mergeInitialCard(card: Card | null): CardUpdate {
+  if (!card) return EMPTY_CARD;
+  const type = card.type ?? 'story';
+  return {
+    ...EMPTY_CARD,
+    ...card,
+    coverImageId: card.coverImageId ?? null,
+    coverImage: card.coverImage ?? null,
+    type,
+    displayMode: normalizeDisplayModeForType(type, card.displayMode),
+  };
+}
+
 /**
  * CardFormProvider Component
  */
 export function CardFormProvider({ children, initialCard, allTags, onSave }: FormProviderProps) {
   const [formState, setFormState] = useState<FormState>(() => {
-    const card = initialCard
-      ? {
-          ...EMPTY_CARD,
-          ...initialCard,
-          coverImageId: initialCard.coverImageId ?? null,
-          coverImage: initialCard.coverImage ?? null,
-        }
-      : EMPTY_CARD;
+    const card = mergeInitialCard(initialCard);
     return {
       cardData: card,
       isSaving: false,
@@ -132,12 +139,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       // Only update if this is the first load or if the initialCard.docId has changed
       setFormState(prevState => {
         if (!prevState.cardData.docId || prevState.cardData.docId !== initialCard.docId) {
-          const mergedCard = {
-            ...EMPTY_CARD,
-            ...initialCard,
-            coverImageId: initialCard.coverImageId ?? null,
-            coverImage: initialCard.coverImage ?? null,
-          };
+          const mergedCard = mergeInitialCard(initialCard);
           return {
             ...prevState,
             cardData: mergedCard,

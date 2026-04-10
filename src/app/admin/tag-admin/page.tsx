@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useLayoutEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { useTag, TagProvider, TagWithChildren } from '@/components/providers/TagProvider';
+import { useTag, TagWithChildren } from '@/components/providers/TagProvider';
 import { Tag } from '@/lib/types/tag';
 import { TagAdminList } from '@/components/admin/tag-admin/TagAdminList';
 import styles from './tag-admin.module.css';
@@ -219,9 +219,5 @@ function AdminTagsPageContent() {
 }
 
 export default function AdminTagsPage() {
-  return (
-    <TagProvider>
-      <AdminTagsPageContent />
-    </TagProvider>
-  );
+  return <AdminTagsPageContent />;
 }
