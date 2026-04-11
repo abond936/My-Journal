@@ -2,8 +2,7 @@ Prompts
 
 Before we begin, please commit this to memory:
 
-- Understand the strategic architecture and the specific implementaton of the entire application by reading docs/Project.md and
-the entire codebase. 
+- Understand the strategic architecture and the specific implementation of the entire application by reading docs/01-Vision-Architecture.md, docs/02-Application.md, docs/03-Implementation.md, and the entire codebase. 
 
 - Make all recommendations consistent with the implemented strategy/architecture or raise the inconsistencies that a recommendation may create. The architecture can be changed if properly coordinated.
 
@@ -22,7 +21,7 @@ This project is reasonably mature. Some architectural elements remain open and m
 
 For us to work efficiently and effectively together, you must have a thorough macro and micro understanding of the application so that your assessments and recommendations consistent with the long-term architecture and goals and not break what works for the sake of a short-term fix. 
 
-Please read docs/Project.md, a combination context setter and development tracker, and the codebase thoroughly to familiarize yourself with the details of the project--the data models, schemas, components, services and api's. 
+Please read docs/01-Vision-Architecture.md, docs/02-Application.md, and docs/03-Implementation.md, and the codebase thoroughly to familiarize yourself with the details of the project—the data models, schemas, components, services and APIs. 
 
 Then please give me your assessment of the state of development (good and bad), and any inconsistencies you may have found between the two.
 

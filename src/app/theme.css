@@ -1,150 +1,32 @@
 /*
-  Unified Design System (v2) - Simplified 3-Shade Approach
-  ==========================================
-  This file represents the single source of truth for all styling tokens,
-  built on a simplified 3-shade color system for theme colors 1 and 2.
-  
-  APPROACH:
-  - Color 1: Background (100=darkest, 200=medium, 300=lightest) - consistent layering
-  - Color 2: Text/Foreground (100=lightest, 200=medium, 300=darkest) - consistent layering
-  - Colors 3-14: Semantic colors with single values
-  - Automatic light/dark mode switching with appropriate shade mapping
-
-  Structure:
-  1. Base Tokens: Raw, context-agnostic primitive values.
-  2. Global Element Tokens: Application-wide styles for foundational HTML elements.
-  3. Component Tokens: Scoped styles for specific, reusable components.
-*/
-
-/*
- * =================================================================
- * LIGHT THEME (DEFAULT)
- * =================================================================
+ * theme.css — static global rules only.
+ * Design tokens (:root and [data-theme="dark"] variables) are injected by RootLayout
+ * from Firestore (app_settings/theme) or theme-data.json via buildThemeTokensCss().
+ *
+ * Emergency fallbacks: if token injection fails, the UI stays readable until fixed.
  */
 :root {
-  /* --- 1. BASE TOKENS --- */
+  --body-background-color: #d9d9d9;
+  --text1-color: #1a1a1a;
+  --text2-color: #333333;
+  --body-font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --scrollbar-track-color: #e8e8e8;
+  --scrollbar-thumb-color: #b0b0b0;
+  --scrollbar-thumb-hover-color: #888888;
+  --border-radius-full: 9999px;
 
-  /* Color Palette (HEX-based) */
-  --hex3: #135b96; /* principal */
-  --hex4: #E6B85A; /* accent */
-  --hex5: #8A3A0E; /* alt1 */
-  --hex6: #0E3A4A; /* alt2 */
-  --hex7: #2C5A1F; /* alt3 */
-  --hex8: #5A1F4F; /* alt4 */
-  --hex9: #6A4F29; /* alt5 */
-  --hex10: #B08A3E; /* alt6 */
-  --hex11: #059669; /* success */
-  --hex12: #dc2626; /* error */
-  --hex13: #d97706; /* warning */
-  --hex14: #2563eb; /* info */
-  /* --color15: */
-  
-  /* Color Palette (HSL-based) */
-  --h3: 211; /* principal */
-  --s3: 76%;
-  --l3: 33%;
-  --h4: 42; /* accent */
-  --s4: 76%;
-  --l4: 62%;
-  --h5: 20; /* alt1 */
-  --s5: 80%;
-  --l5: 30%;
-  --h6: 198; /* alt2 */
-  --s6: 63%;
-  --l6: 18%;
-  --h7: 102; /* alt3 */
-  --s7: 50%;
-  --l7: 24%;
-  --h8: 311; /* alt4 */
-  --s8: 49%;
-  --l8: 24%;
-  --h9: 35; /* alt5 */
-  --s9: 44%;
-  --l9: 29%;
-  --h10: 41; /* alt6 */
-  --s10: 49%;
-  --l10: 47%;
-  --h11: 160; /* success */
-  --s11: 94%;
-  --l11: 30%;
-  --h12: 0; /* error */
-  --s12: 71%;
-  --l12: 50%;
-  --h13: 34; /* warning */
-  --s13: 96%;
-  --l13: 43%;
-  --h14: 221; /* info */
-  --s14: 81%;
-  --l14: 55%;
-  /* --hue15: */
-
-  /* Theme Colors 3-Shade Scales (Light Mode) */
-  /* Color 1 Light Mode Scale */
+  /* App shell + layout (must exist if SSR theme <style> is missing or invalid) */
   --color1-100: hsl(0, 0%, 85%);
   --color1-200: hsl(0, 0%, 95%);
   --color1-300: hsl(0, 0%, 100%);
-  /* Color 2 Light Mode Scale */
   --color2-100: hsl(0, 0%, 10%);
-  --color2-200: hsl(0, 0%, 0%);
-  --color2-300: hsl(0, 0%, 0%);
-
-  /* Base Color Definitions (Colors 3-14) */
-  --color3: hsl(var(--h3), var(--s3), var(--l3));
-  --color4: hsl(var(--h4), var(--s4), var(--l4));
-  --color5: hsl(var(--h5), var(--s5), var(--l5));
-  --color6: hsl(var(--h6), var(--s6), var(--l6));
-  --color7: hsl(var(--h7), var(--s7), var(--l7));
-  --color8: hsl(var(--h8), var(--s8), var(--l8));
-  --color9: hsl(var(--h9), var(--s9), var(--l9));
-  --color10: hsl(var(--h10), var(--s10), var(--l10));
-  --color11: hsl(var(--h11), var(--s11), var(--l11));
-  --color12: hsl(var(--h12), var(--s12), var(--l12));
-  --color13: hsl(var(--h13), var(--s13), var(--l13));
-  --color14: hsl(var(--h14), var(--s14), var(--l14));
-
-  /* Breakpoints (Mobile-First) */
-  --breakpoint-sm: 640px;
-  --breakpoint-md: 768px;
-  --breakpoint-lg: 1024px;
-  --breakpoint-xl: 1280px;
-
-  /* Typography Scale */
-  --font-family-sans: "Ink Free", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-family-serif: "Georgia", serif;
-  --font-family-handwriting: "Ink Free", cursive;
-
-  /* Fluid Typography */
-  --font-size1-fluid: clamp(1.5rem, 1rem + 2.5vw, 3rem);
-  --font-size2-fluid: clamp(1.25rem, 0.8rem + 2.25vw, 2.25rem);
-  --font-size3-fluid: clamp(1rem, 0.75rem + 1.25vw, 1.5rem);
-
-  /* Fluid Spacing */
-  --spacing1-fluid: clamp(1rem, 0.5rem + 2.5vw, 2rem);
-  --spacing2-fluid: clamp(2rem, 1rem + 5vw, 4rem);
-  --spacing3-fluid: clamp(4rem, 2rem + 10vw, 8rem);
-
-  /* Static Typography */
-  --font-size-xs: 0.875rem;
-  --font-size-sm: 1rem;
-  --font-size-base: 1.125rem;
-  --font-size-lg: 1.25rem;
-  --font-size-xl: 1.5rem;
-  --font-size-2xl: 1.875rem;
-  --font-size-3xl: 2.5rem;
-  --font-size-4xl: 3rem;
-  --font-size-5xl: 3.75rem;
-  --font-size-6xl: 4rem;
-
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-
-  --line-height-base: 1.5;
-  --line-height-tight: 1.25;
-  --line-height-relaxed: 1.75;
-
-  /* Spacing Scale */
+  --color2-200: hsl(0, 0%, 20%);
+  --color2-300: hsl(0, 0%, 10%);
+  --color3: hsl(211, 76%, 33%);
+  --layout-background1-color: var(--color1-100);
+  --layout-background2-color: var(--color1-200);
+  --border1-color: var(--color1-200);
+  --header-height: 120px;
   --spacing-unit: 4px;
   --spacing-xs: calc(1 * var(--spacing-unit));
   --spacing-sm: calc(2 * var(--spacing-unit));
@@ -154,216 +36,45 @@
   --spacing-2xl: calc(12 * var(--spacing-unit));
   --spacing-3xl: calc(16 * var(--spacing-unit));
   --spacing-4xl: calc(24 * var(--spacing-unit));
-
-  /* Border & Radius Scale */
+  --layout-container-max-width: 1200px;
   --border-width-thin: 1px;
   --border-width-medium: 2px;
-  --border-width-thick: 3px;
-  
-  --border-radius-sm: 0.25rem;
-  --border-radius-md: 0.5rem;
   --border-radius-lg: 0.75rem;
-  --border-radius-xl: 1rem;
-  --border-radius-full: 9999px;
-
-  /* Shadow Scale (For Light Theme) */
-  --shadow-strength: 10%;
-  --shadow-color: hsl(var(--h2) / var(--shadow-strength));
-  --shadow-sm: 0 1px 2px -1px var(--shadow-color);
-  --shadow-md: 0 3px 4px -2px var(--shadow-color), 0 7px 10px -4px var(--shadow-color);
-  --shadow-lg: 0 5px 8px -3px var(--shadow-color), 0 12px 18px -5px var(--shadow-color);
-  --shadow-xl: 0 10px 15px -5px var(--shadow-color), 0 25px 35px -10px var(--shadow-color);
-
-  /* Z-Index Scale */
-  --z-index-default: 1;
-  --z-index-content: 10;
-  --z-index-sticky: 100;
-  --z-index-modal-backdrop: 1000;
-  --z-index-sidebar: 1100;
+  --shadow-sm: 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 3px 4px -2px rgba(0, 0, 0, 0.1);
+  --font-size-sm: 1rem;
+  --font-size-base: 1.125rem;
+  --font-size-lg: 1.25rem;
+  --font-size-2xl: 1.875rem;
+  --font-weight-semibold: 600;
+  --line-height-relaxed: 1.75;
+  --gradient-bottom-overlay: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+  --gradient-bottom-overlay-strong: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
   --z-index-header: 1200;
-  --z-index-modal: 1300;
-  --z-index-tooltip: 1400;
-
-  /* --- 2. GLOBAL ELEMENT TOKENS (LIGHT THEME) --- */
-  
-  /* Global Body Background */
-  --body-background-color: var(--color1-100);
-  
-  /* Layout */
-  --layout-container-max-width: 1200px;
-  --body-font-family: var(--font-family-sans);
-  --layout-background1-color: var(--color1-100);
-  --layout-background2-color: var(--color1-200);
+  --z-index-sidebar: 1100;
+  --z-index-modal-backdrop: 1000;
   --sidebar-width: 300px;
-  --sidebar-width-mobile: 250px;
-  --logo-max-height: 120px;
-  --spinner-size: 50px;
-  --form-min-width: 120px;
-  --button-min-width: 60px;
-  --icon-min-width: 24px;
   --transition-short: 0.2s;
-
-  /* Borders - Using color1 shades */
-  --border1-color: var(--color1-200);
-  --border2-color: var(--color1-300);
-
-  /* States */
-  --state-success-background-color: hsl(var(--h11) / 0.15);
-  --state-success-border-color: var(--color11);
-  --state-error-background-color: hsl(var(--h12) / 0.15);
-  --state-error-border-color: var(--color12);
-  --state-warning-background-color: hsl(var(--h13) / 0.15);
-  --state-warning-border-color: var(--color13);
-  --state-info-background-color: hsl(var(--h14) / 0.15);
-  --state-info-border-color: var(--color14);
-
-  /* Typography */
-  --text1-color: var(--color2-300);
-  --text2-color: var(--color2-200);
-
-  /* --- 3. COMPONENT TOKENS --- */
-  
-  /* Header */
-  --header-height: 120px;
-  --header-background-color: var(--color1-100);
-  --header-border-color: var(--border1-color);
-  --header-border-width: var(--border-width-thin);
-
-  /* Button: Solid */
-  --button-solid-background-color: var(--color3);
-  --button-solid-background-color-hover: var(--color3);
-  --button-solid-border-color: var(--color3);
-  --button-solid-text-color: white;
-  
-  /* Button: Outline */
-  --button-outline-background-color: transparent;
-  --button-outline-background-color-hover: hsla(var(--h3), var(--s3), var(--l3), 0.1);
-  --button-outline-border-color: var(--border1-color);
-  --button-outline-text-color: var(--color2-300);
-  --button-outline-border-width: var(--border-width-medium);
-
-  /* Card */
-  --card-background-color: var(--color1-200);
-  --card-padding: var(--spacing-lg);
-  --card-border-color: var(--border1-color);
-  --card-border-width: var(--border-width-medium);
-  --card-border-radius: var(--border-radius-lg);
-  --card-shadow: var(--shadow-sm);
-  --card-shadow-hover: var(--shadow-md);
-  
-  /* Tag */
-  --tag-padding: var(--spacing-xs) var(--spacing-sm);
-  --tag-border-radius: var(--border-radius-full);
-  --tag-font-weight: var(--font-weight-medium);
-  --tag-font-size: var(--font-size-sm);
-  --tag-font-family: var(--font-family-sans);
-  --tag-text-color: var(--color1-100);
-  --tag-who-bg-color: var(--color5);
-  --tag-what-bg-color: var(--color6);
-  --tag-when-bg-color: var(--color7);
-  --tag-where-bg-color: var(--color8);
-  
-  /* Form & Input */
-  --input-background-color: var(--color1-100);
-  --input-border-color: var(--border1-color);
-  --input-border-color-focus: var(--color3);
-  --input-text-color: var(--color2-300);
-  --input-border-radius: var(--border-radius-sm);
-  --input-padding: var(--spacing-sm) var(--spacing-md);
-
-  /* Link */
-  --link-text-color: var(--color3);
-  --link-text-color-hover: var(--color3);
-  --link-decoration-hover: underline;
-
-  /* Gradients */
-  --gradient-bottom-overlay: linear-gradient(transparent, rgba(0,0,0,0.7));
-  --gradient-bottom-overlay-strong: linear-gradient(transparent, rgba(0,0,0,0.9));
-
-  /* Global scrollbar colors */
-  --scrollbar-track-color: var(--layout-background2-color);
-  --scrollbar-thumb-color: var(--border2-color);
-  --scrollbar-thumb-hover-color: var(--text2-color);
-
-  /* Lightbox */
-  --lightbox-overlay-background-color: hsl(var(--h2) / 0.9);
-  --lightbox-control-background-color: hsl(var(--h1) / 0.8);
-  --lightbox-control-border-color: hsl(var(--h2) / 0.35);
-  --lightbox-control-text-color: var(--color2-100);
-  --lightbox-caption-text-color: var(--color2-100);
-
-  /*
-   * Raster watermarks on flat tiles (e.g. callout pushpin): artwork is dark-on-transparent.
-   * Light mode: text1 is dark on layout-background1 (~light gray) — same as “?” using color + opacity.
-   */
-  --card-watermark-raster-filter: none;
-
-  /* Native control hinting */
-  color-scheme: light;
+  --font-size-xl: 1.5rem;
 }
 
-/*
- * =================================================================
- * DARK THEME OVERRIDES
- * =================================================================
- */
-[data-theme="dark"] {
-  /* --- BASE TOKEN OVERRIDES --- */
+[data-theme='dark'] {
+  --body-background-color: #1a1a1a;
+  --text1-color: #e8e8e8;
+  --text2-color: #cccccc;
+  --scrollbar-track-color: #2a2a2a;
+  --scrollbar-thumb-color: #555;
+  --scrollbar-thumb-hover-color: #777;
 
-  /* Shadow Scale (For Dark Theme) */
-  --shadow-strength: 25%;
-  --shadow-color: hsl(var(--h1) / var(--shadow-strength));
-
-  /* Theme Colors 3-Shade Scales (Dark Mode) */
-  /* Color 1 Dark Mode Scale */
   --color1-100: hsl(0, 0%, 10%);
   --color1-200: hsl(0, 0%, 20%);
   --color1-300: hsl(0, 0%, 30%);
-  /* Color 2 Dark Mode Scale */
   --color2-100: hsl(0, 0%, 100%);
   --color2-200: hsl(0, 0%, 90%);
   --color2-300: hsl(0, 0%, 80%);
-
-  /* --- GLOBAL ELEMENT TOKEN OVERRIDES --- */
-  --body-background-color: var(--color1-100);
   --layout-background1-color: var(--color1-100);
   --layout-background2-color: var(--color1-200);
-
   --border1-color: var(--color1-200);
-  --border2-color: var(--color1-300);
-
-  --text1-color: var(--color2-300);
-  --text2-color: var(--color2-200);
-
-  /* --- COMPONENT TOKEN OVERRIDES --- */
-  --header-background-color: var(--color1-100);
-
-  --input-background-color: var(--color1-100);
-  --input-border-color: var(--border1-color);
-  --input-text-color: var(--text1-color);
-  
-  --card-background-color: var(--color1-200);
-
-  /* Global scrollbar colors (dark mode) */
-  --scrollbar-track-color: var(--layout-background1-color);
-  --scrollbar-thumb-color: var(--color1-300);
-  --scrollbar-thumb-hover-color: var(--text2-color);
-
-  /* Lightbox (dark mode) */
-  --lightbox-overlay-background-color: hsl(var(--h1) / 0.92);
-  --lightbox-control-background-color: hsl(var(--h1) / 0.72);
-  --lightbox-control-border-color: hsl(var(--h2) / 0.55);
-  --lightbox-control-text-color: var(--color2-100);
-  --lightbox-caption-text-color: var(--color2-100);
-
-  /*
-   * Dark mode: text1 is light on dark layout-background1. Invert dark raster + same opacity
-   * as .qa watermark so the pin matches the “?” (not dark-on-dark).
-   */
-  --card-watermark-raster-filter: invert(1);
-
-  /* Native control hinting */
-  color-scheme: dark;
 }
 
 /*
@@ -372,14 +83,12 @@
  * =================================================================
  */
 
-/* Apply body background color globally */
 body {
   background-color: var(--body-background-color);
   color: var(--text1-color);
   font-family: var(--body-font-family);
 }
 
-/* Global scrollbar styling */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb-color) var(--scrollbar-track-color);

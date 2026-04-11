@@ -340,12 +340,12 @@
 
 .statusBadge.temporary {
   background: var(--state-warning-background-color);
-  color: var(--state-warning-text-color);
+  color: var(--state-warning-border-color);
 }
 
 .statusBadge.active {
   background: var(--state-success-background-color);
-  color: var(--state-success-text-color);
+  color: var(--state-success-border-color);
 }
 
 .pagination {

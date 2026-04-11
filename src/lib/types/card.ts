@@ -80,6 +80,14 @@ export const cardSchema = z.object({
   /** When set, this card was created by folder import; used to detect duplicates. */
   importedFromFolder: z.string().optional(),
 
+  /**
+   * Denormalized journal-time sort keys from When tags (packed YYYYMMDD-style; 00 = unknown parts).
+   * `journalWhenSortAsc`: oldest-first; undated uses a large sentinel so they sort last.
+   * `journalWhenSortDesc`: newest-first; undated uses -1 so they sort last.
+   */
+  journalWhenSortAsc: z.number().optional(),
+  journalWhenSortDesc: z.number().optional(),
+
   // Timestamps
   createdAt: z.number(),
   updatedAt: z.number(),
@@ -111,6 +119,8 @@ export const cardUpdateValidationSchema = cardSchema.partial().omit({
   where: true,
   title_lowercase: true, // Server-generated
   curatedNavEligible: true,
+  journalWhenSortAsc: true,
+  journalWhenSortDesc: true,
 });
 
 /**

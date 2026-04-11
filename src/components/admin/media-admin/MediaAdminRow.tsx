@@ -10,6 +10,7 @@ import { useMedia } from '@/components/providers/MediaProvider';
 import { useTag } from '@/components/providers/TagProvider';
 import { parseObjectPositionToPercents } from '@/lib/utils/parseObjectPositionPercent';
 import { getCoreTagsByDimension } from '@/lib/utils/tagDisplay';
+import { isMediaAssigned } from '@/lib/utils/mediaAssignmentSeek';
 import styles from './MediaAdminRow.module.css';
 
 interface ColumnConfig {
@@ -112,12 +113,14 @@ export default function MediaAdminRow({
 
   const renderCell = (column: ColumnConfig) => {
     switch (column.key) {
-      case 'status':
+      case 'assignment': {
+        const assigned = isMediaAssigned(media);
         return (
-          <span className={`${styles.statusBadge} ${styles[media.status]}`}>
-            {media.status}
+          <span className={`${styles.assignmentBadge} ${assigned ? styles.assigned : styles.unassigned}`}>
+            {assigned ? 'Assigned' : 'Unassigned'}
           </span>
         );
+      }
 
       case 'thumbnail':
         return (

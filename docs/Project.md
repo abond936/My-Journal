@@ -1,5 +1,7 @@
 # PROJECT OVERVIEW
 
+> **Archived reference.** Canonical documentation is `docs/01-Vision-Architecture.md`, `docs/02-Application.md`, and `docs/03-Implementation.md`. Prefer those files; this monolith may be incomplete or out of date.
+
 Legend:
 ✅`Implemented`
 ⭕`Planned (1/2/3)`
@@ -12,7 +14,7 @@ Legend:
 
 ## Document Governance
 
-- **Canonical Document** - `Project.md` is the canonical project document for author and AI.
+- **Canonical documents** - `docs/01-Vision-Architecture.md`, `docs/02-Application.md`, `docs/03-Implementation.md` (see note at top of this file).
 - **AI Behavior** - AI process, approval, and execution rules live in `.cursor/rules/# AI_InteractionRules.mdc`.
 - **Author** - Provides direction, constraints, and priorities--not implementation details.
 - **AI/Engineering** - Proposes how to build, designs flows, and recommends technical approaches.
@@ -253,10 +255,10 @@ The primary users are the author (admin) creating the content and his family con
 ✅ **Mode** - FreeForm | Curated
 ✅ **Selected Tags** - Shows selected tags as chips.
 ✅ **Search Tags** - Search tags.
-✅ **Sort by** - Random | Oldest | Newest on filtered card feed.
+✅ **Sort by** - Random | Oldest | Newest on the filtered feed. Oldest and Newest use **journal When** (parsed from When tag names), not card `createdAt`; cards without a parsable When use undated ordering.
+✅ **Sort / Group** - **Group by** none, event (Curated only), or a tag dimension (Who / What / When / Where); sectioned feed on `/view` (`GlobalSidebar`, `CardFeedV2`, `feedGrouping.ts`, `CardProvider`). Denormalized sort keys `journalWhenSortAsc` / `journalWhenSortDesc` (`journalWhenSort.ts`, `getCards` ordering); legacy backfill `npm run backfill:journal-when-sort`.
 
 ⭕2 **Tag Tree Counts** - Fix numbering and add media counts "(x/y)" on tag tree nodes.
-⭕2 **Sort / Group** - Add user-selectable sort/group by event, Who, What, When, Where so multi-constraint filters do not devolve into an incoherent mix across unrelated occasions.
 ✅ **Curated Completeness** - Curated sidebar lists collection parents via Firestore query on denormalized `curatedNavEligible` (maintained in `cardService` on create/update/delete), not a 500-recent scan. Composite indexes in `firestore.indexes.json`; one-time `npm run backfill:curated-nav-eligible` for legacy docs.
 ⭕2 **Collection Metadata** - Implement collection metadata (child counts).
 ⭕2 **Chron Tree** - Provide tree in chronological order (Year / Month / What) for browsing.
@@ -284,7 +286,7 @@ The primary users are the author (admin) creating the content and his family con
 ✅ **Curated or FreeForm** - Author-ordered or user-explored.
 ✅ **Content Types** - Stories: Navigate. Galleries: Inline (≤5 images) or Navigate (>5). Questions: **Static** (question + excerpt on tile), **Inline** (question + optional cover + full TipTap answer on tile), or **Navigate** (teaser tile → `/view/[id]`). Quotes: typically inline/static. Callouts: typically **inline** or **static** (see Callout card); **Navigate** shows body on the tile but does not link (same as other non-story types). Collections: any card with children.
 
-⭕2 **Coherence** - Multi-tag filter results need predictable grouping/sort, not unordered shuffle. Overlaps with Left Navigation ⭕2 Sort/Group; consolidate when that work begins.
+✅ **Coherence** - Multi-tag feeds use journal When ordering and optional group-by sections (Left Navigation Sort / Group; shipped).
 ⭕2 **Card Cues** - Show small type badge on compact cards (`Story`, `Q&A`, `Gallery`, `Callout`, `Quote`).
 
 ### **Content Page**
@@ -546,7 +548,7 @@ The primary users are the author (admin) creating the content and his family con
 | Card ↔ tag `cardCount` (and ancestors) | `updateTagCountsForCard` inside card transactions (tag changes, publish state, `deleteCard`) |
 | Card ↔ questions | `unlinkCardFromAllQuestions` after `deleteCard`; link/unlink APIs update `usedByCardIds` + `usageCount` |
 | Drift / bulk repair | Ad hoc: `npm run sync:typesense` / `sync:typesense:media`; `npm run reconcile:media-cards`; other scripts under `src/lib/scripts/`. Not a separate product backlog item—normal CRUD paths above own day-to-day consistency. |
-⭕1 **No temporary/active.** Remove this status. No longer required. All imported media is in the bank. Track **where assigned** (cover, gallery, content) for filtering; unassigned is valid.
+✅ **Bank-only media** - No temporary or active status; bank + `referencedByCardIds`; unassigned vs assigned via `GET /api/media?assignment=unassigned|assigned` (`mediaAssignmentSeek.ts`).
 
   **"Unassigned" Query:** - Uses `referencedByCardIds` on media + `GET /api/media?assignment=unassigned|assigned` (sequential scan; see `mediaAssignmentSeek.ts`).
   **Firebase Console → Storage → Rules** - (required for public URLs)
@@ -690,7 +692,7 @@ The primary users are the author (admin) creating the content and his family con
 *Features*
 ✅ **Light/Dark Toggle** - Theme toggle in top navigation.
 ✅ **Admin Page** - Theme admin for color and font parameters.
-⭕2 **CSS Tokenization** - Ensure all CSS in app is tokenized via `theme.css` variables.
+⭕2 **CSS Tokenization** - Move **design-affecting** values—colors, typography scale, spacing rhythm, radii, shadows, and key surfaces—into `theme.css` variables (and Theme Management where appropriate) so literals in modules do not block **plug-and-play designs**. Not every numeric value in the app is a “theme” concern (e.g. one-off layout math); scope is what should change when switching designs. Grow coverage incrementally toward named presets.
 
 ---
 
@@ -737,12 +739,8 @@ The primary users are the author (admin) creating the content and his family con
 - ⭕2 **Quote Content** — Content Page. Source material into quotes.
 - ❓ **Related Count** — View Page. Size/count of Related / Explore More.
 
-*Tags & navigation*
-- ⭕2 **Sort / Group** — Left Nav. Coherent multi-filter ordering.
-- ⭕2 **Coherence** — Content. Grouping/sort with Sort/Group.
-
 *Theme & media (hosting enablers)*
-- ⭕2 **CSS Tokenization** — Theme. Full token coverage for reader polish.
+- ⭕2 **CSS Tokenization** — Theme. Design-affecting values via tokens; plug-and-play presets (see body).
 - ⭕2 **Browser Upload** — Media. Hosted deployment without server folder read.
 
 ### Phase 4 — Scale & polish
@@ -773,7 +771,6 @@ The primary users are the author (admin) creating the content and his family con
 - ⭕2 **Assigned** — Questions. Assigned/Unassigned when linked to cards.
 - ⭕2 **Question Content** — Content Page. Word doc / prompts into app.
 - ⭕2 **Post-Import Maintenance** — Media. GIMP/Topaz + replace-in-place.
-- ⭕1 **No temporary/active.** — Media. Remove status; assignment-based filtering only.
 
 *Users*
 - ⭕1 **Rename Collection** — Users. `journal_users` → `users`.

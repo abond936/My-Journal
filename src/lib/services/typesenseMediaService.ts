@@ -24,6 +24,9 @@ const mediaSchema = {
   default_sorting_field: 'created_at',
 };
 
+/** Indexed for schema compatibility; not used for filtering (media has no lifecycle status). */
+const TYPESENSE_MEDIA_STATUS_PLACEHOLDER = 'library';
+
 export interface TypesenseMediaDocument {
   id: string;
   searchable: string;
@@ -100,7 +103,7 @@ export function mediaToTypesenseDocument(media: Media, nameMap: Map<string, stri
   return {
     id: media.docId,
     searchable: parts.join(' ').slice(0, 32000),
-    status: media.status || 'temporary',
+    status: TYPESENSE_MEDIA_STATUS_PLACEHOLDER,
     source: media.source || 'local',
     shape: mediaShapeFromDimensions(media.width, media.height),
     has_caption: Boolean(media.caption && media.caption.trim()),
@@ -197,7 +200,6 @@ export interface MediaTypesenseSearchParams {
   query: string;
   page: number;
   perPage: number;
-  status: string | null;
   source: string | null;
   dimensions: string | null;
   hasCaption: string | null;
@@ -246,9 +248,6 @@ export async function searchMediaTypesense(
 
   const filterParts: string[] = [];
 
-  if (params.status && params.status !== 'all') {
-    filterParts.push(`status:=${escapeFilterValue(params.status)}`);
-  }
   if (params.source && params.source !== 'all') {
     filterParts.push(`source:=${escapeFilterValue(params.source)}`);
   }

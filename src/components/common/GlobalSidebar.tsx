@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useTag } from '@/components/providers/TagProvider';
-import { useCardContext, type FeedSortOrder } from '@/components/providers/CardProvider';
+import { useCardContext, type FeedSortOrder, type FeedGroupBy } from '@/components/providers/CardProvider';
 import TagTree from '@/components/common/TagTree';
 import { filterTreesBySearch } from '@/lib/utils/tagUtils';
 import { groupCollectionsByDimension } from '@/lib/utils/cardUtils';
@@ -42,6 +42,8 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     collectionCards,
     feedSort,
     setFeedSort,
+    feedGroupBy,
+    setFeedGroupBy,
     clearFilters,
   } = useCardContext();
   const { data: session } = useSession();
@@ -268,12 +270,35 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                   className={styles.compactControl}
                   aria-label="Sort card feed"
                 >
-                  <option value="newest">Newest first</option>
-                  <option value="oldest">Oldest first</option>
+                  <option value="newest">Newest (When tag) first</option>
+                  <option value="oldest">Oldest (When tag) first</option>
                   <option value="random">Random</option>
                 </select>
                 <p className={styles.sortHint}>
-                  Title search uses alphabetical order. Random shuffles cards loaded so far.
+                  Newest/oldest use your When tags (decade/year/YYYYMMDD). Cards without a parseable When
+                  date appear last (&quot;Undated&quot; when grouped by When). Title search uses alphabetical
+                  order. Random shuffles cards loaded so far.
+                </p>
+              </div>
+
+              <div className={styles.sidebarSection}>
+                <h3 className={styles.sectionHeading}>Group by</h3>
+                <select
+                  id="feed-group-select"
+                  value={feedGroupBy}
+                  onChange={e => setFeedGroupBy(e.target.value as FeedGroupBy)}
+                  className={styles.compactControl}
+                  aria-label="Group card feed"
+                >
+                  <option value="none">None</option>
+                  <option value="when">When</option>
+                  <option value="who">Who</option>
+                  <option value="where">Where</option>
+                  <option value="what">What</option>
+                </select>
+                <p className={styles.sortHint}>
+                  One section per card (first tag in that dimension by name). What can produce many
+                  sections.
                 </p>
               </div>
 

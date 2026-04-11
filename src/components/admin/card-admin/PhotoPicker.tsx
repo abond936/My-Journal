@@ -149,7 +149,6 @@ export default function PhotoPicker({
   const [selectedLibraryMedia, setSelectedLibraryMedia] = useState<Media[]>([]);
   const librarySearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [libStatus, setLibStatus] = useState('all');
   const [libSource, setLibSource] = useState('all');
   const [libDimensions, setLibDimensions] = useState('all');
   const [libHasCaption, setLibHasCaption] = useState('all');
@@ -401,7 +400,6 @@ export default function PhotoPicker({
       if (listPage != null && listPage > 1) params.set('listPage', String(listPage));
       const cursor = opts?.cursor;
       if (cursor) params.set('cursor', cursor);
-      if (libStatus !== 'all') params.set('status', libStatus);
       if (libSource !== 'all') params.set('source', libSource);
       if (libDimensions !== 'all') params.set('dimensions', libDimensions);
       if (libHasCaption !== 'all') params.set('hasCaption', libHasCaption);
@@ -411,7 +409,6 @@ export default function PhotoPicker({
     },
     [
       librarySearchApplied,
-      libStatus,
       libSource,
       libDimensions,
       libHasCaption,
@@ -466,7 +463,6 @@ export default function PhotoPicker({
     }
     setLibrarySearchDraft('');
     setLibrarySearchApplied('');
-    setLibStatus('all');
     setLibSource('all');
     setLibDimensions('all');
     setLibHasCaption('all');
@@ -491,7 +487,6 @@ export default function PhotoPicker({
     setLibraryHasNext(false);
     setLibrarySearchDraft('');
     setLibrarySearchApplied('');
-    setLibStatus('all');
     setLibSource('all');
     setLibDimensions('all');
     setLibHasCaption('all');
@@ -564,7 +559,6 @@ export default function PhotoPicker({
     isOpen,
     sourceTab,
     librarySearchApplied,
-    libStatus,
     libSource,
     libDimensions,
     libHasCaption,
@@ -742,19 +736,6 @@ export default function PhotoPicker({
               )}
             </div>
             <div className={styles.libraryFilters}>
-              <div className={styles.libraryFilterGroup}>
-                <label htmlFor="lib-filter-status">Status</label>
-                <select
-                  id="lib-filter-status"
-                  value={libStatus}
-                  onChange={e => setLibStatus(e.target.value)}
-                  className={styles.libraryFilterSelect}
-                >
-                  <option value="all">All</option>
-                  <option value="temporary">Temporary</option>
-                  <option value="active">Active</option>
-                </select>
-              </div>
               <div className={styles.libraryFilterGroup}>
                 <label htmlFor="lib-filter-source">Source</label>
                 <select

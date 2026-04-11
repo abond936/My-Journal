@@ -21,7 +21,8 @@ function useIntersectionObserver(callback: () => void, options?: IntersectionObs
 }
 
 export default function CardsPage() {
-  const { cards, loadingMore, hasMore, loadMore, isLoading } = useCardContext();
+  const { cards, feedSections, loadingMore, hasMore, loadMore, isLoading, error } =
+    useCardContext();
 
   const loadingLock = useRef(false);
   const handleLoadMore = useCallback(() => {
@@ -53,12 +54,32 @@ export default function CardsPage() {
     sessionStorage.setItem(SCROLL_POSITION_KEY, window.scrollY.toString());
   }, []);
   
+  if (error) {
+    return (
+      <div className={styles.page} role="alert">
+        <p style={{ color: 'var(--text1-color)', marginBottom: '0.5rem' }}>
+          Could not load the feed.
+        </p>
+        <pre
+          style={{
+            fontSize: '0.875rem',
+            whiteSpace: 'pre-wrap',
+            color: 'var(--text2-color)',
+          }}
+        >
+          {error instanceof Error ? error.message : String(error)}
+        </pre>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.page}>
-      <CardFeedV2 
-        cards={cards} 
+      <CardFeedV2
+        cards={cards}
+        sections={feedSections}
         loading={isLoading}
-        loadMoreRef={loadMoreRef} 
+        loadMoreRef={loadMoreRef}
         onSaveScrollPosition={onSaveScrollPosition}
       />
       {loadingMore && <div style={{ textAlign: 'center', padding: '2rem' }}>Loading more...</div>}

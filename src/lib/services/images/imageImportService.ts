@@ -115,11 +115,10 @@ export async function readMetadataCaption(fullPath: string): Promise<string> {
  * @returns A promise that resolves with the new Media object.
  */
 async function createMediaAsset(
-  fileBuffer: Buffer, 
-  originalFilename: string, 
-  source: Media['source'], 
+  fileBuffer: Buffer,
+  originalFilename: string,
+  source: Media['source'],
   sourcePath: string,
-  status: Media['status'] = 'temporary',
   captionOverride?: string
 ): Promise<Media> {
   const app = getAdminApp();
@@ -172,7 +171,6 @@ async function createMediaAsset(
     storagePath,
     source,
     sourcePath,
-    status,
     objectPosition: '50% 50%',
     caption: captionOverride ?? '', 
     createdAt: now,
@@ -263,7 +261,6 @@ export async function importFromLocalDrive(
       filename,
       'local',
       sourcePath,
-      'temporary',
       caption || undefined
     );
 
@@ -299,7 +296,7 @@ export async function importFromBuffer(
   try {
     // For uploads/pastes, the sourcePath is just a representation of where it came from.
     const sourcePath = `upload://${originalFilename}`;
-    const newMedia = await createMediaAsset(fileBuffer, originalFilename, 'paste', sourcePath, 'temporary');
+    const newMedia = await createMediaAsset(fileBuffer, originalFilename, 'paste', sourcePath);
 
     // Return the hydrated object that the client expects
     return {
@@ -312,36 +309,7 @@ export async function importFromBuffer(
   }
 }
 
-/**
- * Updates the status of a media asset in Firestore.
- *
- * @param mediaId - The ID of the media asset to update.
- * @param status - The new status to set.
- */
-export async function updateMediaStatus(mediaId: string, status: Media['status']): Promise<void> {
-  const app = getAdminApp();
-  const firestore = app.firestore();
-  const mediaRef = firestore.collection('media').doc(mediaId);
-
-  try {
-    const doc = await mediaRef.get();
-    if (!doc.exists) {
-      throw new Error(`Media document with ID ${mediaId} not found.`);
-    }
-
-    await mediaRef.update({
-      status: status,
-      updatedAt: Date.now(),
-    });
-    void syncMediaToTypesenseById(mediaId);
-    console.log(`[updateMediaStatus] Successfully updated status for media ID ${mediaId} to "${status}".`);
-  } catch (error) {
-    console.error(`[updateMediaStatus] CRITICAL ERROR during status update for media ID ${mediaId}:`, error);
-    throw new Error(`Failed to update status for media asset ${mediaId}. See server logs for details.`);
-  }
-}
-
-type MediaPatchFields = Partial<Pick<Media, 'status' | 'caption' | 'objectPosition' | 'tags'>>;
+type MediaPatchFields = Partial<Pick<Media, 'caption' | 'objectPosition' | 'tags'>>;
 
 async function applyTagFieldsToPayload(
   payload: Record<string, unknown>,
@@ -376,7 +344,6 @@ export async function patchMediaDocument(mediaId: string, updates: MediaPatchFie
   }
 
   const hasField =
-    updates.status !== undefined ||
     updates.caption !== undefined ||
     updates.objectPosition !== undefined ||
     updates.tags !== undefined;
@@ -399,9 +366,6 @@ export async function patchMediaDocument(mediaId: string, updates: MediaPatchFie
       await updateTagCountsForMedia(oldTags, newTags, tx);
 
       const payload: Record<string, unknown> = { updatedAt: Date.now() };
-      if (updates.status !== undefined) {
-        payload.status = updates.status;
-      }
       if (updates.caption !== undefined) {
         payload.caption = updates.caption;
       }
@@ -421,9 +385,6 @@ export async function patchMediaDocument(mediaId: string, updates: MediaPatchFie
 
   const payload: Record<string, unknown> = { updatedAt: Date.now() };
 
-  if (updates.status !== undefined) {
-    payload.status = updates.status;
-  }
   if (updates.caption !== undefined) {
     payload.caption = updates.caption;
   }

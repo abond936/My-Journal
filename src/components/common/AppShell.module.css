@@ -31,7 +31,7 @@
     right: 0;
     width: clamp(180px, 26vw, 420px);
     height: clamp(180px, 26vw, 420px);
-    background-image: radial-gradient(circle at bottom right, var(--color3-100) 0%, transparent 70%);
+    background-image: radial-gradient(circle at bottom right, var(--color3) 0%, transparent 70%);
   }
   
   .header {
@@ -46,6 +46,7 @@
   .contentWrapper {
     display: flex;
     flex: 1;
+    min-height: 0; /* allow nested flex child to shrink so main can scroll */
     padding-top: var(--header-height);
     overflow: hidden;
     overflow-x: hidden;
@@ -99,6 +100,7 @@
   
   .mainContent {
     flex: 1;
+    min-height: 0; /* critical: without this, overflow-y may never show content in flex layouts */
     overflow-y: auto;
     overflow-x: hidden;
     padding: var(--spacing-lg);
@@ -106,7 +108,8 @@
   }
   
   /* On small screens, the main content takes the full width */
-  @media (max-width: var(--breakpoint-md)) {
+  /* Literal width: custom properties are not reliable inside @media in all browsers. */
+  @media (max-width: 768px) {
     .contentWrapper {
       overflow: visible;
     }
@@ -144,7 +147,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.38);
+      background: color-mix(in srgb, black 38%, transparent);
       opacity: 0;
       pointer-events: none;
       transition: opacity var(--transition-short) ease;

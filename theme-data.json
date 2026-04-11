@@ -132,6 +132,7 @@
     }
   ],
   "darkModeShift": 5,
+  "activePresetId": "custom",
   "typography": {
     "textColors": {
       "text1": "color2-300",

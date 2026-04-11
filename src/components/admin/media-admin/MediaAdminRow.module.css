@@ -31,8 +31,8 @@
   width: var(--spacing-xl);
 }
 
-/* Status Badge */
-.statusBadge {
+/* Card assignment (referencedByCardIds) */
+.assignmentBadge {
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-sm);
@@ -43,14 +43,14 @@
   min-width: var(--spacing-2xl);
 }
 
-.statusBadge.temporary {
-  background: var(--state-warning-background-color);
-  color: var(--state-warning-text-color);
+.assignmentBadge.assigned {
+  background: var(--state-success-background-color);
+  color: var(--state-success-border-color);
 }
 
-.statusBadge.active {
-  background: var(--state-success-background-color);
-  color: var(--state-success-text-color);
+.assignmentBadge.unassigned {
+  background: var(--state-warning-background-color);
+  color: var(--state-warning-border-color);
 }
 
 /* Thumbnail */

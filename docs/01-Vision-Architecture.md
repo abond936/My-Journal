@@ -1,6 +1,6 @@
 # VISION & ARCHITECTURE
 
-**See also:** `02-Application.md` · `03-Implementation.md`
+**See also:** `02-Application.md` · `03-Implementation.md` · `04-Theme-Design-Contract.md` (theme semantics & presets)
 
 Legend:
 ✅`Implemented`
@@ -13,10 +13,11 @@ Legend:
 
 ## Document Governance
 
-- **Three-Document Model** - Project documentation is split across three files in `docs/`:
+- **Three-Document Model** - Core project documentation is split across three files in `docs/`:
   - `01-Vision-Architecture.md` — Product vision, principles, technical stack, data models, decisions. Stable; changes rarely.
   - `02-Application.md` — Each app area: *Features* grouped under `✅ Complete`, `⭕1 Planned`, `⭕2 Future`, `❓ Open` (plus standalone 📐 / 📘). Changes when features ship or are planned.
   - `03-Implementation.md` — Execution plan and phased sequencing (`⭕1` only). Changes when priorities shift. Each listed item must repeat the **same bold title and trailing text** as its source line in `02-Application.md` or (for Backend items) in this file—verbatim, including punctuation and counts. Only **phase assignment and ordering** may differ.
+- **Supplementary specs** - Focused references (e.g. `04-Theme-Design-Contract.md` for semantic tokens, presets, and design-led reconciliation) extend the core trio; they do not replace `02`/`03` for feature inventory or phased backlog.
 - **AI Behavior** - AI process, approval, and execution rules live in `.cursor/rules/# AI_InteractionRules.mdc`.
 - **Author** - Provides direction, constraints, and priorities--not implementation details.
 - **AI/Engineering** - Proposes how to build, designs flows, and recommends technical approaches.
@@ -143,6 +144,8 @@ The primary users are the author (admin) creating the content and his family con
 
 *Principles*
 - **UI Alignment** - Align UI behavior with **validated server contracts** (types/schemas); the client does not override server authority on writes. Clear **presentation and client-state** boundaries; business rules stay in services/API layer.
+- **Design surfaces** - The reader (`/view`) UI is the primary **designed** surface—typography, color rhythm, spacing, and tone. Admin may stay denser for workflows but should **reuse the same design tokens** (and previews where it matters) so what the author sees while authoring matches what the family sees when reading.
+- **Swappable looks** - Theme Management should move toward **named design packages** (coherent font, color, and spacing choices) selected as a whole, not only isolated slider tweaks. **Tokenization** (CSS variables in `theme.css` driven from persisted theme data) is the practical path to plug-and-play designs.
 
 *Features*
 ✅ **Complete**
@@ -155,6 +158,8 @@ The primary users are the author (admin) creating the content and his family con
   - **Data Fetching** - `SWR` for client-side fetching and caching.
 ⭕2 **Future**
   - **Unused Dependencies** - Remove unused packages from `package.json`: `react-markdown`, `@uiw/react-md-editor`, `@minoru/react-dnd-treeview`. Evaluate `react-photo-album` and `framer-motion` before removing.
+
+📐 **Visual direction** - The product should feel **journal / archival** and **mobile-native**, while also reading as a **clear, professional** consumer app. Those aims can conflict (for example, a handwriting display face vs neutral UI typography). Prefer resolving tension through **theme presets** and distinct **type roles** (e.g. display vs body) wired to tokens, rather than scattered one-off styles. Iteration on the Theme Management model is expected as presets mature.
 
 ### **Scripts**
 

@@ -36,12 +36,12 @@ export default function AppShell({ children }: AppShellProps) {
     setSidebarOpen(prev => !prev);
   };
 
-  // Avoid transitional overlap between intro page and authenticated shell
-  // while session status is still resolving.
+  // Never return null here: a stuck or slow session would show a blank screen.
+  // Shell chrome may briefly mismatch until status resolves; children still render.
   if (status === 'loading') {
-    return null;
+    return <>{children}</>;
   }
-  
+
   // If unauthenticated, render children directly (e.g., the login page)
   if (!isAuthenticated) {
     return <>{children}</>;

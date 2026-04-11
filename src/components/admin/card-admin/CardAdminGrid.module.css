@@ -126,18 +126,18 @@
   font-size: 10px;
   font-weight: var(--font-weight-medium);
   text-transform: uppercase;
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
+  background: color-mix(in srgb, var(--color2-300) 70%, transparent);
+  color: var(--color1-300);
 }
 
 .statusBadge.draft {
   background: var(--state-warning-background-color);
-  color: var(--state-warning-text-color);
+  color: var(--state-warning-border-color);
 }
 
 .statusBadge.published {
   background: var(--state-success-background-color);
-  color: var(--state-success-text-color);
+  color: var(--state-success-border-color);
 }
 
 .title {

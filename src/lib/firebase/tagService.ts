@@ -2,6 +2,7 @@ import { getAdminApp } from '@/lib/config/firebase/admin';
 import { Tag, OrganizedTags } from '@/lib/types/tag';
 import type { Media } from '@/lib/types/photo';
 import { FieldValue, type DocumentData, type Transaction } from 'firebase-admin/firestore';
+import { buildTagMap, computeJournalWhenSortKeys } from '@/lib/utils/journalWhenSort';
 
 const adminApp = getAdminApp();
 const firestore = adminApp.firestore();
@@ -40,7 +41,7 @@ function isTagNameTakenBySiblingOrRootDimension(
 
 /**
  * Derives filterTags + dimensional arrays from **card-assigned tags only**.
- * Media tags are separate and do not roll onto the card (see Project.md / Phase B).
+ * Media tags are separate and do not roll onto the card (see docs/02-Application.md → Tag Management / media tagging behavior).
  */
 export async function mergeDerivedTagsForCardRecord(
   cardData: DocumentData | undefined,
@@ -263,6 +264,9 @@ export async function updateCardsForTagChange(tagId: string): Promise<void> {
 
     let updatedCount = 0;
 
+    const allTagsForJournal = await getAllTags();
+    const journalTagMap = buildTagMap(allTagsForJournal);
+
     for (const batch of batches) {
       const batchPromises = batch.map(async (cardId) => {
         try {
@@ -276,6 +280,7 @@ export async function updateCardsForTagChange(tagId: string): Promise<void> {
           const cardData = cardDoc.data();
 
           const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(cardData);
+          const journal = computeJournalWhenSortKeys(dimensionalTags.when || [], journalTagMap);
 
           // Update the card
           await firestore.collection('cards').doc(cardId).update({
@@ -284,6 +289,8 @@ export async function updateCardsForTagChange(tagId: string): Promise<void> {
             what: dimensionalTags.what,
             when: dimensionalTags.when,
             where: dimensionalTags.where,
+            journalWhenSortAsc: journal.journalWhenSortAsc,
+            journalWhenSortDesc: journal.journalWhenSortDesc,
             updatedAt: FieldValue.serverTimestamp()
           });
 
@@ -452,6 +459,7 @@ export async function deleteTag(docId: string): Promise<void> {
               mergedCardPayload,
               transaction
             );
+            const journal = computeJournalWhenSortKeys(dimensionalTags.when || [], tagMap);
 
             // Update the card
             transaction.update(cardRef, {
@@ -461,6 +469,8 @@ export async function deleteTag(docId: string): Promise<void> {
               what: dimensionalTags.what,
               when: dimensionalTags.when,
               where: dimensionalTags.where,
+              journalWhenSortAsc: journal.journalWhenSortAsc,
+              journalWhenSortDesc: journal.journalWhenSortDesc,
               updatedAt: FieldValue.serverTimestamp()
             });
             
@@ -1096,6 +1106,7 @@ export async function updateTagAndDescendantPaths(tagId: string, newParentId: st
   // 11. Update all affected cards with recalculated derived data
   for (const card of affectedCards) {
     const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(card.data, transaction);
+    const journal = computeJournalWhenSortKeys(dimensionalTags.when || [], tagMap);
 
     transaction.update(card.ref, {
       filterTags,
@@ -1103,6 +1114,8 @@ export async function updateTagAndDescendantPaths(tagId: string, newParentId: st
       what: dimensionalTags.what,
       when: dimensionalTags.when,
       where: dimensionalTags.where,
+      journalWhenSortAsc: journal.journalWhenSortAsc,
+      journalWhenSortDesc: journal.journalWhenSortDesc,
       updatedAt: FieldValue.serverTimestamp()
     });
   }

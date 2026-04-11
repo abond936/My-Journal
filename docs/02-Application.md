@@ -114,10 +114,8 @@ Legend:
 - **Mode** - FreeForm | Curated
 - **Selected Tags** - Shows selected tags as chips.
 - **Search Tags** - Search tags.
-- **Sort by** - Random | Oldest | Newest on filtered card feed.
-
-⭕1 **Planned**
-- **Sort / Group** - Add user-selectable sort/group by event, Who, What, When, Where. Coherence.
+- **Sort by** - Random | Oldest | Newest on the filtered feed. Oldest and Newest use **journal When** (parsed from When tag names), not card `createdAt`; cards without a parsable When use undated ordering.
+- **Sort / Group** - **Group by** none, event (Curated only), or a tag dimension (Who / What / When / Where). The feed renders labeled sections so multi-tag filters stay readable (`CardFeedV2`, `feedGrouping.ts`, `CardProvider`).
 
 ⭕2 **Future**
 - **Tag Tree Counts** - Fix numbering and add media counts "(x/y)" on tag tree nodes.
@@ -170,12 +168,12 @@ Legend:
 - **Detail** - `CardDetailPage.tsx` and view components in `src/components/view/` (TipTap, gallery, discovery blocks).
 - **Feed chrome** - Header, search row, type chips; `@` card mentions via `CardMention` / `TipTapRenderer`.
 - **Suggestions (detail)** - Children from server; Similar / Explore via `/api/cards/random` (`count=3`, tag dimensions from current card). `DiscoverySection`: horizontal scroll rails, compact `V2ContentCard` (`small` + `fullWidth`).
+- **Card Content** - Title, subtitle, excerpt, and main body (TipTap) roles set per card type and display mode; feed vs detail behavior matches the conventions in **Content Page** and **View Page** (assessment complete for v1).
 
 📐 **Product vs code** - v1 intent: omit story excerpt on feed/detail; `StoryCardContent` still renders `excerpt` when the field is set—clear data or add a guard when enforcing.
 📐 **Horizontal open** - Prefer horizontal open for long-form on mobile where the reader implements it.
 
 ⭕1 **Planned**
-- **Card Content** - Assess Title, Subtitle, Excerpt, Content.
 - **Questions / Quotes** - Source material (Word, books, Notion).
 - **Quote Card** - Attribution modeling (e.g. Content vs subtitle/excerpt).
 
@@ -210,9 +208,7 @@ Legend:
 - **Related** - Display 3 random from filter. Reduced font.
 - **Explore More** - Display 3 random outside filter. Reduced font.
 - **Progressive children (discover + child hydration)** - **Discover More:** structural **Related Content** renders from server props immediately; **Similar Topics** / **Explore More** load client-side after mount with per-group loaders (`DiscoverySection.tsx`). **`/view/[id]`:** child cards load via `getCardsByIds(..., { hydrationMode: 'cover-only' })` with first-gallery image when no cover—fewer Firestore reads than full hydration. The view page RSC still awaits parent + children in one round-trip; streaming parent-only first remains optional (🔵 / future).
-
-⭕1 **Planned**
-- **Related Count** - Reduce size/number of Related and Explore More cards?
+- **Related Count** - Similar / Explore presentation tuned so rails stay visually light: compact tile width (`cardRailCell` clamp in `DiscoverySection.module.css`), secondary group title scale, `V2ContentCard` `small` on rails.
 
 ⭕2 **Future**
 - **Feed hydration tiers:** Optional **cover-only** first paint on `/view` (defer full gallery/content hydration until card open or below fold) to reduce payload and server work vs today's full hydration for feed cards.
@@ -242,7 +238,7 @@ Legend:
 - **Question Management** - CRUD and create-card linkage workflow.
 - **User Management** - Users model and admin user workflow.
 - **Theme Management** - Set parameters for colors, fonts, etc.
-- **Scripts** - `package.json` scripts for migrations, reconciliation, one-off repairs, and emergencies. Detail in TECHNICAL > Scripts.
+- **Scripts** - `package.json` scripts for migrations, reconciliation, one-off repairs, and emergencies. See `01-Vision-Architecture.md` → **TECHNICAL** → **Scripts** and `docs/NPM-SCRIPTS.md`.
 
 ⭕2 **Future**
 - **Maintenance Management** - Admin UI over existing secured maintenance APIs (`POST /api/admin/maintenance/*`: reconcile, cleanup, backfill, diagnose-cover). A Maintenance tab existed previously and was removed; restore when in-app diagnose/fix outweighs CLI + manual HTTP. Today: `docs/NPM-SCRIPTS.md` and `npm run …` scripts.
@@ -315,10 +311,7 @@ Legend:
 - **Import paths** - Local drive / PhotoPicker / paste-drop via `imageImportService.ts`; folder-as-card (`__X` marker, `IMPORT_FOLDER_MAX_IMAGES`, `ONEDRIVE_ROOT_FOLDER`) — full rules in `docs/IMPORT-REFERENCE.md` and `normalize-images-README.md`.
 - **Card edges** - `referencedByCardIds` maintained on create/update/delete paths; unassigned filter + `mediaAssignmentSeek.ts`. Drift repair: `npm run reconcile:media-cards`, maintenance HTTP — see `docs/NPM-SCRIPTS.md`.
 - **Admin** - Multi-dimensional filter, replace-in-place (`POST /api/images/{id}/replace`), tagging (`PATCH /api/images/{id}`), bulk modes, multi-select → draft gallery card (`MediaAdminContent`).
-
-⭕1 **Planned**
-- **Temporary/Active.** Remove this status. No longer required. All imported media is in the bank. Track **where assigned** (cover, gallery, content) for filtering; unassigned is valid.
-- **"Unassigned" Query:** - Uses `referencedByCardIds` on media + `GET /api/media?assignment=unassigned|assigned` (sequential scan; see `mediaAssignmentSeek.ts`).
+- **Bank-only** - No temporary or active status; imported media is in the bank. Assignment and unassigned filtering use `referencedByCardIds` and `GET /api/media?assignment=unassigned|assigned` (`mediaAssignmentSeek.ts`).
 
 ⭕2 **Future**
 - **Rename types module** - `src/lib/types/photo.ts` → `media.ts` (throughout)
@@ -448,18 +441,22 @@ Legend:
 ### **Theme Management**
 
 *Intent*
-- **Custom Themes** - Allow customizable light and dark modes
+- **Custom Themes** - Allow customizable light and dark modes and, over time, **whole design packages** the author can switch between.
 
 *Principles*
-- **User-Controllable** - Provide detailed control.
+- **User-Controllable** - The author can adjust parameters; the implementation should converge on **presets** that stay coherent together.
+- **Reader vs admin** - Polish targets the **reader** experience first; admin uses the **same token set** where parity helps (previews, shared components), without blocking dense authoring layouts.
+- **Professional + journal** - Aim for a UI that reads as **well-crafted and mobile-centric** while still allowing a **warm, journal/history** personality—usually via tokens (color, type roles, spacing), not ad hoc CSS.
 
 *Features*
 ✅ **Complete**
 - **Light/Dark Toggle** - Theme toggle in top navigation.
-- **Admin Page** - Theme admin for color and font parameters.
+- **Admin Page** - Theme admin for color and font parameters (`src/app/theme.css` as the runtime token sheet; admin persists into the theme model the app applies).
 
 ⭕1 **Planned**
-- **CSS Tokenization** - Ensure all CSS in app is tokenized via `theme.css` variables.
+- **CSS Tokenization** - Move **design-affecting** values—colors, typography scale, spacing rhythm, radii, shadows, and key surfaces—into `theme.css` variables (and Theme Management where appropriate) so literals in modules do not block **plug-and-play designs**. Not every numeric value in the app is a “theme” concern (e.g. one-off layout math); scope is what should change when switching designs. Grow coverage incrementally toward named presets.
+
+📘 **Design contract** - Semantic roles, preset intent (Journal vs Editorial), and reconciliation order: `docs/04-Theme-Design-Contract.md`.
 
 ---
 

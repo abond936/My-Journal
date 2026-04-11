@@ -19,7 +19,7 @@ interface ColumnConfig {
 const MEDIA_COLUMN_WIDTHS_KEY = 'media-admin-column-widths';
 
 const defaultColumns: ColumnConfig[] = [
-  { key: 'status', label: 'Status', width: 100, minWidth: 80, maxWidth: 150 },
+  { key: 'assignment', label: 'On cards', width: 120, minWidth: 90, maxWidth: 160 },
   { key: 'thumbnail', label: 'Icon', width: 160, minWidth: 130, maxWidth: 240 },
   { key: 'filename', label: 'Filename', width: 250, minWidth: 200, maxWidth: 500, sortable: true },
   { key: 'caption', label: 'Caption', width: 300, minWidth: 200, maxWidth: 600, sortable: true },

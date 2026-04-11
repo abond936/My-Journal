@@ -7,7 +7,11 @@ import Home from '@/components/view/Home';
 
 export default function Page() {
   return (
-    <Suspense fallback={null}>
+    <Suspense
+      fallback={
+        <div style={{ padding: '2rem', textAlign: 'center' }}>Loading…</div>
+      }
+    >
       <Home />
     </Suspense>
   );

@@ -70,21 +70,9 @@ Legend:
 
 
 
-*Left Navigation (`02-Application.md`)*
-
-- **Sort / Group** - Add user-selectable sort/group by event, Who, What, When, Where. Coherence.
-
-
-
-*View Page (`02-Application.md`)*
-
-- **Related Count** - Reduce size/number of Related and Explore More cards?
-
-
-
 *Theme Management (`02-Application.md`)*
 
-- **CSS Tokenization** - Ensure all CSS in app is tokenized via `theme.css` variables.
+- **CSS Tokenization** - Move **design-affecting** values—colors, typography scale, spacing rhythm, radii, shadows, and key surfaces—into `theme.css` variables (and Theme Management where appropriate) so literals in modules do not block **plug-and-play designs**. Not every numeric value in the app is a “theme” concern (e.g. one-off layout math); scope is what should change when switching designs. Grow coverage incrementally toward named presets.
 
 
 
@@ -96,19 +84,10 @@ Legend:
 
 *Content Page (`02-Application.md`)*
 
-- **Card Content** - Assess Title, Subtitle, Excerpt, Content.
-
 - **Questions / Quotes** - Source material (Word, books, Notion).
 
 - **Quote Card** - Attribution modeling (e.g. Content vs subtitle/excerpt).
 
-
-
-*Media Management (`02-Application.md`)*
-
-- **Temporary/Active.** Remove this status. No longer required. All imported media is in the bank. Track **where assigned** (cover, gallery, content) for filtering; unassigned is valid.
-
-- **"Unassigned" Query:** - Uses `referencedByCardIds` on media + `GET /api/media?assignment=unassigned|assigned` (sequential scan; see `mediaAssignmentSeek.ts`).
 
 
 *Tag Management (`02-Application.md`)*

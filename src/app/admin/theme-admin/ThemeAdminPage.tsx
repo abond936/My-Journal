@@ -1,8 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import styles from './ThemeAdmin.module.css';
 import { StructuredThemeData, BaseColor, ThemeColor, hexToHsl } from '@/lib/types/theme';
+import {
+  THEME_PRESET_META,
+  getThemePresetDocument,
+  type ThemePresetId,
+  type ThemeDocumentData,
+} from '@/lib/theme/themePresets';
+import ThemeReaderPreview from './ThemeReaderPreview';
 
 // Color Palette Editor Component
 const PaletteColorEditor: React.FC<{
@@ -112,8 +120,6 @@ const PaletteColorEditor: React.FC<{
     // Generate shades for each hex color
     const lightShades = generateShadeColors(color.light.hex, color.id === 1);
     const darkShades = generateShadeColors(color.dark.hex, color.id === 1);
-    
-    console.log(`Rendering theme color ${color.id}:`, { lightShades, darkShades });
 
     return (
       <div className={styles.colorEditor}>
@@ -416,7 +422,7 @@ const ColorReferenceInput: React.FC<{
   const [previewColor, setPreviewColor] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  const validateAndPreview = (inputValue: string) => {
+  const validateAndPreview = useCallback((inputValue: string) => {
     if (!inputValue.trim()) {
       setIsValid(true);
       setPreviewColor('');
@@ -482,9 +488,10 @@ const ColorReferenceInput: React.FC<{
         return;
       }
 
-      // Generate preview color matching CSS generation logic
-      const h = parseInt(color.h, 10);
-      const s = parseInt(color.s, 10);
+      // Generate preview color matching CSS generation logic (theme colors 1–2 store HSL under light/dark)
+      const light = (color as ThemeColor).light;
+      const h = parseInt(light.h, 10);
+      const s = parseInt(String(light.s).replace('%', ''), 10);
       const stepValue = parseInt(step, 10);
       
       let baseLightness;
@@ -521,11 +528,11 @@ const ColorReferenceInput: React.FC<{
       setPreviewColor('');
       setErrorMessage('Invalid color reference format');
     }
-  };
+  }, [colors, themeColors]);
 
   React.useEffect(() => {
     validateAndPreview(value);
-  }, [value, colors]);
+  }, [value, validateAndPreview]);
 
   return (
     <div className={styles.colorReferenceInput}>
@@ -737,11 +744,13 @@ const SpacingSection: React.FC<{
 
 // Main Theme Admin Component
 export default function ThemeAdminPage() {
+  const router = useRouter();
   const [themeData, setThemeData] = useState<StructuredThemeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('light');
   const [darkModeShift, setDarkModeShift] = useState(5);
+  const [activePresetId, setActivePresetId] = useState<ThemePresetId | 'custom'>('custom');
 
   useEffect(() => {
     const fetchThemeData = async () => {
@@ -751,6 +760,8 @@ export default function ThemeAdminPage() {
           const data = await response.json();
           setThemeData(data);
           setDarkModeShift(data.darkModeShift || 5);
+          const ap = (data as ThemeDocumentData).activePresetId;
+          setActivePresetId(ap === 'journal' || ap === 'editorial' ? ap : 'custom');
         }
       } catch (error) {
         console.error('Failed to fetch theme data:', error);
@@ -764,7 +775,8 @@ export default function ThemeAdminPage() {
 
   const handleColorChange = (id: number, field: keyof BaseColor | keyof ThemeColor, value: string, variant?: 'light' | 'dark') => {
     if (!themeData) return;
-    
+    setActivePresetId('custom');
+
     setThemeData(prev => {
       const newData = { ...prev! };
       
@@ -791,7 +803,8 @@ export default function ThemeAdminPage() {
 
   const handleHslChange = (id: number, h: string, s: string, l: string, variant?: 'light' | 'dark') => {
     if (!themeData) return;
-    
+    setActivePresetId('custom');
+
     setThemeData(prev => {
       const newData = { ...prev! };
       
@@ -816,6 +829,7 @@ export default function ThemeAdminPage() {
 
   const handleTokenChange = (section: string, key: string, value: string) => {
     if (!themeData) return;
+    setActivePresetId('custom');
 
     setThemeData(prev => ({
       ...prev!,
@@ -828,6 +842,7 @@ export default function ThemeAdminPage() {
 
   const handleNestedTokenChange = (section: string, subsection: string, key: string, value: string) => {
     if (!themeData) return;
+    setActivePresetId('custom');
 
     setThemeData(prev => ({
       ...prev!,
@@ -843,6 +858,7 @@ export default function ThemeAdminPage() {
 
   const handleDeepNestedTokenChange = (section: string, subsection: string, subsubsection: string, key: string, value: string) => {
     if (!themeData) return;
+    setActivePresetId('custom');
 
     setThemeData(prev => ({
       ...prev!,
@@ -862,6 +878,14 @@ export default function ThemeAdminPage() {
   const toggleTheme = () => {
     setCurrentTheme(prev => prev === 'light' ? 'dark' : 'light');
     document.documentElement.setAttribute('data-theme', currentTheme === 'light' ? 'dark' : 'light');
+  };
+
+  const applyPreset = (id: ThemePresetId) => {
+    const doc = getThemePresetDocument(id);
+    setDarkModeShift(doc.darkModeShift ?? 5);
+    setActivePresetId(doc.activePresetId ?? id);
+    const { darkModeShift: _ds, activePresetId: _ap, ...structured } = doc;
+    setThemeData(structured as StructuredThemeData);
   };
 
   const validateThemeData = (data: any): string[] => {
@@ -950,9 +974,10 @@ export default function ThemeAdminPage() {
     
     setSaving(true);
     try {
-      const dataToSave = {
+      const dataToSave: ThemeDocumentData = {
         ...themeData,
-        darkModeShift: darkModeShift
+        darkModeShift,
+        activePresetId,
       };
       
       const response = await fetch('/api/theme', {
@@ -962,7 +987,7 @@ export default function ThemeAdminPage() {
       });
       
       if (response.ok) {
-        console.log('Theme saved successfully');
+        router.refresh();
         alert('Theme saved successfully!');
       } else {
         const errorText = await response.text();
@@ -1008,6 +1033,39 @@ export default function ThemeAdminPage() {
       </div>
 
       <main className={styles.mainContent}>
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2>Design preset</h2>
+          </div>
+          <p className={styles.presetIntro}>
+            The admin chooses the look for all readers. Pick a starting point, refine below, then Save. Active:{' '}
+            <strong>
+              {activePresetId === 'custom'
+                ? 'Custom'
+                : THEME_PRESET_META[activePresetId].label}
+            </strong>
+            .
+          </p>
+          <div className={styles.presetGrid}>
+            {(['journal', 'editorial'] as const).map((id) => (
+              <div key={id} className={styles.presetCard}>
+                <h3 className={styles.presetCardTitle}>{THEME_PRESET_META[id].label}</h3>
+                <p className={styles.presetCardText}>{THEME_PRESET_META[id].description}</p>
+                <button
+                  type="button"
+                  className={styles.presetApplyButton}
+                  onClick={() => applyPreset(id)}
+                  disabled={saving}
+                >
+                  Apply {THEME_PRESET_META[id].label}
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <ThemeReaderPreview themeData={themeData} darkModeShift={darkModeShift} />
+
         {/* Color Palette Section */}
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
@@ -1026,7 +1084,10 @@ export default function ThemeAdminPage() {
                   min="0"
                   max="100"
                   value={darkModeShift}
-                  onChange={(e) => setDarkModeShift(parseInt(e.target.value, 10))}
+                  onChange={(e) => {
+                    setActivePresetId('custom');
+                    setDarkModeShift(parseInt(e.target.value, 10));
+                  }}
                   className={styles.variationInput}
                 />
                 <span>%</span>

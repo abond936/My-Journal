@@ -7,6 +7,7 @@ type Theme = 'light' | 'dark';
 interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
+  /** Reloads the page so SSR-injected theme tokens (after Theme admin save) apply. Prefer `router.refresh()` in admin when possible. */
   refreshTheme: () => Promise<void>;
   isThemeLoading: boolean;
 }
@@ -26,48 +27,25 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
-  const [isThemeLoading, setIsThemeLoading] = useState(false);
-
-  // Load theme data from admin system
-  const loadThemeData = useCallback(async () => {
-    try {
-      setIsThemeLoading(true);
-      const response = await fetch('/api/theme');
-      if (response.ok) {
-        const themeData = await response.json();
-        // Store theme data in a way that can be accessed by CSS
-        // This could be through CSS custom properties or a different mechanism
-        console.log('Theme data loaded:', themeData);
-      }
-    } catch (error) {
-      console.error('Failed to load theme data:', error);
-    } finally {
-      setIsThemeLoading(false);
-    }
-  }, []);
-
-  // Refresh theme from admin system
-  const refreshTheme = useCallback(async () => {
-    await loadThemeData();
-  }, [loadThemeData]);
 
   useEffect(() => {
-    // Check for saved theme preference
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'light' || savedTheme === 'dark') {
       setTheme(savedTheme);
       document.documentElement.setAttribute('data-theme', savedTheme);
     } else {
-      // Check system preference
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       const initialTheme = prefersDark ? 'dark' : 'light';
       setTheme(initialTheme);
       document.documentElement.setAttribute('data-theme', initialTheme);
     }
+  }, []);
 
-    // Load initial theme data
-    loadThemeData();
-  }, [loadThemeData]);
+  const refreshTheme = useCallback(async () => {
+    if (typeof window !== 'undefined') {
+      window.location.reload();
+    }
+  }, []);
 
   const toggleTheme = useCallback(() => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -76,18 +54,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('theme', newTheme);
   }, [theme]);
 
-  const value = useMemo(() => ({ 
-    theme, 
-    toggleTheme, 
-    refreshTheme, 
-    isThemeLoading 
-  }), [theme, toggleTheme, refreshTheme, isThemeLoading]);
-
-  return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
+  const value = useMemo(
+    () => ({
+      theme,
+      toggleTheme,
+      refreshTheme,
+      isThemeLoading: false,
+    }),
+    [theme, toggleTheme, refreshTheme]
   );
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {
@@ -96,4 +73,4 @@ export function useTheme() {
     throw new Error('useTheme must be used within a ThemeProvider');
   }
   return context;
-} 
+}

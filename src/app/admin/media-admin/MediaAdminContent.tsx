@@ -210,18 +210,6 @@ export default function MediaAdminContent() {
         {/* Secondary filters */}
         <div className={styles.filters}>
           <div className={styles.filterGroup}>
-            <label>Status:</label>
-            <select 
-              value={filters.status} 
-              onChange={(e) => handleFilterChange('status', e.target.value)}
-            >
-              <option value="all">All</option>
-              <option value="temporary">Temporary</option>
-              <option value="active">Active</option>
-            </select>
-          </div>
-
-          <div className={styles.filterGroup}>
             <label>Source:</label>
             <select 
               value={filters.source} 

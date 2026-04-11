@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getThemeData, saveThemeData } from '@/lib/services/themeService';
+import { getResolvedThemeData, saveThemeData } from '@/lib/services/themeService';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
 
@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const themeData = await getThemeData();
+    const themeData = await getResolvedThemeData();
     return NextResponse.json(themeData);
   } catch (error) {
     console.error('API Error fetching theme data:', error);

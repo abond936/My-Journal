@@ -32,7 +32,6 @@ interface MediaListResponse {
 }
 
 export interface MediaFilters {
-  status: string;
   source: string;
   dimensions: string;
   hasCaption: string;
@@ -77,7 +76,6 @@ interface MediaContextType {
 const MediaContext = createContext<MediaContextType | undefined>(undefined);
 
 const defaultFilters: MediaFilters = {
-  status: 'all',
   source: 'all',
   dimensions: 'all',
   hasCaption: 'all',
@@ -124,7 +122,6 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       params.set('listPage', String(opts.listPage));
     }
 
-    if (mediaFilters.status !== 'all') params.append('status', mediaFilters.status);
     if (mediaFilters.source !== 'all') params.append('source', mediaFilters.source);
     if (mediaFilters.dimensions !== 'all') params.append('dimensions', mediaFilters.dimensions);
     if (mediaFilters.hasCaption !== 'all') params.append('hasCaption', mediaFilters.hasCaption);

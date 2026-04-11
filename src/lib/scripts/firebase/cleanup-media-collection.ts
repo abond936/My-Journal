@@ -36,11 +36,9 @@ function chunk<T>(arr: T[], size: number): T[][] {
 
 interface CleanupReport {
   totalMediaDocs: number;
-  mediaResetToTemporary: number;
   totalCardsProcessed: number;
   validMediaFound: number;
   invalidMediaRemoved: number;
-  mediaActivated: number;
   storageValidationErrors: number;
   errors: string[];
 }
@@ -53,13 +51,11 @@ export async function cleanupMediaCollection(dryRun: boolean = false): Promise<C
 
   const report: CleanupReport = {
     totalMediaDocs: 0,
-    mediaResetToTemporary: 0,
     totalCardsProcessed: 0,
     validMediaFound: 0,
     invalidMediaRemoved: 0,
-    mediaActivated: 0,
     storageValidationErrors: 0,
-    errors: []
+    errors: [],
   };
 
   console.log('🚀 Starting media collection cleanup...');
@@ -68,33 +64,15 @@ export async function cleanupMediaCollection(dryRun: boolean = false): Promise<C
   }
 
   try {
-    // Step 1: Reset all media docs to temporary status
-    console.log('📋 Step 1: Resetting all media docs to temporary status...');
-    const mediaSnapshot = await firestore.collection(MEDIA_COLLECTION).get();
-    report.totalMediaDocs = mediaSnapshot.size;
-    
-    if (!dryRun) {
-      const docChunks = chunk(mediaSnapshot.docs, FIRESTORE_BATCH_LIMIT);
-      for (let i = 0; i < docChunks.length; i++) {
-        const mediaBatch = firestore.batch();
-        docChunks[i].forEach(doc => {
-          mediaBatch.update(doc.ref, { status: 'temporary', updatedAt: Date.now() });
-        });
-        await mediaBatch.commit();
-        console.log(`   Batch ${i + 1}/${docChunks.length}: reset ${docChunks[i].length} media docs`);
-      }
-      report.mediaResetToTemporary = mediaSnapshot.size;
-      console.log(`✅ Reset ${mediaSnapshot.size} media docs to temporary status`);
-    } else {
-      console.log(`[DRY RUN] Would reset ${mediaSnapshot.size} media docs to temporary status`);
-    }
+    const mediaCountSnap = await firestore.collection(MEDIA_COLLECTION).count().get();
+    report.totalMediaDocs = mediaCountSnap.data().count;
 
-    // Step 2: Process all cards and validate their media references
-    console.log('📋 Step 2: Processing cards and validating media references...');
+    // Step 1: Process all cards and validate their media references
+    console.log('📋 Step 1: Processing cards and validating media references...');
     const cardsSnapshot = await firestore.collection(CARDS_COLLECTION).get();
     report.totalCardsProcessed = cardsSnapshot.size;
     
-    const mediaToActivate = new Set<string>();
+    const validReferencedMediaIds = new Set<string>();
     const cardUpdates: { cardId: string; updates: Partial<Card> }[] = [];
 
     for (const cardDoc of cardsSnapshot.docs) {
@@ -107,7 +85,7 @@ export async function cleanupMediaCollection(dryRun: boolean = false): Promise<C
       if (cardData.coverImageId) {
         const isValid = await validateMediaReference(cardData.coverImageId, firestore, bucket, report);
         if (isValid) {
-          mediaToActivate.add(cardData.coverImageId);
+          validReferencedMediaIds.add(cardData.coverImageId);
           report.validMediaFound++;
         } else {
           console.log(`[DRY RUN] Would remove invalid cover image for card "${cardData.title}" (${cardId}): ${cardData.coverImageId}`);
@@ -124,7 +102,7 @@ export async function cleanupMediaCollection(dryRun: boolean = false): Promise<C
           if (item.mediaId) {
             const isValid = await validateMediaReference(item.mediaId, firestore, bucket, report);
             if (isValid) {
-              mediaToActivate.add(item.mediaId);
+              validReferencedMediaIds.add(item.mediaId);
               validGalleryMedia.push(item);
               report.validMediaFound++;
             } else {
@@ -147,7 +125,7 @@ export async function cleanupMediaCollection(dryRun: boolean = false): Promise<C
         for (const mediaId of contentMediaIds) {
           const isValid = await validateMediaReference(mediaId, firestore, bucket, report);
           if (isValid) {
-            mediaToActivate.add(mediaId);
+            validReferencedMediaIds.add(mediaId);
             validContentMediaIds.push(mediaId);
             report.validMediaFound++;
           } else {
@@ -176,29 +154,10 @@ export async function cleanupMediaCollection(dryRun: boolean = false): Promise<C
     console.log(`- Valid media references found: ${report.validMediaFound}`);
     console.log(`- Invalid media references removed: ${report.invalidMediaRemoved}`);
     console.log(`- Cards needing updates: ${cardUpdates.length}`);
+    console.log(`- Distinct valid media IDs referenced by cards: ${validReferencedMediaIds.size}`);
 
-    // Step 3: Activate valid media
-    console.log('📋 Step 3: Activating valid media...');
-    if (!dryRun && mediaToActivate.size > 0) {
-      const mediaIds = Array.from(mediaToActivate);
-      const idChunks = chunk(mediaIds, FIRESTORE_BATCH_LIMIT);
-      for (let i = 0; i < idChunks.length; i++) {
-        const activateBatch = firestore.batch();
-        for (const mediaId of idChunks[i]) {
-          const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
-          activateBatch.update(mediaRef, { status: 'active', updatedAt: Date.now() });
-        }
-        await activateBatch.commit();
-        console.log(`   Batch ${i + 1}/${idChunks.length}: activated ${idChunks[i].length} media docs`);
-      }
-      report.mediaActivated = mediaToActivate.size;
-      console.log(`✅ Activated ${mediaToActivate.size} media docs`);
-    } else {
-      console.log(`[DRY RUN] Would activate ${mediaToActivate.size} media docs`);
-    }
-
-    // Step 4: Update cards with cleaned media references
-    console.log('📋 Step 4: Updating cards with cleaned media references...');
+    // Step 2: Update cards with cleaned media references
+    console.log('📋 Step 2: Updating cards with cleaned media references...');
     if (!dryRun && cardUpdates.length > 0) {
       const updateChunks = chunk(cardUpdates, FIRESTORE_BATCH_LIMIT);
       for (let i = 0; i < updateChunks.length; i++) {
@@ -215,20 +174,11 @@ export async function cleanupMediaCollection(dryRun: boolean = false): Promise<C
       console.log(`[DRY RUN] Would update ${cardUpdates.length} cards`);
     }
 
-    // Step 5: Generate final report
-    const remainingTemporaryMedia = await firestore
-      .collection(MEDIA_COLLECTION)
-      .where('status', '==', 'temporary')
-      .get();
-
     console.log('📋 Final Report:');
-    console.log(`- Total media docs processed: ${report.totalMediaDocs}`);
-    console.log(`- Media reset to temporary: ${report.mediaResetToTemporary}`);
+    console.log(`- Total media docs (collection count): ${report.totalMediaDocs}`);
     console.log(`- Cards processed: ${report.totalCardsProcessed}`);
     console.log(`- Valid media references found: ${report.validMediaFound}`);
     console.log(`- Invalid media references removed: ${report.invalidMediaRemoved}`);
-    console.log(`- Media activated: ${report.mediaActivated}`);
-    console.log(`- Remaining temporary media (can be deleted): ${remainingTemporaryMedia.size}`);
     console.log(`- Storage validation errors: ${report.storageValidationErrors}`);
 
     if (report.errors.length > 0) {
@@ -315,11 +265,9 @@ async function main() {
     console.log('🎯 Final Result:');
     console.log(`   Success: ${result.errors.length === 0 ? 'YES' : 'NO'}`);
     console.log(`   Total media docs: ${result.totalMediaDocs}`);
-    console.log(`   Media reset to temporary: ${result.mediaResetToTemporary}`);
     console.log(`   Cards processed: ${result.totalCardsProcessed}`);
     console.log(`   Valid media found: ${result.validMediaFound}`);
     console.log(`   Invalid media removed: ${result.invalidMediaRemoved}`);
-    console.log(`   Media activated: ${result.mediaActivated}`);
     console.log(`   Errors: ${result.errors.length}`);
     
     if (result.errors.length > 0) {

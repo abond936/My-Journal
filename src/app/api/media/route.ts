@@ -19,15 +19,10 @@ import {
 
 function buildBaseQuery(
   mediaRef: CollectionReference,
-  status: string | null,
   source: string | null,
   hasCaption: string | null
 ): Query {
   let baseQuery: Query = mediaRef;
-
-  if (status && status !== 'all') {
-    baseQuery = baseQuery.where('status', '==', status);
-  }
 
   if (source && source !== 'all') {
     baseQuery = baseQuery.where('source', '==', source);
@@ -172,7 +167,6 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 100);
     const cursor = searchParams.get('cursor');
     const prevCursor = searchParams.get('prevCursor');
-    const status = searchParams.get('status');
     const source = searchParams.get('source');
     const dimensions = searchParams.get('dimensions');
     const hasCaption = searchParams.get('hasCaption');
@@ -187,7 +181,7 @@ export async function GET(request: NextRequest) {
     const app = getAdminApp();
     const firestore = app.firestore();
     const mediaRef = firestore.collection('media');
-    const baseQuery = buildBaseQuery(mediaRef, status, source, hasCaption);
+    const baseQuery = buildBaseQuery(mediaRef, source, hasCaption);
 
     const shouldUseLegacyTagSeek = !!tagMode && tagMode !== 'all';
 
@@ -218,7 +212,6 @@ export async function GET(request: NextRequest) {
         query: searchTrimmed.length > 0 ? searchTrimmed : '*',
         page: listPage,
         perPage: limit,
-        status,
         source,
         dimensions,
         hasCaption,

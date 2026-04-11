@@ -1,6 +1,6 @@
 # Import & normalization (technical reference)
 
-Product rules, backlog, and digiKam workflow live in **`docs/Project.md`** (Authoring pipeline, Media Management, TECHNICAL → Import Folder as Card). This page summarizes **implementation-facing** details that are easy to miss elsewhere.
+Product rules and import workflow context live in **`docs/02-Application.md`** (e.g. **Media Management**, **Administration**) and **`docs/01-Vision-Architecture.md`** (**TECHNICAL**). This page summarizes **implementation-facing** details that are easy to miss elsewhere.
 
 ## Folder import in the app (`ImportFolderModal` / `importFolderAsCard`)
 

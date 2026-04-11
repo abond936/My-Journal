@@ -294,33 +294,33 @@
 }
 
 .dragHandle:hover {
-  background-color: rgba(0, 123, 255, 0.1);
+  background-color: hsla(var(--h3), var(--s3), var(--l3), 0.1);
 }
 
 .dragHandle:active {
   cursor: grabbing;
-  background-color: rgba(0, 123, 255, 0.2);
+  background-color: hsla(var(--h3), var(--s3), var(--l3), 0.2);
 }
 
 /* Valid drop zone highlighting */
 .rowWrapper[data-valid-drop="true"] {
-  background-color: rgba(0, 123, 255, 0.05);
-  border: 1px dashed #007bff;
-  border-radius: 4px;
+  background-color: hsla(var(--h3), var(--s3), var(--l3), 0.05);
+  border: var(--border-width-thin) dashed var(--color3);
+  border-radius: var(--border-radius-sm);
 }
 
 /* Invalid drop zone indication */
 .rowWrapper[data-valid-drop="false"] {
   opacity: 0.6;
-  background-color: rgba(220, 53, 69, 0.05);
+  background-color: hsla(var(--h12), var(--s12), var(--l12), 0.05);
 }
 
 /* Reparenting visual feedback */
 .rowWrapper[data-reparent-target="true"] {
-  background-color: rgba(40, 167, 69, 0.1);
-  border: 2px solid #28a745;
-  border-radius: 4px;
-  box-shadow: 0 0 8px rgba(40, 167, 69, 0.3);
+  background-color: var(--state-success-background-color);
+  border: var(--border-width-medium) solid var(--state-success-border-color);
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 0 8px hsla(var(--h11), var(--s11), var(--l11), 0.3);
 }
 
 .rowWrapper[data-reparent-target="true"]::before {
@@ -329,9 +329,9 @@
 
 /* Enhanced valid drop zone highlighting for reordering */
 .rowWrapper[data-valid-drop="true"]:not([data-reparent-target="true"]) {
-  background-color: rgba(0, 123, 255, 0.05);
-  border: 1px dashed #007bff;
-  border-radius: 4px;
+  background-color: hsla(var(--h3), var(--s3), var(--l3), 0.05);
+  border: var(--border-width-thin) dashed var(--color3);
+  border-radius: var(--border-radius-sm);
 }
 
 @media (max-width: 768px) {

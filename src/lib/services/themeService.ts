@@ -1,11 +1,16 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
+import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import { getAdminApp } from '@/lib/config/firebase/admin';
 import { BaseColor, StructuredThemeData, TypographyTokens, SpacingTokens, BorderTokens, ShadowTokens, ZIndexTokens, LayoutTokens, ComponentTokens, StateTokens, GradientTokens, ThemeColor } from '@/lib/types/theme';
 
 /**
- * Server-side theme service for reading and writing theme data from JSON and generating CSS
- * This file contains server-only operations and should not be imported by client components
+ * Server-side theme service: JSON backup, Firestore runtime source, CSS token generation.
+ * Do not import from client components.
  */
+
+const THEME_FIRESTORE_COLLECTION = 'app_settings';
+const THEME_FIRESTORE_DOC = 'theme';
 
 /**
  * Converts a HEX color to HSL components.
@@ -150,19 +155,17 @@ const generateDarkModeColorScales = (themeColors: ThemeColor[]): string => {
 };
 
 /**
- * Saves theme data to JSON file and generates CSS with simplified 3-shade approach
+ * CSS variable blocks for :root and [data-theme="dark"] only (no global element rules).
+ * Injected in RootLayout so tokens work on serverless without writing the repo.
  */
-export const saveThemeData = async (themeData: StructuredThemeData & { darkModeShift?: number }): Promise<void> => {
-  try {
-    // Save to JSON file
-    const jsonPath = path.join(process.cwd(), 'theme-data.json');
-    await fs.writeFile(jsonPath, JSON.stringify(themeData, null, 2), 'utf-8');
-    
-    // Generate CSS file
-    const cssPath = path.join(process.cwd(), 'src', 'app', 'theme.css');
-    
-    // Generate CSS content with simplified 3-shade approach
-    let cssContent = `/*
+/** `color5` → `5` for var(--color${n}); safe if ref is missing (matches prior .replace('color', '') semantics). */
+function stripColorRefForVar(ref: string | undefined, fallback: string): string {
+  const s = typeof ref === 'string' && ref.trim() ? ref.trim() : fallback;
+  return s.replace('color', '');
+}
+
+export function buildThemeTokensCss(themeData: StructuredThemeData & { darkModeShift?: number }): string {
+  let cssContent = `/*
   Unified Design System (v2) - Simplified 3-Shade Approach
   ==========================================
   This file represents the single source of truth for all styling tokens,
@@ -338,14 +341,14 @@ export const saveThemeData = async (themeData: StructuredThemeData & { darkModeS
   --border2-color: var(--color1-300);
 
   /* States */
-  --state-success-background-color: hsl(var(--h${themeData.states.success.backgroundColor.replace('color', '')}) / 0.15);
-  --state-success-border-color: var(--color${themeData.states.success.borderColor.replace('color', '')});
-  --state-error-background-color: hsl(var(--h${themeData.states.error.backgroundColor.replace('color', '')}) / 0.15);
-  --state-error-border-color: var(--color${themeData.states.error.borderColor.replace('color', '')});
-  --state-warning-background-color: hsl(var(--h${themeData.states.warning.backgroundColor.replace('color', '')}) / 0.15);
-  --state-warning-border-color: var(--color${themeData.states.warning.borderColor.replace('color', '')});
-  --state-info-background-color: hsl(var(--h${themeData.states.info.backgroundColor.replace('color', '')}) / 0.15);
-  --state-info-border-color: var(--color${themeData.states.info.borderColor.replace('color', '')});
+  --state-success-background-color: hsl(var(--h${stripColorRefForVar(themeData.states?.success?.backgroundColor, 'color11')}) / 0.15);
+  --state-success-border-color: var(--color${stripColorRefForVar(themeData.states?.success?.borderColor, 'color11')});
+  --state-error-background-color: hsl(var(--h${stripColorRefForVar(themeData.states?.error?.backgroundColor, 'color12')}) / 0.15);
+  --state-error-border-color: var(--color${stripColorRefForVar(themeData.states?.error?.borderColor, 'color12')});
+  --state-warning-background-color: hsl(var(--h${stripColorRefForVar(themeData.states?.warning?.backgroundColor, 'color13')}) / 0.15);
+  --state-warning-border-color: var(--color${stripColorRefForVar(themeData.states?.warning?.borderColor, 'color13')});
+  --state-info-background-color: hsl(var(--h${stripColorRefForVar(themeData.states?.info?.backgroundColor, 'color14')}) / 0.15);
+  --state-info-border-color: var(--color${stripColorRefForVar(themeData.states?.info?.borderColor, 'color14')});
 
   /* Typography */
   --text1-color: var(--color2-300);
@@ -388,10 +391,10 @@ export const saveThemeData = async (themeData: StructuredThemeData & { darkModeS
   --tag-font-size: var(--font-size-sm);
   --tag-font-family: var(--font-family-sans);
   --tag-text-color: var(--color1-100);
-  --tag-who-bg-color: var(--color${themeData.components.tag.backgrounds.who.replace('color', '')});
-  --tag-what-bg-color: var(--color${themeData.components.tag.backgrounds.what.replace('color', '')});
-  --tag-when-bg-color: var(--color${themeData.components.tag.backgrounds.when.replace('color', '')});
-  --tag-where-bg-color: var(--color${themeData.components.tag.backgrounds.where.replace('color', '')});
+  --tag-who-bg-color: var(--color${stripColorRefForVar(themeData.components?.tag?.backgrounds?.who, 'color5')});
+  --tag-what-bg-color: var(--color${stripColorRefForVar(themeData.components?.tag?.backgrounds?.what, 'color6')});
+  --tag-when-bg-color: var(--color${stripColorRefForVar(themeData.components?.tag?.backgrounds?.when, 'color7')});
+  --tag-where-bg-color: var(--color${stripColorRefForVar(themeData.components?.tag?.backgrounds?.where, 'color8')});
   
   /* Form & Input */
   --input-background-color: var(--color1-100);
@@ -450,26 +453,97 @@ export const saveThemeData = async (themeData: StructuredThemeData & { darkModeS
   
   --card-background-color: var(--color1-200);
 }
-
-/*
- * =================================================================
- * GLOBAL ELEMENT STYLES
- * =================================================================
- */
-
-/* Apply body background color globally */
-body {
-  background-color: var(--body-background-color);
-  color: var(--text1-color);
-  font-family: var(--body-font-family);
-}
 `;
 
-    // Write the CSS file
-    await fs.writeFile(cssPath, cssContent, 'utf-8');
-    console.log('Theme data saved to JSON and CSS generated successfully');
+  return cssContent;
+}
+
+/** Remove persisted-only fields before passing theme JSON into `buildThemeTokensCss`. */
+export function themeDataForCssGeneration(
+  data: StructuredThemeData & { darkModeShift?: number; activePresetId?: string }
+): StructuredThemeData & { darkModeShift?: number } {
+  const { activePresetId: _omitPreset, ...rest } = data;
+  return rest;
+}
+
+/** Firestore can hold a partial `data` object; building CSS from it throws or yields broken vars. */
+function isThemeDataViable(
+  data: (StructuredThemeData & { darkModeShift?: number }) | null | undefined
+): boolean {
+  if (!data?.palette?.length || !data.themeColors?.length) return false;
+  const hasBg = data.themeColors.some((c) => c.id === 1);
+  const hasText = data.themeColors.some((c) => c.id === 2);
+  if (!hasBg || !hasText) return false;
+  if (!data.layout?.breakpoints?.sm) return false;
+  if (!data.typography?.fontFamilies?.sans) return false;
+  if (!data.spacing?.unit) return false;
+  if (!data.shadows?.strengthDark) return false;
+  return true;
+}
+
+/**
+ * Theme for SSR: Firestore `app_settings/theme` when present and complete, else `theme-data.json`.
+ */
+export async function getResolvedThemeData(): Promise<
+  StructuredThemeData & { darkModeShift?: number; activePresetId?: string }
+> {
+  const fromFile = await getThemeData();
+  try {
+    getAdminApp();
+    const db = getFirestore();
+    const snap = await db.collection(THEME_FIRESTORE_COLLECTION).doc(THEME_FIRESTORE_DOC).get();
+    if (snap.exists) {
+      const row = snap.data();
+      const data = row?.data as (StructuredThemeData & { darkModeShift?: number }) | undefined;
+      if (isThemeDataViable(data)) {
+        return {
+          ...data!,
+          darkModeShift: data!.darkModeShift ?? row?.darkModeShift ?? 5,
+        };
+      }
+      if (data?.palette?.length) {
+        console.warn(
+          '[theme] Firestore app_settings/theme is incomplete; using theme-data.json. Re-save from Theme admin or run npm run seed:theme-firestore.'
+        );
+      }
+    }
+  } catch (e) {
+    console.warn('[theme] Firestore load failed; falling back to theme-data.json:', e);
+  }
+  return fromFile;
+}
+
+async function persistThemeToFirestore(
+  themeData: StructuredThemeData & { darkModeShift?: number; activePresetId?: string }
+): Promise<void> {
+  getAdminApp();
+  const db = getFirestore();
+  await db.collection(THEME_FIRESTORE_COLLECTION).doc(THEME_FIRESTORE_DOC).set({
+    data: themeData,
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+}
+
+/** One-off / CI: push `theme-data.json` to Firestore so production matches repo without opening Theme admin. */
+export async function syncThemeFromJsonToFirestore(): Promise<void> {
+  const data = await getThemeData();
+  if (!data.palette?.length) {
+    throw new Error('theme-data.json has no palette; cannot sync to Firestore');
+  }
+  await persistThemeToFirestore(data);
+}
+
+/** Writes `theme-data.json` (git-friendly backup) and Firestore (runtime source of truth). */
+export const saveThemeData = async (
+  themeData: StructuredThemeData & { darkModeShift?: number; activePresetId?: string }
+): Promise<void> => {
+  try {
+    const jsonPath = path.join(process.cwd(), 'theme-data.json');
+    await fs.writeFile(jsonPath, JSON.stringify(themeData, null, 2), 'utf-8');
+    await persistThemeToFirestore(themeData);
+    console.log('Theme saved to theme-data.json and Firestore');
   } catch (error) {
     console.error('Failed to save theme data:', error);
     throw error;
   }
-}; 
+};

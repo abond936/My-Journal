@@ -73,7 +73,7 @@ For each input `photo.jpg`:
 ## Related
 
 - **`docs/IMPORT-REFERENCE.md`** — `__X` rule, env vars, cardseed vs `seedCards.ts`  
-- **`docs/Project.md`** — product workflow, `IMPORT_FOLDER_MAX_IMAGES`, digiKam pipeline  
+- **`docs/02-Application.md`** — Media Management, Administration; **`docs/IMPORT-REFERENCE.md`** — `IMPORT_FOLDER_MAX_IMAGES`, folder rules  
 - **`docs/NPM-SCRIPTS.md`** — script index  
 - **`METADATA_EXTRACTION_README.md`** — metadata-only extraction (no WebP)  
 - **`create-photo-folders.bat`** — optional z/y/x layout (legacy); many workflows now use a **single folder** + `__X` naming  

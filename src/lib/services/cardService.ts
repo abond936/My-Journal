@@ -4,6 +4,7 @@ import { Tag } from '@/lib/types/tag';
 import {
   updateTagCountsForCard,
   mergeDerivedTagsForCardRecord,
+  getAllTags,
 } from '@/lib/firebase/tagService';
 import { getFirestore, FieldPath, FieldValue, Transaction } from 'firebase-admin/firestore';
 import {
@@ -13,6 +14,7 @@ import {
 } from './images/imageImportService';
 import { extractMediaFromContent, stripContentImageSrc, hydrateContentImageSrc, removeMediaFromContent, generateExcerpt } from '@/lib/utils/cardUtils';
 import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
+import { buildTagMap, computeJournalWhenSortKeys } from '@/lib/utils/journalWhenSort';
 import { getPublicStorageUrl } from '@/lib/utils/storageUrl';
 import { Media } from '@/lib/types/photo';
 import { unlinkCardFromAllQuestions } from '@/lib/services/questionService';
@@ -498,6 +500,11 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
       }
 
       const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord({ tags: selectedTags });
+      const allTagsForJournal = await getAllTags();
+      const journalWhenSort = computeJournalWhenSortKeys(
+        dimensionalTags.when || [],
+        buildTagMap(allTagsForJournal)
+      );
 
       const autoExcerpt = validatedData.excerptAuto ? generateExcerpt(cleanedContent) : undefined;
 
@@ -520,6 +527,8 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
         what: dimensionalTags.what || [],
         when: dimensionalTags.when || [],
         where: dimensionalTags.where || [],
+        journalWhenSortAsc: journalWhenSort.journalWhenSortAsc,
+        journalWhenSortDesc: journalWhenSort.journalWhenSortDesc,
         createdAt: Date.now(),
         updatedAt: Date.now(),
         curatedNavEligible: computeCuratedNavEligible({
@@ -547,32 +556,31 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
       // 2. Update tag counts using centralized function
       await updateTagCountsForCard(null, newCard, transaction);
 
-      // 3. Collect all media IDs that should be marked as 'active'.
-      const mediaIdsToActivate = new Set<string>();
+      // 3. Collect all media IDs referenced by the new card (for referencedByCardIds).
+      const mediaIdsReferenced = new Set<string>();
       if (newCard.coverImageId) {
-        mediaIdsToActivate.add(newCard.coverImageId);
+        mediaIdsReferenced.add(newCard.coverImageId);
       }
       if (newCard.galleryMedia) {
-        newCard.galleryMedia.forEach(item => item.mediaId && mediaIdsToActivate.add(item.mediaId));
+        newCard.galleryMedia.forEach(item => item.mediaId && mediaIdsReferenced.add(item.mediaId));
       }
       if (newCard.contentMedia) {
-        newCard.contentMedia.forEach(id => mediaIdsToActivate.add(id));
+        newCard.contentMedia.forEach(id => mediaIdsReferenced.add(id));
       }
-  
+
       // 4. If a coverImageFocalPoint was provided, update it on the media doc.
       if (newCard.coverImageFocalPoint && newCard.coverImageId) {
         const coverRef = firestore.collection(MEDIA_COLLECTION).doc(newCard.coverImageId);
-        transaction.update(coverRef, { 
-          objectPosition: `${newCard.coverImageFocalPoint.x} ${newCard.coverImageFocalPoint.y}`, 
-          updatedAt: Date.now() 
+        transaction.update(coverRef, {
+          objectPosition: `${newCard.coverImageFocalPoint.x} ${newCard.coverImageFocalPoint.y}`,
+          updatedAt: Date.now(),
         });
       }
-  
-      // 5. Update the status of all associated media to 'active' and add this card to referencedByCardIds.
-      for (const mediaId of Array.from(mediaIdsToActivate)) {
+
+      // 5. Denormalize card reference onto each media doc.
+      for (const mediaId of Array.from(mediaIdsReferenced)) {
         const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
         transaction.update(mediaRef, {
-          status: 'active',
           updatedAt: Date.now(),
           referencedByCardIds: FieldValue.arrayUnion(docRef.id),
         });
@@ -756,6 +764,14 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       cleanedUpdate.when = dimensionalTags.when || [];
       cleanedUpdate.where = dimensionalTags.where || [];
 
+      const allTagsForJournal = await getAllTags();
+      const journalWhenSort = computeJournalWhenSortKeys(
+        cleanedUpdate.when || [],
+        buildTagMap(allTagsForJournal)
+      );
+      cleanedUpdate.journalWhenSortAsc = journalWhenSort.journalWhenSortAsc;
+      cleanedUpdate.journalWhenSortDesc = journalWhenSort.journalWhenSortDesc;
+
       const finalChildrenForNav = 'childrenIds' in cleanedUpdate
         ? cleanedUpdate.childrenIds!
         : normalizeChildrenIds(existingData.childrenIds, cardId);
@@ -813,19 +829,7 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
   
       // 5. Tag counts were already adjusted earlier.
 
-      // 6. Collect all media IDs that should be marked as 'active'.
-      const mediaIdsToActivate = new Set<string>();
-      if (!isClearingCover && cleanedUpdate.coverImageId && typeof cleanedUpdate.coverImageId === 'string') {
-        mediaIdsToActivate.add(cleanedUpdate.coverImageId);
-      }
-      if (cleanedUpdate.galleryMedia) {
-        cleanedUpdate.galleryMedia.forEach(item => item.mediaId && mediaIdsToActivate.add(item.mediaId));
-      }
-      if (cleanedUpdate.contentMedia) {
-        cleanedUpdate.contentMedia.forEach(id => mediaIdsToActivate.add(id));
-      }
-  
-      // 7. If a new coverImageFocalPoint was provided (and we're not clearing cover), update the media doc.
+      // 6. If a new coverImageFocalPoint was provided (and we're not clearing cover), update the media doc.
       if (!isClearingCover) {
         const coverImageFocalPoint = cleanedUpdate.coverImageFocalPoint;
         const coverImageId = cleanedUpdate.coverImageId ?? existingData.coverImageId;
@@ -834,13 +838,7 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
           transaction.update(coverRef, { objectPosition: `${coverImageFocalPoint.x} ${coverImageFocalPoint.y}`, updatedAt: Date.now() });
         }
       }
-  
-      // 8. Update the status of all associated media to 'active'.
-      for (const mediaId of Array.from(mediaIdsToActivate)) {
-        const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
-        transaction.update(mediaRef, { status: 'active', updatedAt: Date.now() });
-      }
-  
+
       return null; // Signal completion; we fetch after transaction
     });
 
@@ -1055,6 +1053,11 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
   for (let i = 0; i < cardIds.length; i += BULK_UPDATE_TAGS_CHUNK_SIZE) {
     const chunk = cardIds.slice(i, i + BULK_UPDATE_TAGS_CHUNK_SIZE);
 
+    const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord({ tags });
+    const allTags = await getAllTags();
+    const tagMap = buildTagMap(allTags);
+    const journalWhenSort = computeJournalWhenSortKeys(dimensionalTags.when || [], tagMap);
+
     await firestore.runTransaction(async (transaction) => {
       const cardRefs = chunk.map(id => firestore.collection(CARDS_COLLECTION).doc(id));
       const cardDocs = await transaction.getAll(...cardRefs);
@@ -1070,8 +1073,6 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
       for (const cardDoc of cardDocs) {
         if (!cardDoc.exists) continue;
         const cardId = cardDoc.id;
-        const cardData = cardDoc.data() as Card;
-        const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord({ tags });
 
         const cardRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
         transaction.update(cardRef, {
@@ -1081,6 +1082,8 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
           what: dimensionalTags.what || [],
           when: dimensionalTags.when || [],
           where: dimensionalTags.where || [],
+          journalWhenSortAsc: journalWhenSort.journalWhenSortAsc,
+          journalWhenSortDesc: journalWhenSort.journalWhenSortDesc,
           updatedAt: Date.now(),
         });
       }
@@ -1397,10 +1400,14 @@ export async function getCards(options: {
     query = query.where('childrenIds', 'array-contains', childrenIds_contains);
   }
 
-  // Apply sorting (title search uses range on title + orderBy title)
+  // Apply sorting (title search uses range on title + orderBy title).
+  // Newest/oldest follow **journal When** tags, not card createdAt; undated sorts last (see journalWhenSort.ts).
   if (!q) {
-    const direction = sort === 'oldest' ? 'asc' : 'desc';
-    query = query.orderBy('createdAt', direction);
+    if (sort === 'oldest') {
+      query = query.orderBy('journalWhenSortAsc', 'asc');
+    } else {
+      query = query.orderBy('journalWhenSortDesc', 'desc');
+    }
   }
 
   // Apply pagination

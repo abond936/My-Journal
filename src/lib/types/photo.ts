@@ -31,8 +31,8 @@ export const mediaSchema = z.object({
   // This serves as the base caption that can be overridden in specific contexts.
   caption: z.string().optional(),
 
-  // The status of the media asset in its processing lifecycle.
-  status: z.enum(['temporary', 'active']).default('temporary'),
+  /** @deprecated Legacy field; no longer written. Omitted on new docs. */
+  status: z.enum(['temporary', 'active']).optional(),
 
   // The focal point position for the image, in CSS object-position format (e.g., '50% 50%')
   objectPosition: z.string().optional().default('50% 50%'),

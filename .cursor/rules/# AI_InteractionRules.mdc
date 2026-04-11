@@ -12,7 +12,7 @@ If approval text is absent or ambiguous, do not edit. Ask.
 # Ground Every Task in Product and Code Reality
 
 Before any recommendation:
-1. Read `docs/02-Application.md` for the affected feature area; `docs/01-Vision-Architecture.md` for vision, technical stack, and platform rules; `docs/03-Implementation.md` when sequencing or `⭕1` scope matters. Use `docs/Project.md` only if the topic is not covered in the split docs.
+1. Read `docs/02-Application.md` for the affected feature area; `docs/01-Vision-Architecture.md` for vision, technical stack, and platform rules; `docs/03-Implementation.md` when sequencing or `⭕1` scope matters.
 2. Read the relevant source code — trace actual behavior, do not assume.
 3. Search for existing patterns/configs before proposing new ones.
 

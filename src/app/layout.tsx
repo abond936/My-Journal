@@ -6,13 +6,34 @@ import AuthProvider from '@/components/providers/AuthProvider';
 import { TagProvider } from '@/components/providers/TagProvider';
 import { CardProvider } from '@/components/providers/CardProvider';
 import AppShell from '@/components/common/AppShell';
+import {
+  buildThemeTokensCss,
+  getResolvedThemeData,
+  getThemeData,
+  themeDataForCssGeneration,
+} from '@/lib/services/themeService';
 
 export const metadata: Metadata = {
   title: 'My Journal',
   description: 'A personal journal of life stories and memories',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  let themeTokensCss = '';
+  try {
+    const themeData = await getResolvedThemeData();
+    themeTokensCss = buildThemeTokensCss(themeDataForCssGeneration(themeData));
+  } catch (e) {
+    console.error('[theme] Failed to build theme tokens for layout:', e);
+  }
+  if (!themeTokensCss) {
+    try {
+      themeTokensCss = buildThemeTokensCss(themeDataForCssGeneration(await getThemeData()));
+    } catch (e) {
+      console.error('[theme] Fallback theme-data.json build failed:', e);
+    }
+  }
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -24,6 +45,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `(function(){try{var s=localStorage.getItem('theme');var t=(s==='light'||s==='dark')?s:(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`,
           }}
         />
+        {themeTokensCss ? (
+          <style
+            id="theme-tokens"
+            dangerouslySetInnerHTML={{
+              __html: themeTokensCss,
+            }}
+          />
+        ) : null}
       </head>
       <body suppressHydrationWarning>
         <AuthProvider>

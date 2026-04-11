@@ -8,6 +8,7 @@ import { usePathname } from 'next/navigation';
 import { Card } from '@/lib/types/card';
 import { PaginatedResult } from '@/lib/types/services';
 import { useTag } from './TagProvider';
+import { groupCardsForFeed, type FeedGroupBy } from '@/lib/utils/feedGrouping';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -17,6 +18,8 @@ export type ActiveDimension = 'all' | 'who' | 'what' | 'when' | 'where' | 'colle
 
 /** Main feed ordering. `random` shuffles cards loaded so far (same pages as newest). */
 export type FeedSortOrder = 'newest' | 'oldest' | 'random';
+
+export type { FeedGroupBy };
 
 export interface ICardContext {
   // Filter state
@@ -28,6 +31,9 @@ export interface ICardContext {
   collectionId: string | null;
   collectionCards: Card[]; // Flat list of collection parent cards
   feedSort: FeedSortOrder;
+  feedGroupBy: FeedGroupBy;
+  /** Grouped sections for the main feed; null when grouping is off or not applicable. */
+  feedSections: { heading: string; cards: Card[] }[] | null;
 
   // Filter actions
   toggleTag: (tagId: string) => void;
@@ -37,6 +43,7 @@ export interface ICardContext {
   setActiveDimension: (dim: ActiveDimension) => void;
   setCollectionId: (id: string | null) => void;
   setFeedSort: (order: FeedSortOrder) => void;
+  setFeedGroupBy: (g: FeedGroupBy) => void;
   clearFilters: () => void;
   setPageLimit: (limit: number) => void;
   
@@ -54,8 +61,10 @@ export interface ICardContext {
 const DIMENSION_STORAGE_KEY = 'myjournal-active-dimension';
 const COLLECTION_STORAGE_KEY = 'myjournal-collection-id';
 const FEED_SORT_KEY = 'myjournal-feed-sort';
+const FEED_GROUP_KEY = 'myjournal-feed-group';
 
 const FEED_SORT_VALUES = new Set<string>(['newest', 'oldest', 'random']);
+const FEED_GROUP_VALUES = new Set<string>(['none', 'who', 'what', 'when', 'where']);
 
 function normalizeStoredActiveDimension(raw: string | null): ActiveDimension {
   if (!raw) return 'all';
@@ -69,6 +78,13 @@ function readStoredFeedSort(): FeedSortOrder {
   const raw = sessionStorage.getItem(FEED_SORT_KEY);
   if (!raw || !FEED_SORT_VALUES.has(raw)) return 'newest';
   return raw as FeedSortOrder;
+}
+
+function readStoredFeedGroup(): FeedGroupBy {
+  if (typeof window === 'undefined') return 'none';
+  const raw = sessionStorage.getItem(FEED_GROUP_KEY);
+  if (!raw || !FEED_GROUP_VALUES.has(raw)) return 'none';
+  return raw as FeedGroupBy;
 }
 
 function shuffleCards<T extends { docId?: string }>(items: T[]): T[] {
@@ -109,10 +125,16 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     return sessionStorage.getItem(COLLECTION_STORAGE_KEY) || null;
   });
   const [feedSort, setFeedSortState] = useState<FeedSortOrder>(() => readStoredFeedSort());
+  const [feedGroupBy, setFeedGroupByState] = useState<FeedGroupBy>(() => readStoredFeedGroup());
 
   const setFeedSort = useCallback((order: FeedSortOrder) => {
     setFeedSortState(order);
     if (typeof window !== 'undefined') sessionStorage.setItem(FEED_SORT_KEY, order);
+  }, []);
+
+  const setFeedGroupBy = useCallback((g: FeedGroupBy) => {
+    setFeedGroupByState(g);
+    if (typeof window !== 'undefined') sessionStorage.setItem(FEED_GROUP_KEY, g);
   }, []);
 
   const setActiveDimension = useCallback((dim: ActiveDimension) => {
@@ -271,7 +293,17 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     if (activeDimension === 'collections' && !collectionId) return collectionCards;
     return orderedPaginatedCards;
   }, [activeDimension, collectionId, collectionCards, orderedPaginatedCards]);
+
+  const tagNameById = useMemo(
+    () => new Map(allTags?.filter((t) => t.docId).map((t) => [t.docId!, t.name]) ?? []),
+    [allTags]
+  );
+
   const isCollectionsListMode = activeDimension === 'collections' && !collectionId;
+  const feedSections = useMemo(() => {
+    if (feedGroupBy === 'none' || isCollectionsListMode) return null;
+    return groupCardsForFeed(cards, feedGroupBy, tagNameById);
+  }, [cards, feedGroupBy, tagNameById, isCollectionsListMode]);
   const isLoading = isCollectionsListMode ? collectionsLoading : (swrLoading && !data);
   const loadingMore = swrLoading && size > 1;
   const hasMore = isCollectionsListMode ? false : (data?.[data.length - 1]?.hasMore ?? false);
@@ -300,7 +332,8 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     setStatus(isAdmin ? 'all' : 'published');
     setCollectionId(null);
     setFeedSort('newest');
-  }, [isAdmin, setFilterTags, setCollectionId, setFeedSort]);
+    setFeedGroupBy('none');
+  }, [isAdmin, setFilterTags, setCollectionId, setFeedSort, setFeedGroupBy]);
 
   const value = useMemo(
     () => ({
@@ -317,6 +350,8 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       collectionId,
       collectionCards,
       feedSort,
+      feedGroupBy,
+      feedSections,
       loadMore,
       mutate,
       toggleTag,
@@ -326,6 +361,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       setActiveDimension,
       setCollectionId,
       setFeedSort,
+      setFeedGroupBy,
       clearFilters,
       setPageLimit,
       isValidating,
@@ -344,6 +380,8 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       collectionId,
       collectionCards,
       feedSort,
+      feedGroupBy,
+      feedSections,
       loadMore,
       mutate,
       toggleTag,
@@ -353,6 +391,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       setActiveDimension,
       setCollectionId,
       setFeedSort,
+      setFeedGroupBy,
       clearFilters,
       setPageLimit,
       isValidating,

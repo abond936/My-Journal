@@ -20,6 +20,8 @@ const cardsSchema: Typesense.CollectionCreateSchema = {
     { name: 'where_names', type: 'string[]', optional: true, facet: true },
     { name: 'created_at', type: 'int64', facet: false },
     { name: 'updated_at', type: 'int64', facet: false },
+    /** Packed When sort key (same as Firestore journalWhenSortDesc); optional for older indexes. */
+    { name: 'journal_when_sort', type: 'int64', facet: false, optional: true },
   ],
   default_sorting_field: 'updated_at',
 };
@@ -39,6 +41,7 @@ export interface TypesenseCardDocument {
   where_names?: string[];
   created_at: number;
   updated_at: number;
+  journal_when_sort?: number;
 }
 
 export async function ensureCardsCollection(): Promise<void> {
@@ -207,6 +210,8 @@ export async function syncCardToTypesense(card: Card): Promise<void> {
       where_names: lookupNames(card.where, nameMap),
       created_at: Math.floor(Number(card.createdAt) || 0),
       updated_at: Math.floor(Number(card.updatedAt) || 0),
+      journal_when_sort:
+        card.journalWhenSortDesc != null ? Math.floor(Number(card.journalWhenSortDesc)) : undefined,
     };
 
     await upsertCard(doc);
