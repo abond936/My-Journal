@@ -1,6 +1,6 @@
 # VISION & ARCHITECTURE
 
-**See also:** `02-Application.md` · `03-Implementation.md` · `04-Theme-Design-Contract.md` (theme semantics & presets)
+**See also:** `02-Application.md` · `03-Implementation.md` · `04-Theme-Design-Contract.md` (theme semantics, presets, reader shell & responsive layout §9)
 
 Legend:
 ✅`Implemented`
@@ -17,7 +17,7 @@ Legend:
   - `01-Vision-Architecture.md` — Product vision, principles, technical stack, data models, decisions. Stable; changes rarely.
   - `02-Application.md` — Each app area: *Features* grouped under `✅ Complete`, `⭕1 Planned`, `⭕2 Future`, `❓ Open` (plus standalone 📐 / 📘). Changes when features ship or are planned.
   - `03-Implementation.md` — Execution plan and phased sequencing (`⭕1` only). Changes when priorities shift. Each listed item must repeat the **same bold title and trailing text** as its source line in `02-Application.md` or (for Backend items) in this file—verbatim, including punctuation and counts. Only **phase assignment and ordering** may differ.
-- **Supplementary specs** - Focused references (e.g. `04-Theme-Design-Contract.md` for semantic tokens, presets, and design-led reconciliation) extend the core trio; they do not replace `02`/`03` for feature inventory or phased backlog.
+- **Supplementary specs** - Focused references (e.g. `04-Theme-Design-Contract.md` for semantic tokens, presets, reader responsive/nav contract §9, and design-led reconciliation) extend the core trio; they do not replace `02`/`03` for feature inventory or phased backlog.
 - **AI Behavior** - AI process, approval, and execution rules live in `.cursor/rules/# AI_InteractionRules.mdc`.
 - **Author** - Provides direction, constraints, and priorities--not implementation details.
 - **AI/Engineering** - Proposes how to build, designs flows, and recommends technical approaches.

@@ -32,7 +32,10 @@ export const buildTagTree = (tags: Tag[]): TagWithChildren[] => {
   });
 
   const sortTags = (tagNodes: TagWithChildren[]) => {
-    tagNodes.sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name));
+    tagNodes.sort(
+      (a, b) =>
+        (a.order ?? 0) - (b.order ?? 0) || (a.docId || '').localeCompare(b.docId || '')
+    );
     tagNodes.forEach(t => sortTags(t.children));
   };
 

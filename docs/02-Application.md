@@ -58,6 +58,7 @@ Legend:
 - **Mobile-First, Desktop-Second** - Layout adapts automatically by screen size; touch-optimized on mobile.
 - **Seamless Flow** - No jarring interruptions between content; smooth transitions and contextual progression.
 - **Single Control Surface** - All filtering and discovery controls accessible from one panel.
+- **Responsive contract** - Desktop vs narrow layout, breakpoints, sidebar toggle behavior, and main feed column rules are defined in `docs/04-Theme-Design-Contract.md` §9; implementation must match that section (literal `px` in `@media`, not `var(--breakpoint-*)` for layout breakpoints).
 
 ---
 
@@ -73,7 +74,7 @@ Legend:
 ✅ **Complete**
 - **Login Page** - Application opens to home page with login form and SVG logo.
 - **Home Layout**  - Login splash with logo; no nav bar. Redirects to /view after login.
-
+⭕ **Left Upper Image** - The change in the logo and top nav lost the upper left image.
 ---
 
 ### **Top Navigation**
@@ -107,7 +108,7 @@ Legend:
 *Features*
 ✅ **Complete**
 - **Hierarchical Tag Tree** - Tag tree for filtering content by card type and active dimension.
-- **Mobile** - Left sidebar/drawer pattern for filters on small screens; no bottom navigation bar.
+- **Mobile** - Left sidebar uses a **drawer** (overlay + backdrop) at `max-width: 768px`; **sidebar toggle (←/→) remains visible at all widths** so filters are always reachable; no bottom navigation bar. Details: `docs/04-Theme-Design-Contract.md` §9.
 - **Card Type** - Icon buttons: Story | Gallery | Question | Callout | Quote
 - **Tag Dimension** - All | Who | What | When | Where
 - **Persistence** - Remembers selections across page refreshes.
@@ -162,7 +163,7 @@ Legend:
 
 *Features*
 ✅ **Complete**
-- **Feed** - `CardFeedV2` → `V2ContentCard` (`src/components/view/`). Responsive grid on `/view` after login.
+- **Feed** - `CardFeedV2` → `V2ContentCard` (`src/components/view/`). Responsive grid on `/view` after login; **single column at `max-width: 768px`** per `docs/04-Theme-Design-Contract.md` §9.4.
 - **Linking rule** - Feed tile links to `/view/[id]` only when `displayMode === 'navigate'` and `type` is `story`, `gallery`, or `qa`. Other types/modes render a non-link tile (`V2ContentCard.tsx` `isInteractive`).
 - **Schema** - `type`: `story` | `gallery` | `qa` | `quote` | `callout`; `displayMode`: `static` | `inline` | `navigate` (`src/lib/types/card.ts`). Collection structure = `childrenIds` on any type, not a separate `type`.
 - **Detail** - `CardDetailPage.tsx` and view components in `src/components/view/` (TipTap, gallery, discovery blocks).
@@ -174,6 +175,7 @@ Legend:
 📐 **Horizontal open** - Prefer horizontal open for long-form on mobile where the reader implements it.
 
 ⭕1 **Planned**
+- **Layout `@media` hardening** - Replace `var(--breakpoint-*)` inside `@media` where it affects layout (`V2ContentCard`, `Navigation`, `ViewLayout`, `ContentCard`, `ThemeAdmin`, `TagTree`, etc.) so breakpoints match `docs/04-Theme-Design-Contract.md` §9.2 (literal `px`).
 - **Questions / Quotes** - Source material (Word, books, Notion).
 - **Quote Card** - Attribution modeling (e.g. Content vs subtitle/excerpt).
 
@@ -230,6 +232,7 @@ Legend:
 *Features*
 ✅ **Complete**
 - **Navigation** - Top hamburger navigation `Admin` button navigates to Administration (`src/app/admin/layout.tsx`).
+⭕ **Theme Management** - When in Theme Management, clicking the hamburger shows Admin and Theme highlighted.
 - **Domains** - All admin domains active: Cards, Media, Collections, Tags, Questions, Users, Themes.
 - **Card Management** - Core CRUD, card schema, edit flows, collection route.
 - **Media Management** - Assigned/unassigned filtering, replace-in-place, card-reference-aware delete.
@@ -313,6 +316,9 @@ Legend:
 - **Admin** - Multi-dimensional filter, replace-in-place (`POST /api/images/{id}/replace`), tagging (`PATCH /api/images/{id}`), bulk modes, multi-select → draft gallery card (`MediaAdminContent`).
 - **Bank-only** - No temporary or active status; imported media is in the bank. Assignment and unassigned filtering use `referencedByCardIds` and `GET /api/media?assignment=unassigned|assigned` (`mediaAssignmentSeek.ts`).
 
+⭕1
+- **Import Metadata** - Adjust import metadata precedence to favor embedded image metadata over sidecar JSON where appropriate; extend import to read hierarchical keywords from embedded XMP/IPTC and resolve to app tag IDs.
+
 ⭕2 **Future**
 - **Rename types module** - `src/lib/types/photo.ts` → `media.ts` (throughout)
 - **Append to Gallery** - Bulk add selected banked media to another **existing** card's gallery from Media admin (parked). **Today** images still reach cards after import via **Create card from selection** (draft gallery + edit), **PhotoPicker** / gallery in card edit, **inline images** in rich text, and **replace-in-place** on media rows—no need to block on this bulk-append flow.
@@ -373,6 +379,7 @@ Legend:
 
 ⭕1 **Planned**
 - **Tag Recomp** - Schedule or queue recomputation for hierarchical counts (and media side) vs relying on `FieldValue.increment` alone when semantics are "unique per subtree."
+- **Node Strategy** - Raw tag overlay to created aggregations.
 
 ⭕2 **Future**
 - **Unified tag edges (conceptual):** Treat assignments as **(subjectType, subjectId, tagId)** even if denormalized on `Card` / `Media` for reads—eases counts, digiKam mapping, migrations. (??)
@@ -455,6 +462,7 @@ Legend:
 
 ⭕1 **Planned**
 - **CSS Tokenization** - Move **design-affecting** values—colors, typography scale, spacing rhythm, radii, shadows, and key surfaces—into `theme.css` variables (and Theme Management where appropriate) so literals in modules do not block **plug-and-play designs**. Not every numeric value in the app is a “theme” concern (e.g. one-off layout math); scope is what should change when switching designs. Grow coverage incrementally toward named presets.
+❓ **Italic** - Is there a way to right lean the ink font?
 
 📘 **Design contract** - Semantic roles, preset intent (Journal vs Editorial), and reconciliation order: `docs/04-Theme-Design-Contract.md`.
 

@@ -7,6 +7,8 @@ import styles from './page.module.css';
 
 export type CardEditPageChromeProps = {
   cardId: string | null;
+  /** Validated reader path (e.g. `/view` or `/view/[id]`); Back navigates here instead of history. */
+  readerReturnTo?: string | null;
   onDelete: () => Promise<void>;
   onDuplicate: () => Promise<void>;
   isDeleting: boolean;
@@ -18,6 +20,7 @@ export type CardEditPageChromeProps = {
  */
 export default function CardEditPageChrome({
   cardId,
+  readerReturnTo = null,
   onDelete,
   onDuplicate,
   isDeleting,
@@ -28,6 +31,10 @@ export default function CardEditPageChrome({
 
   const handleBack = () => {
     if (!confirmLeaveIfDirty()) return;
+    if (readerReturnTo) {
+      router.push(readerReturnTo);
+      return;
+    }
     router.back();
   };
 

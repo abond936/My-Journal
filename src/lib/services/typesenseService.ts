@@ -1,10 +1,10 @@
-import Typesense from 'typesense';
+import type { BaseCollectionCreateSchema, CollectionFieldSchema } from 'typesense';
 import { getTypesenseClient, isTypesenseConfigured } from '@/lib/config/typesense';
 import { Card } from '@/lib/types/card';
 
 const CARDS_COLLECTION = 'cards';
 
-const cardsSchema: Typesense.CollectionCreateSchema = {
+const cardsSchema: BaseCollectionCreateSchema & { fields: CollectionFieldSchema[] } = {
   name: CARDS_COLLECTION,
   fields: [
     { name: 'title', type: 'string', facet: false },

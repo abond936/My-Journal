@@ -74,6 +74,13 @@
   gap: var(--spacing-lg);
 }
 
+/* Reader shell contract: `docs/04-Theme-Design-Contract.md` §9.4 — literal px for layout breakpoints */
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .cardLink {
   text-decoration: none;
   color: inherit;

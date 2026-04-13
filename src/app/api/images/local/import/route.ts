@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
+import { getAllTags } from '@/lib/firebase/tagService';
+import { buildTagNameLookupMaps } from '@/lib/services/images/embeddedMetadataForImport';
 import { importFromLocalDrive } from '@/lib/services/images/imageImportService';
 
 export async function POST(request: NextRequest) {
@@ -20,7 +22,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'sourcePath is required.' }, { status: 400 });
     }
 
-    const { mediaId, media } = await importFromLocalDrive(sourcePath);
+    const tagNameMaps = buildTagNameLookupMaps(await getAllTags());
+    const { mediaId, media } = await importFromLocalDrive(sourcePath, {
+      readMetadata: true,
+      tagNameMaps,
+      normalizeInMemory: true,
+    });
 
     return NextResponse.json({ mediaId, media });
   } catch (error) {

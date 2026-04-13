@@ -8,7 +8,10 @@ This file is an **index only**. Canonical instructions are not duplicated here (
 | Vision, principles, tech stack, decisions | `docs/01-Vision-Architecture.md` |
 | App areas: features (buckets + 📐/📘) per section | `docs/02-Application.md` |
 | Execution plan, phased sequencing (`⭕1` only) | `docs/03-Implementation.md` |
-| Theme: semantic tokens, presets, design-led reconciliation | `docs/04-Theme-Design-Contract.md` |
+| Theme: semantic tokens, presets, reader shell & responsive layout (§9), design-led reconciliation | `docs/04-Theme-Design-Contract.md` |
+| Guided archive / AI clustering & story elicitation (seed spec) | `docs/05-Guided-Archive-Assistance.md` |
+
+**Document count** — Do **not** add new top-level `docs/*.md` files unless the author explicitly approves a new document. Integrate new guidance into the existing split: vision/stack → `01`; app features & behavior → `02`; phased work → `03`; tokens **and** reader responsive/nav layout contract → `04` §9; guided-archive seed → `05`. If unsure, extend the closest existing section rather than creating `06-…`.
 
 For new work: the author states **what**; the agent proposes **how** after assessment. Implement only after explicit approval.
 
@@ -39,6 +42,7 @@ Next.js **requires** `NEXT_PUBLIC_*` variables in a `.env` file (process env var
 
 ### Gotchas
 
+- **Local image import** (folder + `/api/images/local/import`) uses **`exiftool-vendored`** to read captions and keywords from files. Requires **Node ≥ 20** (dependency engines). The bundled ExifTool runs in child processes on the machine hosting the Next.js server (typical: your desktop with `ONEDRIVE_ROOT_FOLDER`).
 - **Typesense** is optional; search falls back to Firestore prefix queries when credentials are absent. Media search returns 503 without it.
 - **`FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY`** often contains literal `\n` characters; ensure the secret value preserves them correctly.
 - The app may already be authenticated (session cookie) after first login; subsequent page loads skip the login screen.

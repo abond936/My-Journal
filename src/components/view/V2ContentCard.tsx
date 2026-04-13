@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import JournalImage from '@/components/common/JournalImage';
 import { Card } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils'; // Corrected import path
@@ -9,6 +10,7 @@ import { getObjectPositionForAspectRatio } from '@/lib/utils/objectPositionUtils
 import { getEffectiveGalleryObjectPosition } from '@/lib/utils/galleryObjectPosition';
 import TipTapRenderer from '@/components/common/TipTapRenderer';
 import { formatQuoteAttribution } from '@/lib/utils/cardUtils';
+import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 import styles from './V2ContentCard.module.css';
 
 // Simple horizontal slider
@@ -237,14 +239,18 @@ const QACardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, di
   );
 };
 
-const CalloutCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => {
-  const showBody =
-    card.content && (displayMode === 'inline' || displayMode === 'navigate');
+const CalloutCardContent: React.FC<{ card: Card }> = ({ card }) => {
+  /** Callouts are static-only in product rules; feed still shows TipTap like quote tiles. */
+  const showBody = Boolean(card.content?.trim());
   const hasExcerpt = Boolean(card.excerpt?.trim());
+  const titleText = card.title?.trim() ?? '';
+  const subtitleText = card.subtitle?.trim() ?? '';
 
   return (
     <div className={styles.content}>
-      <h3 className={styles.calloutTitle}>{card.title}</h3>
+      {titleText ? <h3 className={styles.calloutTitle}>{titleText}</h3> : null}
+      {!titleText && subtitleText ? <h3 className={styles.calloutTitle}>{subtitleText}</h3> : null}
+      {titleText && subtitleText ? <p className={styles.calloutSubtitle}>{subtitleText}</p> : null}
       {hasExcerpt ? <p className={styles.calloutExcerpt}>{card.excerpt}</p> : null}
       {showBody ? (
         <div className={`${styles.inlineContent} ${styles.calloutBody}`}>
@@ -262,11 +268,25 @@ interface V2ContentCardProps {
   size?: 'small' | 'medium' | 'large';
   /** When true, card stretches to parent width (use with fixed-width rail cells). */
   fullWidth?: boolean;
+  /** Save feed scroll before navigating to card detail (Content → detail). */
   onClick?: () => void;
+  /** Save feed scroll before opening admin edit from Content feed (optional). */
+  onBeforeNavigateToAdminEdit?: () => void;
+  /** `returnTo` query for edit page Back link (e.g. `/view` from feed, `/view/[id]` from detail rails). */
+  adminEditReturnTo?: string;
 }
 
-const V2ContentCard: React.FC<V2ContentCardProps> = ({ card, size = 'medium', fullWidth = false, onClick }) => {
-  const displayMode = card.displayMode || 'navigate';
+const V2ContentCard: React.FC<V2ContentCardProps> = ({
+  card,
+  size = 'medium',
+  fullWidth = false,
+  onClick,
+  onBeforeNavigateToAdminEdit,
+  adminEditReturnTo = '/view',
+}) => {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === 'admin';
+  const displayMode = normalizeDisplayModeForType(card.type, card.displayMode);
   
   // Determine if card should be interactive based on display mode
   const isInteractive =
@@ -284,6 +304,11 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({ card, size = 'medium', fu
       : '';
   const className = `${styles.card} ${cardTypeClass} ${sizeClass} ${displayModeClass} ${qaWithCoverClass} ${fullWidth ? styles.fullWidth : ''}`.trim();
 
+  const editHref =
+    card.docId && isAdmin
+      ? `/admin/card-admin/${card.docId}/edit?returnTo=${encodeURIComponent(adminEditReturnTo)}`
+      : null;
+
   const renderContent = () => {
     switch (card.type) {
       case 'gallery':
@@ -295,7 +320,7 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({ card, size = 'medium', fu
       case 'callout':
         return (
           <>
-            <CalloutCardContent card={card} displayMode={displayMode} />
+            <CalloutCardContent card={card} />
             <div className={styles.calloutPinOverlay} aria-hidden>
               <img
                 src="/images/pushpin.svg"
@@ -314,15 +339,31 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({ card, size = 'medium', fu
     }
   };
 
-  if (isInteractive) {
-    return (
+  const body =
+    isInteractive && card.docId ? (
       <Link href={`/view/${card.docId}`} className={className} onClick={onClick}>
         {renderContent()}
       </Link>
+    ) : (
+      <div className={className}>{renderContent()}</div>
     );
+
+  if (!editHref) {
+    return body;
   }
 
-  return <div className={className}>{renderContent()}</div>;
+  return (
+    <div className={styles.cardShell}>
+      {body}
+      <Link
+        href={editHref}
+        className={styles.adminEditLink}
+        onClick={() => onBeforeNavigateToAdminEdit?.()}
+      >
+        Edit
+      </Link>
+    </div>
+  );
 };
 
 export default V2ContentCard; 

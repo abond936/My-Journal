@@ -1,0 +1,115 @@
+﻿=== Dry run: import metadata (ExifTool + tag map) ===
+Generated: 2026-04-13T17:23:41.868Z
+Root: C:\Users\alanb\OneDrive\Pictures\zMomDadPics
+
+Loading tag tree from Firestore...
+Tag names (exact map size): 642
+
+__X-marked image files found: 3055
+
+=== Summary ===
+Total __X files: 3055
+Read OK: 3055
+Read errors: 0
+With non-empty caption: 606
+With at least one unmapped keyword: 227
+Unique unmapped keyword strings: 12
+
+=== Unmapped keywords (not in app tag name map) — count then label ===
+119	G:Homes
+108	G:Bob & Sandra
+108	L:Childress Dr
+67	WHO/zNA
+67	WHO|zNA
+67	zNA
+29	N:Margaret Bond
+12	2WHAT/Home
+12	2WHAT|Home
+12	Home
+11	2WHAT/G:Homes
+11	2WHAT|G:Homes
+
+=== Sample files with unmapped keywords (up to 40) ===
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\Cameos\00541_p_12af5lw97p0500_r__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\Cameos\03205_p_12af5lw97p0467__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\Cameos\03215_p_12af5lw97p0463__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\Cameos\03217_p_12af5lw97p0462__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\Cameos\03218_p_12af5lw97p0464__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\Cameos\03219_p_12af5lw97p0465_r__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\Cameos\03220_p_12af5lw97p0466__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\Cameos\03221_p_12af5lw97p0469__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\Cameos\03222_p_12af5lw97p0470__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\Cameos\03223_p_12af5lw97p1485__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\Cameos\03228_p_12af5lw97p3805__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\Cameos\03229_p_12af5lw97p3804__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\Cameos\03231_p_12af5lw97p3800__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\Cameos\03324_p_12af5lw97p3798__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\Cameos\03325_p_12af5lw97p3799__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\Cameos\03451_p_12af5lw97p0468__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\House\02040_p_12af5lw97p1663_z__X.jpg
+  unmapped: Home | 2WHAT/Home | 2WHAT|Home
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\House\02976_p_12af5lw97p3565__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\House\02977_p_12af5lw97p3566__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\House\02978_p_12af5lw97p3567__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\House\02980_p_12af5lw97p3569__X.jpg
+  unmapped: Home | 2WHAT/Home | 2WHAT|Home
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\House\02981_p_12af5lw97p3570__X.jpg
+  unmapped: Home | 2WHAT/Home | 2WHAT|Home
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\House\02982_p_12af5lw97p3571__X.jpg
+  unmapped: Home | 2WHAT/Home | 2WHAT|Home
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\House\02983_p_12af5lw97p3572__X.jpg
+  unmapped: Home | 2WHAT/Home | 2WHAT|Home
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\House\02985_p_12af5lw97p3574__X.jpg
+  unmapped: Home | 2WHAT/Home | 2WHAT|Home
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\House\02986_p_12af5lw97p3575__X.jpg
+  unmapped: Home | 2WHAT/Home | 2WHAT|Home
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\House\02987_p_12af5lw97p3576__X.jpg
+  unmapped: Home | 2WHAT/Home | 2WHAT|Home
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\House\02988_p_12af5lw97p3577__X.jpg
+  unmapped: Home | 2WHAT/Home | 2WHAT|Home
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\House\02990_p_12af5lw97p3579__X.jpg
+  unmapped: Home | 2WHAT/Home | 2WHAT|Home
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\House\02991_p_12af5lw97p3580__X.jpg
+  unmapped: Home | 2WHAT/Home | 2WHAT|Home
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\House\03037_p_12af5lw97p3645_b__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\House\03146_p_12af5lw97p3245_b__X.jpg
+  unmapped: Home | 2WHAT/Home | 2WHAT|Home
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\zMisc\03001_p_12af5lw97p3602_z__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\zMisc\03148_p_12af5lw97p0525__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\zMisc\03161_p_12af5lw97p0723__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\zMisc\03177_p_12af5lw97p1682__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\zMisc\03181_p_12af5lw97p1638__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\zMisc\03183_p_12af5lw97p1673__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\zMisc\03232_p_12af5lw97p3644__X.jpg
+  unmapped: N:Margaret Bond
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\zMisc\03240_p_12af5lw97p3601__X.jpg
+  unmapped: N:Margaret Bond
+... and 187 more files with unmapped keywords
+
+Report written to C:\Users\alanb\my-journal\tools\dry-run-import-metadata-report.txt

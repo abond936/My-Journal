@@ -97,6 +97,7 @@ export default function CardFeedV2({
           card={card}
           size="medium"
           onClick={onSaveScrollPosition}
+          onBeforeNavigateToAdminEdit={onSaveScrollPosition}
         />
       ))}
     </div>

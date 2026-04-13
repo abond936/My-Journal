@@ -8,6 +8,23 @@
   box-shadow: var(--shadow-md);
 }
 
+.adminEditBar {
+  margin: 0 0 var(--spacing-md);
+  padding-top: var(--spacing-md);
+  text-align: right;
+}
+
+.adminEditBar a {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color4-light);
+  text-decoration: none;
+}
+
+.adminEditBar a:hover {
+  text-decoration: underline;
+}
+
 .header {
   margin-bottom: var(--spacing-xl);
   padding-bottom: var(--spacing-lg);

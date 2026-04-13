@@ -78,22 +78,24 @@
 .actions {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-sm);
   flex-shrink: 0;
 }
 
+/* Do not use transform: scale() here — it enlarges the painted glyph but leaves a tight
+   hit box so the adjacent + can steal clicks meant for the default-expanded (⊞/⊟) control. */
 .actionButton {
   all: unset;
   cursor: pointer;
-  padding: var(--spacing-xs) var(--spacing-xs);
-  font-size: var(--font-size-base);
-  min-width: var(--spacing-lg);
-  height: var(--spacing-lg);
+  box-sizing: border-box;
+  padding: var(--spacing-xs);
+  font-size: var(--font-size-lg);
+  min-width: 2rem;
+  min-height: 2rem;
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0.5;
-  transform: scale(1.8);
   transition: opacity var(--transition-short) ease;
 }
 

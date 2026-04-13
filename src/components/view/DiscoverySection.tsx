@@ -103,6 +103,11 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
     };
   }, [currentCard, childrenCards, cardType]);
 
+  const detailReturnTo =
+    currentCard.docId != null && currentCard.docId !== ''
+      ? `/view/${currentCard.docId}`
+      : '/view';
+
   const hasChildren = childrenCards.length > 0;
   const hasFiltered = filtered.length > 0;
   const hasRandom = random.length > 0;
@@ -144,7 +149,12 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
           <div className={styles.cardRail} role="list" aria-label="Related content">
             {childrenCards.map(card => (
               <div key={card.docId} className={styles.cardRailCell} role="listitem">
-                <V2ContentCard card={card} size="small" fullWidth />
+                <V2ContentCard
+                  card={card}
+                  size="small"
+                  fullWidth
+                  adminEditReturnTo={detailReturnTo}
+                />
               </div>
             ))}
           </div>
@@ -169,7 +179,12 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
             <div className={styles.cardRail} role="list" aria-label="Similar topics">
               {filtered.map(card => (
                 <div key={card.docId} className={styles.cardRailCell} role="listitem">
-                  <V2ContentCard card={card} size="small" fullWidth />
+                  <V2ContentCard
+                    card={card}
+                    size="small"
+                    fullWidth
+                    adminEditReturnTo={detailReturnTo}
+                  />
                 </div>
               ))}
             </div>
@@ -189,7 +204,12 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
             <div className={styles.cardRail} role="list" aria-label="Explore more">
               {random.map(card => (
                 <div key={card.docId} className={styles.cardRailCell} role="listitem">
-                  <V2ContentCard card={card} size="small" fullWidth />
+                  <V2ContentCard
+                    card={card}
+                    size="small"
+                    fullWidth
+                    adminEditReturnTo={detailReturnTo}
+                  />
                 </div>
               ))}
             </div>

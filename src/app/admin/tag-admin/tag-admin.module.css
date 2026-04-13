@@ -400,6 +400,24 @@
   background: var(--layout-background2-color);
 }
 
+/* Fills remaining column height under the heading; DndContext may not be a flex item by itself */
+.dimensionColumnDndRoot {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* DndContext may inject a wrapper; keep it filling the column */
+.dimensionColumnDndRoot > * {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Grows to fill column so short dimensions match sibling height; cap overall scroll area */
 .dimensionColumnScroll {
   flex: 1 1 auto;

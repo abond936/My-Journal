@@ -87,7 +87,11 @@ export function TagAdminRow({
         {/* Expander button (for nodes with children) */}
         {hasChildren && (
           <div className={styles.expander}>
-            <button onClick={() => onToggleCollapse(tag.docId!)} className={styles.expandButton}>
+            <button
+              type="button"
+              onClick={() => onToggleCollapse(tag.docId!)}
+              className={styles.expandButton}
+            >
               {isCollapsed ? '►' : '▼'}
             </button>
           </div>
@@ -123,16 +127,46 @@ export function TagAdminRow({
         <div className={styles.actions}>
           {hasChildren && (
             <button
-              onClick={() => onUpdateTag(tag.docId!, { defaultExpanded: tag.defaultExpanded === false })}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onUpdateTag(tag.docId!, { defaultExpanded: tag.defaultExpanded === false });
+              }}
               className={styles.actionButton}
-              title={tag.defaultExpanded === false ? 'Collapsed by default in Explore (click to expand)' : 'Expanded by default in Explore (click to collapse)'}
-              aria-label={tag.defaultExpanded === false ? 'Set expanded by default' : 'Set collapsed by default'}
+              title={
+                tag.defaultExpanded === false
+                  ? 'Collapsed by default in Explore sidebar (click for expanded by default)'
+                  : 'Expanded by default in Explore sidebar (click for collapsed by default)'
+              }
+              aria-label={
+                tag.defaultExpanded === false ? 'Set expanded by default in Explore' : 'Set collapsed by default in Explore'
+              }
             >
               {tag.defaultExpanded === false ? '⊞' : '⊟'}
             </button>
           )}
-          <button onClick={() => setIsAddingChild(p => !p)} className={styles.actionButton}>+</button>
-          <button onClick={() => onDeleteTag(tag.docId!)} className={styles.actionButton}>×</button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsAddingChild((p) => !p);
+            }}
+            className={styles.actionButton}
+            aria-label="Add child tag"
+          >
+            +
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteTag(tag.docId!);
+            }}
+            className={styles.actionButton}
+            aria-label="Delete tag"
+          >
+            ×
+          </button>
         </div>
       </div>
 

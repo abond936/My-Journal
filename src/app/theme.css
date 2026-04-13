@@ -56,6 +56,9 @@
   --sidebar-width: 300px;
   --transition-short: 0.2s;
   --font-size-xl: 1.5rem;
+
+  /* Callout pushpin & similar raster watermarks (see docs/04-Theme-Design-Contract.md) */
+  --card-watermark-raster-filter: none;
 }
 
 [data-theme='dark'] {
@@ -75,6 +78,8 @@
   --layout-background1-color: var(--color1-100);
   --layout-background2-color: var(--color1-200);
   --border1-color: var(--color1-200);
+
+  --card-watermark-raster-filter: invert(1);
 }
 
 /*

@@ -4,14 +4,14 @@ import React from 'react';
 import { Card, CardUpdate } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 import CardForm from '@/components/admin/card-admin/CardForm';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import useSWR, { mutate as globalMutate } from 'swr';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import styles from './page.module.css';
-import { useCardContext } from '@/components/providers/CardProvider';
 import { PaginatedResult } from '@/lib/types/services';
 import { CardFormProvider } from '@/components/providers/CardFormProvider';
 import CardEditPageChrome from './CardEditPageChrome';
+import { getSafeReaderReturnTo } from '@/lib/utils/readerReturnTo';
 
 const UPDATED_CARD_KEY = 'updatedCardState';
 
@@ -24,6 +24,8 @@ const fetcher = (url: string) =>
 
 export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const readerReturnTo = getSafeReaderReturnTo(searchParams.get('returnTo'));
   
   // Fetch initial data using SWR. This is the single source of truth.
   const { 
@@ -137,7 +139,11 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
         throw new Error(data.error || 'Failed to duplicate card.');
       }
       const newCard = await response.json();
-      router.push(`/admin/card-admin/${newCard.docId}/edit`);
+      const editUrl =
+        readerReturnTo != null
+          ? `/admin/card-admin/${newCard.docId}/edit?returnTo=${encodeURIComponent(readerReturnTo)}`
+          : `/admin/card-admin/${newCard.docId}/edit`;
+      router.push(editUrl);
     } catch (err) {
       console.error('Duplicate error:', err);
       alert(err instanceof Error ? err.message : 'An unknown error occurred.');
@@ -165,6 +171,7 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
       >
         <CardEditPageChrome
           cardId={cardId}
+          readerReturnTo={readerReturnTo}
           onDelete={handleDelete}
           onDuplicate={handleDuplicate}
           isDeleting={isDeleting}

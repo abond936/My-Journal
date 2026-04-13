@@ -1,8 +1,8 @@
-import Typesense from 'typesense';
+import { Client } from 'typesense';
 
-let client: Typesense.Client | null = null;
+let client: Client | null = null;
 
-export function getTypesenseClient(): Typesense.Client | null {
+export function getTypesenseClient(): Client | null {
   if (client) return client;
 
   const host = process.env.TYPESENSE_HOST;
@@ -12,7 +12,7 @@ export function getTypesenseClient(): Typesense.Client | null {
 
   if (!host || !apiKey) return null;
 
-  client = new Typesense.Client({
+  client = new Client({
     nodes: [{ host, port, protocol }],
     apiKey,
     connectionTimeoutSeconds: 5,

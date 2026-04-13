@@ -117,10 +117,6 @@
     .mainContent {
       width: 100%;
     }
-    
-    .sidebarToggle {
-      display: none; /* Hide toggle button on mobile */
-    }
 
     .sidebarWrapper {
       position: fixed;

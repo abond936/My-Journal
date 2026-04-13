@@ -1,5 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { getAllTags } from '@/lib/firebase/tagService';
+import { buildTagNameLookupMaps } from '@/lib/services/images/embeddedMetadataForImport';
 import { importFromLocalDrive } from '@/lib/services/images/imageImportService';
 import {
   createCard,
@@ -33,12 +35,14 @@ function filterMarkedImageFilenames(filenames: string[]): string[] {
 }
 
 async function importChunk(
-  items: { path: string; order: number }[]
+  items: { path: string; order: number }[],
+  tagNameMaps: ReturnType<typeof buildTagNameLookupMaps>
 ): Promise<{ galleryMedia: GalleryMediaItem[]; failedPaths: string[] }> {
   const results = await Promise.allSettled(
     items.map(async ({ path: relativeImagePath, order }) => {
       const { mediaId } = await importFromLocalDrive(relativeImagePath, {
         readMetadata: true,
+        tagNameMaps,
         normalizeInMemory: true,
       });
       return { mediaId, order };
@@ -263,9 +267,11 @@ export async function importFolderAsCard(
     order: i,
   }));
 
+  const tagNameMaps = buildTagNameLookupMaps(await getAllTags());
+
   for (let i = 0; i < items.length; i += CONCURRENT_IMPORTS) {
     const chunk = items.slice(i, i + CONCURRENT_IMPORTS);
-    const { galleryMedia: chunkMedia, failedPaths: chunkFailed } = await importChunk(chunk);
+    const { galleryMedia: chunkMedia, failedPaths: chunkFailed } = await importChunk(chunk, tagNameMaps);
     galleryMedia.push(...chunkMedia);
     failedPaths.push(...chunkFailed);
   }
@@ -385,6 +391,7 @@ export async function importFolderAsMediaOnly(
   let skippedCount = 0;
 
   const items = imageFiles.map((filename) => toDbPath(path.join(importSourcePath, filename)));
+  const tagNameMaps = buildTagNameLookupMaps(await getAllTags());
 
   for (let i = 0; i < items.length; i += CONCURRENT_IMPORTS) {
     const chunk = items.slice(i, i + CONCURRENT_IMPORTS);
@@ -392,6 +399,7 @@ export async function importFolderAsMediaOnly(
       chunk.map((sourcePath) =>
         importFromLocalDrive(sourcePath, {
           readMetadata: true,
+          tagNameMaps,
           skipIfExists: true,
           normalizeInMemory: true,
         })

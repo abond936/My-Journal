@@ -14,6 +14,7 @@ Run from the repo root. Most maintenance scripts need Firebase Admin env vars (s
 | `npm run backfill:journal-when-sort` | Backfill `journalWhenSortAsc` / `journalWhenSortDesc` from When tags (`src/lib/scripts/cards/backfill-journal-when-sort.ts`); dry-run by default, add `-- --apply` to write |
 | `npm run update:tag-counts -- --apply` | Recalculate hierarchical `cardCount` and `mediaCount` on all tags (`--dry-run` to preview) |
 | `npm run diagnose:tag` | Debug single tag |
+| `npm run dry-run:import-metadata` | Scan `zMomDadPics` (or pass `-- <dir>`) for `__X` files; ExifTool read + keyword→tag map; no writes except Firestore tag read. Report: `tools/dry-run-import-metadata-report.txt` |
 | `npm run diagnose:cover` | Cover image diagnostic |
 | `npm run test:clear-cover` | Dev cover clear test |
 | `npm run normalize:images` | Local WebP + JSON normalization (`src/lib/scripts/normalize-images.ts`). Args: `<sourceDir> <destDir>`; append `-- --card-export-only` to process only `*__X.*` files (same rule as admin folder import). See `normalize-images-README.md` and `docs/IMPORT-REFERENCE.md`. |

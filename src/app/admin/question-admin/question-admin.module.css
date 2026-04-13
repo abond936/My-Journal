@@ -155,9 +155,6 @@
 .table th {
   font-weight: var(--font-weight-semibold);
   color: var(--text2-color);
-  position: sticky;
-  top: var(--admin-table-header-top, 0px);
-  z-index: 70;
   background: var(--layout-background1-color);
 }
 

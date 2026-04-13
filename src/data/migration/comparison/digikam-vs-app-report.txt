@@ -1,0 +1,23 @@
+digiKam vs app (tags-export.csv)
+Generated: 2026-04-13T16:25:48.985Z
+
+DigiKam file: C:\Users\alanb\my-journal\public\digiKamTags.txt
+App export:   C:\Users\alanb\my-journal\tags-export.csv
+DigiKam tag nodes: 561
+DigiKam unique names (excl. section roots): 556
+App export rows: 645
+App unique names (trimmed): 636
+
+--- DigiKam names with NO app tag (exact name) ---
+Count: 1
+
+[WHERE] (1)
+  China
+
+--- Name in digiKam differs only by spelling/case from app ---
+(none)
+
+--- Duplicate digiKam labels (same name, different paths) ---
+  zNA  (4 paths)
+  Graduation  (2 paths)
+  50th  (2 paths)

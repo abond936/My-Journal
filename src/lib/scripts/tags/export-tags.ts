@@ -7,8 +7,10 @@
  * @requires FIREBASE_SERVICE_ACCOUNT_PROJECT_ID
  * @requires FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY
  * @requires FIREBASE_SERVICE_ACCOUNT_CLIENT_EMAIL
- * 
- * @usage npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/tags/export-tags.ts
+ *
+ * @usage Preload dotenv so `FIREBASE_*` are set before `@/lib/config/firebase/admin` loads (it initializes Admin at import time):
+ *   npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/tags/export-tags.ts
+ * Or: npm run export:tags
  */
 
 import * as dotenv from 'dotenv';

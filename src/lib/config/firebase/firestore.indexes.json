@@ -43,6 +43,10 @@
         {
           "fieldPath": "journalWhenSortDesc",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
         }
       ]
     },
@@ -56,6 +60,10 @@
         },
         {
           "fieldPath": "journalWhenSortAsc",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
           "order": "ASCENDING"
         }
       ]
@@ -75,6 +83,10 @@
         {
           "fieldPath": "journalWhenSortDesc",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
         }
       ]
     },
@@ -93,6 +105,10 @@
         {
           "fieldPath": "journalWhenSortAsc",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -107,6 +123,10 @@
         {
           "fieldPath": "journalWhenSortDesc",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
         }
       ]
     },
@@ -120,6 +140,10 @@
         },
         {
           "fieldPath": "journalWhenSortAsc",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
           "order": "ASCENDING"
         }
       ]
@@ -135,6 +159,10 @@
         {
           "fieldPath": "title",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -149,6 +177,10 @@
         {
           "fieldPath": "journalWhenSortDesc",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
         }
       ]
     },
@@ -162,6 +194,10 @@
         },
         {
           "fieldPath": "journalWhenSortAsc",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
           "order": "ASCENDING"
         }
       ]
@@ -181,6 +217,10 @@
         {
           "fieldPath": "journalWhenSortDesc",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
         }
       ]
     },
@@ -199,6 +239,10 @@
         {
           "fieldPath": "journalWhenSortAsc",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -212,6 +256,10 @@
         },
         {
           "fieldPath": "journalWhenSortDesc",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
           "order": "DESCENDING"
         }
       ]
@@ -227,41 +275,9 @@
         {
           "fieldPath": "journalWhenSortAsc",
           "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "cards",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "who",
-          "arrayConfig": "CONTAINS"
         },
         {
-          "fieldPath": "status",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "journalWhenSortDesc",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "cards",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "who",
-          "arrayConfig": "CONTAINS"
-        },
-        {
-          "fieldPath": "status",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "journalWhenSortAsc",
+          "fieldPath": "__name__",
           "order": "ASCENDING"
         }
       ]
@@ -279,11 +295,59 @@
           "order": "ASCENDING"
         },
         {
+          "fieldPath": "journalWhenSortDesc",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "cards",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "who",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "journalWhenSortAsc",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "cards",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "who",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
           "fieldPath": "type",
           "order": "ASCENDING"
         },
         {
           "fieldPath": "journalWhenSortDesc",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
           "order": "DESCENDING"
         }
       ]
@@ -307,6 +371,10 @@
         {
           "fieldPath": "journalWhenSortAsc",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -321,6 +389,10 @@
         {
           "fieldPath": "journalWhenSortDesc",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
         }
       ]
     },
@@ -334,6 +406,10 @@
         },
         {
           "fieldPath": "journalWhenSortAsc",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
           "order": "ASCENDING"
         }
       ]
@@ -353,6 +429,10 @@
         {
           "fieldPath": "journalWhenSortDesc",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
         }
       ]
     },
@@ -370,6 +450,10 @@
         },
         {
           "fieldPath": "journalWhenSortAsc",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
           "order": "ASCENDING"
         }
       ]
@@ -393,6 +477,10 @@
         {
           "fieldPath": "journalWhenSortDesc",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
         }
       ]
     },
@@ -415,6 +503,10 @@
         {
           "fieldPath": "journalWhenSortAsc",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -429,6 +521,10 @@
         {
           "fieldPath": "journalWhenSortDesc",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
         }
       ]
     },
@@ -442,6 +538,10 @@
         },
         {
           "fieldPath": "journalWhenSortAsc",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
           "order": "ASCENDING"
         }
       ]
@@ -461,6 +561,10 @@
         {
           "fieldPath": "journalWhenSortDesc",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
         }
       ]
     },
@@ -478,6 +582,10 @@
         },
         {
           "fieldPath": "journalWhenSortAsc",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
           "order": "ASCENDING"
         }
       ]
@@ -501,6 +609,10 @@
         {
           "fieldPath": "journalWhenSortDesc",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
         }
       ]
     },
@@ -523,6 +635,10 @@
         {
           "fieldPath": "journalWhenSortAsc",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -537,6 +653,10 @@
         {
           "fieldPath": "journalWhenSortDesc",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
         }
       ]
     },
@@ -550,6 +670,10 @@
         },
         {
           "fieldPath": "journalWhenSortAsc",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
           "order": "ASCENDING"
         }
       ]
@@ -569,6 +693,10 @@
         {
           "fieldPath": "journalWhenSortDesc",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
         }
       ]
     },
@@ -586,6 +714,10 @@
         },
         {
           "fieldPath": "journalWhenSortAsc",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
           "order": "ASCENDING"
         }
       ]
@@ -609,6 +741,10 @@
         {
           "fieldPath": "journalWhenSortDesc",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
         }
       ]
     },
@@ -630,6 +766,10 @@
         },
         {
           "fieldPath": "journalWhenSortAsc",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
           "order": "ASCENDING"
         }
       ]
@@ -649,6 +789,10 @@
         {
           "fieldPath": "journalWhenSortDesc",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
         }
       ]
     },
@@ -666,6 +810,10 @@
         },
         {
           "fieldPath": "journalWhenSortAsc",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
           "order": "ASCENDING"
         }
       ]

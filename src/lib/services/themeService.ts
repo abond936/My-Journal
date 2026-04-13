@@ -412,6 +412,9 @@ export function buildThemeTokensCss(themeData: StructuredThemeData & { darkModeS
   /* Gradients */
   --gradient-bottom-overlay: ${themeData.gradients.bottomOverlay};
   --gradient-bottom-overlay-strong: ${themeData.gradients.bottomOverlayStrong};
+
+  /* Flat-tile raster watermarks (e.g. callout pushpin) */
+  --card-watermark-raster-filter: none;
 }
 
 /*
@@ -452,6 +455,8 @@ export function buildThemeTokensCss(themeData: StructuredThemeData & { darkModeS
   --input-text-color: var(--text1-color);
   
   --card-background-color: var(--color1-200);
+
+  --card-watermark-raster-filter: invert(1);
 }
 `;
 

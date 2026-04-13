@@ -1,0 +1,32 @@
+﻿=== Summary ===
+Root: C:\Users\alanb\OneDrive\Pictures\zMomDadPics
+Folders with at least one image file (in folder only): 442
+Max __X per folder (your rule): 30
+
+=== A) More than 30 __X-marked images (split before one-card import) ===
+65 __X, 0 non-__X images in folder | C:\Users\alanb\OneDrive\Pictures\zMomDadPics\BobSandra\Hartwell
+50 __X, 0 non-__X images in folder | C:\Users\alanb\OneDrive\Pictures\zMomDadPics\BobSandra\Homes\Childress Dr
+49 __X, 0 non-__X images in folder | C:\Users\alanb\OneDrive\Pictures\zMomDadPics\BobSandra\Travel\zGeneral\General1
+46 __X, 0 non-__X images in folder | C:\Users\alanb\OneDrive\Pictures\zMomDadPics\BobSandra\50th
+42 __X, 0 non-__X images in folder | C:\Users\alanb\OneDrive\Pictures\zMomDadPics\zKids\4Mark\Citadel
+40 __X, 0 non-__X images in folder | C:\Users\alanb\OneDrive\Pictures\zMomDadPics\zKids\3Greg\Portraits
+40 __X, 0 non-__X images in folder | C:\Users\alanb\OneDrive\Pictures\zMomDadPics\BobSandra\Travel\zGeneral
+35 __X, 1 non-__X images in folder | C:\Users\alanb\OneDrive\Pictures\zMomDadPics\BobSandra\Homes\Keller Blvd
+34 __X, 0 non-__X images in folder | C:\Users\alanb\OneDrive\Pictures\zMomDadPics\BobSandra\Clemson Football
+34 __X, 51 non-__X images in folder | C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Sandra\02 Parents\Dora\zMisc
+34 __X, 0 non-__X images in folder | C:\Users\alanb\OneDrive\Pictures\zMomDadPics\BobSandra\Friends
+34 __X, 0 non-__X images in folder | C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\Margaret\zMisc
+33 __X, 0 non-__X images in folder | C:\Users\alanb\OneDrive\Pictures\zMomDadPics\BobSandra\Homes\Childress Dr\Interior
+31 __X, 0 non-__X images in folder | C:\Users\alanb\OneDrive\Pictures\zMomDadPics\zKids\4Mark\Portraits
+31 __X, 31 non-__X images in folder | C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Sandra\02 Parents\Dora\Siblings
+31 __X, 11 non-__X images in folder | C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Sandra\02 Parents\Dora\Travel
+
+=== B) Has images but zero __X (rename / marker gap) ===
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Bob\02 Parents\BobMargaret
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\a1Sandra\02 Parents\SandraMildred
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\BobSandra\Travel\Itta Bena
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\zKids\1Alan\zFamily
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\zKids\2Scot\zFamily
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\zKids\3Greg\zFamily
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\zKids\4Mark\zzFamily
+C:\Users\alanb\OneDrive\Pictures\zMomDadPics\zKids\4Mark\zzFamily\Emily

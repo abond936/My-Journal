@@ -6,6 +6,19 @@ import useSWR from 'swr';
 import useSWRInfinite, { SWRInfiniteResponse } from 'swr/infinite';
 import { usePathname } from 'next/navigation';
 import { Card } from '@/lib/types/card';
+
+/** Keeps first occurrence of each docId when infinite pages overlap (stable Firestore cursors). */
+function dedupeCardsByDocId(cards: Card[]): Card[] {
+  const seen = new Set<string>();
+  const out: Card[] = [];
+  for (const card of cards) {
+    const id = card.docId;
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    out.push(card);
+  }
+  return out;
+}
 import { PaginatedResult } from '@/lib/types/services';
 import { useTag } from './TagProvider';
 import { groupCardsForFeed, type FeedGroupBy } from '@/lib/utils/feedGrouping';
@@ -280,10 +293,11 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   );
 
   // --- Derived State ---
-  const paginatedCards = useMemo(
-    () => (Array.isArray(data) ? data : []).filter(Boolean).flatMap((page) => page.items) || [],
-    [data]
-  );
+  const paginatedCards = useMemo(() => {
+    const flat =
+      (Array.isArray(data) ? data : []).filter(Boolean).flatMap((page) => page.items) || [];
+    return dedupeCardsByDocId(flat);
+  }, [data]);
   const orderedPaginatedCards = useMemo(() => {
     if (feedSort !== 'random') return paginatedCards;
     if (collectionId) return paginatedCards;

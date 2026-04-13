@@ -125,7 +125,7 @@ This will test:
 The journal app’s **`readMetadataCaption`** (see `src/lib/services/images/imageImportService.ts`) looks for a **sidecar JSON** next to each image file (same base name as the image), then falls back to embedded EXIF. That matches the JSON written by **`normalize-images`** / extraction scripts when files sit on the path under **`ONEDRIVE_ROOT_FOLDER`**.
 
 - After editing metadata in **digiKam** or similar, **regenerate** sidecars if you rely on JSON rather than embedded fields.
-- **Folder import** in admin only ingests files whose names end with **`__X`** before the extension (e.g. `photo__X.jpg`). See **`docs/IMPORT-REFERENCE.md`**.
+- **Folder import** in admin only ingests files whose names end with **`__X`** before the extension (e.g. `photo__X.jpg`). Captions and keywords come from **embedded metadata** (ExifTool), not these JSON sidecars. See **`docs/IMPORT-REFERENCE.md`**.
 
 ## Next Steps
 

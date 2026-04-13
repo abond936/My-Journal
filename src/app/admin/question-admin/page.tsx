@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Question } from '@/lib/types/question';
 import styles from './question-admin.module.css';
@@ -44,18 +44,12 @@ export default function QuestionAdminPage() {
   const [linkCardIdByQuestion, setLinkCardIdByQuestion] = useState<Record<string, string>>({});
   const [cardTypeByQuestion, setCardTypeByQuestion] = useState<Record<string, 'qa' | 'story'>>({});
 
-  const stickyTopRef = useRef<HTMLDivElement | null>(null);
-
   useLayoutEffect(() => {
     const measure = () => {
       const tabsEl = document.getElementById('admin-tabs-bar');
-      const stickyEl = stickyTopRef.current;
-      if (!tabsEl || !stickyEl) return;
+      if (!tabsEl) return;
       const tabsHeight = tabsEl.getBoundingClientRect().height;
-      const stickyHeight = stickyEl.getBoundingClientRect().height;
-
       document.documentElement.style.setProperty('--admin-tabs-height', `${tabsHeight}px`);
-      document.documentElement.style.setProperty('--admin-table-header-top', `${tabsHeight + stickyHeight}px`);
     };
 
     measure();
@@ -135,7 +129,7 @@ export default function QuestionAdminPage() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.stickyTop} ref={stickyTopRef}>
+      <div className={styles.stickyTop}>
         <h1 className={styles.pageHeading}>Question management</h1>
         <p className={styles.intro}>
           Maintain a reusable question bank and link each question to one or more cards. Use this to track what has

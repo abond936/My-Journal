@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import JournalImage from '@/components/common/JournalImage';
 import { Card } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
@@ -17,12 +19,24 @@ interface CardDetailPageProps {
 }
 
 const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) => {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === 'admin';
+  const detailReturnTo = card.docId ? `/view/${card.docId}` : null;
   const isQa = card.type === 'qa';
   const isQuote = card.type === 'quote';
   const quoteAttribution = isQuote ? formatQuoteAttribution(card.subtitle, card.excerpt) : '';
 
   return (
     <article className={styles.container}>
+      {isAdmin && detailReturnTo && card.docId ? (
+        <p className={styles.adminEditBar}>
+          <Link
+            href={`/admin/card-admin/${card.docId}/edit?returnTo=${encodeURIComponent(detailReturnTo)}`}
+          >
+            Edit card
+          </Link>
+        </p>
+      ) : null}
       <header
         className={`${styles.header} ${!card.subtitle || isQuote ? styles.noSubtitle : ''}`}
       >

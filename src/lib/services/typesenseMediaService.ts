@@ -1,4 +1,5 @@
 import { FieldPath } from 'firebase-admin/firestore';
+import type { BaseCollectionCreateSchema, CollectionFieldSchema } from 'typesense';
 import { getTypesenseClient, isTypesenseConfigured } from '@/lib/config/typesense';
 import { Media } from '@/lib/types/photo';
 import type { DimensionalTagIdMap } from '@/lib/utils/tagUtils';
@@ -6,7 +7,7 @@ import { dimensionalTagMapHasFilters } from '@/lib/utils/tagUtils';
 
 const MEDIA_COLLECTION = 'media';
 
-const mediaSchema = {
+const mediaSchema: BaseCollectionCreateSchema & { fields: CollectionFieldSchema[] } = {
   name: MEDIA_COLLECTION,
   fields: [
     { name: 'searchable', type: 'string', facet: false },

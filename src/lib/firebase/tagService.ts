@@ -438,83 +438,122 @@ export async function deleteTag(docId: string): Promise<void> {
       mediaSnap.docs.forEach((d) => affectedMediaIds.add(d.id));
     }
     console.log(`Found ${affectedMediaIds.size} media items affected by tag deletion`);
-    
-    // Use a transaction to ensure atomicity
-    await firestore.runTransaction(async (transaction) => {
-      // Update all affected cards to remove the deleted tags
-      for (const cardId of affectedCardIds) {
-        const cardRef = firestore.collection('cards').doc(cardId);
-        const cardDoc = await transaction.get(cardRef);
-        
-        if (cardDoc.exists) {
-          const cardData = cardDoc.data();
-          const currentTags = cardData?.tags || [];
-          
-          // Remove all tags that are being deleted
-          const updatedTags = currentTags.filter((tagId: string) => !tagsToDelete.includes(tagId));
-          
-          if (updatedTags.length !== currentTags.length) {
-            const mergedCardPayload = { ...cardData, tags: updatedTags };
-            const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(
-              mergedCardPayload,
-              transaction
-            );
-            const journal = computeJournalWhenSortKeys(dimensionalTags.when || [], tagMap);
 
-            // Update the card
-            transaction.update(cardRef, {
-              tags: updatedTags,
-              filterTags,
-              who: dimensionalTags.who,
-              what: dimensionalTags.what,
-              when: dimensionalTags.when,
-              where: dimensionalTags.where,
-              journalWhenSortAsc: journal.journalWhenSortAsc,
-              journalWhenSortDesc: journal.journalWhenSortDesc,
-              updatedAt: FieldValue.serverTimestamp()
-            });
-            
-            // Decrement counts for all affected tags and their ancestors
-            const removedTags = currentTags.filter((tagId: string) => tagsToDelete.includes(tagId));
-            if (removedTags.length > 0) {
-              await updateTagCounts(removedTags, 'decrement', transaction);
-            }
-          }
+    const tagsToDeleteSet = new Set(tagsToDelete);
+
+    await firestore.runTransaction(async (transaction) => {
+      // Firestore: all transaction reads before any writes.
+      const cardRefList = [...affectedCardIds].map((id) => firestore.collection('cards').doc(id));
+      const mediaRefList = [...affectedMediaIds].map((id) => firestore.collection('media').doc(id));
+      const cardSnaps = await Promise.all(cardRefList.map((ref) => transaction.get(ref)));
+      const mediaSnaps = await Promise.all(mediaRefList.map((ref) => transaction.get(ref)));
+
+      const cardCountDeltaMap: Record<string, number> = {};
+      const mediaCountDeltaMap: Record<string, number> = {};
+
+      type CardWrite = {
+        ref: FirebaseFirestore.DocumentReference;
+        payload: Record<string, unknown>;
+      };
+      type MediaWrite = {
+        ref: FirebaseFirestore.DocumentReference;
+        payload: Record<string, unknown>;
+      };
+      const cardWrites: CardWrite[] = [];
+      const mediaWrites: MediaWrite[] = [];
+
+      const mergeAssignmentDelta = (
+        oldTags: string[] | undefined,
+        newTags: string[] | undefined,
+        into: Record<string, number>
+      ) => {
+        const oldSet = new Set(oldTags || []);
+        const newSet = new Set(newTags || []);
+        for (const tagId of newSet) {
+          if (!oldSet.has(tagId)) into[tagId] = (into[tagId] || 0) + 1;
         }
+        for (const tagId of oldSet) {
+          if (!newSet.has(tagId)) into[tagId] = (into[tagId] || 0) - 1;
+        }
+      };
+
+      for (let i = 0; i < cardSnaps.length; i++) {
+        const cardDoc = cardSnaps[i]!;
+        const cardRef = cardRefList[i]!;
+        if (!cardDoc.exists) continue;
+        const cardData = cardDoc.data();
+        const currentTags = cardData?.tags || [];
+        const updatedTags = currentTags.filter((tagId: string) => !tagsToDelete.includes(tagId));
+        if (updatedTags.length === currentTags.length) continue;
+
+        const removedTags = currentTags.filter((tagId: string) => tagsToDelete.includes(tagId));
+        for (const tid of removedTags) {
+          cardCountDeltaMap[tid] = (cardCountDeltaMap[tid] || 0) - 1;
+        }
+
+        const mergedCardPayload = { ...cardData, tags: updatedTags };
+        const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(mergedCardPayload, transaction);
+        const journal = computeJournalWhenSortKeys(dimensionalTags.when || [], tagMap);
+
+        cardWrites.push({
+          ref: cardRef,
+          payload: {
+            tags: updatedTags,
+            filterTags,
+            who: dimensionalTags.who,
+            what: dimensionalTags.what,
+            when: dimensionalTags.when,
+            where: dimensionalTags.where,
+            journalWhenSortAsc: journal.journalWhenSortAsc,
+            journalWhenSortDesc: journal.journalWhenSortDesc,
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+        });
       }
 
-      for (const mediaId of affectedMediaIds) {
-        const mediaRef = firestore.collection('media').doc(mediaId);
-        const mediaDoc = await transaction.get(mediaRef);
+      for (let i = 0; i < mediaSnaps.length; i++) {
+        const mediaDoc = mediaSnaps[i]!;
+        const mediaRef = mediaRefList[i]!;
         if (!mediaDoc.exists) continue;
         const mediaData = mediaDoc.data() as Media;
         const currentTags = mediaData.tags || [];
         const updatedTags = currentTags.filter((tid: string) => !tagsToDelete.includes(tid));
         if (updatedTags.length === currentTags.length) continue;
 
-        await updateTagCountsForMedia(currentTags, updatedTags, transaction);
+        mergeAssignmentDelta(currentTags, updatedTags, mediaCountDeltaMap);
         const { filterTags, dimensionalTags } = await calculateDerivedTagData(updatedTags);
-        transaction.update(mediaRef, {
-          tags: updatedTags,
-          filterTags,
-          who: dimensionalTags.who ?? [],
-          what: dimensionalTags.what ?? [],
-          when: dimensionalTags.when ?? [],
-          where: dimensionalTags.where ?? [],
-          hasTags: updatedTags.length > 0,
-          hasWho: (dimensionalTags.who ?? []).length > 0,
-          hasWhat: (dimensionalTags.what ?? []).length > 0,
-          hasWhen: (dimensionalTags.when ?? []).length > 0,
-          hasWhere: (dimensionalTags.where ?? []).length > 0,
-          updatedAt: Date.now(),
+        mediaWrites.push({
+          ref: mediaRef,
+          payload: {
+            tags: updatedTags,
+            filterTags,
+            who: dimensionalTags.who ?? [],
+            what: dimensionalTags.what ?? [],
+            when: dimensionalTags.when ?? [],
+            where: dimensionalTags.where ?? [],
+            hasTags: updatedTags.length > 0,
+            hasWho: (dimensionalTags.who ?? []).length > 0,
+            hasWhat: (dimensionalTags.what ?? []).length > 0,
+            hasWhen: (dimensionalTags.when ?? []).length > 0,
+            hasWhere: (dimensionalTags.where ?? []).length > 0,
+            updatedAt: Date.now(),
+          },
         });
       }
-      
-      // Delete all tag descendants
-      tagsToDelete.forEach(tagId => {
-        const tagRef = firestore.collection(TAGS_COLLECTION).doc(tagId);
-        transaction.delete(tagRef);
-      });
+
+      await applyTagCountDeltas(cardCountDeltaMap, transaction, 'cardCount', tagMap, tagsToDeleteSet);
+      await applyTagCountDeltas(mediaCountDeltaMap, transaction, 'mediaCount', tagMap, tagsToDeleteSet);
+
+      for (const { ref, payload } of cardWrites) {
+        transaction.update(ref, payload as DocumentData);
+      }
+      for (const { ref, payload } of mediaWrites) {
+        transaction.update(ref, payload as DocumentData);
+      }
+
+      for (const tagId of tagsToDelete) {
+        transaction.delete(firestore.collection(TAGS_COLLECTION).doc(tagId));
+      }
     });
     
     console.log(`Successfully deleted ${tagsToDelete.length} tags and updated ${affectedCardIds.size} cards, ${affectedMediaIds.size} media`);
@@ -612,32 +651,43 @@ export async function createTag(tagData: Omit<Tag, 'docId' | 'createdAt' | 'upda
  * @param direction The direction of the adjustment: 'increment' or 'decrement'.
  * @param transaction The Firestore transaction to perform the updates in.
  */
-export async function updateTagCounts(tagIds: string[], direction: 'increment' | 'decrement', transaction: FirebaseFirestore.Transaction) {
+export async function updateTagCounts(
+  tagIds: string[],
+  direction: 'increment' | 'decrement',
+  transaction: FirebaseFirestore.Transaction,
+  /** When set, use paths from this map instead of transaction reads (required after any write in the same txn). */
+  tagPathLookup?: Map<string, Tag>
+) {
   if (!tagIds || tagIds.length === 0) {
     return;
   }
 
-  // Use the transaction to get the tag documents.
-  const tagRefs = tagIds.map(id => firestore.collection('tags').doc(id));
-  const tagDocs = await transaction.getAll(...tagRefs);
-  
   const allAncestorIds = new Set<string>();
 
-  for (const doc of tagDocs) {
-    if (doc.exists) {
-      const tag = doc.data() as Tag;
-      // Use the pre-calculated path to find all ancestors.
-      if (tag.path) {
-        tag.path.forEach(ancestorId => allAncestorIds.add(ancestorId));
+  if (tagPathLookup) {
+    for (const id of tagIds) {
+      const tag = tagPathLookup.get(id);
+      if (tag?.path) {
+        tag.path.forEach((ancestorId) => allAncestorIds.add(ancestorId));
+      }
+    }
+  } else {
+    const tagRefs = tagIds.map((id) => firestore.collection('tags').doc(id));
+    const tagDocs = await transaction.getAll(...tagRefs);
+
+    for (const doc of tagDocs) {
+      if (doc.exists) {
+        const tag = doc.data() as Tag;
+        if (tag.path) {
+          tag.path.forEach((ancestorId) => allAncestorIds.add(ancestorId));
+        }
       }
     }
   }
 
-  // Combine the direct tags and all their unique ancestors into one list.
   const allIdsToUpdate = [...new Set([...tagIds, ...Array.from(allAncestorIds)])];
   const amount = direction === 'increment' ? 1 : -1;
 
-  // Perform atomic updates for every affected tag.
   for (const tagId of allIdsToUpdate) {
     const tagRef = firestore.collection('tags').doc(tagId);
     transaction.update(tagRef, { cardCount: FieldValue.increment(amount) });
@@ -650,7 +700,8 @@ export async function updateTagCounts(tagIds: string[], direction: 'increment' |
 export async function updateTagCountsForMedia(
   oldTags: string[] | undefined,
   newTags: string[] | undefined,
-  transaction: FirebaseFirestore.Transaction
+  transaction: FirebaseFirestore.Transaction,
+  tagPathLookup?: Map<string, Tag>
 ): Promise<void> {
   const oldSet = new Set(oldTags || []);
   const newSet = new Set(newTags || []);
@@ -667,7 +718,7 @@ export async function updateTagCountsForMedia(
     }
   }
 
-  await applyTagCountDeltas(deltaMap, transaction, 'mediaCount');
+  await applyTagCountDeltas(deltaMap, transaction, 'mediaCount', tagPathLookup);
 }
 
 /**
@@ -720,36 +771,49 @@ export async function updateTagCountsForCard(
 async function applyTagCountDeltas(
   deltaMap: Record<string, number>,
   transaction: FirebaseFirestore.Transaction,
-  countField: 'cardCount' | 'mediaCount' = 'cardCount'
+  countField: 'cardCount' | 'mediaCount' = 'cardCount',
+  tagPathLookup?: Map<string, Tag>,
+  /** Do not update these tag docs (e.g. about to be deleted in the same transaction). */
+  skipTagIds?: Set<string>
 ): Promise<void> {
   const candidateIds = Object.keys(deltaMap);
   if (candidateIds.length === 0) return;
-  
-  // Read all affected tags to get their paths
-  const tagRefs = candidateIds.map(id => firestore.collection('tags').doc(id));
-  const tagDocs = await transaction.getAll(...tagRefs);
-  
-  // Include ancestors in deltaMap
-  for (const docSnap of tagDocs) {
-    if (!docSnap.exists) continue;
-    const tagData = docSnap.data() as Tag;
-    const tagId = docSnap.id;
-    const delta = deltaMap[tagId] || 0;
-    if (delta === 0) continue;
 
-    if (Array.isArray(tagData.path)) {
-      tagData.path.forEach(ancestorId => {
-        deltaMap[ancestorId] = (deltaMap[ancestorId] || 0) + delta;
-      });
+  if (tagPathLookup) {
+    for (const tagId of candidateIds) {
+      const delta = deltaMap[tagId] || 0;
+      if (delta === 0) continue;
+      const tagData = tagPathLookup.get(tagId);
+      if (tagData?.path && Array.isArray(tagData.path)) {
+        for (const ancestorId of tagData.path) {
+          deltaMap[ancestorId] = (deltaMap[ancestorId] || 0) + delta;
+        }
+      }
+    }
+  } else {
+    const tagRefs = candidateIds.map((id) => firestore.collection('tags').doc(id));
+    const tagDocs = await transaction.getAll(...tagRefs);
+
+    for (const docSnap of tagDocs) {
+      if (!docSnap.exists) continue;
+      const tagData = docSnap.data() as Tag;
+      const tagId = docSnap.id;
+      const delta = deltaMap[tagId] || 0;
+      if (delta === 0) continue;
+
+      if (Array.isArray(tagData.path)) {
+        for (const ancestorId of tagData.path) {
+          deltaMap[ancestorId] = (deltaMap[ancestorId] || 0) + delta;
+        }
+      }
     }
   }
 
-  // Apply all increments/decrements
   for (const [tagId, delta] of Object.entries(deltaMap)) {
-    if (delta !== 0) {
-      const ref = firestore.collection('tags').doc(tagId);
-      transaction.update(ref, { [countField]: FieldValue.increment(delta) });
-    }
+    if (delta === 0) continue;
+    if (skipTagIds?.has(tagId)) continue;
+    const ref = firestore.collection('tags').doc(tagId);
+    transaction.update(ref, { [countField]: FieldValue.increment(delta) });
   }
 }
 

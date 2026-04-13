@@ -76,6 +76,12 @@ Legend:
 
 
 
+*Content Page (`02-Application.md`)*
+
+- **Layout `@media` hardening** - Replace `var(--breakpoint-*)` inside `@media` where it affects layout (`V2ContentCard`, `Navigation`, `ViewLayout`, `ContentCard`, `ThemeAdmin`, `TagTree`, etc.) so breakpoints match `docs/04-Theme-Design-Contract.md` §9.2 (literal `px`).
+
+
+
 ### Phase 4 — Scale & polish
 
 ⭕1 **Planned**

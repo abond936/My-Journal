@@ -1350,9 +1350,11 @@ export async function getCards(options: {
   if (q) {
     const searchTerm = q.trim();
     if (searchTerm) {
-      query = query.where('title', '>=', searchTerm)
-                   .where('title', '<=', searchTerm + '\uf8ff')
-                   .orderBy('title');
+      query = query
+        .where('title', '>=', searchTerm)
+        .where('title', '<=', searchTerm + '\uf8ff')
+        .orderBy('title')
+        .orderBy(FieldPath.documentId(), 'asc');
     }
   }
 
@@ -1404,9 +1406,9 @@ export async function getCards(options: {
   // Newest/oldest follow **journal When** tags, not card createdAt; undated sorts last (see journalWhenSort.ts).
   if (!q) {
     if (sort === 'oldest') {
-      query = query.orderBy('journalWhenSortAsc', 'asc');
+      query = query.orderBy('journalWhenSortAsc', 'asc').orderBy(FieldPath.documentId(), 'asc');
     } else {
-      query = query.orderBy('journalWhenSortDesc', 'desc');
+      query = query.orderBy('journalWhenSortDesc', 'desc').orderBy(FieldPath.documentId(), 'desc');
     }
   }
 

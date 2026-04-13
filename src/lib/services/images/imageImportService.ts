@@ -7,7 +7,11 @@ import {
   syncMediaToTypesenseById,
 } from '@/lib/services/typesenseMediaService';
 import { getPublicStorageUrl } from '@/lib/utils/storageUrl';
-import { normalizeBufferToWebp } from '@/lib/services/images/inMemoryWebpNormalize';
+import { normalizeBufferToWebp, isCardExportMarkedFilename } from '@/lib/services/images/inMemoryWebpNormalize';
+import {
+  readEmbeddedCaptionAndKeywords,
+  resolveKeywordStringsToTagIds,
+} from '@/lib/services/images/embeddedMetadataForImport';
 import * as admin from 'firebase-admin';
 import fs from 'fs/promises';
 import path from 'path';
@@ -42,63 +46,13 @@ export async function findMediaBySourcePath(sourcePath: string): Promise<Media |
 }
 
 /**
- * Reads caption from metadata, if available.
- * 1. Looks for sidecar .json (normalize-images or extract-metadata output)
- * 2. Otherwise attempts to read from embedded EXIF/IPTC via Sharp
+ * Reads caption from embedded metadata only (ExifTool). No JSON sidecars.
  * @param fullPath - Absolute path to the image file
- * @returns Caption string or empty string if none found
  */
 export async function readMetadataCaption(fullPath: string): Promise<string> {
   try {
-    // 1. Check for sidecar JSON (same base name, .json extension)
-    const ext = path.extname(fullPath);
-    const basePath = fullPath.slice(0, -ext.length);
-    const jsonPath = `${basePath}.json`;
-
-    try {
-      const jsonContent = await fs.readFile(jsonPath, 'utf-8');
-      const data = JSON.parse(jsonContent) as Record<string, unknown>;
-
-      // normalize-images: flat { description, title, subject, comments }
-      // extract-image-metadata: { extracted: { Title, Subject, Comments } }
-      const extracted = data.extracted as Record<string, unknown> | undefined;
-      const flat = data as Record<string, unknown>;
-
-      const candidates = [
-        flat.description,
-        flat.title,
-        flat.subject,
-        flat.comments,
-        extracted?.Title,
-        extracted?.Subject,
-        extracted?.Comments,
-      ].filter((v): v is string => typeof v === 'string' && v.trim().length > 0);
-
-      if (candidates.length > 0) {
-        return candidates[0].trim();
-      }
-    } catch {
-      // No JSON or invalid - continue to embedded metadata
-    }
-
-    // 2. Try embedded metadata via Sharp
-    const fileBuffer = await fs.readFile(fullPath);
-    const image = sharp(fileBuffer);
-    const metadata = await image.metadata();
-
-    if (metadata.exif) {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const ExifReader = require('exif-reader');
-        const exif = ExifReader(metadata.exif);
-        const desc = exif?.ImageDescription?.description || exif?.Exif?.UserComment?.description;
-        if (typeof desc === 'string' && desc.trim()) return desc.trim();
-      } catch {
-        // exif-reader parse failed
-      }
-    }
-
-    return '';
+    const { caption } = await readEmbeddedCaptionAndKeywords(fullPath);
+    return caption;
   } catch {
     return '';
   }
@@ -112,6 +66,7 @@ export async function readMetadataCaption(fullPath: string): Promise<string> {
  * @param originalFilename - The original name of the file.
  * @param source - The source of the image (e.g., 'local-drive', 'upload').
  * @param sourcePath - The original path or identifier from the source.
+ * @param tagIds - Optional tag IDs from embedded keywords (updates mediaCount in same transaction).
  * @returns A promise that resolves with the new Media object.
  */
 async function createMediaAsset(
@@ -119,7 +74,8 @@ async function createMediaAsset(
   originalFilename: string,
   source: Media['source'],
   sourcePath: string,
-  captionOverride?: string
+  captionOverride?: string,
+  tagIds?: string[]
 ): Promise<Media> {
   const app = getAdminApp();
   const firestore = app.firestore();
@@ -158,9 +114,18 @@ async function createMediaAsset(
   // 4. Build permanent public URL (no expiration; requires Storage rules for public read)
   const storageUrl = getPublicStorageUrl(storagePath);
 
+  const tagIdsResolved = [
+    ...new Set((tagIds || []).filter((id): id is string => typeof id === 'string' && id.length > 0)),
+  ];
+
+  let derived: Awaited<ReturnType<typeof calculateDerivedTagData>> | null = null;
+  if (tagIdsResolved.length > 0) {
+    derived = await calculateDerivedTagData(tagIdsResolved);
+  }
+
   // 5. Construct the canonical Media object
   const now = Date.now();
-  const newMedia: Media = {
+  const baseFields = {
     docId: docId,
     filename: originalFilename,
     width,
@@ -172,27 +137,61 @@ async function createMediaAsset(
     source,
     sourcePath,
     objectPosition: '50% 50%',
-    caption: captionOverride ?? '', 
+    caption: captionOverride ?? '',
     createdAt: now,
     updatedAt: now,
-    hasTags: false,
-    hasWho: false,
-    hasWhat: false,
-    hasWhen: false,
-    hasWhere: false,
   };
 
-  // 6. Save the document to the top-level 'media' collection in Firestore
-  await mediaRef.set(newMedia);
+  const newMedia: Media = derived
+    ? {
+        ...baseFields,
+        tags: tagIdsResolved,
+        filterTags: derived.filterTags,
+        who: derived.dimensionalTags.who ?? [],
+        what: derived.dimensionalTags.what ?? [],
+        when: derived.dimensionalTags.when ?? [],
+        where: derived.dimensionalTags.where ?? [],
+        hasTags: true,
+        hasWho: (derived.dimensionalTags.who ?? []).length > 0,
+        hasWhat: (derived.dimensionalTags.what ?? []).length > 0,
+        hasWhen: (derived.dimensionalTags.when ?? []).length > 0,
+        hasWhere: (derived.dimensionalTags.where ?? []).length > 0,
+      }
+    : {
+        ...baseFields,
+        hasTags: false,
+        hasWho: false,
+        hasWhat: false,
+        hasWhen: false,
+        hasWhere: false,
+      };
+
+  // 6. Save media + tag counts atomically when tags are present
+  if (tagIdsResolved.length > 0) {
+    await firestore.runTransaction(async (tx) => {
+      tx.set(mediaRef, newMedia);
+      await updateTagCountsForMedia([], tagIdsResolved, tx);
+    });
+  } else {
+    await mediaRef.set(newMedia);
+  }
 
   void syncMediaToTypesense(newMedia);
 
   return newMedia;
 }
 
+/** Built from Firestore tags — maps display names to tag doc IDs for embedded keyword resolution. */
+export type ImportTagNameMaps = {
+  exact: Map<string, string>;
+  lower: Map<string, string>;
+};
+
 export interface ImportFromLocalOptions {
-  /** If true, reads caption from sidecar .json or embedded metadata */
+  /** If true, reads caption + keywords from embedded metadata (ExifTool); maps keywords when tagNameMaps is set. */
   readMetadata?: boolean;
+  /** Required with readMetadata to attach tags from file keywords to the new media doc. */
+  tagNameMaps?: ImportTagNameMaps;
   /** If true, skip import when a media doc with same sourcePath already exists; return existing */
   skipIfExists?: boolean;
   /**
@@ -245,8 +244,13 @@ export async function importFromLocalDrive(
     let filename = path.basename(fullPath);
 
     let caption: string | undefined;
+    let resolvedTagIds: string[] | undefined;
     if (options?.readMetadata) {
-      caption = await readMetadataCaption(fullPath);
+      const { caption: cap, keywordStrings } = await readEmbeddedCaptionAndKeywords(fullPath);
+      caption = cap || undefined;
+      if (options.tagNameMaps) {
+        resolvedTagIds = resolveKeywordStringsToTagIds(keywordStrings, options.tagNameMaps);
+      }
     }
 
     if (options?.normalizeInMemory) {
@@ -261,7 +265,8 @@ export async function importFromLocalDrive(
       filename,
       'local',
       sourcePath,
-      caption || undefined
+      caption || undefined,
+      resolvedTagIds
     );
 
     // Return the hydrated object that the client expects
@@ -284,19 +289,29 @@ export async function importFromLocalDrive(
 
 /**
  * Imports an image from a buffer (e.g., from an upload or paste).
+ * Applies the same in-memory pipeline as folder import (`normalizeBufferToWebp`): EXIF rotate,
+ * max dimension cap, WebP encode—unless the filename is a card-export marker (preserve pixels).
  *
  * @param fileBuffer - The buffer containing the image data.
  * @param originalFilename - The original name of the file.
  * @returns A promise that resolves with the new Media object, structured for client-side use.
  */
 export async function importFromBuffer(
-  fileBuffer: Buffer, 
+  fileBuffer: Buffer,
   originalFilename: string
 ): Promise<{ mediaId: string; media: Media }> {
   try {
+    let buffer = fileBuffer;
+    let filename = originalFilename;
+    if (!isCardExportMarkedFilename(originalFilename)) {
+      const { webpBuffer } = await normalizeBufferToWebp(fileBuffer);
+      buffer = webpBuffer;
+      filename = `${path.parse(originalFilename).name}.webp`;
+    }
+
     // For uploads/pastes, the sourcePath is just a representation of where it came from.
-    const sourcePath = `upload://${originalFilename}`;
-    const newMedia = await createMediaAsset(fileBuffer, originalFilename, 'paste', sourcePath);
+    const sourcePath = `upload://${filename}`;
+    const newMedia = await createMediaAsset(buffer, filename, 'paste', sourcePath);
 
     // Return the hydrated object that the client expects
     return {
