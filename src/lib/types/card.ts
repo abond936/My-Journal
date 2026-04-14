@@ -61,6 +61,14 @@ export const cardSchema = z.object({
   what: z.array(z.string()).optional(),
   when: z.array(z.string()).optional(),
   where: z.array(z.string()).optional(),
+  // Media-derived dimensional helper signals (derived from attached media tags).
+  mediaWho: z.array(z.string()).optional(),
+  mediaWhat: z.array(z.string()).optional(),
+  mediaWhen: z.array(z.string()).optional(),
+  mediaWhere: z.array(z.string()).optional(),
+  whoSortKey: z.string().optional(),
+  whatSortKey: z.string().optional(),
+  whereSortKey: z.string().optional(),
 
   // Direct tag assignments and optimized query structure
   tags: z.array(z.string()).optional(),
@@ -117,10 +125,17 @@ export const cardUpdateValidationSchema = cardSchema.partial().omit({
   what: true,
   when: true,
   where: true,
+  mediaWho: true,
+  mediaWhat: true,
+  mediaWhen: true,
+  mediaWhere: true,
   title_lowercase: true, // Server-generated
   curatedNavEligible: true,
   journalWhenSortAsc: true,
   journalWhenSortDesc: true,
+  whoSortKey: true,
+  whatSortKey: true,
+  whereSortKey: true,
 });
 
 /**

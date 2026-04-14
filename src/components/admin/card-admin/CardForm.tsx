@@ -3,7 +3,7 @@
 import React, { useRef, useCallback, useState, useMemo, useEffect } from 'react';
 import { Card, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { Media } from '@/lib/types/photo';
-import { extractMediaFromContent, generateExcerpt } from '@/lib/utils/cardUtils';
+import { dehydrateCardForSave, extractMediaFromContent, generateExcerpt } from '@/lib/utils/cardUtils';
 import CoverPhotoContainer from '@/components/admin/card-admin/CoverPhotoContainer';
 import GalleryManager from '@/components/admin/card-admin/GalleryManager';
 import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
@@ -17,6 +17,44 @@ import clsx from 'clsx';
 import PhotoPicker from '@/components/admin/card-admin/PhotoPicker';
 import LoadingOverlay from '@/components/admin/card-admin/LoadingOverlay';
 import { getAllowedDisplayModes, normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
+import { arrayMove } from '@dnd-kit/sortable';
+
+type CardDraftOption = {
+  title: string;
+  subtitle: string;
+  excerpt: string;
+  content: string;
+  rationale?: string;
+};
+
+function textToBasicHtml(text: string): string {
+  const safe = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  return safe
+    .split(/\n{2,}/)
+    .map((block) => `<p>${block.replace(/\n/g, '<br/>')}</p>`)
+    .join('');
+}
+
+function normalizeGalleryOrders(items: HydratedGalleryMediaItem[]): HydratedGalleryMediaItem[] {
+  return items.map((item, index) => ({
+    ...item,
+    order:
+      typeof item.order === 'number' && !Number.isNaN(item.order) ? item.order : index,
+  }));
+}
+
+function formatCardApiError(data: Record<string, unknown>): string {
+  if (typeof data.message === 'string' && data.message) return data.message;
+  if (typeof data.error === 'string' && data.error) return data.error;
+  const d = data.details as { issues?: Array<{ message?: string; path?: unknown }> } | undefined;
+  if (d?.issues?.length) {
+    return d.issues.map((i) => i.message || JSON.stringify(i.path)).join('; ');
+  }
+  return 'Could not save gallery to the card.';
+}
 
 const CardForm: React.FC = () => {
   const {
@@ -27,6 +65,7 @@ const CardForm: React.FC = () => {
     handleSave,
     updateContentMedia,
     registerEditorContentGetter,
+    commitGalleryMediaPersisted,
   } = useCardForm();
 
   const editorRef = useRef<RichTextEditorRef>(null);
@@ -37,6 +76,10 @@ const CardForm: React.FC = () => {
     );
   }, [registerEditorContentGetter, cardData.content]);
   const [isPhotoPickerOpen, setIsPhotoPickerOpen] = useState(false);
+  const [isSuggestingDrafts, setIsSuggestingDrafts] = useState(false);
+  const [includeHistoricalContext, setIncludeHistoricalContext] = useState(false);
+  const [draftOptions, setDraftOptions] = useState<CardDraftOption[]>([]);
+  const [draftSuggestionError, setDraftSuggestionError] = useState<string | null>(null);
   
   const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setField('title', e.target.value), [setField]);
   const handleSubtitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setField('subtitle', e.target.value), [setField]);
@@ -86,6 +129,67 @@ const CardForm: React.FC = () => {
     setField('galleryMedia', newGallery);
   }, [setField]);
 
+  /**
+   * Persist gallery slot overrides on the card (PATCH galleryMedia only).
+   * Uses a direct PATCH so full-card client validation cannot block the save; then syncs dirty baseline.
+   */
+  const persistGalleryAfterSlotSave = useCallback(
+    async (nextGallery: HydratedGalleryMediaItem[]): Promise<boolean> => {
+      const docId = cardData.docId?.trim();
+      if (!docId) {
+        window.alert('Save the card once before editing gallery metadata.');
+        return false;
+      }
+
+      const normalized = normalizeGalleryOrders(nextGallery);
+      const dehydrated = dehydrateCardForSave({
+        ...cardData,
+        galleryMedia: normalized,
+      });
+      if (!Array.isArray(dehydrated.galleryMedia)) return false;
+
+      const body = { galleryMedia: dehydrated.galleryMedia };
+
+      try {
+        const res = await fetch(`/api/cards/${docId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          cache: 'no-store',
+          credentials: 'same-origin',
+        });
+        const payload = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+        if (!res.ok) {
+          window.alert(formatCardApiError(payload));
+          return false;
+        }
+        commitGalleryMediaPersisted(normalized);
+        return true;
+      } catch (e) {
+        console.error('[persistGalleryAfterSlotSave]', e);
+        window.alert(e instanceof Error ? e.message : 'Network error saving gallery.');
+        return false;
+      }
+    },
+    [cardData, commitGalleryMediaPersisted]
+  );
+
+  const handleSetGalleryItemAsCover = useCallback(
+    (item: HydratedGalleryMediaItem) => {
+      if (!item.media) return;
+      // Promote selected gallery item to cover and move it to first slot for predictable ordering.
+      const current = [...((cardData.galleryMedia || []) as HydratedGalleryMediaItem[])];
+      const idx = current.findIndex((g) => g.mediaId === item.mediaId);
+      if (idx > 0) {
+        const reordered = arrayMove(current, idx, 0).map((g, order) => ({ ...g, order }));
+        setField('galleryMedia', reordered);
+      }
+      const coverPos = item.objectPosition || item.media.objectPosition || '50% 50%';
+      handleCoverImageChange(item.media, coverPos);
+    },
+    [cardData.galleryMedia, handleCoverImageChange, setField]
+  );
+
   const handleChildCardsChange = useCallback((newChildIds: string[]) => {
     setField('childrenIds', newChildIds);
   }, [setField]);
@@ -117,6 +221,61 @@ const CardForm: React.FC = () => {
     }
     setIsPhotoPickerOpen(false);
   }, []);
+
+  const requestDraftSuggestions = useCallback(async () => {
+    setIsSuggestingDrafts(true);
+    setDraftSuggestionError(null);
+    setDraftOptions([]);
+    try {
+      const currentContent = editorRef.current?.getContent() ?? (cardData.content || '');
+      const res = await fetch('/api/ai/suggest-card-drafts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          title: cardData.title || '',
+          subtitle: cardData.subtitle || '',
+          excerpt: cardData.excerpt || '',
+          content: currentContent || '',
+          includeHistoricalContext,
+        }),
+      });
+      const payload = await res.json().catch(() => ({})) as {
+        message?: string;
+        error?: string;
+        options?: CardDraftOption[];
+      };
+      if (!res.ok) {
+        throw new Error(payload.error || payload.message || `Request failed (${res.status})`);
+      }
+      if (!Array.isArray(payload.options) || payload.options.length === 0) {
+        throw new Error('No draft options returned.');
+      }
+      setDraftOptions(payload.options.slice(0, 3));
+    } catch (e) {
+      setDraftSuggestionError(e instanceof Error ? e.message : 'Failed to get suggestions');
+    } finally {
+      setIsSuggestingDrafts(false);
+    }
+  }, [cardData.title, cardData.subtitle, cardData.excerpt, cardData.content, includeHistoricalContext]);
+
+  const applyDraftOption = useCallback(
+    (option: CardDraftOption, scope: 'all' | 'head' | 'content') => {
+      if (scope === 'all' || scope === 'head') {
+        setField('title', option.title || '');
+        setField('subtitle', option.subtitle || '');
+        setField('excerptAuto', false);
+        setField('excerpt', option.excerpt || '');
+      }
+      if (scope === 'all' || scope === 'content') {
+        const html = textToBasicHtml(option.content || '');
+        setField('content', html);
+        updateContentMedia(extractMediaFromContent(html));
+      }
+      setDraftOptions([]);
+    },
+    [setField, updateContentMedia]
+  );
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -168,6 +327,52 @@ const CardForm: React.FC = () => {
                   className={styles.excerptInput}
                   rows={3}
                 />
+              )}
+            </div>
+            <div className={styles.aiAssistSection}>
+              <div className={styles.aiAssistTopRow}>
+                <button
+                  type="button"
+                  className={styles.aiAssistButton}
+                  onClick={() => void requestDraftSuggestions()}
+                  disabled={isSuggestingDrafts || isSaving}
+                >
+                  {isSuggestingDrafts ? 'Generating…' : 'Suggest 3 draft options'}
+                </button>
+                <label className={styles.aiAssistToggle}>
+                  <input
+                    type="checkbox"
+                    checked={includeHistoricalContext}
+                    onChange={(e) => setIncludeHistoricalContext(e.target.checked)}
+                    disabled={isSuggestingDrafts}
+                  />
+                  Include historical context
+                </label>
+              </div>
+              {draftSuggestionError && (
+                <p className={styles.aiAssistError}>{draftSuggestionError}</p>
+              )}
+              {draftOptions.length > 0 && (
+                <div className={styles.aiDraftOptions}>
+                  {draftOptions.map((opt, idx) => (
+                    <div key={`draft-${idx}`} className={styles.aiDraftCard}>
+                      <div className={styles.aiDraftHeading}>
+                        <strong>Option {idx + 1}</strong>
+                        {opt.rationale ? <span>{opt.rationale}</span> : null}
+                      </div>
+                      <div className={styles.aiDraftPreview}>
+                        <p><strong>Title:</strong> {opt.title || '(empty)'}</p>
+                        <p><strong>Subtitle:</strong> {opt.subtitle || '(empty)'}</p>
+                        <p><strong>Excerpt:</strong> {opt.excerpt || '(empty)'}</p>
+                      </div>
+                      <div className={styles.aiDraftActions}>
+                        <button type="button" onClick={() => applyDraftOption(opt, 'all')}>Apply full</button>
+                        <button type="button" onClick={() => applyDraftOption(opt, 'head')}>Apply title/subtitle/excerpt</button>
+                        <button type="button" onClick={() => applyDraftOption(opt, 'content')}>Apply content</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>
@@ -256,6 +461,9 @@ const CardForm: React.FC = () => {
             <GalleryManager
               galleryMedia={(cardData.galleryMedia || []) as HydratedGalleryMediaItem[]}
               onUpdate={handleGalleryUpdate}
+              onPersistGalleryAfterSlotSave={persistGalleryAfterSlotSave}
+              onSetAsCover={handleSetGalleryItemAsCover}
+              currentCoverMediaId={cardData.coverImageId || null}
               error={errors.galleryMedia}
               filterTagIds={cardData.tags ?? []}
             />

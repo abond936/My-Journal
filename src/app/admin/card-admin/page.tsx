@@ -5,18 +5,27 @@ import { useRouter } from 'next/navigation';
 import { useTag } from '@/components/providers/TagProvider';
 import { useCardContext } from '@/components/providers/CardProvider';
 import { Card } from '@/lib/types/card';
-import { Tag } from '@/lib/types/tag';
 import styles from './card-admin.module.css';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import { buildDimensionTree } from '@/lib/utils/tagUtils';
 import CardAdminList from '@/components/admin/card-admin/CardAdminList';
 import CardAdminGrid from '@/components/admin/card-admin/CardAdminGrid';
+import CollectionsManagerPanel from '@/components/admin/card-admin/CollectionsManagerPanel';
 import BulkEditTagsModal from '@/components/admin/card-admin/BulkEditTagsModal';
 import ImportFolderModal from '@/components/admin/card-admin/ImportFolderModal';
+import { getCoreTagsByDimension } from '@/lib/utils/tagDisplay';
 
-const SCROLL_POSITION_KEY = 'adminCardListScrollPos';
 const CARD_VIEW_MODE_KEY = 'card-admin-view-mode';
-type ViewMode = 'grid' | 'table';
+type ViewMode = 'grid' | 'table' | 'collections';
+type AdminSortMode =
+  | 'whenDesc'
+  | 'whenAsc'
+  | 'createdDesc'
+  | 'createdAsc'
+  | 'titleAsc'
+  | 'titleDesc'
+  | 'whoAsc'
+  | 'whatAsc'
+  | 'whereAsc';
 
 export default function AdminCardsPage() {
   const router = useRouter();
@@ -29,6 +38,9 @@ export default function AdminCardsPage() {
   const [isBulkTagModalOpen, setIsBulkTagModalOpen] = useState(false);
   const [isImportFolderModalOpen, setIsImportFolderModalOpen] = useState(false);
   const [searchInputValue, setSearchInputValue] = useState('');
+  const [adminSortMode, setAdminSortMode] = useState<AdminSortMode>('whenDesc');
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [displayCards, setDisplayCards] = useState<Card[]>([]);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { 
@@ -46,12 +58,12 @@ export default function AdminCardsPage() {
     mutate,
     searchTerm,
     status,
-    cardType,
     setSearchTerm,
     setStatus,
-    setCardType,
     setPageLimit,
     isValidating,
+    mediaTagSignals,
+    setMediaTagSignal,
   } = useCardContext();
 
   // Set the desired page limit for the admin section
@@ -69,9 +81,14 @@ export default function AdminCardsPage() {
     }
   }, [viewMode]);
 
-  const dimensionalTree = useMemo(() => {
-    if (!allTags) return {};
-    return buildDimensionTree(allTags);
+  const tagsByDimension = useMemo(() => {
+    const source = allTags || [];
+    return {
+      who: source.filter((tag) => tag.dimension === 'who'),
+      what: source.filter((tag) => String(tag.dimension) === 'what' || String(tag.dimension) === 'reflection'),
+      when: source.filter((tag) => tag.dimension === 'when'),
+      where: source.filter((tag) => tag.dimension === 'where'),
+    };
   }, [allTags]);
 
   // --- Scroll Restoration ---
@@ -111,7 +128,7 @@ export default function AdminCardsPage() {
   // Clear selection when filters change
   useEffect(() => {
     setSelectedCardIds(new Set());
-  }, [searchTerm, status, cardType]);
+  }, [searchTerm, status]);
 
   useEffect(() => {
     setSearchInputValue(searchTerm);
@@ -131,13 +148,19 @@ export default function AdminCardsPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isLoading && !tagsLoading) {
+      setHasLoadedOnce(true);
+    }
+  }, [isLoading, tagsLoading]);
+
   const onSaveScrollPosition = useCallback((cardId: string) => {
     sessionStorage.setItem('scrollToCardId', cardId);
   }, []);
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      const allIds = new Set(cards.map(c => c.docId));
+      const allIds = new Set(sortedCards.map(c => c.docId));
       setSelectedCardIds(allIds);
     } else {
       setSelectedCardIds(new Set());
@@ -156,7 +179,7 @@ export default function AdminCardsPage() {
     });
   };
 
-  const handleBulkUpdate = async (field: keyof Card, value: any) => {
+  const handleBulkUpdate = async (field: keyof Card, value: string) => {
     const confirmMessage = `Are you sure you want to update ${field} for ${selectedCardIds.size} selected cards?`;
     if (!confirm(confirmMessage)) return;
     
@@ -200,8 +223,52 @@ export default function AdminCardsPage() {
     }
   };
 
+  const handleBulkApplyMediaSuggestions = async () => {
+    if (selectedCardIds.size === 0) return;
+    const selectedCards = displayCards.filter((card) => selectedCardIds.has(card.docId));
+    if (selectedCards.length === 0) return;
+    const updates = selectedCards
+      .map((card) => {
+        const suggestions = [
+          ...(card.mediaWho || []),
+          ...(card.mediaWhat || []),
+          ...(card.mediaWhen || []),
+          ...(card.mediaWhere || []),
+        ].filter((tagId) => !(card.tags || []).includes(tagId));
+        if (!suggestions.length) return null;
+        const nextTags = Array.from(new Set([...(card.tags || []), ...suggestions]));
+        return { id: card.docId, tags: nextTags };
+      })
+      .filter((entry): entry is { id: string; tags: string[] } => Boolean(entry));
+
+    if (!updates.length) {
+      alert('No media suggestions available on selected cards.');
+      return;
+    }
+
+    try {
+      await Promise.all(
+        updates.map((entry) =>
+          fetch(`/api/cards/${entry.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tags: entry.tags }),
+          })
+        )
+      );
+      await mutate(undefined, { revalidate: true });
+      setSelectedCardIds(new Set());
+    } catch (error) {
+      console.error('Failed to apply media suggestions in bulk', error);
+      alert('Failed to apply media suggestions. Please retry.');
+      await mutate(undefined, { revalidate: true });
+    }
+  };
+
   const handleUpdateCard = async (cardId: string, updateData: Partial<Card>) => {
     try {
+      // Keep the edited row in view after SWR revalidation.
+      onSaveScrollPosition(cardId);
       const response = await fetch(`/api/cards/${cardId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -223,6 +290,92 @@ export default function AdminCardsPage() {
     }
   };
 
+  const sortedCards = useMemo(() => {
+    const sorted = [...cards];
+    const tagNameById = new Map((allTags || []).map((tag) => [tag.docId, tag.name]));
+    const firstDirectTagLabel = (card: Card, dimension: 'who' | 'what' | 'where') => {
+      const core = getCoreTagsByDimension(card);
+      const ids = core[dimension] || [];
+      if (!ids.length) return '\uffff';
+      const labels = ids
+        .map((id) => tagNameById.get(id) || '')
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b));
+      return labels[0] || '\uffff';
+    };
+    const whenAsc = (a: Card, b: Card) => {
+      const av = a.journalWhenSortAsc ?? Number.MAX_SAFE_INTEGER;
+      const bv = b.journalWhenSortAsc ?? Number.MAX_SAFE_INTEGER;
+      if (av !== bv) return av - bv;
+      return (a.title || '').localeCompare(b.title || '');
+    };
+    const whenDesc = (a: Card, b: Card) => {
+      const av = a.journalWhenSortDesc ?? Number.MIN_SAFE_INTEGER;
+      const bv = b.journalWhenSortDesc ?? Number.MIN_SAFE_INTEGER;
+      if (av !== bv) return bv - av;
+      return (a.title || '').localeCompare(b.title || '');
+    };
+    const titleAsc = (a: Card, b: Card) => (a.title || '').localeCompare(b.title || '');
+    const titleDesc = (a: Card, b: Card) => (b.title || '').localeCompare(a.title || '');
+    const createdAsc = (a: Card, b: Card) => {
+      if (a.createdAt !== b.createdAt) return a.createdAt - b.createdAt;
+      return (a.title || '').localeCompare(b.title || '');
+    };
+    const createdDesc = (a: Card, b: Card) => {
+      if (a.createdAt !== b.createdAt) return b.createdAt - a.createdAt;
+      return (a.title || '').localeCompare(b.title || '');
+    };
+    const byDimension = (dimension: 'who' | 'what' | 'where') => (a: Card, b: Card) => {
+      const av = firstDirectTagLabel(a, dimension);
+      const bv = firstDirectTagLabel(b, dimension);
+      if (av !== bv) return av.localeCompare(bv);
+      return (a.title || '').localeCompare(b.title || '');
+    };
+
+    switch (adminSortMode) {
+      case 'whenAsc':
+        sorted.sort(whenAsc);
+        break;
+      case 'createdAsc':
+        sorted.sort(createdAsc);
+        break;
+      case 'createdDesc':
+        sorted.sort(createdDesc);
+        break;
+      case 'titleAsc':
+        sorted.sort(titleAsc);
+        break;
+      case 'titleDesc':
+        sorted.sort(titleDesc);
+        break;
+      case 'whoAsc':
+        sorted.sort(byDimension('who'));
+        break;
+      case 'whatAsc':
+        sorted.sort(byDimension('what'));
+        break;
+      case 'whereAsc':
+        sorted.sort(byDimension('where'));
+        break;
+      case 'whenDesc':
+      default:
+        sorted.sort(whenDesc);
+    }
+    return sorted;
+  }, [cards, adminSortMode, allTags]);
+
+  useEffect(() => {
+    const activelySearching = Boolean(searchInputValue.trim()) && isValidating;
+    if (!activelySearching) {
+      setDisplayCards(sortedCards);
+      return;
+    }
+    // Keep current rows visible while next title-only search request is in flight.
+    if (sortedCards.length > 0) {
+      setDisplayCards(sortedCards);
+    }
+  }, [sortedCards, isValidating, searchInputValue]);
+
   const handleDeleteCard = async (cardId: string) => {
     try {
       const response = await fetch(`/api/cards/${cardId}`, { method: 'DELETE' });
@@ -237,7 +390,7 @@ export default function AdminCardsPage() {
     }
   };
 
-  if (isLoading || tagsLoading) return <LoadingSpinner />;
+  if (!hasLoadedOnce && (isLoading || tagsLoading)) return <LoadingSpinner />;
   if (error) return <div className={styles.error}>{error.message || 'Failed to load cards.'}</div>;
 
   return (
@@ -255,7 +408,6 @@ export default function AdminCardsPage() {
         </div>
 
         <div className={styles.viewToggleBar}>
-          <span className={styles.viewToggleLabel}>View:</span>
           <span className={styles.viewToggleButtonGroup}>
             <button
               type="button"
@@ -273,9 +425,18 @@ export default function AdminCardsPage() {
             >
               Table
             </button>
+            <button
+              type="button"
+              className={`${styles.viewToggleButton} ${viewMode === 'collections' ? styles.viewToggleActive : ''}`}
+              onClick={() => setViewMode('collections')}
+              aria-pressed={viewMode === 'collections'}
+            >
+              Collections
+            </button>
           </span>
         </div>
 
+        {viewMode !== 'collections' && (
         <div className={styles.filterSection}>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <input
@@ -316,20 +477,78 @@ export default function AdminCardsPage() {
               <option value="published">Published</option>
             </select>
             <select
-              value={cardType}
-              onChange={e => setCardType(e.target.value as typeof cardType)}
+              value={adminSortMode}
+              onChange={e => setAdminSortMode(e.target.value as AdminSortMode)}
               className={styles.filterSelect}
             >
-              <option value="all">All Types</option>
-              <option value="story">Story</option>
-              <option value="qa">Q&A</option>
-              <option value="quote">Quote</option>
-              <option value="callout">Callout</option>
-              <option value="gallery">Gallery</option>
+              <option value="whenDesc">When (Desc)</option>
+              <option value="whenAsc">When (Asc)</option>
+              <option value="createdDesc">Created (Desc)</option>
+              <option value="createdAsc">Created (Asc)</option>
+              <option value="titleAsc">Title (A-Z)</option>
+              <option value="titleDesc">Title (Z-A)</option>
+              <option value="whoAsc">Who (A-Z)</option>
+              <option value="whatAsc">What (A-Z)</option>
+              <option value="whereAsc">Where (A-Z)</option>
             </select>
+            <select
+              value={mediaTagSignals.who[0] || ''}
+              onChange={(e) => setMediaTagSignal('who', e.target.value ? [e.target.value] : [])}
+              className={styles.filterSelect}
+            >
+              <option value="">Media Who: Any</option>
+              {tagsByDimension.who.map((tag) => (
+                <option key={tag.docId} value={tag.docId}>
+                  {tag.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={mediaTagSignals.what[0] || ''}
+              onChange={(e) => setMediaTagSignal('what', e.target.value ? [e.target.value] : [])}
+              className={styles.filterSelect}
+            >
+              <option value="">Media What: Any</option>
+              {tagsByDimension.what.map((tag) => (
+                <option key={tag.docId} value={tag.docId}>
+                  {tag.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={mediaTagSignals.when[0] || ''}
+              onChange={(e) => setMediaTagSignal('when', e.target.value ? [e.target.value] : [])}
+              className={styles.filterSelect}
+            >
+              <option value="">Media When: Any</option>
+              {tagsByDimension.when.map((tag) => (
+                <option key={tag.docId} value={tag.docId}>
+                  {tag.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={mediaTagSignals.where[0] || ''}
+              onChange={(e) => setMediaTagSignal('where', e.target.value ? [e.target.value] : [])}
+              className={styles.filterSelect}
+            >
+              <option value="">Media Where: Any</option>
+              {tagsByDimension.where.map((tag) => (
+                <option key={tag.docId} value={tag.docId}>
+                  {tag.name}
+                </option>
+              ))}
+            </select>
+            {isValidating && searchInputValue.trim() && (
+              <span className={styles.searchingHint} aria-live="polite">
+                Searching...
+              </span>
+            )}
           </div>
         </div>
+        )}
         
+        {viewMode !== 'collections' && (
         <div className={styles.bulkActions}>
           <span>
             {selectedCardIds.size === 0 
@@ -378,6 +597,14 @@ export default function AdminCardsPage() {
             >
               Edit Tags
             </button>
+            <button
+              type="button"
+              onClick={() => void handleBulkApplyMediaSuggestions()}
+              className={styles.actionButton}
+              disabled={selectedCardIds.size === 0}
+            >
+              Apply Media Suggestions
+            </button>
             <button 
               onClick={handleBulkDelete} 
               className={`${styles.actionButton} ${styles.deleteButton}`}
@@ -387,11 +614,23 @@ export default function AdminCardsPage() {
             </button>
           </div>
         </div>
+        )}
       </div>
 
       {viewMode === 'grid' ? (
         <CardAdminGrid
-          cards={cards}
+          cards={displayCards}
+          selectedCardIds={selectedCardIds}
+          allTags={allTags || []}
+          onSelectCard={handleSelectCard}
+          onSelectAll={handleSelectAll}
+          onSaveScrollPosition={onSaveScrollPosition}
+          onUpdateCard={handleUpdateCard}
+          onDeleteCard={handleDeleteCard}
+        />
+      ) : viewMode === 'table' ? (
+        <CardAdminList
+          cards={displayCards}
           selectedCardIds={selectedCardIds}
           allTags={allTags || []}
           onSelectCard={handleSelectCard}
@@ -401,19 +640,13 @@ export default function AdminCardsPage() {
           onDeleteCard={handleDeleteCard}
         />
       ) : (
-        <CardAdminList
-          cards={cards}
-          selectedCardIds={selectedCardIds}
-          allTags={allTags || []}
-          onSelectCard={handleSelectCard}
-          onSelectAll={handleSelectAll}
-          onSaveScrollPosition={onSaveScrollPosition}
-          onUpdateCard={handleUpdateCard}
-          onDeleteCard={handleDeleteCard}
+        <CollectionsManagerPanel
+          cards={displayCards}
+          onReload={async () => mutate(undefined, { revalidate: true })}
         />
       )}
 
-      {hasMore && (
+      {viewMode !== 'collections' && hasMore && (
         <div className={styles.loadMoreContainer}>
           <button onClick={loadMore} disabled={loadingMore} className={styles.loadMoreButton}>
             {loadingMore ? 'Loading...' : 'Load More'}

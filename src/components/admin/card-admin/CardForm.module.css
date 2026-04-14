@@ -104,6 +104,98 @@
   border-color: var(--input-border-color-focus);
 }
 
+.aiAssistSection {
+  margin-top: var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--input-border-radius);
+  padding: var(--spacing-sm);
+  background: var(--layout-background2-color);
+}
+
+.aiAssistTopRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.aiAssistButton {
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--input-border-radius);
+  background: var(--layout-background1-color);
+  color: var(--text1-color);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  cursor: pointer;
+}
+
+.aiAssistButton:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.aiAssistToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+}
+
+.aiAssistError {
+  margin: var(--spacing-sm) 0 0;
+  color: var(--state-error-border-color);
+  font-size: var(--font-size-sm);
+}
+
+.aiDraftOptions {
+  display: grid;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+}
+
+.aiDraftCard {
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--input-border-radius);
+  padding: var(--spacing-sm);
+  background: var(--layout-background1-color);
+}
+
+.aiDraftHeading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.aiDraftHeading span {
+  color: var(--text2-color);
+  font-size: var(--font-size-sm);
+}
+
+.aiDraftPreview p {
+  margin: var(--spacing-xs) 0;
+  font-size: var(--font-size-sm);
+  color: var(--text1-color);
+}
+
+.aiDraftActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-sm);
+}
+
+.aiDraftActions button {
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--input-border-radius);
+  background: var(--layout-background2-color);
+  color: var(--text1-color);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  cursor: pointer;
+}
+
 .coverPhotoSection {
   width: 100%;
 }

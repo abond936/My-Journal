@@ -155,6 +155,84 @@ export function computeCuratedNavEligible(card: Pick<Card, 'childrenIds' | 'cura
   return children.length > 0 || card.curatedRoot === true;
 }
 
+function computeDimensionSortKeys(
+  directTagIds: string[] | undefined,
+  allTags: Tag[]
+): Pick<Card, 'whoSortKey' | 'whatSortKey' | 'whereSortKey'> {
+  const byId = new Map(allTags.filter((t) => t.docId).map((t) => [t.docId!, t]));
+  const buckets: Record<'who' | 'what' | 'where', string[]> = {
+    who: [],
+    what: [],
+    where: [],
+  };
+
+  for (const tagId of directTagIds || []) {
+    const tag = byId.get(tagId);
+    if (!tag?.name || !tag.dimension) continue;
+    const dim = String(tag.dimension) === 'reflection' ? 'what' : String(tag.dimension);
+    if (dim === 'who' || dim === 'what' || dim === 'where') {
+      buckets[dim].push(tag.name.trim().toLowerCase());
+    }
+  }
+
+  const pick = (values: string[]) => values.filter(Boolean).sort((a, b) => a.localeCompare(b))[0] || '\uffff';
+
+  return {
+    whoSortKey: pick(buckets.who),
+    whatSortKey: pick(buckets.what),
+    whereSortKey: pick(buckets.where),
+  };
+}
+
+function computeMediaSignalBuckets(
+  mediaTagIds: string[],
+  allTags: Tag[]
+): Pick<Card, 'mediaWho' | 'mediaWhat' | 'mediaWhen' | 'mediaWhere'> {
+  const byId = new Map(allTags.filter((t) => t.docId).map((t) => [t.docId!, t]));
+  const buckets: Record<'who' | 'what' | 'when' | 'where', Set<string>> = {
+    who: new Set<string>(),
+    what: new Set<string>(),
+    when: new Set<string>(),
+    where: new Set<string>(),
+  };
+
+  for (const tagId of mediaTagIds) {
+    const tag = byId.get(tagId);
+    if (!tag?.docId || !tag.dimension) continue;
+    const dim = String(tag.dimension) === 'reflection' ? 'what' : String(tag.dimension);
+    if (dim === 'who' || dim === 'what' || dim === 'when' || dim === 'where') {
+      buckets[dim].add(tag.docId);
+    }
+  }
+
+  return {
+    mediaWho: Array.from(buckets.who),
+    mediaWhat: Array.from(buckets.what),
+    mediaWhen: Array.from(buckets.when),
+    mediaWhere: Array.from(buckets.where),
+  };
+}
+
+async function computeCardMediaSignalsFromMediaIds(
+  mediaIds: Set<string>,
+  allTags: Tag[]
+): Promise<Pick<Card, 'mediaWho' | 'mediaWhat' | 'mediaWhen' | 'mediaWhere'>> {
+  if (mediaIds.size === 0) {
+    return { mediaWho: [], mediaWhat: [], mediaWhen: [], mediaWhere: [] };
+  }
+  const docs = await Promise.all(
+    Array.from(mediaIds).map((id) => firestore.collection(MEDIA_COLLECTION).doc(id).get())
+  );
+  const tagIds = new Set<string>();
+  for (const doc of docs) {
+    const media = doc.exists ? (doc.data() as Media) : undefined;
+    for (const tagId of media?.tags || []) {
+      if (typeof tagId === 'string' && tagId.trim()) tagIds.add(tagId);
+    }
+  }
+  return computeMediaSignalBuckets(Array.from(tagIds), allTags);
+}
+
 type ParentChildrenAdjust = { childrenIds: string[]; curatedRoot: boolean };
 
 async function wouldCreateCycle(
@@ -219,6 +297,28 @@ export async function getCardsReferencingMedia(mediaId: string): Promise<string[
   return ids;
 }
 
+export async function recomputeCardMediaSignals(cardId: string): Promise<void> {
+  const doc = await firestore.collection(CARDS_COLLECTION).doc(cardId).get();
+  if (!doc.exists) return;
+  const card = { docId: doc.id, ...(doc.data() as Card) };
+  const mediaIds = getMediaIdsFromCard(card);
+  const allTags = await getAllTags();
+  const mediaSignals = await computeCardMediaSignalsFromMediaIds(mediaIds, allTags);
+  await doc.ref.update({
+    mediaWho: mediaSignals.mediaWho,
+    mediaWhat: mediaSignals.mediaWhat,
+    mediaWhen: mediaSignals.mediaWhen,
+    mediaWhere: mediaSignals.mediaWhere,
+    updatedAt: Date.now(),
+  });
+}
+
+export async function recomputeCardsMediaSignalsForMedia(mediaId: string): Promise<void> {
+  const cardIds = await getCardsReferencingMedia(mediaId);
+  if (!cardIds.length) return;
+  await Promise.all(cardIds.map((id) => recomputeCardMediaSignals(id)));
+}
+
 /** Removes a media reference from a card (cover, gallery, or content). */
 export async function removeMediaReferenceFromCard(cardId: string, mediaId: string): Promise<void> {
   const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
@@ -264,6 +364,8 @@ export async function removeMediaReferenceFromCard(cardId: string, mediaId: stri
     });
     void syncMediaToTypesenseById(mediaId);
   }
+
+  await recomputeCardMediaSignals(cardId);
 
   const updatedCard = await getCardById(cardId);
   if (updatedCard) {
@@ -505,6 +607,14 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
         dimensionalTags.when || [],
         buildTagMap(allTagsForJournal)
       );
+      const dimensionSortKeys = computeDimensionSortKeys(selectedTags, allTagsForJournal);
+      const mediaIdsForSignals = new Set<string>();
+      if (validatedData.coverImageId) mediaIdsForSignals.add(validatedData.coverImageId);
+      (validatedData.galleryMedia || []).forEach((item) => {
+        if (item.mediaId) mediaIdsForSignals.add(item.mediaId);
+      });
+      contentMediaIds.forEach((id) => mediaIdsForSignals.add(id));
+      const mediaSignals = await computeCardMediaSignalsFromMediaIds(mediaIdsForSignals, allTagsForJournal);
 
       const autoExcerpt = validatedData.excerptAuto ? generateExcerpt(cleanedContent) : undefined;
 
@@ -527,6 +637,13 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
         what: dimensionalTags.what || [],
         when: dimensionalTags.when || [],
         where: dimensionalTags.where || [],
+        mediaWho: mediaSignals.mediaWho,
+        mediaWhat: mediaSignals.mediaWhat,
+        mediaWhen: mediaSignals.mediaWhen,
+        mediaWhere: mediaSignals.mediaWhere,
+        whoSortKey: dimensionSortKeys.whoSortKey,
+        whatSortKey: dimensionSortKeys.whatSortKey,
+        whereSortKey: dimensionSortKeys.whereSortKey,
         journalWhenSortAsc: journalWhenSort.journalWhenSortAsc,
         journalWhenSortDesc: journalWhenSort.journalWhenSortDesc,
         createdAt: Date.now(),
@@ -769,8 +886,17 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         cleanedUpdate.when || [],
         buildTagMap(allTagsForJournal)
       );
+      const dimensionSortKeys = computeDimensionSortKeys(finalTags || [], allTagsForJournal);
+      const mediaSignals = await computeCardMediaSignalsFromMediaIds(newMediaIds, allTagsForJournal);
       cleanedUpdate.journalWhenSortAsc = journalWhenSort.journalWhenSortAsc;
       cleanedUpdate.journalWhenSortDesc = journalWhenSort.journalWhenSortDesc;
+      cleanedUpdate.whoSortKey = dimensionSortKeys.whoSortKey;
+      cleanedUpdate.whatSortKey = dimensionSortKeys.whatSortKey;
+      cleanedUpdate.whereSortKey = dimensionSortKeys.whereSortKey;
+      cleanedUpdate.mediaWho = mediaSignals.mediaWho;
+      cleanedUpdate.mediaWhat = mediaSignals.mediaWhat;
+      cleanedUpdate.mediaWhen = mediaSignals.mediaWhen;
+      cleanedUpdate.mediaWhere = mediaSignals.mediaWhere;
 
       const finalChildrenForNav = 'childrenIds' in cleanedUpdate
         ? cleanedUpdate.childrenIds!
@@ -1057,6 +1183,7 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
     const allTags = await getAllTags();
     const tagMap = buildTagMap(allTags);
     const journalWhenSort = computeJournalWhenSortKeys(dimensionalTags.when || [], tagMap);
+    const dimensionSortKeys = computeDimensionSortKeys(tags, allTags);
 
     await firestore.runTransaction(async (transaction) => {
       const cardRefs = chunk.map(id => firestore.collection(CARDS_COLLECTION).doc(id));
@@ -1082,6 +1209,9 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
           what: dimensionalTags.what || [],
           when: dimensionalTags.when || [],
           where: dimensionalTags.where || [],
+          whoSortKey: dimensionSortKeys.whoSortKey,
+          whatSortKey: dimensionSortKeys.whatSortKey,
+          whereSortKey: dimensionSortKeys.whereSortKey,
           journalWhenSortAsc: journalWhenSort.journalWhenSortAsc,
           journalWhenSortDesc: journalWhenSort.journalWhenSortDesc,
           updatedAt: Date.now(),
@@ -1324,12 +1454,19 @@ export async function getCards(options: {
     when?: string[];
     where?: string[];
   };
+  mediaDimensionalTags?: {
+    who?: string[];
+    what?: string[];
+    when?: string[];
+    where?: string[];
+  };
   childrenIds_contains?: string;
   limit?: number;
   lastDocId?: string;
   hydrationMode?: 'full' | 'cover-only';
-  /** When `q` is set, title prefix search uses `orderBy('title')` and this is ignored. */
-  sort?: 'newest' | 'oldest';
+  /** When `q` is set, title prefix search uses `orderBy('title_lowercase')` and this is ignored. */
+  sortBy?: 'when' | 'created' | 'title' | 'who' | 'what' | 'where';
+  sortDir?: 'asc' | 'desc';
 } = {}): Promise<{ items: Card[]; lastDocId?: string; hasMore: boolean }> {
   const { 
     q,
@@ -1337,25 +1474,40 @@ export async function getCards(options: {
     type = 'all',
     tags,
     dimensionalTags,
+    mediaDimensionalTags,
     childrenIds_contains,
     limit = 10,
     lastDocId,
     hydrationMode = 'full',
-    sort = 'newest',
+    sortBy = 'when',
+    sortDir = 'desc',
   } = options;
 
   let query: FirebaseFirestore.Query = firestore.collection(CARDS_COLLECTION);
+  const trimmedQuery = q?.trim() ?? '';
+  const hasSearch = trimmedQuery.length > 0;
+  const hasMediaSignalFilters = Boolean(
+    mediaDimensionalTags &&
+      ((mediaDimensionalTags.who && mediaDimensionalTags.who.length > 0) ||
+        (mediaDimensionalTags.what && mediaDimensionalTags.what.length > 0) ||
+        (mediaDimensionalTags.when && mediaDimensionalTags.when.length > 0) ||
+        (mediaDimensionalTags.where && mediaDimensionalTags.where.length > 0))
+  );
+  const matchesAny = (candidate: string[] | undefined, required: string[] | undefined) => {
+    if (!required || required.length === 0) return true;
+    if (!candidate || candidate.length === 0) return false;
+    const set = new Set(candidate);
+    return required.some((id) => set.has(id));
+  };
 
   // Combined text search and tag filtering
-  if (q) {
-    const searchTerm = q.trim();
-    if (searchTerm) {
-      query = query
-        .where('title', '>=', searchTerm)
-        .where('title', '<=', searchTerm + '\uf8ff')
-        .orderBy('title')
-        .orderBy(FieldPath.documentId(), 'asc');
-    }
+  if (hasSearch) {
+    const lower = trimmedQuery.toLowerCase();
+    query = query
+      .where('title_lowercase', '>=', lower)
+      .where('title_lowercase', '<=', lower + '\uf8ff')
+      .orderBy('title_lowercase')
+      .orderBy(FieldPath.documentId(), 'asc');
   }
 
   // --- Filter by tags ---
@@ -1397,18 +1549,38 @@ export async function getCards(options: {
     }
   }
 
+  // Media signal filters are applied in-memory after query.
+  // Firestore cannot safely support the required combinations here (multi array-contains-any + order/pagination).
+
   // Filter by childrenIds_contains
   if (childrenIds_contains) {
     query = query.where('childrenIds', 'array-contains', childrenIds_contains);
   }
 
-  // Apply sorting (title search uses range on title + orderBy title).
-  // Newest/oldest follow **journal When** tags, not card createdAt; undated sorts last (see journalWhenSort.ts).
-  if (!q) {
-    if (sort === 'oldest') {
-      query = query.orderBy('journalWhenSortAsc', 'asc').orderBy(FieldPath.documentId(), 'asc');
+  // Apply sorting (title search uses range on title + orderBy title_lowercase).
+  // `when` uses denormalized journal keys where undated items sort last.
+  if (!hasSearch) {
+    if (sortBy === 'created') {
+      query =
+        sortDir === 'asc'
+          ? query.orderBy('createdAt', 'asc').orderBy(FieldPath.documentId(), 'asc')
+          : query.orderBy('createdAt', 'desc').orderBy(FieldPath.documentId(), 'desc');
+    } else if (sortBy === 'title') {
+      query =
+        sortDir === 'asc'
+          ? query.orderBy('title_lowercase', 'asc').orderBy(FieldPath.documentId(), 'asc')
+          : query.orderBy('title_lowercase', 'desc').orderBy(FieldPath.documentId(), 'desc');
+    } else if (sortBy === 'who' || sortBy === 'what' || sortBy === 'where') {
+      const key = sortBy === 'who' ? 'whoSortKey' : sortBy === 'what' ? 'whatSortKey' : 'whereSortKey';
+      query =
+        sortDir === 'asc'
+          ? query.orderBy(key, 'asc').orderBy('title_lowercase', 'asc').orderBy(FieldPath.documentId(), 'asc')
+          : query.orderBy(key, 'desc').orderBy('title_lowercase', 'asc').orderBy(FieldPath.documentId(), 'asc');
     } else {
-      query = query.orderBy('journalWhenSortDesc', 'desc').orderBy(FieldPath.documentId(), 'desc');
+      query =
+        sortDir === 'asc'
+          ? query.orderBy('journalWhenSortAsc', 'asc').orderBy(FieldPath.documentId(), 'asc')
+          : query.orderBy('journalWhenSortDesc', 'desc').orderBy(FieldPath.documentId(), 'desc');
     }
   }
 
@@ -1420,7 +1592,7 @@ export async function getCards(options: {
     }
   }
 
-  const querySnapshot = await query.limit(limit).get();
+  const querySnapshot = await query.limit(hasMediaSignalFilters ? Math.max(limit * 5, 100) : limit).get();
 
   let cards: Card[] = querySnapshot.docs.map(doc => ({
     docId: doc.id,
@@ -1434,9 +1606,96 @@ export async function getCards(options: {
     cards = await _hydrateCards(cards);
   }
 
+  if (hasMediaSignalFilters && mediaDimensionalTags) {
+    cards = cards.filter((card) => {
+      return (
+        matchesAny(card.mediaWho, mediaDimensionalTags.who) &&
+        matchesAny(card.mediaWhat, mediaDimensionalTags.what) &&
+        matchesAny(card.mediaWhen, mediaDimensionalTags.when) &&
+        matchesAny(card.mediaWhere, mediaDimensionalTags.where)
+      );
+    });
+  }
+  if (cards.length > limit) {
+    cards = cards.slice(0, limit);
+  }
+
   const lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
-  const lastDocIdResult = lastVisible ? lastVisible.id : undefined;
-  const hasMore = querySnapshot.size === limit;
+  let lastDocIdResult = lastVisible ? lastVisible.id : undefined;
+  let hasMore = hasMediaSignalFilters ? querySnapshot.size >= Math.max(limit * 5, 100) : querySnapshot.size === limit;
+
+  // Temporary safety net: if title_lowercase is missing on legacy docs, strict prefix search can miss obvious results.
+  // Fall back to a bounded scan and in-memory title match so admin search remains usable until backfill runs.
+  if (hasSearch && cards.length === 0) {
+    let fallbackQuery: FirebaseFirestore.Query = firestore.collection(CARDS_COLLECTION);
+    if (status && status !== 'all') fallbackQuery = fallbackQuery.where('status', '==', status);
+    if (type && type !== 'all') fallbackQuery = fallbackQuery.where('type', '==', type);
+    if (tags && tags.length > 0) {
+      tags.forEach((tag) => {
+        fallbackQuery = fallbackQuery.where(`filterTags.${tag}`, '==', true);
+      });
+    }
+    if (dimensionalTags) {
+      const { who, what, when, where } = dimensionalTags;
+      if (who && who.length > 0) fallbackQuery = fallbackQuery.where('who', 'array-contains-any', who);
+      if (what && what.length > 0) fallbackQuery = fallbackQuery.where('what', 'array-contains-any', what);
+      if (when && when.length > 0) fallbackQuery = fallbackQuery.where('when', 'array-contains-any', when);
+      if (where && where.length > 0) fallbackQuery = fallbackQuery.where('where', 'array-contains-any', where);
+    }
+    // Media signal filters are applied in-memory below for fallback too.
+    if (childrenIds_contains) {
+      fallbackQuery = fallbackQuery.where('childrenIds', 'array-contains', childrenIds_contains);
+    }
+
+    if (sortBy === 'created') {
+      fallbackQuery =
+        sortDir === 'asc'
+          ? fallbackQuery.orderBy('createdAt', 'asc').orderBy(FieldPath.documentId(), 'asc')
+          : fallbackQuery.orderBy('createdAt', 'desc').orderBy(FieldPath.documentId(), 'desc');
+    } else if (sortBy === 'title') {
+      fallbackQuery =
+        sortDir === 'asc'
+          ? fallbackQuery.orderBy('title_lowercase', 'asc').orderBy(FieldPath.documentId(), 'asc')
+          : fallbackQuery.orderBy('title_lowercase', 'desc').orderBy(FieldPath.documentId(), 'desc');
+    } else if (sortBy === 'who' || sortBy === 'what' || sortBy === 'where') {
+      const key = sortBy === 'who' ? 'whoSortKey' : sortBy === 'what' ? 'whatSortKey' : 'whereSortKey';
+      fallbackQuery =
+        sortDir === 'asc'
+          ? fallbackQuery.orderBy(key, 'asc').orderBy('title_lowercase', 'asc').orderBy(FieldPath.documentId(), 'asc')
+          : fallbackQuery.orderBy(key, 'desc').orderBy('title_lowercase', 'asc').orderBy(FieldPath.documentId(), 'asc');
+    } else {
+      fallbackQuery =
+        sortDir === 'asc'
+          ? fallbackQuery.orderBy('journalWhenSortAsc', 'asc').orderBy(FieldPath.documentId(), 'asc')
+          : fallbackQuery.orderBy('journalWhenSortDesc', 'desc').orderBy(FieldPath.documentId(), 'desc');
+    }
+
+    const fallbackSnap = await fallbackQuery.limit(200).get();
+    const lower = trimmedQuery.toLowerCase();
+    let fallbackItems = fallbackSnap.docs
+      .map((doc) => ({ docId: doc.id, ...(doc.data() as Card) } as Card))
+      .filter((c) => (c.title || '').toLowerCase().includes(lower))
+      .slice(0, 200);
+    if (mediaDimensionalTags) {
+      fallbackItems = fallbackItems.filter((card) => {
+        return (
+          matchesAny(card.mediaWho, mediaDimensionalTags.who) &&
+          matchesAny(card.mediaWhat, mediaDimensionalTags.what) &&
+          matchesAny(card.mediaWhen, mediaDimensionalTags.when) &&
+          matchesAny(card.mediaWhere, mediaDimensionalTags.where)
+        );
+      });
+    }
+    fallbackItems = fallbackItems.slice(0, limit);
+
+    if (fallbackItems.length > 0) {
+      cards = hydrationMode === 'cover-only'
+        ? await _hydrateCoverImagesOnly(fallbackItems)
+        : await _hydrateCards(fallbackItems);
+      lastDocIdResult = cards[cards.length - 1]?.docId;
+      hasMore = false;
+    }
+  }
 
   return { items: cards, lastDocId: lastDocIdResult, hasMore };
 }

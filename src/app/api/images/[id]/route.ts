@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
 import { patchMediaDocument } from '@/lib/services/images/imageImportService';
-import { deleteMediaWithCardCleanup } from '@/lib/services/cardService';
+import { deleteMediaWithCardCleanup, recomputeCardsMediaSignalsForMedia } from '@/lib/services/cardService';
 
 /**
  * @swagger
@@ -94,6 +94,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     await patchMediaDocument(mediaId, patch);
+    if (hasTags) {
+      await recomputeCardsMediaSignalsForMedia(mediaId);
+    }
 
     return NextResponse.json({ message: `Media asset ${mediaId} updated.` });
   } catch (error) {

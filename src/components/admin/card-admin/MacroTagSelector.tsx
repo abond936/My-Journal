@@ -153,6 +153,10 @@ function ExpandedView({ initialSelection, onSave, onCancel, saving = false, clas
   const [currentSelection, setCurrentSelection] = useState<Set<string>>(new Set(initialSelection));
   const [searchTerm, setSearchTerm] = useState('');
 
+  React.useEffect(() => {
+    setCurrentSelection(new Set(initialSelection));
+  }, [initialSelection]);
+
   const dimensionalTree = useMemo(() => {
     if (!tags) return [];
     return createUITreeFromDimensions(tags);
@@ -188,6 +192,25 @@ function ExpandedView({ initialSelection, onSave, onCancel, saving = false, clas
     });
     return dimensions;
   }, [selectedTagTree]);
+
+  const expandedNodeIds = useMemo(() => {
+    const expanded = new Set<string>();
+    const walk = (node: TagWithChildren): boolean => {
+      const selfSelected = currentSelection.has(node.docId);
+      let childSelected = false;
+      for (const child of node.children || []) {
+        if (walk(child)) childSelected = true;
+      }
+      if (childSelected) expanded.add(node.docId);
+      return selfSelected || childSelected;
+    };
+    for (const dimension of dimensionalTree) {
+      for (const child of dimension.children || []) {
+        walk(child);
+      }
+    }
+    return expanded;
+  }, [dimensionalTree, currentSelection]);
 
   const handleTagChange = (tagId: string, isSelected: boolean) => {
     setCurrentSelection(prev => {
@@ -255,6 +278,7 @@ function ExpandedView({ initialSelection, onSave, onCancel, saving = false, clas
               dimension={dimension}
               selection={currentSelection}
               onSelectionChange={handleTagChange}
+              expandedNodeIds={expandedNodeIds}
               checkboxIdPrefix="tag"
               forceExpandAll={!!searchTerm.trim()}
             />

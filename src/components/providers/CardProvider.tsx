@@ -29,8 +29,21 @@ export type CardFilterType = 'all' | 'story' | 'qa' | 'quote' | 'callout' | 'gal
 export type CardStatus = 'all' | 'draft' | 'published';
 export type ActiveDimension = 'all' | 'who' | 'what' | 'when' | 'where' | 'collections';
 
-/** Main feed ordering. `random` shuffles cards loaded so far (same pages as newest). */
-export type FeedSortOrder = 'newest' | 'oldest' | 'random';
+/** Main feed ordering. `random` uses newest-ordered pages then shuffles; order is stable across SWR refresh, and load-more only shuffles new cards while keeping earlier positions. */
+export type FeedSortOrder =
+  | 'random'
+  | 'whenDesc'
+  | 'whenAsc'
+  | 'createdDesc'
+  | 'createdAsc'
+  | 'titleAsc'
+  | 'titleDesc'
+  | 'whoAsc'
+  | 'whoDesc'
+  | 'whatAsc'
+  | 'whatDesc'
+  | 'whereAsc'
+  | 'whereDesc';
 
 export type { FeedGroupBy };
 
@@ -45,6 +58,12 @@ export interface ICardContext {
   collectionCards: Card[]; // Flat list of collection parent cards
   feedSort: FeedSortOrder;
   feedGroupBy: FeedGroupBy;
+  mediaTagSignals: {
+    who: string[];
+    what: string[];
+    when: string[];
+    where: string[];
+  };
   /** Grouped sections for the main feed; null when grouping is off or not applicable. */
   feedSections: { heading: string; cards: Card[] }[] | null;
 
@@ -57,6 +76,7 @@ export interface ICardContext {
   setCollectionId: (id: string | null) => void;
   setFeedSort: (order: FeedSortOrder) => void;
   setFeedGroupBy: (g: FeedGroupBy) => void;
+  setMediaTagSignal: (dimension: 'who' | 'what' | 'when' | 'where', tagIds: string[]) => void;
   clearFilters: () => void;
   setPageLimit: (limit: number) => void;
   
@@ -76,7 +96,21 @@ const COLLECTION_STORAGE_KEY = 'myjournal-collection-id';
 const FEED_SORT_KEY = 'myjournal-feed-sort';
 const FEED_GROUP_KEY = 'myjournal-feed-group';
 
-const FEED_SORT_VALUES = new Set<string>(['newest', 'oldest', 'random']);
+const FEED_SORT_VALUES = new Set<string>([
+  'random',
+  'whenDesc',
+  'whenAsc',
+  'createdDesc',
+  'createdAsc',
+  'titleAsc',
+  'titleDesc',
+  'whoAsc',
+  'whoDesc',
+  'whatAsc',
+  'whatDesc',
+  'whereAsc',
+  'whereDesc',
+]);
 const FEED_GROUP_VALUES = new Set<string>(['none', 'who', 'what', 'when', 'where']);
 
 function normalizeStoredActiveDimension(raw: string | null): ActiveDimension {
@@ -87,9 +121,9 @@ function normalizeStoredActiveDimension(raw: string | null): ActiveDimension {
 }
 
 function readStoredFeedSort(): FeedSortOrder {
-  if (typeof window === 'undefined') return 'newest';
+  if (typeof window === 'undefined') return 'random';
   const raw = sessionStorage.getItem(FEED_SORT_KEY);
-  if (!raw || !FEED_SORT_VALUES.has(raw)) return 'newest';
+  if (!raw || !FEED_SORT_VALUES.has(raw)) return 'random';
   return raw as FeedSortOrder;
 }
 
@@ -139,6 +173,23 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   });
   const [feedSort, setFeedSortState] = useState<FeedSortOrder>(() => readStoredFeedSort());
   const [feedGroupBy, setFeedGroupByState] = useState<FeedGroupBy>(() => readStoredFeedGroup());
+  const [mediaTagSignals, setMediaTagSignals] = useState<{
+    who: string[];
+    what: string[];
+    when: string[];
+    where: string[];
+  }>({
+    who: [],
+    what: [],
+    when: [],
+    where: [],
+  });
+
+  /**
+   * Random feed: stable order across SWR revalidation (same doc-id set). On infinite scroll, keep
+   * the existing permutation and only shuffle newly loaded cards (append), so earlier rows do not jump.
+   */
+  const randomFeedOrderCacheRef = useRef<{ orderedDocIds: string[]; idSet: Set<string> } | null>(null);
 
   const setFeedSort = useCallback((order: FeedSortOrder) => {
     setFeedSortState(order);
@@ -149,6 +200,16 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     setFeedGroupByState(g);
     if (typeof window !== 'undefined') sessionStorage.setItem(FEED_GROUP_KEY, g);
   }, []);
+
+  const setMediaTagSignal = useCallback(
+    (dimension: 'who' | 'what' | 'when' | 'where', tagIds: string[]) => {
+      setMediaTagSignals((prev) => ({
+        ...prev,
+        [dimension]: tagIds,
+      }));
+    },
+    []
+  );
 
   const setActiveDimension = useCallback((dim: ActiveDimension) => {
     setActiveDimensionState(dim);
@@ -272,12 +333,62 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       Object.entries(dimensionalTags).forEach(([dimension, tagIds]) => {
         if (tagIds && tagIds.length > 0) params.set(dimension, tagIds.join(','));
       });
+      if (mediaTagSignals.who.length > 0) params.set('mediaWho', mediaTagSignals.who.join(','));
+      if (mediaTagSignals.what.length > 0) params.set('mediaWhat', mediaTagSignals.what.join(','));
+      if (mediaTagSignals.when.length > 0) params.set('mediaWhen', mediaTagSignals.when.join(','));
+      if (mediaTagSignals.where.length > 0) params.set('mediaWhere', mediaTagSignals.where.join(','));
       if (searchTerm?.trim()) params.set('q', searchTerm);
+      if (isAdmin && searchTerm?.trim()) params.set('searchField', 'title');
       if (cardType && cardType !== 'all') params.set('type', cardType);
       if (pageIndex > 0 && previousPageData?.lastDocId) params.set('lastDocId', previousPageData.lastDocId);
       if (isAdmin && !needsFullHydration) params.set('hydration', 'cover-only');
       if (!searchTerm?.trim()) {
-        params.set('sort', feedSort === 'oldest' ? 'oldest' : 'newest');
+        if (feedSort === 'random') {
+          params.set('sortBy', 'when');
+          params.set('sortDir', 'desc');
+        } else if (feedSort === 'whenAsc') {
+          params.set('sortBy', 'when');
+          params.set('sortDir', 'asc');
+        } else if (feedSort === 'whenDesc') {
+          params.set('sortBy', 'when');
+          params.set('sortDir', 'desc');
+        } else if (feedSort === 'createdAsc') {
+          params.set('sortBy', 'created');
+          params.set('sortDir', 'asc');
+        } else if (feedSort === 'createdDesc') {
+          params.set('sortBy', 'created');
+          params.set('sortDir', 'desc');
+        } else if (feedSort === 'titleAsc') {
+          params.set('sortBy', 'title');
+          params.set('sortDir', 'asc');
+        } else if (feedSort === 'titleDesc') {
+          params.set('sortBy', 'title');
+          params.set('sortDir', 'desc');
+        } else if (feedSort === 'whoAsc') {
+          params.set('sortBy', 'who');
+          params.set('sortDir', 'asc');
+        } else if (feedSort === 'whoDesc') {
+          params.set('sortBy', 'who');
+          params.set('sortDir', 'desc');
+        } else if (feedSort === 'whatAsc') {
+          params.set('sortBy', 'what');
+          params.set('sortDir', 'asc');
+        } else if (feedSort === 'whatDesc') {
+          params.set('sortBy', 'what');
+          params.set('sortDir', 'desc');
+        } else if (feedSort === 'whereAsc') {
+          params.set('sortBy', 'where');
+          params.set('sortDir', 'asc');
+        } else if (feedSort === 'whereDesc') {
+          params.set('sortBy', 'where');
+          params.set('sortDir', 'desc');
+        } else {
+          params.set('sortBy', 'when');
+          params.set('sortDir', 'desc');
+        }
+      } else {
+        params.set('sortBy', 'title');
+        params.set('sortDir', 'asc');
       }
 
       return `${endpoint}?${params.toString()}`;
@@ -299,10 +410,61 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     return dedupeCardsByDocId(flat);
   }, [data]);
   const orderedPaginatedCards = useMemo(() => {
-    if (feedSort !== 'random') return paginatedCards;
-    if (collectionId) return paginatedCards;
-    return shuffleCards(paginatedCards);
-  }, [paginatedCards, feedSort, collectionId]);
+    if (feedSort !== 'random') {
+      randomFeedOrderCacheRef.current = null;
+      return paginatedCards;
+    }
+    // Admin list editing should stay stable across revalidation.
+    if (pathname?.startsWith('/admin/card-admin')) {
+      return paginatedCards;
+    }
+    if (collectionId) {
+      return paginatedCards;
+    }
+
+    const docIds = paginatedCards.map((c) => c.docId).filter((id): id is string => Boolean(id));
+    const currentSet = new Set(docIds);
+    const prev = randomFeedOrderCacheRef.current;
+    const byId = new Map(paginatedCards.map((c) => [c.docId!, c]));
+
+    if (prev && prev.idSet.size > 0) {
+      // Keep previously seen cards in their prior relative order.
+      // Any cards not seen before (including replacements after edits) are appended shuffled.
+      const orderedExisting = prev.orderedDocIds.filter((id) => currentSet.has(id));
+      const existingSet = new Set(orderedExisting);
+      const newCards = paginatedCards.filter((c) => c.docId && !existingSet.has(c.docId));
+
+      if (
+        newCards.length === 0 &&
+        orderedExisting.length === paginatedCards.length &&
+        paginatedCards.length === docIds.length
+      ) {
+        return orderedExisting
+          .map((id) => byId.get(id))
+          .filter((c): c is Card => c !== undefined);
+      }
+
+      const shuffledNew = shuffleCards(newCards);
+      const combinedIds = [
+        ...orderedExisting,
+        ...shuffledNew.map((c) => c.docId!),
+      ];
+      randomFeedOrderCacheRef.current = {
+        orderedDocIds: combinedIds,
+        idSet: currentSet,
+      };
+      return combinedIds
+        .map((id) => byId.get(id))
+        .filter((c): c is Card => c !== undefined);
+    }
+
+    const shuffled = shuffleCards(paginatedCards);
+    randomFeedOrderCacheRef.current = {
+      orderedDocIds: shuffled.map((c) => c.docId!),
+      idSet: currentSet,
+    };
+    return shuffled;
+  }, [paginatedCards, feedSort, collectionId, pathname]);
   const cards = useMemo(() => {
     if (activeDimension === 'collections' && !collectionId) return collectionCards;
     return orderedPaginatedCards;
@@ -345,8 +507,9 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     setSearchTerm('');
     setStatus(isAdmin ? 'all' : 'published');
     setCollectionId(null);
-    setFeedSort('newest');
+    setFeedSort('random');
     setFeedGroupBy('none');
+    setMediaTagSignals({ who: [], what: [], when: [], where: [] });
   }, [isAdmin, setFilterTags, setCollectionId, setFeedSort, setFeedGroupBy]);
 
   const value = useMemo(
@@ -365,6 +528,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       collectionCards,
       feedSort,
       feedGroupBy,
+      mediaTagSignals,
       feedSections,
       loadMore,
       mutate,
@@ -376,6 +540,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       setCollectionId,
       setFeedSort,
       setFeedGroupBy,
+      setMediaTagSignal,
       clearFilters,
       setPageLimit,
       isValidating,
@@ -395,6 +560,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       collectionCards,
       feedSort,
       feedGroupBy,
+      mediaTagSignals,
       feedSections,
       loadMore,
       mutate,
@@ -406,6 +572,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       setCollectionId,
       setFeedSort,
       setFeedGroupBy,
+      setMediaTagSignal,
       clearFilters,
       setPageLimit,
       isValidating,

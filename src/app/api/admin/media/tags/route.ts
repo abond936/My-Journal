@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth/authOptions';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { Media } from '@/lib/types/photo';
 import { patchMediaDocument } from '@/lib/services/images/imageImportService';
+import { recomputeCardsMediaSignalsForMedia } from '@/lib/services/cardService';
 
 /**
  * POST — bulk-edit tags on many media docs.
@@ -58,6 +59,7 @@ export async function POST(request: NextRequest) {
       }
 
       await patchMediaDocument(id, { tags: nextTags });
+      await recomputeCardsMediaSignalsForMedia(id);
     }
 
     return NextResponse.json({ ok: true, updated: ids.length, mode: effectiveMode });

@@ -88,6 +88,21 @@ export async function GET(request: Request) {
     if (whenTags && whenTags.length > 0) dimensionalTags.when = whenTags;
     if (whereTags && whereTags.length > 0) dimensionalTags.where = whereTags;
 
+    const mediaDimensionalTags: {
+      who?: string[];
+      what?: string[];
+      when?: string[];
+      where?: string[];
+    } = {};
+    const mediaWhoTags = searchParams.get('mediaWho')?.split(',').filter(tag => tag.trim());
+    const mediaWhatTags = searchParams.get('mediaWhat')?.split(',').filter(tag => tag.trim());
+    const mediaWhenTags = searchParams.get('mediaWhen')?.split(',').filter(tag => tag.trim());
+    const mediaWhereTags = searchParams.get('mediaWhere')?.split(',').filter(tag => tag.trim());
+    if (mediaWhoTags && mediaWhoTags.length > 0) mediaDimensionalTags.who = mediaWhoTags;
+    if (mediaWhatTags && mediaWhatTags.length > 0) mediaDimensionalTags.what = mediaWhatTags;
+    if (mediaWhenTags && mediaWhenTags.length > 0) mediaDimensionalTags.when = mediaWhenTags;
+    if (mediaWhereTags && mediaWhereTags.length > 0) mediaDimensionalTags.where = mediaWhereTags;
+
     let status = searchParams.get('status') as Card['status'] | 'all' | null;
     if (!status) {
       status = isAdmin ? 'all' : 'published';
@@ -103,6 +118,7 @@ export async function GET(request: Request) {
 
     const type = (searchParams.get('type') as Card['type'] | 'all') || 'all';
     const q = searchParams.get('q') || undefined;
+    const searchField = searchParams.get('searchField');
     const limit = searchParams.has('limit') ? parseInt(searchParams.get('limit')!, 10) : 10;
     const lastDocId = searchParams.get('lastDocId') || undefined;
     const childrenIds_contains = searchParams.get('childrenIds_contains') || undefined;
@@ -111,9 +127,24 @@ export async function GET(request: Request) {
     const hydrationParam = searchParams.get('hydration');
     const hydrationMode: 'full' | 'cover-only' =
       hydrationParam === 'cover-only' ? 'cover-only' : 'full';
-    const sortRaw = searchParams.get('sort');
-    const sort: 'newest' | 'oldest' | undefined =
-      sortRaw === 'oldest' ? 'oldest' : sortRaw === 'newest' ? 'newest' : undefined;
+    const sortByRaw = searchParams.get('sortBy');
+    const sortBy: 'when' | 'created' | 'title' | 'who' | 'what' | 'where' | undefined =
+      sortByRaw === 'created'
+        ? 'created'
+        : sortByRaw === 'title'
+          ? 'title'
+          : sortByRaw === 'who'
+            ? 'who'
+            : sortByRaw === 'what'
+              ? 'what'
+              : sortByRaw === 'where'
+                ? 'where'
+                : sortByRaw === 'when'
+                  ? 'when'
+                  : undefined;
+    const sortDirRaw = searchParams.get('sortDir');
+    const sortDir: 'asc' | 'desc' | undefined =
+      sortDirRaw === 'asc' ? 'asc' : sortDirRaw === 'desc' ? 'desc' : undefined;
 
     try {
       // List cards that are collections (have children)
@@ -132,7 +163,8 @@ export async function GET(request: Request) {
         return NextResponse.json(result);
       }
 
-      if (q?.trim() && isTypesenseConfigured()) {
+      const titleOnlySearch = searchField === 'title';
+      if (q?.trim() && isTypesenseConfigured() && !titleOnlySearch) {
         try {
           const searchResult = await searchCards({
             query: q.trim(),
@@ -161,11 +193,14 @@ export async function GET(request: Request) {
         type,
         tags,
         dimensionalTags: Object.keys(dimensionalTags).length > 0 ? dimensionalTags : undefined,
+        mediaDimensionalTags:
+          Object.keys(mediaDimensionalTags).length > 0 ? mediaDimensionalTags : undefined,
         childrenIds_contains,
         limit,
         lastDocId,
         hydrationMode,
-        ...(sort ? { sort } : {}),
+        ...(sortBy ? { sortBy } : {}),
+        ...(sortDir ? { sortDir } : {}),
       });
 
       return NextResponse.json(result);

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import JournalImage from '@/components/common/JournalImage';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/lib/types/card';
@@ -12,7 +12,8 @@ import EditableDisplayModeCell from './EditableDisplayModeCell';
 import EditableTypeCell from './EditableTypeCell';
 import EditableStatusCell from './EditableStatusCell';
 import ResizableHeader from './ResizableHeader';
-import { getCoreTagsByDimension } from '@/lib/utils/tagDisplay';
+import EditModal from './EditModal';
+import MacroTagSelector from './MacroTagSelector';
 
 const COLUMN_WIDTHS_KEY = 'cardAdminColumnWidths';
 const DEFAULT_COLUMN_WIDTHS = {
@@ -55,6 +56,8 @@ export default function CardAdminList({
 }: CardAdminListProps) {
   const router = useRouter();
   const isAllSelected = cards.length > 0 && selectedCardIds.size === cards.length;
+  const [tagsEditCard, setTagsEditCard] = useState<Card | null>(null);
+  const [savingTags, setSavingTags] = useState(false);
 
   // Map of tagId -> tag name for quick lookup
   const tagMap = React.useMemo(() => new Map(allTags.map(t => [t.docId!, t.name])), [allTags]);
@@ -78,6 +81,79 @@ export default function CardAdminList({
     onSaveScrollPosition(cardId);
     router.push(`/admin/card-admin/${cardId}/edit`);
   };
+
+  const selectedTagObjectsForModal = React.useMemo(() => {
+    if (!tagsEditCard) return [];
+    const selected = new Set(tagsEditCard.tags || []);
+    return allTags.filter((tag) => selected.has(tag.docId));
+  }, [allTags, tagsEditCard]);
+
+  const openTagsEditor = useCallback(
+    async (card: Card) => {
+      setSavingTags(true);
+      try {
+        const response = await fetch(`/api/cards/${card.docId}`, { cache: 'no-store' });
+        if (!response.ok) {
+          setTagsEditCard(card);
+          return;
+        }
+        const latest = (await response.json()) as Card;
+        setTagsEditCard({
+          ...card,
+          ...latest,
+          docId: card.docId,
+        });
+      } catch {
+        setTagsEditCard(card);
+      } finally {
+        setSavingTags(false);
+      }
+    },
+    []
+  );
+
+  const tagDimensionById = React.useMemo(() => {
+    const map = new Map<string, 'who' | 'what' | 'when' | 'where'>();
+    allTags.forEach((tag) => {
+      if (!tag.docId || !tag.dimension) return;
+      const dim = String(tag.dimension) === 'reflection' ? 'what' : String(tag.dimension);
+      if (dim === 'who' || dim === 'what' || dim === 'when' || dim === 'where') {
+        map.set(tag.docId, dim);
+      }
+    });
+    return map;
+  }, [allTags]);
+
+  const getDirectTagsByDimension = useCallback(
+    (card: Card, dimension: 'who' | 'what' | 'when' | 'where') =>
+      (card.tags || []).filter((tagId) => tagDimensionById.get(tagId) === dimension),
+    [tagDimensionById]
+  );
+
+  const getMediaSuggestionTags = useCallback(
+    (card: Card, dimension: 'who' | 'what' | 'when' | 'where') => {
+      const mediaByDimension = {
+        who: card.mediaWho || [],
+        what: card.mediaWhat || [],
+        when: card.mediaWhen || [],
+        where: card.mediaWhere || [],
+      };
+      const current = new Set(card.tags || []);
+      return mediaByDimension[dimension].filter((tagId) => !current.has(tagId));
+    },
+    []
+  );
+
+  const applyDimensionSuggestions = useCallback(
+    async (card: Card, dimension: 'who' | 'what' | 'when' | 'where') => {
+      const suggestions = getMediaSuggestionTags(card, dimension);
+      if (!suggestions.length) return;
+      const nextTags = new Set(card.tags || []);
+      suggestions.forEach((tagId) => nextTags.add(tagId));
+      await onUpdateCard(card.docId, { tags: Array.from(nextTags) });
+    },
+    [getMediaSuggestionTags, onUpdateCard]
+  );
 
   return (
     <div className={styles.tableContainer}>
@@ -167,36 +243,55 @@ export default function CardAdminList({
               <td style={{ width: columnWidths.content }}>{card.content ? 'Y' : 'N'}</td>
               <td style={{ width: columnWidths.gallery }}>{card.galleryMedia?.length || 0}</td>
               <td style={{ width: columnWidths.children }}>{card.childrenIds?.length || 0}</td>
-              {
-                (() => {
-                  const core = getCoreTagsByDimension(card);
-                  const render = (ids: string[]) => ids.map(id => (
-                    <span key={id} className={styles.tag}>{tagMap.get(id) ?? id}</span>
-                  ));
+              {(() => {
+                const render = (ids: string[], className: string) => ids.map(id => (
+                  <span key={id} className={className}>{tagMap.get(id) ?? id}</span>
+                ));
+                const renderDimensionCell = (dimension: 'who' | 'what' | 'when' | 'where', width: number) => {
+                  const displayIds = getDirectTagsByDimension(card, dimension);
+                  const suggestionIds = getMediaSuggestionTags(card, dimension);
+                  const hasSuggestions = suggestionIds.length > 0;
                   return (
-                    <>
-                      <td style={{ width: columnWidths.who }}>
-                        <div className={styles.tags}>{render(core.who)}</div>
-                      </td>
-                      <td style={{ width: columnWidths.what }}>
-                        <div className={styles.tags}>{render(core.what)}</div>
-                      </td>
-                      <td style={{ width: columnWidths.when }}>
-                        <div className={styles.tags}>{render(core.when)}</div>
-                      </td>
-                      <td style={{ width: columnWidths.where }}>
-                        <div className={styles.tags}>{render(core.where)}</div>
-                      </td>
-                    </>
+                    <td style={{ width }} key={`${card.docId}-${dimension}`}>
+                      <div className={styles.tags}>{render(displayIds, styles.currentTag)}</div>
+                      <div className={styles.tagSuggestionRow}>
+                        <div className={styles.tagSuggestions}>
+                          {hasSuggestions ? render(suggestionIds, styles.suggestionTag) : <span className={styles.noSuggestion}>No media suggestions</span>}
+                        </div>
+                        <button
+                          type="button"
+                          className={styles.suggestApplyButton}
+                          disabled={!hasSuggestions}
+                          onClick={() => void applyDimensionSuggestions(card, dimension)}
+                        >
+                          Apply {dimension}
+                        </button>
+                      </div>
+                    </td>
                   );
-                })()
-              }
+                };
+                return (
+                  <>
+                    {renderDimensionCell('who', columnWidths.who)}
+                    {renderDimensionCell('what', columnWidths.what)}
+                    {renderDimensionCell('when', columnWidths.when)}
+                    {renderDimensionCell('where', columnWidths.where)}
+                  </>
+                );
+              })()}
               <td style={{ width: columnWidths.actions }}>
                 <button
                   onClick={() => handleEditClick(card.docId)}
                   className={styles.actionButton}
                 >
                   Edit
+                </button>
+                <button
+                  onClick={() => void openTagsEditor(card)}
+                  className={styles.actionButton}
+                  disabled={savingTags}
+                >
+                  Tags
                 </button>
                 <button
                   onClick={async () => {
@@ -238,6 +333,34 @@ export default function CardAdminList({
           ))}
         </tbody>
       </table>
+      {tagsEditCard ? (
+        <EditModal
+          isOpen={true}
+          onClose={() => {
+            if (!savingTags) setTagsEditCard(null);
+          }}
+          title={`Edit Tags: ${tagsEditCard.title || '(No title)'}`}
+        >
+          <MacroTagSelector
+            selectedTags={selectedTagObjectsForModal}
+            allTags={allTags}
+            startExpanded
+            onRequestClose={() => setTagsEditCard(null)}
+            onChange={() => {
+              // no-op, save goes through onSaveSelection
+            }}
+            onSaveSelection={async (newIds) => {
+              setSavingTags(true);
+              try {
+                await onUpdateCard(tagsEditCard.docId, { tags: newIds });
+                setTagsEditCard(null);
+              } finally {
+                setSavingTags(false);
+              }
+            }}
+          />
+        </EditModal>
+      ) : null}
     </div>
   );
 } 
