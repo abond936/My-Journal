@@ -312,13 +312,21 @@
   background-color: var(--layout-background1-color);
 }
 
+/* Tag block + row filters + search + hint: cap height so the grid keeps most of the panel; scroll inside here. */
+.libraryControls {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: min(36vh, 280px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  flex-shrink: 1;
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
+}
+
 .libraryTagSection {
   padding: 0.65rem 1rem;
   border-bottom: var(--border-width-thin) solid var(--border1-color);
   background-color: var(--layout-background2-color);
-  flex-shrink: 0;
-  max-height: min(38vh, 320px);
-  overflow-y: auto;
 }
 
 .libraryTagSectionLabel {
@@ -353,7 +361,6 @@
   padding: 0.65rem 1rem;
   border-bottom: var(--border-width-thin) solid var(--border1-color);
   background-color: var(--layout-background2-color);
-  flex-shrink: 0;
 }
 
 .libraryFilterGroup {
@@ -417,7 +424,6 @@
   font-size: 0.75rem;
   color: var(--text2-color);
   line-height: 1.35;
-  flex-shrink: 0;
 }
 
 .libraryToolbar {
@@ -425,7 +431,6 @@
   gap: 0.5rem;
   padding: 0.75rem 1rem;
   border-bottom: var(--border-width-thin) solid var(--border1-color);
-  flex-shrink: 0;
 }
 
 .librarySearchInput {
@@ -453,14 +458,37 @@
   background: var(--layout-background1-color);
 }
 
-.libraryGrid {
+/* Single flex child so grid + load-more share one bounded column; min-height:0 allows inner scroll. */
+.libraryResults {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Scroll here only — not on the grid. A grid that is also a sized flex child can collapse row heights. */
+.libraryScroll {
   flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
+}
+
+.libraryGrid {
   padding: 1rem;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-auto-rows: max-content;
   gap: 0.75rem;
   align-content: start;
+  align-items: start;
+}
+
+/* Library tiles: width from column, height from aspect-ratio (not stretched by grid row flex quirks). */
+.libraryGrid .photoItem {
+  width: 100%;
+  height: auto;
 }
 
 .libraryCaption {

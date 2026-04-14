@@ -709,6 +709,7 @@ export default function PhotoPicker({
 
         {sourceTab === 'library' && (
           <div className={styles.libraryPanel}>
+            <div className={styles.libraryControls}>
             <div className={styles.libraryTagSection}>
               <p className={styles.libraryTagSectionLabel}>Filter library by tags</p>
               <p className={styles.libraryTagSectionHint}>
@@ -817,6 +818,7 @@ export default function PhotoPicker({
               Search updates as you type (short delay). Same non-tag filters as Media admin. Tag filter and
               optional &quot;Match card tags&quot; are in the section above.
             </p>
+            </div>
 
             {libraryLoading ? (
               <div className={styles.loading}>
@@ -826,8 +828,9 @@ export default function PhotoPicker({
             ) : libraryItems.length === 0 ? (
               <div className={styles.noContent}>No media matches the current filters.</div>
             ) : (
-              <>
-                <div className={styles.libraryGrid}>
+              <div className={styles.libraryResults}>
+                <div className={styles.libraryScroll}>
+                  <div className={styles.libraryGrid}>
                   {libraryItems.map(media => {
                     const isSelected = selectedLibraryMedia.some(m => m.docId === media.docId);
                     return (
@@ -864,6 +867,7 @@ export default function PhotoPicker({
                       </div>
                     );
                   })}
+                  </div>
                 </div>
                 {libraryHasNext && (
                   <div className={styles.libraryLoadMoreWrap}>
@@ -877,7 +881,7 @@ export default function PhotoPicker({
                     </button>
                   </div>
                 )}
-              </>
+              </div>
             )}
           </div>
         )}

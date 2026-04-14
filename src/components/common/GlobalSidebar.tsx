@@ -274,11 +274,6 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                   <option value="oldest">Oldest (When tag) first</option>
                   <option value="random">Random</option>
                 </select>
-                <p className={styles.sortHint}>
-                  Newest/oldest use your When tags (decade/year/YYYYMMDD). Cards without a parseable When
-                  date appear last (&quot;Undated&quot; when grouped by When). Title search uses alphabetical
-                  order. Random shuffles cards loaded so far.
-                </p>
               </div>
 
               <div className={styles.sidebarSection}>
@@ -296,10 +291,6 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                   <option value="where">Where</option>
                   <option value="what">What</option>
                 </select>
-                <p className={styles.sortHint}>
-                  One section per card (first tag in that dimension by name). What can produce many
-                  sections.
-                </p>
               </div>
 
               <nav className={styles.navigation}>
