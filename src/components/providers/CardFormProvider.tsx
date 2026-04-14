@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { Card, CardUpdate, cardSchema, GalleryMediaItem, HydratedGalleryMediaItem } from '@/lib/types/card';
+import { Card, CardUpdate, cardSchema, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 import { Media } from '@/lib/types/photo';
 import {
@@ -61,6 +61,18 @@ interface FormContextValue {
   confirmLeaveIfDirty: () => boolean;
   /** RichTextEditor registers latest HTML getter so leave/dirty matches TipTap buffer. */
   registerEditorContentGetter: (getter: () => string) => () => void;
+
+  /**
+   * Align dirty baseline with current form state (after a successful partial persist such as
+   * gallery-only PATCH) without running full-card validation.
+   */
+  syncPersistableBaseline: () => void;
+
+  /**
+   * After gallery-only PATCH succeeds: set gallery on card, merge editor HTML into cardData,
+   * and align lastSavedState so isDirty / leave guards match Firestore (avoids editor vs cardData drift).
+   */
+  commitGalleryMediaPersisted: (nextGallery: HydratedGalleryMediaItem[]) => void;
 }
 
 /**
@@ -102,11 +114,12 @@ interface FormProviderProps {
   children: React.ReactNode;
   initialCard: Card | null;
   allTags: Tag[];
-  onSave: (cardData: CardUpdate) => Promise<void>;
+  /** Resolve with the saved card from the API when available so dirty baseline matches the server. */
+  onSave: (cardData: CardUpdate) => Promise<Card | null>;
 }
 
 function mergeInitialCard(card: Card | null): CardUpdate {
-  if (!card) return EMPTY_CARD;
+  if (!card) return { ...EMPTY_CARD };
   const type = card.type ?? 'story';
   return {
     ...EMPTY_CARD,
@@ -115,6 +128,10 @@ function mergeInitialCard(card: Card | null): CardUpdate {
     coverImage: card.coverImage ?? null,
     type,
     displayMode: normalizeDisplayModeForType(type, card.displayMode),
+    tags: Array.isArray(card.tags) ? card.tags : [],
+    childrenIds: Array.isArray(card.childrenIds) ? card.childrenIds : [],
+    contentMedia: Array.isArray(card.contentMedia) ? card.contentMedia : [],
+    galleryMedia: Array.isArray(card.galleryMedia) ? card.galleryMedia : [],
   };
 }
 
@@ -200,6 +217,35 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     return window.confirm('You have unsaved changes. Leave without saving?');
   }, [formState.lastSavedState.cardData, mergeEditorContentInto]);
 
+  const syncPersistableBaseline = useCallback(() => {
+    setFormState((prev) => ({
+      ...prev,
+      lastSavedState: {
+        cardData: mergeEditorContentInto(prev.cardData),
+      },
+    }));
+  }, [mergeEditorContentInto]);
+
+  const commitGalleryMediaPersisted = useCallback(
+    (nextGallery: HydratedGalleryMediaItem[]) => {
+      setFormState((prev) => {
+        const cardWithGallery: CardUpdate = {
+          ...prev.cardData,
+          galleryMedia: nextGallery,
+        };
+        const merged = mergeEditorContentInto(cardWithGallery);
+        return {
+          ...prev,
+          cardData: merged,
+          lastSavedState: {
+            cardData: { ...merged },
+          },
+        };
+      });
+    },
+    [mergeEditorContentInto]
+  );
+
   useEffect(() => {
     if (!isDirty) return;
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -211,27 +257,18 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
   }, [isDirty]);
 
   const setField = useCallback((field: keyof CardUpdate, value: any) => {
-    if (!formState.cardData) return;
-
-    // Only update if the value has actually changed
-    if (value !== formState.cardData[field]) {
-
-
-      setFormState(prev => {
-        const newState = {
-          ...prev,
-          cardData: {
-            ...prev.cardData,
-            [field]: value
-          }
-        };
-
-
-
-        return newState;
-      });
-    }
-  }, [formState.cardData]);
+    setFormState((prev) => {
+      if (!prev.cardData) return prev;
+      if (value === prev.cardData[field]) return prev;
+      return {
+        ...prev,
+        cardData: {
+          ...prev.cardData,
+          [field]: value,
+        },
+      };
+    });
+  }, []);
 
   const updateCoverImage = useCallback((media: Media | null, focalPoint?: { x: number; y: number }) => {
     setFormState(prev => ({
@@ -339,12 +376,18 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
         // Remove derived fields – server will regenerate
         delete (payload as any).filterTags;
 
-        await onSave(payload);
+        const savedCard = await onSave(payload);
+
+        const baseline =
+          savedCard != null
+            ? mergeEditorContentInto(mergeInitialCard(savedCard))
+            : dataToSave;
 
         batchStateUpdate({
           isSaving: false,
+          cardData: baseline,
           lastSavedState: {
-            cardData: dataToSave,
+            cardData: { ...baseline },
           },
         });
       } catch (error) {
@@ -356,14 +399,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
   );
 
   const resetForm = useCallback(() => {
-    const card = initialCard
-      ? {
-          ...EMPTY_CARD,
-          ...initialCard,
-          coverImageId: initialCard.coverImageId ?? null,
-          coverImage: initialCard.coverImage ?? null,
-        }
-      : EMPTY_CARD;
+    const card = mergeInitialCard(initialCard);
     setFormState({
       cardData: card,
       isSaving: false,
@@ -389,6 +425,8 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       isDirty,
       confirmLeaveIfDirty,
       registerEditorContentGetter,
+      syncPersistableBaseline,
+      commitGalleryMediaPersisted,
     }),
     [
       formState,
@@ -404,6 +442,8 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       isDirty,
       confirmLeaveIfDirty,
       registerEditorContentGetter,
+      syncPersistableBaseline,
+      commitGalleryMediaPersisted,
     ]
   );
 

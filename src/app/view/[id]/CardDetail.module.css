@@ -38,7 +38,7 @@
 .coverImageContainer {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 4 / 5;
   overflow: hidden;
   border-radius: var(--border-radius-lg);
   margin-bottom: var(--spacing-lg);

@@ -107,6 +107,7 @@
 .expandButton {
   all: unset;
   cursor: pointer;
+  font-family: var(--body-font-family);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -130,6 +131,7 @@
 .defaultExpandButton {
   all: unset;
   cursor: pointer;
+  font-family: var(--body-font-family);
   font-size: 0.75rem;
   opacity: 0.6;
   padding: 0 2px;
@@ -147,12 +149,18 @@
 
 .checkbox {
   margin: 0;
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--button-solid-background-color);
+  cursor: pointer;
 }
 
 .tagName {
   cursor: pointer;
+  font-family: var(--body-font-family);
   color: var(--text1-color);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-normal, 400);
 }
 
 .children {

@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import styles from './TagTree.module.css';
 import { TagWithChildren } from '@/components/providers/TagProvider';
 import { getDefaultExpandedTagIds, getAllExpandableTagIds } from '@/lib/utils/tagUtils';
+import { usePersistentTreeExpansion } from '@/lib/hooks/usePersistentTreeExpansion';
 
 interface TagTreeProps {
   tree: TagWithChildren[];
@@ -27,29 +28,24 @@ export default function TagTree({
   onSetDefaultExpanded,
   showDefaultExpandControl = false,
 }: TagTreeProps) {
-  const [expandedTags, setExpandedTags] = useState<Set<string>>(new Set());
+  const {
+    expandedIds,
+    toggleExpanded,
+    initializeIfEmpty,
+  } = usePersistentTreeExpansion('myjournal:tag-tree:expanded');
 
-  // Set initial expanded state based on tag.defaultExpanded (collapsed when false)
+  const forceExpandedIds = useMemo(() => getAllExpandableTagIds(tree), [tree]);
+  const effectiveExpanded = forceExpandAll ? forceExpandedIds : expandedIds;
+
+  // Set initial expanded state based on tag.defaultExpanded (collapsed when false).
   useEffect(() => {
     if (tree.length > 0) {
-      setExpandedTags(forceExpandAll ? getAllExpandableTagIds(tree) : getDefaultExpandedTagIds(tree));
+      initializeIfEmpty(Array.from(getDefaultExpandedTagIds(tree)));
     }
-  }, [tree, forceExpandAll]);
-
-  const toggleTag = (tagId: string) => {
-    setExpandedTags(prev => {
-      const next = new Set(prev);
-      if (next.has(tagId)) {
-        next.delete(tagId);
-      } else {
-        next.add(tagId);
-      }
-      return next;
-    });
-  };
+  }, [tree, initializeIfEmpty]);
 
   const renderTag = (tag: TagWithChildren, level: number = 0) => {
-    const isExpanded = expandedTags.has(tag.docId);
+    const isExpanded = effectiveExpanded.has(tag.docId);
     const isSelected = selectedTags.includes(tag.docId);
     const hasChildren = tag.children && tag.children.length > 0;
     const isDefaultExpanded = tag.defaultExpanded !== false;
@@ -63,7 +59,7 @@ export default function TagTree({
         <div className={styles.tagHeader}>
           <button
             className={styles.expandButton}
-            onClick={() => toggleTag(tag.docId)}
+            onClick={() => toggleExpanded(tag.docId)}
             aria-expanded={isExpanded}
             disabled={!hasChildren}
           >

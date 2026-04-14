@@ -173,8 +173,8 @@ The primary users are the author (admin) creating the content and his family con
 ✅ **Complete**
   - **Syntax** - `npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json`.
   - **Firebase Setup** - Credentials live in `.env`.
-  - **.env** - Scripts load `.env` before importing Firebase (`-r dotenv/config`, optionally `DOTENV_CONFIG_PATH=.env`) so env vars are available when `admin.ts` initializes.
-  - **Maintenance Scripts** - Active scripts: `reconcile:media-cards`, `regenerate:storage-urls`, `cleanup:media`, `backup-database`, `backfill:media-metadata`, `seed:journal-users`.
+  - **.env** - Scripts load `.env` **before** any static import of `admin.ts` (`-r dotenv/config` on the Node/tsx invocation, optionally `DOTENV_CONFIG_PATH=.env`). In-file `dotenv.config()` alone is **not** enough if the same file statically imports Firebase Admin—imports run first. See `docs/NPM-SCRIPTS.md` → **Firebase Admin CLI (dotenv)**.
+  - **Maintenance Scripts** - Active scripts: `reconcile:media-cards`, `regenerate:storage-urls`, `cleanup:media`, `backup:database`, `backfill:media-metadata`, `seed:journal-users`.
 ⭕2 **Future**
   - **Script Cleanup** - 86 script files under `src/lib/scripts/`; many are obsolete migration/debug/test scripts not wired into `package.json`. Review and prune.
 📘 **Script Index** - `docs/NPM-SCRIPTS.md`.
@@ -191,7 +191,7 @@ The primary users are the author (admin) creating the content and his family con
 
 *Features*
 ✅ **Complete**
-  - **Database** - Windows Scheduled Task at 2am daily, auto-awake PC, cleared after >5 days. Script files exist (`backup-database.ts`, `backup-firestore.ts`) but are not wired into `package.json`.
+  - **Database** - `npm run backup:database` writes under `ONEDRIVE_PATH/Firebase Backups/run-<timestamp>/` (all Firestore root collections, index/rules copies, optional Typesense JSONL). Storage file bytes are not included. Optional Windows task: `src/lib/scripts/setup-database-backup-task.ps1` (uses `tsx -r dotenv/config` and `firebase/backup-firestore.ts`; requires `.env` visible to the task user).
   - **Repo** - GitHub backup on every push for 7 days.
     - Commit directly to **`main`** and push to `origin/main`. Do not use feature branches or PR merge flow unless explicitly requested for a specific task.
 ⭕2 **Future**

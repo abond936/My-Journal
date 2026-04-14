@@ -134,16 +134,17 @@ export default function CoverPhotoContainer({
         data-testid="cover-dropzone"
       >
         <input {...getInputProps()} />
-      {isSaving ? (
-        <div className={styles.placeholder}>
-          <LoadingSpinner />
-        </div>
-      ) : coverImage ? (
+      {coverImage ? (
         <>
           <div className={styles.imageContainer} style={{ position: 'relative' }}>
             {isDragActive && (
               <div className={styles.dropOverlay}>
                 Drop to replace cover
+              </div>
+            )}
+            {isSaving && (
+              <div className={styles.savingOverlay} aria-label="Saving cover image changes">
+                <LoadingSpinner />
               </div>
             )}
             <JournalImage
@@ -164,6 +165,7 @@ export default function CoverPhotoContainer({
                 onClick={() => setIsPickerOpen(true)}
                 className={styles.changeButton}
                 type="button"
+                disabled={isSaving || isUploading}
               >
                 Change
               </button>
@@ -171,6 +173,7 @@ export default function CoverPhotoContainer({
                 onClick={handleRemovePhoto}
                 className={styles.removeButton}
                 type="button"
+                disabled={isSaving || isUploading}
               >
                 Remove
               </button>
@@ -191,6 +194,7 @@ export default function CoverPhotoContainer({
                   handlePositionChange(newHorizontal, verticalPosition);
                 }}
                 className={styles.slider}
+                disabled={isSaving || isUploading}
               />
             </div>
             <div className={styles.sliderContainer}>
@@ -208,6 +212,7 @@ export default function CoverPhotoContainer({
                   handlePositionChange(horizontalPosition, newVertical);
                 }}
                 className={styles.slider}
+                disabled={isSaving || isUploading}
               />
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { updateCard } from '@/lib/services/cardService';
+import { getCardsByIds, updateCard } from '@/lib/services/cardService';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
 
@@ -12,15 +12,34 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { cardIds, tags } = await request.json();
+    const { cardIds, tags, addTagIds, removeTagIds } = await request.json();
 
-    if (!Array.isArray(cardIds) || cardIds.length === 0 || !Array.isArray(tags)) {
+    if (!Array.isArray(cardIds) || cardIds.length === 0) {
       return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     }
 
-    // Since cardService functions handle transactions, we can parallelize the updates.
+    // Backward compatibility: full replacement mode.
+    if (Array.isArray(tags)) {
+      await Promise.all(cardIds.map(cardId => updateCard(cardId, { tags })));
+      return NextResponse.json({ message: 'Tags updated successfully' });
+    }
+
+    if (!Array.isArray(addTagIds) || !Array.isArray(removeTagIds)) {
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    }
+
+    const cards = await getCardsByIds(cardIds, { hydrationMode: 'cover-only' });
     await Promise.all(
-      cardIds.map(cardId => updateCard(cardId, { tags }))
+      cards.map((card) => {
+        const next = new Set(card.tags || []);
+        addTagIds.forEach((tagId) => {
+          if (typeof tagId === 'string' && tagId.trim()) next.add(tagId);
+        });
+        removeTagIds.forEach((tagId) => {
+          if (typeof tagId === 'string' && tagId.trim()) next.delete(tagId);
+        });
+        return updateCard(card.docId, { tags: Array.from(next) });
+      })
     );
 
     return NextResponse.json({ message: 'Tags updated successfully' });

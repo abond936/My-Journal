@@ -8,7 +8,7 @@ Product rules and import workflow context live in **`docs/02-Application.md`** (
 - Only files whose **basename** ends with **`__X`** immediately before the extension are imported, e.g. `IMG_0001__X.jpg`. Use **two underscores** and an **uppercase X** (`__X`), not `__x`.
 - Images are **WebP-optimized in memory** and uploaded to **Firebase Storage**; the app **does not** write an `xNormalized` folder on disk during import.
 - **`sourcePath`** on each `media` document still refers to the **original** file path (the `__X` file) for duplicate detection.
-- **`IMPORT_FOLDER_MAX_IMAGES`** (default `50`) applies to the **count of `__X` files** per folder.
+- **`IMPORT_FOLDER_MAX_IMAGES`** (default `60`) applies to the **count of `__X` files** per folder.
 - Read paths (legacy still supported): images directly in a leaf folder, or under a child **`yEdited`** or **`xNormalized`** folder—**only `__X`-marked** files are read from that directory.
 
 ## Local CLI: `normalize-images` (`npm run normalize:images`)
@@ -37,3 +37,5 @@ See **`normalize-images-README.md`** for full CLI behavior.
 ## Related npm scripts
 
 See **`docs/NPM-SCRIPTS.md`**. For media/card integrity after bulk work: `npm run reconcile:media-cards -- --diagnose`.
+
+- **`npm run import:folder -- "<path>"`** — CLI smoke test for a single folder import (same behavior as admin folder import). Requires `.env` with `ONEDRIVE_ROOT_FOLDER` and Firebase Admin vars.

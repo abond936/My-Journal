@@ -34,13 +34,32 @@ import {
 interface GalleryManagerProps {
   galleryMedia: HydratedGalleryMediaItem[];
   onUpdate: (newGallery: HydratedGalleryMediaItem[]) => void;
+  onSetAsCover?: (item: HydratedGalleryMediaItem) => void;
+  currentCoverMediaId?: string | null;
   error?: string;
   className?: string;
   /** Narrow Library tab in photo picker to media matching these card tags. */
   filterTagIds?: string[];
+  /**
+   * After a gallery slot is saved in the modal (tags PATCH + local slot state), persist
+   * `galleryMedia` on the card so caption/focal overrides match Firestore and dirty/leave guards clear.
+   * Return false if the card PATCH failed so the modal can stay open.
+   */
+  onPersistGalleryAfterSlotSave?: (
+    nextGallery: HydratedGalleryMediaItem[]
+  ) => boolean | Promise<boolean>;
 }
 
-export default function GalleryManager({ galleryMedia, onUpdate, error, className, filterTagIds }: GalleryManagerProps) {
+export default function GalleryManager({
+  galleryMedia,
+  onUpdate,
+  onSetAsCover,
+  currentCoverMediaId,
+  error,
+  className,
+  filterTagIds,
+  onPersistGalleryAfterSlotSave,
+}: GalleryManagerProps) {
   const [editingItem, setEditingItem] = useState<HydratedGalleryMediaItem | null>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
@@ -58,10 +77,15 @@ export default function GalleryManager({ galleryMedia, onUpdate, error, classNam
     onUpdate(galleryMedia.filter(item => item.mediaId !== mediaId));
   };
 
-  const handleSaveMetadata = (updatedItem: HydratedGalleryMediaItem) => {
-    onUpdate(galleryMedia.map(item =>
+  const handleSaveMetadata = async (updatedItem: HydratedGalleryMediaItem) => {
+    const nextGallery = galleryMedia.map((item) =>
       item.mediaId === updatedItem.mediaId ? updatedItem : item
-    ));
+    );
+    onUpdate(nextGallery);
+    if (onPersistGalleryAfterSlotSave) {
+      const ok = await onPersistGalleryAfterSlotSave(nextGallery);
+      if (!ok) return;
+    }
     setEditingItem(null);
   };
 
@@ -126,10 +150,22 @@ export default function GalleryManager({ galleryMedia, onUpdate, error, classNam
                     </div>
                   )}
                   <div className={styles.controls}>
+                    {onSetAsCover ? (
+                      <button
+                        onClick={() => onSetAsCover(item)}
+                        className={styles.editButton}
+                        aria-label="Set as cover image"
+                        type="button"
+                        disabled={item.mediaId === currentCoverMediaId}
+                      >
+                        {item.mediaId === currentCoverMediaId ? 'Cover' : 'Set Cover'}
+                      </button>
+                    ) : null}
                     <button
                       onClick={() => setEditingItem(item)}
                       className={styles.editButton}
                       aria-label="Edit image metadata"
+                      type="button"
                     >
                       Edit
                     </button>
@@ -137,6 +173,7 @@ export default function GalleryManager({ galleryMedia, onUpdate, error, classNam
                       onClick={() => handleRemovePhoto(item.mediaId)}
                       className={styles.removeButton}
                       aria-label="Remove image"
+                      type="button"
                     >
                       ×
                     </button>
@@ -153,6 +190,7 @@ export default function GalleryManager({ galleryMedia, onUpdate, error, classNam
           isOpen={!!editingItem}
           onClose={() => setEditingItem(null)}
           title={`Edit: ${editingItem.media?.filename || 'Image'}`}
+          size="wide"
         >
           <GalleryItemForm
             item={editingItem}
@@ -177,7 +215,7 @@ export default function GalleryManager({ galleryMedia, onUpdate, error, classNam
 // --- Internal Form Component for the Modal ---
 interface GalleryItemFormProps {
   item: HydratedGalleryMediaItem;
-  onSave: (updatedItem: HydratedGalleryMediaItem) => void;
+  onSave: (updatedItem: HydratedGalleryMediaItem) => void | Promise<void>;
 }
 
 function GalleryItemForm({ item, onSave }: GalleryItemFormProps) {
@@ -245,8 +283,12 @@ function GalleryItemForm({ item, onSave }: GalleryItemFormProps) {
     setCaption(item.media?.caption ?? '');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  /**
+   * Must not use a nested <form> here: GalleryManager lives inside CardForm's <form id="card-form">.
+   * A nested form is invalid HTML; the browser can treat the modal "Save" as submitting the outer
+   * card form instead of this flow (tags PATCH + gallery slot PATCH never run).
+   */
+  const handleSaveClick = async () => {
     setTagSaveError(null);
     const tagsPayload = [...mediaTagIds];
     setSaving(true);
@@ -268,7 +310,7 @@ function GalleryItemForm({ item, onSave }: GalleryItemFormProps) {
     setSaving(false);
 
     const { objectPosition: _op, caption: _cap, ...rest } = item;
-    onSave({
+    await onSave({
       ...rest,
       ...(item.media
         ? {
@@ -286,29 +328,75 @@ function GalleryItemForm({ item, onSave }: GalleryItemFormProps) {
   const selectedTagObjects = allTags.filter(t => t.docId && mediaTagIds.includes(t.docId));
 
   return (
-    <form onSubmit={handleSubmit} className={styles.form}>
+    <div className={styles.form}>
       {item.media ? (
-        <div className={styles.focalPreview}>
-          <JournalImage
-            src={getDisplayUrl(item.media)}
-            alt=""
-            className={styles.focalPreviewImage}
-            width={480}
-            height={360}
-            sizes="(max-width: 520px) 100vw, 480px"
-            style={{
-              objectFit: 'cover',
-              objectPosition,
-            }}
-          />
+        <div className={styles.previewStack}>
+          <div className={styles.focalPreview}>
+            <JournalImage
+              src={getDisplayUrl(item.media)}
+              alt=""
+              fill
+              className={styles.focalPreviewImage}
+              sizes="(max-width: 900px) 90vw, 800px"
+              style={{
+                objectFit: 'cover',
+                objectPosition,
+              }}
+              priority={false}
+            />
+          </div>
+          <div className={styles.focalSliders}>
+            <div className={styles.sliderRow}>
+              <label htmlFor="gallery-focal-h">Horizontal</label>
+              <input
+                id="gallery-focal-h"
+                type="range"
+                min={0}
+                max={100}
+                value={horizontalPosition}
+                onChange={(e) => handleSliderH(Number(e.target.value))}
+                className={styles.slider}
+              />
+            </div>
+            <div className={styles.sliderRow}>
+              <label htmlFor="gallery-focal-v">Vertical</label>
+              <input
+                id="gallery-focal-v"
+                type="range"
+                min={0}
+                max={100}
+                value={verticalPosition}
+                onChange={(e) => handleSliderV(Number(e.target.value))}
+                className={styles.slider}
+              />
+            </div>
+            <div className={styles.focalActions}>
+              <button
+                type="button"
+                className={styles.resetFocalButton}
+                onClick={handleResetFocalToMediaDefault}
+                disabled={!hasFocalOverride}
+              >
+                Use media default
+              </button>
+            </div>
+          </div>
         </div>
       ) : null}
 
-      <div className={`${styles.formGroup} ${styles.whoSection}`}>
-        <span className={styles.whoSectionLabel}>Tags on this image</span>
-        <p className={styles.whoHint}>
-          Same tag library as cards. Tags apply to this media only—they do not merge onto the parent card.
-        </p>
+      <div className={styles.formGroup}>
+        <label htmlFor="gallery-caption">Caption</label>
+        <textarea
+          id="gallery-caption"
+          value={caption}
+          onChange={(e) => handleCaptionChange(e.target.value)}
+          className={styles.textarea}
+          rows={3}
+          placeholder="Optional caption for this slot on the card"
+        />
+      </div>
+
+      <div className={`${styles.formGroup} ${styles.tagBlock}`}>
         {tagSaveError ? <p className={styles.whoError}>{tagSaveError}</p> : null}
         <MacroTagSelector
           selectedTags={selectedTagObjects}
@@ -317,69 +405,18 @@ function GalleryItemForm({ item, onSave }: GalleryItemFormProps) {
         />
       </div>
 
-      <div className={styles.formGroup}>
-        <label htmlFor="gallery-caption">Caption</label>
-        <textarea
-          id="gallery-caption"
-          value={caption}
-          onChange={e => handleCaptionChange(e.target.value)}
-          className={styles.textarea}
-          rows={3}
-          placeholder="Optional; shown under the image on the card"
-        />
-      </div>
-
-      <div className={styles.formGroup}>
-        <span className={styles.focalLabel}>Focal point (crop preview)</span>
-        <p className={styles.focalInheritHint}>
-          {hasFocalOverride
-            ? 'This card overrides the media default for this slot only.'
-            : 'Using the media default. Move a slider to set a per-card override, or edit default focal in Media Admin.'}
-        </p>
-        <div className={styles.sliderRow}>
-          <label htmlFor="gallery-focal-h">Horizontal</label>
-          <input
-            id="gallery-focal-h"
-            type="range"
-            min={0}
-            max={100}
-            value={horizontalPosition}
-            onChange={e => handleSliderH(Number(e.target.value))}
-            className={styles.slider}
-          />
-        </div>
-        <div className={styles.sliderRow}>
-          <label htmlFor="gallery-focal-v">Vertical</label>
-          <input
-            id="gallery-focal-v"
-            type="range"
-            min={0}
-            max={100}
-            value={verticalPosition}
-            onChange={e => handleSliderV(Number(e.target.value))}
-            className={styles.slider}
-          />
-        </div>
-        <div className={styles.focalActions}>
-          <button
-            type="button"
-            className={styles.resetFocalButton}
-            onClick={handleResetFocalToMediaDefault}
-            disabled={!hasFocalOverride}
-          >
-            Use media default
-          </button>
-        </div>
-        <p className={styles.focalHint}>
-          Preview / override value: <code>{objectPosition}</code>
-        </p>
-      </div>
-
       <div className={styles.formActions}>
-        <button type="submit" className={styles.saveButton} disabled={saving}>
+        <button
+          type="button"
+          className={styles.saveButton}
+          disabled={saving}
+          onClick={() => {
+            void handleSaveClick();
+          }}
+        >
           {saving ? 'Saving…' : 'Save Changes'}
         </button>
       </div>
-    </form>
+    </div>
   );
 } 

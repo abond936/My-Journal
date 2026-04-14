@@ -57,7 +57,7 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) 
                         y: card.coverImageFocalPoint.y ?? 0,
                       },
                       { width: card.coverImage.width, height: card.coverImage.height },
-                      '4/3',
+                      '4/5',
                       800
                     )
                   : 'center'

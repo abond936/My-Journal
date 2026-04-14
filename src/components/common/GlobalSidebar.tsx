@@ -185,13 +185,10 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
               <div className={styles.sidebarSection}>
                 <h3 className={styles.sectionHeading}>Tags</h3>
                 <div className={styles.dimensionsBlock}>
-                  <span className={styles.dimensionsLabel} id="dimensions-label">
-                    Dimensions
-                  </span>
                   <div
                     className={styles.dimensionTabs}
                     role="tablist"
-                    aria-labelledby="dimensions-label"
+                    aria-label="Tag dimensions"
                   >
                     {DIMENSION_TABS.map(({ id, label }) => (
                       <button
@@ -270,9 +267,19 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                   className={styles.compactControl}
                   aria-label="Sort card feed"
                 >
-                  <option value="newest">Newest (When tag) first</option>
-                  <option value="oldest">Oldest (When tag) first</option>
                   <option value="random">Random</option>
+                  <option value="whenDesc">When (Desc)</option>
+                  <option value="whenAsc">When (Asc)</option>
+                  <option value="createdDesc">Created (Desc)</option>
+                  <option value="createdAsc">Created (Asc)</option>
+                  <option value="titleAsc">Title (A-Z)</option>
+                  <option value="titleDesc">Title (Z-A)</option>
+                  <option value="whoAsc">Who (A-Z)</option>
+                  <option value="whoDesc">Who (Z-A)</option>
+                  <option value="whatAsc">What (A-Z)</option>
+                  <option value="whatDesc">What (Z-A)</option>
+                  <option value="whereAsc">Where (A-Z)</option>
+                  <option value="whereDesc">Where (Z-A)</option>
                 </select>
               </div>
 

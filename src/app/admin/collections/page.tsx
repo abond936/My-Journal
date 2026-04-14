@@ -111,6 +111,7 @@ export default function CollectionsAdminPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published'>('all');
   const [draggingCardId, setDraggingCardId] = useState<string | null>(null);
   const sensors = useSensors(useSensor(PointerSensor));
   const stickyTopRef = useRef<HTMLDivElement | null>(null);
@@ -178,17 +179,16 @@ export default function CollectionsAdminPage() {
 
   const unparentedCards = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return cards.filter(card => {
+    const filtered = cards.filter(card => {
       if (parentByChild.has(card.docId)) return false;
       if (childIdSet.has(card.docId)) return false; // hide roots from the right pane
+      if (statusFilter !== 'all' && card.status !== statusFilter) return false;
       if (!q) return true;
-      return (
-        (card.title || '').toLowerCase().includes(q) ||
-        (card.subtitle || '').toLowerCase().includes(q) ||
-        card.docId.toLowerCase().includes(q)
-      );
+      return (card.title || '').toLowerCase().startsWith(q);
     });
-  }, [cards, parentByChild, childIdSet, search]);
+    filtered.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    return filtered;
+  }, [cards, parentByChild, childIdSet, search, statusFilter]);
 
   const patchCard = async (cardId: string, payload: Partial<Card>) => {
     const res = await fetch(`/api/cards/${cardId}`, {
@@ -314,7 +314,6 @@ export default function CollectionsAdminPage() {
           <DraggableCard card={node} className={styles.nodeRow} disabled={saving}>
             <span className={styles.nodeTitle}>{cardLabel(node)}</span>
             <div className={styles.nodeActions}>
-              <span className={styles.nodeMeta}>{node.docId}</span>
               {parentByChild.has(node.docId) ? (
                 <button
                   type="button"
@@ -341,10 +340,6 @@ export default function CollectionsAdminPage() {
     <div className={styles.container}>
       <div className={styles.stickyTop} ref={stickyTopRef}>
         <h1>Collections Management</h1>
-        <p className={styles.intro}>
-          Curated mode uses single-parent relationships. A card can belong to at most one parent at a time.
-          Collection card type is optional; any card can have children.
-        </p>
       </div>
 
       {error ? <p className={styles.error}>{error}</p> : null}
@@ -355,7 +350,7 @@ export default function CollectionsAdminPage() {
           <div className={styles.layout}>
             <section className={styles.panel}>
               <h2>Curated Tree</h2>
-              <p className={styles.hint}>Drag cards onto a card to set parent/child.</p>
+              <p className={styles.hint}>Drag a card here to set parent/child relationship.</p>
               <TreeRootDropZone className={styles.treeRootDropZone}>
                 {rootedCollections.length === 0 ? (
                   <p className={styles.emptyTreeHint}>Drop a card here to start your curated tree.</p>
@@ -369,12 +364,24 @@ export default function CollectionsAdminPage() {
             <section className={styles.panel}>
               <h2>Unparented Cards</h2>
               <p className={styles.hint}>Drop a card here to remove its parent.</p>
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className={styles.input}
-                placeholder="Search unparented cards..."
-              />
+              <div className={styles.controlsRow}>
+                <input
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className={styles.input}
+                  placeholder="Search by title..."
+                />
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as 'all' | 'draft' | 'published')}
+                  className={styles.statusSelect}
+                  aria-label="Filter unparented cards by status"
+                >
+                  <option value="all">All statuses</option>
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                </select>
+              </div>
               <UnparentDropZone className={styles.unparentDropZone}>
                 <ul className={styles.list}>
                   {unparentedCards.map(card => (
@@ -382,9 +389,7 @@ export default function CollectionsAdminPage() {
                       <DraggableCard card={card} className={styles.listRow} disabled={saving}>
                         <div>
                           <div className={styles.nodeTitle}>{cardLabel(card)}</div>
-                          <div className={styles.nodeMeta}>{card.docId}</div>
                         </div>
-                        <span className={styles.dragHint}>Drag to tree</span>
                       </DraggableCard>
                     </li>
                   ))}

@@ -12,18 +12,26 @@ interface EditableTitleCellProps {
 export default function EditableTitleCell({ card, onUpdate }: EditableTitleCellProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(card.title);
+  const [error, setError] = useState<string | null>(null);
 
   // If the card prop changes from the outside, update the local state
   useEffect(() => {
     setTitle(card.title);
+    setError(null);
   }, [card.title]);
 
   const handleSave = async () => {
+    const nextTitle = title.trim();
+    if (!nextTitle) {
+      setError('Title is required');
+      return;
+    }
     setIsEditing(false);
+    setError(null);
     // Only call update if the title has actually changed
-    if (title.trim() !== card.title) {
+    if (nextTitle !== card.title) {
       try {
-        await onUpdate(card.docId, { title: title.trim() });
+        await onUpdate(card.docId, { title: nextTitle });
       } catch (error) {
         console.error('Failed to update title:', error);
         // Revert to original title on error
@@ -38,20 +46,27 @@ export default function EditableTitleCell({ card, onUpdate }: EditableTitleCellP
     } else if (e.key === 'Escape') {
       setTitle(card.title);
       setIsEditing(false);
+      setError(null);
     }
   };
 
   if (isEditing) {
     return (
-      <input
-        type="text"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        onBlur={handleSave}
-        onKeyDown={handleKeyDown}
-        className={styles.inlineEditInput}
-        autoFocus
-      />
+      <div>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => {
+            setTitle(e.target.value);
+            if (error) setError(null);
+          }}
+          onBlur={handleSave}
+          onKeyDown={handleKeyDown}
+          className={styles.inlineEditInput}
+          autoFocus
+        />
+        {error ? <div className={styles.inlineValidationError}>{error}</div> : null}
+      </div>
     );
   }
 

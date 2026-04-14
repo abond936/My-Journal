@@ -12,6 +12,9 @@ interface TagPickerDimensionColumnProps {
   dimension: TagWithChildren;
   selection: Set<string>;
   onSelectionChange: (tagId: string, selected: boolean) => void;
+  getSelectionState?: (tagId: string) => 'checked' | 'unchecked' | 'mixed';
+  onToggleTag?: (tagId: string, currentState: 'checked' | 'unchecked' | 'mixed') => void;
+  expandedNodeIds?: Set<string>;
   checkboxIdPrefix: string;
   forceExpandAll?: boolean;
 }
@@ -20,6 +23,9 @@ export default function TagPickerDimensionColumn({
   dimension,
   selection,
   onSelectionChange,
+  getSelectionState,
+  onToggleTag,
+  expandedNodeIds,
   checkboxIdPrefix,
   forceExpandAll = false,
 }: TagPickerDimensionColumnProps) {
@@ -151,6 +157,9 @@ export default function TagPickerDimensionColumn({
             node={root}
             selection={selection}
             onChange={onSelectionChange}
+            getSelectionState={getSelectionState}
+            onToggleTag={onToggleTag}
+            expandedNodeIds={expandedNodeIds}
             depth={0}
             dimensionKey={dimensionKey}
             checkboxIdPrefix={checkboxIdPrefix}
@@ -167,6 +176,9 @@ interface TagPickerInteractiveTagNodeProps {
   node: TagWithChildren;
   selection: Set<string>;
   onChange: (tagId: string, selected: boolean) => void;
+  getSelectionState?: (tagId: string) => 'checked' | 'unchecked' | 'mixed';
+  onToggleTag?: (tagId: string, currentState: 'checked' | 'unchecked' | 'mixed') => void;
+  expandedNodeIds?: Set<string>;
   depth: number;
   dimensionKey: string;
   checkboxIdPrefix: string;
@@ -178,6 +190,9 @@ function TagPickerInteractiveTagNode({
   node,
   selection,
   onChange,
+  getSelectionState,
+  onToggleTag,
+  expandedNodeIds,
   depth,
   dimensionKey,
   checkboxIdPrefix,
@@ -186,11 +201,17 @@ function TagPickerInteractiveTagNode({
 }: TagPickerInteractiveTagNodeProps) {
   const expandLevels = getTagTreeExpandLevelsForDimension(dimensionKey);
   const [isCollapsed, setIsCollapsed] = useState(() => depth >= expandLevels);
-  const isSelected = selection.has(node.docId);
+  const selectionState = getSelectionState ? getSelectionState(node.docId) : (selection.has(node.docId) ? 'checked' : 'unchecked');
+  const isSelected = selectionState === 'checked';
   const hasChildren = node.children && node.children.length > 0;
-  const effectiveCollapsed = forceExpandAll ? false : isCollapsed;
+  const forceExpandedBySelection = expandedNodeIds?.has(node.docId) ?? false;
+  const effectiveCollapsed = forceExpandAll || forceExpandedBySelection ? false : isCollapsed;
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (onToggleTag) {
+      onToggleTag(node.docId, selectionState);
+      return;
+    }
     onChange(node.docId, e.target.checked);
   };
 
@@ -225,9 +246,15 @@ function TagPickerInteractiveTagNode({
           type="checkbox"
           id={checkboxId}
           checked={isSelected}
+          ref={(el) => {
+            if (!el) return;
+            el.indeterminate = selectionState === 'mixed';
+          }}
+          aria-checked={selectionState === 'mixed' ? 'mixed' : isSelected}
           onChange={handleCheckboxChange}
         />
         <label htmlFor={checkboxId}>{node.name}</label>
+        {selectionState === 'mixed' ? <span className={styles.mixedMarker}>—</span> : null}
       </div>
       {!effectiveCollapsed && hasChildren && (
         <div className={styles.tagChildren}>
@@ -237,6 +264,9 @@ function TagPickerInteractiveTagNode({
               node={child}
               selection={selection}
               onChange={onChange}
+              getSelectionState={getSelectionState}
+              onToggleTag={onToggleTag}
+              expandedNodeIds={expandedNodeIds}
               depth={depth + 1}
               dimensionKey={dimensionKey}
               checkboxIdPrefix={checkboxIdPrefix}

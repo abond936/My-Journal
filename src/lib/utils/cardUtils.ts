@@ -174,7 +174,9 @@ export function dehydrateCardForSave(raw: any): CardUpdate {
     ...rest 
   } = raw;
 
-  const dehydratedGallery = galleryMedia?.map((item: any) => {
+  // Coerce to array so "missing gallery" and "empty gallery" match for dirty/compare and PATCH slices.
+  const gallerySource = Array.isArray(galleryMedia) ? galleryMedia : [];
+  const dehydratedGallery = gallerySource.map((item: any) => {
     const { media: _m, ...g } = item || {};
     let out = { ...g };
     const trimmed = typeof out.objectPosition === 'string' ? out.objectPosition.trim() : '';
@@ -202,7 +204,7 @@ export function dehydrateCardForSave(raw: any): CardUpdate {
     // Always include tags/children/gallery/contentMedia when present (including empty arrays) so removals persist
     ...(Array.isArray(raw.tags) ? { tags: raw.tags } : {}),
     ...(Array.isArray(raw.childrenIds) ? { childrenIds: raw.childrenIds } : {}),
-    ...(Array.isArray(dehydratedGallery) ? { galleryMedia: dehydratedGallery } : {}),
+    galleryMedia: dehydratedGallery,
     ...(Array.isArray(cleanedContent) ? { contentMedia: cleanedContent } : {}),
   } as CardUpdate;
 
@@ -226,12 +228,62 @@ function sortKeysDeep(value: unknown): unknown {
 }
 
 /**
+ * Normalize body HTML so TipTap re-serialization vs Firestore/hydrated markup does not
+ * falsely mark the form dirty (src URLs stripped server-side; whitespace/NBSP differences).
+ */
+export function normalizeHtmlForDirtyCompare(html: string | null | undefined): string {
+  if (!html || typeof html !== 'string') return '';
+  const stripped = stripContentImageSrc(html);
+  return stripped
+    .replace(/\u00a0/g, ' ')
+    .replace(/>\s+</g, '><')
+    .trim();
+}
+
+function prepareCardUpdateForDirtyCompare(c: CardUpdate): CardUpdate {
+  const next: CardUpdate = { ...c };
+  if (typeof next.content === 'string') {
+    const norm = normalizeHtmlForDirtyCompare(next.content);
+    next.content = norm;
+    next.contentMedia = extractMediaFromContent(norm);
+  }
+  return next;
+}
+
+/** Denormalized / server-maintained — must not drive leave-confirm false positives. */
+const DERIVED_CARD_KEYS_FOR_DIRTY = new Set([
+  'curatedNavEligible',
+  'journalWhenSortAsc',
+  'journalWhenSortDesc',
+]);
+
+function omitDerivedCardFieldsForDirtyCompare(value: unknown): unknown {
+  if (value === null || typeof value !== 'object') {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map(omitDerivedCardFieldsForDirtyCompare);
+  }
+  const o = value as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const k of Object.keys(o).sort()) {
+    if (DERIVED_CARD_KEYS_FOR_DIRTY.has(k)) continue;
+    out[k] = omitDerivedCardFieldsForDirtyCompare(o[k]);
+  }
+  return out;
+}
+
+/**
  * True if two card states would persist the same payload (after dehydrate).
  * Ignores transient/hydrated fields (cover object, gallery media blobs, etc.).
  */
 export function persistableSnapshotsEqual(a: CardUpdate, b: CardUpdate): boolean {
-  const da = sortKeysDeep(dehydrateCardForSave(a));
-  const db = sortKeysDeep(dehydrateCardForSave(b));
+  const da = omitDerivedCardFieldsForDirtyCompare(
+    sortKeysDeep(dehydrateCardForSave(prepareCardUpdateForDirtyCompare(a)))
+  );
+  const db = omitDerivedCardFieldsForDirtyCompare(
+    sortKeysDeep(dehydrateCardForSave(prepareCardUpdateForDirtyCompare(b)))
+  );
   return JSON.stringify(da) === JSON.stringify(db);
 }
 

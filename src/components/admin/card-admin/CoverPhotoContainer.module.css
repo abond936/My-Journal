@@ -24,7 +24,7 @@
   outline-offset: 2px;
 }
 
-/* 4:3 aspect ratio to match view page; user sets focal point based on this preview */
+/* 4:5 aspect ratio to match reader/detail cover; user sets focal point based on this preview */
 .dropOverlay {
   position: absolute;
   inset: 0;
@@ -39,12 +39,23 @@
   pointer-events: none;
 }
 
+.savingOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--layout-background2-color) 35%, transparent);
+  z-index: 8;
+  pointer-events: none;
+}
+
 .imageContainer {
   position: relative;
   width: 600px;
   min-width: 200px;
   max-width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 4 / 5;
   flex-shrink: 0;
   align-self: center;
   background-color: var(--layout-background2-color);
@@ -127,6 +138,12 @@
 
 .changeButton:hover {
   background-color: var(--button-solid-background-color-hover);
+}
+
+.changeButton:disabled,
+.removeButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .removeButton {
@@ -236,6 +253,11 @@
 
 .slider::-moz-range-thumb:hover {
   background: var(--button-solid-background-color-hover);
+}
+
+.slider:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .processingContainer {

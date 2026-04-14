@@ -10,10 +10,13 @@ This file is an **index only**. Canonical instructions are not duplicated here (
 | Execution plan, phased sequencing (`⭕1` only) | `docs/03-Implementation.md` |
 | Theme: semantic tokens, presets, reader shell & responsive layout (§9), design-led reconciliation | `docs/04-Theme-Design-Contract.md` |
 | Guided archive / AI clustering & story elicitation (seed spec) | `docs/05-Guided-Archive-Assistance.md` |
+| Firebase Admin / Firestore CLI scripts (dotenv preload, import order) | `docs/NPM-SCRIPTS.md` → **Firebase Admin CLI (dotenv)** |
 
 **Document count** — Do **not** add new top-level `docs/*.md` files unless the author explicitly approves a new document. Integrate new guidance into the existing split: vision/stack → `01`; app features & behavior → `02`; phased work → `03`; tokens **and** reader responsive/nav layout contract → `04` §9; guided-archive seed → `05`. If unsure, extend the closest existing section rather than creating `06-…`.
 
 For new work: the author states **what**; the agent proposes **how** after assessment. Implement only after explicit approval.
+
+**Operational:** Run **`npm run backup:database`** from the repo root before large Firestore-changing work (e.g. mass import) when the author expects the agent to handle backups; it requires a local `.env` with Firebase Admin + `ONEDRIVE_PATH` (and optional Typesense vars). See `docs/NPM-SCRIPTS.md` → **Firebase Admin CLI (dotenv)** and the `backup:database` row.
 
 ## Cursor Cloud specific instructions
 
@@ -45,4 +48,5 @@ Next.js **requires** `NEXT_PUBLIC_*` variables in a `.env` file (process env var
 - **Local image import** (folder + `/api/images/local/import`) uses **`exiftool-vendored`** to read captions and keywords from files. Requires **Node ≥ 20** (dependency engines). The bundled ExifTool runs in child processes on the machine hosting the Next.js server (typical: your desktop with `ONEDRIVE_ROOT_FOLDER`).
 - **Typesense** is optional; search falls back to Firestore prefix queries when credentials are absent. Media search returns 503 without it.
 - **`FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY`** often contains literal `\n` characters; ensure the secret value preserves them correctly.
+- **Firestore / Admin scripts:** Preload dotenv (`tsx -r dotenv/config …` or equivalent) so `.env` is loaded **before** modules that import `@/lib/config/firebase/admin`; otherwise static imports initialize Firebase with empty credentials. Details: `docs/NPM-SCRIPTS.md` → **Firebase Admin CLI (dotenv)**.
 - The app may already be authenticated (session cookie) after first login; subsequent page loads skip the login screen.

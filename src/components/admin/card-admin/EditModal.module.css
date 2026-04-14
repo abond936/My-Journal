@@ -17,6 +17,22 @@
     border-radius: var(--border-radius-md);
     width: 90%;
     max-width: 500px;
+    max-height: min(92vh, 900px);
+    display: flex;
+    flex-direction: column;
+}
+
+.modalWide {
+    max-width: 1120px;
+    width: min(96vw, 1120px);
+    max-height: min(96vh, 980px);
+}
+
+.body {
+    padding-top: var(--spacing-md);
+    overflow-y: auto;
+    min-height: 0;
+    flex: 1;
 }
 
 .header {
@@ -26,6 +42,7 @@
     border-bottom: var(--border-width-thin) solid var(--color-border-primary);
     padding-bottom: var(--spacing-md);
     margin-bottom: var(--spacing-md);
+    flex-shrink: 0;
 }
 
 .header h3 {
@@ -39,7 +56,3 @@
     cursor: pointer;
     color: var(--text1-color);
 }
-
-.body {
-    padding-top: var(--spacing-md);
-} 

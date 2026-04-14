@@ -60,7 +60,15 @@ Legend:
 
 ### Phase 2 — Admin Productivity
 
-*Complete*
+⭕1 **Planned**
+
+*Card Management (`02-Application.md`)*
+
+- **Writing Assist** - In card edit, provide a simple AI assist for selected text in title/subtitle/excerpt/content with explicit actions (`Make concise`, `Make engaging`, `Elaborate`, `Fix grammar`) and suggestion-only outcomes (`Replace`, `Insert below`, `Dismiss`)—never auto-apply.
+
+- **Context Assist** - Keep historical/background context as a separate, explicit AI request from writing rewrites; return context as an independent suggestion block that can be accepted or dismissed without affecting the base rewrite.
+
+- **Admin Ordering** - Remove random ordering from admin lists and expand deterministic order controls (`When`, `Created`, `Title`, `Who`, `What`, `Where`) with predictable tie-break behavior so sparse `When` coverage does not collapse into one large undated block.
 
 
 
@@ -79,6 +87,12 @@ Legend:
 *Content Page (`02-Application.md`)*
 
 - **Layout `@media` hardening** - Replace `var(--breakpoint-*)` inside `@media` where it affects layout (`V2ContentCard`, `Navigation`, `ViewLayout`, `ContentCard`, `ThemeAdmin`, `TagTree`, etc.) so breakpoints match `docs/04-Theme-Design-Contract.md` §9.2 (literal `px`).
+
+*Left Navigation (`02-Application.md`)*
+
+- **Reader Order Model** - Split ordering by mode: **Freeform** keeps Random plus deterministic order options (`When`, `Created`, `Title`, `Who`, `What`, `Where`) with `Asc/Desc`; **Curated** ignores sort controls and always follows curated tree/TOC order.
+
+- **Sort Semantics** - Define deterministic ordering rules for all reader order modes: explicit tie-break chain, consistent undated policy for `When` (undated at end), and normalized dimension ordering behavior for `Who/What/Where`.
 
 
 

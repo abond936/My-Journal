@@ -38,7 +38,7 @@ const StoryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card,
             y: card.coverImageFocalPoint.y ?? 0,
           },
           { width: card.coverImage.width, height: card.coverImage.height },
-          '1/1',
+          '4/5',
           400
         )
       : 'center';
@@ -91,7 +91,7 @@ const GalleryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ car
             y: card.coverImageFocalPoint.y ?? 0,
           },
           { width: card.coverImage.width, height: card.coverImage.height },
-          '1/1',
+          '4/5',
           400
         )
       : 'center';
@@ -170,7 +170,7 @@ const QACardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, di
             y: card.coverImageFocalPoint.y ?? 0,
           },
           { width: card.coverImage.width, height: card.coverImage.height },
-          '1/1',
+          '4/5',
           400
         )
       : 'center';
@@ -304,9 +304,23 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
       : '';
   const className = `${styles.card} ${cardTypeClass} ${sizeClass} ${displayModeClass} ${qaWithCoverClass} ${fullWidth ? styles.fullWidth : ''}`.trim();
 
+  const addFocusCardToReturnTo = (returnTo: string, focusCardId: string): string => {
+    const [pathAndQuery, hashFragment] = returnTo.split('#');
+    const [pathOnly, queryString = ''] = pathAndQuery.split('?');
+    const params = new URLSearchParams(queryString);
+    params.set('focusCardId', focusCardId);
+    const next = `${pathOnly}?${params.toString()}`;
+    return hashFragment ? `${next}#${hashFragment}` : next;
+  };
+
+  const returnToWithFocus =
+    card.docId != null
+      ? addFocusCardToReturnTo(adminEditReturnTo, card.docId)
+      : adminEditReturnTo;
+
   const editHref =
     card.docId && isAdmin
-      ? `/admin/card-admin/${card.docId}/edit?returnTo=${encodeURIComponent(adminEditReturnTo)}`
+      ? `/admin/card-admin/${card.docId}/edit?returnTo=${encodeURIComponent(returnToWithFocus)}`
       : null;
 
   const renderContent = () => {
@@ -341,11 +355,18 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
 
   const body =
     isInteractive && card.docId ? (
-      <Link href={`/view/${card.docId}`} className={className} onClick={onClick}>
+      <Link
+        href={`/view/${card.docId}`}
+        className={className}
+        onClick={onClick}
+        data-card-id={card.docId}
+      >
         {renderContent()}
       </Link>
     ) : (
-      <div className={className}>{renderContent()}</div>
+      <div className={className} data-card-id={card.docId}>
+        {renderContent()}
+      </div>
     );
 
   if (!editHref) {

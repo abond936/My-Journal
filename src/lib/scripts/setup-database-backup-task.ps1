@@ -9,7 +9,7 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 # --- Configuration ---
 $taskName = "MyJournal-DatabaseBackup"
 $taskDescription = "Daily backup of MyJournal Firestore database."
-$scriptToRun = "src\\lib\\scripts\\backup-database.ts"
+$scriptToRun = "src\\lib\\scripts\\firebase\\backup-firestore.ts"
 $triggerTime = "2:00AM"
 # --- End Configuration ---
 
@@ -19,7 +19,7 @@ $projectRoot = (Get-Item -Path "." -Verbose).FullName
 $fullScriptPath = Join-Path -Path $projectRoot -ChildPath $scriptToRun
 
 # Define the action to execute the TypeScript script via ts-node
-$action = New-ScheduledTaskAction -Execute "npx" -Argument "ts-node -r tsconfig-paths/register -P tsconfig.scripts.json `"$fullScriptPath`"" -WorkingDirectory $projectRoot
+$action = New-ScheduledTaskAction -Execute "npx" -Argument "tsx -r dotenv/config `"$fullScriptPath`"" -WorkingDirectory $projectRoot
 
 # Define the trigger to run the task daily
 $trigger = New-ScheduledTaskTrigger -Daily -At $triggerTime

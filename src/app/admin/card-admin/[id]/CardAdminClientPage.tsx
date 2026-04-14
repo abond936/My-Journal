@@ -52,7 +52,7 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isDuplicating, setIsDuplicating] = React.useState(false);
 
-  const handleSave = async (cardData: CardUpdate) => {
+  const handleSave = async (cardData: CardUpdate): Promise<Card | null> => {
     try {
       const url = cardId ? `/api/cards/${cardId}` : '/api/cards';
       const method = cardId ? 'PATCH' : 'POST';
@@ -64,7 +64,7 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
         cache: 'no-store',
       });
 
-      const savedData = await response.json();
+      const savedData = (await response.json()) as Card;
 
       if (!response.ok) {
         throw new Error('Failed to save the card.');
@@ -85,6 +85,7 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
         router.push(`/admin/card-admin/${savedData.docId}`);
       }
 
+      return savedData;
     } catch (error) {
       console.error('Failed to save card:', error);
       throw error;

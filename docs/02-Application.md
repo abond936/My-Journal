@@ -118,6 +118,10 @@ Legend:
 - **Sort by** - Random | Oldest | Newest on the filtered feed. Oldest and Newest use **journal When** (parsed from When tag names), not card `createdAt`; cards without a parsable When use undated ordering.
 - **Sort / Group** - **Group by** none, event (Curated only), or a tag dimension (Who / What / When / Where). The feed renders labeled sections so multi-tag filters stay readable (`CardFeedV2`, `feedGrouping.ts`, `CardProvider`).
 
+⭕1 **Planned**
+- **Reader Order Model** - Split ordering by mode: **Freeform** keeps Random plus deterministic order options (`When`, `Created`, `Title`, `Who`, `What`, `Where`) with `Asc/Desc`; **Curated** ignores sort controls and always follows curated tree/TOC order.
+- **Sort Semantics** - Define deterministic ordering rules for all reader order modes: explicit tie-break chain, consistent undated policy for `When` (undated at end), and normalized dimension ordering behavior for `Who/What/Where`.
+
 ⭕2 **Future**
 - **Tag Tree Counts** - Fix numbering and add media counts "(x/y)" on tag tree nodes.
 - **Collection Metadata** - Implement collection metadata (child counts).
@@ -268,6 +272,11 @@ Legend:
 - **Import** - Folder-as-card (`ImportFolderModal`, `__X` files, caps) — details in `docs/IMPORT-REFERENCE.md`.
 - **Discovery in edit** - PhotoPicker Library tab mirrors Media list filters + in-modal tag dimensions (`filterTagIds` from `CardForm`).
 
+⭕1 **Planned**
+- **Writing Assist** - In card edit, provide a simple AI assist for selected text in title/subtitle/excerpt/content with explicit actions (`Make concise`, `Make engaging`, `Elaborate`, `Fix grammar`) and suggestion-only outcomes (`Replace`, `Insert below`, `Dismiss`)—never auto-apply.
+- **Context Assist** - Keep historical/background context as a separate, explicit AI request from writing rewrites; return context as an independent suggestion block that can be accepted or dismissed without affecting the base rewrite.
+- **Admin Ordering** - Remove random ordering from admin lists and expand deterministic order controls (`When`, `Created`, `Title`, `Who`, `What`, `Where`) with predictable tie-break behavior so sparse `When` coverage does not collapse into one large undated block.
+
 ⭕2 **Future**
 - **Card Edit Mosaic** - Mosaic layout for gallery manager in card edit (align with Apple/Google Photos-style browsing).
 - **Card Linkage** - Non-hierarchical "See Also" cross-references via `linkedCardIds: string[]` (many-to-many, unordered). Surfaces in reader view alongside tag-affinity related cards. Distinct from parent-child (`childrenIds`) and question→card linkage. Deferred until after import.
@@ -294,6 +303,7 @@ Legend:
 
 📐 **Structural Model** - Listing eligibility matches `childrenIds.length > 0 OR curatedRoot === true`, stored as `curatedNavEligible` for querying. Sidebar `getCollectionCards` filters `curatedNavEligible == true` (and optional `status`), ordered by `createdAt`.
 
+⭕Multi-parent - 
 ---
 
 ### **Media Management**
@@ -479,3 +489,46 @@ Legend:
 *Features*
 ⭕2 **Future**
 - **Gallery Styles Management** - Devise preconfigured card styles for selection — masonry, mosaic, etc.
+
+
+
+
+Summary of needed improvements.
+
+**Card Edit**
+- Move back button to left, consistent with Back from View.
+- Left justify instead of center justify (?)
+- Make narrower to emulate eventual view or provide preview. Can the page look like the view page, but editable?
+- Narrow the "Edit Card" bar.
+- Move Status, Type, Display Mode to top.
+- Reduce space between Content editor and Gallery Images.
+- Sync the size of edit page headings--Status, Type, Display Mode, Tags, Gallery, Child Cards.
+- Rename "Gallery Images" to "Gallery" and left-align with other section titles.
+- Remove  from Child Cards the text "Add..." and "Current Children".
+- Rename "Add Photos" to "Add" and right align with the Tags 'edit' button.
+- Use similar background color for Gallery.
+- Use a title for each section: Title, Body, Gallery, Child Cards.
+- The Edit Tags expands too large. Make it appear as if the search bar and tag create/select section expands below.
+- Shouldn't the zNAs for each dimension be or at least appear as children of the root dimensions? WHO/zNA, etc.
+- Each of the dimensions should have the root at the top--WHO | WHAT | WHEN | WHERE
+- Move Tags section to below the Body section.
+- Have the available tags (with their precedence--WHO/Family/Parents/Father/Robert) appear below the search bar with the ability to arrow down and select the desired tag.
+
+**Left Sidebar**
+- The left sidebar does not look particularly mobile-like and is very busy.
+- Open/Close - To save space and improve navigation, Move the close arrow to the right of the word "Explore" and when closed, put the open arrow on the same line so it lookslike the arrows are dragging open or pushing closed the sidebar.
+- Initially show buttons for Freeform and Curated as is.
+- Then horizontal buttons for sections for Cards and Tags.
+- OnClick Cards - Expand down to show 5 buttons with icon and name that toggle on and off changing the filter. All buttons toggled on (default) is "All" so no need for an all button.
+- OnClick Tags - Expand down to show 4 buttons with icon and name that when clicked, open that dimension's tree. After selection, show selections below dimension's button. When no selections are made, the default is all, so no need for an "All" button.
+- Group by - What does this section do that tag selections don't do? 
+- Sort by - Rename the selections to Random, When (Asc), When (Dec) and default to random. Created At is not a viable alternative to when, even if when is empty or zNA.
+- Reduce font size of tree.
+- Increase box selection size in tree slightly to make selection easier.
+- Search Tags bar - Put "Search tags..." inside the search bar as the prompt with no field title. Display results below the search input.
+
+
+
+
+**Theme**
+- 

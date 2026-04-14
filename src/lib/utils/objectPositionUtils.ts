@@ -70,7 +70,7 @@ export function calculateObjectPosition(
  * Get object-position for common aspect ratios
  * @param focalPoint - Focal point coordinates
  * @param originalImage - Original image dimensions
- * @param aspectRatio - Target aspect ratio (e.g., "16/9", "4/3", "1/1")
+ * @param aspectRatio - Target aspect ratio (e.g., "16/9", "4/5", "1/1")
  * @param baseWidth - Base width for calculation (height will be calculated)
  * @returns CSS object-position string
  */

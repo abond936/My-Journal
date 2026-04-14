@@ -6,19 +6,8 @@ import { useTag } from '@/components/providers/TagProvider';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import styles from './BulkEditTagsModal.module.css';
 import { createUITreeFromDimensions, filterTreesBySearch } from '@/lib/utils/tagUtils';
+import { TagWithChildren } from '@/components/providers/TagProvider';
 import TagPickerDimensionColumn from '@/components/admin/card-admin/TagPickerDimensionColumn';
-
-/** Union of all tags on the selected cards — initial check state for bulk replace. */
-const getUnionTagIds = (cards: Card[]): string[] => {
-  if (!cards || cards.length === 0) return [];
-  const u = new Set<string>();
-  for (const c of cards) {
-    for (const t of c.tags || []) {
-      u.add(t);
-    }
-  }
-  return Array.from(u);
-};
 
 // --- Main Component ---
 interface BulkEditTagsModalProps {
@@ -33,7 +22,7 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
-  const [currentSelection, setCurrentSelection] = useState<Set<string>>(new Set());
+  const [tagDecisions, setTagDecisions] = useState<Map<string, boolean>>(new Map());
   const [searchTerm, setSearchTerm] = useState('');
 
   /** Stable key so we do not refetch / reset when the parent passes a new `cardIds` array each render. */
@@ -47,7 +36,7 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
     if (!isOpen) {
       setError(null);
       setCards([]);
-      setCurrentSelection(new Set());
+      setTagDecisions(new Map());
       setSearchTerm('');
       return;
     }
@@ -65,7 +54,7 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
         if (!response.ok) throw new Error('Failed to fetch selected cards.');
         const fetchedCards: Card[] = await response.json();
         setCards(fetchedCards);
-        setCurrentSelection(new Set(getUnionTagIds(fetchedCards)));
+        setTagDecisions(new Map());
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An unknown error occurred.');
       } finally {
@@ -89,14 +78,68 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
     }));
   }, [dimensionalTree, searchTerm]);
 
+  const tagPresenceCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const card of cards) {
+      for (const tagId of card.tags || []) {
+        counts.set(tagId, (counts.get(tagId) || 0) + 1);
+      }
+    }
+    return counts;
+  }, [cards]);
+
+  const getSelectionState = (tagId: string): 'checked' | 'unchecked' | 'mixed' => {
+    const explicit = tagDecisions.get(tagId);
+    if (explicit !== undefined) return explicit ? 'checked' : 'unchecked';
+    const count = tagPresenceCounts.get(tagId) || 0;
+    if (count === 0) return 'unchecked';
+    if (count === cards.length) return 'checked';
+    return 'mixed';
+  };
+
+  const checkedSelection = useMemo(() => {
+    const selected = new Set<string>();
+    for (const tag of allTags || []) {
+      if (getSelectionState(tag.docId) === 'checked') selected.add(tag.docId);
+    }
+    return selected;
+  }, [allTags, tagDecisions, tagPresenceCounts, cards.length]);
+
+  const expandedNodeIds = useMemo(() => {
+    const expanded = new Set<string>();
+    const walk = (node: TagWithChildren): boolean => {
+      const state = getSelectionState(node.docId);
+      const selfSelected = state === 'checked' || state === 'mixed';
+      let childSelected = false;
+      for (const child of node.children || []) {
+        if (walk(child)) childSelected = true;
+      }
+      if (childSelected) expanded.add(node.docId);
+      return selfSelected || childSelected;
+    };
+    for (const dimension of dimensionalTree) {
+      for (const child of dimension.children || []) {
+        walk(child);
+      }
+    }
+    return expanded;
+  }, [dimensionalTree, allTags, tagDecisions, tagPresenceCounts, cards.length]);
+
   const handleSaveChanges = async () => {
     setIsLoading(true);
     setError(null);
     try {
+      const addTagIds = Array.from(tagDecisions.entries())
+        .filter(([, value]) => value)
+        .map(([tagId]) => tagId);
+      const removeTagIds = Array.from(tagDecisions.entries())
+        .filter(([, value]) => !value)
+        .map(([tagId]) => tagId);
+
       const response = await fetch('/api/cards/bulk-update-tags', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cardIds, tags: Array.from(currentSelection) }),
+        body: JSON.stringify({ cardIds, addTagIds, removeTagIds }),
       });
       if (!response.ok) throw new Error('Failed to save tags.');
       await onSave();
@@ -109,14 +152,22 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
   };
 
   const handleTagChange = (tagId: string, isSelected: boolean) => {
-    setCurrentSelection(prev => {
-      const newSelection = new Set(prev);
-      if (isSelected) {
-        newSelection.add(tagId);
+    setTagDecisions((prev) => {
+      const next = new Map(prev);
+      next.set(tagId, isSelected);
+      return next;
+    });
+  };
+
+  const handleToggleTag = (tagId: string, currentState: 'checked' | 'unchecked' | 'mixed') => {
+    setTagDecisions((prev) => {
+      const next = new Map(prev);
+      if (currentState === 'checked') {
+        next.set(tagId, false);
       } else {
-        newSelection.delete(tagId);
+        next.set(tagId, true);
       }
-      return newSelection;
+      return next;
     });
   };
 
@@ -127,9 +178,14 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
       <div className={styles.modalContainer}>
         <h2 className={styles.modalHeader}>Edit Tags for {cardIds.length} Cards</h2>
         <p className={styles.helpText}>
-          All tags that appear on any selected card start checked. Saving sets <strong>every</strong> selected card to
-          this exact tag list—uncheck to remove from all, check to add to all.
+          Tag states reflect the selected cards: <strong>checked = all</strong>, <strong>dash = some</strong>, <strong>empty = none</strong>.
+          Click once to set for all, click again to remove from all.
         </p>
+        <div className={styles.stateLegend} aria-hidden>
+          <span>✓ all</span>
+          <span>— some</span>
+          <span>☐ none</span>
+        </div>
 
         <div className={styles.searchBar}>
           <input
@@ -161,8 +217,11 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
               <TagPickerDimensionColumn
                 key={dimension.docId}
                 dimension={dimension}
-                selection={currentSelection}
+                selection={checkedSelection}
                 onSelectionChange={handleTagChange}
+                getSelectionState={getSelectionState}
+                onToggleTag={handleToggleTag}
+                expandedNodeIds={expandedNodeIds}
                 checkboxIdPrefix="bulk-tag"
                 forceExpandAll={!!searchTerm.trim()}
               />

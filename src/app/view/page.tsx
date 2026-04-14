@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useCardContext } from '@/components/providers/CardProvider';
 import styles from './ViewPage.module.css';
 import AdminFAB from '@/components/admin/card-admin/AdminFAB';
@@ -23,6 +24,9 @@ function useIntersectionObserver(callback: () => void, options?: IntersectionObs
 export default function CardsPage() {
   const { cards, feedSections, loadingMore, hasMore, loadMore, isLoading, error } =
     useCardContext();
+  const searchParams = useSearchParams();
+  const focusCardId = searchParams.get('focusCardId');
+  const consumedFocusRef = useRef<string | null>(null);
 
   const loadingLock = useRef(false);
   const handleLoadMore = useCallback(() => {
@@ -37,18 +41,29 @@ export default function CardsPage() {
     rootMargin: '400px',
   });
 
-  // Restore scroll position on page load
+  // Restore to edited card when returning from edit; otherwise restore prior scroll position.
   useEffect(() => {
-    if (!isLoading && cards.length > 0) {
-      const savedPosition = sessionStorage.getItem(SCROLL_POSITION_KEY);
-      if (savedPosition) {
+    if (isLoading || cards.length === 0) return;
+
+    if (focusCardId && consumedFocusRef.current !== focusCardId) {
+      const el = document.querySelector(`[data-card-id="${focusCardId}"]`) as HTMLElement | null;
+      if (el) {
+        consumedFocusRef.current = focusCardId;
         setTimeout(() => {
-          window.scrollTo(0, parseInt(savedPosition, 10));
-          sessionStorage.removeItem(SCROLL_POSITION_KEY);
-        }, 100); // Delay to allow DOM to render
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+        return;
       }
     }
-  }, [isLoading, cards.length]);
+
+    const savedPosition = sessionStorage.getItem(SCROLL_POSITION_KEY);
+    if (savedPosition) {
+      setTimeout(() => {
+        window.scrollTo(0, parseInt(savedPosition, 10));
+        sessionStorage.removeItem(SCROLL_POSITION_KEY);
+      }, 100); // Delay to allow DOM to render
+    }
+  }, [isLoading, cards.length, focusCardId]);
 
   const onSaveScrollPosition = useCallback(() => {
     sessionStorage.setItem(SCROLL_POSITION_KEY, window.scrollY.toString());

@@ -12,11 +12,6 @@
   margin-bottom: var(--spacing-md);
 }
 
-.intro {
-  color: var(--text2-color);
-  margin-bottom: var(--spacing-md);
-}
-
 .layout {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -41,10 +36,31 @@
   color: var(--text1-color);
 }
 
+.controlsRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.statusSelect {
+  padding: var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--input-background-color);
+  color: var(--text1-color);
+}
+
 .hint {
   margin: 0 0 var(--spacing-sm);
   color: var(--text2-color);
   font-size: var(--font-size-sm);
+}
+
+.treeToolbar {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-sm);
 }
 
 .treeList,
@@ -55,7 +71,7 @@
 }
 
 .treeList {
-  padding-left: var(--spacing-sm);
+  padding-left: var(--spacing-xs);
 }
 
 .treeNode {
@@ -93,10 +109,45 @@
   gap: var(--spacing-sm);
 }
 
+.nodeLead {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.treeExpandButton {
+  all: unset;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--spacing-sm);
+  height: var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  color: var(--text1-color);
+  opacity: 0.7;
+  transition: opacity var(--transition-short) ease;
+}
+
+.treeExpandButton:hover {
+  opacity: 1;
+}
+
+.treeExpandIcon {
+  font-size: var(--font-size-xs);
+  line-height: 1;
+}
+
+.treePersistedMarker {
+  font-size: 0.75rem;
+  opacity: 0.6;
+  line-height: 1;
+}
+
 .nodeRow {
   border: var(--border-width-thin) dashed transparent;
   border-radius: var(--border-radius-sm);
-  padding: 2px var(--spacing-xs);
+  padding: 1px var(--spacing-xs);
 }
 
 .nodeActions {
@@ -137,11 +188,6 @@
   border-radius: var(--border-radius-sm);
   padding: var(--spacing-xs) var(--spacing-sm);
   background: var(--layout-background2-color);
-}
-
-.dragHint {
-  font-size: var(--font-size-xs);
-  color: var(--text2-color);
 }
 
 .draggingStatus {

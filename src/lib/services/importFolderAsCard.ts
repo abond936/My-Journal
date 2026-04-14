@@ -2,7 +2,10 @@ import fs from 'fs/promises';
 import path from 'path';
 import { getAllTags } from '@/lib/firebase/tagService';
 import { buildTagNameLookupMaps } from '@/lib/services/images/embeddedMetadataForImport';
-import { importFromLocalDrive } from '@/lib/services/images/imageImportService';
+import {
+  importFromLocalDrive,
+  type ImportTagNameMaps,
+} from '@/lib/services/images/imageImportService';
 import {
   createCard,
   updateCard,
@@ -15,7 +18,7 @@ const ONEDRIVE_ROOT_FOLDER = process.env.ONEDRIVE_ROOT_FOLDER;
 const SUPPORTED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.tif'];
 
 /** Max images per folder import to avoid serverless timeout. Override via IMPORT_FOLDER_MAX_IMAGES env. */
-const IMPORT_FOLDER_MAX_IMAGES = parseInt(process.env.IMPORT_FOLDER_MAX_IMAGES || '50', 10) || 50;
+const IMPORT_FOLDER_MAX_IMAGES = parseInt(process.env.IMPORT_FOLDER_MAX_IMAGES || '60', 10) || 60;
 
 /** Max subdirs per batch import to avoid timeout. Override via IMPORT_BATCH_MAX_SUBDIRS env. */
 const IMPORT_BATCH_MAX_SUBDIRS = parseInt(process.env.IMPORT_BATCH_MAX_SUBDIRS || '20', 10) || 20;
@@ -77,6 +80,8 @@ export interface ImportFolderResult {
 
 export interface ImportFolderOptions {
   overwriteCardId?: string;
+  /** When set (e.g. batch import), avoids repeated Firestore reads for the full tag tree */
+  tagNameMaps?: ImportTagNameMaps;
 }
 
 /**
@@ -267,7 +272,8 @@ export async function importFolderAsCard(
     order: i,
   }));
 
-  const tagNameMaps = buildTagNameLookupMaps(await getAllTags());
+  const tagNameMaps =
+    options?.tagNameMaps ?? buildTagNameLookupMaps(await getAllTags());
 
   for (let i = 0; i < items.length; i += CONCURRENT_IMPORTS) {
     const chunk = items.slice(i, i + CONCURRENT_IMPORTS);
@@ -600,5 +606,96 @@ export async function batchImportMediaOnly(rootPath: string): Promise<BatchImpor
     totalImported,
     totalSkipped,
     totalFailed,
+  };
+}
+
+export interface BatchImportFoldersAsCardsResult {
+  folderResults: Array<{
+    folderPath: string;
+    title: string;
+    status: 'created' | 'exists' | 'error';
+    cardId?: string;
+    importedCount?: number;
+    failedPaths?: string[];
+    error?: string;
+  }>;
+  totalCreated: number;
+  totalSkippedExisting: number;
+  totalErrors: number;
+}
+
+/**
+ * Discovers leaf folders under `rootPath` (same rules as media batch) and imports each as a gallery card.
+ * Skips folders already linked via `importedFromFolder`. Continues on per-folder errors (e.g. over `IMPORT_FOLDER_MAX_IMAGES`).
+ * Uses one `getAllTags` for the whole run.
+ */
+export type BatchFolderCardProgressRow = BatchImportFoldersAsCardsResult['folderResults'][number];
+
+export async function batchImportFoldersAsCards(
+  rootPath: string,
+  options?: {
+    maxFolders?: number;
+    /** Called after each folder (success, exists, or error) for long-run logging */
+    onFolderDone?: (row: BatchFolderCardProgressRow, index: number, total: number) => void;
+  }
+): Promise<BatchImportFoldersAsCardsResult> {
+  const subdirs = await discoverNormalizedSubdirs(rootPath);
+  const max = options?.maxFolders;
+  const toProcess = typeof max === 'number' && max > 0 ? subdirs.slice(0, max) : subdirs;
+
+  const tagNameMaps = buildTagNameLookupMaps(await getAllTags());
+
+  const folderResults: BatchImportFoldersAsCardsResult['folderResults'] = [];
+  let totalCreated = 0;
+  let totalSkippedExisting = 0;
+  let totalErrors = 0;
+  const total = toProcess.length;
+
+  for (let i = 0; i < toProcess.length; i++) {
+    const sub = toProcess[i]!;
+    console.log(`[${i + 1}/${total}] ${sub.title} (${sub.folderPath})`);
+    let row: BatchFolderCardProgressRow;
+    try {
+      const r = await importFolderAsCard(sub.folderPath, { tagNameMaps });
+      if ('exists' in r && r.exists) {
+        row = {
+          folderPath: sub.folderPath,
+          title: sub.title,
+          status: 'exists',
+          cardId: r.existingCardId,
+        };
+        totalSkippedExisting++;
+      } else {
+        const created = r as ImportFolderResult;
+        row = {
+          folderPath: sub.folderPath,
+          title: sub.title,
+          status: 'created',
+          cardId: created.cardId,
+          importedCount: created.importedCount,
+          failedPaths: created.failedPaths,
+        };
+        totalCreated++;
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error('[batchImportFoldersAsCards] Failed:', sub.folderPath, message);
+      row = {
+        folderPath: sub.folderPath,
+        title: sub.title,
+        status: 'error',
+        error: message,
+      };
+      totalErrors++;
+    }
+    folderResults.push(row);
+    options?.onFolderDone?.(row, i, total);
+  }
+
+  return {
+    folderResults,
+    totalCreated,
+    totalSkippedExisting,
+    totalErrors,
   };
 }

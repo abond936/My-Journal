@@ -1,6 +1,7 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { calculateDerivedTagData, updateTagCountsForMedia } from '@/lib/firebase/tagService';
 import { Media } from '@/lib/types/photo';
+import type { Tag } from '@/lib/types/tag';
 import {
   removeMediaFromTypesense,
   syncMediaToTypesense,
@@ -168,9 +169,20 @@ async function createMediaAsset(
 
   // 6. Save media + tag counts atomically when tags are present
   if (tagIdsResolved.length > 0) {
+    // Pre-read tag.path outside the transaction so we never call transaction.getAll after writes
+    // (Firestore: all reads before all writes in a transaction).
+    const tagRefs = tagIdsResolved.map((id) => firestore.collection('tags').doc(id));
+    const tagSnapshots = await firestore.getAll(...tagRefs);
+    const tagPathLookup = new Map<string, Tag>();
+    for (const snap of tagSnapshots) {
+      if (snap.exists) {
+        tagPathLookup.set(snap.id, snap.data() as Tag);
+      }
+    }
+
     await firestore.runTransaction(async (tx) => {
       tx.set(mediaRef, newMedia);
-      await updateTagCountsForMedia([], tagIdsResolved, tx);
+      await updateTagCountsForMedia([], tagIdsResolved, tx, tagPathLookup);
     });
   } else {
     await mediaRef.set(newMedia);

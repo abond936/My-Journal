@@ -10,7 +10,8 @@
   border: var(--border-width-thin) solid var(--border1-color);
   position: relative;
   transition: transform var(--transition-short) ease, box-shadow var(--transition-short) ease;
-  aspect-ratio: 1 / 1;
+  /* Taller than square so portrait covers lose less top/bottom under object-fit: cover */
+  aspect-ratio: 4 / 5;
 }
 
 .card:hover {
