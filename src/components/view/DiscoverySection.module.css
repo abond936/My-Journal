@@ -4,6 +4,7 @@
   margin-top: var(--spacing-lg);
   padding-top: var(--spacing-sm);
   border-top: var(--border-width-thin) solid var(--border1-color);
+  clear: both;
 }
 
 .discoveryTitle {

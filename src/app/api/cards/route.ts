@@ -118,7 +118,9 @@ export async function GET(request: Request) {
 
     const type = (searchParams.get('type') as Card['type'] | 'all') || 'all';
     const q = searchParams.get('q') || undefined;
-    const searchField = searchParams.get('searchField');
+    const searchScopeParam = searchParams.get('searchScope');
+    const searchScope: 'default' | 'admin-title' =
+      searchScopeParam === 'admin-title' ? 'admin-title' : 'default';
     const limit = searchParams.has('limit') ? parseInt(searchParams.get('limit')!, 10) : 10;
     const lastDocId = searchParams.get('lastDocId') || undefined;
     const childrenIds_contains = searchParams.get('childrenIds_contains') || undefined;
@@ -163,24 +165,53 @@ export async function GET(request: Request) {
         return NextResponse.json(result);
       }
 
-      const titleOnlySearch = searchField === 'title';
-      if (q?.trim() && isTypesenseConfigured() && !titleOnlySearch) {
+      const matchesAny = (candidate: string[] | undefined, required: string[] | undefined) => {
+        if (!required || required.length === 0) return true;
+        if (!candidate || candidate.length === 0) return false;
+        const set = new Set(candidate);
+        return required.some((id) => set.has(id));
+      };
+      const applyPostFilters = (items: Card[]): Card[] => {
+        return items.filter((card) => {
+          if (childrenIds_contains && !(card.childrenIds || []).includes(childrenIds_contains)) return false;
+          if (tags && tags.length > 0) {
+            const filterTags = card.filterTags || {};
+            for (const tag of tags) {
+              if (!filterTags[tag]) return false;
+            }
+          }
+          if (dimensionalTags.who && dimensionalTags.who.length > 0 && !matchesAny(card.who, dimensionalTags.who)) return false;
+          if (dimensionalTags.what && dimensionalTags.what.length > 0 && !matchesAny(card.what, dimensionalTags.what)) return false;
+          if (dimensionalTags.when && dimensionalTags.when.length > 0 && !matchesAny(card.when, dimensionalTags.when)) return false;
+          if (dimensionalTags.where && dimensionalTags.where.length > 0 && !matchesAny(card.where, dimensionalTags.where)) return false;
+          if (mediaDimensionalTags.who && mediaDimensionalTags.who.length > 0 && !matchesAny(card.mediaWho, mediaDimensionalTags.who)) return false;
+          if (mediaDimensionalTags.what && mediaDimensionalTags.what.length > 0 && !matchesAny(card.mediaWhat, mediaDimensionalTags.what)) return false;
+          if (mediaDimensionalTags.when && mediaDimensionalTags.when.length > 0 && !matchesAny(card.mediaWhen, mediaDimensionalTags.when)) return false;
+          if (mediaDimensionalTags.where && mediaDimensionalTags.where.length > 0 && !matchesAny(card.mediaWhere, mediaDimensionalTags.where)) return false;
+          return true;
+        });
+      };
+
+      if (q?.trim() && isTypesenseConfigured()) {
         try {
           const searchResult = await searchCards({
             query: q.trim(),
             type: type !== 'all' ? type : undefined,
             status: status !== 'all' ? status : undefined,
-            perPage: limit,
+            perPage: Math.max(limit * 5, 100),
+            searchScope,
           });
 
           if (searchResult.docIds.length === 0) {
             return NextResponse.json({ items: [], hasMore: false } as PaginatedResult<Card>);
           }
 
-          const items = await getCardsByIds(searchResult.docIds);
+          const rawItems = await getCardsByIds(searchResult.docIds);
+          const filteredItems = applyPostFilters(rawItems);
+          const items = filteredItems.slice(0, limit);
           return NextResponse.json({
             items,
-            hasMore: searchResult.totalFound > searchResult.docIds.length,
+            hasMore: filteredItems.length > limit || searchResult.totalFound > searchResult.docIds.length,
           } as PaginatedResult<Card>);
         } catch (tsError) {
           console.warn('Typesense search failed, falling back to Firestore:', tsError);

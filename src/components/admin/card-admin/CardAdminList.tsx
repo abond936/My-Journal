@@ -112,22 +112,39 @@ export default function CardAdminList({
     []
   );
 
-  const tagDimensionById = React.useMemo(() => {
-    const map = new Map<string, 'who' | 'what' | 'when' | 'where'>();
-    allTags.forEach((tag) => {
-      if (!tag.docId || !tag.dimension) return;
-      const dim = String(tag.dimension) === 'reflection' ? 'what' : String(tag.dimension);
-      if (dim === 'who' || dim === 'what' || dim === 'when' || dim === 'where') {
-        map.set(tag.docId, dim);
+  const tagById = React.useMemo(() => new Map(allTags.map((tag) => [tag.docId!, tag])), [allTags]);
+
+  const resolvedTagDimensionById = React.useMemo(() => {
+    const resolved = new Map<string, 'who' | 'what' | 'when' | 'where' | undefined>();
+    const resolveDimension = (tagId: string): 'who' | 'what' | 'when' | 'where' | undefined => {
+      if (resolved.has(tagId)) return resolved.get(tagId);
+      const visited = new Set<string>();
+      let current = tagById.get(tagId);
+      while (current?.docId && !visited.has(current.docId)) {
+        visited.add(current.docId);
+        const raw = current.dimension ? String(current.dimension) : '';
+        const dim = raw === 'reflection' ? 'what' : raw;
+        if (dim === 'who' || dim === 'what' || dim === 'when' || dim === 'where') {
+          resolved.set(tagId, dim);
+          return dim;
+        }
+        if (!current.parentId) break;
+        current = tagById.get(current.parentId);
       }
-    });
-    return map;
-  }, [allTags]);
+      resolved.set(tagId, undefined);
+      return undefined;
+    };
+    for (const tag of allTags) {
+      if (!tag.docId) continue;
+      resolveDimension(tag.docId);
+    }
+    return resolved;
+  }, [allTags, tagById]);
 
   const getDirectTagsByDimension = useCallback(
     (card: Card, dimension: 'who' | 'what' | 'when' | 'where') =>
-      (card.tags || []).filter((tagId) => tagDimensionById.get(tagId) === dimension),
-    [tagDimensionById]
+      (card.tags || []).filter((tagId) => resolvedTagDimensionById.get(tagId) === dimension),
+    [resolvedTagDimensionById]
   );
 
   const getMediaSuggestionTags = useCallback(
@@ -138,10 +155,10 @@ export default function CardAdminList({
         when: card.mediaWhen || [],
         where: card.mediaWhere || [],
       };
-      const current = new Set(card.tags || []);
-      return mediaByDimension[dimension].filter((tagId) => !current.has(tagId));
+      const currentDimensionTags = new Set(getDirectTagsByDimension(card, dimension));
+      return mediaByDimension[dimension].filter((tagId) => !currentDimensionTags.has(tagId));
     },
-    []
+    [getDirectTagsByDimension]
   );
 
   const applyDimensionSuggestions = useCallback(
@@ -297,31 +314,42 @@ export default function CardAdminList({
                   onClick={async () => {
                     // Save scroll position before potential deletion
                     onSaveScrollPosition(card.docId);
-                    
-                    // Check for parent cards
-                    const params = new URLSearchParams({ childrenIds_contains: card.docId });
-                    const response = await fetch(`/api/cards?${params.toString()}`);
-                    if (!response.ok) {
-                      alert('Could not verify parent cards.');
-                      return;
+
+                    let parentCards: Card[] = [];
+                    let verificationFailed = false;
+                    try {
+                      const params = new URLSearchParams({
+                        childrenIds_contains: card.docId,
+                        status: 'all',
+                        limit: '200',
+                      });
+                      const response = await fetch(`/api/cards?${params.toString()}`);
+                      if (!response.ok) {
+                        verificationFailed = true;
+                      } else {
+                        const parentCardsResult = (await response.json()) as { items?: Card[] };
+                        parentCards = Array.isArray(parentCardsResult.items) ? parentCardsResult.items : [];
+                      }
+                    } catch {
+                      verificationFailed = true;
                     }
-                    
-                    const parentCardsResult = await response.json();
-                    const parentCards = parentCardsResult.items;
 
                     let confirmMessage = 'Are you sure you want to delete this card? This action cannot be undone.';
                     if (parentCards.length > 0) {
-                      const parentTitles = parentCards.map((p: Card) => p.title).join(', ');
+                      const parentTitles = parentCards.map((p: Card) => p.title || '(Untitled)').join(', ');
                       confirmMessage = `WARNING: This card is a child of the following cards: ${parentTitles}.\n\nDeleting it will remove it from these collections. Are you sure you want to proceed?`;
+                    } else if (verificationFailed) {
+                      confirmMessage =
+                        'Could not verify parent cards right now.\n\nYou can still delete; parent cleanup is handled server-side.\n\nProceed with delete?';
                     }
 
-                    if (window.confirm(confirmMessage)) {
-                      try {
-                        await onDeleteCard(card.docId);
-                      } catch (err) {
-                        console.error('Deletion error:', err);
-                        alert(err instanceof Error ? err.message : 'An unknown error occurred.');
-                      }
+                    if (!window.confirm(confirmMessage)) return;
+
+                    try {
+                      await onDeleteCard(card.docId);
+                    } catch (err) {
+                      console.error('Deletion error:', err);
+                      alert(err instanceof Error ? err.message : 'An unknown error occurred.');
                     }
                   }}
                   className={`${styles.actionButton} ${styles.deleteButton}`}

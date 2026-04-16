@@ -104,14 +104,30 @@ export default function CoverPhotoContainer({
     return () => el.removeEventListener('paste', onPaste);
   }, [uploadFile]);
 
+  const swallowButtonEvent = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+    },
+    []
+  );
+
   const handlePhotoSelect = (media: Media) => {
     setIsPickerOpen(false);
     onChange(media, '50% 50%');
   };
 
-  const handleRemovePhoto = useCallback(() => {
-    onChange(null);
-  }, [onChange]);
+  const handleRemovePhoto = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    swallowButtonEvent(e);
+    setHorizontalPosition(50);
+    setVerticalPosition(50);
+    onChange(null, '50% 50%');
+  }, [onChange, swallowButtonEvent]);
+
+  const handleOpenPicker = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    swallowButtonEvent(e);
+    setIsPickerOpen(true);
+  }, [swallowButtonEvent]);
 
   const handlePositionChange = useCallback((horizontal: number, vertical: number) => {
     onChange(coverImage, `${horizontal}% ${vertical}%`);
@@ -162,7 +178,8 @@ export default function CoverPhotoContainer({
             />
             <div className={styles.buttonContainer}>
               <button
-                onClick={() => setIsPickerOpen(true)}
+                onMouseDown={swallowButtonEvent}
+                onClick={handleOpenPicker}
                 className={styles.changeButton}
                 type="button"
                 disabled={isSaving || isUploading}
@@ -170,6 +187,7 @@ export default function CoverPhotoContainer({
                 Change
               </button>
               <button
+                onMouseDown={swallowButtonEvent}
                 onClick={handleRemovePhoto}
                 className={styles.removeButton}
                 type="button"
@@ -233,7 +251,8 @@ export default function CoverPhotoContainer({
                 {isDragActive ? 'Drop the image here' : 'Drag and drop or paste image'}
               </p>
               <button
-                onClick={(e) => { e.stopPropagation(); setIsPickerOpen(true); }}
+                onMouseDown={swallowButtonEvent}
+                onClick={handleOpenPicker}
                 className={styles.addButton}
                 type="button"
               >

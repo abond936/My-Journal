@@ -642,7 +642,7 @@ export default function AdminCardsPage() {
       ) : (
         <CollectionsManagerPanel
           cards={displayCards}
-          onReload={async () => mutate(undefined, { revalidate: true })}
+          collectionsActive={viewMode === 'collections'}
         />
       )}
 

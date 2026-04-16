@@ -12,6 +12,14 @@ function normalizeTagNameForUniqueness(name: string): string {
   return name.trim().toLowerCase();
 }
 
+type CanonicalDimension = 'who' | 'what' | 'when' | 'where';
+
+function normalizeDimension(value: unknown): CanonicalDimension | undefined {
+  const raw = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (raw === 'who' || raw === 'what' || raw === 'when' || raw === 'where') return raw;
+  return undefined;
+}
+
 /**
  * True if another tag already uses this display name in the same tree slot:
  * - **Roots** (no parent): same `dimension` + same name (case-insensitive) — e.g. four roots all named `zNA`, one per dimension.
@@ -353,7 +361,27 @@ export async function updateTag(docId: string, tagData: Partial<Omit<Tag, 'docId
 
     const nextName = tagData.name !== undefined ? tagData.name : existing.name;
     const nextParentId = tagData.parentId !== undefined ? tagData.parentId : existing.parentId;
-    const nextDimension = tagData.dimension !== undefined ? tagData.dimension : existing.dimension;
+    let nextDimension = normalizeDimension(
+      tagData.dimension !== undefined ? tagData.dimension : existing.dimension
+    );
+
+    if (nextParentId) {
+      const parentDoc = await firestore.collection(TAGS_COLLECTION).doc(nextParentId).get();
+      if (!parentDoc.exists) {
+        throw new Error('Parent tag not found');
+      }
+      const parentData = parentDoc.data() as Tag;
+      const parentDimension = normalizeDimension(parentData.dimension);
+      if (!parentDimension) {
+        throw new Error('Parent tag must have a valid dimension');
+      }
+      if (nextDimension && nextDimension !== parentDimension) {
+        throw new Error('Child tag dimension must match parent dimension');
+      }
+      nextDimension = parentDimension;
+    } else if (!nextDimension) {
+      throw new Error('Root tags require a dimension');
+    }
 
     if (
       tagData.name !== undefined ||
@@ -378,6 +406,7 @@ export async function updateTag(docId: string, tagData: Partial<Omit<Tag, 'docId
     // Prepare update data
     const updateData = {
       ...tagData,
+      dimension: nextDimension,
       updatedAt: FieldValue.serverTimestamp()
     };
 
@@ -578,14 +607,20 @@ export async function createTag(tagData: Omit<Tag, 'docId' | 'createdAt' | 'upda
         throw new Error('Parent tag not found');
       }
       const parentData = parentDoc.data() as Tag;
-      if (!tagData.dimension && parentData.dimension) {
-        tagData.dimension = parentData.dimension;
+      const parentDimension = normalizeDimension(parentData.dimension);
+      if (!parentDimension) {
+        throw new Error('Parent tag must have a valid dimension');
       }
+      const requestedDimension = normalizeDimension(tagData.dimension);
+      if (requestedDimension && requestedDimension !== parentDimension) {
+        throw new Error('Child tag dimension must match parent dimension');
+      }
+      tagData.dimension = parentDimension;
       if (parentData.path) {
         newPath.push(...parentData.path);
       }
       newPath.push(parentDoc.id);
-    } else if (!tagData.dimension) {
+    } else if (!normalizeDimension(tagData.dimension)) {
       throw new Error('Root tags require a dimension');
     }
 

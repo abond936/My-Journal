@@ -36,7 +36,7 @@ Legend:
 ✅ **Complete**
 - **Structure** - App is separated into content and administration surfaces with shared providers/navigation patterns.
 - **Layouts** - AppShell (navigation/structure), ViewLayout (content interface), AdminLayout (admin interface).
-- **Providers** - AuthProvider, TagProvider, CardProvider.
+- **Providers** - Root app providers: AuthProvider, ThemeProvider, TagProvider, CardProvider. Admin layout adds MediaProvider.
 - **Route Separation** - Reader and admin routes are distinct, preserving explicit editing context.
 
 ⭕2 **Future**
@@ -74,7 +74,8 @@ Legend:
 ✅ **Complete**
 - **Login Page** - Application opens to home page with login form and SVG logo.
 - **Home Layout**  - Login splash with logo; no nav bar. Redirects to /view after login.
-⭕ **Left Upper Image** - The change in the logo and top nav lost the upper left image.
+❓ **Open**
+- **Left Upper Image** - The change in the logo and top nav lost the upper left image.
 ---
 
 ### **Top Navigation**
@@ -109,14 +110,14 @@ Legend:
 ✅ **Complete**
 - **Hierarchical Tag Tree** - Tag tree for filtering content by card type and active dimension.
 - **Mobile** - Left sidebar uses a **drawer** (overlay + backdrop) at `max-width: 768px`; **sidebar toggle (←/→) remains visible at all widths** so filters are always reachable; no bottom navigation bar. Details: `docs/04-Theme-Design-Contract.md` §9.
-- **Card Type** - Icon buttons: Story | Gallery | Question | Callout | Quote
+- **Card Type** - Select control: All Types | Story | Gallery | Q&A | Quote | Callout.
 - **Tag Dimension** - All | Who | What | When | Where
 - **Persistence** - Remembers selections across page refreshes.
 - **Mode** - FreeForm | Curated
 - **Selected Tags** - Shows selected tags as chips.
-- **Search Tags** - Search tags.
-- **Sort by** - Random | Oldest | Newest on the filtered feed. Oldest and Newest use **journal When** (parsed from When tag names), not card `createdAt`; cards without a parsable When use undated ordering.
-- **Sort / Group** - **Group by** none, event (Curated only), or a tag dimension (Who / What / When / Where). The feed renders labeled sections so multi-tag filters stay readable (`CardFeedV2`, `feedGrouping.ts`, `CardProvider`).
+- **Search Tags** - Search input filters the visible tree (`Type to filter...`), while preserving selected chips.
+- **Sort by** - Random | When (Desc/Asc) | Created (Desc/Asc) | Title (A-Z/Z-A) | Who (A-Z/Z-A) | What (A-Z/Z-A) | Where (A-Z/Z-A).
+- **Group by** - None | When | Who | What | Where. Grouped sections render in the feed when enabled; collection-list mode does not group.
 
 ⭕1 **Planned**
 - **Reader Order Model** - Split ordering by mode: **Freeform** keeps Random plus deterministic order options (`When`, `Created`, `Title`, `Who`, `What`, `Where`) with `Asc/Desc`; **Curated** ignores sort controls and always follows curated tree/TOC order.
@@ -180,8 +181,27 @@ Legend:
 
 ⭕1 **Planned**
 - **Layout `@media` hardening** - Replace `var(--breakpoint-*)` inside `@media` where it affects layout (`V2ContentCard`, `Navigation`, `ViewLayout`, `ContentCard`, `ThemeAdmin`, `TagTree`, etc.) so breakpoints match `docs/04-Theme-Design-Contract.md` §9.2 (literal `px`).
+- **Feed Presentation Matrix** - Define and enforce a single presentation contract across feed/detail/rail contexts for each `type` + `displayMode` pair, including interaction model (open vs expand), title/excerpt behavior, and media framing rules.
+- **Rail Variant** - Add a curated horizontal rail variant for qualifying sequences (for example, school/college story runs) with explicit eligibility, ordering, and card-size behavior separate from the default feed grid.
+- **In-Feed Expansion** - Add optional `Read more` progressive disclosure for story excerpts in feed cards, with deterministic truncation and explicit collapse/expand behavior that does not break feed scroll continuity.
+- **Orientation-aware Framing** - Use cover media orientation metadata to choose from a bounded ratio set (landscape/portrait/square) per approved layout variant so best-fit rendering improves without degrading feed rhythm.
 - **Questions / Quotes** - Source material (Word, books, Notion).
 - **Quote Card** - Attribution modeling (e.g. Content vs subtitle/excerpt).
+
+📐 **V1 Matrix** - Initial presentation contract for `type` + `displayMode` behavior by context:
+
+| Type | Display mode | Feed (default grid) | Feed (rail variant) | Open card (`/view/[id]`) | Excerpt behavior | Cover framing |
+|------|--------------|---------------------|---------------------|---------------------------|------------------|---------------|
+| story | navigate | Interactive tile opens detail; title visible; excerpt optional behind `Read more` | Optional curated horizontal sequence tile; opens detail | Full narrative page with title/subtitle/cover/content | Truncate in feed; optional `Read more` expansion in-place | Orientation-aware ratio bucket per variant (landscape/portrait/square) |
+| story | inline | Non-interactive tile with title + excerpt/content preview | Optional only when explicitly curated; non-interactive by default | N/A (not used as open behavior) | Allow `Read more` for long preview text | Orientation-aware ratio bucket per variant |
+| gallery | navigate | Interactive tile with cover-first media | Primary rail candidate; horizontal sequence of gallery tiles | Detail page with gallery and related blocks | No excerpt requirement; title-first | Orientation-aware ratio bucket per variant |
+| gallery | inline | Non-interactive tile; inline gallery preview allowed | Optional curated rail for quick browse | N/A (not used as open behavior) | Not excerpt-driven | Orientation-aware ratio bucket per variant |
+| qa | navigate | Interactive question tile opens detail answer page | Optional themed rail (for grouped Q&A runs) | Question + answer detail structure | Teaser optional; no `Read more` requirement in v1 | Orientation-aware ratio bucket per variant when cover exists |
+| qa | inline | Non-interactive tile with question + answer preview | Optional curated rail | N/A (not used as open behavior) | Preview-first; no `Read more` requirement in v1 | Orientation-aware ratio bucket per variant when cover exists |
+| quote | static | Non-interactive quote tile | Optional quote rail for themed runs | Render quote body + attribution when opened directly | Not excerpt-driven | No cover required; if cover exists, use orientation-aware ratio bucket |
+| callout | static | Non-interactive callout tile | Optional callout rail | Render callout content when opened directly | Not excerpt-driven | No cover required; if cover exists, use orientation-aware ratio bucket |
+
+📐 **Matrix Rules** - Keep the matrix as the source of truth for feed/detail behavior; new variants (for example `short`) must be added to this matrix before implementation.
 
 ⭕2 **Future**
 - **Bundle / `next/image`** - Code-split heavy routes; tuning feed image priority.
@@ -236,7 +256,6 @@ Legend:
 *Features*
 ✅ **Complete**
 - **Navigation** - Top hamburger navigation `Admin` button navigates to Administration (`src/app/admin/layout.tsx`).
-⭕ **Theme Management** - When in Theme Management, clicking the hamburger shows Admin and Theme highlighted.
 - **Domains** - All admin domains active: Cards, Media, Collections, Tags, Questions, Users, Themes.
 - **Card Management** - Core CRUD, card schema, edit flows, collection route.
 - **Media Management** - Assigned/unassigned filtering, replace-in-place, card-reference-aware delete.
@@ -271,9 +290,9 @@ Legend:
 - **Fields** - Types `story|gallery|qa|quote|callout`; status; `displayMode`; cover + `PhotoPicker` / `CoverPhotoContainer`; `galleryMedia`; TipTap `content` + embedded media + `@` mentions (see Content Page); `MacroTagSelector`; excerpt + auto (`excerptAuto`); `childrenIds` + picker UI; dirty leave/duplicate flows (`persistableSnapshotsEqual`, `confirmLeaveIfDirty`, `POST /api/cards/[id]/duplicate`).
 - **Import** - Folder-as-card (`ImportFolderModal`, `__X` files, caps) — details in `docs/IMPORT-REFERENCE.md`.
 - **Discovery in edit** - PhotoPicker Library tab mirrors Media list filters + in-modal tag dimensions (`filterTagIds` from `CardForm`).
+- **Writing Assist** - Admin-only AI suggestion endpoint is active (`POST /api/ai/suggest-card-drafts`) with suggestion-only outputs; no auto-apply.
 
 ⭕1 **Planned**
-- **Writing Assist** - In card edit, provide a simple AI assist for selected text in title/subtitle/excerpt/content with explicit actions (`Make concise`, `Make engaging`, `Elaborate`, `Fix grammar`) and suggestion-only outcomes (`Replace`, `Insert below`, `Dismiss`)—never auto-apply.
 - **Context Assist** - Keep historical/background context as a separate, explicit AI request from writing rewrites; return context as an independent suggestion block that can be accepted or dismissed without affecting the base rewrite.
 - **Admin Ordering** - Remove random ordering from admin lists and expand deterministic order controls (`When`, `Created`, `Title`, `Who`, `What`, `Where`) with predictable tie-break behavior so sparse `When` coverage does not collapse into one large undated block.
 
@@ -303,7 +322,8 @@ Legend:
 
 📐 **Structural Model** - Listing eligibility matches `childrenIds.length > 0 OR curatedRoot === true`, stored as `curatedNavEligible` for querying. Sidebar `getCollectionCards` filters `curatedNavEligible == true` (and optional `status`), ordered by `createdAt`.
 
-⭕Multi-parent - 
+❓ **Open**
+- **Multi-parent** - 
 ---
 
 ### **Media Management**
@@ -325,9 +345,10 @@ Legend:
 - **Card edges** - `referencedByCardIds` maintained on create/update/delete paths; unassigned filter + `mediaAssignmentSeek.ts`. Drift repair: `npm run reconcile:media-cards`, maintenance HTTP — see `docs/NPM-SCRIPTS.md`.
 - **Admin** - Multi-dimensional filter, replace-in-place (`POST /api/images/{id}/replace`), tagging (`PATCH /api/images/{id}`), bulk modes, multi-select → draft gallery card (`MediaAdminContent`).
 - **Bank-only** - No temporary or active status; imported media is in the bank. Assignment and unassigned filtering use `referencedByCardIds` and `GET /api/media?assignment=unassigned|assigned` (`mediaAssignmentSeek.ts`).
+- **Import Metadata** - Import reads embedded metadata (caption + keyword paths from XMP/IPTC/EXIF via ExifTool) and resolves keywords to app tag IDs in the import path.
 
-⭕1
-- **Import Metadata** - Adjust import metadata precedence to favor embedded image metadata over sidecar JSON where appropriate; extend import to read hierarchical keywords from embedded XMP/IPTC and resolve to app tag IDs.
+⭕1 **Planned**
+- **Import Metadata Precedence** - Finalize precedence policy for embedded metadata vs sidecar JSON when both are present across all import paths.
 
 ⭕2 **Future**
 - **Rename types module** - `src/lib/types/photo.ts` → `media.ts` (throughout)

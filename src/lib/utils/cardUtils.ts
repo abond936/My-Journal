@@ -1,8 +1,9 @@
 import { Card, CardUpdate } from '@/lib/types/card';
+import { compareCuratedRootCards } from '@/lib/utils/curatedCollectionTree';
 
 const DIMENSIONS = ['who', 'what', 'when', 'where'] as const;
 
-const EXCERPT_MAX_LENGTH = 150;
+const EXCERPT_MAX_LENGTH = 70;
 
 /**
  * Quote card attribution for feed/detail: prefer `subtitle`, else `excerpt`.
@@ -46,7 +47,7 @@ export function generateExcerpt(html: string | null | undefined, maxLength = EXC
  * Groups collection cards by dimension (who, what, when, where).
  * A collection appears in every dimension group it has tags for (Option B).
  * Uncategorized: collections with no tags in any dimension.
- * Within each group, sorted by title A-Z.
+ * Within each group, sorted by `curatedRootOrder` (if set), then title A–Z.
  */
 export function groupCollectionsByDimension(cards: Card[]): Record<string, Card[]> {
   const groups: Record<string, Card[]> = {
@@ -77,13 +78,8 @@ export function groupCollectionsByDimension(cards: Card[]): Record<string, Card[
     }
   }
 
-  // Sort each group by title A-Z
   for (const key of Object.keys(groups)) {
-    groups[key].sort((a, b) => {
-      const titleA = (a.title || a.subtitle || 'Untitled').toLowerCase();
-      const titleB = (b.title || b.subtitle || 'Untitled').toLowerCase();
-      return titleA.localeCompare(titleB);
-    });
+    groups[key].sort(compareCuratedRootCards);
   }
 
   return groups;

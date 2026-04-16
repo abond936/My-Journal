@@ -62,7 +62,7 @@ describe('CoverPhotoContainer', () => {
     const removeButton = screen.getByRole('button', { name: /remove/i });
     await userEvent.click(removeButton);
 
-    expect(mockOnChange).toHaveBeenCalledWith(null);
+    expect(mockOnChange).toHaveBeenCalledWith(null, '50% 50%');
   });
 
   it('handles file drop', async () => {

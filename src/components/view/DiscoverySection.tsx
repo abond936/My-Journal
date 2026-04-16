@@ -30,6 +30,12 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
 
       try {
         const excludeIds = [currentCard.docId, ...childrenCards.map(c => c.docId)];
+        const sharedDimensions = {
+          who: currentCard.who || [],
+          what: currentCard.what || [],
+          when: currentCard.when || [],
+          where: currentCard.where || [],
+        };
 
         const filteredParams = new URLSearchParams({
           count: '3',
@@ -38,25 +44,38 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
         if (cardType && cardType !== 'all') {
           filteredParams.set('type', cardType);
         }
-        if (currentCard.who && currentCard.who.length > 0) {
-          filteredParams.set('who', currentCard.who.join(','));
+        if (sharedDimensions.who.length > 0) {
+          filteredParams.set('who', sharedDimensions.who.join(','));
         }
-        if (currentCard.what && currentCard.what.length > 0) {
-          filteredParams.set('what', currentCard.what.join(','));
+        if (sharedDimensions.what.length > 0) {
+          filteredParams.set('what', sharedDimensions.what.join(','));
         }
-        if (currentCard.when && currentCard.when.length > 0) {
-          filteredParams.set('when', currentCard.when.join(','));
+        if (sharedDimensions.when.length > 0) {
+          filteredParams.set('when', sharedDimensions.when.join(','));
         }
-        if (currentCard.where && currentCard.where.length > 0) {
-          filteredParams.set('where', currentCard.where.join(','));
+        if (sharedDimensions.where.length > 0) {
+          filteredParams.set('where', sharedDimensions.where.join(','));
         }
 
         const randomParams = new URLSearchParams({
           count: '3',
           exclude: excludeIds.join(','),
+          excludeDimensionalMatches: 'true',
         });
         if (cardType && cardType !== 'all') {
           randomParams.set('type', cardType);
+        }
+        if (sharedDimensions.who.length > 0) {
+          randomParams.set('who', sharedDimensions.who.join(','));
+        }
+        if (sharedDimensions.what.length > 0) {
+          randomParams.set('what', sharedDimensions.what.join(','));
+        }
+        if (sharedDimensions.when.length > 0) {
+          randomParams.set('when', sharedDimensions.when.join(','));
+        }
+        if (sharedDimensions.where.length > 0) {
+          randomParams.set('where', sharedDimensions.where.join(','));
         }
 
         const [filteredResponse, randomResponse] = await Promise.all([
@@ -119,7 +138,7 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
   if (!hasChildren && extrasLoading) {
     return (
       <section className={styles.discoverySection}>
-        <h2 className={styles.discoveryTitle}>Discover More</h2>
+        <h2 className={styles.discoveryTitle}>Explore More</h2>
         <div className={styles.loadingContainer}>
           <LoadingSpinner />
           <p>Loading related content...</p>
@@ -131,7 +150,7 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
   if (!hasChildren && extrasError && !hasFiltered && !hasRandom) {
     return (
       <section className={styles.discoverySection}>
-        <h2 className={styles.discoveryTitle}>Discover More</h2>
+        <h2 className={styles.discoveryTitle}>Explore More</h2>
         <div className={styles.errorContainer}>
           <p>Unable to load related content: {extrasError}</p>
         </div>
@@ -141,7 +160,7 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
 
   return (
     <section className={styles.discoverySection}>
-      <h2 className={styles.discoveryTitle}>Discover More</h2>
+      <h2 className={styles.discoveryTitle}>Explore More</h2>
 
       {hasChildren && (
         <div className={styles.discoveryGroup}>
@@ -169,14 +188,14 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
 
       {(extrasLoading || hasFiltered) && (
         <div className={styles.discoveryGroup}>
-          <h3 className={styles.groupTitle}>Similar Topics</h3>
+          <h3 className={styles.groupTitle}>Related</h3>
           {extrasLoading && !hasFiltered ? (
             <div className={styles.extrasLoadingRow}>
               <LoadingSpinner />
-              <span>Loading similar topics…</span>
+              <span>Loading related cards…</span>
             </div>
           ) : hasFiltered ? (
-            <div className={styles.cardRail} role="list" aria-label="Similar topics">
+            <div className={styles.cardRail} role="list" aria-label="Related cards">
               {filtered.map(card => (
                 <div key={card.docId} className={styles.cardRailCell} role="listitem">
                   <V2ContentCard
@@ -194,14 +213,14 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
 
       {(extrasLoading || hasRandom) && (
         <div className={styles.discoveryGroup}>
-          <h3 className={`${styles.groupTitle} ${styles.exploreGroupTitle}`}>Explore More</h3>
+          <h3 className={`${styles.groupTitle} ${styles.exploreGroupTitle}`}>Random</h3>
           {extrasLoading && !hasRandom ? (
             <div className={styles.extrasLoadingRow}>
               <LoadingSpinner />
-              <span>Loading explore suggestions…</span>
+              <span>Loading random cards…</span>
             </div>
           ) : hasRandom ? (
-            <div className={styles.cardRail} role="list" aria-label="Explore more">
+            <div className={styles.cardRail} role="list" aria-label="Random cards">
               {random.map(card => (
                 <div key={card.docId} className={styles.cardRailCell} role="listitem">
                   <V2ContentCard

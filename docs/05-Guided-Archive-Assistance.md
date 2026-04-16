@@ -131,6 +131,8 @@ Many people complete **digitization** (scanning, basic cleanup) and stall at **o
 *Principles*
 - **Framework over blank canvas** - Always show **recommended next step** (“Review 12 suggested events,” “Name people in this stack”).
 - **Visible progress** - Users should see **archive coverage** (e.g. % of items in at least one confirmed occasion) to sustain motivation.
+- **Human-first framing** - Present the system as three simple work zones: **Left = piles** (AI-suggested moments), **Middle = actions** (confirm/split/merge/skip), **Right = meaning** (who/where/when/story with gentle prompts). One-line model: **Left finds moments, Middle organizes moments, Right explains moments**.
+- **Glean, do not demand** - Users speak naturally (“That is Sissy's birthday at Grandma's”); the system extracts structure behind the scenes, proposes likely details (including inferred age/stage when possible), and asks only minimal confirmation questions.
 
 *Features*
 ✅ **Complete**
@@ -179,3 +181,4 @@ Many people complete **digitization** (scanning, basic cleanup) and stall at **o
 | Date | Change |
 |------|--------|
 | 2026-04-10 | Initial seed: vision, principles, architecture threads, application skeleton, implementation starters, relationship to my-journal. |
+| 2026-04-15 | Added concise three-pane mental model and voice-first "glean" interaction framing for conceptual clarity. |

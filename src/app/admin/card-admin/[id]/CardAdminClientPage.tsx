@@ -97,17 +97,32 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
 
     setIsDeleting(true);
     try {
-      const params = new URLSearchParams({ childrenIds_contains: cardId });
-      const response = await fetch(`/api/cards?${params.toString()}`);
-      if (!response.ok) throw new Error('Could not verify parent cards.');
-      
-      const parentCardsResult: PaginatedResult<Card> = await response.json();
-      const parentCards = parentCardsResult.items;
+      let parentCards: Card[] = [];
+      let verificationFailed = false;
+      try {
+        const params = new URLSearchParams({
+          childrenIds_contains: cardId,
+          status: 'all',
+          limit: '200',
+        });
+        const response = await fetch(`/api/cards?${params.toString()}`);
+        if (!response.ok) {
+          verificationFailed = true;
+        } else {
+          const parentCardsResult: PaginatedResult<Card> = await response.json();
+          parentCards = parentCardsResult.items || [];
+        }
+      } catch {
+        verificationFailed = true;
+      }
 
       let confirmMessage = 'Are you sure you want to delete this card? This action cannot be undone.';
       if (parentCards.length > 0) {
-        const parentTitles = parentCards.map(p => p.title).join(', ');
+        const parentTitles = parentCards.map(p => p.title || '(Untitled)').join(', ');
         confirmMessage = `WARNING: This card is a child of the following cards: ${parentTitles}.\n\nDeleting it will remove it from these collections. Are you sure you want to proceed?`;
+      } else if (verificationFailed) {
+        confirmMessage =
+          'Could not verify parent cards right now.\n\nYou can still delete; parent cleanup is handled server-side.\n\nProceed with delete?';
       }
 
       if (window.confirm(confirmMessage)) {

@@ -89,6 +89,7 @@ export interface SearchOptions {
   status?: string;
   page?: number;
   perPage?: number;
+  searchScope?: 'default' | 'admin-title';
 }
 
 export interface SearchResult {
@@ -108,13 +109,19 @@ export async function searchCards(options: SearchOptions): Promise<SearchResult>
     filterParts.push(`status:=${options.status}`);
   }
 
+  const isAdminTitleScope = options.searchScope === 'admin-title';
+  const queryBy = isAdminTitleScope
+    ? 'title,subtitle'
+    : 'title,subtitle,excerpt,content_text,tag_names,who_names,what_names,when_names,where_names';
+  const queryByWeights = isAdminTitleScope ? '10,5' : '10,5,4,2,3,3,3,3,3';
+
   const result = await client
     .collections(CARDS_COLLECTION)
     .documents()
     .search({
       q: options.query,
-      query_by: 'title,subtitle,excerpt,content_text,tag_names,who_names,what_names,when_names,where_names',
-      query_by_weights: '10,5,4,2,3,3,3,3,3',
+      query_by: queryBy,
+      query_by_weights: queryByWeights,
       filter_by: filterParts.length > 0 ? filterParts.join(' && ') : undefined,
       page: options.page || 1,
       per_page: options.perPage || 50,

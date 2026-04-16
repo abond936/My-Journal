@@ -78,6 +78,8 @@ export const cardSchema = z.object({
   childrenIds: z.array(z.string()).optional(),
   // Top-level curated root for sidebar/API listing (getCollectionCards) even when childrenIds is empty.
   curatedRoot: z.boolean().optional(),
+  /** Order among top-level curated roots (admin tree + sidebar). Lower sorts first; unset sorts by title. */
+  curatedRootOrder: z.number().optional(),
 
   /**
    * Denormalized: true when `(childrenIds?.length > 0) || curatedRoot === true`. Maintained only on the

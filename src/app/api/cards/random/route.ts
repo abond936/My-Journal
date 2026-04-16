@@ -97,6 +97,12 @@ function getRandomCardIds(
     when?: string[];
     where?: string[];
   },
+  excludeDimensionalTags?: {
+    who?: string[];
+    what?: string[];
+    when?: string[];
+    where?: string[];
+  },
   excludeIds: string[] = [],
   type?: CardTypeFilter
 ): string[] {
@@ -106,20 +112,22 @@ function getRandomCardIds(
   
   let availableCardIds: string[];
   
-  if (dimensionalTags && Object.keys(dimensionalTags).some(dim => dimensionalTags[dim]?.length > 0)) {
-    // Filter by dimensional tags
-    const matchingCardIds = new Set<string>();
-    
-    Object.entries(dimensionalTags).forEach(([dimension, tagIds]) => {
-      if (tagIds && tagIds.length > 0) {
-        tagIds.forEach(tagId => {
-          const cardIds = cardIdCache!.cardIdsByDimension[dimension][tagId] || [];
-          cardIds.forEach(cardId => matchingCardIds.add(cardId));
-        });
-      }
+  if (dimensionalTags && Object.keys(dimensionalTags).some(dim => dimensionalTags[dim as keyof typeof dimensionalTags]?.length > 0)) {
+    // Related logic: AND across provided dimensions, OR within each dimension.
+    let intersectedIds: Set<string> | null = null;
+    (['who', 'what', 'when', 'where'] as const).forEach((dimension) => {
+      const tagIds = dimensionalTags[dimension] || [];
+      if (!tagIds.length) return;
+      const idsForDimension = new Set<string>();
+      tagIds.forEach((tagId) => {
+        const cardIds = cardIdCache!.cardIdsByDimension[dimension][tagId] || [];
+        cardIds.forEach((cardId) => idsForDimension.add(cardId));
+      });
+      intersectedIds = intersectedIds === null
+        ? idsForDimension
+        : new Set([...intersectedIds].filter((id) => idsForDimension.has(id)));
     });
-    
-    availableCardIds = Array.from(matchingCardIds);
+    availableCardIds = intersectedIds ? Array.from(intersectedIds) : [];
   } else {
     // Use all cards
     availableCardIds = [...cardIdCache.allCardIds];
@@ -133,6 +141,24 @@ function getRandomCardIds(
   
   // Filter out excluded IDs
   availableCardIds = availableCardIds.filter(id => !excludeIds.includes(id));
+
+  // Optional random logic: remove anything that matches provided dimensional tags.
+  if (
+    excludeDimensionalTags &&
+    Object.keys(excludeDimensionalTags).some(
+      (dim) => excludeDimensionalTags[dim as keyof typeof excludeDimensionalTags]?.length
+    )
+  ) {
+    const excludedByDimension = new Set<string>();
+    (['who', 'what', 'when', 'where'] as const).forEach((dimension) => {
+      const tagIds = excludeDimensionalTags[dimension] || [];
+      tagIds.forEach((tagId) => {
+        const ids = cardIdCache!.cardIdsByDimension[dimension][tagId] || [];
+        ids.forEach((id) => excludedByDimension.add(id));
+      });
+    });
+    availableCardIds = availableCardIds.filter((id) => !excludedByDimension.has(id));
+  }
   
   // If we don't have enough cards, return what we have
   if (availableCardIds.length <= count) {
@@ -196,6 +222,7 @@ export async function GET(request: Request) {
 
     const typeParam = searchParams.get('type') as CardTypeFilter | null;
     const type = typeParam && CARD_TYPES.includes(typeParam as typeof CARD_TYPES[number]) ? typeParam : undefined;
+    const excludeDimensionalMatches = searchParams.get('excludeDimensionalMatches') === 'true';
 
     // Update cache if needed
     if (!cardIdCache || Date.now() - cardIdCache.lastUpdated > CACHE_DURATION) {
@@ -203,7 +230,13 @@ export async function GET(request: Request) {
     }
     
     // Get random card IDs from cache
-    const randomCardIds = getRandomCardIds(count, dimensionalTags, excludeIds, type || 'all');
+    const randomCardIds = getRandomCardIds(
+      count,
+      excludeDimensionalMatches ? undefined : dimensionalTags,
+      excludeDimensionalMatches ? dimensionalTags : undefined,
+      excludeIds,
+      type || 'all'
+    );
     
     if (randomCardIds.length === 0) {
       return NextResponse.json([]);

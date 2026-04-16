@@ -114,6 +114,17 @@ const Home: React.FC = () => {
         </section>
       </div>
 
+      {/* Top corner graphic */}
+      <div className={styles.topCorner}>
+        <Image
+          src="/images/uploads/top-corner.png"
+          alt=""
+          width={200}
+          height={200}
+          sizes="200px"
+        />
+      </div>
+
       {/* Bottom corner graphic */}
       <div className={styles.bottomCorner}>
         <Image 

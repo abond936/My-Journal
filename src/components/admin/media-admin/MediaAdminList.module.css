@@ -41,10 +41,11 @@
   background: var(--state-error-background-color);
 }
 
-/* Table Styles */
+/* overflow-y: clip avoids overflow-x:auto computing overflow-y:auto, which breaks thead sticky. */
 .tableContainer {
   overflow-x: auto;
-  max-width: 100vw;
+  overflow-y: clip;
+  max-width: 100%;
   padding-bottom: var(--spacing-md);
 }
 
@@ -60,6 +61,7 @@
 .table td {
   padding: var(--spacing-sm);
   text-align: left;
+  vertical-align: top;
   border-bottom: var(--border-width-thin) solid var(--border1-color);
 }
 
@@ -80,8 +82,8 @@
 
 .headerCell {
   position: sticky;
-  top: var(--media-admin-table-header-top, 0px);
-  z-index: 80;
+  top: var(--media-admin-chrome-offset, 120px);
+  z-index: 52;
   padding: var(--spacing-sm);
   background: var(--layout-background2-color);
   border-bottom: var(--border-width-thin) solid var(--border1-color);
@@ -117,12 +119,13 @@
 
 .checkboxCell {
   position: sticky;
-  top: var(--media-admin-table-header-top, 0px);
-  z-index: 80;
+  top: var(--media-admin-chrome-offset, 120px);
+  z-index: 52;
   padding: var(--spacing-sm);
   background: var(--layout-background2-color);
   border-bottom: var(--border-width-thin) solid var(--border1-color);
   text-align: center;
+  vertical-align: top;
   width: var(--spacing-xl);
 }
 
@@ -131,6 +134,19 @@
   padding: var(--spacing-2xl);
   color: var(--text2-color);
   font-style: italic;
+}
+
+@supports not (overflow: clip) {
+  .tableContainer {
+    overflow-y: visible;
+  }
+
+  .headerCell,
+  .checkboxCell {
+    position: relative;
+    top: auto;
+    z-index: auto;
+  }
 }
 
 /* Responsive styles */

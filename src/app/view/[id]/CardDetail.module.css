@@ -28,6 +28,8 @@
 .header {
   margin-bottom: var(--spacing-xl);
   padding-bottom: var(--spacing-lg);
+  padding-left: var(--spacing-md);
+  padding-right: var(--spacing-md);
 }
 
 .noSubtitle {
@@ -56,7 +58,7 @@
 .title {
   font-size: var(--font-size-4xl);
   font-weight: var(--font-weight-bold);
-  margin-bottom: 0;
+  margin-bottom: var(--spacing-md);
 }
 
 .titleWithSubtitle {

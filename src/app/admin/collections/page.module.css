@@ -16,6 +16,8 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--spacing-md);
+  align-items: stretch;
+  min-height: 0;
 }
 
 .panel {
@@ -23,7 +25,17 @@
   border-radius: var(--border-radius-md);
   padding: var(--spacing-md);
   background: var(--layout-background1-color);
-  min-height: 28rem;
+  min-height: 0;
+  max-height: calc(100dvh - var(--admin-tabs-height, 56px) - 20rem);
+  display: flex;
+  flex-direction: column;
+}
+
+.panelScroll {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .input {
@@ -70,8 +82,10 @@
   padding: 0;
 }
 
-.treeList {
-  padding-left: var(--spacing-xs);
+/* Curated tree: each nested level indents (root list stays flush inside drop zone). */
+.treeList .treeList {
+  margin-left: var(--spacing-xl);
+  padding-left: var(--spacing-sm);
 }
 
 .treeNode {
@@ -113,6 +127,43 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
+  flex: 1;
+  min-width: 0;
+}
+
+.nodeDragSurface {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* Full-width “gap” above each row: insert sibling before this card (title = nest as last child). */
+.treeInsertBeforeWrap {
+  width: 100%;
+  margin-top: -4px;
+  padding-top: 4px;
+  margin-bottom: 1px;
+  box-sizing: border-box;
+}
+
+.treeInsertBeforeZone {
+  width: 100%;
+  min-height: 8px;
+  border-radius: var(--border-radius-sm);
+  cursor: copy;
+  background: color-mix(in srgb, var(--border1-color) 22%, transparent);
+}
+
+.treeInsertBeforeZoneActive {
+  outline: 2px solid var(--button-solid-border-color);
+  background: color-mix(in srgb, var(--button-solid-background-color) 18%, transparent);
+}
+
+.nodeTitleDropZone {
+  flex: 1;
+  min-width: 0;
+  border-radius: var(--border-radius-sm);
 }
 
 .treeExpandButton {
@@ -194,6 +245,19 @@
   margin-top: var(--spacing-sm);
   font-size: var(--font-size-sm);
   color: var(--text2-color);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-sm);
+  border: var(--border-width-thin) solid var(--border1-color);
+  background: var(--layout-background2-color);
+}
+
+.draggingStatusReparent {
+  border-left: 4px solid var(--state-warning-border-color, #b45309);
+}
+
+.hintStrong {
+  color: var(--text1-color);
+  font-weight: var(--font-weight-semibold);
 }
 
 .error {
@@ -201,8 +265,109 @@
   margin-bottom: var(--spacing-sm);
 }
 
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, #000 45%, transparent);
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-md);
+}
+
+.modal {
+  width: min(960px, 96vw);
+  max-height: 88vh;
+  overflow: hidden;
+  border-radius: var(--border-radius-md);
+  border: var(--border-width-thin) solid var(--border1-color);
+  background: var(--layout-background1-color);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
+.bulkSummary {
+  margin: 0;
+  color: var(--text1-color);
+  font-size: var(--font-size-sm);
+}
+
+.bulkControlsGrid {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto auto auto;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.checkboxLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--text1-color);
+  font-size: var(--font-size-sm);
+}
+
+.bulkActionsRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.bulkList {
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--layout-background2-color);
+  min-height: 16rem;
+  max-height: 46vh;
+  overflow: auto;
+  padding: var(--spacing-sm);
+}
+
+.bulkListRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) 0;
+  border-bottom: var(--border-width-thin) solid color-mix(in srgb, var(--border1-color) 60%, transparent);
+}
+
+.bulkListRow:last-child {
+  border-bottom: 0;
+}
+
+.bulkRowLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-width: 0;
+}
+
+.bulkFooter {
+  display: flex;
+  justify-content: flex-end;
+}
+
 @media (max-width: 980px) {
   .layout {
     grid-template-columns: 1fr;
+  }
+
+  .bulkControlsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .bulkActionsRow {
+    flex-wrap: wrap;
   }
 }

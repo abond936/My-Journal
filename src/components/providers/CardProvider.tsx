@@ -338,7 +338,9 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       if (mediaTagSignals.when.length > 0) params.set('mediaWhen', mediaTagSignals.when.join(','));
       if (mediaTagSignals.where.length > 0) params.set('mediaWhere', mediaTagSignals.where.join(','));
       if (searchTerm?.trim()) params.set('q', searchTerm);
-      if (isAdmin && searchTerm?.trim()) params.set('searchField', 'title');
+      if (pathname?.startsWith('/admin/card-admin') && searchTerm?.trim()) {
+        params.set('searchScope', 'admin-title');
+      }
       if (cardType && cardType !== 'all') params.set('type', cardType);
       if (pageIndex > 0 && previousPageData?.lastDocId) params.set('lastDocId', previousPageData.lastDocId);
       if (isAdmin && !needsFullHydration) params.set('hydration', 'cover-only');

@@ -13,6 +13,7 @@ import {
   markStorageForLaterDeletion,
 } from './images/imageImportService';
 import { extractMediaFromContent, stripContentImageSrc, hydrateContentImageSrc, removeMediaFromContent, generateExcerpt } from '@/lib/utils/cardUtils';
+import { compareCuratedRootCards } from '@/lib/utils/curatedCollectionTree';
 import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 import { buildTagMap, computeJournalWhenSortKeys } from '@/lib/utils/journalWhenSort';
 import { getPublicStorageUrl } from '@/lib/utils/storageUrl';
@@ -1154,6 +1155,7 @@ export async function getCollectionCards(
 
   const snapshot = await query.get();
   const cards: Card[] = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Card));
+  cards.sort(compareCuratedRootCards);
 
   if (options.hydrationMode === 'cover-only') {
     return _hydrateCoverImagesOnly(cards);

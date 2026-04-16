@@ -34,7 +34,7 @@
 
 .renderer :global(p) {
   margin-top: 0;
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
 }
 
 .renderer :global(blockquote) {

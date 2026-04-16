@@ -7,12 +7,25 @@ import styles from './ImageToolbar.module.css';
 interface ImageToolbarProps {
   editor: Editor;
   onAction: (action: 'setSize' | 'setAlignment' | 'setWrap' | 'delete', value?: string) => void;
+  targetLabel?: string;
+  canRemove?: boolean;
+  currentSize?: 'small' | 'medium' | 'large';
+  currentAlignment?: 'left' | 'center' | 'right';
+  currentWrap?: 'on' | 'off';
 }
 
-const ImageToolbar = ({ editor, onAction }: ImageToolbarProps) => {
-  const size = editor.getAttributes('figureWithImage')['data-size'];
-  const alignment = editor.getAttributes('figureWithImage')['data-alignment'];
-  const wrap = editor.getAttributes('figureWithImage')['data-wrap'];
+const ImageToolbar = ({
+  editor,
+  onAction,
+  targetLabel,
+  canRemove = true,
+  currentSize,
+  currentAlignment,
+  currentWrap,
+}: ImageToolbarProps) => {
+  const size = currentSize ?? editor.getAttributes('figureWithImage')['data-size'];
+  const alignment = currentAlignment ?? editor.getAttributes('figureWithImage')['data-alignment'];
+  const wrap = currentWrap ?? editor.getAttributes('figureWithImage')['data-wrap'];
 
   const handlePress = (e: React.MouseEvent<HTMLButtonElement>, action: 'setSize' | 'setAlignment' | 'setWrap' | 'delete', value?: string) => {
     e.preventDefault();
@@ -21,6 +34,7 @@ const ImageToolbar = ({ editor, onAction }: ImageToolbarProps) => {
 
   return (
     <div className={styles.imageToolbar}>
+      {targetLabel ? <div className={styles.targetInfo}>Selected: {targetLabel}</div> : null}
       <div className={styles.toolbarSection}>
         <label className={styles.toolbarLabel}>Size:</label>
         <div className={styles.buttonGroup}>
@@ -45,7 +59,15 @@ const ImageToolbar = ({ editor, onAction }: ImageToolbarProps) => {
         </div>
       </div>
       <div className={styles.toolbarSection}>
-        <button onMouseDown={(e) => handlePress(e, 'delete')} type="button" className={`${styles.toolbarButton} ${styles.dangerButton}`}>Remove</button>
+        <button
+          onMouseDown={(e) => handlePress(e, 'delete')}
+          type="button"
+          className={`${styles.toolbarButton} ${styles.dangerButton}`}
+          disabled={!canRemove}
+          title={targetLabel ? `Remove ${targetLabel}` : 'Remove selected image'}
+        >
+          Remove
+        </button>
       </div>
     </div>
   );

@@ -62,9 +62,18 @@
 
 .imageToolbar {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
   padding: var(--spacing-sm);
   border-radius: var(--border-radius-sm);
   margin-bottom: var(--spacing-sm);
+}
+
+.targetInfo {
+  width: 100%;
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
 }
 
 .toolbarSection {
@@ -113,3 +122,8 @@
   background-color: var(--color12);
   color: white;
 } 
+
+.toolbarButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}

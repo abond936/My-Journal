@@ -59,6 +59,21 @@
 }
 
 /* Bottom corner styling */
+.topCorner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  width: clamp(200px, 30vw, 400px);
+  pointer-events: none;
+}
+
+.topCorner img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
 .bottomCorner {
   position: fixed;
   bottom: 0;

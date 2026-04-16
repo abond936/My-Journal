@@ -47,7 +47,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
   const { updateContentMedia } = useCardForm();
   const [content, setContent] = useState(initialContent);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
-  const [selectedNode, setSelectedNode] = useState<any | null>(null);
+  const [activeImageMediaId, setActiveImageMediaId] = useState<string | null>(null);
 
   const logPreview = (tag: string, html: string, length: number) => {
     // Only log significant content changes (more than 10 characters difference)
@@ -68,31 +68,104 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
     return Array.from(mediaIds);
   }, []);
 
+  const removeFigureByMediaId = (mediaId: string): boolean => {
+    if (!editor) return false;
+    const { state, view } = editor;
+    const { doc } = state;
+    let deleteFrom: number | null = null;
+    let deleteTo: number | null = null;
+
+    doc.descendants((node, pos) => {
+      if (node.type.name !== 'figureWithImage') return true;
+      const nodeMediaId = (node.attrs?.['data-media-id'] ?? node.attrs?.docId) as string | undefined;
+      if (nodeMediaId === mediaId) {
+        deleteFrom = pos;
+        deleteTo = pos + node.nodeSize;
+        return false;
+      }
+      return true;
+    });
+
+    if (deleteFrom == null || deleteTo == null) return false;
+
+    const tr = state.tr.delete(deleteFrom, deleteTo);
+    view.dispatch(tr);
+    return true;
+  };
+
+  const updateFigureAttrsByMediaId = (
+    mediaId: string,
+    attrsPatch: Partial<{ 'data-size': 'small' | 'medium' | 'large'; 'data-alignment': 'left' | 'center' | 'right'; 'data-wrap': 'on' | 'off' }>
+  ): boolean => {
+    if (!editor) return false;
+    const { state, view } = editor;
+    const { doc } = state;
+    let targetPos: number | null = null;
+    let targetAttrs: Record<string, unknown> | null = null;
+
+    doc.descendants((node, pos) => {
+      if (node.type.name !== 'figureWithImage') return true;
+      const nodeMediaId = (node.attrs?.['data-media-id'] ?? node.attrs?.docId) as string | undefined;
+      if (nodeMediaId === mediaId) {
+        targetPos = pos;
+        targetAttrs = node.attrs as Record<string, unknown>;
+        return false;
+      }
+      return true;
+    });
+
+    if (targetPos == null || targetAttrs == null) return false;
+
+    const tr = state.tr.setNodeMarkup(targetPos, undefined, {
+      ...targetAttrs,
+      ...attrsPatch,
+    });
+    view.dispatch(tr);
+    return true;
+  };
+
+  const getActiveImageAttrs = (): Record<string, unknown> | null => {
+    if (!editor || !activeImageMediaId) return null;
+    let attrs: Record<string, unknown> | null = null;
+    editor.state.doc.descendants((node) => {
+      if (node.type.name !== 'figureWithImage') return true;
+      const nodeMediaId = (node.attrs?.['data-media-id'] ?? node.attrs?.docId) as string | undefined;
+      if (nodeMediaId === activeImageMediaId) {
+        attrs = node.attrs as Record<string, unknown>;
+        return false;
+      }
+      return true;
+    });
+    return attrs;
+  };
+
   const handleToolbarAction = (action: 'setSize' | 'setAlignment' | 'setWrap' | 'delete', value?: any) => {
-    if (!editor || !selectedNode) return;
-    const chain = editor.chain();
+    if (!editor || !activeImageMediaId) return;
     
     if (action === 'delete') {
-      const mediaId = selectedNode.attrs['data-media-id'];
-      if (mediaId) {
-        const currentMediaIds = extractMediaIds(editor.getHTML());
-        const updatedMediaIds = currentMediaIds.filter(id => id !== mediaId);
-        updateContentMedia(updatedMediaIds);
-        onImageDelete?.(mediaId);
+      const removed = removeFigureByMediaId(activeImageMediaId);
+      if (!removed) {
+        console.warn('[RichTextEditor] Failed to remove selected inline image by media id');
+        return;
       }
-      chain.deleteNode('figureWithImage').run();
+
+      const currentMediaIds = extractMediaIds(editor.getHTML());
+      const updatedMediaIds = currentMediaIds.filter(id => id !== activeImageMediaId);
+      updateContentMedia(updatedMediaIds);
+      onImageDelete?.(activeImageMediaId);
+      setActiveImageMediaId(null);
       return;
     }
 
     switch (action) {
       case 'setSize':
-        chain.setFigureSize(value).run();
+        updateFigureAttrsByMediaId(activeImageMediaId, { 'data-size': value });
         break;
       case 'setAlignment':
-        chain.setFigureAlignment(value).run();
+        updateFigureAttrsByMediaId(activeImageMediaId, { 'data-alignment': value });
         break;
       case 'setWrap':
-        chain.setFigureWrap(value).run();
+        updateFigureAttrsByMediaId(activeImageMediaId, { 'data-wrap': value });
         break;
     }
   };
@@ -126,7 +199,13 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
     immediatelyRender: false,
     onSelectionUpdate: ({ editor }) => {
       const node = editor.state.doc.nodeAt(editor.state.selection.from);
-      setSelectedNode(node?.type.name === 'figureWithImage' ? node : null);
+      const figureNode = node?.type.name === 'figureWithImage' ? node : null;
+      if (figureNode) {
+        const mediaId = figureNode.attrs?.['data-media-id'] ?? figureNode.attrs?.docId ?? null;
+        setActiveImageMediaId(mediaId);
+      } else if (!editor.isActive('figureWithImage')) {
+        setActiveImageMediaId(null);
+      }
     },
     onTransaction: ({ editor, transaction }) => {
       // Transaction handling without logging
@@ -155,6 +234,12 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
           handleImageUpload(file);
           return true;
         }
+        return false;
+      },
+      handleClickOn: (view, pos, node) => {
+        if (node.type.name !== 'figureWithImage') return false;
+        const mediaId = (node.attrs?.['data-media-id'] ?? node.attrs?.docId) as string | undefined;
+        setActiveImageMediaId(mediaId ?? null);
         return false;
       },
     },
@@ -220,6 +305,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
   }));
   
   if (!editor) return null;
+  const activeImageAttrs = getActiveImageAttrs();
 
   const handleToolbarButtonPress = (e: React.MouseEvent<HTMLButtonElement>, command: () => void) => {
     e.preventDefault();
@@ -241,7 +327,19 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
             @ card
           </span>
         </div>
-        {editor.isActive('figureWithImage') && selectedNode && <ImageToolbar editor={editor} onAction={handleToolbarAction} />}
+        {activeImageMediaId && activeImageAttrs && (
+          <ImageToolbar
+            editor={editor}
+            onAction={handleToolbarAction}
+            targetLabel={(activeImageAttrs.alt as string | null) || activeImageMediaId}
+            canRemove={Boolean(activeImageMediaId)}
+            currentSize={(activeImageAttrs['data-size'] as 'small' | 'medium' | 'large' | undefined) ?? 'medium'}
+            currentAlignment={
+              (activeImageAttrs['data-alignment'] as 'left' | 'center' | 'right' | undefined) ?? 'left'
+            }
+            currentWrap={(activeImageAttrs['data-wrap'] as 'on' | 'off' | undefined) ?? 'off'}
+          />
+        )}
       </div>
       <EditorContent editor={editor} className={styles.editorContent} />
       {error && <p className={styles.errorText}>{error}</p>}

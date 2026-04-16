@@ -133,50 +133,42 @@ export default function MediaAdminContent() {
     fetchMedia(1, { search });
   };
 
+  /** Whole controls block (title/toggle/search/filters/toolbar) stays sticky above the table. */
   const stickyTopRef = useRef<HTMLDivElement | null>(null);
 
   useLayoutEffect(() => {
+    const stickyEl = stickyTopRef.current;
     const measure = () => {
       const tabsEl = document.getElementById('admin-tabs-bar');
-      const stickyEl = stickyTopRef.current;
-      if (!tabsEl || !stickyEl) return;
-
-      const tabsHeight = tabsEl.getBoundingClientRect().height;
-      const stickyHeight = stickyEl.getBoundingClientRect().height;
-
-      document.documentElement.style.setProperty('--admin-tabs-height', `${tabsHeight}px`);
-      document.documentElement.style.setProperty('--media-admin-sticky-top-height', `${stickyHeight}px`);
-      document.documentElement.style.setProperty(
-        '--media-admin-table-header-top',
-        `${tabsHeight + stickyHeight}px`
-      );
+      const sticky = stickyTopRef.current;
+      if (!tabsEl || !sticky) return;
+      const tabsH = tabsEl.getBoundingClientRect().height;
+      const stickyH = sticky.getBoundingClientRect().height;
+      document.documentElement.style.setProperty('--admin-tabs-height', `${tabsH}px`);
+      document.documentElement.style.setProperty('--media-admin-chrome-offset', `${tabsH + stickyH}px`);
     };
 
     measure();
     window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, [selectedMediaIds.length, loading, error, viewMode]);
+    const ro =
+      stickyEl && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => measure()) : null;
+    if (stickyEl && ro) ro.observe(stickyEl);
+    return () => {
+      window.removeEventListener('resize', measure);
+      ro?.disconnect();
+    };
+  }, []);
 
   return (
     <div className={styles.container}>
       <div className={styles.stickyTop} ref={stickyTopRef}>
         <h1>Media Management</h1>
-        <div className={styles.tagPrimarySection}>
-          <p className={styles.tagPrimaryLabel}>Tag filter (primary)</p>
-          <p className={styles.tagPrimaryText}>
-            Use the <strong>left sidebar</strong> tag tree (same as Cards / view). Multi-select dimensional tags
-            first to narrow the library; assignment and tag filters use Typesense when configured for faster
-            results.
-          </p>
-        </div>
 
-        {/* View toggle - prominent, always visible */}
         <div className={styles.viewToggleBar}>
-          <span className={styles.viewToggleLabel}>View:</span>
           <span className={styles.viewToggleButtonGroup}>
             <button
               type="button"
-              className={`${styles.viewToggleButton} ${viewMode === 'grid' ? styles.active : ''}`}
+              className={`${styles.viewToggleButton} ${viewMode === 'grid' ? styles.viewToggleActive : ''}`}
               onClick={() => setViewMode('grid')}
               aria-pressed={viewMode === 'grid'}
             >
@@ -184,7 +176,7 @@ export default function MediaAdminContent() {
             </button>
             <button
               type="button"
-              className={`${styles.viewToggleButton} ${viewMode === 'table' ? styles.active : ''}`}
+              className={`${styles.viewToggleButton} ${viewMode === 'table' ? styles.viewToggleActive : ''}`}
               onClick={() => setViewMode('table')}
               aria-pressed={viewMode === 'table'}
             >
