@@ -767,7 +767,8 @@ export async function updateTagCountsForMedia(
 export async function updateTagCountsForCard(
   oldCard: { tags?: string[]; status?: string } | null,
   newCard: { tags?: string[]; status?: string },
-  transaction: FirebaseFirestore.Transaction
+  transaction: FirebaseFirestore.Transaction,
+  tagPathLookup?: Map<string, Tag>
 ): Promise<void> {
   const oldTags = new Set(oldCard?.tags || []);
   const newTags = new Set(newCard.tags || []);
@@ -794,7 +795,7 @@ export async function updateTagCountsForCard(
   }
   
   // Apply deltas with ancestor inclusion
-  await applyTagCountDeltas(deltaMap, transaction, 'cardCount');
+  await applyTagCountDeltas(deltaMap, transaction, 'cardCount', tagPathLookup);
 }
 
 /**

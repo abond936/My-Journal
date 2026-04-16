@@ -66,19 +66,18 @@ export default function ChildCardManager({
 
   return (
     <div className={clsx(styles.container, className)}>
-      <h4>Child Cards</h4>
+      <h4 className={styles.sectionTitle}>Child Cards</h4>
       <p className={styles.hint}>
-        Add or reparent children in{' '}
+        Reorder or remove children. Add or reparent in{' '}
         <Link href="/admin/collections" className={styles.collectionsLink}>
-          Collections
+          Card Management/Collections
         </Link>
-        . Here you can reorder or remove children for this card.
+        .
       </p>
 
       {error && <p className={styles.error}>{error}</p>}
 
       <div className={styles.childList}>
-        <h5>Current Children</h5>
         {areChildrenLoading && <p>Loading child cards...</p>}
         {childrenError && <p className={styles.error}>{childrenError}</p>}
         {!areChildrenLoading && !childrenError && childCards.length === 0 && (

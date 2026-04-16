@@ -95,7 +95,7 @@ export default function MacroTagSelector({
   return (
     <div className={clsx(styles.container, className, error && styles.error)}>
       <div className={styles.header}>
-        <h3>Tags</h3>
+        <h4 className={styles.sectionTitle}>Tags</h4>
         <button
           onClick={() => setIsExpanded(true)}
           className={styles.editButton}

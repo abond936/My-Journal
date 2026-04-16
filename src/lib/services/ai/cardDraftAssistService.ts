@@ -17,7 +17,7 @@ export const cardDraftOptionSchema = z.object({
 });
 
 export const suggestCardDraftsResponseSchema = z.object({
-  options: z.array(cardDraftOptionSchema).min(2).max(2),
+  options: z.array(cardDraftOptionSchema).min(1).max(1),
 });
 
 export type SuggestCardDraftsRequest = z.infer<typeof suggestCardDraftsRequestSchema>;
@@ -150,7 +150,7 @@ export async function suggestCardDraftOptions(input: SuggestCardDraftsRequest): 
   const excerpt = truncateText(input.excerpt || '', 1600);
   const prompt = [
     'Help improve a personal family-journal card.',
-    'Return exactly 2 distinct draft options as JSON with shape: { "options": [{ "title","subtitle","excerpt","content","rationale" }] }.',
+    'Return exactly 1 draft option as JSON with shape: { "options": [{ "title","subtitle","excerpt","content","rationale" }] }.',
     'Constraints:',
     '- Do not invent facts, names, dates, or places.',
     '- Keep unknown details neutral.',

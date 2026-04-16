@@ -1,5 +1,12 @@
 import { NextResponse } from 'next/server';
-import { createCard, getCards, getCardsByIds, getCardsByCollectionId, getCollectionCards } from '@/lib/services/cardService';
+import {
+  createCard,
+  getCards,
+  getCardsByIds,
+  getCardsByCollectionId,
+  getCollectionCards,
+  getParentCardsByChildId,
+} from '@/lib/services/cardService';
 import { Card } from '@/lib/types/card';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
@@ -163,6 +170,26 @@ export async function GET(request: Request) {
           hydrationMode,
         });
         return NextResponse.json(result);
+      }
+
+      // Dedicated narrow parent lookup path (used by admin delete warning flow).
+      if (
+        childrenIds_contains &&
+        !q?.trim() &&
+        !tags?.length &&
+        Object.keys(dimensionalTags).length === 0 &&
+        Object.keys(mediaDimensionalTags).length === 0 &&
+        !sortBy
+      ) {
+        const items = await getParentCardsByChildId(childrenIds_contains, {
+          status,
+          limit,
+          hydrationMode,
+        });
+        return NextResponse.json({
+          items,
+          hasMore: items.length >= limit,
+        } as PaginatedResult<Card>);
       }
 
       const matchesAny = (candidate: string[] | undefined, required: string[] | undefined) => {

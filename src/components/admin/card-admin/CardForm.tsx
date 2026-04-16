@@ -222,10 +222,10 @@ const CardForm: React.FC = () => {
     setIsPhotoPickerOpen(false);
   }, []);
 
-  const requestDraftSuggestions = useCallback(async () => {
+  const requestDraftSuggestions = useCallback(async (preserveExisting = false) => {
     setIsSuggestingDrafts(true);
     setDraftSuggestionError(null);
-    setDraftOptions([]);
+    if (!preserveExisting) setDraftOptions([]);
     try {
       const currentContent = editorRef.current?.getContent() ?? (cardData.content || '');
       const res = await fetch('/api/ai/suggest-card-drafts', {
@@ -251,7 +251,7 @@ const CardForm: React.FC = () => {
       if (!Array.isArray(payload.options) || payload.options.length === 0) {
         throw new Error('No draft options returned.');
       }
-      setDraftOptions(payload.options.slice(0, 3));
+      setDraftOptions(payload.options.slice(0, 1));
     } catch (e) {
       setDraftSuggestionError(e instanceof Error ? e.message : 'Failed to get suggestions');
     } finally {
@@ -259,11 +259,20 @@ const CardForm: React.FC = () => {
     }
   }, [cardData.title, cardData.subtitle, cardData.excerpt, cardData.content, includeHistoricalContext]);
 
+  const clearDraftSuggestions = useCallback(() => {
+    setDraftOptions([]);
+    setDraftSuggestionError(null);
+  }, []);
+
   const applyDraftOption = useCallback(
-    (option: CardDraftOption, scope: 'all' | 'head' | 'content') => {
-      if (scope === 'all' || scope === 'head') {
+    (option: CardDraftOption, scope: 'all' | 'title' | 'subtitle' | 'content') => {
+      if (scope === 'all' || scope === 'title') {
         setField('title', option.title || '');
+      }
+      if (scope === 'all' || scope === 'subtitle') {
         setField('subtitle', option.subtitle || '');
+      }
+      if (scope === 'all') {
         setField('excerptAuto', false);
         setField('excerpt', option.excerpt || '');
       }
@@ -303,18 +312,10 @@ const CardForm: React.FC = () => {
               type="text"
               value={cardData.subtitle || ''}
               onChange={handleSubtitleChange}
-              placeholder="Subtitle (optional)"
+              placeholder="Subtitle"
               className={styles.subtitleInput}
             />
             <div className={styles.excerptSection}>
-              <label className={styles.excerptToggle}>
-                <input
-                  type="checkbox"
-                  checked={isExcerptAuto}
-                  onChange={handleExcerptAutoToggle}
-                />
-                <span className={styles.excerptToggleLabel}>Auto-generate from content</span>
-              </label>
               {isExcerptAuto ? (
                 <div className={styles.excerptPreview}>
                   {autoExcerptPreview || 'Excerpt will be generated from content when saved.'}
@@ -325,55 +326,61 @@ const CardForm: React.FC = () => {
                   onChange={handleExcerptChange}
                   placeholder="Write a custom excerpt…"
                   className={styles.excerptInput}
-                  rows={3}
+                  rows={2}
                 />
               )}
+              <label className={styles.excerptToggle}>
+                <input
+                  type="checkbox"
+                  checked={isExcerptAuto}
+                  onChange={handleExcerptAutoToggle}
+                />
+                <span className={styles.excerptToggleLabel}>Auto-generate from content</span>
+              </label>
             </div>
-            <div className={styles.aiAssistSection}>
-              <div className={styles.aiAssistTopRow}>
-                <button
-                  type="button"
-                  className={styles.aiAssistButton}
-                  onClick={() => void requestDraftSuggestions()}
-                  disabled={isSuggestingDrafts || isSaving}
+            <div className={styles.statusSection}>
+              <div className={styles.selectGroup}>
+                <label htmlFor="status-select" className={styles.selectLabel}>Status</label>
+                <select
+                  id="status-select"
+                  value={cardData.status}
+                  onChange={handleStatusChange}
+                  className={clsx(styles.statusSelect, errors.status && styles.inputError)}
                 >
-                  {isSuggestingDrafts ? 'Generating…' : 'Suggest 3 draft options'}
-                </button>
-                <label className={styles.aiAssistToggle}>
-                  <input
-                    type="checkbox"
-                    checked={includeHistoricalContext}
-                    onChange={(e) => setIncludeHistoricalContext(e.target.checked)}
-                    disabled={isSuggestingDrafts}
-                  />
-                  Include historical context
-                </label>
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                </select>
               </div>
-              {draftSuggestionError && (
-                <p className={styles.aiAssistError}>{draftSuggestionError}</p>
-              )}
-              {draftOptions.length > 0 && (
-                <div className={styles.aiDraftOptions}>
-                  {draftOptions.map((opt, idx) => (
-                    <div key={`draft-${idx}`} className={styles.aiDraftCard}>
-                      <div className={styles.aiDraftHeading}>
-                        <strong>Option {idx + 1}</strong>
-                        {opt.rationale ? <span>{opt.rationale}</span> : null}
-                      </div>
-                      <div className={styles.aiDraftPreview}>
-                        <p><strong>Title:</strong> {opt.title || '(empty)'}</p>
-                        <p><strong>Subtitle:</strong> {opt.subtitle || '(empty)'}</p>
-                        <p><strong>Excerpt:</strong> {opt.excerpt || '(empty)'}</p>
-                      </div>
-                      <div className={styles.aiDraftActions}>
-                        <button type="button" onClick={() => applyDraftOption(opt, 'all')}>Apply full</button>
-                        <button type="button" onClick={() => applyDraftOption(opt, 'head')}>Apply title/subtitle/excerpt</button>
-                        <button type="button" onClick={() => applyDraftOption(opt, 'content')}>Apply content</button>
-                      </div>
-                    </div>
+              <div className={styles.selectGroup}>
+                <label htmlFor="type-select" className={styles.selectLabel}>Type</label>
+                <select
+                  id="type-select"
+                  value={cardData.type}
+                  onChange={handleTypeChange}
+                  className={clsx(styles.statusSelect, errors.type && styles.inputError)}
+                >
+                  <option value="story">Story</option>
+                  <option value="qa">Q&A</option>
+                  <option value="quote">Quote</option>
+                  <option value="callout">Callout</option>
+                  <option value="gallery">Gallery</option>
+                </select>
+              </div>
+              <div className={styles.selectGroup}>
+                <label htmlFor="display-mode-select" className={styles.selectLabel}>Display Mode</label>
+                <select
+                  id="display-mode-select"
+                  value={normalizeDisplayModeForType(cardData.type ?? 'story', cardData.displayMode)}
+                  onChange={handleDisplayModeChange}
+                  className={clsx(styles.statusSelect, errors.displayMode && styles.inputError)}
+                >
+                  {allowedDisplayModes.map((mode) => (
+                    <option key={mode} value={mode}>
+                      {mode === 'inline' ? 'Inline' : mode === 'navigate' ? 'Navigate' : 'Static'}
+                    </option>
                   ))}
-                </div>
-              )}
+                </select>
+              </div>
             </div>
           </div>
 
@@ -391,51 +398,6 @@ const CardForm: React.FC = () => {
             />
           </div>
 
-          <div className={styles.statusSection}>
-            <div className={styles.selectGroup}>
-              <label htmlFor="status-select" className={styles.selectLabel}>Status</label>
-              <select
-                id="status-select"
-                value={cardData.status}
-                onChange={handleStatusChange}
-                className={clsx(styles.statusSelect, errors.status && styles.inputError)}
-              >
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-              </select>
-            </div>
-            <div className={styles.selectGroup}>
-              <label htmlFor="type-select" className={styles.selectLabel}>Type</label>
-              <select
-                id="type-select"
-                value={cardData.type}
-                onChange={handleTypeChange}
-                className={clsx(styles.statusSelect, errors.type && styles.inputError)}
-              >
-                <option value="story">Story</option>
-                <option value="qa">Q&A</option>
-                <option value="quote">Quote</option>
-                <option value="callout">Callout</option>
-                <option value="gallery">Gallery</option>
-              </select>
-            </div>
-            <div className={styles.selectGroup}>
-              <label htmlFor="display-mode-select" className={styles.selectLabel}>Display Mode</label>
-              <select
-                id="display-mode-select"
-                value={normalizeDisplayModeForType(cardData.type ?? 'story', cardData.displayMode)}
-                onChange={handleDisplayModeChange}
-                className={clsx(styles.statusSelect, errors.displayMode && styles.inputError)}
-              >
-                {allowedDisplayModes.map((mode) => (
-                  <option key={mode} value={mode}>
-                    {mode === 'inline' ? 'Inline' : mode === 'navigate' ? 'Navigate' : 'Static'}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
           <div className={styles.tagsSection}>
             <MacroTagSelector
               selectedTags={selectedTagObjects}
@@ -446,6 +408,7 @@ const CardForm: React.FC = () => {
           </div>
 
           <div className={styles.editorSection}>
+            <h4 className={styles.sectionTitle}>Content</h4>
             <RichTextEditor
               currentCardId={cardData.docId}
               ref={editorRef}
@@ -455,6 +418,72 @@ const CardForm: React.FC = () => {
               error={errors.content}
               className={clsx(errors.content && styles.inputError)}
             />
+          </div>
+
+          <div className={styles.aiAssistSection}>
+            <h4 className={styles.sectionTitle}>AI Assist</h4>
+            <div className={styles.aiAssistTopRow}>
+              <div className={styles.aiAssistActionGroup}>
+                <button
+                  type="button"
+                  className={styles.aiAssistButton}
+                  onClick={() => void requestDraftSuggestions(false)}
+                  disabled={isSuggestingDrafts || isSaving}
+                >
+                  {isSuggestingDrafts ? 'Generating…' : 'Draft'}
+                </button>
+                <button
+                  type="button"
+                  className={styles.aiAssistButton}
+                  onClick={() => void requestDraftSuggestions(true)}
+                  disabled={isSuggestingDrafts || draftOptions.length === 0}
+                >
+                  Revision
+                </button>
+                <button
+                  type="button"
+                  className={styles.aiAssistClearButton}
+                  onClick={clearDraftSuggestions}
+                  disabled={isSuggestingDrafts || (draftOptions.length === 0 && !draftSuggestionError)}
+                >
+                  Clear
+                </button>
+              </div>
+              <label className={styles.aiAssistToggle}>
+                <input
+                  type="checkbox"
+                  checked={includeHistoricalContext}
+                  onChange={(e) => setIncludeHistoricalContext(e.target.checked)}
+                  disabled={isSuggestingDrafts}
+                />
+                Include historical context
+              </label>
+            </div>
+            {draftSuggestionError && (
+              <p className={styles.aiAssistError}>{draftSuggestionError}</p>
+            )}
+            {draftOptions.length > 0 && (
+              <div className={styles.aiDraftOptions}>
+                {draftOptions.map((opt, idx) => (
+                  <div key={`draft-${idx}`} className={styles.aiDraftCard}>
+                    <div className={styles.aiDraftHeading}>
+                      {opt.rationale ? <span>{opt.rationale}</span> : null}
+                    </div>
+                    <div className={styles.aiDraftPreview}>
+                      <p><strong>Title:</strong> {opt.title || '(empty)'}</p>
+                      <p><strong>Subtitle:</strong> {opt.subtitle || '(empty)'}</p>
+                      <p><strong>Content:</strong> {opt.content || '(empty)'}</p>
+                    </div>
+                    <div className={styles.aiDraftActions}>
+                      <button type="button" onClick={() => applyDraftOption(opt, 'all')}>Apply Full</button>
+                      <button type="button" onClick={() => applyDraftOption(opt, 'title')}>Apply Title</button>
+                      <button type="button" onClick={() => applyDraftOption(opt, 'subtitle')}>Apply Subtitle</button>
+                      <button type="button" onClick={() => applyDraftOption(opt, 'content')}>Apply Content</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className={styles.gallerySection}>

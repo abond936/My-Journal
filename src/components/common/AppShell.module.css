@@ -156,6 +156,21 @@
       pointer-events: auto;
     }
 
+    /* Drawer and toggle share --z-index-sidebar on mobile; raise toggle so it stays above drawer and backdrop. */
+    .sidebarToggle {
+      z-index: calc(var(--z-index-sidebar) + 2);
+      left: max(var(--spacing-sm), env(safe-area-inset-left, 0px));
+      top: calc(var(--header-height) + max(var(--spacing-xs), env(safe-area-inset-top, 0px)));
+      min-width: 44px;
+      min-height: 44px;
+      width: auto;
+      height: auto;
+      padding: var(--spacing-xs);
+      border: var(--border-width-thin) solid var(--border1-color);
+      border-radius: var(--border-radius-md);
+      box-shadow: var(--shadow-sm);
+    }
+
     .appShell::before,
     .appShell::after {
       opacity: 0.14;

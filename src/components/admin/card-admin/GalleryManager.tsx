@@ -17,7 +17,7 @@ import {
   SortableContext,
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
-import { HydratedGalleryMediaItem } from '@/lib/types/card';
+import { GalleryMediaItem, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import PhotoPicker from '@/components/admin/card-admin/PhotoPicker';
 import styles from './GalleryManager.module.css';
@@ -30,6 +30,22 @@ import {
   getEffectiveGalleryObjectPosition,
   gallerySlotHasCaptionOverride,
 } from '@/lib/utils/galleryObjectPosition';
+
+function applySlotCaptionEdit(item: GalleryMediaItem, newText: string): GalleryMediaItem {
+  const mediaDefault = item.media?.caption ?? '';
+  if (newText === mediaDefault) {
+    if (!gallerySlotHasCaptionOverride(item)) return item;
+    const rest = { ...item };
+    delete rest.caption;
+    return rest;
+  }
+  return { ...item, caption: newText };
+}
+
+/** Value for the card-only override field (not merged with file caption). */
+function cardCaptionFieldValue(item: GalleryMediaItem): string {
+  return gallerySlotHasCaptionOverride(item) ? (item.caption ?? '') : '';
+}
 
 interface GalleryManagerProps {
   galleryMedia: HydratedGalleryMediaItem[];
@@ -77,6 +93,14 @@ export default function GalleryManager({
     onUpdate(galleryMedia.filter(item => item.mediaId !== mediaId));
   };
 
+  const handleInlineCaptionChange = (mediaId: string, newText: string) => {
+    onUpdate(
+      galleryMedia.map((g) =>
+        g.mediaId === mediaId ? (applySlotCaptionEdit(g, newText) as HydratedGalleryMediaItem) : g
+      )
+    );
+  };
+
   const handleSaveMetadata = async (updatedItem: HydratedGalleryMediaItem) => {
     const nextGallery = galleryMedia.map((item) =>
       item.mediaId === updatedItem.mediaId ? updatedItem : item
@@ -107,13 +131,13 @@ export default function GalleryManager({
   return (
     <div className={`${styles.container} ${className || ''}`}>
       <div className={styles.header}>
-        <h3>Gallery Images</h3>
+        <h4 className={styles.sectionTitle}>Gallery</h4>
         <button
           onClick={() => setIsPickerOpen(true)}
           className={styles.addButton}
           type="button"
         >
-          Add Photos
+          Add
         </button>
       </div>
       
@@ -126,57 +150,77 @@ export default function GalleryManager({
           <div className={styles.imageGrid}>
             {galleryMedia.map((item) => (
               <SortableItem key={item.mediaId} id={item.mediaId}>
-                <div className={styles.imageItem}>
-                  {item.media ? (
-                    <JournalImage
-                      src={getDisplayUrl(item.media)}
-                      alt={
-                        getEffectiveGalleryCaption(item, item.media) ||
-                        item.media.filename ||
-                        ''
-                      }
-                      className={styles.thumbnail}
-                      width={200}
-                      height={150}
-                      sizes="200px"
-                      style={{
-                        objectPosition: getEffectiveGalleryObjectPosition(item, item.media),
-                      }}
-                      priority={false}
-                    />
-                  ) : (
-                    <div className={styles.placeholder}>
-                      <LoadingSpinner />
-                    </div>
-                  )}
-                  <div className={styles.controls}>
-                    {onSetAsCover ? (
+                <div className={styles.imageCell}>
+                  <div className={styles.imageItem}>
+                    {item.media ? (
+                      <JournalImage
+                        src={getDisplayUrl(item.media)}
+                        alt={
+                          getEffectiveGalleryCaption(item, item.media) ||
+                          item.media.filename ||
+                          ''
+                        }
+                        className={styles.thumbnail}
+                        width={240}
+                        height={180}
+                        sizes="(max-width: 768px) 50vw, 240px"
+                        style={{
+                          objectPosition: getEffectiveGalleryObjectPosition(item, item.media),
+                        }}
+                        priority={false}
+                      />
+                    ) : (
+                      <div className={styles.placeholder}>
+                        <LoadingSpinner />
+                      </div>
+                    )}
+                    <div className={styles.controls}>
+                      {onSetAsCover ? (
+                        <button
+                          onClick={() => onSetAsCover(item)}
+                          className={styles.editButton}
+                          aria-label="Set as cover image"
+                          type="button"
+                          disabled={item.mediaId === currentCoverMediaId}
+                        >
+                          {item.mediaId === currentCoverMediaId ? 'Cover' : 'Set Cover'}
+                        </button>
+                      ) : null}
                       <button
-                        onClick={() => onSetAsCover(item)}
+                        onClick={() => setEditingItem(item)}
                         className={styles.editButton}
-                        aria-label="Set as cover image"
+                        aria-label="Edit image metadata"
                         type="button"
-                        disabled={item.mediaId === currentCoverMediaId}
                       >
-                        {item.mediaId === currentCoverMediaId ? 'Cover' : 'Set Cover'}
+                        Edit
                       </button>
+                      <button
+                        onClick={() => handleRemovePhoto(item.mediaId)}
+                        className={styles.removeButton}
+                        aria-label="Remove image"
+                        type="button"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                  <div className={styles.captionBlock}>
+                    {item.media?.caption?.trim() ? (
+                      <p className={styles.mediaCaption}>{item.media.caption}</p>
                     ) : null}
-                    <button
-                      onClick={() => setEditingItem(item)}
-                      className={styles.editButton}
-                      aria-label="Edit image metadata"
-                      type="button"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleRemovePhoto(item.mediaId)}
-                      className={styles.removeButton}
-                      aria-label="Remove image"
-                      type="button"
-                    >
-                      ×
-                    </button>
+                    <textarea
+                      id={`gallery-caption-${item.mediaId}`}
+                      className={styles.inlineCaption}
+                      rows={2}
+                      value={cardCaptionFieldValue(item)}
+                      onChange={(e) => handleInlineCaptionChange(item.mediaId, e.target.value)}
+                      placeholder="Card caption…"
+                      aria-label={
+                        item.media?.filename
+                          ? `Card caption override for ${item.media.filename}`
+                          : `Card caption override for gallery image ${item.mediaId}`
+                      }
+                    />
                   </div>
                 </div>
               </SortableItem>

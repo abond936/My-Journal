@@ -8,7 +8,6 @@ import {
 } from '@/lib/firebase/tagService';
 import { getFirestore, FieldPath, FieldValue, Transaction } from 'firebase-admin/firestore';
 import {
-  deleteMediaAsset,
   deleteFromStorageWithRetry,
   markStorageForLaterDeletion,
 } from './images/imageImportService';
@@ -1288,7 +1287,7 @@ export async function deleteCard(cardId: string): Promise<void> {
     }
     const cardToDelete = cardSnap.data() as Card;
 
-    // Collect media IDs for post-transaction cleanup
+    // Collect media IDs for transaction cleanup work
     const mediaToDelete: string[] = [];
     if (cardToDelete.coverImageId) {
         mediaToDelete.push(cardToDelete.coverImageId);
@@ -1300,6 +1299,11 @@ export async function deleteCard(cardId: string): Promise<void> {
         cardToDelete.contentMedia.forEach(id => mediaToDelete.push(id));
     }
 
+    // Preload tag tree once so transaction-side tag count updates remain write-only.
+    const allTags = await getAllTags();
+    const tagPathLookup = new Map(allTags.filter((t) => t.docId).map((t) => [t.docId!, t]));
+    const storagePathsToDelete = new Set<string>();
+
     return withRetry(async () => {
       return firestore.runTransaction(async (transaction) => {
         const docSnap = await transaction.get(docRef);
@@ -1307,33 +1311,48 @@ export async function deleteCard(cardId: string): Promise<void> {
             console.warn(`Card with ID ${cardId} not found for deletion.`);
             return;
         }
+        const currentCard = docSnap.data() as Card;
 
-        // Decrement counts for all associated tags if the card was published
-        if (cardToDelete.status === 'published' && cardToDelete.tags && cardToDelete.tags.length > 0) {
-            await updateTagCountsForCard(cardToDelete, { ...cardToDelete, tags: [] }, transaction);
-        }
-
-        // Clean up parent-child relationships
+        // Read phase (must complete before writes in Firestore transactions)
         const parentCardsQuery = firestore.collection(CARDS_COLLECTION)
             .where('childrenIds', 'array-contains', cardId);
         const parentCardsSnapshot = await transaction.get(parentCardsQuery);
-        
-        for (const parentDoc of parentCardsSnapshot.docs) {
-            const parentData = parentDoc.data() as Card;
-            const updatedChildrenIds = (parentData.childrenIds || []).filter(id => id !== cardId);
-            transaction.update(parentDoc.ref, {
-              childrenIds: updatedChildrenIds,
-              curatedNavEligible: computeCuratedNavEligible({
-                childrenIds: updatedChildrenIds,
-                curatedRoot: parentData.curatedRoot === true,
-              }),
-              updatedAt: Date.now(),
-            });
+        const mediaRefs = Array.from(new Set(mediaToDelete)).map((mediaId) =>
+          firestore.collection(MEDIA_COLLECTION).doc(mediaId)
+        );
+        const mediaSnapshots = mediaRefs.length > 0 ? await transaction.getAll(...mediaRefs) : [];
+
+        // Write phase
+        // Decrement counts for all associated tags if the card was published.
+        if (currentCard.status === 'published' && currentCard.tags && currentCard.tags.length > 0) {
+            await updateTagCountsForCard(
+              currentCard,
+              { ...currentCard, tags: [] },
+              transaction,
+              tagPathLookup
+            );
         }
 
-        // Delete media documents from Firestore (within transaction)
-        for (const mediaId of mediaToDelete) {
-            await deleteMediaAsset(mediaId, transaction);
+        for (const parentDoc of parentCardsSnapshot.docs) {
+          const parentData = parentDoc.data() as Card;
+          const updatedChildrenIds = (parentData.childrenIds || []).filter(id => id !== cardId);
+          transaction.update(parentDoc.ref, {
+            childrenIds: updatedChildrenIds,
+            curatedNavEligible: computeCuratedNavEligible({
+              childrenIds: updatedChildrenIds,
+              curatedRoot: parentData.curatedRoot === true,
+            }),
+            updatedAt: Date.now(),
+          });
+        }
+
+        // Remove media docs + decrement media tag counts using pre-read snapshots.
+        for (const mediaSnap of mediaSnapshots) {
+          if (!mediaSnap.exists) continue;
+          const mediaData = mediaSnap.data() as Media;
+          if (mediaData.storagePath) storagePathsToDelete.add(mediaData.storagePath);
+          await updateTagCountsForMedia(mediaData.tags || [], [], transaction, tagPathLookup);
+          transaction.delete(mediaSnap.ref);
         }
 
         // Delete the card document
@@ -1346,22 +1365,17 @@ export async function deleteCard(cardId: string): Promise<void> {
           void removeMediaFromTypesense(mediaId);
         }
 
-        // Post-transaction: Try immediate storage cleanup for the deleted media
-        // This is outside the transaction, so failures won't affect database integrity
-        for (const mediaId of mediaToDelete) {
-            try {
-                const mediaDoc = await firestore.collection('media').doc(mediaId).get();
-                if (mediaDoc.exists) {
-                    const mediaData = mediaDoc.data() as Media;
-                    
-                    const success = await deleteFromStorageWithRetry(mediaData.storagePath);
-                    if (!success) {
-                        await markStorageForLaterDeletion(mediaData.storagePath);
-                    }
-                }
-            } catch (error) {
-                console.error(`Error processing storage for ${mediaId}:`, error);
+        // Post-transaction: Try immediate storage cleanup for deleted media files.
+        // This runs outside Firestore transaction boundaries to keep DB integrity decoupled from storage availability.
+        for (const storagePath of storagePathsToDelete) {
+          try {
+            const success = await deleteFromStorageWithRetry(storagePath);
+            if (!success) {
+              await markStorageForLaterDeletion(storagePath);
             }
+          } catch (error) {
+            console.error(`Error processing storage cleanup for ${storagePath}:`, error);
+          }
         }
     });
 }
@@ -1700,6 +1714,33 @@ export async function getCards(options: {
   }
 
   return { items: cards, lastDocId: lastDocIdResult, hasMore };
+}
+
+/**
+ * Lightweight parent lookup for delete-safety checks.
+ * Uses a narrow query shape to avoid index coupling with generic feed/list sorting.
+ */
+export async function getParentCardsByChildId(
+  childId: string,
+  options: {
+    status?: Card['status'] | 'all';
+    limit?: number;
+    hydrationMode?: 'full' | 'cover-only';
+  } = {}
+): Promise<Card[]> {
+  const { status = 'all', limit = 200, hydrationMode = 'cover-only' } = options;
+  let query: FirebaseFirestore.Query = firestore
+    .collection(CARDS_COLLECTION)
+    .where('childrenIds', 'array-contains', childId);
+
+  if (status !== 'all') {
+    query = query.where('status', '==', status);
+  }
+
+  const snap = await query.limit(limit).get();
+  let cards = snap.docs.map((doc) => ({ docId: doc.id, ...doc.data() } as Card));
+  cards = hydrationMode === 'cover-only' ? await _hydrateCoverImagesOnly(cards) : await _hydrateCards(cards);
+  return cards;
 }
 
  

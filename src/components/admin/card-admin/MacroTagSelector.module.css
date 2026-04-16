@@ -3,7 +3,7 @@
   border-radius: var(--border-radius-md);
   padding: var(--spacing-md);
   margin-top: var(--spacing-sm);
-  background-color: var(--layout-background2-color);
+  background-color: var(--layout-background1-color);
   transition: all var(--transition-short) ease-in-out;
   position: relative;
 }
@@ -24,12 +24,11 @@
   margin-bottom: var(--spacing-md);
 }
 
-.header h3 {
+.sectionTitle {
   margin: 0;
   font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
   color: var(--text1-color);
-  margin-top: 0;
-  margin-bottom: var(--spacing-sm);
 }
 
 .editButton, .saveButton, .cancelButton {

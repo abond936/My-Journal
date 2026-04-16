@@ -66,7 +66,6 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) 
             />
           </div>
         )}
-        {isQa ? <p className={styles.detailKicker}>Question</p> : null}
         <h1
           className={`${styles.title} ${card.subtitle && !isQuote ? styles.titleWithSubtitle : ''}`}
         >
@@ -77,7 +76,6 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) 
 
       {card.content && (
         <section className={styles.content} aria-label={isQa ? 'Answer' : undefined}>
-          {isQa ? <h2 className={styles.qaAnswerHeading}>Answer</h2> : null}
           {isQuote ? (
             <blockquote className={styles.quoteDetailQuote}>
               <TipTapRenderer content={card.content} />

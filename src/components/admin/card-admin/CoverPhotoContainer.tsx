@@ -150,6 +150,7 @@ export default function CoverPhotoContainer({
         data-testid="cover-dropzone"
       >
         <input {...getInputProps()} />
+      <h4 className={styles.sectionTitle}>Cover</h4>
       {coverImage ? (
         <>
           <div className={styles.imageContainer} style={{ position: 'relative' }}>
