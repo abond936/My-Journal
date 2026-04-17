@@ -166,10 +166,54 @@ Changes to breakpoints, toggle visibility, or feed column rules are **product de
 
 ---
 
-## 10. Revision history
+## 10. In-app status messaging contract
+
+This section defines the UX and token contract for system/status messaging so feedback appears as part of the app (not browser/system chrome).
+
+### 10.1 Outcome-first behavior
+
+- **Single save acknowledgement per action** - For card save, use one primary save-state surface (no competing local + global indicators for the same operation).
+- **Clear completion signal** - After save, show a concise success or error acknowledgement in-app.
+- **No native dialogs for product feedback** - Replace `alert`/`confirm` with themed components as migration scope expands.
+
+### 10.2 Message types and intended surfaces
+
+| Type | Behavior | Preferred surface |
+|------|----------|-------------------|
+| Blocking progress | User must wait; controls are inert | Full-page or modal overlay with spinner + message |
+| Inline progress | Only one region is loading/saving | Inline status row in that section |
+| Success | Operation completed | Auto-dismissing inline/banner notice |
+| Warning | Recoverable issue / partial success | Persistent warning banner with guidance |
+| Error (local) | Section failed, app continues | Local error banner with retry action |
+| Error (blocking) | Current flow cannot continue | Error dialog or full-page error shell |
+| Confirmation | Potentially destructive action | Themed confirm dialog (not browser confirm) |
+
+### 10.3 Visual and token rules
+
+- **Semantic tokens only** - Use `--state-info-*`, `--state-success-*`, `--state-warning-*`, `--state-error-*` for status backgrounds/borders.
+- **Readable contrast by default** - Backdrops and panels must remain legible against media-rich content; avoid relying on low-opacity overlays alone.
+- **Consistent hierarchy** - Primary status text uses `--text1-color`; supporting copy uses `--text2-color`.
+- **Motion discipline** - Spinners should be visible and sized for context; provide reduced-motion fallback.
+
+### 10.4 Accessibility rules
+
+- **Live status** - Progress and success notices use `role="status"` with polite live region behavior.
+- **Urgent failures** - Blocking/local failures use `role="alert"` where appropriate.
+- **Dialog focus** - Confirm/error dialogs trap focus and restore focus to the invoking control on close.
+
+### 10.5 Initial narrow implementation reference (card save)
+
+- Card save feedback should present one clear saving state and one clear save result.
+- Cover-local save overlays should not compete with a global card-save overlay during the same operation.
+- This narrow implementation is the template for broader rollout across admin and reader surfaces.
+
+---
+
+## 11. Revision history
 
 | Date | Change |
 |------|--------|
 | 2026-04-10 | Initial contract: semantic roles, type roles, two presets, Theme Management target, reconciliation order. |
 | 2026-04-10 | §4.1 base palette (3–14); persistence: Firestore + layout-injected tokens + `theme-data.json` fallback. |
 | 2026-04-11 | §9 reader shell & responsive layout (breakpoints, sidebar toggle, feed columns); literal `px` in `@media`; §10 revision history (renumber). |
+| 2026-04-16 | Added §10 in-app status messaging contract (message taxonomy, behavior, token/a11y rules, card-save narrow reference); moved revision history to §11. |

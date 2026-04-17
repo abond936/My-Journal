@@ -47,6 +47,18 @@
   background-color: var(--layout-background2-color);
 }
 
+.coverImageContainer.coverPortrait {
+  aspect-ratio: 4 / 5;
+}
+
+.coverImageContainer.coverLandscape {
+  aspect-ratio: 3 / 2;
+}
+
+.coverImageContainer.coverSquare {
+  aspect-ratio: 1 / 1;
+}
+
 .coverImage {
   width: 100%;
   height: 100%;

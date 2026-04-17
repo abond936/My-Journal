@@ -18,6 +18,8 @@ interface ContainerDimensions {
   height: number;
 }
 
+export type AspectRatioBucket = 'portrait' | 'landscape' | 'square';
+
 /**
  * Calculate object-position percentage to center a focal point in the container.
  * Uses the formula from https://odland.dev/2023/02/26/cropping-images-with-css-while-keeping-a-focal-point-in-the-center/
@@ -89,3 +91,26 @@ export function getObjectPositionForAspectRatio(
     { width: baseWidth, height: baseHeight }
   );
 } 
+
+/**
+ * Buckets media orientation into a bounded set used by reader/admin framing.
+ */
+export function getAspectRatioBucket(
+  media?: { width?: number; height?: number } | null
+): AspectRatioBucket {
+  const width = media?.width ?? 0;
+  const height = media?.height ?? 0;
+  if (width <= 0 || height <= 0) return 'portrait';
+  const ratio = width / height;
+  if (Math.abs(ratio - 1) <= 0.08) return 'square';
+  return ratio > 1 ? 'landscape' : 'portrait';
+}
+
+/**
+ * Ratio contract for edit/view surfaces.
+ */
+export function getAspectRatioValue(bucket: AspectRatioBucket): '4/5' | '3/2' | '1/1' {
+  if (bucket === 'landscape') return '3/2';
+  if (bucket === 'square') return '1/1';
+  return '4/5';
+}

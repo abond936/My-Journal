@@ -58,6 +58,18 @@
     overflow: hidden;
 }
 
+.imageItem.imagePortrait {
+    aspect-ratio: 4 / 5;
+}
+
+.imageItem.imageLandscape {
+    aspect-ratio: 3 / 2;
+}
+
+.imageItem.imageSquare {
+    aspect-ratio: 1 / 1;
+}
+
 .thumbnail {
     width: 100%;
     height: 100%;
@@ -203,7 +215,8 @@
 }
 
 .editButton {
-    /* This button will be positioned by the flex container */
+    background-color: var(--button-solid-background-color);
+    color: var(--button-solid-text-color);
 }
 
 /* Styles for the form within the modal */

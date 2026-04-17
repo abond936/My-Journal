@@ -3,6 +3,7 @@ import { Card, cardSchema, GalleryMediaItem } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 import {
   updateTagCountsForCard,
+  updateTagCountsForMedia,
   mergeDerivedTagsForCardRecord,
   getAllTags,
 } from '@/lib/firebase/tagService';

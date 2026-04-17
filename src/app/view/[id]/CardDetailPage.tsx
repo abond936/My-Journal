@@ -6,7 +6,11 @@ import { useSession } from 'next-auth/react';
 import JournalImage from '@/components/common/JournalImage';
 import { Card } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
-import { getObjectPositionForAspectRatio } from '@/lib/utils/objectPositionUtils';
+import {
+  getAspectRatioBucket,
+  getAspectRatioValue,
+  getObjectPositionForAspectRatio,
+} from '@/lib/utils/objectPositionUtils';
 import styles from './CardDetail.module.css';
 import TipTapRenderer from '@/components/common/TipTapRenderer';
 import InlineGallery from '@/components/view/InlineGallery';
@@ -25,6 +29,14 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) 
   const isQa = card.type === 'qa';
   const isQuote = card.type === 'quote';
   const quoteAttribution = isQuote ? formatQuoteAttribution(card.subtitle, card.excerpt) : '';
+  const coverBucket = getAspectRatioBucket(card.coverImage);
+  const coverRatio = getAspectRatioValue(coverBucket);
+  const coverFrameClass =
+    coverBucket === 'landscape'
+      ? styles.coverLandscape
+      : coverBucket === 'square'
+        ? styles.coverSquare
+        : styles.coverPortrait;
 
   return (
     <article className={styles.container}>
@@ -41,7 +53,7 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) 
         className={`${styles.header} ${!card.subtitle || isQuote ? styles.noSubtitle : ''}`}
       >
         {card.coverImage && (
-          <div className={styles.coverImageContainer}>
+          <div className={`${styles.coverImageContainer} ${coverFrameClass}`}>
             <JournalImage
               src={getDisplayUrl(card.coverImage)}
               alt={card.title}
@@ -57,7 +69,7 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) 
                         y: card.coverImageFocalPoint.y ?? 0,
                       },
                       { width: card.coverImage.width, height: card.coverImage.height },
-                      '4/5',
+                      coverRatio,
                       800
                     )
                   : 'center'

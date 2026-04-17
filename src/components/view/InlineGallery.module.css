@@ -133,6 +133,18 @@
   aspect-ratio: 3/2;
 }
 
+.imageWrapper.imagePortrait {
+  aspect-ratio: 4 / 5;
+}
+
+.imageWrapper.imageLandscape {
+  aspect-ratio: 3 / 2;
+}
+
+.imageWrapper.imageSquare {
+  aspect-ratio: 1 / 1;
+}
+
 .imageWrapperButton {
   display: block;
   padding: 0;

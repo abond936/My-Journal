@@ -80,6 +80,7 @@ const CardForm: React.FC = () => {
   const [includeHistoricalContext, setIncludeHistoricalContext] = useState(false);
   const [draftOptions, setDraftOptions] = useState<CardDraftOption[]>([]);
   const [draftSuggestionError, setDraftSuggestionError] = useState<string | null>(null);
+  const [saveNotice, setSaveNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   
   const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setField('title', e.target.value), [setField]);
   const handleSubtitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setField('subtitle', e.target.value), [setField]);
@@ -208,8 +209,19 @@ const CardForm: React.FC = () => {
     e.preventDefault();
     const editorContent = editorRef.current?.getContent();
     const overrides = editorContent !== undefined ? { content: editorContent } : undefined;
-    await handleSave(overrides);
+    const saved = await handleSave(overrides);
+    setSaveNotice(
+      saved
+        ? { type: 'success', message: 'Card saved.' }
+        : { type: 'error', message: 'Could not save card. Please review any errors and try again.' }
+    );
   }, [handleSave]);
+
+  useEffect(() => {
+    if (!saveNotice || saveNotice.type !== 'success') return;
+    const timer = window.setTimeout(() => setSaveNotice(null), 3000);
+    return () => window.clearTimeout(timer);
+  }, [saveNotice]);
 
   const handleAddImageToContent = useCallback(() => {
     setIsPhotoPickerOpen(true);
@@ -288,7 +300,11 @@ const CardForm: React.FC = () => {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <LoadingOverlay isVisible={isSaving} />
+      <LoadingOverlay
+        isVisible={isSaving}
+        title="Saving card..."
+        message="Updating card details and synchronizing feed data."
+      />
       {isPhotoPickerOpen && (
         <PhotoPicker
           isOpen={isPhotoPickerOpen}
@@ -300,6 +316,18 @@ const CardForm: React.FC = () => {
       )}
       <form id="card-form" onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.mainContent}>
+          {saveNotice ? (
+            <div
+              className={clsx(
+                styles.saveNotice,
+                saveNotice.type === 'success' ? styles.saveNoticeSuccess : styles.saveNoticeError
+              )}
+              role={saveNotice.type === 'error' ? 'alert' : 'status'}
+              aria-live="polite"
+            >
+              {saveNotice.message}
+            </div>
+          ) : null}
           <div className={styles.header}>
             <input
               type="text"
@@ -393,6 +421,7 @@ const CardForm: React.FC = () => {
               }
               onChange={handleCoverImageChange}
               isSaving={isSaving}
+              showSavingOverlay={false}
               error={errors.coverImage}
               filterTagIds={cardData.tags ?? []}
             />

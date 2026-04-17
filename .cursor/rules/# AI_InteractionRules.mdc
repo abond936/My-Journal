@@ -39,4 +39,16 @@ If AI edits outside approved scope or makes unapproved changes:
 - Stop immediately.
 - Offer to restore/revert the unapproved changes before any new work.
 
+# No Patch-Over Policy (Logic/Data Mismatches)
+
+If behavior and stored fields do not logically align (example: embedded media exists in `content` but `contentMedia` is empty/missing), do **not** patch around the mismatch in UI/API code.
+
+Required handling:
+- **Stop and investigate first**: determine exactly how the mismatch was produced.
+- **Classify root cause**:
+  - **Logic flaw** (write path/update path bug) → fix the logic at the source so future writes are correct.
+  - **Legacy/data drift** (historical records) → run targeted data remediation/backfill to restore consistency.
+- **Do not ship workaround-only behavior** that masks the mismatch without fixing source logic or data.
+- **Report findings and proposed correction path** before implementation when scope/impact extends beyond the requested change.
+
 ASSESS → RECOMMEND → WAIT → EXECUTE

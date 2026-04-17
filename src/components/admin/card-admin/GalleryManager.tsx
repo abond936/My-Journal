@@ -30,6 +30,7 @@ import {
   getEffectiveGalleryObjectPosition,
   gallerySlotHasCaptionOverride,
 } from '@/lib/utils/galleryObjectPosition';
+import { getAspectRatioBucket } from '@/lib/utils/objectPositionUtils';
 
 function applySlotCaptionEdit(item: GalleryMediaItem, newText: string): GalleryMediaItem {
   const mediaDefault = item.media?.caption ?? '';
@@ -151,7 +152,15 @@ export default function GalleryManager({
             {galleryMedia.map((item) => (
               <SortableItem key={item.mediaId} id={item.mediaId}>
                 <div className={styles.imageCell}>
-                  <div className={styles.imageItem}>
+                  <div
+                    className={`${styles.imageItem} ${
+                      getAspectRatioBucket(item.media) === 'landscape'
+                        ? styles.imageLandscape
+                        : getAspectRatioBucket(item.media) === 'square'
+                          ? styles.imageSquare
+                          : styles.imagePortrait
+                    }`}
+                  >
                     {item.media ? (
                       <JournalImage
                         src={getDisplayUrl(item.media)}

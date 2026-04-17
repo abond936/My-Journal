@@ -3,13 +3,18 @@
 import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import { FileText, Images } from 'lucide-react';
 import JournalImage from '@/components/common/JournalImage';
 import { Card } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils'; // Corrected import path
-import { getObjectPositionForAspectRatio } from '@/lib/utils/objectPositionUtils';
+import {
+  getAspectRatioBucket,
+  getAspectRatioValue,
+  getObjectPositionForAspectRatio,
+} from '@/lib/utils/objectPositionUtils';
 import { getEffectiveGalleryObjectPosition } from '@/lib/utils/galleryObjectPosition';
 import TipTapRenderer from '@/components/common/TipTapRenderer';
-import { formatQuoteAttribution } from '@/lib/utils/cardUtils';
+import { extractMediaFromContent, formatQuoteAttribution } from '@/lib/utils/cardUtils';
 import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 import styles from './V2ContentCard.module.css';
 
@@ -27,9 +32,15 @@ function getCoverMediaId(card: Card): string | undefined {
   return undefined;
 }
 
+function hasBodyText(card: Card): boolean {
+  const content = typeof card.content === 'string' ? card.content.trim() : '';
+  return content.length > 0;
+}
+
 // --- Card Type Renderers ---
 
 const StoryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => {
+  const coverRatio = getAspectRatioValue(getAspectRatioBucket(card.coverImage));
   const objectPosition =
     card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
       ? getObjectPositionForAspectRatio(
@@ -38,7 +49,7 @@ const StoryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card,
             y: card.coverImageFocalPoint.y ?? 0,
           },
           { width: card.coverImage.width, height: card.coverImage.height },
-          '4/5',
+          coverRatio,
           400
         )
       : 'center';
@@ -76,6 +87,7 @@ const StoryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card,
 // Gallery feed: Swiper with cover as first slide when set; gallery items omit any row whose mediaId matches cover (dedupe).
 const GalleryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => {
   const coverId = useMemo(() => getCoverMediaId(card), [card]);
+  const coverRatio = getAspectRatioValue(getAspectRatioBucket(card.coverImage));
 
   const gallerySlides = useMemo(() => {
     const items = (card.galleryMedia ?? []).filter((item) => item.media);
@@ -91,7 +103,7 @@ const GalleryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ car
             y: card.coverImageFocalPoint.y ?? 0,
           },
           { width: card.coverImage.width, height: card.coverImage.height },
-          '4/5',
+          coverRatio,
           400
         )
       : 'center';
@@ -143,14 +155,13 @@ const GalleryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ car
 };
 
 /**
- * Quote feed tile: **Title** = short label (not the full quotation). **Content** = quote (TipTap).
+ * Quote feed tile: **Content** = quote (TipTap). Title is omitted here (see `/view/[id]` detail header).
  * **Attribution** = `subtitle` preferred, else `excerpt` (em dash added by `formatQuoteAttribution` when missing).
  */
 const QuoteCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card }) => {
   const attribution = formatQuoteAttribution(card.subtitle, card.excerpt);
   return (
     <div className={styles.content}>
-      {card.title ? <h3 className={styles.quoteCardTitle}>{card.title}</h3> : null}
       {card.content ? (
         <blockquote className={styles.quoteBody}>
           <TipTapRenderer content={card.content} surface="transparent" />
@@ -162,6 +173,7 @@ const QuoteCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card 
 };
 
 const QACardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => {
+  const coverRatio = getAspectRatioValue(getAspectRatioBucket(card.coverImage));
   const objectPosition =
     card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
       ? getObjectPositionForAspectRatio(
@@ -170,7 +182,7 @@ const QACardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, di
             y: card.coverImageFocalPoint.y ?? 0,
           },
           { width: card.coverImage.width, height: card.coverImage.height },
-          '4/5',
+          coverRatio,
           400
         )
       : 'center';
@@ -302,7 +314,27 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
     (displayMode === 'navigate' || displayMode === 'inline')
       ? styles.qaWithCover
       : '';
-  const className = `${styles.card} ${cardTypeClass} ${sizeClass} ${displayModeClass} ${qaWithCoverClass} ${fullWidth ? styles.fullWidth : ''}`.trim();
+  const frameSource =
+    card.coverImage ||
+    (card.galleryMedia?.find((item) => item.media)?.media as { width?: number; height?: number } | undefined);
+  const aspectBucket = getAspectRatioBucket(frameSource);
+  const aspectClass =
+    aspectBucket === 'landscape'
+      ? styles.aspectLandscape
+      : aspectBucket === 'square'
+        ? styles.aspectSquare
+        : styles.aspectPortrait;
+  const className = `${styles.card} ${cardTypeClass} ${sizeClass} ${displayModeClass} ${qaWithCoverClass} ${fullWidth ? styles.fullWidth : ''} ${aspectClass}`.trim();
+  const cardSupportsMediaBadge =
+    card.type === 'story' || card.type === 'gallery' || card.type === 'qa';
+  const cardSupportsTextBadge = card.type === 'story' || card.type === 'gallery';
+  const coverId = getCoverMediaId(card);
+  const galleryNonCoverCount = (card.galleryMedia ?? []).filter((item) => item.mediaId !== coverId).length;
+  const contentMediaFromFieldCount = Array.isArray(card.contentMedia) ? card.contentMedia.length : 0;
+  const contentMediaFromHtmlCount = extractMediaFromContent(card.content ?? '').length;
+  const contentMediaCount = Math.max(contentMediaFromFieldCount, contentMediaFromHtmlCount);
+  const showMediaBadge = cardSupportsMediaBadge && (galleryNonCoverCount > 0 || contentMediaCount > 0);
+  const showTextBadge = cardSupportsTextBadge && !card.excerpt?.trim() && hasBodyText(card);
 
   const addFocusCardToReturnTo = (returnTo: string, focusCardId: string): string => {
     const [pathAndQuery, hashFragment] = returnTo.split('#');
@@ -361,10 +393,38 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
         onClick={onClick}
         data-card-id={card.docId}
       >
+        {(showMediaBadge || showTextBadge) && (
+          <div className={styles.metaBadges} aria-hidden="true">
+            {showMediaBadge ? (
+              <span className={styles.metaBadge} title="More media inside">
+                <Images size={14} />
+              </span>
+            ) : null}
+            {showTextBadge ? (
+              <span className={styles.metaBadge} title="More text inside">
+                <FileText size={14} />
+              </span>
+            ) : null}
+          </div>
+        )}
         {renderContent()}
       </Link>
     ) : (
       <div className={className} data-card-id={card.docId}>
+        {(showMediaBadge || showTextBadge) && (
+          <div className={styles.metaBadges} aria-hidden="true">
+            {showMediaBadge ? (
+              <span className={styles.metaBadge} title="More media inside">
+                <Images size={14} />
+              </span>
+            ) : null}
+            {showTextBadge ? (
+              <span className={styles.metaBadge} title="More text inside">
+                <FileText size={14} />
+              </span>
+            ) : null}
+          </div>
+        )}
         {renderContent()}
       </div>
     );

@@ -46,7 +46,7 @@ interface FormContextValue {
   updateChildIds: (newChildIds: string[]) => void;
   
   // Form Actions
-  handleSave: (overrides?: Partial<CardUpdate>) => Promise<void>;
+  handleSave: (overrides?: Partial<CardUpdate>) => Promise<boolean>;
   resetForm: () => void;
   
   // Validation
@@ -360,12 +360,12 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
   }, [formState.cardData, batchStateUpdate]);
 
   const handleSave = useCallback(
-    async (overrides?: Partial<CardUpdate>) => {
+    async (overrides?: Partial<CardUpdate>): Promise<boolean> => {
       const merged = mergeEditorContentInto(formState.cardData);
       const dataToSave = overrides ? { ...merged, ...overrides } : merged;
 
       if (!validateForm(dataToSave)) {
-        return;
+        return false;
       }
 
       batchStateUpdate({ isSaving: true });
@@ -390,9 +390,11 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
             cardData: { ...baseline },
           },
         });
+        return true;
       } catch (error) {
         console.error('[handleSave] Error during save:', error);
         batchStateUpdate({ isSaving: false });
+        return false;
       }
     },
     [validateForm, batchStateUpdate, onSave, formState.cardData, mergeEditorContentInto]

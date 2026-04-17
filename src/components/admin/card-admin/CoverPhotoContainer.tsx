@@ -7,6 +7,7 @@ import styles from './CoverPhotoContainer.module.css';
 import { Media } from '@/lib/types/photo';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import { getImageFileFromDataTransfer } from '@/lib/utils/clipboardImage';
+import { getAspectRatioBucket } from '@/lib/utils/objectPositionUtils';
 import PhotoPicker from '@/components/admin/card-admin/PhotoPicker';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -17,6 +18,8 @@ interface CoverPhotoContainerProps {
   error?: string;
   className?: string;
   isSaving: boolean;
+  /** Disable local save overlay when a global save indicator is active. */
+  showSavingOverlay?: boolean;
   /** Narrow Library tab in photo picker to media matching these card tags. */
   filterTagIds?: string[];
 }
@@ -28,6 +31,7 @@ export default function CoverPhotoContainer({
   error,
   className,
   isSaving,
+  showSavingOverlay = true,
   filterTagIds,
 }: CoverPhotoContainerProps) {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
@@ -134,6 +138,13 @@ export default function CoverPhotoContainer({
   }, [onChange, coverImage]);
   
   const displayError = error || portraitError || uploadError;
+  const coverBucket = getAspectRatioBucket(coverImage);
+  const coverFrameClass =
+    coverBucket === 'landscape'
+      ? styles.imageLandscape
+      : coverBucket === 'square'
+        ? styles.imageSquare
+        : styles.imagePortrait;
 
   return (
     <div
@@ -153,13 +164,13 @@ export default function CoverPhotoContainer({
       <h4 className={styles.sectionTitle}>Cover</h4>
       {coverImage ? (
         <>
-          <div className={styles.imageContainer} style={{ position: 'relative' }}>
+          <div className={`${styles.imageContainer} ${coverFrameClass}`} style={{ position: 'relative' }}>
             {isDragActive && (
               <div className={styles.dropOverlay}>
                 Drop to replace cover
               </div>
             )}
-            {isSaving && (
+            {isSaving && showSavingOverlay && (
               <div className={styles.savingOverlay} aria-label="Saving cover image changes">
                 <LoadingSpinner />
               </div>

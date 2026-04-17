@@ -7,6 +7,7 @@ import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import {
   getEffectiveGalleryCaption,
 } from '@/lib/utils/galleryObjectPosition';
+import { getAspectRatioBucket } from '@/lib/utils/objectPositionUtils';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Zoom, Keyboard } from 'swiper/modules';
 import 'swiper/css';
@@ -132,11 +133,13 @@ export default function InlineGallery({ media, title = "Gallery" }: InlineGaller
         >
           {validMedia.map((item, index) => {
             const displayCaption = getEffectiveGalleryCaption(item, item.media);
-            const isPortrait =
-              Boolean(item.media) &&
-              typeof item.media.width === 'number' &&
-              typeof item.media.height === 'number' &&
-              item.media.height > item.media.width;
+            const ratioBucket = getAspectRatioBucket(item.media);
+            const wrapperClass =
+              ratioBucket === 'landscape'
+                ? styles.imageLandscape
+                : ratioBucket === 'square'
+                  ? styles.imageSquare
+                  : styles.imagePortrait;
             return (
               <div key={item.mediaId} className={styles.imageItem}>
                 <button
@@ -145,7 +148,7 @@ export default function InlineGallery({ media, title = "Gallery" }: InlineGaller
                   onClick={() => openLightbox(index)}
                   aria-label={`Open image ${index + 1} fullscreen`}
                 >
-                  <div className={styles.imageWrapper}>
+                  <div className={`${styles.imageWrapper} ${wrapperClass}`}>
                     <JournalImage
                       src={getDisplayUrl(item.media)}
                       alt={displayCaption.trim() ? displayCaption : `Image ${index + 1}`}
@@ -154,7 +157,7 @@ export default function InlineGallery({ media, title = "Gallery" }: InlineGaller
                       height={200}
                       sizes="(max-width: 768px) 100vw, (max-width: 1024px) 96vw, 94vw"
                       style={{
-                        objectFit: isPortrait ? 'contain' : 'cover',
+                        objectFit: 'cover',
                         objectPosition: 'center',
                       }}
                       priority={index < 2} // Prioritize first 2 images
