@@ -187,6 +187,8 @@ interface TagAdminListProps {
   onCreateTag: (tagData: Omit<Tag, 'docId' | 'createdAt' | 'updatedAt'>) => Promise<Tag | undefined>;
   onReorder: (activeId: string, overId: string, placement: 'before' | 'after') => void;
   onReparent: (activeId: string, overId: string) => void;
+  /** When true, each dimension stays in its own full-width row (e.g. resizable Studio tags pane). */
+  stackDimensionColumns?: boolean;
 }
 
 interface DimensionColumn {
@@ -416,6 +418,7 @@ export function TagAdminList({
   onCreateTag,
   onReorder,
   onReparent,
+  stackDimensionColumns = false,
 }: TagAdminListProps) {
   const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
   const [dragState, setDragState] = useState<{
@@ -504,7 +507,13 @@ export function TagAdminList({
           🔄 Reparenting Mode Active (Release Shift to exit)
         </div>
       )}
-      <div className={styles.dimensionGrid}>
+      <div
+        className={
+          stackDimensionColumns
+            ? `${styles.dimensionGrid} ${styles.dimensionGridSingleColumn}`
+            : styles.dimensionGrid
+        }
+      >
         {columns.map((col) => (
           <TagAdminDimensionColumn
             key={col.id}

@@ -1477,6 +1477,13 @@ export async function getCards(options: {
     when?: string[];
     where?: string[];
   };
+  /** When true for a dimension, keep only cards with no card-level tags in that dimension (empty or absent array). Applied in-memory with query oversampling (same pattern as media tag signals). */
+  dimensionMissing?: {
+    who?: boolean;
+    what?: boolean;
+    when?: boolean;
+    where?: boolean;
+  };
   childrenIds_contains?: string;
   limit?: number;
   lastDocId?: string;
@@ -1492,6 +1499,7 @@ export async function getCards(options: {
     tags,
     dimensionalTags,
     mediaDimensionalTags,
+    dimensionMissing,
     childrenIds_contains,
     limit = 10,
     lastDocId,
@@ -1510,6 +1518,14 @@ export async function getCards(options: {
         (mediaDimensionalTags.when && mediaDimensionalTags.when.length > 0) ||
         (mediaDimensionalTags.where && mediaDimensionalTags.where.length > 0))
   );
+  const hasDimensionMissingFilters = Boolean(
+    dimensionMissing &&
+      (dimensionMissing.who ||
+        dimensionMissing.what ||
+        dimensionMissing.when ||
+        dimensionMissing.where)
+  );
+  const needsPostFilterOversample = hasMediaSignalFilters || hasDimensionMissingFilters;
   const matchesAny = (candidate: string[] | undefined, required: string[] | undefined) => {
     if (!required || required.length === 0) return true;
     if (!candidate || candidate.length === 0) return false;
@@ -1609,7 +1625,9 @@ export async function getCards(options: {
     }
   }
 
-  const querySnapshot = await query.limit(hasMediaSignalFilters ? Math.max(limit * 5, 100) : limit).get();
+  const querySnapshot = await query.limit(
+    needsPostFilterOversample ? Math.max(limit * 5, 100) : limit
+  ).get();
 
   let cards: Card[] = querySnapshot.docs.map(doc => ({
     docId: doc.id,
@@ -1623,6 +1641,8 @@ export async function getCards(options: {
     cards = await _hydrateCards(cards);
   }
 
+  const cardDimEmpty = (arr: string[] | undefined) => !arr || arr.length === 0;
+
   if (hasMediaSignalFilters && mediaDimensionalTags) {
     cards = cards.filter((card) => {
       return (
@@ -1633,13 +1653,24 @@ export async function getCards(options: {
       );
     });
   }
+  if (hasDimensionMissingFilters && dimensionMissing) {
+    cards = cards.filter((card) => {
+      if (dimensionMissing.who && !cardDimEmpty(card.who)) return false;
+      if (dimensionMissing.what && !cardDimEmpty(card.what)) return false;
+      if (dimensionMissing.when && !cardDimEmpty(card.when)) return false;
+      if (dimensionMissing.where && !cardDimEmpty(card.where)) return false;
+      return true;
+    });
+  }
   if (cards.length > limit) {
     cards = cards.slice(0, limit);
   }
 
   const lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
   let lastDocIdResult = lastVisible ? lastVisible.id : undefined;
-  let hasMore = hasMediaSignalFilters ? querySnapshot.size >= Math.max(limit * 5, 100) : querySnapshot.size === limit;
+  let hasMore = needsPostFilterOversample
+    ? querySnapshot.size >= Math.max(limit * 5, 100)
+    : querySnapshot.size === limit;
 
   // Temporary safety net: if title_lowercase is missing on legacy docs, strict prefix search can miss obvious results.
   // Fall back to a bounded scan and in-memory title match so admin search remains usable until backfill runs.
@@ -1701,6 +1732,15 @@ export async function getCards(options: {
           matchesAny(card.mediaWhen, mediaDimensionalTags.when) &&
           matchesAny(card.mediaWhere, mediaDimensionalTags.where)
         );
+      });
+    }
+    if (hasDimensionMissingFilters && dimensionMissing) {
+      fallbackItems = fallbackItems.filter((card) => {
+        if (dimensionMissing.who && !cardDimEmpty(card.who)) return false;
+        if (dimensionMissing.what && !cardDimEmpty(card.what)) return false;
+        if (dimensionMissing.when && !cardDimEmpty(card.when)) return false;
+        if (dimensionMissing.where && !cardDimEmpty(card.where)) return false;
+        return true;
       });
     }
     fallbackItems = fallbackItems.slice(0, limit);

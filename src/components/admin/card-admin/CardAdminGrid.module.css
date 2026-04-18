@@ -22,7 +22,7 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: var(--spacing-lg);
 }
 
@@ -151,6 +151,10 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.inlineEditorWrap {
+  padding: 0 var(--spacing-sm) var(--spacing-sm);
 }
 
 .emptyState {

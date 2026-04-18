@@ -41,7 +41,7 @@ Run from the repo root. Most maintenance scripts need Firebase Admin env vars (s
 | `npm run seed:journal-users` | Seed `journal_users` for auth |
 | `npm run seed:theme-firestore` | Copy `theme-data.json` → Firestore `app_settings/theme` (aligns hosted SSR tokens with repo) |
 | `npm run sync:typesense` | Firestore cards → Typesense `cards` collection |
-| `npm run sync:typesense:fresh` | Same, drop `cards` index first (`--fresh`) |
+| `npm run sync:typesense:fresh` | Same, drop `cards` index first (`--fresh`). **Use after Typesense card schema changes** (new facet/sort fields) so the collection is recreated before import. |
 | `npm run sync:typesense:media` | Firestore media → Typesense `media` collection (search/facets for `/api/media`) |
 | `npm run sync:typesense:media:fresh` | Same, drop media index first (`--fresh`) |
 

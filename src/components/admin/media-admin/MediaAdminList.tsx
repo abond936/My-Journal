@@ -17,6 +17,19 @@ interface ColumnConfig {
 }
 
 const MEDIA_COLUMN_WIDTHS_KEY = 'media-admin-column-widths';
+/** Persisted widths when embedded in Collections / Studio (fewer columns). */
+const MEDIA_COLUMN_WIDTHS_KEY_COMPACT = 'media-admin-column-widths-collections-embed';
+
+const COMPACT_HIDDEN_COLUMN_KEYS = new Set([
+  'filename',
+  'width',
+  'height',
+  'size',
+  'contentType',
+  'objectPosition',
+  'source',
+  'sourcePath',
+]);
 
 const defaultColumns: ColumnConfig[] = [
   { key: 'assignment', label: 'On cards', width: 120, minWidth: 90, maxWidth: 160 },
@@ -37,7 +50,35 @@ const defaultColumns: ColumnConfig[] = [
   { key: 'actions', label: 'Actions', width: 120, minWidth: 100, maxWidth: 150 },
 ];
 
-export default function MediaAdminList() {
+function getColumnsForVariant(variant: 'full' | 'compact'): ColumnConfig[] {
+  if (variant === 'full') return defaultColumns;
+  return defaultColumns
+    .filter((col) => !COMPACT_HIDDEN_COLUMN_KEYS.has(col.key))
+    .map((col) =>
+      col.key === 'actions'
+        ? { ...col, width: 176, minWidth: 150, maxWidth: 260 }
+        : col
+    );
+}
+
+function loadInitialColumns(variant: 'full' | 'compact'): ColumnConfig[] {
+  const base = getColumnsForVariant(variant);
+  const key = variant === 'compact' ? MEDIA_COLUMN_WIDTHS_KEY_COMPACT : MEDIA_COLUMN_WIDTHS_KEY;
+  if (typeof window === 'undefined') return base;
+  try {
+    const saved = localStorage.getItem(key);
+    if (!saved) return base;
+    const savedWidths = JSON.parse(saved) as Record<string, number>;
+    return base.map((col) => ({
+      ...col,
+      width: typeof savedWidths[col.key] === 'number' ? savedWidths[col.key] : col.width,
+    }));
+  } catch {
+    return base;
+  }
+}
+
+export default function MediaAdminList({ variant = 'full' }: { variant?: 'full' | 'compact' }) {
   const { 
     media, 
     selectedMediaIds, 
@@ -46,19 +87,13 @@ export default function MediaAdminList() {
     selectNone 
   } = useMedia();
 
-  const [columns, setColumns] = useState<ColumnConfig[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(MEDIA_COLUMN_WIDTHS_KEY);
-      if (saved) {
-        const savedWidths = JSON.parse(saved);
-        return defaultColumns.map(col => ({
-          ...col,
-          width: savedWidths[col.key] || col.width
-        }));
-      }
-    }
-    return defaultColumns;
-  });
+  const storageKey = variant === 'compact' ? MEDIA_COLUMN_WIDTHS_KEY_COMPACT : MEDIA_COLUMN_WIDTHS_KEY;
+
+  const [columns, setColumns] = useState<ColumnConfig[]>(() => loadInitialColumns(variant));
+
+  useEffect(() => {
+    setColumns(loadInitialColumns(variant));
+  }, [variant]);
 
   // Save column configuration to localStorage
   useEffect(() => {
@@ -67,9 +102,9 @@ export default function MediaAdminList() {
         acc[col.key] = col.width;
         return acc;
       }, {} as Record<string, number>);
-      localStorage.setItem(MEDIA_COLUMN_WIDTHS_KEY, JSON.stringify(widths));
+      localStorage.setItem(storageKey, JSON.stringify(widths));
     }
-  }, [columns]);
+  }, [columns, storageKey]);
 
   const handleColumnResize = (columnKey: string, newWidth: number) => {
     setColumns(prev => prev.map(col => 
@@ -80,7 +115,7 @@ export default function MediaAdminList() {
   const totalWidth = columns.reduce((sum, col) => sum + col.width, 0) + 40; // +40 for checkbox column
 
   return (
-    <div className={styles.container}>
+    <div className={variant === 'compact' ? `${styles.container} ${styles.containerCompact}` : styles.container}>
       {/* Table */}
       <div className={styles.tableContainer}>
         <table className={styles.table} style={{ width: totalWidth }}>

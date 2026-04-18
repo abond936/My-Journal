@@ -344,6 +344,8 @@ Legend:
 - **Import paths** - Local drive / PhotoPicker / paste-drop via `imageImportService.ts`; folder-as-card (`__X` marker, `IMPORT_FOLDER_MAX_IMAGES`, `ONEDRIVE_ROOT_FOLDER`) — full rules in `docs/IMPORT-REFERENCE.md` and `normalize-images-README.md`.
 - **Card edges** - `referencedByCardIds` maintained on create/update/delete paths; unassigned filter + `mediaAssignmentSeek.ts`. Drift repair: `npm run reconcile:media-cards`, maintenance HTTP — see `docs/NPM-SCRIPTS.md`.
 - **Admin** - Multi-dimensional filter, replace-in-place (`POST /api/images/{id}/replace`), tagging (`PATCH /api/images/{id}`), bulk modes, multi-select → draft gallery card (`MediaAdminContent`).
+- **Triage** - Admin route `/admin/media-triage`: three-pane workspace (queue · preview/caption · media tags) over the same `MediaProvider` / `GET /api/media` list as Media admin; classic table/grid unchanged.
+- **Studio** - Admin route `/admin/studio`: experimental combined shell — left embeds the same tag DnD tree as Tag admin (`useTagManagement` + `TagAdminList`), center embeds `CollectionsAdminClient` (`embedded`) with the same curated card DnD as Collections; right column placeholder for inline metadata / future media rows. Collections and Tag admin routes unchanged.
 - **Bank-only** - No temporary or active status; imported media is in the bank. Assignment and unassigned filtering use `referencedByCardIds` and `GET /api/media?assignment=unassigned|assigned` (`mediaAssignmentSeek.ts`).
 - **Import Metadata** - Import reads embedded metadata (caption + keyword paths from XMP/IPTC/EXIF via ExifTool) and resolves keywords to app tag IDs in the import path.
 

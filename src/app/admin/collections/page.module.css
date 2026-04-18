@@ -1,5 +1,17 @@
 .container {
   padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  /* Fill viewport under admin tabs so the three-column layout can grow. */
+  min-height: calc(100dvh - var(--admin-tabs-height, 56px) - 1.5rem);
+}
+
+/* Fills space below chrome; DndContext has no DOM node so this wrapper carries flex height. */
+.mainShell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .stickyTop {
@@ -12,12 +24,51 @@
   margin-bottom: var(--spacing-md);
 }
 
+.collectionsResizeHint {
+  margin: var(--spacing-sm) 0 0;
+  max-width: 48rem;
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+  line-height: 1.4;
+}
+
 .layout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* grid-template-columns set inline when wide (tree | handle | unparent | handle | media). */
   gap: var(--spacing-md);
   align-items: stretch;
   min-height: 0;
+  flex: 1;
+}
+
+.layout > *:not(.colResizeHandle) {
+  min-width: 0;
+}
+
+.layoutStacked {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  align-items: stretch;
+  min-height: 0;
+  flex: 1;
+}
+
+.colResizeHandle {
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+  background: color-mix(in srgb, var(--border1-color) 55%, transparent);
+  border-radius: var(--border-radius-sm);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 4;
+}
+
+.colResizeHandle:hover,
+.colResizeHandle:focus-visible {
+  background: color-mix(in srgb, var(--color3) 35%, var(--border1-color));
+  outline: none;
 }
 
 .panel {
@@ -36,6 +87,67 @@
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+.mediaPanelScroll {
+  overflow-x: auto;
+}
+
+.mediaPanelToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+}
+
+.mediaToolbarLabel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+  min-width: 0;
+}
+
+.mediaToolbarBulk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+}
+
+.mediaLoading {
+  margin: 0 0 var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+}
+
+.mediaPagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: var(--border-width-thin) solid var(--border1-color);
+}
+
+.mediaPageInfo {
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+}
+
+.mediaDeleteButton {
+  background: var(--state-error-background-color);
+  color: var(--state-error-text-color);
+  border-color: var(--state-error-border-color);
+}
+
+.mediaDeleteButton:hover:not(:disabled) {
+  background: var(--state-error-background-color-hover);
 }
 
 .input {
@@ -358,11 +470,42 @@
   justify-content: flex-end;
 }
 
-@media (max-width: 980px) {
-  .layout {
-    grid-template-columns: 1fr;
-  }
+/* Embedded in Admin Studio (narrower chrome, tighter panels) */
+.studioEmbeddedRoot {
+  padding: 0;
+  min-height: 0;
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
 
+.studioEmbeddedChrome {
+  position: sticky;
+  top: var(--admin-tabs-height, 0px);
+  z-index: 55;
+  background: var(--layout-background1-color);
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+}
+
+.studioEmbeddedTitle {
+  margin: 0 0 var(--spacing-xs);
+  font-size: var(--font-size-lg);
+}
+
+.studioEmbeddedHint {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+}
+
+.studioEmbeddedHint a {
+  color: var(--color3);
+}
+
+@media (max-width: 980px) {
   .bulkControlsGrid {
     grid-template-columns: 1fr;
   }

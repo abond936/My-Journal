@@ -1,0 +1,67 @@
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip {
+  border: 1px solid var(--border1-color);
+  background: var(--layout-background2-color);
+  color: var(--text1-color);
+  border-radius: var(--border-radius-sm);
+  font-size: 11px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.chip:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.input {
+  width: 100%;
+  border: 1px solid var(--border1-color);
+  background: var(--input-background-color);
+  color: var(--text1-color);
+  border-radius: var(--border-radius-sm);
+  font-size: 12px;
+  padding: 4px 6px;
+}
+
+.suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 120px;
+  overflow-y: auto;
+  border: 1px solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--layout-background1-color);
+}
+
+.suggestion {
+  border: none;
+  background: transparent;
+  color: var(--text1-color);
+  text-align: left;
+  font-size: 11px;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+
+.suggestion:hover {
+  background: var(--layout-background2-color);
+}
+
+.error {
+  color: var(--state-error-text-color);
+  font-size: 11px;
+}

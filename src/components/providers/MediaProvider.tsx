@@ -85,7 +85,9 @@ const defaultFilters: MediaFilters = {
 
 export function MediaProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isMediaAdminRoute = Boolean(pathname?.startsWith('/admin/media-admin'));
+  const isMediaListRoute = Boolean(
+    pathname?.startsWith('/admin/media-admin') || pathname?.startsWith('/admin/media-triage')
+  );
 
   const { selectedTags } = useCardContext();
   const { tags: allTags } = useTag();
@@ -351,12 +353,12 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     setSelectedMediaIds([]);
   }, []);
 
-  // Load / refresh list only on Media admin (avoid fetching on every sidebar change while on Card admin, etc.).
+  // Load / refresh list only on media list surfaces (avoid fetching on Card admin, etc.).
   useEffect(() => {
-    if (!isMediaAdminRoute) return;
+    if (!isMediaListRoute) return;
     void fetchMedia(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchMedia identity changes with cursors/stack; dimensionalTagKey is the intended trigger
-  }, [dimensionalTagKey, isMediaAdminRoute]);
+  }, [dimensionalTagKey, isMediaListRoute]);
 
   const value: MediaContextType = {
     media,

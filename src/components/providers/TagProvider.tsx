@@ -4,7 +4,7 @@ import React, { createContext, useContext, useMemo, ReactNode, useCallback, useS
 import useSWR, { type KeyedMutator } from 'swr';
 import { useSession } from 'next-auth/react';
 import { Tag } from '@/lib/types/tag';
-import { buildTagTree } from '@/lib/utils/tagUtils';
+import { buildTagTree, normalizeTagDimensionKey } from '@/lib/utils/tagUtils';
 
 // --- Helper Functions ---
 
@@ -159,8 +159,9 @@ export function TagProvider({ children }: { children: ReactNode }) {
     // Build the full tree once
     const fullTree = buildTagTree(tags || []);
     dims.forEach(dim => {
-      // For each dimension, find roots with that dimension
-      result[dim] = fullTree.filter(root => root.dimension === dim);
+      result[dim] = fullTree.filter(
+        (root) => normalizeTagDimensionKey(root.dimension as string | undefined) === dim
+      );
     });
     return result;
   }, [tags]);

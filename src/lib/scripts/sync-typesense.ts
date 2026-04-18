@@ -2,6 +2,9 @@
  * Syncs all cards from Firestore to Typesense.
  * Run: npm run sync:typesense
  *
+ * After schema changes (new Typesense fields), drop and recreate the index:
+ *   npm run sync:typesense:fresh
+ *
  * Reads every card, resolves tag IDs to names, strips HTML from content,
  * and upserts into the Typesense 'cards' collection.
  */
@@ -11,23 +14,6 @@ import { resolve } from 'path';
 
 dotenv.config({ path: resolve(process.cwd(), '.env') });
 
-function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function resolveNames(ids: string[] | undefined, tagMap: Map<string, string>): string[] {
-  if (!ids || ids.length === 0) return [];
-  return ids.map((id) => tagMap.get(id) || id);
-}
-
 async function main() {
   // Dynamic imports so dotenv loads before Firebase initializes
   const { getAdminApp } = await import('@/lib/config/firebase/admin');
@@ -35,6 +21,7 @@ async function main() {
     ensureCardsCollection,
     dropCardsCollection,
     importCards,
+    buildTypesenseCardDocumentFromData,
   } = await import('@/lib/services/typesenseService');
   type TypesenseCardDocument = import('@/lib/services/typesenseService').TypesenseCardDocument;
 
@@ -70,25 +57,7 @@ async function main() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   snapshot.forEach((doc: any) => {
-    const data = doc.data();
-    const contentText = data.content ? stripHtml(data.content) : '';
-
-    docs.push({
-      id: doc.id,
-      title: data.title || '',
-      subtitle: data.subtitle || undefined,
-      excerpt: data.excerpt || undefined,
-      content_text: contentText.length > 0 ? contentText.substring(0, 10000) : undefined,
-      type: data.type || 'story',
-      status: data.status || 'draft',
-      tag_names: resolveNames(data.tags, tagMap),
-      who_names: resolveNames(data.who, tagMap),
-      what_names: resolveNames(data.what, tagMap),
-      when_names: resolveNames(data.when, tagMap),
-      where_names: resolveNames(data.where, tagMap),
-      created_at: Math.floor(Number(data.createdAt) || 0),
-      updated_at: Math.floor(Number(data.updatedAt) || 0),
-    });
+    docs.push(buildTypesenseCardDocumentFromData(doc.id, doc.data(), tagMap));
   });
 
   console.log(`Importing ${docs.length} cards to Typesense...`);

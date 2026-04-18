@@ -18,10 +18,32 @@ const cardsSchema: BaseCollectionCreateSchema & { fields: CollectionFieldSchema[
     { name: 'what_names', type: 'string[]', optional: true, facet: true },
     { name: 'when_names', type: 'string[]', optional: true, facet: true },
     { name: 'where_names', type: 'string[]', optional: true, facet: true },
+    /** Direct + inherited tag ids (matches `filterTags` keys) for AND filtering. */
+    { name: 'filter_tag_ids', type: 'string[]', optional: true, facet: true },
+    { name: 'tag_ids', type: 'string[]', optional: true, facet: true },
+    { name: 'who_ids', type: 'string[]', optional: true, facet: true },
+    { name: 'what_ids', type: 'string[]', optional: true, facet: true },
+    { name: 'when_ids', type: 'string[]', optional: true, facet: true },
+    { name: 'where_ids', type: 'string[]', optional: true, facet: true },
+    { name: 'media_who_ids', type: 'string[]', optional: true, facet: true },
+    { name: 'media_what_ids', type: 'string[]', optional: true, facet: true },
+    { name: 'media_when_ids', type: 'string[]', optional: true, facet: true },
+    { name: 'media_where_ids', type: 'string[]', optional: true, facet: true },
+    { name: 'child_ids', type: 'string[]', optional: true, facet: true },
+    { name: 'title_lowercase', type: 'string', optional: true, facet: false },
+    { name: 'who_sort_key', type: 'string', optional: true, facet: false },
+    { name: 'what_sort_key', type: 'string', optional: true, facet: false },
+    { name: 'where_sort_key', type: 'string', optional: true, facet: false },
     { name: 'created_at', type: 'int64', facet: false },
     { name: 'updated_at', type: 'int64', facet: false },
-    /** Packed When sort key (same as Firestore journalWhenSortDesc); optional for older indexes. */
+    /** Packed When sort keys (Firestore mirrors). */
     { name: 'journal_when_sort', type: 'int64', facet: false, optional: true },
+    { name: 'journal_when_sort_asc', type: 'int64', facet: false, optional: true },
+    /** Cardinality for “missing dimension” filters. */
+    { name: 'who_count', type: 'int32', facet: true, optional: true },
+    { name: 'what_count', type: 'int32', facet: true, optional: true },
+    { name: 'when_count', type: 'int32', facet: true, optional: true },
+    { name: 'where_count', type: 'int32', facet: true, optional: true },
   ],
   default_sorting_field: 'updated_at',
 };
@@ -39,9 +61,29 @@ export interface TypesenseCardDocument {
   what_names?: string[];
   when_names?: string[];
   where_names?: string[];
+  filter_tag_ids?: string[];
+  tag_ids?: string[];
+  who_ids?: string[];
+  what_ids?: string[];
+  when_ids?: string[];
+  where_ids?: string[];
+  media_who_ids?: string[];
+  media_what_ids?: string[];
+  media_when_ids?: string[];
+  media_where_ids?: string[];
+  child_ids?: string[];
+  title_lowercase?: string;
+  who_sort_key?: string;
+  what_sort_key?: string;
+  where_sort_key?: string;
   created_at: number;
   updated_at: number;
   journal_when_sort?: number;
+  journal_when_sort_asc?: number;
+  who_count?: number;
+  what_count?: number;
+  when_count?: number;
+  where_count?: number;
 }
 
 export async function ensureCardsCollection(): Promise<void> {
@@ -97,36 +139,174 @@ export interface SearchResult {
   totalFound: number;
 }
 
-export async function searchCards(options: SearchOptions): Promise<SearchResult> {
+export type TypesenseCardSortField = 'when' | 'created' | 'title' | 'who' | 'what' | 'where';
+
+export interface SearchCardsFilteredOptions {
+  /** User text search; omit or empty for browse-all (`*`). */
+  textQuery?: string;
+  type?: string;
+  status?: string;
+  /** AND: every id must appear in `filter_tag_ids` (inherited + direct). */
+  tags?: string[];
+  dimensionalTags?: {
+    who?: string[];
+    what?: string[];
+    when?: string[];
+    where?: string[];
+  };
+  mediaDimensionalTags?: {
+    who?: string[];
+    what?: string[];
+    when?: string[];
+    where?: string[];
+  };
+  /** Card’s `childrenIds` must contain this id. */
+  childrenIds_contains?: string;
+  dimensionMissing?: {
+    who?: boolean;
+    what?: boolean;
+    when?: boolean;
+    where?: boolean;
+  };
+  /** Zero-based page index (infinite scroll). */
+  page: number;
+  perPage: number;
+  sortBy: TypesenseCardSortField;
+  sortDir: 'asc' | 'desc';
+  searchScope?: 'default' | 'admin-title';
+}
+
+function escapeFilterValue(value: string): string {
+  return '`' + value.replace(/`/g, '``') + '`';
+}
+
+function orGroup(field: string, ids: string[] | undefined): string | null {
+  if (!ids || ids.length === 0) return null;
+  if (ids.length === 1) return `${field}:=${escapeFilterValue(ids[0])}`;
+  return `(${ids.map((id) => `${field}:=${escapeFilterValue(id)}`).join(' || ')})`;
+}
+
+function buildListSort(
+  sortBy: TypesenseCardSortField,
+  sortDir: 'asc' | 'desc',
+  hasTextQuery: boolean
+): string {
+  if (hasTextQuery) {
+    return '_text_match:desc,updated_at:desc';
+  }
+  /** Tie-breaker only — `id` is not declared in our Typesense schema (sorting by it 404s the whole query). */
+  const tie = 'updated_at:desc,title_lowercase:asc';
+  if (sortBy === 'created') {
+    return sortDir === 'asc' ? `created_at:asc,${tie}` : `created_at:desc,${tie}`;
+  }
+  if (sortBy === 'title') {
+    return sortDir === 'asc' ? `title_lowercase:asc,${tie}` : `title_lowercase:desc,${tie}`;
+  }
+  if (sortBy === 'who') {
+    return sortDir === 'asc'
+      ? `who_sort_key:asc,title_lowercase:asc,${tie}`
+      : `who_sort_key:desc,title_lowercase:asc,${tie}`;
+  }
+  if (sortBy === 'what') {
+    return sortDir === 'asc'
+      ? `what_sort_key:asc,title_lowercase:asc,${tie}`
+      : `what_sort_key:desc,title_lowercase:asc,${tie}`;
+  }
+  if (sortBy === 'where') {
+    return sortDir === 'asc'
+      ? `where_sort_key:asc,title_lowercase:asc,${tie}`
+      : `where_sort_key:desc,title_lowercase:asc,${tie}`;
+  }
+  // when
+  return sortDir === 'asc'
+    ? `journal_when_sort_asc:asc,${tie}`
+    : `journal_when_sort:desc,${tie}`;
+}
+
+/**
+ * Full-text + facet browse for cards. Uses Typesense `filter_by` so multiple
+ * dimensional array constraints (illegal in one Firestore query) are supported.
+ */
+export async function searchCardsFiltered(
+  options: SearchCardsFilteredOptions
+): Promise<SearchResult> {
   const client = getTypesenseClient();
   if (!client) throw new Error('Typesense not configured');
 
   const filterParts: string[] = [];
   if (options.type && options.type !== 'all') {
-    filterParts.push(`type:=${options.type}`);
+    filterParts.push(`type:=${escapeFilterValue(options.type)}`);
   }
   if (options.status && options.status !== 'all') {
-    filterParts.push(`status:=${options.status}`);
+    filterParts.push(`status:=${escapeFilterValue(options.status)}`);
   }
 
+  if (options.tags && options.tags.length > 0) {
+    for (const tag of options.tags) {
+      if (tag) filterParts.push(`filter_tag_ids:=${escapeFilterValue(tag)}`);
+    }
+  }
+
+  const dim = options.dimensionalTags;
+  if (dim) {
+    const w = orGroup('who_ids', dim.who);
+    if (w) filterParts.push(w);
+    const x = orGroup('what_ids', dim.what);
+    if (x) filterParts.push(x);
+    const y = orGroup('when_ids', dim.when);
+    if (y) filterParts.push(y);
+    const z = orGroup('where_ids', dim.where);
+    if (z) filterParts.push(z);
+  }
+
+  const md = options.mediaDimensionalTags;
+  if (md) {
+    const w = orGroup('media_who_ids', md.who);
+    if (w) filterParts.push(w);
+    const x = orGroup('media_what_ids', md.what);
+    if (x) filterParts.push(x);
+    const y = orGroup('media_when_ids', md.when);
+    if (y) filterParts.push(y);
+    const z = orGroup('media_where_ids', md.where);
+    if (z) filterParts.push(z);
+  }
+
+  if (options.childrenIds_contains) {
+    filterParts.push(`child_ids:=${escapeFilterValue(options.childrenIds_contains)}`);
+  }
+
+  const miss = options.dimensionMissing;
+  if (miss) {
+    if (miss.who) filterParts.push('who_count:=0');
+    if (miss.what) filterParts.push('what_count:=0');
+    if (miss.when) filterParts.push('when_count:=0');
+    if (miss.where) filterParts.push('where_count:=0');
+  }
+
+  const hasText = Boolean(options.textQuery && options.textQuery.trim().length > 0);
   const isAdminTitleScope = options.searchScope === 'admin-title';
   const queryBy = isAdminTitleScope
     ? 'title,subtitle'
     : 'title,subtitle,excerpt,content_text,tag_names,who_names,what_names,when_names,where_names';
   const queryByWeights = isAdminTitleScope ? '10,5' : '10,5,4,2,3,3,3,3,3';
 
-  const result = await client
-    .collections(CARDS_COLLECTION)
-    .documents()
-    .search({
-      q: options.query,
-      query_by: queryBy,
-      query_by_weights: queryByWeights,
-      filter_by: filterParts.length > 0 ? filterParts.join(' && ') : undefined,
-      page: options.page || 1,
-      per_page: options.perPage || 50,
-      sort_by: '_text_match:desc,updated_at:desc',
-    });
+  const q = hasText ? options.textQuery!.trim() : '*';
+  const sortBy = options.sortBy;
+  const sortDir = options.sortDir;
+  const sortByResolved = sortBy ?? 'when';
+  const sortDirResolved = sortDir ?? 'desc';
+
+  const tsPage = Math.max(1, options.page + 1);
+
+  const result = await client.collections(CARDS_COLLECTION).documents().search({
+    q,
+    query_by: queryBy,
+    query_by_weights: queryByWeights,
+    filter_by: filterParts.length > 0 ? filterParts.join(' && ') : undefined,
+    page: tsPage,
+    per_page: options.perPage,
+    sort_by: buildListSort(sortByResolved, sortDirResolved, hasText),
+  });
 
   const docIds = (result.hits ?? [])
     .map((hit) => (hit.document as TypesenseCardDocument).id)
@@ -136,6 +316,19 @@ export async function searchCards(options: SearchOptions): Promise<SearchResult>
     docIds,
     totalFound: result.found ?? 0,
   };
+}
+
+export async function searchCards(options: SearchOptions): Promise<SearchResult> {
+  return searchCardsFiltered({
+    textQuery: options.query?.trim() || undefined,
+    type: options.type,
+    status: options.status,
+    page: Math.max(0, (options.page ?? 1) - 1),
+    perPage: options.perPage || 50,
+    sortBy: 'when',
+    sortDir: 'desc',
+    searchScope: options.searchScope,
+  });
 }
 
 export async function dropCardsCollection(): Promise<void> {
@@ -172,14 +365,87 @@ async function resolveTagNames(tagIds: string[]): Promise<Map<string, string>> {
   for (let i = 0; i < tagIds.length; i += BATCH) {
     const batch = tagIds.slice(i, i + BATCH);
     const snap = await db.collection('tags').where('__name__', 'in', batch).get();
-    snap.forEach(doc => nameMap.set(doc.id, doc.data().name || doc.id));
+    snap.forEach((doc) => nameMap.set(doc.id, doc.data().name || doc.id));
   }
   return nameMap;
 }
 
 function lookupNames(ids: string[] | undefined, nameMap: Map<string, string>): string[] {
   if (!ids || ids.length === 0) return [];
-  return ids.map(id => nameMap.get(id) || id);
+  return ids.map((id) => nameMap.get(id) || id);
+}
+
+/** Shared Firestore → Typesense card document (script + runtime sync). */
+export function buildTypesenseCardDocumentFromData(
+  docId: string,
+  data: Record<string, unknown>,
+  tagMap: Map<string, string>
+): TypesenseCardDocument {
+  const tags = (data.tags as string[] | undefined) ?? [];
+  const who = (data.who as string[] | undefined) ?? [];
+  const what = (data.what as string[] | undefined) ?? [];
+  const when = (data.when as string[] | undefined) ?? [];
+  const where = (data.where as string[] | undefined) ?? [];
+  const filterTags = (data.filterTags as Record<string, boolean> | undefined) ?? {};
+  const filterTagIds = Object.keys(filterTags).filter((k) => filterTags[k]);
+
+  const contentRaw = data.content as string | undefined;
+  const contentText = contentRaw ? stripHtml(contentRaw) : '';
+
+  const title = (data.title as string) || '';
+  const titleLower =
+    (data.title_lowercase as string | undefined) ||
+    title.toLowerCase();
+
+  return {
+    id: docId,
+    title,
+    subtitle: (data.subtitle as string | undefined) || undefined,
+    excerpt: (data.excerpt as string | undefined) || undefined,
+    content_text: contentText.length > 0 ? contentText.substring(0, 10000) : undefined,
+    type: (data.type as string) || 'story',
+    status: (data.status as string) || 'draft',
+    tag_names: lookupNames(tags, tagMap),
+    who_names: lookupNames(who, tagMap),
+    what_names: lookupNames(what, tagMap),
+    when_names: lookupNames(when, tagMap),
+    where_names: lookupNames(where, tagMap),
+    filter_tag_ids: filterTagIds.length > 0 ? filterTagIds : undefined,
+    tag_ids: tags.length > 0 ? tags : undefined,
+    who_ids: who.length > 0 ? who : undefined,
+    what_ids: what.length > 0 ? what : undefined,
+    when_ids: when.length > 0 ? when : undefined,
+    where_ids: where.length > 0 ? where : undefined,
+    media_who_ids: ((data.mediaWho as string[] | undefined) ?? []).length
+      ? (data.mediaWho as string[])
+      : undefined,
+    media_what_ids: ((data.mediaWhat as string[] | undefined) ?? []).length
+      ? (data.mediaWhat as string[])
+      : undefined,
+    media_when_ids: ((data.mediaWhen as string[] | undefined) ?? []).length
+      ? (data.mediaWhen as string[])
+      : undefined,
+    media_where_ids: ((data.mediaWhere as string[] | undefined) ?? []).length
+      ? (data.mediaWhere as string[])
+      : undefined,
+    child_ids: ((data.childrenIds as string[] | undefined) ?? []).length
+      ? (data.childrenIds as string[])
+      : undefined,
+    title_lowercase: titleLower || undefined,
+    who_sort_key: (data.whoSortKey as string | undefined) || undefined,
+    what_sort_key: (data.whatSortKey as string | undefined) || undefined,
+    where_sort_key: (data.whereSortKey as string | undefined) || undefined,
+    created_at: Math.floor(Number(data.createdAt) || 0),
+    updated_at: Math.floor(Number(data.updatedAt) || 0),
+    journal_when_sort:
+      data.journalWhenSortDesc != null ? Math.floor(Number(data.journalWhenSortDesc)) : undefined,
+    journal_when_sort_asc:
+      data.journalWhenSortAsc != null ? Math.floor(Number(data.journalWhenSortAsc)) : undefined,
+    who_count: who.length,
+    what_count: what.length,
+    when_count: when.length,
+    where_count: where.length,
+  };
 }
 
 /**
@@ -200,26 +466,8 @@ export async function syncCardToTypesense(card: Card): Promise<void> {
     const unique = [...new Set(allTagIds)];
     const nameMap = await resolveTagNames(unique);
 
-    const contentText = card.content ? stripHtml(card.content) : '';
-
-    const doc: TypesenseCardDocument = {
-      id: card.docId,
-      title: card.title || '',
-      subtitle: card.subtitle || undefined,
-      excerpt: card.excerpt || undefined,
-      content_text: contentText.length > 0 ? contentText.substring(0, 10000) : undefined,
-      type: card.type || 'story',
-      status: card.status || 'draft',
-      tag_names: lookupNames(card.tags, nameMap),
-      who_names: lookupNames(card.who, nameMap),
-      what_names: lookupNames(card.what, nameMap),
-      when_names: lookupNames(card.when, nameMap),
-      where_names: lookupNames(card.where, nameMap),
-      created_at: Math.floor(Number(card.createdAt) || 0),
-      updated_at: Math.floor(Number(card.updatedAt) || 0),
-      journal_when_sort:
-        card.journalWhenSortDesc != null ? Math.floor(Number(card.journalWhenSortDesc)) : undefined,
-    };
+    const data = { ...card } as unknown as Record<string, unknown>;
+    const doc = buildTypesenseCardDocumentFromData(card.docId, data, nameMap);
 
     await upsertCard(doc);
   } catch (err) {

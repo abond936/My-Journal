@@ -8,13 +8,16 @@ interface ResizableHeaderProps {
   minWidth?: number;
   onResize: (width: number) => void;
   children: React.ReactNode;
+  /** Extra class on `<th>` (e.g. tighter padding for cover column). */
+  thClassName?: string;
 }
 
 export default function ResizableHeader({ 
   width, 
   minWidth = 50, 
   onResize, 
-  children 
+  children,
+  thClassName,
 }: ResizableHeaderProps) {
   const [isResizing, setIsResizing] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -52,7 +55,7 @@ export default function ResizableHeader({
 
   return (
     <th 
-      className={`${styles.resizableHeader} ${isResizing ? styles.resizing : ''}`}
+      className={`${styles.resizableHeader} ${isResizing ? styles.resizing : ''} ${thClassName ?? ''}`.trim()}
       style={{ width: `${width}px` }}
     >
       {children}

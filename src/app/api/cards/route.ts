@@ -13,7 +13,10 @@ import { authOptions } from '@/lib/auth/authOptions';
 import { PaginatedResult } from '@/lib/types/services';
 import { cardSchema } from '@/lib/types/card';
 import { isTypesenseConfigured } from '@/lib/config/typesense';
-import { searchCards } from '@/lib/services/typesenseService';
+import {
+  searchCardsFiltered,
+  type TypesenseCardSortField,
+} from '@/lib/services/typesenseService';
 
 export const dynamic = 'force-dynamic';
 
@@ -95,6 +98,23 @@ export async function GET(request: Request) {
     if (whenTags && whenTags.length > 0) dimensionalTags.when = whenTags;
     if (whereTags && whereTags.length > 0) dimensionalTags.where = whereTags;
 
+    const dimensionMissing: {
+      who?: boolean;
+      what?: boolean;
+      when?: boolean;
+      where?: boolean;
+    } = {};
+    if (searchParams.get('whoMissing') === 'true') dimensionMissing.who = true;
+    if (searchParams.get('whatMissing') === 'true') dimensionMissing.what = true;
+    if (searchParams.get('whenMissing') === 'true') dimensionMissing.when = true;
+    if (searchParams.get('whereMissing') === 'true') dimensionMissing.where = true;
+
+    // Missing-dimension filter wins over same-dimension tag list (cannot intersect).
+    if (dimensionMissing.who) delete dimensionalTags.who;
+    if (dimensionMissing.what) delete dimensionalTags.what;
+    if (dimensionMissing.when) delete dimensionalTags.when;
+    if (dimensionMissing.where) delete dimensionalTags.where;
+
     const mediaDimensionalTags: {
       who?: string[];
       what?: string[];
@@ -109,6 +129,13 @@ export async function GET(request: Request) {
     if (mediaWhatTags && mediaWhatTags.length > 0) mediaDimensionalTags.what = mediaWhatTags;
     if (mediaWhenTags && mediaWhenTags.length > 0) mediaDimensionalTags.when = mediaWhenTags;
     if (mediaWhereTags && mediaWhereTags.length > 0) mediaDimensionalTags.where = mediaWhereTags;
+
+    const hasDimensionMissingFilters = Boolean(
+      dimensionMissing.who ||
+        dimensionMissing.what ||
+        dimensionMissing.when ||
+        dimensionMissing.where
+    );
 
     let status = searchParams.get('status') as Card['status'] | 'all' | null;
     if (!status) {
@@ -179,6 +206,7 @@ export async function GET(request: Request) {
         !tags?.length &&
         Object.keys(dimensionalTags).length === 0 &&
         Object.keys(mediaDimensionalTags).length === 0 &&
+        !hasDimensionMissingFilters &&
         !sortBy
       ) {
         const items = await getParentCardsByChildId(childrenIds_contains, {
@@ -198,6 +226,7 @@ export async function GET(request: Request) {
         const set = new Set(candidate);
         return required.some((id) => set.has(id));
       };
+      const cardDimEmpty = (arr: string[] | undefined) => !arr || arr.length === 0;
       const applyPostFilters = (items: Card[]): Card[] => {
         return items.filter((card) => {
           if (childrenIds_contains && !(card.childrenIds || []).includes(childrenIds_contains)) return false;
@@ -211,6 +240,10 @@ export async function GET(request: Request) {
           if (dimensionalTags.what && dimensionalTags.what.length > 0 && !matchesAny(card.what, dimensionalTags.what)) return false;
           if (dimensionalTags.when && dimensionalTags.when.length > 0 && !matchesAny(card.when, dimensionalTags.when)) return false;
           if (dimensionalTags.where && dimensionalTags.where.length > 0 && !matchesAny(card.where, dimensionalTags.where)) return false;
+          if (dimensionMissing.who && !cardDimEmpty(card.who)) return false;
+          if (dimensionMissing.what && !cardDimEmpty(card.what)) return false;
+          if (dimensionMissing.when && !cardDimEmpty(card.when)) return false;
+          if (dimensionMissing.where && !cardDimEmpty(card.where)) return false;
           if (mediaDimensionalTags.who && mediaDimensionalTags.who.length > 0 && !matchesAny(card.mediaWho, mediaDimensionalTags.who)) return false;
           if (mediaDimensionalTags.what && mediaDimensionalTags.what.length > 0 && !matchesAny(card.mediaWhat, mediaDimensionalTags.what)) return false;
           if (mediaDimensionalTags.when && mediaDimensionalTags.when.length > 0 && !matchesAny(card.mediaWhen, mediaDimensionalTags.when)) return false;
@@ -219,29 +252,53 @@ export async function GET(request: Request) {
         });
       };
 
-      if (q?.trim() && isTypesenseConfigured()) {
+      if (isTypesenseConfigured()) {
         try {
-          const searchResult = await searchCards({
-            query: q.trim(),
-            type: type !== 'all' ? type : undefined,
-            status: status !== 'all' ? status : undefined,
-            perPage: Math.max(limit * 5, 100),
+          const pageIdx = Math.max(0, parseInt(searchParams.get('page') ?? '0', 10) || 0);
+          const sortByResolved: TypesenseCardSortField =
+            sortBy ?? (q?.trim() ? 'title' : 'when');
+          const sortDirResolved = sortDir ?? (q?.trim() ? 'asc' : 'desc');
+
+          const searchResult = await searchCardsFiltered({
+            textQuery: q?.trim() || undefined,
+            type,
+            status,
+            tags: tags?.filter((t): t is string => Boolean(t?.trim())),
+            dimensionalTags:
+              Object.keys(dimensionalTags).length > 0 ? dimensionalTags : undefined,
+            mediaDimensionalTags:
+              Object.keys(mediaDimensionalTags).length > 0 ? mediaDimensionalTags : undefined,
+            childrenIds_contains,
+            dimensionMissing: hasDimensionMissingFilters ? dimensionMissing : undefined,
+            page: pageIdx,
+            perPage: limit,
+            sortBy: sortByResolved,
+            sortDir: sortDirResolved,
             searchScope,
           });
 
           if (searchResult.docIds.length === 0) {
-            return NextResponse.json({ items: [], hasMore: false } as PaginatedResult<Card>);
+            return NextResponse.json({
+              items: [],
+              hasMore: false,
+              lastDocId: undefined,
+            } as PaginatedResult<Card>);
           }
 
-          const rawItems = await getCardsByIds(searchResult.docIds);
+          const rawItems = await getCardsByIds(searchResult.docIds, { hydrationMode });
           const filteredItems = applyPostFilters(rawItems);
           const items = filteredItems.slice(0, limit);
+          const lastDocId =
+            items.length > 0 ? items[items.length - 1].docId : undefined;
+          const hasMore = (pageIdx + 1) * limit < searchResult.totalFound;
+
           return NextResponse.json({
             items,
-            hasMore: filteredItems.length > limit || searchResult.totalFound > searchResult.docIds.length,
+            lastDocId,
+            hasMore,
           } as PaginatedResult<Card>);
         } catch (tsError) {
-          console.warn('Typesense search failed, falling back to Firestore:', tsError);
+          console.warn('Typesense list/search failed, falling back to Firestore:', tsError);
         }
       }
 
@@ -253,6 +310,7 @@ export async function GET(request: Request) {
         dimensionalTags: Object.keys(dimensionalTags).length > 0 ? dimensionalTags : undefined,
         mediaDimensionalTags:
           Object.keys(mediaDimensionalTags).length > 0 ? mediaDimensionalTags : undefined,
+        dimensionMissing: hasDimensionMissingFilters ? dimensionMissing : undefined,
         childrenIds_contains,
         limit,
         lastDocId,

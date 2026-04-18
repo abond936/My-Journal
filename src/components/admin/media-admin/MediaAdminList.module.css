@@ -5,6 +5,12 @@
   margin: 0 auto;
 }
 
+.containerCompact {
+  padding: 0;
+  margin: 0;
+  max-width: none;
+}
+
 /* Bulk Actions */
 .bulkActions {
   display: flex;

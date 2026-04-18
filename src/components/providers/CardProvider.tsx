@@ -29,6 +29,14 @@ export type CardFilterType = 'all' | 'story' | 'qa' | 'quote' | 'callout' | 'gal
 export type CardStatus = 'all' | 'draft' | 'published';
 export type ActiveDimension = 'all' | 'who' | 'what' | 'when' | 'where' | 'collections';
 
+/** Card-level dimensional tags: filter to cards with no tags in that dimension (API: `whoMissing`, etc.). Mutually exclusive with sidebar tag picks for the same dimension (missing wins). */
+export type CardDimensionMissing = {
+  who: boolean;
+  what: boolean;
+  when: boolean;
+  where: boolean;
+};
+
 /** Main feed ordering. `random` uses newest-ordered pages then shuffles; order is stable across SWR refresh, and load-more only shuffles new cards while keeping earlier positions. */
 export type FeedSortOrder =
   | 'random'
@@ -64,6 +72,7 @@ export interface ICardContext {
     when: string[];
     where: string[];
   };
+  cardDimensionMissing: CardDimensionMissing;
   /** Grouped sections for the main feed; null when grouping is off or not applicable. */
   feedSections: { heading: string; cards: Card[] }[] | null;
 
@@ -77,6 +86,7 @@ export interface ICardContext {
   setFeedSort: (order: FeedSortOrder) => void;
   setFeedGroupBy: (g: FeedGroupBy) => void;
   setMediaTagSignal: (dimension: 'who' | 'what' | 'when' | 'where', tagIds: string[]) => void;
+  setCardDimensionMissing: (dimension: 'who' | 'what' | 'when' | 'where', value: boolean) => void;
   clearFilters: () => void;
   setPageLimit: (limit: number) => void;
   
@@ -184,6 +194,12 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     when: [],
     where: [],
   });
+  const [cardDimensionMissing, setCardDimensionMissingState] = useState<CardDimensionMissing>({
+    who: false,
+    what: false,
+    when: false,
+    where: false,
+  });
 
   /**
    * Random feed: stable order across SWR revalidation (same doc-id set). On infinite scroll, keep
@@ -207,6 +223,13 @@ export const CardProvider = ({ children }: CardProviderProps) => {
         ...prev,
         [dimension]: tagIds,
       }));
+    },
+    []
+  );
+
+  const setCardDimensionMissing = useCallback(
+    (dimension: 'who' | 'what' | 'when' | 'where', value: boolean) => {
+      setCardDimensionMissingState((prev) => ({ ...prev, [dimension]: value }));
     },
     []
   );
@@ -318,6 +341,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       const endpoint = '/api/cards';
       const params = new URLSearchParams({ limit: String(pageLimit) });
       params.set('status', status);
+      params.set('page', String(pageIndex));
 
       // Fetch a specific collection's children
       if (collectionId) {
@@ -331,8 +355,17 @@ export const CardProvider = ({ children }: CardProviderProps) => {
 
       // Explore / All: normal filtered list
       Object.entries(dimensionalTags).forEach(([dimension, tagIds]) => {
-        if (tagIds && tagIds.length > 0) params.set(dimension, tagIds.join(','));
+        if (!tagIds || tagIds.length === 0) return;
+        if (dimension === 'who' && cardDimensionMissing.who) return;
+        if (dimension === 'what' && cardDimensionMissing.what) return;
+        if (dimension === 'when' && cardDimensionMissing.when) return;
+        if (dimension === 'where' && cardDimensionMissing.where) return;
+        params.set(dimension, tagIds.join(','));
       });
+      if (cardDimensionMissing.who) params.set('whoMissing', 'true');
+      if (cardDimensionMissing.what) params.set('whatMissing', 'true');
+      if (cardDimensionMissing.when) params.set('whenMissing', 'true');
+      if (cardDimensionMissing.where) params.set('whereMissing', 'true');
       if (mediaTagSignals.who.length > 0) params.set('mediaWho', mediaTagSignals.who.join(','));
       if (mediaTagSignals.what.length > 0) params.set('mediaWhat', mediaTagSignals.what.join(','));
       if (mediaTagSignals.when.length > 0) params.set('mediaWhen', mediaTagSignals.when.join(','));
@@ -512,6 +545,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     setFeedSort('random');
     setFeedGroupBy('none');
     setMediaTagSignals({ who: [], what: [], when: [], where: [] });
+    setCardDimensionMissingState({ who: false, what: false, when: false, where: false });
   }, [isAdmin, setFilterTags, setCollectionId, setFeedSort, setFeedGroupBy]);
 
   const value = useMemo(
@@ -531,6 +565,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       feedSort,
       feedGroupBy,
       mediaTagSignals,
+      cardDimensionMissing,
       feedSections,
       loadMore,
       mutate,
@@ -543,6 +578,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       setFeedSort,
       setFeedGroupBy,
       setMediaTagSignal,
+      setCardDimensionMissing,
       clearFilters,
       setPageLimit,
       isValidating,
@@ -563,6 +599,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       feedSort,
       feedGroupBy,
       mediaTagSignals,
+      cardDimensionMissing,
       feedSections,
       loadMore,
       mutate,
@@ -575,6 +612,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       setFeedSort,
       setFeedGroupBy,
       setMediaTagSignal,
+      setCardDimensionMissing,
       clearFilters,
       setPageLimit,
       isValidating,

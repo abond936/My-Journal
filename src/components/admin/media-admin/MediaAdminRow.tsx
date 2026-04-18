@@ -35,6 +35,7 @@ export default function MediaAdminRow({
   isSelected, 
   onToggleSelection 
 }: MediaAdminRowProps) {
+  const focalInActions = !columns.some((c) => c.key === 'objectPosition');
   const { deleteMedia, updateMedia, fetchMedia, currentPage } = useMedia();
   const { tags } = useTag();
   const tagNameMap = React.useMemo(
@@ -270,6 +271,17 @@ export default function MediaAdminRow({
       case 'actions':
         return (
           <div className={styles.actions}>
+            {focalInActions ? (
+              <button
+                type="button"
+                onClick={() => setFocalModalOpen(true)}
+                className={styles.actionButton}
+                title="Default focal (crop)"
+                disabled={replacing}
+              >
+                Focal
+              </button>
+            ) : null}
             <input
               ref={replaceInputRef}
               type="file"

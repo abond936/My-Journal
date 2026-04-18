@@ -48,6 +48,17 @@ export const buildTagTree = (tags: Tag[]): TagWithChildren[] => {
  * @param tree - A hierarchical array of `TagWithChildren`.
  * @returns A record where keys are dimensions and values are the corresponding tag trees.
  */
+/** Maps legacy `reflection` and unknown dims to the four card dimensions used in UI trees. */
+export function normalizeTagDimensionKey(
+  dimension: string | undefined
+): 'who' | 'what' | 'when' | 'where' | undefined {
+  if (!dimension) return undefined;
+  const d = String(dimension);
+  if (d === 'reflection') return 'what';
+  if (d === 'who' || d === 'what' || d === 'when' || d === 'where') return d;
+  return undefined;
+}
+
 const groupTreeByDimension = (tree: TagWithChildren[]): Record<string, TagWithChildren[]> => {
   const dimensionMap: Record<string, TagWithChildren[]> = {
     who: [],
@@ -57,9 +68,9 @@ const groupTreeByDimension = (tree: TagWithChildren[]): Record<string, TagWithCh
   };
 
   tree.forEach(rootNode => {
-    const dimension = rootNode.dimension;
-    if (dimension && dimensionMap.hasOwnProperty(dimension)) {
-      dimensionMap[dimension].push(rootNode);
+    const normalized = normalizeTagDimensionKey(rootNode.dimension as string | undefined);
+    if (normalized) {
+      dimensionMap[normalized].push(rootNode);
     }
   });
 

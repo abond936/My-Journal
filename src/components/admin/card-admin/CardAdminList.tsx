@@ -14,11 +14,12 @@ import EditableStatusCell from './EditableStatusCell';
 import ResizableHeader from './ResizableHeader';
 import EditModal from './EditModal';
 import MacroTagSelector from './MacroTagSelector';
+import DimensionTagCellEditor from './DimensionTagCellEditor';
 
 const COLUMN_WIDTHS_KEY = 'cardAdminColumnWidths';
 const DEFAULT_COLUMN_WIDTHS = {
   checkbox: 40,
-  cover: 60,
+  cover: 90,
   title: 200,
   type: 100,
   status: 100,
@@ -30,7 +31,7 @@ const DEFAULT_COLUMN_WIDTHS = {
   what: 150,
   when: 150,
   where: 150,
-  actions: 120
+  actions: 280
 };
 
 interface CardAdminListProps {
@@ -76,6 +77,7 @@ export default function CardAdminList({
       return updated;
     });
   }, []);
+  const actionsColumnWidth = Math.max(columnWidths.actions, 280);
 
   const handleEditClick = (cardId: string) => {
     onSaveScrollPosition(cardId);
@@ -161,6 +163,23 @@ export default function CardAdminList({
     [getDirectTagsByDimension]
   );
 
+  const dimensionOptions = React.useMemo(() => {
+    const dims: Record<'who' | 'what' | 'when' | 'where', Tag[]> = {
+      who: [],
+      what: [],
+      when: [],
+      where: [],
+    };
+    for (const tag of allTags) {
+      const raw = tag.dimension ? String(tag.dimension) : '';
+      const dim = raw === 'reflection' ? 'what' : raw;
+      if (dim === 'who' || dim === 'what' || dim === 'when' || dim === 'where') {
+        dims[dim].push(tag);
+      }
+    }
+    return dims;
+  }, [allTags]);
+
   const applyDimensionSuggestions = useCallback(
     async (card: Card, dimension: 'who' | 'what' | 'when' | 'where') => {
       const suggestions = getMediaSuggestionTags(card, dimension);
@@ -180,7 +199,11 @@ export default function CardAdminList({
             <ResizableHeader width={columnWidths.checkbox} onResize={(w) => handleColumnResize('checkbox', w)}>
               <input type="checkbox" checked={isAllSelected} onChange={onSelectAll} />
             </ResizableHeader>
-            <ResizableHeader width={columnWidths.cover} onResize={(w) => handleColumnResize('cover', w)}>
+            <ResizableHeader
+              width={columnWidths.cover}
+              onResize={(w) => handleColumnResize('cover', w)}
+              thClassName={styles.coverHeaderCell}
+            >
               Cover
             </ResizableHeader>
             <ResizableHeader width={columnWidths.title} onResize={(w) => handleColumnResize('title', w)}>
@@ -216,7 +239,7 @@ export default function CardAdminList({
             <ResizableHeader width={columnWidths.where} onResize={(w) => handleColumnResize('where', w)}>
               Where
             </ResizableHeader>
-            <ResizableHeader width={columnWidths.actions} onResize={(w) => handleColumnResize('actions', w)}>
+            <ResizableHeader width={actionsColumnWidth} onResize={(w) => handleColumnResize('actions', w)}>
               Actions
             </ResizableHeader>
           </tr>
@@ -237,9 +260,9 @@ export default function CardAdminList({
                     src={getDisplayUrl(card.coverImage)} 
                     alt="Cover"
                     className={styles.coverThumbnail}
-                    width={60}
-                    height={60}
-                    sizes="60px"
+                    width={256}
+                    height={256}
+                    sizes={`${columnWidths.cover}px`}
                   />
                 ) : (
                   <span className={styles.noCover}>—</span>
@@ -270,7 +293,14 @@ export default function CardAdminList({
                   const hasSuggestions = suggestionIds.length > 0;
                   return (
                     <td style={{ width }} key={`${card.docId}-${dimension}`}>
-                      <div className={styles.tags}>{render(displayIds, styles.currentTag)}</div>
+                      <DimensionTagCellEditor
+                        card={card}
+                        dimension={dimension}
+                        tagIds={displayIds}
+                        dimensionOptions={dimensionOptions[dimension]}
+                        tagNameMap={tagMap}
+                        onUpdateCard={onUpdateCard}
+                      />
                       <div className={styles.tagSuggestionRow}>
                         <div className={styles.tagSuggestions}>
                           {hasSuggestions ? render(suggestionIds, styles.suggestionTag) : <span className={styles.noSuggestion}>No media suggestions</span>}
@@ -296,7 +326,7 @@ export default function CardAdminList({
                   </>
                 );
               })()}
-              <td style={{ width: columnWidths.actions }}>
+              <td style={{ width: actionsColumnWidth, minWidth: actionsColumnWidth }}>
                 <button
                   onClick={() => handleEditClick(card.docId)}
                   className={styles.actionButton}

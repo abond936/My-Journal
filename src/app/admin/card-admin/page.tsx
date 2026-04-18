@@ -64,6 +64,8 @@ export default function AdminCardsPage() {
     isValidating,
     mediaTagSignals,
     setMediaTagSignal,
+    cardDimensionMissing,
+    setCardDimensionMissing,
   } = useCardContext();
 
   // Set the desired page limit for the admin section
@@ -128,7 +130,7 @@ export default function AdminCardsPage() {
   // Clear selection when filters change
   useEffect(() => {
     setSelectedCardIds(new Set());
-  }, [searchTerm, status]);
+  }, [searchTerm, status, cardDimensionMissing]);
 
   useEffect(() => {
     setSearchInputValue(searchTerm);
@@ -278,8 +280,19 @@ export default function AdminCardsPage() {
       if (!response.ok) {
         throw new Error('Failed to update card.');
       }
-      // Optimistic update can be tricky, so we revalidate from server
-      await mutate(undefined, { revalidate: true });
+      const updatedCard = (await response.json()) as Card;
+
+      // Patch the updated card into current SWR pages to avoid full-table refetch/repaint
+      await mutate(
+        (current) => {
+          if (!current) return current;
+          return current.map((page) => ({
+            ...page,
+            items: page.items.map((item) => (item.docId === cardId ? { ...item, ...updatedCard } : item)),
+          }));
+        },
+        { revalidate: false }
+      );
     } catch (err) {
       console.error(`Error updating card ${cardId}:`, err);
       // It's good practice to inform the user and maybe revert UI changes
@@ -490,6 +503,38 @@ export default function AdminCardsPage() {
               <option value="whoAsc">Who (A-Z)</option>
               <option value="whatAsc">What (A-Z)</option>
               <option value="whereAsc">Where (A-Z)</option>
+            </select>
+            <select
+              value={cardDimensionMissing.who ? 'missing' : ''}
+              onChange={(e) => setCardDimensionMissing('who', e.target.value === 'missing')}
+              className={styles.filterSelect}
+            >
+              <option value="">Card Who: Any</option>
+              <option value="missing">Card Who: No tags</option>
+            </select>
+            <select
+              value={cardDimensionMissing.what ? 'missing' : ''}
+              onChange={(e) => setCardDimensionMissing('what', e.target.value === 'missing')}
+              className={styles.filterSelect}
+            >
+              <option value="">Card What: Any</option>
+              <option value="missing">Card What: No tags</option>
+            </select>
+            <select
+              value={cardDimensionMissing.when ? 'missing' : ''}
+              onChange={(e) => setCardDimensionMissing('when', e.target.value === 'missing')}
+              className={styles.filterSelect}
+            >
+              <option value="">Card When: Any</option>
+              <option value="missing">Card When: No tags</option>
+            </select>
+            <select
+              value={cardDimensionMissing.where ? 'missing' : ''}
+              onChange={(e) => setCardDimensionMissing('where', e.target.value === 'missing')}
+              className={styles.filterSelect}
+            >
+              <option value="">Card Where: Any</option>
+              <option value="missing">Card Where: No tags</option>
             </select>
             <select
               value={mediaTagSignals.who[0] || ''}

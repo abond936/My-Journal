@@ -8,11 +8,11 @@ import { seedInitialAdminIfEmpty } from '../../auth/journalUsersFirestore';
 
 async function main() {
   const result = await seedInitialAdminIfEmpty();
-  if (result.created) {
-    console.log(`Created admin journal user: ${result.docId}`);
-  } else {
+  if ('reason' in result) {
     console.log(`Skipped: ${result.reason}`);
+    return;
   }
+  console.log(`Created admin journal user: ${result.docId}`);
 }
 
 main().catch(err => {

@@ -204,30 +204,53 @@
   user-select: none;
 }
 
+.entriesTable input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
 .entriesTable tr:hover {
   background: var(--layout-background1-color);
 }
 
 /* Cover Image Styles */
 .coverImageCell {
-  width: 50px;
-  padding: var(--spacing-xs) !important;
+  width: 75px;
+  padding: calc(var(--spacing-xs) / 2) !important;
   text-align: center;
+  vertical-align: middle;
 }
 
 .coverThumbnail {
-  width: 40px;
-  height: 40px;
+  box-sizing: border-box;
+  display: block;
+  width: calc(100% - 2px);
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
   border-radius: var(--border-radius-md);
   border: 1px solid var(--border1-color);
+  margin: 0 auto;
 }
 
 .noCover {
   color: var(--text2-color);
   font-size: var(--font-size-lg);
-  display: inline-block;
-  line-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: calc(100% - 2px);
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+  border: 1px solid transparent;
+}
+
+.coverHeaderCell {
+  padding: calc(var(--spacing-xs) / 2) var(--spacing-xs) !important;
 }
 
 /* Inline Editing */
@@ -293,7 +316,7 @@
 }
 
 .suggestionTag {
-  font-size: var(--font-size-sm);
+  font-size: 13px;
   padding: 0;
   background: transparent;
   border: none;
@@ -321,7 +344,8 @@
 }
 
 .noSuggestion {
-  font-size: var(--font-size-xs);
+  font-size: 13px;
+  font-weight: var(--font-weight-regular, 400);
   color: var(--text2-color);
 }
 
@@ -332,7 +356,7 @@
   background: var(--layout-background1-color);
   color: var(--text1-color);
   padding: 2px var(--spacing-xs);
-  font-size: var(--font-size-xs);
+  font-size: 13px;
   cursor: pointer;
 }
 
@@ -384,6 +408,114 @@
   border-color: var(--state-error-border-color);
   color: var(--text1-color);
   background: transparent;
+}
+
+.dimensionEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dimensionChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 20px;
+}
+
+.dimensionEmpty {
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+}
+
+.dimensionChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--layout-background3-color, var(--layout-background2-color));
+  color: var(--text1-color);
+  font-size: 15px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.dimensionChipX {
+  opacity: 0.8;
+}
+
+.dimensionAddButton {
+  align-self: flex-start;
+  border: var(--border-width-thin) dashed var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--text2-color);
+  font-size: 10px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.dimensionPicker {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dimensionPickerInput {
+  width: 100%;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--input-background-color);
+  color: var(--text1-color);
+  font-size: var(--font-size-xs);
+  padding: 4px 6px;
+}
+
+.dimensionSuggestionList {
+  display: flex;
+  flex-direction: column;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  max-height: 120px;
+  overflow-y: auto;
+  background: var(--layout-background1-color);
+}
+
+.dimensionSuggestionItem {
+  border: none;
+  background: transparent;
+  text-align: left;
+  color: var(--text1-color);
+  font-size: var(--font-size-xs);
+  padding: 4px 6px;
+  cursor: pointer;
+}
+
+.dimensionSuggestionItem:hover {
+  background: var(--layout-background2-color);
+}
+
+.dimensionSuggestionEmpty {
+  color: var(--text2-color);
+  font-size: var(--font-size-xs);
+  padding: 4px 6px;
+}
+
+.dimensionError {
+  color: var(--state-error-text-color);
+  font-size: var(--font-size-xs);
+}
+
+:global(html[data-theme='dark']) .dimensionChip {
+  background: #222a36;
+  color: #eef3ff;
+  border-color: #4f5f79;
+}
+
+:global(html[data-theme='dark']) .dimensionAddButton {
+  color: #cfd9ef;
+  border-color: #4f5f79;
 }
 
 .filterSelect:disabled {

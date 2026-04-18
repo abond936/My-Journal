@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Tag, TagWithChildren } from '@/lib/types/tag';
 import { useTag } from '@/components/providers/TagProvider';
 import { getTagTreeExpandLevelsForDimension } from '@/lib/constants/tagTreeExpansion';
@@ -36,6 +36,21 @@ export default function TagPickerDimensionColumn({
   const [pendingChild, setPendingChild] = useState<{ id: string; name: string } | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const addChildPanelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!pendingChild) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const el = addChildPanelRef.current;
+      if (el && !el.contains(e.target as Node)) {
+        setPendingChild(null);
+        setChildDraft('');
+        setAddError(null);
+      }
+    };
+    document.addEventListener('pointerdown', onPointerDown, true);
+    return () => document.removeEventListener('pointerdown', onPointerDown, true);
+  }, [pendingChild]);
 
   const handleCreate = useCallback(
     async (name: string, parentId: string | undefined) => {
@@ -109,7 +124,7 @@ export default function TagPickerDimensionColumn({
       </div>
 
       {pendingChild && (
-        <div className={styles.addTagChildPanel}>
+        <div ref={addChildPanelRef} className={styles.addTagChildPanel}>
           <div className={styles.addTagChildHeading}>
             New tag under <strong>{pendingChild.name}</strong>
           </div>

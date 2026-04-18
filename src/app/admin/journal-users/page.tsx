@@ -190,15 +190,15 @@ export default function JournalUsersAdminPage() {
         {createMessage && <div className={styles.success}>{createMessage}</div>}
       </section>
 
-      <section className={styles.section}>
+      <section className={`${styles.section} ${styles.tableSection}`}>
         <h2>All users</h2>
         {loading ? (
           <p>Loading…</p>
         ) : (
           <>
             {rowError && <div className={styles.error}>{rowError}</div>}
-            <div className={styles.tableWrap}>
-              <table className={styles.table}>
+            <div className={styles.tableContainer}>
+              <table className={styles.entriesTable}>
                 <thead>
                   <tr>
                     <th>Username</th>

@@ -9,6 +9,7 @@ import { DirectDimensionChipsRow } from '@/components/admin/common/DirectDimensi
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import { getCoreTagsByDimension } from '@/lib/utils/tagDisplay';
 import styles from './CardAdminGrid.module.css';
+import InlineTagEditor from './InlineTagEditor';
 
 interface CardAdminGridProps {
   cards: Card[];
@@ -25,6 +26,8 @@ interface CardAdminGridCellProps {
   card: Card;
   isSelected: boolean;
   tagNameMap: Map<string, string>;
+  allTags: Tag[];
+  onUpdateCard: (cardId: string, updateData: Partial<Card>) => Promise<void>;
   onSelect: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -34,6 +37,8 @@ function CardAdminGridCell({
   card,
   isSelected,
   tagNameMap,
+  allTags,
+  onUpdateCard,
   onSelect,
   onEdit,
   onDelete,
@@ -97,6 +102,13 @@ function CardAdminGridCell({
         {card.title || 'Untitled'}
       </div>
       <DirectDimensionChipsRow core={core} tagNameMap={tagNameMap} />
+      <div className={styles.inlineEditorWrap}>
+        <InlineTagEditor
+          card={card}
+          allTags={allTags}
+          onUpdateCard={onUpdateCard}
+        />
+      </div>
     </div>
   );
 }
@@ -107,6 +119,7 @@ export default function CardAdminGrid({
   onSelectCard,
   onSelectAll,
   onSaveScrollPosition,
+  onUpdateCard,
   onDeleteCard,
   allTags,
 }: CardAdminGridProps) {
@@ -164,6 +177,8 @@ export default function CardAdminGrid({
             card={card}
             isSelected={selectedCardIds.has(card.docId)}
             tagNameMap={tagNameMap}
+            allTags={allTags}
+            onUpdateCard={onUpdateCard}
             onSelect={() => onSelectCard(card.docId)}
             onEdit={() => handleEdit(card.docId)}
             onDelete={() => handleDelete(card)}

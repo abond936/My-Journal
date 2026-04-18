@@ -4,7 +4,12 @@ import React, { useState, useMemo } from 'react';
 import { useTag } from '@/components/providers/TagProvider';
 import { Tag, TagWithChildren } from '@/lib/types/tag';
 import styles from './MacroTagSelector.module.css';
-import { buildSparseTagTree, createUITreeFromDimensions, filterTreesBySearch } from '@/lib/utils/tagUtils';
+import {
+  buildSparseTagTree,
+  createUITreeFromDimensions,
+  filterTreesBySearch,
+  normalizeTagDimensionKey,
+} from '@/lib/utils/tagUtils';
 import clsx from 'clsx';
 import TagPickerDimensionColumn from '@/components/admin/card-admin/TagPickerDimensionColumn';
 
@@ -72,10 +77,9 @@ export default function MacroTagSelector({
       when: [],
       where: [],
     };
-    selectedTagTree.forEach(rootNode => {
-      if (rootNode.dimension && dimensions[rootNode.dimension]) {
-        dimensions[rootNode.dimension].push(rootNode);
-      }
+    selectedTagTree.forEach((rootNode) => {
+      const dim = normalizeTagDimensionKey(rootNode.dimension as string | undefined);
+      if (dim) dimensions[dim].push(rootNode);
     });
     return dimensions;
   }, [selectedTagTree]);
@@ -84,6 +88,7 @@ export default function MacroTagSelector({
     return (
       <ExpandedView
         initialSelection={selectedTagIds}
+        allTags={allTags}
         onSave={handleSave}
         onCancel={handleCancel}
         saving={saving}
@@ -142,14 +147,38 @@ function TagNode({ node }: { node: TagWithChildren }) {
 
 interface ExpandedViewProps {
   initialSelection: string[];
+  /** Fallback when TagProvider list is still empty; merged so trees show every tag. */
+  allTags: Tag[];
   onSave: (newSelection: string[]) => void | Promise<void>;
   onCancel: () => void;
   saving?: boolean;
   className?: string;
 }
 
-function ExpandedView({ initialSelection, onSave, onCancel, saving = false, className }: ExpandedViewProps) {
+function ExpandedView({
+  initialSelection,
+  allTags,
+  onSave,
+  onCancel,
+  saving = false,
+  className,
+}: ExpandedViewProps) {
   const { tags } = useTag();
+  const tagSource = useMemo(() => {
+    const a = tags ?? [];
+    const b = allTags ?? [];
+    if (!a.length) return b;
+    if (!b.length) return a;
+    const map = new Map<string, Tag>();
+    for (const t of b) {
+      if (t.docId) map.set(t.docId, t);
+    }
+    for (const t of a) {
+      if (t.docId) map.set(t.docId, t);
+    }
+    return Array.from(map.values());
+  }, [tags, allTags]);
+
   const [currentSelection, setCurrentSelection] = useState<Set<string>>(new Set(initialSelection));
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -158,9 +187,9 @@ function ExpandedView({ initialSelection, onSave, onCancel, saving = false, clas
   }, [initialSelection]);
 
   const dimensionalTree = useMemo(() => {
-    if (!tags) return [];
-    return createUITreeFromDimensions(tags);
-  }, [tags]);
+    if (!tagSource.length) return [];
+    return createUITreeFromDimensions(tagSource);
+  }, [tagSource]);
 
   const filteredDimensionalTree = useMemo(() => {
     const search = searchTerm.trim();
@@ -173,9 +202,9 @@ function ExpandedView({ initialSelection, onSave, onCancel, saving = false, clas
 
   // Build sparse tree showing selected tags and their ancestors
   const selectedTagTree = useMemo(() => {
-    if (!tags || currentSelection.size === 0) return [];
-    return buildSparseTagTree(tags, Array.from(currentSelection));
-  }, [tags, currentSelection]);
+    if (!tagSource.length || currentSelection.size === 0) return [];
+    return buildSparseTagTree(tagSource, Array.from(currentSelection));
+  }, [tagSource, currentSelection]);
 
   // Organize the sparse tree by dimension (same logic as main component)
   const dimensionalSelectedTree = useMemo(() => {
@@ -185,10 +214,9 @@ function ExpandedView({ initialSelection, onSave, onCancel, saving = false, clas
       when: [],
       where: [],
     };
-    selectedTagTree.forEach(rootNode => {
-      if (rootNode.dimension && dimensions[rootNode.dimension]) {
-        dimensions[rootNode.dimension].push(rootNode);
-      }
+    selectedTagTree.forEach((rootNode) => {
+      const dim = normalizeTagDimensionKey(rootNode.dimension as string | undefined);
+      if (dim) dimensions[dim].push(rootNode);
     });
     return dimensions;
   }, [selectedTagTree]);
@@ -228,9 +256,17 @@ function ExpandedView({ initialSelection, onSave, onCancel, saving = false, clas
     await onSave(Array.from(currentSelection));
   };
 
+  React.useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [onCancel]);
+
   return (
-    <div className={clsx(styles.overlay, className)}>
-      <div className={styles.modalContainer}>
+    <div className={clsx(styles.overlay, className)} onClick={onCancel} role="presentation">
+      <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
         <h2 className={styles.modalHeader}>Edit Tags</h2>
 
         <div className={styles.searchBar}>

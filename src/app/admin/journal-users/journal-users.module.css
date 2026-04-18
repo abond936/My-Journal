@@ -44,6 +44,18 @@
   color: var(--text1-color);
 }
 
+/* Match Card Admin table area: no shaded panel around the table */
+.tableSection {
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.tableSection h2 {
+  padding: 0 var(--spacing-lg);
+  margin-bottom: var(--spacing-sm);
+}
+
 .formRow {
   display: flex;
   flex-wrap: wrap;
@@ -114,30 +126,38 @@
   cursor: not-allowed;
 }
 
-.tableWrap {
+/* Table styles copied from Card Admin (entries table) */
+.tableContainer {
   overflow-x: auto;
+  max-width: 100vw;
+  padding: 0;
 }
 
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--font-size-sm);
+.entriesTable {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--layout-background1-color);
 }
 
-.table th,
-.table td {
-  padding: var(--spacing-sm) var(--spacing-md);
+.entriesTable th,
+.entriesTable td {
+  padding: var(--spacing-xs);
   text-align: left;
-  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  border-bottom: 1px solid var(--border1-color);
+  position: relative;
   color: var(--text1-color);
 }
 
-.table th {
-  font-weight: var(--font-weight-semibold);
-  color: var(--text2-color);
-  position: sticky;
-  top: var(--admin-table-header-top, 0px);
-  z-index: 70;
+.entriesTable th {
+  background: var(--layout-background2-color);
+  font-weight: 600;
+  color: var(--text1-color);
+  user-select: none;
+}
+
+.entriesTable tr:hover {
   background: var(--layout-background1-color);
 }
 

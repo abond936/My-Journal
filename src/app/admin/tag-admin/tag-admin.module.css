@@ -378,6 +378,11 @@
   width: 100%;
 }
 
+/* Studio / narrow hosts: keep dimension panes stacked (no auto-fit columns across). */
+.dimensionGridSingleColumn {
+  grid-template-columns: 1fr;
+}
+
 .dimensionColumn {
   min-width: 0;
   min-height: 0;
