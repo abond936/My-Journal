@@ -3,6 +3,9 @@ import { NodeViewWrapper, NodeViewContent } from '@tiptap/react';
 import { NodeSelection } from 'prosemirror-state';
 import JournalImage from '@/components/common/JournalImage';
 import styles from './FigureWithImageView.module.css';
+import type { FigureImageSize } from '@/lib/tiptap/extensions/FigureWithImage';
+
+const FIGURE_SIZE_CLASSES: FigureImageSize[] = ['xsmall', 'small', 'medium', 'large'];
 
 export const FigureWithImageView = ({ node, updateAttributes, editor, selected, getPos }) => {
   const {
@@ -10,7 +13,7 @@ export const FigureWithImageView = ({ node, updateAttributes, editor, selected, 
     alt,
     width,
     height,
-    'data-size': size,
+    'data-size': sizeRaw,
     'data-alignment': alignment,
     'data-wrap': wrap,
     'data-media-id': mediaId,
@@ -33,6 +36,10 @@ export const FigureWithImageView = ({ node, updateAttributes, editor, selected, 
   if (!src || !width || !height) {
     return null;
   }
+
+  const size: FigureImageSize = FIGURE_SIZE_CLASSES.includes(sizeRaw as FigureImageSize)
+    ? (sizeRaw as FigureImageSize)
+    : 'medium';
 
   return (
     <NodeViewWrapper

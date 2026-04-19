@@ -1,4 +1,9 @@
-import type { BaseCollectionCreateSchema, CollectionFieldSchema } from 'typesense';
+import type {
+  BaseCollectionCreateSchema,
+  Client,
+  CollectionFieldSchema,
+  CollectionSchema,
+} from 'typesense';
 import { getTypesenseClient, isTypesenseConfigured } from '@/lib/config/typesense';
 import { Card } from '@/lib/types/card';
 
@@ -30,10 +35,11 @@ const cardsSchema: BaseCollectionCreateSchema & { fields: CollectionFieldSchema[
     { name: 'media_when_ids', type: 'string[]', optional: true, facet: true },
     { name: 'media_where_ids', type: 'string[]', optional: true, facet: true },
     { name: 'child_ids', type: 'string[]', optional: true, facet: true },
-    { name: 'title_lowercase', type: 'string', optional: true, facet: false },
-    { name: 'who_sort_key', type: 'string', optional: true, facet: false },
-    { name: 'what_sort_key', type: 'string', optional: true, facet: false },
-    { name: 'where_sort_key', type: 'string', optional: true, facet: false },
+    /** `sort: true` required for `sort_by` on string fields (Typesense default is sort off for strings). */
+    { name: 'title_lowercase', type: 'string', optional: true, facet: false, sort: true },
+    { name: 'who_sort_key', type: 'string', optional: true, facet: false, sort: true },
+    { name: 'what_sort_key', type: 'string', optional: true, facet: false, sort: true },
+    { name: 'where_sort_key', type: 'string', optional: true, facet: false, sort: true },
     { name: 'created_at', type: 'int64', facet: false },
     { name: 'updated_at', type: 'int64', facet: false },
     /** Packed When sort keys (Firestore mirrors). */
@@ -86,12 +92,53 @@ export interface TypesenseCardDocument {
   where_count?: number;
 }
 
+type CollectionFieldPatch = CollectionFieldSchema | { name: string; drop: true };
+
+/**
+ * Existing Typesense collections may have been created before `sort: true` on string sort keys.
+ * Patch in place (drop + re-add field) then rely on `sync:typesense` to re-upsert documents.
+ */
+async function patchCardsCollectionSortableStringFields(
+  client: Client,
+  existing: CollectionSchema
+): Promise<void> {
+  const fields = existing.fields ?? [];
+  const patchFields: CollectionFieldPatch[] = [];
+  const sortableNames = ['title_lowercase', 'who_sort_key', 'what_sort_key', 'where_sort_key'] as const;
+
+  for (const name of sortableNames) {
+    const f = fields.find((x) => x.name === name);
+    if (f && f.type === 'string' && f.sort !== true) {
+      patchFields.push({ name, drop: true });
+      patchFields.push({
+        name,
+        type: 'string',
+        optional: true,
+        facet: false,
+        sort: true,
+      });
+    }
+  }
+
+  if (patchFields.length === 0) return;
+
+  // eslint-disable-next-line no-console
+  console.warn(
+    '[Typesense] Updating cards schema: enabling sort on',
+    sortableNames.filter((n) => patchFields.some((p) => 'drop' in p && p.name === n)).join(', ')
+  );
+  await client.collections(CARDS_COLLECTION).update({ fields: patchFields });
+  // eslint-disable-next-line no-console
+  console.warn('[Typesense] Re-upsert cards (e.g. npm run sync:typesense) so sort fields are repopulated.');
+}
+
 export async function ensureCardsCollection(): Promise<void> {
   const client = getTypesenseClient();
   if (!client) throw new Error('Typesense not configured');
 
   try {
-    await client.collections(CARDS_COLLECTION).retrieve();
+    const existing = await client.collections(CARDS_COLLECTION).retrieve();
+    await patchCardsCollectionSortableStringFields(client, existing);
   } catch {
     await client.collections().create(cardsSchema);
   }
@@ -149,12 +196,6 @@ export interface SearchCardsFilteredOptions {
   /** AND: every id must appear in `filter_tag_ids` (inherited + direct). */
   tags?: string[];
   dimensionalTags?: {
-    who?: string[];
-    what?: string[];
-    when?: string[];
-    where?: string[];
-  };
-  mediaDimensionalTags?: {
     who?: string[];
     what?: string[];
     when?: string[];
@@ -256,18 +297,6 @@ export async function searchCardsFiltered(
     const y = orGroup('when_ids', dim.when);
     if (y) filterParts.push(y);
     const z = orGroup('where_ids', dim.where);
-    if (z) filterParts.push(z);
-  }
-
-  const md = options.mediaDimensionalTags;
-  if (md) {
-    const w = orGroup('media_who_ids', md.who);
-    if (w) filterParts.push(w);
-    const x = orGroup('media_what_ids', md.what);
-    if (x) filterParts.push(x);
-    const y = orGroup('media_when_ids', md.when);
-    if (y) filterParts.push(y);
-    const z = orGroup('media_where_ids', md.where);
     if (z) filterParts.push(z);
   }
 

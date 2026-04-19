@@ -44,6 +44,8 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     setFeedSort,
     feedGroupBy,
     setFeedGroupBy,
+    includeChildrenInFeed,
+    setIncludeChildrenInFeed,
     clearFilters,
   } = useCardContext();
   const { data: session } = useSession();
@@ -298,6 +300,23 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                   <option value="where">Where</option>
                   <option value="what">What</option>
                 </select>
+              </div>
+
+              <div className={styles.sidebarSection}>
+                <label className={styles.feedToggleRow}>
+                  <input
+                    type="checkbox"
+                    checked={includeChildrenInFeed}
+                    onChange={e => setIncludeChildrenInFeed(e.target.checked)}
+                    aria-describedby="feed-include-children-hint"
+                  />
+                  <span>Show children after tag-filtered parents</span>
+                </label>
+                <p id="feed-include-children-hint" className={styles.feedToggleHint}>
+                  Only when sidebar tags or dimension-missing filters are active—not for title-only search
+                  or type-only. After each matching parent, lists its direct children
+                  (same publish/draft as the feed); omits duplicates already on the page.
+                </p>
               </div>
 
               <nav className={styles.navigation}>

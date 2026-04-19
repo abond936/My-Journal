@@ -5,11 +5,9 @@ import JournalImage from '@/components/common/JournalImage';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
-import { DirectDimensionChipsRow } from '@/components/admin/common/DirectDimensionChips';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
-import { getCoreTagsByDimension } from '@/lib/utils/tagDisplay';
 import styles from './CardAdminGrid.module.css';
-import InlineTagEditor from './InlineTagEditor';
+import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
 
 interface CardAdminGridProps {
   cards: Card[];
@@ -25,7 +23,6 @@ interface CardAdminGridProps {
 interface CardAdminGridCellProps {
   card: Card;
   isSelected: boolean;
-  tagNameMap: Map<string, string>;
   allTags: Tag[];
   onUpdateCard: (cardId: string, updateData: Partial<Card>) => Promise<void>;
   onSelect: () => void;
@@ -36,14 +33,12 @@ interface CardAdminGridCellProps {
 function CardAdminGridCell({
   card,
   isSelected,
-  tagNameMap,
   allTags,
   onUpdateCard,
   onSelect,
   onEdit,
   onDelete,
 }: CardAdminGridCellProps) {
-  const core = getCoreTagsByDimension(card);
   return (
     <div
       id={`card-${card.docId}`}
@@ -55,6 +50,7 @@ function CardAdminGridCell({
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
+        if ((e.target as HTMLElement).closest('input, textarea, button, [role="listbox"]')) return;
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           onEdit();
@@ -101,12 +97,12 @@ function CardAdminGridCell({
       <div className={styles.title} title={card.title}>
         {card.title || 'Untitled'}
       </div>
-      <DirectDimensionChipsRow core={core} tagNameMap={tagNameMap} />
       <div className={styles.inlineEditorWrap}>
-        <InlineTagEditor
+        <CardDimensionalTagCommandBar
           card={card}
           allTags={allTags}
-          onUpdateCard={onUpdateCard}
+          variant="compact"
+          onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
         />
       </div>
     </div>
@@ -125,10 +121,6 @@ export default function CardAdminGrid({
 }: CardAdminGridProps) {
   const router = useRouter();
   const isAllSelected = cards.length > 0 && selectedCardIds.size === cards.length;
-  const tagNameMap = React.useMemo(
-    () => new Map(allTags.filter((t) => t.docId).map((t) => [t.docId as string, t.name])),
-    [allTags]
-  );
 
   const handleEdit = (cardId: string) => {
     onSaveScrollPosition(cardId);
@@ -176,7 +168,6 @@ export default function CardAdminGrid({
             key={card.docId}
             card={card}
             isSelected={selectedCardIds.has(card.docId)}
-            tagNameMap={tagNameMap}
             allTags={allTags}
             onUpdateCard={onUpdateCard}
             onSelect={() => onSelectCard(card.docId)}

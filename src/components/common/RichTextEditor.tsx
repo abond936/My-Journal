@@ -2,15 +2,16 @@
 
 import React, { useState, useCallback, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
+import { NodeSelection, TextSelection } from 'prosemirror-state';
 import StarterKit from '@tiptap/starter-kit';
-import { FigureWithImage } from '@/lib/tiptap/extensions/FigureWithImage';
+import { FigureWithImage, type FigureImageSize } from '@/lib/tiptap/extensions/FigureWithImage';
 import { CardMention } from '@/lib/tiptap/extensions/CardMention';
 import Link from '@tiptap/extension-link';
 import { Media } from '@/lib/types/photo';
 import ImageToolbar from './ImageToolbar';
 import styles from './RichTextEditor.module.css';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
-import { getImageFileFromDataTransfer } from '@/lib/utils/clipboardImage';
+import { dataTransferHasMeaningfulText, getImageFileFromDataTransfer } from '@/lib/utils/clipboardImage';
 import clsx from 'clsx';
 import { useCardForm } from '@/components/providers/CardFormProvider';
 
@@ -95,7 +96,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
 
   const updateFigureAttrsByMediaId = (
     mediaId: string,
-    attrsPatch: Partial<{ 'data-size': 'small' | 'medium' | 'large'; 'data-alignment': 'left' | 'center' | 'right'; 'data-wrap': 'on' | 'off' }>
+    attrsPatch: Partial<{ 'data-size': FigureImageSize; 'data-alignment': 'left' | 'center' | 'right'; 'data-wrap': 'on' | 'off' }>
   ): boolean => {
     if (!editor) return false;
     const { state, view } = editor;
@@ -219,6 +220,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
       attributes: { class: clsx(styles.editor, className, { [styles.isDisabled]: isDisabled }) },
       handleDrop: (view, event, slice, moved) => {
         if (moved) return false;
+        if (dataTransferHasMeaningfulText(event.dataTransfer)) return false;
         const file = getImageFileFromDataTransfer(event.dataTransfer);
         if (file) {
           event.preventDefault();
@@ -228,6 +230,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
         return false;
       },
       handlePaste: (view, event) => {
+        if (dataTransferHasMeaningfulText(event.clipboardData)) return false;
         const file = getImageFileFromDataTransfer(event.clipboardData);
         if (file) {
           event.preventDefault();
@@ -294,6 +297,35 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
       'data-media-id': media.docId,
     }).run();
 
+    // Replacing an empty paragraph often leaves the doc ending with only the figure.
+    // With no block after it, there is nowhere reliable to place a text cursor (Chrome).
+    const { state, view } = editor;
+    const { schema, selection } = state;
+    let afterFigure: number | null = null;
+    if (selection instanceof NodeSelection && selection.node.type.name === 'figureWithImage') {
+      afterFigure = selection.to;
+    } else {
+      const $a = selection.$anchor;
+      for (let d = $a.depth; d >= 0; d -= 1) {
+        if ($a.node(d).type.name === 'figureWithImage') {
+          afterFigure = $a.after(d);
+          break;
+        }
+      }
+    }
+    if (afterFigure != null) {
+      const $after = state.doc.resolve(Math.min(afterFigure, state.doc.content.size));
+      if (!$after.nodeAfter) {
+        const para = schema.nodes.paragraph.create();
+        const tr = state.tr.insert(afterFigure, para);
+        const inside = afterFigure + 1;
+        tr.setSelection(TextSelection.near(tr.doc.resolve(Math.min(inside, tr.doc.content.size))));
+        view.dispatch(tr);
+      } else if ($after.nodeAfter.type.name === 'paragraph') {
+        view.dispatch(state.tr.setSelection(TextSelection.near(state.doc.resolve(afterFigure + 1))));
+      }
+    }
+
     const newContent = editor.getHTML();
     handleContentUpdate(newContent);
   }, [editor, handleContentUpdate]);
@@ -333,7 +365,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
             onAction={handleToolbarAction}
             targetLabel={(activeImageAttrs.alt as string | null) || activeImageMediaId}
             canRemove={Boolean(activeImageMediaId)}
-            currentSize={(activeImageAttrs['data-size'] as 'small' | 'medium' | 'large' | undefined) ?? 'medium'}
+            currentSize={(activeImageAttrs['data-size'] as FigureImageSize | undefined) ?? 'medium'}
             currentAlignment={
               (activeImageAttrs['data-alignment'] as 'left' | 'center' | 'right' | undefined) ?? 'left'
             }

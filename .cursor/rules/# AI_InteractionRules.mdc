@@ -12,11 +12,18 @@ If approval text is absent or ambiguous, do not edit. Ask.
 # Ground Every Task in Product and Code Reality
 
 Before any recommendation:
-1. Read `docs/02-Application.md` for the affected feature area; `docs/01-Vision-Architecture.md` for vision, technical stack, and platform rules; `docs/03-Implementation.md` when sequencing or `⭕1` scope matters.
+1. Read `docs/02-Application.md` for the affected feature area; `docs/01-Vision-Architecture.md` for vision, technical stack, and platform rules; `docs/03-Implementation.md` when sequencing or `⭕1` scope matters. For **API writes**, **bulk admin actions**, **list refresh**, or **Typesense/Firestore list paths**, also read **`docs/01-Vision-Architecture.md` → TECHNICAL → Backend / Frontend *Principles*** (data planes, mutation scope, catalog reads, transactions) and the **Backend** 📐 lines on list refresh, bulk writes, and Typesense behavior—do not ship N× full-card pipelines or full-catalog refetch as the default without treating it as an explicit deviation from those rules.
 2. Read the relevant source code — trace actual behavior, do not assume.
 3. Search for existing patterns/configs before proposing new ones.
 
 Every recommendation must tie to: product capability, architecture correctness, runtime behavior, or delivery risk. If a proposed change does not advance one of these, do not propose it.
+
+# Product invariants vs efficiency (no “contract excuse”)
+
+**Architecture docs** (`docs/01-Vision-Architecture.md`, etc.) define **how** to build efficiently and where boundaries lie. They do **not** override **product invariants**: accurate **tag / media / card denormalized counts**, correct **derived tag fields** on cards (`filterTags`, dimensional arrays, sort keys), **auth**, or **reader-facing truth** for published content.
+
+- **Accurate counts** — Refactors that avoid full `updateCard` (or similar wide paths) often exist **because** those paths already performed `updateTagCountsFor*` and derived-field updates. A faster path must **preserve the same accounting** (batched, once-per-request, or shared transactions)—not omit it. Skipping count maintenance to satisfy a “narrow pipeline” rule is a **failure**, not compliance.
+- **When rules conflict** — If the most efficient approach would skip work that exists for integrity (counts, derived filters, index fields the app relies on), **stop** in ASSESS/RECOMMEND: state the **conflict**, list **options** (e.g. batch the same helpers, async index with explicit lag disclosure), and get **author** direction. Do **not** ship the shortcut and later explain regressions as “because the contract”—call out the tradeoff **before** implementation.
 
 # Substantive Work Only
 
@@ -32,6 +39,14 @@ Do not remove reference content (directory maps, contracts, decision records) wi
 2. **RECOMMEND** — State options, recommendation, rationale, and impact on other systems. Label each item SUBSTANTIVE or EDITORIAL. Maximum 3 items per pass unless author sets a different limit.
 3. **WAIT** — Ask: "Do you approve this exact edit set? May I proceed?" Do not edit until explicit approval naming specific items.
 4. **EXECUTE** — Edit only approved items, only in approved scope. Apply in-file so author sees diff. After applying, state exactly what changed. If a new issue appears outside scope, stop and return to Step 1.
+
+# Change scope boundary (approved surface only)
+
+The approved edit set is a **closed list**: paths, behaviors, or artifacts the author named (or clearly implied, e.g. “fix the typo in X”). Everything else is **out of scope** until they say otherwise.
+
+- **Do not expand** into adjacent UI, shared providers, other routes, types, tests, copy, or “cleanup” because it feels related. Example: removing a filter from an API must not, by itself, justify removing admin toolbar controls that use different semantics—unless the author approved that removal.
+- **Unspecified touch points** — If the right fix could reasonably be done in more than one place, or touching a second system would be cleaner but was **not** asked for, **ask** before including it. Prefer a minimal change that matches the ask; offer broader changes as a **separate** optional item in RECOMMEND, not bundled silently.
+- **Ambiguous scope** — If “fix filtering” could mean API-only, client-only, or both, state the ambiguity in RECOMMEND and get confirmation before EXECUTE.
 
 # Failure Recovery
 

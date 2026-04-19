@@ -17,6 +17,12 @@
   border-color: var(--state-warning-border-color);
 }
 
+/* Optional error outline when `error` prop is set (class name used in JSX). */
+.error {
+  border-color: var(--state-error-border-color);
+  background-color: var(--state-error-background-color);
+}
+
 .header {
   display: flex;
   justify-content: space-between;
@@ -66,6 +72,11 @@
 .tagNode {
   font-size: var(--font-size-sm);
   margin-bottom: var(--spacing-xs);
+}
+
+.tagName {
+  font-size: var(--font-size-sm);
+  color: var(--text1-color);
 }
 
 .tagChildren {

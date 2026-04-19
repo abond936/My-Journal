@@ -14,6 +14,7 @@ import CardEditPageChrome from './CardEditPageChrome';
 import { getSafeReaderReturnTo } from '@/lib/utils/readerReturnTo';
 
 const UPDATED_CARD_KEY = 'updatedCardState';
+const SCROLL_TO_CARD_IF_REMOVED_KEY = 'scrollToCardIdIfRemoved';
 
 interface CardAdminClientPageProps {
   cardId: string | null;
@@ -51,6 +52,15 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
   
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isDuplicating, setIsDuplicating] = React.useState(false);
+
+  // Drop stale list neighbor if this edit session was not opened from the list row we anchored (e.g. direct URL).
+  React.useEffect(() => {
+    if (!cardId) return;
+    const stored = sessionStorage.getItem('scrollToCardId');
+    if (stored !== cardId) {
+      sessionStorage.removeItem(SCROLL_TO_CARD_IF_REMOVED_KEY);
+    }
+  }, [cardId]);
 
   const handleSave = async (cardData: CardUpdate): Promise<Card | null> => {
     try {
@@ -130,10 +140,20 @@ export default function CardAdminClientPage({ cardId }: CardAdminClientPageProps
         if (!deleteResponse.ok) {
           throw new Error('Failed to delete card.');
         }
-        // Save the card ID for scroll position restoration
-        sessionStorage.setItem('scrollToCardId', cardId);
+        // List scroll anchor was set when opening edit; after delete the row is gone — scroll to neighbor instead.
+        const neighbor = sessionStorage.getItem(SCROLL_TO_CARD_IF_REMOVED_KEY);
+        sessionStorage.removeItem(SCROLL_TO_CARD_IF_REMOVED_KEY);
+        if (neighbor) {
+          sessionStorage.setItem('scrollToCardId', neighbor);
+        } else {
+          sessionStorage.removeItem('scrollToCardId');
+        }
+        globalMutate(
+          (key) => typeof key === 'string' && key.startsWith('/api/cards?'),
+          undefined,
+          { revalidate: true }
+        );
         router.push('/admin/card-admin');
-        router.refresh();
       }
     } catch (err) {
       console.error('Deletion error:', err);

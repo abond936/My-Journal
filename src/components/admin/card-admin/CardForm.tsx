@@ -7,6 +7,8 @@ import { dehydrateCardForSave, extractMediaFromContent, generateExcerpt } from '
 import CoverPhotoContainer from '@/components/admin/card-admin/CoverPhotoContainer';
 import GalleryManager from '@/components/admin/card-admin/GalleryManager';
 import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
+import macroTagStyles from '@/components/admin/card-admin/MacroTagSelector.module.css';
+import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
 import ChildCardManager from '@/components/admin/card-admin/ChildCardManager';
 import RichTextEditor, { RichTextEditorRef } from '@/components/common/RichTextEditor';
 import styles from './CardForm.module.css';
@@ -81,7 +83,12 @@ const CardForm: React.FC = () => {
   const [draftOptions, setDraftOptions] = useState<CardDraftOption[]>([]);
   const [draftSuggestionError, setDraftSuggestionError] = useState<string | null>(null);
   const [saveNotice, setSaveNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  
+  const [tagMacroExpanded, setTagMacroExpanded] = useState(false);
+
+  useEffect(() => {
+    setTagMacroExpanded(false);
+  }, [cardData.docId]);
+
   const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setField('title', e.target.value), [setField]);
   const handleSubtitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setField('subtitle', e.target.value), [setField]);
   const handleExcerptChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setField('excerpt', e.target.value), [setField]);
@@ -428,10 +435,31 @@ const CardForm: React.FC = () => {
           </div>
 
           <div className={styles.tagsSection}>
+            <CardDimensionalTagCommandBar
+              card={cardData}
+              allTags={allTags}
+              disabled={isSaving}
+              onUpdateTags={handleTagsChange}
+              tagError={errors.tags}
+              className={styles.tagCommandBar}
+              trailingSlot={
+                <button
+                  type="button"
+                  className={macroTagStyles.editButton}
+                  disabled={isSaving}
+                  onClick={() => setTagMacroExpanded(true)}
+                >
+                  Edit tags
+                </button>
+              }
+            />
             <MacroTagSelector
               selectedTags={selectedTagObjects}
               allTags={allTags}
               onChange={handleTagsChange}
+              expanded={tagMacroExpanded}
+              onExpandedChange={setTagMacroExpanded}
+              collapsedSummary="none"
               className={clsx(styles.tagSelector, errors.tags && styles.inputError)}
             />
           </div>

@@ -293,6 +293,10 @@
   max-width: none;
 }
 
+.tagCommandBar {
+  margin-bottom: var(--spacing-md);
+}
+
 .editorSection {
   width: calc(100% + 28px);
   max-width: none;

@@ -17,6 +17,10 @@
   width: 50%;
   max-width: 450px;
 }
+.figureWrapper.xsmall {
+  width: 22%;
+  max-width: 160px;
+}
 .figureWrapper.small {
   width: 33.33%;
   max-width: 250px;

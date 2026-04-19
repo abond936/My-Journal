@@ -27,6 +27,7 @@ import {
   nextCuratedRootOrderForAppend,
   normalizeCuratedChildIds,
 } from '@/lib/utils/curatedCollectionTree';
+import { fetchAdminCardSnapshot } from '@/lib/utils/fetchAdminCardSnapshot';
 import styles from '@/app/admin/collections/page.module.css';
 import CollectionsMediaPanel from '@/components/admin/collections/CollectionsMediaPanel';
 
@@ -458,12 +459,12 @@ export default function CollectionsAdminClient({ embedded = false }: { embedded?
       await handleInsertRootBefore(childId, beforeSiblingId);
       return;
     }
-    const parent = cardById.get(parentId);
-    if (!parent?.docId) return;
-    const nextChildren = buildChildrenIdsWithInsertBefore(parent.childrenIds, childId, beforeSiblingId);
+    if (!cardById.get(parentId)?.docId) return;
     setSaving(true);
     setError(null);
     try {
+      const parentFresh = await fetchAdminCardSnapshot(parentId);
+      const nextChildren = buildChildrenIdsWithInsertBefore(parentFresh.childrenIds, childId, beforeSiblingId);
       await patchCard(parentId, { childrenIds: nextChildren });
       await patchCard(childId, { curatedRoot: false });
       await load();
@@ -483,11 +484,9 @@ export default function CollectionsAdminClient({ embedded = false }: { embedded?
     setError(null);
     try {
       if (currentParentId) {
-        const currentParent = cardById.get(currentParentId);
-        if (currentParent?.docId) {
-          const detached = normalizeCuratedChildIds(currentParent.childrenIds).filter((id) => id !== childId);
-          await patchCard(currentParentId, { childrenIds: detached });
-        }
+        const currentFresh = await fetchAdminCardSnapshot(currentParentId);
+        const detached = normalizeCuratedChildIds(currentFresh.childrenIds).filter((id) => id !== childId);
+        await patchCard(currentParentId, { childrenIds: detached });
       }
       await Promise.all(
         newRootIds.map((id, idx) =>
@@ -509,12 +508,14 @@ export default function CollectionsAdminClient({ embedded = false }: { embedded?
     if (!parentId) return;
     if (childId === parentId) return;
     if (parentByChild.get(childId) === parentId) return;
-    const parent = cardById.get(parentId);
-    if (!parent) return;
-    const nextChildren = Array.from(new Set([...normalizeCuratedChildIds(parent.childrenIds), childId]));
+    if (!cardById.get(parentId)) return;
     setSaving(true);
     setError(null);
     try {
+      const parentFresh = await fetchAdminCardSnapshot(parentId);
+      const nextChildren = Array.from(
+        new Set([...normalizeCuratedChildIds(parentFresh.childrenIds), childId])
+      );
       await patchCard(parentId, { childrenIds: nextChildren });
       await patchCard(childId, { curatedRoot: false });
       await load();
@@ -528,12 +529,11 @@ export default function CollectionsAdminClient({ embedded = false }: { embedded?
   const handleDetachChild = async (childId: string) => {
     const parentId = parentByChild.get(childId);
     if (!parentId) return;
-    const parent = cardById.get(parentId);
-    if (!parent) return;
-    const nextChildren = normalizeCuratedChildIds(parent.childrenIds).filter((id) => id !== childId);
     setSaving(true);
     setError(null);
     try {
+      const parentFresh = await fetchAdminCardSnapshot(parentId);
+      const nextChildren = normalizeCuratedChildIds(parentFresh.childrenIds).filter((id) => id !== childId);
       await patchCard(parentId, { childrenIds: nextChildren });
       await load();
     } catch (e) {
@@ -588,13 +588,9 @@ export default function CollectionsAdminClient({ embedded = false }: { embedded?
       try {
         const currentParentId = parentByChild.get(childId);
         if (currentParentId) {
-          const currentParent = cardById.get(currentParentId);
-          if (currentParent) {
-            const nextChildren = normalizeCuratedChildIds(currentParent.childrenIds).filter(
-              (id) => id !== childId
-            );
-            await patchCard(currentParentId, { childrenIds: nextChildren });
-          }
+          const currentFresh = await fetchAdminCardSnapshot(currentParentId);
+          const nextChildren = normalizeCuratedChildIds(currentFresh.childrenIds).filter((id) => id !== childId);
+          await patchCard(currentParentId, { childrenIds: nextChildren });
         }
         const nextOrder = nextCuratedRootOrderForAppend(rootedCollections, childId);
         await patchCard(childId, { curatedRoot: true, curatedRootOrder: nextOrder });
@@ -685,18 +681,19 @@ export default function CollectionsAdminClient({ embedded = false }: { embedded?
     if (!bulkParentCard?.docId) return;
     const selectedIds = Array.from(bulkSelectedIds).filter((id) => bulkSelectableIds.has(id));
     if (selectedIds.length === 0) return;
-    const existingChildren = normalizeCuratedChildIds(bulkParentCard.childrenIds);
-    const existingSet = new Set(existingChildren);
-    const added = selectedIds.filter((id) => !existingSet.has(id));
-    if (added.length === 0) {
-      setBulkSummary('No changes needed. All selected cards were already children.');
-      return;
-    }
-    const nextChildren = Array.from(new Set([...existingChildren, ...selectedIds]));
     setSaving(true);
     setError(null);
     setBulkSummary(null);
     try {
+      const parentFresh = await fetchAdminCardSnapshot(bulkParentCard.docId);
+      const existingChildren = normalizeCuratedChildIds(parentFresh.childrenIds);
+      const existingSet = new Set(existingChildren);
+      const added = selectedIds.filter((id) => !existingSet.has(id));
+      if (added.length === 0) {
+        setBulkSummary('No changes needed. All selected cards were already children.');
+        return;
+      }
+      const nextChildren = Array.from(new Set([...existingChildren, ...selectedIds]));
       await patchCard(bulkParentCard.docId, { childrenIds: nextChildren });
       await load();
       setBulkSelectedIds(new Set());

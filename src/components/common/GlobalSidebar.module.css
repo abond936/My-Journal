@@ -328,4 +328,26 @@
   
   .clearButton {
     background-color: transparent;
-  } 
+  }
+
+.feedToggleRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--text1-color);
+  cursor: pointer;
+  line-height: 1.35;
+}
+
+.feedToggleRow input {
+  margin-top: 0.2em;
+  flex-shrink: 0;
+}
+
+.feedToggleHint {
+  margin: var(--spacing-xs) 0 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+  line-height: 1.4;
+}

@@ -845,9 +845,29 @@ async function applyTagCountDeltas(
     }
   }
 
-  for (const [tagId, delta] of Object.entries(deltaMap)) {
+  const finalTagIds = Object.entries(deltaMap)
+    .filter(([, d]) => d !== 0)
+    .map(([id]) => id)
+    .filter((id) => !skipTagIds?.has(id));
+
+  if (finalTagIds.length === 0) return;
+
+  const finalRefs = finalTagIds.map((id) => firestore.collection('tags').doc(id));
+  const finalSnaps =
+    finalRefs.length > 0 ? await transaction.getAll(...finalRefs) : [];
+  const existingIds = new Set(
+    finalSnaps.filter((s) => s.exists).map((s) => s.id)
+  );
+
+  for (const tagId of finalTagIds) {
+    const delta = deltaMap[tagId] || 0;
     if (delta === 0) continue;
-    if (skipTagIds?.has(tagId)) continue;
+    if (!existingIds.has(tagId)) {
+      console.warn(
+        `[applyTagCountDeltas] Skipping ${countField} increment for missing tag doc: ${tagId} (delta=${delta})`
+      );
+      continue;
+    }
     const ref = firestore.collection('tags').doc(tagId);
     transaction.update(ref, { [countField]: FieldValue.increment(delta) });
   }

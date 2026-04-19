@@ -3,13 +3,14 @@
 import React from 'react';
 import { Editor } from '@tiptap/core';
 import styles from './ImageToolbar.module.css';
+import type { FigureImageSize } from '@/lib/tiptap/extensions/FigureWithImage';
 
 interface ImageToolbarProps {
   editor: Editor;
   onAction: (action: 'setSize' | 'setAlignment' | 'setWrap' | 'delete', value?: string) => void;
   targetLabel?: string;
   canRemove?: boolean;
-  currentSize?: 'small' | 'medium' | 'large';
+  currentSize?: FigureImageSize;
   currentAlignment?: 'left' | 'center' | 'right';
   currentWrap?: 'on' | 'off';
 }
@@ -38,6 +39,7 @@ const ImageToolbar = ({
       <div className={styles.toolbarSection}>
         <label className={styles.toolbarLabel}>Size:</label>
         <div className={styles.buttonGroup}>
+          <button onMouseDown={(e) => handlePress(e, 'setSize', 'xsmall')} type="button" className={`${styles.toolbarButton} ${size === 'xsmall' ? styles.active : ''}`} title="Extra small">xs</button>
           <button onMouseDown={(e) => handlePress(e, 'setSize', 'small')} type="button" className={`${styles.toolbarButton} ${size === 'small' ? styles.active : ''}`}>sm</button>
           <button onMouseDown={(e) => handlePress(e, 'setSize', 'medium')} type="button" className={`${styles.toolbarButton} ${size === 'medium' ? styles.active : ''}`}>md</button>
           <button onMouseDown={(e) => handlePress(e, 'setSize', 'large')} type="button" className={`${styles.toolbarButton} ${size === 'large' ? styles.active : ''}`}>lg</button>

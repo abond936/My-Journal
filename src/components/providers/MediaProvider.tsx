@@ -242,7 +242,14 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to delete media: ${response.statusText}`);
+        const errBody = await response.json().catch(() => ({}));
+        const detail =
+          typeof (errBody as { error?: string }).error === 'string'
+            ? (errBody as { error: string }).error
+            : typeof (errBody as { message?: string }).message === 'string'
+              ? (errBody as { message: string }).message
+              : response.statusText;
+        throw new Error(`Failed to delete media: ${detail}`);
       }
 
       // Remove from local state

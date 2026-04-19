@@ -70,6 +70,10 @@ Legend:
 
 - **Admin Ordering** - Remove random ordering from admin lists and expand deterministic order controls (`When`, `Created`, `Title`, `Who`, `What`, `Where`) with predictable tie-break behavior so sparse `When` coverage does not collapse into one large undated block.
 
+*Backend (`01-Vision-Architecture.md`)*
+
+- **Narrow mutation paths** - Route tag-only and similar **narrow** admin mutations through dedicated service functions that batch Firestore field updates and derived-field recompute **once per request** where possible; avoid N sequential full `updateCard` pipelines for bulk work. Keep wide `updateCard` (or equivalent) for structural and rich-content changes.
+
 
 
 ### Phase 3 — Reader experience

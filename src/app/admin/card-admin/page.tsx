@@ -15,6 +15,8 @@ import ImportFolderModal from '@/components/admin/card-admin/ImportFolderModal';
 import { getCoreTagsByDimension } from '@/lib/utils/tagDisplay';
 
 const CARD_VIEW_MODE_KEY = 'card-admin-view-mode';
+/** Neighbor row in admin list order when the primary `scrollToCardId` row is removed (e.g. delete). */
+const SCROLL_TO_CARD_IF_REMOVED_KEY = 'scrollToCardIdIfRemoved';
 type ViewMode = 'grid' | 'table' | 'collections';
 type AdminSortMode =
   | 'whenDesc'
@@ -41,6 +43,13 @@ export default function AdminCardsPage() {
   const [adminSortMode, setAdminSortMode] = useState<AdminSortMode>('whenDesc');
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [displayCards, setDisplayCards] = useState<Card[]>([]);
+  /** Admin page only: narrow visible rows by denormalized media-tag ids on each card (never sent to `/api/cards`). */
+  const [adminMediaRowFilter, setAdminMediaRowFilter] = useState<{
+    who: string;
+    what: string;
+    when: string;
+    where: string;
+  }>({ who: '', what: '', when: '', where: '' });
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { 
@@ -62,11 +71,19 @@ export default function AdminCardsPage() {
     setStatus,
     setPageLimit,
     isValidating,
-    mediaTagSignals,
-    setMediaTagSignal,
     cardDimensionMissing,
     setCardDimensionMissing,
   } = useCardContext();
+
+  const tagsByDimension = useMemo(() => {
+    const source = allTags || [];
+    return {
+      who: source.filter((tag) => tag.dimension === 'who'),
+      what: source.filter((tag) => String(tag.dimension) === 'what' || String(tag.dimension) === 'reflection'),
+      when: source.filter((tag) => tag.dimension === 'when'),
+      where: source.filter((tag) => tag.dimension === 'where'),
+    };
+  }, [allTags]);
 
   // Set the desired page limit for the admin section
   useEffect(() => {
@@ -82,16 +99,6 @@ export default function AdminCardsPage() {
       localStorage.setItem(CARD_VIEW_MODE_KEY, viewMode);
     }
   }, [viewMode]);
-
-  const tagsByDimension = useMemo(() => {
-    const source = allTags || [];
-    return {
-      who: source.filter((tag) => tag.dimension === 'who'),
-      what: source.filter((tag) => String(tag.dimension) === 'what' || String(tag.dimension) === 'reflection'),
-      when: source.filter((tag) => tag.dimension === 'when'),
-      where: source.filter((tag) => tag.dimension === 'where'),
-    };
-  }, [allTags]);
 
   // --- Scroll Restoration ---
   const prevIsValidating = useRef(true);
@@ -113,15 +120,22 @@ export default function AdminCardsPage() {
   
   useEffect(() => {
     if (prevIsValidating.current && !isValidating) {
-      const cardId = sessionStorage.getItem('scrollToCardId');
-      if (cardId) {
-        const element = document.getElementById(`card-${cardId}`);
-        if (element) {
-          setTimeout(() => {
-            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            sessionStorage.removeItem('scrollToCardId');
-          }, 100);
-        }
+      const primary = sessionStorage.getItem('scrollToCardId');
+      const fallback = sessionStorage.getItem(SCROLL_TO_CARD_IF_REMOVED_KEY);
+      const tryScroll = (id: string) => {
+        const element = document.getElementById(`card-${id}`);
+        if (!element) return false;
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          sessionStorage.removeItem('scrollToCardId');
+          sessionStorage.removeItem(SCROLL_TO_CARD_IF_REMOVED_KEY);
+        }, 100);
+        return true;
+      };
+      if (primary && tryScroll(primary)) {
+        // ok
+      } else if (fallback && tryScroll(fallback)) {
+        // primary row gone (e.g. deleted) — stay near same list position
       }
     }
     prevIsValidating.current = isValidating;
@@ -130,7 +144,15 @@ export default function AdminCardsPage() {
   // Clear selection when filters change
   useEffect(() => {
     setSelectedCardIds(new Set());
-  }, [searchTerm, status, cardDimensionMissing]);
+  }, [
+    searchTerm,
+    status,
+    cardDimensionMissing,
+    adminMediaRowFilter.who,
+    adminMediaRowFilter.what,
+    adminMediaRowFilter.when,
+    adminMediaRowFilter.where,
+  ]);
 
   useEffect(() => {
     setSearchInputValue(searchTerm);
@@ -155,19 +177,6 @@ export default function AdminCardsPage() {
       setHasLoadedOnce(true);
     }
   }, [isLoading, tagsLoading]);
-
-  const onSaveScrollPosition = useCallback((cardId: string) => {
-    sessionStorage.setItem('scrollToCardId', cardId);
-  }, []);
-
-  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.checked) {
-      const allIds = new Set(sortedCards.map(c => c.docId));
-      setSelectedCardIds(allIds);
-    } else {
-      setSelectedCardIds(new Set());
-    }
-  };
 
   const handleSelectCard = (cardId: string) => {
     setSelectedCardIds(prev => {
@@ -377,17 +386,50 @@ export default function AdminCardsPage() {
     return sorted;
   }, [cards, adminSortMode, allTags]);
 
+  const adminVisibleRows = useMemo(() => {
+    return sortedCards.filter((card) => {
+      const f = adminMediaRowFilter;
+      if (f.who && !(card.mediaWho || []).includes(f.who)) return false;
+      if (f.what && !(card.mediaWhat || []).includes(f.what)) return false;
+      if (f.when && !(card.mediaWhen || []).includes(f.when)) return false;
+      if (f.where && !(card.mediaWhere || []).includes(f.where)) return false;
+      return true;
+    });
+  }, [sortedCards, adminMediaRowFilter]);
+
+  const handleSelectAll = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      const allIds = new Set(adminVisibleRows.map((c) => c.docId).filter(Boolean) as string[]);
+      setSelectedCardIds(allIds);
+    } else {
+      setSelectedCardIds(new Set());
+    }
+  }, [adminVisibleRows]);
+
+  const onSaveScrollPosition = useCallback((cardId: string) => {
+    sessionStorage.setItem('scrollToCardId', cardId);
+    const idx = adminVisibleRows.findIndex((c) => c.docId === cardId);
+    const neighbor =
+      idx > 0
+        ? adminVisibleRows[idx - 1]!.docId
+        : idx >= 0 && idx + 1 < adminVisibleRows.length
+          ? adminVisibleRows[idx + 1]!.docId
+          : '';
+    if (neighbor) sessionStorage.setItem(SCROLL_TO_CARD_IF_REMOVED_KEY, neighbor);
+    else sessionStorage.removeItem(SCROLL_TO_CARD_IF_REMOVED_KEY);
+  }, [adminVisibleRows]);
+
   useEffect(() => {
     const activelySearching = Boolean(searchInputValue.trim()) && isValidating;
     if (!activelySearching) {
-      setDisplayCards(sortedCards);
+      setDisplayCards(adminVisibleRows);
       return;
     }
     // Keep current rows visible while next title-only search request is in flight.
-    if (sortedCards.length > 0) {
-      setDisplayCards(sortedCards);
+    if (adminVisibleRows.length > 0) {
+      setDisplayCards(adminVisibleRows);
     }
-  }, [sortedCards, isValidating, searchInputValue]);
+  }, [adminVisibleRows, isValidating, searchInputValue]);
 
   const handleDeleteCard = async (cardId: string) => {
     try {
@@ -537,49 +579,61 @@ export default function AdminCardsPage() {
               <option value="missing">Card Where: No tags</option>
             </select>
             <select
-              value={mediaTagSignals.who[0] || ''}
-              onChange={(e) => setMediaTagSignal('who', e.target.value ? [e.target.value] : [])}
+              title="This page only — rows whose aggregated media tags include this id. Does not change the main card feed API."
+              value={adminMediaRowFilter.who}
+              onChange={(e) =>
+                setAdminMediaRowFilter((prev) => ({ ...prev, who: e.target.value }))
+              }
               className={styles.filterSelect}
             >
               <option value="">Media Who: Any</option>
               {tagsByDimension.who.map((tag) => (
-                <option key={tag.docId} value={tag.docId}>
+                <option key={tag.docId} value={tag.docId!}>
                   {tag.name}
                 </option>
               ))}
             </select>
             <select
-              value={mediaTagSignals.what[0] || ''}
-              onChange={(e) => setMediaTagSignal('what', e.target.value ? [e.target.value] : [])}
+              title="This page only — rows whose aggregated media tags include this id. Does not change the main card feed API."
+              value={adminMediaRowFilter.what}
+              onChange={(e) =>
+                setAdminMediaRowFilter((prev) => ({ ...prev, what: e.target.value }))
+              }
               className={styles.filterSelect}
             >
               <option value="">Media What: Any</option>
               {tagsByDimension.what.map((tag) => (
-                <option key={tag.docId} value={tag.docId}>
+                <option key={tag.docId} value={tag.docId!}>
                   {tag.name}
                 </option>
               ))}
             </select>
             <select
-              value={mediaTagSignals.when[0] || ''}
-              onChange={(e) => setMediaTagSignal('when', e.target.value ? [e.target.value] : [])}
+              title="This page only — rows whose aggregated media tags include this id. Does not change the main card feed API."
+              value={adminMediaRowFilter.when}
+              onChange={(e) =>
+                setAdminMediaRowFilter((prev) => ({ ...prev, when: e.target.value }))
+              }
               className={styles.filterSelect}
             >
               <option value="">Media When: Any</option>
               {tagsByDimension.when.map((tag) => (
-                <option key={tag.docId} value={tag.docId}>
+                <option key={tag.docId} value={tag.docId!}>
                   {tag.name}
                 </option>
               ))}
             </select>
             <select
-              value={mediaTagSignals.where[0] || ''}
-              onChange={(e) => setMediaTagSignal('where', e.target.value ? [e.target.value] : [])}
+              title="This page only — rows whose aggregated media tags include this id. Does not change the main card feed API."
+              value={adminMediaRowFilter.where}
+              onChange={(e) =>
+                setAdminMediaRowFilter((prev) => ({ ...prev, where: e.target.value }))
+              }
               className={styles.filterSelect}
             >
               <option value="">Media Where: Any</option>
               {tagsByDimension.where.map((tag) => (
-                <option key={tag.docId} value={tag.docId}>
+                <option key={tag.docId} value={tag.docId!}>
                   {tag.name}
                 </option>
               ))}

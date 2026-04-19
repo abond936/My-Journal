@@ -66,12 +66,6 @@ export interface ICardContext {
   collectionCards: Card[]; // Flat list of collection parent cards
   feedSort: FeedSortOrder;
   feedGroupBy: FeedGroupBy;
-  mediaTagSignals: {
-    who: string[];
-    what: string[];
-    when: string[];
-    where: string[];
-  };
   cardDimensionMissing: CardDimensionMissing;
   /** Grouped sections for the main feed; null when grouping is off or not applicable. */
   feedSections: { heading: string; cards: Card[] }[] | null;
@@ -85,10 +79,15 @@ export interface ICardContext {
   setCollectionId: (id: string | null) => void;
   setFeedSort: (order: FeedSortOrder) => void;
   setFeedGroupBy: (g: FeedGroupBy) => void;
-  setMediaTagSignal: (dimension: 'who' | 'what' | 'when' | 'where', tagIds: string[]) => void;
   setCardDimensionMissing: (dimension: 'who' | 'what' | 'when' | 'where', value: boolean) => void;
   clearFilters: () => void;
   setPageLimit: (limit: number) => void;
+  /**
+   * When true and tag/dimension-style filters are active, each feed page also loads direct
+   * `childrenIds` after matching parents (`/api/cards?includeChildren` — ignored without those filters).
+   */
+  includeChildrenInFeed: boolean;
+  setIncludeChildrenInFeed: (value: boolean) => void;
   
   // Data state
   cards: Card[];
@@ -105,6 +104,7 @@ const DIMENSION_STORAGE_KEY = 'myjournal-active-dimension';
 const COLLECTION_STORAGE_KEY = 'myjournal-collection-id';
 const FEED_SORT_KEY = 'myjournal-feed-sort';
 const FEED_GROUP_KEY = 'myjournal-feed-group';
+const FEED_INCLUDE_CHILDREN_KEY = 'myjournal-feed-include-children';
 
 const FEED_SORT_VALUES = new Set<string>([
   'random',
@@ -142,6 +142,11 @@ function readStoredFeedGroup(): FeedGroupBy {
   const raw = sessionStorage.getItem(FEED_GROUP_KEY);
   if (!raw || !FEED_GROUP_VALUES.has(raw)) return 'none';
   return raw as FeedGroupBy;
+}
+
+function readStoredIncludeChildrenInFeed(): boolean {
+  if (typeof window === 'undefined') return false;
+  return sessionStorage.getItem(FEED_INCLUDE_CHILDREN_KEY) === 'true';
 }
 
 function shuffleCards<T extends { docId?: string }>(items: T[]): T[] {
@@ -183,17 +188,9 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   });
   const [feedSort, setFeedSortState] = useState<FeedSortOrder>(() => readStoredFeedSort());
   const [feedGroupBy, setFeedGroupByState] = useState<FeedGroupBy>(() => readStoredFeedGroup());
-  const [mediaTagSignals, setMediaTagSignals] = useState<{
-    who: string[];
-    what: string[];
-    when: string[];
-    where: string[];
-  }>({
-    who: [],
-    what: [],
-    when: [],
-    where: [],
-  });
+  const [includeChildrenInFeed, setIncludeChildrenInFeedState] = useState<boolean>(() =>
+    readStoredIncludeChildrenInFeed()
+  );
   const [cardDimensionMissing, setCardDimensionMissingState] = useState<CardDimensionMissing>({
     who: false,
     what: false,
@@ -217,15 +214,13 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     if (typeof window !== 'undefined') sessionStorage.setItem(FEED_GROUP_KEY, g);
   }, []);
 
-  const setMediaTagSignal = useCallback(
-    (dimension: 'who' | 'what' | 'when' | 'where', tagIds: string[]) => {
-      setMediaTagSignals((prev) => ({
-        ...prev,
-        [dimension]: tagIds,
-      }));
-    },
-    []
-  );
+  const setIncludeChildrenInFeed = useCallback((value: boolean) => {
+    setIncludeChildrenInFeedState(value);
+    if (typeof window !== 'undefined') {
+      if (value) sessionStorage.setItem(FEED_INCLUDE_CHILDREN_KEY, 'true');
+      else sessionStorage.removeItem(FEED_INCLUDE_CHILDREN_KEY);
+    }
+  }, []);
 
   const setCardDimensionMissing = useCallback(
     (dimension: 'who' | 'what' | 'when' | 'where', value: boolean) => {
@@ -290,6 +285,20 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     
     return dimensionalMap;
   }, [selectedFilterTagIds, allTags]);
+
+  /** Mirrors GET /api/cards gate: only dimensional / missing / media-tag filters—not title or type alone. */
+  const canTagScopeChildExpansion = useMemo(
+    () =>
+      Boolean(dimensionalTags.who?.length) ||
+      Boolean(dimensionalTags.what?.length) ||
+      Boolean(dimensionalTags.when?.length) ||
+      Boolean(dimensionalTags.where?.length) ||
+      cardDimensionMissing.who ||
+      cardDimensionMissing.what ||
+      cardDimensionMissing.when ||
+      cardDimensionMissing.where,
+    [dimensionalTags, cardDimensionMissing]
+  );
 
   // Hydration: admin list needs only covers (saves reads); content feed needs full (galleries, content images)
   const needsFullHydration = pathname?.startsWith('/view') || pathname?.startsWith('/search');
@@ -366,10 +375,6 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       if (cardDimensionMissing.what) params.set('whatMissing', 'true');
       if (cardDimensionMissing.when) params.set('whenMissing', 'true');
       if (cardDimensionMissing.where) params.set('whereMissing', 'true');
-      if (mediaTagSignals.who.length > 0) params.set('mediaWho', mediaTagSignals.who.join(','));
-      if (mediaTagSignals.what.length > 0) params.set('mediaWhat', mediaTagSignals.what.join(','));
-      if (mediaTagSignals.when.length > 0) params.set('mediaWhen', mediaTagSignals.when.join(','));
-      if (mediaTagSignals.where.length > 0) params.set('mediaWhere', mediaTagSignals.where.join(','));
       if (searchTerm?.trim()) params.set('q', searchTerm);
       if (pathname?.startsWith('/admin/card-admin') && searchTerm?.trim()) {
         params.set('searchScope', 'admin-title');
@@ -377,6 +382,9 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       if (cardType && cardType !== 'all') params.set('type', cardType);
       if (pageIndex > 0 && previousPageData?.lastDocId) params.set('lastDocId', previousPageData.lastDocId);
       if (isAdmin && !needsFullHydration) params.set('hydration', 'cover-only');
+      if (includeChildrenInFeed && canTagScopeChildExpansion) {
+        params.set('includeChildren', 'true');
+      }
       if (!searchTerm?.trim()) {
         if (feedSort === 'random') {
           params.set('sortBy', 'when');
@@ -544,7 +552,6 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     setCollectionId(null);
     setFeedSort('random');
     setFeedGroupBy('none');
-    setMediaTagSignals({ who: [], what: [], when: [], where: [] });
     setCardDimensionMissingState({ who: false, what: false, when: false, where: false });
   }, [isAdmin, setFilterTags, setCollectionId, setFeedSort, setFeedGroupBy]);
 
@@ -564,7 +571,6 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       collectionCards,
       feedSort,
       feedGroupBy,
-      mediaTagSignals,
       cardDimensionMissing,
       feedSections,
       loadMore,
@@ -577,11 +583,12 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       setCollectionId,
       setFeedSort,
       setFeedGroupBy,
-      setMediaTagSignal,
       setCardDimensionMissing,
       clearFilters,
       setPageLimit,
       isValidating,
+      includeChildrenInFeed,
+      setIncludeChildrenInFeed,
     }),
     [
       cards,
@@ -598,7 +605,6 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       collectionCards,
       feedSort,
       feedGroupBy,
-      mediaTagSignals,
       cardDimensionMissing,
       feedSections,
       loadMore,
@@ -611,11 +617,12 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       setCollectionId,
       setFeedSort,
       setFeedGroupBy,
-      setMediaTagSignal,
       setCardDimensionMissing,
       clearFilters,
       setPageLimit,
       isValidating,
+      includeChildrenInFeed,
+      setIncludeChildrenInFeed,
     ]
   );
 

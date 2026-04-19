@@ -6,6 +6,9 @@ export interface FigureWithImageOptions {
   HTMLAttributes: Record<string, any>;
 }
 
+/** Inline image figure width preset (stored as `data-size` on the figure). */
+export type FigureImageSize = 'xsmall' | 'small' | 'medium' | 'large';
+
 /** Attributes passed to `setFigureWithImage` (node attrs, not extension options). */
 export type SetFigureWithImageAttrs = {
   src: string;
@@ -22,7 +25,7 @@ declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     figureWithImage: {
       setFigureWithImage: (options: SetFigureWithImageAttrs) => ReturnType;
-      setFigureSize: (size: 'small' | 'medium' | 'large') => ReturnType;
+      setFigureSize: (size: FigureImageSize) => ReturnType;
       setFigureAlignment: (alignment: 'left' | 'center' | 'right') => ReturnType;
       setFigureWrap: (wrap: 'on' | 'off') => ReturnType;
       deleteFigure: () => ReturnType;

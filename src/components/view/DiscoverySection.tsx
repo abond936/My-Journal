@@ -10,9 +10,18 @@ import styles from './DiscoverySection.module.css';
 interface DiscoverySectionProps {
   currentCard: Card;
   childrenCards: Card[];
+  /**
+   * When true, the child-card horizontal rail is omitted here (e.g. story parents show
+   * `ChildCardsRail` on the detail page instead).
+   */
+  suppressChildCardsGroup?: boolean;
 }
 
-export default function DiscoverySection({ currentCard, childrenCards }: DiscoverySectionProps) {
+export default function DiscoverySection({
+  currentCard,
+  childrenCards,
+  suppressChildCardsGroup = false,
+}: DiscoverySectionProps) {
   const { cardType } = useCardContext();
   const [filtered, setFiltered] = useState<Card[]>([]);
   const [random, setRandom] = useState<Card[]>([]);
@@ -128,10 +137,11 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
       : '/view';
 
   const hasChildren = childrenCards.length > 0;
+  const showDiscoveryChildRail = hasChildren && !suppressChildCardsGroup;
   const hasFiltered = filtered.length > 0;
   const hasRandom = random.length > 0;
 
-  if (!hasChildren && !extrasLoading && !hasFiltered && !hasRandom && !extrasError) {
+  if (!showDiscoveryChildRail && !extrasLoading && !hasFiltered && !hasRandom && !extrasError) {
     return null;
   }
 
@@ -162,7 +172,7 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
     <section className={styles.discoverySection}>
       <h2 className={styles.discoveryTitle}>Explore More</h2>
 
-      {hasChildren && (
+      {showDiscoveryChildRail && (
         <div className={styles.discoveryGroup}>
           <h3 className={styles.groupTitle}>Related Content</h3>
           <div className={styles.cardRail} role="list" aria-label="Related content">
@@ -180,11 +190,11 @@ export default function DiscoverySection({ currentCard, childrenCards }: Discove
         </div>
       )}
 
-      {extrasError && hasChildren && (
+      {extrasError ? (
         <div className={styles.errorContainer} role="alert">
           <p>Unable to load suggestions (similar / explore): {extrasError}</p>
         </div>
-      )}
+      ) : null}
 
       {(extrasLoading || hasFiltered) && (
         <div className={styles.discoveryGroup}>

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import {
   createCard,
+  expandFeedItemsWithChildren,
   getCards,
   getCardsByIds,
   getCardsByCollectionId,
@@ -115,21 +116,6 @@ export async function GET(request: Request) {
     if (dimensionMissing.when) delete dimensionalTags.when;
     if (dimensionMissing.where) delete dimensionalTags.where;
 
-    const mediaDimensionalTags: {
-      who?: string[];
-      what?: string[];
-      when?: string[];
-      where?: string[];
-    } = {};
-    const mediaWhoTags = searchParams.get('mediaWho')?.split(',').filter(tag => tag.trim());
-    const mediaWhatTags = searchParams.get('mediaWhat')?.split(',').filter(tag => tag.trim());
-    const mediaWhenTags = searchParams.get('mediaWhen')?.split(',').filter(tag => tag.trim());
-    const mediaWhereTags = searchParams.get('mediaWhere')?.split(',').filter(tag => tag.trim());
-    if (mediaWhoTags && mediaWhoTags.length > 0) mediaDimensionalTags.who = mediaWhoTags;
-    if (mediaWhatTags && mediaWhatTags.length > 0) mediaDimensionalTags.what = mediaWhatTags;
-    if (mediaWhenTags && mediaWhenTags.length > 0) mediaDimensionalTags.when = mediaWhenTags;
-    if (mediaWhereTags && mediaWhereTags.length > 0) mediaDimensionalTags.where = mediaWhereTags;
-
     const hasDimensionMissingFilters = Boolean(
       dimensionMissing.who ||
         dimensionMissing.what ||
@@ -181,6 +167,18 @@ export async function GET(request: Request) {
     const sortDirRaw = searchParams.get('sortDir');
     const sortDir: 'asc' | 'desc' | undefined =
       sortDirRaw === 'asc' ? 'asc' : sortDirRaw === 'desc' ? 'desc' : undefined;
+    const includeChildren = searchParams.get('includeChildren') === 'true';
+
+    /** Child expansion is only for tag/dimension-style discovery—not title-only or type-only. */
+    const hasNonEmptyTags = Boolean(tags?.filter((t) => t?.trim()).length);
+    const hasTagOrDimensionStyleFilter =
+      hasNonEmptyTags ||
+      Boolean(whoTags?.length) ||
+      Boolean(whatTags?.length) ||
+      Boolean(whenTags?.length) ||
+      Boolean(whereTags?.length) ||
+      hasDimensionMissingFilters;
+    const shouldExpandChildren = includeChildren && hasTagOrDimensionStyleFilter;
 
     try {
       // List cards that are collections (have children)
@@ -205,7 +203,6 @@ export async function GET(request: Request) {
         !q?.trim() &&
         !tags?.length &&
         Object.keys(dimensionalTags).length === 0 &&
-        Object.keys(mediaDimensionalTags).length === 0 &&
         !hasDimensionMissingFilters &&
         !sortBy
       ) {
@@ -244,10 +241,6 @@ export async function GET(request: Request) {
           if (dimensionMissing.what && !cardDimEmpty(card.what)) return false;
           if (dimensionMissing.when && !cardDimEmpty(card.when)) return false;
           if (dimensionMissing.where && !cardDimEmpty(card.where)) return false;
-          if (mediaDimensionalTags.who && mediaDimensionalTags.who.length > 0 && !matchesAny(card.mediaWho, mediaDimensionalTags.who)) return false;
-          if (mediaDimensionalTags.what && mediaDimensionalTags.what.length > 0 && !matchesAny(card.mediaWhat, mediaDimensionalTags.what)) return false;
-          if (mediaDimensionalTags.when && mediaDimensionalTags.when.length > 0 && !matchesAny(card.mediaWhen, mediaDimensionalTags.when)) return false;
-          if (mediaDimensionalTags.where && mediaDimensionalTags.where.length > 0 && !matchesAny(card.mediaWhere, mediaDimensionalTags.where)) return false;
           return true;
         });
       };
@@ -266,8 +259,6 @@ export async function GET(request: Request) {
             tags: tags?.filter((t): t is string => Boolean(t?.trim())),
             dimensionalTags:
               Object.keys(dimensionalTags).length > 0 ? dimensionalTags : undefined,
-            mediaDimensionalTags:
-              Object.keys(mediaDimensionalTags).length > 0 ? mediaDimensionalTags : undefined,
             childrenIds_contains,
             dimensionMissing: hasDimensionMissingFilters ? dimensionMissing : undefined,
             page: pageIdx,
@@ -287,7 +278,10 @@ export async function GET(request: Request) {
 
           const rawItems = await getCardsByIds(searchResult.docIds, { hydrationMode });
           const filteredItems = applyPostFilters(rawItems);
-          const items = filteredItems.slice(0, limit);
+          let items = filteredItems.slice(0, limit);
+          if (shouldExpandChildren && items.length > 0) {
+            items = await expandFeedItemsWithChildren(items, { status, hydrationMode });
+          }
           const lastDocId =
             items.length > 0 ? items[items.length - 1].docId : undefined;
           const hasMore = (pageIdx + 1) * limit < searchResult.totalFound;
@@ -308,8 +302,6 @@ export async function GET(request: Request) {
         type,
         tags,
         dimensionalTags: Object.keys(dimensionalTags).length > 0 ? dimensionalTags : undefined,
-        mediaDimensionalTags:
-          Object.keys(mediaDimensionalTags).length > 0 ? mediaDimensionalTags : undefined,
         dimensionMissing: hasDimensionMissingFilters ? dimensionMissing : undefined,
         childrenIds_contains,
         limit,
@@ -318,6 +310,10 @@ export async function GET(request: Request) {
         ...(sortBy ? { sortBy } : {}),
         ...(sortDir ? { sortDir } : {}),
       });
+
+      if (shouldExpandChildren && result.items.length > 0) {
+        result.items = await expandFeedItemsWithChildren(result.items, { status, hydrationMode });
+      }
 
       return NextResponse.json(result);
     } catch (error) {

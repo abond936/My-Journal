@@ -1,0 +1,230 @@
+/* Gallery-aligned rail for child story cards on parent detail */
+
+.section {
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
+  border-top: var(--border-width-thin) solid var(--border1-color);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+  color: var(--text1-color);
+}
+
+.count {
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+  background: var(--layout-background2-color);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-full);
+}
+
+.railWrap {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.navButton {
+  position: absolute;
+  top: 42%;
+  transform: translateY(-50%);
+  background: var(--color1-300);
+  color: white;
+  border: none;
+  width: var(--spacing-2xl);
+  height: var(--spacing-2xl);
+  border-radius: var(--border-radius-full);
+  cursor: pointer;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xl);
+  font-weight: bold;
+  transition: opacity var(--transition-short) ease, visibility var(--transition-short) ease,
+    transform var(--transition-short) ease;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.navButton:hover {
+  background: var(--color1-200);
+  transform: translateY(-50%) scale(1.05);
+}
+
+.navButton.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.prevButton {
+  left: var(--spacing-sm);
+}
+
+.nextButton {
+  right: var(--spacing-sm);
+}
+
+.navButton:focus {
+  outline: 2px solid var(--color3);
+  outline-offset: 2px;
+}
+
+.scroll {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: var(--spacing-md);
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  padding: var(--spacing-sm) var(--spacing-xs);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scroll::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .scroll::-webkit-scrollbar {
+    display: block;
+    height: 6px;
+  }
+
+  .scroll::-webkit-scrollbar-track {
+    background: var(--layout-background2-color);
+    border-radius: 3px;
+  }
+
+  .scroll::-webkit-scrollbar-thumb {
+    background: var(--border1-color);
+    border-radius: 3px;
+  }
+
+  .scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--text2-color);
+  }
+}
+
+.slide {
+  flex: 0 0 min(280px, 86vw);
+  scroll-snap-align: start;
+  min-width: 0;
+}
+
+.slideLink {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  text-decoration: none;
+  color: inherit;
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  background: var(--layout-background1-color);
+  border: var(--border-width-thin) solid var(--border1-color);
+  transition: border-color var(--transition-short), box-shadow var(--transition-short);
+}
+
+.slideLink:hover {
+  border-color: var(--color3);
+  box-shadow: var(--shadow-sm);
+}
+
+.slideLink:focus-visible {
+  outline: 2px solid var(--color3);
+  outline-offset: 2px;
+}
+
+.thumb {
+  position: relative;
+  width: 100%;
+  background: var(--layout-background2-color);
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+}
+
+.thumbLandscape {
+  aspect-ratio: 3 / 2;
+}
+
+.thumbPortrait {
+  aspect-ratio: 4 / 5;
+}
+
+.thumbSquare {
+  aspect-ratio: 1 / 1;
+}
+
+.thumbImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.noCover {
+  width: 100%;
+  height: 100%;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+}
+
+.slideTitle {
+  margin: 0;
+  padding: 0 var(--spacing-sm) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text1-color);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.scroll:focus {
+  outline: 2px solid var(--color3);
+  outline-offset: 2px;
+}
+
+@media (min-width: 768px) {
+  .section {
+    margin-top: var(--spacing-2xl);
+    padding-top: var(--spacing-xl);
+  }
+
+  .title {
+    font-size: var(--font-size-xl);
+  }
+
+  .slide {
+    flex: 0 0 clamp(200px, 32vw, 280px);
+  }
+
+  .navButton {
+    width: var(--spacing-3xl);
+    height: var(--spacing-3xl);
+    font-size: var(--font-size-2xl);
+  }
+}
+
+@media (min-width: 1024px) {
+  .slide {
+    flex: 0 0 clamp(220px, 24vw, 300px);
+  }
+}

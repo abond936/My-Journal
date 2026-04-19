@@ -30,6 +30,7 @@ import {
   nextCuratedRootOrderForAppend,
   normalizeCuratedChildIds,
 } from '@/lib/utils/curatedCollectionTree';
+import { fetchAdminCardSnapshot } from '@/lib/utils/fetchAdminCardSnapshot';
 import styles from '@/app/admin/collections/page.module.css';
 
 function cardLabel(card: Card): string {
@@ -103,7 +104,7 @@ export default function CollectionsManagerPanel({
   collectionsActive = false,
 }: CollectionsManagerPanelProps) {
   const { selectedFilterTagIds, tags: providerTags } = useTag();
-  const { cardType, searchTerm, mediaTagSignals } = useCardContext();
+  const { cardType, searchTerm } = useCardContext();
   const [allCards, setAllCards] = useState<Card[]>([]);
   const [loadingAllCards, setLoadingAllCards] = useState(false);
   const [searchValue, setSearchValue] = useState('');
@@ -198,13 +199,9 @@ export default function CollectionsManagerPanel({
       if (what?.length && !intersectsAny(card.what, what)) return false;
       if (when?.length && !intersectsAny(card.when, when)) return false;
       if (where?.length && !intersectsAny(card.where, where)) return false;
-      if (mediaTagSignals.who.length && !intersectsAny(card.mediaWho, mediaTagSignals.who)) return false;
-      if (mediaTagSignals.what.length && !intersectsAny(card.mediaWhat, mediaTagSignals.what)) return false;
-      if (mediaTagSignals.when.length && !intersectsAny(card.mediaWhen, mediaTagSignals.when)) return false;
-      if (mediaTagSignals.where.length && !intersectsAny(card.mediaWhere, mediaTagSignals.where)) return false;
       return true;
     },
-    [cardType, searchTerm, dimensionalTags, mediaTagSignals]
+    [cardType, searchTerm, dimensionalTags]
   );
 
   const cardById = useMemo(() => new Map(mergedCatalog.map((c) => [c.docId, c])), [mergedCatalog]);
@@ -275,12 +272,12 @@ export default function CollectionsManagerPanel({
       await handleInsertRootBefore(childId, beforeSiblingId);
       return;
     }
-    const parent = cardById.get(parentId);
-    if (!parent?.docId) return;
-    const nextChildren = buildChildrenIdsWithInsertBefore(parent.childrenIds, childId, beforeSiblingId);
+    if (!cardById.get(parentId)?.docId) return;
     setSaving(true);
     setError(null);
     try {
+      const parentFresh = await fetchAdminCardSnapshot(parentId);
+      const nextChildren = buildChildrenIdsWithInsertBefore(parentFresh.childrenIds, childId, beforeSiblingId);
       await patchCard(parentId, { childrenIds: nextChildren });
       await patchCard(childId, { curatedRoot: false });
       await loadAllCards();
@@ -300,11 +297,9 @@ export default function CollectionsManagerPanel({
     setError(null);
     try {
       if (currentParentId) {
-        const currentParent = cardById.get(currentParentId);
-        if (currentParent?.docId) {
-          const detached = normalizeCuratedChildIds(currentParent.childrenIds).filter((id) => id !== childId);
-          await patchCard(currentParentId, { childrenIds: detached });
-        }
+        const currentFresh = await fetchAdminCardSnapshot(currentParentId);
+        const detached = normalizeCuratedChildIds(currentFresh.childrenIds).filter((id) => id !== childId);
+        await patchCard(currentParentId, { childrenIds: detached });
       }
       await Promise.all(
         newRootIds.map((id, idx) =>
@@ -324,12 +319,14 @@ export default function CollectionsManagerPanel({
 
   const handleAttachChild = async (childId: string, parentId: string) => {
     if (!parentId || childId === parentId || parentByChild.get(childId) === parentId) return;
-    const parent = cardById.get(parentId);
-    if (!parent) return;
-    const nextChildren = Array.from(new Set([...normalizeCuratedChildIds(parent.childrenIds), childId]));
+    if (!cardById.get(parentId)) return;
     setSaving(true);
     setError(null);
     try {
+      const parentFresh = await fetchAdminCardSnapshot(parentId);
+      const nextChildren = Array.from(
+        new Set([...normalizeCuratedChildIds(parentFresh.childrenIds), childId])
+      );
       await patchCard(parentId, { childrenIds: nextChildren });
       await patchCard(childId, { curatedRoot: false });
       await loadAllCards();
@@ -343,12 +340,11 @@ export default function CollectionsManagerPanel({
   const handleDetachChild = async (childId: string) => {
     const parentId = parentByChild.get(childId);
     if (!parentId) return;
-    const parent = cardById.get(parentId);
-    if (!parent) return;
-    const nextChildren = normalizeCuratedChildIds(parent.childrenIds).filter((id) => id !== childId);
     setSaving(true);
     setError(null);
     try {
+      const parentFresh = await fetchAdminCardSnapshot(parentId);
+      const nextChildren = normalizeCuratedChildIds(parentFresh.childrenIds).filter((id) => id !== childId);
       await patchCard(parentId, { childrenIds: nextChildren });
       await loadAllCards();
     } catch (e) {
@@ -407,11 +403,9 @@ export default function CollectionsManagerPanel({
       try {
         const currentParentId = parentByChild.get(childId);
         if (currentParentId) {
-          const currentParent = cardById.get(currentParentId);
-          if (currentParent) {
-            const nextChildren = normalizeCuratedChildIds(currentParent.childrenIds).filter((id) => id !== childId);
-            await patchCard(currentParentId, { childrenIds: nextChildren });
-          }
+          const currentFresh = await fetchAdminCardSnapshot(currentParentId);
+          const nextChildren = normalizeCuratedChildIds(currentFresh.childrenIds).filter((id) => id !== childId);
+          await patchCard(currentParentId, { childrenIds: nextChildren });
         }
         const nextOrder = nextCuratedRootOrderForAppend(rootedCollections, childId);
         await patchCard(childId, { curatedRoot: true, curatedRootOrder: nextOrder });

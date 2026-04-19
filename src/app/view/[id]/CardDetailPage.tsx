@@ -14,6 +14,7 @@ import {
 import styles from './CardDetail.module.css';
 import TipTapRenderer from '@/components/common/TipTapRenderer';
 import InlineGallery from '@/components/view/InlineGallery';
+import ChildCardsRail from '@/components/view/ChildCardsRail';
 import DiscoverySection from '@/components/view/DiscoverySection';
 import { formatQuoteAttribution } from '@/lib/utils/cardUtils';
 
@@ -104,6 +105,10 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) 
         </footer>
       ) : null}
 
+      {card.type === 'story' && childrenCards.length > 0 ? (
+        <ChildCardsRail cards={childrenCards} />
+      ) : null}
+
       {/* Inline Gallery */}
       {card.galleryMedia && card.galleryMedia.length > 0 && (
         <InlineGallery 
@@ -113,9 +118,10 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) 
       )}
 
       {/* Discovery Section */}
-      <DiscoverySection 
-        currentCard={card} 
-        childrenCards={childrenCards} 
+      <DiscoverySection
+        currentCard={card}
+        childrenCards={childrenCards}
+        suppressChildCardsGroup={card.type === 'story' && childrenCards.length > 0}
       />
     </article>
   );

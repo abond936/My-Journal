@@ -10,6 +10,7 @@ import {
 import { getFirestore, FieldPath, FieldValue, Transaction } from 'firebase-admin/firestore';
 import {
   deleteFromStorageWithRetry,
+  deleteMediaAsset,
   markStorageForLaterDeletion,
 } from './images/imageImportService';
 import { extractMediaFromContent, stripContentImageSrc, hydrateContentImageSrc, removeMediaFromContent, generateExcerpt } from '@/lib/utils/cardUtils';
@@ -1066,6 +1067,56 @@ export async function getCardsByIds(
 }
 
 /**
+ * After a feed page resolves to matching parent cards, append each parent's direct
+ * `childrenIds` (in list order) for the same hydration. Intended only when the feed query
+ * already uses tag/dimension-style filters (the API gates `includeChildren` accordingly)—not
+ * for search-only or type-only lists. Dedupes by docId; children must match `status` when it
+ * is not `all` (e.g. published-only feeds skip draft children).
+ */
+export async function expandFeedItemsWithChildren(
+  items: Card[],
+  options: { status: Card['status'] | 'all'; hydrationMode: 'full' | 'cover-only' }
+): Promise<Card[]> {
+  if (!items.length) return items;
+  const { status, hydrationMode } = options;
+
+  const childMatchesStatus = (child: Card): boolean => {
+    if (status === 'all') return true;
+    return child.status === status;
+  };
+
+  const seen = new Set<string>();
+  for (const c of items) {
+    if (c.docId) seen.add(c.docId);
+  }
+
+  const idsToFetch = new Set<string>();
+  for (const card of items) {
+    for (const id of card.childrenIds || []) {
+      if (id && !seen.has(id)) idsToFetch.add(id);
+    }
+  }
+  if (idsToFetch.size === 0) return items;
+
+  const fetched = await getCardsByIds([...idsToFetch], { hydrationMode });
+  const byId = new Map(fetched.map((c) => [c.docId!, c]));
+
+  const out: Card[] = [];
+  for (const card of items) {
+    out.push(card);
+    for (const cid of card.childrenIds || []) {
+      if (!cid || seen.has(cid)) continue;
+      const ch = byId.get(cid);
+      if (!ch?.docId) continue;
+      if (!childMatchesStatus(ch)) continue;
+      seen.add(cid);
+      out.push(ch);
+    }
+  }
+  return out;
+}
+
+/**
  * Retrieves a paginated subset of cards from a given list of IDs.
  * @param ids - The full list of card IDs to paginate through.
  * @param options - Options for pagination (limit, lastDocId).
@@ -1471,13 +1522,7 @@ export async function getCards(options: {
     when?: string[];
     where?: string[];
   };
-  mediaDimensionalTags?: {
-    who?: string[];
-    what?: string[];
-    when?: string[];
-    where?: string[];
-  };
-  /** When true for a dimension, keep only cards with no card-level tags in that dimension (empty or absent array). Applied in-memory with query oversampling (same pattern as media tag signals). */
+  /** When true for a dimension, keep only cards with no card-level tags in that dimension (empty or absent array). Applied in-memory with query oversampling. */
   dimensionMissing?: {
     who?: boolean;
     what?: boolean;
@@ -1498,7 +1543,6 @@ export async function getCards(options: {
     type = 'all',
     tags,
     dimensionalTags,
-    mediaDimensionalTags,
     dimensionMissing,
     childrenIds_contains,
     limit = 10,
@@ -1511,13 +1555,6 @@ export async function getCards(options: {
   let query: FirebaseFirestore.Query = firestore.collection(CARDS_COLLECTION);
   const trimmedQuery = q?.trim() ?? '';
   const hasSearch = trimmedQuery.length > 0;
-  const hasMediaSignalFilters = Boolean(
-    mediaDimensionalTags &&
-      ((mediaDimensionalTags.who && mediaDimensionalTags.who.length > 0) ||
-        (mediaDimensionalTags.what && mediaDimensionalTags.what.length > 0) ||
-        (mediaDimensionalTags.when && mediaDimensionalTags.when.length > 0) ||
-        (mediaDimensionalTags.where && mediaDimensionalTags.where.length > 0))
-  );
   const hasDimensionMissingFilters = Boolean(
     dimensionMissing &&
       (dimensionMissing.who ||
@@ -1525,13 +1562,7 @@ export async function getCards(options: {
         dimensionMissing.when ||
         dimensionMissing.where)
   );
-  const needsPostFilterOversample = hasMediaSignalFilters || hasDimensionMissingFilters;
-  const matchesAny = (candidate: string[] | undefined, required: string[] | undefined) => {
-    if (!required || required.length === 0) return true;
-    if (!candidate || candidate.length === 0) return false;
-    const set = new Set(candidate);
-    return required.some((id) => set.has(id));
-  };
+  const needsPostFilterOversample = hasDimensionMissingFilters;
 
   // Combined text search and tag filtering
   if (hasSearch) {
@@ -1581,9 +1612,6 @@ export async function getCards(options: {
       query = query.where('where', 'array-contains-any', where);
     }
   }
-
-  // Media signal filters are applied in-memory after query.
-  // Firestore cannot safely support the required combinations here (multi array-contains-any + order/pagination).
 
   // Filter by childrenIds_contains
   if (childrenIds_contains) {
@@ -1643,16 +1671,6 @@ export async function getCards(options: {
 
   const cardDimEmpty = (arr: string[] | undefined) => !arr || arr.length === 0;
 
-  if (hasMediaSignalFilters && mediaDimensionalTags) {
-    cards = cards.filter((card) => {
-      return (
-        matchesAny(card.mediaWho, mediaDimensionalTags.who) &&
-        matchesAny(card.mediaWhat, mediaDimensionalTags.what) &&
-        matchesAny(card.mediaWhen, mediaDimensionalTags.when) &&
-        matchesAny(card.mediaWhere, mediaDimensionalTags.where)
-      );
-    });
-  }
   if (hasDimensionMissingFilters && dimensionMissing) {
     cards = cards.filter((card) => {
       if (dimensionMissing.who && !cardDimEmpty(card.who)) return false;
@@ -1690,7 +1708,6 @@ export async function getCards(options: {
       if (when && when.length > 0) fallbackQuery = fallbackQuery.where('when', 'array-contains-any', when);
       if (where && where.length > 0) fallbackQuery = fallbackQuery.where('where', 'array-contains-any', where);
     }
-    // Media signal filters are applied in-memory below for fallback too.
     if (childrenIds_contains) {
       fallbackQuery = fallbackQuery.where('childrenIds', 'array-contains', childrenIds_contains);
     }
@@ -1724,16 +1741,6 @@ export async function getCards(options: {
       .map((doc) => ({ docId: doc.id, ...(doc.data() as Card) } as Card))
       .filter((c) => (c.title || '').toLowerCase().includes(lower))
       .slice(0, 200);
-    if (mediaDimensionalTags) {
-      fallbackItems = fallbackItems.filter((card) => {
-        return (
-          matchesAny(card.mediaWho, mediaDimensionalTags.who) &&
-          matchesAny(card.mediaWhat, mediaDimensionalTags.what) &&
-          matchesAny(card.mediaWhen, mediaDimensionalTags.when) &&
-          matchesAny(card.mediaWhere, mediaDimensionalTags.where)
-        );
-      });
-    }
     if (hasDimensionMissingFilters && dimensionMissing) {
       fallbackItems = fallbackItems.filter((card) => {
         if (dimensionMissing.who && !cardDimEmpty(card.who)) return false;

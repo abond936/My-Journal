@@ -156,12 +156,16 @@ export const filterTreeBySearch = (
   search: string
 ): TagWithChildren | null => {
   const searchLower = search?.trim().toLowerCase() ?? '';
+  const selfMatches =
+    !searchLower || (node.name?.toLowerCase().includes(searchLower) ?? false);
+  // When this node matches, keep the full subtree so descendants (e.g. Bond under Ancestry) stay visible.
+  if (selfMatches) {
+    return { ...node, children: node.children };
+  }
   const childResults = node.children
     .map((c) => filterTreeBySearch(c, search))
     .filter((r): r is TagWithChildren => r !== null);
-  const selfMatches =
-    !searchLower || (node.name?.toLowerCase().includes(searchLower) ?? false);
-  if (selfMatches || childResults.length > 0) {
+  if (childResults.length > 0) {
     return { ...node, children: childResults };
   }
   return null;

@@ -10,8 +10,11 @@ import {
   filterTreesBySearch,
   normalizeTagDimensionKey,
 } from '@/lib/utils/tagUtils';
+import { DIMENSION_ORDER } from '@/lib/utils/tagDisplay';
 import clsx from 'clsx';
 import TagPickerDimensionColumn from '@/components/admin/card-admin/TagPickerDimensionColumn';
+
+export type MacroTagCollapsedSummary = 'sparseTrees' | 'none';
 
 interface MacroTagSelectorProps {
   selectedTags: Tag[];
@@ -22,6 +25,11 @@ interface MacroTagSelectorProps {
   className?: string;
   startExpanded?: boolean;
   onRequestClose?: () => void;
+  /** When set with `onExpandedChange`, expansion is controlled by the parent (e.g. Edit on the tag command bar). */
+  expanded?: boolean;
+  onExpandedChange?: (open: boolean) => void;
+  /** Collapsed face: full sparse trees (default) or hidden when the parent shows tags elsewhere. */
+  collapsedSummary?: MacroTagCollapsedSummary;
 }
 
 export default function MacroTagSelector({
@@ -33,8 +41,19 @@ export default function MacroTagSelector({
   className,
   startExpanded = false,
   onRequestClose,
+  expanded: expandedProp,
+  onExpandedChange,
+  collapsedSummary = 'sparseTrees',
 }: MacroTagSelectorProps) {
-  const [isExpanded, setIsExpanded] = useState(startExpanded);
+  const isControlled =
+    typeof expandedProp === 'boolean' && typeof onExpandedChange === 'function';
+  const [uncontrolledExpanded, setUncontrolledExpanded] = useState(startExpanded);
+  const isExpanded = isControlled ? expandedProp : uncontrolledExpanded;
+  const setExpanded = (next: boolean) => {
+    if (isControlled) onExpandedChange!(next);
+    else setUncontrolledExpanded(next);
+  };
+
   const [saving, setSaving] = useState(false);
   const { tags: providerTags } = useTag();
   const effectiveAllTags = providerTags.length > 0 ? providerTags : allTags;
@@ -50,15 +69,16 @@ export default function MacroTagSelector({
       }
       return;
     }
-    setIsExpanded(false);
+    setExpanded(false);
   };
 
   const handleCancel = () => {
     if (startExpanded && onRequestClose) {
       onRequestClose();
+      if (isControlled) onExpandedChange?.(false);
       return;
     }
-    setIsExpanded(false);
+    setExpanded(false);
   };
 
   const selectedTagIds = selectedTags.map(tag => tag.docId);
@@ -96,13 +116,21 @@ export default function MacroTagSelector({
     );
   }
 
-  // This is the default, collapsed view
+  if (collapsedSummary === 'none') {
+    return error ? (
+      <div className={clsx(styles.container, className)}>
+        <p className={styles.errorText}>{error}</p>
+      </div>
+    ) : null;
+  }
+
+  // Default collapsed view: header + sparse trees
   return (
     <div className={clsx(styles.container, className, error && styles.error)}>
       <div className={styles.header}>
         <h4 className={styles.sectionTitle}>Tags</h4>
         <button
-          onClick={() => setIsExpanded(true)}
+          onClick={() => setExpanded(true)}
           className={styles.editButton}
           type="button"
         >
@@ -111,15 +139,18 @@ export default function MacroTagSelector({
       </div>
       <div className={styles.collapsedView}>
         <div className={styles.dimensionColumns}>
-          {Object.entries(dimensionalSelectedTree).map(([dimension, roots]) => (
-            <div key={dimension} className={styles.dimensionColumn}>
-              {roots.length > 0 ? (
-                roots.map(root => <TagNode key={root.docId} node={root} />)
-              ) : (
-                <span className={styles.dimensionLabel}>{dimension.toUpperCase()}</span>
-              )}
-            </div>
-          ))}
+          {DIMENSION_ORDER.map((dimension) => {
+            const roots = dimensionalSelectedTree[dimension] ?? [];
+            return (
+              <div key={dimension} className={styles.dimensionColumn}>
+                {roots.length > 0 ? (
+                  roots.map((root) => <TagNode key={root.docId} node={root} />)
+                ) : (
+                  <span className={styles.dimensionLabel}>{dimension.toUpperCase()}</span>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
       {error && <p className={styles.errorText}>{error}</p>}
@@ -294,15 +325,18 @@ function ExpandedView({
           <div className={styles.treeDisplaySection}>
             <h3>Selected Tags</h3>
             <div className={styles.dimensionColumns}>
-              {Object.entries(dimensionalSelectedTree).map(([dimension, roots]) => (
-                <div key={dimension} className={styles.dimensionColumn}>
-                  {roots.length > 0 ? (
-                    roots.map(root => <TagNode key={root.docId} node={root} />)
-                  ) : (
-                    <span className={styles.dimensionLabel}>{dimension.toUpperCase()}</span>
-                  )}
-                </div>
-              ))}
+              {DIMENSION_ORDER.map((dimension) => {
+                const roots = dimensionalSelectedTree[dimension] ?? [];
+                return (
+                  <div key={dimension} className={styles.dimensionColumn}>
+                    {roots.length > 0 ? (
+                      roots.map((root) => <TagNode key={root.docId} node={root} />)
+                    ) : (
+                      <span className={styles.dimensionLabel}>{dimension.toUpperCase()}</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

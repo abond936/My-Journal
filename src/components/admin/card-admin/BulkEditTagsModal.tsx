@@ -223,7 +223,8 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
                 onToggleTag={handleToggleTag}
                 expandedNodeIds={expandedNodeIds}
                 checkboxIdPrefix="bulk-tag"
-                forceExpandAll={!!searchTerm.trim()}
+                /* Always expand: default tree depth is 0 (everything starts collapsed), which hides deep tags unless the user expands every level. */
+                forceExpandAll
               />
             ))}
           </div>

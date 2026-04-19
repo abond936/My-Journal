@@ -83,6 +83,11 @@ The primary users are the author (admin) creating the content and his family con
 - **Validation & Authorization** - Server-side validation and authorization for data integrity.
 - **Schema** - Type-safe contracts and explicit server-side schema validation.
 - **Services** - Use managed services pragmatically (Firebase/Auth.js/Next.js).
+- **Data planes** - **Firestore** (and Storage for binaries) is the **authoritative** store for cards, media, and tags. **Derived fields** on cards (`filterTags`, dimensional tag arrays, sort keys, denormalized flags) are computed from authoritative inputs by explicit service rules—not re-derived ad hoc in UI or duplicated with conflicting logic. **Typesense** (and any other search index) is a **projection** for search and list efficiency; treat it as **eventually consistent** with Firestore. It must not force **synchronous** full-document pipelines (full hydration, unrelated media index churn, repeated full-tag-catalog reads) on **narrow** mutations unless the product explicitly requires immediate search parity for that path.
+- **Mutation scope** - Classify every write as **narrow** (e.g. tag-only, status-only, single-field metadata) or **wide** (body HTML, gallery structure, cover changes, structural `childrenIds` / collection edits). **Narrow** paths must use **bounded** Firestore reads/writes: avoid N× full `updateCard`-style pipelines for N rows, avoid reloading entire admin catalogs as the default success path, and skip redundant Typesense/media sync when indexed fields did not change. **Wide** paths may use heavier recomputation and index sync; keep that work explicit and documented at the call site. **Never** skip or weaken **denormalized count and derived-field maintenance** (tag `cardCount` / `mediaCount`, card `filterTags` and dimensional arrays, etc.) solely to look “narrow”—those are **product invariants** for filters, admin truth, and reader consistency; narrow work must still apply the **same accounting rules**, batched or once-per-request, not omitted.
+- **Denormalized counts** - Card, media, and tag documents carry **denormalized counts and derived tag projections** so queries and UI stay fast and honest. Any mutation that changes assignments must keep those fields **correct** in Firestore (and indices when the product requires search parity). Refactors that replace “full `updateCard`” for speed must **re-home** the same `updateTagCountsFor*` / `mergeDerivedTags*` (or equivalent) logic into the new path—not drop it. Historical use of the wide pipeline is often **because counts and derived fields were already wired there**; slimmer paths are desirable, but **accuracy is non-negotiable**.
+- **Catalog reads** - Do not load the **full tags collection** or **unbounded card lists** once per item inside a single API handler or transaction. Prefer a single read (or request-scoped cache), batched `get`/`in` chunks, or precomputed maps passed into helpers.
+- **Transactions** - Keep Firestore **transactions** minimal: only reads and writes that **must** be atomic together. Prefer computing derived payloads **outside** the transaction when ordering and integrity allow, then writing in one transaction.
 
 *Features*
 ✅ **Complete**
@@ -108,8 +113,10 @@ The primary users are the author (admin) creating the content and his family con
       - `utils/` general utilities (date formatting, tag manipulation)
   - **Data Models** - `src/lib/types/` (read directly; fully commented).
   - **Typesense** - Full-text search for cards/media with CRUD sync and Firestore fallback.
+  - **Typesense list limits** - Typesense Cloud allows at most **250 hits per page** (`per_page`). API routes and services that list cards (or other indexed entities) through Typesense **must not** pass client `limit` values greater than 250 directly as `per_page`; use **paging** (multiple search requests) or cap and document. Exceeding the limit yields **422**, logged failures, and **Firestore fallback**, which harms latency and masks index health.
   - **Auth.js** - Firebase adapter, role-based access control, session persistence, app wrapper `AuthProvider`.
 ⭕1 **Planned**
+  - **Narrow mutation paths** - Route tag-only and similar **narrow** admin mutations through dedicated service functions that batch Firestore field updates and derived-field recompute **once per request** where possible; avoid N sequential full `updateCard` pipelines for bulk work. Keep wide `updateCard` (or equivalent) for structural and rich-content changes.
   - **Code** - Comment code.
   - **Directory** - Cleanup directory.
   - **ESLint** - Address ESLint violations.
@@ -130,6 +137,9 @@ The primary users are the author (admin) creating the content and his family con
     - **Source Adapters**
     - **Web vs. Mobile** - PWA, React Native, Capacitor; camera capture is important.
 📐 **Denormalized Read** - Keep denormalized read patterns where Firestore query limits demand it.
+📐 **List refresh** - After a successful mutation, prefer **patching** the current list or **invalidating a targeted query** over reloading entire admin catalogs; use full reload only when list membership or ordering cannot be derived locally.
+📐 **Bulk writes** - Bulk tag and similar operations must be **O(batch)** bounded work (batched reads/writes, shared tag maps), not **O(cards × full-card-save)** unless explicitly accepted and measured.
+📐 **Contract vs product** - Efficiency and pipeline-shape rules in this document are **constraints on how** work is done, not permission to break **what** the product must preserve (accurate counts, derived dimensions, published/draft behavior, auth). If the leanest design appears to conflict with an invariant, **raise the conflict explicitly** (tradeoffs, risks, options)—do not implement a shortcut and later justify regressions by citing “architecture.” Author decides when to accept risk or spend complexity.
 📐 **Script-Heavy** - Keep script-heavy maintenance available while admin UX matures.
 📐 **Auth in Buildout** - During build/content phase, keep using env-based login (`ADMIN_EMAIL` / `ADMIN_PASSWORD`) so work can continue without user provisioning.
 📐 **Auth at Rollout** - At go-live prep, run `npm run seed:journal-users` once to create the single admin in Firestore (`journal_users`) when that collection is empty.
@@ -146,6 +156,8 @@ The primary users are the author (admin) creating the content and his family con
 - **UI Alignment** - Align UI behavior with **validated server contracts** (types/schemas); the client does not override server authority on writes. Clear **presentation and client-state** boundaries; business rules stay in services/API layer.
 - **Design surfaces** - The reader (`/view`) UI is the primary **designed** surface—typography, color rhythm, spacing, and tone. Admin may stay denser for workflows but should **reuse the same design tokens** (and previews where it matters) so what the author sees while authoring matches what the family sees when reading.
 - **Swappable looks** - Theme Management should move toward **named design packages** (coherent font, color, and spacing choices) selected as a whole, not only isolated slider tweaks. **Tokenization** (CSS variables in `theme.css` driven from persisted theme data) is the practical path to plug-and-play designs.
+- **List stability** - After mutations, update the **smallest** sufficient UI state: patch a row, remove/add ids in the current page, or refetch **one** page or cursor scope—not entire unbounded lists by default. Reserve full catalog refetch for recovery, unknown membership change, or explicit user refresh.
+- **Authoritative confirmation** - Separate **optimistic** display from **confirmed** server state where it improves perceived speed; do not block the UI on secondary work (search index sync, full media hydration) when the user action can be acknowledged from Firestore alone.
 
 *Features*
 ✅ **Complete**

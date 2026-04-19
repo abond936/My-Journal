@@ -5,7 +5,10 @@ This file is an **index only**. Canonical instructions are not duplicated here (
 | Topic | Location |
 |--------|----------|
 | Agent process (assess → recommend → wait; explicit approval before edits) | `.cursor/rules/# AI_InteractionRules.mdc` |
+| **Change scope** (approved surface only; ask before adjacent UI/API/context edits) | `.cursor/rules/# AI_InteractionRules.mdc` → **Change scope boundary** |
 | Vision, principles, tech stack, decisions | `docs/01-Vision-Architecture.md` |
+| **Data planes, mutation scope, Typesense limits, list refresh** (normative—read before writes/admin list changes) | `docs/01-Vision-Architecture.md` → **TECHNICAL** → **Backend** / **Frontend** *Principles* + Backend 📐 |
+| **Product invariants vs efficiency** (counts, derived tags—no shortcuts that break them; escalate conflicts) | `.cursor/rules/# AI_InteractionRules.mdc` → **Product invariants vs efficiency**; `docs/01-Vision-Architecture.md` → **Denormalized counts** principle + 📐 **Contract vs product** |
 | App areas: features (buckets + 📐/📘) per section | `docs/02-Application.md` |
 | Execution plan, phased sequencing (`⭕1` only) | `docs/03-Implementation.md` |
 | Theme: semantic tokens, presets, reader shell & responsive layout (§9), design-led reconciliation | `docs/04-Theme-Design-Contract.md` |
@@ -14,7 +17,7 @@ This file is an **index only**. Canonical instructions are not duplicated here (
 
 **Document count** — Do **not** add new top-level `docs/*.md` files unless the author explicitly approves a new document. Integrate new guidance into the existing split: vision/stack → `01`; app features & behavior → `02`; phased work → `03`; tokens **and** reader responsive/nav layout contract → `04` §9; guided-archive seed → `05`. If unsure, extend the closest existing section rather than creating `06-…`.
 
-For new work: the author states **what**; the agent proposes **how** after assessment. Implement only after explicit approval.
+For new work: the author states **what**; the agent proposes **how** after assessment. Implement only after explicit approval. If something important is adjacent but **not** specified (extra files, shared state, separate screens), **ask** before adding it to the edit set—do not bundle it by default.
 
 **Operational:** Run **`npm run backup:database`** from the repo root before large Firestore-changing work (e.g. mass import) when the author expects the agent to handle backups; it requires a local `.env` with Firebase Admin + `ONEDRIVE_PATH` (and optional Typesense vars). See `docs/NPM-SCRIPTS.md` → **Firebase Admin CLI (dotenv)** and the `backup:database` row.
 

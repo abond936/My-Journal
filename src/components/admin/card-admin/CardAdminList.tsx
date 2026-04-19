@@ -14,7 +14,9 @@ import EditableStatusCell from './EditableStatusCell';
 import ResizableHeader from './ResizableHeader';
 import EditModal from './EditModal';
 import MacroTagSelector from './MacroTagSelector';
-import DimensionTagCellEditor from './DimensionTagCellEditor';
+import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
+import { DIMENSION_LABEL, DIMENSION_ORDER } from '@/lib/utils/tagDisplay';
+import { buildResolvedTagDimensionMap } from '@/lib/utils/tagDimensionResolve';
 
 const COLUMN_WIDTHS_KEY = 'cardAdminColumnWidths';
 const DEFAULT_COLUMN_WIDTHS = {
@@ -27,12 +29,26 @@ const DEFAULT_COLUMN_WIDTHS = {
   content: 80,
   gallery: 80,
   children: 80,
-  who: 150,
-  what: 150,
-  when: 150,
-  where: 150,
+  dimensionTags: 600,
   actions: 280
 };
+
+function loadColumnWidths(): typeof DEFAULT_COLUMN_WIDTHS {
+  if (typeof window === 'undefined') return { ...DEFAULT_COLUMN_WIDTHS };
+  const raw = localStorage.getItem(COLUMN_WIDTHS_KEY);
+  if (!raw) return { ...DEFAULT_COLUMN_WIDTHS };
+  try {
+    const parsed = JSON.parse(raw) as Record<string, number>;
+    const merged = { ...DEFAULT_COLUMN_WIDTHS, ...parsed };
+    if (!parsed.dimensionTags && (parsed.who || parsed.what || parsed.when || parsed.where)) {
+      merged.dimensionTags =
+        (parsed.who ?? 150) + (parsed.what ?? 150) + (parsed.when ?? 150) + (parsed.where ?? 150);
+    }
+    return merged;
+  } catch {
+    return { ...DEFAULT_COLUMN_WIDTHS };
+  }
+}
 
 interface CardAdminListProps {
   cards: Card[];
@@ -64,11 +80,7 @@ export default function CardAdminList({
   const tagMap = React.useMemo(() => new Map(allTags.map(t => [t.docId!, t.name])), [allTags]);
 
   // Column width management
-  const [columnWidths, setColumnWidths] = useState(() => {
-    if (typeof window === 'undefined') return DEFAULT_COLUMN_WIDTHS;
-    const saved = localStorage.getItem(COLUMN_WIDTHS_KEY);
-    return saved ? { ...DEFAULT_COLUMN_WIDTHS, ...JSON.parse(saved) } : DEFAULT_COLUMN_WIDTHS;
-  });
+  const [columnWidths, setColumnWidths] = useState(loadColumnWidths);
 
   const handleColumnResize = useCallback((columnId: keyof typeof DEFAULT_COLUMN_WIDTHS, width: number) => {
     setColumnWidths(prev => {
@@ -114,34 +126,10 @@ export default function CardAdminList({
     []
   );
 
-  const tagById = React.useMemo(() => new Map(allTags.map((tag) => [tag.docId!, tag])), [allTags]);
-
-  const resolvedTagDimensionById = React.useMemo(() => {
-    const resolved = new Map<string, 'who' | 'what' | 'when' | 'where' | undefined>();
-    const resolveDimension = (tagId: string): 'who' | 'what' | 'when' | 'where' | undefined => {
-      if (resolved.has(tagId)) return resolved.get(tagId);
-      const visited = new Set<string>();
-      let current = tagById.get(tagId);
-      while (current?.docId && !visited.has(current.docId)) {
-        visited.add(current.docId);
-        const raw = current.dimension ? String(current.dimension) : '';
-        const dim = raw === 'reflection' ? 'what' : raw;
-        if (dim === 'who' || dim === 'what' || dim === 'when' || dim === 'where') {
-          resolved.set(tagId, dim);
-          return dim;
-        }
-        if (!current.parentId) break;
-        current = tagById.get(current.parentId);
-      }
-      resolved.set(tagId, undefined);
-      return undefined;
-    };
-    for (const tag of allTags) {
-      if (!tag.docId) continue;
-      resolveDimension(tag.docId);
-    }
-    return resolved;
-  }, [allTags, tagById]);
+  const resolvedTagDimensionById = React.useMemo(
+    () => buildResolvedTagDimensionMap(allTags),
+    [allTags]
+  );
 
   const getDirectTagsByDimension = useCallback(
     (card: Card, dimension: 'who' | 'what' | 'when' | 'where') =>
@@ -162,23 +150,6 @@ export default function CardAdminList({
     },
     [getDirectTagsByDimension]
   );
-
-  const dimensionOptions = React.useMemo(() => {
-    const dims: Record<'who' | 'what' | 'when' | 'where', Tag[]> = {
-      who: [],
-      what: [],
-      when: [],
-      where: [],
-    };
-    for (const tag of allTags) {
-      const raw = tag.dimension ? String(tag.dimension) : '';
-      const dim = raw === 'reflection' ? 'what' : raw;
-      if (dim === 'who' || dim === 'what' || dim === 'when' || dim === 'where') {
-        dims[dim].push(tag);
-      }
-    }
-    return dims;
-  }, [allTags]);
 
   const applyDimensionSuggestions = useCallback(
     async (card: Card, dimension: 'who' | 'what' | 'when' | 'where') => {
@@ -227,17 +198,12 @@ export default function CardAdminList({
             <ResizableHeader width={columnWidths.children} onResize={(w) => handleColumnResize('children', w)}>
               Children
             </ResizableHeader>
-            <ResizableHeader width={columnWidths.who} onResize={(w) => handleColumnResize('who', w)}>
-              Who
-            </ResizableHeader>
-            <ResizableHeader width={columnWidths.what} onResize={(w) => handleColumnResize('what', w)}>
-              What
-            </ResizableHeader>
-            <ResizableHeader width={columnWidths.when} onResize={(w) => handleColumnResize('when', w)}>
-              When
-            </ResizableHeader>
-            <ResizableHeader width={columnWidths.where} onResize={(w) => handleColumnResize('where', w)}>
-              Where
+            <ResizableHeader
+              width={columnWidths.dimensionTags}
+              minWidth={320}
+              onResize={(w) => handleColumnResize('dimensionTags', w)}
+            >
+              Tags (Who · What · When · Where)
             </ResizableHeader>
             <ResizableHeader width={actionsColumnWidth} onResize={(w) => handleColumnResize('actions', w)}>
               Actions
@@ -283,27 +249,30 @@ export default function CardAdminList({
               <td style={{ width: columnWidths.content }}>{card.content ? 'Y' : 'N'}</td>
               <td style={{ width: columnWidths.gallery }}>{card.galleryMedia?.length || 0}</td>
               <td style={{ width: columnWidths.children }}>{card.childrenIds?.length || 0}</td>
-              {(() => {
-                const render = (ids: string[], className: string) => ids.map(id => (
-                  <span key={id} className={className}>{tagMap.get(id) ?? id}</span>
-                ));
-                const renderDimensionCell = (dimension: 'who' | 'what' | 'when' | 'where', width: number) => {
-                  const displayIds = getDirectTagsByDimension(card, dimension);
-                  const suggestionIds = getMediaSuggestionTags(card, dimension);
-                  const hasSuggestions = suggestionIds.length > 0;
-                  return (
-                    <td style={{ width }} key={`${card.docId}-${dimension}`}>
-                      <DimensionTagCellEditor
-                        card={card}
-                        dimension={dimension}
-                        tagIds={displayIds}
-                        dimensionOptions={dimensionOptions[dimension]}
-                        tagNameMap={tagMap}
-                        onUpdateCard={onUpdateCard}
-                      />
-                      <div className={styles.tagSuggestionRow}>
+              <td className={styles.tableTagCommandCell} style={{ width: columnWidths.dimensionTags }}>
+                <CardDimensionalTagCommandBar
+                  card={card}
+                  allTags={allTags}
+                  variant="compact"
+                  onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
+                />
+                <div className={styles.tableMediaDimGrid}>
+                  {DIMENSION_ORDER.map((dimension) => {
+                    const suggestionIds = getMediaSuggestionTags(card, dimension);
+                    const hasSuggestions = suggestionIds.length > 0;
+                    return (
+                      <div key={dimension} className={styles.tableMediaDimCell}>
+                        <div className={styles.tableMediaDimLabel}>{DIMENSION_LABEL[dimension]}</div>
                         <div className={styles.tagSuggestions}>
-                          {hasSuggestions ? render(suggestionIds, styles.suggestionTag) : <span className={styles.noSuggestion}>No media suggestions</span>}
+                          {hasSuggestions ? (
+                            suggestionIds.map((id) => (
+                              <span key={id} className={styles.suggestionTag}>
+                                {tagMap.get(id) ?? id}
+                              </span>
+                            ))
+                          ) : (
+                            <span className={styles.noSuggestion}>None</span>
+                          )}
                         </div>
                         <button
                           type="button"
@@ -314,18 +283,10 @@ export default function CardAdminList({
                           Apply {dimension}
                         </button>
                       </div>
-                    </td>
-                  );
-                };
-                return (
-                  <>
-                    {renderDimensionCell('who', columnWidths.who)}
-                    {renderDimensionCell('what', columnWidths.what)}
-                    {renderDimensionCell('when', columnWidths.when)}
-                    {renderDimensionCell('where', columnWidths.where)}
-                  </>
-                );
-              })()}
+                    );
+                  })}
+                </div>
+              </td>
               <td style={{ width: actionsColumnWidth, minWidth: actionsColumnWidth }}>
                 <button
                   onClick={() => handleEditClick(card.docId)}
