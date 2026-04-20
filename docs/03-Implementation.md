@@ -66,13 +66,6 @@ Legend:
   - Owner and scope are explicitly recorded in the work item/PR notes.
   - A separate emulator-backed integrity job runs nightly and on manual dispatch (non-blocking during stabilization).
 
-  **Operational ownership (runbook)**
-  - Assign one weekly **Integrity Owner** to monitor `integrity-gate` and `Integrity Emulator` workflow runs.
-  - On any failure, triage same day and open a fix ticket immediately with owner + ETA.
-  - If `integrity-gate` fails, block merge until resolved; if nightly emulator fails, treat as high-priority and resolve before promotion to required status.
-  - Re-evaluate emulator job after 7 consecutive green nightly runs and then promote it to a required check for `main`.
-  - **Validation evidence (2026-04-20)** — local run `npm run test:integrity` passed (`4` suites, `12` tests; `1` emulator suite skipped by default), `npm run test:integrity:emulator` passed (`2` tests), and narrow mutation milestones merged (`#8` bulk card tags, `#10` bulk media tags) with route-level guard coverage.
-
 
 
 ### Phase 2 — Admin Productivity
@@ -81,46 +74,59 @@ Legend:
 
 *Card Management (`02-Application.md`)*
 
+  **Priority bands**
+  - **P1 (import-blocking / workflow-critical)** - **Card edit layout polish**; **Tag picker ergonomics**.
+  - **P2 (high workflow value)** - **Grid density reduction**; **Grid tag-chip layout**; **Context Assist**.
+  - **P3 (quality extension)** - **Writing Assist**.
+
 - **Writing Assist** - In card edit, provide a simple AI assist for selected text in title/subtitle/excerpt/content with explicit actions (`Make concise`, `Make engaging`, `Elaborate`, `Fix grammar`) and suggestion-only outcomes (`Replace`, `Insert below`, `Dismiss`)—never auto-apply.
 
 - **Context Assist** - Keep historical/background context as a distinct output contract from writing rewrites (even when requested together), so context remains separately reviewable/accept-dismiss and does not couple to rewrite acceptance.
 
 - **Grid tag-chip layout** - In Card Management grid view, move dimensional tag chips to a left-side vertical stack and remove inline dimension-label text (`Who`, `What`, `When`, `Where`) so chips carry the signal without redundant labels.
 - **Grid density reduction** - Reduce Card Management grid card footprint by ~25% (thumbnail/card block dimensions and spacing) while preserving legibility, click targets, and selection affordances.
+- **Card edit layout polish** - Align card-edit page chrome and section hierarchy for a cleaner authoring flow: header/back/action alignment, consistent section heading scale, tighter spacing between Body/Tags/Gallery/Child Cards, and clearer section ordering.
+- **Tag picker ergonomics** - Keep macro-tag editing compact and predictable in card edit: controlled expansion below the command bar, root-first dimensional presentation, and searchable keyboard-friendly result selection with path clarity.
 
 *Tag Management (`02-Application.md`)*
+
+  **Priority bands**
+  - **P1 (foundation dependency)** - **Sidebar integration model**.
+  - **P2 (consistency hardening)** - **DnD interaction contract**.
 
 - **Sidebar integration model** - Keep one canonical tag tree/data model (`TagProvider`) and support **different views of the same tree**: lightweight viewer sidebar filter view for all users, admin-augmented sidebar controls for admins, and full edit/reorder/reparent workflows on `/admin/tag-admin` / admin surfaces (not a duplicated second tree model).
 - **DnD interaction contract** - Before expanding drag-and-drop to additional admin flows (card assignment, gallery/media assignment, broader tree operations), standardize one interaction contract across admin DnD surfaces: drop semantics (on vs between), sensors/activation thresholds, visual drop indicators, drag handles, and keyboard parity. Expansion is gated on this consistency pass.
 
 *Media Management (`02-Application.md`)*
 
+  **Priority bands**
+  - **P1 (import-readiness / integrity)** - **Import Metadata Precedence**.
+  - **P2 (operator productivity)** - **Media identity & duplicate signals**; **Unassigned duplicate triage**; **Grid admin ergonomics**; **Grid tagging UX + empty-dimension filter**; **Table header attachment**; **Admin pagination consistency**.
+  - **P3 (already validated in current baseline)** - **Media delete & referrer resolution**.
+
 - **Import Metadata Precedence** - Finalize precedence policy for embedded metadata vs sidecar JSON when both are present across all import paths.
 - **Media delete & referrer resolution** - Align `getCardsReferencingMedia` / `deleteMediaWithCardCleanup` with the same reference surface as `removeMediaReferenceFromCard` (cover, gallery, `contentMedia`, inline HTML `data-media-id`), and/or reconcile `referencedByCardIds` before destructive work, so delete and filters do not trust a stale or incomplete array. Complements Administration notes on card PATCH vs missing `media`.
-  - Progress update: media delete/referrer resolution now uses authoritative card-surface scans (not `referencedByCardIds` alone), removes references across all card surfaces in one pass, blocks deletion when references remain unresolved, and returns route-level contract `409 MEDIA_DELETE_BLOCKED_REFERENCES` on `DELETE /api/images/{id}`.
 - **Media identity & duplicate signals** - In admin lists, treat `media.docId` as canonical identity; `filename` is display metadata and may collide (`image.webp`, etc.). Add optional canonical columns/signals (for example `docId`, normalized `sourcePath`, checksum/hash/size where available) so duplicate triage and operator actions do not depend on filename uniqueness.
-  - Progress update: media admin now exposes canonical identity signals in both table and grid (explicit `docId` and `sourcePath`), reducing filename-only ambiguity during duplicate triage.
 - **Unassigned duplicate triage** - Add explicit triage flow for `assignment=unassigned` items that appear duplicated by source-derived/content-derived signals, with sortable/groupable views (starting with `sourcePath`) to quickly confirm, keep, merge intent, or remove.
-  - Progress update: Media admin now includes an unassigned-only duplicate triage mode that reorders results `sourcePath` first (then filename/docId) in both table and grid views.
 - **Grid admin ergonomics** - In Media **grid** view, remove filename text from the card body, increase bulk-select checkbox target sizes (row and select-all) for reliable admin use, and keep visual focus/checked states obvious.
 - **Grid tagging UX + empty-dimension filter** - Replace truncated/illegible grid tag display with an admin-usable layout (readable removable chips and inline add/search affordance on each item), align interaction model with card-management tagging (`search → selectable results → chips with remove X`), and support per-dimension filter modes (`has any`, `is empty`, `matches tag`) for Who/What/When/Where.
-  - Progress update: per-dimension media filter modes (`has any`, `is empty`, `matches tag`) are now available in Media admin table and grid views for Who/What/When/Where.
-  - Progress update: media grid now supports inline per-item retagging via `Edit tags…` using the shared searchable tag picker flow.
-  - Progress update: inline grid retagging now provides deterministic save behavior (no close on failure) with per-item success/error feedback.
 - **Table header attachment** - In media table view, keep the header attached to the top edge of the table scroll container (correct sticky offset/z-index) so it remains visible while rows scroll.
-  - Progress update: compact embedded media tables now use container-local sticky headers (`top: 0`) with their own scroll container; full Media Admin retains sticky offset under admin chrome.
 - **Admin pagination consistency** - Standardize pagination controls on **Previous/Next** across admin media surfaces (Media Admin, Media Triage, related admin panels) with consistent wording/states for seek vs indexed pagination. This applies to admin only; reader/content surfaces remain continuous.
-  - Progress update: Media Triage pagination copy now matches Media Admin (seek-mode hint + total-items phrasing), and seek navigation now honors previous-page cursor history in shared MediaProvider pagination state.
-  - Progress update: bulk media tag add/replace/remove now uses `bulkApplyMediaTags` (batched transactions) instead of per-item patch/recompute loops; route-level integrity guard coverage added for the narrow path.
+- **Validation evidence (2026-04-20)** - `npm run test:integrity:emulator` now passes with media-delete/referrer scenarios covering stale `referencedByCardIds` reconciliation, multi-surface card detach (`coverImageId` + `galleryMedia` + `contentMedia` + inline HTML), and missing-media no-op safety.
 
 *Administration (`02-Application.md`)*
+
+  **Priority bands**
+  - **P1 (cross-surface reliability)** - **Error/Warning/Notification standardization**.
 
 - **Error/Warning/Notification standardization** - Standardize feedback across admin and reader surfaces with one message contract: domain-coded API errors plus consistent client rendering for success/info/warning/error, actionable copy, and retry guidance where relevant; avoid surfacing raw Firestore/transport errors to users. Align implementation with `docs/04-Theme-Design-Contract.md` §10 and accessibility semantics.
 
 *Backend (`01-Vision-Architecture.md`)*
 
+  **Priority bands**
+  - **P1 (architectural correctness)** - **Narrow mutation paths**.
+
 - **Narrow mutation paths** - Route tag-only and similar **narrow** admin mutations through dedicated service functions that batch Firestore field updates and derived-field recompute **once per request** where possible; avoid N sequential full `updateCard` pipelines for bulk work. Keep wide `updateCard` (or equivalent) for structural and rich-content changes.
-  - Progress update: bulk card tag add/remove now uses `bulkApplyTagDelta` (batched transactions) instead of per-card `updateCard`; remaining narrow mutation paths stay in scope.
 
 
 
@@ -132,11 +138,18 @@ Legend:
 
 *Theme Management (`02-Application.md`)*
 
+  **Priority bands**
+  - **P2 (reader polish enabler)** - **CSS Tokenization**.
+
 - **CSS Tokenization** - Move **design-affecting** values—colors, typography scale, spacing rhythm, radii, shadows, and key surfaces—into `theme.css` variables (and Theme Management where appropriate) so literals in modules do not block **plug-and-play designs**. Not every numeric value in the app is a “theme” concern (e.g. one-off layout math); scope is what should change when switching designs. Grow coverage incrementally toward named presets.
 
 
 
 *Content Page (`02-Application.md`)*
+
+  **Priority bands**
+  - **P1 (reader UX contract)** - **Feed Presentation Matrix**; **Layout `@media` hardening**.
+  - **P2 (experience enhancement)** - **In-Feed Expansion**; **Orientation-aware Framing**; **Rail Variant**.
 
 - **Layout `@media` hardening** - Replace `var(--breakpoint-*)` inside `@media` where it affects layout (`V2ContentCard`, `Navigation`, `ViewLayout`, `ContentCard`, `ThemeAdmin`, `TagTree`, etc.) so breakpoints match `docs/04-Theme-Design-Contract.md` §9.2 (literal `px`).
 - **Feed Presentation Matrix** - Define and enforce a single presentation contract across feed/detail/rail contexts for each `type` + `displayMode` pair, including interaction model (open vs expand), title/excerpt behavior, and media framing rules.
@@ -153,10 +166,14 @@ Legend:
 
 *Left Navigation (`02-Application.md`)*
 
+  **Priority bands**
+  - **P1 (mobile reader usability)** - **Mobile-first filter redesign**.
+  - **P2 (behavioral consistency)** - **Reader Order Model**; **Sort Semantics**.
+
 - **Reader Order Model** - Split ordering by mode: **Freeform** keeps Random plus deterministic order options (`When`, `Created`, `Title`, `Who`, `What`, `Where`) with `Asc/Desc`; **Curated** ignores sort controls and always follows curated tree/TOC order.
 
 - **Sort Semantics** - Define deterministic ordering rules for all reader order modes: explicit tie-break chain, consistent undated policy for `When` (undated at end), and normalized dimension ordering behavior for `Who/What/Where`.
-- **Mobile-first filter redesign** - Sidebar freeform filters move to icon-led chip controls: rename **Card type** to **Cards** and replace single select with five toggle chips/buttons (`story`, `gallery`, `qa`, `quote`, `callout`) where “all” means all five active; Tags remove the `All` dimension tab and use only `Who/What/When/Where`; remove legacy copy/controls for **Show children after tag-filtered parents** from reader sidebar UX; tag tree is collapsed by default (especially mobile) and expands per selected dimension on demand.
+- **Mobile-first filter redesign** - Sidebar freeform filters move to icon-led chip controls: rename **Card type** to **Cards** and replace single select with five toggle chips/buttons (`story`, `gallery`, `qa`, `quote`, `callout`) where “all” means all five active; Tags remove the `All` dimension tab and use only `Who/What/When/Where`; remove legacy copy/controls for **Show children after tag-filtered parents** from reader sidebar UX; simplify search control copy/presentation (`Search tags...` in-field prompt), reduce sidebar visual density, and keep tag tree collapsed by default (especially mobile) with per-dimension expansion on demand.
 
 
 

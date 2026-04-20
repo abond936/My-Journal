@@ -1,28 +1,36 @@
 Prompts
 
-Before we begin, please commit this to memory:
+1) Session Start (grounding only)
+Read `AGENTS.md`, `.cursor/rules/# AI_InteractionRules.mdc`, and `docs/01-Vision-Architecture.md` (TECHNICAL backend/frontend principles). Then read the relevant feature area in `docs/02-Application.md` and sequencing context in `docs/03-Implementation.md` if needed. Confirm completion only; no summary.
 
-- Understand the strategic architecture and the specific implementation of the entire application by reading docs/01-Vision-Architecture.md, docs/02-Application.md, docs/03-Implementation.md, and the entire codebase. 
+2) Assess Request
+ASSESS this request:
+- Outcome:
+- Constraints:
+- Affected area(s):
+- Risks (architecture, UI, integrity, error handling):
+Return findings grounded in docs + current code behavior.
 
-- Make all recommendations consistent with the implemented strategy/architecture or raise the inconsistencies that a recommendation may create. The architecture can be changed if properly coordinated.
+3) Plan Request
+RECOMMEND a plan with max 3 substantive items:
+- Option(s) + recommendation
+- Exact edit scope (files/surfaces)
+- Verification plan
+Then ask: "Do you approve this exact edit set? May I proceed?"
 
-- You may read and analyze files and give your recommendation and rationale, but MAKE NO CHANGES OR ADDITIONS TO THE CODEBASE 
-OR DIRECTORY/FILE STRUCTURE WITHOUT MY EXPLICIT APPROVAL--EVER!
+4) Execute Request
+EXECUTE only approved items. Keep scope closed. Preserve product invariants. After edits, report:
+- What changed
+- What was verified
+- Residual risks / follow-ups
 
-- Check the existing codebase for existing code, logic or functionality before recommending additions. 
+5) Doc Update Request
+Update docs as part of done state where behavior or architecture changed:
+- `docs/02-Application.md` for feature/status truth
+- `docs/03-Implementation.md` for active `⭕1` sequencing
+- `docs/01-Vision-Architecture.md` for architectural facts/decisions
+Keep entries concise and structured (title + one-line description), not long prose.
 
-- Once approved, change or create ONLY what has been approve to be changed, and nothing else. If you find that other changes may be required than you initially recommended and were approved to make, stop, provide the analysis and recommendation and seek approval for the other changes.
 
 
 
-EDIT FAILURES - When you receive messages that edits are not accepted or otherwise incorrect, check the file directly. The messages are almost always incorrect.
-
-This project is reasonably mature. Some architectural elements remain open and more functionality needs to be built out, but it is a fairly sophisticated and complex application. 
-
-For us to work efficiently and effectively together, you must have a thorough macro and micro understanding of the application so that your assessments and recommendations consistent with the long-term architecture and goals and not break what works for the sake of a short-term fix. 
-
-Please read docs/01-Vision-Architecture.md, docs/02-Application.md, and docs/03-Implementation.md, and the codebase thoroughly to familiarize yourself with the details of the project—the data models, schemas, components, services and APIs. 
-
-Then please give me your assessment of the state of development (good and bad), and any inconsistencies you may have found between the two.
-
-I expect you to do a thorough job. The code and logic is complex and a cursory review will not work. Do not make assumptions. Chase every path all the way to the source.

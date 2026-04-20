@@ -9,6 +9,32 @@ import {
   findDerivedFieldViolations,
 } from '@/lib/integrity/invariantChecks';
 
+jest.mock('@/lib/config/firebase/admin', () => ({
+  getAdminApp: () => {
+    const { getApps, initializeApp } = require('firebase-admin/app');
+    const { getFirestore } = require('firebase-admin/firestore');
+    const app =
+      getApps()[0] ??
+      initializeApp({
+        projectId: 'demo-my-journal-integrity',
+        storageBucket: 'demo-my-journal-integrity.appspot.com',
+      });
+    return {
+      firestore: () => getFirestore(app),
+      storage: () => ({
+        bucket: () => ({
+          file: () => ({
+            delete: async () => undefined,
+            setMetadata: async () => undefined,
+          }),
+        }),
+      }),
+    };
+  },
+}));
+
+import { deleteMediaWithCardCleanup, getCardsReferencingMedia } from '@/lib/services/cardService';
+
 const hasEmulator = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
 const describeIfEmulator = hasEmulator ? describe : describe.skip;
 
@@ -22,6 +48,7 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
     if (getApps().length === 0) {
       app = initializeApp({
         projectId,
+        storageBucket: 'demo-my-journal-integrity.appspot.com',
       });
     } else {
       app = getApps()[0]!;
@@ -125,6 +152,78 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
     expect(dangling).toEqual([
       { cardId: 'card-bad', mediaId: 'media-missing', field: 'coverImageId' },
     ]);
+  });
+
+  it('reconciles stale media backrefs and detaches all card surfaces during delete', async () => {
+    const db = getFirestore(app);
+
+    await db.collection('media').doc('media-delete').set({
+      filename: 'delete-me.jpg',
+      storagePath: 'images/delete-me.jpg',
+      referencedByCardIds: ['card-only-cover'],
+      updatedAt: Date.now(),
+    });
+
+    await db.collection('cards').doc('card-multi').set({
+      docId: 'card-multi',
+      status: 'published',
+      coverImageId: 'media-delete',
+      galleryMedia: [{ mediaId: 'media-delete', order: 0 }],
+      contentMedia: ['media-delete'],
+      content: '<p>before</p><figure data-media-id="media-delete"><img src="x" /></figure>',
+      tags: [],
+      filterTags: {},
+      who: [],
+      what: [],
+      when: [],
+      where: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    // Authoritative scan should discover actual references beyond stale referencedByCardIds.
+    const refsBeforeDelete = await getCardsReferencingMedia('media-delete');
+    expect(refsBeforeDelete).toEqual(['card-multi']);
+
+    await deleteMediaWithCardCleanup('media-delete');
+
+    const cardAfter = await db.collection('cards').doc('card-multi').get();
+    expect(cardAfter.exists).toBe(true);
+    const after = cardAfter.data() as IntegrityCard;
+    expect(after.coverImageId ?? null).toBeNull();
+    expect(after.galleryMedia ?? []).toEqual([]);
+    expect(after.contentMedia ?? []).toEqual([]);
+    expect((after as { content?: string }).content ?? '').not.toContain('media-delete');
+
+    const mediaAfter = await db.collection('media').doc('media-delete').get();
+    expect(mediaAfter.exists).toBe(false);
+  });
+
+  it('does not mutate cards when delete is requested for missing media docs', async () => {
+    const db = getFirestore(app);
+
+    // Card still references an ID that has no media doc.
+    await db.collection('cards').doc('card-orphan-ref').set({
+      docId: 'card-orphan-ref',
+      status: 'published',
+      coverImageId: 'media-missing',
+      galleryMedia: [],
+      contentMedia: [],
+      tags: [],
+      filterTags: {},
+      who: [],
+      what: [],
+      when: [],
+      where: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    await expect(deleteMediaWithCardCleanup('media-missing')).resolves.toBeUndefined();
+
+    const cardAfter = await db.collection('cards').doc('card-orphan-ref').get();
+    expect(cardAfter.exists).toBe(true);
+    expect(cardAfter.data()?.coverImageId).toBe('media-missing');
   });
 });
 

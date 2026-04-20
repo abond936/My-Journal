@@ -120,16 +120,21 @@ Legend:
 - **Search Tags** - Search input filters the visible tree (`Type to filter...`), while preserving selected chips.
 - **Sort by** - Random | When (Desc/Asc) | Created (Desc/Asc) | Title (A-Z/Z-A) | Who (A-Z/Z-A) | What (A-Z/Z-A) | Where (A-Z/Z-A).
 - **Group by** - None | When | Who | What | Where. Grouped sections render in the feed when enabled; collection-list mode does not group.
+- **Mode quick toggle** - Freeform/Curated mode buttons are implemented directly in the sidebar control surface.
+- **Tag tree target size** - Tag-tree selection checkboxes use larger tap targets for easier mobile interaction.
 
 ⭕1 **Planned**
 - **Reader Order Model** - Split ordering by mode: **Freeform** keeps Random plus deterministic order options (`When`, `Created`, `Title`, `Who`, `What`, `Where`) with `Asc/Desc`; **Curated** ignores sort controls and always follows curated tree/TOC order.
 - **Sort Semantics** - Define deterministic ordering rules for all reader order modes: explicit tie-break chain, consistent undated policy for `When` (undated at end), and normalized dimension ordering behavior for `Who/What/Where`.
-- **Mobile-first filter redesign** - Sidebar freeform filters move to icon-led chip controls: rename **Card type** to **Cards** and replace single select with five toggle chips/buttons (`story`, `gallery`, `qa`, `quote`, `callout`) where “all” means all five active; Tags remove the `All` dimension tab and use only `Who/What/When/Where`; remove legacy copy/controls for **Show children after tag-filtered parents** from reader sidebar UX; tag tree is collapsed by default (especially mobile) and expands per selected dimension on demand.
+- **Mobile-first filter redesign** - Sidebar freeform filters move to icon-led chip controls: rename **Card type** to **Cards** and replace single select with five toggle chips/buttons (`story`, `gallery`, `qa`, `quote`, `callout`) where “all” means all five active; Tags remove the `All` dimension tab and use only `Who/What/When/Where`; remove legacy copy/controls for **Show children after tag-filtered parents** from reader sidebar UX; simplify search control copy/presentation (`Search tags...` in-field prompt), reduce sidebar visual density, and keep tag tree collapsed by default (especially mobile) with per-dimension expansion on demand.
 
 ⭕2 **Future**
 - **Tag Tree Counts** - Fix numbering and add media counts "(x/y)" on tag tree nodes.
 - **Collection Metadata** - Implement collection metadata (child counts).
 - **Chron Tree** - Provide tree in chronological order (Year / Month / What) for browsing.
+❓ **Open**
+- **Group by control** - Confirm whether reader sidebar should keep `Group by` as a primary control or move/remove it.
+- **Created sort visibility** - Confirm whether `Created` sort options remain visible in reader sidebar or move behind an advanced mode.
 
 ---
 
@@ -302,11 +307,15 @@ Legend:
 - **Admin Ordering** - Admin lists support deterministic order controls (`When`, `Created`, `Title`, `Who`, `What`, `Where`) with explicit tie-break behavior and no random ordering default.
 - **Admin filter depth** - Card admin supports card-dimension missing filters (`Card Who/What/When/Where: No tags`) and page-level media-signal row filters (`Media Who/What/When/Where`) layered on the visible admin list.
 - **Bulk tag mutation path** - `POST /api/cards/bulk-update-tags` add/remove mode now uses a dedicated batched service (`bulkApplyTagDelta`) that updates card tag-derived fields and tag counts in bulk transactions instead of per-card `updateCard` calls.
+- **Card edit labels** - Card edit now uses concise section/button labels (`Gallery`, `Add`) and removes legacy child-card helper copy (`Add...`, `Current Children`).
+- **Card edit control grouping** - `Status`, `Type`, and `Display Mode` controls are grouped in the top card-edit header section.
 
 ⭕1 **Planned**
 - **Context Assist** - Keep historical/background context as a distinct output contract from writing rewrites (even when requested together), so context remains separately reviewable/accept-dismiss and does not couple to rewrite acceptance.
 - **Grid tag-chip layout** - In Card Management grid view, move dimensional tag chips to a left-side vertical stack and remove inline dimension-label text (`Who`, `What`, `When`, `Where`) so chips carry the signal without redundant labels.
 - **Grid density reduction** - Reduce Card Management grid card footprint by ~25% (thumbnail/card block dimensions and spacing) while preserving legibility, click targets, and selection affordances.
+- **Card edit layout polish** - Align card-edit page chrome and section hierarchy for a cleaner authoring flow: header/back/action alignment, consistent section heading scale, tighter spacing between Body/Tags/Gallery/Child Cards, and clearer section ordering.
+- **Tag picker ergonomics** - Keep macro-tag editing compact and predictable in card edit: controlled expansion below the command bar, root-first dimensional presentation, and searchable keyboard-friendly result selection with path clarity.
 
 ⭕2 **Future**
 - **Card Edit Mosaic** - Mosaic layout for gallery manager in card edit (align with Apple/Google Photos-style browsing).
@@ -548,46 +557,4 @@ Legend:
 *Features*
 ⭕2 **Future**
 - **Gallery Styles Management** - Devise preconfigured card styles for selection — masonry, mosaic, etc.
-
-
-
-
-Summary of needed improvements.
-
-**Card Edit**
-- Move back button to left, consistent with Back from View.
-- Left justify instead of center justify (?)
-- Make narrower to emulate eventual view or provide preview. Can the page look like the view page, but editable?
-- Narrow the "Edit Card" bar.
-- Move Status, Type, Display Mode to top.
-- Reduce space between Content editor and Gallery Images.
-- Sync the size of edit page headings--Status, Type, Display Mode, Tags, Gallery, Child Cards.
-- Rename "Gallery Images" to "Gallery" and left-align with other section titles.
-- Remove  from Child Cards the text "Add..." and "Current Children".
-- Rename "Add Photos" to "Add" and right align with the Tags 'edit' button.
-- Use similar background color for Gallery.
-- Use a title for each section: Title, Body, Gallery, Child Cards.
-- The Edit Tags expands too large. Make it appear as if the search bar and tag create/select section expands below.
-- Shouldn't the zNAs for each dimension be or at least appear as children of the root dimensions? WHO/zNA, etc.
-- Each of the dimensions should have the root at the top--WHO | WHAT | WHEN | WHERE
-- Move Tags section to below the Body section.
-- Have the available tags (with their precedence--WHO/Family/Parents/Father/Robert) appear below the search bar with the ability to arrow down and select the desired tag.
-
-**Left Sidebar**
-- The left sidebar does not look particularly mobile-like and is very busy.
-- Open/Close - To save space and improve navigation, Move the close arrow to the right of the word "Explore" and when closed, put the open arrow on the same line so it lookslike the arrows are dragging open or pushing closed the sidebar.
-- Initially show buttons for Freeform and Curated as is.
-- Then horizontal buttons for sections for Cards and Tags.
-- OnClick Cards - Expand down to show 5 buttons with icon and name that toggle on and off changing the filter. All buttons toggled on (default) is "All" so no need for an all button.
-- OnClick Tags - Expand down to show 4 buttons with icon and name that when clicked, open that dimension's tree. After selection, show selections below dimension's button. When no selections are made, the default is all, so no need for an "All" button.
-- Group by - What does this section do that tag selections don't do? 
-- Sort by - Rename the selections to Random, When (Asc), When (Dec) and default to random. Created At is not a viable alternative to when, even if when is empty or zNA.
-- Reduce font size of tree.
-- Increase box selection size in tree slightly to make selection easier.
-- Search Tags bar - Put "Search tags..." inside the search bar as the prompt with no field title. Display results below the search input.
-
-
-
-
-**Theme**
-- 
+📐 **Improvement intake** - Capture new improvement needs as concise, structured feature bullets in the owning section (`⭕1`, `⭕2`, or `❓`) with clear title + one-line description, instead of long prose blocks.
