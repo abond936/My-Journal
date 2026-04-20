@@ -55,8 +55,12 @@
 }
 
 .tableContainerFull {
-  overflow-x: auto;
-  overflow-y: clip;
+  overflow: auto;
+  max-height: calc(100vh - var(--media-admin-chrome-offset, 240px) - var(--spacing-xl));
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-md);
+  background: var(--layout-background1-color);
+  --media-admin-header-top: 0px;
 }
 
 .tableContainerCompact {
@@ -105,7 +109,7 @@
 
 .headerCell {
   position: sticky;
-  top: var(--media-admin-chrome-offset, 120px);
+  top: var(--media-admin-header-top, var(--media-admin-chrome-offset, 120px));
   z-index: 52;
   padding: var(--spacing-sm);
   background: var(--layout-background2-color);
@@ -142,7 +146,7 @@
 
 .checkboxCell {
   position: sticky;
-  top: var(--media-admin-chrome-offset, 120px);
+  top: var(--media-admin-header-top, var(--media-admin-chrome-offset, 120px));
   z-index: 52;
   padding: var(--spacing-sm);
   background: var(--layout-background2-color);
