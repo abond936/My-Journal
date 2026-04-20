@@ -1,5 +1,11 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
-import { calculateDerivedTagData, updateTagCountsForMedia } from '@/lib/firebase/tagService';
+import {
+  calculateDerivedTagData,
+  getAllTags,
+  getTagAncestors,
+  organizeTagsByDimension,
+  updateTagCountsForMedia,
+} from '@/lib/firebase/tagService';
 import { Media } from '@/lib/types/photo';
 import type { Tag } from '@/lib/types/tag';
 import {
@@ -382,6 +388,72 @@ export async function importFromBuffer(
 
 type MediaPatchFields = Partial<Pick<Media, 'caption' | 'objectPosition' | 'tags'>>;
 
+const BULK_MEDIA_TAGS_CHUNK_SIZE = 400;
+
+type MediaTagDerived = {
+  filterTags: Record<string, boolean>;
+  who: string[];
+  what: string[];
+  when: string[];
+  where: string[];
+  hasTags: boolean;
+  hasWho: boolean;
+  hasWhat: boolean;
+  hasWhen: boolean;
+  hasWhere: boolean;
+  tags: string[];
+};
+
+async function deriveMediaTagFields(
+  rawTagIds: string[],
+  allTags: Tag[]
+): Promise<MediaTagDerived> {
+  const tags = Array.from(
+    new Set(rawTagIds.filter((id): id is string => typeof id === 'string' && id.trim().length > 0))
+  );
+  if (!tags.length) {
+    return {
+      tags: [],
+      filterTags: {},
+      who: [],
+      what: [],
+      when: [],
+      where: [],
+      hasTags: false,
+      hasWho: false,
+      hasWhat: false,
+      hasWhen: false,
+      hasWhere: false,
+    };
+  }
+
+  const ancestorTags = await getTagAncestors(tags, allTags);
+  const inheritedTags = Array.from(new Set([...tags, ...ancestorTags]));
+  const dimensionalTags = await organizeTagsByDimension(inheritedTags, allTags);
+  const who = dimensionalTags.who ?? [];
+  const what = dimensionalTags.what ?? [];
+  const when = dimensionalTags.when ?? [];
+  const where = dimensionalTags.where ?? [];
+  const filterTags = inheritedTags.reduce((acc, tagId) => {
+    acc[tagId] = true;
+    return acc;
+  }, {} as Record<string, boolean>);
+
+  return {
+    tags,
+    filterTags,
+    who,
+    what,
+    when,
+    where,
+    hasTags: tags.length > 0,
+    hasWho: who.length > 0,
+    hasWhat: what.length > 0,
+    hasWhen: when.length > 0,
+    hasWhere: where.length > 0,
+  };
+}
+
 async function applyTagFieldsToPayload(
   payload: Record<string, unknown>,
   tagIds: string[]
@@ -469,6 +541,89 @@ export async function patchMediaDocument(mediaId: string, updates: MediaPatchFie
 
   await mediaRef.update(payload);
   void syncMediaToTypesenseById(mediaId);
+}
+
+export async function bulkApplyMediaTags(
+  mediaIds: string[],
+  tagIds: string[],
+  mode: 'add' | 'replace' | 'remove' = 'add'
+): Promise<{ updatedIds: string[] }> {
+  const ids = Array.from(
+    new Set(mediaIds.filter((id): id is string => typeof id === 'string' && id.trim().length > 0))
+  );
+  if (!ids.length) return { updatedIds: [] };
+
+  const normalizedMode: 'add' | 'replace' | 'remove' =
+    mode === 'replace' || mode === 'remove' ? mode : 'add';
+  const incomingTags = Array.from(
+    new Set(tagIds.filter((id): id is string => typeof id === 'string' && id.trim().length > 0))
+  );
+
+  const app = getAdminApp();
+  const firestore = app.firestore();
+  const allTags = await getAllTags();
+  const tagPathLookup = new Map(allTags.filter((t) => t.docId).map((t) => [t.docId!, t]));
+  const derivedCache = new Map<string, MediaTagDerived>();
+  const updatedIds: string[] = [];
+
+  for (let i = 0; i < ids.length; i += BULK_MEDIA_TAGS_CHUNK_SIZE) {
+    const chunk = ids.slice(i, i + BULK_MEDIA_TAGS_CHUNK_SIZE);
+    await firestore.runTransaction(async (tx) => {
+      const refs = chunk.map((id) => firestore.collection('media').doc(id));
+      const docs = await tx.getAll(...refs);
+
+      for (const mediaDoc of docs) {
+        if (!mediaDoc.exists) continue;
+        const media = mediaDoc.data() as Media;
+        const existingTags = (media.tags || []).filter(
+          (id): id is string => typeof id === 'string' && id.trim().length > 0
+        );
+
+        let nextTags: string[];
+        if (normalizedMode === 'replace') {
+          nextTags = incomingTags;
+        } else if (normalizedMode === 'remove') {
+          const removeSet = new Set(incomingTags);
+          nextTags = existingTags.filter((id) => !removeSet.has(id));
+        } else {
+          nextTags = Array.from(new Set([...existingTags, ...incomingTags]));
+        }
+
+        const unchanged =
+          nextTags.length === existingTags.length &&
+          nextTags.every((id) => existingTags.includes(id));
+        if (unchanged) continue;
+
+        const cacheKey = [...nextTags].sort((a, b) => a.localeCompare(b)).join('\u001f');
+        let derived = derivedCache.get(cacheKey);
+        if (!derived) {
+          derived = await deriveMediaTagFields(nextTags, allTags);
+          derivedCache.set(cacheKey, derived);
+        }
+
+        await updateTagCountsForMedia(existingTags, derived.tags, tx, tagPathLookup);
+        tx.update(mediaDoc.ref, {
+          tags: derived.tags,
+          filterTags: derived.filterTags,
+          who: derived.who,
+          what: derived.what,
+          when: derived.when,
+          where: derived.where,
+          hasTags: derived.hasTags,
+          hasWho: derived.hasWho,
+          hasWhat: derived.hasWhat,
+          hasWhen: derived.hasWhen,
+          hasWhere: derived.hasWhere,
+          updatedAt: Date.now(),
+        });
+        updatedIds.push(mediaDoc.id);
+      }
+    });
+  }
+
+  const uniqueUpdatedIds = Array.from(new Set(updatedIds));
+  uniqueUpdatedIds.forEach((id) => void syncMediaToTypesenseById(id));
+  return { updatedIds: uniqueUpdatedIds };
 }
 
 /**

@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
-import { getAdminApp } from '@/lib/config/firebase/admin';
-import { Media } from '@/lib/types/photo';
-import { patchMediaDocument } from '@/lib/services/images/imageImportService';
-import { recomputeCardsMediaSignalsForMedia } from '@/lib/services/cardService';
+import { bulkApplyMediaTags } from '@/lib/services/images/imageImportService';
+import { recomputeCardsMediaSignalsForMediaIds } from '@/lib/services/cardService';
 
 /**
  * POST — bulk-edit tags on many media docs.
@@ -40,29 +38,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'No valid media IDs.' }, { status: 400 });
     }
 
-    const firestore = getAdminApp().firestore();
-
-    for (const id of ids) {
-      const doc = await firestore.collection('media').doc(id).get();
-      const data = doc.data() as Media | undefined;
-      const existingTags = (data?.tags ?? [])
-        .filter((t): t is string => typeof t === 'string');
-
-      let nextTags: string[];
-      if (effectiveMode === 'replace') {
-        nextTags = [...new Set(tagList)];
-      } else if (effectiveMode === 'remove') {
-        const removeSet = new Set(tagList);
-        nextTags = existingTags.filter(t => !removeSet.has(t));
-      } else {
-        nextTags = [...new Set([...existingTags, ...tagList])];
-      }
-
-      await patchMediaDocument(id, { tags: nextTags });
-      await recomputeCardsMediaSignalsForMedia(id);
+    const { updatedIds } = await bulkApplyMediaTags(ids, tagList, effectiveMode);
+    if (updatedIds.length) {
+      await recomputeCardsMediaSignalsForMediaIds(updatedIds);
     }
 
-    return NextResponse.json({ ok: true, updated: ids.length, mode: effectiveMode });
+    return NextResponse.json({ ok: true, updated: updatedIds.length, mode: effectiveMode });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[POST /api/admin/media/tags]', message);
