@@ -343,6 +343,11 @@
   color: var(--text2-color);
 }
 
+.paginationHint {
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+}
+
 .bulkTagHint {
   margin: 0 0 var(--spacing-sm);
   font-size: var(--font-size-sm);

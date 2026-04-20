@@ -12,6 +12,23 @@ import styles from './media-admin.module.css';
 
 const MEDIA_VIEW_MODE_KEY = 'media-admin-view-mode';
 type ViewMode = 'grid' | 'table';
+type DimensionKey = 'who' | 'what' | 'when' | 'where';
+type DimensionFilterMode = 'any' | 'hasAny' | 'isEmpty' | 'matches';
+
+type DimensionFilterState = Record<
+  DimensionKey,
+  {
+    mode: DimensionFilterMode;
+    tagId: string;
+  }
+>;
+
+const DEFAULT_DIMENSION_FILTERS: DimensionFilterState = {
+  who: { mode: 'any', tagId: '' },
+  what: { mode: 'any', tagId: '' },
+  when: { mode: 'any', tagId: '' },
+  where: { mode: 'any', tagId: '' },
+};
 
 export default function MediaAdminContent() {
   const router = useRouter();
@@ -56,6 +73,8 @@ export default function MediaAdminContent() {
   const [pendingBulkTags, setPendingBulkTags] = useState<string[]>([]);
   const [bulkTagApplying, setBulkTagApplying] = useState(false);
   const [bulkTagMode, setBulkTagMode] = useState<'add' | 'replace' | 'remove'>('add');
+  const [duplicateTriageMode, setDuplicateTriageMode] = useState(false);
+  const [dimensionFilters, setDimensionFilters] = useState<DimensionFilterState>(DEFAULT_DIMENSION_FILTERS);
 
   const handleOpenBulkTags = () => {
     setPendingBulkTags([]);
@@ -126,11 +145,33 @@ export default function MediaAdminContent() {
   const handleFilterChange = (key: keyof MediaFilters, value: string) => {
     setFilter(key, value);
     fetchMedia(1, { [key]: value });
+    if (key === 'assignment' && value !== 'unassigned') {
+      setDuplicateTriageMode(false);
+    }
   };
 
   const handleSearch = (search: string) => {
     setFilter('search', search);
     fetchMedia(1, { search });
+  };
+
+  const handleClearFilters = () => {
+    clearFilters();
+    setDuplicateTriageMode(false);
+    setDimensionFilters(DEFAULT_DIMENSION_FILTERS);
+  };
+
+  const updateDimensionFilter = (
+    dimension: DimensionKey,
+    patch: Partial<{ mode: DimensionFilterMode; tagId: string }>
+  ) => {
+    setDimensionFilters((prev) => ({
+      ...prev,
+      [dimension]: {
+        ...prev[dimension],
+        ...patch,
+      },
+    }));
   };
 
   /** Whole controls block (title/toggle/search/filters/toolbar) stays sticky above the table. */
@@ -250,10 +291,57 @@ export default function MediaAdminContent() {
               <option value="assigned">Assigned (cover, gallery, or content)</option>
             </select>
           </div>
+          {filters.assignment === 'unassigned' && (
+            <div className={styles.filterGroup}>
+              <label>Duplicate triage:</label>
+              <select
+                value={duplicateTriageMode ? 'sourcePath' : 'none'}
+                onChange={(e) => setDuplicateTriageMode(e.target.value === 'sourcePath')}
+              >
+                <option value="none">Normal order</option>
+                <option value="sourcePath">Source-path first</option>
+              </select>
+            </div>
+          )}
 
-          <button onClick={clearFilters} className={styles.clearButton}>
+          <button onClick={handleClearFilters} className={styles.clearButton}>
             Clear Filters
           </button>
+        </div>
+        <div className={styles.filters}>
+          {(['who', 'what', 'when', 'where'] as DimensionKey[]).map((dimension) => {
+            const state = dimensionFilters[dimension];
+            const options = allTags.filter((t) => t.dimension === dimension && t.docId);
+            return (
+              <div className={styles.filterGroup} key={dimension}>
+                <label>{dimension[0]!.toUpperCase() + dimension.slice(1)}:</label>
+                <select
+                  value={state.mode}
+                  onChange={(e) =>
+                    updateDimensionFilter(dimension, { mode: e.target.value as DimensionFilterMode })
+                  }
+                >
+                  <option value="any">Any</option>
+                  <option value="hasAny">Has any</option>
+                  <option value="isEmpty">Is empty</option>
+                  <option value="matches">Matches tag</option>
+                </select>
+                {state.mode === 'matches' && (
+                  <select
+                    value={state.tagId}
+                    onChange={(e) => updateDimensionFilter(dimension, { tagId: e.target.value })}
+                  >
+                    <option value="">Select tag…</option>
+                    {options.map((tag) => (
+                      <option key={tag.docId} value={tag.docId}>
+                        {tag.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* Bulk actions bar */}
@@ -326,7 +414,11 @@ export default function MediaAdminContent() {
       {error && <p className={styles.error}>{error.toString()}</p>}
 
       {/* Media list or grid */}
-      {!loading && !error && (viewMode === 'grid' ? <MediaAdminGrid /> : <MediaAdminList />)}
+      {!loading && !error && (
+        viewMode === 'grid'
+          ? <MediaAdminGrid sourcePathFirst={duplicateTriageMode} dimensionFilters={dimensionFilters} />
+          : <MediaAdminList sourcePathFirst={duplicateTriageMode} dimensionFilters={dimensionFilters} />
+      )}
 
       {/* Pagination */}
       {pagination &&

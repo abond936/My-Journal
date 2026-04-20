@@ -81,6 +81,16 @@
   max-width: 100%;
 }
 
+.mediaId {
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
 /* Caption */
 .caption {
   color: var(--text1-color);
@@ -353,6 +363,7 @@
   }
 
   .filename,
+  .mediaId,
   .caption,
   .sourcePath {
     font-size: var(--font-size-xs);

@@ -416,12 +416,16 @@ export default function MediaTriageWorkspace() {
               {pagination.seekMode ? (
                 <>
                   Page {currentPage}
-                  {pagination.hasNext ? ' · more on Next' : ''}
+                  {pagination.hasNext ? ' · more available (Next)' : ''}
+                  <span className={styles.paginationHint}>
+                    {' '}
+                    — scans newest first; Clear filters returns to page 1
+                  </span>
                 </>
               ) : (
                 <>
                   Page {pagination.page ?? currentPage} of {pagination.totalPages ?? 1}
-                  {pagination.total != null ? ` (${pagination.total} total)` : ''}
+                  {pagination.total != null ? ` (${pagination.total} total items)` : ''}
                 </>
               )}
             </span>

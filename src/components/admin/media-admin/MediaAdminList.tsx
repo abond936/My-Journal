@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Media } from '@/lib/types/photo';
 import { useMedia } from '@/components/providers/MediaProvider';
 import MediaAdminRow from './MediaAdminRow';
@@ -16,12 +16,23 @@ interface ColumnConfig {
   sortable?: boolean;
 }
 
+type DimensionKey = 'who' | 'what' | 'when' | 'where';
+type DimensionFilterMode = 'any' | 'hasAny' | 'isEmpty' | 'matches';
+type DimensionFilters = Record<
+  DimensionKey,
+  {
+    mode: DimensionFilterMode;
+    tagId: string;
+  }
+>;
+
 const MEDIA_COLUMN_WIDTHS_KEY = 'media-admin-column-widths';
 /** Persisted widths when embedded in Collections / Studio (fewer columns). */
 const MEDIA_COLUMN_WIDTHS_KEY_COMPACT = 'media-admin-column-widths-collections-embed';
 
 const COMPACT_HIDDEN_COLUMN_KEYS = new Set([
   'filename',
+  'docId',
   'width',
   'height',
   'size',
@@ -35,6 +46,7 @@ const defaultColumns: ColumnConfig[] = [
   { key: 'assignment', label: 'On cards', width: 120, minWidth: 90, maxWidth: 160 },
   { key: 'thumbnail', label: 'Icon', width: 160, minWidth: 130, maxWidth: 240 },
   { key: 'filename', label: 'Filename', width: 250, minWidth: 200, maxWidth: 500, sortable: true },
+  { key: 'docId', label: 'Media ID', width: 220, minWidth: 180, maxWidth: 420, sortable: true },
   { key: 'caption', label: 'Caption', width: 300, minWidth: 200, maxWidth: 600, sortable: true },
   { key: 'width', label: 'Width', width: 100, minWidth: 80, maxWidth: 120 },
   { key: 'height', label: 'Height', width: 100, minWidth: 80, maxWidth: 120 },
@@ -78,7 +90,15 @@ function loadInitialColumns(variant: 'full' | 'compact'): ColumnConfig[] {
   }
 }
 
-export default function MediaAdminList({ variant = 'full' }: { variant?: 'full' | 'compact' }) {
+export default function MediaAdminList({
+  variant = 'full',
+  sourcePathFirst = false,
+  dimensionFilters,
+}: {
+  variant?: 'full' | 'compact';
+  sourcePathFirst?: boolean;
+  dimensionFilters: DimensionFilters;
+}) {
   const { 
     media, 
     selectedMediaIds, 
@@ -90,6 +110,28 @@ export default function MediaAdminList({ variant = 'full' }: { variant?: 'full' 
   const storageKey = variant === 'compact' ? MEDIA_COLUMN_WIDTHS_KEY_COMPACT : MEDIA_COLUMN_WIDTHS_KEY;
 
   const [columns, setColumns] = useState<ColumnConfig[]>(() => loadInitialColumns(variant));
+  const visibleMedia = useMemo(() => {
+    const normalize = (value: string | undefined) => (value ?? '').trim().toLowerCase();
+    const modeFiltered = media.filter((item) => {
+      return (['who', 'what', 'when', 'where'] as DimensionKey[]).every((dimension) => {
+        const state = dimensionFilters[dimension];
+        const ids = Array.isArray(item[dimension]) ? (item[dimension] as string[]) : [];
+        if (state.mode === 'any') return true;
+        if (state.mode === 'hasAny') return ids.length > 0;
+        if (state.mode === 'isEmpty') return ids.length === 0;
+        if (state.mode === 'matches') return state.tagId ? ids.includes(state.tagId) : true;
+        return true;
+      });
+    });
+    if (!sourcePathFirst) return modeFiltered;
+    return [...modeFiltered].sort((a, b) => {
+      const sourcePathCompare = normalize(a.sourcePath).localeCompare(normalize(b.sourcePath));
+      if (sourcePathCompare !== 0) return sourcePathCompare;
+      const fileCompare = normalize(a.filename).localeCompare(normalize(b.filename));
+      if (fileCompare !== 0) return fileCompare;
+      return normalize(a.docId).localeCompare(normalize(b.docId));
+    });
+  }, [media, sourcePathFirst, dimensionFilters]);
 
   useEffect(() => {
     setColumns(loadInitialColumns(variant));
@@ -117,7 +159,13 @@ export default function MediaAdminList({ variant = 'full' }: { variant?: 'full' 
   return (
     <div className={variant === 'compact' ? `${styles.container} ${styles.containerCompact}` : styles.container}>
       {/* Table */}
-      <div className={styles.tableContainer}>
+      <div
+        className={
+          variant === 'compact'
+            ? `${styles.tableContainer} ${styles.tableContainerCompact}`
+            : `${styles.tableContainer} ${styles.tableContainerFull}`
+        }
+      >
         <table className={styles.table} style={{ width: totalWidth }}>
           <thead>
             <tr>
@@ -142,7 +190,7 @@ export default function MediaAdminList({ variant = 'full' }: { variant?: 'full' 
             </tr>
           </thead>
           <tbody>
-            {media.map((item) => (
+            {visibleMedia.map((item) => (
               <MediaAdminRow
                 key={item.docId}
                 media={item}
@@ -155,7 +203,7 @@ export default function MediaAdminList({ variant = 'full' }: { variant?: 'full' 
         </table>
       </div>
 
-      {media.length === 0 && (
+      {visibleMedia.length === 0 && (
         <div className={styles.emptyState}>
           <p>No media found matching the current filters.</p>
         </div>

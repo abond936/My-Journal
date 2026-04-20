@@ -154,6 +154,8 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       } else if (useSeekPagination) {
         if (page > currentPage && nextCursor) {
           opts = { cursor: nextCursor };
+        } else if (page < currentPage && page >= 2 && cursorStack[page - 2]) {
+          opts = { cursor: cursorStack[page - 2]! };
         } else {
           opts = undefined;
         }
@@ -187,7 +189,11 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       const data: MediaListResponse = await response.json();
       lastMediaEngineRef.current = data.pagination.engine ?? 'firestore';
       setMedia(data.media);
-      setPagination({ ...data.pagination, page });
+      setPagination({
+        ...data.pagination,
+        page,
+        hasPrev: Boolean(data.pagination.hasPrev || page > 1),
+      });
       setCurrentPage(page);
       setNextCursor(data.pagination.nextCursor);
       setPrevCursor(data.pagination.prevCursor);

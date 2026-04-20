@@ -146,6 +146,16 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error(`Error deleting media asset ${mediaId}:`, errorMessage);
+    if (typeof errorMessage === 'string' && errorMessage.includes('unresolved card references remain')) {
+      return NextResponse.json(
+        {
+          message: 'Cannot delete media asset because references still exist.',
+          code: 'MEDIA_DELETE_BLOCKED_REFERENCES',
+          error: errorMessage,
+        },
+        { status: 409 }
+      );
+    }
     return NextResponse.json({ message: 'Error deleting media asset.', error: errorMessage }, { status: 500 });
   }
 }

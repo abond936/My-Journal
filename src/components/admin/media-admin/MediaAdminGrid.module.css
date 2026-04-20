@@ -104,6 +104,48 @@
   overflow: hidden;
 }
 
+.identityBlock {
+  padding: 0 var(--spacing-sm) var(--spacing-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.identityLine {
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+  font-family: monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inlineActions {
+  padding: 0 var(--spacing-sm) var(--spacing-sm);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.inlineActionButton {
+  border: var(--border-width-thin) solid var(--border1-color);
+  background: var(--layout-background1-color);
+  color: var(--text1-color);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+.inlineActionButton:hover {
+  background: var(--layout-background2-color);
+}
+
+.saveNotice {
+  margin: 0 var(--spacing-sm) var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  color: var(--state-success-border-color);
+}
+
 .emptyState {
   text-align: center;
   padding: var(--spacing-2xl);

@@ -9,6 +9,7 @@
   padding: 0;
   margin: 0;
   max-width: none;
+  --media-admin-chrome-offset: 0px;
 }
 
 /* Bulk Actions */
@@ -49,10 +50,26 @@
 
 /* overflow-y: clip avoids overflow-x:auto computing overflow-y:auto, which breaks thead sticky. */
 .tableContainer {
-  overflow-x: auto;
-  overflow-y: clip;
   max-width: 100%;
   padding-bottom: var(--spacing-md);
+}
+
+.tableContainerFull {
+  overflow-x: auto;
+  overflow-y: clip;
+}
+
+.tableContainerCompact {
+  overflow: auto;
+  max-height: min(70vh, 760px);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-md);
+  background: var(--layout-background1-color);
+}
+
+.containerCompact .headerCell,
+.containerCompact .checkboxCell {
+  top: 0;
 }
 
 .table {

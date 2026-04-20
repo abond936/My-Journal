@@ -269,14 +269,10 @@ async function wouldCreateCycle(
   return false;
 }
 
-/** Finds card IDs that reference the given mediaId. Uses referencedByCardIds if present, else scans (lazy backfill). */
+/** Finds card IDs that reference the given mediaId by authoritative surface scan (cover, gallery, content ids, inline content media ids). */
 export async function getCardsReferencingMedia(mediaId: string): Promise<string[]> {
   const mediaDoc = await firestore.collection(MEDIA_COLLECTION).doc(mediaId).get();
   if (!mediaDoc.exists) return [];
-  const data = mediaDoc.data();
-  const refs = data?.referencedByCardIds as string[] | undefined;
-  if (Array.isArray(refs) && refs.length > 0) return [...refs];
-
   const cardIds = new Set<string>();
   const [coverSnap, contentSnap] = await Promise.all([
     firestore.collection(CARDS_COLLECTION).where('coverImageId', '==', mediaId).get(),
@@ -288,16 +284,19 @@ export async function getCardsReferencingMedia(mediaId: string): Promise<string[
   const allCardsSnap = await firestore.collection(CARDS_COLLECTION).get();
   allCardsSnap.docs.forEach(doc => {
     const card = doc.data() as Card;
-    if (card.galleryMedia?.some(g => g.mediaId === mediaId)) cardIds.add(doc.id);
+    if (
+      card.galleryMedia?.some((g) => g.mediaId === mediaId) ||
+      extractMediaFromContent(card.content ?? '').includes(mediaId)
+    ) {
+      cardIds.add(doc.id);
+    }
   });
 
   const ids = Array.from(cardIds);
-  if (ids.length > 0) {
-    await firestore.collection(MEDIA_COLLECTION).doc(mediaId).update({
-      referencedByCardIds: ids,
-      updatedAt: Date.now(),
-    });
-  }
+  await firestore.collection(MEDIA_COLLECTION).doc(mediaId).update({
+    referencedByCardIds: ids,
+    updatedAt: Date.now(),
+  });
   return ids;
 }
 
@@ -337,7 +336,7 @@ export async function recomputeCardsMediaSignalsForMediaIds(mediaIds: string[]):
   await Promise.all(Array.from(allCardIds).map((id) => recomputeCardMediaSignals(id)));
 }
 
-/** Removes a media reference from a card (cover, gallery, or content). */
+/** Removes all occurrences of a media reference from a card (cover, gallery, and content/inline). */
 export async function removeMediaReferenceFromCard(cardId: string, mediaId: string): Promise<void> {
   const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
   const snap = await docRef.get();
@@ -350,28 +349,20 @@ export async function removeMediaReferenceFromCard(cardId: string, mediaId: stri
     return;
   }
 
+  const payload: Record<string, unknown> = { updatedAt: Date.now() };
   if (card.coverImageId === mediaId) {
-    await docRef.update({
-      coverImageId: FieldValue.delete(),
-      coverImageFocalPoint: FieldValue.delete(),
-      coverImage: FieldValue.delete(),
-      updatedAt: Date.now(),
-    });
-  } else if (card.galleryMedia?.some(g => g.mediaId === mediaId)) {
-    const newGallery = card.galleryMedia.filter(g => g.mediaId !== mediaId);
-    await docRef.update({
-      galleryMedia: newGallery,
-      updatedAt: Date.now(),
-    });
-  } else {
-    const newContent = removeMediaFromContent(card.content, mediaId);
-    const newContentMedia = (card.contentMedia ?? []).filter(id => id !== mediaId);
-    await docRef.update({
-      content: newContent,
-      contentMedia: newContentMedia,
-      updatedAt: Date.now(),
-    });
+    payload.coverImageId = FieldValue.delete();
+    payload.coverImageFocalPoint = FieldValue.delete();
+    payload.coverImage = FieldValue.delete();
   }
+  if (card.galleryMedia?.some((g) => g.mediaId === mediaId)) {
+    payload.galleryMedia = card.galleryMedia.filter((g) => g.mediaId !== mediaId);
+  }
+  if ((card.contentMedia ?? []).includes(mediaId) || inBodyHtml) {
+    payload.content = removeMediaFromContent(card.content, mediaId);
+    payload.contentMedia = (card.contentMedia ?? []).filter((id) => id !== mediaId);
+  }
+  await docRef.update(payload);
 
   const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
   const mediaSnap = await mediaRef.get();
@@ -393,9 +384,16 @@ export async function removeMediaReferenceFromCard(cardId: string, mediaId: stri
 
 /** Deletes media and removes its references from all cards (Option B). */
 export async function deleteMediaWithCardCleanup(mediaId: string): Promise<void> {
-  const cardIds = await getCardsReferencingMedia(mediaId);
+  const firstPassCardIds = await getCardsReferencingMedia(mediaId);
+  const cardIds = Array.from(new Set(firstPassCardIds));
   for (const cardId of cardIds) {
     await removeMediaReferenceFromCard(cardId, mediaId);
+  }
+  const remaining = await getCardsReferencingMedia(mediaId);
+  if (remaining.length > 0) {
+    throw new Error(
+      `Cannot delete media ${mediaId}; unresolved card references remain: ${remaining.join(', ')}`
+    );
   }
   await deleteMediaAsset(mediaId);
 }

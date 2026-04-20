@@ -148,6 +148,13 @@ export default function MediaAdminRow({
           </div>
         );
 
+      case 'docId':
+        return (
+          <div className={styles.mediaId} title={media.docId}>
+            {media.docId}
+          </div>
+        );
+
       case 'caption':
         if (isEditingCaption) {
           return (
