@@ -71,6 +71,7 @@ Legend:
   - On any failure, triage same day and open a fix ticket immediately with owner + ETA.
   - If `integrity-gate` fails, block merge until resolved; if nightly emulator fails, treat as high-priority and resolve before promotion to required status.
   - Re-evaluate emulator job after 7 consecutive green nightly runs and then promote it to a required check for `main`.
+  - **Validation evidence (2026-04-20)** — local run `npm run test:integrity` passed (`4` suites, `12` tests; `1` emulator suite skipped by default), `npm run test:integrity:emulator` passed (`2` tests), and narrow mutation milestones merged (`#8` bulk card tags, `#10` bulk media tags) with route-level guard coverage.
 
 
 
