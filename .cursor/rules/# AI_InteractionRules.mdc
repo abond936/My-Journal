@@ -38,7 +38,9 @@ Do not remove reference content (directory maps, contracts, decision records) wi
 1. **ASSESS** — Read the split docs above (as applicable) + relevant code. Present findings grounded in product intent and actual implementation.
 2. **RECOMMEND** — State options, recommendation, rationale, and impact on other systems. Label each item SUBSTANTIVE or EDITORIAL. Maximum 3 items per pass unless author sets a different limit.
 3. **WAIT** — Ask: "Do you approve this exact edit set? May I proceed?" Do not edit until explicit approval naming specific items.
-4. **EXECUTE** — Edit only approved items, only in approved scope. Apply in-file so author sees diff. After applying, state exactly what changed. If a new issue appears outside scope, stop and return to Step 1.
+4. **EXECUTE** — Edit only approved items, only in approved scope. **Where the diff lives:** apply changes with normal **in-workspace / in-editor** edits so the author reviews them in the **IDE diff UI** (gutters, side-by-side, accept/reject)—that is the primary review surface. **Do not** paste `git diff` output, full-file before/after dumps, or other **large chat-side diffs** unless the author **explicitly** asks for a diff in chat. After applying, give a **concise prose summary** of what changed (which files, what behavior)—not a line-by-line recreation of the editor diff. If a new issue appears outside scope, stop and return to Step 1.
+   - **Documentation (part of “done”)** — When the change alters **shipped behavior**, **feature completeness vs planned**, or **architectural fact**, include updates to `docs/02-Application.md`, `docs/03-Implementation.md`, and `docs/01-Vision-Architecture.md` (per **Document Governance** in `01`) in the **same approved edit set**, unless the author explicitly **excluded documentation** for this pass.
+   - **Post-execute prompt** — After stating what changed, ask the author: **“Do you want documentation updated (`02` / `03` / `01` as applicable) to reflect this?”** If they want doc work that was **not** already approved, return through **RECOMMEND → WAIT** with a **doc-only** edit set before editing.
 
 # Change scope boundary (approved surface only)
 

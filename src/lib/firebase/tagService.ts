@@ -83,9 +83,13 @@ export async function getAllTags(): Promise<Tag[]> {
  * Organizes a list of tag IDs by their dimensions using server-side data.
  * This function uses Firebase Admin SDK directly and should be used for server-side operations.
  * @param tagIds The list of tag IDs to organize by dimension.
+ * @param allTags Optional preloaded catalog — avoids a second full `tags` collection read when the caller already fetched it (e.g. `calculateDerivedTagData`).
  * @returns A promise that resolves to an object with tags categorized by dimension.
  */
-export async function organizeTagsByDimension(tagIds: string[]): Promise<OrganizedTags> {
+export async function organizeTagsByDimension(
+  tagIds: string[],
+  allTags?: Tag[]
+): Promise<OrganizedTags> {
   if (!tagIds || tagIds.length === 0) {
     return {
       who: [],
@@ -96,9 +100,9 @@ export async function organizeTagsByDimension(tagIds: string[]): Promise<Organiz
   }
 
   try {
-    const allTags = await getAllTags();
-    
-    const tagMap = new Map(allTags.map(tag => [tag.docId!, tag]));
+    const tags = allTags ?? (await getAllTags());
+
+    const tagMap = new Map(tags.map(tag => [tag.docId!, tag]));
 
     const organizedTags: OrganizedTags = {
       who: [],
@@ -148,15 +152,16 @@ export async function organizeTagsByDimension(tagIds: string[]): Promise<Organiz
 /**
  * Calculates all ancestor tags for a given list of tag IDs using server-side data.
  * @param tagIds The list of tag IDs to find ancestors for.
+ * @param allTags Optional preloaded catalog — avoids a duplicate full `tags` read when combined with `organizeTagsByDimension` in the same flow.
  * @returns A promise that resolves to an array of unique ancestor tag IDs.
  */
-export async function getTagAncestors(tagIds: string[]): Promise<string[]> {
+export async function getTagAncestors(tagIds: string[], allTags?: Tag[]): Promise<string[]> {
   if (!tagIds || tagIds.length === 0) {
     return [];
   }
 
-  const allTags = await getAllTags();
-  const tagMap = new Map(allTags.map(tag => [tag.docId!, tag]));
+  const tags = allTags ?? (await getAllTags());
+  const tagMap = new Map(tags.map(tag => [tag.docId!, tag]));
   const ancestors = new Set<string>();
 
   const findAncestors = (tagId: string) => {
@@ -193,8 +198,11 @@ export async function calculateDerivedTagData(directTagIds: string[]): Promise<{
   }
 
   try {
+    /** One Firestore read for the whole derived calculation (was two via getTagAncestors + organizeTagsByDimension each calling getAllTags). */
+    const allTags = await getAllTags();
+
     // Get ancestor tags
-    const ancestorTags = await getTagAncestors(directTagIds);
+    const ancestorTags = await getTagAncestors(directTagIds, allTags);
 
     // Combine direct tags with ancestors for filterTags
     const inheritedTags = [...new Set([...directTagIds, ...ancestorTags])];
@@ -206,7 +214,7 @@ export async function calculateDerivedTagData(directTagIds: string[]): Promise<{
     }, {} as Record<string, boolean>);
 
     // Organize both direct and inherited tags by dimension
-    const dimensionalTags = await organizeTagsByDimension(inheritedTags);
+    const dimensionalTags = await organizeTagsByDimension(inheritedTags, allTags);
 
     const result = {
       filterTags,

@@ -1,9 +1,88 @@
 /**
  * Reads captions and keywords from embedded metadata via ExifTool (exiftool-vendored).
  * Used for local/folder import — no JSON sidecars.
+ *
+ * Uses **one-shot `execFile` invocations** against the vendored ExifTool binary. Resolves the
+ * binary with `EXIFTOOL_PATH`, then `node_modules/...` (works when Next’s dynamic `exiftoolPath()`
+ * import fails), then `exiftoolPath()` as a last resort.
  */
-import { exiftool, type Tags } from 'exiftool-vendored';
+import { execFile } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import { promisify } from 'node:util';
+import { exiftoolPath } from 'exiftool-vendored';
 import type { Tag } from '@/lib/types/tag';
+
+const execFileAsync = promisify(execFile);
+
+const importDebug = process.env.DEBUG_IMPORT === '1';
+
+/** Cached successful resolution only (retries after transient failures). */
+let resolvedExiftoolBin: string | undefined;
+
+function resolveBundledExiftoolPath(): string | null {
+  const root = process.cwd();
+  if (process.platform === 'win32') {
+    const p = path.join(root, 'node_modules', 'exiftool-vendored.exe', 'bin', 'exiftool.exe');
+    return fs.existsSync(p) ? p : null;
+  }
+  const candidates = [
+    path.join(root, 'node_modules', 'exiftool-vendored.pl', 'bin', 'exiftool'),
+    path.join(root, 'node_modules', 'exiftool-vendored.pl', 'bin', 'exiftool.pl'),
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) return p;
+  }
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require('exiftool-vendored.pl') as string | undefined;
+    if (typeof mod === 'string' && fs.existsSync(mod)) return mod;
+  } catch {
+    /* optional platform package */
+  }
+  return null;
+}
+
+async function getExiftoolBinaryPath(): Promise<string> {
+  if (resolvedExiftoolBin) return resolvedExiftoolBin;
+
+  const envPath = process.env.EXIFTOOL_PATH?.trim();
+  if (envPath && fs.existsSync(envPath)) {
+    resolvedExiftoolBin = envPath;
+    return envPath;
+  }
+
+  const bundled = resolveBundledExiftoolPath();
+  if (bundled) {
+    resolvedExiftoolBin = bundled;
+    return bundled;
+  }
+
+  const p = await exiftoolPath();
+  resolvedExiftoolBin = p;
+  return p;
+}
+
+export type EmbeddedCaptionReadResult = {
+  caption: string;
+  keywordStrings: string[];
+  /** Exif binary missing or exec failed; caller may still import without embedded fields. */
+  infrastructureError?: string;
+};
+
+/** `-j` keys are often group-prefixed (`IPTC:Caption-Abstract`); match the tag names we request. */
+function valueForTagName(rec: Record<string, unknown>, tagName: string): unknown {
+  const direct = rec[tagName];
+  if (direct != null && direct !== '') return direct;
+  const suffix = ':' + tagName;
+  for (const key of Object.keys(rec)) {
+    if (key === tagName || key.endsWith(suffix)) {
+      const v = rec[key];
+      if (v != null && v !== '') return v;
+    }
+  }
+  return undefined;
+}
 
 const CAPTION_TAG_KEYS = [
   'CaptionAbstract',
@@ -110,19 +189,79 @@ function keywordLookupVariants(s: string): string[] {
 }
 
 /**
+ * ExifTool args: only tags we map to captions/keywords — avoids `read()`'s `-all` scan
+ * (very slow on large PNGs / cloud-backed paths). `-fast2` where applicable.
+ */
+const IMPORT_METADATA_READ_ARGS = [
+  '-fast2',
+  '-CaptionAbstract',
+  '-Caption-Abstract',
+  '-Description',
+  '-ImageDescription',
+  '-UserComment',
+  '-Headline',
+  '-ObjectName',
+  '-Title',
+  '-Keywords',
+  '-Subject',
+  '-LastKeywordXMP',
+  '-HierarchicalSubject',
+  '-CatalogSets',
+] as const;
+
+async function readMetadataRecordViaExecFile(fullPath: string): Promise<Record<string, unknown>> {
+  const bin = await getExiftoolBinaryPath();
+  const args = ['-charset', 'filename=utf8', '-j', '-q', ...IMPORT_METADATA_READ_ARGS, fullPath];
+  const { stdout } = await execFileAsync(bin, args, {
+    timeout: 25_000,
+    maxBuffer: 25 * 1024 * 1024,
+    windowsHide: true,
+  });
+  const text = stdout.trim();
+  if (!text) return {};
+  let data: unknown;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    return {};
+  }
+  if (!Array.isArray(data) || data.length === 0) return {};
+  const first = data[0] as Record<string, unknown>;
+  if (typeof first.Error === 'string' && first.Error) {
+    console.warn('[readEmbeddedCaptionAndKeywords] ExifTool -j error field:', first.Error, fullPath);
+    return {};
+  }
+  return first;
+}
+
+/**
  * Reads embedded caption + keyword strings from a file on disk.
  * Safe to call on originals before in-memory WebP normalization.
  */
-export async function readEmbeddedCaptionAndKeywords(fullPath: string): Promise<{
-  caption: string;
-  keywordStrings: string[];
-}> {
-  const tags: Tags = await exiftool.read(fullPath);
-  const rec = tags as unknown as Record<string, unknown>;
+export async function readEmbeddedCaptionAndKeywords(
+  fullPath: string
+): Promise<EmbeddedCaptionReadResult> {
+  let rec: Record<string, unknown>;
+  try {
+    if (importDebug) {
+      console.info('[readEmbeddedCaptionAndKeywords] exec begin', JSON.stringify({ fullPath }));
+    }
+    rec = await readMetadataRecordViaExecFile(fullPath);
+    if (importDebug) {
+      console.info('[readEmbeddedCaptionAndKeywords] exec end', JSON.stringify({ fullPath }));
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn('[readEmbeddedCaptionAndKeywords] ExifTool read failed, continuing without metadata:', {
+      fullPath,
+      err: msg,
+    });
+    return { caption: '', keywordStrings: [], infrastructureError: msg };
+  }
 
   let caption = '';
   for (const key of CAPTION_TAG_KEYS) {
-    const v = rec[key];
+    const v = valueForTagName(rec, key);
     const s = coerceToString(v);
     if (s) {
       caption = s;
@@ -132,7 +271,7 @@ export async function readEmbeddedCaptionAndKeywords(fullPath: string): Promise<
 
   const keywordSet = new Set<string>();
   for (const key of KEYWORD_TAG_KEYS) {
-    collectKeywordStrings(rec[key], keywordSet);
+    collectKeywordStrings(valueForTagName(rec, key), keywordSet);
   }
 
   const keywordStrings = [...keywordSet].filter((k) => !isStructuralOrCardseedKeyword(k));

@@ -1,0 +1,18 @@
+---
+description: First-turn context load for my-journal (index, rules, vision backend, then trace code)
+alwaysApply: true
+---
+
+# Session context (my-journal)
+
+Before you **recommend**, **design**, **edit code**, or **run repo-backed diagnostics**—on the **first** turn in a chat that does any of those (or **immediately** if the user’s **first** message already requires one of them):
+
+1. **Read** `AGENTS.md` (index to all canon).
+2. **Read** `.cursor/rules/# AI_InteractionRules.mdc` (approval, scope, **EXECUTE** = in-editor diff for review—not chat-side diff dumps, no patch-overs, invariants vs efficiency).
+3. **Read** `docs/01-Vision-Architecture.md` at minimum **TECHNICAL → Backend** through *Principles* (including **Card–media integrity**, **Delete graph**, **Durability boundary**). If the task is feature-specific, read the matching area in `docs/02-Application.md`. If sequencing or phase scope matters, read the active lines in `docs/03-Implementation.md`.
+4. **Do not** claim or assume a full-repo mental model. After the doc pass, use **grep / semantic search / read** only on paths the task implies.
+5. In that first qualifying reply, output **one line**: **Doc anchors:** which files/sections you read (e.g. `AGENTS`, `01 TECHNICAL Backend Principles`, `02 Card Management`). If a required file is unreadable, say so and stop.
+
+**Secrets:** Never print or commit `.env` / `.env.local` contents.
+
+**Conflicts:** If `01` efficiency guidance appears to conflict with product invariants for the task, follow `# AI_InteractionRules.mdc` → **Product invariants vs efficiency**—state the conflict and options before a shortcut.

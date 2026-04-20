@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import JournalImage from '@/components/common/JournalImage';
 import { useTag } from '@/components/providers/TagProvider';
 import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
@@ -80,15 +80,23 @@ export default function GalleryManager({
   const [editingItem, setEditingItem] = useState<HydratedGalleryMediaItem | null>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
-  const handleMultiPhotoSelect = (newItems: HydratedGalleryMediaItem[]) => {
-    const base = galleryMedia.length;
+  const galleryRef = useRef(galleryMedia);
+  useEffect(() => {
+    galleryRef.current = galleryMedia;
+  }, [galleryMedia]);
+
+  /** Keeps latest gallery for chunked imports; PhotoPicker closes itself after import—do not close here. */
+  const handleMultiPhotoSelect = useCallback((newItems: HydratedGalleryMediaItem[]) => {
+    const current = galleryRef.current;
+    const base = current.length;
     const reindexed = newItems.map((item, i) => ({
       ...item,
       order: base + i,
     }));
-    onUpdate([...galleryMedia, ...reindexed]);
-    setIsPickerOpen(false);
-  };
+    const merged = [...current, ...reindexed];
+    galleryRef.current = merged;
+    onUpdate(merged);
+  }, [onUpdate]);
 
   const handleRemovePhoto = (mediaId: string) => {
     onUpdate(galleryMedia.filter(item => item.mediaId !== mediaId));

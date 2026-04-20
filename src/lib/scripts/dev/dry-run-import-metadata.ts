@@ -13,7 +13,6 @@
  */
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { exiftool } from 'exiftool-vendored';
 import { getAllTags } from '@/lib/firebase/tagService';
 import {
   buildTagNameLookupMaps,
@@ -222,15 +221,7 @@ async function writeReport(lines: string[]) {
   await fs.writeFile(outPath, utf8Bom + lines.join('\n'), 'utf8');
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    try {
-      await exiftool.end();
-    } catch {
-      /* ignore */
-    }
-  });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

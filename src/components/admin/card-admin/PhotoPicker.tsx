@@ -132,6 +132,8 @@ export default function PhotoPicker({
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingFolders, setIsLoadingFolders] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
+  /** Shown during local import — HTTP has no per-file progress; this at least proves the UI is alive. */
+  const [importElapsedSec, setImportElapsedSec] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [mode] = useState<'single' | 'multi'>(initialMode);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
@@ -155,6 +157,10 @@ export default function PhotoPicker({
   const [libAssignment, setLibAssignment] = useState('all');
   const [matchCardTags, setMatchCardTags] = useState(true);
   const [libraryPickerTagIds, setLibraryPickerTagIds] = useState<string[]>([]);
+  /** When true, server runs ExifTool for captions/keywords (opt-in). */
+  const [readEmbeddedMetadata, setReadEmbeddedMetadata] = useState(false);
+  /** Shown after import when metadata was requested but the server reported read failures. */
+  const [importMetadataNotice, setImportMetadataNotice] = useState<string | null>(null);
 
   const cardDimensionalMapForLibrary = useMemo(() => {
     if (!matchCardTags || !filterTagIds?.length) {
@@ -266,56 +272,115 @@ export default function PhotoPicker({
     async (pickerPhotos: PickerMedia[]) => {
       if (pickerPhotos.length === 0) return;
 
-      const CONCURRENT_IMPORTS = 5;
+      /** Matches server `MAX_SOURCE_PATHS_PER_REQUEST`; one tag-catalog load per batch on the API. */
+      const MAX_SOURCE_PATHS_PER_REQUEST = 40;
 
       try {
+        setImportElapsedSec(0);
         setIsImporting(true);
         setError(null);
+        setImportMetadataNotice(null);
 
         const importedResults: { mediaId: string; media: Media }[] = [];
+        const importFailures: { sourcePath: string; message: string }[] = [];
+        let anyMetadataReadIssue = false;
 
-        for (let i = 0; i < pickerPhotos.length; i += CONCURRENT_IMPORTS) {
-          const chunk = pickerPhotos.slice(i, i + CONCURRENT_IMPORTS);
-          const chunkResults = await Promise.all(
-            chunk.map(async photo => {
-              const response = await fetch('/api/images/local/import', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sourcePath: photo.sourcePath }),
-              });
+        type BatchImportResponse = {
+          results: { sourcePath: string; mediaId: string; media: Media }[];
+          errors: { sourcePath: string; message: string }[];
+          metadataReadIssues?: { sourcePath: string; message: string }[];
+        };
 
-              if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Failed to import image: ${errorText}`);
-              }
+        for (let i = 0; i < pickerPhotos.length; i += MAX_SOURCE_PATHS_PER_REQUEST) {
+          const slice = pickerPhotos.slice(i, i + MAX_SOURCE_PATHS_PER_REQUEST);
+          const response = await fetch('/api/images/local/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sourcePaths: slice.map(p => p.sourcePath),
+              readEmbeddedMetadata,
+            }),
+          });
 
-              return (await response.json()) as { mediaId: string; media: Media };
-            })
-          );
-          importedResults.push(...chunkResults);
+          if (!response.ok) {
+            const errorText = await response.text();
+            const msg = errorText || `HTTP ${response.status}`;
+            for (const photo of slice) {
+              importFailures.push({ sourcePath: photo.sourcePath, message: msg });
+            }
+            continue;
+          }
+
+          const data = (await response.json()) as BatchImportResponse;
+          for (const e of data.errors ?? []) {
+            importFailures.push({ sourcePath: e.sourcePath, message: e.message });
+          }
+
+          const metaIssues = data.metadataReadIssues ?? [];
+          if (readEmbeddedMetadata && metaIssues.length > 0) {
+            anyMetadataReadIssue = true;
+            const uniq = [...new Set(metaIssues.map((w) => w.message))];
+            setImportMetadataNotice(
+              `Import metadata was on, but Exif could not run for ${metaIssues.length} file(s): ${uniq.join('; ')} ` +
+                `Set EXIFTOOL_PATH to your exiftool binary if it is not in the default location.`
+            );
+          }
+
+          const chunkOk: { mediaId: string; media: Media }[] = (data.results ?? []).map(r => ({
+            mediaId: r.mediaId,
+            media: r.media,
+          }));
+          importedResults.push(...chunkOk);
+
+          if (mode === 'multi' && onMultiSelect && chunkOk.length > 0) {
+            const chunkHydrated: HydratedGalleryMediaItem[] = chunkOk.map(res => ({
+              mediaId: res.mediaId,
+              order: 0,
+              media: res.media,
+            }));
+            onMultiSelect(chunkHydrated);
+          }
+        }
+
+        if (importFailures.length > 0) {
+          const failedList = importFailures
+            .map(f => `${f.sourcePath}: ${f.message}`)
+            .join('; ');
+          if (importedResults.length === 0) {
+            setError(
+              importFailures.length === pickerPhotos.length
+                ? `Import failed (${importFailures.length} file(s)): ${failedList}`
+                : `Import failed: ${failedList}`
+            );
+          } else {
+            setError(
+              `${importFailures.length} of ${pickerPhotos.length} failed — ${failedList}. ` +
+                `${importedResults.length} added to the gallery.`
+            );
+          }
         }
 
         if (mode === 'single') {
           if (importedResults.length > 0 && onSelect) {
             onSelect(importedResults[0].media);
+            if (!anyMetadataReadIssue) {
+              onClose();
+            }
           }
-        } else if (mode === 'multi' && onMultiSelect) {
-          const hydratedItems: HydratedGalleryMediaItem[] = importedResults.map(res => ({
-            mediaId: res.mediaId,
-            order: 0,
-            media: res.media,
-          }));
-          onMultiSelect(hydratedItems);
+        } else if (importedResults.length > 0 && importFailures.length === 0) {
+          if (!anyMetadataReadIssue) {
+            onClose();
+          }
         }
-        onClose();
       } catch (err) {
         console.error('Error importing photos:', err);
         setError(err instanceof Error ? err.message : 'Failed to import photos');
       } finally {
         setIsImporting(false);
+        setImportElapsedSec(0);
       }
     },
-    [mode, onSelect, onMultiSelect, onClose]
+    [mode, onSelect, onMultiSelect, onClose, readEmbeddedMetadata]
   );
 
   const completeLibrarySelection = useCallback(() => {
@@ -495,8 +560,10 @@ export default function PhotoPicker({
     setLibraryPickerTagIds([]);
     setLibraryRefreshKey(0);
     setLibraryError(null);
-    setError(null);
-    void loadFolderTree();
+        setError(null);
+        setReadEmbeddedMetadata(false);
+        setImportMetadataNotice(null);
+        void loadFolderTree();
   }, [isOpen, loadFolderTree, filterTagIds]);
 
   useEffect(() => {
@@ -504,6 +571,15 @@ export default function PhotoPicker({
       loadPhotos(selectedFolder);
     }
   }, [selectedFolder, loadPhotos]);
+
+  useEffect(() => {
+    if (!isImporting) return;
+    setImportElapsedSec(0);
+    const id = window.setInterval(() => {
+      setImportElapsedSec((s) => s + 1);
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [isImporting]);
 
   useEffect(() => {
     if (!isOpen || sourceTab !== 'library') return;
@@ -888,6 +964,31 @@ export default function PhotoPicker({
 
         {(showLocalFooter || showLibraryFooter) && (
           <div className={styles.footer}>
+            {showLocalFooter && importMetadataNotice && (
+              <div className={styles.importMetadataNotice} role="alert">
+                {importMetadataNotice}
+              </div>
+            )}
+            {showLocalFooter && (
+              <label className={styles.footerMetaToggle}>
+                <input
+                  type="checkbox"
+                  checked={readEmbeddedMetadata}
+                  onChange={e => setReadEmbeddedMetadata(e.target.checked)}
+                  disabled={isImporting}
+                />
+                <span>Import Metadata.</span>
+              </label>
+            )}
+            {showLocalFooter && isImporting && (
+              <p className={styles.importProgressHint} role="status" aria-live="polite">
+                Server import in progress ({importElapsedSec}s). The browser waits for the whole batch to finish.
+                {readEmbeddedMetadata
+                  ? ' With import metadata on, each file runs ExifTool and can take noticeably longer.'
+                  : ''}
+              </p>
+            )}
+            <div className={styles.footerRow}>
             <button
               type="button"
               onClick={() => {
@@ -919,6 +1020,7 @@ export default function PhotoPicker({
                 `Use ${selectedLibraryMedia.length} photo${selectedLibraryMedia.length !== 1 ? 's' : ''}`
               )}
             </button>
+            </div>
           </div>
         )}
 

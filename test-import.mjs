@@ -8,7 +8,8 @@ async function testImport() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        sourcePath: 'Camera Roll/20160121_084754.jpg'
+        sourcePath: 'Camera Roll/20160121_084754.jpg',
+        readEmbeddedMetadata: true,
       })
     });
     

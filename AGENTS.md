@@ -4,7 +4,9 @@ This file is an **index only**. Canonical instructions are not duplicated here (
 
 | Topic | Location |
 |--------|----------|
+| **Session start** — first-turn read of index + rules + `01` Backend (then trace code as needed) | `.cursor/rules/session-context.mdc` |
 | Agent process (assess → recommend → wait; explicit approval before edits) | `.cursor/rules/# AI_InteractionRules.mdc` |
+| **Editor-first review** — apply edits in the workspace so the author uses the **IDE diff** (accept/reject); do **not** paste full `git diff` / large before-after blocks in chat unless the author asks | `.cursor/rules/# AI_InteractionRules.mdc` → **EXECUTE** |
 | **Change scope** (approved surface only; ask before adjacent UI/API/context edits) | `.cursor/rules/# AI_InteractionRules.mdc` → **Change scope boundary** |
 | Vision, principles, tech stack, decisions | `docs/01-Vision-Architecture.md` |
 | **Data planes, mutation scope, Typesense limits, list refresh** (normative—read before writes/admin list changes) | `docs/01-Vision-Architecture.md` → **TECHNICAL** → **Backend** / **Frontend** *Principles* + Backend 📐 |
@@ -48,7 +50,7 @@ Next.js **requires** `NEXT_PUBLIC_*` variables in a `.env` file (process env var
 
 ### Gotchas
 
-- **Local image import** (folder + `/api/images/local/import`) uses **`exiftool-vendored`** to read captions and keywords from files. Requires **Node ≥ 20** (dependency engines). The bundled ExifTool runs in child processes on the machine hosting the Next.js server (typical: your desktop with `ONEDRIVE_ROOT_FOLDER`).
+- **Local image import** (folder + `/api/images/local/import`): embedded captions and keywords are **opt-in** from the gallery picker (“Import Metadata.”) and via `readEmbeddedMetadata: true` on the API. Without that, imports skip ExifTool and are much faster. With it on, the server runs **exiftool** from **exiftool-vendored** in child processes (**Node ≥ 20**). If reads fail, set **`EXIFTOOL_PATH`** to your `exiftool` binary. For verbose import logs, set **`DEBUG_IMPORT=1`**. If dev import feels stuck, restarting **`npm run dev`** often clears a wedged ExifTool worker. Paths are relative to your configured local root (e.g. `ONEDRIVE_ROOT_FOLDER`).
 - **Typesense** is optional; search falls back to Firestore prefix queries when credentials are absent. Media search returns 503 without it.
 - **`FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY`** often contains literal `\n` characters; ensure the secret value preserves them correctly.
 - **Firestore / Admin scripts:** Preload dotenv (`tsx -r dotenv/config …` or equivalent) so `.env` is loaded **before** modules that import `@/lib/config/firebase/admin`; otherwise static imports initialize Firebase with empty credentials. Details: `docs/NPM-SCRIPTS.md` → **Firebase Admin CLI (dotenv)**.

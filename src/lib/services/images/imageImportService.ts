@@ -13,6 +13,7 @@ import {
   readEmbeddedCaptionAndKeywords,
   resolveKeywordStringsToTagIds,
 } from '@/lib/services/images/embeddedMetadataForImport';
+import { getCachedTagNameMaps } from '@/lib/services/images/importTagMapsCache';
 import * as admin from 'firebase-admin';
 import fs from 'fs/promises';
 import path from 'path';
@@ -200,9 +201,12 @@ export type ImportTagNameMaps = {
 };
 
 export interface ImportFromLocalOptions {
-  /** If true, reads caption + keywords from embedded metadata (ExifTool); maps keywords when tagNameMaps is set. */
+  /** If true, reads caption + keywords from embedded metadata (ExifTool); maps keywords when keywords exist. */
   readMetadata?: boolean;
-  /** Required with readMetadata to attach tags from file keywords to the new media doc. */
+  /**
+   * Optional prebuilt keyword→tag maps. If omitted and embedded keywords exist, maps are loaded once via cache
+   * (`getCachedTagNameMaps`). Omit for gallery import so a full Firestore tag load is skipped when files have no keywords.
+   */
   tagNameMaps?: ImportTagNameMaps;
   /** If true, skip import when a media doc with same sourcePath already exists; return existing */
   skipIfExists?: boolean;
@@ -211,6 +215,8 @@ export interface ImportFromLocalOptions {
    * Used for folder import workflows; `sourcePath` still points at the original file for dedup.
    */
   normalizeInMemory?: boolean;
+  /** When Exif/exec fails but import continues, collect a short message per file (e.g. for API `metadataReadIssues`). */
+  collectMetadataReadIssue?: (sourcePath: string, message: string) => void;
 }
 
 export interface ImportFromLocalResult {
@@ -251,26 +257,58 @@ export async function importFromLocalDrive(
     const normalizedSourcePath = toSystemPath(sourcePath);
     const fullPath = path.join(ONEDRIVE_ROOT_FOLDER, normalizedSourcePath);
 
-    // Read and process the file
-    let fileBuffer = await fs.readFile(fullPath);
-    let filename = path.basename(fullPath);
+    /**
+     * ExifTool reads from disk; `fs.readFile` loads the whole image — order Exif first so we avoid
+     * buffering multi‑MB files before discovering there is no caption (and OS cache helps the follow-up read).
+     * Tag name maps: load only when embedded keywords exist (avoids a full Firestore tag scan when captions-only).
+     */
+    const traceStages = Boolean(options?.readMetadata) && process.env.DEBUG_IMPORT === '1';
 
     let caption: string | undefined;
     let resolvedTagIds: string[] | undefined;
     if (options?.readMetadata) {
-      const { caption: cap, keywordStrings } = await readEmbeddedCaptionAndKeywords(fullPath);
-      caption = cap || undefined;
-      if (options.tagNameMaps) {
-        resolvedTagIds = resolveKeywordStringsToTagIds(keywordStrings, options.tagNameMaps);
+      const exifT0 = Date.now();
+      const meta = await readEmbeddedCaptionAndKeywords(fullPath);
+      if (traceStages) {
+        console.info(
+          '[importFromLocalDrive] stage exif',
+          JSON.stringify({ sourcePath, ms: Date.now() - exifT0 })
+        );
+      }
+      if (meta.infrastructureError) {
+        options.collectMetadataReadIssue?.(sourcePath, meta.infrastructureError);
+      }
+      caption = meta.caption || undefined;
+      if (meta.keywordStrings.length > 0) {
+        const maps = options.tagNameMaps ?? (await getCachedTagNameMaps());
+        resolvedTagIds = resolveKeywordStringsToTagIds(meta.keywordStrings, maps);
       }
     }
 
+    const readT0 = Date.now();
+    let fileBuffer = await fs.readFile(fullPath);
+    let filename = path.basename(fullPath);
+    if (traceStages) {
+      console.info(
+        '[importFromLocalDrive] stage readFile',
+        JSON.stringify({ sourcePath, ms: Date.now() - readT0 })
+      );
+    }
+
     if (options?.normalizeInMemory) {
+      const normT0 = Date.now();
       const { webpBuffer } = await normalizeBufferToWebp(fileBuffer);
       fileBuffer = webpBuffer;
       filename = `${path.parse(filename).name}.webp`;
+      if (traceStages) {
+        console.info(
+          '[importFromLocalDrive] stage webp',
+          JSON.stringify({ sourcePath, ms: Date.now() - normT0 })
+        );
+      }
     }
 
+    const persistT0 = Date.now();
     // Create the raw media asset
     const newMedia = await createMediaAsset(
       fileBuffer,
@@ -280,6 +318,12 @@ export async function importFromLocalDrive(
       caption || undefined,
       resolvedTagIds
     );
+    if (traceStages) {
+      console.info(
+        '[importFromLocalDrive] stage persist',
+        JSON.stringify({ sourcePath, ms: Date.now() - persistT0, mediaId: newMedia.docId })
+      );
+    }
 
     // Return the hydrated object that the client expects
     return {
@@ -469,12 +513,15 @@ export async function replaceMediaAssetContent(
     metadata: { contentType },
   });
 
+  const storageUrl = getPublicStorageUrl(existing.storagePath);
+
   await mediaRef.update({
     filename: originalFilename || existing.filename,
     width,
     height,
     size: fileBuffer.length,
     contentType,
+    storageUrl,
     updatedAt: Date.now(),
   });
   void syncMediaToTypesenseById(mediaId);
@@ -575,4 +622,80 @@ export async function deleteMediaAsset(
       throw new Error(`Failed to delete media asset ${mediaId}. See server logs for details.`);
     }
   }
+}
+
+export type RepairMissingStorageResult =
+  | { ok: true; dryRun: boolean; message: string }
+  | { ok: false; message: string };
+
+/**
+ * When a media doc references a Storage path but the object is missing (deleted upload, failed write, etc.),
+ * re-read the original bytes from disk for **local** imports (`source: 'local'` + `sourcePath` under
+ * `ONEDRIVE_ROOT_FOLDER`) and re-upload in place. Preserves media doc id, `storagePath`, and all card references.
+ * Paste/upload sources cannot be auto-repaired (no canonical file on disk).
+ */
+export async function repairMissingStorageFromLocalSource(
+  mediaId: string,
+  options?: { dryRun?: boolean }
+): Promise<RepairMissingStorageResult> {
+  const dryRun = options?.dryRun ?? false;
+  const app = getAdminApp();
+  const firestore = app.firestore();
+  const bucket = app.storage().bucket();
+  const mediaRef = firestore.collection('media').doc(mediaId);
+  const snap = await mediaRef.get();
+  if (!snap.exists) {
+    return { ok: false, message: `Media document ${mediaId} not found.` };
+  }
+  const m = snap.data() as Media;
+  if (!m.storagePath?.trim()) {
+    return { ok: false, message: `Media ${mediaId} has no storagePath.` };
+  }
+  const storageFile = bucket.file(m.storagePath);
+  const [exists] = await storageFile.exists();
+  if (exists) {
+    return { ok: false, message: `Storage object already exists at ${m.storagePath}; nothing to repair.` };
+  }
+  if (m.source !== 'local') {
+    return {
+      ok: false,
+      message:
+        `Automatic repair only supports source=local (this doc has source=${String(m.source)}). ` +
+        `Re-upload the file via Media admin or POST /api/images/${mediaId}/replace.`,
+    };
+  }
+  if (!ONEDRIVE_ROOT_FOLDER) {
+    return { ok: false, message: 'ONEDRIVE_ROOT_FOLDER is not set; cannot resolve local source file.' };
+  }
+  const fullPath = path.join(ONEDRIVE_ROOT_FOLDER, toSystemPath(m.sourcePath));
+  let fileBuffer: Buffer;
+  try {
+    fileBuffer = await fs.readFile(fullPath);
+  } catch {
+    return { ok: false, message: `Could not read local file: ${fullPath}` };
+  }
+
+  const sourceBase = path.basename(m.sourcePath);
+  let outBuf = fileBuffer;
+  let uploadFilename = (m.filename && m.filename.trim()) || sourceBase;
+  if (!isCardExportMarkedFilename(sourceBase)) {
+    const { webpBuffer } = await normalizeBufferToWebp(fileBuffer);
+    outBuf = webpBuffer;
+    uploadFilename = `${path.parse(sourceBase).name}.webp`;
+  }
+
+  if (dryRun) {
+    return {
+      ok: true,
+      dryRun: true,
+      message: `Would re-upload to ${m.storagePath} using ${fullPath} (${outBuf.length} bytes, filename ${uploadFilename}).`,
+    };
+  }
+
+  await replaceMediaAssetContent(mediaId, outBuf, uploadFilename);
+  return {
+    ok: true,
+    dryRun: false,
+    message: `Re-uploaded Storage object at ${m.storagePath} from ${fullPath}.`,
+  };
 }
