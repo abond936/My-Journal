@@ -9,6 +9,8 @@
     "lint": "next lint",
     "test": "jest",
     "test:integrity": "jest src/__tests__/integrity",
+    "test:integrity:emulator:run": "jest src/__tests__/integrity/emulator.integrity.test.ts --runInBand",
+    "test:integrity:emulator": "npx --yes firebase-tools@13 emulators:exec --project demo-my-journal-integrity --only firestore \"npm run test:integrity:emulator:run\"",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "generate-migration-plan": "ts-node src/lib/scripts/migration-plan-generator.ts",
