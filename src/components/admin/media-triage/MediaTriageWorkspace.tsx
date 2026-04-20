@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import JournalImage from '@/components/common/JournalImage';
-import { useMedia, type MediaFilters } from '@/components/providers/MediaProvider';
+import { getMediaErrorSeverity, useMedia, type MediaFilters } from '@/components/providers/MediaProvider';
 import { useTag } from '@/components/providers/TagProvider';
 import EditModal from '@/components/admin/card-admin/EditModal';
 import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
@@ -13,6 +13,12 @@ import { getCoreTagsByDimension } from '@/lib/utils/tagDisplay';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import { isMediaAssigned } from '@/lib/utils/mediaAssignmentSeek';
 import styles from './MediaTriageWorkspace.module.css';
+
+type ApiErrorResponse = {
+  message?: string;
+  code?: string;
+  details?: string[];
+};
 
 export default function MediaTriageWorkspace() {
   const router = useRouter();
@@ -36,6 +42,7 @@ export default function MediaTriageWorkspace() {
   } = useMedia();
 
   const { tags: allTags } = useTag();
+  const errorSeverity = getMediaErrorSeverity(error);
 
   const [focusId, setFocusId] = useState<string | null>(null);
   const [captionDraft, setCaptionDraft] = useState('');
@@ -188,8 +195,8 @@ export default function MediaTriageWorkspace() {
       });
 
       if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.error || err.details?.[0] || `HTTP ${response.status}`);
+        const err = (await response.json().catch(() => ({}))) as ApiErrorResponse;
+        throw new Error(err.message || err.details?.[0] || `HTTP ${response.status}`);
       }
 
       const newCard = await response.json();
@@ -306,7 +313,9 @@ export default function MediaTriageWorkspace() {
       </header>
 
       {loading && <p>Loading media…</p>}
-      {error && <p className={styles.error}>{error.message}</p>}
+      {error && (
+        <p className={errorSeverity === 'warning' ? styles.warning : styles.error}>{error.message}</p>
+      )}
 
       {!loading && !error && (
         <div className={styles.panes}>

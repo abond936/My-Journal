@@ -2,7 +2,7 @@
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useMedia, type MediaFilters } from '@/components/providers/MediaProvider';
+import { getMediaErrorSeverity, useMedia, type MediaFilters } from '@/components/providers/MediaProvider';
 import { useTag } from '@/components/providers/TagProvider';
 import MediaAdminList from '@/components/admin/media-admin/MediaAdminList';
 import MediaAdminGrid from '@/components/admin/media-admin/MediaAdminGrid';
@@ -14,6 +14,11 @@ const MEDIA_VIEW_MODE_KEY = 'media-admin-view-mode';
 type ViewMode = 'grid' | 'table';
 type DimensionKey = 'who' | 'what' | 'when' | 'where';
 type DimensionFilterMode = 'any' | 'hasAny' | 'isEmpty' | 'matches';
+type ApiErrorResponse = {
+  message?: string;
+  code?: string;
+  details?: string[];
+};
 
 type DimensionFilterState = Record<
   DimensionKey,
@@ -49,6 +54,7 @@ export default function MediaAdminContent() {
   } = useMedia();
 
   const { tags: allTags } = useTag();
+  const errorSeverity = getMediaErrorSeverity(error);
 
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window === 'undefined') return 'grid';
@@ -127,8 +133,8 @@ export default function MediaAdminContent() {
       });
 
       if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.error || err.details?.[0] || `HTTP ${response.status}`);
+        const err = (await response.json().catch(() => ({}))) as ApiErrorResponse;
+        throw new Error(err.message || err.details?.[0] || `HTTP ${response.status}`);
       }
 
       const newCard = await response.json();
@@ -411,7 +417,9 @@ export default function MediaAdminContent() {
 
       {/* Loading and Error States */}
       {loading && <p>Loading media...</p>}
-      {error && <p className={styles.error}>{error.toString()}</p>}
+      {error && (
+        <p className={errorSeverity === 'warning' ? styles.warning : styles.error}>{error.message}</p>
+      )}
 
       {/* Media list or grid */}
       {!loading && !error && (

@@ -4,6 +4,19 @@ import { authOptions } from '@/lib/auth/authOptions';
 import { patchMediaDocument } from '@/lib/services/images/imageImportService';
 import { deleteMediaWithCardCleanup, recomputeCardsMediaSignalsForMedia } from '@/lib/services/cardService';
 
+type ApiErrorPayload = {
+  ok: false;
+  code: string;
+  message: string;
+  severity: 'error' | 'warning';
+  retryable: boolean;
+  error?: string;
+};
+
+function errorResponse(payload: ApiErrorPayload, status: number) {
+  return NextResponse.json(payload, { status });
+}
+
 /**
  * @swagger
  * /api/images/{id}:
@@ -47,12 +60,30 @@ import { deleteMediaWithCardCleanup, recomputeCardsMediaSignalsForMedia } from '
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') {
-    return new NextResponse('Forbidden', { status: 403 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'AUTH_FORBIDDEN',
+        message: 'Forbidden.',
+        severity: 'error',
+        retryable: false,
+      },
+      403
+    );
   }
 
   const { id: mediaId } = await params;
   if (!mediaId) {
-    return NextResponse.json({ message: 'Media ID is required.' }, { status: 400 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'MEDIA_ID_REQUIRED',
+        message: 'Media ID is required.',
+        severity: 'error',
+        retryable: false,
+      },
+      400
+    );
   }
 
   try {
@@ -63,9 +94,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const hasTags = 'tags' in body && body.tags !== undefined;
 
     if (!hasCaption && !hasObjectPosition && !hasTags) {
-      return NextResponse.json(
-        { message: 'Provide at least one of: caption, objectPosition, tags.' },
-        { status: 400 }
+      return errorResponse(
+        {
+          ok: false,
+          code: 'MEDIA_PATCH_FIELDS_REQUIRED',
+          message: 'Provide at least one of: caption, objectPosition, tags.',
+          severity: 'error',
+          retryable: false,
+        },
+        400
       );
     }
 
@@ -81,14 +118,32 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     if (hasObjectPosition) {
       if (typeof body.objectPosition !== 'string' || !body.objectPosition.trim()) {
-        return NextResponse.json({ message: 'objectPosition must be a non-empty string.' }, { status: 400 });
+        return errorResponse(
+          {
+            ok: false,
+            code: 'MEDIA_OBJECT_POSITION_INVALID',
+            message: 'objectPosition must be a non-empty string.',
+            severity: 'error',
+            retryable: false,
+          },
+          400
+        );
       }
       patch.objectPosition = body.objectPosition.trim();
     }
 
     if (hasTags) {
       if (!Array.isArray(body.tags)) {
-        return NextResponse.json({ message: 'tags must be an array of strings.' }, { status: 400 });
+        return errorResponse(
+          {
+            ok: false,
+            code: 'MEDIA_TAGS_INVALID',
+            message: 'tags must be an array of strings.',
+            severity: 'error',
+            retryable: false,
+          },
+          400
+        );
       }
       patch.tags = body.tags.filter((id): id is string => typeof id === 'string');
     }
@@ -98,11 +153,21 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       await recomputeCardsMediaSignalsForMedia(mediaId);
     }
 
-    return NextResponse.json({ message: `Media asset ${mediaId} updated.` });
+    return NextResponse.json({ ok: true, message: `Media asset ${mediaId} updated.` });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error(`Error updating media ${mediaId}:`, errorMessage);
-    return NextResponse.json({ message: 'Error updating media.', error: errorMessage }, { status: 500 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'MEDIA_PATCH_FAILED',
+        message: 'Error updating media.',
+        severity: 'error',
+        retryable: true,
+        error: errorMessage,
+      },
+      500
+    );
   }
 }
 
@@ -132,30 +197,61 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') {
-    return new NextResponse('Forbidden', { status: 403 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'AUTH_FORBIDDEN',
+        message: 'Forbidden.',
+        severity: 'error',
+        retryable: false,
+      },
+      403
+    );
   }
 
   const { id: mediaId } = await params;
   if (!mediaId) {
-    return NextResponse.json({ message: 'Media ID is required.' }, { status: 400 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'MEDIA_ID_REQUIRED',
+        message: 'Media ID is required.',
+        severity: 'error',
+        retryable: false,
+      },
+      400
+    );
   }
 
   try {
     await deleteMediaWithCardCleanup(mediaId);
-    return NextResponse.json({ message: `Media asset ${mediaId} deleted successfully.` });
+    return NextResponse.json({ ok: true, message: `Media asset ${mediaId} deleted successfully.` });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error(`Error deleting media asset ${mediaId}:`, errorMessage);
     if (typeof errorMessage === 'string' && errorMessage.includes('unresolved card references remain')) {
-      return NextResponse.json(
+      return errorResponse(
         {
+          ok: false,
           message: 'Cannot delete media asset because references still exist.',
           code: 'MEDIA_DELETE_BLOCKED_REFERENCES',
+          severity: 'warning',
+          retryable: false,
           error: errorMessage,
         },
-        { status: 409 }
+        409
       );
     }
-    return NextResponse.json({ message: 'Error deleting media asset.', error: errorMessage }, { status: 500 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'MEDIA_DELETE_FAILED',
+        message: 'Error deleting media asset.',
+        severity: 'error',
+        retryable: true,
+        error: errorMessage,
+      },
+      500
+    );
   }
 }

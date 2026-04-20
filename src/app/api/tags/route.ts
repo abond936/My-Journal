@@ -9,6 +9,19 @@ import { safeToDate } from '@/lib/utils/dateUtils';
 // Initialize Firebase Admin
 getAdminApp();
 
+type ApiErrorPayload = {
+    ok: false;
+    code: string;
+    message: string;
+    severity: 'error' | 'warning';
+    retryable: boolean;
+    error?: string;
+};
+
+function errorResponse(payload: ApiErrorPayload, status: number) {
+    return NextResponse.json(payload, { status });
+}
+
 /**
  * @swagger
  * /api/tags:
@@ -30,10 +43,16 @@ getAdminApp();
 export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session) {
-        return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
-            status: 401,
-            headers: { 'Content-Type': 'application/json' },
-        });
+        return errorResponse(
+            {
+                ok: false,
+                code: 'AUTH_UNAUTHORIZED',
+                message: 'Unauthorized.',
+                severity: 'error',
+                retryable: false,
+            },
+            401
+        );
     }
 
     try {
@@ -47,7 +66,18 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(tagsWithDates);
     } catch (error) {
         console.error('API Error fetching all tags:', error);
-        return new NextResponse('Internal server error', { status: 500 });
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return errorResponse(
+            {
+                ok: false,
+                code: 'TAG_LIST_FAILED',
+                message: 'Internal server error.',
+                severity: 'error',
+                retryable: true,
+                error: message,
+            },
+            500
+        );
     }
 }
 
@@ -78,17 +108,32 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'admin') {
-        return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
-            status: 403,
-            headers: { 'Content-Type': 'application/json' },
-        });
+        return errorResponse(
+            {
+                ok: false,
+                code: 'AUTH_FORBIDDEN',
+                message: 'Forbidden.',
+                severity: 'error',
+                retryable: false,
+            },
+            403
+        );
     }
 
     try {
         const body: Omit<Tag, 'docId' | 'createdAt' | 'updatedAt'> = await request.json();
 
         if (!body.name) {
-            return new NextResponse('Tag name is required', { status: 400 });
+            return errorResponse(
+                {
+                    ok: false,
+                    code: 'TAG_NAME_REQUIRED',
+                    message: 'Tag name is required.',
+                    severity: 'error',
+                    retryable: false,
+                },
+                400
+            );
         }
 
         const newTag = await createTag(body);
@@ -110,12 +155,29 @@ export async function POST(request: NextRequest) {
         
         // Handle specific error for duplicate names
         if (error instanceof Error && error.message.includes('Tag with this name already exists')) {
-            return new NextResponse(JSON.stringify({ error: 'Tag with this name already exists' }), {
-                status: 409,
-                headers: { 'Content-Type': 'application/json' },
-            });
+            return errorResponse(
+                {
+                    ok: false,
+                    code: 'TAG_NAME_CONFLICT',
+                    message: 'Tag with this name already exists.',
+                    severity: 'error',
+                    retryable: false,
+                },
+                409
+            );
         }
-        
-        return new NextResponse('Internal server error', { status: 500 });
+
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return errorResponse(
+            {
+                ok: false,
+                code: 'TAG_CREATE_FAILED',
+                message: 'Internal server error.',
+                severity: 'error',
+                retryable: true,
+                error: message,
+            },
+            500
+        );
     }
 }

@@ -58,7 +58,9 @@ describe('POST /api/admin/media/tags', () => {
     } as NextRequest;
 
     const res = await POST(req);
+    const payload = await res.json();
     expect(res.status).toBe(403);
+    expect(payload).toMatchObject({ code: 'AUTH_FORBIDDEN' });
     expect(mockedBulkApplyMediaTags).not.toHaveBeenCalled();
   });
 
@@ -89,8 +91,10 @@ describe('DELETE /api/images/[id]', () => {
 
     const req = {} as NextRequest;
     const res = await DELETE(req, { params: Promise.resolve({ id: 'media-1' }) });
+    const payload = await res.json();
 
     expect(res.status).toBe(403);
+    expect(payload).toMatchObject({ code: 'AUTH_FORBIDDEN' });
     expect(mockedDeleteMediaWithCardCleanup).not.toHaveBeenCalled();
   });
 

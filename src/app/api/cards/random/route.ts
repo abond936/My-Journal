@@ -7,6 +7,19 @@ import { Card } from '@/lib/types/card';
 const CARD_TYPES = ['story', 'qa', 'quote', 'callout', 'gallery'] as const;
 type CardTypeFilter = typeof CARD_TYPES[number] | 'all';
 
+type ApiErrorPayload = {
+  ok: false;
+  code: string;
+  message: string;
+  severity: 'error' | 'warning';
+  retryable: boolean;
+  error?: string;
+};
+
+function errorResponse(payload: ApiErrorPayload, status: number) {
+  return NextResponse.json(payload, { status });
+}
+
 // In-memory cache for card IDs
 let cardIdCache: {
   allCardIds: string[];
@@ -249,6 +262,16 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Error in GET /api/cards/random:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-    return NextResponse.json({ error: 'Internal Server Error', detailedError: errorMessage }, { status: 500 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'CARD_RANDOM_FETCH_FAILED',
+        message: 'Internal server error.',
+        severity: 'error',
+        retryable: true,
+        error: errorMessage,
+      },
+      500
+    );
   }
 } 

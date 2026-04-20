@@ -353,6 +353,15 @@
   margin: var(--spacing-md) 0;
 }
 
+.warning {
+  color: var(--state-warning-text-color);
+  padding: var(--spacing-md);
+  background: var(--state-warning-background-color);
+  border: var(--border-width-thin) solid var(--state-warning-border-color);
+  border-radius: var(--border-radius-sm);
+  margin: var(--spacing-md) 0;
+}
+
 @media (max-width: 768px) {
   .container {
     padding: var(--spacing-md);

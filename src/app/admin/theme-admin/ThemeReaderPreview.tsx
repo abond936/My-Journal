@@ -5,6 +5,10 @@ import type { StructuredThemeData } from '@/lib/types/theme';
 import styles from './ThemeAdmin.module.css';
 
 type PreviewMode = 'light' | 'dark';
+type ApiErrorResponse = {
+  message?: string;
+  error?: string;
+};
 
 const PREVIEW_SCOPE = 'themeAdminReaderPreview';
 
@@ -50,6 +54,10 @@ export default function ThemeReaderPreview({
           if (!ctrl.signal.aborted && res.ok && typeof data.css === 'string') {
             setScopedCss(data.css);
           } else if (!ctrl.signal.aborted) {
+            const err = data as ApiErrorResponse;
+            if (err.message || err.error) {
+              console.error('[ThemeReaderPreview] preview CSS failed:', err.message || err.error);
+            }
             setScopedCss('');
           }
         } catch (e) {

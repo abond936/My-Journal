@@ -31,6 +31,54 @@ interface MediaListResponse {
   };
 }
 
+type ApiErrorResponse = {
+  message?: string;
+  code?: string;
+  severity?: 'error' | 'warning';
+  retryable?: boolean;
+  error?: string;
+};
+
+export type MediaErrorSeverity = 'error' | 'warning';
+
+export type MediaUiError = Error & {
+  code?: string;
+  severity?: MediaErrorSeverity;
+  retryable?: boolean;
+};
+
+function toUserFacingError(prefix: string, payload: ApiErrorResponse, fallback: string): MediaUiError {
+  const parts: string[] = [];
+  if (typeof payload.message === 'string' && payload.message.trim()) {
+    parts.push(payload.message);
+  } else {
+    parts.push(fallback);
+  }
+  if (typeof payload.code === 'string' && payload.code.trim()) {
+    parts.push(`(${payload.code})`);
+  }
+  if (typeof payload.retryable === 'boolean') {
+    parts.push(payload.retryable ? 'Retryable.' : 'Not retryable.');
+  }
+  const error = new Error(`${prefix}: ${parts.join(' ')}`) as MediaUiError;
+  if (typeof payload.code === 'string' && payload.code.trim()) {
+    error.code = payload.code;
+  }
+  if (payload.severity === 'warning' || payload.severity === 'error') {
+    error.severity = payload.severity;
+  }
+  if (typeof payload.retryable === 'boolean') {
+    error.retryable = payload.retryable;
+  }
+  return error;
+}
+
+export function getMediaErrorSeverity(error: Error | null): MediaErrorSeverity {
+  if (!error) return 'error';
+  const maybeMediaError = error as MediaUiError;
+  return maybeMediaError.severity === 'warning' ? 'warning' : 'error';
+}
+
 export interface MediaFilters {
   source: string;
   dimensions: string;
@@ -170,20 +218,15 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       const queryString = buildQueryString(updatedFilters, dimensionalTagMap, opts);
       const response = await fetch(`/api/media?${queryString}`);
       if (!response.ok) {
-        const errBody = await response.json().catch(() => ({})) as {
-          message?: string;
-          code?: string;
-        };
+        const errBody = (await response.json().catch(() => ({}))) as ApiErrorResponse;
         if (response.status === 503 && errBody.code === 'SEARCH_UNAVAILABLE') {
-          throw new Error(
-            typeof errBody.message === 'string'
-              ? errBody.message
-              : 'Media search requires Typesense. Clear search or configure TYPESENSE_* env vars.'
+          throw toUserFacingError(
+            'Media search unavailable',
+            errBody,
+            'Media search requires Typesense. Clear search or configure TYPESENSE_* env vars.'
           );
         }
-        throw new Error(
-          typeof errBody.message === 'string' ? errBody.message : `Failed to fetch media: ${response.statusText}`
-        );
+        throw toUserFacingError('Failed to fetch media', errBody, response.statusText);
       }
 
       const data: MediaListResponse = await response.json();
@@ -227,7 +270,8 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to update media: ${response.statusText}`);
+        const payload = (await response.json().catch(() => ({}))) as ApiErrorResponse;
+        throw toUserFacingError('Failed to update media', payload, response.statusText);
       }
 
       // Refresh the current page to get updated data
@@ -248,14 +292,8 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        const errBody = await response.json().catch(() => ({}));
-        const detail =
-          typeof (errBody as { error?: string }).error === 'string'
-            ? (errBody as { error: string }).error
-            : typeof (errBody as { message?: string }).message === 'string'
-              ? (errBody as { message: string }).message
-              : response.statusText;
-        throw new Error(`Failed to delete media: ${detail}`);
+        const payload = (await response.json().catch(() => ({}))) as ApiErrorResponse;
+        throw toUserFacingError('Failed to delete media', payload, response.statusText);
       }
 
       // Remove from local state
@@ -285,7 +323,10 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         const results = await Promise.allSettled(
           chunk.map(async (id) => {
             const response = await fetch(`/api/images/${id}`, { method: 'DELETE' });
-            if (!response.ok) throw new Error(`Failed to delete ${id}`);
+            if (!response.ok) {
+              const payload = (await response.json().catch(() => ({}))) as ApiErrorResponse;
+              throw toUserFacingError(`Failed to delete ${id}`, payload, response.statusText);
+            }
             return id;
           })
         );
@@ -324,8 +365,8 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
           body: JSON.stringify({ mediaIds, tags, mode }),
         });
         if (!response.ok) {
-          const data = await response.json().catch(() => ({}));
-          throw new Error(typeof data.message === 'string' ? data.message : response.statusText);
+          const data = (await response.json().catch(() => ({}))) as ApiErrorResponse;
+          throw toUserFacingError('Bulk tag update failed', data, response.statusText);
         }
         await fetchMedia(currentPage);
       } catch (err) {

@@ -105,6 +105,8 @@ Legend:
   - **P3 (already validated in current baseline)** - **Media delete & referrer resolution**.
 
 - **Import Metadata Precedence** - Finalize precedence policy for embedded metadata vs sidecar JSON when both are present across all import paths.
+  - Decision closeout (2026-04-20): import contract is embedded-metadata-only for captions/keywords; JSON sidecars are intentionally out-of-scope for app import flows.
+  - Regression evidence: `readMetadataCaption` coverage in integrity tests asserts embedded metadata remains the only caption source used by import code paths.
 - **Media delete & referrer resolution** - Align `getCardsReferencingMedia` / `deleteMediaWithCardCleanup` with the same reference surface as `removeMediaReferenceFromCard` (cover, gallery, `contentMedia`, inline HTML `data-media-id`), and/or reconcile `referencedByCardIds` before destructive work, so delete and filters do not trust a stale or incomplete array. Complements Administration notes on card PATCH vs missing `media`.
 - **Media identity & duplicate signals** - In admin lists, treat `media.docId` as canonical identity; `filename` is display metadata and may collide (`image.webp`, etc.). Add optional canonical columns/signals (for example `docId`, normalized `sourcePath`, checksum/hash/size where available) so duplicate triage and operator actions do not depend on filename uniqueness.
 - **Unassigned duplicate triage** - Add explicit triage flow for `assignment=unassigned` items that appear duplicated by source-derived/content-derived signals, with sortable/groupable views (starting with `sourcePath`) to quickly confirm, keep, merge intent, or remove.
@@ -120,6 +122,18 @@ Legend:
   - **P1 (cross-surface reliability)** - **Error/Warning/Notification standardization**.
 
 - **Error/Warning/Notification standardization** - Standardize feedback across admin and reader surfaces with one message contract: domain-coded API errors plus consistent client rendering for success/info/warning/error, actionable copy, and retry guidance where relevant; avoid surfacing raw Firestore/transport errors to users. Align implementation with `docs/04-Theme-Design-Contract.md` §10 and accessibility semantics.
+  - Progress update: initial media-admin/API slice shipped — `/api/media` GET, `/api/images/[id]` PATCH/DELETE, `/api/admin/media/tags`, `/api/images/[id]/replace`, `/api/images/browser`, `/api/images/local/import`, `/api/import/folder`, and `/api/import/batch` now emit domain-coded error payloads (`code`, `message`, `severity`, `retryable`), with MediaProvider and media admin/triage panels updated to parse and render warning vs error severity consistently.
+  - Progress update: second admin slice shipped — `POST /api/cards` plus `GET`/`POST /api/admin/questions` now emit the same domain-coded error payloads, and dependent admin clients now parse `message`-first error responses consistently.
+  - Progress update: question-admin detail slice shipped — `/api/admin/questions/[id]` (`PATCH`/`DELETE`/`POST`/`PUT`) and `/api/admin/questions/[id]/create-card` now emit the same domain-coded payloads for auth, validation, not-found, and server-failure paths.
+  - Progress update: user-admin slice shipped — `/api/admin/journal-users` (`GET`/`POST`) and `/api/admin/journal-users/[id]` (`PATCH`) now emit the same domain-coded payloads for auth, validation, conflict/not-found, and server-failure paths.
+  - Progress update: theme + maintenance slice shipped — `/api/theme` (`GET`/`POST`), `/api/theme/preview-css` (`POST`), and `/api/admin/maintenance` (`reconcile`/`cleanup`/`backfill`/`diagnose-cover` POST routes) now emit the same domain-coded payloads; Theme admin client parsing now reads structured `message` responses for fetch/save/preview failures.
+  - Progress update: cards + AI parity slice shipped — cards list/search/random/bulk/by-ids/duplicate routes and `POST /api/ai/suggest-card-drafts` now emit domain-coded payloads for auth, validation, and server-failure paths, aligning reader/admin card flows with the shared contract.
+  - Progress update: tags + import-preview gap slice shipped — `GET`/`POST /api/tags`, `GET`/`PUT`/`PATCH`/`DELETE /api/tags/[id]`, `POST /api/tags/[id]/reparent`, and import preview routes (`/api/import/folder/preview`, `/api/import/batch/preview`) now emit domain-coded payloads, closing the remaining major legacy API gaps.
+  - Definition-of-done closeout (2026-04-20): scoped standardization is complete for targeted admin/reader routes and key client surfaces.
+  - Validation evidence checklist:
+    - API coverage verified for scoped routes: domain-coded JSON payload (`ok: false`, `code`, `message`, `severity`, `retryable`) now used across media, cards/AI, tags, questions, users, theme, maintenance, and import-preview paths.
+    - UI severity rendering verified on media admin, media triage, and collections media panel (`warning` vs `error` styles and message parsing from structured payloads).
+    - Regression evidence recorded from this sprint: lint pass clean on touched files and integrity suites green (`npm run test:integrity`, `npm run test:integrity:emulator`).
 
 *Backend (`01-Vision-Architecture.md`)*
 

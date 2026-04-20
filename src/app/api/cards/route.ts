@@ -19,6 +19,20 @@ import {
   type TypesenseCardSortField,
 } from '@/lib/services/typesenseService';
 
+type ApiErrorPayload = {
+  ok: false;
+  code: string;
+  message: string;
+  severity: 'error' | 'warning';
+  retryable: boolean;
+  error?: string;
+  details?: string[];
+};
+
+function errorResponse(payload: ApiErrorPayload, status: number) {
+  return NextResponse.json(payload, { status });
+}
+
 export const dynamic = 'force-dynamic';
 
 /**
@@ -130,10 +144,16 @@ export async function GET(request: Request) {
     
     // Security check: Only admins can request 'draft' or 'all' cards
     if ((status === 'draft' || status === 'all') && !isAdmin) {
-      return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return errorResponse(
+        {
+          ok: false,
+          code: 'AUTH_FORBIDDEN',
+          message: 'Forbidden.',
+          severity: 'error',
+          retryable: false,
+        },
+        403
+      );
     }
 
     const type = (searchParams.get('type') as Card['type'] | 'all') || 'all';
@@ -319,12 +339,32 @@ export async function GET(request: Request) {
     } catch (error) {
       console.error('Error in GET /api/cards:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      return NextResponse.json({ error: 'Internal Server Error', detailedError: errorMessage }, { status: 500 });
+      return errorResponse(
+        {
+          ok: false,
+          code: 'CARD_LIST_FAILED',
+          message: 'Internal server error.',
+          severity: 'error',
+          retryable: true,
+          error: errorMessage,
+        },
+        500
+      );
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error('Error in GET /api/cards:', errorMessage);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'CARD_LIST_FAILED',
+        message: 'Internal server error.',
+        severity: 'error',
+        retryable: true,
+        error: errorMessage,
+      },
+      500
+    );
   }
 }
 
@@ -355,10 +395,16 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') {
-    return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'AUTH_FORBIDDEN',
+        message: 'Forbidden.',
+        severity: 'error',
+        retryable: false,
+      },
+      403
+    );
   }
 
   try {
@@ -381,14 +427,18 @@ export async function POST(request: Request) {
       }
       
       console.log('[POST /api/cards] Error messages:', errorMessages);
-      
-      return new NextResponse(JSON.stringify({ 
-        error: 'Validation failed',
-        details: errorMessages 
-      }), { 
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
+
+      return errorResponse(
+        {
+          ok: false,
+          code: 'CARD_CREATE_VALIDATION_FAILED',
+          message: 'Validation failed.',
+          severity: 'error',
+          retryable: false,
+          details: errorMessages,
+        },
+        400
+      );
     }
     
     // The createCard service function will handle defaults and timestamps
@@ -398,8 +448,28 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error creating card:', error);
     if (error instanceof SyntaxError) {
-      return new NextResponse(JSON.stringify({ error: 'Invalid JSON format' }), { status: 400 });
+      return errorResponse(
+        {
+          ok: false,
+          code: 'CARD_CREATE_INVALID_JSON',
+          message: 'Invalid JSON format.',
+          severity: 'error',
+          retryable: false,
+        },
+        400
+      );
     }
-    return new NextResponse('Internal server error', { status: 500 });
+    const message = error instanceof Error ? error.message : 'An unknown error occurred';
+    return errorResponse(
+      {
+        ok: false,
+        code: 'CARD_CREATE_FAILED',
+        message: 'Internal server error.',
+        severity: 'error',
+        retryable: true,
+        error: message,
+      },
+      500
+    );
   }
 } 

@@ -5,6 +5,19 @@ import { authOptions } from '@/lib/auth/authOptions';
 import { Card } from '@/lib/types/card';
 import { PaginatedResult } from '@/lib/types/services';
 
+type ApiErrorPayload = {
+  ok: false;
+  code: string;
+  message: string;
+  severity: 'error' | 'warning';
+  retryable: boolean;
+  error?: string;
+};
+
+function errorResponse(payload: ApiErrorPayload, status: number) {
+  return NextResponse.json(payload, { status });
+}
+
 export const dynamic = 'force-dynamic';
 
 /**
@@ -59,7 +72,16 @@ export async function GET(request: Request) {
     const q = searchParams.get('q');
     
     if (!q) {
-      return NextResponse.json({ error: 'Query parameter "q" is required.' }, { status: 400 });
+      return errorResponse(
+        {
+          ok: false,
+          code: 'CARD_SEARCH_QUERY_REQUIRED',
+          message: 'Query parameter "q" is required.',
+          severity: 'error',
+          retryable: false,
+        },
+        400
+      );
     }
 
     const limit = searchParams.has('limit') ? parseInt(searchParams.get('limit')!, 10) : 10;
@@ -77,6 +99,16 @@ export async function GET(request: Request) {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error('Error in GET /api/cards/search:', errorMessage);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'CARD_SEARCH_FAILED',
+        message: 'Internal server error.',
+        severity: 'error',
+        retryable: true,
+        error: errorMessage,
+      },
+      500
+    );
   }
 } 

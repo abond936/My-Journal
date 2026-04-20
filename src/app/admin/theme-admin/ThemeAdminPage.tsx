@@ -12,6 +12,12 @@ import {
 } from '@/lib/theme/themePresets';
 import ThemeReaderPreview from './ThemeReaderPreview';
 
+type ApiErrorResponse = {
+  message?: string;
+  code?: string;
+  error?: string;
+};
+
 // Color Palette Editor Component
 const PaletteColorEditor: React.FC<{
   color: BaseColor | ThemeColor;
@@ -756,13 +762,15 @@ export default function ThemeAdminPage() {
     const fetchThemeData = async () => {
       try {
         const response = await fetch('/api/theme');
-        if (response.ok) {
-          const data = await response.json();
-          setThemeData(data);
-          setDarkModeShift(data.darkModeShift || 5);
-          const ap = (data as ThemeDocumentData).activePresetId;
-          setActivePresetId(ap === 'journal' || ap === 'editorial' ? ap : 'custom');
+        const data = await response.json();
+        if (!response.ok) {
+          const err = data as ApiErrorResponse;
+          throw new Error(err.message || err.error || 'Failed to fetch theme data.');
         }
+        setThemeData(data);
+        setDarkModeShift(data.darkModeShift || 5);
+        const ap = (data as ThemeDocumentData).activePresetId;
+        setActivePresetId(ap === 'journal' || ap === 'editorial' ? ap : 'custom');
       } catch (error) {
         console.error('Failed to fetch theme data:', error);
       } finally {
@@ -990,8 +998,8 @@ export default function ThemeAdminPage() {
         router.refresh();
         alert('Theme saved successfully!');
       } else {
-        const errorText = await response.text();
-        alert(`Failed to save theme: ${errorText}`);
+        const err = (await response.json().catch(() => ({}))) as ApiErrorResponse;
+        alert(`Failed to save theme: ${err.message || err.error || 'Request failed.'}`);
       }
     } catch (error) {
       console.error('Failed to save theme:', error);

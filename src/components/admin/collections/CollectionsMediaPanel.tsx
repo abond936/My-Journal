@@ -2,7 +2,7 @@
 
 import React, { useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useMedia } from '@/components/providers/MediaProvider';
+import { getMediaErrorSeverity, useMedia } from '@/components/providers/MediaProvider';
 import MediaAdminList from '@/components/admin/media-admin/MediaAdminList';
 import styles from '@/app/admin/collections/page.module.css';
 
@@ -52,6 +52,7 @@ export default function CollectionsMediaPanel() {
   const showPaginationControls =
     !!pag &&
     (pag.seekMode ? pag.hasNext || currentPage > 1 : (pag.totalPages ?? 1) > 1);
+  const errorSeverity = getMediaErrorSeverity(error);
 
   return (
     <section className={`${styles.panel} ${styles.mediaPanel}`}>
@@ -86,7 +87,9 @@ export default function CollectionsMediaPanel() {
           </div>
         ) : null}
       </div>
-      {error ? <p className={styles.error}>{error.message}</p> : null}
+      {error ? (
+        <p className={errorSeverity === 'warning' ? styles.warning : styles.error}>{error.message}</p>
+      ) : null}
       {loading ? <p className={styles.mediaLoading}>Loading media…</p> : null}
       <div className={`${styles.panelScroll} ${styles.mediaPanelScroll}`}>
         <MediaAdminList variant="compact" />

@@ -6,6 +6,13 @@ import { Question } from '@/lib/types/question';
 import styles from './question-admin.module.css';
 
 type QuestionsResponse = { questions: Question[]; message?: string };
+type ApiErrorResponse = {
+  message?: string;
+  code?: string;
+  severity?: 'error' | 'warning';
+  retryable?: boolean;
+  error?: string;
+};
 
 async function fetchQuestions(): Promise<Question[]> {
   const res = await fetch('/api/admin/questions');
@@ -101,7 +108,8 @@ export default function QuestionAdminPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.message || data.error || 'Failed to create question');
+        const err = data as ApiErrorResponse;
+        throw new Error(err.message || err.error || 'Failed to create question');
       }
       setCreateMessage('Question created');
       setNewPrompt('');
@@ -244,7 +252,7 @@ export default function QuestionAdminPage() {
                                       headers: { 'Content-Type': 'application/json' },
                                       body: JSON.stringify({ prompt: editPrompt, tags: normalizeTags(editTags) }),
                                     });
-                                    const data = await res.json();
+                                    const data = (await res.json()) as ApiErrorResponse;
                                     if (!res.ok) throw new Error(data.message || data.error || 'Update failed');
                                     setEditingId(null);
                                   })
@@ -277,7 +285,7 @@ export default function QuestionAdminPage() {
                             onClick={() =>
                               runRowAction(q.docId, async () => {
                                 const res = await fetch(`/api/admin/questions/${q.docId}`, { method: 'DELETE' });
-                                const data = await res.json();
+                                const data = (await res.json()) as ApiErrorResponse;
                                 if (!res.ok) throw new Error(data.message || data.error || 'Delete failed');
                               })
                             }
@@ -304,7 +312,7 @@ export default function QuestionAdminPage() {
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({ cardId }),
                                 });
-                                const data = await res.json();
+                                const data = (await res.json()) as ApiErrorResponse;
                                 if (!res.ok) throw new Error(data.message || data.error || 'Link failed');
                               })
                             }
@@ -324,7 +332,7 @@ export default function QuestionAdminPage() {
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({ cardId }),
                                 });
-                                const data = await res.json();
+                                const data = (await res.json()) as ApiErrorResponse;
                                 if (!res.ok) throw new Error(data.message || data.error || 'Unlink failed');
                               })
                             }
@@ -353,7 +361,7 @@ export default function QuestionAdminPage() {
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({ type: cardTypeByQuestion[q.docId] || 'qa' }),
                                 });
-                                const data = await res.json();
+                                const data = (await res.json()) as ApiErrorResponse & { card?: { docId?: string } };
                                 if (!res.ok) throw new Error(data.message || data.error || 'Create card failed');
                                 const cardId = data.card?.docId;
                                 if (cardId) {

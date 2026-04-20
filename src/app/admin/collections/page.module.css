@@ -377,6 +377,11 @@
   margin-bottom: var(--spacing-sm);
 }
 
+.warning {
+  color: var(--state-warning-text-color);
+  margin-bottom: var(--spacing-sm);
+}
+
 .modalBackdrop {
   position: fixed;
   inset: 0;

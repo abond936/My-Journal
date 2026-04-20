@@ -10,10 +10,33 @@ const postBodySchema = z.object({
   displayName: z.string().max(128).optional(),
 });
 
+type ApiErrorPayload = {
+  ok: false;
+  code: string;
+  message: string;
+  severity: 'error' | 'warning';
+  retryable: boolean;
+  error?: string;
+  issues?: unknown;
+};
+
+function errorResponse(payload: ApiErrorPayload, status: number) {
+  return NextResponse.json(payload, { status });
+}
+
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') {
-    return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'AUTH_FORBIDDEN',
+        message: 'Forbidden.',
+        severity: 'error',
+        retryable: false,
+      },
+      403
+    );
   }
 
   try {
@@ -22,28 +45,63 @@ export async function GET() {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[/api/admin/journal-users GET]', error);
-    return NextResponse.json({ message: 'Failed to list users', error: message }, { status: 500 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'USER_LIST_FAILED',
+        message: 'Failed to list users.',
+        severity: 'error',
+        retryable: true,
+        error: message,
+      },
+      500
+    );
   }
 }
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') {
-    return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'AUTH_FORBIDDEN',
+        message: 'Forbidden.',
+        severity: 'error',
+        retryable: false,
+      },
+      403
+    );
   }
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ message: 'Invalid JSON' }, { status: 400 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'USER_CREATE_INVALID_JSON',
+        message: 'Invalid JSON.',
+        severity: 'error',
+        retryable: false,
+      },
+      400
+    );
   }
 
   const parsed = postBodySchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json(
-      { message: 'Invalid body', issues: parsed.error.flatten() },
-      { status: 400 }
+    return errorResponse(
+      {
+        ok: false,
+        code: 'USER_CREATE_INVALID_BODY',
+        message: 'Invalid body.',
+        severity: 'error',
+        retryable: false,
+        issues: parsed.error.flatten(),
+      },
+      400
     );
   }
 
@@ -55,6 +113,17 @@ export async function POST(request: NextRequest) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     const status = message.includes('already exists') ? 409 : 500;
     console.error('[/api/admin/journal-users POST]', error);
-    return NextResponse.json({ message, error: message }, { status });
+    const code = status === 409 ? 'USER_CREATE_CONFLICT' : 'USER_CREATE_FAILED';
+    return errorResponse(
+      {
+        ok: false,
+        code,
+        message,
+        severity: 'error',
+        retryable: status === 500,
+        error: message,
+      },
+      status
+    );
   }
 }

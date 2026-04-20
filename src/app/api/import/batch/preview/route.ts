@@ -3,11 +3,33 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
 import { discoverNormalizedSubdirs } from '@/lib/services/importFolderAsCard';
 
+type ApiErrorPayload = {
+  ok: false;
+  code: string;
+  message: string;
+  severity: 'error' | 'warning';
+  retryable: boolean;
+  error?: string;
+};
+
+function errorResponse(payload: ApiErrorPayload, status: number) {
+  return NextResponse.json(payload, { status });
+}
+
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
 
   if (!session || session.user.role !== 'admin') {
-    return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'AUTH_FORBIDDEN',
+        message: 'Forbidden.',
+        severity: 'error',
+        retryable: false,
+      },
+      403
+    );
   }
 
   try {
@@ -15,9 +37,15 @@ export async function POST(request: NextRequest) {
     const rootPath = body.rootPath as string | undefined;
 
     if (!rootPath || typeof rootPath !== 'string') {
-      return NextResponse.json(
-        { message: 'rootPath is required.' },
-        { status: 400 }
+      return errorResponse(
+        {
+          ok: false,
+          code: 'IMPORT_PREVIEW_BATCH_ROOT_REQUIRED',
+          message: 'rootPath is required.',
+          severity: 'error',
+          retryable: false,
+        },
+        400
       );
     }
 
@@ -32,9 +60,16 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error('[/api/import/batch/preview] Error:', error);
-    return NextResponse.json(
-      { message: 'Batch preview failed.', error: message },
-      { status: 500 }
+    return errorResponse(
+      {
+        ok: false,
+        code: 'IMPORT_PREVIEW_BATCH_FAILED',
+        message: 'Batch preview failed.',
+        severity: 'error',
+        retryable: true,
+        error: message,
+      },
+      500
     );
   }
 }

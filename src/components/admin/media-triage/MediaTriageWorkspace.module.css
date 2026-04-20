@@ -309,6 +309,11 @@
   font-size: var(--font-size-sm);
 }
 
+.warning {
+  color: var(--state-warning-text-color);
+  font-size: var(--font-size-sm);
+}
+
 .emptyCenter {
   padding: var(--spacing-xl);
   text-align: center;

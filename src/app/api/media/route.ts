@@ -17,6 +17,19 @@ import {
   parseDimensionalTagParamsFromSearchParams,
 } from '@/lib/utils/tagUtils';
 
+type ApiErrorPayload = {
+  ok: false;
+  code: string;
+  message: string;
+  severity: 'error' | 'warning';
+  retryable: boolean;
+  error?: string;
+};
+
+function errorResponse(payload: ApiErrorPayload, status: number) {
+  return NextResponse.json(payload, { status });
+}
+
 function buildBaseQuery(
   mediaRef: CollectionReference,
   source: string | null,
@@ -159,7 +172,16 @@ async function fetchMediaByIdsInOrder(firestore: Firestore, ids: string[]): Prom
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') {
-    return new NextResponse('Forbidden', { status: 403 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'AUTH_FORBIDDEN',
+        message: 'Forbidden.',
+        severity: 'error',
+        retryable: false,
+      },
+      403
+    );
   }
 
   try {
@@ -187,13 +209,16 @@ export async function GET(request: NextRequest) {
 
     const searchTrimmed = search?.trim() ?? '';
     if (searchTrimmed.length > 0 && !isTypesenseConfigured()) {
-      return NextResponse.json(
+      return errorResponse(
         {
+          ok: false,
           message:
             'Text search for media requires Typesense (TYPESENSE_HOST and TYPESENSE_API_KEY). Configure Typesense or clear the search box.',
           code: 'SEARCH_UNAVAILABLE',
+          severity: 'warning',
+          retryable: false,
         },
-        { status: 503 }
+        503
       );
     }
 
@@ -389,6 +414,16 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error('Error fetching media:', errorMessage);
-    return NextResponse.json({ message: 'Error fetching media.', error: errorMessage }, { status: 500 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'MEDIA_LIST_FETCH_FAILED',
+        message: 'Error fetching media.',
+        severity: 'error',
+        retryable: true,
+        error: errorMessage,
+      },
+      500
+    );
   }
 }
