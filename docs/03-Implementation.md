@@ -56,6 +56,15 @@ Legend:
 
 *Complete*
 
+- **Stability Sprint 0 — Integrity gate (CI)** - Implement one blocking CI integrity gate for core invariants on card/media/tag mutation paths. Scope: card-media referential integrity (`coverImageId`, `galleryMedia`, `contentMedia` all resolve to existing `media` docs), no dangling `referencedByCardIds`, and tag-count / derived-field consistency checks on representative create/update/delete flows. Assign a single owner and timebox execution to 2–3 days.
+
+  **Definition of complete**
+  - A dedicated CI job runs automatically on pull requests and before merge to `main`.
+  - The gate includes at least three automated integrity tests covering the scoped invariants above.
+  - The CI job is configured as a required, blocking check for merge.
+  - The initial gate run is green on the current baseline branch.
+  - Owner and scope are explicitly recorded in the work item/PR notes.
+
 
 
 ### Phase 2 — Admin Productivity
