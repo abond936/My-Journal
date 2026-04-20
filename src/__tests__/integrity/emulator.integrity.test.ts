@@ -1,4 +1,4 @@
-import { initializeApp, getApps, App } from 'firebase-admin/app';
+import { initializeApp, getApps, deleteApp, App } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import {
   IntegrityCard,
@@ -13,6 +13,7 @@ const hasEmulator = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
 const describeIfEmulator = hasEmulator ? describe : describe.skip;
 
 describeIfEmulator('Integrity gate (Firestore emulator)', () => {
+  jest.setTimeout(30000);
   let app: App;
   const projectId = 'demo-my-journal-integrity';
 
@@ -33,6 +34,13 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
     await clearCollection(db, 'cards');
     await clearCollection(db, 'media');
     await clearCollection(db, 'tags');
+  });
+
+  afterAll(async () => {
+    if (!hasEmulator) return;
+    if (app) {
+      await deleteApp(app);
+    }
   });
 
   it('keeps references and derived fields consistent on representative create/update/delete path', async () => {
