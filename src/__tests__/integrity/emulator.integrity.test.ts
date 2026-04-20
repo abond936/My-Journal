@@ -33,10 +33,18 @@ jest.mock('@/lib/config/firebase/admin', () => ({
   },
 }));
 
-import { deleteMediaWithCardCleanup, getCardsReferencingMedia } from '@/lib/services/cardService';
-
 const hasEmulator = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
 const describeIfEmulator = hasEmulator ? describe : describe.skip;
+
+type CardServiceModule = typeof import('@/lib/services/cardService');
+let cardServiceModulePromise: Promise<CardServiceModule> | null = null;
+
+function getCardService(): Promise<CardServiceModule> {
+  if (!cardServiceModulePromise) {
+    cardServiceModulePromise = import('@/lib/services/cardService');
+  }
+  return cardServiceModulePromise;
+}
 
 describeIfEmulator('Integrity gate (Firestore emulator)', () => {
   jest.setTimeout(30000);
@@ -156,6 +164,7 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
 
   it('reconciles stale media backrefs and detaches all card surfaces during delete', async () => {
     const db = getFirestore(app);
+    const { deleteMediaWithCardCleanup, getCardsReferencingMedia } = await getCardService();
 
     await db.collection('media').doc('media-delete').set({
       filename: 'delete-me.jpg',
@@ -201,6 +210,7 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
 
   it('does not mutate cards when delete is requested for missing media docs', async () => {
     const db = getFirestore(app);
+    const { deleteMediaWithCardCleanup } = await getCardService();
 
     // Card still references an ID that has no media doc.
     await db.collection('cards').doc('card-orphan-ref').set({
