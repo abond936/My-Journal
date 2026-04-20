@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "jest",
+    "test:integrity": "jest src/__tests__/integrity",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "generate-migration-plan": "ts-node src/lib/scripts/migration-plan-generator.ts",

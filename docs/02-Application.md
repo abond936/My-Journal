@@ -269,6 +269,7 @@ Legend:
 
 ⭕1 **Planned**
 - **Error/Warning/Notification standardization** - Standardize feedback across admin and reader surfaces with one message contract: domain-coded API errors plus consistent client rendering for success/info/warning/error, actionable copy, and retry guidance where relevant; avoid surfacing raw Firestore/transport errors to users. Align implementation with `docs/04-Theme-Design-Contract.md` §10 and accessibility semantics.
+- **Stability Sprint 0 — Integrity gate (CI)** - Implement one blocking CI integrity gate for core invariants on card/media/tag mutation paths. Scope: card-media referential integrity (`coverImageId`, `galleryMedia`, `contentMedia` all resolve to existing `media` docs), no dangling `referencedByCardIds`, and tag-count / derived-field consistency checks on representative create/update/delete flows. Assign a single owner and timebox execution to 2–3 days.
 
 ⭕2 **Future**
 - **Maintenance Management** - Admin UI over existing secured maintenance APIs (`POST /api/admin/maintenance/*`: reconcile, cleanup, backfill, diagnose-cover). A Maintenance tab existed previously and was removed; restore when in-app diagnose/fix outweighs CLI + manual HTTP. Today: `docs/NPM-SCRIPTS.md` and `npm run …` scripts.
