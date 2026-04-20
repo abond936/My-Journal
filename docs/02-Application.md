@@ -301,6 +301,7 @@ Legend:
 - **Writing Assist** - Admin-only AI suggestion endpoint is active (`POST /api/ai/suggest-card-drafts`) with suggestion-only outputs; no auto-apply.
 - **Admin Ordering** - Admin lists support deterministic order controls (`When`, `Created`, `Title`, `Who`, `What`, `Where`) with explicit tie-break behavior and no random ordering default.
 - **Admin filter depth** - Card admin supports card-dimension missing filters (`Card Who/What/When/Where: No tags`) and page-level media-signal row filters (`Media Who/What/When/Where`) layered on the visible admin list.
+- **Bulk tag mutation path** - `POST /api/cards/bulk-update-tags` add/remove mode now uses a dedicated batched service (`bulkApplyTagDelta`) that updates card tag-derived fields and tag counts in bulk transactions instead of per-card `updateCard` calls.
 
 ⭕1 **Planned**
 - **Context Assist** - Keep historical/background context as a distinct output contract from writing rewrites (even when requested together), so context remains separately reviewable/accept-dismiss and does not couple to rewrite acceptance.

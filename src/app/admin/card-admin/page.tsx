@@ -757,8 +757,26 @@ export default function AdminCardsPage() {
         isOpen={isBulkTagModalOpen}
         onClose={() => setIsBulkTagModalOpen(false)}
         cardIds={Array.from(selectedCardIds)}
-        onSave={async () => {
-          await mutate(undefined, { revalidate: true });
+        onSave={async ({ cardIds, addTagIds, removeTagIds }) => {
+          const add = new Set(addTagIds);
+          const remove = new Set(removeTagIds);
+          await mutate((currentPages) => {
+            if (!currentPages) return currentPages;
+            const targetIds = new Set(cardIds);
+            return currentPages.map((page) => ({
+              ...page,
+              items: page.items.map((card) => {
+                if (!targetIds.has(card.docId)) return card;
+                const nextTags = new Set(card.tags || []);
+                add.forEach((tagId) => nextTags.add(tagId));
+                remove.forEach((tagId) => nextTags.delete(tagId));
+                return {
+                  ...card,
+                  tags: Array.from(nextTags),
+                };
+              }),
+            }));
+          }, { revalidate: false });
           setSelectedCardIds(new Set()); // Clear selections after successful tag update
         }}
       />
