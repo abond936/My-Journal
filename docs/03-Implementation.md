@@ -64,6 +64,13 @@ Legend:
   - The CI job is configured as a required, blocking check for merge.
   - The initial gate run is green on the current baseline branch.
   - Owner and scope are explicitly recorded in the work item/PR notes.
+  - A separate emulator-backed integrity job runs nightly and on manual dispatch (non-blocking during stabilization).
+
+  **Operational ownership (runbook)**
+  - Assign one weekly **Integrity Owner** to monitor `integrity-gate` and `Integrity Emulator` workflow runs.
+  - On any failure, triage same day and open a fix ticket immediately with owner + ETA.
+  - If `integrity-gate` fails, block merge until resolved; if nightly emulator fails, treat as high-priority and resolve before promotion to required status.
+  - Re-evaluate emulator job after 7 consecutive green nightly runs and then promote it to a required check for `main`.
 
 
 
