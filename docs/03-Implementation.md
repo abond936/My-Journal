@@ -102,6 +102,7 @@ Legend:
 - **Grid tagging UX + empty-dimension filter** - Replace truncated/illegible grid tag display with an admin-usable layout (readable removable chips and inline add/search affordance on each item), align interaction model with card-management tagging (`search → selectable results → chips with remove X`), and support per-dimension filter modes (`has any`, `is empty`, `matches tag`) for Who/What/When/Where.
 - **Table header attachment** - In media table view, keep the header attached to the top edge of the table scroll container (correct sticky offset/z-index) so it remains visible while rows scroll.
 - **Admin pagination consistency** - Standardize pagination controls on **Previous/Next** across admin media surfaces (Media Admin, Media Triage, related admin panels) with consistent wording/states for seek vs indexed pagination. This applies to admin only; reader/content surfaces remain continuous.
+  - Progress update: bulk media tag add/replace/remove now uses `bulkApplyMediaTags` (batched transactions) instead of per-item patch/recompute loops; route-level integrity guard coverage added for the narrow path.
 
 *Administration (`02-Application.md`)*
 

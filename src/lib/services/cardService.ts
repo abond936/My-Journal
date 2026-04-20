@@ -323,6 +323,20 @@ export async function recomputeCardsMediaSignalsForMedia(mediaId: string): Promi
   await Promise.all(cardIds.map((id) => recomputeCardMediaSignals(id)));
 }
 
+export async function recomputeCardsMediaSignalsForMediaIds(mediaIds: string[]): Promise<void> {
+  if (!mediaIds.length) return;
+  const allCardIds = new Set<string>();
+  const uniqueMediaIds = Array.from(
+    new Set(mediaIds.filter((id): id is string => typeof id === 'string' && id.trim().length > 0))
+  );
+  const cardIdLists = await Promise.all(uniqueMediaIds.map((mediaId) => getCardsReferencingMedia(mediaId)));
+  for (const ids of cardIdLists) {
+    ids.forEach((id) => allCardIds.add(id));
+  }
+  if (!allCardIds.size) return;
+  await Promise.all(Array.from(allCardIds).map((id) => recomputeCardMediaSignals(id)));
+}
+
 /** Removes a media reference from a card (cover, gallery, or content). */
 export async function removeMediaReferenceFromCard(cardId: string, mediaId: string): Promise<void> {
   const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
