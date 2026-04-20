@@ -110,6 +110,7 @@ Legend:
 *Backend (`01-Vision-Architecture.md`)*
 
 - **Narrow mutation paths** - Route tag-only and similar **narrow** admin mutations through dedicated service functions that batch Firestore field updates and derived-field recompute **once per request** where possible; avoid N sequential full `updateCard` pipelines for bulk work. Keep wide `updateCard` (or equivalent) for structural and rich-content changes.
+  - Progress update: bulk card tag add/remove now uses `bulkApplyTagDelta` (batched transactions) instead of per-card `updateCard`; remaining narrow mutation paths stay in scope.
 
 
 
