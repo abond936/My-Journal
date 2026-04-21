@@ -52,7 +52,7 @@ Legend:
 
 
 
-📐 **Studio program status (2026-04-21)** - **Primary execution track:** sequenced **⭕1** Studio items in `docs/02-Application.md` (**Administration**, **Card Management**, **Media Management**, **Tag Management**) under `📐 **Studio unified shell contract**` (**Administration**). **Paused as the main build track:** Relationship DnD expansion (see **⭕2** **Relationship DnD contract (cards ↔ media ↔ tags)** and **DnD interaction contract** in `02-Application.md`) until **Studio desktop shell** and related layout are validated—see `📐 **Studio unified shell contract**` (7). **Consolidation track (2026):** **`Studio selected-context elimination`** + **`Studio inline tags without modal`** move relationship DnD and tag affordances into **in-shell Card Edit**; **`PhotoPicker convergence in Media admin`** and **`TipTap body media from bank (Studio)`** sequence per `docs/02-Application.md`. **Technical baseline to preserve:** curated collections tree DnD is **default-on** (`NEXT_PUBLIC_CURATED_TREE_DND` kill switch); `updateCard` `childrenIds` attach semantics (`curatedRoot` clear, `curatedNavEligible`, `CURATED_COLLECTION_CYCLE` / `CURATED_COLLECTION_CHILD_NOT_FOUND`); client **`fetchAdminCardSnapshot`** + optimistic rollback on embedded tree; Studio **`patchSelectedCard` / card GET** with **`throwIfJsonApiFailed`**; tests: `curated-tree-hardening.test.ts`, `emulator.curated-tree-updateCard.test.ts`, `curatedCollectionTree.test.ts`. **Superseded guidance:** `📐 **Studio orchestration decisions (2026-04-20)**` item (2) (defer embedded full card edit)—replaced by **Studio card edit** and `📐 **Studio shell & navigation (2026-04-21)**` in `02-Application.md`.
+📐 **Studio program status (2026-04-22)** - **Shipped (v1):** **Collections Studio** embed (`CollectionsAdminClient` `embedded`)—multi-pane shell, curated tree + **Attach candidates** bank (title/status/sort + **on-card** vs **media-on-card** dimensional filters), full **`MediaAdminContent`** with pane-level dimensional filters and **optional** compose→`GET /api/media` merge (`studioMediaMergeCardDimensionalTags`, default **off** in Studio), **in-shell `CardForm`** (**Compose**) with cover/gallery/children DnD from the media bank (**`Studio selected-context elimination (v1)`**—relationship-only column removed). **Admin grids:** card and media **grid** views use **natural-aspect** thumbnails + **vertical dimension rails** + card **search-only** tag row / media caption-under-image + identity-on-hover. **Primary execution track (remaining ⭕1):** **Studio IA demotion**; **Studio tag rail** + **Sidebar integration model** (**Tag Management** in `02-Application.md`); **Studio inline tags without modal** (extend beyond card-grid rail + narrow search); **`TipTap body media from bank (Studio)`**; **`PhotoPicker convergence in Media admin`**—all verbatim in `docs/02-Application.md`. **Broader DnD contract:** **⭕2** **Relationship DnD contract** + **DnD interaction contract** after shell validation in use (`📐 **Studio unified shell contract**` (7)). **Technical baseline to preserve:** curated collections tree DnD **default-on** (`NEXT_PUBLIC_CURATED_TREE_DND` kill switch); `updateCard` `childrenIds` attach semantics (`curatedRoot` clear, `curatedNavEligible`, `CURATED_COLLECTION_CYCLE` / `CURATED_COLLECTION_CHILD_NOT_FOUND`); client **`fetchAdminCardSnapshot`** + optimistic rollback on embedded tree; Studio **`patchSelectedCard` / card GET** with **`throwIfJsonApiFailed`**; tests: `curated-tree-hardening.test.ts`, `emulator.curated-tree-updateCard.test.ts`, `curatedCollectionTree.test.ts`.
 
 
 
@@ -72,23 +72,17 @@ Legend:
 
 
 
-**§ Studio sequence** *(contract: `docs/02-Application.md` → **Administration** → `📐 **Studio unified shell contract**`)*
+**§ Studio sequence** *(contract: `docs/02-Application.md` → **Administration** → `📐 **Studio unified shell contract**`; completed v1 items are summarized under **`📐 **Studio program status (2026-04-22)**` above—not duplicated here.)*
 
 
-
-- **Studio desktop shell** - Desktop-only `/admin/studio` multi-pane layout and one session-scoped selection model (`cardId`, media selection); placeholder regions acceptable before pane fill (`📐 **Studio unified shell contract**`).
 
 - **Studio IA demotion** - Execute navigation hygiene from `📐 **Studio unified shell contract**` (6): hide or demote primary admin IA for `/admin/collections`, Card Management **Collections** when redundant, and `/admin/media-triage`; routes may remain in repo.
-
-- **Tree candidate filters** - Card admin list filters and sorts produce **curated-tree attach candidates** (e.g. no parent / not yet in tree) so a dedicated Studio **unparented** column stays optional (`📐 **Studio media & body (2026-04-22)**`).
 
 - **Studio tag rail** - Full Tag Admin workflows in Studio **left rail** on `TagProvider` per `📐 **Studio unified shell contract**` (1); coordinates with **Sidebar integration model** for `/view`.
 
 - **Sidebar integration model** - **Today:** canonical `TagProvider` tree powers **filter-only** `/view` left-sidebar controls for **all** signed-in users and full tag create/edit/reorder/reparent (including DnD) on `/admin/tag-admin` and in the Studio tag column prototype—**not** a second taxonomy. **Planned:** **role-dependent** views on that same tree—**admins** on `/view` get **full tag-library maintenance** in the left sidebar (parity with `/admin/tag-admin`: add/delete/edit/reorder/reparent); **viewers** unchanged. `/admin/tag-admin` stays until **Studio tag rail** + `/view` admin sidebar fully replace those workflows (`📐 **Studio unified shell contract**` (1)).
 
-- **Studio curated tree integration** - Curated tree pane in Studio with attach/detach/reorder using existing `updateCard` semantics, `fetchAdminCardSnapshot`, and optimistic rollback patterns (`📐 **Studio unified shell contract**` (2); technical baseline in `docs/03-Implementation.md` → `📐 **Studio program status (2026-04-21)**`).
-- **Studio selected-context elimination** - Collapse **Selected card context** into **in-shell Card Edit**: register the same Studio **`@dnd-kit`** targets on cover, gallery, and children as today’s **`StudioCardRelationshipPanel`**, driven by **`handleStudioRelationshipDragEnd`** / **`patchSelectedCard`**; reconcile **`ChildCardManager`** / **`GalleryManager`** nested **`DndContext`** with the Studio outer **`CollectionsAdminClient`** context; keep **`CoverPhotoContainer`** paste and file-drop; use **Media admin** for bank→card drags; remove the duplicate relationship column when parity is reached (`📐 **Studio media & body (2026-04-22)**`).
-- **Studio inline tags without modal** - In **Studio Card Edit**, surface **`CardDimensionalTagCommandBar`** (or equivalent) so dimensional tags are edited inline without requiring **Edit tags** for routine work.
+- **Studio inline tags without modal** - Extend inline dimensional tagging so **routine** work on **full CardForm** and on **media grid tiles** does not depend on **Edit tags…** / heavy modals (today: card **grid** uses vertical rail + narrow search; media **grid** still opens modal for full selector; compose column uses existing `CardForm` tag surfaces).
 
 
 
@@ -96,7 +90,7 @@ Legend:
 
 
 
-*Priority bands after Studio sequence:* **P2** — **Grid density reduction**; **Grid tag-chip layout**; **Context Assist**.
+*Priority bands after Studio sequence:* **P2** — **Grid density reduction**; **Context Assist** (grid tag layout shipped—see **Card Management** ✅ in `02-Application.md`).
 
 
 
@@ -104,9 +98,7 @@ Legend:
 
 - **Context Assist** - Keep historical/background context as a distinct output contract from writing rewrites (even when requested together), so context remains separately reviewable/accept-dismiss and does not couple to rewrite acceptance.
 
-- **Grid tag-chip layout** - In Card Management grid view, move dimensional tag chips to a left-side vertical stack and remove inline dimension-label text (`Who`, `What`, `When`, `Where`) so chips carry the signal without redundant labels.
-
-- **Grid density reduction** - Reduce Card Management grid card footprint by ~25% (thumbnail/card block dimensions and spacing) while preserving legibility, click targets, and selection affordances.
+- **Grid density reduction** - Reduce Card Management grid card footprint by ~25% (thumbnail/card block dimensions and spacing) while preserving legibility, click targets, and selection affordances—incremental follow-up now that aspect-accurate thumbnails ship.
 
 - **Card edit layout polish** - Align card-edit page chrome and section hierarchy for a cleaner authoring flow: header/back/action alignment, consistent section heading scale, tighter spacing between Body/Tags/Gallery/Child Cards, and clearer section ordering.
 
@@ -128,7 +120,7 @@ Legend:
 
 
 
-*Priority bands:* **P2 (operator productivity)** — **Media identity & duplicate signals**; **Unassigned duplicate triage**; **Grid admin ergonomics**; **Grid tagging UX + empty-dimension filter**.
+*Priority bands:* **P2 (operator productivity)** — **Media identity & duplicate signals**; **Unassigned duplicate triage**; **Grid admin ergonomics** (checkbox sizing); **Grid tagging UX** (per-tile inline add/search—pane-level dimensional filters shipped).
 
 
 
@@ -138,9 +130,9 @@ Legend:
 
 - **Unassigned duplicate triage** - Add explicit triage flow for `assignment=unassigned` items that appear duplicated by source-derived/content-derived signals, with sortable/groupable views (starting with `sourcePath`) to quickly confirm, keep, merge intent, or remove.
 
-- **Grid admin ergonomics** - In Media **grid** view, remove filename text from the card body, increase bulk-select checkbox target sizes (row and select-all) for reliable admin use, and keep visual focus/checked states obvious.
+- **Grid admin ergonomics** - **Remaining:** larger bulk-select checkbox target sizes (row and select-all) and any further focus/checked-state polish. **Done:** filename removed from grid tile body; identity strings on image hover (`02-Application.md` **Media Management**).
 
-- **Grid tagging UX + empty-dimension filter** - Replace truncated/illegible grid tag display with an admin-usable layout (readable removable chips and inline add/search affordance on each item), align interaction model with card-management tagging (`search → selectable results → chips with remove X`), and support per-dimension filter modes (`has any`, `is empty`, `matches tag`) for Who/What/When/Where.
+- **Grid tagging UX + empty-dimension filter** - **Remaining:** optional **per-tile** inline add/search (without modal) for parity with card-grid search foot; table view alignment with the new grid rail pattern if desired. **Done:** pane-level per-dimension modes and vertical rail on grid tiles (`02-Application.md`).
 
 
 
