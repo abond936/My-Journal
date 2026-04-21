@@ -1,4 +1,5 @@
 import type { Card } from '@/lib/types/card';
+import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 
 /**
  * Loads the latest card from GET `/api/cards/[id]` (admin session).
@@ -7,9 +8,7 @@ import type { Card } from '@/lib/types/card';
  */
 export async function fetchAdminCardSnapshot(cardId: string): Promise<Card> {
   const res = await fetch(`/api/cards/${cardId}`);
-  const data = (await res.json().catch(() => ({}))) as Card & { error?: string };
-  if (!res.ok) {
-    throw new Error(typeof data.error === 'string' ? data.error : 'Failed to load card');
-  }
+  const data = (await res.json().catch(() => ({}))) as Card & { error?: string; message?: string };
+  throwIfJsonApiFailed(res, data, 'Failed to load card');
   return data;
 }

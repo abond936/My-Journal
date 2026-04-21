@@ -50,6 +50,8 @@ Legend:
 
 *(None blocking.)*
 
+📐 **Recommended next step (Studio / orchestration, 2026-04-20)** - **Update (2026-04-23):** Curated **collections tree DnD** is **default-on**; set `NEXT_PUBLIC_CURATED_TREE_DND=false` (or `0` / `no` / `off`) to disable. **Server:** `updateCard` applies **new** `childrenIds` attachments in one transaction (detach other parents, **clear `curatedRoot` on newly attached children**, recompute `curatedNavEligible`); invalid graph attempts return **`AppError`** with `CURATED_COLLECTION_CYCLE` (409) or `CURATED_COLLECTION_CHILD_NOT_FOUND` (404). **Client:** Collections / embedded tree PATCH uses **`fetchAdminCardSnapshot`** before parent `childrenIds` writes; full-page Collections and **embedded `CollectionsManagerPanel`** use **optimistic tree state** with rollback on failure (embedded clears overlay + `loadAllCards()` on success); Studio **`patchSelectedCard` / card GET** use **`throwIfJsonApiFailed`** for JSON errors. **Tests:** `curated-tree-hardening.test.ts` (gate), `emulator.curated-tree-updateCard.test.ts` (emulator job alongside `emulator.integrity.test.ts`), and `curatedCollectionTree.test.ts` (unit). **Slice 3** (promote Studio as primary admin path) stays **later** until Studio is exercised in real use. Full **Tag Admin rail** and embedded **full card edit** stay deferred per `📐 **Studio orchestration decisions (2026-04-20)**` in `02-Application.md`.
+
 
 
 ### Phase 1 — Pre-Import
@@ -75,12 +77,54 @@ Legend:
 *Card Management (`02-Application.md`)*
 
   **Priority bands**
-  - **P1 (import-blocking / workflow-critical)** - **Card edit layout polish**; **Tag picker ergonomics**.
+  - **P1 (import-blocking / workflow-critical)** - **Card-first orchestration workspace**; **Relationship DnD contract (cards ↔ media ↔ tags)**; **Card edit layout polish**; **Tag picker ergonomics**.
   - **P2 (high workflow value)** - **Grid density reduction**; **Grid tag-chip layout**; **Context Assist**.
   - **P3 (quality extension)** - **Writing Assist**.
 
 - **Writing Assist** - In card edit, provide a simple AI assist for selected text in title/subtitle/excerpt/content with explicit actions (`Make concise`, `Make engaging`, `Elaborate`, `Fix grammar`) and suggestion-only outcomes (`Replace`, `Insert below`, `Dismiss`)—never auto-apply.
 
+- **Card-first orchestration workspace** - Make card administration the primary authoring lens by consolidating card, media, and tag relationship work into one workspace: selected card context with expandable relationship panels (cover, gallery, content-media signal, children), inline tag editing, and fast thumbnail-first assignment visibility.
+  - **Slice 1 — Card relationship shell (read + inspect)**
+    - Build one card-centric workspace shell that renders selected card context and expandable relationship panels for `cover`, `gallery`, `children`, and content-media signal (`contentMedia` present / count + preview hooks).
+    - Definition of complete:
+      - A selected card renders relationship panels in one screen without navigating to separate admin pages.
+      - Panels show stable identity + thumbnail-first rows (no filename-only dependence) for assigned media/card edges.
+      - Inline tag chips are visible on card and assigned media rows in the same workspace context.
+      - No runtime errors when panels render with partial/empty relationship data.
+  - **Slice 2 — Inline relationship editing (non-DnD parity)**
+    - Add fast inline add/remove/edit actions for cover/gallery/children/tag relationships inside the workspace before DnD rollout, using existing narrow mutation APIs where available.
+    - Definition of complete:
+      - Operators can change cover, add/remove gallery media, and add/remove children without leaving the workspace.
+      - Inline tag edits on selected card and assigned media persist and refresh relationship views in-place.
+      - Mutation feedback uses standardized domain-coded error/warning rendering (no raw transport messages).
+      - Integrity checks remain green for representative relationship mutation flows.
+  - **Slice 3 — Promote workspace as primary admin path**
+    - Wire workspace entry/navigation so card orchestration tasks default to this surface, while legacy pages remain fallback during transition.
+    - Definition of complete:
+      - Primary card admin navigation exposes the orchestration workspace as first-path for relationship work.
+      - Legacy pages are labeled/positioned as secondary or fallback where overlap remains.
+      - Documentation records scope boundaries of workspace vs fallback pages to prevent dual-surface drift.
+    - 📐 **Sequencing (2026-04-22)** - Defer executing Slice 3 until Studio has been exercised enough to trust it. Curated tree DnD is **default-on** as of 2026-04-23; `NEXT_PUBLIC_CURATED_TREE_DND` remains an optional **kill switch** only.
+- **Relationship DnD contract (cards ↔ media ↔ tags)** - Standardize direct-manipulation assignment/reorder flows so operators can drag and drop media to card targets (cover/gallery/children where applicable), reorder parent-child card structure, and add/remove relationship edges without modal-heavy seek/insert loops; require keyboard parity and clear drop semantics.
+  - **Slice 1 — Shared DnD primitives and semantics**
+    - Define one interaction contract for drag handles, sensors/activation, droppable states, and drop semantics (`on` vs `between`) across card/media/tag relationship surfaces.
+    - Definition of complete:
+      - One reusable DnD primitive set is used by at least two orchestration surfaces.
+      - Drop indicator language and acceptance/rejection rules are consistent across those surfaces.
+      - Keyboard-accessible drag path exists for core reorder/attach flows.
+  - **Slice 2 — Card ↔ card and media ↔ card direct manipulation**
+    - Implement contract-backed DnD for child-card reorder/reparent and media assignment targets (cover/gallery at minimum) inside the card-first workspace.
+    - Definition of complete:
+      - Child-card reorder/reparent executes via DnD with deterministic persisted order.
+      - Media drop-to-cover and drop-to-gallery work without modal seek/insert loops for library media.
+      - Failure paths preserve UI state and display standardized actionable error/warning messages.
+      - Representative integrity tests pass for these mutation paths.
+  - **Slice 3 — Tag edge DnD expansion + hardening**
+    - Extend DnD contract to tag relationship edges where appropriate, then run consistency/accessibility hardening across orchestration interactions.
+    - Definition of complete:
+      - Tag edge add/remove/reorder interactions follow the same DnD contract and visual semantics.
+      - Keyboard parity and focus states are validated across card/media/tag DnD operations.
+      - A regression checklist is recorded and executed for drag/drop acceptance, cancellation, and undo-safe behavior.
 - **Context Assist** - Keep historical/background context as a distinct output contract from writing rewrites (even when requested together), so context remains separately reviewable/accept-dismiss and does not couple to rewrite acceptance.
 
 - **Grid tag-chip layout** - In Card Management grid view, move dimensional tag chips to a left-side vertical stack and remove inline dimension-label text (`Who`, `What`, `When`, `Where`) so chips carry the signal without redundant labels.
@@ -101,9 +145,10 @@ Legend:
 
   **Priority bands**
   - **P1 (import-readiness / integrity)** - **Import Metadata Precedence**.
-  - **P2 (operator productivity)** - **Media identity & duplicate signals**; **Unassigned duplicate triage**; **Grid admin ergonomics**; **Grid tagging UX + empty-dimension filter**; **Table header attachment**; **Admin pagination consistency**.
+  - **P2 (operator productivity)** - **Studio media bank parity**; **Media identity & duplicate signals**; **Unassigned duplicate triage**; **Grid admin ergonomics**; **Grid tagging UX + empty-dimension filter**; **Table header attachment**; **Admin pagination consistency**.
   - **P3 (already validated in current baseline)** - **Media delete & referrer resolution**.
 
+- **Studio media bank parity** - In `/admin/studio`, replace the ad hoc `GET /api/media` drag source list with the same `MediaProvider`-driven filter/list contract as Media Admin (compact panel embedding), preserving drag-to-cover and drag-to-gallery against the selected card so browse/filter and assignment share one media surface.
 - **Import Metadata Precedence** - Finalize precedence policy for embedded metadata vs sidecar JSON when both are present across all import paths.
   - Decision closeout (2026-04-20): import contract is embedded-metadata-only for captions/keywords; JSON sidecars are intentionally out-of-scope for app import flows.
   - Regression evidence: `readMetadataCaption` coverage in integrity tests asserts embedded metadata remains the only caption source used by import code paths.

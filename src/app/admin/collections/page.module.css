@@ -201,7 +201,8 @@
 }
 
 .treeNode {
-  margin-bottom: var(--spacing-sm);
+  /* Tight vertical rhythm (Explorer-like); insert-before band + pointerWithin collision still target drops. */
+  margin-bottom: 2px;
 }
 
 .nodeDropZone,
@@ -211,9 +212,9 @@
 }
 
 .treeRootDropZone {
-  min-height: 8rem;
+  min-height: 4rem;
   border: var(--border-width-thin) dashed var(--border1-color);
-  padding: var(--spacing-sm);
+  padding: var(--spacing-xs);
 }
 
 .emptyTreeHint {
@@ -222,9 +223,45 @@
   font-size: var(--font-size-sm);
 }
 
+/* When the tree has roots, `tree-root` is only this strip so it does not overlap row insert bands. */
+.treeRootAppendStrip {
+  margin-top: var(--spacing-sm);
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.treeRootAppendHint {
+  margin: 0;
+  color: var(--text2-color);
+  font-size: var(--font-size-xs);
+  text-align: center;
+  line-height: 1.35;
+}
+
 .dropTargetActive {
   outline: 2px solid var(--button-solid-border-color);
   background: color-mix(in srgb, var(--button-solid-background-color) 12%, transparent);
+}
+
+/* Nesting on card title: clear “become last child here” bar (distinct from insert-before sibling line). */
+.nodeTitleDropZoneNestActive {
+  outline: none;
+  background: color-mix(in srgb, var(--color3) 8%, transparent);
+  position: relative;
+}
+
+.nodeTitleDropZoneNestActive::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--color3);
+  border-radius: 999px 999px 0 0;
+  pointer-events: none;
 }
 
 .nodeRow,
@@ -250,12 +287,12 @@
   align-items: center;
 }
 
-/* Full-width “gap” above each row: insert sibling before this card (title = nest as last child). */
+/* Full-width band above each row: insert sibling before this card (title = nest as last child). */
 .treeInsertBeforeWrap {
   width: 100%;
-  margin-top: -4px;
-  padding-top: 4px;
-  margin-bottom: 1px;
+  margin-top: -2px;
+  padding-top: 2px;
+  margin-bottom: 0;
   box-sizing: border-box;
 }
 
@@ -264,18 +301,58 @@
   min-height: 8px;
   border-radius: var(--border-radius-sm);
   cursor: copy;
-  background: color-mix(in srgb, var(--border1-color) 22%, transparent);
+  background: transparent;
+  position: relative;
 }
 
+/* Explorer-style insertion bar between rows (pointer is over “insert before this card”). */
 .treeInsertBeforeZoneActive {
-  outline: 2px solid var(--button-solid-border-color);
-  background: color-mix(in srgb, var(--button-solid-background-color) 18%, transparent);
+  background: transparent;
+}
+
+.treeInsertBeforeZoneActive::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 2px;
+  background: var(--color3);
+  border-radius: 999px;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--layout-background1-color) 85%, var(--color3)),
+    0 1px 2px color-mix(in srgb, var(--text1-color) 12%, transparent);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .nodeTitleDropZone {
   flex: 1;
   min-width: 0;
   border-radius: var(--border-radius-sm);
+}
+
+/*
+ * When a row is expanded, the first child’s “insert before” band sits directly under the title row.
+ * The pointer often lands only in that band, so collisions pick insertBefore:firstChild instead of
+ * parent:parentId. A short column + pulled-up insert band creates overlap; curatedTreeCollisionDetection
+ * already prefers parent:* over insertBefore:* when both contain the pointer.
+ */
+.parentNestHitColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  align-self: stretch;
+}
+
+.nestHitExtension {
+  min-height: 10px;
+  flex-shrink: 0;
+}
+
+li.treeNode > ul.treeList > li.treeNode:first-child .treeInsertBeforeWrap {
+  margin-top: -10px;
 }
 
 .treeExpandButton {
@@ -310,7 +387,12 @@
 .nodeRow {
   border: var(--border-width-thin) dashed transparent;
   border-radius: var(--border-radius-sm);
-  padding: 1px var(--spacing-xs);
+  padding: 0 var(--spacing-xs);
+}
+
+.nodeRowSelected {
+  border-color: color-mix(in srgb, var(--color3) 55%, var(--border1-color));
+  background: color-mix(in srgb, var(--color3) 9%, transparent);
 }
 
 .nodeActions {
@@ -343,14 +425,19 @@
 }
 
 .listRowWrap {
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: 2px;
 }
 
 .listRow {
   border: var(--border-width-thin) solid var(--border1-color);
   border-radius: var(--border-radius-sm);
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: 2px var(--spacing-sm);
   background: var(--layout-background2-color);
+}
+
+.listRowSelected {
+  border-color: color-mix(in srgb, var(--color3) 55%, var(--border1-color));
+  background: color-mix(in srgb, var(--color3) 10%, var(--layout-background2-color));
 }
 
 .draggingStatus {
@@ -365,6 +452,27 @@
 
 .draggingStatusReparent {
   border-left: 4px solid var(--state-warning-border-color, #b45309);
+}
+
+/* DragOverlay child: root node is sized in TSX (max-content). Chip stays transparent so the list shows through. */
+.dragOverlayCard {
+  max-width: min(22rem, 90vw);
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  border: var(--border-width-thin) solid var(--border1-color);
+  background: transparent;
+  color: var(--text1-color);
+  text-shadow:
+    0 0 2px color-mix(in srgb, var(--layout-background1-color) 90%, transparent),
+    0 1px 3px color-mix(in srgb, var(--layout-background1-color) 75%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color3) 40%, transparent);
+  cursor: grabbing;
+  pointer-events: auto;
+}
+
+.dragOverlayTitle {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
 }
 
 .hintStrong {

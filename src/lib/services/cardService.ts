@@ -21,6 +21,7 @@ import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 import { buildTagMap, computeJournalWhenSortKeys } from '@/lib/utils/journalWhenSort';
 import { getPublicStorageUrl } from '@/lib/utils/storageUrl';
 import { Media } from '@/lib/types/photo';
+import { AppError, ErrorCode } from '@/lib/types/error';
 import { unlinkCardFromAllQuestions } from '@/lib/services/questionService';
 import { syncCardToTypesense, removeCardFromTypesense } from '@/lib/services/typesenseService';
 import {
@@ -610,9 +611,11 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
         for (const parentDoc of parentSnap.docs) {
           const parentData = parentDoc.data() as Card;
           const updatedChildren = normalizeChildrenIds(parentData.childrenIds).filter(id => id !== childId);
+          const detachCuratedRoot =
+            updatedChildren.length === 0 ? true : parentData.curatedRoot === true;
           parentDetachUpdates.set(parentDoc.id, {
             childrenIds: updatedChildren,
-            curatedRoot: parentData.curatedRoot === true,
+            curatedRoot: detachCuratedRoot,
           });
         }
       }
@@ -678,6 +681,7 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
         const parentRef = firestore.collection(CARDS_COLLECTION).doc(parentId);
         transaction.update(parentRef, {
           childrenIds: adjust.childrenIds,
+          curatedRoot: adjust.curatedRoot,
           curatedNavEligible: computeCuratedNavEligible({
             childrenIds: adjust.childrenIds,
             curatedRoot: adjust.curatedRoot,
@@ -758,7 +762,8 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         throw new Error(`Card with ID ${cardId} not found.`);
       }
       const existingData = docSnap.data() as Card;
-      
+      /** New `childrenIds` entries (vs pre-transaction parent); used to clear `curatedRoot` on children in the same write. */
+      const newlyAttachedChildren = new Map<string, Card>();
 
   
       // --- Start Firestore Batch Write ---
@@ -836,10 +841,30 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         const normalizedChildren = normalizeChildrenIds(cleanedUpdate.childrenIds, cardId);
         cleanedUpdate.childrenIds = normalizedChildren;
 
+        const prevChildren = normalizeChildrenIds(existingData.childrenIds, cardId);
+        const prevChildSet = new Set(prevChildren);
+        for (const childId of normalizedChildren) {
+          if (prevChildSet.has(childId)) continue;
+          const childRef = firestore.collection(CARDS_COLLECTION).doc(childId);
+          const childSnap = await transaction.get(childRef);
+          if (!childSnap.exists) {
+            throw new AppError(
+              ErrorCode.CURATED_COLLECTION_CHILD_NOT_FOUND,
+              `Cannot add child ${childId}: card not found.`,
+              { childId, parentCardId: cardId }
+            );
+          }
+          newlyAttachedChildren.set(childId, childSnap.data() as Card);
+        }
+
         for (const childId of normalizedChildren) {
           const hasCycle = await wouldCreateCycle(transaction, cardId, childId);
           if (hasCycle) {
-            throw new Error(`Cannot set child ${childId}; this would create a cycle.`);
+            throw new AppError(
+              ErrorCode.CURATED_COLLECTION_CYCLE,
+              `Cannot set child ${childId}; this would create a cycle.`,
+              { childId, parentCardId: cardId }
+            );
           }
         }
 
@@ -852,11 +877,17 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
             if (parentDoc.id === cardId) continue;
             const parentData = parentDoc.data() as Card;
             const updatedChildren = normalizeChildrenIds(parentData.childrenIds).filter(id => id !== childId);
+            /** Empty collection heads must stay `curatedNavEligible` / visible in the admin tree; promote to explicit root. */
+            const detachCuratedRoot =
+              updatedChildren.length === 0 ? true : parentData.curatedRoot === true;
             parentDetachUpdates.set(parentDoc.id, {
               childrenIds: updatedChildren,
-              curatedRoot: parentData.curatedRoot === true,
+              curatedRoot: detachCuratedRoot,
             });
           }
+        }
+        if (normalizedChildren.length === 0 && !('curatedRoot' in cardData)) {
+          cleanedUpdate.curatedRoot = true;
         }
       }
   
@@ -930,9 +961,23 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         const parentRef = firestore.collection(CARDS_COLLECTION).doc(parentId);
         transaction.update(parentRef, {
           childrenIds: adjust.childrenIds,
+          curatedRoot: adjust.curatedRoot,
           curatedNavEligible: computeCuratedNavEligible({
             childrenIds: adjust.childrenIds,
             curatedRoot: adjust.curatedRoot,
+          }),
+          updatedAt: Date.now(),
+        });
+      }
+
+      for (const [childId, priorChild] of newlyAttachedChildren) {
+        const childRef = firestore.collection(CARDS_COLLECTION).doc(childId);
+        const childChildren = normalizeChildrenIds(priorChild.childrenIds, childId);
+        transaction.update(childRef, {
+          curatedRoot: false,
+          curatedNavEligible: computeCuratedNavEligible({
+            childrenIds: childChildren,
+            curatedRoot: false,
           }),
           updatedAt: Date.now(),
         });

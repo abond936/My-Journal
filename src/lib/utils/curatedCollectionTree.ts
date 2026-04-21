@@ -21,6 +21,32 @@ export function normalizeCuratedChildIds(ids: unknown): string[] {
   return Array.from(seen);
 }
 
+/**
+ * True if attaching `childId` under `parentId` would make `parentId` a descendant of `childId`
+ * (including `parentId === childId`). Walks `childrenIds` from `childId` downward.
+ */
+export function wouldAttachChildCreateCuratedCycle(cards: Card[], childId: string, parentId: string): boolean {
+  if (!childId || !parentId || childId === parentId) return true;
+  const byId = new Map<string, Card>();
+  for (const c of cards) {
+    if (c.docId) byId.set(c.docId, c);
+  }
+  const stack = [childId];
+  const seen = new Set<string>();
+  while (stack.length > 0) {
+    const id = stack.pop()!;
+    if (id === parentId) return true;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const card = byId.get(id);
+    if (!card) continue;
+    for (const cid of normalizeCuratedChildIds(card.childrenIds)) {
+      stack.push(cid);
+    }
+  }
+  return false;
+}
+
 /** Insert `childId` immediately before `beforeSiblingId` in a parent's `childrenIds` (deduped, stable). */
 export function buildChildrenIdsWithInsertBefore(
   parentChildrenIds: unknown,
@@ -80,6 +106,10 @@ export type CuratedTreePatchFn = (cardId: string, payload: Partial<Card>) => Pro
 /**
  * Reorder siblings under the same parent, or reorder top-level curated roots (`__root__`).
  * No-op if the two cards are not siblings at the same tree level.
+ *
+ * `patchCard` should reject on non-OK HTTP responses; wrap `fetch` + JSON with
+ * `throwIfJsonApiFailed` from `@/lib/utils/httpJsonApiErrors` so `AppError` `message` / `code`
+ * from the cards API propagate to the UI.
  */
 export async function persistCuratedSiblingReorder(
   activeCardId: string,

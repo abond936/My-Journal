@@ -29,6 +29,37 @@
   text-align: center;
   border-right: var(--border-width-thin) solid var(--border1-color);
   width: var(--spacing-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  flex-wrap: nowrap;
+}
+
+.checkboxCellWithStudioHandle {
+  width: auto;
+  min-width: 3.25rem;
+}
+
+.studioSourceDragHandle {
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--layout-background2-color);
+  color: var(--text1-color);
+  font-size: 12px;
+  line-height: 1;
+  padding: 4px 4px;
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.studioSourceDragHandle:active {
+  cursor: grabbing;
+}
+
+.studioSourceDragHandle:focus-visible {
+  outline: 2px solid var(--button-solid-border-color, var(--color3));
+  outline-offset: 1px;
 }
 
 /* Card assignment (referencedByCardIds) */

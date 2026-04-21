@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { Media } from '@/lib/types/photo';
 import { useMedia } from '@/components/providers/MediaProvider';
 import MediaAdminRow from './MediaAdminRow';
+import { MediaAdminRowStudioSource } from './MediaAdminRowStudioSource';
 import MediaResizableHeader from './MediaResizableHeader';
 import styles from './MediaAdminList.module.css';
 
@@ -25,6 +25,13 @@ type DimensionFilters = Record<
     tagId: string;
   }
 >;
+
+const DEFAULT_DIMENSION_FILTERS: DimensionFilters = {
+  who: { mode: 'any', tagId: '' },
+  what: { mode: 'any', tagId: '' },
+  when: { mode: 'any', tagId: '' },
+  where: { mode: 'any', tagId: '' },
+};
 
 const MEDIA_COLUMN_WIDTHS_KEY = 'media-admin-column-widths';
 /** Persisted widths when embedded in Collections / Studio (fewer columns). */
@@ -93,11 +100,14 @@ function loadInitialColumns(variant: 'full' | 'compact'): ColumnConfig[] {
 export default function MediaAdminList({
   variant = 'full',
   sourcePathFirst = false,
-  dimensionFilters,
+  dimensionFilters = DEFAULT_DIMENSION_FILTERS,
+  /** Admin Studio only: rows register as `source:*` drags (requires parent `DndContext`). */
+  studioSourceDraggable = false,
 }: {
   variant?: 'full' | 'compact';
   sourcePathFirst?: boolean;
-  dimensionFilters: DimensionFilters;
+  dimensionFilters?: DimensionFilters;
+  studioSourceDraggable?: boolean;
 }) {
   const { 
     media, 
@@ -190,15 +200,25 @@ export default function MediaAdminList({
             </tr>
           </thead>
           <tbody>
-            {visibleMedia.map((item) => (
-              <MediaAdminRow
-                key={item.docId}
-                media={item}
-                columns={columns}
-                isSelected={selectedMediaIds.includes(item.docId)}
-                onToggleSelection={() => toggleMediaSelection(item.docId)}
-              />
-            ))}
+            {visibleMedia.map((item) =>
+              studioSourceDraggable ? (
+                <MediaAdminRowStudioSource
+                  key={item.docId}
+                  media={item}
+                  columns={columns}
+                  isSelected={selectedMediaIds.includes(item.docId)}
+                  onToggleSelection={() => toggleMediaSelection(item.docId)}
+                />
+              ) : (
+                <MediaAdminRow
+                  key={item.docId}
+                  media={item}
+                  columns={columns}
+                  isSelected={selectedMediaIds.includes(item.docId)}
+                  onToggleSelection={() => toggleMediaSelection(item.docId)}
+                />
+              )
+            )}
           </tbody>
         </table>
       </div>

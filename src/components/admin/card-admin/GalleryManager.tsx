@@ -4,14 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import JournalImage from '@/components/common/JournalImage';
 import { useTag } from '@/components/providers/TagProvider';
 import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
+import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import {
   arrayMove,
   SortableContext,
@@ -31,6 +24,7 @@ import {
   gallerySlotHasCaptionOverride,
 } from '@/lib/utils/galleryObjectPosition';
 import { getAspectRatioBucket } from '@/lib/utils/objectPositionUtils';
+import { useDefaultDndSensors } from '@/lib/hooks/useDefaultDndSensors';
 
 function applySlotCaptionEdit(item: GalleryMediaItem, newText: string): GalleryMediaItem {
   const mediaDefault = item.media?.caption ?? '';
@@ -122,7 +116,7 @@ export default function GalleryManager({
     setEditingItem(null);
   };
 
-  const sensors = useSensors(useSensor(PointerSensor));
+  const sensors = useDefaultDndSensors();
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;

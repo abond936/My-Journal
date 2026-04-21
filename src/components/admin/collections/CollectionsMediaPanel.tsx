@@ -9,7 +9,12 @@ import styles from '@/app/admin/collections/page.module.css';
 /**
  * Compact media table for Collections / Studio: loads media on mount, assignment filter + pagination.
  */
-export default function CollectionsMediaPanel() {
+type CollectionsMediaPanelProps = {
+  /** When true (Admin Studio embedded column), rows register as `source:*` for cover/gallery drops. */
+  studioSourceDraggable?: boolean;
+};
+
+export default function CollectionsMediaPanel({ studioSourceDraggable = false }: CollectionsMediaPanelProps) {
   const {
     fetchMedia,
     loading,
@@ -92,7 +97,7 @@ export default function CollectionsMediaPanel() {
       ) : null}
       {loading ? <p className={styles.mediaLoading}>Loading media…</p> : null}
       <div className={`${styles.panelScroll} ${styles.mediaPanelScroll}`}>
-        <MediaAdminList variant="compact" />
+        <MediaAdminList variant="compact" studioSourceDraggable={studioSourceDraggable} />
       </div>
       {showPaginationControls && pag ? (
         <div className={styles.mediaPagination}>

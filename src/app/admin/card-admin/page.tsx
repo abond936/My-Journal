@@ -428,7 +428,9 @@ export default function AdminCardsPage() {
     // Keep current rows visible while next title-only search request is in flight.
     if (adminVisibleRows.length > 0) {
       setDisplayCards(adminVisibleRows);
+      return;
     }
+    setDisplayCards([]);
   }, [adminVisibleRows, isValidating, searchInputValue]);
 
   const handleDeleteCard = async (cardId: string) => {

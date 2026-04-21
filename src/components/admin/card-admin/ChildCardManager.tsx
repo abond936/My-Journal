@@ -2,14 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
+import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import {
   arrayMove,
   SortableContext,
@@ -18,6 +11,7 @@ import {
 import styles from './ChildCardManager.module.css';
 import { SortableItem } from './SortableItem';
 import { useChildCards } from '@/lib/hooks/useChildCards';
+import { useDefaultDndSensors } from '@/lib/hooks/useDefaultDndSensors';
 import clsx from 'clsx';
 
 interface ChildCardManagerProps {
@@ -45,13 +39,7 @@ export default function ChildCardManager({
     onUpdate(childrenIds.filter(id => id !== idToRemove));
   };
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 6,
-      },
-    })
-  );
+  const sensors = useDefaultDndSensors();
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;

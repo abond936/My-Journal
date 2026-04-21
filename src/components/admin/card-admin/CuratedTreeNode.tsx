@@ -1,23 +1,63 @@
 'use client';
 
 import React from 'react';
-import { useDraggable, useDroppable } from '@dnd-kit/core';
+import { useDraggable, useDndContext, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import type { Card } from '@/lib/types/card';
 import { normalizeCuratedChildIds } from '@/lib/utils/curatedCollectionTree';
-import { useCuratedTreeDragKind } from '@/components/admin/card-admin/curatedTreeDragContext';
+import { useCuratedTreeDropHighlight } from '@/components/admin/card-admin/curatedTreeDropHighlightContext';
 import styles from '@/app/admin/collections/page.module.css';
+
+function StaticTreeRowCard({
+  className,
+  children,
+  disabled,
+  onClick,
+}: {
+  className: string;
+  children: React.ReactNode;
+  disabled?: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <div
+      className={className}
+      onClick={onClick}
+      style={{ cursor: disabled ? 'not-allowed' : 'pointer' }}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          if (!disabled) onClick?.();
+        }
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function ReadOnlyInsertBeforeGap() {
+  return (
+    <div className={styles.treeInsertBeforeWrap} aria-hidden>
+      <div className={styles.treeInsertBeforeZone} />
+    </div>
+  );
+}
 
 function DraggableCard({
   card,
   className,
   children,
   disabled,
+  onClick,
 }: {
   card: Card;
   className: string;
   children: React.ReactNode;
   disabled?: boolean;
+  onClick?: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `card:${card.docId}`,
@@ -27,28 +67,47 @@ function DraggableCard({
 
   const style = {
     transform: CSS.Translate.toString(transform),
-    opacity: isDragging ? 0.55 : 1,
+    opacity: isDragging ? 0 : 1,
     cursor: disabled ? 'not-allowed' : 'grab',
   };
 
   return (
-    <div ref={setNodeRef} style={style} className={className} {...attributes} {...listeners}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={className}
+      onClick={onClick}
+      {...attributes}
+      {...listeners}
+    >
       {children}
     </div>
   );
 }
 
 function InsertBeforeDropZone({ beforeCardId }: { beforeCardId: string }) {
-  const dragKind = useCuratedTreeDragKind();
-  const { setNodeRef, isOver } = useDroppable({
-    id: `insertBefore:${beforeCardId}`,
-    disabled: dragKind !== 'reparent',
+  const { active, over } = useDndContext();
+  const activeStr = active?.id != null ? String(active.id) : '';
+  const reparentFromCard = activeStr.startsWith('card:');
+  const draggedCardId = activeStr.startsWith('card:') ? activeStr.slice(5) : null;
+  const highlightId = useCuratedTreeDropHighlight();
+  const insertId = `insertBefore:${beforeCardId}`;
+  const parentDropId = `parent:${beforeCardId}`;
+  const overStr = over?.id != null ? String(over.id) : '';
+  /** Same card: nest-on-title vs insert-before-sibling — hide the insert bar when nesting on this row. */
+  const nestOnThisRow = highlightId === parentDropId || overStr === parentDropId;
+  const { setNodeRef } = useDroppable({
+    id: insertId,
+    disabled: !reparentFromCard,
   });
+  /** Match DnD `over` only (via context). Per-droppable `isOver` can stay true on the source row while `over` is `parent:*` elsewhere, which left the insertion line stuck on the row being dragged. */
+  const showLine =
+    !nestOnThisRow && beforeCardId !== draggedCardId && highlightId === insertId;
   return (
     <div className={styles.treeInsertBeforeWrap}>
       <div
         ref={setNodeRef}
-        className={`${styles.treeInsertBeforeZone} ${isOver ? styles.treeInsertBeforeZoneActive : ''}`}
+        className={`${styles.treeInsertBeforeZone} ${showLine ? styles.treeInsertBeforeZoneActive : ''}`}
         title="Drop here to insert before this row (sibling order). Easiest: aim for the gap above this card. Title = nest as last child."
         aria-label="Insert before this row"
       />
@@ -65,13 +124,21 @@ function ParentDropZone({
   className: string;
   children: React.ReactNode;
 }) {
-  const dragKind = useCuratedTreeDragKind();
-  const { setNodeRef, isOver } = useDroppable({
-    id: `parent:${parentId}`,
-    disabled: dragKind !== 'reparent',
+  const { active } = useDndContext();
+  const activeStr = active?.id != null ? String(active.id) : '';
+  const reparentFromCard = activeStr.startsWith('card:');
+  const highlightId = useCuratedTreeDropHighlight();
+  const parentDropId = `parent:${parentId}`;
+  const { setNodeRef } = useDroppable({
+    id: parentDropId,
+    disabled: !reparentFromCard,
   });
+  const nestActive = highlightId === parentDropId;
   return (
-    <div ref={setNodeRef} className={`${className} ${isOver ? styles.dropTargetActive : ''}`}>
+    <div
+      ref={setNodeRef}
+      className={`${className} ${nestActive ? `${styles.dropTargetActive} ${styles.nodeTitleDropZoneNestActive}` : ''}`}
+    >
       {children}
     </div>
   );
@@ -91,6 +158,10 @@ export interface CuratedTreeNodeProps {
   saving: boolean;
   onDetachChild: (id: string) => void;
   onOpenBulkAdd: (parentId: string) => void;
+  onSelectCard: (id: string) => void;
+  selectedCardId: string | null;
+  /** When true, tree rows are not draggable and insert/parent drop targets are not registered. */
+  disableCuratedDrag?: boolean;
 }
 
 export function CuratedTreeNode({
@@ -103,6 +174,9 @@ export function CuratedTreeNode({
   saving,
   onDetachChild,
   onOpenBulkAdd,
+  onSelectCard,
+  selectedCardId,
+  disableCuratedDrag = false,
 }: CuratedTreeNodeProps) {
   const isCycle = seen.has(node.docId);
 
@@ -125,10 +199,23 @@ export function CuratedTreeNode({
   const hasChildren = children.length > 0;
   const isExpanded = expandedIds.has(node.docId);
 
+  const titleClassName = [
+    styles.nodeTitleDropZone,
+    hasChildren && isExpanded && !disableCuratedDrag ? styles.parentNestHitColumn : '',
+  ]
+    .join(' ')
+    .trim();
+
   return (
     <li className={styles.treeNode}>
-      {node.docId ? <InsertBeforeDropZone beforeCardId={node.docId} /> : null}
-      <div className={styles.nodeRow}>
+      {node.docId ? (
+        disableCuratedDrag ? (
+          <ReadOnlyInsertBeforeGap />
+        ) : (
+          <InsertBeforeDropZone beforeCardId={node.docId} />
+        )
+      ) : null}
+      <div className={`${styles.nodeRow} ${selectedCardId === node.docId ? styles.nodeRowSelected : ''}`}>
         <div className={styles.nodeLead}>
           {hasChildren ? (
             <>
@@ -150,15 +237,35 @@ export function CuratedTreeNode({
               </span>
             </>
           ) : null}
-          <ParentDropZone parentId={node.docId!} className={styles.nodeTitleDropZone}>
-            <DraggableCard
-              card={node}
-              className={styles.nodeDragSurface}
-              disabled={saving}
-            >
-              <span className={styles.nodeTitle}>{cardLabel(node)}</span>
-            </DraggableCard>
-          </ParentDropZone>
+          {disableCuratedDrag ? (
+            <div className={titleClassName}>
+              <StaticTreeRowCard
+                className={styles.nodeDragSurface}
+                disabled={saving}
+                onClick={() => onSelectCard(node.docId)}
+              >
+                <span className={styles.nodeTitle}>{cardLabel(node)}</span>
+              </StaticTreeRowCard>
+            </div>
+          ) : (
+            <ParentDropZone parentId={node.docId!} className={titleClassName}>
+              <DraggableCard
+                card={node}
+                className={styles.nodeDragSurface}
+                disabled={saving}
+                onClick={() => onSelectCard(node.docId)}
+              >
+                <span className={styles.nodeTitle}>{cardLabel(node)}</span>
+              </DraggableCard>
+              {hasChildren && isExpanded ? (
+                <div
+                  className={styles.nestHitExtension}
+                  aria-hidden
+                  title="Drop here to add as last child under this card"
+                />
+              ) : null}
+            </ParentDropZone>
+          )}
         </div>
         <div className={styles.nodeActions}>
           <button
@@ -195,6 +302,9 @@ export function CuratedTreeNode({
               saving={saving}
               onDetachChild={onDetachChild}
               onOpenBulkAdd={onOpenBulkAdd}
+              onSelectCard={onSelectCard}
+              selectedCardId={selectedCardId}
+              disableCuratedDrag={disableCuratedDrag}
             />
           ))}
         </ul>

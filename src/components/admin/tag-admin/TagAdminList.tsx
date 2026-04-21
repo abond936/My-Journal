@@ -6,9 +6,6 @@ import type { TagWithChildren } from '@/components/providers/TagProvider';
 import { TagAdminRow } from './TagAdminRow';
 import {
   DndContext,
-  PointerSensor,
-  useSensor,
-  useSensors,
   DragEndEvent,
   DragOverEvent,
   DragStartEvent,
@@ -21,6 +18,7 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useDefaultDndSensors } from '@/lib/hooks/useDefaultDndSensors';
 import styles from '@/app/admin/tag-admin/tag-admin.module.css';
 
 type TagRow = TagWithChildren & { depth: number };
@@ -157,7 +155,6 @@ function SortableTag({
   }
 
   const isOverTag = dragState.overId === tag.docId;
-  const isValidDrop = isOverTag && dragState.isValidDrop;
   const dropIndicator = isOverTag && dragState.isValidDrop && !dragState.isReparenting ? dragState.dropIndicator : null;
   const isReparentTarget = isOverTag && dragState.isReparenting;
   const showReorderHighlight = isOverTag && dragState.isValidDrop && !dragState.isReparenting;
@@ -234,7 +231,7 @@ function TagAdminDimensionColumn({
       reparentTarget: string | null;
     }>
   >;
-  sensors: ReturnType<typeof useSensors>;
+  sensors: ReturnType<typeof useDefaultDndSensors>;
   collisionDetection: CollisionDetection;
   onReorder: TagAdminListProps['onReorder'];
   onReparent: TagAdminListProps['onReparent'];
@@ -476,7 +473,7 @@ export function TagAdminList({
 
   const columnCollisionDetection = useMemo(() => makeColumnCollisionDetection(), []);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const sensors = useDefaultDndSensors();
 
   const handleToggleCollapse = useCallback((tagId: string) => {
     setCollapsedNodes((prev) => {

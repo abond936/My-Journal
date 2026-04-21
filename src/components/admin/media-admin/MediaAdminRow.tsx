@@ -11,7 +11,16 @@ import { useTag } from '@/components/providers/TagProvider';
 import { parseObjectPositionToPercents } from '@/lib/utils/parseObjectPositionPercent';
 import { getCoreTagsByDimension } from '@/lib/utils/tagDisplay';
 import { isMediaAssigned } from '@/lib/utils/mediaAssignmentSeek';
+import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
 import styles from './MediaAdminRow.module.css';
+
+export type MediaAdminRowStudioDragBind = {
+  attributes: DraggableAttributes;
+  listeners: DraggableSyntheticListeners;
+  setNodeRef: (el: HTMLElement | null) => void;
+  setActivatorNodeRef: (el: HTMLElement | null) => void;
+  style: React.CSSProperties;
+};
 
 interface ColumnConfig {
   key: string;
@@ -27,13 +36,19 @@ interface MediaAdminRowProps {
   columns: ColumnConfig[];
   isSelected: boolean;
   onToggleSelection: () => void;
+  /** When set (Studio + `DndContext`), row is draggable as `source:{mediaId}` for cover/gallery drops. */
+  studioDragBind?: MediaAdminRowStudioDragBind;
 }
 
-export default function MediaAdminRow({ 
-  media, 
-  columns, 
-  isSelected, 
-  onToggleSelection 
+/** Row props without internal Studio drag binding (used by `MediaAdminRowStudioSource`). */
+export type MediaAdminRowBaseProps = Omit<MediaAdminRowProps, 'studioDragBind'>;
+
+export default function MediaAdminRow({
+  media,
+  columns,
+  isSelected,
+  onToggleSelection,
+  studioDragBind,
 }: MediaAdminRowProps) {
   const focalInActions = !columns.some((c) => c.key === 'objectPosition');
   const { deleteMedia, updateMedia, fetchMedia, currentPage } = useMedia();
@@ -42,10 +57,7 @@ export default function MediaAdminRow({
     () => new Map(tags.filter((t) => t.docId).map((t) => [t.docId as string, t.name])),
     [tags]
   );
-  const core = React.useMemo(
-    () => getCoreTagsByDimension(media),
-    [media.docId, media.tags, media.who, media.what, media.when, media.where]
-  );
+  const core = React.useMemo(() => getCoreTagsByDimension(media), [media]);
   const [isEditingCaption, setIsEditingCaption] = useState(false);
   const [captionValue, setCaptionValue] = useState(media.caption || '');
   const [focalModalOpen, setFocalModalOpen] = useState(false);
@@ -330,8 +342,26 @@ export default function MediaAdminRow({
 
   return (
     <>
-      <tr className={`${styles.row} ${isSelected ? styles.selected : ''}`}>
-        <td className={styles.checkboxCell}>
+      <tr
+        ref={studioDragBind?.setNodeRef}
+        style={studioDragBind?.style}
+        className={`${styles.row} ${isSelected ? styles.selected : ''}`}
+      >
+        <td className={`${styles.checkboxCell} ${studioDragBind ? styles.checkboxCellWithStudioHandle : ''}`}>
+          {studioDragBind ? (
+            <button
+              type="button"
+              ref={studioDragBind.setActivatorNodeRef}
+              className={styles.studioSourceDragHandle}
+              aria-label="Drag to selected card cover or gallery. Space to pick up, arrows to move, Space to drop."
+              title="Drag to Cover or Gallery (Selected card context)"
+              data-studio-dnd-return-focus={media.docId ? `source:${media.docId}` : undefined}
+              {...studioDragBind.attributes}
+              {...studioDragBind.listeners}
+            >
+              ⋮⋮
+            </button>
+          ) : null}
           <input
             type="checkbox"
             checked={isSelected}
