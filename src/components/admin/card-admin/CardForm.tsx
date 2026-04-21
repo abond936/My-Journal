@@ -20,6 +20,11 @@ import PhotoPicker from '@/components/admin/card-admin/PhotoPicker';
 import LoadingOverlay from '@/components/admin/card-admin/LoadingOverlay';
 import { getAllowedDisplayModes, normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 import { arrayMove } from '@dnd-kit/sortable';
+import { useStudioCardFormStudioOptional } from '@/components/admin/studio/studioCardFormStudioContext';
+import { StudioDropZone } from '@/components/admin/studio/studioRelationshipDndPrimitives';
+import StudioCardFormGallery from '@/components/admin/studio/StudioCardFormGallery';
+import StudioCardFormChildren from '@/components/admin/studio/StudioCardFormChildren';
+import studioShellStyles from '@/components/admin/studio/StudioWorkspace.module.css';
 
 type CardDraftOption = {
   title: string;
@@ -69,6 +74,9 @@ const CardForm: React.FC = () => {
     registerEditorContentGetter,
     commitGalleryMediaPersisted,
   } = useCardForm();
+
+  const studioFormCtx = useStudioCardFormStudioOptional();
+  const studioShellForm = Boolean(studioFormCtx?.studioShellCardForm);
 
   const editorRef = useRef<RichTextEditorRef>(null);
 
@@ -420,18 +428,44 @@ const CardForm: React.FC = () => {
           </div>
 
           <div className={styles.coverPhotoSection}>
-            <CoverPhotoContainer
-              coverImage={cardData.coverImage}
-              objectPosition={cardData.coverImageFocalPoint ? 
-                `${(cardData.coverImageFocalPoint.x / (cardData.coverImage?.width || 1)) * 100}% ${(cardData.coverImageFocalPoint.y / (cardData.coverImage?.height || 1)) * 100}%` : 
-                '50% 50%'
-              }
-              onChange={handleCoverImageChange}
-              isSaving={isSaving}
-              showSavingOverlay={false}
-              error={errors.coverImage}
-              filterTagIds={cardData.tags ?? []}
-            />
+            {studioShellForm ? (
+              <StudioDropZone
+                id="drop:cover"
+                accepts={['source', 'gallery']}
+                ariaLabel="Cover drop target: drop source or gallery media here to set cover"
+              >
+                <p className={studioShellStyles.dropHint}>
+                  Drop from the Media bank (or a gallery row) here to assign cover.
+                </p>
+                <CoverPhotoContainer
+                  coverImage={cardData.coverImage}
+                  objectPosition={
+                    cardData.coverImageFocalPoint
+                      ? `${(cardData.coverImageFocalPoint.x / (cardData.coverImage?.width || 1)) * 100}% ${(cardData.coverImageFocalPoint.y / (cardData.coverImage?.height || 1)) * 100}%`
+                      : '50% 50%'
+                  }
+                  onChange={handleCoverImageChange}
+                  isSaving={isSaving}
+                  showSavingOverlay={false}
+                  error={errors.coverImage}
+                  filterTagIds={cardData.tags ?? []}
+                />
+              </StudioDropZone>
+            ) : (
+              <CoverPhotoContainer
+                coverImage={cardData.coverImage}
+                objectPosition={
+                  cardData.coverImageFocalPoint
+                    ? `${(cardData.coverImageFocalPoint.x / (cardData.coverImage?.width || 1)) * 100}% ${(cardData.coverImageFocalPoint.y / (cardData.coverImage?.height || 1)) * 100}%`
+                    : '50% 50%'
+                }
+                onChange={handleCoverImageChange}
+                isSaving={isSaving}
+                showSavingOverlay={false}
+                error={errors.coverImage}
+                filterTagIds={cardData.tags ?? []}
+              />
+            )}
           </div>
 
           <div className={styles.tagsSection}>
@@ -439,29 +473,34 @@ const CardForm: React.FC = () => {
               card={cardData}
               allTags={allTags}
               disabled={isSaving}
+              variant={studioShellForm ? 'compact' : 'default'}
               onUpdateTags={handleTagsChange}
               tagError={errors.tags}
               className={styles.tagCommandBar}
               trailingSlot={
-                <button
-                  type="button"
-                  className={macroTagStyles.editButton}
-                  disabled={isSaving}
-                  onClick={() => setTagMacroExpanded(true)}
-                >
-                  Edit tags
-                </button>
+                studioShellForm ? null : (
+                  <button
+                    type="button"
+                    className={macroTagStyles.editButton}
+                    disabled={isSaving}
+                    onClick={() => setTagMacroExpanded(true)}
+                  >
+                    Edit tags
+                  </button>
+                )
               }
             />
-            <MacroTagSelector
-              selectedTags={selectedTagObjects}
-              allTags={allTags}
-              onChange={handleTagsChange}
-              expanded={tagMacroExpanded}
-              onExpandedChange={setTagMacroExpanded}
-              collapsedSummary="none"
-              className={clsx(styles.tagSelector, errors.tags && styles.inputError)}
-            />
+            {!studioShellForm ? (
+              <MacroTagSelector
+                selectedTags={selectedTagObjects}
+                allTags={allTags}
+                onChange={handleTagsChange}
+                expanded={tagMacroExpanded}
+                onExpandedChange={setTagMacroExpanded}
+                collapsedSummary="none"
+                className={clsx(styles.tagSelector, errors.tags && styles.inputError)}
+              />
+            ) : null}
           </div>
 
           <div className={styles.editorSection}>
@@ -544,24 +583,36 @@ const CardForm: React.FC = () => {
           </div>
 
           <div className={styles.gallerySection}>
-            <GalleryManager
-              galleryMedia={(cardData.galleryMedia || []) as HydratedGalleryMediaItem[]}
-              onUpdate={handleGalleryUpdate}
-              onPersistGalleryAfterSlotSave={persistGalleryAfterSlotSave}
-              onSetAsCover={handleSetGalleryItemAsCover}
-              currentCoverMediaId={cardData.coverImageId || null}
-              error={errors.galleryMedia}
-              filterTagIds={cardData.tags ?? []}
-            />
+            {studioShellForm ? (
+              <StudioCardFormGallery
+                disabled={isSaving}
+                onSetAsCover={handleSetGalleryItemAsCover}
+                currentCoverMediaId={cardData.coverImageId || null}
+              />
+            ) : (
+              <GalleryManager
+                galleryMedia={(cardData.galleryMedia || []) as HydratedGalleryMediaItem[]}
+                onUpdate={handleGalleryUpdate}
+                onPersistGalleryAfterSlotSave={persistGalleryAfterSlotSave}
+                onSetAsCover={handleSetGalleryItemAsCover}
+                currentCoverMediaId={cardData.coverImageId || null}
+                error={errors.galleryMedia}
+                filterTagIds={cardData.tags ?? []}
+              />
+            )}
           </div>
 
           <div className={styles.childrenSection}>
-            <ChildCardManager
-              cardId={cardData.docId}
-              childrenIds={cardData.childrenIds || []}
-              onUpdate={handleChildCardsChange}
-              error={errors.childrenIds}
-            />
+            {studioShellForm ? (
+              <StudioCardFormChildren disabled={isSaving} />
+            ) : (
+              <ChildCardManager
+                cardId={cardData.docId}
+                childrenIds={cardData.childrenIds || []}
+                onUpdate={handleChildCardsChange}
+                error={errors.childrenIds}
+              />
+            )}
           </div>
         </div>
       </form>

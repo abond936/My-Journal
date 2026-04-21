@@ -295,7 +295,32 @@
   .navigation {
     margin-bottom: var(--spacing-md);
   }
-  
+
+  /* Admin + /view only: switch between feed filters and full tag library editing */
+  .viewTagSidebarTabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-md);
+  }
+
+  .viewTagSidebarTab {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-xs);
+    font-family: var(--body-font-family);
+    background: transparent;
+    border: var(--border-width-thin) solid var(--border1-color);
+    border-radius: var(--border-radius-md);
+    color: var(--text2-color);
+    cursor: pointer;
+  }
+
+  .viewTagSidebarTabActive {
+    background-color: var(--button-solid-background-color);
+    color: var(--button-solid-text-color);
+    border-color: var(--button-solid-border-color);
+  }
+
   .filterControls {
     flex-shrink: 0; /* Never shrink - always keep buttons visible */
     margin-top: auto;

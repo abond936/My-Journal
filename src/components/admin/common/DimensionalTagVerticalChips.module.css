@@ -1,0 +1,67 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  max-width: 100%;
+  align-self: stretch;
+}
+
+.dimBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 3px 0;
+  min-width: 0;
+}
+
+.dimBlockDivider {
+  border-top: var(--border-width-thin) solid var(--border1-color);
+}
+
+.empty {
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+  font-style: italic;
+  line-height: 1.2;
+}
+
+.tagButton {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+  width: 100%;
+  min-width: 0;
+  padding: 3px 4px;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  background: color-mix(in srgb, var(--layout-background2-color) 88%, transparent);
+  color: var(--text1-color);
+  font-size: var(--font-size-xs);
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+  word-break: break-word;
+}
+
+.tagButton:hover:not(:disabled) {
+  background: var(--layout-background2-color);
+}
+
+.tagButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.tagName {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.tagX {
+  flex-shrink: 0;
+  opacity: 0.65;
+  font-size: 0.75rem;
+  line-height: 1.2;
+}

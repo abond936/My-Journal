@@ -11,6 +11,12 @@ import {
 } from '@/lib/utils/cardUtils';
 import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 
+/** Fields refreshed from Studio shell after relationship DnD / PATCH (same card `docId`). */
+export type ShellRelationshipSnapshot = Pick<
+  CardUpdate,
+  'coverImageId' | 'coverImage' | 'coverImageFocalPoint' | 'galleryMedia' | 'childrenIds' | 'contentMedia'
+>;
+
 /**
  * FormState Interface
  * Represents the complete state of the card form
@@ -73,6 +79,9 @@ interface FormContextValue {
    * and align lastSavedState so isDirty / leave guards match Firestore (avoids editor vs cardData drift).
    */
   commitGalleryMediaPersisted: (nextGallery: HydratedGalleryMediaItem[]) => void;
+
+  /** Studio: merge shell-refetched relationship fields; keeps other dirty fields intact. */
+  applyShellRelationshipSync: (snap: Partial<ShellRelationshipSnapshot>) => void;
 }
 
 /**
@@ -245,6 +254,34 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     },
     [mergeEditorContentInto]
   );
+
+  const applyShellRelationshipSync = useCallback((snap: Partial<ShellRelationshipSnapshot>) => {
+    const keys = [
+      'coverImageId',
+      'coverImage',
+      'coverImageFocalPoint',
+      'galleryMedia',
+      'childrenIds',
+      'contentMedia',
+    ] as const satisfies readonly (keyof ShellRelationshipSnapshot)[];
+    setFormState((prev) => {
+      let nextCard = prev.cardData;
+      let nextSaved = prev.lastSavedState.cardData;
+      for (const k of keys) {
+        if (!Object.prototype.hasOwnProperty.call(snap, k)) continue;
+        const v = snap[k];
+        nextCard = { ...nextCard, [k]: v } as CardUpdate;
+        nextSaved = { ...nextSaved, [k]: v } as CardUpdate;
+      }
+      const mergedCard = mergeEditorContentInto(nextCard);
+      const mergedSaved = mergeEditorContentInto(nextSaved);
+      return {
+        ...prev,
+        cardData: mergedCard,
+        lastSavedState: { cardData: mergedSaved },
+      };
+    });
+  }, [mergeEditorContentInto]);
 
   useEffect(() => {
     if (!isDirty) return;
@@ -429,6 +466,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       registerEditorContentGetter,
       syncPersistableBaseline,
       commitGalleryMediaPersisted,
+      applyShellRelationshipSync,
     }),
     [
       formState,
@@ -446,6 +484,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       registerEditorContentGetter,
       syncPersistableBaseline,
       commitGalleryMediaPersisted,
+      applyShellRelationshipSync,
     ]
   );
 

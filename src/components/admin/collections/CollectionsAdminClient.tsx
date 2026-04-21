@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import {
   DndContext,
   DragEndEvent,
+  DragOverEvent,
   DragStartEvent,
   DragOverlay,
   MeasuringStrategy,
@@ -11,7 +12,6 @@ import {
   useDndContext,
   useDroppable,
 } from '@dnd-kit/core';
-import { CSS as DndCss } from '@dnd-kit/utilities';
 import { Card } from '@/lib/types/card';
 import { CuratedTreeNode } from '@/components/admin/card-admin/CuratedTreeNode';
 import { CuratedTreeDragProvider, type CuratedTreeDragKind } from '@/components/admin/card-admin/curatedTreeDragContext';
@@ -24,10 +24,14 @@ import {
   buildChildrenIdsWithInsertBefore,
   buildRootDocIdListWithInsertBefore,
   compareCuratedRootCards,
+  collectCuratedSubtreeIdsFromMaster,
+  listCuratedTopLevelFromMaster,
   nextCuratedRootOrderForAppend,
   normalizeCuratedChildIds,
+  resolveCuratedDropIntent,
   wouldAttachChildCreateCuratedCycle,
 } from '@/lib/utils/curatedCollectionTree';
+import { listCuratedTreeAttachCandidates } from '@/lib/utils/curatedTreeAttachCandidates';
 import {
   optimisticAttachChildAsLast,
   optimisticDetachChild,
@@ -39,8 +43,10 @@ import { fetchAdminCardSnapshot } from '@/lib/utils/fetchAdminCardSnapshot';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import styles from '@/app/admin/collections/page.module.css';
 import CollectionsMediaPanel from '@/components/admin/collections/CollectionsMediaPanel';
-import { isCuratedTreeDndEnabled } from '@/lib/config/curatedTreeDnd';
+import type { EmbeddedUnparentedBankContext } from '@/components/admin/collections/embeddedUnparentedBankContext';
+import { getCuratedTreeMasterId, isCuratedTreeDndEnabled } from '@/lib/config/curatedTreeDnd';
 import { useDefaultDndSensors } from '@/lib/hooks/useDefaultDndSensors';
+import TagAdminStudioPane from '@/components/admin/studio/TagAdminStudioPane';
 
 const COLLECTIONS_CENTER_COLUMNS_KEY = 'collectionsCenterPaneWidths';
 const COL_HANDLE = 8;
@@ -112,14 +118,14 @@ function StaticUnparentCard({ className, children, disabled, onClick }: Omit<Dra
 }
 
 function DraggableCard({ card, className, children, disabled, onClick }: DraggableCardProps) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `card:${card.docId}`,
     disabled,
     data: { cardId: card.docId },
   });
 
   const style = {
-    transform: DndCss.Translate.toString(transform),
+    transform: undefined as string | undefined,
     opacity: isDragging ? 0 : 1,
     cursor: disabled ? 'not-allowed' : 'grab',
   };
@@ -155,9 +161,29 @@ function UnparentDropZoneInteractive({ className, children }: Omit<UnparentDropZ
   const reparentFromCard = activeStr.startsWith('card:');
   const highlightId = useCuratedTreeDropHighlight();
   const { setNodeRef } = useDroppable({ id: 'unparented', disabled: !reparentFromCard });
-  const activeDrop = highlightId === 'unparented';
+  const activeDrop = highlightId === 'unparented' || (highlightId?.startsWith('unparented-row:') ?? false);
   return (
     <div ref={setNodeRef} className={`${className} ${activeDrop ? styles.dropTargetActive : ''}`}>
+      {children}
+    </div>
+  );
+}
+
+function UnparentRowDropZone({
+  rowId,
+  className,
+  children,
+}: {
+  rowId: string;
+  className: string;
+  children: React.ReactNode;
+}) {
+  const { active } = useDndContext();
+  const activeStr = active?.id != null ? String(active.id) : '';
+  const reparentFromCard = activeStr.startsWith('card:');
+  const { setNodeRef } = useDroppable({ id: `unparented-row:${rowId}`, disabled: !reparentFromCard });
+  return (
+    <div ref={setNodeRef} className={className}>
       {children}
     </div>
   );
@@ -209,11 +235,14 @@ export default function CollectionsAdminClient({
   embedded = false,
   onSelectCard,
   embeddedRightSlot,
+  embeddedUnparentedReplacement,
   onStudioRelationshipDragEnd,
 }: {
   embedded?: boolean;
   onSelectCard?: (cardId: string) => void;
   embeddedRightSlot?: React.ReactNode | ((ctx: EmbeddedStudioSlotContext) => React.ReactNode);
+  /** When set with `embedded`, replaces the title-only unparented list with this UI (e.g. card admin table/grid). */
+  embeddedUnparentedReplacement?: (ctx: EmbeddedUnparentedBankContext) => React.ReactNode;
   onStudioRelationshipDragEnd?: (event: DragEndEvent) => Promise<boolean>;
 }) {
   const [cards, setCards] = useState<Card[]>([]);
@@ -225,6 +254,7 @@ export default function CollectionsAdminClient({
   const [draggingCardId, setDraggingCardId] = useState<string | null>(null);
   const [curatedDragKind, setCuratedDragKind] = useState<CuratedTreeDragKind>(null);
   const [dragOverlayCard, setDragOverlayCard] = useState<Card | null>(null);
+  const lastValidOverIdRef = useRef<string | null>(null);
   const hasInitializedTreeExpansionRef = useRef(false);
   const [bulkParentId, setBulkParentId] = useState<string | null>(null);
   const [bulkSearch, setBulkSearch] = useState('');
@@ -234,8 +264,13 @@ export default function CollectionsAdminClient({
   const [bulkSelectedIds, setBulkSelectedIds] = useState<Set<string>>(() => new Set());
   const [bulkSummary, setBulkSummary] = useState<string | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
-  const sensors = useDefaultDndSensors();
+  const [studioLeftTab, setStudioLeftTab] = useState<'tags' | 'tree'>(() => {
+    if (typeof window === 'undefined') return 'tags';
+    return window.localStorage.getItem('studioLeftTab') === 'tree' ? 'tree' : 'tags';
+  });
+  const sensors = useDefaultDndSensors({ pointerActivationDistance: 10 });
   const curatedTreeDnd = isCuratedTreeDndEnabled();
+  const curatedTreeMasterId = getCuratedTreeMasterId();
   const treeDropZonesReadOnly = !curatedTreeDnd;
   /** Studio embed registers its own droppables; keep DndContext when embedded even if tree drag is off. */
   const needsDndContext = curatedTreeDnd || Boolean(embeddedRightSlot);
@@ -272,6 +307,14 @@ export default function CollectionsAdminClient({
     mq.addEventListener('change', apply);
     return () => mq.removeEventListener('change', apply);
   }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('studioLeftTab', studioLeftTab);
+    } catch {
+      /* ignore */
+    }
+  }, [studioLeftTab]);
 
   const persistCenterWidths = useCallback((tree: number, unparent: number) => {
     try {
@@ -446,6 +489,11 @@ export default function CollectionsAdminClient({
   }, []);
 
   const cardById = useMemo(() => new Map(cards.map(c => [c.docId, c])), [cards]);
+  const masterCard = useMemo(
+    () => (curatedTreeMasterId ? cardById.get(curatedTreeMasterId) ?? null : null),
+    [cardById, curatedTreeMasterId]
+  );
+  const useMasterTree = Boolean(curatedTreeMasterId && masterCard?.docId);
 
   const parentByChild = useMemo(() => {
     const map = new Map<string, string>();
@@ -458,13 +506,10 @@ export default function CollectionsAdminClient({
     return map;
   }, [cards]);
 
-  const childIdSet = useMemo(() => {
-    const set = new Set<string>();
-    cards.forEach((card) => normalizeCuratedChildIds(card.childrenIds).forEach((id) => set.add(id)));
-    return set;
-  }, [cards]);
-
   const rootedCollections = useMemo(() => {
+    if (useMasterTree && curatedTreeMasterId) {
+      return listCuratedTopLevelFromMaster(cards, curatedTreeMasterId);
+    }
     const list = cards.filter((card) => {
       if (parentByChild.has(card.docId)) return false;
       const children = normalizeCuratedChildIds(card.childrenIds);
@@ -472,7 +517,12 @@ export default function CollectionsAdminClient({
     });
     list.sort(compareCuratedRootCards);
     return list;
-  }, [cards, parentByChild]);
+  }, [cards, parentByChild, useMasterTree, curatedTreeMasterId]);
+
+  const masterSubtreeIds = useMemo(() => {
+    if (!useMasterTree || !curatedTreeMasterId) return new Set<string>();
+    return collectCuratedSubtreeIdsFromMaster(cards, curatedTreeMasterId);
+  }, [useMasterTree, curatedTreeMasterId, cards]);
 
   useEffect(() => {
     if (!cards.length) {
@@ -563,19 +613,24 @@ export default function CollectionsAdminClient({
     setBulkSelectedIds(new Set());
   }, []);
 
-  const unparentedCards = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const filtered = cards.filter(card => {
-      if (parentByChild.has(card.docId)) return false;
-      if (childIdSet.has(card.docId)) return false; // hide collection parents from the right pane
-      if (card.curatedRoot === true) return false; // hide explicit curated roots even without children
-      if (statusFilter !== 'all' && card.status !== statusFilter) return false;
-      if (!q) return true;
-      return (card.title || '').toLowerCase().includes(q);
-    });
-    filtered.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-    return filtered;
-  }, [cards, parentByChild, childIdSet, search, statusFilter]);
+  const matchesEmbeddedUnparented = useCallback(
+    (card: Card) => {
+      const q = search.trim().toLowerCase();
+      if (q && !(card.title || '').toLowerCase().includes(q)) return false;
+      return true;
+    },
+    [search]
+  );
+
+  const unparentedCards = useMemo(
+    () =>
+      listCuratedTreeAttachCandidates(cards, {
+        curatedTreeMasterId,
+        matchesFilters: matchesEmbeddedUnparented,
+        statusFilter: statusFilter,
+      }),
+    [cards, curatedTreeMasterId, matchesEmbeddedUnparented, statusFilter]
+  );
 
   const patchCard = async (cardId: string, payload: Partial<Card>) => {
     const res = await fetch(`/api/cards/${cardId}`, {
@@ -586,6 +641,25 @@ export default function CollectionsAdminClient({
     const data = await res.json().catch(() => ({}));
     throwIfJsonApiFailed(res, data, 'Failed to update collection membership');
   };
+
+  const fetchAuthoritativeParentIds = useCallback(
+    async (childId: string): Promise<string[]> => {
+      const params = new URLSearchParams({
+        childrenIds_contains: childId,
+        limit: '100',
+        status: 'all',
+        hydration: 'cover-only',
+      });
+      const res = await fetch(`/api/cards?${params.toString()}`);
+      const data = (await res.json().catch(() => ({}))) as { items?: Card[]; error?: string };
+      if (!res.ok) throw new Error(data.error || 'Failed to resolve parent for detach');
+      const parentIds = (data.items || [])
+        .map((item) => item.docId)
+        .filter((id): id is string => Boolean(id));
+      return Array.from(new Set(parentIds));
+    },
+    []
+  );
 
   const handleInsertChildBeforeSibling = async (childId: string, beforeSiblingId: string) => {
     if (!childId || !beforeSiblingId || childId === beforeSiblingId) return;
@@ -617,6 +691,29 @@ export default function CollectionsAdminClient({
 
   const handleInsertRootBefore = async (childId: string, beforeRootId: string) => {
     if (!beforeRootId || childId === beforeRootId) return;
+    if (useMasterTree && curatedTreeMasterId) {
+      const snapshot = cards;
+      setSaving(true);
+      setError(null);
+      try {
+        const masterFresh = await fetchAdminCardSnapshot(curatedTreeMasterId);
+        const currentParentId = parentByChild.get(childId);
+        if (currentParentId && currentParentId !== curatedTreeMasterId) {
+          const currentFresh = await fetchAdminCardSnapshot(currentParentId);
+          const detached = normalizeCuratedChildIds(currentFresh.childrenIds).filter((id) => id !== childId);
+          await patchCard(currentParentId, { childrenIds: detached });
+        }
+        const nextMasterChildren = buildChildrenIdsWithInsertBefore(masterFresh.childrenIds, childId, beforeRootId);
+        await patchCard(curatedTreeMasterId, { childrenIds: nextMasterChildren });
+        await load({ soft: true });
+      } catch (e) {
+        setCards(snapshot);
+        setError(e instanceof Error ? e.message : 'Failed to insert top-level card');
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
     const rootIds = rootedCollections.map((r) => r.docId!);
     const newRootIds = buildRootDocIdListWithInsertBefore(rootIds, childId, beforeRootId);
     const currentParentId = parentByChild.get(childId);
@@ -678,17 +775,44 @@ export default function CollectionsAdminClient({
   };
 
   const handleDetachChild = async (childId: string) => {
-    const parentId = parentByChild.get(childId);
-    if (!parentId) return;
+    const initialParentIds = new Set<string>();
+    const mappedParentId = parentByChild.get(childId);
+    if (mappedParentId) initialParentIds.add(mappedParentId);
+    if (useMasterTree && curatedTreeMasterId && masterSubtreeIds.has(childId)) {
+      initialParentIds.add(curatedTreeMasterId);
+    }
+
+    let parentIds = Array.from(initialParentIds);
+    if (parentIds.length === 0) {
+      try {
+        parentIds = await fetchAuthoritativeParentIds(childId);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to resolve parent for detach');
+        return;
+      }
+    }
+    if (parentIds.length === 0) return;
     const snapshot = cards;
-    const optimistic = optimisticDetachChild(cards, childId);
+    let optimistic = cards;
+    for (const pid of parentIds) {
+      optimistic =
+        pid === curatedTreeMasterId
+          ? optimistic.map((card) => {
+              if (card.docId !== curatedTreeMasterId) return card;
+              const nextChildren = normalizeCuratedChildIds(card.childrenIds).filter((id) => id !== childId);
+              return { ...card, childrenIds: nextChildren };
+            })
+          : optimisticDetachChild(optimistic, childId) ?? optimistic;
+    }
     if (optimistic) setCards(optimistic);
     setSaving(true);
     setError(null);
     try {
-      const parentFresh = await fetchAdminCardSnapshot(parentId);
-      const nextChildren = normalizeCuratedChildIds(parentFresh.childrenIds).filter((id) => id !== childId);
-      await patchCard(parentId, { childrenIds: nextChildren });
+      for (const parentId of parentIds) {
+        const parentFresh = await fetchAdminCardSnapshot(parentId);
+        const nextChildren = normalizeCuratedChildIds(parentFresh.childrenIds).filter((id) => id !== childId);
+        await patchCard(parentId, { childrenIds: nextChildren });
+      }
       await load({ soft: true });
     } catch (e) {
       setCards(snapshot);
@@ -701,11 +825,6 @@ export default function CollectionsAdminClient({
   const parseCardId = (value: unknown): string | null => {
     if (typeof value !== 'string') return null;
     return value.startsWith('card:') ? value.slice(5) : null;
-  };
-
-  const parseParentId = (value: unknown): string | null => {
-    if (typeof value !== 'string') return null;
-    return value.startsWith('parent:') ? value.slice(7) : null;
   };
 
   /** After Studio relationship drags, return focus to the row handle (keyboard + screen-reader UX). */
@@ -730,9 +849,16 @@ export default function CollectionsAdminClient({
     setCuratedDragKind(null);
     setDraggingCardId(null);
     setDragOverlayCard(null);
+    lastValidOverIdRef.current = null;
+  }, []);
+
+  const handleDragOver = useCallback((event: DragOverEvent) => {
+    const id = event.over?.id != null ? String(event.over.id) : null;
+    if (id) lastValidOverIdRef.current = id;
   }, []);
 
   const handleDragStart = (event: DragStartEvent) => {
+    lastValidOverIdRef.current = null;
     const raw = event.active.id;
     const id = typeof raw === 'string' ? raw : String(raw);
     if (id.startsWith('studioChild:') || id.startsWith('gallery:') || id.startsWith('source:')) {
@@ -758,74 +884,107 @@ export default function CollectionsAdminClient({
     const rawActive = event.active.id;
     const rawOver = event.over?.id ?? null;
     const activeStr = typeof rawActive === 'string' ? rawActive : String(rawActive);
-    const overStr = rawOver != null ? (typeof rawOver === 'string' ? rawOver : String(rawOver)) : null;
+    const overStr =
+      rawOver != null
+        ? (typeof rawOver === 'string' ? rawOver : String(rawOver))
+        : lastValidOverIdRef.current;
 
-    if (onStudioRelationshipDragEnd) {
-      try {
-        const handled = await onStudioRelationshipDragEnd(event);
-        if (handled) {
+    try {
+      if (onStudioRelationshipDragEnd) {
+        try {
+          const handled = await onStudioRelationshipDragEnd(event);
+          if (handled) {
+            setCuratedDragKind(null);
+            setDraggingCardId(null);
+            setDragOverlayCard(null);
+            restoreStudioRelationshipFocus(activeStr);
+            return;
+          }
+        } catch (e) {
+          setError(e instanceof Error ? e.message : 'Studio relationship update failed');
           setCuratedDragKind(null);
           setDraggingCardId(null);
           setDragOverlayCard(null);
           restoreStudioRelationshipFocus(activeStr);
           return;
         }
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Studio relationship update failed');
-        setCuratedDragKind(null);
-        setDraggingCardId(null);
-        setDragOverlayCard(null);
-        restoreStudioRelationshipFocus(activeStr);
+      }
+
+      setCuratedDragKind(null);
+      setDraggingCardId(null);
+
+      const childId = parseCardId(activeStr);
+      const overId = overStr;
+      if (!childId || !overId || saving) return;
+
+      const intent = resolveCuratedDropIntent(overId);
+      if (intent.kind === 'unparented') {
+        await handleDetachChild(childId);
         return;
       }
-    }
 
-    setCuratedDragKind(null);
-    setDraggingCardId(null);
-
-    const childId = parseCardId(activeStr);
-    const overId = overStr;
-    if (!childId || !overId || saving) return;
-
-    if (overId === 'unparented') {
-      await handleDetachChild(childId);
-      return;
-    }
-
-    if (overId === 'tree-root') {
-      const snapshot = cards;
-      const optimistic = optimisticPromoteToRootAppend(cards, childId);
-      if (optimistic) setCards(optimistic);
-      setSaving(true);
-      setError(null);
-      try {
-        const currentParentId = parentByChild.get(childId);
-        if (currentParentId) {
-          const currentFresh = await fetchAdminCardSnapshot(currentParentId);
-          const nextChildren = normalizeCuratedChildIds(currentFresh.childrenIds).filter((id) => id !== childId);
-          await patchCard(currentParentId, { childrenIds: nextChildren });
+      if (intent.kind === 'tree-root') {
+        if (useMasterTree && curatedTreeMasterId) {
+        const snapshot = cards;
+        setSaving(true);
+        setError(null);
+        try {
+          const masterFresh = await fetchAdminCardSnapshot(curatedTreeMasterId);
+          const currentParentId = parentByChild.get(childId);
+          if (currentParentId && currentParentId !== curatedTreeMasterId) {
+            const currentFresh = await fetchAdminCardSnapshot(currentParentId);
+            const nextChildren = normalizeCuratedChildIds(currentFresh.childrenIds).filter((id) => id !== childId);
+            await patchCard(currentParentId, { childrenIds: nextChildren });
+          }
+          const nextMasterChildren = [
+            ...normalizeCuratedChildIds(masterFresh.childrenIds).filter((id) => id !== childId),
+            childId,
+          ];
+          await patchCard(curatedTreeMasterId, { childrenIds: nextMasterChildren });
+          await load({ soft: true });
+        } catch (e) {
+          setCards(snapshot);
+          setError(e instanceof Error ? e.message : 'Failed to append top-level card');
+        } finally {
+          setSaving(false);
         }
-        const nextOrder = nextCuratedRootOrderForAppend(rootedCollections, childId);
-        await patchCard(childId, { curatedRoot: true, curatedRootOrder: nextOrder });
-        await load({ soft: true });
-      } catch (e) {
-        setCards(snapshot);
-        setError(e instanceof Error ? e.message : 'Failed to set curated root');
-      } finally {
-        setSaving(false);
+          return;
+        }
+        const snapshot = cards;
+        const optimistic = optimisticPromoteToRootAppend(cards, childId);
+        if (optimistic) setCards(optimistic);
+        setSaving(true);
+        setError(null);
+        try {
+          const currentParentId = parentByChild.get(childId);
+          if (currentParentId) {
+            const currentFresh = await fetchAdminCardSnapshot(currentParentId);
+            const nextChildren = normalizeCuratedChildIds(currentFresh.childrenIds).filter((id) => id !== childId);
+            await patchCard(currentParentId, { childrenIds: nextChildren });
+          }
+          const nextOrder = nextCuratedRootOrderForAppend(rootedCollections, childId);
+          await patchCard(childId, { curatedRoot: true, curatedRootOrder: nextOrder });
+          await load({ soft: true });
+        } catch (e) {
+          setCards(snapshot);
+          setError(e instanceof Error ? e.message : 'Failed to set curated root');
+        } finally {
+          setSaving(false);
+        }
+        return;
       }
-      return;
-    }
 
-    if (overId.startsWith('insertBefore:')) {
-      const beforeId = overId.slice('insertBefore:'.length);
-      if (beforeId) await handleInsertChildBeforeSibling(childId, beforeId);
-      return;
-    }
+      if (intent.kind === 'insert-before') {
+        await handleInsertChildBeforeSibling(childId, intent.beforeId);
+        return;
+      }
 
-    const parentId = parseParentId(overId);
-    if (!parentId) return;
-    await handleAttachChild(childId, parentId);
+      if (intent.kind === 'parent') {
+        await handleAttachChild(childId, intent.parentId);
+      }
+    } finally {
+      lastValidOverIdRef.current = null;
+    }
   };
 
   const reparentTitle =
@@ -919,110 +1078,217 @@ export default function CollectionsAdminClient({
     }
   }, [bulkParentCard, bulkSelectedIds, bulkSelectableIds]);
 
+  /** Admin Studio: middle column uses `embeddedUnparentedReplacement` (card bank) instead of the title-only list. */
+  const studioAttachBank = embedded && Boolean(embeddedUnparentedReplacement);
+
   const collectionsCenterGrid = (
           <div
             ref={layoutRef}
             className={wideCenterLayout ? styles.layout : styles.layoutStacked}
             style={centerGridStyle}
           >
-            <section className={styles.panel}>
-              <h2>Curated Tree</h2>
-              <div className={styles.panelScroll}>
-                {rootedCollections.length === 0 ? (
-                  <TreeRootDropZone readOnly={treeDropZonesReadOnly} className={styles.treeRootDropZone}>
-                    <p className={styles.emptyTreeHint}>
-                      {curatedTreeDnd
-                        ? 'Drop a card here to start your curated tree.'
-                        : 'No curated roots yet, or add children from card admin.'}
-                    </p>
-                  </TreeRootDropZone>
+            {studioAttachBank ? (
+              <section className={`${styles.panel} ${styles.panelStudioLeftTabs}`}>
+                <h2 className={styles.panelStudioColumnTitle}>Organization</h2>
+                <div className={styles.studioLeftTabBar} role="tablist" aria-label="Tags and curated tree">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={studioLeftTab === 'tags'}
+                    className={`${styles.studioLeftTab} ${studioLeftTab === 'tags' ? styles.studioLeftTabActive : ''}`}
+                    onClick={() => setStudioLeftTab('tags')}
+                  >
+                    Tags
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={studioLeftTab === 'tree'}
+                    className={`${styles.studioLeftTab} ${studioLeftTab === 'tree' ? styles.studioLeftTabActive : ''}`}
+                    onClick={() => setStudioLeftTab('tree')}
+                  >
+                    Tree
+                  </button>
+                </div>
+                {studioLeftTab === 'tags' ? (
+                  <div className={styles.studioLeftTabPanel} role="tabpanel">
+                    <TagAdminStudioPane embeddedColumn />
+                  </div>
                 ) : (
-                  <>
-                    <ul className={styles.treeList}>
-                      {rootedCollections.map((root) => (
-                        <CuratedTreeNode
-                          key={root.docId}
-                          node={root}
-                          seen={new Set()}
-                          cardById={cardById}
-                          parentByChild={parentByChild}
-                          expandedIds={treeExpandedIds}
-                          toggleExpanded={toggleTreeExpanded}
-                          saving={saving}
-                          onDetachChild={(id) => void handleDetachChild(id)}
-                          onOpenBulkAdd={openBulkAddForParent}
-                          onSelectCard={handleSelectCard}
-                          selectedCardId={selectedCardId}
-                          disableCuratedDrag={treeDropZonesReadOnly}
-                        />
-                      ))}
-                    </ul>
-                    {curatedTreeDnd ? (
-                      <TreeRootDropZone
-                        readOnly={treeDropZonesReadOnly}
-                        className={`${styles.treeRootDropZone} ${styles.treeRootAppendStrip}`}
-                      >
-                        <p className={styles.treeRootAppendHint}>
-                          Drop here to add at the end of top-level curated items.
-                        </p>
-                      </TreeRootDropZone>
-                    ) : null}
-                  </>
+                  <div className={styles.studioLeftTabPanel} role="tabpanel">
+                    <h2 className={styles.studioLeftTreeHeading}>Curated tree</h2>
+                    <div className={styles.panelScroll}>
+                      {rootedCollections.length === 0 ? (
+                        <TreeRootDropZone readOnly={treeDropZonesReadOnly} className={styles.treeRootDropZone}>
+                          <p className={styles.emptyTreeHint}>
+                            {curatedTreeDnd
+                              ? 'Drop a card here to start your curated tree.'
+                              : 'No curated roots yet, or add children from card admin.'}
+                          </p>
+                        </TreeRootDropZone>
+                      ) : (
+                        <>
+                          <ul className={styles.treeList}>
+                            {rootedCollections.map((root) => (
+                              <CuratedTreeNode
+                                key={root.docId}
+                                node={root}
+                                seen={new Set()}
+                                cardById={cardById}
+                                parentByChild={parentByChild}
+                                expandedIds={treeExpandedIds}
+                                toggleExpanded={toggleTreeExpanded}
+                                saving={saving}
+                                onDetachChild={(id) => void handleDetachChild(id)}
+                                onOpenBulkAdd={openBulkAddForParent}
+                                onSelectCard={handleSelectCard}
+                                selectedCardId={selectedCardId}
+                                disableCuratedDrag={treeDropZonesReadOnly}
+                              />
+                            ))}
+                          </ul>
+                          {curatedTreeDnd ? (
+                            <TreeRootDropZone
+                              readOnly={treeDropZonesReadOnly}
+                              className={`${styles.treeRootDropZone} ${styles.treeRootAppendStrip}`}
+                            >
+                              <p className={styles.treeRootAppendHint}>
+                                Drop here to add at the end of top-level curated items.
+                              </p>
+                            </TreeRootDropZone>
+                          ) : null}
+                        </>
+                      )}
+                    </div>
+                  </div>
                 )}
-              </div>
-            </section>
+              </section>
+            ) : (
+              <section className={styles.panel}>
+                <h2>Curated Tree</h2>
+                <div className={styles.panelScroll}>
+                  {rootedCollections.length === 0 ? (
+                    <TreeRootDropZone readOnly={treeDropZonesReadOnly} className={styles.treeRootDropZone}>
+                      <p className={styles.emptyTreeHint}>
+                        {curatedTreeDnd
+                          ? 'Drop a card here to start your curated tree.'
+                          : 'No curated roots yet, or add children from card admin.'}
+                      </p>
+                    </TreeRootDropZone>
+                  ) : (
+                    <>
+                      <ul className={styles.treeList}>
+                        {rootedCollections.map((root) => (
+                          <CuratedTreeNode
+                            key={root.docId}
+                            node={root}
+                            seen={new Set()}
+                            cardById={cardById}
+                            parentByChild={parentByChild}
+                            expandedIds={treeExpandedIds}
+                            toggleExpanded={toggleTreeExpanded}
+                            saving={saving}
+                            onDetachChild={(id) => void handleDetachChild(id)}
+                            onOpenBulkAdd={openBulkAddForParent}
+                            onSelectCard={handleSelectCard}
+                            selectedCardId={selectedCardId}
+                            disableCuratedDrag={treeDropZonesReadOnly}
+                          />
+                        ))}
+                      </ul>
+                      {curatedTreeDnd ? (
+                        <TreeRootDropZone
+                          readOnly={treeDropZonesReadOnly}
+                          className={`${styles.treeRootDropZone} ${styles.treeRootAppendStrip}`}
+                        >
+                          <p className={styles.treeRootAppendHint}>
+                            Drop here to add at the end of top-level curated items.
+                          </p>
+                        </TreeRootDropZone>
+                      ) : null}
+                    </>
+                  )}
+                </div>
+              </section>
+            )}
 
             {wideCenterLayout ? (
               <div
                 className={styles.colResizeHandle}
                 role="separator"
                 aria-orientation="vertical"
-                aria-label="Resize curated tree and unparented columns"
+                aria-label={
+                  studioAttachBank
+                    ? 'Resize Tags or Tree column and Cards column'
+                    : 'Resize curated tree and unparented columns'
+                }
                 onPointerDown={onColResizePointerDown(1)}
               />
             ) : null}
 
             <section className={styles.panel}>
-              <h2>Unparented Cards</h2>
-              <p className={styles.hint}>
-                {curatedTreeDnd
-                  ? 'Drop a card here to remove its parent.'
-                  : 'Cards without a curated parent appear here.'}
-              </p>
-              <div className={styles.controlsRow}>
-                <input
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className={styles.input}
-                  placeholder="Search by title..."
-                />
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as 'all' | 'draft' | 'published')}
-                  className={styles.statusSelect}
-                  aria-label="Filter unparented cards by status"
-                >
-                  <option value="all">All statuses</option>
-                  <option value="draft">Draft</option>
-                  <option value="published">Published</option>
-                </select>
-              </div>
-              <div className={styles.panelScroll}>
-                <UnparentDropZone readOnly={treeDropZonesReadOnly} className={styles.unparentDropZone}>
+              <h2 className={studioAttachBank ? styles.panelStudioColumnTitle : undefined}>
+                {studioAttachBank ? 'Cards' : 'Unparented Cards'}
+              </h2>
+              {!studioAttachBank ? (
+                <p className={styles.hint}>
+                  {curatedTreeDnd
+                    ? 'Drop a card here to remove its parent.'
+                    : 'Cards without a curated parent appear here.'}
+                </p>
+              ) : null}
+              {!studioAttachBank ? (
+                <div className={styles.controlsRow}>
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className={styles.input}
+                    placeholder="Search by title..."
+                  />
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value as 'all' | 'draft' | 'published')}
+                    className={styles.statusSelect}
+                    aria-label="Filter unparented cards by status"
+                  >
+                    <option value="all">All statuses</option>
+                    <option value="draft">Draft</option>
+                    <option value="published">Published</option>
+                  </select>
+                </div>
+              ) : null}
+              <UnparentDropZone readOnly={treeDropZonesReadOnly} className={`${styles.unparentDropZone} ${styles.panelScroll}`}>
+                {studioAttachBank ? (
+                  embeddedUnparentedReplacement!({
+                    refreshCards: () => void load({ soft: true }),
+                    collectionCards: cards,
+                    search,
+                    setSearch,
+                    statusFilter,
+                    setStatusFilter,
+                    selectedCardId,
+                    onSelectCard: handleSelectCard,
+                    saving,
+                    curatedTreeDnd,
+                    treeDropZonesReadOnly,
+                  })
+                ) : (
                   <ul className={styles.list}>
-                    {unparentedCards.map(card => (
+                    {unparentedCards.map((card) => (
                       <li key={card.docId} className={styles.listRowWrap}>
                         {curatedTreeDnd ? (
-                          <DraggableCard
-                            card={card}
-                            className={`${styles.listRow} ${selectedCardId === card.docId ? styles.listRowSelected : ''}`}
-                            disabled={saving}
-                            onClick={() => handleSelectCard(card.docId)}
-                          >
-                            <div>
-                              <div className={styles.nodeTitle}>{cardLabel(card)}</div>
-                            </div>
-                          </DraggableCard>
+                          <UnparentRowDropZone rowId={card.docId} className={styles.unparentRowDropZone}>
+                            <DraggableCard
+                              card={card}
+                              className={`${styles.listRow} ${selectedCardId === card.docId ? styles.listRowSelected : ''}`}
+                              disabled={saving}
+                              onClick={() => handleSelectCard(card.docId)}
+                            >
+                              <div>
+                                <div className={styles.nodeTitle}>{cardLabel(card)}</div>
+                              </div>
+                            </DraggableCard>
+                          </UnparentRowDropZone>
                         ) : (
                           <StaticUnparentCard
                             className={`${styles.listRow} ${selectedCardId === card.docId ? styles.listRowSelected : ''}`}
@@ -1037,8 +1303,8 @@ export default function CollectionsAdminClient({
                       </li>
                     ))}
                   </ul>
-                </UnparentDropZone>
-              </div>
+                )}
+              </UnparentDropZone>
             </section>
 
             {wideCenterLayout ? (
@@ -1046,7 +1312,11 @@ export default function CollectionsAdminClient({
                 className={styles.colResizeHandle}
                 role="separator"
                 aria-orientation="vertical"
-                aria-label="Resize unparented and media columns"
+                aria-label={
+                  studioAttachBank
+                    ? 'Resize Cards and media columns'
+                    : 'Resize unparented and media columns'
+                }
                 onPointerDown={onColResizePointerDown(2)}
               />
             ) : null}
@@ -1068,30 +1338,17 @@ export default function CollectionsAdminClient({
       {!embedded ? (
         <div className={styles.stickyTop} ref={stickyTopRef}>
           <h1>Collections Management</h1>
+          {useMasterTree ? (
+            <p className={styles.masterModeHint}>
+              Master mode active: top-level curated items come from children of <code>{curatedTreeMasterId}</code>.
+            </p>
+          ) : null}
           <p className={styles.collectionsResizeHint}>
             Drag the narrow bars between columns to resize the tree, unparented list, and media pane. Widths are saved
             in this browser.
           </p>
         </div>
-      ) : (
-        <div className={styles.studioEmbeddedChrome} ref={stickyTopRef}>
-          <h2 className={styles.studioEmbeddedTitle}>Cards and curated tree</h2>
-          <p className={styles.studioEmbeddedHint}>
-            {curatedTreeDnd ? (
-              <>
-                Same drag-and-drop as Collections. Drag the narrow bars between columns to resize. Full-page version:{' '}
-                <a href="/admin/collections">Collections</a>.
-              </>
-            ) : (
-              <>
-                Curated tree drag-and-drop is off (same as full Collections). Relationship / slot drag may still be
-                active on the right. Resize columns the same way. Full-page:{' '}
-                <a href="/admin/collections">Collections</a>.
-              </>
-            )}
-          </p>
-        </div>
-      )}
+      ) : null}
 
       {error ? <p className={styles.error}>{error}</p> : null}
       {loading ? <p>Loading cards...</p> : null}
@@ -1115,6 +1372,7 @@ export default function CollectionsAdminClient({
             },
           }}
           onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
           onDragCancel={handleDragCancel}
           onDragEnd={handleDragEnd}
         >
@@ -1125,7 +1383,7 @@ export default function CollectionsAdminClient({
             <p className={`${styles.draggingStatus} ${styles.draggingStatusReparent}`} role="status" aria-live="polite">
               <strong>Reparenting</strong> — «{reparentTitle}». Drop on a <strong>title</strong> to nest, the{' '}
               <strong>band above a row</strong> to insert before that row, the dashed box for a root at the end, or{' '}
-              <strong>Unparented</strong>.
+              <strong>{studioAttachBank ? 'Cards' : 'Unparented'}</strong>.
             </p>
           ) : null}
           </CuratedTreeDragProvider>

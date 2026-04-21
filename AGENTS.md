@@ -12,7 +12,7 @@ This file is an **index only**. Canonical instructions are not duplicated here (
 | **Data planes, mutation scope, Typesense limits, list refresh** (normative—read before writes/admin list changes) | `docs/01-Vision-Architecture.md` → **TECHNICAL** → **Backend** / **Frontend** *Principles* + Backend 📐 |
 | **Product invariants vs efficiency** (counts, derived tags—no shortcuts that break them; escalate conflicts) | `.cursor/rules/# AI_InteractionRules.mdc` → **Product invariants vs efficiency**; `docs/01-Vision-Architecture.md` → **Denormalized counts** principle + 📐 **Contract vs product** |
 | App areas: features (buckets + 📐/📘) per section | `docs/02-Application.md` |
-| Execution plan, phased sequencing (`⭕1` only) | `docs/03-Implementation.md` |
+| Execution plan, phased sequencing (`⭕1` only); **Studio consolidation** (selected-context → in-shell Card Edit, Media/PhotoPicker) | `docs/03-Implementation.md` (`📐 **Studio program status**`, **§ Studio sequence**); `docs/02-Application.md` → `📐 **Studio unified shell contract**` (4), `📐 **Studio media & body (2026-04-22)**` |
 | Theme: semantic tokens, presets, reader shell & responsive layout (§9), design-led reconciliation | `docs/04-Theme-Design-Contract.md` |
 | Guided archive / AI clustering & story elicitation (seed spec) | `docs/05-Guided-Archive-Assistance.md` |
 | Firebase Admin / Firestore CLI scripts (dotenv preload, import order) | `docs/NPM-SCRIPTS.md` → **Firebase Admin CLI (dotenv)** |

@@ -101,7 +101,69 @@ export function compareCuratedRootCards(a: Card, b: Card): number {
   return (a.docId || '').localeCompare(b.docId || '');
 }
 
+/** Ordered top-level curated cards when a fixed master node is configured. */
+export function listCuratedTopLevelFromMaster(cards: Card[], masterId: string): Card[] {
+  const byId = new Map<string, Card>();
+  for (const c of cards) {
+    if (c.docId) byId.set(c.docId, c);
+  }
+  const master = byId.get(masterId);
+  if (!master) return [];
+  return normalizeCuratedChildIds(master.childrenIds)
+    .map((id) => byId.get(id))
+    .filter((c): c is Card => Boolean(c));
+}
+
+/** All descendants reachable from the master's direct children (excludes the master itself). */
+export function collectCuratedSubtreeIdsFromMaster(cards: Card[], masterId: string): Set<string> {
+  const byId = new Map<string, Card>();
+  for (const c of cards) {
+    if (c.docId) byId.set(c.docId, c);
+  }
+  const master = byId.get(masterId);
+  if (!master) return new Set<string>();
+  const included = new Set<string>();
+  const stack = normalizeCuratedChildIds(master.childrenIds);
+  while (stack.length > 0) {
+    const id = stack.pop()!;
+    if (included.has(id)) continue;
+    included.add(id);
+    const node = byId.get(id);
+    if (!node) continue;
+    normalizeCuratedChildIds(node.childrenIds).forEach((cid) => stack.push(cid));
+  }
+  return included;
+}
+
 export type CuratedTreePatchFn = (cardId: string, payload: Partial<Card>) => Promise<void>;
+
+export type CuratedDropIntent =
+  | { kind: 'none' }
+  | { kind: 'unparented' }
+  | { kind: 'tree-root' }
+  | { kind: 'insert-before'; beforeId: string }
+  | { kind: 'parent'; parentId: string };
+
+/** Normalize DnD `over.id` to one curated-tree action. */
+export function resolveCuratedDropIntent(overId: string | null): CuratedDropIntent {
+  if (!overId) return { kind: 'none' };
+  if (overId === 'unparented') return { kind: 'unparented' };
+  if (overId.startsWith('unparented-row:')) return { kind: 'unparented' };
+  if (overId === 'tree-root') return { kind: 'tree-root' };
+  if (overId.startsWith('insertBefore:')) {
+    const beforeId = overId.slice('insertBefore:'.length);
+    return beforeId ? { kind: 'insert-before', beforeId } : { kind: 'none' };
+  }
+  if (overId.startsWith('parent:')) {
+    const parentId = overId.slice('parent:'.length);
+    return parentId ? { kind: 'parent', parentId } : { kind: 'none' };
+  }
+  if (overId.startsWith('studio-parent:')) {
+    const parentId = overId.slice('studio-parent:'.length);
+    return parentId ? { kind: 'parent', parentId } : { kind: 'none' };
+  }
+  return { kind: 'none' };
+}
 
 /**
  * Reorder siblings under the same parent, or reorder top-level curated roots (`__root__`).

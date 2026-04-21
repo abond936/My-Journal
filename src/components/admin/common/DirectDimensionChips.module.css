@@ -59,3 +59,37 @@
 .tableCell .chipEmpty {
   width: 100%;
 }
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  max-width: 100%;
+  align-self: stretch;
+}
+
+.railDim {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 3px 0;
+  min-width: 0;
+}
+
+.railDimDivider {
+  border-top: var(--border-width-thin) solid var(--border1-color);
+}
+
+.railLine {
+  font-size: var(--font-size-xs);
+  line-height: 1.25;
+  color: var(--text1-color);
+  word-break: break-word;
+}
+
+.railEmpty {
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+  font-style: italic;
+}

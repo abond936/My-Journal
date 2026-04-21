@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { useDraggable, useDndContext, useDroppable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import type { Card } from '@/lib/types/card';
 import { normalizeCuratedChildIds } from '@/lib/utils/curatedCollectionTree';
 import { useCuratedTreeDropHighlight } from '@/components/admin/card-admin/curatedTreeDropHighlightContext';
@@ -59,28 +58,34 @@ function DraggableCard({
   disabled?: boolean;
   onClick?: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `card:${card.docId}`,
     disabled,
     data: { cardId: card.docId },
   });
 
   const style = {
-    transform: CSS.Translate.toString(transform),
+    transform: undefined as string | undefined,
     opacity: isDragging ? 0 : 1,
     cursor: disabled ? 'not-allowed' : 'grab',
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={className}
-      onClick={onClick}
-      {...attributes}
-      {...listeners}
-    >
-      {children}
+    <div ref={setNodeRef} style={style} className={className} onClick={onClick}>
+      <button
+        type="button"
+        className={styles.treeDragHandle}
+        aria-label="Drag to move card in curated tree"
+        title="Drag to move"
+        onMouseDown={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+        {...attributes}
+        {...listeners}
+      >
+        ⋮⋮
+      </button>
+      <div className={styles.nodeDragContent}>{children}</div>
     </div>
   );
 }
@@ -201,7 +206,6 @@ export function CuratedTreeNode({
 
   const titleClassName = [
     styles.nodeTitleDropZone,
-    hasChildren && isExpanded && !disableCuratedDrag ? styles.parentNestHitColumn : '',
   ]
     .join(' ')
     .trim();
@@ -257,13 +261,6 @@ export function CuratedTreeNode({
               >
                 <span className={styles.nodeTitle}>{cardLabel(node)}</span>
               </DraggableCard>
-              {hasChildren && isExpanded ? (
-                <div
-                  className={styles.nestHitExtension}
-                  aria-hidden
-                  title="Drop here to add as last child under this card"
-                />
-              ) : null}
             </ParentDropZone>
           )}
         </div>

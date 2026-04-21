@@ -103,11 +103,13 @@ export default function MediaAdminList({
   dimensionFilters = DEFAULT_DIMENSION_FILTERS,
   /** Admin Studio only: rows register as `source:*` drags (requires parent `DndContext`). */
   studioSourceDraggable = false,
+  clientSort = 'none',
 }: {
   variant?: 'full' | 'compact';
   sourcePathFirst?: boolean;
   dimensionFilters?: DimensionFilters;
   studioSourceDraggable?: boolean;
+  clientSort?: 'none' | 'filenameAsc' | 'filenameDesc';
 }) {
   const { 
     media, 
@@ -133,15 +135,27 @@ export default function MediaAdminList({
         return true;
       });
     });
-    if (!sourcePathFirst) return modeFiltered;
-    return [...modeFiltered].sort((a, b) => {
+    const applyClientSort = (rows: typeof media) => {
+      if (clientSort === 'filenameAsc') {
+        return [...rows].sort((a, b) => normalize(a.filename).localeCompare(normalize(b.filename)));
+      }
+      if (clientSort === 'filenameDesc') {
+        return [...rows].sort((a, b) => normalize(b.filename).localeCompare(normalize(a.filename)));
+      }
+      return rows;
+    };
+
+    const afterDim = applyClientSort(modeFiltered);
+
+    if (!sourcePathFirst) return afterDim;
+    return [...afterDim].sort((a, b) => {
       const sourcePathCompare = normalize(a.sourcePath).localeCompare(normalize(b.sourcePath));
       if (sourcePathCompare !== 0) return sourcePathCompare;
       const fileCompare = normalize(a.filename).localeCompare(normalize(b.filename));
       if (fileCompare !== 0) return fileCompare;
       return normalize(a.docId).localeCompare(normalize(b.docId));
     });
-  }, [media, sourcePathFirst, dimensionFilters]);
+  }, [media, sourcePathFirst, dimensionFilters, clientSort]);
 
   useEffect(() => {
     setColumns(loadInitialColumns(variant));

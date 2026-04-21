@@ -1,6 +1,8 @@
 .container {
   padding: 0;
   max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 .selectAllRow {
@@ -22,8 +24,14 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   gap: var(--spacing-lg);
+  min-width: 0;
+}
+
+.gridStudioCompact {
+  grid-template-columns: repeat(auto-fill, minmax(min(160px, 100%), 1fr));
+  gap: var(--spacing-md);
 }
 
 .cell {
@@ -48,25 +56,70 @@
   box-shadow: 0 0 0 2px var(--color1);
 }
 
-.checkboxWrap {
-  position: absolute;
-  top: var(--spacing-xs);
-  left: var(--spacing-xs);
-  z-index: 2;
+.cellHeader {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 4px 6px;
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  flex-shrink: 0;
 }
 
-.checkboxWrap input {
+.cellHeaderStart {
+  flex-shrink: 0;
+}
+
+.cellHeaderCheckbox {
   width: 18px;
   height: 18px;
   cursor: pointer;
   accent-color: var(--color1);
 }
 
+.cellHeaderMid {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.cellHeaderActions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.curatedDragHandle {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--layout-background2-color);
+  cursor: grab;
+  font-size: 0.65rem;
+  line-height: 1;
+  color: var(--text2-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.curatedDragHandle:active {
+  cursor: grabbing;
+}
+
+.curatedDragHandle:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .deleteBtn {
-  position: absolute;
-  top: var(--spacing-xs);
-  right: var(--spacing-xs);
-  z-index: 2;
   width: 28px;
   height: 28px;
   padding: 0;
@@ -86,37 +139,54 @@
   background: var(--state-error-background-color);
 }
 
+.cellMain {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  min-height: 0;
+  min-width: 0;
+}
+
+.tagRail {
+  flex: 0 0 min(32%, 6.75rem);
+  max-width: 7.5rem;
+  min-width: 4.25rem;
+  padding: var(--spacing-xs);
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-height: 22rem;
+  border-right: var(--border-width-thin) solid var(--border1-color);
+  align-self: stretch;
+  background: color-mix(in srgb, var(--layout-background2-color) 55%, transparent);
+}
+
+.imageCol {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .thumbnailWrap {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 5;
   overflow: hidden;
   background: var(--layout-background2-color);
 }
 
-.thumbnail {
-  object-fit: cover;
+.thumbnailNatural {
+  object-fit: contain;
 }
 
 .noCover {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: var(--font-size-sm);
   color: var(--text2-color);
   background: var(--layout-background2-color);
-}
-
-.badges {
-  position: absolute;
-  bottom: var(--spacing-xs);
-  left: var(--spacing-xs);
-  right: var(--spacing-xs);
-  display: flex;
-  gap: var(--spacing-xs);
-  flex-wrap: wrap;
 }
 
 .typeBadge,
@@ -141,7 +211,7 @@
 }
 
 .title {
-  padding: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-sm) 0;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--text1-color);
@@ -153,8 +223,21 @@
   overflow: hidden;
 }
 
-.inlineEditorWrap {
-  padding: 0 var(--spacing-sm) var(--spacing-sm);
+.caption {
+  padding: var(--spacing-xs) var(--spacing-sm) 0;
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.tagSearchFoot {
+  padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-sm);
+  min-width: 0;
 }
 
 .emptyState {
@@ -166,6 +249,17 @@
 
 @media (max-width: 768px) {
   .grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+
+  .grid.gridStudioCompact {
+    grid-template-columns: repeat(auto-fill, minmax(min(140px, 100%), 1fr));
+    gap: var(--spacing-sm);
+  }
+
+  .tagRail {
+    max-height: 14rem;
+    min-width: 3.5rem;
+    max-width: 6rem;
   }
 }

@@ -182,3 +182,26 @@
 .wrapCompact .suggestions {
   max-height: 140px;
 }
+
+.wrapSearchOnly {
+  gap: var(--spacing-xs);
+  align-items: flex-start;
+}
+
+.searchRowFoot {
+  justify-content: flex-start;
+}
+
+.searchInputFoot {
+  flex: 0 1 auto;
+  width: 100%;
+  max-width: min(100%, 18rem);
+  align-self: flex-start;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  border-radius: var(--border-radius-sm);
+}
+
+.wrapSearchOnly .suggestions {
+  max-height: 140px;
+}

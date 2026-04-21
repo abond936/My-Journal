@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import clsx from 'clsx';
 import type { OrganizedTags } from '@/lib/types/tag';
 import {
   DIMENSION_LABEL,
@@ -77,6 +78,49 @@ export function DirectDimensionChipsRow({ core, tagNameMap }: DirectDimensionChi
           variant="grid"
         />
       ))}
+    </div>
+  );
+}
+
+export interface DirectDimensionTagsRailProps {
+  core: OrganizedTags;
+  tagNameMap: Map<string, string>;
+  className?: string;
+}
+
+/**
+ * Same dimension order as chips row (Who → What → When → Where) without column labels.
+ * For admin media grid: full tag names, wrapping, read-only.
+ */
+export function DirectDimensionTagsRail({ core, tagNameMap, className }: DirectDimensionTagsRailProps) {
+  return (
+    <div
+      className={clsx(styles.rail, className)}
+      title="Dimension order (top to bottom): Who, What, When, Where."
+    >
+      {DIMENSION_ORDER.map((dim, index) => {
+        const ids = core[dim];
+        const label = DIMENSION_LABEL[dim];
+        const names = resolveNames(ids, tagNameMap);
+        const groupTitle = names.length === 0 ? `${label}: (none)` : `${label}: ${names.join(', ')}`;
+        return (
+          <div
+            key={dim}
+            className={clsx(styles.railDim, index > 0 && styles.railDimDivider)}
+            title={groupTitle}
+          >
+            {ids.length === 0 ? (
+              <span className={styles.railEmpty}>—</span>
+            ) : (
+              ids.map((id) => (
+                <span key={`${dim}-${id}`} className={styles.railLine} title={`${label}: ${tagNameMap.get(id) ?? id}`}>
+                  {tagNameMap.get(id) ?? id}
+                </span>
+              ))
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -4,6 +4,10 @@ import { useState, useCallback, useMemo } from 'react';
 import { useTag, type TagWithChildren } from '@/components/providers/TagProvider';
 import { buildTagTree } from '@/lib/utils/tagUtils';
 
+/**
+ * Shared tag CRUD + tree ordering for `/admin/tag-admin` and `TagAdminStudioPane`.
+ * Preserve stable behavior for the full Tag Management page (fallback); extend Studio-only needs via new optional hook/list props with safe defaults—do not regress the standalone route.
+ */
 export function useTagManagement() {
   const { tags: swrTags, createTag, updateTag, deleteTag, loading, error: swrError, mutate } = useTag();
   const [isSaving, setIsSaving] = useState(false);

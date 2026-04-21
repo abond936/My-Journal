@@ -1,36 +1,42 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { DragEndEvent } from '@dnd-kit/core';
 import CollectionsAdminClient from '@/components/admin/collections/CollectionsAdminClient';
-import CollectionsMediaPanel from '@/components/admin/collections/CollectionsMediaPanel';
-import TagAdminStudioPane from '@/components/admin/studio/TagAdminStudioPane';
-import StudioCardRelationshipPanel, {
-  handleStudioRelationshipDragEnd,
-  type StudioCardContext,
-} from '@/components/admin/studio/StudioCardRelationshipPanel';
-import { useTag } from '@/components/providers/TagProvider';
+import StudioTreeCandidateCardBank from '@/components/admin/studio/StudioTreeCandidateCardBank';
+import MediaAdminContent from '@/app/admin/media-admin/MediaAdminContent';
+import StudioCardEditPane from '@/components/admin/studio/StudioCardEditPane';
+import { handleStudioRelationshipDragEnd } from '@/components/admin/studio/studioRelationshipDndPrimitives';
+import type { StudioCardContext } from '@/components/admin/studio/studioCardTypes';
+import { StudioShellProvider, type StudioShellContextValue } from '@/components/admin/studio/StudioShellContext';
+import { useMedia } from '@/components/providers/MediaProvider';
 import type { Card } from '@/lib/types/card';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
+import cardAdminPageStyles from '@/app/admin/card-admin/card-admin.module.css';
 import styles from './StudioWorkspace.module.css';
 
-const STORAGE_KEY = 'studioPaneWidths';
-const HANDLE = 8;
-const MIN_LEFT = 200;
-const MIN_CENTER = 240;
+const STUDIO_CARD_EDIT_WIDTH_KEY = 'studioCardEditPaneWidth';
+const CARD_EDIT_RESIZE_HANDLE = 8;
+const MIN_CARD_EDIT_PX = 260;
+const MIN_MEDIA_BANK_PX = 200;
 
-function readStoredLeftWidth(): number | null {
+/** When the row is narrower than MIN_CARD_EDIT + media minimum, still allow dragging within the real range. */
+function cardEditWidthBounds(rowW: number): { minEdit: number; maxEdit: number } | null {
+  const maxEdit = rowW - MIN_MEDIA_BANK_PX - CARD_EDIT_RESIZE_HANDLE;
+  if (maxEdit < 1) return null;
+  const minEdit = Math.min(MIN_CARD_EDIT_PX, maxEdit);
+  return { minEdit, maxEdit };
+}
+function readStoredCardEditWidth(): number | null {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STUDIO_CARD_EDIT_WIDTH_KEY);
     if (!raw) return null;
-    const o = JSON.parse(raw) as { left?: number; right?: number };
-    if (typeof o.left === 'number') return o.left;
+    const w = Number.parseInt(raw, 10);
+    return Number.isFinite(w) ? w : null;
   } catch {
-    /* ignore */
+    return null;
   }
-  return null;
 }
 
 function clamp(n: number, lo: number, hi: number) {
@@ -39,13 +45,13 @@ function clamp(n: number, lo: number, hi: number) {
 
 export default function StudioWorkspace() {
   const [wideLayout, setWideLayout] = useState(true);
-  const [leftWidth, setLeftWidth] = useState(300);
-  const leftRef = useRef(leftWidth);
+  const [cardEditWidth, setCardEditWidth] = useState(380);
+  const cardEditWidthRef = useRef(cardEditWidth);
+  const studioMediaCardRowRef = useRef<HTMLDivElement | null>(null);
+  /** True while dragging card-edit width (skip ResizeObserver clamp). */
+  const cardEditResizeActiveRef = useRef(false);
+  const cardEditResizeSessionRef = useRef<{ startX: number; startW: number; pointerId: number } | null>(null);
   const collectionsRefreshRef = useRef<(() => void) | null>(null);
-  const [drag, setDrag] = useState<{
-    startX: number;
-    startLeft: number;
-  } | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [selectedCard, setSelectedCard] = useState<StudioCardContext | null>(null);
   const [cardLoading, setCardLoading] = useState(false);
@@ -53,20 +59,17 @@ export default function StudioWorkspace() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionInfo, setActionInfo] = useState<string | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
-  const [expandedPanels, setExpandedPanels] = useState<Record<'cover' | 'gallery' | 'children' | 'content', boolean>>({
-    cover: true,
-    gallery: true,
-    children: true,
-    content: true,
-  });
-  const { tags } = useTag();
-
-  leftRef.current = leftWidth;
+  const {
+    selectedMediaIds,
+    setSelectedMediaIds,
+    toggleMediaSelection,
+    selectAll: selectAllMediaOnPage,
+    selectNone: selectNoneMedia,
+  } = useMedia();
 
   useEffect(() => {
-    const stored = readStoredLeftWidth();
-    if (stored != null) setLeftWidth(stored);
-  }, []);
+    selectNoneMedia();
+  }, [selectedCardId, selectNoneMedia]);
 
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 1201px)');
@@ -76,61 +79,122 @@ export default function StudioWorkspace() {
     return () => mq.removeEventListener('change', apply);
   }, []);
 
-  const persistLeftWidth = useCallback((left: number) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ left }));
-    } catch {
-      /* ignore */
+  useLayoutEffect(() => {
+    const measure = () => {
+      const tabsEl = document.getElementById('admin-tabs-bar');
+      if (!tabsEl) return;
+      const tabsHeight = tabsEl.getBoundingClientRect().height;
+      document.documentElement.style.setProperty('--admin-tabs-height', `${tabsHeight}px`);
+    };
+
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
+
+  cardEditWidthRef.current = cardEditWidth;
+
+  useEffect(() => {
+    const stored = readStoredCardEditWidth();
+    if (stored != null) {
+      setCardEditWidth(clamp(stored, MIN_CARD_EDIT_PX, 900));
     }
   }, []);
 
-  useEffect(() => {
-    if (!drag) return;
+  const clampCardEditToRow = useCallback(() => {
+    if (cardEditResizeActiveRef.current) return;
+    const row = studioMediaCardRowRef.current;
+    if (!row || !wideLayout) return;
+    const rowW = row.getBoundingClientRect().width;
+    const bounds = cardEditWidthBounds(rowW);
+    if (!bounds) return;
+    setCardEditWidth((w) => clamp(w, bounds.minEdit, bounds.maxEdit));
+  }, [wideLayout]);
 
-    const chrome = 32;
+  const rowResizeObserverRef = useRef<ResizeObserver | null>(null);
 
-    const onMove = (e: PointerEvent) => {
-      const dx = e.clientX - drag.startX;
-      const maxLeft = window.innerWidth - HANDLE - MIN_CENTER - chrome;
-      const next = clamp(drag.startLeft + dx, MIN_LEFT, maxLeft);
-      setLeftWidth(next);
-    };
-
-    const onUp = () => {
-      persistLeftWidth(leftRef.current);
-      setDrag(null);
-    };
-
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
-    window.addEventListener('pointercancel', onUp);
-    return () => {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-      window.removeEventListener('pointercancel', onUp);
-    };
-  }, [drag, persistLeftWidth]);
-
-  const onHandleDown = useCallback(
-    (e: React.PointerEvent) => {
-      if (!wideLayout) return;
-      e.preventDefault();
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-      setDrag({ startX: e.clientX, startLeft: leftWidth });
+  const bindStudioMediaCardRowRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      studioMediaCardRowRef.current = el;
+      rowResizeObserverRef.current?.disconnect();
+      rowResizeObserverRef.current = null;
+      if (!el || !wideLayout) return;
+      const ro = new ResizeObserver(() => {
+        clampCardEditToRow();
+      });
+      ro.observe(el);
+      rowResizeObserverRef.current = ro;
+      queueMicrotask(() => {
+        clampCardEditToRow();
+      });
     },
-    [wideLayout, leftWidth]
+    [wideLayout, clampCardEditToRow]
   );
 
-  const gridStyle = useMemo(() => {
-    if (!wideLayout) return undefined;
-    return {
-      gridTemplateColumns: `${leftWidth}px ${HANDLE}px minmax(${MIN_CENTER}px, 1fr)`,
-    } as React.CSSProperties;
-  }, [wideLayout, leftWidth]);
-
-  const togglePanel = useCallback((panel: 'cover' | 'gallery' | 'children' | 'content') => {
-    setExpandedPanels((prev) => ({ ...prev, [panel]: !prev[panel] }));
+  useEffect(() => {
+    return () => {
+      rowResizeObserverRef.current?.disconnect();
+      rowResizeObserverRef.current = null;
+    };
   }, []);
+
+  useEffect(() => {
+    window.addEventListener('resize', clampCardEditToRow);
+    return () => window.removeEventListener('resize', clampCardEditToRow);
+  }, [clampCardEditToRow]);
+
+  const onCardEditResizePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (!wideLayout || e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const target = e.currentTarget as HTMLElement;
+      target.setPointerCapture(e.pointerId);
+      cardEditResizeActiveRef.current = true;
+      cardEditResizeSessionRef.current = {
+        startX: e.clientX,
+        startW: cardEditWidthRef.current,
+        pointerId: e.pointerId,
+      };
+
+      const onMove = (ev: PointerEvent) => {
+        const session = cardEditResizeSessionRef.current;
+        if (!session || ev.pointerId !== session.pointerId) return;
+        const row = studioMediaCardRowRef.current;
+        if (!row) return;
+        const bounds = cardEditWidthBounds(row.getBoundingClientRect().width);
+        if (!bounds) return;
+        const dx = ev.clientX - session.startX;
+        const next = clamp(session.startW + dx, bounds.minEdit, bounds.maxEdit);
+        setCardEditWidth(next);
+      };
+
+      const end = (ev: PointerEvent) => {
+        const session = cardEditResizeSessionRef.current;
+        if (!session || ev.pointerId !== session.pointerId) return;
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', end);
+        window.removeEventListener('pointercancel', end);
+        try {
+          target.releasePointerCapture(session.pointerId);
+        } catch {
+          /* ignore if already released */
+        }
+        cardEditResizeActiveRef.current = false;
+        cardEditResizeSessionRef.current = null;
+        try {
+          localStorage.setItem(STUDIO_CARD_EDIT_WIDTH_KEY, String(cardEditWidthRef.current));
+        } catch {
+          /* ignore */
+        }
+      };
+
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', end);
+      window.addEventListener('pointercancel', end);
+    },
+    [wideLayout]
+  );
 
   const loadSelectedCard = useCallback(async (cardId: string, opts?: { quiet?: boolean }) => {
     if (!opts?.quiet) setCardLoading(true);
@@ -151,6 +215,9 @@ export default function StudioWorkspace() {
       return;
     }
     let cancelled = false;
+    setSelectedCard(null);
+    setCardError(null);
+    setCardLoading(true);
     const run = async () => {
       try {
         await loadSelectedCard(selectedCardId);
@@ -208,69 +275,117 @@ export default function StudioWorkspace() {
     [actionBusy, selectedCard, selectedCardId, patchSelectedCard]
   );
 
+  const refreshCollectionsCardList = useCallback(() => {
+    collectionsRefreshRef.current?.();
+  }, []);
+
+  const studioShellValue = useMemo<StudioShellContextValue>(
+    () => ({
+      selectedCardId,
+      setSelectedCardId,
+      selectedCard,
+      cardLoading,
+      cardError,
+      loadSelectedCard,
+      patchSelectedCard,
+      refreshCollectionsCardList,
+      selectedMediaIds,
+      setSelectedMediaIds,
+      toggleMediaSelection,
+      selectAllMediaOnPage,
+      selectNoneMedia,
+    }),
+    [
+      selectedCardId,
+      selectedCard,
+      cardLoading,
+      cardError,
+      loadSelectedCard,
+      patchSelectedCard,
+      refreshCollectionsCardList,
+      selectedMediaIds,
+      setSelectedMediaIds,
+      toggleMediaSelection,
+      selectAllMediaOnPage,
+      selectNoneMedia,
+    ]
+  );
+
   return (
-    <div className={styles.page}>
-      <p className={styles.intro}>
-        Experimental <strong>Admin Studio</strong>: tag tree and a three-column card workspace (curated tree ·
-        unparented · selected-card context + same Media bank as Collections) in one screen. Card and media drags share
-        one surface so you can drop a card onto the <strong>Children</strong> block to attach it to the selected card.
-        Drag from the media bank to Cover/Gallery, or use keyboard (Space, arrows, Space) and row actions in Selected
-        card context. This route is separate from
-        Collections and Tag admin so we can evolve layout and interactions without replacing them.{' '}
-        <Link href="/admin/collections">Collections</Link> · <Link href="/admin/tag-admin">Tag admin</Link>.
-        {wideLayout ? (
-          <>
-            {' '}
-            Drag the narrow bar to resize the tag column; widths are saved in this browser.
-          </>
-        ) : null}
-      </p>
-
-      <div className={wideLayout ? styles.grid : styles.gridStacked} style={gridStyle}>
-        <TagAdminStudioPane />
-
-        {wideLayout ? (
-          <div
-            className={styles.resizeHandle}
-            role="separator"
-            aria-orientation="vertical"
-            aria-label="Resize tag and card columns"
-            onPointerDown={onHandleDown}
-          />
-        ) : null}
-
-        <div className={styles.collectionsHost}>
-          <CollectionsAdminClient
-            embedded
-            onSelectCard={setSelectedCardId}
-            onStudioRelationshipDragEnd={onStudioRelationshipDragEnd}
-            embeddedRightSlot={({ refreshCards }) => {
-              collectionsRefreshRef.current = refreshCards;
-              return (
-                <div className={styles.studioRightColumn}>
-                  <div className={styles.studioRelationshipColumn}>
-                    <StudioCardRelationshipPanel
-                      cardLoading={cardLoading}
-                      cardError={cardError}
-                      selectedCard={selectedCard}
-                      tags={tags}
-                      actionBusy={actionBusy}
-                      actionInfo={actionInfo}
-                      actionError={actionError}
-                      expandedPanels={expandedPanels}
-                      togglePanel={togglePanel}
-                      patchSelectedCard={patchSelectedCard}
-                    />
+    <StudioShellProvider value={studioShellValue}>
+      <div className={styles.page}>
+        <div className={cardAdminPageStyles.stickyTop}>
+          <h1 className={cardAdminPageStyles.title}>Content Management</h1>
+        </div>
+        <div className={wideLayout ? styles.grid : styles.gridStacked}>
+          <div className={styles.collectionsHost}>
+            <CollectionsAdminClient
+              embedded
+              onSelectCard={setSelectedCardId}
+              onStudioRelationshipDragEnd={onStudioRelationshipDragEnd}
+              embeddedUnparentedReplacement={(ctx) => <StudioTreeCandidateCardBank {...ctx} />}
+              embeddedRightSlot={({ refreshCards }) => {
+                collectionsRefreshRef.current = refreshCards;
+                return (
+                  <div className={styles.studioRightColumn}>
+                    {actionInfo || actionError ? (
+                      <div className={styles.studioActionStrip}>
+                        {actionInfo ? (
+                          <p className={styles.metaInfo} role="status" aria-live="polite">
+                            {actionInfo}
+                          </p>
+                        ) : null}
+                        {actionError ? (
+                          <p className={styles.metaError} role="alert">
+                            {actionError}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
+                    <div
+                      ref={bindStudioMediaCardRowRef}
+                      className={
+                        wideLayout
+                          ? `${styles.studioMediaCardRow} ${styles.studioMediaCardRowResizable}`
+                          : styles.studioMediaCardRow
+                      }
+                    >
+                      <div className={styles.studioMediaBankColumn}>
+                        <div className={styles.studioMediaBankFill}>
+                          <MediaAdminContent embedded studioSourceDraggable />
+                        </div>
+                      </div>
+                      {wideLayout ? (
+                        <div
+                          className={`${styles.resizeHandle} ${styles.cardEditColumnResizeHandle}`}
+                          role="separator"
+                          aria-orientation="vertical"
+                          aria-label="Resize media bank and card edit columns"
+                          onPointerDown={onCardEditResizePointerDown}
+                        />
+                      ) : null}
+                      <div
+                        className={styles.studioCardEditInBankColumn}
+                        style={
+                          wideLayout
+                            ? {
+                                flex: `0 0 ${cardEditWidth}px`,
+                                width: cardEditWidth,
+                                minWidth: MIN_CARD_EDIT_PX,
+                              }
+                            : undefined
+                        }
+                      >
+                        <StudioCardEditPane />
+                      </div>
+                    </div>
                   </div>
-                  <div className={styles.studioMediaBankColumn}>
-                    <CollectionsMediaPanel studioSourceDraggable />
-                  </div>
-                </div>
-              );
-            }}
-          />
+                );
+              }}
+            />
+          </div>
         </div>
       </div>
-    </div>
+    </StudioShellProvider>
   );
 }

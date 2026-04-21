@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useLayoutEffect, useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTag } from '@/components/providers/TagProvider';
 import { useCardContext } from '@/components/providers/CardProvider';
@@ -12,22 +13,23 @@ import CardAdminGrid from '@/components/admin/card-admin/CardAdminGrid';
 import CollectionsManagerPanel from '@/components/admin/card-admin/CollectionsManagerPanel';
 import BulkEditTagsModal from '@/components/admin/card-admin/BulkEditTagsModal';
 import ImportFolderModal from '@/components/admin/card-admin/ImportFolderModal';
-import { getCoreTagsByDimension } from '@/lib/utils/tagDisplay';
+import { sortAdminCards, type AdminCardSortMode } from '@/lib/utils/adminCardSort';
+import {
+  listCuratedTreeAttachCandidates,
+  mergeCardCatalogs,
+} from '@/lib/utils/curatedTreeAttachCandidates';
+import { getCuratedTreeMasterId } from '@/lib/config/curatedTreeDnd';
 
 const CARD_VIEW_MODE_KEY = 'card-admin-view-mode';
 /** Neighbor row in admin list order when the primary `scrollToCardId` row is removed (e.g. delete). */
 const SCROLL_TO_CARD_IF_REMOVED_KEY = 'scrollToCardIdIfRemoved';
 type ViewMode = 'grid' | 'table' | 'collections';
-type AdminSortMode =
-  | 'whenDesc'
-  | 'whenAsc'
-  | 'createdDesc'
-  | 'createdAsc'
-  | 'titleAsc'
-  | 'titleDesc'
-  | 'whoAsc'
-  | 'whatAsc'
-  | 'whereAsc';
+
+function intersectsAny(haystack: string[] | undefined, needles: string[]): boolean {
+  if (!needles.length) return true;
+  const set = new Set(haystack || []);
+  return needles.some((id) => set.has(id));
+}
 
 export default function AdminCardsPage() {
   const router = useRouter();
@@ -40,9 +42,13 @@ export default function AdminCardsPage() {
   const [isBulkTagModalOpen, setIsBulkTagModalOpen] = useState(false);
   const [isImportFolderModalOpen, setIsImportFolderModalOpen] = useState(false);
   const [searchInputValue, setSearchInputValue] = useState('');
-  const [adminSortMode, setAdminSortMode] = useState<AdminSortMode>('whenDesc');
+  const [adminSortMode, setAdminSortMode] = useState<AdminCardSortMode>('whenDesc');
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [displayCards, setDisplayCards] = useState<Card[]>([]);
+  /** Full-card snapshot for curated-tree attach candidate filter (grid/table only). */
+  const [fullCatalogForTree, setFullCatalogForTree] = useState<Card[]>([]);
+  const [loadingFullCatalogForTree, setLoadingFullCatalogForTree] = useState(false);
+  const [treeCandidateFilter, setTreeCandidateFilter] = useState(false);
   /** Admin page only: narrow visible rows by denormalized media-tag ids on each card (never sent to `/api/cards`). */
   const [adminMediaRowFilter, setAdminMediaRowFilter] = useState<{
     who: string;
@@ -52,9 +58,10 @@ export default function AdminCardsPage() {
   }>({ who: '', what: '', when: '', where: '' });
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { 
-    tags: allTags, 
-    loading: tagsLoading, 
+  const {
+    tags: allTags,
+    loading: tagsLoading,
+    selectedFilterTagIds,
   } = useTag();
 
   const {
@@ -73,6 +80,7 @@ export default function AdminCardsPage() {
     isValidating,
     cardDimensionMissing,
     setCardDimensionMissing,
+    cardType,
   } = useCardContext();
 
   const tagsByDimension = useMemo(() => {
@@ -84,6 +92,50 @@ export default function AdminCardsPage() {
       where: source.filter((tag) => tag.dimension === 'where'),
     };
   }, [allTags]);
+
+  const dimensionalTagsForTree = useMemo(() => {
+    const map: { who?: string[]; what?: string[]; when?: string[]; where?: string[] } = {};
+    const all = allTags || [];
+    selectedFilterTagIds.forEach((tagId) => {
+      const tag = all.find((t) => t.docId === tagId);
+      if (!tag?.dimension) return;
+      const dim = String(tag.dimension) === 'reflection' ? 'what' : String(tag.dimension);
+      if (dim !== 'who' && dim !== 'what' && dim !== 'when' && dim !== 'where') return;
+      if (!map[dim]) map[dim] = [];
+      map[dim]!.push(tagId);
+    });
+    return map;
+  }, [selectedFilterTagIds, allTags]);
+
+  const matchesTreeSidebarFilters = useCallback(
+    (card: Card): boolean => {
+      if (cardType && cardType !== 'all' && card.type !== cardType) return false;
+      const q = searchTerm?.trim().toLowerCase();
+      if (q) {
+        const title = (card.title || '').toLowerCase();
+        if (!title.includes(q)) return false;
+      }
+      const { who, what, when, where } = dimensionalTagsForTree;
+      if (who?.length && !intersectsAny(card.who, who)) return false;
+      if (what?.length && !intersectsAny(card.what, what)) return false;
+      if (when?.length && !intersectsAny(card.when, when)) return false;
+      if (where?.length && !intersectsAny(card.where, where)) return false;
+      return true;
+    },
+    [cardType, searchTerm, dimensionalTagsForTree]
+  );
+
+  const matchesDimensionMissingRow = useCallback(
+    (card: Card) => {
+      const m = cardDimensionMissing;
+      if (m.who && (card.who?.length ?? 0) > 0) return false;
+      if (m.what && (card.what?.length ?? 0) > 0) return false;
+      if (m.when && (card.when?.length ?? 0) > 0) return false;
+      if (m.where && (card.where?.length ?? 0) > 0) return false;
+      return true;
+    },
+    [cardDimensionMissing]
+  );
 
   // Set the desired page limit for the admin section
   useEffect(() => {
@@ -152,7 +204,35 @@ export default function AdminCardsPage() {
     adminMediaRowFilter.what,
     adminMediaRowFilter.when,
     adminMediaRowFilter.where,
+    treeCandidateFilter,
   ]);
+
+  useEffect(() => {
+    if (!treeCandidateFilter) return;
+    let cancelled = false;
+    setLoadingFullCatalogForTree(true);
+    (async () => {
+      try {
+        const params = new URLSearchParams({
+          limit: '2500',
+          status: 'all',
+          hydration: 'cover-only',
+          sortBy: 'created',
+          sortDir: 'desc',
+        });
+        const res = await fetch(`/api/cards?${params.toString()}`);
+        const data = (await res.json().catch(() => ({}))) as { items?: Card[] };
+        if (!cancelled && res.ok && Array.isArray(data.items)) {
+          setFullCatalogForTree(data.items);
+        }
+      } finally {
+        if (!cancelled) setLoadingFullCatalogForTree(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [treeCandidateFilter]);
 
   useEffect(() => {
     setSearchInputValue(searchTerm);
@@ -312,79 +392,10 @@ export default function AdminCardsPage() {
     }
   };
 
-  const sortedCards = useMemo(() => {
-    const sorted = [...cards];
-    const tagNameById = new Map((allTags || []).map((tag) => [tag.docId, tag.name]));
-    const firstDirectTagLabel = (card: Card, dimension: 'who' | 'what' | 'where') => {
-      const core = getCoreTagsByDimension(card);
-      const ids = core[dimension] || [];
-      if (!ids.length) return '\uffff';
-      const labels = ids
-        .map((id) => tagNameById.get(id) || '')
-        .filter(Boolean)
-        .sort((a, b) => a.localeCompare(b));
-      return labels[0] || '\uffff';
-    };
-    const whenAsc = (a: Card, b: Card) => {
-      const av = a.journalWhenSortAsc ?? Number.MAX_SAFE_INTEGER;
-      const bv = b.journalWhenSortAsc ?? Number.MAX_SAFE_INTEGER;
-      if (av !== bv) return av - bv;
-      return (a.title || '').localeCompare(b.title || '');
-    };
-    const whenDesc = (a: Card, b: Card) => {
-      const av = a.journalWhenSortDesc ?? Number.MIN_SAFE_INTEGER;
-      const bv = b.journalWhenSortDesc ?? Number.MIN_SAFE_INTEGER;
-      if (av !== bv) return bv - av;
-      return (a.title || '').localeCompare(b.title || '');
-    };
-    const titleAsc = (a: Card, b: Card) => (a.title || '').localeCompare(b.title || '');
-    const titleDesc = (a: Card, b: Card) => (b.title || '').localeCompare(a.title || '');
-    const createdAsc = (a: Card, b: Card) => {
-      if (a.createdAt !== b.createdAt) return a.createdAt - b.createdAt;
-      return (a.title || '').localeCompare(b.title || '');
-    };
-    const createdDesc = (a: Card, b: Card) => {
-      if (a.createdAt !== b.createdAt) return b.createdAt - a.createdAt;
-      return (a.title || '').localeCompare(b.title || '');
-    };
-    const byDimension = (dimension: 'who' | 'what' | 'where') => (a: Card, b: Card) => {
-      const av = firstDirectTagLabel(a, dimension);
-      const bv = firstDirectTagLabel(b, dimension);
-      if (av !== bv) return av.localeCompare(bv);
-      return (a.title || '').localeCompare(b.title || '');
-    };
-
-    switch (adminSortMode) {
-      case 'whenAsc':
-        sorted.sort(whenAsc);
-        break;
-      case 'createdAsc':
-        sorted.sort(createdAsc);
-        break;
-      case 'createdDesc':
-        sorted.sort(createdDesc);
-        break;
-      case 'titleAsc':
-        sorted.sort(titleAsc);
-        break;
-      case 'titleDesc':
-        sorted.sort(titleDesc);
-        break;
-      case 'whoAsc':
-        sorted.sort(byDimension('who'));
-        break;
-      case 'whatAsc':
-        sorted.sort(byDimension('what'));
-        break;
-      case 'whereAsc':
-        sorted.sort(byDimension('where'));
-        break;
-      case 'whenDesc':
-      default:
-        sorted.sort(whenDesc);
-    }
-    return sorted;
-  }, [cards, adminSortMode, allTags]);
+  const sortedCards = useMemo(
+    () => sortAdminCards([...cards], adminSortMode, allTags || []),
+    [cards, adminSortMode, allTags]
+  );
 
   const adminVisibleRows = useMemo(() => {
     return sortedCards.filter((card) => {
@@ -397,41 +408,79 @@ export default function AdminCardsPage() {
     });
   }, [sortedCards, adminMediaRowFilter]);
 
+  const mergedCatalogForTree = useMemo(() => {
+    if (!treeCandidateFilter || !fullCatalogForTree.length) return [];
+    return mergeCardCatalogs(fullCatalogForTree, cards);
+  }, [treeCandidateFilter, fullCatalogForTree, cards]);
+
+  const treeCandidateRows = useMemo(() => {
+    if (!treeCandidateFilter || !mergedCatalogForTree.length) return [];
+    const candidates = listCuratedTreeAttachCandidates(mergedCatalogForTree, {
+      curatedTreeMasterId: getCuratedTreeMasterId(),
+      matchesFilters: matchesTreeSidebarFilters,
+      statusFilter: status,
+    });
+    const afterMissing = candidates.filter(matchesDimensionMissingRow);
+    const afterMedia = afterMissing.filter((card) => {
+      const f = adminMediaRowFilter;
+      if (f.who && !(card.mediaWho || []).includes(f.who)) return false;
+      if (f.what && !(card.mediaWhat || []).includes(f.what)) return false;
+      if (f.when && !(card.mediaWhen || []).includes(f.when)) return false;
+      if (f.where && !(card.mediaWhere || []).includes(f.where)) return false;
+      return true;
+    });
+    return sortAdminCards(afterMedia, adminSortMode, allTags || []);
+  }, [
+    treeCandidateFilter,
+    mergedCatalogForTree,
+    matchesTreeSidebarFilters,
+    status,
+    matchesDimensionMissingRow,
+    adminMediaRowFilter,
+    adminSortMode,
+    allTags,
+  ]);
+
+  const listForDisplay = useMemo(() => {
+    if (!treeCandidateFilter) return adminVisibleRows;
+    return treeCandidateRows;
+  }, [treeCandidateFilter, adminVisibleRows, treeCandidateRows]);
+
   const handleSelectAll = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      const allIds = new Set(adminVisibleRows.map((c) => c.docId).filter(Boolean) as string[]);
+      const allIds = new Set(listForDisplay.map((c) => c.docId).filter(Boolean) as string[]);
       setSelectedCardIds(allIds);
     } else {
       setSelectedCardIds(new Set());
     }
-  }, [adminVisibleRows]);
+  }, [listForDisplay]);
 
   const onSaveScrollPosition = useCallback((cardId: string) => {
     sessionStorage.setItem('scrollToCardId', cardId);
-    const idx = adminVisibleRows.findIndex((c) => c.docId === cardId);
+    const idx = listForDisplay.findIndex((c) => c.docId === cardId);
     const neighbor =
       idx > 0
-        ? adminVisibleRows[idx - 1]!.docId
-        : idx >= 0 && idx + 1 < adminVisibleRows.length
-          ? adminVisibleRows[idx + 1]!.docId
+        ? listForDisplay[idx - 1]!.docId
+        : idx >= 0 && idx + 1 < listForDisplay.length
+          ? listForDisplay[idx + 1]!.docId
           : '';
     if (neighbor) sessionStorage.setItem(SCROLL_TO_CARD_IF_REMOVED_KEY, neighbor);
     else sessionStorage.removeItem(SCROLL_TO_CARD_IF_REMOVED_KEY);
-  }, [adminVisibleRows]);
+  }, [listForDisplay]);
 
   useEffect(() => {
     const activelySearching = Boolean(searchInputValue.trim()) && isValidating;
     if (!activelySearching) {
-      setDisplayCards(adminVisibleRows);
+      setDisplayCards(listForDisplay);
       return;
     }
     // Keep current rows visible while next title-only search request is in flight.
-    if (adminVisibleRows.length > 0) {
-      setDisplayCards(adminVisibleRows);
+    if (listForDisplay.length > 0) {
+      setDisplayCards(listForDisplay);
       return;
     }
     setDisplayCards([]);
-  }, [adminVisibleRows, isValidating, searchInputValue]);
+  }, [listForDisplay, isValidating, searchInputValue]);
 
   const handleDeleteCard = async (cardId: string) => {
     try {
@@ -482,15 +531,23 @@ export default function AdminCardsPage() {
             >
               Table
             </button>
+          </span>
+          <div className={styles.viewToggleSupplementary}>
             <button
               type="button"
-              className={`${styles.viewToggleButton} ${viewMode === 'collections' ? styles.viewToggleActive : ''}`}
+              className={`${styles.viewToggleButton} ${styles.viewToggleButtonSupplementary} ${
+                viewMode === 'collections' ? styles.viewToggleActive : ''
+              }`}
               onClick={() => setViewMode('collections')}
               aria-pressed={viewMode === 'collections'}
             >
               Collections
             </button>
-          </span>
+            <span className={styles.viewToggleStudioHint}>
+              Prefer <Link href="/admin/studio">Studio</Link> for tree + cards + media together; use this for
+              full-page curated work when needed.
+            </span>
+          </div>
         </div>
 
         {viewMode !== 'collections' && (
@@ -535,7 +592,7 @@ export default function AdminCardsPage() {
             </select>
             <select
               value={adminSortMode}
-              onChange={e => setAdminSortMode(e.target.value as AdminSortMode)}
+              onChange={e => setAdminSortMode(e.target.value as AdminCardSortMode)}
               className={styles.filterSelect}
             >
               <option value="whenDesc">When (Desc)</option>
@@ -645,6 +702,19 @@ export default function AdminCardsPage() {
                 Searching...
               </span>
             )}
+            <label className={styles.treeCandidateToggle}>
+              <input
+                type="checkbox"
+                checked={treeCandidateFilter}
+                onChange={(e) => setTreeCandidateFilter(e.target.checked)}
+              />
+              Tree attach candidates
+            </label>
+            {treeCandidateFilter && loadingFullCatalogForTree ? (
+              <span className={styles.searchingHint} aria-live="polite">
+                Loading catalog…
+              </span>
+            ) : null}
           </div>
         </div>
         )}
@@ -742,12 +812,12 @@ export default function AdminCardsPage() {
         />
       ) : (
         <CollectionsManagerPanel
-          cards={displayCards}
+          cards={viewMode === 'collections' ? adminVisibleRows : displayCards}
           collectionsActive={viewMode === 'collections'}
         />
       )}
 
-      {viewMode !== 'collections' && hasMore && (
+      {viewMode !== 'collections' && hasMore && !treeCandidateFilter && (
         <div className={styles.loadMoreContainer}>
           <button onClick={loadMore} disabled={loadingMore} className={styles.loadMoreButton}>
             {loadingMore ? 'Loading...' : 'Load More'}

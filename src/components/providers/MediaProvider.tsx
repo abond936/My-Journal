@@ -9,6 +9,8 @@ import {
   appendDimensionalTagQueryParams,
   dimensionalTagMapHasFilters,
   groupSelectedTagIdsByDimension,
+  mergeDimensionalTagMaps,
+  type DimensionalTagIdMap,
 } from '@/lib/utils/tagUtils';
 
 interface MediaListResponse {
@@ -112,6 +114,17 @@ interface MediaContextType {
   // Filter actions
   setFilter: (key: keyof MediaFilters, value: string) => void;
   clearFilters: () => void;
+  /** Admin Studio: extra who/what/when/where tag ids merged into GET /api/media (this pane’s “Server” row). */
+  dimensionalQueryOverlay: DimensionalTagIdMap;
+  setDimensionalQueryOverlay: (
+    map: DimensionalTagIdMap | ((prev: DimensionalTagIdMap) => DimensionalTagIdMap)
+  ) => void;
+  /**
+   * Admin Studio only: when true, media fetch also merges dimensional tags from the Compose card form
+   * (`CardContext`). Default false keeps media filters independent from card tagging.
+   */
+  studioMediaMergeCardDimensionalTags: boolean;
+  setStudioMediaMergeCardDimensionalTags: (v: boolean) => void;
   
   // Selection
   selectedMediaIds: string[];
@@ -157,11 +170,25 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const [cursorStack, setCursorStack] = useState<(string | null)[]>([]);
   const [filters, setFilters] = useState<MediaFilters>(defaultFilters);
   const [selectedMediaIds, setSelectedMediaIds] = useState<string[]>([]);
+  const [dimensionalQueryOverlay, setDimensionalQueryOverlayState] = useState<DimensionalTagIdMap>({});
+  const dimensionalQueryOverlayRef = useRef<DimensionalTagIdMap>({});
+  const [studioMediaMergeCardDimensionalTags, setStudioMediaMergeCardDimensionalTags] = useState(false);
   const lastMediaEngineRef = useRef<'typesense' | 'firestore' | null>(null);
+
+  const setDimensionalQueryOverlay = useCallback(
+    (mapOrFn: DimensionalTagIdMap | ((prev: DimensionalTagIdMap) => DimensionalTagIdMap)) => {
+      setDimensionalQueryOverlayState((prev) => {
+        const next = typeof mapOrFn === 'function' ? mapOrFn(prev) : mapOrFn;
+        dimensionalQueryOverlayRef.current = next;
+        return next;
+      });
+    },
+    []
+  );
 
   const buildQueryString = useCallback((
     mediaFilters: MediaFilters,
-    dimMap: ReturnType<typeof groupSelectedTagIdsByDimension>,
+    dimMap: DimensionalTagIdMap,
     opts?: { cursor?: string; prevCursor?: string; listPage?: number }
   ) => {
     const params = new URLSearchParams();
@@ -188,9 +215,18 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const updatedFilters = { ...filters, ...newFilters };
+      const isStudioPath = pathname?.startsWith('/admin/studio');
+      const cardDimensionalForFetch =
+        isStudioPath && !studioMediaMergeCardDimensionalTags
+          ? ({} as DimensionalTagIdMap)
+          : dimensionalTagMap;
+      const mergedDimensional = mergeDimensionalTagMaps(
+        cardDimensionalForFetch,
+        dimensionalQueryOverlayRef.current
+      );
       const assignmentSeek =
         updatedFilters.assignment === 'unassigned' || updatedFilters.assignment === 'assigned';
-      const tagSeek = dimensionalTagMapHasFilters(dimensionalTagMap);
+      const tagSeek = dimensionalTagMapHasFilters(mergedDimensional);
       const useSeekPagination = assignmentSeek || tagSeek;
       const typesensePaging = lastMediaEngineRef.current === 'typesense';
       let opts: { cursor?: string; prevCursor?: string; listPage?: number } | undefined;
@@ -215,7 +251,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         opts = { cursor: cursorStack[page - 2]! };
       }
 
-      const queryString = buildQueryString(updatedFilters, dimensionalTagMap, opts);
+      const queryString = buildQueryString(updatedFilters, mergedDimensional, opts);
       const response = await fetch(`/api/media?${queryString}`);
       if (!response.ok) {
         const errBody = (await response.json().catch(() => ({}))) as ApiErrorResponse;
@@ -259,7 +295,18 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [filters, buildQueryString, currentPage, nextCursor, prevCursor, cursorStack, dimensionalTagMap]);
+  }, [
+    filters,
+    buildQueryString,
+    currentPage,
+    nextCursor,
+    prevCursor,
+    cursorStack,
+    dimensionalTagMap,
+    dimensionalQueryOverlay,
+    pathname,
+    studioMediaMergeCardDimensionalTags,
+  ]);
 
   const updateMedia = useCallback(async (id: string, updates: Partial<Media>): Promise<Media | undefined> => {
     try {
@@ -384,6 +431,8 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
 
   const clearFilters = useCallback(() => {
     lastMediaEngineRef.current = null;
+    dimensionalQueryOverlayRef.current = {};
+    setDimensionalQueryOverlayState({});
     setFilters(defaultFilters);
     setCursorStack([]);
     setNextCursor(null);
@@ -428,6 +477,10 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     bulkApplyTags,
     setFilter,
     clearFilters,
+    dimensionalQueryOverlay,
+    setDimensionalQueryOverlay,
+    studioMediaMergeCardDimensionalTags,
+    setStudioMediaMergeCardDimensionalTags,
     selectedMediaIds,
     setSelectedMediaIds,
     toggleMediaSelection,

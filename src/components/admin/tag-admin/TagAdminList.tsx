@@ -177,6 +177,7 @@ function SortableTag({
   );
 }
 
+/** Used by `/admin/tag-admin` (default layout) and Studio (optional `stackDimensionColumns`). */
 interface TagAdminListProps {
   tagTree: TagWithChildren[];
   onUpdateTag: (id: string, tagData: Partial<Omit<Tag, 'docId'>>) => Promise<Tag | undefined>;

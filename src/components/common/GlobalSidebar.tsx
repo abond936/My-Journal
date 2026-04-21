@@ -1,13 +1,17 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useTag } from '@/components/providers/TagProvider';
 import { useCardContext, type FeedSortOrder, type FeedGroupBy } from '@/components/providers/CardProvider';
 import TagTree from '@/components/common/TagTree';
 import { filterTreesBySearch } from '@/lib/utils/tagUtils';
 import { groupCollectionsByDimension } from '@/lib/utils/cardUtils';
+import ViewTagLibrarySidebarPane from '@/components/view/ViewTagLibrarySidebarPane';
 import styles from './GlobalSidebar.module.css';
+
+const VIEW_TAG_SIDEBAR_TAB_KEY = 'myjournal-view-sidebar-tag-tab';
 
 interface GlobalSidebarProps {
   isOpen: boolean;
@@ -19,6 +23,10 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     if (typeof window === 'undefined') return 'freeform';
     const saved = sessionStorage.getItem('myjournal-sidebar-browse-mode');
     return saved === 'curated' ? 'curated' : 'freeform';
+  });
+  const [viewTagSidebarTab, setViewTagSidebarTab] = useState<'filter' | 'library'>(() => {
+    if (typeof window === 'undefined') return 'filter';
+    return sessionStorage.getItem(VIEW_TAG_SIDEBAR_TAB_KEY) === 'library' ? 'library' : 'filter';
   });
   const {
     tags,
@@ -50,6 +58,8 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
   } = useCardContext();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'admin';
+  const pathname = usePathname();
+  const isViewRoute = pathname === '/view' || (pathname?.startsWith('/view/') ?? false);
 
   const handleSetDefaultExpanded = useCallback(
     (tagId: string, expanded: boolean) => {
@@ -94,6 +104,12 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
 
   const isCollectionsMode = browseMode === 'curated';
   const isTagMode = !isCollectionsMode;
+  const showViewTagLibrary = Boolean(isAdmin && isTagMode && isViewRoute);
+
+  const persistViewTagSidebarTab = useCallback((tab: 'filter' | 'library') => {
+    setViewTagSidebarTab(tab);
+    if (typeof window !== 'undefined') sessionStorage.setItem(VIEW_TAG_SIDEBAR_TAB_KEY, tab);
+  }, []);
 
   const collectionsByDimension = useMemo(
     () => groupCollectionsByDimension(collectionCards),
@@ -186,78 +202,104 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
 
               <div className={styles.sidebarSection}>
                 <h3 className={styles.sectionHeading}>Tags</h3>
-                <div className={styles.dimensionsBlock}>
-                  <div
-                    className={styles.dimensionTabs}
-                    role="tablist"
-                    aria-label="Tag dimensions"
-                  >
-                    {DIMENSION_TABS.map(({ id, label }) => (
-                      <button
-                        key={id}
-                        type="button"
-                        role="tab"
-                        aria-selected={activeDimension === id}
-                        className={`${styles.dimensionTab} ${activeDimension === id ? styles.dimensionTabActive : ''}`}
-                        onClick={() => setActiveDimension(id)}
+                {showViewTagLibrary ? (
+                  <div className={styles.viewTagSidebarTabs} role="tablist" aria-label="Tag sidebar mode">
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={viewTagSidebarTab === 'filter'}
+                      className={`${styles.viewTagSidebarTab} ${viewTagSidebarTab === 'filter' ? styles.viewTagSidebarTabActive : ''}`}
+                      onClick={() => persistViewTagSidebarTab('filter')}
+                    >
+                      Filter feed
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={viewTagSidebarTab === 'library'}
+                      className={`${styles.viewTagSidebarTab} ${viewTagSidebarTab === 'library' ? styles.viewTagSidebarTabActive : ''}`}
+                      onClick={() => persistViewTagSidebarTab('library')}
+                    >
+                      Edit library
+                    </button>
+                  </div>
+                ) : null}
+                {(!showViewTagLibrary || viewTagSidebarTab === 'filter') ? (
+                  <>
+                    <div className={styles.dimensionsBlock}>
+                      <div
+                        className={styles.dimensionTabs}
+                        role="tablist"
+                        aria-label="Tag dimensions"
                       >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className={styles.searchBlock}>
-                  <label htmlFor="tag-search-input" className={styles.searchTagsLabel}>
-                    Search tags
-                  </label>
-                  <input
-                    id="tag-search-input"
-                    type="search"
-                    placeholder="Type to filter…"
-                    value={tagSearch}
-                    onChange={e => setTagSearch(e.target.value)}
-                    className={styles.compactControl}
-                    aria-label="Search tags in tree"
-                  />
-                </div>
-
-                {hasActiveFilters && (
-                  <div className={styles.activeFilters}>
-                    <span className={styles.activeFiltersLabel}>Active</span>
-                    <div className={styles.activeFiltersChips}>
-                      {cardType !== 'all' && (
-                        <span className={styles.filterChip}>
-                          {cardTypeLabels[cardType] ?? cardType}
+                        {DIMENSION_TABS.map(({ id, label }) => (
                           <button
+                            key={id}
                             type="button"
-                            onClick={removeCardTypeFilter}
-                            className={styles.filterChipRemove}
-                            aria-label={`Remove ${cardTypeLabels[cardType] ?? cardType} filter`}
+                            role="tab"
+                            aria-selected={activeDimension === id}
+                            className={`${styles.dimensionTab} ${activeDimension === id ? styles.dimensionTabActive : ''}`}
+                            onClick={() => setActiveDimension(id)}
                           >
-                            ×
+                            {label}
                           </button>
-                        </span>
-                      )}
-                      {selectedFilterTagIds.map(tagId => {
-                        const tagName = tags?.find(t => t.docId === tagId)?.name ?? tagId;
-                        return (
-                          <span key={tagId} className={styles.filterChip}>
-                            {tagName}
-                            <button
-                              type="button"
-                              onClick={() => removeTagFilter(tagId)}
-                              className={styles.filterChipRemove}
-                              aria-label={`Remove ${tagName} filter`}
-                            >
-                              ×
-                            </button>
-                          </span>
-                        );
-                      })}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+
+                    <div className={styles.searchBlock}>
+                      <label htmlFor="tag-search-input" className={styles.searchTagsLabel}>
+                        Search tags
+                      </label>
+                      <input
+                        id="tag-search-input"
+                        type="search"
+                        placeholder="Type to filter…"
+                        value={tagSearch}
+                        onChange={e => setTagSearch(e.target.value)}
+                        className={styles.compactControl}
+                        aria-label="Search tags in tree"
+                      />
+                    </div>
+
+                    {hasActiveFilters && (
+                      <div className={styles.activeFilters}>
+                        <span className={styles.activeFiltersLabel}>Active</span>
+                        <div className={styles.activeFiltersChips}>
+                          {cardType !== 'all' && (
+                            <span className={styles.filterChip}>
+                              {cardTypeLabels[cardType] ?? cardType}
+                              <button
+                                type="button"
+                                onClick={removeCardTypeFilter}
+                                className={styles.filterChipRemove}
+                                aria-label={`Remove ${cardTypeLabels[cardType] ?? cardType} filter`}
+                              >
+                                ×
+                              </button>
+                            </span>
+                          )}
+                          {selectedFilterTagIds.map(tagId => {
+                            const tagName = tags?.find(t => t.docId === tagId)?.name ?? tagId;
+                            return (
+                              <span key={tagId} className={styles.filterChip}>
+                                {tagName}
+                                <button
+                                  type="button"
+                                  onClick={() => removeTagFilter(tagId)}
+                                  className={styles.filterChipRemove}
+                                  aria-label={`Remove ${tagName} filter`}
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : null}
               </div>
 
               <div className={styles.sidebarSection}>
@@ -320,20 +362,24 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
               </div>
 
               <nav className={styles.navigation}>
-                <TagTree
-                  tree={filteredTagTree}
-                  selectedTags={selectedFilterTagIds}
-                  onSelectionChange={handleSelectionChange}
-                  loading={tagsLoading}
-                  forceExpandAll={!!tagSearch.trim()}
-                  onSetDefaultExpanded={handleSetDefaultExpanded}
-                  showDefaultExpandControl={isAdmin}
-                  emptyMessage={
-                    tagSearch.trim()
-                      ? 'No tags match your search.'
-                      : `No tags in ${activeDimension === 'all' ? 'any category' : DIMENSION_TABS.find(t => t.id === activeDimension)?.label ?? activeDimension}.`
-                  }
-                />
+                {!showViewTagLibrary || viewTagSidebarTab === 'filter' ? (
+                  <TagTree
+                    tree={filteredTagTree}
+                    selectedTags={selectedFilterTagIds}
+                    onSelectionChange={handleSelectionChange}
+                    loading={tagsLoading}
+                    forceExpandAll={!!tagSearch.trim()}
+                    onSetDefaultExpanded={handleSetDefaultExpanded}
+                    showDefaultExpandControl={isAdmin}
+                    emptyMessage={
+                      tagSearch.trim()
+                        ? 'No tags match your search.'
+                        : `No tags in ${activeDimension === 'all' ? 'any category' : DIMENSION_TABS.find(t => t.id === activeDimension)?.label ?? activeDimension}.`
+                    }
+                  />
+                ) : (
+                  <ViewTagLibrarySidebarPane />
+                )}
               </nav>
             </>
           ) : (

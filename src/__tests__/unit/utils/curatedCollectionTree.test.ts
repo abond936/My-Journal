@@ -2,6 +2,8 @@ import type { Card } from '@/lib/types/card';
 import {
   buildChildrenIdsWithInsertBefore,
   buildRootDocIdListWithInsertBefore,
+  collectCuratedSubtreeIdsFromMaster,
+  listCuratedTopLevelFromMaster,
   normalizeCuratedChildIds,
   nextCuratedRootOrderForAppend,
   wouldAttachChildCreateCuratedCycle,
@@ -67,5 +69,24 @@ describe('nextCuratedRootOrderForAppend', () => {
     ];
     expect(nextCuratedRootOrderForAppend(roots)).toBe(60);
     expect(nextCuratedRootOrderForAppend(roots, 'b')).toBe(20);
+  });
+});
+
+describe('master-parent helpers', () => {
+  const cards: Card[] = [
+    { docId: 'master', childrenIds: ['r2', 'r1'] } as Card,
+    { docId: 'r1', childrenIds: ['c1'] } as Card,
+    { docId: 'r2', childrenIds: [] } as Card,
+    { docId: 'c1', childrenIds: ['g1'] } as Card,
+    { docId: 'g1', childrenIds: [] } as Card,
+    { docId: 'outside', childrenIds: [] } as Card,
+  ];
+
+  it('lists top-level cards in master children order', () => {
+    expect(listCuratedTopLevelFromMaster(cards, 'master').map((c) => c.docId)).toEqual(['r2', 'r1']);
+  });
+
+  it('collects all descendants under master and excludes unrelated cards', () => {
+    expect(Array.from(collectCuratedSubtreeIdsFromMaster(cards, 'master')).sort()).toEqual(['c1', 'g1', 'r1', 'r2']);
   });
 });

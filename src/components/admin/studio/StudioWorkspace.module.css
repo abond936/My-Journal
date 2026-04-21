@@ -1,34 +1,22 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: 0;
   min-height: calc(100dvh - var(--admin-tabs-height, 48px) - var(--spacing-lg));
   max-width: 100%;
-}
-
-.intro {
-  margin: 0;
-  font-size: var(--font-size-sm);
-  color: var(--text2-color);
-  max-width: 56rem;
-}
-
-.intro a {
-  color: var(--color3);
+  box-sizing: border-box;
+  padding: 0 var(--spacing-md) var(--spacing-md);
 }
 
 .grid {
-  display: grid;
-  gap: 0;
-  align-items: stretch;
-  align-content: stretch;
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
-  /* Single row fills remaining page height so the center column (collections) can use full length. */
-  grid-template-rows: minmax(0, 1fr);
+  gap: 0;
 }
 
-.grid > *:not(.resizeHandle) {
+.grid > * {
   min-width: 0;
 }
 
@@ -68,6 +56,19 @@
   overflow: hidden;
 }
 
+/* Tags tab inside Collections first column: no outer chrome, fill tab panel */
+.tagPaneEmbeddedColumn {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  overflow: hidden;
+}
+
 .tagPaneHeader {
   margin-bottom: 0 !important;
   flex-shrink: 0;
@@ -77,16 +78,6 @@
   margin: 0 0 var(--spacing-xs);
   font-size: var(--font-size-lg);
   color: var(--text1-color);
-}
-
-.tagPaneIntro {
-  margin: 0;
-  font-size: var(--font-size-sm);
-  color: var(--text2-color);
-}
-
-.tagPaneIntro a {
-  color: var(--color3);
 }
 
 .tagPaneBody {
@@ -105,6 +96,7 @@
 .collectionsHost {
   display: flex;
   flex-direction: column;
+  flex: 1;
   min-height: 0;
   height: 100%;
   max-height: 100%;
@@ -114,45 +106,194 @@
   overflow: hidden;
 }
 
-/* Embedded Collections right column: relationship context + same Media bank as full Collections */
+/* Fourth grid column (wide): reserved for in-shell Card edit. */
+.cardEditColumn {
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cardEditStacked {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cardEditPlaceholder {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-md);
+  background: var(--layout-background2-color);
+  padding: var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+  overflow: auto;
+}
+
+.cardEditPlaceholderIntro {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.cardEditPlaceholderCode {
+  font-size: var(--font-size-xs);
+  padding: 1px 4px;
+  border-radius: var(--border-radius-sm);
+  background: var(--layout-background1-color);
+  border: var(--border-width-thin) solid var(--border1-color);
+}
+
+.cardEditPlaceholderMeta {
+  margin: 0;
+  margin-top: auto;
+  padding-top: var(--spacing-sm);
+  border-top: var(--border-width-thin) solid var(--border1-color);
+  color: var(--text2-color);
+}
+
+.cardEditPlaceholderError {
+  margin: 0;
+  color: var(--state-error-text-color);
+}
+
+.studioCardEditChromeLink {
+  color: var(--color3);
+  font-size: var(--font-size-sm);
+  text-decoration: none;
+}
+
+.studioCardEditChromeLink:hover {
+  text-decoration: underline;
+}
+
+.studioCardEditHost {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-md) var(--spacing-md) 0;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-md);
+  background: var(--layout-background2-color);
+  overflow: hidden;
+}
+
+/* Matches Collections `panelStudioColumnTitle` (Cards / Organization / Media). */
+.studioComposeTitle {
+  flex-shrink: 0;
+  margin: 0 0 var(--spacing-sm);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  color: var(--text1-color);
+}
+
+.studioCardEditToolbar {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--spacing-xs) 0 0;
+}
+
+.studioCardEditScroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Compact CardForm inside narrow Studio column */
+.studioCardEditScroll :global(form#card-form) {
+  padding: var(--spacing-sm);
+  gap: var(--spacing-md);
+  max-width: none;
+  margin: 0;
+}
+
+/* Embedded Collections right column: Media bank + in-shell Card edit (shared @dnd-kit surface) */
 .studioRightColumn {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
   min-height: 0;
   flex: 1;
   height: 100%;
   max-height: 100%;
 }
 
-.studioRelationshipColumn {
-  flex: 1 1 42%;
+.studioActionStrip {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: 0 var(--spacing-xs);
+}
+
+.studioMediaCardRow {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  flex: 1;
+  min-height: 0;
+  align-items: stretch;
+  align-content: stretch;
+}
+
+/* Media + resize handle + fixed-width card edit (wide Studio only) */
+.studioMediaCardRowResizable {
+  flex-wrap: nowrap;
+  gap: 0;
+  overflow-x: hidden;
+}
+
+.studioMediaCardRowResizable .studioMediaBankColumn {
+  flex: 1 1 auto;
+  min-width: 200px;
+}
+
+.cardEditColumnResizeHandle {
+  width: 8px;
+  min-height: 120px;
+  align-self: stretch;
+  flex-shrink: 0;
+  z-index: 40;
+  position: relative;
+}
+
+.studioCardEditInBankColumn {
+  flex: 0 1 380px;
+  min-width: min(100%, 280px);
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-}
-
-.studioRelationshipColumn > :global(section) {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
 }
 
 .studioMediaBankColumn {
-  flex: 1 1 58%;
+  flex: 1 1 220px;
+  min-width: min(100%, 200px);
   min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-.studioMediaBankColumn > :global(section) {
+.studioMediaBankColumn > :global(section),
+.studioMediaBankFill {
   flex: 1;
   min-height: 0;
   max-height: none;
   display: flex;
   flex-direction: column;
+}
+
+.studioMediaBankFill {
+  overflow: hidden;
 }
 
 .metaPane {
@@ -328,6 +469,12 @@
   display: flex;
   gap: var(--spacing-sm);
   align-items: center;
+}
+
+.studioFormSectionTitle {
+  margin: 0 0 var(--spacing-xs);
+  font-size: var(--font-size-md);
+  color: var(--text1-color);
 }
 
 .sourceHeading {

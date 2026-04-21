@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useCallback, useState } from 'react';
+import { useDraggable, useDroppable, useDndContext } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import JournalImage from '@/components/common/JournalImage';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/lib/types/card';
@@ -19,6 +21,7 @@ import { DIMENSION_LABEL, DIMENSION_ORDER } from '@/lib/utils/tagDisplay';
 import { buildResolvedTagDimensionMap } from '@/lib/utils/tagDimensionResolve';
 
 const COLUMN_WIDTHS_KEY = 'cardAdminColumnWidths';
+const STUDIO_CURATED_DRAG_COL = 36;
 const DEFAULT_COLUMN_WIDTHS = {
   checkbox: 40,
   cover: 90,
@@ -30,7 +33,7 @@ const DEFAULT_COLUMN_WIDTHS = {
   gallery: 80,
   children: 80,
   dimensionTags: 600,
-  actions: 280
+  actions: 280,
 };
 
 function loadColumnWidths(): typeof DEFAULT_COLUMN_WIDTHS {
@@ -59,6 +62,333 @@ interface CardAdminListProps {
   onSaveScrollPosition: (cardId: string) => void;
   onUpdateCard: (cardId: string, updateData: Partial<Card>) => Promise<void>;
   onDeleteCard: (cardId: string) => Promise<void>;
+  /** Curated-tree Studio bank: drag handle registers `card:*` for tree / unparent drops. */
+  studioCuratedTreeDrag?: boolean;
+  /**
+   * Registers `unparented-row:${docId}` on each row (same shell targets as Collections title list)
+   * so collision detection prefers row-sized hit targets when detaching onto the bank.
+   */
+  studioCuratedTreeUnparentedRowTarget?: boolean;
+  /** Hide the header “select all” checkbox (embedded single-select bank). */
+  hideBulkSelectHeader?: boolean;
+  /** Disable row drags and dim destructive actions while parent is saving. */
+  interactionDisabled?: boolean;
+}
+
+type CardAdminListPlainRowProps = {
+  card: Card;
+  interactionDisabled: boolean;
+  columnWidths: typeof DEFAULT_COLUMN_WIDTHS;
+  actionsColumnWidth: number;
+  selectedCardIds: Set<string>;
+  allTags: Tag[];
+  tagMap: Map<string, string>;
+  onSelectCard: (cardId: string) => void;
+  onUpdateCard: (cardId: string, updateData: Partial<Card>) => Promise<void>;
+  handleEditClick: (cardId: string) => void;
+  getMediaSuggestionTags: (card: Card, dimension: 'who' | 'what' | 'when' | 'where') => string[];
+  applyDimensionSuggestions: (card: Card, dimension: 'who' | 'what' | 'when' | 'where') => Promise<void>;
+  openTagsEditor: (card: Card) => void;
+  savingTags: boolean;
+  confirmAndDeleteCard: (card: Card) => Promise<void>;
+};
+
+type CardAdminListStudioRowProps = CardAdminListPlainRowProps & {
+  studioCuratedTreeDrag: boolean;
+  studioCuratedTreeUnparentedRowTarget: boolean;
+};
+
+/** Card admin `/admin/card-admin` table rows — must not use dnd-kit (no `DndContext` on that page). */
+function CardAdminListPlainRow({
+  card,
+  interactionDisabled,
+  columnWidths,
+  actionsColumnWidth,
+  selectedCardIds,
+  allTags,
+  tagMap,
+  onSelectCard,
+  onUpdateCard,
+  handleEditClick,
+  getMediaSuggestionTags,
+  applyDimensionSuggestions,
+  openTagsEditor,
+  savingTags,
+  confirmAndDeleteCard,
+}: CardAdminListPlainRowProps) {
+  return (
+    <tr id={`card-${card.docId}`} className={selectedCardIds.has(card.docId) ? styles.selectedRow : ''}>
+      <td style={{ width: columnWidths.checkbox }}>
+        <input
+          type="checkbox"
+          checked={selectedCardIds.has(card.docId)}
+          onChange={() => onSelectCard(card.docId)}
+          disabled={interactionDisabled}
+        />
+      </td>
+      <td className={styles.coverImageCell} style={{ width: columnWidths.cover }}>
+        {card.coverImage ? (
+          <JournalImage
+            src={getDisplayUrl(card.coverImage)}
+            alt="Cover"
+            className={styles.coverThumbnail}
+            width={256}
+            height={256}
+            sizes={`${columnWidths.cover}px`}
+          />
+        ) : (
+          <span className={styles.noCover}>—</span>
+        )}
+      </td>
+      <td style={{ width: columnWidths.title }}>
+        <EditableTitleCell card={card} onUpdate={onUpdateCard} />
+      </td>
+      <td style={{ width: columnWidths.type }}>
+        <EditableTypeCell card={card} onUpdate={onUpdateCard} />
+      </td>
+      <td style={{ width: columnWidths.status }}>
+        <EditableStatusCell card={card} onUpdate={onUpdateCard} />
+      </td>
+      <td style={{ width: columnWidths.display }}>
+        <EditableDisplayModeCell card={card} onUpdate={onUpdateCard} />
+      </td>
+      <td style={{ width: columnWidths.content }}>{card.content ? 'Y' : 'N'}</td>
+      <td style={{ width: columnWidths.gallery }}>{card.galleryMedia?.length || 0}</td>
+      <td style={{ width: columnWidths.children }}>{card.childrenIds?.length || 0}</td>
+      <td className={styles.tableTagCommandCell} style={{ width: columnWidths.dimensionTags }}>
+        <CardDimensionalTagCommandBar
+          card={card}
+          allTags={allTags}
+          variant="compact"
+          onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
+        />
+        <div className={styles.tableMediaDimGrid}>
+          {DIMENSION_ORDER.map((dimension) => {
+            const suggestionIds = getMediaSuggestionTags(card, dimension);
+            const hasSuggestions = suggestionIds.length > 0;
+            return (
+              <div key={dimension} className={styles.tableMediaDimCell}>
+                <div className={styles.tableMediaDimLabel}>{DIMENSION_LABEL[dimension]}</div>
+                <div className={styles.tagSuggestions}>
+                  {hasSuggestions ? (
+                    suggestionIds.map((id) => (
+                      <span key={id} className={styles.suggestionTag}>
+                        {tagMap.get(id) ?? id}
+                      </span>
+                    ))
+                  ) : (
+                    <span className={styles.noSuggestion}>None</span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className={styles.suggestApplyButton}
+                  disabled={!hasSuggestions}
+                  onClick={() => void applyDimensionSuggestions(card, dimension)}
+                >
+                  Apply {dimension}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </td>
+      <td style={{ width: actionsColumnWidth, minWidth: actionsColumnWidth }}>
+        <button type="button" onClick={() => handleEditClick(card.docId)} className={styles.actionButton}>
+          Edit
+        </button>
+        <button
+          type="button"
+          onClick={() => void openTagsEditor(card)}
+          className={styles.actionButton}
+          disabled={savingTags}
+        >
+          Tags
+        </button>
+        <button
+          type="button"
+          onClick={() => void confirmAndDeleteCard(card)}
+          className={`${styles.actionButton} ${styles.deleteButton}`}
+        >
+          Delete
+        </button>
+      </td>
+    </tr>
+  );
+}
+
+/** Studio Collections attach bank only — requires parent `DndContext`. */
+function CardAdminListStudioRow({
+  card,
+  studioCuratedTreeDrag,
+  studioCuratedTreeUnparentedRowTarget,
+  interactionDisabled,
+  columnWidths,
+  actionsColumnWidth,
+  selectedCardIds,
+  allTags,
+  tagMap,
+  onSelectCard,
+  onUpdateCard,
+  handleEditClick,
+  getMediaSuggestionTags,
+  applyDimensionSuggestions,
+  openTagsEditor,
+  savingTags,
+  confirmAndDeleteCard,
+}: CardAdminListStudioRowProps) {
+  const { active } = useDndContext();
+  const activeStr = active?.id != null ? String(active.id) : '';
+  const reparentFromCard = activeStr.startsWith('card:');
+
+  const rowDnd = useDraggable({
+    id: `card:${card.docId}`,
+    disabled: interactionDisabled || !studioCuratedTreeDrag,
+    data: { cardId: card.docId },
+  });
+
+  const rowShellDrop = useDroppable({
+    id: `unparented-row:${card.docId}`,
+    disabled: interactionDisabled || !studioCuratedTreeUnparentedRowTarget || !reparentFromCard,
+  });
+
+  const setRowRef = useCallback(
+    (node: HTMLTableRowElement | null) => {
+      rowDnd.setNodeRef(node);
+      rowShellDrop.setNodeRef(node);
+    },
+    [rowDnd, rowShellDrop]
+  );
+
+  const needsRowRef = studioCuratedTreeDrag || studioCuratedTreeUnparentedRowTarget;
+
+  const rowStyle: React.CSSProperties | undefined =
+    studioCuratedTreeDrag && (rowDnd.isDragging || rowDnd.transform)
+      ? {
+          opacity: rowDnd.isDragging ? 0.55 : 1,
+          transform: rowDnd.transform ? CSS.Translate.toString(rowDnd.transform) : undefined,
+        }
+      : undefined;
+
+  return (
+    <tr
+      ref={needsRowRef ? setRowRef : undefined}
+      style={rowStyle}
+      id={`card-${card.docId}`}
+      className={selectedCardIds.has(card.docId) ? styles.selectedRow : ''}
+    >
+      {studioCuratedTreeDrag ? (
+        <td style={{ width: STUDIO_CURATED_DRAG_COL, padding: '4px', verticalAlign: 'middle' }}>
+          <button
+            type="button"
+            ref={rowDnd.setActivatorNodeRef}
+            className={styles.studioCuratedDragHandle}
+            {...rowDnd.listeners}
+            {...rowDnd.attributes}
+            disabled={interactionDisabled}
+            aria-label="Drag into curated tree"
+          >
+            ⋮⋮
+          </button>
+        </td>
+      ) : null}
+      <td style={{ width: columnWidths.checkbox }}>
+        <input
+          type="checkbox"
+          checked={selectedCardIds.has(card.docId)}
+          onChange={() => onSelectCard(card.docId)}
+          disabled={interactionDisabled}
+        />
+      </td>
+      <td className={styles.coverImageCell} style={{ width: columnWidths.cover }}>
+        {card.coverImage ? (
+          <JournalImage
+            src={getDisplayUrl(card.coverImage)}
+            alt="Cover"
+            className={styles.coverThumbnail}
+            width={256}
+            height={256}
+            sizes={`${columnWidths.cover}px`}
+          />
+        ) : (
+          <span className={styles.noCover}>—</span>
+        )}
+      </td>
+      <td style={{ width: columnWidths.title }}>
+        <EditableTitleCell card={card} onUpdate={onUpdateCard} />
+      </td>
+      <td style={{ width: columnWidths.type }}>
+        <EditableTypeCell card={card} onUpdate={onUpdateCard} />
+      </td>
+      <td style={{ width: columnWidths.status }}>
+        <EditableStatusCell card={card} onUpdate={onUpdateCard} />
+      </td>
+      <td style={{ width: columnWidths.display }}>
+        <EditableDisplayModeCell card={card} onUpdate={onUpdateCard} />
+      </td>
+      <td style={{ width: columnWidths.content }}>{card.content ? 'Y' : 'N'}</td>
+      <td style={{ width: columnWidths.gallery }}>{card.galleryMedia?.length || 0}</td>
+      <td style={{ width: columnWidths.children }}>{card.childrenIds?.length || 0}</td>
+      <td className={styles.tableTagCommandCell} style={{ width: columnWidths.dimensionTags }}>
+        <CardDimensionalTagCommandBar
+          card={card}
+          allTags={allTags}
+          variant="compact"
+          onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
+        />
+        <div className={styles.tableMediaDimGrid}>
+          {DIMENSION_ORDER.map((dimension) => {
+            const suggestionIds = getMediaSuggestionTags(card, dimension);
+            const hasSuggestions = suggestionIds.length > 0;
+            return (
+              <div key={dimension} className={styles.tableMediaDimCell}>
+                <div className={styles.tableMediaDimLabel}>{DIMENSION_LABEL[dimension]}</div>
+                <div className={styles.tagSuggestions}>
+                  {hasSuggestions ? (
+                    suggestionIds.map((id) => (
+                      <span key={id} className={styles.suggestionTag}>
+                        {tagMap.get(id) ?? id}
+                      </span>
+                    ))
+                  ) : (
+                    <span className={styles.noSuggestion}>None</span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className={styles.suggestApplyButton}
+                  disabled={!hasSuggestions}
+                  onClick={() => void applyDimensionSuggestions(card, dimension)}
+                >
+                  Apply {dimension}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </td>
+      <td style={{ width: actionsColumnWidth, minWidth: actionsColumnWidth }}>
+        <button type="button" onClick={() => handleEditClick(card.docId)} className={styles.actionButton}>
+          Edit
+        </button>
+        <button
+          type="button"
+          onClick={() => void openTagsEditor(card)}
+          className={styles.actionButton}
+          disabled={savingTags}
+        >
+          Tags
+        </button>
+        <button
+          type="button"
+          onClick={() => void confirmAndDeleteCard(card)}
+          className={`${styles.actionButton} ${styles.deleteButton}`}
+        >
+          Delete
+        </button>
+      </td>
+    </tr>
+  );
 }
 
 export default function CardAdminList({
@@ -70,20 +400,25 @@ export default function CardAdminList({
   onSaveScrollPosition,
   onUpdateCard,
   onDeleteCard,
+  studioCuratedTreeDrag = false,
+  studioCuratedTreeUnparentedRowTarget = false,
+  hideBulkSelectHeader = false,
+  interactionDisabled = false,
 }: CardAdminListProps) {
   const router = useRouter();
   const isAllSelected = cards.length > 0 && selectedCardIds.size === cards.length;
   const [tagsEditCard, setTagsEditCard] = useState<Card | null>(null);
   const [savingTags, setSavingTags] = useState(false);
 
-  // Map of tagId -> tag name for quick lookup
-  const tagMap = React.useMemo(() => new Map(allTags.map(t => [t.docId!, t.name])), [allTags]);
+  const tagMap = React.useMemo(
+    () => new Map(allTags.map((t) => [t.docId!, t.name ?? ''])),
+    [allTags]
+  );
 
-  // Column width management
   const [columnWidths, setColumnWidths] = useState(loadColumnWidths);
 
   const handleColumnResize = useCallback((columnId: keyof typeof DEFAULT_COLUMN_WIDTHS, width: number) => {
-    setColumnWidths(prev => {
+    setColumnWidths((prev) => {
       const updated = { ...prev, [columnId]: width };
       localStorage.setItem(COLUMN_WIDTHS_KEY, JSON.stringify(updated));
       return updated;
@@ -102,34 +437,28 @@ export default function CardAdminList({
     return allTags.filter((tag) => selected.has(tag.docId));
   }, [allTags, tagsEditCard]);
 
-  const openTagsEditor = useCallback(
-    async (card: Card) => {
-      setSavingTags(true);
-      try {
-        const response = await fetch(`/api/cards/${card.docId}`, { cache: 'no-store' });
-        if (!response.ok) {
-          setTagsEditCard(card);
-          return;
-        }
-        const latest = (await response.json()) as Card;
-        setTagsEditCard({
-          ...card,
-          ...latest,
-          docId: card.docId,
-        });
-      } catch {
+  const openTagsEditor = useCallback(async (card: Card) => {
+    setSavingTags(true);
+    try {
+      const response = await fetch(`/api/cards/${card.docId}`, { cache: 'no-store' });
+      if (!response.ok) {
         setTagsEditCard(card);
-      } finally {
-        setSavingTags(false);
+        return;
       }
-    },
-    []
-  );
+      const latest = (await response.json()) as Card;
+      setTagsEditCard({
+        ...card,
+        ...latest,
+        docId: card.docId,
+      });
+    } catch {
+      setTagsEditCard(card);
+    } finally {
+      setSavingTags(false);
+    }
+  }, []);
 
-  const resolvedTagDimensionById = React.useMemo(
-    () => buildResolvedTagDimensionMap(allTags),
-    [allTags]
-  );
+  const resolvedTagDimensionById = React.useMemo(() => buildResolvedTagDimensionMap(allTags), [allTags]);
 
   const getDirectTagsByDimension = useCallback(
     (card: Card, dimension: 'who' | 'what' | 'when' | 'where') =>
@@ -162,13 +491,75 @@ export default function CardAdminList({
     [getMediaSuggestionTags, onUpdateCard]
   );
 
+  const confirmAndDeleteCard = useCallback(
+    async (card: Card) => {
+      onSaveScrollPosition(card.docId);
+
+      let parentCards: Card[] = [];
+      let verificationFailed = false;
+      try {
+        const params = new URLSearchParams({
+          childrenIds_contains: card.docId,
+          status: 'all',
+          limit: '200',
+        });
+        const response = await fetch(`/api/cards?${params.toString()}`);
+        if (!response.ok) {
+          verificationFailed = true;
+        } else {
+          const parentCardsResult = (await response.json()) as { items?: Card[] };
+          parentCards = Array.isArray(parentCardsResult.items) ? parentCardsResult.items : [];
+        }
+      } catch {
+        verificationFailed = true;
+      }
+
+      let confirmMessage = 'Are you sure you want to delete this card? This action cannot be undone.';
+      if (parentCards.length > 0) {
+        const parentTitles = parentCards.map((p: Card) => p.title || '(Untitled)').join(', ');
+        confirmMessage = `WARNING: This card is a child of the following cards: ${parentTitles}.\n\nDeleting it will remove it from these collections. Are you sure you want to proceed?`;
+      } else if (verificationFailed) {
+        confirmMessage =
+          'Could not verify parent cards right now.\n\nYou can still delete; parent cleanup is handled server-side.\n\nProceed with delete?';
+      }
+
+      if (!window.confirm(confirmMessage)) return;
+
+      try {
+        await onDeleteCard(card.docId);
+      } catch (err) {
+        console.error('Deletion error:', err);
+        alert(err instanceof Error ? err.message : 'An unknown error occurred.');
+      }
+    },
+    [onDeleteCard, onSaveScrollPosition]
+  );
+
+  const needsCuratedDndKit = studioCuratedTreeDrag || studioCuratedTreeUnparentedRowTarget;
+
   return (
     <div className={styles.tableContainer}>
       <table className={styles.entriesTable}>
         <thead>
           <tr>
+            {studioCuratedTreeDrag ? (
+              <th
+                style={{
+                  width: STUDIO_CURATED_DRAG_COL,
+                  textAlign: 'center',
+                  fontSize: 'var(--font-size-xs)',
+                  color: 'var(--text2-color)',
+                }}
+              >
+                Drag
+              </th>
+            ) : null}
             <ResizableHeader width={columnWidths.checkbox} onResize={(w) => handleColumnResize('checkbox', w)}>
-              <input type="checkbox" checked={isAllSelected} onChange={onSelectAll} />
+              {hideBulkSelectHeader ? (
+                <span aria-hidden="true" />
+              ) : (
+                <input type="checkbox" checked={isAllSelected} onChange={onSelectAll} />
+              )}
             </ResizableHeader>
             <ResizableHeader
               width={columnWidths.cover}
@@ -211,145 +602,49 @@ export default function CardAdminList({
           </tr>
         </thead>
         <tbody>
-          {cards.map(card => (
-            <tr key={card.docId} id={`card-${card.docId}`} className={selectedCardIds.has(card.docId) ? styles.selectedRow : ''}>
-              <td style={{ width: columnWidths.checkbox }}>
-                <input
-                  type="checkbox"
-                  checked={selectedCardIds.has(card.docId)}
-                  onChange={() => onSelectCard(card.docId)}
-                />
-              </td>
-              <td className={styles.coverImageCell} style={{ width: columnWidths.cover }}>
-                {card.coverImage ? (
-                  <JournalImage 
-                    src={getDisplayUrl(card.coverImage)} 
-                    alt="Cover"
-                    className={styles.coverThumbnail}
-                    width={256}
-                    height={256}
-                    sizes={`${columnWidths.cover}px`}
-                  />
-                ) : (
-                  <span className={styles.noCover}>—</span>
-                )}
-              </td>
-              <td style={{ width: columnWidths.title }}>
-                <EditableTitleCell card={card} onUpdate={onUpdateCard} />
-              </td>
-              <td style={{ width: columnWidths.type }}>
-                <EditableTypeCell card={card} onUpdate={onUpdateCard} />
-              </td>
-              <td style={{ width: columnWidths.status }}>
-                <EditableStatusCell card={card} onUpdate={onUpdateCard} />
-              </td>
-              <td style={{ width: columnWidths.display }}>
-                <EditableDisplayModeCell card={card} onUpdate={onUpdateCard} />
-              </td>
-              <td style={{ width: columnWidths.content }}>{card.content ? 'Y' : 'N'}</td>
-              <td style={{ width: columnWidths.gallery }}>{card.galleryMedia?.length || 0}</td>
-              <td style={{ width: columnWidths.children }}>{card.childrenIds?.length || 0}</td>
-              <td className={styles.tableTagCommandCell} style={{ width: columnWidths.dimensionTags }}>
-                <CardDimensionalTagCommandBar
-                  card={card}
-                  allTags={allTags}
-                  variant="compact"
-                  onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
-                />
-                <div className={styles.tableMediaDimGrid}>
-                  {DIMENSION_ORDER.map((dimension) => {
-                    const suggestionIds = getMediaSuggestionTags(card, dimension);
-                    const hasSuggestions = suggestionIds.length > 0;
-                    return (
-                      <div key={dimension} className={styles.tableMediaDimCell}>
-                        <div className={styles.tableMediaDimLabel}>{DIMENSION_LABEL[dimension]}</div>
-                        <div className={styles.tagSuggestions}>
-                          {hasSuggestions ? (
-                            suggestionIds.map((id) => (
-                              <span key={id} className={styles.suggestionTag}>
-                                {tagMap.get(id) ?? id}
-                              </span>
-                            ))
-                          ) : (
-                            <span className={styles.noSuggestion}>None</span>
-                          )}
-                        </div>
-                        <button
-                          type="button"
-                          className={styles.suggestApplyButton}
-                          disabled={!hasSuggestions}
-                          onClick={() => void applyDimensionSuggestions(card, dimension)}
-                        >
-                          Apply {dimension}
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </td>
-              <td style={{ width: actionsColumnWidth, minWidth: actionsColumnWidth }}>
-                <button
-                  onClick={() => handleEditClick(card.docId)}
-                  className={styles.actionButton}
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => void openTagsEditor(card)}
-                  className={styles.actionButton}
-                  disabled={savingTags}
-                >
-                  Tags
-                </button>
-                <button
-                  onClick={async () => {
-                    // Save scroll position before potential deletion
-                    onSaveScrollPosition(card.docId);
-
-                    let parentCards: Card[] = [];
-                    let verificationFailed = false;
-                    try {
-                      const params = new URLSearchParams({
-                        childrenIds_contains: card.docId,
-                        status: 'all',
-                        limit: '200',
-                      });
-                      const response = await fetch(`/api/cards?${params.toString()}`);
-                      if (!response.ok) {
-                        verificationFailed = true;
-                      } else {
-                        const parentCardsResult = (await response.json()) as { items?: Card[] };
-                        parentCards = Array.isArray(parentCardsResult.items) ? parentCardsResult.items : [];
-                      }
-                    } catch {
-                      verificationFailed = true;
-                    }
-
-                    let confirmMessage = 'Are you sure you want to delete this card? This action cannot be undone.';
-                    if (parentCards.length > 0) {
-                      const parentTitles = parentCards.map((p: Card) => p.title || '(Untitled)').join(', ');
-                      confirmMessage = `WARNING: This card is a child of the following cards: ${parentTitles}.\n\nDeleting it will remove it from these collections. Are you sure you want to proceed?`;
-                    } else if (verificationFailed) {
-                      confirmMessage =
-                        'Could not verify parent cards right now.\n\nYou can still delete; parent cleanup is handled server-side.\n\nProceed with delete?';
-                    }
-
-                    if (!window.confirm(confirmMessage)) return;
-
-                    try {
-                      await onDeleteCard(card.docId);
-                    } catch (err) {
-                      console.error('Deletion error:', err);
-                      alert(err instanceof Error ? err.message : 'An unknown error occurred.');
-                    }
-                  }}
-                  className={`${styles.actionButton} ${styles.deleteButton}`}
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
+          {cards.map((card) =>
+            needsCuratedDndKit ? (
+              <CardAdminListStudioRow
+                key={card.docId}
+                card={card}
+                studioCuratedTreeDrag={studioCuratedTreeDrag}
+                studioCuratedTreeUnparentedRowTarget={studioCuratedTreeUnparentedRowTarget}
+                interactionDisabled={interactionDisabled}
+                columnWidths={columnWidths}
+                actionsColumnWidth={actionsColumnWidth}
+                selectedCardIds={selectedCardIds}
+                allTags={allTags}
+                tagMap={tagMap}
+                onSelectCard={onSelectCard}
+                onUpdateCard={onUpdateCard}
+                handleEditClick={handleEditClick}
+                getMediaSuggestionTags={getMediaSuggestionTags}
+                applyDimensionSuggestions={applyDimensionSuggestions}
+                openTagsEditor={openTagsEditor}
+                savingTags={savingTags}
+                confirmAndDeleteCard={confirmAndDeleteCard}
+              />
+            ) : (
+              <CardAdminListPlainRow
+                key={card.docId}
+                card={card}
+                interactionDisabled={interactionDisabled}
+                columnWidths={columnWidths}
+                actionsColumnWidth={actionsColumnWidth}
+                selectedCardIds={selectedCardIds}
+                allTags={allTags}
+                tagMap={tagMap}
+                onSelectCard={onSelectCard}
+                onUpdateCard={onUpdateCard}
+                handleEditClick={handleEditClick}
+                getMediaSuggestionTags={getMediaSuggestionTags}
+                applyDimensionSuggestions={applyDimensionSuggestions}
+                openTagsEditor={openTagsEditor}
+                savingTags={savingTags}
+                confirmAndDeleteCard={confirmAndDeleteCard}
+              />
+            )
+          )}
         </tbody>
       </table>
       {tagsEditCard ? (
@@ -382,4 +677,4 @@ export default function CardAdminList({
       ) : null}
     </div>
   );
-} 
+}

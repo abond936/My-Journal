@@ -9,3 +9,14 @@ export function isCuratedTreeDndEnabled(): boolean {
   if (v === '0' || v === 'false' || v === 'no' || v === 'off') return false;
   return v === '1' || v === 'true' || v === 'yes' || v === 'on';
 }
+
+/**
+ * Optional curated tree master card id.
+ * When set, top-level curated items are interpreted as direct children of this card.
+ */
+export function getCuratedTreeMasterId(): string | null {
+  const raw = process.env.NEXT_PUBLIC_CURATED_TREE_MASTER_ID;
+  if (typeof raw !== 'string') return null;
+  const id = raw.trim();
+  return id.length > 0 ? id : null;
+}

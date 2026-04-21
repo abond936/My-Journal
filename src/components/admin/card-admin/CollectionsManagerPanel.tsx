@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   DndContext,
   DragEndEvent,
+  DragOverEvent,
   DragStartEvent,
   DragOverlay,
   MeasuringStrategy,
@@ -11,7 +12,6 @@ import {
   useDndContext,
   useDroppable,
 } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import { Card } from '@/lib/types/card';
 import { usePersistentTreeExpansion } from '@/lib/hooks/usePersistentTreeExpansion';
 import { useTag } from '@/components/providers/TagProvider';
@@ -27,13 +27,20 @@ import {
   buildChildrenIdsWithInsertBefore,
   buildRootDocIdListWithInsertBefore,
   compareCuratedRootCards,
+  collectCuratedSubtreeIdsFromMaster,
+  listCuratedTopLevelFromMaster,
   nextCuratedRootOrderForAppend,
   normalizeCuratedChildIds,
+  resolveCuratedDropIntent,
   wouldAttachChildCreateCuratedCycle,
 } from '@/lib/utils/curatedCollectionTree';
+import {
+  listCuratedTreeAttachCandidates,
+  mergeCardCatalogs,
+} from '@/lib/utils/curatedTreeAttachCandidates';
 import { fetchAdminCardSnapshot } from '@/lib/utils/fetchAdminCardSnapshot';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
-import { isCuratedTreeDndEnabled } from '@/lib/config/curatedTreeDnd';
+import { getCuratedTreeMasterId, isCuratedTreeDndEnabled } from '@/lib/config/curatedTreeDnd';
 import { useDefaultDndSensors } from '@/lib/hooks/useDefaultDndSensors';
 import {
   optimisticAttachChildAsLast,
@@ -77,14 +84,14 @@ function StaticUnparentCard({ className, children, disabled, onClick }: Omit<Dra
 }
 
 function DraggableCard({ card, className, children, disabled, onClick }: DraggableCardProps) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `card:${card.docId}`,
     disabled,
     data: { cardId: card.docId },
   });
 
   const style = {
-    transform: CSS.Translate.toString(transform),
+    transform: undefined as string | undefined,
     opacity: isDragging ? 0 : 1,
     cursor: disabled ? 'not-allowed' : 'grab',
   };
@@ -108,9 +115,29 @@ function UnparentDropZoneInteractive({ className, children }: Omit<TreeShellZone
   const reparentFromCard = activeStr.startsWith('card:');
   const highlightId = useCuratedTreeDropHighlight();
   const { setNodeRef } = useDroppable({ id: 'unparented', disabled: !reparentFromCard });
-  const activeDrop = highlightId === 'unparented';
+  const activeDrop = highlightId === 'unparented' || (highlightId?.startsWith('unparented-row:') ?? false);
   return (
     <div ref={setNodeRef} className={`${className} ${activeDrop ? styles.dropTargetActive : ''}`}>
+      {children}
+    </div>
+  );
+}
+
+function UnparentRowDropZone({
+  rowId,
+  className,
+  children,
+}: {
+  rowId: string;
+  className: string;
+  children: React.ReactNode;
+}) {
+  const { active } = useDndContext();
+  const activeStr = active?.id != null ? String(active.id) : '';
+  const reparentFromCard = activeStr.startsWith('card:');
+  const { setNodeRef } = useDroppable({ id: `unparented-row:${rowId}`, disabled: !reparentFromCard });
+  return (
+    <div ref={setNodeRef} className={className}>
       {children}
     </div>
   );
@@ -177,6 +204,7 @@ export default function CollectionsManagerPanel({
   const [draggingCardId, setDraggingCardId] = useState<string | null>(null);
   const [curatedDragKind, setCuratedDragKind] = useState<CuratedTreeDragKind>(null);
   const [dragOverlayCard, setDragOverlayCard] = useState<Card | null>(null);
+  const lastValidOverIdRef = useRef<string | null>(null);
   const {
     expandedIds,
     toggleExpanded,
@@ -184,8 +212,9 @@ export default function CollectionsManagerPanel({
     expandAll: setExpandedAll,
     collapseAll,
   } = usePersistentTreeExpansion('myjournal:collections-tree:expanded');
-  const sensors = useDefaultDndSensors();
+  const sensors = useDefaultDndSensors({ pointerActivationDistance: 10 });
   const curatedTreeDnd = isCuratedTreeDndEnabled();
+  const curatedTreeMasterId = getCuratedTreeMasterId();
   const treeDropZonesReadOnly = !curatedTreeDnd;
 
   const loadAllCards = useCallback(async () => {
@@ -211,28 +240,7 @@ export default function CollectionsManagerPanel({
   }, [collectionsActive, loadAllCards]);
 
   /** Merge paginated `cards` (fresher after edits) with full `allCards` so new/updated rows appear. */
-  const mergedCatalog = useMemo(() => {
-    const byId = new Map<string, Card>();
-    for (const c of allCards) {
-      if (c.docId) byId.set(c.docId, c);
-    }
-    for (const c of cards) {
-      if (!c.docId) continue;
-      const prev = byId.get(c.docId);
-      if (!prev) {
-        byId.set(c.docId, c);
-        continue;
-      }
-      const merged: Card = { ...prev, ...c };
-      // Paginated SWR rows can omit fields; shallow spread would wipe `childrenIds` / curated flags and
-      // break parentByChild (children wrongly listed as unparented).
-      if (!Object.hasOwn(c, 'childrenIds')) merged.childrenIds = prev.childrenIds;
-      if (!Object.hasOwn(c, 'curatedRoot')) merged.curatedRoot = prev.curatedRoot;
-      if (!Object.hasOwn(c, 'curatedRootOrder')) merged.curatedRootOrder = prev.curatedRootOrder;
-      byId.set(c.docId, merged);
-    }
-    return Array.from(byId.values());
-  }, [allCards, cards]);
+  const mergedCatalog = useMemo(() => mergeCardCatalogs(allCards, cards), [allCards, cards]);
 
   const effectiveCatalog = useMemo(() => viewCatalog ?? mergedCatalog, [viewCatalog, mergedCatalog]);
 
@@ -269,6 +277,12 @@ export default function CollectionsManagerPanel({
   );
 
   const cardById = useMemo(() => new Map(effectiveCatalog.map((c) => [c.docId, c])), [effectiveCatalog]);
+  const masterCard = useMemo(
+    () => (curatedTreeMasterId ? cardById.get(curatedTreeMasterId) ?? null : null),
+    [cardById, curatedTreeMasterId]
+  );
+  const useMasterTree = Boolean(curatedTreeMasterId && masterCard?.docId);
+  const showMasterMissingWarning = Boolean(curatedTreeMasterId) && !useMasterTree;
 
   const parentByChild = useMemo(() => {
     const map = new Map<string, string>();
@@ -279,13 +293,10 @@ export default function CollectionsManagerPanel({
     return map;
   }, [effectiveCatalog]);
 
-  const childIdSet = useMemo(() => {
-    const set = new Set<string>();
-    effectiveCatalog.forEach((card) => normalizeCuratedChildIds(card.childrenIds).forEach((id) => set.add(id)));
-    return set;
-  }, [effectiveCatalog]);
-
   const rootedCollections = useMemo(() => {
+    if (useMasterTree && curatedTreeMasterId) {
+      return listCuratedTopLevelFromMaster(effectiveCatalog, curatedTreeMasterId);
+    }
     const list = effectiveCatalog.filter((card) => {
       if (parentByChild.has(card.docId)) return false;
       const children = normalizeCuratedChildIds(card.childrenIds);
@@ -293,27 +304,36 @@ export default function CollectionsManagerPanel({
     });
     list.sort(compareCuratedRootCards);
     return list;
-  }, [effectiveCatalog, parentByChild]);
+  }, [effectiveCatalog, parentByChild, useMasterTree, curatedTreeMasterId]);
+
+  const masterSubtreeIds = useMemo(() => {
+    if (!useMasterTree || !curatedTreeMasterId) return new Set<string>();
+    return collectCuratedSubtreeIdsFromMaster(effectiveCatalog, curatedTreeMasterId);
+  }, [useMasterTree, curatedTreeMasterId, effectiveCatalog]);
 
   useEffect(() => {
     initializeIfEmpty(rootedCollections.map((root) => root.docId));
   }, [rootedCollections, initializeIfEmpty]);
 
-  const unparentedCards = useMemo(() => {
-    const list = effectiveCatalog.filter((card) => {
-      if (!card.docId) return false;
+  const matchesUnparentedList = useCallback(
+    (card: Card) => {
       if (!cardMatchesSidebar(card)) return false;
-      if (parentByChild.has(card.docId)) return false;
-      if (childIdSet.has(card.docId)) return false;
-      if (card.curatedRoot === true) return false;
-      if (statusValue !== 'all' && card.status !== statusValue) return false;
       const q = searchValue.trim().toLowerCase();
       if (q && !(card.title || '').toLowerCase().includes(q)) return false;
       return true;
-    });
-    list.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-    return list;
-  }, [effectiveCatalog, parentByChild, childIdSet, searchValue, statusValue, cardMatchesSidebar]);
+    },
+    [cardMatchesSidebar, searchValue]
+  );
+
+  const unparentedCards = useMemo(
+    () =>
+      listCuratedTreeAttachCandidates(effectiveCatalog, {
+        curatedTreeMasterId,
+        matchesFilters: matchesUnparentedList,
+        statusFilter: statusValue,
+      }),
+    [effectiveCatalog, curatedTreeMasterId, matchesUnparentedList, statusValue]
+  );
 
   const patchCard = async (cardId: string, payload: Partial<Card>) => {
     const res = await fetch(`/api/cards/${cardId}`, {
@@ -324,6 +344,25 @@ export default function CollectionsManagerPanel({
     const data = await res.json().catch(() => ({}));
     throwIfJsonApiFailed(res, data, 'Failed to update collection membership');
   };
+
+  const fetchAuthoritativeParentIds = useCallback(
+    async (childId: string): Promise<string[]> => {
+      const params = new URLSearchParams({
+        childrenIds_contains: childId,
+        limit: '100',
+        status: 'all',
+        hydration: 'cover-only',
+      });
+      const res = await fetch(`/api/cards?${params.toString()}`);
+      const data = (await res.json().catch(() => ({}))) as { items?: Card[]; error?: string };
+      if (!res.ok) throw new Error(data.error || 'Failed to resolve parent for detach');
+      const parentIds = (data.items || [])
+        .map((item) => item.docId)
+        .filter((id): id is string => Boolean(id));
+      return Array.from(new Set(parentIds));
+    },
+    []
+  );
 
   const handleInsertChildBeforeSibling = async (childId: string, beforeSiblingId: string) => {
     if (!childId || !beforeSiblingId || childId === beforeSiblingId) return;
@@ -355,6 +394,29 @@ export default function CollectionsManagerPanel({
 
   const handleInsertRootBefore = async (childId: string, beforeRootId: string) => {
     if (!beforeRootId || childId === beforeRootId) return;
+    if (useMasterTree && curatedTreeMasterId) {
+      setSaving(true);
+      setError(null);
+      try {
+        const masterFresh = await fetchAdminCardSnapshot(curatedTreeMasterId);
+        const currentParentId = parentByChild.get(childId);
+        if (currentParentId && currentParentId !== curatedTreeMasterId) {
+          const currentFresh = await fetchAdminCardSnapshot(currentParentId);
+          const detached = normalizeCuratedChildIds(currentFresh.childrenIds).filter((id) => id !== childId);
+          await patchCard(currentParentId, { childrenIds: detached });
+        }
+        const nextMasterChildren = buildChildrenIdsWithInsertBefore(masterFresh.childrenIds, childId, beforeRootId);
+        await patchCard(curatedTreeMasterId, { childrenIds: nextMasterChildren });
+        await loadAllCards();
+        setViewCatalog(null);
+      } catch (e) {
+        setViewCatalog(null);
+        setError(e instanceof Error ? e.message : 'Failed to insert top-level card');
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
     const rootIds = rootedCollections.map((r) => r.docId!);
     const newRootIds = buildRootDocIdListWithInsertBefore(rootIds, childId, beforeRootId);
     const currentParentId = parentByChild.get(childId);
@@ -414,16 +476,44 @@ export default function CollectionsManagerPanel({
   };
 
   const handleDetachChild = async (childId: string) => {
-    const parentId = parentByChild.get(childId);
-    if (!parentId) return;
-    const optimistic = optimisticDetachChild(effectiveCatalog, childId);
+    const initialParentIds = new Set<string>();
+    const mappedParentId = parentByChild.get(childId);
+    if (mappedParentId) initialParentIds.add(mappedParentId);
+    if (useMasterTree && curatedTreeMasterId && masterSubtreeIds.has(childId)) {
+      initialParentIds.add(curatedTreeMasterId);
+    }
+
+    let parentIds = Array.from(initialParentIds);
+    if (parentIds.length === 0) {
+      try {
+        parentIds = await fetchAuthoritativeParentIds(childId);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to resolve parent for detach');
+        return;
+      }
+    }
+    if (parentIds.length === 0) return;
+
+    let optimistic = effectiveCatalog;
+    for (const pid of parentIds) {
+      optimistic =
+        pid === curatedTreeMasterId
+          ? optimistic.map((card) => {
+              if (card.docId !== curatedTreeMasterId) return card;
+              const nextChildren = normalizeCuratedChildIds(card.childrenIds).filter((id) => id !== childId);
+              return { ...card, childrenIds: nextChildren };
+            })
+          : optimisticDetachChild(optimistic, childId) ?? optimistic;
+    }
     if (optimistic) setViewCatalog(optimistic);
     setSaving(true);
     setError(null);
     try {
-      const parentFresh = await fetchAdminCardSnapshot(parentId);
-      const nextChildren = normalizeCuratedChildIds(parentFresh.childrenIds).filter((id) => id !== childId);
-      await patchCard(parentId, { childrenIds: nextChildren });
+      for (const parentId of parentIds) {
+        const parentFresh = await fetchAdminCardSnapshot(parentId);
+        const nextChildren = normalizeCuratedChildIds(parentFresh.childrenIds).filter((id) => id !== childId);
+        await patchCard(parentId, { childrenIds: nextChildren });
+      }
       await loadAllCards();
       setViewCatalog(null);
     } catch (e) {
@@ -436,8 +526,6 @@ export default function CollectionsManagerPanel({
 
   const parseCardId = (value: unknown): string | null =>
     typeof value === 'string' && value.startsWith('card:') ? value.slice(5) : null;
-  const parseParentId = (value: unknown): string | null =>
-    typeof value === 'string' && value.startsWith('parent:') ? value.slice(7) : null;
 
   const expandAll = () => {
     const next = new Set<string>();
@@ -452,9 +540,16 @@ export default function CollectionsManagerPanel({
     setCuratedDragKind(null);
     setDraggingCardId(null);
     setDragOverlayCard(null);
+    lastValidOverIdRef.current = null;
+  }, []);
+
+  const handleDragOver = useCallback((event: DragOverEvent) => {
+    const id = event.over?.id != null ? String(event.over.id) : null;
+    if (id) lastValidOverIdRef.current = id;
   }, []);
 
   const handleDragStart = (event: DragStartEvent) => {
+    lastValidOverIdRef.current = null;
     const raw = event.active.id;
     const id = typeof raw === 'string' ? raw : String(raw);
     if (id.startsWith('card:')) {
@@ -476,51 +571,84 @@ export default function CollectionsManagerPanel({
     const rawActive = event.active.id;
     const rawOver = event.over?.id ?? null;
     const activeStr = typeof rawActive === 'string' ? rawActive : String(rawActive);
-    const overStr = rawOver != null ? (typeof rawOver === 'string' ? rawOver : String(rawOver)) : null;
+    const overStr =
+      rawOver != null
+        ? (typeof rawOver === 'string' ? rawOver : String(rawOver))
+        : lastValidOverIdRef.current;
 
-    const childId = parseCardId(activeStr);
-    const overId = overStr;
-    if (!childId || !overId || saving) return;
+    try {
+      const childId = parseCardId(activeStr);
+      const overId = overStr;
+      if (!childId || !overId || saving) return;
 
-    if (overId === 'unparented') {
-      await handleDetachChild(childId);
-      return;
-    }
-
-    if (overId === 'tree-root') {
-      const optimistic = optimisticPromoteToRootAppend(effectiveCatalog, childId);
-      if (optimistic) setViewCatalog(optimistic);
-      setSaving(true);
-      setError(null);
-      try {
-        const currentParentId = parentByChild.get(childId);
-        if (currentParentId) {
-          const currentFresh = await fetchAdminCardSnapshot(currentParentId);
-          const nextChildren = normalizeCuratedChildIds(currentFresh.childrenIds).filter((id) => id !== childId);
-          await patchCard(currentParentId, { childrenIds: nextChildren });
-        }
-        const nextOrder = nextCuratedRootOrderForAppend(rootedCollections, childId);
-        await patchCard(childId, { curatedRoot: true, curatedRootOrder: nextOrder });
-        await loadAllCards();
-        setViewCatalog(null);
-      } catch (e) {
-        setViewCatalog(null);
-        setError(e instanceof Error ? e.message : 'Failed to set curated root');
-      } finally {
-        setSaving(false);
+      const intent = resolveCuratedDropIntent(overId);
+      if (intent.kind === 'unparented') {
+        await handleDetachChild(childId);
+        return;
       }
-      return;
-    }
 
-    if (overId.startsWith('insertBefore:')) {
-      const beforeId = overId.slice('insertBefore:'.length);
-      if (beforeId) await handleInsertChildBeforeSibling(childId, beforeId);
-      return;
-    }
+      if (intent.kind === 'tree-root') {
+        if (useMasterTree && curatedTreeMasterId) {
+        setSaving(true);
+        setError(null);
+        try {
+          const masterFresh = await fetchAdminCardSnapshot(curatedTreeMasterId);
+          const currentParentId = parentByChild.get(childId);
+          if (currentParentId && currentParentId !== curatedTreeMasterId) {
+            const currentFresh = await fetchAdminCardSnapshot(currentParentId);
+            const nextChildren = normalizeCuratedChildIds(currentFresh.childrenIds).filter((id) => id !== childId);
+            await patchCard(currentParentId, { childrenIds: nextChildren });
+          }
+          const nextMasterChildren = [
+            ...normalizeCuratedChildIds(masterFresh.childrenIds).filter((id) => id !== childId),
+            childId,
+          ];
+          await patchCard(curatedTreeMasterId, { childrenIds: nextMasterChildren });
+          await loadAllCards();
+          setViewCatalog(null);
+        } catch (e) {
+          setViewCatalog(null);
+          setError(e instanceof Error ? e.message : 'Failed to append top-level card');
+        } finally {
+          setSaving(false);
+        }
+          return;
+        }
+        const optimistic = optimisticPromoteToRootAppend(effectiveCatalog, childId);
+        if (optimistic) setViewCatalog(optimistic);
+        setSaving(true);
+        setError(null);
+        try {
+          const currentParentId = parentByChild.get(childId);
+          if (currentParentId) {
+            const currentFresh = await fetchAdminCardSnapshot(currentParentId);
+            const nextChildren = normalizeCuratedChildIds(currentFresh.childrenIds).filter((id) => id !== childId);
+            await patchCard(currentParentId, { childrenIds: nextChildren });
+          }
+          const nextOrder = nextCuratedRootOrderForAppend(rootedCollections, childId);
+          await patchCard(childId, { curatedRoot: true, curatedRootOrder: nextOrder });
+          await loadAllCards();
+          setViewCatalog(null);
+        } catch (e) {
+          setViewCatalog(null);
+          setError(e instanceof Error ? e.message : 'Failed to set curated root');
+        } finally {
+          setSaving(false);
+        }
+        return;
+      }
 
-    const parentId = parseParentId(overId);
-    if (!parentId) return;
-    await handleAttachChild(childId, parentId);
+      if (intent.kind === 'insert-before') {
+        await handleInsertChildBeforeSibling(childId, intent.beforeId);
+        return;
+      }
+
+      if (intent.kind === 'parent') {
+        await handleAttachChild(childId, intent.parentId);
+      }
+    } finally {
+      lastValidOverIdRef.current = null;
+    }
   };
 
   const reparentTitle =
@@ -529,6 +657,11 @@ export default function CollectionsManagerPanel({
   const layoutBody = (
     <>
       {error ? <p className={styles.error}>{error}</p> : null}
+      {showMasterMissingWarning ? (
+        <p className={styles.warning} role="alert">
+          Curated master mode is configured, but card <code>{curatedTreeMasterId}</code> is not in the loaded catalog.
+        </p>
+      ) : null}
       <div className={styles.layout}>
         <section className={styles.panel}>
           <h2>Curated Tree</h2>
@@ -614,30 +747,30 @@ export default function CollectionsManagerPanel({
             </select>
           </div>
           {loadingAllCards ? <p className={styles.hint}>Loading cards...</p> : null}
-          <div className={styles.panelScroll}>
-            <UnparentDropZone readOnly={treeDropZonesReadOnly} className={styles.unparentDropZone}>
-              <ul className={styles.list}>
-                {unparentedCards.map((card) => (
-                  <li key={card.docId} className={styles.listRowWrap}>
-                    {curatedTreeDnd ? (
+          <UnparentDropZone readOnly={treeDropZonesReadOnly} className={`${styles.unparentDropZone} ${styles.panelScroll}`}>
+            <ul className={styles.list}>
+              {unparentedCards.map((card) => (
+                <li key={card.docId} className={styles.listRowWrap}>
+                  {curatedTreeDnd ? (
+                    <UnparentRowDropZone rowId={card.docId} className={styles.unparentRowDropZone}>
                       <DraggableCard card={card} className={styles.listRow} disabled={saving}>
                         <div className={styles.nodeTitle}>{cardLabel(card)}</div>
                       </DraggableCard>
-                    ) : (
-                      <StaticUnparentCard className={styles.listRow} disabled={saving}>
-                        <div className={styles.nodeTitle}>{cardLabel(card)}</div>
-                      </StaticUnparentCard>
-                    )}
-                  </li>
-                ))}
-                {unparentedCards.length === 0 ? (
-                  <li className={styles.listRowWrap}>
-                    <div className={styles.hint}>No unparented cards match current sidebar and local filters.</div>
-                  </li>
-                ) : null}
-              </ul>
-            </UnparentDropZone>
-          </div>
+                    </UnparentRowDropZone>
+                  ) : (
+                    <StaticUnparentCard className={styles.listRow} disabled={saving}>
+                      <div className={styles.nodeTitle}>{cardLabel(card)}</div>
+                    </StaticUnparentCard>
+                  )}
+                </li>
+              ))}
+              {unparentedCards.length === 0 ? (
+                <li className={styles.listRowWrap}>
+                  <div className={styles.hint}>No unparented cards match current sidebar and local filters.</div>
+                </li>
+              ) : null}
+            </ul>
+          </UnparentDropZone>
         </section>
       </div>
     </>
@@ -666,6 +799,7 @@ export default function CollectionsManagerPanel({
         },
       }}
       onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
       onDragCancel={handleDragCancel}
       onDragEnd={handleDragEnd}
     >

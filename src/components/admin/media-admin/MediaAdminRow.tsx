@@ -354,7 +354,7 @@ export default function MediaAdminRow({
               ref={studioDragBind.setActivatorNodeRef}
               className={styles.studioSourceDragHandle}
               aria-label="Drag to selected card cover or gallery. Space to pick up, arrows to move, Space to drop."
-              title="Drag to Cover or Gallery (Selected card context)"
+              title="Drag to Cover or Gallery (Studio Card edit)"
               data-studio-dnd-return-focus={media.docId ? `source:${media.docId}` : undefined}
               {...studioDragBind.attributes}
               {...studioDragBind.listeners}

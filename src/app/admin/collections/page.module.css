@@ -32,6 +32,16 @@
   line-height: 1.4;
 }
 
+.masterModeHint {
+  margin: var(--spacing-sm) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+}
+
+.masterModeHint code {
+  font-size: 0.9em;
+}
+
 .layout {
   display: grid;
   /* grid-template-columns set inline when wide (tree | handle | unparent | handle | media). */
@@ -39,6 +49,8 @@
   align-items: stretch;
   min-height: 0;
   flex: 1;
+  /* Keep wide tables / grid cards from painting over sibling columns (grid overflow is visible by default). */
+  overflow: hidden;
 }
 
 .layout > *:not(.colResizeHandle) {
@@ -52,6 +64,7 @@
   align-items: stretch;
   min-height: 0;
   flex: 1;
+  overflow: hidden;
 }
 
 .colResizeHandle {
@@ -80,6 +93,26 @@
   max-height: calc(100dvh - var(--admin-tabs-height, 56px) - 20rem);
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.panel > h2,
+.panel > .hint,
+.panel > .controlsRow {
+  position: relative;
+  z-index: 2;
+  background: var(--layout-background1-color);
+}
+
+/* Admin Studio: shared column headings (Organization, Cards, matches Media/Compose in sibling modules). */
+.panelStudioColumnTitle {
+  flex-shrink: 0;
+  margin: 0 0 var(--spacing-sm);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  color: var(--text1-color);
 }
 
 .panelScroll {
@@ -211,6 +244,14 @@
   border-radius: var(--border-radius-sm);
 }
 
+.unparentDropZone {
+  min-height: 120px;
+}
+
+.unparentRowDropZone {
+  width: 100%;
+}
+
 .treeRootDropZone {
   min-height: 4rem;
   border: var(--border-width-thin) dashed var(--border1-color);
@@ -285,20 +326,51 @@
   min-width: 0;
   display: flex;
   align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.nodeDragContent {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.treeDragHandle {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--border-radius-sm);
+  color: var(--text2-color);
+  cursor: grab;
+  user-select: none;
+  line-height: 1;
+}
+
+.treeDragHandle:hover {
+  background: color-mix(in srgb, var(--layout-background2-color) 80%, transparent);
+  color: var(--text1-color);
+}
+
+.treeDragHandle:active {
+  cursor: grabbing;
 }
 
 /* Full-width band above each row: insert sibling before this card (title = nest as last child). */
 .treeInsertBeforeWrap {
   width: 100%;
-  margin-top: -2px;
-  padding-top: 2px;
+  margin-top: 0;
+  padding-top: 0;
   margin-bottom: 0;
   box-sizing: border-box;
 }
 
 .treeInsertBeforeZone {
   width: 100%;
-  min-height: 8px;
+  min-height: 10px;
   border-radius: var(--border-radius-sm);
   cursor: copy;
   background: transparent;
@@ -340,19 +412,7 @@
  * already prefers parent:* over insertBefore:* when both contain the pointer.
  */
 .parentNestHitColumn {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  align-self: stretch;
-}
-
-.nestHitExtension {
-  min-height: 10px;
-  flex-shrink: 0;
-}
-
-li.treeNode > ul.treeList > li.treeNode:first-child .treeInsertBeforeWrap {
-  margin-top: -10px;
+  display: block;
 }
 
 .treeExpandButton {
@@ -616,6 +676,59 @@ li.treeNode > ul.treeList > li.treeNode:first-child .treeInsertBeforeWrap {
 
 .studioEmbeddedHint a {
   color: var(--color3);
+}
+
+/* Studio: first column = Tags | Tree tabs */
+.panelStudioLeftTabs {
+  max-height: calc(100dvh - var(--admin-tabs-height, 56px) - 10rem);
+}
+
+.studioLeftTabBar {
+  display: flex;
+  gap: 0;
+  margin: 0 0 var(--spacing-sm);
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  flex-shrink: 0;
+}
+
+.studioLeftTab {
+  margin: 0;
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: transparent;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text2-color);
+  cursor: pointer;
+  border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
+}
+
+.studioLeftTab:hover {
+  color: var(--text1-color);
+  background: color-mix(in srgb, var(--layout-background2-color) 80%, transparent);
+}
+
+.studioLeftTabActive {
+  color: var(--text1-color);
+  border-bottom-color: var(--color3);
+}
+
+.studioLeftTabPanel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.studioLeftTreeHeading {
+  margin: 0 0 var(--spacing-xs);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text1-color);
+  flex-shrink: 0;
 }
 
 @media (max-width: 980px) {

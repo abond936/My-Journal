@@ -175,6 +175,7 @@ The primary users are the author (admin) creating the content and his family con
   - **Unused Dependencies** - Remove unused packages from `package.json`: `react-markdown`, `@uiw/react-md-editor`, `@minoru/react-dnd-treeview`. Evaluate `react-photo-album` and `framer-motion` before removing.
 
 📐 **Visual direction** - The product should feel **journal / archival** and **mobile-native**, while also reading as a **clear, professional** consumer app. Those aims can conflict (for example, a handwriting display face vs neutral UI typography). Prefer resolving tension through **theme presets** and distinct **type roles** (e.g. display vs body) wired to tokens, rather than scattered one-off styles. Iteration on the Theme Management model is expected as presets mature.
+📐 **Unified Studio (content admin)** - Long-term **content** administration (cards, media, tags, and their relationships) targets one combined **`/admin/studio`** surface; Questions, Users, and Themes remain separate admin routes. Canonical scope: `docs/02-Application.md` → **Administration** (`📐 **Studio unified shell contract**`) and sequenced **⭕1** Studio items across **Administration**, **Card Management**, **Media Management**, **Tag Management**; **Card Management** → `📐 **Studio shell & navigation (2026-04-21)**`. Relationship editing and **PhotoPicker**-grade picking **converge** on **in-shell Card Edit** plus **Media admin** (`📐 **Studio media & body (2026-04-22)**` in `02-Application.md`).
 
 ### **Scripts**
 

@@ -131,4 +131,12 @@
   
   .clearButton {
     background-color: transparent;
-  } 
+  }
+
+.accessMessage {
+  padding: var(--spacing-lg);
+  max-width: 36rem;
+  color: var(--text1-color);
+  line-height: 1.5;
+  font-size: var(--font-size-base);
+}

@@ -1,16 +1,17 @@
 'use client';
 
 import React, { useLayoutEffect, useRef } from 'react';
-import Link from 'next/link';
 import { TagAdminList } from '@/components/admin/tag-admin/TagAdminList';
 import { useTagManagement } from '@/components/admin/tag-admin/useTagManagement';
 import tagAdminStyles from '@/app/admin/tag-admin/tag-admin.module.css';
 import studioStyles from './StudioWorkspace.module.css';
 
 /**
- * Same drag-and-drop tag tree as Tag admin, embedded in Admin Studio.
+ * Studio tag rail: same `useTagManagement` + `TagAdminList` as `/admin/tag-admin`.
+ * The full page remains the canonical fallback—do not change its behavior when editing shared code;
+ * use optional props / Studio-only wrappers so defaults match the standalone route.
  */
-export default function TagAdminStudioPane() {
+export default function TagAdminStudioPane({ embeddedColumn = false }: { embeddedColumn?: boolean }) {
   const {
     tagTree,
     loading,
@@ -26,6 +27,7 @@ export default function TagAdminStudioPane() {
   const stickyTopRef = useRef<HTMLDivElement | null>(null);
 
   useLayoutEffect(() => {
+    if (embeddedColumn) return;
     const measure = () => {
       const tabsEl = document.getElementById('admin-tabs-bar');
       const stickyEl = stickyTopRef.current;
@@ -37,16 +39,15 @@ export default function TagAdminStudioPane() {
     measure();
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
-  }, []);
+  }, [embeddedColumn]);
 
   return (
-    <div className={studioStyles.tagPane}>
-      <div className={`${tagAdminStyles.stickyTop} ${studioStyles.tagPaneHeader}`} ref={stickyTopRef}>
+    <div className={embeddedColumn ? studioStyles.tagPaneEmbeddedColumn : studioStyles.tagPane}>
+      <div
+        className={`${embeddedColumn ? '' : tagAdminStyles.stickyTop} ${studioStyles.tagPaneHeader}`}
+        ref={stickyTopRef}
+      >
         <h2 className={studioStyles.tagPaneTitle}>Tags</h2>
-        <p className={studioStyles.tagPaneIntro}>
-          Reorder and reparent here, or open the{' '}
-          <Link href="/admin/tag-admin">full Tag Management</Link> page.
-        </p>
       </div>
       {loading && <p className={studioStyles.tagPaneBody}>Loading tags…</p>}
       {error && <p className={tagAdminStyles.error}>{error.toString()}</p>}
