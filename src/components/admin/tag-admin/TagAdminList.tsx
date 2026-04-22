@@ -187,6 +187,8 @@ interface TagAdminListProps {
   onReparent: (activeId: string, overId: string) => void;
   /** When true, each dimension stays in its own full-width row (e.g. resizable Studio tags pane). */
   stackDimensionColumns?: boolean;
+  /** Studio embedded: hide Who/What/When/Where column titles. */
+  hideDimensionColumnHeadings?: boolean;
 }
 
 interface DimensionColumn {
@@ -210,7 +212,9 @@ function TagAdminDimensionColumn({
   onUpdateTag,
   onDeleteTag,
   onCreateTag,
+  hideDimensionColumnHeadings,
 }: {
+  hideDimensionColumnHeadings?: boolean;
   col: DimensionColumn;
   tagMap: Map<string, TagRow>;
   isShiftPressed: boolean;
@@ -368,7 +372,9 @@ function TagAdminDimensionColumn({
 
   return (
     <section className={styles.dimensionColumn}>
-      <h2 className={styles.dimensionColumnHeading}>{col.title}</h2>
+      {hideDimensionColumnHeadings ? null : (
+        <h2 className={styles.dimensionColumnHeading}>{col.title}</h2>
+      )}
       <div className={styles.dimensionColumnDndRoot}>
         <DndContext
           sensors={sensors}
@@ -417,6 +423,7 @@ export function TagAdminList({
   onReorder,
   onReparent,
   stackDimensionColumns = false,
+  hideDimensionColumnHeadings = false,
 }: TagAdminListProps) {
   const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
   const [dragState, setDragState] = useState<{
@@ -516,6 +523,7 @@ export function TagAdminList({
           <TagAdminDimensionColumn
             key={col.id}
             col={col}
+            hideDimensionColumnHeadings={hideDimensionColumnHeadings}
             tagMap={tagMap}
             isShiftPressed={isShiftPressed}
             dragState={dragState}

@@ -4,6 +4,7 @@
   gap: var(--spacing-xs);
   padding: 0 var(--spacing-sm) var(--spacing-sm);
   min-width: 0;
+  font: var(--admin-grid-overlay-font);
 }
 
 .chip {
@@ -11,10 +12,9 @@
   align-items: center;
   min-width: 0;
   max-width: 100%;
-  padding: 2px var(--spacing-xs);
+  padding: 1px 4px;
   border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: none;
   background: var(--layout-background2-color);
   color: var(--text1-color);
 }
@@ -25,10 +25,9 @@
   justify-content: center;
   min-width: 0;
   max-width: 100%;
-  padding: 2px var(--spacing-xs);
+  padding: 1px 4px;
   border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: none;
   background: var(--layout-background2-color);
   color: var(--text2-color);
   font-style: italic;
@@ -38,7 +37,7 @@
   flex: 1 1 0;
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
+  text-overflow: clip;
   white-space: nowrap;
 }
 
@@ -67,13 +66,14 @@
   min-width: 0;
   max-width: 100%;
   align-self: stretch;
+  font: var(--admin-grid-overlay-font);
 }
 
 .railDim {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 3px 0;
+  gap: 1px;
+  padding: 2px 0;
   min-width: 0;
 }
 
@@ -81,15 +81,53 @@
   border-top: var(--border-width-thin) solid var(--border1-color);
 }
 
-.railLine {
-  font-size: var(--font-size-xs);
-  line-height: 1.25;
-  color: var(--text1-color);
-  word-break: break-word;
+.railLinePill {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin: 1px 0;
+  padding: 1px 3px;
+  border-radius: var(--border-radius-sm);
+  line-height: 1.15;
+  border: none;
+  color: #fff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 35%);
+}
+
+.railLineText {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: clip;
+}
+
+.railMore {
+  flex-shrink: 0;
+  padding-left: 1px;
+  line-height: 1;
+}
+
+.railLineWho {
+  background: color-mix(in srgb, var(--tag-who-bg-color) 50%, transparent);
+}
+
+.railLineWhat {
+  background: color-mix(in srgb, var(--tag-what-bg-color) 50%, transparent);
+}
+
+.railLineWhen {
+  background: color-mix(in srgb, var(--tag-when-bg-color) 50%, transparent);
+}
+
+.railLineWhere {
+  background: color-mix(in srgb, var(--tag-where-bg-color) 50%, transparent);
 }
 
 .railEmpty {
-  font-size: var(--font-size-xs);
   color: var(--text2-color);
   font-style: italic;
 }

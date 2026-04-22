@@ -75,14 +75,6 @@
   align-items: stretch;
 }
 
-.studioMediaIntro {
-  margin: 0 0 var(--spacing-sm);
-  font-size: var(--font-size-xs);
-  color: var(--text2-color);
-  line-height: 1.4;
-  max-width: 52rem;
-}
-
 .studioSyncToggle {
   display: flex;
   align-items: flex-start;
@@ -98,15 +90,6 @@
 .studioSyncToggle input {
   margin-top: 2px;
   flex-shrink: 0;
-}
-
-.studioMediaSectionLabel {
-  margin: 0;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text2-color);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 .studioMediaRowOne {

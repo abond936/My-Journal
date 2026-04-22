@@ -1,0 +1,281 @@
+/**
+ * Shared admin grid cell: image-first with overlays (tags left, chrome top/bottom).
+ * Cards and media grids compose the same shell; slots differ (type/status vs source/assigned).
+ */
+
+.cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--layout-background1-color);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color var(--transition-short), box-shadow var(--transition-short);
+}
+
+.cell:hover {
+  border-color: var(--color3);
+  box-shadow: var(--shadow-sm);
+}
+
+.cell.selected {
+  border-color: var(--color1);
+  box-shadow: 0 0 0 2px var(--color1);
+}
+
+.thumbStack {
+  position: relative;
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}
+
+.thumbScrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: var(--gradient-bottom-overlay);
+}
+
+.overlayTop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+  padding: 6px;
+  pointer-events: none;
+}
+
+.overlayTop > * {
+  pointer-events: auto;
+}
+
+.overlayTopStart {
+  flex-shrink: 0;
+}
+
+.overlayTopEnd {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.overlayLeftRail {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 3;
+  width: min(36%, 7.5rem);
+  max-width: 8rem;
+  min-width: 3.75rem;
+  padding: 40px 6px 44px 6px;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  box-sizing: border-box;
+  /* Read tags on busy covers */
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--layout-background1-color) 88%, transparent) 0%,
+    color-mix(in srgb, var(--layout-background1-color) 35%, transparent) 72%,
+    transparent 100%
+  );
+}
+
+.overlayBottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  pointer-events: none;
+}
+
+.overlayBottom > * {
+  pointer-events: auto;
+}
+
+.belowThumb {
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--color1);
+}
+
+/* Type/status/source/assigned — tokenized with dimensional tags on same cells */
+.metaBadge {
+  padding: 2px 5px;
+  border-radius: var(--border-radius-sm);
+  font: var(--admin-grid-overlay-font);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  background: color-mix(in srgb, var(--layout-background1-color) 50%, transparent);
+  color: var(--text1-color);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--border1-color) 50%, transparent);
+  backdrop-filter: blur(4px);
+}
+
+.metaBadgeMuted {
+  padding: 2px 5px;
+  border-radius: var(--border-radius-sm);
+  font: var(--admin-grid-overlay-font);
+  color: var(--text2-color);
+  text-transform: none;
+  letter-spacing: 0.02em;
+  background: color-mix(in srgb, var(--layout-background1-color) 50%, transparent);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--border1-color) 50%, transparent);
+  backdrop-filter: blur(4px);
+}
+
+.metaBadgeDraft {
+  padding: 2px 5px;
+  border-radius: var(--border-radius-sm);
+  font: var(--admin-grid-overlay-font);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  background: color-mix(in srgb, var(--state-warning-border-color) 50%, transparent);
+  color: #fff;
+  border: none;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 35%);
+  backdrop-filter: blur(4px);
+}
+
+.metaBadgePublished {
+  padding: 2px 5px;
+  border-radius: var(--border-radius-sm);
+  font: var(--admin-grid-overlay-font);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  background: color-mix(in srgb, var(--state-success-border-color) 50%, transparent);
+  color: #fff;
+  border: none;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 35%);
+  backdrop-filter: blur(4px);
+}
+
+.metaBadgeAssigned {
+  padding: 2px 5px;
+  border-radius: var(--border-radius-sm);
+  font: var(--admin-grid-overlay-font);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  background: color-mix(in srgb, var(--state-success-border-color) 50%, transparent);
+  color: #fff;
+  border: none;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 35%);
+  backdrop-filter: blur(4px);
+}
+
+.metaBadgeUnassigned {
+  padding: 2px 5px;
+  border-radius: var(--border-radius-sm);
+  font: var(--admin-grid-overlay-font);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  background: color-mix(in srgb, var(--layout-background2-color) 55%, transparent);
+  color: #fff;
+  border: none;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 40%);
+  backdrop-filter: blur(4px);
+}
+
+.deleteBtn {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: color-mix(in srgb, var(--layout-background1-color) 90%, transparent);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  opacity: 0.92;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.deleteBtn:hover {
+  opacity: 1;
+  background: var(--state-error-background-color);
+}
+
+.curatedDragHandle {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: color-mix(in srgb, var(--layout-background1-color) 90%, transparent);
+  cursor: grab;
+  font-size: 9px;
+  line-height: 1;
+  color: var(--text2-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.curatedDragHandle:active {
+  cursor: grabbing;
+}
+
+.curatedDragHandle:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Media grid: drag handle for Studio source → cover/gallery */
+.studioSourceDragHandle {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  line-height: 1;
+  cursor: grab;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: color-mix(in srgb, var(--layout-background1-color) 92%, transparent);
+  color: var(--text2-color);
+  backdrop-filter: blur(4px);
+}
+
+.studioSourceDragHandle:active {
+  cursor: grabbing;
+}
+
+@media (max-width: 768px) {
+  .overlayLeftRail {
+    width: min(38%, 6.5rem);
+    min-width: 3.25rem;
+    padding-top: 38px;
+    padding-bottom: 42px;
+  }
+}

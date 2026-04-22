@@ -36,8 +36,8 @@ export async function GET(
     // Get ID from params
     const { id } = await params;
 
-    // Validate ID format (example validation)
-    if (!/^[a-zA-Z0-9-]+$/.test(id)) {
+    // Firestore document IDs must not contain `/` (path segment); allow common id chars (incl. `_`, `.`).
+    if (!id || id.length > 1500 || id.includes('/')) {
       throw new AppError(
         ErrorCode.VALIDATION_ERROR,
         'Invalid card ID format',
@@ -58,11 +58,11 @@ export async function GET(
     const limitParam = searchParams.get('limit');
     
     // If limit is not provided or invalid, use default
-    const limit = limitParam 
+    const limit = limitParam
       ? z.coerce
           .number()
           .min(1)
-          .max(100)
+          .max(250)
           .catch(10) // Use 10 as fallback if parsing fails
           .parse(limitParam)
       : 10;

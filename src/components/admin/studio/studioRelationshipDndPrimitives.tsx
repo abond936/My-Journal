@@ -211,7 +211,7 @@ export async function handleStudioRelationshipDragEnd(
   if (activeId.startsWith('gallery:') && overId === 'drop:cover') {
     const mediaId = activeId.split(':')[1];
     if (!mediaId) return true;
-    await ctx.patchSelectedCard({ coverImageId: mediaId }, 'Cover assigned from gallery by drag/drop.');
+    await ctx.patchSelectedCard({ coverImageId: mediaId });
     return true;
   }
 
@@ -220,7 +220,7 @@ export async function handleStudioRelationshipDragEnd(
     if (!mediaId) return true;
 
     if (overId === 'drop:cover') {
-      await ctx.patchSelectedCard({ coverImageId: mediaId }, 'Cover assigned by drag/drop.');
+      await ctx.patchSelectedCard({ coverImageId: mediaId });
       return true;
     }
 

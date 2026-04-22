@@ -6,6 +6,7 @@ import { mutate as globalMutate } from 'swr';
 import CardForm from '@/components/admin/card-admin/CardForm';
 import { CardFormProvider } from '@/components/providers/CardFormProvider';
 import StudioCardFormShellSync from '@/components/admin/studio/StudioCardFormShellSync';
+import StudioComposeFormActions from '@/components/admin/studio/StudioComposeFormActions';
 import { StudioCardFormStudioProvider } from '@/components/admin/studio/studioCardFormStudioContext';
 import { useStudioShell } from '@/components/admin/studio/StudioShellContext';
 import type { StudioCardContext } from '@/components/admin/studio/studioCardTypes';
@@ -108,24 +109,17 @@ export default function StudioCardEditPane() {
   return (
     <aside className={styles.studioCardEditHost} aria-label="Compose">
       <h2 className={styles.studioComposeTitle}>Compose</h2>
-      <div className={styles.studioCardEditToolbar}>
-        <Link
-          href={`/admin/card-admin/${selectedCardId}/edit`}
-          className={styles.studioCardEditChromeLink}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Open full page
-        </Link>
-      </div>
-      <div className={styles.studioCardEditScroll}>
-        <StudioCardFormStudioProvider value={{ studioShellCardForm: true }}>
-          <CardFormProvider key={providerKey} initialCard={initialCard} allTags={allTags} onSave={handleSave}>
+      <CardFormProvider key={providerKey} initialCard={initialCard} allTags={allTags} onSave={handleSave}>
+        <div className={styles.studioCardEditToolbar}>
+          <StudioComposeFormActions />
+        </div>
+        <div className={styles.studioCardEditScroll}>
+          <StudioCardFormStudioProvider value={{ studioShellCardForm: true }}>
             <StudioCardFormShellSync />
             <CardForm />
-          </CardFormProvider>
-        </StudioCardFormStudioProvider>
-      </div>
+          </StudioCardFormStudioProvider>
+        </div>
+      </CardFormProvider>
     </aside>
   );
 }

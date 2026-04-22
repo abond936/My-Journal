@@ -52,6 +52,7 @@ function AdminTagsPageContent() {
       {!loading && !error && (
         <TagAdminList
           tagTree={tagTree}
+          hideDimensionColumnHeadings
           onReorder={handleReorder}
           onReparent={handleReparent}
           onCreateTag={handleCreateTag}

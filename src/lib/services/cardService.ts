@@ -886,7 +886,13 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
             });
           }
         }
-        if (normalizedChildren.length === 0 && !('curatedRoot' in cardData)) {
+        // Only promote when the last child was removed. Full-form PATCHes echo `childrenIds: []`
+        // for normal cards; those must not flip `curatedRoot` or they appear in the Curated tree.
+        if (
+          normalizedChildren.length === 0 &&
+          !('curatedRoot' in cardData) &&
+          prevChildren.length > 0
+        ) {
           cleanedUpdate.curatedRoot = true;
         }
       }

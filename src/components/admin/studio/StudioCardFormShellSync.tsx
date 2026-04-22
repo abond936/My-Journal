@@ -31,6 +31,7 @@ function relationshipSignature(card: StudioCardContext): string {
 /**
  * Keeps CardForm relationship fields aligned with `StudioShellContext.selectedCard` after
  * shell PATCH + refetch (DnD, etc.) without remounting the provider on every `updatedAt`.
+ * Only updates `cardData` so Compose Save / dirty state reflect pending full-form baseline.
  */
 export default function StudioCardFormShellSync() {
   const { selectedCard, selectedCardId } = useStudioShell();

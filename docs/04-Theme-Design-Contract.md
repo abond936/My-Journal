@@ -39,6 +39,17 @@ Resolve conflicts with **type roles** and **presets**, not by mixing display fon
 
 **Rule:** Handwriting is a *display* choice bound to a preset or explicit component token — not the default `--body-font-family` for the whole app.
 
+### 3.1 Admin grid thumbnail overlays (card + media)
+
+Dense metadata on **card** and **media** admin **grid** thumbnails (type, status, source, assignment, dimensional tag rail) uses **dedicated tokens** in `theme1.css` — **not** `--font-size-xs` / global admin UI scale:
+
+| Token | Role |
+|-------|------|
+| `--font-size-admin-grid-overlay` | Rem-only size for that layer only (~6px at 16px root unless changed). |
+| `--admin-grid-overlay-font` | Shorthand: **medium** weight + overlay size + **1.2** line-height + **`--font-family-sans`**. |
+
+Components: `AdminGridCellChrome.module.css` (meta badges), `DimensionalTagVerticalChips`, `DirectDimensionChips` (rail + triage row chips). **Dimensional tag fills** on thumbnails use **`color-mix(..., 50%, transparent)`** on `--tag-*-bg-color` with **white** label text where applicable; **draft / published / assigned / unassigned** badges use the same translucent + **white** text pattern. Adjusting overlay density is done **only** via these tokens and the shared chrome modules so reader and full-page admin typography stay unchanged.
+
 ---
 
 ## 4. Semantic color & surface roles (reader-first)

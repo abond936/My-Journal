@@ -18,7 +18,10 @@ function messageFromJsonBody(body: unknown, fallback: string): string {
  */
 export function throwIfJsonApiFailed(res: Response, body: unknown, fallbackMessage: string): void {
   if (res.ok) return;
-  const msg = messageFromJsonBody(body, fallbackMessage);
+  let msg = messageFromJsonBody(body, fallbackMessage);
+  if (msg === fallbackMessage) {
+    msg = `${fallbackMessage} (HTTP ${res.status})`;
+  }
   const err = new Error(msg) as Error & { apiCode?: string };
   if (body && typeof body === 'object') {
     const code = (body as JsonApiErrorBody).code;

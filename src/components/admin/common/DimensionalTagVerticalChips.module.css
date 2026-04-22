@@ -5,13 +5,14 @@
   min-width: 0;
   max-width: 100%;
   align-self: stretch;
+  font: var(--admin-grid-overlay-font);
 }
 
 .dimBlock {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 3px 0;
+  gap: 1px;
+  padding: 2px 0;
   min-width: 0;
 }
 
@@ -20,33 +21,56 @@
 }
 
 .empty {
-  font-size: var(--font-size-xs);
+  font: var(--admin-grid-overlay-font);
   color: var(--text2-color);
+  /* `font` shorthand resets style; restore after */
   font-style: italic;
-  line-height: 1.2;
 }
 
 .tagButton {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--spacing-xs);
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1px;
   width: 100%;
   min-width: 0;
-  padding: 3px 4px;
+  padding: 1px 3px;
   border: none;
   border-radius: var(--border-radius-sm);
-  background: color-mix(in srgb, var(--layout-background2-color) 88%, transparent);
+  background: color-mix(in srgb, var(--layout-background2-color) 50%, transparent);
   color: var(--text1-color);
-  font-size: var(--font-size-xs);
-  line-height: 1.25;
+  font: var(--admin-grid-overlay-font);
   text-align: left;
   cursor: pointer;
-  word-break: break-word;
+}
+
+.tagDimWho {
+  background: color-mix(in srgb, var(--tag-who-bg-color) 50%, transparent);
+  color: #fff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 35%);
+}
+
+.tagDimWhat {
+  background: color-mix(in srgb, var(--tag-what-bg-color) 50%, transparent);
+  color: #fff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 35%);
+}
+
+.tagDimWhen {
+  background: color-mix(in srgb, var(--tag-when-bg-color) 50%, transparent);
+  color: #fff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 35%);
+}
+
+.tagDimWhere {
+  background: color-mix(in srgb, var(--tag-where-bg-color) 50%, transparent);
+  color: #fff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 35%);
 }
 
 .tagButton:hover:not(:disabled) {
-  background: var(--layout-background2-color);
+  filter: brightness(1.07);
 }
 
 .tagButton:disabled {
@@ -57,11 +81,25 @@
 .tagName {
   flex: 1 1 auto;
   min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: clip;
+}
+
+.tagMore {
+  flex-shrink: 0;
+  font: inherit;
+  line-height: 1;
+  color: inherit;
+  opacity: 0.95;
 }
 
 .tagX {
   flex-shrink: 0;
-  opacity: 0.65;
-  font-size: 0.75rem;
+  margin-left: auto;
+  padding-left: 1px;
+  opacity: 0.85;
+  font: inherit;
   line-height: 1.2;
+  color: inherit;
 }

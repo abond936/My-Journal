@@ -57,6 +57,7 @@ export default function TagAdminStudioPane({ embeddedColumn = false }: { embedde
           <TagAdminList
             tagTree={tagTree}
             stackDimensionColumns
+            hideDimensionColumnHeadings
             onReorder={handleReorder}
             onReparent={handleReparent}
             onCreateTag={handleCreateTag}

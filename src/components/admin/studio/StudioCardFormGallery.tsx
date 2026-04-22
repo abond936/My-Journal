@@ -57,7 +57,6 @@ export default function StudioCardFormGallery({
       accepts={['source']}
       ariaLabel="Gallery drop target: drop source media here to append"
     >
-      <p className={styles.dropHint}>Drop from the Media bank here to append to gallery.</p>
       <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
         <div className={styles.mediaList}>
           {gallery.map((item, index) => (
@@ -71,16 +70,15 @@ export default function StudioCardFormGallery({
                   <JournalImage
                     src={getDisplayUrl(item.media)}
                     alt={item.caption || item.media.filename || 'Gallery image'}
-                    width={68}
-                    height={68}
+                    width={102}
+                    height={102}
                     className={styles.mediaThumb}
                   />
                 ) : (
                   <div className={styles.mediaThumbFallback}>No thumb</div>
                 )}
                 <div>
-                  <div className={styles.mediaLabel}>{item.caption || item.media?.filename || 'Gallery item'}</div>
-                  <div className={styles.metaMuted}>{item.mediaId}</div>
+                  <div className={styles.mediaLabel}>{item.caption ?? ''}</div>
                   <div className={styles.inlineActions}>
                     <button
                       type="button"
@@ -121,10 +119,6 @@ export default function StudioCardFormGallery({
               </div>
             </StudioGallerySortableRow>
           ))}
-          <p className={styles.metaMuted}>
-            Reorder with drag handles (keyboard: Space, arrows, Space) or Move up / Move down. Drag onto Cover to assign
-            cover.
-          </p>
         </div>
       </SortableContext>
     </StudioDropZone>
@@ -134,7 +128,6 @@ export default function StudioCardFormGallery({
       accepts={['source']}
       ariaLabel="Gallery drop target: drop source media here to add first gallery item"
     >
-      <p className={styles.dropHint}>Drop from the Media bank here to append to gallery.</p>
       <p className={styles.metaMuted}>No gallery media assigned.</p>
     </StudioDropZone>
   );

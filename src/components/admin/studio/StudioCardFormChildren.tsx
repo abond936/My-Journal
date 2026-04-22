@@ -53,11 +53,7 @@ export default function StudioCardFormChildren({ disabled }: { disabled: boolean
 
   return (
     <div>
-      <h4 className={styles.studioFormSectionTitle}>Child cards</h4>
-      <p className={styles.dropHint}>
-        Drag a card from the tree or attach candidates onto this block to add as the last child. Reorder with handles
-        (keyboard: Space, arrows, Space) or Move up / Move down.
-      </p>
+      <h4 className={styles.studioFormSectionTitle}>Children</h4>
       {childrenError ? <p className={styles.metaError}>{childrenError}</p> : null}
       {areChildrenLoading ? <p className={styles.metaMuted}>Loading child cards…</p> : null}
       {!areChildrenLoading && !childrenError && docId ? (
@@ -80,7 +76,6 @@ export default function StudioCardFormChildren({ disabled }: { disabled: boolean
                             ) : (
                               <span className={styles.metaMuted}>{childId}</span>
                             )}
-                            <div className={styles.metaMuted}>{childId}</div>
                           </div>
                           <div className={styles.inlineActions}>
                             <button

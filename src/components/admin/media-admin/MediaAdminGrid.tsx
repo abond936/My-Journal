@@ -12,8 +12,11 @@ import type { MediaAdminRowStudioDragBind } from '@/components/admin/media-admin
 import { useMedia } from '@/components/providers/MediaProvider';
 import { useTag } from '@/components/providers/TagProvider';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
-import { getCoreTagsByDimension } from '@/lib/utils/tagDisplay';
+import { formatCoreTagsTooltipLines, getCoreTagsByDimension } from '@/lib/utils/tagDisplay';
 import styles from './MediaAdminGrid.module.css';
+import AdminGridCellChrome from '@/components/admin/common/AdminGridCellChrome';
+import chromeStyles from '@/components/admin/common/AdminGridCellChrome.module.css';
+import { adminChromeSelector, ADMIN_GRID_CHROME } from '@/components/admin/common/adminGridChromeAttr';
 
 export interface MediaAdminGridCellProps {
   media: Media;
@@ -35,6 +38,15 @@ type DimensionFilters = Record<
   }
 >;
 
+function isMediaGridChromeInteractiveTarget(t: HTMLElement): boolean {
+  return Boolean(
+    t.closest(adminChromeSelector(ADMIN_GRID_CHROME.overlayTopStart)) ||
+      t.closest(adminChromeSelector(ADMIN_GRID_CHROME.overlayTopEnd)) ||
+      t.closest(adminChromeSelector(ADMIN_GRID_CHROME.tagRail)) ||
+      t.closest(adminChromeSelector(ADMIN_GRID_CHROME.footerActions))
+  );
+}
+
 function MediaAdminGridCell({
   media,
   tagNameMap,
@@ -44,7 +56,7 @@ function MediaAdminGridCell({
   onToggleSelection,
   studioDragBind,
 }: MediaAdminGridCellProps) {
-  const core = getCoreTagsByDimension(media);
+  const core = useMemo(() => getCoreTagsByDimension(media), [media]);
   const [tagModalOpen, setTagModalOpen] = React.useState(false);
   const [pendingTags, setPendingTags] = React.useState<string[]>(media.tags ?? []);
   const [saveError, setSaveError] = React.useState<string | null>(null);
@@ -67,11 +79,12 @@ function MediaAdminGridCell({
 
   const onCellClick = (e: React.MouseEvent) => {
     const t = e.target as HTMLElement;
-    if (t.closest(`.${styles.cellHeaderStart}`) || t.closest(`.${styles.cellHeaderActions}`)) return;
+    if (isMediaGridChromeInteractiveTarget(t)) return;
     if (t.closest('button')) return;
     onToggleSelection();
   };
   const onCellKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.target as HTMLElement).closest('input, textarea, button, [role="listbox"]')) return;
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       onToggleSelection();
@@ -84,26 +97,49 @@ function MediaAdminGridCell({
       : { aspectRatio: '4 / 3' };
 
   const identityTooltip = `File: ${media.filename}\nID: ${media.docId}\nSource: ${media.sourcePath || '—'}`;
+  const thumbnailTooltip = useMemo(() => {
+    const tagLines = formatCoreTagsTooltipLines(core, (id) => tagNameMap.get(id) ?? id);
+    return `${identityTooltip}\n\n${tagLines}`;
+  }, [identityTooltip, core, tagNameMap]);
 
-  const cellBody = (
-    <>
-      <div className={styles.cellHeader}>
-        <div className={styles.cellHeaderStart} onClick={(e) => e.stopPropagation()}>
+  const assigned = (media.referencedByCardIds?.length ?? 0) > 0;
+  const studioRootExtras = studioDragBind
+    ? {
+        ref: studioDragBind.setNodeRef,
+        style: studioDragBind.style,
+        className: `${styles.cellStudioSource} ${styles.cellClickSurface}`,
+      }
+    : {};
+
+  const gridCell = (
+    <AdminGridCellChrome
+      selected={isSelected}
+      rootProps={{
+        ...studioRootExtras,
+        role: 'button',
+        tabIndex: 0,
+        title: thumbnailTooltip,
+        onClick: onCellClick,
+        onKeyDown: onCellKeyDown,
+      }}
+      overlayTopStart={
+        <div onClick={(e) => e.stopPropagation()}>
           <input
             type="checkbox"
             checked={isSelected}
             onChange={onToggleSelection}
             aria-label={`Select ${media.filename}`}
-            className={styles.cellHeaderCheckbox}
+            className={chromeStyles.checkbox}
           />
         </div>
-        <div className={styles.cellHeaderSpacer} aria-hidden />
-        <div className={styles.cellHeaderActions} onClick={(e) => e.stopPropagation()}>
-          {studioDragBind ? (
+      }
+      overlayTopEnd={
+        studioDragBind ? (
+          <div onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               ref={studioDragBind.setActivatorNodeRef}
-              className={styles.studioGridDragHandle}
+              className={chromeStyles.studioSourceDragHandle}
               aria-label={`Drag ${media.filename} to selected card cover or gallery`}
               title="Drag to Cover or Gallery (Studio Card edit)"
               data-studio-dnd-return-focus={media.docId ? `source:${media.docId}` : undefined}
@@ -113,76 +149,58 @@ function MediaAdminGridCell({
             >
               ⋮⋮
             </button>
-          ) : null}
-        </div>
-      </div>
-      <div className={styles.cellMain}>
-        <div className={styles.tagRail}>
-          <DirectDimensionTagsRail core={core} tagNameMap={tagNameMap} />
-        </div>
-        <div className={styles.imageCol}>
-          <div className={styles.thumbnailWrap} style={aspectStyle} title={identityTooltip}>
-            <JournalImage
-              src={getDisplayUrl(media)}
-              alt={media.caption || media.filename}
-              fill
-              className={styles.thumbnailNatural}
-              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 200px"
-            />
           </div>
+        ) : null
+      }
+      overlayLeftRail={<DirectDimensionTagsRail core={core} tagNameMap={tagNameMap} />}
+      overlayBottom={
+        <>
+          <span className={chromeStyles.metaBadgeMuted}>{media.source}</span>
+          <span className={assigned ? chromeStyles.metaBadgeAssigned : chromeStyles.metaBadgeUnassigned}>
+            {assigned ? 'Assigned' : 'Unassigned'}
+          </span>
+        </>
+      }
+      thumbnail={
+        <div className={styles.thumbnailWrap} style={aspectStyle} title={thumbnailTooltip}>
+          <JournalImage
+            src={getDisplayUrl(media)}
+            alt={media.caption || media.filename}
+            fill
+            className={styles.thumbnailNatural}
+            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 200px"
+          />
         </div>
-      </div>
-      {media.caption ? (
-        <div className={styles.captionBelow} title={media.caption}>
-          {media.caption}
-        </div>
-      ) : null}
-      <div className={styles.inlineActions}>
-        <button
-          type="button"
-          className={styles.inlineActionButton}
-          onClick={(e) => {
-            e.stopPropagation();
-            setSaveError(null);
-            setTagModalOpen(true);
-          }}
-        >
-          Edit tags…
-        </button>
-      </div>
-      {saveNotice ? <div className={styles.saveNotice}>{saveNotice}</div> : null}
-    </>
+      }
+      belowThumbnail={
+        <>
+          {media.caption ? (
+            <div className={styles.captionBelow} title={media.caption}>
+              {media.caption}
+            </div>
+          ) : null}
+          <div className={styles.inlineActions} data-admin-chrome={ADMIN_GRID_CHROME.footerActions}>
+            <button
+              type="button"
+              className={styles.inlineActionButton}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSaveError(null);
+                setTagModalOpen(true);
+              }}
+            >
+              Edit tags…
+            </button>
+          </div>
+          {saveNotice ? <div className={styles.saveNotice}>{saveNotice}</div> : null}
+        </>
+      }
+    />
   );
 
   return (
     <>
-      {studioDragBind ? (
-        <div
-          ref={studioDragBind.setNodeRef}
-          style={studioDragBind.style}
-          className={`${styles.cell} ${isSelected ? styles.selected : ''} ${styles.cellStudioSource}`}
-        >
-          <div
-            className={styles.cellClickSurface}
-            role="button"
-            tabIndex={0}
-            onClick={onCellClick}
-            onKeyDown={onCellKeyDown}
-          >
-            {cellBody}
-          </div>
-        </div>
-      ) : (
-        <div
-          className={`${styles.cell} ${isSelected ? styles.selected : ''}`}
-          onClick={onCellClick}
-          role="button"
-          tabIndex={0}
-          onKeyDown={onCellKeyDown}
-        >
-          {cellBody}
-        </div>
-      )}
+      {gridCell}
       <EditModal
         isOpen={tagModalOpen}
         onClose={() => setTagModalOpen(false)}

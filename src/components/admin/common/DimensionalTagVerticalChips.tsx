@@ -4,7 +4,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import clsx from 'clsx';
 import type { Card } from '@/lib/types/card';
 import type { Tag } from '@/lib/types/tag';
-import { DIMENSION_ORDER } from '@/lib/utils/tagDisplay';
+import { DIMENSION_LABEL, DIMENSION_ORDER, formatCoreTagsTooltipLines, type TagDimension } from '@/lib/utils/tagDisplay';
 import {
   buildResolvedTagDimensionMap,
   buildTagByIdMap,
@@ -53,43 +53,76 @@ export default function DimensionalTagVerticalChips({
     [onUpdateTags]
   );
 
-  const removeTag = useCallback(
-    async (tagId: string) => {
-      const next = currentTags.filter((id) => id !== tagId);
+  const railSummaryTitle = useMemo(
+    () =>
+      `Who → What → When → Where (top to bottom).\n\n${formatCoreTagsTooltipLines(core, (id) => tagById.get(id)?.name ?? id)}`,
+    [core, tagById]
+  );
+
+  const removeFirstTagInDimension = useCallback(
+    async (dim: TagDimension) => {
+      const ids = core[dim];
+      if (ids.length === 0) return;
+      const firstId = ids[0];
+      const next = currentTags.filter((id) => id !== firstId);
       await persist(next);
     },
-    [currentTags, persist]
+    [core, currentTags, persist]
   );
 
   return (
-    <div
-      className={clsx(styles.root, className)}
-      title="Dimension order (top to bottom): Who, What, When, Where."
-      onClick={(e) => e.stopPropagation()}
-    >
-      {DIMENSION_ORDER.map((dim, dimIndex) => (
-        <div key={dim} className={clsx(styles.dimBlock, dimIndex > 0 && styles.dimBlockDivider)}>
-          {core[dim].length === 0 ? (
-            <span className={styles.empty}>—</span>
-          ) : (
-            core[dim].map((id) => (
-              <button
-                key={id}
-                type="button"
-                className={styles.tagButton}
-                disabled={disabled || saving}
-                title={`Remove ${tagById.get(id)?.name ?? id}`}
-                onClick={() => void removeTag(id)}
-              >
-                <span className={styles.tagName}>{tagById.get(id)?.name ?? id}</span>
-                <span className={styles.tagX} aria-hidden>
-                  ×
+    <div className={clsx(styles.root, className)} title={railSummaryTitle} onClick={(e) => e.stopPropagation()}>
+      {DIMENSION_ORDER.map((dim, dimIndex) => {
+        const ids = core[dim];
+        const label = DIMENSION_LABEL[dim];
+        if (ids.length === 0) {
+          return (
+            <div key={dim} className={clsx(styles.dimBlock, dimIndex > 0 && styles.dimBlockDivider)}>
+              <span className={styles.empty}>—</span>
+            </div>
+          );
+        }
+        const firstId = ids[0];
+        const firstName = tagById.get(firstId)?.name ?? firstId;
+        const restCount = ids.length - 1;
+        const allNames = ids.map((id) => tagById.get(id)?.name ?? id).join(', ');
+        const rowTitle =
+          restCount > 0
+            ? `${label}: ${allNames}\nRemove “${firstName}” (× removes the first tag in this dimension).`
+            : `${label}: ${allNames}\nRemove “${firstName}”.`;
+        return (
+          <div key={dim} className={clsx(styles.dimBlock, dimIndex > 0 && styles.dimBlockDivider)}>
+            <button
+              type="button"
+              className={clsx(
+                styles.tagButton,
+                dim === 'who' && styles.tagDimWho,
+                dim === 'what' && styles.tagDimWhat,
+                dim === 'when' && styles.tagDimWhen,
+                dim === 'where' && styles.tagDimWhere
+              )}
+              disabled={disabled || saving}
+              title={rowTitle}
+              aria-label={
+                restCount > 0
+                  ? `Remove ${firstName} from ${label} (${restCount} more in this dimension; tooltip lists all).`
+                  : `Remove ${firstName} from ${label}.`
+              }
+              onClick={() => void removeFirstTagInDimension(dim)}
+            >
+              <span className={styles.tagName}>{firstName}</span>
+              {restCount > 0 ? (
+                <span className={styles.tagMore} aria-hidden>
+                  +
                 </span>
-              </button>
-            ))
-          )}
-        </div>
-      ))}
+              ) : null}
+              <span className={styles.tagX} aria-hidden>
+                ×
+              </span>
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }

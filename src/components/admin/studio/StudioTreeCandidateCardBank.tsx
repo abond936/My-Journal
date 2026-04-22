@@ -220,7 +220,6 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
 
   return (
     <div className={styles.root}>
-      <h3 className={styles.studioCardFiltersHeading}>Filter cards</h3>
       <div className={styles.studioCardFilters} role="search">
         <label className={styles.studioCardField}>
           <span className={styles.studioCardFieldLabel}>Search title</span>
@@ -261,16 +260,23 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
           </select>
         </label>
       </div>
-      <p className={styles.studioCardDimSectionLabel}>Tags on card vs on attached media</p>
-      <div className={styles.studioCardDimMatrix}>
-        {DIMENSION_KEYS.map((dimension) => {
-          const options = tagsForDimension(allTags || [], dimension);
-          const title = dimensionTitle(dimension);
-          return (
-            <div key={dimension} className={styles.studioCardDimColumn}>
-              <div className={styles.studioCardDimColumnTitle}>{title}</div>
-              <label className={styles.studioCardDimField}>
-                <span className={styles.studioCardDimBadge}>On card</span>
+      <div className={styles.studioCardDimMatrix} role="group" aria-label="Filter by dimensional tags">
+        <div className={styles.studioCardDimHeaderRow}>
+          <span className={styles.studioCardDimCorner} aria-hidden />
+          {DIMENSION_KEYS.map((dimension) => (
+            <div key={dimension} className={styles.studioCardDimHeaderCell}>
+              {dimensionTitle(dimension)}
+            </div>
+          ))}
+        </div>
+        <div className={styles.studioCardDimDataRow}>
+          <span className={styles.studioCardDimRowLabel}>On card</span>
+          {DIMENSION_KEYS.map((dimension) => {
+            const options = tagsForDimension(allTags || [], dimension);
+            const title = dimensionTitle(dimension);
+            return (
+              <label key={`card-${dimension}`} className={styles.studioCardDimFieldCell}>
+                <span className={styles.visuallyHidden}>{title} on card</span>
                 <select
                   className={styles.studioCardDimSelect}
                   value={cardDimTagId[dimension]}
@@ -287,8 +293,17 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
                   ))}
                 </select>
               </label>
-              <label className={styles.studioCardDimField}>
-                <span className={styles.studioCardDimBadge}>On media</span>
+            );
+          })}
+        </div>
+        <div className={styles.studioCardDimDataRow}>
+          <span className={styles.studioCardDimRowLabel}>On media</span>
+          {DIMENSION_KEYS.map((dimension) => {
+            const options = tagsForDimension(allTags || [], dimension);
+            const title = dimensionTitle(dimension);
+            return (
+              <label key={`media-${dimension}`} className={styles.studioCardDimFieldCell}>
+                <span className={styles.visuallyHidden}>{title} on media</span>
                 <select
                   className={styles.studioCardDimSelect}
                   value={mediaOnCardDimTagId[dimension]}
@@ -305,9 +320,9 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
                   ))}
                 </select>
               </label>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
       {tagFiltersActive ? (
         <div className={styles.studioCardTagFilterActions}>

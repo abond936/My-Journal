@@ -26,6 +26,19 @@ export const DIMENSION_LABEL: Record<TagDimension, string> = {
  * Returns, for each dimension, ONLY the tags that were directly selected on the record.
  * Intersects each dimensional array with `tags` (the direct assignment list).
  */
+/** Multi-line native tooltip for admin grid thumbnails (Who/What/When/Where). */
+export function formatCoreTagsTooltipLines(
+  core: OrganizedTags,
+  resolveName: (id: string) => string
+): string {
+  return DIMENSION_ORDER.map((dim) => {
+    const ids = core[dim];
+    const label = DIMENSION_LABEL[dim];
+    if (ids.length === 0) return `${label}: —`;
+    return `${label}: ${ids.map(resolveName).join(', ')}`;
+  }).join('\n');
+}
+
 export function getCoreTagsByDimension(source: DirectDimensionalTagSource): OrganizedTags {
   const direct = new Set(source.tags ?? []);
   const pick = (arr?: string[]) => (arr ?? []).filter(id => direct.has(id));

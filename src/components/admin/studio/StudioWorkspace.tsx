@@ -11,7 +11,9 @@ import type { StudioCardContext } from '@/components/admin/studio/studioCardType
 import { StudioShellProvider, type StudioShellContextValue } from '@/components/admin/studio/StudioShellContext';
 import { useMedia } from '@/components/providers/MediaProvider';
 import type { Card } from '@/lib/types/card';
+import { EMBEDDED_ADMIN_WIDE_MIN_WIDTH_PX } from '@/lib/admin/embeddedWideMinWidthPx';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
+import { DND_POINTER_IGNORE_ATTR } from '@/lib/hooks/useDefaultDndSensors';
 import cardAdminPageStyles from '@/app/admin/card-admin/card-admin.module.css';
 import styles from './StudioWorkspace.module.css';
 
@@ -19,11 +21,16 @@ const STUDIO_CARD_EDIT_WIDTH_KEY = 'studioCardEditPaneWidth';
 const CARD_EDIT_RESIZE_HANDLE = 8;
 const MIN_CARD_EDIT_PX = 260;
 const MIN_MEDIA_BANK_PX = 200;
+/** Default Compose column width (px) when no saved preference; double-click handle resets here. */
+const DEFAULT_CARD_EDIT_WIDTH = 480;
+/** Upper cap so Compose does not grow past a comfortable editing line length even on ultra-wide rows. */
+const MAX_CARD_EDIT_WIDTH = 1200;
 
 /** When the row is narrower than MIN_CARD_EDIT + media minimum, still allow dragging within the real range. */
 function cardEditWidthBounds(rowW: number): { minEdit: number; maxEdit: number } | null {
-  const maxEdit = rowW - MIN_MEDIA_BANK_PX - CARD_EDIT_RESIZE_HANDLE;
-  if (maxEdit < 1) return null;
+  const rawMax = rowW - MIN_MEDIA_BANK_PX - CARD_EDIT_RESIZE_HANDLE;
+  if (rawMax < 1) return null;
+  const maxEdit = Math.min(MAX_CARD_EDIT_WIDTH, rawMax);
   const minEdit = Math.min(MIN_CARD_EDIT_PX, maxEdit);
   return { minEdit, maxEdit };
 }
@@ -43,9 +50,14 @@ function clamp(n: number, lo: number, hi: number) {
   return Math.min(hi, Math.max(lo, n));
 }
 
+function rowWidthForCardEditResize(row: HTMLElement): number {
+  const w = row.getBoundingClientRect().width;
+  return w > 0 ? w : row.offsetWidth;
+}
+
 export default function StudioWorkspace() {
   const [wideLayout, setWideLayout] = useState(true);
-  const [cardEditWidth, setCardEditWidth] = useState(380);
+  const [cardEditWidth, setCardEditWidth] = useState(DEFAULT_CARD_EDIT_WIDTH);
   const cardEditWidthRef = useRef(cardEditWidth);
   const studioMediaCardRowRef = useRef<HTMLDivElement | null>(null);
   /** True while dragging card-edit width (skip ResizeObserver clamp). */
@@ -72,7 +84,7 @@ export default function StudioWorkspace() {
   }, [selectedCardId, selectNoneMedia]);
 
   useEffect(() => {
-    const mq = window.matchMedia('(min-width: 1201px)');
+    const mq = window.matchMedia(`(min-width: ${EMBEDDED_ADMIN_WIDE_MIN_WIDTH_PX}px)`);
     const apply = () => setWideLayout(mq.matches);
     apply();
     mq.addEventListener('change', apply);
@@ -97,7 +109,7 @@ export default function StudioWorkspace() {
   useEffect(() => {
     const stored = readStoredCardEditWidth();
     if (stored != null) {
-      setCardEditWidth(clamp(stored, MIN_CARD_EDIT_PX, 900));
+      setCardEditWidth(clamp(stored, MIN_CARD_EDIT_PX, MAX_CARD_EDIT_WIDTH));
     }
   }, []);
 
@@ -105,8 +117,7 @@ export default function StudioWorkspace() {
     if (cardEditResizeActiveRef.current) return;
     const row = studioMediaCardRowRef.current;
     if (!row || !wideLayout) return;
-    const rowW = row.getBoundingClientRect().width;
-    const bounds = cardEditWidthBounds(rowW);
+    const bounds = cardEditWidthBounds(rowWidthForCardEditResize(row));
     if (!bounds) return;
     setCardEditWidth((w) => clamp(w, bounds.minEdit, bounds.maxEdit));
   }, [wideLayout]);
@@ -162,10 +173,11 @@ export default function StudioWorkspace() {
         if (!session || ev.pointerId !== session.pointerId) return;
         const row = studioMediaCardRowRef.current;
         if (!row) return;
-        const bounds = cardEditWidthBounds(row.getBoundingClientRect().width);
+        const bounds = cardEditWidthBounds(rowWidthForCardEditResize(row));
         if (!bounds) return;
         const dx = ev.clientX - session.startX;
-        const next = clamp(session.startW + dx, bounds.minEdit, bounds.maxEdit);
+        // Handle is left of Compose: drag left → wider Compose; drag right → narrower (invert raw dx).
+        const next = clamp(session.startW - dx, bounds.minEdit, bounds.maxEdit);
         setCardEditWidth(next);
       };
 
@@ -196,15 +208,48 @@ export default function StudioWorkspace() {
     [wideLayout]
   );
 
+  const onCardEditResizeDoubleClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (!wideLayout || e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const row = studioMediaCardRowRef.current;
+      if (!row) return;
+      const bounds = cardEditWidthBounds(rowWidthForCardEditResize(row));
+      if (!bounds) return;
+      const next = clamp(DEFAULT_CARD_EDIT_WIDTH, bounds.minEdit, bounds.maxEdit);
+      setCardEditWidth(next);
+      try {
+        localStorage.setItem(STUDIO_CARD_EDIT_WIDTH_KEY, String(next));
+      } catch {
+        /* ignore */
+      }
+    },
+    [wideLayout]
+  );
+
   const loadSelectedCard = useCallback(async (cardId: string, opts?: { quiet?: boolean }) => {
     if (!opts?.quiet) setCardLoading(true);
     setCardError(null);
-    const res = await fetch(`/api/cards/${cardId}?limit=200`, { cache: 'no-store' });
-    const data = (await res.json().catch(() => ({}))) as StudioCardContext & { message?: string; error?: string };
+    const id = cardId.trim();
+    const res = await fetch(`/api/cards/${encodeURIComponent(id)}?limit=100`, {
+      cache: 'no-store',
+      credentials: 'same-origin',
+    });
+    const raw = await res.text();
+    let data: unknown;
+    try {
+      data = raw ? JSON.parse(raw) : {};
+    } catch {
+      data = {
+        message: `Could not parse API response (HTTP ${res.status}). ${raw.slice(0, 160)}${raw.length > 160 ? '…' : ''}`,
+      };
+    }
     throwIfJsonApiFailed(res, data, 'Failed to load card');
-    setSelectedCard(data);
+    const card = data as StudioCardContext;
+    setSelectedCard(card);
     if (!opts?.quiet) setCardLoading(false);
-    return data;
+    return card;
   }, []);
 
   useEffect(() => {
@@ -241,7 +286,6 @@ export default function StudioWorkspace() {
       if (!selectedCardId) return;
       setActionBusy(true);
       setActionError(null);
-      if (successMessage) setActionInfo(null);
       try {
         const res = await fetch(`/api/cards/${selectedCardId}`, {
           method: 'PATCH',
@@ -252,9 +296,11 @@ export default function StudioWorkspace() {
         throwIfJsonApiFailed(res, data, 'Update failed.');
         await loadSelectedCard(selectedCardId, { quiet: true });
         collectionsRefreshRef.current?.();
-        if (successMessage) setActionInfo(successMessage);
+        // Always refresh strip: omitting a message must clear stale text (e.g. old cover-drag copy).
+        setActionInfo(successMessage ?? null);
       } catch (e) {
         setActionError(e instanceof Error ? e.message : 'Update failed.');
+        setActionInfo(null);
       } finally {
         setActionBusy(false);
       }
@@ -360,8 +406,11 @@ export default function StudioWorkspace() {
                           className={`${styles.resizeHandle} ${styles.cardEditColumnResizeHandle}`}
                           role="separator"
                           aria-orientation="vertical"
-                          aria-label="Resize media bank and card edit columns"
+                          aria-label="Resize media bank and Compose columns"
+                          title="Drag to resize Compose vs Media. Double-click to reset width."
+                          {...{ [DND_POINTER_IGNORE_ATTR]: '' }}
                           onPointerDown={onCardEditResizePointerDown}
+                          onDoubleClick={onCardEditResizeDoubleClick}
                         />
                       ) : null}
                       <div

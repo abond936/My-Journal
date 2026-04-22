@@ -86,6 +86,27 @@
   margin-top: var(--spacing-sm);
 }
 
+.excerptSectionStudio {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+  width: 100%;
+}
+
+.excerptSectionStudio .excerptToggle {
+  margin-left: 0;
+  margin-top: 0;
+  justify-content: flex-start;
+  width: auto;
+}
+
+.excerptSectionStudio .excerptPreview,
+.excerptSectionStudio .excerptInput {
+  width: 100%;
+  align-self: stretch;
+}
+
 .excerptToggle {
   display: inline-flex;
   align-items: center;

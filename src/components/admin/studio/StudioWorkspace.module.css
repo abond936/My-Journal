@@ -128,7 +128,7 @@
   gap: var(--spacing-sm);
   border: var(--border-width-thin) solid var(--border1-color);
   border-radius: var(--border-radius-md);
-  background: var(--layout-background2-color);
+  background: var(--layout-background1-color);
   padding: var(--spacing-md);
   font-size: var(--font-size-sm);
   color: var(--text2-color);
@@ -180,7 +180,7 @@
   padding: var(--spacing-md) var(--spacing-md) 0;
   border: var(--border-width-thin) solid var(--border1-color);
   border-radius: var(--border-radius-md);
-  background: var(--layout-background2-color);
+  background: var(--layout-background1-color);
   overflow: hidden;
 }
 
@@ -197,14 +197,70 @@
 .studioCardEditToolbar {
   flex-shrink: 0;
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
   padding: var(--spacing-xs) 0 0;
+}
+
+.studioComposeFormActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.studioComposeSaveButton {
+  min-height: 36px;
+  padding: var(--spacing-xs) var(--spacing-md);
+  background-color: var(--color3);
+  color: var(--button-solid-text-color);
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.studioComposeSaveButton:hover:not(:disabled) {
+  background-color: hsl(var(--h3), var(--s3), 25%);
+}
+
+.studioComposeSaveButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.studioComposeCancelButton {
+  min-height: 36px;
+  padding: var(--spacing-xs) var(--spacing-md);
+  background-color: transparent;
+  color: var(--text1-color);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.studioComposeCancelButton:hover:not(:disabled) {
+  background-color: var(--button-outline-background-color-hover);
+}
+
+.studioComposeCancelButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .studioCardEditScroll {
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* Compact CardForm inside narrow Studio column */
@@ -267,7 +323,7 @@
 }
 
 .studioCardEditInBankColumn {
-  flex: 0 1 380px;
+  flex: 0 1 480px;
   min-width: min(100%, 280px);
   min-height: 0;
   display: flex;
@@ -472,9 +528,11 @@
 }
 
 .studioFormSectionTitle {
-  margin: 0 0 var(--spacing-xs);
-  font-size: var(--font-size-md);
+  margin: 0 0 var(--spacing-sm);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
   color: var(--text1-color);
+  line-height: var(--line-height-tight);
 }
 
 .sourceHeading {
@@ -522,8 +580,8 @@
 }
 
 .mediaThumbFallback {
-  width: 68px;
-  height: 68px;
+  width: 102px;
+  height: 102px;
   display: grid;
   place-items: center;
   border-radius: var(--border-radius-sm);

@@ -24,7 +24,6 @@ import { useStudioCardFormStudioOptional } from '@/components/admin/studio/studi
 import { StudioDropZone } from '@/components/admin/studio/studioRelationshipDndPrimitives';
 import StudioCardFormGallery from '@/components/admin/studio/StudioCardFormGallery';
 import StudioCardFormChildren from '@/components/admin/studio/StudioCardFormChildren';
-import studioShellStyles from '@/components/admin/studio/StudioWorkspace.module.css';
 
 type CardDraftOption = {
   title: string;
@@ -65,7 +64,7 @@ function formatCardApiError(data: Record<string, unknown>): string {
 
 const CardForm: React.FC = () => {
   const {
-    formState: { cardData, isSaving, errors },
+    formState: { cardData, isSaving, errors, formRevision },
     allTags,
     setField,
     updateCoverImage,
@@ -358,28 +357,58 @@ const CardForm: React.FC = () => {
               placeholder="Subtitle"
               className={styles.subtitleInput}
             />
-            <div className={styles.excerptSection}>
-              {isExcerptAuto ? (
-                <div className={styles.excerptPreview}>
-                  {autoExcerptPreview || 'Excerpt will be generated from content when saved.'}
-                </div>
+            <div
+              className={clsx(styles.excerptSection, studioShellForm && styles.excerptSectionStudio)}
+            >
+              {studioShellForm ? (
+                <>
+                  <label className={styles.excerptToggle}>
+                    <input
+                      type="checkbox"
+                      checked={isExcerptAuto}
+                      onChange={handleExcerptAutoToggle}
+                    />
+                    <span className={styles.excerptToggleLabel}>Auto-generate from content</span>
+                  </label>
+                  {isExcerptAuto ? (
+                    <div className={styles.excerptPreview}>
+                      {autoExcerptPreview || 'Excerpt will be generated from content when saved.'}
+                    </div>
+                  ) : (
+                    <textarea
+                      value={cardData.excerpt || ''}
+                      onChange={handleExcerptChange}
+                      placeholder="Write a custom excerpt…"
+                      className={styles.excerptInput}
+                      rows={2}
+                    />
+                  )}
+                </>
               ) : (
-                <textarea
-                  value={cardData.excerpt || ''}
-                  onChange={handleExcerptChange}
-                  placeholder="Write a custom excerpt…"
-                  className={styles.excerptInput}
-                  rows={2}
-                />
+                <>
+                  {isExcerptAuto ? (
+                    <div className={styles.excerptPreview}>
+                      {autoExcerptPreview || 'Excerpt will be generated from content when saved.'}
+                    </div>
+                  ) : (
+                    <textarea
+                      value={cardData.excerpt || ''}
+                      onChange={handleExcerptChange}
+                      placeholder="Write a custom excerpt…"
+                      className={styles.excerptInput}
+                      rows={2}
+                    />
+                  )}
+                  <label className={styles.excerptToggle}>
+                    <input
+                      type="checkbox"
+                      checked={isExcerptAuto}
+                      onChange={handleExcerptAutoToggle}
+                    />
+                    <span className={styles.excerptToggleLabel}>Auto-generate from content</span>
+                  </label>
+                </>
               )}
-              <label className={styles.excerptToggle}>
-                <input
-                  type="checkbox"
-                  checked={isExcerptAuto}
-                  onChange={handleExcerptAutoToggle}
-                />
-                <span className={styles.excerptToggleLabel}>Auto-generate from content</span>
-              </label>
             </div>
             <div className={styles.statusSection}>
               <div className={styles.selectGroup}>
@@ -434,9 +463,6 @@ const CardForm: React.FC = () => {
                 accepts={['source', 'gallery']}
                 ariaLabel="Cover drop target: drop source or gallery media here to set cover"
               >
-                <p className={studioShellStyles.dropHint}>
-                  Drop from the Media bank (or a gallery row) here to assign cover.
-                </p>
                 <CoverPhotoContainer
                   coverImage={cardData.coverImage}
                   objectPosition={
@@ -506,6 +532,7 @@ const CardForm: React.FC = () => {
           <div className={styles.editorSection}>
             <h4 className={styles.sectionTitle}>Content</h4>
             <RichTextEditor
+              key={formRevision}
               currentCardId={cardData.docId}
               ref={editorRef}
               initialContent={cardData.content}

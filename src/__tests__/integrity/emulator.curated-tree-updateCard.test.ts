@@ -189,6 +189,27 @@ describeIfEmulator('Curated tree updateCard (Firestore emulator)', () => {
     });
   });
 
+  it('does not set curatedRoot when PATCH echoes empty childrenIds on a never-parent card', async () => {
+    const db = getFirestore(app);
+    await db.collection('cards').doc('standalone-1').set(
+      minimalCard('standalone-1', {
+        childrenIds: [],
+        curatedRoot: false,
+        curatedNavEligible: false,
+      })
+    );
+
+    const { updateCard } = await getCardService();
+    await updateCard('standalone-1', { title: 'Renamed', childrenIds: [] });
+
+    const snap = await db.collection('cards').doc('standalone-1').get();
+    expect(snap.exists).toBe(true);
+    const row = snap.data() as { title?: string; curatedRoot?: boolean; curatedNavEligible?: boolean };
+    expect(row.title).toBe('Renamed');
+    expect(row.curatedRoot).not.toBe(true);
+    expect(row.curatedNavEligible).not.toBe(true);
+  });
+
   it('rejects a childrenIds entry that references a missing card', async () => {
     const db = getFirestore(app);
     await db.collection('cards').doc('lonely-parent').set(

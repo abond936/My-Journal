@@ -51,12 +51,15 @@ function DraggableCard({
   children,
   disabled,
   onClick,
+  betweenHandleAndTitle,
 }: {
   card: Card;
   className: string;
   children: React.ReactNode;
   disabled?: boolean;
   onClick?: () => void;
+  /** Expand/collapse etc. — rendered after the drag handle, before the title block. */
+  betweenHandleAndTitle?: React.ReactNode;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `card:${card.docId}`,
@@ -85,6 +88,7 @@ function DraggableCard({
       >
         ⋮⋮
       </button>
+      {betweenHandleAndTitle}
       <div className={styles.nodeDragContent}>{children}</div>
     </div>
   );
@@ -221,47 +225,77 @@ export function CuratedTreeNode({
       ) : null}
       <div className={`${styles.nodeRow} ${selectedCardId === node.docId ? styles.nodeRowSelected : ''}`}>
         <div className={styles.nodeLead}>
-          {hasChildren ? (
-            <>
-              <button
-                type="button"
-                className={styles.treeExpandButton}
-                onClick={() => toggleExpanded(node.docId)}
-                aria-expanded={isExpanded}
-                title={isExpanded ? 'Collapse' : 'Expand'}
-              >
-                <span className={styles.treeExpandIcon}>{isExpanded ? '▼' : '►'}</span>
-              </button>
-              <span
-                className={styles.treePersistedMarker}
-                title={isExpanded ? 'Saved as expanded' : 'Saved as collapsed'}
-                aria-hidden="true"
-              >
-                {isExpanded ? '⊟' : '⊞'}
-              </span>
-            </>
-          ) : null}
           {disableCuratedDrag ? (
-            <div className={titleClassName}>
-              <StaticTreeRowCard
-                className={styles.nodeDragSurface}
-                disabled={saving}
-                onClick={() => onSelectCard(node.docId)}
-              >
-                <span className={styles.nodeTitle}>{cardLabel(node)}</span>
-              </StaticTreeRowCard>
-            </div>
+            <>
+              {hasChildren ? (
+                <>
+                  <button
+                    type="button"
+                    className={styles.treeExpandButton}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleExpanded(node.docId);
+                    }}
+                    aria-expanded={isExpanded}
+                    title={isExpanded ? 'Collapse' : 'Expand'}
+                  >
+                    <span className={styles.treeExpandIcon}>{isExpanded ? '▼' : '►'}</span>
+                  </button>
+                  <span
+                    className={styles.treePersistedMarker}
+                    title={isExpanded ? 'Saved as expanded' : 'Saved as collapsed'}
+                    aria-hidden="true"
+                  >
+                    {isExpanded ? '⊟' : '⊞'}
+                  </span>
+                </>
+              ) : null}
+              <div className={titleClassName}>
+                <StaticTreeRowCard
+                  className={styles.nodeDragSurface}
+                  disabled={saving}
+                  onClick={() => onSelectCard(node.docId)}
+                >
+                  <span className={styles.nodeTitle}>{cardLabel(node)}</span>
+                </StaticTreeRowCard>
+              </div>
+            </>
           ) : (
-            <ParentDropZone parentId={node.docId!} className={titleClassName}>
-              <DraggableCard
-                card={node}
-                className={styles.nodeDragSurface}
-                disabled={saving}
-                onClick={() => onSelectCard(node.docId)}
-              >
+            <DraggableCard
+              card={node}
+              className={styles.nodeDragSurface}
+              disabled={saving}
+              onClick={() => onSelectCard(node.docId)}
+              betweenHandleAndTitle={
+                hasChildren ? (
+                  <>
+                    <button
+                      type="button"
+                      className={styles.treeExpandButton}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleExpanded(node.docId);
+                      }}
+                      aria-expanded={isExpanded}
+                      title={isExpanded ? 'Collapse' : 'Expand'}
+                    >
+                      <span className={styles.treeExpandIcon}>{isExpanded ? '▼' : '►'}</span>
+                    </button>
+                    <span
+                      className={styles.treePersistedMarker}
+                      title={isExpanded ? 'Saved as expanded' : 'Saved as collapsed'}
+                      aria-hidden="true"
+                    >
+                      {isExpanded ? '⊟' : '⊞'}
+                    </span>
+                  </>
+                ) : null
+              }
+            >
+              <ParentDropZone parentId={node.docId!} className={titleClassName}>
                 <span className={styles.nodeTitle}>{cardLabel(node)}</span>
-              </DraggableCard>
-            </ParentDropZone>
+              </ParentDropZone>
+            </DraggableCard>
           )}
         </div>
         <div className={styles.nodeActions}>

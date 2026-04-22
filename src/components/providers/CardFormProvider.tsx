@@ -34,6 +34,9 @@ interface FormState {
   lastSavedState: {
     cardData: CardUpdate;
   };
+
+  /** Bumps on `resetForm` so RichTextEditor can remount and match reverted `cardData.content`. */
+  formRevision: number;
 }
 
 /**
@@ -80,7 +83,11 @@ interface FormContextValue {
    */
   commitGalleryMediaPersisted: (nextGallery: HydratedGalleryMediaItem[]) => void;
 
-  /** Studio: merge shell-refetched relationship fields; keeps other dirty fields intact. */
+  /**
+   * Studio: merge shell-refetched relationship fields into `cardData` only (not `lastSavedState`).
+   * Relationship DnD PATCHes the server first; this keeps the form UI in sync while leaving Compose
+   * Save enabled until a full save aligns the dirty baseline.
+   */
   applyShellRelationshipSync: (snap: Partial<ShellRelationshipSnapshot>) => void;
 }
 
@@ -157,6 +164,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       lastSavedState: {
         cardData: card,
       },
+      formRevision: 0,
     };
   });
 
@@ -172,7 +180,8 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
             errors: {},
             lastSavedState: {
               cardData: mergedCard
-            }
+            },
+            formRevision: 0,
           };
         }
         return prevState;
@@ -266,19 +275,15 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     ] as const satisfies readonly (keyof ShellRelationshipSnapshot)[];
     setFormState((prev) => {
       let nextCard = prev.cardData;
-      let nextSaved = prev.lastSavedState.cardData;
       for (const k of keys) {
         if (!Object.prototype.hasOwnProperty.call(snap, k)) continue;
         const v = snap[k];
         nextCard = { ...nextCard, [k]: v } as CardUpdate;
-        nextSaved = { ...nextSaved, [k]: v } as CardUpdate;
       }
       const mergedCard = mergeEditorContentInto(nextCard);
-      const mergedSaved = mergeEditorContentInto(nextSaved);
       return {
         ...prev,
         cardData: mergedCard,
-        lastSavedState: { cardData: mergedSaved },
       };
     });
   }, [mergeEditorContentInto]);
@@ -439,14 +444,15 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
 
   const resetForm = useCallback(() => {
     const card = mergeInitialCard(initialCard);
-    setFormState({
+    setFormState((prev) => ({
       cardData: card,
       isSaving: false,
       errors: {},
       lastSavedState: {
         cardData: card,
       },
-    });
+      formRevision: prev.formRevision + 1,
+    }));
   }, [initialCard]);
 
   const contextValue = useMemo(

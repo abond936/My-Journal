@@ -326,11 +326,6 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
         {embedded ? (
           <>
             <h2 className={styles.embeddedTitle}>Media</h2>
-            <p className={styles.studioMediaIntro}>
-              This column only affects <strong>media</strong> (files), not the Cards bank. <strong>Server</strong>{' '}
-              sets who/what/when/where on the media API request; <strong>Page</strong> narrows the rows already
-              loaded. Card-form dimensional tags are kept separate unless you enable sync below.
-            </p>
             <label className={styles.studioSyncToggle}>
               <input
                 type="checkbox"
@@ -375,7 +370,6 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                 </div>
               </div>
               <div className={styles.studioMediaRightPane}>
-                <p className={styles.studioMediaSectionLabel}>Files & assignment</p>
                 <div className={styles.studioMediaRowOne}>
                   <label className={styles.studioInlineLabel}>
                     Source
@@ -445,7 +439,6 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                     Clear
                   </button>
                 </div>
-                <p className={styles.studioMediaSectionLabel}>Dimensional tags</p>
                 <div className={styles.studioMediaDimMatrix}>
                   {DIMENSION_KEYS.map((dimension) => {
                     const state = dimensionFilters[dimension];

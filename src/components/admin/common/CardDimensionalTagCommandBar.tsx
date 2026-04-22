@@ -30,6 +30,8 @@ export interface CardDimensionalTagCommandBarProps {
   trailingSlot?: React.ReactNode;
   /** Form-level tag validation message / outline (e.g. when full selector is hidden on card edit). */
   tagError?: string;
+  /** Search field placeholder (default matches Media toolbar “Edit tags…”). */
+  searchPlaceholder?: string;
 }
 
 export default function CardDimensionalTagCommandBar({
@@ -41,6 +43,7 @@ export default function CardDimensionalTagCommandBar({
   variant = 'default',
   trailingSlot,
   tagError,
+  searchPlaceholder = 'Edit tags…',
 }: CardDimensionalTagCommandBarProps) {
   const [query, setQuery] = useState('');
   const [highlightIndex, setHighlightIndex] = useState(-1);
@@ -199,7 +202,7 @@ export default function CardDimensionalTagCommandBar({
           ref={searchInputRef}
           type="text"
           className={clsx(styles.searchInput, variant === 'searchOnly' && styles.searchInputFoot)}
-          placeholder="Search all tags by name or path…"
+          placeholder={searchPlaceholder}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onSearchKeyDown}

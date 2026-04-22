@@ -6,6 +6,7 @@ import type { OrganizedTags } from '@/lib/types/tag';
 import {
   DIMENSION_LABEL,
   DIMENSION_ORDER,
+  formatCoreTagsTooltipLines,
   type TagDimension,
 } from '@/lib/utils/tagDisplay';
 import styles from './DirectDimensionChips.module.css';
@@ -23,7 +24,7 @@ export interface DirectDimensionChipCellProps {
 }
 
 /**
- * One dimension: first direct tag name (ellipsis) + `+n` for additional direct tags.
+ * One dimension: first direct tag name (hard clip) + `+` when more exist.
  * Hover `title` lists all direct tag names in that dimension.
  */
 export function DirectDimensionChipCell({
@@ -47,7 +48,7 @@ export function DirectDimensionChipCell({
         <span className={styles.chipLabel}>{names[0]}</span>
         {names.length > 1 ? (
           <span className={styles.chipMore} aria-hidden={true}>
-            +{names.length - 1}
+            +
           </span>
         ) : null}
       </div>
@@ -90,19 +91,19 @@ export interface DirectDimensionTagsRailProps {
 
 /**
  * Same dimension order as chips row (Who → What → When → Where) without column labels.
- * For admin media grid: full tag names, wrapping, read-only.
+ * One clipped preview per dimension; native `title` lists all tags in that dimension.
  */
 export function DirectDimensionTagsRail({ core, tagNameMap, className }: DirectDimensionTagsRailProps) {
+  const railTitle = `Who → What → When → Where (top to bottom).\n\n${formatCoreTagsTooltipLines(core, (id) => tagNameMap.get(id) ?? id)}`;
   return (
-    <div
-      className={clsx(styles.rail, className)}
-      title="Dimension order (top to bottom): Who, What, When, Where."
-    >
+    <div className={clsx(styles.rail, className)} title={railTitle}>
       {DIMENSION_ORDER.map((dim, index) => {
         const ids = core[dim];
         const label = DIMENSION_LABEL[dim];
         const names = resolveNames(ids, tagNameMap);
         const groupTitle = names.length === 0 ? `${label}: (none)` : `${label}: ${names.join(', ')}`;
+        const firstName = names[0] ?? '';
+        const restCount = ids.length - 1;
         return (
           <div
             key={dim}
@@ -112,11 +113,22 @@ export function DirectDimensionTagsRail({ core, tagNameMap, className }: DirectD
             {ids.length === 0 ? (
               <span className={styles.railEmpty}>—</span>
             ) : (
-              ids.map((id) => (
-                <span key={`${dim}-${id}`} className={styles.railLine} title={`${label}: ${tagNameMap.get(id) ?? id}`}>
-                  {tagNameMap.get(id) ?? id}
-                </span>
-              ))
+              <span
+                className={clsx(
+                  styles.railLinePill,
+                  dim === 'who' && styles.railLineWho,
+                  dim === 'what' && styles.railLineWhat,
+                  dim === 'when' && styles.railLineWhen,
+                  dim === 'where' && styles.railLineWhere
+                )}
+              >
+                <span className={styles.railLineText}>{firstName}</span>
+                {restCount > 0 ? (
+                  <span className={styles.railMore} aria-hidden>
+                    +
+                  </span>
+                ) : null}
+              </span>
             )}
           </div>
         );

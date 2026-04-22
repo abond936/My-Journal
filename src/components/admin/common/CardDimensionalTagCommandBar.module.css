@@ -43,6 +43,11 @@
   font-size: var(--font-size-sm);
 }
 
+.wrapCompact .dimLabel {
+  font-weight: var(--font-weight-normal);
+  font-size: var(--font-size-xs);
+}
+
 .chipStrip {
   display: flex;
   flex-wrap: wrap;
@@ -98,7 +103,8 @@
   padding: var(--spacing-sm) var(--spacing-md);
   border: var(--border-width-thin) solid var(--border1-color);
   border-radius: var(--border-radius-md);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-normal);
   background: var(--layout-background2-color);
   color: var(--text1-color);
 }
@@ -177,6 +183,10 @@
 .errorMessage {
   color: var(--state-error-text-color);
   font-size: var(--font-size-sm);
+}
+
+.wrapCompact .chip {
+  font-size: var(--font-size-xs);
 }
 
 .wrapCompact .suggestions {

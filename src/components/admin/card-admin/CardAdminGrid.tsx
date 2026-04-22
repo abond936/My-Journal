@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useDraggable, useDroppable, useDndContext } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import JournalImage from '@/components/common/JournalImage';
@@ -8,9 +8,18 @@ import { useRouter } from 'next/navigation';
 import { Card } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import { formatCoreTagsTooltipLines } from '@/lib/utils/tagDisplay';
+import {
+  buildResolvedTagDimensionMap,
+  buildTagByIdMap,
+  getCoreTagsByDimensionFromTagIds,
+} from '@/lib/utils/tagDimensionResolve';
 import styles from './CardAdminGrid.module.css';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
 import DimensionalTagVerticalChips from '@/components/admin/common/DimensionalTagVerticalChips';
+import AdminGridCellChrome from '@/components/admin/common/AdminGridCellChrome';
+import chromeStyles from '@/components/admin/common/AdminGridCellChrome.module.css';
+import { adminChromeSelector, ADMIN_GRID_CHROME } from '@/components/admin/common/adminGridChromeAttr';
 
 interface CardAdminGridProps {
   cards: Card[];
@@ -46,6 +55,25 @@ function pickCaption(card: Card): string {
     if (v != null && String(v).trim()) return String(v).trim();
   }
   return '';
+}
+
+/** Cover hover: title, caption, then full Who/What/When/Where tag lines. */
+function buildCardThumbnailTooltip(card: Card, allTags: Tag[]): string {
+  const resolvedDimension = buildResolvedTagDimensionMap(allTags);
+  const core = getCoreTagsByDimensionFromTagIds(card.tags ?? [], resolvedDimension);
+  const tagById = buildTagByIdMap(allTags);
+  const tagLines = formatCoreTagsTooltipLines(core, (id) => tagById.get(id)?.name ?? id);
+  const captionLine = pickCaption(card);
+  return [card.title || 'Untitled', captionLine || null, tagLines].filter(Boolean).join('\n\n');
+}
+
+function isCardGridChromeInteractiveTarget(t: HTMLElement): boolean {
+  return Boolean(
+    t.closest(adminChromeSelector(ADMIN_GRID_CHROME.overlayTopStart)) ||
+      t.closest(adminChromeSelector(ADMIN_GRID_CHROME.overlayTopEnd)) ||
+      t.closest(adminChromeSelector(ADMIN_GRID_CHROME.tagRail)) ||
+      t.closest(adminChromeSelector(ADMIN_GRID_CHROME.tagSearchFoot))
+  );
 }
 
 interface CardAdminGridPlainCellProps {
@@ -84,52 +112,56 @@ function CardAdminGridPlainCell({
   };
 
   const captionLine = pickCaption(card);
+  const thumbnailTooltip = useMemo(
+    () => buildCardThumbnailTooltip(card, allTags),
+    [card.docId, card.tags, card.title, card.excerpt, card.subtitle, allTags]
+  );
+
+  const onImageColumnClick = (e: React.MouseEvent) => {
+    const t = e.target as HTMLElement;
+    if (t.closest('a, button, input, textarea')) return;
+    activatePrimary();
+    e.stopPropagation();
+  };
 
   return (
-    <div
-      id={`card-${card.docId}`}
-      className={`${styles.cell} ${isSelected ? styles.selected : ''}`}
-      title={[card.title || 'Untitled', captionLine].filter(Boolean).join('\n')}
-      onClick={(e) => {
-        const t = e.target as HTMLElement;
-        if (
-          t.closest(`.${styles.cellHeaderStart}`) ||
-          t.closest(`.${styles.cellHeaderActions}`) ||
-          t.closest(`.${styles.tagRail}`) ||
-          t.closest(`.${styles.tagSearchFoot}`)
-        )
-          return;
-        activatePrimary();
-      }}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if ((e.target as HTMLElement).closest('input, textarea, button, [role="listbox"]')) return;
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
+    <AdminGridCellChrome
+      selected={isSelected}
+      rootProps={{
+        id: `card-${card.docId}`,
+        title: thumbnailTooltip,
+        onClick: (e) => {
+          const t = e.target as HTMLElement;
+          if (isCardGridChromeInteractiveTarget(t)) return;
           activatePrimary();
-        }
+        },
+        role: 'button',
+        tabIndex: 0,
+        onKeyDown: (e) => {
+          if ((e.target as HTMLElement).closest('input, textarea, button, [role="listbox"]')) return;
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            activatePrimary();
+          }
+        },
       }}
-    >
-      <div className={styles.cellHeader}>
-        <div className={styles.cellHeaderStart} onClick={(e) => e.stopPropagation()}>
+      overlayTopStart={
+        <div onClick={(e) => e.stopPropagation()}>
           <input
             type="checkbox"
             checked={isSelected}
             onChange={onCheckboxChange}
             disabled={interactionDisabled}
             aria-label={`Select ${card.title || 'Untitled'}`}
-            className={styles.cellHeaderCheckbox}
+            className={chromeStyles.checkbox}
           />
         </div>
-        <div className={styles.cellHeaderMid}>
-          <span className={styles.typeBadge}>{card.type}</span>
-          <span className={`${styles.statusBadge} ${styles[card.status]}`}>{card.status}</span>
-        </div>
-        <div className={styles.cellHeaderActions} onClick={(e) => e.stopPropagation()}>
+      }
+      overlayTopEnd={
+        <div onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
-            className={styles.deleteBtn}
+            className={chromeStyles.deleteBtn}
             onClick={(e) => {
               e.stopPropagation();
               onDelete();
@@ -140,56 +172,73 @@ function CardAdminGridPlainCell({
             🗑️
           </button>
         </div>
-      </div>
-
-      <div className={styles.cellMain}>
-        <div className={styles.tagRail}>
-          <DimensionalTagVerticalChips
-            card={card}
-            allTags={allTags}
-            disabled={interactionDisabled}
-            onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
-          />
-        </div>
-        <div className={styles.imageCol}>
-          <div className={styles.thumbnailWrap} style={coverAspectStyle(card.coverImage)}>
-            {card.coverImage ? (
-              <JournalImage
-                src={getDisplayUrl(card.coverImage)}
-                alt={card.title || 'Cover'}
-                fill
-                className={styles.thumbnailNatural}
-                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 200px"
-              />
-            ) : (
-              <div className={styles.noCover}>No cover</div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {!compactStudioGrid ? (
-        <div className={styles.title} title={card.title}>
-          {card.title || 'Untitled'}
-        </div>
-      ) : null}
-
-      {captionLine ? (
-        <div className={styles.caption} title={captionLine}>
-          {captionLine}
-        </div>
-      ) : null}
-
-      <div className={styles.tagSearchFoot}>
-        <CardDimensionalTagCommandBar
+      }
+      overlayLeftRail={
+        <DimensionalTagVerticalChips
           card={card}
           allTags={allTags}
-          variant="searchOnly"
           disabled={interactionDisabled}
           onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
         />
-      </div>
-    </div>
+      }
+      overlayBottom={
+        <>
+          <span className={chromeStyles.metaBadge}>{card.type}</span>
+          <span
+            className={
+              card.status === 'draft' ? chromeStyles.metaBadgeDraft : chromeStyles.metaBadgePublished
+            }
+          >
+            {card.status}
+          </span>
+        </>
+      }
+      thumbnail={
+        <div
+          className={styles.thumbnailWrap}
+          style={coverAspectStyle(card.coverImage)}
+          title={thumbnailTooltip}
+          onClick={onImageColumnClick}
+        >
+          {card.coverImage ? (
+            <JournalImage
+              src={getDisplayUrl(card.coverImage)}
+              alt={card.title || 'Cover'}
+              fill
+              className={styles.thumbnailNatural}
+              sizes={
+                compactStudioGrid
+                  ? '(max-width: 768px) 95vw, min(360px, 40vw)'
+                  : '(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 200px'
+              }
+            />
+          ) : (
+            <div className={styles.noCover}>No cover</div>
+          )}
+        </div>
+      }
+      belowThumbnail={
+        <>
+          <div className={styles.title} title={card.title}>
+            {card.title || 'Untitled'}
+          </div>
+          {captionLine ? (
+            <div className={styles.caption} title={captionLine}>
+              {captionLine}
+            </div>
+          ) : null}
+          <div className={styles.tagSearchFoot} data-admin-chrome={ADMIN_GRID_CHROME.tagSearchFoot}>
+            <CardDimensionalTagCommandBar
+              card={card}
+              allTags={allTags}
+              variant="searchOnly"
+              disabled={interactionDisabled}
+              onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
+            />
+          </div>
+        </>
+      }
+    />
   );
 }
 
@@ -256,56 +305,60 @@ function CardAdminGridStudioCell({
   };
 
   const captionLine = pickCaption(card);
+  const thumbnailTooltip = useMemo(
+    () => buildCardThumbnailTooltip(card, allTags),
+    [card.docId, card.tags, card.title, card.excerpt, card.subtitle, allTags]
+  );
+
+  const onImageColumnClick = (e: React.MouseEvent) => {
+    const t = e.target as HTMLElement;
+    if (t.closest('a, button, input, textarea')) return;
+    activatePrimary();
+    e.stopPropagation();
+  };
 
   return (
-    <div
-      ref={needsCellRef ? setCellRef : undefined}
-      style={cellStyle}
-      id={`card-${card.docId}`}
-      className={`${styles.cell} ${isSelected ? styles.selected : ''}`}
-      title={[card.title || 'Untitled', captionLine].filter(Boolean).join('\n')}
-      onClick={(e) => {
-        const t = e.target as HTMLElement;
-        if (
-          t.closest(`.${styles.cellHeaderStart}`) ||
-          t.closest(`.${styles.cellHeaderActions}`) ||
-          t.closest(`.${styles.tagRail}`) ||
-          t.closest(`.${styles.tagSearchFoot}`)
-        )
-          return;
-        activatePrimary();
-      }}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if ((e.target as HTMLElement).closest('input, textarea, button, [role="listbox"]')) return;
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
+    <AdminGridCellChrome
+      selected={isSelected}
+      rootProps={{
+        ref: needsCellRef ? setCellRef : undefined,
+        style: cellStyle,
+        id: `card-${card.docId}`,
+        title: thumbnailTooltip,
+        onClick: (e) => {
+          const t = e.target as HTMLElement;
+          if (isCardGridChromeInteractiveTarget(t)) return;
           activatePrimary();
-        }
+        },
+        role: 'button',
+        tabIndex: 0,
+        onKeyDown: (e) => {
+          if ((e.target as HTMLElement).closest('input, textarea, button, [role="listbox"]')) return;
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            activatePrimary();
+          }
+        },
       }}
-    >
-      <div className={styles.cellHeader}>
-        <div className={styles.cellHeaderStart} onClick={(e) => e.stopPropagation()}>
+      overlayTopStart={
+        <div onClick={(e) => e.stopPropagation()}>
           <input
             type="checkbox"
             checked={isSelected}
             onChange={onCheckboxChange}
             disabled={interactionDisabled}
             aria-label={`Select ${card.title || 'Untitled'}`}
-            className={styles.cellHeaderCheckbox}
+            className={chromeStyles.checkbox}
           />
         </div>
-        <div className={styles.cellHeaderMid}>
-          <span className={styles.typeBadge}>{card.type}</span>
-          <span className={`${styles.statusBadge} ${styles[card.status]}`}>{card.status}</span>
-        </div>
-        <div className={styles.cellHeaderActions} onClick={(e) => e.stopPropagation()}>
+      }
+      overlayTopEnd={
+        <div onClick={(e) => e.stopPropagation()}>
           {studioCuratedTreeDrag ? (
             <button
               type="button"
               ref={rowDnd.setActivatorNodeRef}
-              className={styles.curatedDragHandle}
+              className={chromeStyles.curatedDragHandle}
               {...rowDnd.listeners}
               {...rowDnd.attributes}
               disabled={interactionDisabled}
@@ -317,7 +370,7 @@ function CardAdminGridStudioCell({
           ) : null}
           <button
             type="button"
-            className={styles.deleteBtn}
+            className={chromeStyles.deleteBtn}
             onClick={(e) => {
               e.stopPropagation();
               onDelete();
@@ -328,56 +381,73 @@ function CardAdminGridStudioCell({
             🗑️
           </button>
         </div>
-      </div>
-
-      <div className={styles.cellMain}>
-        <div className={styles.tagRail}>
-          <DimensionalTagVerticalChips
-            card={card}
-            allTags={allTags}
-            disabled={interactionDisabled}
-            onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
-          />
-        </div>
-        <div className={styles.imageCol}>
-          <div className={styles.thumbnailWrap} style={coverAspectStyle(card.coverImage)}>
-            {card.coverImage ? (
-              <JournalImage
-                src={getDisplayUrl(card.coverImage)}
-                alt={card.title || 'Cover'}
-                fill
-                className={styles.thumbnailNatural}
-                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 200px"
-              />
-            ) : (
-              <div className={styles.noCover}>No cover</div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {!compactStudioGrid ? (
-        <div className={styles.title} title={card.title}>
-          {card.title || 'Untitled'}
-        </div>
-      ) : null}
-
-      {captionLine ? (
-        <div className={styles.caption} title={captionLine}>
-          {captionLine}
-        </div>
-      ) : null}
-
-      <div className={styles.tagSearchFoot}>
-        <CardDimensionalTagCommandBar
+      }
+      overlayLeftRail={
+        <DimensionalTagVerticalChips
           card={card}
           allTags={allTags}
-          variant="searchOnly"
           disabled={interactionDisabled}
           onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
         />
-      </div>
-    </div>
+      }
+      overlayBottom={
+        <>
+          <span className={chromeStyles.metaBadge}>{card.type}</span>
+          <span
+            className={
+              card.status === 'draft' ? chromeStyles.metaBadgeDraft : chromeStyles.metaBadgePublished
+            }
+          >
+            {card.status}
+          </span>
+        </>
+      }
+      thumbnail={
+        <div
+          className={styles.thumbnailWrap}
+          style={coverAspectStyle(card.coverImage)}
+          title={thumbnailTooltip}
+          onClick={onImageColumnClick}
+        >
+          {card.coverImage ? (
+            <JournalImage
+              src={getDisplayUrl(card.coverImage)}
+              alt={card.title || 'Cover'}
+              fill
+              className={styles.thumbnailNatural}
+              sizes={
+                compactStudioGrid
+                  ? '(max-width: 768px) 95vw, min(360px, 40vw)'
+                  : '(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 200px'
+              }
+            />
+          ) : (
+            <div className={styles.noCover}>No cover</div>
+          )}
+        </div>
+      }
+      belowThumbnail={
+        <>
+          <div className={styles.title} title={card.title}>
+            {card.title || 'Untitled'}
+          </div>
+          {captionLine ? (
+            <div className={styles.caption} title={captionLine}>
+              {captionLine}
+            </div>
+          ) : null}
+          <div className={styles.tagSearchFoot} data-admin-chrome={ADMIN_GRID_CHROME.tagSearchFoot}>
+            <CardDimensionalTagCommandBar
+              card={card}
+              allTags={allTags}
+              variant="searchOnly"
+              disabled={interactionDisabled}
+              onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
+            />
+          </div>
+        </>
+      }
+    />
   );
 }
 

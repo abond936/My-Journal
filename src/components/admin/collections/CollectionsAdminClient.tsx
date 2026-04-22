@@ -39,13 +39,15 @@ import {
   optimisticInsertRootBefore,
   optimisticPromoteToRootAppend,
 } from '@/lib/utils/optimisticCuratedCollections';
+import { EMBEDDED_ADMIN_WIDE_MIN_WIDTH_PX } from '@/lib/admin/embeddedWideMinWidthPx';
 import { fetchAdminCardSnapshot } from '@/lib/utils/fetchAdminCardSnapshot';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import styles from '@/app/admin/collections/page.module.css';
+import cardAdminStyles from '@/app/admin/card-admin/card-admin.module.css';
 import CollectionsMediaPanel from '@/components/admin/collections/CollectionsMediaPanel';
 import type { EmbeddedUnparentedBankContext } from '@/components/admin/collections/embeddedUnparentedBankContext';
 import { getCuratedTreeMasterId, isCuratedTreeDndEnabled } from '@/lib/config/curatedTreeDnd';
-import { useDefaultDndSensors } from '@/lib/hooks/useDefaultDndSensors';
+import { DND_POINTER_IGNORE_ATTR, useDefaultDndSensors } from '@/lib/hooks/useDefaultDndSensors';
 import TagAdminStudioPane from '@/components/admin/studio/TagAdminStudioPane';
 
 const COLLECTIONS_CENTER_COLUMNS_KEY = 'collectionsCenterPaneWidths';
@@ -301,7 +303,7 @@ export default function CollectionsAdminClient({
   }, []);
 
   useEffect(() => {
-    const mq = window.matchMedia('(min-width: 981px)');
+    const mq = window.matchMedia(`(min-width: ${EMBEDDED_ADMIN_WIDE_MIN_WIDTH_PX}px)`);
     const apply = () => setWideCenterLayout(mq.matches);
     apply();
     mq.addEventListener('change', apply);
@@ -1090,25 +1092,27 @@ export default function CollectionsAdminClient({
             {studioAttachBank ? (
               <section className={`${styles.panel} ${styles.panelStudioLeftTabs}`}>
                 <h2 className={styles.panelStudioColumnTitle}>Organization</h2>
-                <div className={styles.studioLeftTabBar} role="tablist" aria-label="Tags and curated tree">
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={studioLeftTab === 'tags'}
-                    className={`${styles.studioLeftTab} ${studioLeftTab === 'tags' ? styles.studioLeftTabActive : ''}`}
-                    onClick={() => setStudioLeftTab('tags')}
-                  >
-                    Tags
-                  </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={studioLeftTab === 'tree'}
-                    className={`${styles.studioLeftTab} ${studioLeftTab === 'tree' ? styles.studioLeftTabActive : ''}`}
-                    onClick={() => setStudioLeftTab('tree')}
-                  >
-                    Tree
-                  </button>
+                <div className={styles.studioLeftTabToggleRow}>
+                  <div className={cardAdminStyles.viewToggleButtonGroup} role="tablist" aria-label="Tags and curated tree">
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={studioLeftTab === 'tags'}
+                      className={`${cardAdminStyles.viewToggleButton} ${studioLeftTab === 'tags' ? cardAdminStyles.viewToggleActive : ''}`}
+                      onClick={() => setStudioLeftTab('tags')}
+                    >
+                      Tags
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={studioLeftTab === 'tree'}
+                      className={`${cardAdminStyles.viewToggleButton} ${studioLeftTab === 'tree' ? cardAdminStyles.viewToggleActive : ''}`}
+                      onClick={() => setStudioLeftTab('tree')}
+                    >
+                      Tree
+                    </button>
+                  </div>
                 </div>
                 {studioLeftTab === 'tags' ? (
                   <div className={styles.studioLeftTabPanel} role="tabpanel">
@@ -1222,6 +1226,7 @@ export default function CollectionsAdminClient({
                     ? 'Resize Tags or Tree column and Cards column'
                     : 'Resize curated tree and unparented columns'
                 }
+                {...{ [DND_POINTER_IGNORE_ATTR]: '' }}
                 onPointerDown={onColResizePointerDown(1)}
               />
             ) : null}
@@ -1317,6 +1322,7 @@ export default function CollectionsAdminClient({
                     ? 'Resize Cards and media columns'
                     : 'Resize unparented and media columns'
                 }
+                {...{ [DND_POINTER_IGNORE_ATTR]: '' }}
                 onPointerDown={onColResizePointerDown(2)}
               />
             ) : null}
