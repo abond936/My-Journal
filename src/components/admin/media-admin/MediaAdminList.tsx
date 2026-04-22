@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { useMedia } from '@/components/providers/MediaProvider';
+import { applyModifierSelection } from '@/lib/utils/adminListSelection';
 import MediaAdminRow from './MediaAdminRow';
 import { MediaAdminRowStudioSource } from './MediaAdminRowStudioSource';
 import MediaResizableHeader from './MediaResizableHeader';
@@ -66,7 +67,7 @@ const defaultColumns: ColumnConfig[] = [
   { key: 'when', label: 'When', width: 150, minWidth: 100, maxWidth: 280 },
   { key: 'where', label: 'Where', width: 150, minWidth: 100, maxWidth: 280 },
   { key: 'sourcePath', label: 'Source Path', width: 400, minWidth: 300, maxWidth: 800, sortable: true },
-  { key: 'actions', label: 'Actions', width: 120, minWidth: 100, maxWidth: 150 },
+  { key: 'actions', label: 'Actions', width: 92, minWidth: 80, maxWidth: 130 },
 ];
 
 function getColumnsForVariant(variant: 'full' | 'compact'): ColumnConfig[] {
@@ -75,7 +76,7 @@ function getColumnsForVariant(variant: 'full' | 'compact'): ColumnConfig[] {
     .filter((col) => !COMPACT_HIDDEN_COLUMN_KEYS.has(col.key))
     .map((col) =>
       col.key === 'actions'
-        ? { ...col, width: 176, minWidth: 150, maxWidth: 260 }
+        ? { ...col, width: 100, minWidth: 80, maxWidth: 200 }
         : col
     );
 }
@@ -111,13 +112,8 @@ export default function MediaAdminList({
   studioSourceDraggable?: boolean;
   clientSort?: 'none' | 'filenameAsc' | 'filenameDesc';
 }) {
-  const { 
-    media, 
-    selectedMediaIds, 
-    toggleMediaSelection, 
-    selectAll, 
-    selectNone 
-  } = useMedia();
+  const { media, selectedMediaIds, setSelectedMediaIds } = useMedia();
+  const selectionAnchorIndexRef = useRef<number | null>(null);
 
   const storageKey = variant === 'compact' ? MEDIA_COLUMN_WIDTHS_KEY_COMPACT : MEDIA_COLUMN_WIDTHS_KEY;
 
@@ -157,6 +153,48 @@ export default function MediaAdminList({
     });
   }, [media, sourcePathFirst, dimensionFilters, clientSort]);
 
+  const visibleIds = useMemo(() => visibleMedia.map((m) => m.docId), [visibleMedia]);
+
+  const handleRowSelectionClick = useCallback(
+    (e: React.MouseEvent | React.KeyboardEvent, id: string, index: number) => {
+      e.preventDefault();
+      e.stopPropagation();
+      applyModifierSelection({
+        orderedIds: visibleIds,
+        id,
+        index,
+        modifiers: e,
+        selected: selectedMediaIds,
+        setSelected: setSelectedMediaIds,
+        anchorIndexRef: selectionAnchorIndexRef,
+      });
+    },
+    [visibleIds, selectedMediaIds, setSelectedMediaIds]
+  );
+
+  const handleSelectAllVisible = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.checked) {
+        setSelectedMediaIds((prev) => {
+          const s = new Set(prev);
+          visibleIds.forEach((id) => s.add(id));
+          return [...s];
+        });
+        selectionAnchorIndexRef.current = visibleIds.length > 0 ? visibleIds.length - 1 : null;
+      } else {
+        setSelectedMediaIds((prev) => {
+          const v = new Set(visibleIds);
+          return prev.filter((id) => !v.has(id));
+        });
+        selectionAnchorIndexRef.current = null;
+      }
+    },
+    [visibleIds, setSelectedMediaIds]
+  );
+
+  const allVisibleSelected =
+    visibleIds.length > 0 && visibleIds.every((id) => selectedMediaIds.includes(id));
+
   useEffect(() => {
     setColumns(loadInitialColumns(variant));
   }, [variant]);
@@ -179,6 +217,8 @@ export default function MediaAdminList({
   };
 
   const totalWidth = columns.reduce((sum, col) => sum + col.width, 0) + 40; // +40 for checkbox column
+  /** Focal control lives in the actions column when the Object position column is hidden (e.g. compact). */
+  const focalInActionsColumn = !columns.some((c) => c.key === 'objectPosition');
 
   return (
     <div className={variant === 'compact' ? `${styles.container} ${styles.containerCompact}` : styles.container}>
@@ -196,8 +236,9 @@ export default function MediaAdminList({
               <th className={styles.checkboxCell} style={{ width: 40 }}>
                 <input
                   type="checkbox"
-                  checked={selectedMediaIds.length === media.length && media.length > 0}
-                  onChange={(e) => e.target.checked ? selectAll() : selectNone()}
+                  checked={allVisibleSelected}
+                  onChange={handleSelectAllVisible}
+                  aria-label="Select all media on this table"
                 />
               </th>
               {columns.map((column) => (
@@ -208,20 +249,28 @@ export default function MediaAdminList({
                   maxWidth={column.maxWidth}
                   onResize={(width) => handleColumnResize(column.key, width)}
                 >
-                  {column.label}
+                  {column.key === 'actions' ? (
+                    <div className={styles.tableHeaderStack}>
+                      {focalInActionsColumn ? <span>Focal</span> : null}
+                      <span>Replace</span>
+                      <span>Delete</span>
+                    </div>
+                  ) : (
+                    column.label
+                  )}
                 </MediaResizableHeader>
               ))}
             </tr>
           </thead>
           <tbody>
-            {visibleMedia.map((item) =>
+            {visibleMedia.map((item, index) =>
               studioSourceDraggable ? (
                 <MediaAdminRowStudioSource
                   key={item.docId}
                   media={item}
                   columns={columns}
                   isSelected={selectedMediaIds.includes(item.docId)}
-                  onToggleSelection={() => toggleMediaSelection(item.docId)}
+                  onSelectionCheckboxClick={(e) => handleRowSelectionClick(e, item.docId, index)}
                 />
               ) : (
                 <MediaAdminRow
@@ -229,7 +278,7 @@ export default function MediaAdminList({
                   media={item}
                   columns={columns}
                   isSelected={selectedMediaIds.includes(item.docId)}
-                  onToggleSelection={() => toggleMediaSelection(item.docId)}
+                  onSelectionCheckboxClick={(e) => handleRowSelectionClick(e, item.docId, index)}
                 />
               )
             )}

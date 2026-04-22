@@ -35,7 +35,7 @@ interface MediaAdminRowProps {
   media: Media;
   columns: ColumnConfig[];
   isSelected: boolean;
-  onToggleSelection: () => void;
+  onSelectionCheckboxClick: (e: React.MouseEvent | React.KeyboardEvent) => void;
   /** When set (Studio + `DndContext`), row is draggable as `source:{mediaId}` for cover/gallery drops. */
   studioDragBind?: MediaAdminRowStudioDragBind;
 }
@@ -47,7 +47,7 @@ export default function MediaAdminRow({
   media,
   columns,
   isSelected,
-  onToggleSelection,
+  onSelectionCheckboxClick,
   studioDragBind,
 }: MediaAdminRowProps) {
   const focalInActions = !columns.some((c) => c.key === 'objectPosition');
@@ -295,7 +295,7 @@ export default function MediaAdminRow({
                 type="button"
                 onClick={() => setFocalModalOpen(true)}
                 className={styles.actionButton}
-                title="Default focal (crop)"
+                title="Set default focal point (crop)"
                 disabled={replacing}
               >
                 Focal
@@ -309,20 +309,22 @@ export default function MediaAdminRow({
               onChange={handleReplaceFileChange}
             />
             <button
+              type="button"
               onClick={handleReplaceClick}
               className={styles.actionButton}
               title="Replace image file"
               disabled={replacing}
             >
-              {replacing ? '...' : '↺'}
+              {replacing ? '…' : 'Replace'}
             </button>
-            <button 
+            <button
+              type="button"
               onClick={handleDelete}
               className={`${styles.actionButton} ${styles.deleteButton}`}
               title="Delete"
               disabled={replacing}
             >
-              🗑️
+              Delete
             </button>
           </div>
         );
@@ -364,8 +366,15 @@ export default function MediaAdminRow({
           ) : null}
           <input
             type="checkbox"
+            readOnly
             checked={isSelected}
-            onChange={onToggleSelection}
+            onClick={(e) => onSelectionCheckboxClick(e)}
+            onKeyDown={(e) => {
+              if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                onSelectionCheckboxClick(e);
+              }
+            }}
           />
         </td>
         {columns.map((column) => (

@@ -20,12 +20,13 @@ import DimensionalTagVerticalChips from '@/components/admin/common/DimensionalTa
 import AdminGridCellChrome from '@/components/admin/common/AdminGridCellChrome';
 import chromeStyles from '@/components/admin/common/AdminGridCellChrome.module.css';
 import { adminChromeSelector, ADMIN_GRID_CHROME } from '@/components/admin/common/adminGridChromeAttr';
+import { eventTargetToElement } from '@/lib/utils/domEventTarget';
 
 interface CardAdminGridProps {
   cards: Card[];
   selectedCardIds: Set<string>;
   allTags: Tag[];
-  onSelectCard: (cardId: string) => void;
+  onSelectCard: (cardId: string, index: number, e: React.MouseEvent | React.KeyboardEvent) => void;
   onSelectAll: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onSaveScrollPosition: (cardId: string) => void;
   onUpdateCard: (cardId: string, updateData: Partial<Card>) => Promise<void>;
@@ -35,6 +36,11 @@ interface CardAdminGridProps {
   studioCuratedTreeUnparentedRowTarget?: boolean;
   /** Primary cell click selects the card instead of navigating to edit. */
   studioEmbedCellClickSelects?: boolean;
+  /**
+   * When set with `studioEmbedCellClickSelects`, checkbox still toggles `onSelectCard` (bulk);
+   * cell/keyboard primary activation focuses this id (e.g. Studio compose) instead of bulk toggling.
+   */
+  onStudioFocusCard?: (cardId: string) => void;
   hideBulkSelectRow?: boolean;
   interactionDisabled?: boolean;
   /** Studio attach bank: denser grid (smaller min cell width). */
@@ -67,7 +73,9 @@ function buildCardThumbnailTooltip(card: Card, allTags: Tag[]): string {
   return [card.title || 'Untitled', captionLine || null, tagLines].filter(Boolean).join('\n\n');
 }
 
-function isCardGridChromeInteractiveTarget(t: HTMLElement): boolean {
+function isCardGridChromeInteractiveTarget(target: EventTarget | null): boolean {
+  const t = eventTargetToElement(target);
+  if (!t) return false;
   return Boolean(
     t.closest(adminChromeSelector(ADMIN_GRID_CHROME.overlayTopStart)) ||
       t.closest(adminChromeSelector(ADMIN_GRID_CHROME.overlayTopEnd)) ||
@@ -81,7 +89,9 @@ interface CardAdminGridPlainCellProps {
   isSelected: boolean;
   allTags: Tag[];
   onUpdateCard: (cardId: string, updateData: Partial<Card>) => Promise<void>;
-  onSelect: () => void;
+  onBulkPointer: (e: React.MouseEvent | React.KeyboardEvent) => void;
+  /** If set, cell primary uses this when `studioEmbedCellClickSelects` (else bulk for backward compatibility). */
+  onFocusStudio?: () => void;
   onEdit: () => void;
   onDelete: () => void;
   studioEmbedCellClickSelects: boolean;
@@ -95,20 +105,23 @@ function CardAdminGridPlainCell({
   isSelected,
   allTags,
   onUpdateCard,
-  onSelect,
+  onBulkPointer,
+  onFocusStudio,
   onEdit,
   onDelete,
   studioEmbedCellClickSelects,
   interactionDisabled,
   compactStudioGrid,
 }: CardAdminGridPlainCellProps) {
-  const activatePrimary = () => {
-    if (studioEmbedCellClickSelects) onSelect();
-    else onEdit();
-  };
-
-  const onCheckboxChange = () => {
-    onSelect();
+  const activatePrimary = (e: React.MouseEvent | React.KeyboardEvent) => {
+    if (studioEmbedCellClickSelects) {
+      if (e.shiftKey || e.ctrlKey || e.metaKey) {
+        onBulkPointer(e);
+        return;
+      }
+      if (onFocusStudio) onFocusStudio();
+      else onBulkPointer(e);
+    } else onEdit();
   };
 
   const captionLine = pickCaption(card);
@@ -118,9 +131,9 @@ function CardAdminGridPlainCell({
   );
 
   const onImageColumnClick = (e: React.MouseEvent) => {
-    const t = e.target as HTMLElement;
-    if (t.closest('a, button, input, textarea')) return;
-    activatePrimary();
+    const t = eventTargetToElement(e.target);
+    if (t?.closest('a, button, input, textarea')) return;
+    activatePrimary(e);
     e.stopPropagation();
   };
 
@@ -131,17 +144,17 @@ function CardAdminGridPlainCell({
         id: `card-${card.docId}`,
         title: thumbnailTooltip,
         onClick: (e) => {
-          const t = e.target as HTMLElement;
-          if (isCardGridChromeInteractiveTarget(t)) return;
-          activatePrimary();
+          if (isCardGridChromeInteractiveTarget(e.target)) return;
+          activatePrimary(e);
         },
         role: 'button',
         tabIndex: 0,
         onKeyDown: (e) => {
-          if ((e.target as HTMLElement).closest('input, textarea, button, [role="listbox"]')) return;
+          const t = eventTargetToElement(e.target);
+          if (t?.closest('input, textarea, button, [role="listbox"]')) return;
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            activatePrimary();
+            activatePrimary(e);
           }
         },
       }}
@@ -149,8 +162,20 @@ function CardAdminGridPlainCell({
         <div onClick={(e) => e.stopPropagation()}>
           <input
             type="checkbox"
+            readOnly
             checked={isSelected}
-            onChange={onCheckboxChange}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onBulkPointer(e);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                onBulkPointer(e);
+              }
+            }}
             disabled={interactionDisabled}
             aria-label={`Select ${card.title || 'Untitled'}`}
             className={chromeStyles.checkbox}
@@ -175,7 +200,7 @@ function CardAdminGridPlainCell({
       }
       overlayLeftRail={
         <DimensionalTagVerticalChips
-          card={card}
+          tagIds={card.tags ?? []}
           allTags={allTags}
           disabled={interactionDisabled}
           onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
@@ -253,7 +278,8 @@ function CardAdminGridStudioCell({
   isSelected,
   allTags,
   onUpdateCard,
-  onSelect,
+  onBulkPointer,
+  onFocusStudio,
   onEdit,
   onDelete,
   studioCuratedTreeDrag,
@@ -295,13 +321,15 @@ function CardAdminGridStudioCell({
         }
       : undefined;
 
-  const activatePrimary = () => {
-    if (studioEmbedCellClickSelects) onSelect();
-    else onEdit();
-  };
-
-  const onCheckboxChange = () => {
-    onSelect();
+  const activatePrimary = (e: React.MouseEvent | React.KeyboardEvent) => {
+    if (studioEmbedCellClickSelects) {
+      if (e.shiftKey || e.ctrlKey || e.metaKey) {
+        onBulkPointer(e);
+        return;
+      }
+      if (onFocusStudio) onFocusStudio();
+      else onBulkPointer(e);
+    } else onEdit();
   };
 
   const captionLine = pickCaption(card);
@@ -311,9 +339,9 @@ function CardAdminGridStudioCell({
   );
 
   const onImageColumnClick = (e: React.MouseEvent) => {
-    const t = e.target as HTMLElement;
-    if (t.closest('a, button, input, textarea')) return;
-    activatePrimary();
+    const t = eventTargetToElement(e.target);
+    if (t?.closest('a, button, input, textarea')) return;
+    activatePrimary(e);
     e.stopPropagation();
   };
 
@@ -326,17 +354,17 @@ function CardAdminGridStudioCell({
         id: `card-${card.docId}`,
         title: thumbnailTooltip,
         onClick: (e) => {
-          const t = e.target as HTMLElement;
-          if (isCardGridChromeInteractiveTarget(t)) return;
-          activatePrimary();
+          if (isCardGridChromeInteractiveTarget(e.target)) return;
+          activatePrimary(e);
         },
         role: 'button',
         tabIndex: 0,
         onKeyDown: (e) => {
-          if ((e.target as HTMLElement).closest('input, textarea, button, [role="listbox"]')) return;
+          const t = eventTargetToElement(e.target);
+          if (t?.closest('input, textarea, button, [role="listbox"]')) return;
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            activatePrimary();
+            activatePrimary(e);
           }
         },
       }}
@@ -344,8 +372,20 @@ function CardAdminGridStudioCell({
         <div onClick={(e) => e.stopPropagation()}>
           <input
             type="checkbox"
+            readOnly
             checked={isSelected}
-            onChange={onCheckboxChange}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onBulkPointer(e);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                onBulkPointer(e);
+              }
+            }}
             disabled={interactionDisabled}
             aria-label={`Select ${card.title || 'Untitled'}`}
             className={chromeStyles.checkbox}
@@ -384,7 +424,7 @@ function CardAdminGridStudioCell({
       }
       overlayLeftRail={
         <DimensionalTagVerticalChips
-          card={card}
+          tagIds={card.tags ?? []}
           allTags={allTags}
           disabled={interactionDisabled}
           onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
@@ -463,6 +503,7 @@ export default function CardAdminGrid({
   studioCuratedTreeDrag = false,
   studioCuratedTreeUnparentedRowTarget = false,
   studioEmbedCellClickSelects = false,
+  onStudioFocusCard,
   hideBulkSelectRow = false,
   interactionDisabled = false,
   compactStudioGrid = false,
@@ -512,7 +553,7 @@ export default function CardAdminGrid({
         </div>
       ) : null}
       <div className={compactStudioGrid ? `${styles.grid} ${styles.gridStudioCompact}` : styles.grid}>
-        {cards.map((card) =>
+        {cards.map((card, index) =>
           needsCuratedDndKit ? (
             <CardAdminGridStudioCell
               key={card.docId}
@@ -520,7 +561,8 @@ export default function CardAdminGrid({
               isSelected={selectedCardIds.has(card.docId)}
               allTags={allTags}
               onUpdateCard={onUpdateCard}
-              onSelect={() => onSelectCard(card.docId)}
+              onBulkPointer={(e) => onSelectCard(card.docId, index, e)}
+              onFocusStudio={onStudioFocusCard ? () => onStudioFocusCard(card.docId) : undefined}
               onEdit={() => handleEdit(card.docId)}
               onDelete={() => handleDelete(card)}
               studioCuratedTreeDrag={studioCuratedTreeDrag}
@@ -536,7 +578,8 @@ export default function CardAdminGrid({
               isSelected={selectedCardIds.has(card.docId)}
               allTags={allTags}
               onUpdateCard={onUpdateCard}
-              onSelect={() => onSelectCard(card.docId)}
+              onBulkPointer={(e) => onSelectCard(card.docId, index, e)}
+              onFocusStudio={onStudioFocusCard ? () => onStudioFocusCard(card.docId) : undefined}
               onEdit={() => handleEdit(card.docId)}
               onDelete={() => handleDelete(card)}
               studioEmbedCellClickSelects={studioEmbedCellClickSelects}

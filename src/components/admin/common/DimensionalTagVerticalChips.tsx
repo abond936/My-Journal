@@ -2,7 +2,6 @@
 
 import React, { useCallback, useMemo, useState } from 'react';
 import clsx from 'clsx';
-import type { Card } from '@/lib/types/card';
 import type { Tag } from '@/lib/types/tag';
 import { DIMENSION_LABEL, DIMENSION_ORDER, formatCoreTagsTooltipLines, type TagDimension } from '@/lib/utils/tagDisplay';
 import {
@@ -13,7 +12,8 @@ import {
 import styles from './DimensionalTagVerticalChips.module.css';
 
 export interface DimensionalTagVerticalChipsProps {
-  card: Card;
+  /** Card `tags` or media `tags` (flat id list). */
+  tagIds: string[];
   allTags: Tag[];
   onUpdateTags: (nextTagIds: string[]) => void | Promise<void>;
   disabled?: boolean;
@@ -25,7 +25,7 @@ export interface DimensionalTagVerticalChipsProps {
  * Tags are stacked vertically for admin grid cells.
  */
 export default function DimensionalTagVerticalChips({
-  card,
+  tagIds,
   allTags,
   onUpdateTags,
   disabled = false,
@@ -34,11 +34,11 @@ export default function DimensionalTagVerticalChips({
   const [saving, setSaving] = useState(false);
   const tagById = useMemo(() => buildTagByIdMap(allTags), [allTags]);
   const resolvedDimension = useMemo(() => buildResolvedTagDimensionMap(allTags), [allTags]);
-  const currentTags = card.tags || [];
+  const currentTags = tagIds;
 
   const core = useMemo(
-    () => getCoreTagsByDimensionFromTagIds(card.tags, resolvedDimension),
-    [card.tags, resolvedDimension]
+    () => getCoreTagsByDimensionFromTagIds(tagIds, resolvedDimension),
+    [tagIds, resolvedDimension]
   );
 
   const persist = useCallback(
@@ -88,38 +88,47 @@ export default function DimensionalTagVerticalChips({
         const allNames = ids.map((id) => tagById.get(id)?.name ?? id).join(', ');
         const rowTitle =
           restCount > 0
-            ? `${label}: ${allNames}\nRemove “${firstName}” (× removes the first tag in this dimension).`
-            : `${label}: ${allNames}\nRemove “${firstName}”.`;
+            ? `${label}: ${allNames}\n“${firstName}” is shown; ${restCount} more in this dimension.`
+            : `${label}: ${allNames}.`;
+        const removeLabel =
+          restCount > 0
+            ? `Remove “${firstName}” from ${label} (${restCount} more in this dimension).`
+            : `Remove “${firstName}” from ${label}.`;
         return (
           <div key={dim} className={clsx(styles.dimBlock, dimIndex > 0 && styles.dimBlockDivider)}>
-            <button
-              type="button"
+            <div
               className={clsx(
-                styles.tagButton,
+                styles.tagRow,
                 dim === 'who' && styles.tagDimWho,
                 dim === 'what' && styles.tagDimWhat,
                 dim === 'when' && styles.tagDimWhen,
-                dim === 'where' && styles.tagDimWhere
+                dim === 'where' && styles.tagDimWhere,
+                (disabled || saving) && styles.tagRowDisabled
               )}
-              disabled={disabled || saving}
               title={rowTitle}
-              aria-label={
-                restCount > 0
-                  ? `Remove ${firstName} from ${label} (${restCount} more in this dimension; tooltip lists all).`
-                  : `Remove ${firstName} from ${label}.`
-              }
-              onClick={() => void removeFirstTagInDimension(dim)}
             >
-              <span className={styles.tagName}>{firstName}</span>
-              {restCount > 0 ? (
-                <span className={styles.tagMore} aria-hidden>
-                  +
-                </span>
-              ) : null}
-              <span className={styles.tagX} aria-hidden>
-                ×
+              <span className={styles.tagTextBlock}>
+                <span className={styles.tagName}>{firstName}</span>
+                {restCount > 0 ? (
+                  <span className={styles.tagMore} aria-hidden>
+                    +
+                  </span>
+                ) : null}
               </span>
-            </button>
+              <button
+                type="button"
+                className={styles.removeX}
+                disabled={disabled || saving}
+                title={removeLabel}
+                aria-label={removeLabel}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void removeFirstTagInDimension(dim);
+                }}
+              >
+                ×
+              </button>
+            </div>
           </div>
         );
       })}

@@ -9,7 +9,7 @@ export type AdminGridCellChromeProps = {
   className?: string;
   selected?: boolean;
   /** Merged onto the root cell `div` (e.g. `id`, `ref`, `style`, `role`, handlers). */
-  rootProps?: Omit<React.HTMLAttributes<HTMLDivElement>, 'children'>;
+  rootProps?: Omit<React.ComponentPropsWithRef<'div'>, 'children'>;
   thumbnail: React.ReactNode;
   overlayTopStart?: React.ReactNode;
   overlayTopEnd?: React.ReactNode;

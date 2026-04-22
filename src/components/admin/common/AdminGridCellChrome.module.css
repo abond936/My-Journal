@@ -85,13 +85,7 @@
   overflow-x: hidden;
   overflow-y: hidden;
   box-sizing: border-box;
-  /* Read tags on busy covers */
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--layout-background1-color) 88%, transparent) 0%,
-    color-mix(in srgb, var(--layout-background1-color) 35%, transparent) 72%,
-    transparent 100%
-  );
+  background: transparent;
 }
 
 .overlayBottom {

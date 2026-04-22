@@ -208,7 +208,7 @@ The primary users are the author (admin) creating the content and his family con
 *Features*
 ✅ **Complete**
   - **Database** - `npm run backup:database` writes under `ONEDRIVE_PATH/Firebase Backups/run-<timestamp>/` (all Firestore root collections, index/rules copies, optional Typesense JSONL). Storage file bytes are not included. Optional Windows task: `src/lib/scripts/setup-database-backup-task.ps1` (uses `tsx -r dotenv/config` and `firebase/backup-firestore.ts`; requires `.env` visible to the task user).
-  - **Repo** - GitHub backup on every push for 7 days.
-    - Commit directly to **`main`** and push to `origin/main`. Do not use feature branches or PR merge flow unless explicitly requested for a specific task.
+  - **Source tree (Git)** - **Off-device source of truth** is the **remote** (`origin`): commit to **`main`** and push. Do not use feature branches or PR merge flow unless explicitly requested for a specific task. No second full-tree copy is maintained locally or in CI.
+  - **Local secrets (not in Git)** - `npm run backup-codebase` (see `docs/NPM-SCRIPTS.md`) zips only **repo-root** files that stay out of version control: `.env*`, `service-account.json`, and `*-firebase-adminsdk-*.json`. Default output directory: `C:\Users\alanb\CodeBase Backups\` (override with `CODEBASE_SECRETS_BACKUP_DIR`); keeps 5 rolling zips plus `backup-*-metadata.json` and `backup-*-output.txt`. If no matching files exist, only a log is written. Optional Windows task registration: `src/lib/scripts/utils/setup-backup-task.ps1` (daily; run **PowerShell as Administrator**; task resolves repo root via `git`). **Paradigm:** Git = code; this zip = env/credentials; `backup:database` = app data.
 ⭕2 **Future**
   - **Operational** - Ensure both backups are operational and verified end-to-end.

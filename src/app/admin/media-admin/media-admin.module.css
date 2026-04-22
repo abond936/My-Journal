@@ -25,54 +25,39 @@
   overflow: visible;
 }
 
-/* Studio embedded: search column + stacked Card/Media dimension filters */
-.studioMediaFilterShell {
-  display: grid;
-  grid-template-columns: minmax(140px, 1fr) minmax(0, 2.2fr);
-  gap: var(--spacing-sm);
-  align-items: stretch;
-  margin-bottom: var(--spacing-sm);
-}
-
-.studioMediaSearchSpan {
+/* Studio embedded: filter row (Search first, then Source…), tags, Grid|Table */
+.studioMediaEmbeddedStack {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  min-height: 0;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
   min-width: 0;
 }
 
-.studioMediaSearchLabel {
-  font-size: var(--font-size-xs);
-  color: var(--text2-color);
-  margin-bottom: 2px;
+/* Same flex basis as `StudioTreeCandidateCardBank` `.studioPaneSearchField` */
+.studioPaneSearchField {
+  flex: 0 0 14rem;
+  min-width: 12rem;
+  max-width: 18rem;
 }
 
-.studioMediaSearchTall {
-  flex: 1;
-  min-height: 8.5rem;
+/* Single-line search (replaces overly tall flex-stretched input) */
+.studioMediaSearchInput {
   width: 100%;
   box-sizing: border-box;
-  padding: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  line-height: 1.25;
   border: var(--border-width-thin) solid var(--border1-color);
   border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-sm);
   background: var(--input-background-color);
   color: var(--text1-color);
-  align-self: stretch;
 }
 
-.studioViewToggleCorral {
-  flex-shrink: 0;
-  margin-top: var(--spacing-xs);
-}
-
-.studioMediaRightPane {
+.studioViewToggleRow {
   display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-  min-width: 0;
-  align-items: stretch;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .studioSyncToggle {
@@ -95,9 +80,18 @@
 .studioMediaRowOne {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-sm);
   align-items: flex-end;
   width: 100%;
+}
+
+.studioMediaMacroBlock {
+  min-width: 0;
+}
+
+.studioMediaMacroTagSelector {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .studioInlineLabel {
@@ -207,16 +201,6 @@
   color: var(--text1-color);
 }
 
-.embeddedFallbackLink {
-  margin: var(--spacing-sm) 0 0;
-  font-size: var(--font-size-xs);
-  color: var(--text2-color);
-}
-
-.embeddedFallbackLink a {
-  color: var(--color3);
-}
-
 /* Whole controls strip sticks below admin tabs while table scrolls under it. */
 .stickyTop {
   position: sticky;
@@ -278,7 +262,7 @@
   margin-bottom: var(--spacing-md);
 }
 
-.stickyControls .toolbar {
+.stickyControls .bulkActions {
   margin-bottom: var(--spacing-md);
   border-radius: 0;
 }
@@ -378,23 +362,37 @@
   border-color: var(--color3);
 }
 
-/* View toggle + bulk actions toolbar */
-.toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md);
-  background: var(--layout-background2-color);
-  border-radius: var(--border-radius-md);
-  margin-bottom: var(--spacing-md);
-}
-
+/* Match `card-admin` `.bulkActions`: one bar, fixed min height; count left, actions right. */
 .bulkActions {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  min-height: 44px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--layout-background2-color);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--spacing-md);
   gap: var(--spacing-md);
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.bulkActions > span {
+  flex-shrink: 0;
+}
+
+.bulkActionGroup {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: var(--spacing-md);
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex: 0 1 auto;
 }
 
 .bulkButton {
@@ -410,21 +408,6 @@
 
 .bulkButton:hover {
   background: var(--layout-background2-color);
-}
-
-.bulkButton.createCardButton {
-  background: var(--color1);
-  color: white;
-  border-color: var(--color1);
-}
-
-.bulkButton.createCardButton:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-.bulkButton.createCardButton:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
 }
 
 .bulkButton.deleteButton {
@@ -580,7 +563,7 @@
     padding: var(--spacing-md);
   }
 
-  .toolbar {
+  .bulkActions {
     flex-direction: column;
     align-items: stretch;
   }

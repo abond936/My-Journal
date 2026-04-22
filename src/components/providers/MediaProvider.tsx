@@ -1,6 +1,16 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  type Dispatch,
+  type SetStateAction,
+} from 'react';
 import { usePathname } from 'next/navigation';
 import { Media } from '@/lib/types/photo';
 import { useCardContext } from '@/components/providers/CardProvider';
@@ -114,21 +124,15 @@ interface MediaContextType {
   // Filter actions
   setFilter: (key: keyof MediaFilters, value: string) => void;
   clearFilters: () => void;
-  /** Admin Studio: extra who/what/when/where tag ids merged into GET /api/media (this pane’s “Server” row). */
+  /** Admin Studio: who/what/when/where tag ids for GET /api/media (single MacroTagSelector in embedded Studio). */
   dimensionalQueryOverlay: DimensionalTagIdMap;
   setDimensionalQueryOverlay: (
     map: DimensionalTagIdMap | ((prev: DimensionalTagIdMap) => DimensionalTagIdMap)
   ) => void;
-  /**
-   * Admin Studio only: when true, media fetch also merges dimensional tags from the Compose card form
-   * (`CardContext`). Default false keeps media filters independent from card tagging.
-   */
-  studioMediaMergeCardDimensionalTags: boolean;
-  setStudioMediaMergeCardDimensionalTags: (v: boolean) => void;
   
   // Selection
   selectedMediaIds: string[];
-  setSelectedMediaIds: (ids: string[]) => void;
+  setSelectedMediaIds: Dispatch<SetStateAction<string[]>>;
   toggleMediaSelection: (id: string) => void;
   selectAll: () => void;
   selectNone: () => void;
@@ -172,7 +176,6 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const [selectedMediaIds, setSelectedMediaIds] = useState<string[]>([]);
   const [dimensionalQueryOverlay, setDimensionalQueryOverlayState] = useState<DimensionalTagIdMap>({});
   const dimensionalQueryOverlayRef = useRef<DimensionalTagIdMap>({});
-  const [studioMediaMergeCardDimensionalTags, setStudioMediaMergeCardDimensionalTags] = useState(false);
   const lastMediaEngineRef = useRef<'typesense' | 'firestore' | null>(null);
 
   const setDimensionalQueryOverlay = useCallback(
@@ -216,10 +219,8 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     try {
       const updatedFilters = { ...filters, ...newFilters };
       const isStudioPath = pathname?.startsWith('/admin/studio');
-      const cardDimensionalForFetch =
-        isStudioPath && !studioMediaMergeCardDimensionalTags
-          ? ({} as DimensionalTagIdMap)
-          : dimensionalTagMap;
+      /** Embedded Studio: media list uses only the overlay; full-page and PhotoPicker merge card context + overlay. */
+      const cardDimensionalForFetch = isStudioPath ? ({} as DimensionalTagIdMap) : dimensionalTagMap;
       const mergedDimensional = mergeDimensionalTagMaps(
         cardDimensionalForFetch,
         dimensionalQueryOverlayRef.current
@@ -303,9 +304,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     prevCursor,
     cursorStack,
     dimensionalTagMap,
-    dimensionalQueryOverlay,
     pathname,
-    studioMediaMergeCardDimensionalTags,
   ]);
 
   const updateMedia = useCallback(async (id: string, updates: Partial<Media>): Promise<Media | undefined> => {
@@ -479,8 +478,6 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     clearFilters,
     dimensionalQueryOverlay,
     setDimensionalQueryOverlay,
-    studioMediaMergeCardDimensionalTags,
-    setStudioMediaMergeCardDimensionalTags,
     selectedMediaIds,
     setSelectedMediaIds,
     toggleMediaSelection,

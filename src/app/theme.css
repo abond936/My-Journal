@@ -56,6 +56,10 @@
   --sidebar-width: 320px;
   --transition-short: 0.2s;
   --font-size-xl: 1.5rem;
+  --font-weight-medium: 500;
+  /* Admin grid overlays — fallback when theme token injection is missing (see themeService buildThemeTokensCss) */
+  --font-size-admin-grid-overlay: 0.5rem;
+  --admin-grid-overlay-font: var(--font-weight-medium) var(--font-size-admin-grid-overlay) / 1.2 var(--body-font-family);
 
   /* Callout pushpin & similar raster watermarks (see docs/04-Theme-Design-Contract.md) */
   --card-watermark-raster-filter: none;

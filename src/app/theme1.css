@@ -213,8 +213,8 @@ Elements
   --font-size-2xl: 1.5rem;
   --font-size-3xl: 1.875rem;
   --font-size-4xl: 2.25rem;
-  /** Admin grid *thumbnail* overlays only (~6px at 16px root) — not global admin UI type */
-  --font-size-admin-grid-overlay: 0.375rem;
+  /** Admin grid *thumbnail* overlays only (~8px at 16px root) — not global admin UI type */
+  --font-size-admin-grid-overlay: 0.5rem;
   --admin-grid-overlay-font: var(--font-weight-medium) var(--font-size-admin-grid-overlay) / 1.2
     var(--font-family-sans);
 

@@ -19,6 +19,7 @@ import {
   mergeCardCatalogs,
 } from '@/lib/utils/curatedTreeAttachCandidates';
 import { getCuratedTreeMasterId } from '@/lib/config/curatedTreeDnd';
+import { applyModifierSelection } from '@/lib/utils/adminListSelection';
 
 const CARD_VIEW_MODE_KEY = 'card-admin-view-mode';
 /** Neighbor row in admin list order when the primary `scrollToCardId` row is removed (e.g. delete). */
@@ -34,6 +35,7 @@ function intersectsAny(haystack: string[] | undefined, needles: string[]): boole
 export default function AdminCardsPage() {
   const router = useRouter();
   const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(new Set());
+  const selectionAnchorIndexRef = useRef<number | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window === 'undefined') return 'grid';
     const saved = localStorage.getItem(CARD_VIEW_MODE_KEY);
@@ -258,18 +260,6 @@ export default function AdminCardsPage() {
     }
   }, [isLoading, tagsLoading]);
 
-  const handleSelectCard = (cardId: string) => {
-    setSelectedCardIds(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(cardId)) {
-        newSet.delete(cardId);
-      } else {
-        newSet.add(cardId);
-      }
-      return newSet;
-    });
-  };
-
   const handleBulkUpdate = async (field: keyof Card, value: string) => {
     const confirmMessage = `Are you sure you want to update ${field} for ${selectedCardIds.size} selected cards?`;
     if (!confirm(confirmMessage)) return;
@@ -371,13 +361,24 @@ export default function AdminCardsPage() {
       }
       const updatedCard = (await response.json()) as Card;
 
-      // Patch the updated card into current SWR pages to avoid full-table refetch/repaint
+      // Patch the updated card into current SWR pages to avoid full-table refetch/repaint.
+      // Overlay `updateData` last so `tags` and other fields always reflect the PATCH the client
+      // sent if the JSON body omits a key (e.g. serialization) or the merge would otherwise
+      // keep a stale in-memory row.
       await mutate(
         (current) => {
           if (!current) return current;
           return current.map((page) => ({
             ...page,
-            items: page.items.map((item) => (item.docId === cardId ? { ...item, ...updatedCard } : item)),
+            items: page.items.map((item) => {
+              if (item.docId !== cardId) return item;
+              return {
+                ...item,
+                ...updatedCard,
+                ...updateData,
+                docId: item.docId,
+              };
+            }),
           }));
         },
         { revalidate: false }
@@ -446,12 +447,32 @@ export default function AdminCardsPage() {
     return treeCandidateRows;
   }, [treeCandidateFilter, adminVisibleRows, treeCandidateRows]);
 
+  const handleSelectCard = useCallback(
+    (cardId: string, index: number, e: React.MouseEvent | React.KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const orderedIds = listForDisplay.map((c) => c.docId).filter(Boolean) as string[];
+      applyModifierSelection({
+        orderedIds,
+        id: cardId,
+        index,
+        modifiers: e,
+        selected: Array.from(selectedCardIds),
+        setSelected: (ids) => setSelectedCardIds(new Set(ids)),
+        anchorIndexRef: selectionAnchorIndexRef,
+      });
+    },
+    [listForDisplay, selectedCardIds]
+  );
+
   const handleSelectAll = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
       const allIds = new Set(listForDisplay.map((c) => c.docId).filter(Boolean) as string[]);
       setSelectedCardIds(allIds);
+      selectionAnchorIndexRef.current = listForDisplay.length > 0 ? listForDisplay.length - 1 : null;
     } else {
       setSelectedCardIds(new Set());
+      selectionAnchorIndexRef.current = null;
     }
   }, [listForDisplay]);
 
@@ -722,9 +743,9 @@ export default function AdminCardsPage() {
         {viewMode !== 'collections' && (
         <div className={styles.bulkActions}>
           <span>
-            {selectedCardIds.size === 0 
-              ? "No cards selected" 
-              : `${selectedCardIds.size} cards selected`}
+            {selectedCardIds.size === 0
+              ? 'No cards selected'
+              : `${selectedCardIds.size} card(s) selected`}
           </span>
           <div className={styles.actions}>
             <select

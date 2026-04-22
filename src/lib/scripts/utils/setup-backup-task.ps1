@@ -5,13 +5,21 @@ if (-not $isAdmin) {
     exit 1
 }
 
-# Get the current directory
-$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
-$projectRoot = Split-Path -Parent $scriptPath
+# Repo root (this script lives in src/lib/scripts/utils)
+$scriptDir = $PSScriptRoot
+$projectRoot = $null
+$gitOut = & git -C $scriptDir rev-parse --show-toplevel 2>$null
+if ($LASTEXITCODE -eq 0 -and $gitOut) {
+    $projectRoot = $gitOut.Trim()
+}
+if (-not $projectRoot) {
+    $p = Get-Item $scriptDir
+    $projectRoot = $p.Parent.Parent.Parent.Parent.FullName
+}
 
 # Create the task action
 $action = New-ScheduledTaskAction -Execute "powershell.exe" `
-    -Argument "-NoProfile -ExecutionPolicy Bypass -Command `"cd '$projectRoot'; npx ts-node src/lib/scripts/backup-codebase.ts`""
+    -Argument "-NoProfile -ExecutionPolicy Bypass -Command `"Set-Location -LiteralPath '$projectRoot'; npx ts-node src/lib/scripts/utils/backup-codebase.ts`""
 
 # Create the trigger (run daily at 1 AM)
 $trigger = New-ScheduledTaskTrigger -Daily -At 1AM
@@ -21,7 +29,7 @@ $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -DontStopOnIdleEnd
 
 # Create the task
 $taskName = "MyJournal-CodebaseBackup"
-$taskDescription = "Daily backup of My Journal codebase to OneDrive"
+$taskDescription = "Daily backup of repo-root secrets (.env, service account JSON); Git holds source code"
 
 try {
     # Check if task already exists

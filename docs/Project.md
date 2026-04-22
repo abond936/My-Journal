@@ -167,8 +167,7 @@ The primary users are the author (admin) creating the content and his family con
 
 *Features*
 ✅ **Database** - Windows Scheduled Task at 2am daily, auto awake pc, cleared >5 days. Script files exist (`backup-database.ts`, `backup-firestore.ts`) but are not wired into `package.json`.
-✅ **Repo** - Github - On every push, for 7 days
-    - Commit directly to **`main`** and push to `origin/main`. Do not use feature branches or PR merge flow unless explicitly requested for a specific task.
+✅ **Repo** - **Git** is the off-device source; `npm run backup-codebase` (see `NPM-SCRIPTS.md`) is local **secrets only** at repo root, not a second copy of the tree. Commit to **`main`** and push to `origin`. Do not use feature branches or PR merge flow unless explicitly requested for a specific task.
 ⭕2 **Operational** - Ensure both backups are operational and verified end-to-end.
 
 ---

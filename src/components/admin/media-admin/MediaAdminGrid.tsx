@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
+import { applyModifierSelection } from '@/lib/utils/adminListSelection';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS as DndCss } from '@dnd-kit/utilities';
 import JournalImage from '@/components/common/JournalImage';
 import { Media } from '@/lib/types/photo';
-import { DirectDimensionTagsRail } from '@/components/admin/common/DirectDimensionChips';
+import DimensionalTagVerticalChips from '@/components/admin/common/DimensionalTagVerticalChips';
 import EditModal from '@/components/admin/card-admin/EditModal';
 import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
 import type { MediaAdminRowStudioDragBind } from '@/components/admin/media-admin/MediaAdminRow';
@@ -17,6 +18,7 @@ import styles from './MediaAdminGrid.module.css';
 import AdminGridCellChrome from '@/components/admin/common/AdminGridCellChrome';
 import chromeStyles from '@/components/admin/common/AdminGridCellChrome.module.css';
 import { adminChromeSelector, ADMIN_GRID_CHROME } from '@/components/admin/common/adminGridChromeAttr';
+import { eventTargetToElement } from '@/lib/utils/domEventTarget';
 
 export interface MediaAdminGridCellProps {
   media: Media;
@@ -24,7 +26,7 @@ export interface MediaAdminGridCellProps {
   allTags: ReturnType<typeof useTag>['tags'];
   onSaveTags: (mediaId: string, nextTags: string[]) => Promise<void>;
   isSelected: boolean;
-  onToggleSelection: () => void;
+  onSelectionCheckboxClick: (e: React.MouseEvent | React.KeyboardEvent) => void;
   /** When set (Admin Studio grid + `DndContext`), cell is `source:{mediaId}` for cover/gallery drops. */
   studioDragBind?: MediaAdminRowStudioDragBind;
 }
@@ -38,7 +40,9 @@ type DimensionFilters = Record<
   }
 >;
 
-function isMediaGridChromeInteractiveTarget(t: HTMLElement): boolean {
+function isMediaGridChromeInteractiveTarget(target: EventTarget | null): boolean {
+  const t = eventTargetToElement(target);
+  if (!t) return false;
   return Boolean(
     t.closest(adminChromeSelector(ADMIN_GRID_CHROME.overlayTopStart)) ||
       t.closest(adminChromeSelector(ADMIN_GRID_CHROME.overlayTopEnd)) ||
@@ -53,7 +57,7 @@ function MediaAdminGridCell({
   allTags,
   onSaveTags,
   isSelected,
-  onToggleSelection,
+  onSelectionCheckboxClick,
   studioDragBind,
 }: MediaAdminGridCellProps) {
   const core = useMemo(() => getCoreTagsByDimension(media), [media]);
@@ -78,16 +82,17 @@ function MediaAdminGridCell({
   );
 
   const onCellClick = (e: React.MouseEvent) => {
-    const t = e.target as HTMLElement;
-    if (isMediaGridChromeInteractiveTarget(t)) return;
-    if (t.closest('button')) return;
-    onToggleSelection();
+    if (isMediaGridChromeInteractiveTarget(e.target)) return;
+    const t = eventTargetToElement(e.target);
+    if (t?.closest('button')) return;
+    onSelectionCheckboxClick(e);
   };
   const onCellKeyDown = (e: React.KeyboardEvent) => {
-    if ((e.target as HTMLElement).closest('input, textarea, button, [role="listbox"]')) return;
+    const t = eventTargetToElement(e.target);
+    if (t?.closest('input, textarea, button, [role="listbox"]')) return;
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      onToggleSelection();
+      onSelectionCheckboxClick(e);
     }
   };
 
@@ -126,8 +131,16 @@ function MediaAdminGridCell({
         <div onClick={(e) => e.stopPropagation()}>
           <input
             type="checkbox"
+            readOnly
             checked={isSelected}
-            onChange={onToggleSelection}
+            onClick={(e) => onSelectionCheckboxClick(e)}
+            onKeyDown={(e) => {
+              if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                onSelectionCheckboxClick(e);
+              }
+            }}
             aria-label={`Select ${media.filename}`}
             className={chromeStyles.checkbox}
           />
@@ -152,7 +165,13 @@ function MediaAdminGridCell({
           </div>
         ) : null
       }
-      overlayLeftRail={<DirectDimensionTagsRail core={core} tagNameMap={tagNameMap} />}
+      overlayLeftRail={
+        <DimensionalTagVerticalChips
+          tagIds={media.tags ?? []}
+          allTags={allTags}
+          onUpdateTags={(next) => onSaveTags(media.docId, next)}
+        />
+      }
       overlayBottom={
         <>
           <span className={chromeStyles.metaBadgeMuted}>{media.source}</span>
@@ -263,7 +282,8 @@ export default function MediaAdminGrid({
   studioSourceDraggable?: boolean;
   clientSort?: 'none' | 'filenameAsc' | 'filenameDesc';
 }) {
-  const { media, selectedMediaIds, toggleMediaSelection, selectAll, selectNone, updateMedia } = useMedia();
+  const { media, selectedMediaIds, setSelectedMediaIds, updateMedia } = useMedia();
+  const selectionAnchorIndexRef = useRef<number | null>(null);
   const { tags } = useTag();
   const tagNameMap = new Map(tags.filter(t => t.docId).map(tag => [tag.docId as string, tag.name]));
   const sortedMedia = useMemo(() => {
@@ -301,21 +321,63 @@ export default function MediaAdminGrid({
     });
   }, [media, sourcePathFirst, dimensionFilters, clientSort]);
 
+  const sortedIds = useMemo(() => sortedMedia.map((m) => m.docId), [sortedMedia]);
+
+  const handleGridSelection = useCallback(
+    (e: React.MouseEvent | React.KeyboardEvent, id: string, index: number) => {
+      e.preventDefault();
+      e.stopPropagation();
+      applyModifierSelection({
+        orderedIds: sortedIds,
+        id,
+        index,
+        modifiers: e,
+        selected: selectedMediaIds,
+        setSelected: setSelectedMediaIds,
+        anchorIndexRef: selectionAnchorIndexRef,
+      });
+    },
+    [sortedIds, selectedMediaIds, setSelectedMediaIds]
+  );
+
+  const handleSelectAllOnPage = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.checked) {
+        setSelectedMediaIds((prev) => {
+          const s = new Set(prev);
+          sortedIds.forEach((id) => s.add(id));
+          return [...s];
+        });
+        selectionAnchorIndexRef.current = sortedIds.length > 0 ? sortedIds.length - 1 : null;
+      } else {
+        setSelectedMediaIds((prev) => {
+          const v = new Set(sortedIds);
+          return prev.filter((id) => !v.has(id));
+        });
+        selectionAnchorIndexRef.current = null;
+      }
+    },
+    [sortedIds, setSelectedMediaIds]
+  );
+
+  const allOnPageSelected =
+    sortedIds.length > 0 && sortedIds.every((id) => selectedMediaIds.includes(id));
+
   return (
     <div className={styles.container}>
       {sortedMedia.length > 0 && (
         <div className={styles.selectAllRow}>
           <input
             type="checkbox"
-            checked={selectedMediaIds.length === sortedMedia.length}
-            onChange={(e) => (e.target.checked ? selectAll() : selectNone())}
+            checked={allOnPageSelected}
+            onChange={handleSelectAllOnPage}
             aria-label="Select all on page"
           />
           <span className={styles.selectAllLabel}>Select all on page</span>
         </div>
       )}
       <div className={styles.grid}>
-        {sortedMedia.map((item) =>
+        {sortedMedia.map((item, index) =>
           studioSourceDraggable ? (
             <MediaAdminGridCellStudioSource
               key={item.docId}
@@ -329,7 +391,7 @@ export default function MediaAdminGrid({
                 }
               }}
               isSelected={selectedMediaIds.includes(item.docId)}
-              onToggleSelection={() => toggleMediaSelection(item.docId)}
+              onSelectionCheckboxClick={(e) => handleGridSelection(e, item.docId, index)}
             />
           ) : (
             <MediaAdminGridCell
@@ -344,7 +406,7 @@ export default function MediaAdminGrid({
                 }
               }}
               isSelected={selectedMediaIds.includes(item.docId)}
-              onToggleSelection={() => toggleMediaSelection(item.docId)}
+              onSelectionCheckboxClick={(e) => handleGridSelection(e, item.docId, index)}
             />
           )
         )}

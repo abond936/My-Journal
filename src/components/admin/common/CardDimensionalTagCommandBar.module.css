@@ -189,6 +189,40 @@
   font-size: var(--font-size-xs);
 }
 
+/* Card admin `entriesTable`: larger chips than compact, shrink with column only via overflow/ellipsis */
+.wrapTable .chipsToolbar {
+  padding-left: 2ch;
+  box-sizing: border-box;
+}
+
+.wrapTable .dimensionRow {
+  gap: var(--spacing-xs);
+}
+
+.wrapTable .dimCell {
+  gap: 2px;
+}
+
+.wrapTable .chip,
+.wrapTable .chipEmpty {
+  font-size: calc(var(--font-size-sm) * 1.5);
+  line-height: 1.25;
+  padding: 0.4rem 0.55rem;
+  border-radius: var(--border-radius-md);
+  min-width: 0;
+}
+
+.wrapTable .chipEmpty {
+  font-style: normal;
+  padding: 0.4rem 0.25rem;
+}
+
+.wrapTable .chipStrip {
+  min-height: 0;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
 .wrapCompact .suggestions {
   max-height: 140px;
 }

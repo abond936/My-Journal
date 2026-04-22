@@ -30,8 +30,12 @@ export interface CardDimensionalTagCommandBarProps {
   trailingSlot?: React.ReactNode;
   /** Form-level tag validation message / outline (e.g. when full selector is hidden on card edit). */
   tagError?: string;
-  /** Search field placeholder (default matches Media toolbar “Edit tags…”). */
+  /** Search field placeholder (default matches Media toolbar “Edit tags…"). */
   searchPlaceholder?: string;
+  /** When true, do not render per-dimension “Who/What/…” row labels (header-only layout, e.g. card admin table). */
+  hideDimensionRowLabels?: boolean;
+  /** Card admin table: larger chips, tighter toolbar; use with `variant="compact"`. */
+  tableEmbed?: boolean;
 }
 
 export default function CardDimensionalTagCommandBar({
@@ -44,6 +48,8 @@ export default function CardDimensionalTagCommandBar({
   trailingSlot,
   tagError,
   searchPlaceholder = 'Edit tags…',
+  hideDimensionRowLabels = false,
+  tableEmbed = false,
 }: CardDimensionalTagCommandBarProps) {
   const [query, setQuery] = useState('');
   const [highlightIndex, setHighlightIndex] = useState(-1);
@@ -168,7 +174,7 @@ export default function CardDimensionalTagCommandBar({
           <div className={styles.dimensionRow}>
             {DIMENSION_ORDER.map((dim) => (
               <div key={dim} className={styles.dimCell}>
-                <div className={styles.dimLabel}>{DIMENSION_LABEL[dim]}</div>
+                {hideDimensionRowLabels ? null : <div className={styles.dimLabel}>{DIMENSION_LABEL[dim]}</div>}
                 <div className={styles.chipStrip}>
                   {core[dim].length === 0 ? (
                     <span className={styles.chipEmpty}>—</span>

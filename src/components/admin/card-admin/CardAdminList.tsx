@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useDraggable, useDroppable, useDndContext } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import JournalImage from '@/components/common/JournalImage';
@@ -14,38 +14,93 @@ import EditableDisplayModeCell from './EditableDisplayModeCell';
 import EditableTypeCell from './EditableTypeCell';
 import EditableStatusCell from './EditableStatusCell';
 import ResizableHeader from './ResizableHeader';
-import EditModal from './EditModal';
-import MacroTagSelector from './MacroTagSelector';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
-import { DIMENSION_LABEL, DIMENSION_ORDER } from '@/lib/utils/tagDisplay';
+import { DIMENSION_LABEL, DIMENSION_ORDER, type TagDimension } from '@/lib/utils/tagDisplay';
 import { buildResolvedTagDimensionMap } from '@/lib/utils/tagDimensionResolve';
 
 const COLUMN_WIDTHS_KEY = 'cardAdminColumnWidths';
 const STUDIO_CURATED_DRAG_COL = 36;
+/** Square side = row height; column must be wide enough or the image is cropped horizontally. */
+const COVER_COLUMN_MIN = 120;
 const DEFAULT_COLUMN_WIDTHS = {
   checkbox: 40,
-  cover: 90,
-  title: 200,
-  type: 100,
-  status: 100,
-  display: 100,
-  content: 80,
-  gallery: 80,
-  children: 80,
-  dimensionTags: 600,
-  actions: 280,
+  cover: 128,
+  title: 160,
+  /** Stacked: Type, Display, Status */
+  typeDisplayStatus: 108,
+  /** Stacked: content flag, gallery count, children count */
+  contentGalleryChildren: 64,
+  /** Tag bar: minimum width; column grows to fill space (see col + `ResizableHeader` `widthMode`). */
+  tagBar: 272,
+  dimWho: 90,
+  dimWhat: 90,
+  dimWhen: 90,
+  dimWhere: 90,
+  /** Stacked: Edit, Delete */
+  actions: 80,
 };
 
-function loadColumnWidths(): typeof DEFAULT_COLUMN_WIDTHS {
+type ColumnWidths = typeof DEFAULT_COLUMN_WIDTHS;
+
+const DIM_COL: Record<TagDimension, 'dimWho' | 'dimWhat' | 'dimWhen' | 'dimWhere'> = {
+  who: 'dimWho',
+  what: 'dimWhat',
+  when: 'dimWhen',
+  where: 'dimWhere',
+};
+
+function CardListCoverCell({ card, coverWidth }: { card: Card; coverWidth: number }) {
+  const w = Math.max(coverWidth, COVER_COLUMN_MIN);
+  return (
+    <td className={styles.coverImageCell} style={{ width: w, minWidth: w }}>
+      <div className={styles.coverImageCellInner}>
+        {card.coverImage ? (
+          <JournalImage
+            src={getDisplayUrl(card.coverImage)}
+            alt="Cover"
+            className={styles.coverThumbnailFill}
+            fill
+            sizes={`${w}px`}
+          />
+        ) : (
+          <span className={styles.noCoverInCell} role="img" aria-label="No cover">
+            —
+          </span>
+        )}
+      </div>
+    </td>
+  );
+}
+
+function loadColumnWidths(): ColumnWidths {
   if (typeof window === 'undefined') return { ...DEFAULT_COLUMN_WIDTHS };
   const raw = localStorage.getItem(COLUMN_WIDTHS_KEY);
   if (!raw) return { ...DEFAULT_COLUMN_WIDTHS };
   try {
     const parsed = JSON.parse(raw) as Record<string, number>;
-    const merged = { ...DEFAULT_COLUMN_WIDTHS, ...parsed };
-    if (!parsed.dimensionTags && (parsed.who || parsed.what || parsed.when || parsed.where)) {
-      merged.dimensionTags =
-        (parsed.who ?? 150) + (parsed.what ?? 150) + (parsed.when ?? 150) + (parsed.where ?? 150);
+    const merged: ColumnWidths = { ...DEFAULT_COLUMN_WIDTHS, ...parsed };
+    merged.cover = Math.max(merged.cover, COVER_COLUMN_MIN);
+    const p = parsed as Record<string, number>;
+    if (p.type != null && merged.typeDisplayStatus === DEFAULT_COLUMN_WIDTHS.typeDisplayStatus) {
+      merged.typeDisplayStatus = Math.max(
+        100,
+        Math.round(((p.type ?? 100) + (p.display ?? 100) + (p.status ?? 100)) / 1.2)
+      );
+    }
+    if (p.content != null && merged.contentGalleryChildren === DEFAULT_COLUMN_WIDTHS.contentGalleryChildren) {
+      merged.contentGalleryChildren = Math.max(
+        72,
+        Math.round(((p.content ?? 80) + (p.gallery ?? 80) + (p.children ?? 80)) / 2.5)
+      );
+    }
+    if (p.dimensionTags != null && merged.tagBar === DEFAULT_COLUMN_WIDTHS.tagBar) {
+      const w = p.dimensionTags as number;
+      const per = Math.max(64, Math.round(w / 6));
+      merged.tagBar = per * 2;
+      merged.dimWho = per;
+      merged.dimWhat = per;
+      merged.dimWhen = per;
+      merged.dimWhere = per;
     }
     return merged;
   } catch {
@@ -57,7 +112,7 @@ interface CardAdminListProps {
   cards: Card[];
   selectedCardIds: Set<string>;
   allTags: Tag[];
-  onSelectCard: (cardId: string) => void;
+  onSelectCard: (cardId: string, index: number, e: React.MouseEvent | React.KeyboardEvent) => void;
   onSelectAll: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onSaveScrollPosition: (cardId: string) => void;
   onUpdateCard: (cardId: string, updateData: Partial<Card>) => Promise<void>;
@@ -73,102 +128,95 @@ interface CardAdminListProps {
   hideBulkSelectHeader?: boolean;
   /** Disable row drags and dim destructive actions while parent is saving. */
   interactionDisabled?: boolean;
+  /**
+   * When true, omit Who/What/When/Where media-suggestion columns (e.g. Studio table bank for horizontal space).
+   * Tag bar column still shows; apply-suggestions in bulk is available elsewhere on the page if needed.
+   */
+  hideDimensionMediaSuggestions?: boolean;
 }
 
 type CardAdminListPlainRowProps = {
   card: Card;
+  rowIndex: number;
   interactionDisabled: boolean;
-  columnWidths: typeof DEFAULT_COLUMN_WIDTHS;
+  columnWidths: ColumnWidths;
   actionsColumnWidth: number;
   selectedCardIds: Set<string>;
   allTags: Tag[];
   tagMap: Map<string, string>;
-  onSelectCard: (cardId: string) => void;
+  onSelectCard: (cardId: string, index: number, e: React.MouseEvent | React.KeyboardEvent) => void;
   onUpdateCard: (cardId: string, updateData: Partial<Card>) => Promise<void>;
   handleEditClick: (cardId: string) => void;
-  getMediaSuggestionTags: (card: Card, dimension: 'who' | 'what' | 'when' | 'where') => string[];
-  applyDimensionSuggestions: (card: Card, dimension: 'who' | 'what' | 'when' | 'where') => Promise<void>;
-  openTagsEditor: (card: Card) => void;
-  savingTags: boolean;
+  getMediaSuggestionTags: (card: Card, dimension: TagDimension) => string[];
+  applyDimensionSuggestions: (card: Card, dimension: TagDimension) => Promise<void>;
   confirmAndDeleteCard: (card: Card) => Promise<void>;
+  hideDimensionMediaSuggestions: boolean;
 };
 
-type CardAdminListStudioRowProps = CardAdminListPlainRowProps & {
-  studioCuratedTreeDrag: boolean;
-  studioCuratedTreeUnparentedRowTarget: boolean;
+type CardListMainDataCellsProps = {
+  card: Card;
+  columnWidths: ColumnWidths;
+  actionsColumnWidth: number;
+  allTags: Tag[];
+  tagMap: Map<string, string>;
+  onUpdateCard: (cardId: string, updateData: Partial<Card>) => Promise<void>;
+  handleEditClick: (cardId: string) => void;
+  getMediaSuggestionTags: (card: Card, dimension: TagDimension) => string[];
+  applyDimensionSuggestions: (card: Card, dimension: TagDimension) => Promise<void>;
+  confirmAndDeleteCard: (card: Card) => Promise<void>;
+  hideDimensionMediaSuggestions: boolean;
 };
 
-/** Card admin `/admin/card-admin` table rows — must not use dnd-kit (no `DndContext` on that page). */
-function CardAdminListPlainRow({
+function CardListMainDataCells({
   card,
-  interactionDisabled,
   columnWidths,
   actionsColumnWidth,
-  selectedCardIds,
   allTags,
   tagMap,
-  onSelectCard,
   onUpdateCard,
   handleEditClick,
   getMediaSuggestionTags,
   applyDimensionSuggestions,
-  openTagsEditor,
-  savingTags,
   confirmAndDeleteCard,
-}: CardAdminListPlainRowProps) {
+  hideDimensionMediaSuggestions,
+}: CardListMainDataCellsProps) {
   return (
-    <tr id={`card-${card.docId}`} className={selectedCardIds.has(card.docId) ? styles.selectedRow : ''}>
-      <td style={{ width: columnWidths.checkbox }}>
-        <input
-          type="checkbox"
-          checked={selectedCardIds.has(card.docId)}
-          onChange={() => onSelectCard(card.docId)}
-          disabled={interactionDisabled}
-        />
+    <>
+      <td className={styles.tableStackedCell} style={{ width: columnWidths.typeDisplayStatus }}>
+        <div className={styles.tableStackedTds}>
+          <EditableTypeCell card={card} onUpdate={onUpdateCard} />
+          <EditableDisplayModeCell card={card} onUpdate={onUpdateCard} />
+          <EditableStatusCell card={card} onUpdate={onUpdateCard} />
+        </div>
       </td>
-      <td className={styles.coverImageCell} style={{ width: columnWidths.cover }}>
-        {card.coverImage ? (
-          <JournalImage
-            src={getDisplayUrl(card.coverImage)}
-            alt="Cover"
-            className={styles.coverThumbnail}
-            width={256}
-            height={256}
-            sizes={`${columnWidths.cover}px`}
-          />
-        ) : (
-          <span className={styles.noCover}>—</span>
-        )}
+      <td className={styles.tableStackedCell} style={{ width: columnWidths.contentGalleryChildren }}>
+        <div className={styles.tableCgcStack}>
+          <div className={styles.tableCgcStackLine}>{card.content ? 'Y' : 'N'}</div>
+          <div className={styles.tableCgcStackLine}>{card.galleryMedia?.length || 0}</div>
+          <div className={styles.tableCgcStackLine}>{card.childrenIds?.length || 0}</div>
+        </div>
       </td>
-      <td style={{ width: columnWidths.title }}>
-        <EditableTitleCell card={card} onUpdate={onUpdateCard} />
-      </td>
-      <td style={{ width: columnWidths.type }}>
-        <EditableTypeCell card={card} onUpdate={onUpdateCard} />
-      </td>
-      <td style={{ width: columnWidths.status }}>
-        <EditableStatusCell card={card} onUpdate={onUpdateCard} />
-      </td>
-      <td style={{ width: columnWidths.display }}>
-        <EditableDisplayModeCell card={card} onUpdate={onUpdateCard} />
-      </td>
-      <td style={{ width: columnWidths.content }}>{card.content ? 'Y' : 'N'}</td>
-      <td style={{ width: columnWidths.gallery }}>{card.galleryMedia?.length || 0}</td>
-      <td style={{ width: columnWidths.children }}>{card.childrenIds?.length || 0}</td>
-      <td className={styles.tableTagCommandCell} style={{ width: columnWidths.dimensionTags }}>
+      <td
+        className={styles.tableTagCommandCell}
+        style={{ minWidth: columnWidths.tagBar, width: 'auto' }}
+      >
         <CardDimensionalTagCommandBar
           card={card}
           allTags={allTags}
           variant="compact"
+          tableEmbed
+          hideDimensionRowLabels
           onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
         />
-        <div className={styles.tableMediaDimGrid}>
-          {DIMENSION_ORDER.map((dimension) => {
+      </td>
+      {hideDimensionMediaSuggestions
+        ? null
+        : DIMENSION_ORDER.map((dimension) => {
             const suggestionIds = getMediaSuggestionTags(card, dimension);
             const hasSuggestions = suggestionIds.length > 0;
+            const w = columnWidths[DIM_COL[dimension]];
             return (
-              <div key={dimension} className={styles.tableMediaDimCell}>
-                <div className={styles.tableMediaDimLabel}>{DIMENSION_LABEL[dimension]}</div>
+              <td key={dimension} className={styles.tableDimSuggestionCell} style={{ width: w }}>
                 <div className={styles.tagSuggestions}>
                   {hasSuggestions ? (
                     suggestionIds.map((id) => (
@@ -186,33 +234,87 @@ function CardAdminListPlainRow({
                   disabled={!hasSuggestions}
                   onClick={() => void applyDimensionSuggestions(card, dimension)}
                 >
-                  Apply {dimension}
+                  Apply
                 </button>
-              </div>
+              </td>
             );
           })}
+      <td className={styles.tableStackedCell} style={{ width: actionsColumnWidth, minWidth: actionsColumnWidth }}>
+        <div className={styles.tableActionStack}>
+          <button type="button" onClick={() => handleEditClick(card.docId)} className={styles.actionButton}>
+            Edit
+          </button>
+          <button
+            type="button"
+            onClick={() => void confirmAndDeleteCard(card)}
+            className={`${styles.actionButton} ${styles.deleteButton}`}
+          >
+            Delete
+          </button>
         </div>
       </td>
-      <td style={{ width: actionsColumnWidth, minWidth: actionsColumnWidth }}>
-        <button type="button" onClick={() => handleEditClick(card.docId)} className={styles.actionButton}>
-          Edit
-        </button>
-        <button
-          type="button"
-          onClick={() => void openTagsEditor(card)}
-          className={styles.actionButton}
-          disabled={savingTags}
-        >
-          Tags
-        </button>
-        <button
-          type="button"
-          onClick={() => void confirmAndDeleteCard(card)}
-          className={`${styles.actionButton} ${styles.deleteButton}`}
-        >
-          Delete
-        </button>
+    </>
+  );
+}
+
+type CardAdminListStudioRowProps = CardAdminListPlainRowProps & {
+  studioCuratedTreeDrag: boolean;
+  studioCuratedTreeUnparentedRowTarget: boolean;
+};
+
+/** Card admin `/admin/card-admin` table rows — must not use dnd-kit (no `DndContext` on that page). */
+function CardAdminListPlainRow({
+  card,
+  rowIndex,
+  interactionDisabled,
+  columnWidths,
+  actionsColumnWidth,
+  selectedCardIds,
+  allTags,
+  tagMap,
+  onSelectCard,
+  onUpdateCard,
+  handleEditClick,
+  getMediaSuggestionTags,
+  applyDimensionSuggestions,
+  confirmAndDeleteCard,
+  hideDimensionMediaSuggestions,
+}: CardAdminListPlainRowProps) {
+  return (
+    <tr id={`card-${card.docId}`} className={selectedCardIds.has(card.docId) ? styles.selectedRow : ''}>
+      <td style={{ width: columnWidths.checkbox }}>
+        <input
+          type="checkbox"
+          readOnly
+          checked={selectedCardIds.has(card.docId)}
+          onClick={(e) => !interactionDisabled && onSelectCard(card.docId, rowIndex, e)}
+          onKeyDown={(e) => {
+            if (interactionDisabled) return;
+            if (e.key === ' ' || e.key === 'Enter') {
+              e.preventDefault();
+              onSelectCard(card.docId, rowIndex, e);
+            }
+          }}
+          disabled={interactionDisabled}
+        />
       </td>
+      <CardListCoverCell card={card} coverWidth={columnWidths.cover} />
+      <td className={styles.tableCellTitle} style={{ width: columnWidths.title }}>
+        <EditableTitleCell card={card} onUpdate={onUpdateCard} />
+      </td>
+      <CardListMainDataCells
+        card={card}
+        columnWidths={columnWidths}
+        actionsColumnWidth={actionsColumnWidth}
+        allTags={allTags}
+        tagMap={tagMap}
+        onUpdateCard={onUpdateCard}
+        handleEditClick={handleEditClick}
+        getMediaSuggestionTags={getMediaSuggestionTags}
+        applyDimensionSuggestions={applyDimensionSuggestions}
+        confirmAndDeleteCard={confirmAndDeleteCard}
+        hideDimensionMediaSuggestions={hideDimensionMediaSuggestions}
+      />
     </tr>
   );
 }
@@ -220,6 +322,7 @@ function CardAdminListPlainRow({
 /** Studio Collections attach bank only — requires parent `DndContext`. */
 function CardAdminListStudioRow({
   card,
+  rowIndex,
   studioCuratedTreeDrag,
   studioCuratedTreeUnparentedRowTarget,
   interactionDisabled,
@@ -233,9 +336,8 @@ function CardAdminListStudioRow({
   handleEditClick,
   getMediaSuggestionTags,
   applyDimensionSuggestions,
-  openTagsEditor,
-  savingTags,
   confirmAndDeleteCard,
+  hideDimensionMediaSuggestions,
 }: CardAdminListStudioRowProps) {
   const { active } = useDndContext();
   const activeStr = active?.id != null ? String(active.id) : '';
@@ -295,98 +397,36 @@ function CardAdminListStudioRow({
       <td style={{ width: columnWidths.checkbox }}>
         <input
           type="checkbox"
+          readOnly
           checked={selectedCardIds.has(card.docId)}
-          onChange={() => onSelectCard(card.docId)}
+          onClick={(e) => !interactionDisabled && onSelectCard(card.docId, rowIndex, e)}
+          onKeyDown={(e) => {
+            if (interactionDisabled) return;
+            if (e.key === ' ' || e.key === 'Enter') {
+              e.preventDefault();
+              onSelectCard(card.docId, rowIndex, e);
+            }
+          }}
           disabled={interactionDisabled}
         />
       </td>
-      <td className={styles.coverImageCell} style={{ width: columnWidths.cover }}>
-        {card.coverImage ? (
-          <JournalImage
-            src={getDisplayUrl(card.coverImage)}
-            alt="Cover"
-            className={styles.coverThumbnail}
-            width={256}
-            height={256}
-            sizes={`${columnWidths.cover}px`}
-          />
-        ) : (
-          <span className={styles.noCover}>—</span>
-        )}
-      </td>
-      <td style={{ width: columnWidths.title }}>
+      <CardListCoverCell card={card} coverWidth={columnWidths.cover} />
+      <td className={styles.tableCellTitle} style={{ width: columnWidths.title }}>
         <EditableTitleCell card={card} onUpdate={onUpdateCard} />
       </td>
-      <td style={{ width: columnWidths.type }}>
-        <EditableTypeCell card={card} onUpdate={onUpdateCard} />
-      </td>
-      <td style={{ width: columnWidths.status }}>
-        <EditableStatusCell card={card} onUpdate={onUpdateCard} />
-      </td>
-      <td style={{ width: columnWidths.display }}>
-        <EditableDisplayModeCell card={card} onUpdate={onUpdateCard} />
-      </td>
-      <td style={{ width: columnWidths.content }}>{card.content ? 'Y' : 'N'}</td>
-      <td style={{ width: columnWidths.gallery }}>{card.galleryMedia?.length || 0}</td>
-      <td style={{ width: columnWidths.children }}>{card.childrenIds?.length || 0}</td>
-      <td className={styles.tableTagCommandCell} style={{ width: columnWidths.dimensionTags }}>
-        <CardDimensionalTagCommandBar
-          card={card}
-          allTags={allTags}
-          variant="compact"
-          onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
-        />
-        <div className={styles.tableMediaDimGrid}>
-          {DIMENSION_ORDER.map((dimension) => {
-            const suggestionIds = getMediaSuggestionTags(card, dimension);
-            const hasSuggestions = suggestionIds.length > 0;
-            return (
-              <div key={dimension} className={styles.tableMediaDimCell}>
-                <div className={styles.tableMediaDimLabel}>{DIMENSION_LABEL[dimension]}</div>
-                <div className={styles.tagSuggestions}>
-                  {hasSuggestions ? (
-                    suggestionIds.map((id) => (
-                      <span key={id} className={styles.suggestionTag}>
-                        {tagMap.get(id) ?? id}
-                      </span>
-                    ))
-                  ) : (
-                    <span className={styles.noSuggestion}>None</span>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  className={styles.suggestApplyButton}
-                  disabled={!hasSuggestions}
-                  onClick={() => void applyDimensionSuggestions(card, dimension)}
-                >
-                  Apply {dimension}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      </td>
-      <td style={{ width: actionsColumnWidth, minWidth: actionsColumnWidth }}>
-        <button type="button" onClick={() => handleEditClick(card.docId)} className={styles.actionButton}>
-          Edit
-        </button>
-        <button
-          type="button"
-          onClick={() => void openTagsEditor(card)}
-          className={styles.actionButton}
-          disabled={savingTags}
-        >
-          Tags
-        </button>
-        <button
-          type="button"
-          onClick={() => void confirmAndDeleteCard(card)}
-          className={`${styles.actionButton} ${styles.deleteButton}`}
-        >
-          Delete
-        </button>
-      </td>
+      <CardListMainDataCells
+        card={card}
+        columnWidths={columnWidths}
+        actionsColumnWidth={actionsColumnWidth}
+        allTags={allTags}
+        tagMap={tagMap}
+        onUpdateCard={onUpdateCard}
+        handleEditClick={handleEditClick}
+        getMediaSuggestionTags={getMediaSuggestionTags}
+        applyDimensionSuggestions={applyDimensionSuggestions}
+        confirmAndDeleteCard={confirmAndDeleteCard}
+        hideDimensionMediaSuggestions={hideDimensionMediaSuggestions}
+      />
     </tr>
   );
 }
@@ -404,11 +444,10 @@ export default function CardAdminList({
   studioCuratedTreeUnparentedRowTarget = false,
   hideBulkSelectHeader = false,
   interactionDisabled = false,
+  hideDimensionMediaSuggestions = false,
 }: CardAdminListProps) {
   const router = useRouter();
   const isAllSelected = cards.length > 0 && selectedCardIds.size === cards.length;
-  const [tagsEditCard, setTagsEditCard] = useState<Card | null>(null);
-  const [savingTags, setSavingTags] = useState(false);
 
   const tagMap = React.useMemo(
     () => new Map(allTags.map((t) => [t.docId!, t.name ?? ''])),
@@ -417,57 +456,32 @@ export default function CardAdminList({
 
   const [columnWidths, setColumnWidths] = useState(loadColumnWidths);
 
-  const handleColumnResize = useCallback((columnId: keyof typeof DEFAULT_COLUMN_WIDTHS, width: number) => {
+  const handleColumnResize = useCallback((columnId: keyof ColumnWidths, width: number) => {
     setColumnWidths((prev) => {
-      const updated = { ...prev, [columnId]: width };
+      const w =
+        columnId === 'cover' ? Math.max(Math.round(width), COVER_COLUMN_MIN) : width;
+      const updated = { ...prev, [columnId]: w };
       localStorage.setItem(COLUMN_WIDTHS_KEY, JSON.stringify(updated));
       return updated;
     });
   }, []);
-  const actionsColumnWidth = Math.max(columnWidths.actions, 280);
+  const actionsColumnWidth = Math.max(72, columnWidths.actions);
 
   const handleEditClick = (cardId: string) => {
     onSaveScrollPosition(cardId);
     router.push(`/admin/card-admin/${cardId}/edit`);
   };
 
-  const selectedTagObjectsForModal = React.useMemo(() => {
-    if (!tagsEditCard) return [];
-    const selected = new Set(tagsEditCard.tags || []);
-    return allTags.filter((tag) => selected.has(tag.docId));
-  }, [allTags, tagsEditCard]);
-
-  const openTagsEditor = useCallback(async (card: Card) => {
-    setSavingTags(true);
-    try {
-      const response = await fetch(`/api/cards/${card.docId}`, { cache: 'no-store' });
-      if (!response.ok) {
-        setTagsEditCard(card);
-        return;
-      }
-      const latest = (await response.json()) as Card;
-      setTagsEditCard({
-        ...card,
-        ...latest,
-        docId: card.docId,
-      });
-    } catch {
-      setTagsEditCard(card);
-    } finally {
-      setSavingTags(false);
-    }
-  }, []);
-
   const resolvedTagDimensionById = React.useMemo(() => buildResolvedTagDimensionMap(allTags), [allTags]);
 
   const getDirectTagsByDimension = useCallback(
-    (card: Card, dimension: 'who' | 'what' | 'when' | 'where') =>
+    (card: Card, dimension: TagDimension) =>
       (card.tags || []).filter((tagId) => resolvedTagDimensionById.get(tagId) === dimension),
     [resolvedTagDimensionById]
   );
 
   const getMediaSuggestionTags = useCallback(
-    (card: Card, dimension: 'who' | 'what' | 'when' | 'where') => {
+    (card: Card, dimension: TagDimension) => {
       const mediaByDimension = {
         who: card.mediaWho || [],
         what: card.mediaWhat || [],
@@ -481,7 +495,7 @@ export default function CardAdminList({
   );
 
   const applyDimensionSuggestions = useCallback(
-    async (card: Card, dimension: 'who' | 'what' | 'when' | 'where') => {
+    async (card: Card, dimension: TagDimension) => {
       const suggestions = getMediaSuggestionTags(card, dimension);
       if (!suggestions.length) return;
       const nextTags = new Set(card.tags || []);
@@ -537,9 +551,38 @@ export default function CardAdminList({
 
   const needsCuratedDndKit = studioCuratedTreeDrag || studioCuratedTreeUnparentedRowTarget;
 
+  const tableColGroup = useMemo(
+    () => (
+      <colgroup>
+        {studioCuratedTreeDrag ? <col style={{ width: STUDIO_CURATED_DRAG_COL }} /> : null}
+        <col style={{ width: columnWidths.checkbox }} />
+        <col
+          style={{ width: columnWidths.cover, minWidth: Math.max(columnWidths.cover, COVER_COLUMN_MIN) }}
+        />
+        <col style={{ width: columnWidths.title }} />
+        <col style={{ width: columnWidths.typeDisplayStatus }} />
+        <col style={{ width: columnWidths.contentGalleryChildren }} />
+        <col className={styles.colTagBarFlex} style={{ minWidth: columnWidths.tagBar }} />
+        {hideDimensionMediaSuggestions
+          ? null
+          : DIMENSION_ORDER.map((dim) => (
+              <col key={dim} style={{ width: columnWidths[DIM_COL[dim]] }} />
+            ))}
+        <col style={{ width: actionsColumnWidth }} />
+      </colgroup>
+    ),
+    [
+      actionsColumnWidth,
+      columnWidths,
+      hideDimensionMediaSuggestions,
+      studioCuratedTreeDrag,
+    ]
+  );
+
   return (
     <div className={styles.tableContainer}>
-      <table className={styles.entriesTable}>
+      <table className={`${styles.entriesTable} ${styles.entriesTableCardList}`}>
+        {tableColGroup}
         <thead>
           <tr>
             {studioCuratedTreeDrag ? (
@@ -562,7 +605,8 @@ export default function CardAdminList({
               )}
             </ResizableHeader>
             <ResizableHeader
-              width={columnWidths.cover}
+              width={Math.max(columnWidths.cover, COVER_COLUMN_MIN)}
+              minWidth={COVER_COLUMN_MIN}
               onResize={(w) => handleColumnResize('cover', w)}
               thClassName={styles.coverHeaderCell}
             >
@@ -571,42 +615,66 @@ export default function CardAdminList({
             <ResizableHeader width={columnWidths.title} onResize={(w) => handleColumnResize('title', w)}>
               Title
             </ResizableHeader>
-            <ResizableHeader width={columnWidths.type} onResize={(w) => handleColumnResize('type', w)}>
-              Type
-            </ResizableHeader>
-            <ResizableHeader width={columnWidths.status} onResize={(w) => handleColumnResize('status', w)}>
-              Status
-            </ResizableHeader>
-            <ResizableHeader width={columnWidths.display} onResize={(w) => handleColumnResize('display', w)}>
-              Display
-            </ResizableHeader>
-            <ResizableHeader width={columnWidths.content} onResize={(w) => handleColumnResize('content', w)}>
-              Content
-            </ResizableHeader>
-            <ResizableHeader width={columnWidths.gallery} onResize={(w) => handleColumnResize('gallery', w)}>
-              Gallery
-            </ResizableHeader>
-            <ResizableHeader width={columnWidths.children} onResize={(w) => handleColumnResize('children', w)}>
-              Children
+            <ResizableHeader
+              width={columnWidths.typeDisplayStatus}
+              onResize={(w) => handleColumnResize('typeDisplayStatus', w)}
+            >
+              <div className={styles.tableHeaderStack}>
+                <span>Type</span>
+                <span>Display</span>
+                <span>Status</span>
+              </div>
             </ResizableHeader>
             <ResizableHeader
-              width={columnWidths.dimensionTags}
-              minWidth={320}
-              onResize={(w) => handleColumnResize('dimensionTags', w)}
+              width={columnWidths.contentGalleryChildren}
+              onResize={(w) => handleColumnResize('contentGalleryChildren', w)}
             >
-              Tags (Who · What · When · Where)
+              <div className={styles.tableHeaderStack}>
+                <span>Content</span>
+                <span>Gallery</span>
+                <span>Children</span>
+              </div>
             </ResizableHeader>
+            <ResizableHeader
+              width={columnWidths.tagBar}
+              minWidth={200}
+              widthMode="minWidth"
+              onResize={(w) => handleColumnResize('tagBar', w)}
+            >
+              <div className={styles.tableHeaderTagBar} aria-label="Tag bar dimensions">
+                {DIMENSION_ORDER.map((dim) => (
+                  <span key={dim} className={styles.tableHeaderTagBarDim} title={DIMENSION_LABEL[dim]}>
+                    {DIMENSION_LABEL[dim]}
+                  </span>
+                ))}
+              </div>
+            </ResizableHeader>
+            {hideDimensionMediaSuggestions
+              ? null
+              : DIMENSION_ORDER.map((dim) => (
+                  <ResizableHeader
+                    key={dim}
+                    width={columnWidths[DIM_COL[dim]]}
+                    onResize={(w) => handleColumnResize(DIM_COL[dim], w)}
+                  >
+                    {DIMENSION_LABEL[dim]}
+                  </ResizableHeader>
+                ))}
             <ResizableHeader width={actionsColumnWidth} onResize={(w) => handleColumnResize('actions', w)}>
-              Actions
+              <div className={styles.tableHeaderStack}>
+                <span>Edit</span>
+                <span>Delete</span>
+              </div>
             </ResizableHeader>
           </tr>
         </thead>
         <tbody>
-          {cards.map((card) =>
+          {cards.map((card, rowIndex) =>
             needsCuratedDndKit ? (
               <CardAdminListStudioRow
                 key={card.docId}
                 card={card}
+                rowIndex={rowIndex}
                 studioCuratedTreeDrag={studioCuratedTreeDrag}
                 studioCuratedTreeUnparentedRowTarget={studioCuratedTreeUnparentedRowTarget}
                 interactionDisabled={interactionDisabled}
@@ -620,14 +688,14 @@ export default function CardAdminList({
                 handleEditClick={handleEditClick}
                 getMediaSuggestionTags={getMediaSuggestionTags}
                 applyDimensionSuggestions={applyDimensionSuggestions}
-                openTagsEditor={openTagsEditor}
-                savingTags={savingTags}
                 confirmAndDeleteCard={confirmAndDeleteCard}
+                hideDimensionMediaSuggestions={hideDimensionMediaSuggestions}
               />
             ) : (
               <CardAdminListPlainRow
                 key={card.docId}
                 card={card}
+                rowIndex={rowIndex}
                 interactionDisabled={interactionDisabled}
                 columnWidths={columnWidths}
                 actionsColumnWidth={actionsColumnWidth}
@@ -639,42 +707,13 @@ export default function CardAdminList({
                 handleEditClick={handleEditClick}
                 getMediaSuggestionTags={getMediaSuggestionTags}
                 applyDimensionSuggestions={applyDimensionSuggestions}
-                openTagsEditor={openTagsEditor}
-                savingTags={savingTags}
                 confirmAndDeleteCard={confirmAndDeleteCard}
+                hideDimensionMediaSuggestions={hideDimensionMediaSuggestions}
               />
             )
           )}
         </tbody>
       </table>
-      {tagsEditCard ? (
-        <EditModal
-          isOpen={true}
-          onClose={() => {
-            if (!savingTags) setTagsEditCard(null);
-          }}
-          title={`Edit Tags: ${tagsEditCard.title || '(No title)'}`}
-        >
-          <MacroTagSelector
-            selectedTags={selectedTagObjectsForModal}
-            allTags={allTags}
-            startExpanded
-            onRequestClose={() => setTagsEditCard(null)}
-            onChange={() => {
-              // no-op, save goes through onSaveSelection
-            }}
-            onSaveSelection={async (newIds) => {
-              setSavingTags(true);
-              try {
-                await onUpdateCard(tagsEditCard.docId, { tags: newIds });
-                setTagsEditCard(null);
-              } finally {
-                setSavingTags(false);
-              }
-            }}
-          />
-        </EditModal>
-      ) : null}
     </div>
   );
 }

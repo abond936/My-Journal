@@ -323,12 +323,15 @@
   max-width: 100%;
 }
 
-/* Actions */
+/* Actions (stacked: Focal, Replace, Delete) */
 .actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
-  justify-content: center;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: var(--spacing-xs);
+  align-items: stretch;
+  justify-content: flex-start;
+  min-width: 0;
 }
 
 .hiddenFileInput {
@@ -344,11 +347,13 @@
   cursor: pointer;
   font-size: var(--font-size-sm);
   transition: background-color var(--transition-short);
-  min-width: var(--spacing-lg);
-  height: var(--spacing-lg);
+  min-width: 0;
+  width: 100%;
+  min-height: var(--spacing-lg);
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
 }
 
 .actionButton:hover {
@@ -376,14 +381,8 @@
     height: var(--spacing-3xl);
   }
 
-  .actions {
-    flex-direction: column;
-    gap: var(--spacing-xs);
-  }
-
   .actionButton {
-    min-width: var(--spacing-md);
-    height: var(--spacing-md);
+    min-height: var(--spacing-md);
     font-size: var(--font-size-xs);
   }
 

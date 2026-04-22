@@ -7,21 +7,19 @@
   overflow-x: hidden;
 }
 
-.studioCardFiltersHeading {
-  margin: 0 0 var(--spacing-xs);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text2-color);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
 .studioCardFilters {
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-sm);
   align-items: flex-end;
   margin-bottom: var(--spacing-sm);
+}
+
+/* Matched in media-admin `studioPaneSearchField` — keeps Tags + Grid/Table rows aligned across Studio columns. */
+.studioPaneSearchField {
+  flex: 0 0 14rem;
+  min-width: 12rem;
+  max-width: 18rem;
 }
 
 .studioCardField {
@@ -38,10 +36,12 @@
 }
 
 .studioCardSearchInput {
-  flex: 1;
-  min-width: 8rem;
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
   padding: var(--spacing-xs) var(--spacing-sm);
   font-size: var(--font-size-sm);
+  line-height: 1.25;
   border: var(--border-width-thin) solid var(--border1-color);
   border-radius: var(--border-radius-sm);
   background: var(--input-background-color);
@@ -55,6 +55,16 @@
   border-radius: var(--border-radius-sm);
   background: var(--input-background-color);
   color: var(--text1-color);
+}
+
+.studioCardMacroBlock {
+  margin-bottom: var(--spacing-sm);
+  min-width: 0;
+}
+
+.studioCardMacroTagSelector {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .toolbar {
@@ -75,109 +85,18 @@
   color: var(--text2-color);
 }
 
-.studioCardDimMatrix {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-  margin-bottom: var(--spacing-sm);
-  min-width: 0;
-  overflow-x: auto;
-  padding-bottom: 2px;
-}
-
-.studioCardDimHeaderRow {
-  display: grid;
-  grid-template-columns: 4.75rem repeat(4, minmax(0, 1fr));
-  gap: var(--spacing-xs);
-  align-items: end;
-  min-width: 0;
-}
-
-.studioCardDimCorner {
-  min-height: 0.75rem;
-}
-
-.studioCardDimHeaderCell {
+/* Matches `media-admin` embedded Clear — resets all row filters + tag selection */
+.studioCardClearButton {
+  align-self: flex-end;
+  padding: 4px var(--spacing-sm);
   font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text2-color);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  text-align: center;
-}
-
-.studioCardDimDataRow {
-  display: grid;
-  grid-template-columns: 4.75rem repeat(4, minmax(0, 1fr));
-  gap: var(--spacing-xs);
-  align-items: center;
-  min-width: 0;
-}
-
-.studioCardDimRowLabel {
-  font-size: var(--font-size-xs);
-  color: var(--text2-color);
-  white-space: nowrap;
-  padding-right: 2px;
-}
-
-.studioCardDimFieldCell {
-  display: block;
-  min-width: 0;
-}
-
-.visuallyHidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.studioCardDimField {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.studioCardDimBadge {
-  font-size: 10px;
-  color: var(--text2-color);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.studioCardDimSelect {
-  width: 100%;
-  min-width: 0;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: var(--font-size-xs);
-  border: var(--border-width-thin) solid var(--border1-color);
   border-radius: var(--border-radius-sm);
-  background: var(--input-background-color);
+  border: var(--border-width-thin) solid var(--border1-color);
+  background: var(--layout-background2-color);
   color: var(--text1-color);
-}
-
-.studioCardTagFilterActions {
-  margin-bottom: var(--spacing-sm);
-}
-
-.studioCardClearTagsButton {
-  padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: var(--font-size-xs);
-  border: var(--border-width-thin) solid var(--border1-color);
-  border-radius: var(--border-radius-sm);
-  background: transparent;
-  color: var(--text2-color);
   cursor: pointer;
 }
 
-.studioCardClearTagsButton:hover {
-  color: var(--text1-color);
+.studioCardClearButton:hover {
   border-color: var(--text2-color);
 }

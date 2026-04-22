@@ -21,7 +21,7 @@ This file is an **index only**. Canonical instructions are not duplicated here (
 
 For new work: the author states **what**; the agent proposes **how** after assessment. Implement only after explicit approval. If something important is adjacent but **not** specified (extra files, shared state, separate screens), **ask** before adding it to the edit set—do not bundle it by default.
 
-**Operational:** Run **`npm run backup:database`** from the repo root before large Firestore-changing work (e.g. mass import) when the author expects the agent to handle backups; it requires a local `.env` with Firebase Admin + `ONEDRIVE_PATH` (and optional Typesense vars). See `docs/NPM-SCRIPTS.md` → **Firebase Admin CLI (dotenv)** and the `backup:database` row.
+**Operational:** **Data:** Run **`npm run backup:database`** from the repo root before large Firestore-changing work (e.g. mass import) when the author expects the agent to handle backups; it requires a local `.env` with Firebase Admin + `ONEDRIVE_PATH` (and optional Typesense vars). See `docs/NPM-SCRIPTS.md` → **Firebase Admin CLI (dotenv)** and the `backup:database` row. **Secrets (local):** `npm run backup-codebase` zips only repo-root `.env*` and Firebase service-account JSON; default output **`C:\Users\alanb\CodeBase Backups\`** (or `CODEBASE_SECRETS_BACKUP_DIR`). **Code** lives on the Git remote—no duplicate full-tree local backup. See `docs/01-Vision-Architecture.md` → **Backup**.
 
 ## Cursor Cloud specific instructions
 

@@ -273,6 +273,10 @@ export function buildThemeTokensCss(themeData: StructuredThemeData & { darkModeS
   --font-weight-semibold: ${themeData.typography.fontWeights.semibold};
   --font-weight-bold: ${themeData.typography.fontWeights.bold};
 
+  /* Card/media admin grid thumbnail overlays — not in theme JSON; must live in injected CSS */
+  --font-size-admin-grid-overlay: 0.5rem;
+  --admin-grid-overlay-font: var(--font-weight-medium) var(--font-size-admin-grid-overlay) / 1.2 var(--font-family-sans);
+
   --line-height-base: ${themeData.typography.lineHeights.base};
   --line-height-tight: ${themeData.typography.lineHeights.tight};
   --line-height-relaxed: ${themeData.typography.lineHeights.relaxed};

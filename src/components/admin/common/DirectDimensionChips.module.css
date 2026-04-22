@@ -36,6 +36,7 @@
 .chipLabel {
   flex: 1 1 0;
   min-width: 0;
+  max-width: calc(100% - 3ch);
   overflow: hidden;
   text-overflow: clip;
   white-space: nowrap;
@@ -100,6 +101,7 @@
 .railLineText {
   flex: 1 1 auto;
   min-width: 0;
+  max-width: calc(100% - 3ch);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: clip;
