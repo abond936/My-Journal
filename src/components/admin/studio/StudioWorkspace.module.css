@@ -445,13 +445,26 @@
 }
 
 .dropZoneEligible {
-  outline: 1px dashed color-mix(in srgb, var(--button-solid-border-color) 65%, transparent);
+  outline: 2px dashed color-mix(in srgb, var(--button-solid-border-color) 80%, transparent);
   outline-offset: 2px;
+  background: color-mix(in srgb, var(--button-solid-background-color) 6%, transparent);
+}
+
+.dropZoneEligiblePad {
+  padding: var(--spacing-xs);
+  transition: outline 0.12s ease, background 0.12s ease;
+}
+
+.dropZoneEligibleHint {
+  margin: 0 0 var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text2-color);
 }
 
 .dropZoneActive {
   outline: 2px solid var(--button-solid-border-color);
-  background: color-mix(in srgb, var(--button-solid-background-color) 10%, transparent);
+  background: color-mix(in srgb, var(--button-solid-background-color) 14%, transparent);
   border-radius: var(--border-radius-sm);
 }
 

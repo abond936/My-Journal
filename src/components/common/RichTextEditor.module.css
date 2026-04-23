@@ -8,6 +8,14 @@
   font-family: var(--body-font-family);
 }
 
+/**
+ * Studio Compose: default `overflow: hidden` traps wheel on the TipTap surface so the flex scroll parent
+ * (`.studioCardEditScroll`) rarely receives scroll chaining in Chrome. Visible overflow restores native pane scroll.
+ */
+.editorContainerChainWheel {
+  overflow: visible;
+}
+
 .editorContainer.error {
   border-color: var(--state-error-border-color);
 }

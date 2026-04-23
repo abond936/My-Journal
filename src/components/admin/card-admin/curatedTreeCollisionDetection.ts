@@ -50,7 +50,7 @@ function filterByDomain(hits: Collision[], domain: ReturnType<typeof dragDomain>
     case 'source':
       return hits.filter((c) => {
         const id = String(c.id);
-        return id === 'drop:cover' || id === 'drop:gallery';
+        return id === 'drop:cover' || id === 'drop:gallery' || id === 'drop:body';
       });
     case 'gallery':
       return hits.filter((c) => {

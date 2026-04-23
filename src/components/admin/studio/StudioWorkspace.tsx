@@ -8,7 +8,11 @@ import MediaAdminContent from '@/app/admin/media-admin/MediaAdminContent';
 import StudioCardEditPane from '@/components/admin/studio/StudioCardEditPane';
 import { handleStudioRelationshipDragEnd } from '@/components/admin/studio/studioRelationshipDndPrimitives';
 import type { StudioCardContext } from '@/components/admin/studio/studioCardTypes';
-import { StudioShellProvider, type StudioShellContextValue } from '@/components/admin/studio/StudioShellContext';
+import {
+  StudioShellProvider,
+  type StudioShellContextValue,
+} from '@/components/admin/studio/StudioShellContext';
+import type { Media } from '@/lib/types/photo';
 import { useMedia } from '@/components/providers/MediaProvider';
 import type { Card } from '@/lib/types/card';
 import { EMBEDDED_ADMIN_WIDE_MIN_WIDTH_PX } from '@/lib/admin/embeddedWideMinWidthPx';
@@ -72,12 +76,19 @@ export default function StudioWorkspace() {
   const [actionInfo, setActionInfo] = useState<string | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
   const {
+    media: bankMediaPage,
     selectedMediaIds,
     setSelectedMediaIds,
     toggleMediaSelection,
     selectAll: selectAllMediaOnPage,
     selectNone: selectNoneMedia,
   } = useMedia();
+
+  const bodyMediaInsertRef = useRef<((m: Media) => void) | null>(null);
+  const resolveBankMediaById = useCallback(
+    (id: string) => bankMediaPage.find((m) => m.docId === id),
+    [bankMediaPage]
+  );
 
   useEffect(() => {
     selectNoneMedia();
@@ -316,9 +327,11 @@ export default function StudioWorkspace() {
         selectedCardId,
         patchSelectedCard,
         setActionInfo,
+        resolveBankMediaById,
+        bodyMediaInsertRef,
       });
     },
-    [actionBusy, selectedCard, selectedCardId, patchSelectedCard]
+    [actionBusy, selectedCard, selectedCardId, patchSelectedCard, resolveBankMediaById]
   );
 
   const refreshCollectionsCardList = useCallback(() => {
@@ -340,6 +353,7 @@ export default function StudioWorkspace() {
       toggleMediaSelection,
       selectAllMediaOnPage,
       selectNoneMedia,
+      bodyMediaInsertRef,
     }),
     [
       selectedCardId,

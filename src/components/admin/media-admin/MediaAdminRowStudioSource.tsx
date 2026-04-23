@@ -13,7 +13,7 @@ export function MediaAdminRowStudioSource(props: MediaAdminRowBaseProps) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, isDragging } = useDraggable({
     id: mid ? `source:${mid}` : 'source:invalid',
     disabled: !mid,
-    data: { mediaId: mid },
+    data: { mediaId: mid, studioBankMedia: props.media },
   });
 
   const studioDragBind: MediaAdminRowStudioDragBind = {

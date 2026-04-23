@@ -539,6 +539,45 @@
   font-weight: var(--font-weight-semibold);
 }
 
+.dragOverlaySource {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs);
+  border-radius: var(--border-radius-md);
+  border: var(--border-width-thin) solid var(--border1-color);
+  background: var(--layout-background1-color);
+  box-shadow:
+    0 4px 14px color-mix(in srgb, var(--text1-color) 18%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color3) 35%, transparent);
+  cursor: grabbing;
+  max-width: min(16rem, 88vw);
+}
+
+.dragOverlaySourceThumb {
+  position: relative;
+  width: 120px;
+  height: 84px;
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  background: var(--layout-background2-color);
+}
+
+.dragOverlaySourceImg {
+  object-fit: cover;
+}
+
+.dragOverlaySourceCaption {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text1-color);
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .hintStrong {
   color: var(--text1-color);
   font-weight: var(--font-weight-semibold);

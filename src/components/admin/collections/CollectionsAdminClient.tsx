@@ -49,6 +49,10 @@ import type { EmbeddedUnparentedBankContext } from '@/components/admin/collectio
 import { getCuratedTreeMasterId, isCuratedTreeDndEnabled } from '@/lib/config/curatedTreeDnd';
 import { DND_POINTER_IGNORE_ATTR, useDefaultDndSensors } from '@/lib/hooks/useDefaultDndSensors';
 import TagAdminStudioPane from '@/components/admin/studio/TagAdminStudioPane';
+import JournalImage from '@/components/common/JournalImage';
+import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import type { Media } from '@/lib/types/photo';
+import { useMedia } from '@/components/providers/MediaProvider';
 
 const COLLECTIONS_CENTER_COLUMNS_KEY = 'collectionsCenterPaneWidths';
 const COL_HANDLE = 8;
@@ -257,6 +261,8 @@ export default function CollectionsAdminClient({
   const [draggingCardId, setDraggingCardId] = useState<string | null>(null);
   const [curatedDragKind, setCuratedDragKind] = useState<CuratedTreeDragKind>(null);
   const [dragOverlayCard, setDragOverlayCard] = useState<Card | null>(null);
+  /** Studio bank → body/cover/gallery: show a ghost under the pointer while dragging `source:*`. */
+  const [dragOverlaySourceMedia, setDragOverlaySourceMedia] = useState<Media | null>(null);
   const lastValidOverIdRef = useRef<string | null>(null);
   const hasInitializedTreeExpansionRef = useRef(false);
   const [bulkParentId, setBulkParentId] = useState<string | null>(null);
@@ -272,6 +278,7 @@ export default function CollectionsAdminClient({
     return window.localStorage.getItem('studioLeftTab') === 'tree' ? 'tree' : 'tags';
   });
   const sensors = useDefaultDndSensors({ pointerActivationDistance: 10 });
+  const { media: mediaBankList } = useMedia();
   const curatedTreeDnd = isCuratedTreeDndEnabled();
   const curatedTreeMasterId = getCuratedTreeMasterId();
   const treeDropZonesReadOnly = !curatedTreeDnd;
@@ -852,6 +859,7 @@ export default function CollectionsAdminClient({
     setCuratedDragKind(null);
     setDraggingCardId(null);
     setDragOverlayCard(null);
+    setDragOverlaySourceMedia(null);
     lastValidOverIdRef.current = null;
   }, []);
 
@@ -868,6 +876,15 @@ export default function CollectionsAdminClient({
       setCuratedDragKind(null);
       setDraggingCardId(null);
       setDragOverlayCard(null);
+      if (id.startsWith('source:')) {
+        const mid = id.slice('source:'.length);
+        const fromData = event.active.data.current as { studioBankMedia?: Media } | undefined;
+        setDragOverlaySourceMedia(
+          fromData?.studioBankMedia ?? mediaBankList.find((m) => m.docId === mid) ?? null
+        );
+      } else {
+        setDragOverlaySourceMedia(null);
+      }
       return;
     }
     if (id.startsWith('card:')) {
@@ -875,15 +892,18 @@ export default function CollectionsAdminClient({
       const cid = id.slice(5);
       setDraggingCardId(cid);
       setDragOverlayCard(cardById.get(cid) ?? null);
+      setDragOverlaySourceMedia(null);
     } else {
       setCuratedDragKind(null);
       setDraggingCardId(null);
       setDragOverlayCard(null);
+      setDragOverlaySourceMedia(null);
     }
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     setDragOverlayCard(null);
+    setDragOverlaySourceMedia(null);
     const rawActive = event.active.id;
     const rawOver = event.over?.id ?? null;
     const activeStr = typeof rawActive === 'string' ? rawActive : String(rawActive);
@@ -1394,7 +1414,6 @@ export default function CollectionsAdminClient({
             </p>
           ) : null}
           </CuratedTreeDragProvider>
-          {curatedTreeDnd ? (
           <DragOverlay
             dropAnimation={null}
             zIndex={1100}
@@ -1410,9 +1429,23 @@ export default function CollectionsAdminClient({
               <div className={styles.dragOverlayCard}>
                 <span className={styles.dragOverlayTitle}>{cardLabel(dragOverlayCard)}</span>
               </div>
+            ) : dragOverlaySourceMedia ? (
+              <div className={styles.dragOverlaySource}>
+                <div className={styles.dragOverlaySourceThumb}>
+                  <JournalImage
+                    src={getDisplayUrl(dragOverlaySourceMedia)}
+                    alt=""
+                    fill
+                    className={styles.dragOverlaySourceImg}
+                    sizes="120px"
+                  />
+                </div>
+                <span className={styles.dragOverlaySourceCaption}>
+                  {dragOverlaySourceMedia.filename || dragOverlaySourceMedia.docId || 'Media'}
+                </span>
+              </div>
             ) : null}
           </DragOverlay>
-          ) : null}
           </CuratedTreeDropHighlightSync>
         </DndContext>
         ) : (

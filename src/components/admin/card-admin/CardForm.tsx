@@ -21,6 +21,7 @@ import LoadingOverlay from '@/components/admin/card-admin/LoadingOverlay';
 import { getAllowedDisplayModes, normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useStudioCardFormStudioOptional } from '@/components/admin/studio/studioCardFormStudioContext';
+import { useStudioShellOptional } from '@/components/admin/studio/StudioShellContext';
 import { StudioDropZone } from '@/components/admin/studio/studioRelationshipDndPrimitives';
 import StudioCardFormGallery from '@/components/admin/studio/StudioCardFormGallery';
 import StudioCardFormChildren from '@/components/admin/studio/StudioCardFormChildren';
@@ -76,8 +77,20 @@ const CardForm: React.FC = () => {
 
   const studioFormCtx = useStudioCardFormStudioOptional();
   const studioShellForm = Boolean(studioFormCtx?.studioShellCardForm);
+  const studioShell = useStudioShellOptional();
 
   const editorRef = useRef<RichTextEditorRef>(null);
+
+  useEffect(() => {
+    if (!studioShellForm || !studioShell?.bodyMediaInsertRef) return;
+    const r = studioShell.bodyMediaInsertRef;
+    r.current = (media: Media) => {
+      editorRef.current?.insertImage(media);
+    };
+    return () => {
+      r.current = null;
+    };
+  }, [studioShellForm, studioShell]);
 
   useEffect(() => {
     return registerEditorContentGetter(
@@ -312,6 +325,20 @@ const CardForm: React.FC = () => {
     [setField, updateContentMedia]
   );
 
+  const bodyRichTextEditor = (
+    <RichTextEditor
+      key={formRevision}
+      currentCardId={cardData.docId}
+      ref={editorRef}
+      initialContent={cardData.content}
+      onChange={handleContentChange}
+      onAddImage={handleAddImageToContent}
+      error={errors.content}
+      className={clsx(errors.content && styles.inputError)}
+      chainWheelToScrollParent={studioShellForm}
+    />
+  );
+
   return (
     <DndProvider backend={HTML5Backend}>
       <LoadingOverlay
@@ -531,16 +558,20 @@ const CardForm: React.FC = () => {
 
           <div className={styles.editorSection}>
             <h4 className={styles.sectionTitle}>Content</h4>
-            <RichTextEditor
-              key={formRevision}
-              currentCardId={cardData.docId}
-              ref={editorRef}
-              initialContent={cardData.content}
-              onChange={handleContentChange}
-              onAddImage={handleAddImageToContent}
-              error={errors.content}
-              className={clsx(errors.content && styles.inputError)}
-            />
+            {studioShellForm ? (
+              <StudioDropZone
+                id="drop:body"
+                accepts={['source']}
+                ariaLabel="Drop media from bank into body"
+                className={styles.studioBodyDropZone}
+                alwaysRegister
+                eligibleHint="Release here to insert image in body"
+              >
+                {bodyRichTextEditor}
+              </StudioDropZone>
+            ) : (
+              bodyRichTextEditor
+            )}
           </div>
 
           <div className={styles.aiAssistSection}>

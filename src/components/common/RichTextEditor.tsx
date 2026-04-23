@@ -26,6 +26,11 @@ interface RichTextEditorProps {
   onImageDelete?: (mediaId: string) => void;
   /** When set, this card is omitted from @ card-link suggestions (avoid self-link). */
   currentCardId?: string;
+  /**
+   * Admin Studio compose column: set so wheel over the editor can scroll the outer `.studioCardEditScroll`
+   * (see `.editorContainerChainWheel` — avoids JS wheel listeners).
+   */
+  chainWheelToScrollParent?: boolean;
 }
 
 export interface RichTextEditorRef {
@@ -44,6 +49,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
   onAddImage,
   onImageDelete,
   currentCardId,
+  chainWheelToScrollParent = false,
 }, ref) => {
   const { updateContentMedia } = useCardForm();
   const [content, setContent] = useState(initialContent);
@@ -345,7 +351,13 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
   };
   
   return (
-    <div className={clsx(styles.editorContainer, error && styles.error)}>
+    <div
+      className={clsx(
+        styles.editorContainer,
+        chainWheelToScrollParent && styles.editorContainerChainWheel,
+        error && styles.error,
+      )}
+    >
       {isProcessingImage && <div className={styles.processingOverlay}><span>Processing...</span></div>}
       <div className={styles.toolbar}>
         <div className={styles.toolbarGroup}>

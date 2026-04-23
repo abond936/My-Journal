@@ -1,7 +1,7 @@
 .container {
   max-width: 800px;
   margin: 0 auto var(--spacing-xl);
-  padding: 0 var(--spacing-xl) var(--spacing-xl);
+  padding: 0 var(--spacing-xl) var(--spacing-2xl);
   background-color: var(--layout-background1-color);
   color: var(--text1-color);
   border-radius: var(--border-radius-md);
@@ -137,7 +137,7 @@
 
 @media (max-width: 768px) {
   .container {
-    padding: 0 var(--spacing-sm) var(--spacing-lg);
+    padding: 0 var(--spacing-sm) var(--spacing-2xl);
     border-radius: 0;
     box-shadow: none;
   }

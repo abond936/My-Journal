@@ -1,12 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { type MutableRefObject } from 'react';
 import { arrayMove, useSortable } from '@dnd-kit/sortable';
 import { useDndContext, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { useCuratedTreeDropHighlight } from '@/components/admin/card-admin/curatedTreeDropHighlightContext';
 import type { Card } from '@/lib/types/card';
-import { useStudioShell } from '@/components/admin/studio/StudioShellContext';
+import type { Media } from '@/lib/types/photo';
 import type { StudioCardContext } from '@/components/admin/studio/studioCardTypes';
 import styles from './StudioWorkspace.module.css';
 
@@ -53,11 +53,20 @@ export function StudioDropZone({
   id,
   accepts,
   ariaLabel,
+  className,
+  /** When true, the droppable stays enabled even with no active drag—avoids scroll/hit quirks on long-lived targets like TipTap body. */
+  alwaysRegister = false,
+  /** Shown only while a matching drag is active (`accepts` includes the drag kind). */
+  eligibleHint,
   children,
 }: {
   id: string;
   accepts: Array<'source' | 'gallery'>;
   ariaLabel: string;
+  /** Merged with base drop-zone classes (e.g. min-height for body target). */
+  className?: string;
+  alwaysRegister?: boolean;
+  eligibleHint?: string;
   children: React.ReactNode;
 }) {
   const { active } = useDndContext();
@@ -68,16 +77,23 @@ export function StudioDropZone({
       ? 'gallery'
       : null;
   const isEligible = activeDragKind !== null && accepts.includes(activeDragKind);
-  const { setNodeRef, isOver } = useDroppable({ id, disabled: !isEligible });
+  const { setNodeRef, isOver } = useDroppable({ id, disabled: alwaysRegister ? false : !isEligible });
   return (
     <div
       ref={setNodeRef}
       role="region"
       aria-label={ariaLabel}
-      className={[styles.dropZone, isEligible ? styles.dropZoneEligible : '', isEligible && isOver ? styles.dropZoneActive : '']
+      className={[
+        styles.dropZone,
+        isEligible ? styles.dropZoneEligible : '',
+        isEligible && isOver ? styles.dropZoneActive : '',
+        isEligible ? styles.dropZoneEligiblePad : '',
+        className ?? '',
+      ]
         .join(' ')
         .trim()}
     >
+      {isEligible && eligibleHint ? <p className={styles.dropZoneEligibleHint}>{eligibleHint}</p> : null}
       {children}
     </div>
   );
@@ -162,6 +178,8 @@ export async function handleStudioRelationshipDragEnd(
     selectedCardId: string | null;
     patchSelectedCard: (payload: Partial<Card>, msg?: string) => Promise<void>;
     setActionInfo: (s: string | null) => void;
+    resolveBankMediaById: (id: string) => Media | undefined;
+    bodyMediaInsertRef: MutableRefObject<((media: Media) => void) | null>;
   }
 ): Promise<boolean> {
   const { active, over } = event;
@@ -236,6 +254,24 @@ export async function handleStudioRelationshipDragEnd(
         { galleryMedia: [...gallery, { mediaId, order: nextOrder }] },
         'Media added to gallery by drag/drop.'
       );
+      return true;
+    }
+
+    if (overId === 'drop:body') {
+      const media = ctx.resolveBankMediaById(mediaId);
+      if (!media?.docId) {
+        ctx.setActionInfo(
+          'That media is not on the current bank page. Adjust filters or use Next/Previous, then try again.'
+        );
+        return true;
+      }
+      const insert = ctx.bodyMediaInsertRef.current;
+      if (!insert) {
+        ctx.setActionInfo('Body editor is not ready. Select a card in Compose and try again.');
+        return true;
+      }
+      insert(media);
+      ctx.setActionInfo('Image inserted in body.');
       return true;
     }
   }

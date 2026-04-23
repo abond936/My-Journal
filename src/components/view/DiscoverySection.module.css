@@ -1,8 +1,9 @@
 /* Discovery Section Styles */
 
 .discoverySection {
-  margin-top: var(--spacing-lg);
-  padding-top: var(--spacing-sm);
+  margin-top: var(--spacing-2xl);
+  padding-top: var(--spacing-md);
+  padding-bottom: var(--spacing-xl);
   border-top: var(--border-width-thin) solid var(--border1-color);
   clear: both;
 }
@@ -89,8 +90,9 @@
 
 @media (min-width: 768px) {
   .discoverySection {
-    margin-top: var(--spacing-lg);
-    padding-top: var(--spacing-sm);
+    margin-top: var(--spacing-2xl);
+    padding-top: var(--spacing-md);
+    padding-bottom: var(--spacing-xl);
   }
 
   .discoveryTitle {
@@ -114,7 +116,8 @@
 
 @media (min-width: 1024px) {
   .discoverySection {
-    margin-top: var(--spacing-md);
-    padding-top: var(--spacing-sm);
+    margin-top: var(--spacing-2xl);
+    padding-top: var(--spacing-md);
+    padding-bottom: var(--spacing-xl);
   }
 }

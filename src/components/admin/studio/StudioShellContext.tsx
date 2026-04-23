@@ -1,7 +1,8 @@
 'use client';
 
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, type MutableRefObject } from 'react';
 import type { Card } from '@/lib/types/card';
+import type { Media } from '@/lib/types/photo';
 import type { StudioCardContext } from '@/components/admin/studio/studioCardTypes';
 
 /**
@@ -24,6 +25,11 @@ export type StudioShellContextValue = {
   toggleMediaSelection: (mediaId: string) => void;
   selectAllMediaOnPage: () => void;
   selectNoneMedia: () => void;
+  /**
+   * Compose-only: `CardForm` registers `insertImage` here so `handleStudioRelationshipDragEnd` can insert
+   * bank media into TipTap when the user drops onto `drop:body`.
+   */
+  bodyMediaInsertRef: MutableRefObject<((media: Media) => void) | null>;
 };
 
 const StudioShellContext = createContext<StudioShellContextValue | null>(null);
@@ -44,4 +50,9 @@ export function useStudioShell(): StudioShellContextValue {
     throw new Error('useStudioShell must be used within StudioShellProvider');
   }
   return ctx;
+}
+
+/** Same value as {@link useStudioShell} when inside Studio; `null` elsewhere (e.g. full-page card edit). */
+export function useStudioShellOptional(): StudioShellContextValue | null {
+  return useContext(StudioShellContext);
 }
