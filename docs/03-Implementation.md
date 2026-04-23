@@ -52,7 +52,7 @@ Legend:
 
 
 
-📐 **Studio program status (2026-04-22)** - **Shipped (v1):** **Collections Studio** embed (`CollectionsAdminClient` `embedded`)—multi-pane shell, curated tree + **Attach candidates** bank (title/status/sort + **one** `MacroTagSelector` for **on-card** dimensional tags; **no** on-card vs media-signal matrix in Studio), full **embedded** **`MediaAdminContent`** (search/source/caption/assignment + **one** `MacroTagSelector` for **`GET /api/media`**; **no** compose-card→media merge in Studio), **in-shell `CardForm`** (**Compose**) with cover/gallery/children DnD from the media bank (**`Studio selected-context elimination (v1)`**—relationship-only column removed). **Media-derived tag suggestions** and apply remain on **full-page** card admin (`CardAdminList`), not duplicated in the attach bank; **Attach candidates** **list** table omits those suggestion columns (`hideDimensionMediaSuggestions`) and **refreshes catalog** after in-list card updates. **Admin grids:** card and media **grid** views use **natural-aspect** thumbnails + **vertical dimension rails** + card **search-only** tag row / media caption-under-image + identity-on-hover. **Admin list (table)** compact rows: card list merges **PATCH** payload into SWR cache; media list stacks focal/replace/delete in the actions column when focal is not a separate column. **Primary execution track (remaining ⭕1):** **Studio IA demotion**; **Studio tag rail** + **Sidebar integration model** (**Tag Management** in `02-Application.md`); **Studio inline tags without modal** (extend beyond card-grid rail + narrow search); **`TipTap body media from bank (Studio)`**; **`PhotoPicker convergence in Media admin`**—all verbatim in `docs/02-Application.md`. **Broader DnD contract:** **⭕2** **Relationship DnD contract** + **DnD interaction contract** after shell validation in use (`📐 **Studio unified shell contract**` (7)). **Technical baseline to preserve:** curated collections tree DnD **default-on** (`NEXT_PUBLIC_CURATED_TREE_DND` kill switch); `updateCard` `childrenIds` attach semantics (`curatedRoot` clear, `curatedNavEligible`, `CURATED_COLLECTION_CYCLE` / `CURATED_COLLECTION_CHILD_NOT_FOUND`); client **`fetchAdminCardSnapshot`** + optimistic rollback on embedded tree; Studio **`patchSelectedCard` / card GET** with **`throwIfJsonApiFailed`**; tests: `curated-tree-hardening.test.ts`, `emulator.curated-tree-updateCard.test.ts`, `curatedCollectionTree.test.ts`.
+📐 **Studio program status (2026-04-22)** - **Shipped (v1):** **Collections Studio** at **`/admin/studio`** (`StudioWorkspace` hosts `CollectionsAdminClient` `embedded`)—multi-pane shell, curated tree + **Attach candidates** bank (title/status/sort + **one** `MacroTagSelector` for **on-card** dimensional tags; **no** on-card vs media-signal matrix in Studio), full **embedded** **`MediaAdminContent`** (search/source/caption/assignment + **one** `MacroTagSelector` for **`GET /api/media`**; **no** compose-card→media merge in Studio), **in-shell `CardForm`** (**Compose**) with cover/gallery/children DnD from the media bank (**`Studio selected-context elimination (v1)`**—relationship-only column removed). **Media-derived tag suggestions** and apply remain on **full-page** card admin (`CardAdminList`), not duplicated in the attach bank; **Attach candidates** **list** table omits those suggestion columns (`hideDimensionMediaSuggestions`) and **refreshes catalog** after in-list card updates. **Admin grids:** card and media **grid** views use **natural-aspect** thumbnails + **vertical dimension rails** + card **search-only** tag row / media caption-under-image + identity-on-hover. **Admin list (table)** compact rows: card list merges **PATCH** payload into SWR cache; media list stacks focal/replace/delete in the actions column when focal is not a separate column. **Studio tag rail** + **Sidebar integration model** ✅ (**Tag Management** / **Left Navigation** in `02-Application.md`): **`TagAdminStudioPane`** (Organization) and **`ViewTagLibrarySidebarPane`** (`/view` admin **Tag library** tab); **`/admin/tag-admin`** fallback. **Primary execution track (remaining ⭕1):** **Studio inline tags without modal** (extend beyond card-grid rail + narrow search); **`TipTap body media from bank (Studio)`**; **`PhotoPicker convergence in Media admin`**—all verbatim in `docs/02-Application.md`. **Studio IA demotion** ✅ (see **Administration** ✅ in `02-Application.md`). **Broader DnD contract:** **⭕2** **Relationship DnD contract** + **DnD interaction contract** after shell validation in use (`📐 **Studio unified shell contract**` (7)). **Technical baseline to preserve:** curated collections tree DnD **default-on** (`NEXT_PUBLIC_CURATED_TREE_DND` kill switch); `updateCard` `childrenIds` attach semantics (`curatedRoot` clear, `curatedNavEligible`, `CURATED_COLLECTION_CYCLE` / `CURATED_COLLECTION_CHILD_NOT_FOUND`); client **`fetchAdminCardSnapshot`** + optimistic rollback on embedded tree; Studio **`patchSelectedCard` / card GET** with **`throwIfJsonApiFailed`**; tests: `curated-tree-hardening.test.ts`, `emulator.curated-tree-updateCard.test.ts`, `curatedCollectionTree.test.ts`.
 
 
 
@@ -75,12 +75,6 @@ Legend:
 **§ Studio sequence** *(contract: `docs/02-Application.md` → **Administration** → `📐 **Studio unified shell contract**`; completed v1 items are summarized under **`📐 **Studio program status (2026-04-22)**` above—not duplicated here.)*
 
 
-
-- **Studio IA demotion** - Execute navigation hygiene from `📐 **Studio unified shell contract**` (6): hide or demote primary admin IA for `/admin/collections`, Card Management **Collections** when redundant, and `/admin/media-triage`; routes may remain in repo.
-
-- **Studio tag rail** - Full Tag Admin workflows in Studio **left rail** on `TagProvider` per `📐 **Studio unified shell contract**` (1); coordinates with **Sidebar integration model** for `/view`.
-
-- **Sidebar integration model** - **Today:** canonical `TagProvider` tree powers **filter-only** `/view` left-sidebar controls for **all** signed-in users and full tag create/edit/reorder/reparent (including DnD) on `/admin/tag-admin` and in the Studio tag column prototype—**not** a second taxonomy. **Planned:** **role-dependent** views on that same tree—**admins** on `/view` get **full tag-library maintenance** in the left sidebar (parity with `/admin/tag-admin`: add/delete/edit/reorder/reparent); **viewers** unchanged. `/admin/tag-admin` stays until **Studio tag rail** + `/view` admin sidebar fully replace those workflows (`📐 **Studio unified shell contract**` (1)).
 
 - **Studio inline tags without modal** - Extend inline dimensional tagging so **routine** work on **full CardForm** and on **media grid tiles** does not depend on **Edit tags…** / heavy modals (today: card **grid** and media **grid** use the same vertical rail for remove + per-dimension preview; full selector remains via `Edit tags…` and compose uses existing `CardForm` tag surfaces).
 
@@ -124,7 +118,7 @@ Legend:
 
 
 
-- **PhotoPicker convergence in Media admin** - Add operator flows in **`/admin/media`** (and Studio-embedded **Media admin**) to **import local images into the bank** and to pick library media with **PhotoPicker-grade** filtering (dimensions, search), so **PhotoPicker** in card edit becomes **optional** then **eliminable** for Studio and long-term for full-page card edit (`📐 **Studio media & body (2026-04-22)**`).
+- **PhotoPicker convergence in Media admin** - Add operator flows in **`/admin/media-admin`** (and Studio-embedded **Media admin**) to **import local images into the bank** and to pick library media with **PhotoPicker-grade** filtering (dimensions, search), so **PhotoPicker** in card edit becomes **optional** then **eliminable** for Studio and long-term for full-page card edit (`📐 **Studio media & body (2026-04-22)**`).
 
 - **Media identity & duplicate signals** - In admin lists, treat `media.docId` as canonical identity; `filename` is display metadata and may collide (`image.webp`, etc.). Add optional canonical columns/signals (for example `docId`, normalized `sourcePath`, checksum/hash/size where available) so duplicate triage and operator actions do not depend on filename uniqueness.
 
@@ -216,7 +210,7 @@ Legend:
 
   **Priority bands**
 
-  - **P1 (mobile reader usability)** - **Mobile-first filter redesign**; **Sidebar roles**.
+  - **P1 (mobile reader usability)** - **Mobile-first filter redesign**.
 
   - **P2 (behavioral consistency)** - **Reader Order Model**; **Sort Semantics**.
 
@@ -227,8 +221,6 @@ Legend:
 - **Sort Semantics** - Define deterministic ordering rules for all reader order modes: explicit tie-break chain, consistent undated policy for `When` (undated at end), and normalized dimension ordering behavior for `Who/What/Where`.
 
 - **Mobile-first filter redesign** - Sidebar freeform filters move to icon-led chip controls: rename **Card type** to **Cards** and replace single select with five toggle chips/buttons (`story`, `gallery`, `qa`, `quote`, `callout`) where “all” means all five active; Tags remove the `All` dimension tab and use only `Who/What/When/Where`; remove legacy copy/controls for **Show children after tag-filtered parents** from reader sidebar UX; simplify search control copy/presentation (`Search tags...` in-field prompt), reduce sidebar visual density, and keep tag tree collapsed by default (especially mobile) with per-dimension expansion on demand.
-
-- **Sidebar roles** - **Today:** `/view` uses one left-sidebar layout and the same filter-first control surface for every authenticated user (see **✅ Complete**). **Planned:** differentiate layout and control **depth** by **session role** (viewer vs admin) while keeping drawer/toggle behavior per `docs/04-Theme-Design-Contract.md` §9. **Do not** restate tag taxonomy or API rules here—canonical **⭕1** scope for admin tag maintenance on `/view` and Studio rail: **Tag Management** → **Sidebar integration model**.
 
 
 
@@ -246,7 +238,7 @@ Legend:
 
 - **Directory** - Cleanup directory.
 
-- **ESLint** - Address ESLint violations.
+- **ESLint** - Address ESLint violations. **During feature work**, fix ESLint/TypeScript issues introduced in **approved scope** on touched files per `.cursor/rules/# AI_InteractionRules.mdc` → **Lint and type hygiene on touched code**; repo-wide cleanup and re-enabling lint in production builds remain this phase.
 
 - **Quality** - QA app.
 

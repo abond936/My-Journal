@@ -310,7 +310,7 @@
 
 .studioMediaCardRowResizable .studioMediaBankColumn {
   flex: 1 1 auto;
-  min-width: 200px;
+  min-width: 160px;
 }
 
 .cardEditColumnResizeHandle {
@@ -331,8 +331,8 @@
 }
 
 .studioMediaBankColumn {
-  flex: 1 1 220px;
-  min-width: min(100%, 200px);
+  flex: 1 1 180px;
+  min-width: min(100%, 160px);
   min-height: 0;
   display: flex;
   flex-direction: column;

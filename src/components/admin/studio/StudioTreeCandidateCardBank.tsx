@@ -486,20 +486,20 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
               <option value="navigate">Set to Navigate</option>
               <option value="static">Set to Static</option>
             </select>
-            <button type="button" onClick={handleOpenBulkTags} className={mediaAdminStyles.bulkButton}>
+            <button type="button" onClick={handleOpenBulkTags} className={cardAdminStyles.actionButton}>
               Edit tags…
             </button>
             <button
               type="button"
               onClick={() => setBulkSelectedCardIds(new Set())}
-              className={mediaAdminStyles.bulkButton}
+              className={cardAdminStyles.actionButton}
             >
               Clear Selection
             </button>
             <button
               type="button"
               onClick={() => void handleBulkDelete()}
-              className={`${mediaAdminStyles.bulkButton} ${mediaAdminStyles.deleteButton}`}
+              className={`${cardAdminStyles.actionButton} ${cardAdminStyles.deleteButton}`}
             >
               Delete Selected
             </button>

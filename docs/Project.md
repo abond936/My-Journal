@@ -263,7 +263,7 @@ The primary users are the author (admin) creating the content and his family con
 ⭕2 **Chron Tree** - Provide tree in chronological order (Year / Month / What) for browsing.
 ⭕3 **Mobile Filter UX** - Tune type/tag filter UX on mobile. Layout reference: `--header-height` 60px; mobile filter drawer `--sidebar-width-mobile` 250px (`theme.css`).
 
-📐 **Collections DnD** - Yes, `/admin/collections` supports drag-and-drop of parent cards.
+📐 **Collections DnD** - Yes, **Studio** (`/admin/studio`, Tree tab / `CollectionsAdminClient` embedded) supports drag-and-drop of parent cards in the curated tree.
 
 ## **Content**
 
@@ -382,10 +382,10 @@ The primary users are the author (admin) creating the content and his family con
 
 *Features*
 ✅ **Navigation** - Top hamburger navigation `Admin` button navigates to Administration (`src/app/admin/layout.tsx`).
-✅ **Domains** - All admin domains active: Cards, Media, Collections, Tags, Questions, Users, Themes.
-✅ **Card Management** - Core CRUD, card schema, edit flows, collection route.
+✅ **Domains** - Cards, Media, Tags, Questions, Users, Themes. **Curated tree & attach:** **Studio** (`/admin/studio`); legacy **`/admin/collections`** and **`/admin/media-triage`** URLs **redirect** to Studio.
+✅ **Card Management** - Core CRUD, card schema, edit flows; grid/table on **`/admin/card-admin`**; duplicate in-page **Collections** shell removed—curated assembly is **Studio** only.
 ✅ **Media Management** - Assigned/unassigned filtering, replace-in-place, card-reference-aware delete.
-✅ **Collections Management** - Parent/unparent cards, reorder cards.
+✅ **Collections Management** - Parent/unparent, reorder, promote—**Studio** Tree tab (`CollectionsAdminClient` embedded); structural model unchanged (`childrenIds` / `curatedRoot`).
 ✅ **Tag Management** - Hierarchical admin, DnD/reparenting, inline edits.
 ✅ **Question Management** - CRUD and create-card linkage workflow.
 ✅ **User Management** - Users model and admin user workflow.
@@ -433,12 +433,12 @@ The primary users are the author (admin) creating the content and his family con
 ✅ **Import Folder as Card** – `ImportFolderModal`, folder tree picker, **`__X`-marked files only**, in-memory WebP optimize + upload (no xNormalized on disk), duplicate detection (overwrite/cancel). Mass-import / digiKam prep: **Authoring pipeline — digiKam → mass import** (under Strategic Direction).
 ✅ **Caption and Focal** - Inherit from media by default; optional per-slot override in the gallery edit modal.
 ✅ **Children** - `childrenIds` attaches ordered child cards. Deep nesting allowed; cycles and self-parent blocked in `cardService`; single-parent constraint enforced on move.
-✅ **Children Picker (edit UI)** - Card edit view: reorder/remove children and open child edit links; attach/reparent in Collections admin (`ChildCardManager` → link to `/admin/collections`). Structural assembly stays in TOC/collections work.
+✅ **Children Picker (edit UI)** - Card edit view: reorder/remove children and open child edit links; attach/reparent in **Studio** (`ChildCardManager` → `/admin/studio`). Structural assembly: **Studio** curated tree + reader curated mode.
 🔵 **Card Linkage** - Non-hierarchical "See Also" cross-references via `linkedCardIds: string[]` (many-to-many, unordered). Surfaces in reader view alongside tag-affinity related cards. Distinct from parent-child (`childrenIds`) and question→card linkage. Deferred until after import.
 ✅ **Actions** - Delete (remove tags/recalc, remove from parents, remove related media), Cancel (abandon edits, return to list), Save (save tags/recalc, add media).
 ✅ **Dirty State Tracking** - `persistableSnapshotsEqual` on `dehydrateCardForSave` output vs `lastSavedState`; RichTextEditor registers a content getter for TipTap buffer parity; `confirmLeaveIfDirty` on Back / Delete / Duplicate; `beforeunload` when dirty. Header actions in `CardEditPageChrome` (inside `CardFormProvider`).
 ✅ **Content Versioning (Phase 1)** - "Duplicate Card" action implemented. Creates a draft copy of any card (content, tags, media refs, gallery) via `POST /api/cards/[id]/duplicate`. Button on card edit page header. Next phase: pre-save snapshot to `card_versions` subcollection before mass content authoring.
-✅ **Authoring Discovery (media in edit)** - PhotoPicker **Library** tab: same non-tag query filters as Media admin (`/api/media`: status, source, shape, caption, on-cards), debounced text search, **in-modal dimensional tag filter** (`MacroTagSelector`, independent of left sidebar; OR within dimension, AND across dimensions, merged with optional **Match card tags** from the current card). `filterTagIds` wired from `CardForm` → cover/gallery/content picker. Card discovery: admin card list + Collections for structure.
+✅ **Authoring Discovery (media in edit)** - PhotoPicker **Library** tab: same non-tag query filters as Media admin (`/api/media`: status, source, shape, caption, on-cards), debounced text search, **in-modal dimensional tag filter** (`MacroTagSelector`, independent of left sidebar; OR within dimension, AND across dimensions, merged with optional **Match card tags** from the current card). `filterTagIds` wired from `CardForm` → cover/gallery/content picker. Card discovery: admin card list + **Studio** for structure.
 
 ---
 
@@ -452,9 +452,9 @@ The primary users are the author (admin) creating the content and his family con
 - **Manual ordering** - Author controls sequence through TOC; no automatic sorting.
 
 *Features*
-✅ **Data Model** - `/admin/collections` (`src/app/admin/collections/page.tsx`).
+✅ **Data Model** - Curated tree in **Studio** (`/admin/studio`); standalone `/admin/collections` page removed (**redirect**). Shared layout CSS: `src/app/admin/collections/page.module.css` (used by `CollectionsAdminClient` and card-admin tree chrome, not a routable page).
 📐 **Structural Model** - Listing eligibility matches `childrenIds.length > 0 OR curatedRoot === true`, stored as `curatedNavEligible` for querying. Sidebar `getCollectionCards` filters `curatedNavEligible == true` (and optional `status`), ordered by `createdAt`.
-✅ **Curated Tree** - drag-and-drop—attach/detach children, promote to tree root (`curatedRoot`). Single-parent model; cycles blocked in `cardService`. Admin tree loads up to **1000** cards for the page.
+✅ **Curated Tree** - In **Studio** (Tree tab): drag-and-drop—attach/detach children, promote to tree root (`curatedRoot`). Single-parent model; cycles blocked in `cardService`. Tree data loads up to **1000** cards for that surface.
 ⭕2 **TOC & Ordering** - Manual sibling reordering via drag-and-drop TOC (primary mechanism for curated narrative). One tree UI for reparenting and ordering. Reconcile parent/child model after TOC exists. No cascade on parent delete — children simply lose that parent.
 
 ---

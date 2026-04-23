@@ -58,6 +58,19 @@
 .tableCell .chip,
 .tableCell .chipEmpty {
   width: 100%;
+  /* Match `card-admin` `.dimensionChip` (table media + card tag bar). */
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  box-sizing: border-box;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--layout-background3-color, var(--layout-background2-color));
+  color: var(--text1-color);
+  font-size: 15px;
+  line-height: 1.2;
+  padding: 2px 6px;
+  min-height: 0;
 }
 
 .rail {

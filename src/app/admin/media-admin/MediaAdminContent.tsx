@@ -461,20 +461,20 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                       type="button"
                       onClick={handleCreateCardFromSelection}
                       disabled={isCreatingCard}
-                      className={styles.bulkButton}
+                      className={cardAdminStyles.actionButton}
                     >
                       {isCreatingCard ? 'Creating…' : 'Create card from selection'}
                     </button>
-                    <button type="button" onClick={handleOpenBulkTags} className={styles.bulkButton}>
+                    <button type="button" onClick={handleOpenBulkTags} className={cardAdminStyles.actionButton}>
                       Edit tags…
                     </button>
-                    <button type="button" onClick={selectNone} className={styles.bulkButton}>
+                    <button type="button" onClick={selectNone} className={cardAdminStyles.actionButton}>
                       Clear Selection
                     </button>
                     <button
                       type="button"
                       onClick={handleBulkDelete}
-                      className={`${styles.bulkButton} ${styles.deleteButton}`}
+                      className={`${cardAdminStyles.actionButton} ${cardAdminStyles.deleteButton}`}
                     >
                       Delete Selected
                     </button>

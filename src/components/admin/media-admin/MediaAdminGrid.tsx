@@ -7,8 +7,7 @@ import { CSS as DndCss } from '@dnd-kit/utilities';
 import JournalImage from '@/components/common/JournalImage';
 import { Media } from '@/lib/types/photo';
 import DimensionalTagVerticalChips from '@/components/admin/common/DimensionalTagVerticalChips';
-import EditModal from '@/components/admin/card-admin/EditModal';
-import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
+import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
 import type { MediaAdminRowStudioDragBind } from '@/components/admin/media-admin/MediaAdminRow';
 import { useMedia } from '@/components/providers/MediaProvider';
 import { useTag } from '@/components/providers/TagProvider';
@@ -47,6 +46,7 @@ function isMediaGridChromeInteractiveTarget(target: EventTarget | null): boolean
     t.closest(adminChromeSelector(ADMIN_GRID_CHROME.overlayTopStart)) ||
       t.closest(adminChromeSelector(ADMIN_GRID_CHROME.overlayTopEnd)) ||
       t.closest(adminChromeSelector(ADMIN_GRID_CHROME.tagRail)) ||
+      t.closest(adminChromeSelector(ADMIN_GRID_CHROME.tagSearchFoot)) ||
       t.closest(adminChromeSelector(ADMIN_GRID_CHROME.footerActions))
   );
 }
@@ -61,14 +61,7 @@ function MediaAdminGridCell({
   studioDragBind,
 }: MediaAdminGridCellProps) {
   const core = useMemo(() => getCoreTagsByDimension(media), [media]);
-  const [tagModalOpen, setTagModalOpen] = React.useState(false);
-  const [pendingTags, setPendingTags] = React.useState<string[]>(media.tags ?? []);
-  const [saveError, setSaveError] = React.useState<string | null>(null);
   const [saveNotice, setSaveNotice] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    setPendingTags(media.tags ?? []);
-  }, [media.docId, media.tags]);
 
   React.useEffect(() => {
     if (!saveNotice) return;
@@ -76,9 +69,12 @@ function MediaAdminGridCell({
     return () => window.clearTimeout(id);
   }, [saveNotice]);
 
-  const selectedTags = React.useMemo(
-    () => allTags.filter((tag) => tag.docId && pendingTags.includes(tag.docId)),
-    [allTags, pendingTags]
+  const handleTagUpdate = useCallback(
+    async (nextTagIds: string[]) => {
+      await onSaveTags(media.docId!, nextTagIds);
+      setSaveNotice('Tags saved');
+    },
+    [media.docId, onSaveTags]
   );
 
   const onCellClick = (e: React.MouseEvent) => {
@@ -198,18 +194,14 @@ function MediaAdminGridCell({
               {media.caption}
             </div>
           ) : null}
-          <div className={styles.inlineActions} data-admin-chrome={ADMIN_GRID_CHROME.footerActions}>
-            <button
-              type="button"
-              className={styles.inlineActionButton}
-              onClick={(e) => {
-                e.stopPropagation();
-                setSaveError(null);
-                setTagModalOpen(true);
-              }}
-            >
-              Edit tags…
-            </button>
+          <div className={styles.tagSearchFoot} data-admin-chrome={ADMIN_GRID_CHROME.tagSearchFoot}>
+            <CardDimensionalTagCommandBar
+              card={{ tags: media.tags ?? [] }}
+              allTags={allTags ?? []}
+              variant="searchOnly"
+              suggestionsDensity="dense"
+              onUpdateTags={handleTagUpdate}
+            />
           </div>
           {saveNotice ? <div className={styles.saveNotice}>{saveNotice}</div> : null}
         </>
@@ -217,37 +209,7 @@ function MediaAdminGridCell({
     />
   );
 
-  return (
-    <>
-      {gridCell}
-      <EditModal
-        isOpen={tagModalOpen}
-        onClose={() => setTagModalOpen(false)}
-        title={`Tags: ${media.filename}`}
-        size="wide"
-      >
-        <MacroTagSelector
-          startExpanded
-          selectedTags={selectedTags}
-          allTags={allTags}
-          onChange={setPendingTags}
-          error={saveError ?? undefined}
-          onSaveSelection={async (nextSelection) => {
-            setSaveError(null);
-            try {
-              await onSaveTags(media.docId, nextSelection);
-              setSaveNotice('Tags saved');
-              setTagModalOpen(false);
-            } catch (error) {
-              const message = error instanceof Error ? error.message : 'Failed to save tags.';
-              setSaveError(message);
-            }
-          }}
-          onRequestClose={() => setTagModalOpen(false)}
-        />
-      </EditModal>
-    </>
-  );
+  return gridCell;
 }
 
 function MediaAdminGridCellStudioSource(props: Omit<MediaAdminGridCellProps, 'studioDragBind'>) {

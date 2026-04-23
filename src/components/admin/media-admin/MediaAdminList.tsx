@@ -36,7 +36,12 @@ const DEFAULT_DIMENSION_FILTERS: DimensionFilters = {
 
 const MEDIA_COLUMN_WIDTHS_KEY = 'media-admin-column-widths';
 /** Persisted widths when embedded in Collections / Studio (fewer columns). */
-const MEDIA_COLUMN_WIDTHS_KEY_COMPACT = 'media-admin-column-widths-collections-embed';
+/** Bump when Studio/compact default column budget changes (avoids stale `localStorage` starving Tags). */
+const MEDIA_COLUMN_WIDTHS_KEY_COMPACT = 'media-admin-column-widths-collections-embed-v2';
+
+/** Match `CardAdminList` cover column defaults (`COVER_COLUMN_MIN` / default `cover` width). */
+const MEDIA_THUMB_COLUMN_WIDTH = 128;
+const MEDIA_THUMB_COLUMN_MIN = 120;
 
 const COMPACT_HIDDEN_COLUMN_KEYS = new Set([
   'filename',
@@ -52,33 +57,47 @@ const COMPACT_HIDDEN_COLUMN_KEYS = new Set([
 
 const defaultColumns: ColumnConfig[] = [
   { key: 'assignment', label: 'On cards', width: 120, minWidth: 90, maxWidth: 160 },
-  { key: 'thumbnail', label: 'Icon', width: 160, minWidth: 130, maxWidth: 240 },
+  { key: 'thumbnail', label: 'Icon', width: MEDIA_THUMB_COLUMN_WIDTH, minWidth: MEDIA_THUMB_COLUMN_MIN, maxWidth: 160 },
   { key: 'filename', label: 'Filename', width: 250, minWidth: 200, maxWidth: 500, sortable: true },
   { key: 'docId', label: 'Media ID', width: 220, minWidth: 180, maxWidth: 420, sortable: true },
-  { key: 'caption', label: 'Caption', width: 300, minWidth: 200, maxWidth: 600, sortable: true },
+  { key: 'caption', label: 'Caption', width: 100, minWidth: 72, maxWidth: 360, sortable: true },
   { key: 'width', label: 'Width', width: 100, minWidth: 80, maxWidth: 120 },
   { key: 'height', label: 'Height', width: 100, minWidth: 80, maxWidth: 120 },
   { key: 'size', label: 'Size', width: 120, minWidth: 100, maxWidth: 150, sortable: true },
   { key: 'contentType', label: 'Type', width: 120, minWidth: 100, maxWidth: 150 },
   { key: 'objectPosition', label: 'Object Position', width: 150, minWidth: 120, maxWidth: 200 },
   { key: 'source', label: 'Source', width: 100, minWidth: 80, maxWidth: 120 },
-  { key: 'who', label: 'Who', width: 150, minWidth: 100, maxWidth: 280 },
-  { key: 'what', label: 'What', width: 150, minWidth: 100, maxWidth: 280 },
-  { key: 'when', label: 'When', width: 150, minWidth: 100, maxWidth: 280 },
-  { key: 'where', label: 'Where', width: 150, minWidth: 100, maxWidth: 280 },
+  { key: 'tags', label: 'Tags', width: 320, minWidth: 200, maxWidth: 600 },
   { key: 'sourcePath', label: 'Source Path', width: 400, minWidth: 300, maxWidth: 800, sortable: true },
-  { key: 'actions', label: 'Actions', width: 92, minWidth: 80, maxWidth: 130 },
+  { key: 'actions', label: 'Actions', width: 64, minWidth: 58, maxWidth: 76 },
 ];
 
 function getColumnsForVariant(variant: 'full' | 'compact'): ColumnConfig[] {
   if (variant === 'full') return defaultColumns;
   return defaultColumns
     .filter((col) => !COMPACT_HIDDEN_COLUMN_KEYS.has(col.key))
-    .map((col) =>
-      col.key === 'actions'
-        ? { ...col, width: 100, minWidth: 80, maxWidth: 200 }
-        : col
-    );
+    .map((col) => {
+      if (col.key === 'actions') {
+        /* Stack labels only; keep column barely wider than buttons. */
+        return { ...col, width: 58, minWidth: 54, maxWidth: 72 };
+      }
+      if (col.key === 'thumbnail') {
+        /* Column width = COVER_COLUMN_MIN: square uses row height; no need for 128px rail. */
+        return { ...col, width: MEDIA_THUMB_COLUMN_MIN, minWidth: MEDIA_THUMB_COLUMN_MIN, maxWidth: 128 };
+      }
+      if (col.key === 'assignment') {
+        /* Badge is one word + padding — reclaim space for Tags. */
+        return { ...col, width: 86, minWidth: 68, maxWidth: 102 };
+      }
+      if (col.key === 'caption') {
+        return { ...col, width: 56, minWidth: 48, maxWidth: 180 };
+      }
+      if (col.key === 'tags') {
+        /* Prefer width here — other compact columns are intentionally tight. */
+        return { ...col, width: 420, minWidth: 260, maxWidth: 920 };
+      }
+      return col;
+    });
 }
 
 function loadInitialColumns(variant: 'full' | 'compact'): ColumnConfig[] {
@@ -89,10 +108,11 @@ function loadInitialColumns(variant: 'full' | 'compact'): ColumnConfig[] {
     const saved = localStorage.getItem(key);
     if (!saved) return base;
     const savedWidths = JSON.parse(saved) as Record<string, number>;
-    return base.map((col) => ({
-      ...col,
-      width: typeof savedWidths[col.key] === 'number' ? savedWidths[col.key] : col.width,
-    }));
+    return base.map((col) => {
+      const raw = typeof savedWidths[col.key] === 'number' ? savedWidths[col.key]! : col.width;
+      const clamped = Math.min(col.maxWidth, Math.max(col.minWidth, raw));
+      return { ...col, width: clamped };
+    });
   } catch {
     return base;
   }
@@ -211,9 +231,13 @@ export default function MediaAdminList({
   }, [columns, storageKey]);
 
   const handleColumnResize = (columnKey: string, newWidth: number) => {
-    setColumns(prev => prev.map(col => 
-      col.key === columnKey ? { ...col, width: newWidth } : col
-    ));
+    setColumns((prev) =>
+      prev.map((col) => {
+        if (col.key !== columnKey) return col;
+        const w = Math.min(col.maxWidth, Math.max(col.minWidth, newWidth));
+        return { ...col, width: w };
+      })
+    );
   };
 
   const totalWidth = columns.reduce((sum, col) => sum + col.width, 0) + 40; // +40 for checkbox column
@@ -269,6 +293,7 @@ export default function MediaAdminList({
                   key={item.docId}
                   media={item}
                   columns={columns}
+                  listVariant={variant}
                   isSelected={selectedMediaIds.includes(item.docId)}
                   onSelectionCheckboxClick={(e) => handleRowSelectionClick(e, item.docId, index)}
                 />
@@ -277,6 +302,7 @@ export default function MediaAdminList({
                   key={item.docId}
                   media={item}
                   columns={columns}
+                  listVariant={variant}
                   isSelected={selectedMediaIds.includes(item.docId)}
                   onSelectionCheckboxClick={(e) => handleRowSelectionClick(e, item.docId, index)}
                 />

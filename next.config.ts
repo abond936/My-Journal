@@ -28,13 +28,23 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: '/admin/collections',
+        destination: '/admin/studio',
+        permanent: true,
+      },
+      {
+        source: '/admin/media-triage',
+        destination: '/admin/studio',
+        permanent: true,
+      },
+      {
         source: '/admin/admin-triage',
-        destination: '/admin/media-triage',
+        destination: '/admin/studio',
         permanent: false,
       },
       {
         source: '/admin/triage',
-        destination: '/admin/media-triage',
+        destination: '/admin/studio',
         permanent: false,
       },
     ];

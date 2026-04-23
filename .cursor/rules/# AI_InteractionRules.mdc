@@ -50,6 +50,15 @@ The approved edit set is a **closed list**: paths, behaviors, or artifacts the a
 - **Unspecified touch points** — If the right fix could reasonably be done in more than one place, or touching a second system would be cleaner but was **not** asked for, **ask** before including it. Prefer a minimal change that matches the ask; offer broader changes as a **separate** optional item in RECOMMEND, not bundled silently.
 - **Ambiguous scope** — If “fix filtering” could mean API-only, client-only, or both, state the ambiguity in RECOMMEND and get confirmation before EXECUTE.
 
+# Lint and type hygiene on touched code
+
+The repo carries a **historical ESLint backlog** (see `docs/03-Implementation.md` → Phase 4 **ESLint**). Agents must **not** assume “lint clean file” is required on every edit, and must **not** treat “only check my new lines” as permission to leave **new** violations in place.
+
+1. **Fix your delta** — For every file you **edit in the approved scope**, clear **ESLint and TypeScript issues that your change introduces or directly affects** (same function/component, same hook, imports you add or remove, types your edit makes relevant). Run or honor **`npm run lint`** / IDE diagnostics on **touched paths** before considering the work done.
+2. **Pre-existing noise** — You **do not** have to fix **all** violations already present in a file when the author did not ask for a lint pass. Do **not** expand scope into wholesale reformatting or unrelated-rule fixes across the file “because it was open.”
+3. **Opportunistic, bounded** — If a **trivial** fix in the **immediate edit surface** is one or two lines (e.g. remove an import your edit made unused, obvious hook-deps fix **for code you touched**), include it. If fixing a pre-existing issue requires **refactoring unrelated logic**, **stop**: note it for the author or a dedicated lint task—do not bundle without approval.
+4. **Whole-file / tree-wide lint** — Reserved for **explicitly approved** cleanup work (e.g. Phase 4 backlog, or “lint file X”). Never required merely because a file was touched.
+
 # Failure Recovery
 
 If AI edits outside approved scope or makes unapproved changes:

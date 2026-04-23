@@ -1,7 +1,7 @@
 import type { Card } from '@/lib/types/card';
 import { collectCuratedSubtreeIdsFromMaster, normalizeCuratedChildIds } from '@/lib/utils/curatedCollectionTree';
 
-/** Merge a large admin snapshot with fresher paginated rows (same rules as CollectionsManagerPanel). */
+/** Merge a large admin snapshot with fresher paginated rows (same rules as card-admin grid/table attach-candidate filter). */
 export function mergeCardCatalogs(allCards: Card[], paginated: Card[]): Card[] {
   const byId = new Map<string, Card>();
   for (const c of allCards) {

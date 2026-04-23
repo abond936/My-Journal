@@ -8,6 +8,7 @@ This file is an **index only**. Canonical instructions are not duplicated here (
 | Agent process (assess → recommend → wait; explicit approval before edits) | `.cursor/rules/# AI_InteractionRules.mdc` |
 | **Editor-first review** — apply edits in the workspace so the author uses the **IDE diff** (accept/reject); do **not** paste full `git diff` / large before-after blocks in chat unless the author asks | `.cursor/rules/# AI_InteractionRules.mdc` → **EXECUTE** |
 | **Change scope** (approved surface only; ask before adjacent UI/API/context edits) | `.cursor/rules/# AI_InteractionRules.mdc` → **Change scope boundary** |
+| **Lint on touched code** (fix delta you introduce; no mandatory whole-file ESLint; opportunistic trivial only) | `.cursor/rules/# AI_InteractionRules.mdc` → **Lint and type hygiene on touched code** |
 | Vision, principles, tech stack, decisions | `docs/01-Vision-Architecture.md` |
 | **Data planes, mutation scope, Typesense limits, list refresh** (normative—read before writes/admin list changes) | `docs/01-Vision-Architecture.md` → **TECHNICAL** → **Backend** / **Frontend** *Principles* + Backend 📐 |
 | **Product invariants vs efficiency** (counts, derived tags—no shortcuts that break them; escalate conflicts) | `.cursor/rules/# AI_InteractionRules.mdc` → **Product invariants vs efficiency**; `docs/01-Vision-Architecture.md` → **Denormalized counts** principle + 📐 **Contract vs product** |

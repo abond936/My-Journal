@@ -151,7 +151,7 @@ const defaultFilters: MediaFilters = {
 export function MediaProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isMediaListRoute = Boolean(
-    pathname?.startsWith('/admin/media-admin') || pathname?.startsWith('/admin/media-triage')
+    pathname?.startsWith('/admin/media-admin') || pathname?.startsWith('/admin/studio')
   );
 
   const { selectedTags } = useCardContext();
@@ -315,21 +315,27 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify(updates),
       });
 
+      const body = (await response.json().catch(() => ({}))) as ApiErrorResponse & { media?: Media };
+
       if (!response.ok) {
-        const payload = (await response.json().catch(() => ({}))) as ApiErrorResponse;
-        throw toUserFacingError('Failed to update media', payload, response.statusText);
+        throw toUserFacingError('Failed to update media', body, response.statusText);
       }
 
-      // Refresh the current page to get updated data
+      const updated = body.media;
+      if (updated?.docId) {
+        setMedia((prev) => prev.map((m) => (m.docId === id ? { ...updated, docId: updated.docId } : m)));
+        return updated;
+      }
+
       await fetchMedia(currentPage);
-      return media.find(m => m.docId === id);
+      return undefined;
     } catch (err) {
       const error = err instanceof Error ? err : new Error('An unknown error occurred');
       setError(error);
       console.error('Error updating media:', error);
       return undefined;
     }
-  }, [fetchMedia, currentPage, media]);
+  }, [fetchMedia, currentPage]);
 
   const deleteMedia = useCallback(async (id: string) => {
     try {

@@ -189,7 +189,11 @@
   font-size: var(--font-size-xs);
 }
 
-/* Card admin `entriesTable`: larger chips than compact, shrink with column only via overflow/ellipsis */
+/*
+ * Table-embedded command bar (card admin `entriesTable`, etc.): toolbar inset + row rhythm only.
+ * Chip type stays the same scale as `.wrapCompact .chip` (`--font-size-xs`) — do not override with
+ * a larger px/calc block here; that regressed card-table chips when `tableEmbed` was wired to this class.
+ */
 .wrapTable .chipsToolbar {
   padding-left: 2ch;
   box-sizing: border-box;
@@ -205,16 +209,15 @@
 
 .wrapTable .chip,
 .wrapTable .chipEmpty {
-  font-size: calc(var(--font-size-sm) * 1.5);
-  line-height: 1.25;
-  padding: 0.4rem 0.55rem;
-  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-tight);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
   min-width: 0;
 }
 
 .wrapTable .chipEmpty {
   font-style: normal;
-  padding: 0.4rem 0.25rem;
 }
 
 .wrapTable .chipStrip {
@@ -248,4 +251,24 @@
 
 .wrapSearchOnly .suggestions {
   max-height: 140px;
+}
+
+.wrapDenseSuggestions .suggestion {
+  font-size: var(--font-size-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  line-height: var(--line-height-tight);
+}
+
+.wrapDenseSuggestions .dimBadge {
+  font-size: 0.625rem;
+  min-width: 1.5rem;
+  margin-right: var(--spacing-xs);
+}
+
+.wrapDenseSuggestions .pathLine {
+  font-size: var(--font-size-xs);
+}
+
+.wrapDenseSuggestions .error {
+  font-size: var(--font-size-xs);
 }

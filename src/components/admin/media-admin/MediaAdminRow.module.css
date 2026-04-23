@@ -11,6 +11,18 @@
   background: hsla(var(--h1), var(--s1), var(--l1), 0.1);
 }
 
+/* Studio / compact table: shrink assignment badge so column budget flows to Tags. */
+.rowCompact .assignmentBadge {
+  font-size: 0.625rem;
+  min-width: 0;
+  padding: 2px 4px;
+  letter-spacing: 0.02em;
+}
+
+tr.rowCompact > td.cell {
+  padding: var(--spacing-xs) 4px;
+}
+
 .cell {
   padding: var(--spacing-sm);
   vertical-align: middle;
@@ -24,11 +36,23 @@
   border-right: none;
 }
 
+/* Inline dimensional tag bar (same role as card admin `.tableTagCommandCell`). */
+.tagCommandCell {
+  vertical-align: top;
+  min-width: 0;
+  overflow: hidden;
+  white-space: normal;
+}
+
 .checkboxCell {
-  padding: var(--spacing-sm);
+  /* Match `card-admin` `.entriesTable` checkbox column (40px) and cell padding. */
+  padding: 3px 4px;
   text-align: center;
   border-right: var(--border-width-thin) solid var(--border1-color);
-  width: var(--spacing-xl);
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -84,22 +108,42 @@
   color: var(--state-warning-border-color);
 }
 
-/* Thumbnail */
-.thumbnail {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: var(--spacing-4xl);
-  height: var(--spacing-4xl);
-  border-radius: var(--border-radius-sm);
+/*
+ * Icon column — same geometry as card admin `entriesTable` `.coverImageCell` / `.coverImageCellInner`:
+ * narrow column width, square thumbnail height = row, `aspect-ratio: 1`, centered.
+ */
+.thumbnailCell {
+  position: relative;
+  padding: 0 !important;
+  text-align: center;
+  vertical-align: middle;
   overflow: hidden;
-  background: var(--layout-background2-color);
+  min-height: 3rem;
 }
 
-.thumbnailImage {
-  width: 100%;
-  height: 100%;
+.thumbnailCellInner {
+  position: absolute;
+  top: 2px;
+  right: auto;
+  bottom: 2px;
+  left: 50%;
+  width: auto;
+  height: auto;
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border1-color);
+  overflow: hidden;
+  background: var(--layout-background2-color);
+  box-sizing: border-box;
+}
+
+.thumbnailImageFill {
   object-fit: cover;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: calc(var(--border-radius-md) - 1px);
 }
 
 /* Filename */
@@ -122,12 +166,12 @@
   max-width: 100%;
 }
 
-/* Caption */
+/* Caption — wrap when column is narrow (Studio / compact table). */
 .caption {
   color: var(--text1-color);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
   max-width: 100%;
   cursor: pointer;
   padding: var(--spacing-xs);
@@ -323,14 +367,23 @@
   max-width: 100%;
 }
 
-/* Actions (stacked: Focal, Replace, Delete) */
+/* Actions (stacked: Focal, Replace, Delete) — column hugs buttons, no full-width stretch. */
+.actionsCell {
+  padding-left: 4px !important;
+  padding-right: 4px !important;
+  vertical-align: top;
+}
+
 .actions {
-  display: flex;
+  display: inline-flex;
   flex-direction: column;
   flex-wrap: nowrap;
-  gap: var(--spacing-xs);
+  gap: 2px;
   align-items: stretch;
   justify-content: flex-start;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
   min-width: 0;
 }
 
@@ -339,46 +392,52 @@
 }
 
 .actionButton {
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: 2px var(--spacing-xs);
   border: var(--border-width-thin) solid var(--border1-color);
   border-radius: var(--border-radius-sm);
   background: var(--layout-background1-color);
   color: var(--text1-color);
   cursor: pointer;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
+  line-height: 1.2;
   transition: background-color var(--transition-short);
   min-width: 0;
-  width: 100%;
-  min-height: var(--spacing-lg);
+  width: auto;
+  min-height: 1.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+  white-space: nowrap;
 }
 
 .actionButton:hover {
   background: var(--layout-background2-color);
 }
 
+/* Match `card-admin` `.actionButton.deleteButton` (outline danger, fill on hover — not a solid red block). */
 .actionButton.deleteButton {
-  background: var(--state-error-background-color);
-  color: var(--state-error-text-color);
+  background: var(--layout-background1-color);
+  color: var(--text1-color);
   border-color: var(--state-error-border-color);
 }
 
-.actionButton.deleteButton:hover {
+.actionButton.deleteButton:hover:not(:disabled) {
   background: var(--state-error-background-color);
+  color: white;
+}
+
+.actionButton.deleteButton:disabled {
+  opacity: 0.5;
+  border-color: var(--state-error-border-color);
+  color: var(--text1-color);
+  background: transparent;
 }
 
 @media (max-width: 768px) {
   .cell {
     padding: var(--spacing-xs);
     font-size: var(--font-size-xs);
-  }
-
-  .thumbnail {
-    width: var(--spacing-3xl);
-    height: var(--spacing-3xl);
   }
 
   .actionButton {

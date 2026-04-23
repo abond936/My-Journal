@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { DND_POINTER_IGNORE_ATTR } from '@/lib/hooks/useDefaultDndSensors';
 import styles from '@/app/admin/card-admin/card-admin.module.css';
 
 interface ResizableHeaderProps {
@@ -30,6 +31,7 @@ export default function ResizableHeader({
   const [startWidth, setStartWidth] = useState(width);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
     setIsResizing(true);
     setStartX(e.clientX);
     setStartWidth(width);
@@ -70,8 +72,9 @@ export default function ResizableHeader({
       style={thStyle}
     >
       {children}
-      <div 
+      <div
         className={styles.resizeHandle}
+        {...{ [DND_POINTER_IGNORE_ATTR]: '' }}
         onMouseDown={handleMouseDown}
       />
     </th>

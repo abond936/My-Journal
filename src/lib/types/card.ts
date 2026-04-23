@@ -22,7 +22,7 @@ const galleryMediaItemSchema = z.object({
  * `childrenIds` / `curatedRoot`, not type.
  *
  * **`curatedRoot`:** Top-level slot in Curated browsing when true, even with zero children.
- * Set from Admin → Collections (`/admin/collections`) via tree-root drop—not from the tag sidebar.
+ * Set from **Studio** (`/admin/studio`, Tree tab) via tree-root drop—not from the tag sidebar.
  */
 export const cardSchema = z.object({
   // Document identifier - Firestore's immutable docId

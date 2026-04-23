@@ -53,6 +53,11 @@
   word-break: break-word;
 }
 
+.tagSearchFoot {
+  padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-sm);
+  min-width: 0;
+}
+
 .inlineActions {
   padding: 0 var(--spacing-sm) var(--spacing-sm);
   display: flex;

@@ -20,7 +20,8 @@ function norm(s: string): string {
 }
 
 export interface CardDimensionalTagCommandBarProps {
-  card: Card;
+  /** Tag assignment only; full `Card` is accepted at call sites. */
+  card: Pick<Card, 'tags'>;
   allTags: Tag[];
   onUpdateTags: (nextTagIds: string[]) => void | Promise<void>;
   disabled?: boolean;
@@ -36,6 +37,8 @@ export interface CardDimensionalTagCommandBarProps {
   hideDimensionRowLabels?: boolean;
   /** Card admin table: larger chips, tighter toolbar; use with `variant="compact"`. */
   tableEmbed?: boolean;
+  /** Narrow contexts (e.g. media grid tile): smaller typeahead suggestion rows. */
+  suggestionsDensity?: 'default' | 'dense';
 }
 
 export default function CardDimensionalTagCommandBar({
@@ -50,6 +53,7 @@ export default function CardDimensionalTagCommandBar({
   searchPlaceholder = 'Edit tags…',
   hideDimensionRowLabels = false,
   tableEmbed = false,
+  suggestionsDensity = 'default',
 }: CardDimensionalTagCommandBarProps) {
   const [query, setQuery] = useState('');
   const [highlightIndex, setHighlightIndex] = useState(-1);
@@ -164,6 +168,8 @@ export default function CardDimensionalTagCommandBar({
         styles.wrap,
         variant === 'compact' && styles.wrapCompact,
         variant === 'searchOnly' && styles.wrapSearchOnly,
+        tableEmbed && styles.wrapTable,
+        suggestionsDensity === 'dense' && styles.wrapDenseSuggestions,
         tagError && styles.wrapError,
         className
       )}

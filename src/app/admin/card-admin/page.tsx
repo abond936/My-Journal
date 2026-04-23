@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useLayoutEffect, useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTag } from '@/components/providers/TagProvider';
 import { useCardContext } from '@/components/providers/CardProvider';
@@ -10,7 +9,6 @@ import styles from './card-admin.module.css';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import CardAdminList from '@/components/admin/card-admin/CardAdminList';
 import CardAdminGrid from '@/components/admin/card-admin/CardAdminGrid';
-import CollectionsManagerPanel from '@/components/admin/card-admin/CollectionsManagerPanel';
 import BulkEditTagsModal from '@/components/admin/card-admin/BulkEditTagsModal';
 import ImportFolderModal from '@/components/admin/card-admin/ImportFolderModal';
 import { sortAdminCards, type AdminCardSortMode } from '@/lib/utils/adminCardSort';
@@ -24,7 +22,7 @@ import { applyModifierSelection } from '@/lib/utils/adminListSelection';
 const CARD_VIEW_MODE_KEY = 'card-admin-view-mode';
 /** Neighbor row in admin list order when the primary `scrollToCardId` row is removed (e.g. delete). */
 const SCROLL_TO_CARD_IF_REMOVED_KEY = 'scrollToCardIdIfRemoved';
-type ViewMode = 'grid' | 'table' | 'collections';
+type ViewMode = 'grid' | 'table';
 
 function intersectsAny(haystack: string[] | undefined, needles: string[]): boolean {
   if (!needles.length) return true;
@@ -39,6 +37,10 @@ export default function AdminCardsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window === 'undefined') return 'grid';
     const saved = localStorage.getItem(CARD_VIEW_MODE_KEY);
+    if (saved === 'collections') {
+      localStorage.setItem(CARD_VIEW_MODE_KEY, 'grid');
+      return 'grid';
+    }
     return (saved === 'table' ? 'table' : 'grid') as ViewMode;
   });
   const [isBulkTagModalOpen, setIsBulkTagModalOpen] = useState(false);
@@ -553,25 +555,8 @@ export default function AdminCardsPage() {
               Table
             </button>
           </span>
-          <div className={styles.viewToggleSupplementary}>
-            <button
-              type="button"
-              className={`${styles.viewToggleButton} ${styles.viewToggleButtonSupplementary} ${
-                viewMode === 'collections' ? styles.viewToggleActive : ''
-              }`}
-              onClick={() => setViewMode('collections')}
-              aria-pressed={viewMode === 'collections'}
-            >
-              Collections
-            </button>
-            <span className={styles.viewToggleStudioHint}>
-              Prefer <Link href="/admin/studio">Studio</Link> for tree + cards + media together; use this for
-              full-page curated work when needed.
-            </span>
-          </div>
         </div>
 
-        {viewMode !== 'collections' && (
         <div className={styles.filterSection}>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <input
@@ -738,9 +723,7 @@ export default function AdminCardsPage() {
             ) : null}
           </div>
         </div>
-        )}
-        
-        {viewMode !== 'collections' && (
+
         <div className={styles.bulkActions}>
           <span>
             {selectedCardIds.size === 0
@@ -806,7 +789,6 @@ export default function AdminCardsPage() {
             </button>
           </div>
         </div>
-        )}
       </div>
 
       {viewMode === 'grid' ? (
@@ -820,7 +802,7 @@ export default function AdminCardsPage() {
           onUpdateCard={handleUpdateCard}
           onDeleteCard={handleDeleteCard}
         />
-      ) : viewMode === 'table' ? (
+      ) : (
         <CardAdminList
           cards={displayCards}
           selectedCardIds={selectedCardIds}
@@ -831,14 +813,9 @@ export default function AdminCardsPage() {
           onUpdateCard={handleUpdateCard}
           onDeleteCard={handleDeleteCard}
         />
-      ) : (
-        <CollectionsManagerPanel
-          cards={viewMode === 'collections' ? adminVisibleRows : displayCards}
-          collectionsActive={viewMode === 'collections'}
-        />
       )}
 
-      {viewMode !== 'collections' && hasMore && !treeCandidateFilter && (
+      {hasMore && !treeCandidateFilter && (
         <div className={styles.loadMoreContainer}>
           <button onClick={loadMore} disabled={loadingMore} className={styles.loadMoreButton}>
             {loadingMore ? 'Loading...' : 'Load More'}

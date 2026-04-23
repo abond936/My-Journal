@@ -54,7 +54,8 @@ const COLLECTIONS_CENTER_COLUMNS_KEY = 'collectionsCenterPaneWidths';
 const COL_HANDLE = 8;
 const MIN_TREE_COL = 200;
 const MIN_UNPARENT_COL = 200;
-const MIN_MEDIA_COL = 280;
+/** Minimum width for the Media / Studio right column (grid area); user-resizable. Kept below old 280px to reduce default horizontal sprawl. */
+const MIN_MEDIA_COL = 220;
 
 function clamp(n: number, lo: number, hi: number) {
   return Math.min(hi, Math.max(lo, n));

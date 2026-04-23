@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
+import { getAdminApp } from '@/lib/config/firebase/admin';
 import { patchMediaDocument } from '@/lib/services/images/imageImportService';
 import { deleteMediaWithCardCleanup, recomputeCardsMediaSignalsForMedia } from '@/lib/services/cardService';
+import type { Media } from '@/lib/types/photo';
 
 type ApiErrorPayload = {
   ok: false;
@@ -153,7 +155,25 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       await recomputeCardsMediaSignalsForMedia(mediaId);
     }
 
-    return NextResponse.json({ ok: true, message: `Media asset ${mediaId} updated.` });
+    const snap = await getAdminApp().firestore().collection('media').doc(mediaId).get();
+    if (!snap.exists) {
+      return errorResponse(
+        {
+          ok: false,
+          code: 'MEDIA_NOT_FOUND_AFTER_PATCH',
+          message: 'Media document missing after update.',
+          severity: 'error',
+          retryable: false,
+        },
+        500
+      );
+    }
+    const updatedMedia: Media = { ...(snap.data() as Media), docId: snap.id };
+    return NextResponse.json({
+      ok: true,
+      message: `Media asset ${mediaId} updated.`,
+      media: updatedMedia,
+    });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error(`Error updating media ${mediaId}:`, errorMessage);

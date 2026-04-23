@@ -57,10 +57,10 @@ export default function ChildCardManager({
       <h4 className={styles.sectionTitle}>Child Cards</h4>
       <p className={styles.hint}>
         Reorder or remove children. Add or reparent in{' '}
-        <Link href="/admin/collections" className={styles.collectionsLink}>
-          Card Management/Collections
-        </Link>
-        .
+        <Link href="/admin/studio" className={styles.collectionsLink}>
+          Studio
+        </Link>{' '}
+        (Tree tab).
       </p>
 
       {error && <p className={styles.error}>{error}</p>}
@@ -69,7 +69,7 @@ export default function ChildCardManager({
         {areChildrenLoading && <p>Loading child cards...</p>}
         {childrenError && <p className={styles.error}>{childrenError}</p>}
         {!areChildrenLoading && !childrenError && childCards.length === 0 && (
-          <p>No child cards. Use Collections to attach children.</p>
+          <p>No child cards. Use Studio (Tree tab) to attach children.</p>
         )}
         {!areChildrenLoading && !childrenError && childCards.length > 0 && (
           <DndContext

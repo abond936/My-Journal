@@ -84,6 +84,18 @@
   background: var(--layout-background1-color);
 }
 
+/* Reclaim horizontal space from default `spacing-sm` cell padding (× many columns). */
+.tableContainerCompact .table th,
+.tableContainerCompact .table td {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+.tableContainerCompact .headerContent {
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
 .containerCompact .headerCell,
 .containerCompact .checkboxCell {
   top: 0;
@@ -103,6 +115,13 @@
   text-align: left;
   vertical-align: top;
   border-bottom: var(--border-width-thin) solid var(--border1-color);
+}
+
+/* Match `card-admin` `.entriesTable` row checkboxes (18px). */
+.table input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
 }
 
 .table td {
@@ -134,39 +153,56 @@
   user-select: none;
 }
 
+/* Aligned with `card-admin/ResizableHeader` — handle is a sibling on the same `<th>` (sticky th still contains absolute handle). */
+.resizableHeader {
+  transition: background-color 0.2s;
+}
+
+.resizableHeader.resizing {
+  background: var(--layout-background1-color);
+}
+
 .headerContent {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   width: 100%;
+  min-width: 0;
   padding: var(--spacing-sm);
+  box-sizing: border-box;
 }
 
 .resizeHandle {
   position: absolute;
-  right: 0;
+  right: calc(-1 * var(--spacing-xs));
   top: 0;
   bottom: 0;
   width: var(--spacing-xs);
   background: transparent;
   cursor: col-resize;
+  z-index: 1;
   transition: background-color var(--transition-short);
 }
 
-.resizeHandle:hover {
-  background: var(--color1);
+.resizeHandle:hover,
+.resizing .resizeHandle {
+  background: var(--button-solid-background-color);
 }
 
 .checkboxCell {
   position: sticky;
   top: var(--media-admin-header-top, var(--media-admin-chrome-offset, 120px));
   z-index: 52;
-  padding: var(--spacing-sm);
+  padding: 3px 4px;
   background: var(--layout-background2-color);
   border-bottom: var(--border-width-thin) solid var(--border1-color);
   text-align: center;
   vertical-align: top;
-  width: var(--spacing-xl);
+  /* Match `CardAdminList` checkbox column (40px). */
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  box-sizing: border-box;
 }
 
 .emptyState {
