@@ -85,6 +85,21 @@ function toUserFacingError(prefix: string, payload: ApiErrorResponse, fallback: 
   return error;
 }
 
+function applyMediaTagMutation(
+  existingTags: string[] | undefined,
+  nextTags: string[],
+  mode: 'add' | 'replace' | 'remove'
+): string[] {
+  if (mode === 'replace') return [...nextTags];
+  const tagSet = new Set(existingTags ?? []);
+  if (mode === 'add') {
+    nextTags.forEach((tagId) => tagSet.add(tagId));
+    return Array.from(tagSet);
+  }
+  nextTags.forEach((tagId) => tagSet.delete(tagId));
+  return Array.from(tagSet);
+}
+
 export function getMediaErrorSeverity(error: Error | null): MediaErrorSeverity {
   if (!error) return 'error';
   const maybeMediaError = error as MediaUiError;
@@ -175,6 +190,27 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const [dimensionalQueryOverlay, setDimensionalQueryOverlayState] = useState<DimensionalTagIdMap>({});
   const dimensionalQueryOverlayRef = useRef<DimensionalTagIdMap>({});
   const lastMediaEngineRef = useRef<'typesense' | 'firestore' | null>(null);
+
+  const adjustPaginationAfterDelete = useCallback((deletedCount: number) => {
+    if (deletedCount <= 0) return;
+    setPagination((prev) => {
+      if (!prev) return prev;
+      const nextTotal =
+        typeof prev.total === 'number' ? Math.max(0, prev.total - deletedCount) : prev.total;
+      const nextTotalPages =
+        typeof nextTotal === 'number' ? Math.max(1, Math.ceil(nextTotal / prev.limit)) : prev.totalPages;
+      const nextPage = typeof prev.page === 'number' ? prev.page : currentPage;
+      return {
+        ...prev,
+        total: nextTotal,
+        totalPages: nextTotalPages,
+        hasNext:
+          typeof nextTotalPages === 'number'
+            ? nextPage < nextTotalPages
+            : prev.hasNext,
+      };
+    });
+  }, [currentPage]);
 
   const setDimensionalQueryOverlay = useCallback(
     (mapOrFn: DimensionalTagIdMap | ((prev: DimensionalTagIdMap) => DimensionalTagIdMap)) => {
@@ -349,6 +385,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       // Remove from local state
       setMedia(prev => prev.filter(m => m.docId !== id));
       setSelectedMediaIds(prev => prev.filter(selectedId => selectedId !== id));
+      adjustPaginationAfterDelete(1);
       
       // Refresh pagination if needed
       if (pagination && media.length === 1 && currentPage > 1) {
@@ -359,7 +396,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       setError(error);
       console.error('Error deleting media:', error);
     }
-  }, [fetchMedia, currentPage, pagination, media.length]);
+  }, [adjustPaginationAfterDelete, fetchMedia, currentPage, pagination, media.length]);
 
   const deleteMultipleMedia = useCallback(async (ids: string[]) => {
     if (ids.length === 0) return;
@@ -390,11 +427,10 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       if (deletedIds.length > 0) {
         setMedia((prev) => prev.filter((m) => !deletedIds.includes(m.docId)));
         setSelectedMediaIds((prev) => prev.filter((id) => !deletedIds.includes(id)));
+        adjustPaginationAfterDelete(deletedIds.length);
 
         if (pagination && media.length <= deletedIds.length && currentPage > 1) {
           await fetchMedia(currentPage - 1);
-        } else {
-          await fetchMedia(currentPage);
         }
       }
     } catch (err) {
@@ -402,7 +438,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       setError(error);
       console.error('Error deleting multiple media:', error);
     }
-  }, [fetchMedia, currentPage, pagination, media.length]);
+  }, [adjustPaginationAfterDelete, fetchMedia, currentPage, pagination, media.length]);
 
   const bulkApplyTags = useCallback(
     async (mediaIds: string[], tags: string[], mode: 'add' | 'replace' | 'remove' = 'add') => {
@@ -418,14 +454,24 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
           const data = (await response.json().catch(() => ({}))) as ApiErrorResponse;
           throw toUserFacingError('Bulk tag update failed', data, response.statusText);
         }
-        await fetchMedia(currentPage);
+        const idSet = new Set(mediaIds);
+        setMedia((prev) =>
+          prev.map((item) =>
+            item.docId && idSet.has(item.docId)
+              ? {
+                  ...item,
+                  tags: applyMediaTagMutation(item.tags, tags, mode),
+                }
+              : item
+          )
+        );
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
         setError(error);
         throw error;
       }
     },
-    [fetchMedia, currentPage]
+    []
   );
 
   const setFilter = useCallback((key: keyof MediaFilters, value: string) => {

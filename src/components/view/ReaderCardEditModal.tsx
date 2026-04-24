@@ -8,6 +8,11 @@ import { CardFormProvider, useCardForm } from '@/components/providers/CardFormPr
 import { StudioCardFormStudioProvider } from '@/components/admin/studio/studioCardFormStudioContext';
 import type { Card, CardUpdate } from '@/lib/types/card';
 import type { Tag } from '@/lib/types/tag';
+import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
+import {
+  buildSingleCardDeletePrompt,
+  fetchCardDeleteParents,
+} from '@/lib/utils/cardDeleteWarnings';
 import styles from './ReaderCardEditModal.module.css';
 import studioStyles from '@/components/admin/studio/StudioWorkspace.module.css';
 import modalStyles from '@/components/admin/card-admin/EditModal.module.css';
@@ -164,25 +169,42 @@ export default function ReaderCardEditModal({
   );
 
   const handleDelete = useCallback(async () => {
+    if (!card) return;
+    const { parentTitles, verificationFailed } = await fetchCardDeleteParents(activeCardId);
+    const prompt = buildSingleCardDeletePrompt({
+      title: card.title,
+      isCollectionRoot: card.isCollectionRoot,
+      childCount: card.childrenIds?.length ?? 0,
+      parentTitles,
+      verificationFailed,
+    });
+
+    if (prompt.blocked) {
+      window.alert(prompt.message);
+      return;
+    }
+    if (!window.confirm(prompt.message)) return;
+
     setIsDeleting(true);
     try {
       const response = await fetch(`/api/cards/${activeCardId}`, {
         method: 'DELETE',
         credentials: 'same-origin',
       });
-      if (!response.ok) {
-        throw new Error('Failed to delete card.');
-      }
+      const data = response.status === 204 ? {} : await response.json().catch(() => ({}));
+      throwIfJsonApiFailed(response, data, 'Failed to delete card.');
       closeModal();
       void globalMutate((key) => typeof key === 'string' && key.startsWith('/api/cards?'), undefined, {
         revalidate: true,
       });
       router.push(returnTo);
       router.refresh();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete card.');
     } finally {
       setIsDeleting(false);
     }
-  }, [activeCardId, closeModal, returnTo, router]);
+  }, [activeCardId, card, closeModal, returnTo, router]);
 
   const handleDuplicate = useCallback(async () => {
     setIsDuplicating(true);

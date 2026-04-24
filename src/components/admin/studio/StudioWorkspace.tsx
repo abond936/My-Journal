@@ -23,6 +23,7 @@ import cardAdminPageStyles from '@/app/admin/card-admin/card-admin.module.css';
 import styles from './StudioWorkspace.module.css';
 
 const STUDIO_CARD_EDIT_WIDTH_KEY = 'studioCardEditPaneWidth';
+const STUDIO_PANE_VISIBILITY_KEY = 'studioPaneVisibility';
 const CARD_EDIT_RESIZE_HANDLE = 8;
 const MIN_CARD_EDIT_PX = 260;
 const MIN_MEDIA_BANK_PX = 200;
@@ -60,6 +61,66 @@ function rowWidthForCardEditResize(row: HTMLElement): number {
   return w > 0 ? w : row.offsetWidth;
 }
 
+type StudioPaneVisibility = {
+  organizationCollapsed: boolean;
+  cardsCollapsed: boolean;
+  composeCollapsed: boolean;
+  mediaCollapsed: boolean;
+};
+
+const DEFAULT_STUDIO_PANE_VISIBILITY: StudioPaneVisibility = {
+  organizationCollapsed: true,
+  cardsCollapsed: false,
+  composeCollapsed: false,
+  mediaCollapsed: false,
+};
+
+function readStoredPaneVisibility(): StudioPaneVisibility | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(STUDIO_PANE_VISIBILITY_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<StudioPaneVisibility>;
+    return {
+      ...DEFAULT_STUDIO_PANE_VISIBILITY,
+      ...parsed,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function applyOptimisticSelectedCardPatch(
+  card: StudioCardContext,
+  payload: Partial<Card>
+): StudioCardContext {
+  const next: StudioCardContext = {
+    ...card,
+    ...payload,
+  };
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'childrenIds')) {
+    next.childrenIds = Array.isArray(payload.childrenIds) ? [...payload.childrenIds] : [];
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'galleryMedia')) {
+    next.galleryMedia = Array.isArray(payload.galleryMedia)
+      ? payload.galleryMedia.map((item) => ({ ...item }))
+      : [];
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'contentMedia')) {
+    next.contentMedia = Array.isArray(payload.contentMedia) ? [...payload.contentMedia] : [];
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'coverImageId')) {
+    next.coverImageId = payload.coverImageId ?? null;
+  }
+
+  next.updatedAt = Date.now();
+  return next;
+}
+
 export default function StudioWorkspace() {
   const searchParams = useSearchParams();
   const requestedCardId = useMemo(() => {
@@ -74,6 +135,7 @@ export default function StudioWorkspace() {
   }, [searchParams]);
   const [wideLayout, setWideLayout] = useState(true);
   const [cardEditWidth, setCardEditWidth] = useState(DEFAULT_CARD_EDIT_WIDTH);
+  const [paneVisibility, setPaneVisibility] = useState<StudioPaneVisibility>(DEFAULT_STUDIO_PANE_VISIBILITY);
   const cardEditWidthRef = useRef(cardEditWidth);
   const studioMediaCardRowRef = useRef<HTMLDivElement | null>(null);
   /** True while dragging card-edit width (skip ResizeObserver clamp). */
@@ -141,14 +203,40 @@ export default function StudioWorkspace() {
     }
   }, []);
 
+  useEffect(() => {
+    const stored = readStoredPaneVisibility();
+    if (stored) setPaneVisibility(stored);
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STUDIO_PANE_VISIBILITY_KEY, JSON.stringify(paneVisibility));
+    } catch {
+      /* ignore */
+    }
+  }, [paneVisibility]);
+
+  const togglePane = useCallback((pane: keyof StudioPaneVisibility) => {
+    setPaneVisibility((current) => ({
+      ...current,
+      [pane]: !current[pane],
+    }));
+  }, []);
+
   const clampCardEditToRow = useCallback(() => {
-    if (cardEditResizeActiveRef.current) return;
+    if (
+      cardEditResizeActiveRef.current ||
+      paneVisibility.composeCollapsed ||
+      paneVisibility.mediaCollapsed
+    ) {
+      return;
+    }
     const row = studioMediaCardRowRef.current;
     if (!row || !wideLayout) return;
     const bounds = cardEditWidthBounds(rowWidthForCardEditResize(row));
     if (!bounds) return;
     setCardEditWidth((w) => clamp(w, bounds.minEdit, bounds.maxEdit));
-  }, [wideLayout]);
+  }, [paneVisibility.composeCollapsed, paneVisibility.mediaCollapsed, wideLayout]);
 
   const rowResizeObserverRef = useRef<ResizeObserver | null>(null);
 
@@ -205,7 +293,7 @@ export default function StudioWorkspace() {
         if (!bounds) return;
         const dx = ev.clientX - session.startX;
         // Handle is left of Compose: drag left → wider Compose; drag right → narrower (invert raw dx).
-        const next = clamp(session.startW - dx, bounds.minEdit, bounds.maxEdit);
+        const next = clamp(session.startW + dx, bounds.minEdit, bounds.maxEdit);
         setCardEditWidth(next);
       };
 
@@ -314,6 +402,10 @@ export default function StudioWorkspace() {
       if (!selectedCardId) return;
       setActionBusy(true);
       setActionError(null);
+      const previousCard = selectedCard;
+      if (selectedCard?.docId === selectedCardId) {
+        setSelectedCard(applyOptimisticSelectedCardPatch(selectedCard, payload));
+      }
       try {
         const res = await fetch(`/api/cards/${selectedCardId}`, {
           method: 'PATCH',
@@ -322,18 +414,21 @@ export default function StudioWorkspace() {
         });
         const data = await res.json().catch(() => ({}));
         throwIfJsonApiFailed(res, data, 'Update failed.');
-        await loadSelectedCard(selectedCardId, { quiet: true });
+        setSelectedCard(data as StudioCardContext);
         collectionsRefreshRef.current?.();
         // Always refresh strip: omitting a message must clear stale text (e.g. old cover-drag copy).
         setActionInfo(successMessage ?? null);
       } catch (e) {
+        if (previousCard?.docId === selectedCardId) {
+          setSelectedCard(previousCard);
+        }
         setActionError(e instanceof Error ? e.message : 'Update failed.');
         setActionInfo(null);
       } finally {
         setActionBusy(false);
       }
     },
-    [selectedCardId, loadSelectedCard]
+    [selectedCard, selectedCardId]
   );
 
   const onStudioRelationshipDragEnd = useCallback(
@@ -392,17 +487,57 @@ export default function StudioWorkspace() {
     <StudioShellProvider value={studioShellValue}>
       <div className={styles.page}>
         <div className={cardAdminPageStyles.stickyTop}>
-          <h1 className={cardAdminPageStyles.title}>Content Management</h1>
+          <div className={styles.studioHeaderRow}>
+            <h1 className={cardAdminPageStyles.title}>Content Management</h1>
+            <div className={styles.studioPaneToolbar} aria-label="Studio panes">
+              <button
+                type="button"
+                className={`${styles.studioPaneToggle} ${!paneVisibility.organizationCollapsed ? styles.studioPaneToggleActive : ''}`}
+                aria-pressed={!paneVisibility.organizationCollapsed}
+                onClick={() => togglePane('organizationCollapsed')}
+              >
+                Organize
+              </button>
+              <button
+                type="button"
+                className={`${styles.studioPaneToggle} ${!paneVisibility.cardsCollapsed ? styles.studioPaneToggleActive : ''}`}
+                aria-pressed={!paneVisibility.cardsCollapsed}
+                onClick={() => togglePane('cardsCollapsed')}
+              >
+                Cards
+              </button>
+              <button
+                type="button"
+                className={`${styles.studioPaneToggle} ${!paneVisibility.composeCollapsed ? styles.studioPaneToggleActive : ''}`}
+                aria-pressed={!paneVisibility.composeCollapsed}
+                onClick={() => togglePane('composeCollapsed')}
+              >
+                Compose
+              </button>
+              <button
+                type="button"
+                className={`${styles.studioPaneToggle} ${!paneVisibility.mediaCollapsed ? styles.studioPaneToggleActive : ''}`}
+                aria-pressed={!paneVisibility.mediaCollapsed}
+                onClick={() => togglePane('mediaCollapsed')}
+              >
+                Media
+              </button>
+            </div>
+          </div>
         </div>
         <div className={wideLayout ? styles.grid : styles.gridStacked}>
           <div className={styles.collectionsHost}>
             <CollectionsAdminClient
               embedded
               onSelectCard={setSelectedCardId}
+              embeddedOrganizationCollapsed={paneVisibility.organizationCollapsed}
+              embeddedCardsCollapsed={paneVisibility.cardsCollapsed}
               onStudioRelationshipDragEnd={onStudioRelationshipDragEnd}
               embeddedUnparentedReplacement={(ctx) => <StudioTreeCandidateCardBank {...ctx} />}
               embeddedRightSlot={({ refreshCards }) => {
                 collectionsRefreshRef.current = refreshCards;
+                const showComposePane = !paneVisibility.composeCollapsed;
+                const showMediaPane = !paneVisibility.mediaCollapsed;
                 return (
                   <div className={styles.studioRightColumn}>
                     {actionInfo || actionError ? (
@@ -427,40 +562,48 @@ export default function StudioWorkspace() {
                           : styles.studioMediaCardRow
                       }
                     >
-                      <div className={styles.studioMediaBankColumn}>
-                        <div className={styles.studioMediaBankFill}>
-                          <MediaAdminContent embedded studioSourceDraggable />
+                      {showComposePane ? (
+                        <div
+                          className={styles.studioCardEditInBankColumn}
+                          style={
+                            wideLayout && showMediaPane
+                              ? {
+                                  flex: `0 0 ${cardEditWidth}px`,
+                                  width: cardEditWidth,
+                                  minWidth: MIN_CARD_EDIT_PX,
+                                }
+                              : {
+                                  flex: '1 1 auto',
+                                  width: 'auto',
+                                  minWidth: 0,
+                                }
+                          }
+                        >
+                          <StudioCardEditPane
+                            newCardRequested={newCardRequested && !selectedCardId}
+                            onCardCreated={setSelectedCardId}
+                          />
                         </div>
-                      </div>
-                      {wideLayout ? (
+                      ) : null}
+                      {wideLayout && showComposePane && showMediaPane ? (
                         <div
                           className={`${styles.resizeHandle} ${styles.cardEditColumnResizeHandle}`}
                           role="separator"
                           aria-orientation="vertical"
-                          aria-label="Resize media bank and Compose columns"
-                          title="Drag to resize Compose vs Media. Double-click to reset width."
+                          aria-label="Resize Compose and Media columns"
+                          title="Drag to resize Compose and Media. Double-click to reset width."
                           {...{ [DND_POINTER_IGNORE_ATTR]: '' }}
                           onPointerDown={onCardEditResizePointerDown}
                           onDoubleClick={onCardEditResizeDoubleClick}
                         />
                       ) : null}
-                      <div
-                        className={styles.studioCardEditInBankColumn}
-                        style={
-                          wideLayout
-                            ? {
-                                flex: `0 0 ${cardEditWidth}px`,
-                                width: cardEditWidth,
-                                minWidth: MIN_CARD_EDIT_PX,
-                              }
-                            : undefined
-                        }
-                      >
-                        <StudioCardEditPane
-                          newCardRequested={newCardRequested && !selectedCardId}
-                          onCardCreated={setSelectedCardId}
-                        />
-                      </div>
+                      {showMediaPane ? (
+                        <div className={styles.studioMediaBankColumn}>
+                          <div className={styles.studioMediaBankFill}>
+                            <MediaAdminContent embedded studioSourceDraggable />
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 );

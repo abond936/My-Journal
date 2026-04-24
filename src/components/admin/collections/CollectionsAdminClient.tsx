@@ -35,6 +35,7 @@ import {
   optimisticDetachChild,
   optimisticDetachChildFromParent,
   optimisticInsertChildBeforeSibling,
+  optimisticReorderCollectionRoots,
   optimisticSetCollectionRoot,
 } from '@/lib/utils/optimisticCuratedCollections';
 import { EMBEDDED_ADMIN_WIDE_MIN_WIDTH_PX } from '@/lib/admin/embeddedWideMinWidthPx';
@@ -51,8 +52,15 @@ import JournalImage from '@/components/common/JournalImage';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import type { Media } from '@/lib/types/photo';
 import { useMedia } from '@/components/providers/MediaProvider';
+import { usePersistentTreeExpansion } from '@/lib/hooks/usePersistentTreeExpansion';
+import {
+  buildStudioCollectionCardDragData,
+  isStudioCollectionCardDragData,
+  parseCollectionCardDragId,
+} from '@/lib/dnd/studioDragContract';
 
 const COLLECTIONS_CENTER_COLUMNS_KEY = 'collectionsCenterPaneWidths';
+const COLLECTIONS_TREE_EXPANSION_KEY = 'collectionsTreeExpandedIds';
 const COL_HANDLE = 8;
 const MIN_TREE_COL = 200;
 const MIN_UNPARENT_COL = 200;
@@ -126,7 +134,7 @@ function DraggableCard({ card, className, children, disabled, onClick }: Draggab
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `card:${card.docId}`,
     disabled,
-    data: { cardId: card.docId },
+    data: buildStudioCollectionCardDragData(card.docId),
   });
 
   const style = {
@@ -154,21 +162,31 @@ interface UnparentDropZoneProps {
   children: React.ReactNode;
   /** No droppable registration (curated drag disabled). */
   readOnly?: boolean;
+  suppressActiveHighlight?: boolean;
 }
 
-function UnparentDropZoneReadOnly({ className, children }: Omit<UnparentDropZoneProps, 'readOnly'>) {
+function UnparentDropZoneReadOnly({
+  className,
+  children,
+}: Omit<UnparentDropZoneProps, 'readOnly'>) {
   return <div className={className}>{children}</div>;
 }
 
-function UnparentDropZoneInteractive({ className, children }: Omit<UnparentDropZoneProps, 'readOnly'>) {
+function UnparentDropZoneInteractive({
+  className,
+  children,
+  suppressActiveHighlight = false,
+}: Omit<UnparentDropZoneProps, 'readOnly'>) {
   const { active } = useDndContext();
-  const activeStr = active?.id != null ? String(active.id) : '';
-  const reparentFromCard = activeStr.startsWith('card:');
+  const reparentFromCard = isStudioCollectionCardDragData(active?.data.current);
   const highlightId = useCuratedTreeDropHighlight();
   const { setNodeRef } = useDroppable({ id: 'unparented', disabled: !reparentFromCard });
   const activeDrop = highlightId === 'unparented' || (highlightId?.startsWith('unparented-row:') ?? false);
   return (
-    <div ref={setNodeRef} className={`${className} ${activeDrop ? styles.dropTargetActive : ''}`}>
+    <div
+      ref={setNodeRef}
+      className={`${className} ${activeDrop && !suppressActiveHighlight ? styles.dropTargetActive : ''}`}
+    >
       {children}
     </div>
   );
@@ -184,21 +202,44 @@ function UnparentRowDropZone({
   children: React.ReactNode;
 }) {
   const { active } = useDndContext();
-  const activeStr = active?.id != null ? String(active.id) : '';
-  const reparentFromCard = activeStr.startsWith('card:');
+  const reparentFromCard = isStudioCollectionCardDragData(active?.data.current);
+  const highlightId = useCuratedTreeDropHighlight();
   const { setNodeRef } = useDroppable({ id: `unparented-row:${rowId}`, disabled: !reparentFromCard });
+  const activeDrop = highlightId === `unparented-row:${rowId}`;
   return (
-    <div ref={setNodeRef} className={className}>
+    <div
+      ref={setNodeRef}
+      className={`${className} ${activeDrop ? styles.unparentRowDropZoneActive : ''}`}
+    >
       {children}
     </div>
   );
 }
 
-function UnparentDropZone({ className, children, readOnly }: UnparentDropZoneProps) {
+function UnparentDropZone({
+  className,
+  children,
+  readOnly,
+  suppressActiveHighlight,
+}: UnparentDropZoneProps) {
   if (readOnly) {
-    return <UnparentDropZoneReadOnly className={className}>{children}</UnparentDropZoneReadOnly>;
+    return (
+      <UnparentDropZoneReadOnly
+        className={className}
+        suppressActiveHighlight={suppressActiveHighlight}
+      >
+        {children}
+      </UnparentDropZoneReadOnly>
+    );
   }
-  return <UnparentDropZoneInteractive className={className}>{children}</UnparentDropZoneInteractive>;
+  return (
+    <UnparentDropZoneInteractive
+      className={className}
+      suppressActiveHighlight={suppressActiveHighlight}
+    >
+      {children}
+    </UnparentDropZoneInteractive>
+  );
 }
 
 interface TreeRootDropZoneProps {
@@ -213,8 +254,7 @@ function TreeRootDropZoneReadOnly({ className, children }: Omit<TreeRootDropZone
 
 function TreeRootDropZoneInteractive({ className, children }: Omit<TreeRootDropZoneProps, 'readOnly'>) {
   const { active } = useDndContext();
-  const activeStr = active?.id != null ? String(active.id) : '';
-  const reparentFromCard = activeStr.startsWith('card:');
+  const reparentFromCard = isStudioCollectionCardDragData(active?.data.current);
   const highlightId = useCuratedTreeDropHighlight();
   const { setNodeRef } = useDroppable({ id: 'tree-root', disabled: !reparentFromCard });
   const activeDrop = highlightId === 'tree-root';
@@ -241,6 +281,8 @@ export default function CollectionsAdminClient({
   onSelectCard,
   embeddedRightSlot,
   embeddedUnparentedReplacement,
+  embeddedOrganizationCollapsed = false,
+  embeddedCardsCollapsed = false,
   onStudioRelationshipDragEnd,
 }: {
   embedded?: boolean;
@@ -248,6 +290,8 @@ export default function CollectionsAdminClient({
   embeddedRightSlot?: React.ReactNode | ((ctx: EmbeddedStudioSlotContext) => React.ReactNode);
   /** When set with `embedded`, replaces the title-only unparented list with this UI (e.g. card admin table/grid). */
   embeddedUnparentedReplacement?: (ctx: EmbeddedUnparentedBankContext) => React.ReactNode;
+  embeddedOrganizationCollapsed?: boolean;
+  embeddedCardsCollapsed?: boolean;
   onStudioRelationshipDragEnd?: (event: DragEndEvent) => Promise<boolean>;
 }) {
   const [cards, setCards] = useState<Card[]>([]);
@@ -275,9 +319,13 @@ export default function CollectionsAdminClient({
     if (typeof window === 'undefined') return 'tags';
     return window.localStorage.getItem('studioLeftTab') === 'tree' ? 'tree' : 'tags';
   });
-  const sensors = useDefaultDndSensors({ pointerActivationDistance: 10 });
+  const sensors = useDefaultDndSensors({ pointerActivationDistance: 4 });
   const { media: mediaBankList } = useMedia();
   const curatedTreeDnd = isCuratedTreeDndEnabled();
+  /** Admin Studio: middle column uses `embeddedUnparentedReplacement` (card bank) instead of the title-only list. */
+  const studioAttachBank = embedded && Boolean(embeddedUnparentedReplacement);
+  const showOrganizationPane = !(studioAttachBank && embeddedOrganizationCollapsed);
+  const showCardsPane = !(studioAttachBank && embeddedCardsCollapsed);
   const treeDropZonesReadOnly = !curatedTreeDnd;
   /** Studio embed registers its own droppables; keep DndContext when embedded even if tree drag is off. */
   const needsDndContext = curatedTreeDnd || Boolean(embeddedRightSlot);
@@ -291,7 +339,7 @@ export default function CollectionsAdminClient({
   const dragActiveRef = useRef(false);
   const [colDrag, setColDrag] = useState<
     | { which: 1; startX: number; startTree: number; startUnparent: number }
-    | { which: 2; startX: number; startUnparent: number }
+    | { which: 2; startX: number; startWidth: number; target: 'tree' | 'cards'; fixedLeading: number }
     | null
   >(null);
 
@@ -399,13 +447,15 @@ export default function CollectionsAdminClient({
         setWTree(newTree);
         setWUnparent(newUnparent);
       } else {
-        const maxUn = usable - wTreeRef.current - MIN_MEDIA_COL;
-        const raw = colDrag.startUnparent + dx;
-        const newUnparent =
-          maxUn < MIN_UNPARENT_COL
-            ? MIN_UNPARENT_COL
-            : clamp(raw, MIN_UNPARENT_COL, maxUn);
-        setWUnparent(newUnparent);
+        const maxWidth = usable - colDrag.fixedLeading - MIN_MEDIA_COL;
+        const minWidth = colDrag.target === 'tree' ? MIN_TREE_COL : MIN_UNPARENT_COL;
+        const raw = colDrag.startWidth + dx;
+        const nextWidth = maxWidth < minWidth ? minWidth : clamp(raw, minWidth, maxWidth);
+        if (colDrag.target === 'tree') {
+          setWTree(nextWidth);
+        } else {
+          setWUnparent(nextWidth);
+        }
       }
     };
 
@@ -432,10 +482,13 @@ export default function CollectionsAdminClient({
       if (which === 1) {
         setColDrag({ which: 1, startX: e.clientX, startTree: wTree, startUnparent: wUnparent });
       } else {
-        setColDrag({ which: 2, startX: e.clientX, startUnparent: wUnparent });
+        const target: 'tree' | 'cards' = showCardsPane ? 'cards' : 'tree';
+        const startWidth = target === 'cards' ? wUnparent : wTree;
+        const fixedLeading = showOrganizationPane && showCardsPane ? wTree : 0;
+        setColDrag({ which: 2, startX: e.clientX, startWidth, target, fixedLeading });
       }
     },
-    [wideCenterLayout, wTree, wUnparent]
+    [showCardsPane, showOrganizationPane, wideCenterLayout, wTree, wUnparent]
   );
 
   const centerGridStyle = useMemo((): React.CSSProperties | undefined => {
@@ -535,7 +588,12 @@ export default function CollectionsAdminClient({
     [onSelectCard]
   );
 
-  const [treeExpandedIds, setTreeExpandedIds] = useState<Set<string>>(() => new Set());
+  const {
+    expandedIds: treeExpandedIds,
+    hydrated: treeExpansionHydrated,
+    toggleExpanded: toggleTreeExpanded,
+    initializeIfEmpty: initializeTreeExpansionIfEmpty,
+  } = usePersistentTreeExpansion(COLLECTIONS_TREE_EXPANSION_KEY);
 
   useEffect(() => {
     const expandableIds = new Set<string>();
@@ -545,30 +603,15 @@ export default function CollectionsAdminClient({
       }
     }
 
+    if (!treeExpansionHydrated) return;
+
     if (!hasInitializedTreeExpansionRef.current) {
       hasInitializedTreeExpansionRef.current = true;
-      setTreeExpandedIds(expandableIds);
+      initializeTreeExpansionIfEmpty(Array.from(expandableIds));
       return;
     }
 
-    setTreeExpandedIds((prev) => {
-      const next = new Set<string>();
-      // After initial load, preserve only explicit user choices for currently expandable nodes.
-      prev.forEach((id) => {
-        if (expandableIds.has(id)) next.add(id);
-      });
-      return next;
-    });
-  }, [cards]);
-
-  const toggleTreeExpanded = useCallback((id: string) => {
-    setTreeExpandedIds((prev) => {
-      const n = new Set(prev);
-      if (n.has(id)) n.delete(id);
-      else n.add(id);
-      return n;
-    });
-  }, []);
+  }, [cards, initializeTreeExpansionIfEmpty, treeExpansionHydrated]);
 
   const collectDescendantIds = useCallback(
     (rootId: string): Set<string> => {
@@ -588,16 +631,6 @@ export default function CollectionsAdminClient({
     },
     [cardById]
   );
-
-  const openBulkAddForParent = useCallback((parentId: string) => {
-    setBulkParentId(parentId);
-    setBulkSearch('');
-    setBulkStatus('all');
-    setBulkType('all');
-    setBulkUnparentedOnly(true);
-    setBulkSelectedIds(new Set());
-    setBulkSummary(null);
-  }, []);
 
   const closeBulkAdd = useCallback(() => {
     setBulkParentId(null);
@@ -669,20 +702,19 @@ export default function CollectionsAdminClient({
       const reordered = currentRootIds.filter((id) => id !== childId);
       reordered.splice(beforeIndex, 0, childId);
       nextOrder = reordered.indexOf(childId) * 10;
+      const optimistic = optimisticReorderCollectionRoots(snapshot, reordered);
+      if (optimistic) setCards(optimistic);
     } else {
       const reordered = currentRootIds.slice();
       const idx = reordered.indexOf(beforeRootId);
       reordered.splice(idx < 0 ? reordered.length : idx, 0, childId);
       nextOrder = reordered.indexOf(childId) * 10;
+      const optimistic = optimisticReorderCollectionRoots(snapshot, reordered);
+      if (optimistic) setCards(optimistic);
     }
     setSaving(true);
     setError(null);
     try {
-      const optimistic = optimisticSetCollectionRoot(snapshot, childId, {
-        isCollectionRoot: true,
-        collectionRootOrder: nextOrder,
-      });
-      if (optimistic) setCards(optimistic);
       await patchCard(childId, {
         isCollectionRoot: true,
         collectionRootOrder: nextOrder,
@@ -745,9 +777,24 @@ export default function CollectionsAdminClient({
     }
   };
 
-  const parseCardId = (value: unknown): string | null => {
-    if (typeof value !== 'string') return null;
-    return value.startsWith('card:') ? value.slice(5) : null;
+  const handleClearRoot = async (cardId: string) => {
+    const snapshot = cards;
+    const optimistic = optimisticSetCollectionRoot(cards, cardId, {
+      isCollectionRoot: false,
+      collectionRootOrder: undefined,
+    });
+    if (optimistic) setCards(optimistic);
+    setSaving(true);
+    setError(null);
+    try {
+      await patchCard(cardId, { isCollectionRoot: false });
+      await load({ soft: true });
+    } catch (e) {
+      setCards(snapshot);
+      setError(e instanceof Error ? e.message : 'Failed to remove root');
+    } finally {
+      setSaving(false);
+    }
   };
 
   /** After Studio relationship drags, return focus to the row handle (keyboard + screen-reader UX). */
@@ -800,9 +847,9 @@ export default function CollectionsAdminClient({
       }
       return;
     }
-    if (id.startsWith('card:')) {
+    if (isStudioCollectionCardDragData(event.active.data.current)) {
       setCuratedDragKind('reparent');
-      const cid = id.slice(5);
+      const cid = event.active.data.current.cardId;
       setDraggingCardId(cid);
       setDragOverlayCard(cardById.get(cid) ?? null);
       setDragOverlaySourceMedia(null);
@@ -849,16 +896,29 @@ export default function CollectionsAdminClient({
       setCuratedDragKind(null);
       setDraggingCardId(null);
 
-      const childId = parseCardId(activeStr);
+      const childId =
+        isStudioCollectionCardDragData(event.active.data.current)
+          ? event.active.data.current.cardId
+          : parseCollectionCardDragId(activeStr);
       const overId = overStr;
       if (!childId || !overId || saving) return;
+      const activeData = isStudioCollectionCardDragData(event.active.data.current)
+        ? event.active.data.current
+        : null;
 
       const intent = resolveCuratedDropIntent(overId);
       if (intent.kind === 'orphaned') {
+        if (activeData?.sourceParentId) {
+          await handleDetachChild(childId, activeData.sourceParentId);
+          return;
+        }
+        if (activeData?.sourceIsRoot) {
+          await handleClearRoot(childId);
+          return;
+        }
         const parentIds = parentIdsByChild.get(childId) ?? [];
         if (parentIds.length === 0) {
-          await patchCard(childId, { isCollectionRoot: false });
-          await load({ soft: true });
+          await handleClearRoot(childId);
           return;
         }
         await handleDetachChild(childId, parentIds[0]);
@@ -994,18 +1054,30 @@ export default function CollectionsAdminClient({
     }
   }, [bulkParentCard, bulkSelectedIds, bulkSelectableIds]);
 
-  /** Admin Studio: middle column uses `embeddedUnparentedReplacement` (card bank) instead of the title-only list. */
-  const studioAttachBank = embedded && Boolean(embeddedUnparentedReplacement);
+  const collectionsCenterGridStyle = useMemo((): React.CSSProperties | undefined => {
+    if (!wideCenterLayout) return undefined;
+    if (!showOrganizationPane && !showCardsPane) {
+      return { gridTemplateColumns: `minmax(${MIN_MEDIA_COL}px, 1fr)` };
+    }
+    if (!showOrganizationPane) {
+      return { gridTemplateColumns: `${wUnparent}px ${COL_HANDLE}px minmax(${MIN_MEDIA_COL}px, 1fr)` };
+    }
+    if (!showCardsPane) {
+      return { gridTemplateColumns: `${wTree}px ${COL_HANDLE}px minmax(${MIN_MEDIA_COL}px, 1fr)` };
+    }
+    return centerGridStyle;
+  }, [centerGridStyle, showCardsPane, showOrganizationPane, wTree, wUnparent, wideCenterLayout]);
 
   const collectionsCenterGrid = (
           <div
             ref={layoutRef}
             className={wideCenterLayout ? styles.layout : styles.layoutStacked}
-            style={centerGridStyle}
+            style={collectionsCenterGridStyle}
           >
-            {studioAttachBank ? (
+            {showOrganizationPane ? (
+            studioAttachBank ? (
               <section className={`${styles.panel} ${styles.panelStudioLeftTabs}`}>
-                <h2 className={styles.panelStudioColumnTitle}>Organization</h2>
+                <h2 className={styles.panelStudioColumnTitle}>Organize</h2>
                 <div className={styles.studioLeftTabToggleRow}>
                   <div className={cardAdminStyles.viewToggleButtonGroup} role="tablist" aria-label="Tags and curated tree">
                     <button
@@ -1024,7 +1096,7 @@ export default function CollectionsAdminClient({
                       className={`${cardAdminStyles.viewToggleButton} ${studioLeftTab === 'tree' ? cardAdminStyles.viewToggleActive : ''}`}
                       onClick={() => setStudioLeftTab('tree')}
                     >
-                      Tree
+                      Collections
                     </button>
                   </div>
                 </div>
@@ -1034,7 +1106,6 @@ export default function CollectionsAdminClient({
                   </div>
                 ) : (
                   <div className={styles.studioLeftTabPanel} role="tabpanel">
-                    <h2 className={styles.studioLeftTreeHeading}>Collections</h2>
                     <div className={styles.panelScroll}>
                       {rootedCollections.length === 0 ? (
                         <TreeRootDropZone readOnly={treeDropZonesReadOnly} className={styles.treeRootDropZone}>
@@ -1058,7 +1129,7 @@ export default function CollectionsAdminClient({
                                 toggleExpanded={toggleTreeExpanded}
                                 saving={saving}
                                 onDetachChild={(id, parentId) => void handleDetachChild(id, parentId)}
-                                onOpenBulkAdd={openBulkAddForParent}
+                                onClearRoot={(id) => void handleClearRoot(id)}
                                 onSelectCard={handleSelectCard}
                                 selectedCardId={selectedCardId}
                                 disableCuratedDrag={treeDropZonesReadOnly}
@@ -1103,14 +1174,14 @@ export default function CollectionsAdminClient({
                             seen={new Set()}
                             cardById={cardById}
                             parentByChild={parentIdsByChild}
-                            expandedIds={treeExpandedIds}
-                            toggleExpanded={toggleTreeExpanded}
-                            saving={saving}
-                            onDetachChild={(id, parentId) => void handleDetachChild(id, parentId)}
-                            onOpenBulkAdd={openBulkAddForParent}
-                            onSelectCard={handleSelectCard}
-                            selectedCardId={selectedCardId}
-                            disableCuratedDrag={treeDropZonesReadOnly}
+                             expandedIds={treeExpandedIds}
+                             toggleExpanded={toggleTreeExpanded}
+                             saving={saving}
+                             onDetachChild={(id, parentId) => void handleDetachChild(id, parentId)}
+                             onClearRoot={(id) => void handleClearRoot(id)}
+                             onSelectCard={handleSelectCard}
+                             selectedCardId={selectedCardId}
+                             disableCuratedDrag={treeDropZonesReadOnly}
                           />
                         ))}
                       </ul>
@@ -1128,9 +1199,9 @@ export default function CollectionsAdminClient({
                   )}
                 </div>
               </section>
-            )}
+            )) : null}
 
-            {wideCenterLayout ? (
+            {wideCenterLayout && showOrganizationPane && showCardsPane ? (
               <div
                 className={styles.colResizeHandle}
                 role="separator"
@@ -1145,6 +1216,7 @@ export default function CollectionsAdminClient({
               />
             ) : null}
 
+            {showCardsPane ? (
             <section className={styles.panel}>
               <h2 className={studioAttachBank ? styles.panelStudioColumnTitle : undefined}>
                 {studioAttachBank ? 'Cards' : 'Orphaned Cards'}
@@ -1176,7 +1248,11 @@ export default function CollectionsAdminClient({
                   </select>
                 </div>
               ) : null}
-              <UnparentDropZone readOnly={treeDropZonesReadOnly} className={`${styles.unparentDropZone} ${styles.panelScroll}`}>
+              <UnparentDropZone
+                readOnly={treeDropZonesReadOnly}
+                className={`${styles.unparentDropZone} ${styles.panelScroll}`}
+                suppressActiveHighlight={studioAttachBank}
+              >
                 {studioAttachBank ? (
                   embeddedUnparentedReplacement!({
                     refreshCards: () => void load({ soft: true }),
@@ -1225,16 +1301,19 @@ export default function CollectionsAdminClient({
                 )}
               </UnparentDropZone>
             </section>
+            ) : null}
 
-            {wideCenterLayout ? (
+            {wideCenterLayout && (showOrganizationPane || showCardsPane) ? (
               <div
                 className={styles.colResizeHandle}
                 role="separator"
                 aria-orientation="vertical"
                 aria-label={
-                  studioAttachBank
+                  studioAttachBank && showCardsPane
                     ? 'Resize Cards and media columns'
-                    : 'Resize orphaned and media columns'
+                    : showCardsPane
+                      ? 'Resize orphaned and media columns'
+                      : 'Resize Organize and workspace columns'
                 }
                 {...{ [DND_POINTER_IGNORE_ATTR]: '' }}
                 onPointerDown={onColResizePointerDown(2)}
@@ -1296,9 +1375,9 @@ export default function CollectionsAdminClient({
           {collectionsCenterGrid}
           {curatedTreeDnd && curatedDragKind === 'reparent' && draggingCardId ? (
             <p className={`${styles.draggingStatus} ${styles.draggingStatusReparent}`} role="status" aria-live="polite">
-              <strong>Reparenting</strong> — «{reparentTitle}». Drop on a <strong>title</strong> to nest, the{' '}
-              <strong>band above a row</strong> to insert before that row, the dashed box for a root at the end, or{' '}
-              <strong>{studioAttachBank ? 'Cards' : 'Orphaned'}</strong>.
+              <strong>Moving</strong> — «{reparentTitle}». Drop on a <strong>title</strong> to nest, a{' '}
+              <strong>line</strong> to reorder, the dashed strip for a <strong>top-level root</strong>, or{' '}
+              <strong>{studioAttachBank ? 'Cards' : 'Orphaned'}</strong> to remove it from this branch.
             </p>
           ) : null}
           </CuratedTreeDragProvider>

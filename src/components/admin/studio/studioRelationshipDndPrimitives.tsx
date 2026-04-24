@@ -27,10 +27,14 @@ export function StudioGallerySortableRow({
   const rowStyle: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.6 : 1,
+    opacity: isDragging ? 0.92 : 1,
   };
   return (
-    <div ref={setNodeRef} style={rowStyle} className={styles.gallerySortableRow}>
+    <div
+      ref={setNodeRef}
+      style={rowStyle}
+      className={[styles.gallerySortableRow, isDragging ? styles.sortableRowDragging : ''].join(' ').trim()}
+    >
       <button
         ref={setActivatorNodeRef}
         type="button"
@@ -83,6 +87,8 @@ export function StudioDropZone({
       ref={setNodeRef}
       role="region"
       aria-label={ariaLabel}
+      data-drop-zone-id={id}
+      data-drop-zone-active={isEligible && isOver ? 'true' : 'false'}
       className={[
         styles.dropZone,
         isEligible ? styles.dropZoneEligible : '',
@@ -106,10 +112,14 @@ export function StudioChildSortableRow({ id, children }: { id: string; children:
   const rowStyle: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.6 : 1,
+    opacity: isDragging ? 0.92 : 1,
   };
   return (
-    <div ref={setNodeRef} style={rowStyle} className={styles.childSortableRow}>
+    <div
+      ref={setNodeRef}
+      style={rowStyle}
+      className={[styles.childSortableRow, isDragging ? styles.sortableRowDragging : ''].join(' ').trim()}
+    >
       <button
         ref={setActivatorNodeRef}
         type="button"

@@ -15,6 +15,7 @@ export type AdminGridCellChromeProps = {
   overlayTopEnd?: React.ReactNode;
   overlayLeftRail?: React.ReactNode;
   overlayBottom?: React.ReactNode;
+  belowMeta?: React.ReactNode;
   belowThumbnail?: React.ReactNode;
   /** Extra class on the left tag rail (e.g. studio compact typography). */
   overlayLeftRailClassName?: string;
@@ -32,6 +33,7 @@ export default function AdminGridCellChrome({
   overlayTopEnd,
   overlayLeftRail,
   overlayBottom,
+  belowMeta,
   belowThumbnail,
   overlayLeftRailClassName,
 }: AdminGridCellChromeProps) {
@@ -68,6 +70,7 @@ export default function AdminGridCellChrome({
         ) : null}
         {overlayBottom ? <div className={styles.overlayBottom}>{overlayBottom}</div> : null}
       </div>
+      {belowMeta ? <div className={styles.belowMeta}>{belowMeta}</div> : null}
       {belowThumbnail ? <div className={styles.belowThumb}>{belowThumbnail}</div> : null}
     </div>
   );

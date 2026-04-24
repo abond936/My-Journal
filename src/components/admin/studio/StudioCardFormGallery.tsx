@@ -22,7 +22,10 @@ export default function StudioCardFormGallery({
   currentCoverMediaId: string | null;
 }) {
   const { formState, setField } = useCardForm();
-  const gallery = (formState.cardData.galleryMedia || []) as HydratedGalleryMediaItem[];
+  const gallery = useMemo(
+    () => ((formState.cardData.galleryMedia || []) as HydratedGalleryMediaItem[]),
+    [formState.cardData.galleryMedia]
+  );
 
   const sortableIds = useMemo(
     () => gallery.map((item) => `gallery:${item.mediaId}:${item.order}`),
@@ -56,6 +59,8 @@ export default function StudioCardFormGallery({
       id="drop:gallery"
       accepts={['source']}
       ariaLabel="Gallery drop target: drop source media here to append"
+      className={styles.studioGalleryDropZone}
+      eligibleHint="Release here to add to the gallery"
     >
       <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
         <div className={styles.mediaList}>
@@ -127,6 +132,8 @@ export default function StudioCardFormGallery({
       id="drop:gallery"
       accepts={['source']}
       ariaLabel="Gallery drop target: drop source media here to add first gallery item"
+      className={styles.studioGalleryDropZone}
+      eligibleHint="Release here to start the gallery"
     >
       <p className={styles.metaMuted}>No gallery media assigned.</p>
     </StudioDropZone>

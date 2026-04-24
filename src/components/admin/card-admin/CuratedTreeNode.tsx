@@ -6,6 +6,11 @@ import type { Card } from '@/lib/types/card';
 import { normalizeCuratedChildIds } from '@/lib/utils/curatedCollectionTree';
 import { useCuratedTreeDropHighlight } from '@/components/admin/card-admin/curatedTreeDropHighlightContext';
 import styles from '@/app/admin/collections/page.module.css';
+import {
+  buildStudioCollectionCardDragData,
+  isStudioCollectionCardDragData,
+  parseCollectionCardDragId,
+} from '@/lib/dnd/studioDragContract';
 
 function StaticTreeRowCard({
   className,
@@ -52,6 +57,8 @@ function DraggableCard({
   disabled,
   onClick,
   betweenHandleAndTitle,
+  sourceParentId,
+  sourceIsRoot,
 }: {
   card: Card;
   className: string;
@@ -60,11 +67,13 @@ function DraggableCard({
   onClick?: () => void;
   /** Expand/collapse etc. — rendered after the drag handle, before the title block. */
   betweenHandleAndTitle?: React.ReactNode;
+  sourceParentId?: string;
+  sourceIsRoot?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `card:${card.docId}`,
     disabled,
-    data: { cardId: card.docId },
+    data: buildStudioCollectionCardDragData(card.docId, { sourceParentId, sourceIsRoot }),
   });
 
   const style = {
@@ -97,8 +106,10 @@ function DraggableCard({
 function InsertBeforeDropZone({ beforeCardId }: { beforeCardId: string }) {
   const { active, over } = useDndContext();
   const activeStr = active?.id != null ? String(active.id) : '';
-  const reparentFromCard = activeStr.startsWith('card:');
-  const draggedCardId = activeStr.startsWith('card:') ? activeStr.slice(5) : null;
+  const reparentFromCard = isStudioCollectionCardDragData(active?.data.current);
+  const draggedCardId = isStudioCollectionCardDragData(active?.data.current)
+    ? active.data.current.cardId
+    : parseCollectionCardDragId(activeStr);
   const highlightId = useCuratedTreeDropHighlight();
   const insertId = `insertBefore:${beforeCardId}`;
   const parentDropId = `parent:${beforeCardId}`;
@@ -134,8 +145,7 @@ function ParentDropZone({
   children: React.ReactNode;
 }) {
   const { active } = useDndContext();
-  const activeStr = active?.id != null ? String(active.id) : '';
-  const reparentFromCard = activeStr.startsWith('card:');
+  const reparentFromCard = isStudioCollectionCardDragData(active?.data.current);
   const highlightId = useCuratedTreeDropHighlight();
   const parentDropId = `parent:${parentId}`;
   const { setNodeRef } = useDroppable({
@@ -159,6 +169,7 @@ function cardLabel(card: Card): string {
 
 export interface CuratedTreeNodeProps {
   node: Card;
+  sourceParentId?: string;
   seen: Set<string>;
   cardById: Map<string, Card>;
   parentByChild: Map<string, string[]>;
@@ -166,15 +177,51 @@ export interface CuratedTreeNodeProps {
   toggleExpanded: (id: string) => void;
   saving: boolean;
   onDetachChild: (id: string, parentId: string) => void;
-  onOpenBulkAdd: (parentId: string) => void;
+  onClearRoot: (id: string) => void;
   onSelectCard: (id: string) => void;
   selectedCardId: string | null;
   /** When true, tree rows are not draggable and insert/parent drop targets are not registered. */
   disableCuratedDrag?: boolean;
 }
 
-export function CuratedTreeNode({
+function curatedTreeNodeComparator(prev: CuratedTreeNodeProps, next: CuratedTreeNodeProps): boolean {
+  if (
+    prev.node !== next.node ||
+    prev.sourceParentId !== next.sourceParentId ||
+    prev.saving !== next.saving ||
+    prev.disableCuratedDrag !== next.disableCuratedDrag ||
+    prev.onDetachChild !== next.onDetachChild ||
+    prev.onClearRoot !== next.onClearRoot ||
+    prev.onSelectCard !== next.onSelectCard ||
+    prev.toggleExpanded !== next.toggleExpanded
+  ) {
+    return false;
+  }
+
+  const prevSelected = prev.selectedCardId === prev.node.docId;
+  const nextSelected = next.selectedCardId === next.node.docId;
+  if (prevSelected !== nextSelected) return false;
+
+  const prevExpanded = prev.expandedIds.has(prev.node.docId);
+  const nextExpanded = next.expandedIds.has(next.node.docId);
+  if (prevExpanded !== nextExpanded) return false;
+
+  const prevChildren = normalizeCuratedChildIds(prev.node.childrenIds);
+  const nextChildren = normalizeCuratedChildIds(next.node.childrenIds);
+  if (prevChildren.length !== nextChildren.length) return false;
+  for (let i = 0; i < prevChildren.length; i += 1) {
+    const prevChildId = prevChildren[i];
+    const nextChildId = nextChildren[i];
+    if (prevChildId !== nextChildId) return false;
+    if (prev.cardById.get(prevChildId) !== next.cardById.get(nextChildId)) return false;
+  }
+
+  return true;
+}
+
+function CuratedTreeNodeComponent({
   node,
+  sourceParentId,
   seen,
   cardById,
   parentByChild,
@@ -182,7 +229,7 @@ export function CuratedTreeNode({
   toggleExpanded,
   saving,
   onDetachChild,
-  onOpenBulkAdd,
+  onClearRoot,
   onSelectCard,
   selectedCardId,
   disableCuratedDrag = false,
@@ -266,6 +313,8 @@ export function CuratedTreeNode({
               className={styles.nodeDragSurface}
               disabled={saving}
               onClick={() => onSelectCard(node.docId)}
+              sourceParentId={sourceParentId}
+              sourceIsRoot={!sourceParentId && node.isCollectionRoot === true}
               betweenHandleAndTitle={
                 hasChildren ? (
                   <>
@@ -299,22 +348,18 @@ export function CuratedTreeNode({
           )}
         </div>
         <div className={styles.nodeActions}>
-          <button
-            type="button"
-            onClick={() => onOpenBulkAdd(node.docId)}
-            disabled={saving}
-            className={styles.smallButton}
-          >
-            Bulk add
-          </button>
-          {(parentByChild.get(node.docId)?.length ?? 0) > 0 ? (
+          {sourceParentId || node.isCollectionRoot === true ? (
             <button
               type="button"
-              onClick={() => void onDetachChild(node.docId, parentByChild.get(node.docId)![0])}
+              onClick={() =>
+                sourceParentId ? void onDetachChild(node.docId, sourceParentId) : void onClearRoot(node.docId)
+              }
               disabled={saving}
               className={styles.smallButton}
+              aria-label={sourceParentId ? 'Remove from this parent' : 'Remove root status'}
+              title={sourceParentId ? 'Remove from this parent' : 'Remove root status'}
             >
-              Unparent
+              ×
             </button>
           ) : null}
         </div>
@@ -325,6 +370,7 @@ export function CuratedTreeNode({
             <CuratedTreeNode
               key={child.docId}
               node={child}
+              sourceParentId={node.docId}
               seen={nextSeen}
               cardById={cardById}
               parentByChild={parentByChild}
@@ -332,7 +378,7 @@ export function CuratedTreeNode({
               toggleExpanded={toggleExpanded}
               saving={saving}
               onDetachChild={onDetachChild}
-              onOpenBulkAdd={onOpenBulkAdd}
+              onClearRoot={onClearRoot}
               onSelectCard={onSelectCard}
               selectedCardId={selectedCardId}
               disableCuratedDrag={disableCuratedDrag}
@@ -343,3 +389,5 @@ export function CuratedTreeNode({
     </li>
   );
 }
+
+export const CuratedTreeNode = React.memo(CuratedTreeNodeComponent, curatedTreeNodeComparator);

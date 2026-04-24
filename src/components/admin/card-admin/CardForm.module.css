@@ -329,6 +329,22 @@
   overflow: visible;
 }
 
+.studioCoverDropZone {
+  border-radius: var(--border-radius-md);
+}
+
+.studioCoverDropZone[data-drop-zone-active='true'] {
+  box-shadow:
+    0 16px 30px color-mix(in srgb, var(--button-solid-background-color) 14%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--button-solid-border-color) 20%, transparent);
+}
+
+.studioBodyDropZone[data-drop-zone-active='true'] {
+  box-shadow:
+    0 16px 30px color-mix(in srgb, var(--button-solid-background-color) 14%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--button-solid-border-color) 20%, transparent);
+}
+
 .gallerySection {
   width: 100%;
 }

@@ -1056,10 +1056,21 @@
   font-size: 0.7rem;
   line-height: 1;
   color: var(--text2-color);
+  transition:
+    background var(--transition-short) ease,
+    border-color var(--transition-short) ease,
+    box-shadow var(--transition-short) ease,
+    transform var(--transition-short) ease;
+}
+
+.studioCuratedDragHandle:hover {
+  background: color-mix(in srgb, var(--layout-background2-color) 84%, var(--color3));
+  border-color: color-mix(in srgb, var(--color3) 34%, var(--border1-color));
 }
 
 .studioCuratedDragHandle:active {
   cursor: grabbing;
+  transform: scale(0.98);
 }
 
 .studioCuratedDragHandle:disabled {

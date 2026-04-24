@@ -242,15 +242,26 @@
 .searchInputFoot {
   flex: 0 1 auto;
   width: 100%;
-  max-width: min(100%, 18rem);
+  max-width: min(100%, 10.5rem);
   align-self: flex-start;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: var(--font-size-sm);
+  padding: 4px 8px;
+  font-size: var(--font-size-xs);
   border-radius: var(--border-radius-sm);
 }
 
 .wrapSearchOnly .suggestions {
   max-height: 140px;
+}
+
+.wrapSearchOnly .suggestion {
+  font-size: var(--font-size-xs);
+  padding: 6px 8px;
+}
+
+.wrapSearchOnly .dimBadge {
+  font-size: 0.625rem;
+  min-width: 1.5rem;
+  margin-right: 6px;
 }
 
 .wrapDenseSuggestions .suggestion {

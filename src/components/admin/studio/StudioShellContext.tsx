@@ -13,6 +13,7 @@ export type StudioShellContextValue = {
   selectedCardId: string | null;
   setSelectedCardId: (id: string | null) => void;
   selectedCard: StudioCardContext | null;
+  setSelectedCard: (card: StudioCardContext | null) => void;
   cardLoading: boolean;
   cardError: string | null;
   loadSelectedCard: (cardId: string, opts?: { quiet?: boolean }) => Promise<StudioCardContext>;

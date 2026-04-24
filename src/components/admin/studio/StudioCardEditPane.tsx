@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { mutate as globalMutate } from 'swr';
 import { useRouter } from 'next/navigation';
 import CardForm from '@/components/admin/card-admin/CardForm';
@@ -34,10 +34,11 @@ export default function StudioCardEditPane({
     selectedCard,
     cardLoading,
     cardError,
-    loadSelectedCard,
+    setSelectedCard,
     refreshCollectionsCardList,
   } = useStudioShell();
   const { tags: allTags } = useTag();
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const handleSave = useCallback(
     async (cardData: CardUpdate): Promise<Card | null> => {
@@ -55,7 +56,7 @@ export default function StudioCardEditPane({
         onCardCreated?.(data.docId);
         router.replace(`/admin/studio?card=${encodeURIComponent(data.docId)}`);
       } else if (selectedCardId) {
-        await loadSelectedCard(selectedCardId, { quiet: true });
+        setSelectedCard(data as StudioCardContext);
       }
       refreshCollectionsCardList();
       void globalMutate(
@@ -65,13 +66,24 @@ export default function StudioCardEditPane({
       );
       return data;
     },
-    [selectedCardId, loadSelectedCard, onCardCreated, refreshCollectionsCardList, router]
+    [onCardCreated, refreshCollectionsCardList, router, selectedCardId, setSelectedCard]
   );
 
   const initialCard = useMemo(() => {
     if (!selectedCard) return null;
     return studioContextToInitialCard(selectedCard);
   }, [selectedCard]);
+
+  const handleWheelCapture = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    if (el.scrollHeight <= el.clientHeight + 1) return;
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('input[type="range"]')) return;
+    el.scrollTop += e.deltaY;
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
 
   /** Remount only when switching cards — not on `updatedAt` churn from relationship panel PATCHes (would wipe dirty form). */
   const providerKey = selectedCardId ?? (newCardRequested ? 'new' : 'none');
@@ -126,7 +138,11 @@ export default function StudioCardEditPane({
         <div className={styles.studioCardEditToolbar}>
           <StudioComposeFormActions />
         </div>
-        <div className={styles.studioCardEditScroll}>
+        <div
+          ref={scrollRef}
+          className={styles.studioCardEditScroll}
+          onWheelCapture={handleWheelCapture}
+        >
           <StudioCardFormStudioProvider value={{ studioShellCardForm: true, enableStudioShellDnd: true }}>
             <StudioCardFormShellSync />
             <CardForm />

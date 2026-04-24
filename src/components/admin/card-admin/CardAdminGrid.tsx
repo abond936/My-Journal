@@ -21,6 +21,14 @@ import AdminGridCellChrome from '@/components/admin/common/AdminGridCellChrome';
 import chromeStyles from '@/components/admin/common/AdminGridCellChrome.module.css';
 import { adminChromeSelector, ADMIN_GRID_CHROME } from '@/components/admin/common/adminGridChromeAttr';
 import { eventTargetToElement } from '@/lib/utils/domEventTarget';
+import {
+  buildSingleCardDeletePrompt,
+  fetchCardDeleteParents,
+} from '@/lib/utils/cardDeleteWarnings';
+import {
+  buildStudioCollectionCardDragData,
+  isStudioCollectionCardDragData,
+} from '@/lib/dnd/studioDragContract';
 
 interface CardAdminGridProps {
   cards: Card[];
@@ -48,7 +56,10 @@ interface CardAdminGridProps {
   compactStudioGrid?: boolean;
 }
 
-function coverAspectStyle(cover: Card['coverImage']): React.CSSProperties {
+function coverAspectStyle(cover: Card['coverImage'], uniform = false): React.CSSProperties {
+  if (uniform) {
+    return { aspectRatio: '4 / 3' };
+  }
   const w = cover?.width;
   const h = cover?.height;
   if (typeof w === 'number' && typeof h === 'number' && w > 0 && h > 0) {
@@ -87,15 +98,16 @@ function isCardGridChromeInteractiveTarget(target: EventTarget | null): boolean 
 
 interface CardAdminGridPlainCellProps {
   card: Card;
+  cardIndex: number;
   isSelected: boolean;
   allTags: Tag[];
   secondaryMeta?: { label: string; title?: string } | null;
   onUpdateCard: (cardId: string, updateData: Partial<Card>) => Promise<void>;
-  onBulkPointer: (e: React.MouseEvent | React.KeyboardEvent) => void;
+  onBulkPointer: (e: React.MouseEvent | React.KeyboardEvent, cardId: string, cardIndex: number) => void;
   /** If set, cell primary uses this when `studioEmbedCellClickSelects` (else bulk for backward compatibility). */
-  onFocusStudio?: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
+  onFocusStudio?: (cardId: string) => void;
+  onEdit: (cardId: string) => void;
+  onDelete: (card: Card) => void;
   studioEmbedCellClickSelects: boolean;
   interactionDisabled: boolean;
   compactStudioGrid: boolean;
@@ -104,6 +116,7 @@ interface CardAdminGridPlainCellProps {
 /** `/admin/card-admin` grid — no dnd-kit (no `DndContext` on that page). */
 function CardAdminGridPlainCell({
   card,
+  cardIndex,
   isSelected,
   allTags,
   secondaryMeta,
@@ -116,15 +129,30 @@ function CardAdminGridPlainCell({
   interactionDisabled,
   compactStudioGrid,
 }: CardAdminGridPlainCellProps) {
+  const handleBulkPointer = useCallback(
+    (e: React.MouseEvent | React.KeyboardEvent) => {
+      onBulkPointer(e, card.docId, cardIndex);
+    },
+    [card.docId, cardIndex, onBulkPointer]
+  );
+
+  const handleEdit = useCallback(() => {
+    onEdit(card.docId);
+  }, [card.docId, onEdit]);
+
+  const handleDelete = useCallback(() => {
+    onDelete(card);
+  }, [card, onDelete]);
+
   const activatePrimary = (e: React.MouseEvent | React.KeyboardEvent) => {
     if (studioEmbedCellClickSelects) {
       if (e.shiftKey || e.ctrlKey || e.metaKey) {
-        onBulkPointer(e);
+        handleBulkPointer(e);
         return;
       }
-      if (onFocusStudio) onFocusStudio();
-      else onBulkPointer(e);
-    } else onEdit();
+      if (onFocusStudio) onFocusStudio(card.docId);
+      else handleBulkPointer(e);
+    } else handleEdit();
   };
 
   const captionLine = pickCaption(card);
@@ -170,13 +198,13 @@ function CardAdminGridPlainCell({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              onBulkPointer(e);
+              handleBulkPointer(e);
             }}
             onKeyDown={(e) => {
               if (e.key === ' ' || e.key === 'Enter') {
                 e.preventDefault();
                 e.stopPropagation();
-                onBulkPointer(e);
+                handleBulkPointer(e);
               }
             }}
             disabled={interactionDisabled}
@@ -192,7 +220,7 @@ function CardAdminGridPlainCell({
             className={chromeStyles.deleteBtn}
             onClick={(e) => {
               e.stopPropagation();
-              onDelete();
+              handleDelete();
             }}
             title="Delete"
             aria-label="Delete card"
@@ -202,29 +230,13 @@ function CardAdminGridPlainCell({
         </div>
       }
       overlayLeftRail={
-        <DimensionalTagVerticalChips
-          tagIds={card.tags ?? []}
-          allTags={allTags}
-          disabled={interactionDisabled}
-          onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
-        />
+        undefined
       }
-      overlayBottom={
-        <>
-          <span className={chromeStyles.metaBadge}>{card.type}</span>
-          <span
-            className={
-              card.status === 'draft' ? chromeStyles.metaBadgeDraft : chromeStyles.metaBadgePublished
-            }
-          >
-            {card.status}
-          </span>
-        </>
-      }
+      belowMeta={undefined}
       thumbnail={
         <div
           className={styles.thumbnailWrap}
-          style={coverAspectStyle(card.coverImage)}
+          style={coverAspectStyle(card.coverImage, compactStudioGrid)}
           title={thumbnailTooltip}
           onClick={onImageColumnClick}
         >
@@ -247,15 +259,33 @@ function CardAdminGridPlainCell({
       }
       belowThumbnail={
         <>
+          <div className={styles.metaRow}>
+            <span className={chromeStyles.metaBadge}>{card.type}</span>
+            <span
+              className={
+                card.status === 'draft' ? chromeStyles.metaBadgeDraft : chromeStyles.metaBadgePublished
+              }
+            >
+              {card.status}
+            </span>
+          </div>
           <div className={styles.title} title={card.title}>
             {card.title || 'Untitled'}
           </div>
+          <DimensionalTagVerticalChips
+            className={styles.tagChipsInline}
+            tagIds={card.tags ?? []}
+            allTags={allTags}
+            disabled={interactionDisabled}
+            variant="inline"
+            onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
+          />
           {secondaryMeta ? (
             <div className={styles.secondaryMeta} title={secondaryMeta.title ?? secondaryMeta.label}>
               {secondaryMeta.label}
             </div>
           ) : null}
-          {captionLine ? (
+          {!compactStudioGrid && captionLine ? (
             <div className={styles.caption} title={captionLine}>
               {captionLine}
             </div>
@@ -275,6 +305,24 @@ function CardAdminGridPlainCell({
   );
 }
 
+const MemoizedCardAdminGridPlainCell = React.memo(CardAdminGridPlainCell, (prev, next) => {
+  return (
+    prev.card === next.card &&
+    prev.cardIndex === next.cardIndex &&
+    prev.isSelected === next.isSelected &&
+    prev.allTags === next.allTags &&
+    prev.secondaryMeta === next.secondaryMeta &&
+    prev.onUpdateCard === next.onUpdateCard &&
+    prev.onBulkPointer === next.onBulkPointer &&
+    prev.onFocusStudio === next.onFocusStudio &&
+    prev.onEdit === next.onEdit &&
+    prev.onDelete === next.onDelete &&
+    prev.studioEmbedCellClickSelects === next.studioEmbedCellClickSelects &&
+    prev.interactionDisabled === next.interactionDisabled &&
+    prev.compactStudioGrid === next.compactStudioGrid
+  );
+});
+
 interface CardAdminGridStudioCellProps extends CardAdminGridPlainCellProps {
   studioCuratedTreeDrag: boolean;
   studioCuratedTreeUnparentedRowTarget: boolean;
@@ -283,6 +331,7 @@ interface CardAdminGridStudioCellProps extends CardAdminGridPlainCellProps {
 /** Studio Collections attach bank — requires parent `DndContext`. */
 function CardAdminGridStudioCell({
   card,
+  cardIndex,
   isSelected,
   allTags,
   secondaryMeta,
@@ -297,14 +346,28 @@ function CardAdminGridStudioCell({
   interactionDisabled,
   compactStudioGrid,
 }: CardAdminGridStudioCellProps) {
+  const handleBulkPointer = useCallback(
+    (e: React.MouseEvent | React.KeyboardEvent) => {
+      onBulkPointer(e, card.docId, cardIndex);
+    },
+    [card.docId, cardIndex, onBulkPointer]
+  );
+
+  const handleEdit = useCallback(() => {
+    onEdit(card.docId);
+  }, [card.docId, onEdit]);
+
+  const handleDelete = useCallback(() => {
+    onDelete(card);
+  }, [card, onDelete]);
+
   const { active } = useDndContext();
-  const activeStr = active?.id != null ? String(active.id) : '';
-  const reparentFromCard = activeStr.startsWith('card:');
+  const reparentFromCard = isStudioCollectionCardDragData(active?.data.current);
 
   const rowDnd = useDraggable({
     id: `card:${card.docId}`,
     disabled: interactionDisabled || !studioCuratedTreeDrag,
-    data: { cardId: card.docId },
+    data: buildStudioCollectionCardDragData(card.docId),
   });
 
   const rowShellDrop = useDroppable({
@@ -325,20 +388,27 @@ function CardAdminGridStudioCell({
   const cellStyle: React.CSSProperties | undefined =
     studioCuratedTreeDrag && (rowDnd.isDragging || rowDnd.transform)
       ? {
-          opacity: rowDnd.isDragging ? 0.55 : 1,
+          opacity: rowDnd.isDragging ? 0.92 : 1,
           transform: rowDnd.transform ? CSS.Translate.toString(rowDnd.transform) : undefined,
+          borderRadius: rowDnd.isDragging ? 'var(--border-radius-md)' : undefined,
+          background: rowDnd.isDragging
+            ? 'color-mix(in srgb, var(--layout-background1-color) 92%, var(--color3) 8%)'
+            : undefined,
+          boxShadow: rowDnd.isDragging
+            ? '0 14px 28px color-mix(in srgb, var(--text1-color) 14%, transparent), 0 0 0 1px color-mix(in srgb, var(--color3) 24%, transparent)'
+            : undefined,
         }
       : undefined;
 
   const activatePrimary = (e: React.MouseEvent | React.KeyboardEvent) => {
     if (studioEmbedCellClickSelects) {
       if (e.shiftKey || e.ctrlKey || e.metaKey) {
-        onBulkPointer(e);
+        handleBulkPointer(e);
         return;
       }
-      if (onFocusStudio) onFocusStudio();
-      else onBulkPointer(e);
-    } else onEdit();
+      if (onFocusStudio) onFocusStudio(card.docId);
+      else handleBulkPointer(e);
+    } else handleEdit();
   };
 
   const captionLine = pickCaption(card);
@@ -386,13 +456,13 @@ function CardAdminGridStudioCell({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              onBulkPointer(e);
+              handleBulkPointer(e);
             }}
             onKeyDown={(e) => {
               if (e.key === ' ' || e.key === 'Enter') {
                 e.preventDefault();
                 e.stopPropagation();
-                onBulkPointer(e);
+                handleBulkPointer(e);
               }
             }}
             disabled={interactionDisabled}
@@ -422,7 +492,7 @@ function CardAdminGridStudioCell({
             className={chromeStyles.deleteBtn}
             onClick={(e) => {
               e.stopPropagation();
-              onDelete();
+              handleDelete();
             }}
             title="Delete"
             aria-label="Delete card"
@@ -432,29 +502,13 @@ function CardAdminGridStudioCell({
         </div>
       }
       overlayLeftRail={
-        <DimensionalTagVerticalChips
-          tagIds={card.tags ?? []}
-          allTags={allTags}
-          disabled={interactionDisabled}
-          onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
-        />
+        undefined
       }
-      overlayBottom={
-        <>
-          <span className={chromeStyles.metaBadge}>{card.type}</span>
-          <span
-            className={
-              card.status === 'draft' ? chromeStyles.metaBadgeDraft : chromeStyles.metaBadgePublished
-            }
-          >
-            {card.status}
-          </span>
-        </>
-      }
+      belowMeta={undefined}
       thumbnail={
         <div
           className={styles.thumbnailWrap}
-          style={coverAspectStyle(card.coverImage)}
+          style={coverAspectStyle(card.coverImage, compactStudioGrid)}
           title={thumbnailTooltip}
           onClick={onImageColumnClick}
         >
@@ -477,15 +531,33 @@ function CardAdminGridStudioCell({
       }
       belowThumbnail={
         <>
+          <div className={styles.metaRow}>
+            <span className={chromeStyles.metaBadge}>{card.type}</span>
+            <span
+              className={
+                card.status === 'draft' ? chromeStyles.metaBadgeDraft : chromeStyles.metaBadgePublished
+              }
+            >
+              {card.status}
+            </span>
+          </div>
           <div className={styles.title} title={card.title}>
             {card.title || 'Untitled'}
           </div>
+          <DimensionalTagVerticalChips
+            className={styles.tagChipsInline}
+            tagIds={card.tags ?? []}
+            allTags={allTags}
+            disabled={interactionDisabled}
+            variant="inline"
+            onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
+          />
           {secondaryMeta ? (
             <div className={styles.secondaryMeta} title={secondaryMeta.title ?? secondaryMeta.label}>
               {secondaryMeta.label}
             </div>
           ) : null}
-          {captionLine ? (
+          {!compactStudioGrid && captionLine ? (
             <div className={styles.caption} title={captionLine}>
               {captionLine}
             </div>
@@ -504,6 +576,26 @@ function CardAdminGridStudioCell({
     />
   );
 }
+
+const MemoizedCardAdminGridStudioCell = React.memo(CardAdminGridStudioCell, (prev, next) => {
+  return (
+    prev.card === next.card &&
+    prev.cardIndex === next.cardIndex &&
+    prev.isSelected === next.isSelected &&
+    prev.allTags === next.allTags &&
+    prev.secondaryMeta === next.secondaryMeta &&
+    prev.onUpdateCard === next.onUpdateCard &&
+    prev.onBulkPointer === next.onBulkPointer &&
+    prev.onFocusStudio === next.onFocusStudio &&
+    prev.onEdit === next.onEdit &&
+    prev.onDelete === next.onDelete &&
+    prev.studioCuratedTreeDrag === next.studioCuratedTreeDrag &&
+    prev.studioCuratedTreeUnparentedRowTarget === next.studioCuratedTreeUnparentedRowTarget &&
+    prev.studioEmbedCellClickSelects === next.studioEmbedCellClickSelects &&
+    prev.interactionDisabled === next.interactionDisabled &&
+    prev.compactStudioGrid === next.compactStudioGrid
+  );
+});
 
 export default function CardAdminGrid({
   cards,
@@ -527,24 +619,27 @@ export default function CardAdminGrid({
   const isAllSelected = cards.length > 0 && selectedCardIds.size === cards.length;
   const needsCuratedDndKit = studioCuratedTreeDrag || studioCuratedTreeUnparentedRowTarget;
 
-  const handleEdit = (cardId: string) => {
+  const handleEdit = useCallback((cardId: string) => {
     onSaveScrollPosition(cardId);
     router.push(`/admin/studio?card=${encodeURIComponent(cardId)}`);
-  };
+  }, [onSaveScrollPosition, router]);
 
-  const handleDelete = async (card: Card) => {
-    const params = new URLSearchParams({ childrenIds_contains: card.docId });
-    const response = await fetch(`/api/cards?${params.toString()}`);
-    const parentCardsResult = response.ok ? await response.json() : { items: [] };
-    const parentCards = parentCardsResult.items || [];
+  const handleDelete = useCallback(async (card: Card) => {
+    const { parentTitles, verificationFailed } = await fetchCardDeleteParents(card.docId);
+    const prompt = buildSingleCardDeletePrompt({
+      title: card.title,
+      isCollectionRoot: card.isCollectionRoot,
+      childCount: card.childrenIds?.length ?? 0,
+      parentTitles,
+      verificationFailed,
+    });
 
-    let confirmMessage = 'Are you sure you want to delete this card? This action cannot be undone.';
-    if (parentCards.length > 0) {
-      const parentTitles = parentCards.map((p: Card) => p.title).join(', ');
-      confirmMessage = `WARNING: This card is a child of: ${parentTitles}.\n\nDeleting will remove it from these collections. Proceed?`;
+    if (prompt.blocked) {
+      window.alert(prompt.message);
+      return;
     }
 
-    if (window.confirm(confirmMessage)) {
+    if (window.confirm(prompt.message)) {
       try {
         await onDeleteCard(card.docId);
       } catch (err) {
@@ -552,7 +647,21 @@ export default function CardAdminGrid({
         alert(err instanceof Error ? err.message : 'An unknown error occurred.');
       }
     }
-  };
+  }, [onDeleteCard]);
+
+  const handleBulkPointer = useCallback(
+    (e: React.MouseEvent | React.KeyboardEvent, cardId: string, cardIndex: number) => {
+      onSelectCard(cardId, cardIndex, e);
+    },
+    [onSelectCard]
+  );
+
+  const secondaryMetaById = useMemo(() => {
+    if (!getCardSecondaryMeta) return new Map<string, { label: string; title?: string } | null>();
+    return new Map(
+      cards.map((card) => [card.docId, getCardSecondaryMeta(card) ?? null] as const)
+    );
+  }, [cards, getCardSecondaryMeta]);
 
   return (
     <div className={styles.container}>
@@ -570,17 +679,18 @@ export default function CardAdminGrid({
       <div className={compactStudioGrid ? `${styles.grid} ${styles.gridStudioCompact}` : styles.grid}>
         {cards.map((card, index) =>
           needsCuratedDndKit ? (
-            <CardAdminGridStudioCell
+            <MemoizedCardAdminGridStudioCell
               key={card.docId}
               card={card}
+              cardIndex={index}
               isSelected={selectedCardIds.has(card.docId)}
               allTags={allTags}
-              secondaryMeta={getCardSecondaryMeta?.(card) ?? null}
+              secondaryMeta={secondaryMetaById.get(card.docId) ?? null}
               onUpdateCard={onUpdateCard}
-              onBulkPointer={(e) => onSelectCard(card.docId, index, e)}
-              onFocusStudio={onStudioFocusCard ? () => onStudioFocusCard(card.docId) : undefined}
-              onEdit={() => handleEdit(card.docId)}
-              onDelete={() => handleDelete(card)}
+              onBulkPointer={handleBulkPointer}
+              onFocusStudio={onStudioFocusCard}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
               studioCuratedTreeDrag={studioCuratedTreeDrag}
               studioCuratedTreeUnparentedRowTarget={studioCuratedTreeUnparentedRowTarget}
               studioEmbedCellClickSelects={studioEmbedCellClickSelects}
@@ -588,17 +698,18 @@ export default function CardAdminGrid({
               compactStudioGrid={compactStudioGrid}
             />
           ) : (
-            <CardAdminGridPlainCell
+            <MemoizedCardAdminGridPlainCell
               key={card.docId}
               card={card}
+              cardIndex={index}
               isSelected={selectedCardIds.has(card.docId)}
               allTags={allTags}
-              secondaryMeta={getCardSecondaryMeta?.(card) ?? null}
+              secondaryMeta={secondaryMetaById.get(card.docId) ?? null}
               onUpdateCard={onUpdateCard}
-              onBulkPointer={(e) => onSelectCard(card.docId, index, e)}
-              onFocusStudio={onStudioFocusCard ? () => onStudioFocusCard(card.docId) : undefined}
-              onEdit={() => handleEdit(card.docId)}
-              onDelete={() => handleDelete(card)}
+              onBulkPointer={handleBulkPointer}
+              onFocusStudio={onStudioFocusCard}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
               studioEmbedCellClickSelects={studioEmbedCellClickSelects}
               interactionDisabled={interactionDisabled}
               compactStudioGrid={compactStudioGrid}

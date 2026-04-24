@@ -14,7 +14,9 @@ interface AppShellProps {
 export default function AppShell({ children }: AppShellProps) {
   const { status } = useSession();
   const pathname = usePathname();
-  const [isSidebarOpen, setSidebarOpen] = useState(pathname !== '/');
+  const [isSidebarOpen, setSidebarOpen] = useState(
+    pathname !== '/' && !pathname?.startsWith('/admin/studio')
+  );
 
   const isAuthenticated = status === 'authenticated';
 
@@ -28,6 +30,10 @@ export default function AppShell({ children }: AppShellProps) {
   // Update sidebar state when route changes
   useEffect(() => {
     if (pathname === '/') {
+      setSidebarOpen(false);
+      return;
+    }
+    if (pathname?.startsWith('/admin/studio')) {
       setSidebarOpen(false);
     }
   }, [pathname]);

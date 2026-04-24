@@ -75,10 +75,21 @@ tr.rowCompact > td.cell {
   padding: 4px 4px;
   cursor: grab;
   flex-shrink: 0;
+  transition:
+    background var(--transition-short) ease,
+    border-color var(--transition-short) ease,
+    box-shadow var(--transition-short) ease,
+    transform var(--transition-short) ease;
+}
+
+.studioSourceDragHandle:hover {
+  background: color-mix(in srgb, var(--layout-background2-color) 84%, var(--color3));
+  border-color: color-mix(in srgb, var(--color3) 34%, var(--border1-color));
 }
 
 .studioSourceDragHandle:active {
   cursor: grabbing;
+  transform: scale(0.98);
 }
 
 .studioSourceDragHandle:focus-visible {

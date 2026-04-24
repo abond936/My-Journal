@@ -13,8 +13,6 @@ import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensio
 import ChildCardManager from '@/components/admin/card-admin/ChildCardManager';
 import RichTextEditor, { RichTextEditorRef } from '@/components/common/RichTextEditor';
 import styles from './CardForm.module.css';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
 import { useCardForm } from '@/components/providers/CardFormProvider';
 import clsx from 'clsx';
 import PhotoPicker from '@/components/admin/card-admin/PhotoPicker';
@@ -400,7 +398,7 @@ const CardForm: React.FC = () => {
   );
 
   return (
-    <DndProvider backend={HTML5Backend}>
+    <>
       <LoadingOverlay
         isVisible={isSaving}
         title="Saving card..."
@@ -802,6 +800,8 @@ const CardForm: React.FC = () => {
                 id="drop:cover"
                 accepts={['source', 'gallery']}
                 ariaLabel="Cover drop target: drop source or gallery media here to set cover"
+                className={styles.studioCoverDropZone}
+                eligibleHint="Release here to make this the cover"
               >
                 <CoverPhotoContainer
                   coverImage={cardData.coverImage}
@@ -878,7 +878,7 @@ const CardForm: React.FC = () => {
                 ariaLabel="Drop media from bank into body"
                 className={styles.studioBodyDropZone}
                 alwaysRegister
-                eligibleHint="Release here to insert image in body"
+                eligibleHint="Release here to insert into the story"
               >
                 {bodyRichTextEditor}
               </StudioDropZone>
@@ -988,7 +988,7 @@ const CardForm: React.FC = () => {
         </div>
       </form>
       )}
-    </DndProvider>
+    </>
   );
 };
 

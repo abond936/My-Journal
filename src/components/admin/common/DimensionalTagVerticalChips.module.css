@@ -8,12 +8,23 @@
   font: var(--admin-grid-overlay-font);
 }
 
+.rootInline {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
 .dimBlock {
   display: flex;
   flex-direction: column;
   gap: 0;
   padding: 1px 0;
   min-width: 0;
+}
+
+.dimBlockInline {
+  padding: 0;
 }
 
 .dimBlockDivider {
@@ -43,6 +54,15 @@
   color: var(--text1-color);
   font: var(--admin-grid-overlay-font);
   text-align: left;
+}
+
+.tagRowInline {
+  width: auto;
+  min-height: 24px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  gap: 5px;
+  font-size: 12px;
 }
 
 .tagTextBlock {
@@ -102,6 +122,19 @@
   cursor: pointer;
 }
 
+.removeXInline {
+  min-width: 15px;
+  min-height: 15px;
+  padding: 0;
+  margin-left: 0;
+  background: transparent;
+  font-size: 0.9em;
+}
+
+.removeXInline:hover:not(:disabled) {
+  background: color-mix(in srgb, rgb(0 0 0) 18%, transparent);
+}
+
 .removeX:hover:not(:disabled) {
   filter: brightness(1.12);
   background: color-mix(in srgb, rgb(0 0 0) 25%, transparent);
@@ -124,6 +157,11 @@
   text-overflow: clip;
 }
 
+.tagRowInline .tagName {
+  flex: 0 1 auto;
+  max-width: 8.5rem;
+}
+
 .tagMore {
   flex-shrink: 0;
   font: inherit;
@@ -131,4 +169,3 @@
   color: inherit;
   opacity: 0.95;
 }
-

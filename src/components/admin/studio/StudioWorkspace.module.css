@@ -20,6 +20,48 @@
   min-width: 0;
 }
 
+.studioHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.studioPaneToolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+.studioPaneToggle {
+  min-height: 34px;
+  padding: 0.35rem 0.7rem;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-pill);
+  background: var(--layout-background1-color);
+  color: var(--text2-color);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition:
+    background-color var(--transition-short) ease,
+    border-color var(--transition-short) ease,
+    color var(--transition-short) ease;
+}
+
+.studioPaneToggle:hover {
+  border-color: color-mix(in srgb, var(--color3) 40%, var(--border1-color));
+  color: var(--text1-color);
+}
+
+.studioPaneToggleActive {
+  background: color-mix(in srgb, var(--color3) 12%, var(--layout-background1-color));
+  border-color: color-mix(in srgb, var(--color3) 45%, var(--border1-color));
+  color: var(--text1-color);
+}
+
 .gridStacked {
   display: flex;
   flex-direction: column;
@@ -442,12 +484,17 @@
 
 .dropZone {
   border-radius: var(--border-radius-sm);
+  transition:
+    background var(--transition-short) ease,
+    outline-color var(--transition-short) ease,
+    box-shadow var(--transition-short) ease,
+    border-color var(--transition-short) ease;
 }
 
 .dropZoneEligible {
   outline: 2px dashed color-mix(in srgb, var(--button-solid-border-color) 80%, transparent);
   outline-offset: 2px;
-  background: color-mix(in srgb, var(--button-solid-background-color) 6%, transparent);
+  background: color-mix(in srgb, var(--button-solid-background-color) 8%, transparent);
 }
 
 .dropZoneEligiblePad {
@@ -460,12 +507,20 @@
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   color: var(--text2-color);
+  letter-spacing: 0.01em;
 }
 
 .dropZoneActive {
-  outline: 2px solid var(--button-solid-border-color);
-  background: color-mix(in srgb, var(--button-solid-background-color) 14%, transparent);
+  outline: 2px solid color-mix(in srgb, var(--button-solid-border-color) 82%, white 8%);
+  background: color-mix(in srgb, var(--button-solid-background-color) 16%, transparent);
   border-radius: var(--border-radius-sm);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--button-solid-border-color) 20%, transparent),
+    0 10px 22px color-mix(in srgb, var(--button-solid-background-color) 12%, transparent);
+}
+
+.dropZone[data-drop-zone-active='true'] .dropZoneEligibleHint {
+  color: var(--text1-color);
 }
 
 .dropHint {
@@ -506,6 +561,10 @@
   display: flex;
   gap: var(--spacing-xs);
   align-items: flex-start;
+  transition:
+    box-shadow var(--transition-short) ease,
+    background var(--transition-short) ease,
+    border-color var(--transition-short) ease;
 }
 
 .gallerySortableContent {
@@ -523,10 +582,21 @@
   padding: 6px 5px;
   cursor: grab;
   flex-shrink: 0;
+  transition:
+    background var(--transition-short) ease,
+    border-color var(--transition-short) ease,
+    box-shadow var(--transition-short) ease,
+    transform var(--transition-short) ease;
+}
+
+.dragHandle:hover {
+  background: color-mix(in srgb, var(--layout-background2-color) 84%, var(--color3));
+  border-color: color-mix(in srgb, var(--color3) 34%, var(--border1-color));
 }
 
 .dragHandle:active {
   cursor: grabbing;
+  transform: scale(0.98);
 }
 
 .dragHandle:focus-visible {
@@ -645,6 +715,10 @@
   display: flex;
   gap: var(--spacing-xs);
   align-items: flex-start;
+  transition:
+    box-shadow var(--transition-short) ease,
+    background var(--transition-short) ease,
+    border-color var(--transition-short) ease;
 }
 
 .childSortableMain {
@@ -674,11 +748,17 @@
 .parentAttachZone {
   border-radius: var(--border-radius-sm);
   padding: var(--spacing-xs);
+  transition:
+    background var(--transition-short) ease,
+    box-shadow var(--transition-short) ease;
 }
 
 .parentAttachZoneNestActive {
-  background: color-mix(in srgb, var(--color3) 8%, transparent);
+  background: color-mix(in srgb, var(--color3) 12%, transparent);
   position: relative;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--color3) 26%, transparent),
+    0 8px 18px color-mix(in srgb, var(--color3) 10%, transparent);
 }
 
 .parentAttachZoneNestActive::after {
@@ -710,11 +790,19 @@
   right: 0;
   top: 50%;
   transform: translateY(-50%);
-  height: 2px;
+  height: 3px;
   background: var(--color3);
   border-radius: 999px;
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--layout-background2-color) 85%, var(--color3)),
-    0 1px 2px color-mix(in srgb, var(--text1-color) 12%, transparent);
+    0 2px 6px color-mix(in srgb, var(--color3) 30%, transparent);
   pointer-events: none;
+}
+
+.sortableRowDragging {
+  background: color-mix(in srgb, var(--layout-background1-color) 92%, var(--color3) 8%);
+  border-radius: var(--border-radius-sm);
+  box-shadow:
+    0 14px 28px color-mix(in srgb, var(--text1-color) 14%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color3) 24%, transparent);
 }

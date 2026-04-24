@@ -81,3 +81,28 @@ export function optimisticSetCollectionRoot(
   }
   return next;
 }
+
+export function optimisticReorderCollectionRoots(cards: Card[], orderedRootIds: string[]): Card[] | null {
+  if (orderedRootIds.length === 0) return null;
+  const next = cloneCards(cards);
+  const rootIds = new Set(orderedRootIds);
+  let foundAny = false;
+
+  orderedRootIds.forEach((rootId, index) => {
+    const card = next.find((entry) => entry.docId === rootId);
+    if (!card) return;
+    foundAny = true;
+    card.isCollectionRoot = true;
+    card.collectionRootOrder = index * 10;
+  });
+
+  if (!foundAny) return null;
+
+  for (const card of next) {
+    if (card.docId && rootIds.has(card.docId) && card.isCollectionRoot !== true) {
+      card.isCollectionRoot = true;
+    }
+  }
+
+  return next;
+}

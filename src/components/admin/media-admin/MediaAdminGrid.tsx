@@ -21,11 +21,12 @@ import { eventTargetToElement } from '@/lib/utils/domEventTarget';
 
 export interface MediaAdminGridCellProps {
   media: Media;
+  mediaIndex: number;
   tagNameMap: Map<string, string>;
   allTags: ReturnType<typeof useTag>['tags'];
   onSaveTags: (mediaId: string, nextTags: string[]) => Promise<void>;
   isSelected: boolean;
-  onSelectionCheckboxClick: (e: React.MouseEvent | React.KeyboardEvent) => void;
+  onSelectionCheckboxClick: (e: React.MouseEvent | React.KeyboardEvent, mediaId: string, mediaIndex: number) => void;
   /** When set (Admin Studio grid + `DndContext`), cell is `source:{mediaId}` for cover/gallery drops. */
   studioDragBind?: MediaAdminRowStudioDragBind;
 }
@@ -53,6 +54,7 @@ function isMediaGridChromeInteractiveTarget(target: EventTarget | null): boolean
 
 function MediaAdminGridCell({
   media,
+  mediaIndex,
   tagNameMap,
   allTags,
   onSaveTags,
@@ -77,25 +79,32 @@ function MediaAdminGridCell({
     [media.docId, onSaveTags]
   );
 
+  const handleSelectionClick = useCallback(
+    (e: React.MouseEvent | React.KeyboardEvent) => {
+      onSelectionCheckboxClick(e, media.docId, mediaIndex);
+    },
+    [media.docId, mediaIndex, onSelectionCheckboxClick]
+  );
+
   const onCellClick = (e: React.MouseEvent) => {
     if (isMediaGridChromeInteractiveTarget(e.target)) return;
     const t = eventTargetToElement(e.target);
     if (t?.closest('button')) return;
-    onSelectionCheckboxClick(e);
+    handleSelectionClick(e);
   };
   const onCellKeyDown = (e: React.KeyboardEvent) => {
     const t = eventTargetToElement(e.target);
     if (t?.closest('input, textarea, button, [role="listbox"]')) return;
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      onSelectionCheckboxClick(e);
+      handleSelectionClick(e);
     }
   };
 
   const aspectStyle: React.CSSProperties =
-    media.width > 0 && media.height > 0
-      ? { aspectRatio: `${media.width} / ${media.height}` }
-      : { aspectRatio: '4 / 3' };
+    { aspectRatio: '4 / 3' };
+
+  const displayTitle = media.caption?.trim() || '';
 
   const identityTooltip = `File: ${media.filename}\nID: ${media.docId}\nSource: ${media.sourcePath || '—'}`;
   const thumbnailTooltip = useMemo(() => {
@@ -129,12 +138,12 @@ function MediaAdminGridCell({
             type="checkbox"
             readOnly
             checked={isSelected}
-            onClick={(e) => onSelectionCheckboxClick(e)}
+            onClick={(e) => handleSelectionClick(e)}
             onKeyDown={(e) => {
               if (e.key === ' ' || e.key === 'Enter') {
                 e.preventDefault();
                 e.stopPropagation();
-                onSelectionCheckboxClick(e);
+                handleSelectionClick(e);
               }
             }}
             aria-label={`Select ${media.filename}`}
@@ -161,21 +170,8 @@ function MediaAdminGridCell({
           </div>
         ) : null
       }
-      overlayLeftRail={
-        <DimensionalTagVerticalChips
-          tagIds={media.tags ?? []}
-          allTags={allTags}
-          onUpdateTags={(next) => onSaveTags(media.docId, next)}
-        />
-      }
-      overlayBottom={
-        <>
-          <span className={chromeStyles.metaBadgeMuted}>{media.source}</span>
-          <span className={assigned ? chromeStyles.metaBadgeAssigned : chromeStyles.metaBadgeUnassigned}>
-            {assigned ? 'Assigned' : 'Unassigned'}
-          </span>
-        </>
-      }
+      overlayLeftRail={undefined}
+      belowMeta={undefined}
       thumbnail={
         <div className={styles.thumbnailWrap} style={aspectStyle} title={thumbnailTooltip}>
           <JournalImage
@@ -189,11 +185,24 @@ function MediaAdminGridCell({
       }
       belowThumbnail={
         <>
-          {media.caption ? (
-            <div className={styles.captionBelow} title={media.caption}>
-              {media.caption}
+          <div className={styles.metaRow}>
+            <span className={chromeStyles.metaBadgeMuted}>{media.source}</span>
+            <span className={assigned ? chromeStyles.metaBadgeAssigned : chromeStyles.metaBadgeUnassigned}>
+              {assigned ? 'Assigned' : 'Unassigned'}
+            </span>
+          </div>
+          {displayTitle ? (
+            <div className={styles.mediaTitle} title={displayTitle}>
+              {displayTitle}
             </div>
           ) : null}
+          <DimensionalTagVerticalChips
+            className={styles.tagChipsInline}
+            tagIds={media.tags ?? []}
+            allTags={allTags}
+            variant="inline"
+            onUpdateTags={(next) => onSaveTags(media.docId, next)}
+          />
           <div className={styles.tagSearchFoot} data-admin-chrome={ADMIN_GRID_CHROME.tagSearchFoot}>
             <CardDimensionalTagCommandBar
               card={{ tags: media.tags ?? [] }}
@@ -212,6 +221,19 @@ function MediaAdminGridCell({
   return gridCell;
 }
 
+const MemoizedMediaAdminGridCell = React.memo(MediaAdminGridCell, (prev, next) => {
+  return (
+    prev.media === next.media &&
+    prev.mediaIndex === next.mediaIndex &&
+    prev.tagNameMap === next.tagNameMap &&
+    prev.allTags === next.allTags &&
+    prev.onSaveTags === next.onSaveTags &&
+    prev.isSelected === next.isSelected &&
+    prev.onSelectionCheckboxClick === next.onSelectionCheckboxClick &&
+    prev.studioDragBind === next.studioDragBind
+  );
+});
+
 function MediaAdminGridCellStudioSource(props: Omit<MediaAdminGridCellProps, 'studioDragBind'>) {
   const mid = props.media.docId;
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, isDragging } = useDraggable({
@@ -225,12 +247,31 @@ function MediaAdminGridCellStudioSource(props: Omit<MediaAdminGridCellProps, 'st
     setNodeRef,
     setActivatorNodeRef,
     style: {
-      opacity: isDragging ? 0.6 : 1,
+      opacity: isDragging ? 0.92 : 1,
       transform: DndCss.Translate.toString(transform),
+      borderRadius: isDragging ? 'var(--border-radius-md)' : undefined,
+      background: isDragging
+        ? 'color-mix(in srgb, var(--layout-background1-color) 92%, var(--color3) 8%)'
+        : undefined,
+      boxShadow: isDragging
+        ? '0 14px 28px color-mix(in srgb, var(--text1-color) 14%, transparent), 0 0 0 1px color-mix(in srgb, var(--color3) 24%, transparent)'
+        : undefined,
     },
   };
-  return <MediaAdminGridCell {...props} studioDragBind={studioDragBind} />;
+  return <MemoizedMediaAdminGridCell {...props} studioDragBind={studioDragBind} />;
 }
+
+const MemoizedMediaAdminGridCellStudioSource = React.memo(
+  MediaAdminGridCellStudioSource,
+  (prev, next) =>
+    prev.media === next.media &&
+    prev.mediaIndex === next.mediaIndex &&
+    prev.tagNameMap === next.tagNameMap &&
+    prev.allTags === next.allTags &&
+    prev.onSaveTags === next.onSaveTags &&
+    prev.isSelected === next.isSelected &&
+    prev.onSelectionCheckboxClick === next.onSelectionCheckboxClick
+);
 
 export default function MediaAdminGrid({
   sourcePathFirst = false,
@@ -247,7 +288,10 @@ export default function MediaAdminGrid({
   const { media, selectedMediaIds, setSelectedMediaIds, updateMedia } = useMedia();
   const selectionAnchorIndexRef = useRef<number | null>(null);
   const { tags } = useTag();
-  const tagNameMap = new Map(tags.filter(t => t.docId).map(tag => [tag.docId as string, tag.name]));
+  const tagNameMap = useMemo(
+    () => new Map(tags.filter((t) => t.docId).map((tag) => [tag.docId as string, tag.name])),
+    [tags]
+  );
   const sortedMedia = useMemo(() => {
     const normalize = (value: string | undefined) => (value ?? '').trim().toLowerCase();
     const modeFiltered = media.filter((item) => {
@@ -302,6 +346,16 @@ export default function MediaAdminGrid({
     [sortedIds, selectedMediaIds, setSelectedMediaIds]
   );
 
+  const handleSaveTags = useCallback(
+    async (mediaId: string, nextTags: string[]) => {
+      const updated = await updateMedia(mediaId, { tags: nextTags });
+      if (!updated) {
+        throw new Error('Tag update failed. Please retry.');
+      }
+    },
+    [updateMedia]
+  );
+
   const handleSelectAllOnPage = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.checked) {
@@ -341,34 +395,26 @@ export default function MediaAdminGrid({
       <div className={styles.grid}>
         {sortedMedia.map((item, index) =>
           studioSourceDraggable ? (
-            <MediaAdminGridCellStudioSource
+            <MemoizedMediaAdminGridCellStudioSource
               key={item.docId}
               media={item}
+              mediaIndex={index}
               tagNameMap={tagNameMap}
               allTags={tags}
-              onSaveTags={async (mediaId, nextTags) => {
-                const updated = await updateMedia(mediaId, { tags: nextTags });
-                if (!updated) {
-                  throw new Error('Tag update failed. Please retry.');
-                }
-              }}
+              onSaveTags={handleSaveTags}
               isSelected={selectedMediaIds.includes(item.docId)}
-              onSelectionCheckboxClick={(e) => handleGridSelection(e, item.docId, index)}
+              onSelectionCheckboxClick={handleGridSelection}
             />
           ) : (
-            <MediaAdminGridCell
+            <MemoizedMediaAdminGridCell
               key={item.docId}
               media={item}
+              mediaIndex={index}
               tagNameMap={tagNameMap}
               allTags={tags}
-              onSaveTags={async (mediaId, nextTags) => {
-                const updated = await updateMedia(mediaId, { tags: nextTags });
-                if (!updated) {
-                  throw new Error('Tag update failed. Please retry.');
-                }
-              }}
+              onSaveTags={handleSaveTags}
               isSelected={selectedMediaIds.includes(item.docId)}
-              onSelectionCheckboxClick={(e) => handleGridSelection(e, item.docId, index)}
+              onSelectionCheckboxClick={handleGridSelection}
             />
           )
         )}

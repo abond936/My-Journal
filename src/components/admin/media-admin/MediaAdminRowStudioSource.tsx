@@ -22,8 +22,15 @@ export function MediaAdminRowStudioSource(props: MediaAdminRowBaseProps) {
     setNodeRef,
     setActivatorNodeRef,
     style: {
-      opacity: isDragging ? 0.6 : 1,
+      opacity: isDragging ? 0.92 : 1,
       transform: DndCss.Translate.toString(transform),
+      borderRadius: isDragging ? 'var(--border-radius-md)' : undefined,
+      background: isDragging
+        ? 'color-mix(in srgb, var(--layout-background1-color) 92%, var(--color3) 8%)'
+        : undefined,
+      boxShadow: isDragging
+        ? '0 14px 28px color-mix(in srgb, var(--text1-color) 14%, transparent), 0 0 0 1px color-mix(in srgb, var(--color3) 24%, transparent)'
+        : undefined,
     },
   };
 

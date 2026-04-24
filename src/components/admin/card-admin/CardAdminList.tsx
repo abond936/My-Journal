@@ -17,6 +17,14 @@ import ResizableHeader from './ResizableHeader';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
 import { DIMENSION_LABEL, DIMENSION_ORDER, type TagDimension } from '@/lib/utils/tagDisplay';
 import { buildResolvedTagDimensionMap } from '@/lib/utils/tagDimensionResolve';
+import {
+  buildSingleCardDeletePrompt,
+  fetchCardDeleteParents,
+} from '@/lib/utils/cardDeleteWarnings';
+import {
+  buildStudioCollectionCardDragData,
+  isStudioCollectionCardDragData,
+} from '@/lib/dnd/studioDragContract';
 
 const COLUMN_WIDTHS_KEY = 'cardAdminColumnWidths';
 const STUDIO_CURATED_DRAG_COL = 36;
@@ -349,13 +357,12 @@ function CardAdminListStudioRow({
   hideDimensionMediaSuggestions,
 }: CardAdminListStudioRowProps) {
   const { active } = useDndContext();
-  const activeStr = active?.id != null ? String(active.id) : '';
-  const reparentFromCard = activeStr.startsWith('card:');
+  const reparentFromCard = isStudioCollectionCardDragData(active?.data.current);
 
   const rowDnd = useDraggable({
     id: `card:${card.docId}`,
     disabled: interactionDisabled || !studioCuratedTreeDrag,
-    data: { cardId: card.docId },
+    data: buildStudioCollectionCardDragData(card.docId),
   });
 
   const rowShellDrop = useDroppable({
@@ -376,8 +383,14 @@ function CardAdminListStudioRow({
   const rowStyle: React.CSSProperties | undefined =
     studioCuratedTreeDrag && (rowDnd.isDragging || rowDnd.transform)
       ? {
-          opacity: rowDnd.isDragging ? 0.55 : 1,
+          opacity: rowDnd.isDragging ? 0.92 : 1,
           transform: rowDnd.transform ? CSS.Translate.toString(rowDnd.transform) : undefined,
+          background: rowDnd.isDragging
+            ? 'color-mix(in srgb, var(--layout-background1-color) 92%, var(--color3) 8%)'
+            : undefined,
+          boxShadow: rowDnd.isDragging
+            ? '0 14px 28px color-mix(in srgb, var(--text1-color) 14%, transparent), 0 0 0 1px color-mix(in srgb, var(--color3) 24%, transparent)'
+            : undefined,
         }
       : undefined;
 
@@ -524,35 +537,21 @@ export default function CardAdminList({
     async (card: Card) => {
       onSaveScrollPosition(card.docId);
 
-      let parentCards: Card[] = [];
-      let verificationFailed = false;
-      try {
-        const params = new URLSearchParams({
-          childrenIds_contains: card.docId,
-          status: 'all',
-          limit: '200',
-        });
-        const response = await fetch(`/api/cards?${params.toString()}`);
-        if (!response.ok) {
-          verificationFailed = true;
-        } else {
-          const parentCardsResult = (await response.json()) as { items?: Card[] };
-          parentCards = Array.isArray(parentCardsResult.items) ? parentCardsResult.items : [];
-        }
-      } catch {
-        verificationFailed = true;
+      const { parentTitles, verificationFailed } = await fetchCardDeleteParents(card.docId);
+      const prompt = buildSingleCardDeletePrompt({
+        title: card.title,
+        isCollectionRoot: card.isCollectionRoot,
+        childCount: card.childrenIds?.length ?? 0,
+        parentTitles,
+        verificationFailed,
+      });
+
+      if (prompt.blocked) {
+        window.alert(prompt.message);
+        return;
       }
 
-      let confirmMessage = 'Are you sure you want to delete this card? This action cannot be undone.';
-      if (parentCards.length > 0) {
-        const parentTitles = parentCards.map((p: Card) => p.title || '(Untitled)').join(', ');
-        confirmMessage = `WARNING: This card is a child of the following cards: ${parentTitles}.\n\nDeleting it will remove it from these collections. Are you sure you want to proceed?`;
-      } else if (verificationFailed) {
-        confirmMessage =
-          'Could not verify parent cards right now.\n\nYou can still delete; parent cleanup is handled server-side.\n\nProceed with delete?';
-      }
-
-      if (!window.confirm(confirmMessage)) return;
+      if (!window.confirm(prompt.message)) return;
 
       try {
         await onDeleteCard(card.docId);

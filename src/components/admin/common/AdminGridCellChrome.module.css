@@ -28,8 +28,7 @@
 .thumbStack {
   position: relative;
   width: 100%;
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 0 0 auto;
   min-width: 0;
 }
 
@@ -107,8 +106,19 @@
 }
 
 .belowThumb {
-  flex-shrink: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
   min-width: 0;
+}
+
+.belowMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px 0;
 }
 
 .checkbox {
