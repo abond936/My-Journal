@@ -33,6 +33,17 @@ function errorResponse(payload: ApiErrorPayload, status: number) {
   return NextResponse.json(payload, { status });
 }
 
+const CARD_TYPES_QUERY = new Set<string>(['story', 'qa', 'quote', 'callout', 'gallery']);
+
+function parseCardTypesList(raw: string | null): Card['type'][] | undefined {
+  if (!raw?.trim()) return undefined;
+  const out = raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter((t): t is Card['type'] => CARD_TYPES_QUERY.has(t));
+  return out.length ? [...new Set(out)] : undefined;
+}
+
 export const dynamic = 'force-dynamic';
 
 /**
@@ -156,7 +167,19 @@ export async function GET(request: Request) {
       );
     }
 
-    const type = (searchParams.get('type') as Card['type'] | 'all') || 'all';
+    const typesListParsed = parseCardTypesList(searchParams.get('types'));
+    let type: Card['type'] | 'all' = (searchParams.get('type') as Card['type'] | 'all') || 'all';
+    if (type !== 'all' && !CARD_TYPES_QUERY.has(type)) type = 'all';
+
+    let typesForService: Card['type'][] | undefined;
+    if (typesListParsed?.length) {
+      if (typesListParsed.length === 1) {
+        type = typesListParsed[0];
+      } else {
+        typesForService = typesListParsed;
+        type = 'all';
+      }
+    }
     const q = searchParams.get('q') || undefined;
     const searchScopeParam = searchParams.get('searchScope');
     const searchScope: 'default' | 'admin-title' =
@@ -275,6 +298,8 @@ export async function GET(request: Request) {
           const searchResult = await searchCardsFiltered({
             textQuery: q?.trim() || undefined,
             type,
+            types:
+              typesForService && typesForService.length > 1 ? typesForService : undefined,
             status,
             tags: tags?.filter((t): t is string => Boolean(t?.trim())),
             dimensionalTags:
@@ -320,6 +345,7 @@ export async function GET(request: Request) {
         q,
         status,
         type,
+        types: typesForService,
         tags,
         dimensionalTags: Object.keys(dimensionalTags).length > 0 ? dimensionalTags : undefined,
         dimensionMissing: hasDimensionMissingFilters ? dimensionMissing : undefined,

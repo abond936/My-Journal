@@ -133,6 +133,7 @@ Many people complete **digitization** (scanning, basic cleanup) and stall at **o
 - **Visible progress** - Users should see **archive coverage** (e.g. % of items in at least one confirmed occasion) to sustain motivation.
 - **Human-first framing** - Present the system as three simple work zones: **Left = piles** (AI-suggested moments), **Middle = actions** (confirm/split/merge/skip), **Right = meaning** (who/where/when/story with gentle prompts). One-line model: **Left finds moments, Middle organizes moments, Right explains moments**.
 - **Glean, do not demand** - Users speak naturally (“That is Sissy's birthday at Grandma's”); the system extracts structure behind the scenes, proposes likely details (including inferred age/stage when possible), and asks only minimal confirmation questions.
+- **Structure before prose** - The highest-value assistance is first to help users group, tag, and relate media meaningfully; narrative drafting follows from confirmed structure.
 
 *Features*
 ✅ **Complete**

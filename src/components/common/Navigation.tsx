@@ -142,7 +142,7 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
           {isAdmin && (
             <span className={styles.adminLinksDesktopOnly}>
               <Link
-                href="/admin/card-admin"
+                href="/admin/studio"
                 className={`${styles.navLink} ${pathname?.startsWith('/admin') ? styles.active : ''}`}
               >
                 Admin

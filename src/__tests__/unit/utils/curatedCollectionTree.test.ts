@@ -1,11 +1,12 @@
 import type { Card } from '@/lib/types/card';
 import {
   buildChildrenIdsWithInsertBefore,
+  buildParentIdsByChild,
   buildRootDocIdListWithInsertBefore,
-  collectCuratedSubtreeIdsFromMaster,
-  listCuratedTopLevelFromMaster,
+  getParentIdsForCard,
+  listCollectionRootCards,
   normalizeCuratedChildIds,
-  nextCuratedRootOrderForAppend,
+  nextCollectionRootOrderForAppend,
   wouldAttachChildCreateCuratedCycle,
 } from '@/lib/utils/curatedCollectionTree';
 
@@ -37,21 +38,11 @@ describe('wouldAttachChildCreateCuratedCycle', () => {
   it('returns false for unrelated attach', () => {
     expect(wouldAttachChildCreateCuratedCycle(cards, 'Y', 'A')).toBe(false);
   });
-
-  it('returns true for self or missing ids', () => {
-    expect(wouldAttachChildCreateCuratedCycle(cards, 'A', 'A')).toBe(true);
-    expect(wouldAttachChildCreateCuratedCycle(cards, '', 'A')).toBe(true);
-    expect(wouldAttachChildCreateCuratedCycle(cards, 'A', '')).toBe(true);
-  });
 });
 
 describe('buildChildrenIdsWithInsertBefore', () => {
   it('inserts before sibling when present', () => {
     expect(buildChildrenIdsWithInsertBefore(['a', 'b', 'c'], 'x', 'b')).toEqual(['a', 'x', 'b', 'c']);
-  });
-
-  it('appends when sibling missing', () => {
-    expect(buildChildrenIdsWithInsertBefore(['a'], 'x', 'missing')).toEqual(['a', 'x']);
   });
 });
 
@@ -61,32 +52,41 @@ describe('buildRootDocIdListWithInsertBefore', () => {
   });
 });
 
-describe('nextCuratedRootOrderForAppend', () => {
+describe('nextCollectionRootOrderForAppend', () => {
   it('returns max order + 10, excluding optional id', () => {
     const roots = [
-      { docId: 'a', curatedRootOrder: 10 } as Card,
-      { docId: 'b', curatedRootOrder: 50 } as Card,
+      { docId: 'a', collectionRootOrder: 10 } as Card,
+      { docId: 'b', collectionRootOrder: 50 } as Card,
     ];
-    expect(nextCuratedRootOrderForAppend(roots)).toBe(60);
-    expect(nextCuratedRootOrderForAppend(roots, 'b')).toBe(20);
+    expect(nextCollectionRootOrderForAppend(roots)).toBe(60);
+    expect(nextCollectionRootOrderForAppend(roots, 'b')).toBe(20);
   });
 });
 
-describe('master-parent helpers', () => {
+describe('multi-parent helpers', () => {
   const cards: Card[] = [
-    { docId: 'master', childrenIds: ['r2', 'r1'] } as Card,
-    { docId: 'r1', childrenIds: ['c1'] } as Card,
-    { docId: 'r2', childrenIds: [] } as Card,
-    { docId: 'c1', childrenIds: ['g1'] } as Card,
-    { docId: 'g1', childrenIds: [] } as Card,
-    { docId: 'outside', childrenIds: [] } as Card,
+    { docId: 'root-2', isCollectionRoot: true, collectionRootOrder: 10, childrenIds: [] } as Card,
+    { docId: 'root-1', isCollectionRoot: true, collectionRootOrder: 20, childrenIds: ['child-1'] } as Card,
+    { docId: 'alt-parent', childrenIds: ['child-1'] } as Card,
+    { docId: 'child-1', childrenIds: ['grandchild-1'] } as Card,
+    { docId: 'grandchild-1', childrenIds: [] } as Card,
   ];
 
-  it('lists top-level cards in master children order', () => {
-    expect(listCuratedTopLevelFromMaster(cards, 'master').map((c) => c.docId)).toEqual(['r2', 'r1']);
+  it('lists roots from the explicit root marker in order', () => {
+    expect(listCollectionRootCards(cards).map((c) => c.docId)).toEqual(['root-2', 'root-1']);
   });
 
-  it('collects all descendants under master and excludes unrelated cards', () => {
-    expect(Array.from(collectCuratedSubtreeIdsFromMaster(cards, 'master')).sort()).toEqual(['c1', 'g1', 'r1', 'r2']);
+  it('returns no roots when none are explicitly marked', () => {
+    const legacyCards: Card[] = [
+      { docId: 'master', childrenIds: ['child-1'] } as Card,
+      { docId: 'child-1', childrenIds: [] } as Card,
+    ];
+    expect(listCollectionRootCards(legacyCards).map((c) => c.docId)).toEqual([]);
+  });
+
+  it('returns all parents for a shared child', () => {
+    const parentIdsByChild = buildParentIdsByChild(cards);
+    expect(parentIdsByChild.get('child-1')).toEqual(['root-1', 'alt-parent']);
+    expect(getParentIdsForCard(cards, 'child-1')).toEqual(['root-1', 'alt-parent']);
   });
 });

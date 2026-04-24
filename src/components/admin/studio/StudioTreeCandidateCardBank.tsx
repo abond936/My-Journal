@@ -2,7 +2,6 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTag } from '@/components/providers/TagProvider';
-import CardAdminList from '@/components/admin/card-admin/CardAdminList';
 import CardAdminGrid from '@/components/admin/card-admin/CardAdminGrid';
 import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
 import EditModal from '@/components/admin/card-admin/EditModal';
@@ -11,7 +10,7 @@ import {
   listCuratedTreeAttachCandidates,
   mergeCardCatalogs,
 } from '@/lib/utils/curatedTreeAttachCandidates';
-import { getCuratedTreeMasterId } from '@/lib/config/curatedTreeDnd';
+import { buildParentIdsByChild } from '@/lib/utils/curatedCollectionTree';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import { Card } from '@/lib/types/card';
 import {
@@ -24,10 +23,6 @@ import { applyModifierSelection } from '@/lib/utils/adminListSelection';
 import cardAdminStyles from '@/app/admin/card-admin/card-admin.module.css';
 import mediaAdminStyles from '@/app/admin/media-admin/media-admin.module.css';
 import styles from './StudioTreeCandidateCardBank.module.css';
-
-const STUDIO_CANDIDATE_VIEW_KEY = 'studio-tree-candidate-bank-view';
-
-type ViewMode = 'grid' | 'table';
 
 type CandidateSort = 'titleAsc' | 'titleDesc' | 'createdDesc' | 'createdAsc';
 
@@ -73,22 +68,10 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
   const [pendingBulkTags, setPendingBulkTags] = useState<string[]>([]);
   const [bulkTagMode, setBulkTagMode] = useState<'add' | 'replace' | 'remove'>('add');
   const [bulkTagApplying, setBulkTagApplying] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    if (typeof window === 'undefined') return 'grid';
-    return window.localStorage.getItem(STUDIO_CANDIDATE_VIEW_KEY) === 'table' ? 'table' : 'grid';
-  });
   const [sortMode, setSortMode] = useState<CandidateSort>('titleAsc');
   const [filterTagIds, setFilterTagIds] = useState<string[]>([]);
   const [typeFilter, setTypeFilter] = useState<CardTypeFilter>('all');
   const [displayModeFilter, setDisplayModeFilter] = useState<DisplayModeFilter>('all');
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(STUDIO_CANDIDATE_VIEW_KEY, viewMode);
-    } catch {
-      /* ignore */
-    }
-  }, [viewMode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -126,8 +109,6 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
     [allTags, filterTagIds]
   );
 
-  const curatedTreeMasterId = getCuratedTreeMasterId();
-
   const matchesFilters = useCallback(
     (card: Card) => {
       const q = search.trim().toLowerCase();
@@ -157,7 +138,6 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
 
   const candidateCards = useMemo(() => {
     const raw = listCuratedTreeAttachCandidates(mergedCatalog, {
-      curatedTreeMasterId,
       matchesFilters,
       statusFilter,
     });
@@ -175,7 +155,37 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
       }
     });
     return base;
-  }, [mergedCatalog, curatedTreeMasterId, matchesFilters, statusFilter, sortMode]);
+  }, [mergedCatalog, matchesFilters, statusFilter, sortMode]);
+
+  const collectionStateMetaById = useMemo(() => {
+    const parentIdsByChild = buildParentIdsByChild(mergedCatalog);
+    const titleById = new Map(
+      mergedCatalog
+        .filter((card) => card.docId)
+        .map((card) => [card.docId!, card.title?.trim() || 'Untitled'] as const)
+    );
+
+    return new Map(
+      mergedCatalog
+        .filter((card) => card.docId)
+        .map((card) => {
+          const parentIds = parentIdsByChild.get(card.docId!) ?? [];
+          const labelParts: string[] = [];
+          if (card.isCollectionRoot === true) labelParts.push('Root');
+          if (parentIds.length > 0) labelParts.push(parentIds.length === 1 ? '1 parent' : `${parentIds.length} parents`);
+          const parentNames = parentIds
+            .map((id) => titleById.get(id))
+            .filter((value): value is string => Boolean(value));
+          const title =
+            parentNames.length > 0
+              ? `Attached to ${parentNames.join(', ')}`
+              : card.isCollectionRoot === true
+                ? 'Shown at the top level of Collections'
+                : undefined;
+          return [card.docId!, labelParts.length > 0 ? { label: labelParts.join(' · '), title } : null] as const;
+        })
+    );
+  }, [mergedCatalog]);
 
   const orderedCandidateIds = useMemo(
     () => candidateCards.map((c) => c.docId).filter(Boolean) as string[],
@@ -416,27 +426,11 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
           collapsedSummary="sparseTrees"
         />
       </div>
-      <div className={styles.toolbar} role="group" aria-label="Card list view">
-        <div className={cardAdminStyles.viewToggleButtonGroup}>
-          <button
-            type="button"
-            className={`${cardAdminStyles.viewToggleButton} ${viewMode === 'grid' ? cardAdminStyles.viewToggleActive : ''}`}
-            onClick={() => setViewMode('grid')}
-            aria-pressed={viewMode === 'grid'}
-          >
-            Grid
-          </button>
-          <button
-            type="button"
-            className={`${cardAdminStyles.viewToggleButton} ${viewMode === 'table' ? cardAdminStyles.viewToggleActive : ''}`}
-            onClick={() => setViewMode('table')}
-            aria-pressed={viewMode === 'table'}
-          >
-            Table
-          </button>
-        </div>
+      {loadingCatalog ? (
+        <div className={styles.toolbar}>
         {loadingCatalog ? <span className={styles.catalogHint}>Loading catalog merge…</span> : null}
-      </div>
+        </div>
+      ) : null}
 
       <div className={cardAdminStyles.bulkActions}>
         <span>
@@ -507,39 +501,23 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
         ) : null}
       </div>
 
-      {viewMode === 'table' ? (
-        <CardAdminList
-          cards={candidateCards}
-          selectedCardIds={bulkSelectedCardIds}
-          allTags={allTags || []}
-          onSelectCard={handleBulkSelectCard}
-          onSelectAll={handleSelectAll}
-          onSaveScrollPosition={() => {}}
-          onUpdateCard={onUpdateCard}
-          onDeleteCard={onDeleteCard}
-          studioCuratedTreeDrag={studioDrag}
-          studioCuratedTreeUnparentedRowTarget={studioDrag}
-          interactionDisabled={saving}
-          hideDimensionMediaSuggestions
-        />
-      ) : (
-        <CardAdminGrid
-          cards={candidateCards}
-          selectedCardIds={bulkSelectedCardIds}
-          allTags={allTags || []}
-          onSelectCard={handleBulkSelectCard}
-          onSelectAll={handleSelectAll}
-          onSaveScrollPosition={() => {}}
-          onUpdateCard={onUpdateCard}
-          onDeleteCard={onDeleteCard}
-          studioCuratedTreeDrag={studioDrag}
-          studioCuratedTreeUnparentedRowTarget={studioDrag}
-          studioEmbedCellClickSelects
-          onStudioFocusCard={onStudioSelectCard}
-          interactionDisabled={saving}
-          compactStudioGrid
-        />
-      )}
+      <CardAdminGrid
+        cards={candidateCards}
+        selectedCardIds={bulkSelectedCardIds}
+        allTags={allTags || []}
+        getCardSecondaryMeta={(card) => collectionStateMetaById.get(card.docId) ?? null}
+        onSelectCard={handleBulkSelectCard}
+        onSelectAll={handleSelectAll}
+        onSaveScrollPosition={() => {}}
+        onUpdateCard={onUpdateCard}
+        onDeleteCard={onDeleteCard}
+        studioCuratedTreeDrag={studioDrag}
+        studioCuratedTreeUnparentedRowTarget={studioDrag}
+        studioEmbedCellClickSelects
+        onStudioFocusCard={onStudioSelectCard}
+        interactionDisabled={saving}
+        compactStudioGrid
+      />
 
       <EditModal
         isOpen={bulkTagModalOpen}

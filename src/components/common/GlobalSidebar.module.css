@@ -6,9 +6,17 @@
     padding-top: calc(var(--header-height) - var(--spacing-2xl));
     padding-bottom: var(--spacing-md);
     overflow-y: auto;
+    overscroll-behavior: contain;
     display: flex;
     flex-direction: column;
     height: 100%;
+  }
+
+  @media (max-width: 768px) {
+    .sidebar {
+      padding: var(--spacing-md);
+      padding-top: calc(var(--header-height) - var(--spacing-xl));
+    }
   }
   
   .sidebar.closed {
@@ -209,6 +217,23 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-xs);
+    align-items: center;
+  }
+
+  .activeFiltersResetTypes {
+    padding: 2px var(--spacing-sm);
+    font-size: var(--font-size-xs);
+    font-family: var(--body-font-family);
+    border: var(--border-width-thin) dashed var(--border1-color);
+    border-radius: var(--border-radius-md);
+    background: transparent;
+    color: var(--text2-color);
+    cursor: pointer;
+  }
+
+  .activeFiltersResetTypes:hover {
+    color: var(--text1-color);
+    border-color: var(--text2-color);
   }
 
   .filterChip {
@@ -270,6 +295,64 @@
   }
 
   .dimensionTabActive {
+    background-color: var(--button-solid-background-color);
+    color: var(--button-solid-text-color);
+    border-color: var(--button-solid-border-color);
+  }
+
+  .dimensionTabIcon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    padding: var(--spacing-xs);
+  }
+
+  .dimensionTabIcon svg {
+    width: 1.15rem;
+    height: 1.15rem;
+    flex-shrink: 0;
+  }
+
+  .srOnly {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .cardTypeChips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+  }
+
+  .cardTypeChip {
+    min-height: 36px;
+    padding: 0 var(--spacing-sm);
+    font-size: var(--font-size-xs);
+    font-family: var(--body-font-family);
+    border: var(--border-width-thin) solid var(--border1-color);
+    border-radius: var(--border-radius-md);
+    background: transparent;
+    color: var(--text2-color);
+    cursor: pointer;
+    transition: background-color var(--transition-short), color var(--transition-short),
+      border-color var(--transition-short);
+  }
+
+  .cardTypeChip:hover {
+    background-color: var(--layout-background2-color);
+    color: var(--text1-color);
+  }
+
+  .cardTypeChipActive {
     background-color: var(--button-solid-background-color);
     color: var(--button-solid-text-color);
     border-color: var(--button-solid-border-color);

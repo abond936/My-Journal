@@ -1,8 +1,5 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import React from 'react';
-import MediaAdminContent from './MediaAdminContent';
-
-export default function MediaAdminPage() {
-  return <MediaAdminContent />;
+export default function MediaAdminRedirectPage() {
+  redirect('/admin/studio');
 }

@@ -18,11 +18,8 @@ const galleryMediaItemSchema = z.object({
  * A card is the primary content unit (story, gallery, Q&A, etc.).
  *
  * **Parent / child (structural “collection”):** Any card may have `childrenIds`. A card with
- * at least one child id is a structural collection parent. Listing and curated APIs key off
- * `childrenIds` / `curatedRoot`, not type.
- *
- * **`curatedRoot`:** Top-level slot in Curated browsing when true, even with zero children.
- * Set from **Studio** (`/admin/studio`, Tree tab) via tree-root drop—not from the tag sidebar.
+ * at least one child id is a structural collection parent. Studio tree structure keys off
+ * `childrenIds`, not type.
  */
 export const cardSchema = z.object({
   // Document identifier - Firestore's immutable docId
@@ -76,13 +73,17 @@ export const cardSchema = z.object({
   
   // Ordered child card doc ids. Any card type may have children; order defines narrative/TOC sequence.
   childrenIds: z.array(z.string()).optional(),
-  // Top-level curated root for sidebar/API listing (getCollectionCards) even when childrenIds is empty.
+  /** Explicit top-level collection root marker. A card may be both a root and a child elsewhere. */
+  isCollectionRoot: z.boolean().optional(),
+  /** Explicit ordering among collection roots. Lower values appear first. */
+  collectionRootOrder: z.number().optional(),
+  // Legacy curated-root compatibility fields retained for stored data migration/cleanup.
   curatedRoot: z.boolean().optional(),
-  /** Order among top-level curated roots (admin tree + sidebar). Lower sorts first; unset sorts by title. */
+  /** Legacy ordering field for pre-master curated roots. */
   curatedRootOrder: z.number().optional(),
 
   /**
-   * Denormalized: true when `(childrenIds?.length > 0) || curatedRoot === true`. Maintained only on the
+   * Denormalized: true when `childrenIds?.length > 0`. Maintained only on the
    * server so `getCollectionCards` can query Firestore; do not set via API (omitted from update schema).
    */
   curatedNavEligible: z.boolean().optional(),
@@ -131,6 +132,10 @@ export const cardUpdateValidationSchema = cardSchema.partial().omit({
   mediaWhat: true,
   mediaWhen: true,
   mediaWhere: true,
+  isCollectionRoot: true,
+  collectionRootOrder: true,
+  curatedRoot: true,
+  curatedRootOrder: true,
   title_lowercase: true, // Server-generated
   curatedNavEligible: true,
   journalWhenSortAsc: true,

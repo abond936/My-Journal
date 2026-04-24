@@ -33,7 +33,7 @@ export default function CardFeedV2({
   const {
     clearFilters,
     selectedTags,
-    cardType,
+    isFeedCardTypesFilterActive,
     searchTerm,
     activeDimension,
     collectionId,
@@ -55,7 +55,7 @@ export default function CardFeedV2({
 
   if (isEmpty) {
     const hasTagOrTypeFilters =
-      selectedTags.length > 0 || cardType !== 'all' || Boolean(searchTerm?.trim());
+      selectedTags.length > 0 || isFeedCardTypesFilterActive || Boolean(searchTerm?.trim());
     const hasCollectionOrGroup =
       collectionId !== null || feedGroupBy !== 'none' || activeDimension === 'collections';
     const likelyFiltered = hasTagOrTypeFilters || hasCollectionOrGroup;

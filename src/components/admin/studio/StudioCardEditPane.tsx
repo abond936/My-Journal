@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useCallback, useMemo } from 'react';
-import Link from 'next/link';
 import { mutate as globalMutate } from 'swr';
+import { useRouter } from 'next/navigation';
 import CardForm from '@/components/admin/card-admin/CardForm';
 import { CardFormProvider } from '@/components/providers/CardFormProvider';
 import StudioCardFormShellSync from '@/components/admin/studio/StudioCardFormShellSync';
@@ -16,11 +16,19 @@ import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import styles from './StudioWorkspace.module.css';
 
 function studioContextToInitialCard(card: StudioCardContext): Card {
-  const { children: _children, ...rest } = card;
+  const { children, ...rest } = card;
+  void children;
   return rest as Card;
 }
 
-export default function StudioCardEditPane() {
+export default function StudioCardEditPane({
+  newCardRequested = false,
+  onCardCreated,
+}: {
+  newCardRequested?: boolean;
+  onCardCreated?: (cardId: string) => void;
+}) {
+  const router = useRouter();
   const {
     selectedCardId,
     selectedCard,
@@ -33,9 +41,9 @@ export default function StudioCardEditPane() {
 
   const handleSave = useCallback(
     async (cardData: CardUpdate): Promise<Card | null> => {
-      if (!selectedCardId) return null;
-      const res = await fetch(`/api/cards/${selectedCardId}`, {
-        method: 'PATCH',
+      const isCreate = !selectedCardId;
+      const res = await fetch(isCreate ? '/api/cards' : `/api/cards/${selectedCardId}`, {
+        method: isCreate ? 'POST' : 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cardData),
         cache: 'no-store',
@@ -43,7 +51,12 @@ export default function StudioCardEditPane() {
       });
       const data = (await res.json().catch(() => ({}))) as Card & { message?: string; error?: string };
       throwIfJsonApiFailed(res, data, 'Failed to save card');
-      await loadSelectedCard(selectedCardId, { quiet: true });
+      if (isCreate && data.docId) {
+        onCardCreated?.(data.docId);
+        router.replace(`/admin/studio?card=${encodeURIComponent(data.docId)}`);
+      } else if (selectedCardId) {
+        await loadSelectedCard(selectedCardId, { quiet: true });
+      }
       refreshCollectionsCardList();
       void globalMutate(
         (key) => typeof key === 'string' && key.startsWith('/api/cards?'),
@@ -52,7 +65,7 @@ export default function StudioCardEditPane() {
       );
       return data;
     },
-    [selectedCardId, loadSelectedCard, refreshCollectionsCardList]
+    [selectedCardId, loadSelectedCard, onCardCreated, refreshCollectionsCardList, router]
   );
 
   const initialCard = useMemo(() => {
@@ -61,19 +74,14 @@ export default function StudioCardEditPane() {
   }, [selectedCard]);
 
   /** Remount only when switching cards — not on `updatedAt` churn from relationship panel PATCHes (would wipe dirty form). */
-  const providerKey = selectedCardId ?? 'none';
+  const providerKey = selectedCardId ?? (newCardRequested ? 'new' : 'none');
 
-  if (!selectedCardId) {
+  if (!selectedCardId && !newCardRequested) {
     return (
       <aside className={styles.cardEditPlaceholder} aria-label="Compose">
         <h2 className={styles.studioComposeTitle}>Compose</h2>
         <p className={styles.cardEditPlaceholderIntro}>
-          Select a card in the tree or list to edit fields, body, cover, gallery, and tags here. Delete, duplicate, and
-          full-page chrome stay on{' '}
-          <Link href="/admin/card-admin" className={styles.studioCardEditChromeLink}>
-            Card admin
-          </Link>
-          .
+          Select a card in the tree or list to edit fields, body, cover, gallery, and tags here.
         </p>
       </aside>
     );
@@ -97,7 +105,7 @@ export default function StudioCardEditPane() {
     );
   }
 
-  if (!initialCard) {
+  if (!initialCard && !newCardRequested) {
     return (
       <aside className={styles.cardEditPlaceholder} aria-label="Compose">
         <h2 className={styles.studioComposeTitle}>Compose</h2>
@@ -109,12 +117,17 @@ export default function StudioCardEditPane() {
   return (
     <aside className={styles.studioCardEditHost} aria-label="Compose">
       <h2 className={styles.studioComposeTitle}>Compose</h2>
-      <CardFormProvider key={providerKey} initialCard={initialCard} allTags={allTags} onSave={handleSave}>
+      <CardFormProvider
+        key={providerKey}
+        initialCard={newCardRequested ? null : initialCard}
+        allTags={allTags}
+        onSave={handleSave}
+      >
         <div className={styles.studioCardEditToolbar}>
           <StudioComposeFormActions />
         </div>
         <div className={styles.studioCardEditScroll}>
-          <StudioCardFormStudioProvider value={{ studioShellCardForm: true }}>
+          <StudioCardFormStudioProvider value={{ studioShellCardForm: true, enableStudioShellDnd: true }}>
             <StudioCardFormShellSync />
             <CardForm />
           </StudioCardFormStudioProvider>

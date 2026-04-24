@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/authOptions';
 import { getCardsByIds } from '@/lib/services/cardService';
 import { Card } from '@/lib/types/card';
 
@@ -117,7 +115,8 @@ function getRandomCardIds(
     where?: string[];
   },
   excludeIds: string[] = [],
-  type?: CardTypeFilter
+  type?: CardTypeFilter,
+  types?: Card['type'][]
 ): string[] {
   if (!cardIdCache) {
     throw new Error('Card ID cache not initialized');
@@ -146,8 +145,14 @@ function getRandomCardIds(
     availableCardIds = [...cardIdCache.allCardIds];
   }
   
-  // Filter by card type if specified
-  if (type && type !== 'all' && cardIdCache.cardIdsByType[type]) {
+  // Filter by card type(s) if specified
+  if (types && types.length > 0) {
+    const typeSet = new Set<string>();
+    for (const t of types) {
+      (cardIdCache.cardIdsByType[t] || []).forEach((id) => typeSet.add(id));
+    }
+    availableCardIds = availableCardIds.filter((id) => typeSet.has(id));
+  } else if (type && type !== 'all' && cardIdCache.cardIdsByType[type]) {
     const typeSet = new Set(cardIdCache.cardIdsByType[type]);
     availableCardIds = availableCardIds.filter(id => typeSet.has(id));
   }
@@ -199,9 +204,6 @@ function getRandomCardIds(
  * @param request - The incoming NextRequest.
  */
 export async function GET(request: Request) {
-  const session = await getServerSession(authOptions);
-  const isAdmin = session?.user?.role === 'admin';
-
   try {
     const { searchParams } = new URL(request.url);
     
@@ -234,7 +236,19 @@ export async function GET(request: Request) {
     if (whereTags && whereTags.length > 0) dimensionalTags.where = whereTags;
 
     const typeParam = searchParams.get('type') as CardTypeFilter | null;
-    const type = typeParam && CARD_TYPES.includes(typeParam as typeof CARD_TYPES[number]) ? typeParam : undefined;
+    const type =
+      typeParam && CARD_TYPES.includes(typeParam as (typeof CARD_TYPES)[number])
+        ? typeParam
+        : undefined;
+    const typesRaw = searchParams.get('types');
+    const typesList =
+      typesRaw
+        ?.split(',')
+        .map((s) => s.trim())
+        .filter((t): t is Card['type'] =>
+          CARD_TYPES.includes(t as (typeof CARD_TYPES)[number])
+        ) ?? [];
+    const typesFilter = typesList.length > 0 ? [...new Set(typesList)] : undefined;
     const excludeDimensionalMatches = searchParams.get('excludeDimensionalMatches') === 'true';
 
     // Update cache if needed
@@ -243,12 +257,24 @@ export async function GET(request: Request) {
     }
     
     // Get random card IDs from cache
+    let typeResolved: CardTypeFilter = type || 'all';
+    let typesResolved: Card['type'][] | undefined;
+    if (typesFilter && typesFilter.length > 0) {
+      if (typesFilter.length === 1) {
+        typeResolved = typesFilter[0];
+      } else {
+        typesResolved = typesFilter;
+        typeResolved = 'all';
+      }
+    }
+
     const randomCardIds = getRandomCardIds(
       count,
       excludeDimensionalMatches ? undefined : dimensionalTags,
       excludeDimensionalMatches ? dimensionalTags : undefined,
       excludeIds,
-      type || 'all'
+      typeResolved,
+      typesResolved
     );
     
     if (randomCardIds.length === 0) {

@@ -26,6 +26,7 @@ interface CardAdminGridProps {
   cards: Card[];
   selectedCardIds: Set<string>;
   allTags: Tag[];
+  getCardSecondaryMeta?: (card: Card) => { label: string; title?: string } | null;
   onSelectCard: (cardId: string, index: number, e: React.MouseEvent | React.KeyboardEvent) => void;
   onSelectAll: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onSaveScrollPosition: (cardId: string) => void;
@@ -88,6 +89,7 @@ interface CardAdminGridPlainCellProps {
   card: Card;
   isSelected: boolean;
   allTags: Tag[];
+  secondaryMeta?: { label: string; title?: string } | null;
   onUpdateCard: (cardId: string, updateData: Partial<Card>) => Promise<void>;
   onBulkPointer: (e: React.MouseEvent | React.KeyboardEvent) => void;
   /** If set, cell primary uses this when `studioEmbedCellClickSelects` (else bulk for backward compatibility). */
@@ -104,6 +106,7 @@ function CardAdminGridPlainCell({
   card,
   isSelected,
   allTags,
+  secondaryMeta,
   onUpdateCard,
   onBulkPointer,
   onFocusStudio,
@@ -127,7 +130,7 @@ function CardAdminGridPlainCell({
   const captionLine = pickCaption(card);
   const thumbnailTooltip = useMemo(
     () => buildCardThumbnailTooltip(card, allTags),
-    [card.docId, card.tags, card.title, card.excerpt, card.subtitle, allTags]
+    [card, allTags]
   );
 
   const onImageColumnClick = (e: React.MouseEvent) => {
@@ -247,6 +250,11 @@ function CardAdminGridPlainCell({
           <div className={styles.title} title={card.title}>
             {card.title || 'Untitled'}
           </div>
+          {secondaryMeta ? (
+            <div className={styles.secondaryMeta} title={secondaryMeta.title ?? secondaryMeta.label}>
+              {secondaryMeta.label}
+            </div>
+          ) : null}
           {captionLine ? (
             <div className={styles.caption} title={captionLine}>
               {captionLine}
@@ -277,6 +285,7 @@ function CardAdminGridStudioCell({
   card,
   isSelected,
   allTags,
+  secondaryMeta,
   onUpdateCard,
   onBulkPointer,
   onFocusStudio,
@@ -335,7 +344,7 @@ function CardAdminGridStudioCell({
   const captionLine = pickCaption(card);
   const thumbnailTooltip = useMemo(
     () => buildCardThumbnailTooltip(card, allTags),
-    [card.docId, card.tags, card.title, card.excerpt, card.subtitle, allTags]
+    [card, allTags]
   );
 
   const onImageColumnClick = (e: React.MouseEvent) => {
@@ -471,6 +480,11 @@ function CardAdminGridStudioCell({
           <div className={styles.title} title={card.title}>
             {card.title || 'Untitled'}
           </div>
+          {secondaryMeta ? (
+            <div className={styles.secondaryMeta} title={secondaryMeta.title ?? secondaryMeta.label}>
+              {secondaryMeta.label}
+            </div>
+          ) : null}
           {captionLine ? (
             <div className={styles.caption} title={captionLine}>
               {captionLine}
@@ -500,6 +514,7 @@ export default function CardAdminGrid({
   onUpdateCard,
   onDeleteCard,
   allTags,
+  getCardSecondaryMeta,
   studioCuratedTreeDrag = false,
   studioCuratedTreeUnparentedRowTarget = false,
   studioEmbedCellClickSelects = false,
@@ -514,7 +529,7 @@ export default function CardAdminGrid({
 
   const handleEdit = (cardId: string) => {
     onSaveScrollPosition(cardId);
-    router.push(`/admin/card-admin/${cardId}/edit`);
+    router.push(`/admin/studio?card=${encodeURIComponent(cardId)}`);
   };
 
   const handleDelete = async (card: Card) => {
@@ -560,6 +575,7 @@ export default function CardAdminGrid({
               card={card}
               isSelected={selectedCardIds.has(card.docId)}
               allTags={allTags}
+              secondaryMeta={getCardSecondaryMeta?.(card) ?? null}
               onUpdateCard={onUpdateCard}
               onBulkPointer={(e) => onSelectCard(card.docId, index, e)}
               onFocusStudio={onStudioFocusCard ? () => onStudioFocusCard(card.docId) : undefined}
@@ -577,6 +593,7 @@ export default function CardAdminGrid({
               card={card}
               isSelected={selectedCardIds.has(card.docId)}
               allTags={allTags}
+              secondaryMeta={getCardSecondaryMeta?.(card) ?? null}
               onUpdateCard={onUpdateCard}
               onBulkPointer={(e) => onSelectCard(card.docId, index, e)}
               onFocusStudio={onStudioFocusCard ? () => onStudioFocusCard(card.docId) : undefined}

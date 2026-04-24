@@ -3,8 +3,10 @@
 import React, { createContext, useContext } from 'react';
 
 export type StudioCardFormStudioContextValue = {
-  /** When true, CardForm uses Studio shell DnD targets and compact inline tags. */
+  /** When true, CardForm uses the compact Compose presentation. */
   studioShellCardForm: boolean;
+  /** When true, Compose is running inside the live Studio shell with bank/tree drag targets. */
+  enableStudioShellDnd?: boolean;
 };
 
 const StudioCardFormStudioContext = createContext<StudioCardFormStudioContextValue | null>(null);

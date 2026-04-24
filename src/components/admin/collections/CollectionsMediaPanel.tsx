@@ -64,7 +64,7 @@ export default function CollectionsMediaPanel({ studioSourceDraggable = false }:
       <h2>Media</h2>
       <p className={styles.hint}>
         Compact columns for this layout.{' '}
-        <Link href="/admin/media-admin">Open full Media admin</Link> for search, grid view, and bulk tags.
+        <Link href="/admin/studio">Open Studio</Link> for search, grid view, and bulk tags.
       </p>
       <div className={styles.mediaPanelToolbar}>
         <label className={styles.mediaToolbarLabel}>

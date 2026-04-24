@@ -8,8 +8,6 @@ import styles from './AdminNavTabs.module.css';
 /** Primary admin IA: Studio plus full Card / Media / Tag pages. */
 const primaryTabs = [
   { name: 'Studio', href: '/admin/studio' },
-  { name: 'Cards', href: '/admin/card-admin' },
-  { name: 'Media', href: '/admin/media-admin' },
   { name: 'Tags', href: '/admin/tag-admin' },
   { name: 'Questions', href: '/admin/question-admin' },
   { name: 'Theme', href: '/admin/theme-admin' },

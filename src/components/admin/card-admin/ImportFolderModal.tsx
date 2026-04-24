@@ -262,9 +262,9 @@ export default function ImportFolderModal({
         onClose();
         if (importAsCard && result.cardId) {
           if (onSuccess) onSuccess(result.cardId);
-          else router.push(`/admin/card-admin/${result.cardId}/edit`);
+          else router.push(`/admin/studio?card=${encodeURIComponent(result.cardId)}`);
         } else {
-          router.push('/admin/media-admin');
+          router.push('/admin/studio');
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Import failed');
@@ -303,7 +303,7 @@ export default function ImportFolderModal({
     } finally {
       setIsImporting(false);
     }
-  }, [selectedFolder, router]);
+  }, [selectedFolder]);
 
   const handleImport = useCallback(() => doImport(), [doImport]);
 

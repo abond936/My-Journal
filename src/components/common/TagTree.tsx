@@ -57,34 +57,34 @@ export default function TagTree({
         style={{ paddingLeft: `${level * 0.2}rem` }}
       >
         <div className={styles.tagHeader}>
-          <button
-            className={styles.expandButton}
-            onClick={() => toggleExpanded(tag.docId)}
-            aria-expanded={isExpanded}
-            disabled={!hasChildren}
-          >
-            {hasChildren && (
-              <span className={styles.expandIcon}>
-                {isExpanded ? '▼' : '►'}
-              </span>
-            )}
-          </button>
-          
-          {showDefaultExpandControl && hasChildren && onSetDefaultExpanded && (
+          <div className={styles.tagHeaderLeading}>
             <button
-              type="button"
-              className={styles.defaultExpandButton}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSetDefaultExpanded(tag.docId!, !isDefaultExpanded);
-              }}
-              title={isDefaultExpanded ? 'Collapse by default' : 'Expand by default'}
-              aria-label={isDefaultExpanded ? 'Set collapsed by default' : 'Set expanded by default'}
+              className={styles.expandButton}
+              onClick={() => toggleExpanded(tag.docId)}
+              aria-expanded={isExpanded}
+              disabled={!hasChildren}
             >
-              {isDefaultExpanded ? '⊟' : '⊞'}
+              {hasChildren && (
+                <span className={styles.expandIcon}>
+                  {isExpanded ? '▼' : '►'}
+                </span>
+              )}
             </button>
-          )}
-          
+            {showDefaultExpandControl && hasChildren && onSetDefaultExpanded && (
+              <button
+                type="button"
+                className={styles.defaultExpandButton}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSetDefaultExpanded(tag.docId!, !isDefaultExpanded);
+                }}
+                title={isDefaultExpanded ? 'Collapse by default' : 'Expand by default'}
+                aria-label={isDefaultExpanded ? 'Set collapsed by default' : 'Set expanded by default'}
+              >
+                {isDefaultExpanded ? '⊟' : '⊞'}
+              </button>
+            )}
+          </div>
           <input
             type="checkbox"
             id={`tag-${tag.docId}`}

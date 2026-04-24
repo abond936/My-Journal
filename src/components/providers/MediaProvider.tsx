@@ -150,9 +150,7 @@ const defaultFilters: MediaFilters = {
 
 export function MediaProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isMediaListRoute = Boolean(
-    pathname?.startsWith('/admin/media-admin') || pathname?.startsWith('/admin/studio')
-  );
+  const isMediaListRoute = Boolean(pathname?.startsWith('/admin/studio'));
 
   const { selectedTags } = useCardContext();
   const { tags: allTags } = useTag();

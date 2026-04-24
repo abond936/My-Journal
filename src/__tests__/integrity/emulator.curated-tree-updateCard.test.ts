@@ -4,8 +4,8 @@ import { ErrorCode } from '@/lib/types/error';
 
 jest.mock('@/lib/config/firebase/admin', () => ({
   getAdminApp: () => {
-    const { getApps, initializeApp } = require('firebase-admin/app');
-    const { getFirestore } = require('firebase-admin/firestore');
+    const { getApps, initializeApp } = jest.requireActual<typeof import('firebase-admin/app')>('firebase-admin/app');
+    const { getFirestore } = jest.requireActual<typeof import('firebase-admin/firestore')>('firebase-admin/firestore');
     const app =
       getApps()[0] ??
       initializeApp({
@@ -95,7 +95,7 @@ describeIfEmulator('Curated tree updateCard (Firestore emulator)', () => {
     }
   });
 
-  it('clears curatedRoot on a child when newly listed under a parent childrenIds', async () => {
+  it('removes legacy root flags from a child when newly listed under a parent childrenIds', async () => {
     const db = getFirestore(app);
     await db.collection('cards').doc('parent-1').set(
       minimalCard('parent-1', {
@@ -117,12 +117,17 @@ describeIfEmulator('Curated tree updateCard (Firestore emulator)', () => {
 
     const childSnap = await db.collection('cards').doc('child-1').get();
     expect(childSnap.exists).toBe(true);
-    const child = childSnap.data() as { curatedRoot?: boolean; curatedNavEligible?: boolean };
-    expect(child.curatedRoot).toBe(false);
+    const child = childSnap.data() as {
+      curatedRoot?: boolean;
+      curatedRootOrder?: number;
+      curatedNavEligible?: boolean;
+    };
+    expect(child.curatedRoot).toBeUndefined();
+    expect(child.curatedRootOrder).toBeUndefined();
     expect(child.curatedNavEligible).toBe(false);
   });
 
-  it('promotes former parent to curatedRoot when its last child is moved to another parent', async () => {
+  it('removes legacy root flags from a former parent when its last child is moved away', async () => {
     const db = getFirestore(app);
     await db.collection('cards').doc('parent-orig').set(
       minimalCard('parent-orig', {
@@ -154,11 +159,13 @@ describeIfEmulator('Curated tree updateCard (Firestore emulator)', () => {
     const orig = origSnap.data() as {
       childrenIds?: string[];
       curatedRoot?: boolean;
+      curatedRootOrder?: number;
       curatedNavEligible?: boolean;
     };
     expect(orig.childrenIds ?? []).toEqual([]);
-    expect(orig.curatedRoot).toBe(true);
-    expect(orig.curatedNavEligible).toBe(true);
+    expect(orig.curatedRoot).toBeUndefined();
+    expect(orig.curatedRootOrder).toBeUndefined();
+    expect(orig.curatedNavEligible).toBe(false);
   });
 
   it('rejects a childrenIds update that would create a cycle', async () => {
@@ -189,7 +196,7 @@ describeIfEmulator('Curated tree updateCard (Firestore emulator)', () => {
     });
   });
 
-  it('does not set curatedRoot when PATCH echoes empty childrenIds on a never-parent card', async () => {
+  it('removes legacy root flags when PATCH echoes empty childrenIds on a never-parent card', async () => {
     const db = getFirestore(app);
     await db.collection('cards').doc('standalone-1').set(
       minimalCard('standalone-1', {
@@ -204,9 +211,15 @@ describeIfEmulator('Curated tree updateCard (Firestore emulator)', () => {
 
     const snap = await db.collection('cards').doc('standalone-1').get();
     expect(snap.exists).toBe(true);
-    const row = snap.data() as { title?: string; curatedRoot?: boolean; curatedNavEligible?: boolean };
+    const row = snap.data() as {
+      title?: string;
+      curatedRoot?: boolean;
+      curatedRootOrder?: number;
+      curatedNavEligible?: boolean;
+    };
     expect(row.title).toBe('Renamed');
-    expect(row.curatedRoot).not.toBe(true);
+    expect(row.curatedRoot).toBeUndefined();
+    expect(row.curatedRootOrder).toBeUndefined();
     expect(row.curatedNavEligible).not.toBe(true);
   });
 

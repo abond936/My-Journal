@@ -7,6 +7,15 @@ import useSWRInfinite, { SWRInfiniteResponse } from 'swr/infinite';
 import { usePathname } from 'next/navigation';
 import { Card } from '@/lib/types/card';
 
+/** Reader feed card-type chip order (Explore sidebar). */
+export const FEED_CARD_TYPES_ORDER: Card['type'][] = [
+  'story',
+  'gallery',
+  'qa',
+  'quote',
+  'callout',
+];
+
 /** Keeps first occurrence of each docId when infinite pages overlap (stable Firestore cursors). */
 function dedupeCardsByDocId(cards: Card[]): Card[] {
   const seen = new Set<string>();
@@ -22,8 +31,6 @@ function dedupeCardsByDocId(cards: Card[]): Card[] {
 import { PaginatedResult } from '@/lib/types/services';
 import { useTag } from './TagProvider';
 import { groupCardsForFeed, type FeedGroupBy } from '@/lib/utils/feedGrouping';
-
-const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export type CardFilterType = 'all' | 'story' | 'qa' | 'quote' | 'callout' | 'gallery';
 export type CardStatus = 'all' | 'draft' | 'published';
@@ -73,6 +80,10 @@ export interface ICardContext {
   // Filter actions
   toggleTag: (tagId: string) => void;
   setCardType: (type: CardFilterType) => void;
+  /** Subset of card types included in the reader/admin list feed; all five = no API filter. */
+  feedCardTypes: ReadonlySet<Card['type']>;
+  toggleFeedCardType: (type: Card['type']) => void;
+  isFeedCardTypesFilterActive: boolean;
   setSearchTerm: (term: string) => void;
   setStatus: (status: CardStatus) => void;
   setActiveDimension: (dim: ActiveDimension) => void;
@@ -91,7 +102,7 @@ export interface ICardContext {
   
   // Data state
   cards: Card[];
-  error: any;
+  error: unknown;
   isLoading: boolean;
   loadingMore: boolean;
   hasMore: boolean;
@@ -124,10 +135,10 @@ const FEED_SORT_VALUES = new Set<string>([
 const FEED_GROUP_VALUES = new Set<string>(['none', 'who', 'what', 'when', 'where']);
 
 function normalizeStoredActiveDimension(raw: string | null): ActiveDimension {
-  if (!raw) return 'all';
+  if (!raw || raw === 'all') return 'who';
   if (raw === 'reflection') return 'what';
-  const allowed: ActiveDimension[] = ['all', 'who', 'what', 'when', 'where', 'collections'];
-  return (allowed as string[]).includes(raw) ? (raw as ActiveDimension) : 'all';
+  const allowed: ActiveDimension[] = ['who', 'what', 'when', 'where', 'collections'];
+  return (allowed as string[]).includes(raw) ? (raw as ActiveDimension) : 'who';
 }
 
 function readStoredFeedSort(): FeedSortOrder {
@@ -173,13 +184,45 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   const { selectedFilterTagIds, setFilterTags, tags: allTags } = useTag();
 
   // --- Local Filter State ---
-  const [cardType, setCardType] = useState<CardFilterType>('all');
+  const [feedCardTypes, setFeedCardTypes] = useState<Set<Card['type']>>(
+    () => new Set(FEED_CARD_TYPES_ORDER)
+  );
+
+  const cardType = useMemo((): CardFilterType => {
+    if (feedCardTypes.size >= FEED_CARD_TYPES_ORDER.length) return 'all';
+    if (feedCardTypes.size === 1) return [...feedCardTypes][0] as CardFilterType;
+    return 'all';
+  }, [feedCardTypes]);
+
+  const isFeedCardTypesFilterActive = feedCardTypes.size < FEED_CARD_TYPES_ORDER.length;
+
+  const setCardType = useCallback((type: CardFilterType) => {
+    if (type === 'all') {
+      setFeedCardTypes(new Set(FEED_CARD_TYPES_ORDER));
+    } else {
+      setFeedCardTypes(new Set([type]));
+    }
+  }, []);
+
+  const toggleFeedCardType = useCallback((type: Card['type']) => {
+    if (!FEED_CARD_TYPES_ORDER.includes(type)) return;
+    setFeedCardTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) {
+        if (next.size <= 1) return prev;
+        next.delete(type);
+      } else {
+        next.add(type);
+      }
+      return next;
+    });
+  }, []);
   const [searchTerm, setSearchTerm] = useState('');
   // Default published so pre-session and non-admin requests never send status=all (403 on API).
   const [status, setStatus] = useState<CardStatus>('published');
   const [pageLimit, setPageLimit] = useState(20);
   const [activeDimension, setActiveDimensionState] = useState<ActiveDimension>(() => {
-    if (typeof window === 'undefined') return 'all';
+    if (typeof window === 'undefined') return 'who';
     return normalizeStoredActiveDimension(sessionStorage.getItem(DIMENSION_STORAGE_KEY));
   });
   const [collectionId, setCollectionIdState] = useState<string | null>(() => {
@@ -258,7 +301,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   }, [sessionStatus, session?.user?.role]);
 
   // Define which paths should trigger card fetching
-  const activePaths = ['/view', '/admin/card-admin', '/search'];
+  const activePaths = ['/view', '/search'];
   const isFetchActive = activePaths.some(path => pathname.startsWith(path));
 
   // Organize selected tags by dimension
@@ -329,7 +372,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     },
     { revalidateOnFocus: false }
   );
-  const collectionCards = collectionListData?.items ?? [];
+  const collectionCards = useMemo(() => collectionListData?.items ?? [], [collectionListData]);
 
   const {
     data,
@@ -376,10 +419,13 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       if (cardDimensionMissing.when) params.set('whenMissing', 'true');
       if (cardDimensionMissing.where) params.set('whereMissing', 'true');
       if (searchTerm?.trim()) params.set('q', searchTerm);
-      if (pathname?.startsWith('/admin/card-admin') && searchTerm?.trim()) {
+      if (pathname?.startsWith('/admin/studio') && searchTerm?.trim()) {
         params.set('searchScope', 'admin-title');
       }
-      if (cardType && cardType !== 'all') params.set('type', cardType);
+      const typesList = FEED_CARD_TYPES_ORDER.filter((t) => feedCardTypes.has(t));
+      if (typesList.length > 0 && typesList.length < FEED_CARD_TYPES_ORDER.length) {
+        params.set('types', typesList.join(','));
+      }
       if (pageIndex > 0 && previousPageData?.lastDocId) params.set('lastDocId', previousPageData.lastDocId);
       if (isAdmin && !needsFullHydration) params.set('hydration', 'cover-only');
       if (includeChildrenInFeed && canTagScopeChildExpansion) {
@@ -458,7 +504,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       return paginatedCards;
     }
     // Admin list editing should stay stable across revalidation.
-    if (pathname?.startsWith('/admin/card-admin')) {
+    if (pathname?.startsWith('/admin/studio')) {
       return paginatedCards;
     }
     if (collectionId) {
@@ -546,7 +592,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
 
   const clearFilters = useCallback(() => {
     setFilterTags([]);
-    setCardType('all');
+    setFeedCardTypes(new Set(FEED_CARD_TYPES_ORDER));
     setSearchTerm('');
     setStatus(isAdmin ? 'all' : 'published');
     setCollectionId(null);
@@ -564,6 +610,9 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       hasMore,
       selectedTags: selectedFilterTagIds,
       cardType,
+      feedCardTypes,
+      toggleFeedCardType,
+      isFeedCardTypesFilterActive,
       searchTerm,
       status,
       activeDimension,
@@ -598,6 +647,9 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       hasMore,
       selectedFilterTagIds,
       cardType,
+      feedCardTypes,
+      toggleFeedCardType,
+      isFeedCardTypesFilterActive,
       searchTerm,
       status,
       activeDimension,

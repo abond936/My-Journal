@@ -56,6 +56,7 @@ interface FormContextValue {
   
   // Form Actions
   handleSave: (overrides?: Partial<CardUpdate>) => Promise<boolean>;
+  persistFieldPatch: (patch: Partial<CardUpdate>) => Promise<boolean>;
   resetForm: () => void;
   
   // Validation
@@ -442,6 +443,63 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     [validateForm, batchStateUpdate, onSave, formState.cardData, mergeEditorContentInto]
   );
 
+  const persistFieldPatch = useCallback(
+    async (patch: Partial<CardUpdate>): Promise<boolean> => {
+      const currentDocId = cardDataRef.current.docId;
+      if (!currentDocId) {
+        return false;
+      }
+
+      const cleanedPatch = Object.fromEntries(
+        Object.entries(patch).filter(([, value]) => value !== undefined)
+      ) as Partial<CardUpdate>;
+
+      if (Object.keys(cleanedPatch).length === 0) {
+        return true;
+      }
+
+      try {
+        const savedCard = await onSave(cleanedPatch);
+        if (!savedCard) {
+          return false;
+        }
+
+        const savedBaseline = mergeInitialCard(savedCard);
+        const keysToSync = new Set<keyof CardUpdate>(
+          Object.keys(cleanedPatch) as Array<keyof CardUpdate>
+        );
+        if (keysToSync.has('type') || keysToSync.has('displayMode')) {
+          keysToSync.add('type');
+          keysToSync.add('displayMode');
+        }
+
+        setFormState((prev) => {
+          const nextCardData = { ...prev.cardData };
+          const nextLastSaved = { ...prev.lastSavedState.cardData };
+
+          keysToSync.forEach((key) => {
+            nextCardData[key] = savedBaseline[key];
+            nextLastSaved[key] = savedBaseline[key];
+          });
+
+          return {
+            ...prev,
+            cardData: nextCardData,
+            lastSavedState: {
+              cardData: nextLastSaved,
+            },
+          };
+        });
+
+        return true;
+      } catch (error) {
+        console.error('[persistFieldPatch] Error during partial save:', error);
+        return false;
+      }
+    },
+    [onSave]
+  );
+
   const resetForm = useCallback(() => {
     const card = mergeInitialCard(initialCard);
     setFormState((prev) => ({
@@ -465,6 +523,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       updateChildIds,
       updateContentMedia,
       handleSave,
+      persistFieldPatch,
       resetForm,
       validateForm,
       isDirty,
@@ -483,6 +542,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       updateChildIds,
       updateContentMedia,
       handleSave,
+      persistFieldPatch,
       resetForm,
       validateForm,
       isDirty,

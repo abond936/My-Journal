@@ -23,7 +23,6 @@ interface ChildCardManagerProps {
 }
 
 export default function ChildCardManager({
-  cardId: _cardId,
   childrenIds,
   onUpdate,
   error,
@@ -84,7 +83,7 @@ export default function ChildCardManager({
                     <div className={styles.childItem}>
                       <span className={styles.childTitleRow}>
                         <Link
-                          href={`/admin/card-admin/${child.docId}/edit`}
+                          href={`/admin/studio?card=${encodeURIComponent(child.docId)}`}
                           className={styles.childEditLink}
                         >
                           {child.title || '(Untitled)'}

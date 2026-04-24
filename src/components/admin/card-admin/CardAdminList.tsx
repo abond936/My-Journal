@@ -112,6 +112,7 @@ interface CardAdminListProps {
   cards: Card[];
   selectedCardIds: Set<string>;
   allTags: Tag[];
+  getCardSecondaryMeta?: (card: Card) => { label: string; title?: string } | null;
   onSelectCard: (cardId: string, index: number, e: React.MouseEvent | React.KeyboardEvent) => void;
   onSelectAll: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onSaveScrollPosition: (cardId: string) => void;
@@ -143,6 +144,7 @@ type CardAdminListPlainRowProps = {
   actionsColumnWidth: number;
   selectedCardIds: Set<string>;
   allTags: Tag[];
+  secondaryMeta?: { label: string; title?: string } | null;
   tagMap: Map<string, string>;
   onSelectCard: (cardId: string, index: number, e: React.MouseEvent | React.KeyboardEvent) => void;
   onUpdateCard: (cardId: string, updateData: Partial<Card>) => Promise<void>;
@@ -271,6 +273,7 @@ function CardAdminListPlainRow({
   actionsColumnWidth,
   selectedCardIds,
   allTags,
+  secondaryMeta,
   tagMap,
   onSelectCard,
   onUpdateCard,
@@ -301,6 +304,11 @@ function CardAdminListPlainRow({
       <CardListCoverCell card={card} coverWidth={columnWidths.cover} />
       <td className={styles.tableCellTitle} style={{ width: columnWidths.title }}>
         <EditableTitleCell card={card} onUpdate={onUpdateCard} />
+        {secondaryMeta ? (
+          <div className={styles.tableTitleMeta} title={secondaryMeta.title ?? secondaryMeta.label}>
+            {secondaryMeta.label}
+          </div>
+        ) : null}
       </td>
       <CardListMainDataCells
         card={card}
@@ -330,6 +338,7 @@ function CardAdminListStudioRow({
   actionsColumnWidth,
   selectedCardIds,
   allTags,
+  secondaryMeta,
   tagMap,
   onSelectCard,
   onUpdateCard,
@@ -413,6 +422,11 @@ function CardAdminListStudioRow({
       <CardListCoverCell card={card} coverWidth={columnWidths.cover} />
       <td className={styles.tableCellTitle} style={{ width: columnWidths.title }}>
         <EditableTitleCell card={card} onUpdate={onUpdateCard} />
+        {secondaryMeta ? (
+          <div className={styles.tableTitleMeta} title={secondaryMeta.title ?? secondaryMeta.label}>
+            {secondaryMeta.label}
+          </div>
+        ) : null}
       </td>
       <CardListMainDataCells
         card={card}
@@ -435,6 +449,7 @@ export default function CardAdminList({
   cards,
   selectedCardIds,
   allTags,
+  getCardSecondaryMeta,
   onSelectCard,
   onSelectAll,
   onSaveScrollPosition,
@@ -469,7 +484,7 @@ export default function CardAdminList({
 
   const handleEditClick = (cardId: string) => {
     onSaveScrollPosition(cardId);
-    router.push(`/admin/card-admin/${cardId}/edit`);
+    router.push(`/admin/studio?card=${encodeURIComponent(cardId)}`);
   };
 
   const resolvedTagDimensionById = React.useMemo(() => buildResolvedTagDimensionMap(allTags), [allTags]);
@@ -682,6 +697,7 @@ export default function CardAdminList({
                 actionsColumnWidth={actionsColumnWidth}
                 selectedCardIds={selectedCardIds}
                 allTags={allTags}
+                secondaryMeta={getCardSecondaryMeta?.(card) ?? null}
                 tagMap={tagMap}
                 onSelectCard={onSelectCard}
                 onUpdateCard={onUpdateCard}
@@ -701,6 +717,7 @@ export default function CardAdminList({
                 actionsColumnWidth={actionsColumnWidth}
                 selectedCardIds={selectedCardIds}
                 allTags={allTags}
+                secondaryMeta={getCardSecondaryMeta?.(card) ?? null}
                 tagMap={tagMap}
                 onSelectCard={onSelectCard}
                 onUpdateCard={onUpdateCard}

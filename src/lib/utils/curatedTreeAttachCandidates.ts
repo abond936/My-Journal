@@ -1,7 +1,7 @@
 import type { Card } from '@/lib/types/card';
-import { collectCuratedSubtreeIdsFromMaster, normalizeCuratedChildIds } from '@/lib/utils/curatedCollectionTree';
+import { buildParentIdsByChild } from '@/lib/utils/curatedCollectionTree';
 
-/** Merge a large admin snapshot with fresher paginated rows (same rules as card-admin grid/table attach-candidate filter). */
+/** Merge a large admin snapshot with fresher paginated rows. */
 export function mergeCardCatalogs(allCards: Card[], paginated: Card[]): Card[] {
   const byId = new Map<string, Card>();
   for (const c of allCards) {
@@ -16,71 +16,41 @@ export function mergeCardCatalogs(allCards: Card[], paginated: Card[]): Card[] {
     }
     const merged: Card = { ...prev, ...c };
     if (!Object.hasOwn(c, 'childrenIds')) merged.childrenIds = prev.childrenIds;
-    if (!Object.hasOwn(c, 'curatedRoot')) merged.curatedRoot = prev.curatedRoot;
-    if (!Object.hasOwn(c, 'curatedRootOrder')) merged.curatedRootOrder = prev.curatedRootOrder;
+    if (!Object.hasOwn(c, 'isCollectionRoot')) merged.isCollectionRoot = prev.isCollectionRoot;
+    if (!Object.hasOwn(c, 'collectionRootOrder')) merged.collectionRootOrder = prev.collectionRootOrder;
     byId.set(c.docId, merged);
   }
   return Array.from(byId.values());
 }
 
-function buildParentByChild(catalog: Card[]): Map<string, string> {
-  const map = new Map<string, string>();
-  for (const parent of catalog) {
-    if (!parent.docId) continue;
-    normalizeCuratedChildIds(parent.childrenIds).forEach((childId) => map.set(childId, parent.docId));
-  }
-  return map;
-}
-
-function buildChildIdSet(catalog: Card[]): Set<string> {
-  const set = new Set<string>();
-  catalog.forEach((card) => normalizeCuratedChildIds(card.childrenIds).forEach((id) => set.add(id)));
-  return set;
-}
-
 export type CuratedTreeAttachCandidateOptions = {
-  curatedTreeMasterId: string | null;
-  /** Same role as Collections `cardMatchesSidebar` (type + sidebar tag dimensions + title search from feed). */
   matchesFilters: (card: Card) => boolean;
   statusFilter: 'all' | 'draft' | 'published';
 };
 
 /**
- * Cards eligible to attach into the curated tree (aligned with Collections **unparented** list).
- * Requires a merged catalog that includes `childrenIds` / `curatedRoot` for relevant cards.
+ * Studio cards pane now shows the full card catalog; attaching is one action, not the identity of the pane.
  */
 export function listCuratedTreeAttachCandidates(
   catalog: Card[],
   opts: CuratedTreeAttachCandidateOptions
 ): Card[] {
-  const { curatedTreeMasterId, matchesFilters, statusFilter } = opts;
-  const parentByChild = buildParentByChild(catalog);
-  const childIdSet = buildChildIdSet(catalog);
-  const cardById = new Map(catalog.map((c) => [c.docId, c]));
-  const masterCard = curatedTreeMasterId ? cardById.get(curatedTreeMasterId) ?? null : null;
-  const useMasterTree = Boolean(curatedTreeMasterId && masterCard?.docId);
-  const masterSubtreeIds =
-    useMasterTree && curatedTreeMasterId
-      ? collectCuratedSubtreeIdsFromMaster(catalog, curatedTreeMasterId)
-      : new Set<string>();
-
-  const list = catalog.filter((card) => {
-    if (!card.docId) return false;
-    if (!matchesFilters(card)) return false;
-    if (statusFilter !== 'all' && card.status !== statusFilter) return false;
-
-    if (useMasterTree && curatedTreeMasterId) {
-      if (card.docId === curatedTreeMasterId) return false;
-      if (masterSubtreeIds.has(card.docId)) return false;
+  const { matchesFilters, statusFilter } = opts;
+  return catalog
+    .filter((card) => {
+      if (!card.docId) return false;
+      if (!matchesFilters(card)) return false;
+      if (statusFilter !== 'all' && card.status !== statusFilter) return false;
       return true;
-    }
+    })
+    .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+}
 
-    if (parentByChild.has(card.docId)) return false;
-    if (childIdSet.has(card.docId)) return false;
-    if (card.curatedRoot === true) return false;
-    return true;
+export function listOrphanedCards(catalog: Card[]): Card[] {
+  const parentIdsByChild = buildParentIdsByChild(catalog);
+  return catalog.filter((card) => {
+    if (!card.docId) return false;
+    if (card.isCollectionRoot === true) return false;
+    return (parentIdsByChild.get(card.docId) ?? []).length === 0;
   });
-
-  list.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-  return list;
 }

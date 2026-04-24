@@ -161,11 +161,11 @@ export interface CuratedTreeNodeProps {
   node: Card;
   seen: Set<string>;
   cardById: Map<string, Card>;
-  parentByChild: Map<string, string>;
+  parentByChild: Map<string, string[]>;
   expandedIds: Set<string>;
   toggleExpanded: (id: string) => void;
   saving: boolean;
-  onDetachChild: (id: string) => void;
+  onDetachChild: (id: string, parentId: string) => void;
   onOpenBulkAdd: (parentId: string) => void;
   onSelectCard: (id: string) => void;
   selectedCardId: string | null;
@@ -307,10 +307,10 @@ export function CuratedTreeNode({
           >
             Bulk add
           </button>
-          {parentByChild.has(node.docId) ? (
+          {(parentByChild.get(node.docId)?.length ?? 0) > 0 ? (
             <button
               type="button"
-              onClick={() => void onDetachChild(node.docId)}
+              onClick={() => void onDetachChild(node.docId, parentByChild.get(node.docId)![0])}
               disabled={saving}
               className={styles.smallButton}
             >

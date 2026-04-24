@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { DragEndEvent } from '@dnd-kit/core';
+import { useSearchParams } from 'next/navigation';
 import CollectionsAdminClient from '@/components/admin/collections/CollectionsAdminClient';
 import StudioTreeCandidateCardBank from '@/components/admin/studio/StudioTreeCandidateCardBank';
 import MediaAdminContent from '@/app/admin/media-admin/MediaAdminContent';
@@ -60,6 +61,17 @@ function rowWidthForCardEditResize(row: HTMLElement): number {
 }
 
 export default function StudioWorkspace() {
+  const searchParams = useSearchParams();
+  const requestedCardId = useMemo(() => {
+    const raw = searchParams.get('card');
+    const trimmed = raw?.trim();
+    return trimmed ? trimmed : null;
+  }, [searchParams]);
+  const newCardRequested = useMemo(() => {
+    const raw = searchParams.get('new');
+    if (!raw) return false;
+    return raw === '1' || raw.toLowerCase() === 'true';
+  }, [searchParams]);
   const [wideLayout, setWideLayout] = useState(true);
   const [cardEditWidth, setCardEditWidth] = useState(DEFAULT_CARD_EDIT_WIDTH);
   const cardEditWidthRef = useRef(cardEditWidth);
@@ -68,7 +80,7 @@ export default function StudioWorkspace() {
   const cardEditResizeActiveRef = useRef(false);
   const cardEditResizeSessionRef = useRef<{ startX: number; startW: number; pointerId: number } | null>(null);
   const collectionsRefreshRef = useRef<(() => void) | null>(null);
-  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(() => requestedCardId);
   const [selectedCard, setSelectedCard] = useState<StudioCardContext | null>(null);
   const [cardLoading, setCardLoading] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
@@ -93,6 +105,11 @@ export default function StudioWorkspace() {
   useEffect(() => {
     selectNoneMedia();
   }, [selectedCardId, selectNoneMedia]);
+
+  useEffect(() => {
+    if (!requestedCardId) return;
+    setSelectedCardId((current) => (current === requestedCardId ? current : requestedCardId));
+  }, [requestedCardId]);
 
   useEffect(() => {
     const mq = window.matchMedia(`(min-width: ${EMBEDDED_ADMIN_WIDE_MIN_WIDTH_PX}px)`);
@@ -439,7 +456,10 @@ export default function StudioWorkspace() {
                             : undefined
                         }
                       >
-                        <StudioCardEditPane />
+                        <StudioCardEditPane
+                          newCardRequested={newCardRequested && !selectedCardId}
+                          onCardCreated={setSelectedCardId}
+                        />
                       </div>
                     </div>
                   </div>

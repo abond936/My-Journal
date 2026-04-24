@@ -17,6 +17,7 @@ import TipTapRenderer from '@/components/common/TipTapRenderer';
 import { extractMediaFromContent, formatQuoteAttribution } from '@/lib/utils/cardUtils';
 import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 import styles from './V2ContentCard.module.css';
+import ReaderCardEditModal from '@/components/view/ReaderCardEditModal';
 
 // Simple horizontal slider
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -85,7 +86,7 @@ const StoryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card,
 };
 
 // Gallery feed: Swiper with cover as first slide when set; gallery items omit any row whose mediaId matches cover (dedupe).
-const GalleryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => {
+const GalleryCardContent: React.FC<{ card: Card }> = ({ card }) => {
   const coverId = useMemo(() => getCoverMediaId(card), [card]);
   const coverRatio = getAspectRatioValue(getAspectRatioBucket(card.coverImage));
 
@@ -158,7 +159,7 @@ const GalleryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ car
  * Quote feed tile: **Content** = quote (TipTap). Title is omitted here (see `/view/[id]` detail header).
  * **Attribution** = `subtitle` preferred, else `excerpt` (em dash added by `formatQuoteAttribution` when missing).
  */
-const QuoteCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card }) => {
+const QuoteCardContent: React.FC<{ card: Card }> = ({ card }) => {
   const attribution = formatQuoteAttribution(card.subtitle, card.excerpt);
   return (
     <div className={styles.content}>
@@ -350,17 +351,14 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
       ? addFocusCardToReturnTo(adminEditReturnTo, card.docId)
       : adminEditReturnTo;
 
-  const editHref =
-    card.docId && isAdmin
-      ? `/admin/card-admin/${card.docId}/edit?returnTo=${encodeURIComponent(returnToWithFocus)}`
-      : null;
+  const canEdit = Boolean(card.docId && isAdmin);
 
   const renderContent = () => {
     switch (card.type) {
       case 'gallery':
-        return <GalleryCardContent card={card} displayMode={displayMode} />;
+        return <GalleryCardContent card={card} />;
       case 'quote':
-        return <QuoteCardContent card={card} displayMode={displayMode} />;
+        return <QuoteCardContent card={card} />;
       case 'qa':
         return <QACardContent card={card} displayMode={displayMode} />;
       case 'callout':
@@ -429,20 +427,21 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
       </div>
     );
 
-  if (!editHref) {
+  if (!canEdit) {
     return body;
   }
 
   return (
     <div className={styles.cardShell}>
       {body}
-      <Link
-        href={editHref}
+      <ReaderCardEditModal
+        cardId={card.docId!}
+        returnTo={returnToWithFocus}
         className={styles.adminEditLink}
-        onClick={() => onBeforeNavigateToAdminEdit?.()}
+        onBeforeOpen={onBeforeNavigateToAdminEdit}
       >
         Edit
-      </Link>
+      </ReaderCardEditModal>
     </div>
   );
 };

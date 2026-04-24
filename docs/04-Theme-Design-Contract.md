@@ -13,16 +13,20 @@ Theme work has two legs:
 2. **Implementation** — `theme.css` generation (`themeService.ts`), Theme admin UI, component CSS using `var(--…)`, and deploy-safe persistence.
 
 **Inventorying literals in `*.module.css` alone** optimizes consistency but does not guarantee a coherent product look. This contract is the checklist: new or migrated styles should map to a **role** (or be explicitly out of scope).
+Theme decisions are in service of the reading experience: comfort, tone, and willingness to keep reading a family story to the end.
 
 ---
 
 ## 2. Product constraints (non-negotiable tensions)
 
-| Constraint | Implication for tokens |
-|------------|-------------------------|
-| **Journal / history** | Warm surfaces, optional *display* typography (e.g. handwriting) for **titles or section labels only** — not for dense UI or long body text. |
-| **Professional** | Legible **UI + body** type, consistent spacing scale, restrained saturation on chrome; accents used deliberately (links, primary actions, dimensional tags). |
-| **Mobile-centric** | Touch-friendly min sizes, readable **base** font size on small viewports, horizontal rails and cards that respect tokenized spacing and radii — not one-off `px` stacks. |
+
+| Constraint            | Implication for tokens                                                                                                                                                   |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Journal / history** | Warm surfaces, optional *display* typography (e.g. handwriting) for **titles or section labels only** — not for dense UI or long body text.                              |
+| **Professional**      | Legible **UI + body** type, consistent spacing scale, restrained saturation on chrome; accents used deliberately (links, primary actions, dimensional tags).             |
+| **Mobile-centric**    | Touch-friendly min sizes, readable **base** font size on small viewports, horizontal rails and cards that respect tokenized spacing and radii — not one-off `px` stacks. |
+| **Reading stamina**   | Long-form stories should feel inviting rather than fatiguing; presets should improve immersion and readability before they increase configurability.                     |
+
 
 Resolve conflicts with **type roles** and **presets**, not by mixing display fonts into every label.
 
@@ -30,25 +34,29 @@ Resolve conflicts with **type roles** and **presets**, not by mixing display fon
 
 ## 3. Typography roles
 
-| Role | Job | Typical use | Map today (approx.) | Direction |
-|------|-----|-------------|---------------------|-----------|
-| **UI** | Chrome, tags, buttons, nav, form labels | Admin + reader chrome | `--font-family-sans`, `--font-size-sm` / `base` | Keep neutral and highly legible. |
-| **Body** | Long reading (stories, answers) | TipTap content, narrative | `--body-font-family` → usually `sans` | Slightly larger than UI on mobile if needed — via scale tokens, not ad hoc `px`. |
-| **Title** | Card titles, section headers | Feed tiles, detail headers | Often `sans` or `serif` via component rules | Presets may switch title to **serif** for editorial feel. |
-| **Display** | “Journal personality” | Optional: hero titles, home hero, few headings | `--font-family-handwriting` | Use sparingly; **off** or **subtle** in “Editorial” preset. |
+
+| Role        | Job                                     | Typical use                                    | Map today (approx.)                             | Direction                                                                        |
+| ----------- | --------------------------------------- | ---------------------------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------- |
+| **UI**      | Chrome, tags, buttons, nav, form labels | Admin + reader chrome                          | `--font-family-sans`, `--font-size-sm` / `base` | Keep neutral and highly legible.                                                 |
+| **Body**    | Long reading (stories, answers)         | TipTap content, narrative                      | `--body-font-family` → usually `sans`           | Slightly larger than UI on mobile if needed — via scale tokens, not ad hoc `px`. |
+| **Title**   | Card titles, section headers            | Feed tiles, detail headers                     | Often `sans` or `serif` via component rules     | Presets may switch title to **serif** for editorial feel.                        |
+| **Display** | “Journal personality”                   | Optional: hero titles, home hero, few headings | `--font-family-handwriting`                     | Use sparingly; **off** or **subtle** in “Editorial” preset.                      |
+
 
 **Rule:** Handwriting is a *display* choice bound to a preset or explicit component token — not the default `--body-font-family` for the whole app.
 
 ### 3.1 Admin grid thumbnail overlays (card + media)
 
-Dense metadata on **card** and **media** admin **grid** thumbnails (type, status, source, assignment, dimensional tag rail) uses **dedicated tokens** — **not** `--font-size-xs` / global admin UI scale. **Runtime:** `buildThemeTokensCss()` in `themeService.ts` emits these on `:root` with the rest of the theme (Firestore / `theme-data.json`). **`theme1.css`** mirrors the same names for authoring reference; **`theme.css`** includes fallbacks if injection is empty.
+Dense metadata on **card** and **media** admin **grid** thumbnails (type, status, source, assignment, dimensional tag rail) uses **dedicated tokens** — **not** `--font-size-xs` / global admin UI scale. **Runtime:** `buildThemeTokensCss()` in `themeService.ts` emits these on `:root` with the rest of the theme (Firestore / `theme-data.json`). `**theme1.css`** mirrors the same names for authoring reference; `**theme.css**` includes fallbacks if injection is empty.
 
-| Token | Role |
-|-------|------|
-| `--font-size-admin-grid-overlay` | Rem-only size for that layer only (~8px at 16px root unless changed). |
-| `--admin-grid-overlay-font` | Shorthand: **medium** weight + overlay size + **1.2** line-height + **`--font-family-sans`**. |
 
-Components: `AdminGridCellChrome.module.css` (meta badges), `DimensionalTagVerticalChips`, `DirectDimensionChips` (rail + triage row chips). **Dimensional tag fills** on thumbnails use **`color-mix(..., 50%, transparent)`** on `--tag-*-bg-color` with **white** label text where applicable; **draft / published / assigned / unassigned** badges use the same translucent + **white** text pattern. Adjusting overlay density is done **only** via these tokens and the shared chrome modules so reader and full-page admin typography stay unchanged.
+| Token                            | Role                                                                                          |
+| -------------------------------- | --------------------------------------------------------------------------------------------- |
+| `--font-size-admin-grid-overlay` | Rem-only size for that layer only (~8px at 16px root unless changed).                         |
+| `--admin-grid-overlay-font`      | Shorthand: **medium** weight + overlay size + **1.2** line-height + `**--font-family-sans`**. |
+
+
+Components: `AdminGridCellChrome.module.css` (meta badges), `DimensionalTagVerticalChips`, `DirectDimensionChips` (rail + triage row chips). **Dimensional tag fills** on thumbnails use `**color-mix(..., 50%, transparent)`** on `--tag-*-bg-color` with **white** label text where applicable; **draft / published / assigned / unassigned** badges use the same translucent + **white** text pattern. Adjusting overlay density is done **only** via these tokens and the shared chrome modules so reader and full-page admin typography stay unchanged.
 
 ---
 
@@ -56,32 +64,36 @@ Components: `AdminGridCellChrome.module.css` (meta badges), `DimensionalTagVerti
 
 These are the **meanings** the UI must express. Implementations today use the listed `theme.css` variables; future work may introduce shorter **alias** names (e.g. `--surface-page`) that *point to* these — without duplicating sources of truth in components.
 
-| Semantic role | Meaning | Primary variables today | Notes |
-|-----------------|---------|-------------------------|--------|
-| **Page** | App canvas behind content | `--body-background-color`, `--layout-background1-color` | Same family; cards sit on `--layout-background2` / `--card-background-color`. |
-| **Raised / panel** | Sidebar, secondary panels | `--layout-background2-color` | |
-| **Card** | Primary content tile | `--card-*` (background, border, radius, shadow) | Feed and detail should not hardcode competing grays. |
-| **Text primary** | Main reading text | `--text1-color` | |
-| **Text secondary** | Meta, captions, de-emphasized | `--text2-color` | |
-| **Border subtle** | Dividers, hairlines | `--border1-color` | |
-| **Border strong** | Emphasis, scrollbars | `--border2-color`, scrollbar vars | |
-| **Accent / primary action** | Primary button, key links | `--color3`, `--button-solid-*`, `--link-text-color` | Presets tune hue/saturation, not random new hex in modules. |
-| **Semantic feedback** | Success, warning, error, info | `--state-*-background-color`, `--state-*-border-color` | Tied to palette ids 11–14 in generator. |
-| **Dimensional tags** | Who / What / When / Where | `--tag-who-bg-color`, … | Content language; keep distinct per dimension. |
-| **Overlay / scrim** | Modals, lightbox, media overlays | `--lightbox-*`, gradients `--gradient-bottom-overlay*` | Gradients still contain raw `rgba` in places — **tokenization candidate** aligned to roles. |
-| **Raster watermark** | Flat tile watermarks (e.g. callout) | `--card-watermark-raster-filter` | Theme-aware (light vs dark). |
+
+| Semantic role               | Meaning                             | Primary variables today                                 | Notes                                                                                       |
+| --------------------------- | ----------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| **Page**                    | App canvas behind content           | `--body-background-color`, `--layout-background1-color` | Same family; cards sit on `--layout-background2` / `--card-background-color`.               |
+| **Raised / panel**          | Sidebar, secondary panels           | `--layout-background2-color`                            |                                                                                             |
+| **Card**                    | Primary content tile                | `--card-*` (background, border, radius, shadow)         | Feed and detail should not hardcode competing grays.                                        |
+| **Text primary**            | Main reading text                   | `--text1-color`                                         |                                                                                             |
+| **Text secondary**          | Meta, captions, de-emphasized       | `--text2-color`                                         |                                                                                             |
+| **Border subtle**           | Dividers, hairlines                 | `--border1-color`                                       |                                                                                             |
+| **Border strong**           | Emphasis, scrollbars                | `--border2-color`, scrollbar vars                       |                                                                                             |
+| **Accent / primary action** | Primary button, key links           | `--color3`, `--button-solid-*`, `--link-text-color`     | Presets tune hue/saturation, not random new hex in modules.                                 |
+| **Semantic feedback**       | Success, warning, error, info       | `--state-*-background-color`, `--state-*-border-color`  | Tied to palette ids 11–14 in generator.                                                     |
+| **Dimensional tags**        | Who / What / When / Where           | `--tag-who-bg-color`, …                                 | Content language; keep distinct per dimension.                                              |
+| **Overlay / scrim**         | Modals, lightbox, media overlays    | `--lightbox-*`, gradients `--gradient-bottom-overlay*`  | Gradients still contain raw `rgba` in places — **tokenization candidate** aligned to roles. |
+| **Raster watermark**        | Flat tile watermarks (e.g. callout) | `--card-watermark-raster-filter`                        | Theme-aware (light vs dark).                                                                |
+
 
 **Dark mode:** Same roles; values switch under `[data-theme="dark"]` (generated with light `:root` in the same token sheet). Presets must define **paired** light/dark assignments or derived rules.
 
 ### 4.1 Base palette (colors 3–14)
 
-| Range | Role | Notes |
-|-------|------|--------|
-| **3** | Principal / primary accent | Links, solid primary button, focus accents — maps to `--color3` and related component tokens. |
-| **4** | Secondary accent | Highlights, secondary emphasis. |
-| **5–8** | Dimensional alts | Default mapping to Who / What / When / Where tag chips (`--tag-*-bg-color`); keep distinct hues for scanability. |
-| **9–10** | Extra palette slots | Spares or future semantic uses; avoid hardcoding in modules without a token. |
-| **11–14** | Status | Success, error, warning, info — wired to `--state-*` tokens in the generator. |
+
+| Range     | Role                       | Notes                                                                                                            |
+| --------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **3**     | Principal / primary accent | Links, solid primary button, focus accents — maps to `--color3` and related component tokens.                    |
+| **4**     | Secondary accent           | Highlights, secondary emphasis.                                                                                  |
+| **5–8**   | Dimensional alts           | Default mapping to Who / What / When / Where tag chips (`--tag-*-bg-color`); keep distinct hues for scanability. |
+| **9–10**  | Extra palette slots        | Spares or future semantic uses; avoid hardcoding in modules without a token.                                     |
+| **11–14** | Status                     | Success, error, warning, info — wired to `--state-*` tokens in the generator.                                    |
+
 
 Values are edited in Theme Management and stored in structured theme data; components should reference **semantic / component variables**, not raw `--hex7`, except where the generator already centralizes mapping.
 
@@ -89,12 +101,14 @@ Values are edited in Theme Management and stored in structured theme data; compo
 
 ## 5. Spacing, radius, elevation, motion
 
-| Role | Meaning | Primary variables today | Notes |
-|------|---------|-------------------------|--------|
-| **Spacing scale** | Consistent rhythm | `--spacing-unit`, `--spacing-xs` … `--spacing-4xl` | Layout math in modules should prefer these over magic `px` where it affects *design*. |
-| **Radius** | Roundness language | `--border-radius-*`, `--card-border-radius` | “Journal” preset: slightly softer; “Editorial”: slightly tighter — expressed here, not per-component guesses. |
-| **Elevation** | Depth on cards / chrome | `--shadow-sm` … `--shadow-xl`, `--card-shadow`, `--card-shadow-hover` | |
-| **Motion** | Short transitions | `--transition-short` | Respect `prefers-reduced-motion` at implementation time. |
+
+| Role              | Meaning                 | Primary variables today                                               | Notes                                                                                                         |
+| ----------------- | ----------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Spacing scale** | Consistent rhythm       | `--spacing-unit`, `--spacing-xs` … `--spacing-4xl`                    | Layout math in modules should prefer these over magic `px` where it affects *design*.                         |
+| **Radius**        | Roundness language      | `--border-radius-*`, `--card-border-radius`                           | “Journal” preset: slightly softer; “Editorial”: slightly tighter — expressed here, not per-component guesses. |
+| **Elevation**     | Depth on cards / chrome | `--shadow-sm` … `--shadow-xl`, `--card-shadow`, `--card-shadow-hover` |                                                                                                               |
+| **Motion**        | Short transitions       | `--transition-short`                                                  | Respect `prefers-reduced-motion` at implementation time.                                                      |
+
 
 ---
 
@@ -122,16 +136,18 @@ Presets are **bundles** of assignments to the roles above (plus typography roles
 
 ## 7. What Theme Management must do (target)
 
-| Layer | User-facing behavior |
-|--------|----------------------|
-| **Presets** | Pick **Journal** / **Editorial** (and future presets) on Theme Management; reader-scoped preview + Save persists `activePresetId` with full theme data (admin-chosen global design; no per-user theme yet). |
-| **Overrides** | Optional advanced panel: palette, fonts, spacing scale — same model as today, grouped by *role* where possible. |
-| **Light / dark** | Keep global `data-theme` toggle; preset supplies **pairs** or derivation rules. |
-| **Out of scope** | One-off layout math (e.g. a single modal width hack), animation keyframes that are not part of the design language — unless promoted to a token deliberately. |
 
-**Preview:** Authoritative preview should mirror **`/view`** (sample feed + one detail), not only swatches — so “what I tune” matches “what family sees.”
+| Layer            | User-facing behavior                                                                                                                                                                                        |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Presets**      | Pick **Journal** / **Editorial** (and future presets) on Theme Management; reader-scoped preview + Save persists `activePresetId` with full theme data (admin-chosen global design; no per-user theme yet). |
+| **Overrides**    | Optional advanced panel: palette, fonts, spacing scale — same model as today, grouped by *role* where possible.                                                                                             |
+| **Light / dark** | Keep global `data-theme` toggle; preset supplies **pairs** or derivation rules.                                                                                                                             |
+| **Out of scope** | One-off layout math (e.g. a single modal width hack), animation keyframes that are not part of the design language — unless promoted to a token deliberately.                                               |
 
-**Persistence:** Theme data lives in **Firestore** `app_settings/theme` (written on Theme admin **Save** and via `npm run seed:theme-firestore`). The app **injects** `buildThemeTokensCss()` output in **RootLayout** (`<style id="theme-tokens">`) so variables apply in serverless deploys without committing regenerated CSS. **`theme-data.json`** stays the git backup and fallback when Firestore is empty or unreadable.
+
+**Preview:** Authoritative preview should mirror `**/view`** (sample feed + one detail), not only swatches — so “what I tune” matches “what family sees.” Success criterion: the preview should make it easier to answer “Would someone want to keep reading this?”
+
+**Persistence:** Theme data lives in **Firestore** `app_settings/theme` (written on Theme admin **Save** and via `npm run seed:theme-firestore`). The app **injects** `buildThemeTokensCss()` output in **RootLayout** (`<style id="theme-tokens">`) so variables apply in serverless deploys without committing regenerated CSS. `**theme-data.json`** stays the git backup and fallback when Firestore is empty or unreadable.
 
 ---
 
@@ -157,7 +173,7 @@ This section is the **single product contract** for how the signed-in reader chr
 
 ### 9.2 Breakpoints and CSS mechanics
 
-- **Canonical narrow breakpoint** — **`768px`** is the width at which the app switches to the **drawer** treatment for the filter sidebar (fixed overlay, backdrop). This aligns with the design-token intent `--breakpoint-md: 768px` in `theme1.css` / generated theme data.
+- **Canonical narrow breakpoint** — `**768px`** is the width at which the app switches to the **drawer** treatment for the filter sidebar (fixed overlay, backdrop). This aligns with the design-token intent `--breakpoint-md: 768px` in `theme1.css` / generated theme data.
 - **Literal values in `@media`** — Layout `@media` queries MUST use **literal pixel widths** (e.g. `max-width: 768px`), **not** `var(--breakpoint-md)`. Custom properties inside media queries are unreliable across browsers and have caused inconsistent layout behavior.
 - **Component alignment** — `AppShell`, `Navigation`, `CardFeedV2`, `V2ContentCard`, and related view CSS should use the **same** breakpoint for the same behavioral change unless a documented exception exists.
 
@@ -168,7 +184,7 @@ This section is the **single product contract** for how the signed-in reader chr
 
 ### 9.4 Main content feed grid (`/view`)
 
-- **Narrow** — At **`max-width: 768px`**, the primary card feed uses a **single column** of cards (full-width tiles in the content area). This preserves a “story stream” feel and avoids two squeezed columns on phones and narrow tablets.
+- **Narrow** — At `**max-width: 768px`**, the primary card feed uses a **single column** of cards (full-width tiles in the content area). This preserves a “story stream” feel and avoids two squeezed columns on phones and narrow tablets.
 - **Wider** — Above that breakpoint, a multi-column grid may use tokenized gaps and radii; minimum column width and column count should be chosen deliberately, not only `auto-fill` with a large `minmax` floor that forces two columns too early on narrow tablets.
 
 ### 9.5 When to change this section
@@ -189,19 +205,21 @@ This section defines the UX and token contract for system/status messaging so fe
 
 ### 10.2 Message types and intended surfaces
 
-| Type | Behavior | Preferred surface |
-|------|----------|-------------------|
-| Blocking progress | User must wait; controls are inert | Full-page or modal overlay with spinner + message |
-| Inline progress | Only one region is loading/saving | Inline status row in that section |
-| Success | Operation completed | Auto-dismissing inline/banner notice |
-| Warning | Recoverable issue / partial success | Persistent warning banner with guidance |
-| Error (local) | Section failed, app continues | Local error banner with retry action |
-| Error (blocking) | Current flow cannot continue | Error dialog or full-page error shell |
-| Confirmation | Potentially destructive action | Themed confirm dialog (not browser confirm) |
+
+| Type              | Behavior                            | Preferred surface                                 |
+| ----------------- | ----------------------------------- | ------------------------------------------------- |
+| Blocking progress | User must wait; controls are inert  | Full-page or modal overlay with spinner + message |
+| Inline progress   | Only one region is loading/saving   | Inline status row in that section                 |
+| Success           | Operation completed                 | Auto-dismissing inline/banner notice              |
+| Warning           | Recoverable issue / partial success | Persistent warning banner with guidance           |
+| Error (local)     | Section failed, app continues       | Local error banner with retry action              |
+| Error (blocking)  | Current flow cannot continue        | Error dialog or full-page error shell             |
+| Confirmation      | Potentially destructive action      | Themed confirm dialog (not browser confirm)       |
+
 
 ### 10.3 Visual and token rules
 
-- **Semantic tokens only** - Use `--state-info-*`, `--state-success-*`, `--state-warning-*`, `--state-error-*` for status backgrounds/borders.
+- **Semantic tokens only** - Use `--state-info-`*, `--state-success-*`, `--state-warning-*`, `--state-error-*` for status backgrounds/borders.
 - **Readable contrast by default** - Backdrops and panels must remain legible against media-rich content; avoid relying on low-opacity overlays alone.
 - **Consistent hierarchy** - Primary status text uses `--text1-color`; supporting copy uses `--text2-color`.
 - **Motion discipline** - Spinners should be visible and sized for context; provide reduced-motion fallback.
@@ -222,9 +240,12 @@ This section defines the UX and token contract for system/status messaging so fe
 
 ## 11. Revision history
 
-| Date | Change |
-|------|--------|
-| 2026-04-10 | Initial contract: semantic roles, type roles, two presets, Theme Management target, reconciliation order. |
-| 2026-04-10 | §4.1 base palette (3–14); persistence: Firestore + layout-injected tokens + `theme-data.json` fallback. |
-| 2026-04-11 | §9 reader shell & responsive layout (breakpoints, sidebar toggle, feed columns); literal `px` in `@media`; §10 revision history (renumber). |
+
+| Date       | Change                                                                                                                                                |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-04-10 | Initial contract: semantic roles, type roles, two presets, Theme Management target, reconciliation order.                                             |
+| 2026-04-10 | §4.1 base palette (3–14); persistence: Firestore + layout-injected tokens + `theme-data.json` fallback.                                               |
+| 2026-04-11 | §9 reader shell & responsive layout (breakpoints, sidebar toggle, feed columns); literal `px` in `@media`; §10 revision history (renumber).           |
 | 2026-04-16 | Added §10 in-app status messaging contract (message taxonomy, behavior, token/a11y rules, card-save narrow reference); moved revision history to §11. |
+
+

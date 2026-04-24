@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback, useMemo } from 'react';
-import Link from 'next/link';
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useCardForm } from '@/components/providers/CardFormProvider';
 import { useChildCards } from '@/lib/hooks/useChildCards';
@@ -70,9 +69,9 @@ export default function StudioCardFormChildren({ disabled }: { disabled: boolean
                         <div className={styles.childRowInner}>
                           <div>
                             {child ? (
-                              <Link href={`/admin/card-admin/${child.docId}/edit`} className={styles.childEditLink}>
+                              <span className={styles.childEditLink}>
                                 {cardLabel(child.title, child.subtitle)}
-                              </Link>
+                              </span>
                             ) : (
                               <span className={styles.metaMuted}>{childId}</span>
                             )}

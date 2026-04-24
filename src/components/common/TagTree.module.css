@@ -111,12 +111,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: var(--spacing-sm);
-  height: var(--spacing-sm);
+  min-width: 44px;
+  min-height: 44px;
+  margin: -6px 0;
   font-size: var(--font-size-xs);
   color: var(--text1-color);
   opacity: 0.7;
   transition: opacity var(--transition-short) ease;
+  box-sizing: border-box;
 }
 
 .expandButton:hover {
@@ -134,7 +136,12 @@
   font-family: var(--body-font-family);
   font-size: 0.75rem;
   opacity: 0.6;
-  padding: 0 2px;
+  min-width: 36px;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: -4px 0;
   line-height: 1;
 }
 .defaultExpandButton:hover {
@@ -143,14 +150,22 @@
 
 .tagHeader {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--spacing-xs);
 }
 
+.tagHeaderLeading {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 2px;
+}
+
 .checkbox {
-  margin: 0;
-  width: 1.1rem;
-  height: 1.1rem;
+  margin: 10px 0 0 0;
+  flex: 0 0 1.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
   accent-color: var(--button-solid-background-color);
   cursor: pointer;
 }
@@ -161,6 +176,10 @@
   color: var(--text1-color);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-normal, 400);
+  flex: 1;
+  min-width: 0;
+  line-height: 1.35;
+  padding-top: 10px;
 }
 
 .children {
@@ -171,8 +190,8 @@
   margin: var(--spacing-xs) 0;
 }
 
-/* Desktop adjustments */
-@media (min-width: var(--breakpoint-md)) {
+/* Desktop adjustments — literal px per docs/04-Theme-Design-Contract.md §9.2 */
+@media (min-width: 769px) {
   .sidebar {
     width: var(--sidebar-width);
     height: 100vh;
@@ -203,5 +222,19 @@
   .subsectionList a:hover {
     background-color: var(--color1-200);
     color: var(--text1-color);
+  }
+
+  .checkbox {
+    margin-top: 6px;
+  }
+
+  .tagName {
+    padding-top: 6px;
+  }
+
+  .expandButton {
+    min-width: 36px;
+    min-height: 36px;
+    margin: -4px 0;
   }
 } 

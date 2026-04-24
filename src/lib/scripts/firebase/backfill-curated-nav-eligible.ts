@@ -34,7 +34,6 @@ async function main() {
     const data = doc.data() as Card;
     const next = computeCuratedNavEligible({
       childrenIds: data.childrenIds,
-      curatedRoot: data.curatedRoot === true,
     });
     if (data.curatedNavEligible === next) {
       skipped++;

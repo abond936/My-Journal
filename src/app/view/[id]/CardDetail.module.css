@@ -14,14 +14,16 @@
   text-align: right;
 }
 
-.adminEditBar a {
+.adminEditBar a,
+.adminEditTrigger {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--color4-light);
   text-decoration: none;
 }
 
-.adminEditBar a:hover {
+.adminEditBar a:hover,
+.adminEditTrigger:hover {
   text-decoration: underline;
 }
 

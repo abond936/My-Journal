@@ -1,10 +1,9 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import JournalImage from '@/components/common/JournalImage';
-import { Card } from '@/lib/types/card';
+import { Card, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import {
   getAspectRatioBucket,
@@ -17,6 +16,7 @@ import InlineGallery from '@/components/view/InlineGallery';
 import ChildCardsRail from '@/components/view/ChildCardsRail';
 import DiscoverySection from '@/components/view/DiscoverySection';
 import { formatQuoteAttribution } from '@/lib/utils/cardUtils';
+import ReaderCardEditModal from '@/components/view/ReaderCardEditModal';
 
 interface CardDetailPageProps {
   card: Card;
@@ -38,16 +38,17 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) 
       : coverBucket === 'square'
         ? styles.coverSquare
         : styles.coverPortrait;
+  const hydratedGalleryItems = (card.galleryMedia ?? []).filter(
+    (item): item is HydratedGalleryMediaItem => Boolean(item.media)
+  );
 
   return (
     <article className={styles.container}>
       {isAdmin && detailReturnTo && card.docId ? (
         <p className={styles.adminEditBar}>
-          <Link
-            href={`/admin/card-admin/${card.docId}/edit?returnTo=${encodeURIComponent(detailReturnTo)}`}
-          >
+          <ReaderCardEditModal cardId={card.docId} returnTo={detailReturnTo} className={styles.adminEditTrigger}>
             Edit card
-          </Link>
+          </ReaderCardEditModal>
         </p>
       ) : null}
       <header
@@ -110,9 +111,9 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) 
       ) : null}
 
       {/* Inline Gallery */}
-      {card.galleryMedia && card.galleryMedia.length > 0 && (
+      {hydratedGalleryItems.length > 0 && (
         <InlineGallery 
-          media={card.galleryMedia.filter(item => item.media) as any} 
+          media={hydratedGalleryItems}
           title="Gallery"
         />
       )}

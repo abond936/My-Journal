@@ -4,7 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '@/lib/types/card';
 import V2ContentCard from './V2ContentCard';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import { useCardContext } from '@/components/providers/CardProvider';
+import {
+  useCardContext,
+  FEED_CARD_TYPES_ORDER,
+} from '@/components/providers/CardProvider';
 import styles from './DiscoverySection.module.css';
 
 interface DiscoverySectionProps {
@@ -22,7 +25,7 @@ export default function DiscoverySection({
   childrenCards,
   suppressChildCardsGroup = false,
 }: DiscoverySectionProps) {
-  const { cardType } = useCardContext();
+  const { feedCardTypes, isFeedCardTypesFilterActive } = useCardContext();
   const [filtered, setFiltered] = useState<Card[]>([]);
   const [random, setRandom] = useState<Card[]>([]);
   const [extrasLoading, setExtrasLoading] = useState(true);
@@ -50,8 +53,11 @@ export default function DiscoverySection({
           count: '3',
           exclude: excludeIds.join(','),
         });
-        if (cardType && cardType !== 'all') {
-          filteredParams.set('type', cardType);
+        if (isFeedCardTypesFilterActive) {
+          filteredParams.set(
+            'types',
+            FEED_CARD_TYPES_ORDER.filter((t) => feedCardTypes.has(t)).join(',')
+          );
         }
         if (sharedDimensions.who.length > 0) {
           filteredParams.set('who', sharedDimensions.who.join(','));
@@ -71,8 +77,11 @@ export default function DiscoverySection({
           exclude: excludeIds.join(','),
           excludeDimensionalMatches: 'true',
         });
-        if (cardType && cardType !== 'all') {
-          randomParams.set('type', cardType);
+        if (isFeedCardTypesFilterActive) {
+          randomParams.set(
+            'types',
+            FEED_CARD_TYPES_ORDER.filter((t) => feedCardTypes.has(t)).join(',')
+          );
         }
         if (sharedDimensions.who.length > 0) {
           randomParams.set('who', sharedDimensions.who.join(','));
@@ -129,7 +138,7 @@ export default function DiscoverySection({
     return () => {
       cancelled = true;
     };
-  }, [currentCard, childrenCards, cardType]);
+  }, [currentCard, childrenCards, feedCardTypes, isFeedCardTypesFilterActive]);
 
   const detailReturnTo =
     currentCard.docId != null && currentCard.docId !== ''

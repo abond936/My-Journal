@@ -33,4 +33,14 @@ Keep entries concise and structured (title + one-line description), not long pro
 
 
 
+Updates
+Media 
+    - selecting card in grid and table are not stable
+    - decide/fix card/media pagination
+    - Tailor AI Assist to be AI Story Assist. 
+        - create choices
+        - create a 'voice' file from existing stories
+    -children in the tree and out of the tree?
+
+
 

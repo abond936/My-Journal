@@ -365,7 +365,7 @@ export default function QuestionAdminPage() {
                                 if (!res.ok) throw new Error(data.message || data.error || 'Create card failed');
                                 const cardId = data.card?.docId;
                                 if (cardId) {
-                                  setCreateMessage(`Created draft card ${cardId}. Open edit page to complete it.`);
+                                  setCreateMessage(`Created draft card ${cardId}. Open it in Studio to complete it.`);
                                 }
                               })
                             }
@@ -375,7 +375,7 @@ export default function QuestionAdminPage() {
 
                           {q.usedByCardIds.length > 0 && (
                             <div className={styles.meta}>
-                              Linked: {q.usedByCardIds.map(id => <Link key={id} href={`/admin/card-admin/${id}/edit`}>{id}</Link>)}
+                              Linked: {q.usedByCardIds.map(id => <Link key={id} href={`/admin/studio?card=${encodeURIComponent(id)}`}>{id}</Link>)}
                             </div>
                           )}
                         </div>
