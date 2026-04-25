@@ -39,6 +39,9 @@ export const cardSchema = z.object({
   type: z.enum(['story', 'qa', 'quote', 'callout', 'gallery']).default('story'),
   status: z.enum(['draft', 'published']).default('draft'),
   displayMode: z.enum(['inline', 'navigate', 'static']).default('navigate'),
+
+  // For Q&A cards, the source question-bank prompt. New QA cards must be created from Questions.
+  questionId: z.string().min(1).optional(),
   
   // Cover image reference with position information
   coverImageId: z.string().nullable().optional(),

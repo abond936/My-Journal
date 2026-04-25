@@ -93,9 +93,17 @@ export function useTagManagement() {
       }));
 
       try {
+        const optimisticOrderById = new Map(updates.map((update) => [update.id, update.order]));
+        const optimisticTags = currentTags.map((tag) =>
+          tag.docId && optimisticOrderById.has(tag.docId)
+            ? { ...tag, order: optimisticOrderById.get(tag.docId) }
+            : tag
+        );
+        await mutate(optimisticTags, { revalidate: false });
         await Promise.all(updates.map((update) => updateTag(update.id!, { order: update.order })));
         await mutate();
       } catch (err) {
+        await mutate(currentTags, { revalidate: false });
         console.error('Failed to reorder tags:', err);
         setError('Failed to reorder tags. Please try again.');
       } finally {
@@ -111,7 +119,27 @@ export function useTagManagement() {
       setIsSaving(true);
       setError(null);
 
+      const currentTags = swrTags || [];
+      const activeTag = currentTags.find((t) => t.docId === activeId);
+      const overTag = currentTags.find((t) => t.docId === overId);
+      if (!activeTag || !overTag) {
+        setIsSaving(false);
+        return;
+      }
+
+      const optimisticTags = currentTags.map((tag) =>
+        tag.docId === activeId
+          ? {
+              ...tag,
+              parentId: overId,
+              path: [...(overTag.path || []), overId],
+              dimension: activeTag.parentId ? tag.dimension : undefined,
+            }
+          : tag
+      );
+
       try {
+        await mutate(optimisticTags, { revalidate: false });
         const response = await fetch(`/api/tags/${activeId}/reparent`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -125,13 +153,14 @@ export function useTagManagement() {
 
         await mutate();
       } catch (err) {
+        await mutate(currentTags, { revalidate: false });
         console.error('Failed to reparent tag:', err);
         setError(err instanceof Error ? err.message : 'An unknown error occurred.');
       } finally {
         setIsSaving(false);
       }
     },
-    [mutate]
+    [mutate, swrTags]
   );
 
   return {

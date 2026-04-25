@@ -81,8 +81,13 @@ export async function PATCH(request: NextRequest, { params }: { params: RoutePar
     return NextResponse.json({ question });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    const status = message.includes('not found') ? 404 : 500;
-    const code = status === 404 ? 'QUESTION_NOT_FOUND' : 'QUESTION_UPDATE_FAILED';
+    const validationFailure = message.includes('dimensional tag');
+    const status = message.includes('not found') ? 404 : validationFailure ? 400 : 500;
+    const code = status === 404
+      ? 'QUESTION_NOT_FOUND'
+      : validationFailure
+        ? 'QUESTION_UPDATE_INVALID_TAGS'
+        : 'QUESTION_UPDATE_FAILED';
     return errorResponse(
       {
         ok: false,
@@ -131,16 +136,17 @@ export async function DELETE(_request: NextRequest, { params }: { params: RouteP
     return NextResponse.json({ ok: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
+    const linkedQuestion = message.includes('linked to Q&A cards');
     return errorResponse(
       {
         ok: false,
-        code: 'QUESTION_DELETE_FAILED',
-        message: 'Failed to delete question.',
+        code: linkedQuestion ? 'QUESTION_DELETE_LINKED_CARD' : 'QUESTION_DELETE_FAILED',
+        message: linkedQuestion ? message : 'Failed to delete question.',
         severity: 'error',
-        retryable: true,
+        retryable: !linkedQuestion,
         error: message,
       },
-      500
+      linkedQuestion ? 409 : 500
     );
   }
 }

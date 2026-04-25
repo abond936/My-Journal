@@ -1,13 +1,8 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { z } from 'zod';
 import { authOptions } from '@/lib/auth/authOptions';
 import { createCard } from '@/lib/services/cardService';
 import { getQuestionById, linkCardToQuestion } from '@/lib/services/questionService';
-
-const bodySchema = z.object({
-  type: z.enum(['qa', 'story']).default('qa'),
-});
 
 type RouteParams = Promise<{ id: string }>;
 
@@ -18,7 +13,6 @@ type ApiErrorPayload = {
   severity: 'error' | 'warning';
   retryable: boolean;
   error?: string;
-  issues?: unknown;
 };
 
 function errorResponse(payload: ApiErrorPayload, status: number) {
@@ -55,35 +49,17 @@ export async function POST(request: NextRequest, { params }: { params: RoutePara
     );
   }
 
-  let body: unknown = {};
-  try {
-    body = await request.json().catch(() => ({}));
-  } catch {
-    body = {};
-  }
-  const parsed = bodySchema.safeParse(body);
-  if (!parsed.success) {
-    return errorResponse(
-      {
-        ok: false,
-        code: 'QUESTION_CREATE_CARD_INVALID_BODY',
-        message: 'Invalid body.',
-        severity: 'error',
-        retryable: false,
-        issues: parsed.error.flatten(),
-      },
-      400
-    );
-  }
+  await request.json().catch(() => ({}));
 
   try {
     const newCard = await createCard({
-      type: parsed.data.type,
+      type: 'qa',
+      questionId: question.docId,
       title: question.prompt,
       content: '',
       status: 'draft',
       displayMode: 'navigate',
-      tags: [],
+      tags: question.tagIds,
       galleryMedia: [],
     });
 

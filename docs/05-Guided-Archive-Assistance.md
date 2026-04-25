@@ -40,6 +40,20 @@ Legend:
 
 Many people complete **digitization** (scanning, basic cleanup) and stall at **organization and meaning**. Storage and face grouping alone rarely answer: *What event is this? Who must be named? What single caption would help my family in ten years?* A product that **proposes piles**, **asks in plain language**, and **maps answers into a consistent dimensional model** addresses a **large, underserved** pain point—especially when paired with an existing **journal / card** consumption surface (as in my-journal).
 
+### **Dual intake model (two primary audiences)**
+
+*Intent*
+
+- **Scan-first archives** - Authors who already moved **paper to pixels** (batch scans, disk folders, inconsistent filenames). EXIF is often **absent or misleading** (scanner dates). Value is **point at folder(s) → ingest job → AI piles** (faces as **hints**, visual **similarity** groups, optional folder boundaries) → **review** (split/merge/reject) → **one action** to create or attach to a **card** (e.g. title “Greg’s Birthday”) and apply **Who/What/When/Where** with minimal typing—then **my-journal behaves as it does today** for edit and read.
+- **Digital-native rolls** - Authors with **large phone/camera libraries** where **capture time**, **GPS**, **faces**, and sometimes **album/event** metadata exist. The system should **consume those signals first** and only use heavier vision/LLM to **fill gaps**. Same review-and-confirm contract; different default weights on the **multi-signal fusion** stack.
+
+*Principles*
+
+- **Same spine, different priors** - Both audiences share **provenance**, **provisional vs canonical** separation, **suggest/confirm**, and **promotion into cards + dimensional tags**. Heuristic and model **weights** differ (time/geo/burst strong for digital; folder/visual/face stronger for scans).
+- **Bursts and “almost duplicates”** - Many digital shots are **near-redundant** takes; the feed must not read as a **timeline of seconds**. Treat **burst stacks** or **version groups** as a **single logical item** in gallery/reader surfaces with **in-stack paging** (hero + alternates), not N separate story tiles by default.
+- **Motion companions** - **Live Photos** and similar (still + short video) should **pair** by policy (filename, container metadata, or proximity rules) so operators see **one stack** with optional motion playback, not two unrelated assets.
+- **Video** - Same **integrity and assignment** story as stills where product parity allows; stacks may include **still + clip** when that matches camera behavior. Transcoding and storage cost stay **explicit** decisions (see `docs/02-Application.md` → **Media Management** on video).
+
 ---
 
 ## **TECHNICAL** (architecture & rational approach)
@@ -57,6 +71,9 @@ Many people complete **digitization** (scanning, basic cleanup) and stall at **o
 ⭕2 **Future**
 - **Batch ingest API** - Register assets, extract available EXIF, generate preview thumbnails, queue feature extraction.
 - **Feature store** - Per-image **visual embeddings**, optional **face embeddings** / face-group ids from a provider or library, **timestamp** and **geo** when present.
+- **Folder-scoped automation** - Operator selects **one or more roots** on disk (or upload batches); system registers an **import job**, walks files with caps and dedupe policy, and queues **feature extraction** without requiring pre-organization in digiKam—**optional** path for audiences who have not done dimensional prep outside the app.
+- **Burst and version grouping** - Detect **temporal bursts**, **visual near-duplicates**, and optional **camera “pick” metadata** to propose **stacks** with a **hero** frame; merges/splits are always reversible until promoted to canonical card gallery order.
+- **Motion-pair detection** - Link **still + companion video** (Live Photo–class assets) into one **review unit** and one **promotion** outcome where product rules allow.
 ⭕1 **Planned**
 - **Heuristic pre-clustering** - Cheap, explainable first pass: time windows, folder boundaries, burst detection, optional GPS buckets—outputs **candidate segments** for ML refinement.
 ❓ **Open**
@@ -120,6 +137,7 @@ Many people complete **digitization** (scanning, basic cleanup) and stall at **o
 ⭕2 **Future**
 - **Export bridge** - Push confirmed clusters to **new or existing cards** (e.g. Gallery or Story) with attached media order and proposed captions as editable body.
 - **Idempotent sync** - Re-sync when user changes tags in either direction without duplicate assets.
+- **In-app promotion writes** - After confirmation, call existing **card/media/tag** services so **denormalized counts**, **derived tag fields** (`filterTags`, dimensional arrays, sort keys), and **Typesense** sync follow the same rules as manual admin paths—no parallel “shadow catalog.”
 
 ---
 
@@ -147,6 +165,7 @@ Many people complete **digitization** (scanning, basic cleanup) and stall at **o
 - **Voice-first mode** - Hands-free answers while flipping through a TV or tablet carousel.
 - **Collaborative labeling** - Invite relative to **confirm faces** or **add one sentence** (permissions model TBD).
 - **Print / book prep** - Ordered spreads from confirmed stories for export vendors.
+- **Keeper selection on stacks** - From a burst/version stack, mark a **hero** (and optional alternates hidden in reader) without deleting siblings until the author explicitly chooses archival deletion—supports “shoot many, curate late.”
 
 ❓ **Open**
 - **Pricing** - Per-GB, per-month, or one-time “archive rescue” package; tied to model cost and support load.
@@ -175,6 +194,8 @@ Many people complete **digitization** (scanning, basic cleanup) and stall at **o
 
 📐 **Decision** - **Spike stack** (embedding model vendor, vector store vs brute-force NN for v0, LLM provider)—choose after spike budget and privacy stance are set.
 
+📐 **Productize path** - **MVP appeal** for scan-heavy users is **folder job + review stacks + promote to card + light tagging**, not full narrative generation. **Digital-native** users get **metadata-first clustering** with the same review UI; AI fills gaps. **Scale** work (background workers, cost caps, tenant isolation) follows proven **correction rates** on real archives.
+
 ---
 
 ## **Revision history**
@@ -183,3 +204,4 @@ Many people complete **digitization** (scanning, basic cleanup) and stall at **o
 |------|--------|
 | 2026-04-10 | Initial seed: vision, principles, architecture threads, application skeleton, implementation starters, relationship to my-journal. |
 | 2026-04-15 | Added concise three-pane mental model and voice-first "glean" interaction framing for conceptual clarity. |
+| 2026-04-24 | Dual intake model (scan-first vs digital-native); burst/version stacks, motion companions, video notes; folder automation and in-app promotion integrity; productize path and application futures (keeper selection). |

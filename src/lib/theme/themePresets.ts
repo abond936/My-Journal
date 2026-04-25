@@ -1,7 +1,14 @@
-import { hexToHsl, type StructuredThemeData } from '@/lib/types/theme';
+import {
+  hexToHsl,
+  type AdminThemePresetId,
+  type ReaderThemePresetId,
+  type ScopedThemeDocumentData,
+  type StructuredThemeData,
+} from '@/lib/types/theme';
 import baseTheme from '../../../theme-data.json';
 
-export type ThemePresetId = 'journal' | 'editorial';
+export type ThemePresetId = ReaderThemePresetId;
+export type ThemeAdminPresetId = AdminThemePresetId;
 
 export const THEME_PRESET_META: Record<
   ThemePresetId,
@@ -16,6 +23,17 @@ export const THEME_PRESET_META: Record<
     label: 'Editorial',
     description:
       'Cool neutrals, tighter radii, system sans throughout for a calm product look.',
+  },
+};
+
+export const ADMIN_THEME_PRESET_META: Record<
+  ThemeAdminPresetId,
+  { label: string; description: string }
+> = {
+  admin: {
+    label: 'Admin',
+    description:
+      'Neutral, higher-contrast authoring theme for dense grids, forms, focus states, and long editing sessions.',
   },
 };
 
@@ -46,7 +64,7 @@ function patchPaletteHex(themeData: StructuredThemeData, id: number, hex: string
 /** Full theme document matching `theme-data.json` + optional `activePresetId` / `darkModeShift`. */
 export type ThemeDocumentData = StructuredThemeData & {
   darkModeShift?: number;
-  activePresetId?: ThemePresetId | 'custom';
+  activePresetId?: ThemePresetId | ThemeAdminPresetId | 'custom';
 };
 
 export function buildJournalPreset(): ThemeDocumentData {
@@ -103,6 +121,72 @@ export function buildEditorialPreset(): ThemeDocumentData {
   return t;
 }
 
+export function buildAdminPreset(): ThemeDocumentData {
+  const t = cloneTheme(baseTheme) as ThemeDocumentData;
+  t.activePresetId = 'admin';
+  t.darkModeShift = t.darkModeShift ?? 5;
+  patchThemeColor(t, 1, 'light', '#e7eaf0');
+  patchThemeColor(t, 1, 'dark', '#111827');
+  patchThemeColor(t, 2, 'light', '#111827');
+  patchThemeColor(t, 2, 'dark', '#f8fafc');
+  patchPaletteHex(t, 3, '#1d4ed8');
+  patchPaletteHex(t, 4, '#64748b');
+  patchPaletteHex(t, 11, '#15803d');
+  patchPaletteHex(t, 12, '#b91c1c');
+  patchPaletteHex(t, 13, '#b45309');
+  patchPaletteHex(t, 14, '#0369a1');
+  t.typography.fontFamilies.sans =
+    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+  t.typography.fontFamilies.serif = '"Georgia", "Times New Roman", serif';
+  t.typography.fontFamilies.handwriting = t.typography.fontFamilies.sans;
+  t.spacing.unit = '4px';
+  t.borders.radius.sm = '0.2rem';
+  t.borders.radius.md = '0.35rem';
+  t.borders.radius.lg = '0.5rem';
+  t.borders.radius.xl = '0.625rem';
+  t.shadows.strength = '7%';
+  t.shadows.strengthDark = '24%';
+  t.components.card.borderRadius = 'border/radius/md';
+  t.components.card.shadow = 'shadow/sm';
+  t.components.card.shadowHover = 'shadow/md';
+  t.components.input.borderRadius = 'border/radius-sm';
+  t.components.button.outline.borderWidth = 'border/width/thin';
+  return t;
+}
+
 export function getThemePresetDocument(id: ThemePresetId): ThemeDocumentData {
   return id === 'journal' ? buildJournalPreset() : buildEditorialPreset();
+}
+
+export function getAdminThemePresetDocument(id: ThemeAdminPresetId): ThemeDocumentData {
+  return buildAdminPreset();
+}
+
+export function getDefaultScopedThemeDocument(): ScopedThemeDocumentData {
+  const reader = buildJournalPreset();
+  const admin = buildAdminPreset();
+  const {
+    activePresetId: readerPresetId,
+    darkModeShift: readerDarkModeShift,
+    ...readerData
+  } = reader;
+  const {
+    activePresetId: adminPresetId,
+    darkModeShift: adminDarkModeShift,
+    ...adminData
+  } = admin;
+
+  return {
+    version: 2,
+    reader: {
+      data: readerData as StructuredThemeData,
+      activePresetId: readerPresetId ?? 'journal',
+      darkModeShift: readerDarkModeShift ?? 5,
+    },
+    admin: {
+      data: adminData as StructuredThemeData,
+      activePresetId: adminPresetId ?? 'admin',
+      darkModeShift: adminDarkModeShift ?? 5,
+    },
+  };
 }

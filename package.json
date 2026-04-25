@@ -47,6 +47,7 @@
     "backfill:card-title-lowercase": "tsx -r dotenv/config src/lib/scripts/firebase/backfill-card-title-lowercase.ts",
     "backfill:card-dimension-sort-keys": "tsx -r dotenv/config src/lib/scripts/firebase/backfill-card-dimension-sort-keys.ts",
     "backfill:card-media-signals": "tsx -r dotenv/config src/lib/scripts/firebase/backfill-card-media-signals.ts",
+    "bootstrap:questions-from-qa": "tsx -r dotenv/config src/lib/scripts/firebase/bootstrap-questions-from-qa-cards.ts",
     "audit:card-content-media": "tsx -r dotenv/config src/lib/scripts/firebase/audit-fix-card-content-media.ts",
     "repair:missing-storage-media": "tsx -r dotenv/config src/lib/scripts/firebase/repair-missing-storage-media.ts",
     "sync:typesense": "tsx src/lib/scripts/sync-typesense.ts",

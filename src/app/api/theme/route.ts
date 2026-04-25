@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getResolvedThemeData, saveThemeData } from '@/lib/services/themeService';
+import { getResolvedScopedThemeDocument, saveThemeData } from '@/lib/services/themeService';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
 
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const themeData = await getResolvedThemeData();
+    const themeData = await getResolvedScopedThemeDocument();
     return NextResponse.json(themeData);
   } catch (error) {
     console.error('API Error fetching theme data:', error);
@@ -72,7 +72,9 @@ export async function POST(request: Request) {
     const themeData = await request.json();
     
     // Validate the theme data structure
-    if (!themeData || !themeData.palette || !Array.isArray(themeData.palette)) {
+    const isScopedThemeDocument = themeData?.version === 2 && themeData.reader?.data && themeData.admin?.data;
+    const isLegacyThemeDocument = themeData?.palette && Array.isArray(themeData.palette);
+    if (!themeData || (!isScopedThemeDocument && !isLegacyThemeDocument)) {
       return errorResponse(
         {
           ok: false,

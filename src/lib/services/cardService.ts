@@ -84,7 +84,31 @@ const adminApp = getAdminApp();
 const firestore = adminApp.firestore();
 const CARDS_COLLECTION = 'cards';
 const MEDIA_COLLECTION = 'media';
+const QUESTIONS_COLLECTION = 'questions';
 
+async function assertValidQuestionBackedQa(
+  candidate: Partial<Card>,
+  existing?: Partial<Card>
+): Promise<void> {
+  const finalType = candidate.type ?? existing?.type ?? 'story';
+  if (finalType !== 'qa') return;
+
+  const questionId = candidate.questionId ?? existing?.questionId;
+  if (!questionId) {
+    throw new AppError(
+      ErrorCode.VALIDATION_ERROR,
+      'Q&A cards must be created from a question-bank prompt.'
+    );
+  }
+
+  const questionSnap = await firestore.collection(QUESTIONS_COLLECTION).doc(questionId).get();
+  if (!questionSnap.exists) {
+    throw new AppError(
+      ErrorCode.VALIDATION_ERROR,
+      'Q&A card questionId must reference an existing question.'
+    );
+  }
+}
 
 /**
  * Derives focal point (pixel coords) from media.objectPosition.
@@ -629,6 +653,7 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
 
   // Validate and apply defaults using Zod
   const validatedData = cardSchema.partial().parse(cardData);
+  await assertValidQuestionBackedQa(validatedData);
   const requestedRoot = validatedData.isCollectionRoot === true;
   let resolvedRootOrder = validatedData.collectionRootOrder;
   if (requestedRoot && typeof resolvedRootOrder !== 'number') {
@@ -838,7 +863,7 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         return val;
       };
   
-      const cleanedUpdate = removeUndefinedDeep(validatedUpdate);
+      const cleanedUpdate = removeUndefinedDeep(validatedUpdate) as Partial<Card>;
 
       const mergedType = (cleanedUpdate.type ?? existingData.type) as Card['type'];
       const rawDisplay =
@@ -849,6 +874,23 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       }
 
       // If no fields remain after cleaning, nothing to update â€“ return current data
+      if (mergedType === 'qa') {
+        const questionId = (cleanedUpdate.questionId ?? existingData.questionId) as string | undefined;
+        if (!questionId) {
+          throw new AppError(
+            ErrorCode.VALIDATION_ERROR,
+            'Q&A cards must be created from a question-bank prompt.'
+          );
+        }
+        const questionSnap = await transaction.get(firestore.collection(QUESTIONS_COLLECTION).doc(questionId));
+        if (!questionSnap.exists) {
+          throw new AppError(
+            ErrorCode.VALIDATION_ERROR,
+            'Q&A card questionId must reference an existing question.'
+          );
+        }
+      }
+
       if (Object.keys(cleanedUpdate).length === 0) {
         return existingData;
       }
@@ -1227,7 +1269,7 @@ export function isCollectionRootOnlyPayload(
 }
 
 type CardMetadataUpdates = Partial<
-  Pick<Card, 'title' | 'subtitle' | 'excerpt' | 'excerptAuto' | 'type' | 'displayMode'>
+  Pick<Card, 'title' | 'subtitle' | 'excerpt' | 'excerptAuto' | 'type' | 'displayMode' | 'questionId'>
 >;
 
 const CARD_METADATA_ONLY_KEYS = new Set<keyof CardMetadataUpdates>([
@@ -1237,6 +1279,7 @@ const CARD_METADATA_ONLY_KEYS = new Set<keyof CardMetadataUpdates>([
   'excerptAuto',
   'type',
   'displayMode',
+  'questionId',
 ]);
 
 export function isCardMetadataOnlyPayload(
@@ -1560,6 +1603,7 @@ export async function updateCardMetadata(
   }
 
   const existingData = preSnap.data() as Card;
+  await assertValidQuestionBackedQa(updates, existingData);
   const cleanedUpdates = Object.fromEntries(
     Object.entries(updates).filter(([, value]) => value !== undefined)
   ) as CardMetadataUpdates;

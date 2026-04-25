@@ -5,10 +5,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import styles from './AdminNavTabs.module.css';
 
-/** Primary admin IA: Studio plus full Card / Media / Tag pages. */
+/** Primary admin IA: Studio plus remaining dedicated admin pages. */
 const primaryTabs = [
   { name: 'Studio', href: '/admin/studio' },
-  { name: 'Tags', href: '/admin/tag-admin' },
   { name: 'Questions', href: '/admin/question-admin' },
   { name: 'Theme', href: '/admin/theme-admin' },
   { name: 'Users', href: '/admin/journal-users' },

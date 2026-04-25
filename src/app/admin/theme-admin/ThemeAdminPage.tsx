@@ -3,10 +3,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './ThemeAdmin.module.css';
-import { StructuredThemeData, BaseColor, ThemeColor, hexToHsl } from '@/lib/types/theme';
 import {
+  StructuredThemeData,
+  BaseColor,
+  ThemeColor,
+  hexToHsl,
+  type ScopedThemeDocumentData,
+} from '@/lib/types/theme';
+import {
+  ADMIN_THEME_PRESET_META,
   THEME_PRESET_META,
+  getAdminThemePresetDocument,
   getThemePresetDocument,
+  type ThemeAdminPresetId,
   type ThemePresetId,
   type ThemeDocumentData,
 } from '@/lib/theme/themePresets';
@@ -752,11 +761,14 @@ const SpacingSection: React.FC<{
 export default function ThemeAdminPage() {
   const router = useRouter();
   const [themeData, setThemeData] = useState<StructuredThemeData | null>(null);
+  const [adminThemeData, setAdminThemeData] = useState<StructuredThemeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('light');
   const [darkModeShift, setDarkModeShift] = useState(5);
+  const [adminDarkModeShift, setAdminDarkModeShift] = useState(5);
   const [activePresetId, setActivePresetId] = useState<ThemePresetId | 'custom'>('custom');
+  const [activeAdminPresetId, setActiveAdminPresetId] = useState<ThemeAdminPresetId | 'custom'>('admin');
 
   useEffect(() => {
     const fetchThemeData = async () => {
@@ -767,10 +779,34 @@ export default function ThemeAdminPage() {
           const err = data as ApiErrorResponse;
           throw new Error(err.message || err.error || 'Failed to fetch theme data.');
         }
-        setThemeData(data);
-        setDarkModeShift(data.darkModeShift || 5);
-        const ap = (data as ThemeDocumentData).activePresetId;
-        setActivePresetId(ap === 'journal' || ap === 'editorial' ? ap : 'custom');
+        const adminPreset = getAdminThemePresetDocument('admin');
+        const {
+          darkModeShift: defaultAdminDarkModeShift,
+          activePresetId: defaultAdminPresetId,
+          ...defaultAdminData
+        } = adminPreset;
+
+        if ((data as ScopedThemeDocumentData)?.version === 2) {
+          const scoped = data as ScopedThemeDocumentData;
+          setThemeData(scoped.reader.data);
+          setDarkModeShift(scoped.reader.darkModeShift || 5);
+          setActivePresetId(
+            scoped.reader.activePresetId === 'journal' || scoped.reader.activePresetId === 'editorial'
+              ? scoped.reader.activePresetId
+              : 'custom'
+          );
+          setAdminThemeData(scoped.admin.data);
+          setAdminDarkModeShift(scoped.admin.darkModeShift || 5);
+          setActiveAdminPresetId(scoped.admin.activePresetId === 'admin' ? scoped.admin.activePresetId : 'custom');
+        } else {
+          setThemeData(data);
+          setDarkModeShift(data.darkModeShift || 5);
+          const ap = (data as ThemeDocumentData).activePresetId;
+          setActivePresetId(ap === 'journal' || ap === 'editorial' ? ap : 'custom');
+          setAdminThemeData(defaultAdminData as StructuredThemeData);
+          setAdminDarkModeShift(defaultAdminDarkModeShift ?? 5);
+          setActiveAdminPresetId(defaultAdminPresetId === 'admin' ? defaultAdminPresetId : 'admin');
+        }
       } catch (error) {
         console.error('Failed to fetch theme data:', error);
       } finally {
@@ -891,9 +927,17 @@ export default function ThemeAdminPage() {
   const applyPreset = (id: ThemePresetId) => {
     const doc = getThemePresetDocument(id);
     setDarkModeShift(doc.darkModeShift ?? 5);
-    setActivePresetId(doc.activePresetId ?? id);
+    setActivePresetId(doc.activePresetId === 'journal' || doc.activePresetId === 'editorial' ? doc.activePresetId : id);
     const { darkModeShift: _ds, activePresetId: _ap, ...structured } = doc;
     setThemeData(structured as StructuredThemeData);
+  };
+
+  const applyAdminPreset = (id: ThemeAdminPresetId) => {
+    const doc = getAdminThemePresetDocument(id);
+    setAdminDarkModeShift(doc.darkModeShift ?? 5);
+    setActiveAdminPresetId(doc.activePresetId === 'admin' ? doc.activePresetId : id);
+    const { darkModeShift: _ds, activePresetId: _ap, ...structured } = doc;
+    setAdminThemeData(structured as StructuredThemeData);
   };
 
   const validateThemeData = (data: any): string[] => {
@@ -971,10 +1015,13 @@ export default function ThemeAdminPage() {
   };
 
   const saveTheme = async () => {
-    if (!themeData) return;
+    if (!themeData || !adminThemeData) return;
     
     // Validate theme data before saving
-    const validationErrors = validateThemeData(themeData);
+    const validationErrors = [
+      ...validateThemeData(themeData).map((error) => `Reader: ${error}`),
+      ...validateThemeData(adminThemeData).map((error) => `Admin: ${error}`),
+    ];
     if (validationErrors.length > 0) {
       alert(`Cannot save theme due to validation errors:\n${validationErrors.join('\n')}`);
       return;
@@ -982,10 +1029,18 @@ export default function ThemeAdminPage() {
     
     setSaving(true);
     try {
-      const dataToSave: ThemeDocumentData = {
-        ...themeData,
-        darkModeShift,
-        activePresetId,
+      const dataToSave: ScopedThemeDocumentData = {
+        version: 2,
+        reader: {
+          data: themeData,
+          darkModeShift,
+          activePresetId,
+        },
+        admin: {
+          data: adminThemeData,
+          darkModeShift: adminDarkModeShift,
+          activePresetId: activeAdminPresetId,
+        },
       };
       
       const response = await fetch('/api/theme', {
@@ -1017,7 +1072,7 @@ export default function ThemeAdminPage() {
     );
   }
 
-  if (!themeData) {
+  if (!themeData || !adminThemeData) {
     return (
       <div className={styles.centered}>
         <div>Failed to load theme data</div>
@@ -1046,7 +1101,7 @@ export default function ThemeAdminPage() {
             <h2>Design preset</h2>
           </div>
           <p className={styles.presetIntro}>
-            The admin chooses the look for all readers. Pick a starting point, refine below, then Save. Active:{' '}
+            The reader preset governs family-facing content views. Pick a starting point, refine below, then Save. Active:{' '}
             <strong>
               {activePresetId === 'custom'
                 ? 'Custom'
@@ -1072,7 +1127,44 @@ export default function ThemeAdminPage() {
           </div>
         </section>
 
-        <ThemeReaderPreview themeData={themeData} darkModeShift={darkModeShift} />
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2>Admin theme</h2>
+          </div>
+          <p className={styles.presetIntro}>
+            Admin theme governs authoring surfaces separately from the reader preset. It is tuned for
+            forms, dense grids, focus states, and long editing sessions. Active:{' '}
+            <strong>
+              {activeAdminPresetId === 'custom'
+                ? 'Custom'
+                : ADMIN_THEME_PRESET_META[activeAdminPresetId].label}
+            </strong>
+            .
+          </p>
+          <div className={styles.presetGrid}>
+            {(['admin'] as const).map((id) => (
+              <div key={id} className={styles.presetCard}>
+                <h3 className={styles.presetCardTitle}>{ADMIN_THEME_PRESET_META[id].label}</h3>
+                <p className={styles.presetCardText}>{ADMIN_THEME_PRESET_META[id].description}</p>
+                <button
+                  type="button"
+                  className={styles.presetApplyButton}
+                  onClick={() => applyAdminPreset(id)}
+                  disabled={saving}
+                >
+                  Apply {ADMIN_THEME_PRESET_META[id].label}
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <ThemeReaderPreview
+          themeData={themeData}
+          darkModeShift={darkModeShift}
+          adminThemeData={adminThemeData}
+          adminDarkModeShift={adminDarkModeShift}
+        />
 
         {/* Color Palette Section */}
         <section className={styles.section}>

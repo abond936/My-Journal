@@ -297,6 +297,22 @@ export interface StructuredThemeData {
   gradients: GradientTokens;
 }
 
+export type ReaderThemePresetId = 'journal' | 'editorial';
+export type AdminThemePresetId = 'admin';
+export type ThemeScopeId = 'reader' | 'admin';
+
+export interface ScopedThemeSettings {
+  data: StructuredThemeData;
+  activePresetId?: ReaderThemePresetId | AdminThemePresetId | 'custom';
+  darkModeShift?: number;
+}
+
+export interface ScopedThemeDocumentData {
+  version: 2;
+  reader: ScopedThemeSettings;
+  admin: ScopedThemeSettings;
+}
+
 /**
  * Converts a HEX color to HSL components.
  * This utility is used to automatically sync HEX and HSL values in the admin interface.

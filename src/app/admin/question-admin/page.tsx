@@ -2,6 +2,8 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
+import { useTag } from '@/components/providers/TagProvider';
 import { Question } from '@/lib/types/question';
 import styles from './question-admin.module.css';
 
@@ -40,6 +42,7 @@ export default function QuestionAdminPage() {
 
   const [newPrompt, setNewPrompt] = useState('');
   const [newTags, setNewTags] = useState('');
+  const [newTagIds, setNewTagIds] = useState<string[]>([]);
   const [createBusy, setCreateBusy] = useState(false);
   const [createMessage, setCreateMessage] = useState<string | null>(null);
 
@@ -48,8 +51,9 @@ export default function QuestionAdminPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPrompt, setEditPrompt] = useState('');
   const [editTags, setEditTags] = useState('');
+  const [editTagIds, setEditTagIds] = useState<string[]>([]);
   const [linkCardIdByQuestion, setLinkCardIdByQuestion] = useState<Record<string, string>>({});
-  const [cardTypeByQuestion, setCardTypeByQuestion] = useState<Record<string, 'qa' | 'story'>>({});
+  const { tags: allTags } = useTag();
 
   useLayoutEffect(() => {
     const measure = () => {
@@ -86,12 +90,16 @@ export default function QuestionAdminPage() {
 
     return questions.filter(q => {
       const textOk = !text || q.prompt_lowercase.includes(text);
-      const tagOk = !tag || q.tags.some(t => t.includes(tag));
+      const dimensionalTagOk = q.tagIds.some(id => {
+        const tagName = allTags.find(t => t.docId === id)?.name.toLowerCase() || '';
+        return tagName.includes(tag) || id.toLowerCase().includes(tag);
+      });
+      const tagOk = !tag || q.tags.some(t => t.includes(tag)) || dimensionalTagOk;
       const used = q.usedByCardIds.length > 0;
       const usageOk = usedFilter === 'all' || (usedFilter === 'used' ? used : !used);
       return textOk && tagOk && usageOk;
     });
-  }, [questions, searchText, tagFilter, usedFilter]);
+  }, [allTags, questions, searchText, tagFilter, usedFilter]);
 
   const createQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,6 +111,7 @@ export default function QuestionAdminPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: newPrompt,
+          tagIds: newTagIds,
           tags: normalizeTags(newTags),
         }),
       });
@@ -114,6 +123,7 @@ export default function QuestionAdminPage() {
       setCreateMessage('Question created');
       setNewPrompt('');
       setNewTags('');
+      setNewTagIds([]);
       await load();
     } catch (error) {
       setCreateMessage(error instanceof Error ? error.message : 'Failed to create question');
@@ -171,7 +181,16 @@ export default function QuestionAdminPage() {
                 placeholder="family, childhood"
               />
             </div>
-            <button className={styles.button} type="submit" disabled={createBusy}>
+            <div className={styles.inputGroup}>
+              <label>Dimensional tags</label>
+              <MacroTagSelector
+                selectedTags={allTags.filter(tag => tag.docId && newTagIds.includes(tag.docId))}
+                allTags={allTags}
+                onChange={setNewTagIds}
+                collapsedSummary="sparseTrees"
+              />
+            </div>
+            <button className={styles.button} type="submit" disabled={createBusy || !newPrompt.trim()}>
               {createBusy ? 'Creating…' : 'Create'}
             </button>
           </div>
@@ -231,7 +250,15 @@ export default function QuestionAdminPage() {
                       </td>
                       <td>
                         {editingId === q.docId ? (
-                          <input className={styles.input} value={editTags} onChange={e => setEditTags(e.target.value)} />
+                          <>
+                            <input className={styles.input} value={editTags} onChange={e => setEditTags(e.target.value)} />
+                            <MacroTagSelector
+                              selectedTags={allTags.filter(tag => tag.docId && editTagIds.includes(tag.docId))}
+                              allTags={allTags}
+                              onChange={setEditTagIds}
+                              collapsedSummary="sparseTrees"
+                            />
+                          </>
                         ) : (
                           <>{q.tags.join(', ') || '—'}</>
                         )}
@@ -244,13 +271,13 @@ export default function QuestionAdminPage() {
                               <button
                                 className={styles.button}
                                 type="button"
-                                disabled={rowBusy === q.docId}
+                                disabled={rowBusy === q.docId || !editPrompt.trim()}
                                 onClick={() =>
                                   runRowAction(q.docId, async () => {
                                     const res = await fetch(`/api/admin/questions/${q.docId}`, {
                                       method: 'PATCH',
                                       headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ prompt: editPrompt, tags: normalizeTags(editTags) }),
+                                      body: JSON.stringify({ prompt: editPrompt, tagIds: editTagIds, tags: normalizeTags(editTags) }),
                                     });
                                     const data = (await res.json()) as ApiErrorResponse;
                                     if (!res.ok) throw new Error(data.message || data.error || 'Update failed');
@@ -272,6 +299,7 @@ export default function QuestionAdminPage() {
                                 setEditingId(q.docId);
                                 setEditPrompt(q.prompt);
                                 setEditTags(q.tags.join(', '));
+                                setEditTagIds(q.tagIds || []);
                               }}
                             >
                               Edit
@@ -340,16 +368,6 @@ export default function QuestionAdminPage() {
                             Unlink card
                           </button>
 
-                          <select
-                            className={styles.select}
-                            value={cardTypeByQuestion[q.docId] || 'qa'}
-                            onChange={e =>
-                              setCardTypeByQuestion(prev => ({ ...prev, [q.docId]: e.target.value as 'qa' | 'story' }))
-                            }
-                          >
-                            <option value="qa">QA card</option>
-                            <option value="story">Story card</option>
-                          </select>
                           <button
                             className={styles.button}
                             type="button"
@@ -359,7 +377,7 @@ export default function QuestionAdminPage() {
                                 const res = await fetch(`/api/admin/questions/${q.docId}/create-card`, {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ type: cardTypeByQuestion[q.docId] || 'qa' }),
+                                  body: JSON.stringify({}),
                                 });
                                 const data = (await res.json()) as ApiErrorResponse & { card?: { docId?: string } };
                                 if (!res.ok) throw new Error(data.message || data.error || 'Create card failed');

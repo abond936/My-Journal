@@ -757,7 +757,7 @@ export default function CollectionsAdminClient({
     }
   };
 
-  const handleDetachChild = async (childId: string, parentId: string) => {
+  const handleDetachChild = useCallback(async (childId: string, parentId: string) => {
     if (!parentId) return;
     const snapshot = cards;
     const optimistic = optimisticDetachChildFromParent(cards, childId, parentId) ?? optimisticDetachChild(cards, childId, parentId);
@@ -775,9 +775,9 @@ export default function CollectionsAdminClient({
     } finally {
       setSaving(false);
     }
-  };
+  }, [cards]);
 
-  const handleClearRoot = async (cardId: string) => {
+  const handleClearRoot = useCallback(async (cardId: string) => {
     const snapshot = cards;
     const optimistic = optimisticSetCollectionRoot(cards, cardId, {
       isCollectionRoot: false,
@@ -795,7 +795,21 @@ export default function CollectionsAdminClient({
     } finally {
       setSaving(false);
     }
-  };
+  }, [cards]);
+
+  const handleDetachChildAction = useCallback(
+    (childId: string, parentId: string) => {
+      void handleDetachChild(childId, parentId);
+    },
+    [handleDetachChild]
+  );
+
+  const handleClearRootAction = useCallback(
+    (cardId: string) => {
+      void handleClearRoot(cardId);
+    },
+    [handleClearRoot]
+  );
 
   /** After Studio relationship drags, return focus to the row handle (keyboard + screen-reader UX). */
   const restoreStudioRelationshipFocus = useCallback((activeId: string) => {
@@ -1128,8 +1142,8 @@ export default function CollectionsAdminClient({
                                 expandedIds={treeExpandedIds}
                                 toggleExpanded={toggleTreeExpanded}
                                 saving={saving}
-                                onDetachChild={(id, parentId) => void handleDetachChild(id, parentId)}
-                                onClearRoot={(id) => void handleClearRoot(id)}
+                                onDetachChild={handleDetachChildAction}
+                                onClearRoot={handleClearRootAction}
                                 onSelectCard={handleSelectCard}
                                 selectedCardId={selectedCardId}
                                 disableCuratedDrag={treeDropZonesReadOnly}
@@ -1177,8 +1191,8 @@ export default function CollectionsAdminClient({
                              expandedIds={treeExpandedIds}
                              toggleExpanded={toggleTreeExpanded}
                              saving={saving}
-                             onDetachChild={(id, parentId) => void handleDetachChild(id, parentId)}
-                             onClearRoot={(id) => void handleClearRoot(id)}
+                             onDetachChild={handleDetachChildAction}
+                             onClearRoot={handleClearRootAction}
                              onSelectCard={handleSelectCard}
                              selectedCardId={selectedCardId}
                              disableCuratedDrag={treeDropZonesReadOnly}

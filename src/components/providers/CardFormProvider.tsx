@@ -282,9 +282,15 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
         nextCard = { ...nextCard, [k]: v } as CardUpdate;
       }
       const mergedCard = mergeEditorContentInto(nextCard);
+      const wasPristine = persistableSnapshotsEqual(prev.cardData, prev.lastSavedState.cardData);
       return {
         ...prev,
         cardData: mergedCard,
+        lastSavedState: wasPristine
+          ? {
+              cardData: mergedCard,
+            }
+          : prev.lastSavedState,
       };
     });
   }, [mergeEditorContentInto]);

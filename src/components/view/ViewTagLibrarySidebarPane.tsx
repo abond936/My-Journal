@@ -1,15 +1,13 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import { TagAdminList } from '@/components/admin/tag-admin/TagAdminList';
 import { useTagManagement } from '@/components/admin/tag-admin/useTagManagement';
 import tagAdminStyles from '@/app/admin/tag-admin/tag-admin.module.css';
 import styles from './ViewTagLibrarySidebarPane.module.css';
 
 /**
- * Full tag-library editing on `/view` (admin only). Same hook + list as `/admin/tag-admin` / Studio rail;
- * `/admin/tag-admin` remains the canonical full-page fallback.
+ * Full tag-library editing on `/view` (admin only). Same hook + list as the Studio rail.
  */
 export default function ViewTagLibrarySidebarPane() {
   const {
@@ -27,8 +25,7 @@ export default function ViewTagLibrarySidebarPane() {
   return (
     <div className={styles.wrap}>
       <p className={styles.intro}>
-        Drag by the handle to reorder; hold <strong>Shift</strong> to reparent. Use <code>+</code> to add a child. Same
-        data as <Link href="/admin/tag-admin">Tag Management</Link>—open there for the dedicated page.
+        Drag by the handle to reorder; hold <strong>Shift</strong> to reparent. Use <code>+</code> to add a child.
       </p>
       {loading ? <p className={styles.statusLine}>Loading tags…</p> : null}
       {error ? <p className={tagAdminStyles.error}>{error.toString()}</p> : null}

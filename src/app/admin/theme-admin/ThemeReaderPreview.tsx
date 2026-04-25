@@ -11,15 +11,20 @@ type ApiErrorResponse = {
 };
 
 const PREVIEW_SCOPE = 'themeAdminReaderPreview';
+const ADMIN_PREVIEW_SCOPE = 'themeAdminAdminPreview';
 
 const PREVIEW_DEBOUNCE_MS = 280;
 
 export default function ThemeReaderPreview({
   themeData,
   darkModeShift,
+  adminThemeData,
+  adminDarkModeShift,
 }: {
   themeData: StructuredThemeData | null;
   darkModeShift: number;
+  adminThemeData: StructuredThemeData | null;
+  adminDarkModeShift: number;
 }) {
   const [previewMode, setPreviewMode] = useState<PreviewMode>('light');
   const [scopedCss, setScopedCss] = useState('');
@@ -28,11 +33,14 @@ export default function ThemeReaderPreview({
   const previewBodyJson = useMemo(() => {
     if (!themeData?.palette?.length || !themeData.themeColors?.length) return '';
     try {
-      return JSON.stringify({ ...themeData, darkModeShift });
+      return JSON.stringify({
+        reader: { themeData, darkModeShift },
+        admin: { themeData: adminThemeData, darkModeShift: adminDarkModeShift },
+      });
     } catch {
       return '';
     }
-  }, [themeData, darkModeShift]);
+  }, [themeData, darkModeShift, adminThemeData, adminDarkModeShift]);
 
   useEffect(() => {
     if (!previewBodyJson) {
@@ -44,17 +52,42 @@ export default function ThemeReaderPreview({
     const t = window.setTimeout(() => {
       (async () => {
         try {
-          const res = await fetch('/api/theme/preview-css', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            signal: ctrl.signal,
-            body: previewBodyJson,
-          });
-          const data = await res.json();
-          if (!ctrl.signal.aborted && res.ok && typeof data.css === 'string') {
-            setScopedCss(data.css);
+          const body = JSON.parse(previewBodyJson) as {
+            reader: { themeData: StructuredThemeData; darkModeShift: number };
+            admin: { themeData: StructuredThemeData | null; darkModeShift: number };
+          };
+          const [readerRes, adminRes] = await Promise.all([
+            fetch('/api/theme/preview-css', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              signal: ctrl.signal,
+              body: JSON.stringify({ ...body.reader.themeData, darkModeShift: body.reader.darkModeShift }),
+            }),
+            body.admin.themeData
+              ? fetch('/api/theme/preview-css', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  signal: ctrl.signal,
+                  body: JSON.stringify({
+                    themeData: body.admin.themeData,
+                    darkModeShift: body.admin.darkModeShift,
+                    scope: 'admin',
+                  }),
+                })
+              : Promise.resolve(null),
+          ]);
+          const readerData = await readerRes.json();
+          const adminData = adminRes ? await adminRes.json() : { css: '' };
+          if (
+            !ctrl.signal.aborted &&
+            readerRes.ok &&
+            (!adminRes || adminRes.ok) &&
+            typeof readerData.css === 'string' &&
+            typeof adminData.css === 'string'
+          ) {
+            setScopedCss(`${readerData.css}\n${adminData.css}`);
           } else if (!ctrl.signal.aborted) {
-            const err = data as ApiErrorResponse;
+            const err = (!readerRes.ok ? readerData : adminData) as ApiErrorResponse;
             if (err.message || err.error) {
               console.error('[ThemeReaderPreview] preview CSS failed:', err.message || err.error);
             }
@@ -78,7 +111,7 @@ export default function ThemeReaderPreview({
       <div className={styles.readerPreviewHeader}>
         <h3 className={styles.readerPreviewTitle}>Reader preview</h3>
         <p className={styles.readerPreviewHint}>
-          Sample feed tile using the tokens above (does not affect the rest of this page).
+          Scoped reader and admin samples using the tokens above (does not affect the rest of this page).
         </p>
         <div className={styles.readerPreviewModeToggle}>
           <button
@@ -98,23 +131,53 @@ export default function ThemeReaderPreview({
         </div>
       </div>
       {scopedCss ? <style dangerouslySetInnerHTML={{ __html: scopedCss }} /> : null}
-      <div
-        className={`${PREVIEW_SCOPE} ${styles.readerPreviewCanvas}`}
-        data-theme={previewMode}
-      >
-        <div className={styles.readerPreviewPage}>
-          <div className={styles.readerPreviewCard}>
-            <div className={styles.readerPreviewTagRow}>
-              <span className={styles.readerPreviewTagWho}>Who</span>
-              <span className={styles.readerPreviewTagWhen}>When</span>
+      <div className={styles.previewSamples}>
+        <div
+          className={`${PREVIEW_SCOPE} ${styles.readerPreviewCanvas}`}
+          data-theme={previewMode}
+        >
+          <div className={styles.readerPreviewPage}>
+            <div className={styles.previewKicker}>Reader</div>
+            <div className={styles.readerPreviewCard}>
+              <div className={styles.readerPreviewTagRow}>
+                <span className={styles.readerPreviewTagWho}>Who</span>
+                <span className={styles.readerPreviewTagWhen}>When</span>
+              </div>
+              <h4 className={styles.readerPreviewCardTitle}>Summer at the lake</h4>
+              <p className={styles.readerPreviewCardBody}>
+                A short sample paragraph in body type - how family will read longer stories on a phone.
+              </p>
+              <button type="button" className={styles.readerPreviewPrimaryBtn}>
+                Open story
+              </button>
             </div>
-            <h4 className={styles.readerPreviewCardTitle}>Summer at the lake</h4>
-            <p className={styles.readerPreviewCardBody}>
-              A short sample paragraph in body type—how family will read longer stories on a phone.
-            </p>
-            <button type="button" className={styles.readerPreviewPrimaryBtn}>
-              Open story
-            </button>
+          </div>
+        </div>
+        <div
+          className={`${ADMIN_PREVIEW_SCOPE} ${styles.readerPreviewCanvas}`}
+          data-theme={previewMode}
+        >
+          <div className={styles.readerPreviewPage}>
+            <div className={styles.previewKicker}>Admin</div>
+            <div className={styles.adminPreviewPanel}>
+              <div className={styles.adminPreviewToolbar}>
+                <button type="button" className={styles.readerPreviewPrimaryBtn}>
+                  Save
+                </button>
+                <button type="button" className={styles.adminPreviewSecondaryBtn}>
+                  Review changes
+                </button>
+              </div>
+              <label className={styles.adminPreviewLabel}>
+                Title
+                <input className={styles.adminPreviewInput} value="Greg's Birthday" readOnly />
+              </label>
+              <div className={styles.adminPreviewGridRow}>
+                <span>Status</span>
+                <strong>Draft</strong>
+              </div>
+              <div className={styles.adminPreviewNotice}>Tags saved. 12 media selected.</div>
+            </div>
           </div>
         </div>
       </div>

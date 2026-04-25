@@ -364,6 +364,15 @@
   position: relative;
 }
 
+.questionsColumnResizeHandle {
+  width: 8px;
+  min-height: 120px;
+  align-self: stretch;
+  flex-shrink: 0;
+  z-index: 40;
+  position: relative;
+}
+
 .studioCardEditInBankColumn {
   flex: 0 1 480px;
   min-width: min(100%, 280px);
@@ -379,6 +388,250 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.studioQuestionsColumn {
+  flex: 0 1 320px;
+  min-width: min(100%, 260px);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.studioQuestionsPane {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-md);
+  background: var(--layout-background1-color);
+  overflow: hidden;
+}
+
+.studioQuestionsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
+.studioQuestionFilters,
+.studioQuestionCreate {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
+}
+
+.studioQuestionTreePanel {
+  flex: 0 0 auto;
+  max-height: 180px;
+  overflow: auto;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--layout-background2-color);
+  padding: var(--spacing-xs);
+}
+
+.studioQuestionTreeRoot,
+.studioQuestionTreeNested {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.studioQuestionTreeNested {
+  padding-left: var(--spacing-sm);
+}
+
+.studioQuestionTreeButton {
+  width: 100%;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--text1-color);
+  font-size: var(--font-size-xs);
+  text-align: left;
+  padding: 0 var(--spacing-xs);
+  cursor: pointer;
+}
+
+.studioQuestionTreeButton:hover,
+.studioQuestionTreeButtonActive {
+  background: color-mix(in srgb, var(--color3) 12%, transparent);
+}
+
+.studioQuestionTreeCount {
+  flex-shrink: 0;
+  color: var(--text2-color);
+  font-variant-numeric: tabular-nums;
+}
+
+.studioQuestionInput,
+.studioQuestionSelect,
+.studioQuestionTextarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--input-background-color);
+  color: var(--text1-color);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+}
+
+.studioQuestionTextarea {
+  resize: vertical;
+  min-height: 72px;
+}
+
+.studioQuestionsList {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding-right: 2px;
+}
+
+.studioQuestionRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--layout-background2-color);
+}
+
+.studioQuestionPrompt {
+  color: var(--text1-color);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.35;
+}
+
+.studioQuestionMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  color: var(--text2-color);
+  font-size: var(--font-size-xs);
+}
+
+.studioQuestionTagChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  align-items: center;
+}
+
+.studioQuestionTagChip,
+.studioQuestionEditTagsChip,
+.studioQuestionNoTags {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--layout-background1-color);
+  color: var(--text1-color);
+  font-size: var(--font-size-xs);
+  line-height: 1;
+}
+
+.studioQuestionTagChip {
+  padding: 0 4px 0 var(--spacing-xs);
+}
+
+.studioQuestionEditTagsChip {
+  padding: 0 var(--spacing-xs);
+  cursor: pointer;
+}
+
+.studioQuestionNoTags {
+  padding: 0 var(--spacing-xs);
+  color: var(--text2-color);
+  font-style: italic;
+}
+
+.studioQuestionTagName {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.studioQuestionTagRemove {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--text2-color);
+  font: inherit;
+  cursor: pointer;
+}
+
+.studioQuestionTagRemove:hover,
+.studioQuestionEditTagsChip:hover {
+  background: color-mix(in srgb, var(--color3) 12%, transparent);
+  color: var(--text1-color);
+}
+
+.studioQuestionTagRemove:disabled,
+.studioQuestionEditTagsChip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.studioQuestionActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.studioQuestionPrimaryButton,
+.studioQuestionSmallButton {
+  min-height: 30px;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.studioQuestionPrimaryButton {
+  border: none;
+  background: var(--color3);
+  color: var(--button-solid-text-color);
+  padding: 0 var(--spacing-sm);
+}
+
+.studioQuestionSmallButton {
+  border: var(--border-width-thin) solid var(--border1-color);
+  background: var(--layout-background1-color);
+  color: var(--text1-color);
+  padding: 0 var(--spacing-sm);
+}
+
+.studioQuestionPrimaryButton:disabled,
+.studioQuestionSmallButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .studioMediaBankColumn > :global(section),

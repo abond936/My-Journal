@@ -115,6 +115,7 @@ const CardForm: React.FC = () => {
   const handleExcerptChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setField('excerpt', e.target.value), [setField]);
   const isExcerptAuto = cardData.excerptAuto !== false;
   const autoExcerptPreview = useMemo(() => generateExcerpt(cardData.content), [cardData.content]);
+  const autoExcerptDisplay = autoExcerptPreview || cardData.excerpt || 'Excerpt will be generated from content when saved.';
   const handleExcerptAutoToggle = useCallback(() => {
     const newAuto = !isExcerptAuto;
     setField('excerptAuto', newAuto);
@@ -285,6 +286,13 @@ const CardForm: React.FC = () => {
     void persistFieldPatch({ excerpt: nextExcerpt });
   }, [cardData.docId, cardData.excerpt, isExcerptAuto, lastSavedState.cardData.excerpt, persistFieldPatch]);
 
+  const handleSingleLineFieldEnter = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.blur();
+  }, []);
+
   const allowedDisplayModes = useMemo(
     () => getAllowedDisplayModes(cardData.type ?? 'story'),
     [cardData.type]
@@ -435,6 +443,7 @@ const CardForm: React.FC = () => {
                   value={cardData.title}
                   onChange={handleTitleChange}
                   onBlur={persistTitleOnBlur}
+                  onKeyDown={handleSingleLineFieldEnter}
                   placeholder="Card Title"
                   className={clsx(styles.titleInput, errors.title && styles.inputError)}
                 />
@@ -443,6 +452,7 @@ const CardForm: React.FC = () => {
                   value={cardData.subtitle || ''}
                   onChange={handleSubtitleChange}
                   onBlur={persistSubtitleOnBlur}
+                  onKeyDown={handleSingleLineFieldEnter}
                   placeholder="Subtitle"
                   className={styles.subtitleInput}
                 />
@@ -461,7 +471,7 @@ const CardForm: React.FC = () => {
                       </label>
                       {isExcerptAuto ? (
                         <div className={styles.excerptPreview}>
-                          {autoExcerptPreview || 'Excerpt will be generated from content when saved.'}
+                          {autoExcerptDisplay}
                         </div>
                       ) : (
                         <textarea
@@ -478,7 +488,7 @@ const CardForm: React.FC = () => {
                     <>
                       {isExcerptAuto ? (
                         <div className={styles.excerptPreview}>
-                          {autoExcerptPreview || 'Excerpt will be generated from content when saved.'}
+                          {autoExcerptDisplay}
                         </div>
                       ) : (
                         <textarea
@@ -523,7 +533,7 @@ const CardForm: React.FC = () => {
                       className={clsx(styles.statusSelect, errors.type && styles.inputError)}
                     >
                       <option value="story">Story</option>
-                      <option value="qa">Q&A</option>
+                      {cardData.type === 'qa' && <option value="qa">Q&A</option>}
                       <option value="quote">Quote</option>
                       <option value="callout">Callout</option>
                       <option value="gallery">Gallery</option>
@@ -682,6 +692,7 @@ const CardForm: React.FC = () => {
               value={cardData.title}
               onChange={handleTitleChange}
               onBlur={persistTitleOnBlur}
+              onKeyDown={handleSingleLineFieldEnter}
               placeholder="Card Title"
               className={clsx(styles.titleInput, errors.title && styles.inputError)}
             />
@@ -690,6 +701,7 @@ const CardForm: React.FC = () => {
               value={cardData.subtitle || ''}
               onChange={handleSubtitleChange}
               onBlur={persistSubtitleOnBlur}
+              onKeyDown={handleSingleLineFieldEnter}
               placeholder="Subtitle"
               className={styles.subtitleInput}
             />
@@ -708,7 +720,7 @@ const CardForm: React.FC = () => {
                   </label>
                   {isExcerptAuto ? (
                     <div className={styles.excerptPreview}>
-                      {autoExcerptPreview || 'Excerpt will be generated from content when saved.'}
+                      {autoExcerptDisplay}
                     </div>
                   ) : (
                     <textarea
@@ -725,7 +737,7 @@ const CardForm: React.FC = () => {
                 <>
                   {isExcerptAuto ? (
                     <div className={styles.excerptPreview}>
-                      {autoExcerptPreview || 'Excerpt will be generated from content when saved.'}
+                      {autoExcerptDisplay}
                     </div>
                   ) : (
                     <textarea
@@ -770,7 +782,7 @@ const CardForm: React.FC = () => {
                   className={clsx(styles.statusSelect, errors.type && styles.inputError)}
                 >
                   <option value="story">Story</option>
-                  <option value="qa">Q&A</option>
+                  {cardData.type === 'qa' && <option value="qa">Q&A</option>}
                   <option value="quote">Quote</option>
                   <option value="callout">Callout</option>
                   <option value="gallery">Gallery</option>

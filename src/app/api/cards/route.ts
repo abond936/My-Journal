@@ -466,6 +466,19 @@ export async function POST(request: Request) {
         400
       );
     }
+
+    if (validationResult.data.type === 'qa') {
+      return errorResponse(
+        {
+          ok: false,
+          code: 'CARD_CREATE_QA_REQUIRES_QUESTION',
+          message: 'Q&A cards must be created from a question-bank prompt.',
+          severity: 'error',
+          retryable: false,
+        },
+        400
+      );
+    }
     
     // The createCard service function will handle defaults and timestamps
     const newCard = await createCard(cardData as Omit<Card, 'docId' | 'createdAt' | 'updatedAt' | 'filterTags'>);

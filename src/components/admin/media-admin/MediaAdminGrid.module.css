@@ -80,7 +80,8 @@
 }
 
 .tagSearchFoot {
-  padding: 6px var(--spacing-sm) var(--spacing-sm);
+  margin-top: auto;
+  padding: 8px var(--spacing-sm) var(--spacing-sm);
   min-width: 0;
 }
 

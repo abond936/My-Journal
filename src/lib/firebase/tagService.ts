@@ -53,10 +53,11 @@ function isTagNameTakenBySiblingOrRootDimension(
  */
 export async function mergeDerivedTagsForCardRecord(
   cardData: DocumentData | undefined,
-  _transaction?: Transaction
+  _transaction?: Transaction,
+  allTags?: Tag[]
 ): Promise<{ filterTags: Record<string, boolean>; dimensionalTags: OrganizedTags }> {
   const directTags = (cardData?.tags as string[] | undefined) || [];
-  return calculateDerivedTagData(directTags);
+  return calculateDerivedTagData(directTags, allTags);
 }
 
 /**
@@ -186,7 +187,7 @@ export async function getTagAncestors(tagIds: string[], allTags?: Tag[]): Promis
  * @param directTagIds - The tag IDs directly assigned to the card
  * @returns Promise resolving to all derived tag data
  */
-export async function calculateDerivedTagData(directTagIds: string[]): Promise<{
+export async function calculateDerivedTagData(directTagIds: string[], allTags?: Tag[]): Promise<{
   filterTags: Record<string, boolean>;
   dimensionalTags: OrganizedTags;
 }> {
@@ -199,10 +200,10 @@ export async function calculateDerivedTagData(directTagIds: string[]): Promise<{
 
   try {
     /** One Firestore read for the whole derived calculation (was two via getTagAncestors + organizeTagsByDimension each calling getAllTags). */
-    const allTags = await getAllTags();
+    const tagCatalog = allTags ?? (await getAllTags());
 
     // Get ancestor tags
-    const ancestorTags = await getTagAncestors(directTagIds, allTags);
+    const ancestorTags = await getTagAncestors(directTagIds, tagCatalog);
 
     // Combine direct tags with ancestors for filterTags
     const inheritedTags = [...new Set([...directTagIds, ...ancestorTags])];
@@ -214,7 +215,7 @@ export async function calculateDerivedTagData(directTagIds: string[]): Promise<{
     }, {} as Record<string, boolean>);
 
     // Organize both direct and inherited tags by dimension
-    const dimensionalTags = await organizeTagsByDimension(inheritedTags, allTags);
+    const dimensionalTags = await organizeTagsByDimension(inheritedTags, tagCatalog);
 
     const result = {
       filterTags,
@@ -1233,7 +1234,7 @@ export async function updateTagAndDescendantPaths(tagId: string, newParentId: st
   
   // 11. Update all affected cards with recalculated derived data
   for (const card of affectedCards) {
-    const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(card.data, transaction);
+    const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(card.data, transaction, allTags);
     const journal = computeJournalWhenSortKeys(dimensionalTags.when || [], tagMap);
 
     transaction.update(card.ref, {

@@ -103,16 +103,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ question }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
+    const validationFailure = message.includes('dimensional tag');
     return errorResponse(
       {
         ok: false,
-        code: 'QUESTION_CREATE_FAILED',
-        message: 'Failed to create question.',
+        code: validationFailure ? 'QUESTION_CREATE_INVALID_TAGS' : 'QUESTION_CREATE_FAILED',
+        message: validationFailure ? message : 'Failed to create question.',
         severity: 'error',
-        retryable: true,
+        retryable: !validationFailure,
         error: message,
       },
-      500
+      validationFailure ? 400 : 500
     );
   }
 }

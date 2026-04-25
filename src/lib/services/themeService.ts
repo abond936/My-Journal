@@ -2,7 +2,23 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { getAdminApp } from '@/lib/config/firebase/admin';
-import { BaseColor, StructuredThemeData, TypographyTokens, SpacingTokens, BorderTokens, ShadowTokens, ZIndexTokens, LayoutTokens, ComponentTokens, StateTokens, GradientTokens, ThemeColor } from '@/lib/types/theme';
+import {
+  BaseColor,
+  StructuredThemeData,
+  TypographyTokens,
+  SpacingTokens,
+  BorderTokens,
+  ShadowTokens,
+  ZIndexTokens,
+  LayoutTokens,
+  ComponentTokens,
+  StateTokens,
+  GradientTokens,
+  ThemeColor,
+  ScopedThemeDocumentData,
+  ScopedThemeSettings,
+} from '@/lib/types/theme';
+import { getDefaultScopedThemeDocument } from '@/lib/theme/themePresets';
 
 /**
  * Server-side theme service: JSON backup, Firestore runtime source, CSS token generation.
@@ -475,6 +491,10 @@ export function themeDataForCssGeneration(
   return rest;
 }
 
+type PersistedThemeData =
+  | (StructuredThemeData & { darkModeShift?: number; activePresetId?: string })
+  | ScopedThemeDocumentData;
+
 /** Firestore can hold a partial `data` object; building CSS from it throws or yields broken vars. */
 function isThemeDataViable(
   data: (StructuredThemeData & { darkModeShift?: number }) | null | undefined
@@ -490,27 +510,99 @@ function isThemeDataViable(
   return true;
 }
 
+function isScopedThemeDocument(data: unknown): data is ScopedThemeDocumentData {
+  const row = data as Partial<ScopedThemeDocumentData> | null | undefined;
+  return row?.version === 2 && !!row.reader?.data && !!row.admin?.data;
+}
+
+function themeSettingsFromFlat(
+  data: (StructuredThemeData & { darkModeShift?: number; activePresetId?: string }) | null | undefined,
+  fallback: ScopedThemeSettings
+): ScopedThemeSettings {
+  if (!isThemeDataViable(data)) return fallback;
+  return {
+    data,
+    activePresetId:
+      data.activePresetId === 'journal' ||
+      data.activePresetId === 'editorial' ||
+      data.activePresetId === 'admin' ||
+      data.activePresetId === 'custom'
+        ? data.activePresetId
+        : fallback.activePresetId ?? 'custom',
+    darkModeShift: data.darkModeShift ?? fallback.darkModeShift ?? 5,
+  };
+}
+
+export function normalizeThemeDocument(data: unknown): ScopedThemeDocumentData {
+  const fallback = getDefaultScopedThemeDocument();
+  if (isScopedThemeDocument(data)) {
+    return {
+      version: 2,
+      reader: themeSettingsFromFlat(
+        {
+          ...data.reader.data,
+          activePresetId: data.reader.activePresetId,
+          darkModeShift: data.reader.darkModeShift,
+        },
+        fallback.reader
+      ),
+      admin: themeSettingsFromFlat(
+        {
+          ...data.admin.data,
+          activePresetId: data.admin.activePresetId,
+          darkModeShift: data.admin.darkModeShift,
+        },
+        fallback.admin
+      ),
+    };
+  }
+
+  return {
+    ...fallback,
+    reader: themeSettingsFromFlat(
+      data as (StructuredThemeData & { darkModeShift?: number; activePresetId?: string }) | null | undefined,
+      fallback.reader
+    ),
+  };
+}
+
 /**
  * Theme for SSR: Firestore `app_settings/theme` when present and complete, else `theme-data.json`.
  */
 export async function getResolvedThemeData(): Promise<
   StructuredThemeData & { darkModeShift?: number; activePresetId?: string }
 > {
-  const fromFile = await getThemeData();
+  const scoped = await getResolvedScopedThemeDocument();
+  return {
+    ...scoped.reader.data,
+    darkModeShift: scoped.reader.darkModeShift ?? 5,
+    activePresetId: scoped.reader.activePresetId,
+  };
+}
+
+/**
+ * Theme admin document: Firestore `app_settings/theme` when present and complete,
+ * else `theme-data.json` as reader + Admin preset as admin.
+ */
+export async function getResolvedScopedThemeDocument(): Promise<ScopedThemeDocumentData> {
+  const fromFile = normalizeThemeDocument(await getThemeData());
   try {
     getAdminApp();
     const db = getFirestore();
     const snap = await db.collection(THEME_FIRESTORE_COLLECTION).doc(THEME_FIRESTORE_DOC).get();
     if (snap.exists) {
       const row = snap.data();
-      const data = row?.data as (StructuredThemeData & { darkModeShift?: number }) | undefined;
-      if (isThemeDataViable(data)) {
-        return {
-          ...data!,
-          darkModeShift: data!.darkModeShift ?? row?.darkModeShift ?? 5,
-        };
+      const data = row?.data as PersistedThemeData | undefined;
+      if (isScopedThemeDocument(data)) {
+        return normalizeThemeDocument(data);
       }
-      if (data?.palette?.length) {
+      if (isThemeDataViable(data as StructuredThemeData | undefined)) {
+        return normalizeThemeDocument({
+          ...(data as StructuredThemeData),
+          darkModeShift: (data as { darkModeShift?: number }).darkModeShift ?? row?.darkModeShift ?? 5,
+        });
+      }
+      if ((data as StructuredThemeData | undefined)?.palette?.length) {
         console.warn(
           '[theme] Firestore app_settings/theme is incomplete; using theme-data.json. Re-save from Theme admin or run npm run seed:theme-firestore.'
         );
@@ -523,7 +615,7 @@ export async function getResolvedThemeData(): Promise<
 }
 
 async function persistThemeToFirestore(
-  themeData: StructuredThemeData & { darkModeShift?: number; activePresetId?: string }
+  themeData: PersistedThemeData
 ): Promise<void> {
   getAdminApp();
   const db = getFirestore();
@@ -544,7 +636,7 @@ export async function syncThemeFromJsonToFirestore(): Promise<void> {
 
 /** Writes `theme-data.json` (git-friendly backup) and Firestore (runtime source of truth). */
 export const saveThemeData = async (
-  themeData: StructuredThemeData & { darkModeShift?: number; activePresetId?: string }
+  themeData: PersistedThemeData
 ): Promise<void> => {
   try {
     const jsonPath = path.join(process.cwd(), 'theme-data.json');

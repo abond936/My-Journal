@@ -5,6 +5,7 @@ import { buildThemeTokensCss, themeDataForCssGeneration } from '@/lib/services/t
 import { scopeThemeTokensCss } from '@/lib/theme/scopeThemeTokensCss';
 
 const READER_PREVIEW_SCOPE = '.themeAdminReaderPreview';
+const ADMIN_PREVIEW_SCOPE = '.themeAdminAdminPreview';
 
 type ApiErrorPayload = {
   ok: false;
@@ -37,7 +38,8 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    if (!body?.palette || !Array.isArray(body.palette)) {
+    const themeData = body?.themeData ?? body;
+    if (!themeData?.palette || !Array.isArray(themeData.palette)) {
       return errorResponse(
         {
           ok: false,
@@ -50,9 +52,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const cleaned = themeDataForCssGeneration(body);
+    const scope = body?.scope === 'admin' ? ADMIN_PREVIEW_SCOPE : READER_PREVIEW_SCOPE;
+    const cleaned = themeDataForCssGeneration(themeData);
     const raw = buildThemeTokensCss(cleaned);
-    const css = scopeThemeTokensCss(raw, READER_PREVIEW_SCOPE);
+    const css = scopeThemeTokensCss(raw, scope);
     return NextResponse.json({ css });
   } catch (error) {
     console.error('[preview-css]', error);
