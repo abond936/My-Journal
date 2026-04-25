@@ -2,6 +2,10 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import type { StructuredThemeData } from '@/lib/types/theme';
+import type { Card } from '@/lib/types/card';
+import type { Media } from '@/lib/types/photo';
+import CardDetailPage from '@/app/view/[id]/CardDetailPage';
+import V2ContentCard from '@/components/view/V2ContentCard';
 import styles from './ThemeAdmin.module.css';
 
 type PreviewMode = 'light' | 'dark';
@@ -14,6 +18,97 @@ const PREVIEW_SCOPE = 'themeAdminReaderPreview';
 const ADMIN_PREVIEW_SCOPE = 'themeAdminAdminPreview';
 
 const PREVIEW_DEBOUNCE_MS = 280;
+
+const now = 1_700_000_000_000;
+const previewTransparentPixel =
+  'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
+const lakeMedia: Media = {
+  docId: 'preview-lake',
+  filename: 'lake-preview.png',
+  width: 1200,
+  height: 760,
+  size: 1,
+  contentType: 'image/png',
+  storageUrl: previewTransparentPixel,
+  storagePath: 'preview/lake-preview.png',
+  source: 'local',
+  sourcePath: 'preview/lake-preview.png',
+  createdAt: now,
+  updatedAt: now,
+};
+
+const portraitMedia: Media = {
+  ...lakeMedia,
+  docId: 'preview-portrait',
+  filename: 'portrait-preview.png',
+  width: 900,
+  height: 1100,
+  storageUrl: previewTransparentPixel,
+};
+
+const baseCard = {
+  docId: '',
+  title_lowercase: '',
+  status: 'published' as const,
+  tags: [],
+  content: '',
+  createdAt: now,
+  updatedAt: now,
+};
+
+const previewCards: Card[] = [
+  {
+    ...baseCard,
+    title: 'Summer at the lake',
+    type: 'story',
+    displayMode: 'navigate',
+    coverImage: lakeMedia,
+    contentMedia: ['preview-lake'],
+    content:
+      '<p>We came back to this same little pier every July. The photos are ordinary, but together they make the place feel alive again.</p>',
+  },
+  {
+    ...baseCard,
+    title: "Greg's birthday",
+    type: 'gallery',
+    displayMode: 'navigate',
+    coverImage: lakeMedia,
+    galleryMedia: [
+      { mediaId: 'preview-lake', media: lakeMedia, order: 0, caption: 'Cake, cousins, and the backyard table.' },
+      { mediaId: 'preview-portrait', media: portraitMedia, order: 1, caption: 'Opening presents.' },
+    ],
+  },
+  {
+    ...baseCard,
+    title: 'What did Grandma always cook?',
+    type: 'qa',
+    displayMode: 'navigate',
+    excerpt: 'A Sunday answer from the kitchen table.',
+    content:
+      '<p>Chicken and noodles on Sundays, usually with everyone finding a chair wherever they could.</p>',
+  },
+  {
+    ...baseCard,
+    title: 'Family saying',
+    subtitle: 'Grandpa',
+    excerpt: 'Grandpa',
+    type: 'quote',
+    displayMode: 'static',
+    content: '<p>Family is where the story keeps going.</p>',
+  },
+  {
+    ...baseCard,
+    title: 'Why this trip mattered',
+    subtitle: 'Context note',
+    excerpt: 'A short note that frames the memory.',
+    type: 'callout',
+    displayMode: 'static',
+    content: '<p>This was the first summer everyone made it back at the same time.</p>',
+  },
+];
+
+const [storyPreviewCard, galleryPreviewCard, questionPreviewCard] = previewCards;
 
 export default function ThemeReaderPreview({
   themeData,
@@ -111,7 +206,7 @@ export default function ThemeReaderPreview({
       <div className={styles.readerPreviewHeader}>
         <h3 className={styles.readerPreviewTitle}>Reader preview</h3>
         <p className={styles.readerPreviewHint}>
-          Scoped reader and admin samples using the tokens above (does not affect the rest of this page).
+          Preview only - applying presets changes this scoped sample until you choose Save Theme.
         </p>
         <div className={styles.readerPreviewModeToggle}>
           <button
@@ -136,25 +231,58 @@ export default function ThemeReaderPreview({
           className={`${PREVIEW_SCOPE} ${styles.readerPreviewCanvas}`}
           data-theme={previewMode}
         >
-          <div className={styles.readerPreviewPage}>
-            <div className={styles.previewKicker}>Reader</div>
-            <div className={styles.readerPreviewCard}>
-              <div className={styles.readerPreviewTagRow}>
-                <span className={styles.readerPreviewTagWho}>Who</span>
-                <span className={styles.readerPreviewTagWhen}>When</span>
+          <div className={styles.readerPreviewViewport}>
+            <aside className={styles.readerPreviewSidebar}>
+              <div className={styles.previewKicker}>Sidebar open</div>
+              <div className={styles.readerPreviewModePill}>Freeform</div>
+              <div className={styles.readerPreviewFilterGroup}>
+                <span className={styles.readerPreviewFilterTitle}>Cards</span>
+                <div className={styles.readerPreviewChipRow}>
+                  <span>Story</span>
+                  <span>Gallery</span>
+                  <span>Q&A</span>
+                  <span>Quote</span>
+                  <span>Callout</span>
+                </div>
               </div>
-              <h4 className={styles.readerPreviewCardTitle}>Summer at the lake</h4>
-              <p className={styles.readerPreviewCardBody}>
-                A short sample paragraph in body type - how family will read longer stories on a phone.
-              </p>
-              <button type="button" className={styles.readerPreviewPrimaryBtn}>
-                Open story
-              </button>
-            </div>
+              <div className={styles.readerPreviewFilterGroup}>
+                <span className={styles.readerPreviewFilterTitle}>Tags</span>
+                <div className={styles.readerPreviewTagList}>
+                  <span>Who / Family</span>
+                  <span>What / Birthday</span>
+                  <span>When / 1980s</span>
+                  <span>Where / Illinois</span>
+                </div>
+              </div>
+            </aside>
+            <main className={styles.readerPreviewMain}>
+              <section className={styles.readerPreviewBlock}>
+                <div className={styles.previewKicker}>Feed preview - closed cards</div>
+                <div className={styles.readerPreviewFeedGrid}>
+                  {previewCards.map((card) => (
+                    <div key={`${card.type}-${card.title}`} className={styles.readerPreviewFeedCell}>
+                      <V2ContentCard card={card} fullWidth />
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className={styles.readerPreviewBlock}>
+                <div className={styles.previewKicker}>Detail preview - opened cards</div>
+                <div className={styles.readerPreviewOpenGrid}>
+                  {[storyPreviewCard, galleryPreviewCard, questionPreviewCard].map((card) => (
+                    <div key={`open-${card.type}`} className={styles.readerPreviewDetailFrame}>
+                      <div className={styles.previewKicker}>Open {card.type === 'qa' ? 'question' : card.type}</div>
+                      <CardDetailPage card={card} childrenCards={[]} suppressDiscovery />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </main>
           </div>
         </div>
         <div
-          className={`${ADMIN_PREVIEW_SCOPE} ${styles.readerPreviewCanvas}`}
+          className={`${ADMIN_PREVIEW_SCOPE} ${styles.adminPreviewCanvas}`}
           data-theme={previewMode}
         >
           <div className={styles.readerPreviewPage}>

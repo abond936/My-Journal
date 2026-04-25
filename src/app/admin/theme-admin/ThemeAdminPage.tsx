@@ -27,6 +27,12 @@ type ApiErrorResponse = {
   error?: string;
 };
 
+type SaveNotice = {
+  type: 'success' | 'error' | 'warning';
+  message: string;
+  detail?: string;
+};
+
 // Color Palette Editor Component
 const PaletteColorEditor: React.FC<{
   color: BaseColor | ThemeColor;
@@ -764,6 +770,7 @@ export default function ThemeAdminPage() {
   const [adminThemeData, setAdminThemeData] = useState<StructuredThemeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveNotice, setSaveNotice] = useState<SaveNotice | null>(null);
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('light');
   const [darkModeShift, setDarkModeShift] = useState(5);
   const [adminDarkModeShift, setAdminDarkModeShift] = useState(5);
@@ -926,6 +933,7 @@ export default function ThemeAdminPage() {
 
   const applyPreset = (id: ThemePresetId) => {
     const doc = getThemePresetDocument(id);
+    setSaveNotice(null);
     setDarkModeShift(doc.darkModeShift ?? 5);
     setActivePresetId(doc.activePresetId === 'journal' || doc.activePresetId === 'editorial' ? doc.activePresetId : id);
     const { darkModeShift: _ds, activePresetId: _ap, ...structured } = doc;
@@ -934,6 +942,7 @@ export default function ThemeAdminPage() {
 
   const applyAdminPreset = (id: ThemeAdminPresetId) => {
     const doc = getAdminThemePresetDocument(id);
+    setSaveNotice(null);
     setAdminDarkModeShift(doc.darkModeShift ?? 5);
     setActiveAdminPresetId(doc.activePresetId === 'admin' ? doc.activePresetId : id);
     const { darkModeShift: _ds, activePresetId: _ap, ...structured } = doc;
@@ -1023,11 +1032,16 @@ export default function ThemeAdminPage() {
       ...validateThemeData(adminThemeData).map((error) => `Admin: ${error}`),
     ];
     if (validationErrors.length > 0) {
-      alert(`Cannot save theme due to validation errors:\n${validationErrors.join('\n')}`);
+      setSaveNotice({
+        type: 'warning',
+        message: 'Cannot save theme until validation errors are resolved.',
+        detail: validationErrors.join(' '),
+      });
       return;
     }
     
     setSaving(true);
+    setSaveNotice(null);
     try {
       const dataToSave: ScopedThemeDocumentData = {
         version: 2,
@@ -1051,14 +1065,26 @@ export default function ThemeAdminPage() {
       
       if (response.ok) {
         router.refresh();
-        alert('Theme saved successfully!');
+        setSaveNotice({
+          type: 'success',
+          message: 'Theme saved successfully.',
+          detail: 'Reader and Admin theme settings were persisted.',
+        });
       } else {
         const err = (await response.json().catch(() => ({}))) as ApiErrorResponse;
-        alert(`Failed to save theme: ${err.message || err.error || 'Request failed.'}`);
+        setSaveNotice({
+          type: 'error',
+          message: 'Failed to save theme.',
+          detail: err.message || err.error || 'Request failed.',
+        });
       }
     } catch (error) {
       console.error('Failed to save theme:', error);
-      alert(`Failed to save theme: ${error}`);
+      setSaveNotice({
+        type: 'error',
+        message: 'Failed to save theme.',
+        detail: error instanceof Error ? error.message : String(error),
+      });
     } finally {
       setSaving(false);
     }
@@ -1093,6 +1119,22 @@ export default function ThemeAdminPage() {
             {saving ? 'Saving...' : 'Save Theme'}
           </button>
         </div>
+        {saveNotice ? (
+          <div
+            className={`${styles.saveNotice} ${
+              saveNotice.type === 'success'
+                ? styles.saveNoticeSuccess
+                : saveNotice.type === 'warning'
+                  ? styles.saveNoticeWarning
+                  : styles.saveNoticeError
+            }`}
+            role={saveNotice.type === 'error' || saveNotice.type === 'warning' ? 'alert' : 'status'}
+            aria-live={saveNotice.type === 'success' ? 'polite' : 'assertive'}
+          >
+            <strong>{saveNotice.message}</strong>
+            {saveNotice.detail ? <span>{saveNotice.detail}</span> : null}
+          </div>
+        ) : null}
       </div>
 
       <main className={styles.mainContent}>

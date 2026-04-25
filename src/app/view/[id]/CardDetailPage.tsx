@@ -21,9 +21,10 @@ import ReaderCardEditModal from '@/components/view/ReaderCardEditModal';
 interface CardDetailPageProps {
   card: Card;
   childrenCards: Card[];
+  suppressDiscovery?: boolean;
 }
 
-const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) => {
+const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards, suppressDiscovery = false }) => {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'admin';
   const detailReturnTo = card.docId ? `/view/${card.docId}` : null;
@@ -119,11 +120,13 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) 
       )}
 
       {/* Discovery Section */}
-      <DiscoverySection
-        currentCard={card}
-        childrenCards={childrenCards}
-        suppressChildCardsGroup={card.type === 'story' && childrenCards.length > 0}
-      />
+      {!suppressDiscovery ? (
+        <DiscoverySection
+          currentCard={card}
+          childrenCards={childrenCards}
+          suppressChildCardsGroup={card.type === 'story' && childrenCards.length > 0}
+        />
+      ) : null}
     </article>
   );
 };
