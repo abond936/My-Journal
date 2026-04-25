@@ -180,6 +180,21 @@ function stripColorRefForVar(ref: string | undefined, fallback: string): string 
   return s.replace('color', '');
 }
 
+function tokenValue(ref: string | undefined, fallback: string): string {
+  const s = typeof ref === 'string' && ref.trim() ? ref.trim() : fallback;
+  if (s.includes(' ') && !/[(),]/.test(s)) {
+    return s
+      .split(/\s+/)
+      .map((part) => tokenValue(part, part))
+      .join(' ');
+  }
+  if (/^color\d+(-\d+)?$/.test(s)) return `var(--${s})`;
+  if (/^[a-z-]+\/[a-z0-9-]+\/[a-z0-9-]+$/i.test(s)) return `var(--${s.replace(/\//g, '-')})`;
+  if (/^[a-z-]+\/[a-z0-9-]+$/i.test(s)) return `var(--${s.replace(/\//g, '-')})`;
+  if (/^font-family-/.test(s)) return `var(--${s})`;
+  return s;
+}
+
 export function buildThemeTokensCss(themeData: StructuredThemeData & { darkModeShift?: number }): string {
   let cssContent = `/*
   Unified Design System (v2) - Simplified 3-Shade Approach
@@ -378,56 +393,56 @@ export function buildThemeTokensCss(themeData: StructuredThemeData & { darkModeS
   
   /* Header */
   --header-height: ${themeData.components.header.height};
-  --header-background-color: var(--color1-100);
-  --header-border-color: var(--border1-color);
-  --header-border-width: var(--border-width-thin);
+  --header-background-color: ${tokenValue(themeData.components.header.backgroundColor, 'color1-100')};
+  --header-border-color: ${tokenValue(themeData.components.header.borderColor, 'border1-color')};
+  --header-border-width: ${tokenValue(themeData.components.header.borderWidth, 'border/width/thin')};
 
   /* Button: Solid */
-  --button-solid-background-color: var(--color3);
-  --button-solid-background-color-hover: var(--color3);
-  --button-solid-border-color: var(--color3);
-  --button-solid-text-color: white;
+  --button-solid-background-color: ${tokenValue(themeData.components.button.solid.backgroundColor, 'color3')};
+  --button-solid-background-color-hover: ${tokenValue(themeData.components.button.solid.backgroundColorHover, 'color3')};
+  --button-solid-border-color: ${tokenValue(themeData.components.button.solid.borderColor, 'color3')};
+  --button-solid-text-color: ${tokenValue(themeData.components.button.solid.textColor, 'white')};
   
   /* Button: Outline */
-  --button-outline-background-color: transparent;
-  --button-outline-background-color-hover: hsla(var(--h3), var(--s3), var(--l3), 0.1);
-  --button-outline-border-color: var(--border1-color);
-  --button-outline-text-color: var(--color2-300);
-  --button-outline-border-width: var(--border-width-medium);
+  --button-outline-background-color: ${tokenValue(themeData.components.button.outline.backgroundColor, 'transparent')};
+  --button-outline-background-color-hover: ${tokenValue(themeData.components.button.outline.backgroundColorHover, 'hsla(var(--h3), var(--s3), var(--l3), 0.1)')};
+  --button-outline-border-color: ${tokenValue(themeData.components.button.outline.borderColor, 'border1-color')};
+  --button-outline-text-color: ${tokenValue(themeData.components.button.outline.textColor, 'color2-300')};
+  --button-outline-border-width: ${tokenValue(themeData.components.button.outline.borderWidth, 'border/width/medium')};
 
   /* Card */
-  --card-background-color: var(--color1-200);
-  --card-padding: var(--spacing-lg);
-  --card-border-color: var(--border1-color);
-  --card-border-width: var(--border-width-medium);
-  --card-border-radius: var(--border-radius-lg);
-  --card-shadow: var(--shadow-sm);
-  --card-shadow-hover: var(--shadow-md);
+  --card-background-color: ${tokenValue(themeData.components.card.backgroundColor, 'color1-200')};
+  --card-padding: ${tokenValue(themeData.components.card.padding, 'spacing/lg')};
+  --card-border-color: ${tokenValue(themeData.components.card.borderColor, 'border1-color')};
+  --card-border-width: ${tokenValue(themeData.components.card.borderWidth, 'border/width/medium')};
+  --card-border-radius: ${tokenValue(themeData.components.card.borderRadius, 'border/radius/lg')};
+  --card-shadow: ${tokenValue(themeData.components.card.shadow, 'shadow/sm')};
+  --card-shadow-hover: ${tokenValue(themeData.components.card.shadowHover, 'shadow/md')};
   
   /* Tag */
-  --tag-padding: var(--spacing-xs) var(--spacing-sm);
-  --tag-border-radius: var(--border-radius-full);
-  --tag-font-weight: var(--font-weight-medium);
-  --tag-font-size: var(--font-size-sm);
-  --tag-font-family: var(--font-family-sans);
-  --tag-text-color: var(--color1-100);
+  --tag-padding: ${tokenValue(themeData.components.tag.padding, 'spacing/xs spacing/sm')};
+  --tag-border-radius: ${tokenValue(themeData.components.tag.borderRadius, 'border/radius/full')};
+  --tag-font-weight: ${tokenValue(themeData.components.tag.fontWeight, 'font/weight/medium')};
+  --tag-font-size: ${tokenValue(themeData.components.tag.fontSize, 'font/size/sm')};
+  --tag-font-family: ${tokenValue(themeData.components.tag.fontFamily, 'font/family/sans')};
+  --tag-text-color: ${tokenValue(themeData.components.tag.textColor, 'color1-100')};
   --tag-who-bg-color: var(--color${stripColorRefForVar(themeData.components?.tag?.backgrounds?.who, 'color5')});
   --tag-what-bg-color: var(--color${stripColorRefForVar(themeData.components?.tag?.backgrounds?.what, 'color6')});
   --tag-when-bg-color: var(--color${stripColorRefForVar(themeData.components?.tag?.backgrounds?.when, 'color7')});
   --tag-where-bg-color: var(--color${stripColorRefForVar(themeData.components?.tag?.backgrounds?.where, 'color8')});
   
   /* Form & Input */
-  --input-background-color: var(--color1-100);
-  --input-border-color: var(--border1-color);
-  --input-border-color-focus: var(--color3);
-  --input-text-color: var(--color2-300);
-  --input-border-radius: var(--border-radius-sm);
-  --input-padding: var(--spacing-sm) var(--spacing-md);
+  --input-background-color: ${tokenValue(themeData.components.input.backgroundColor, 'color1-100')};
+  --input-border-color: ${tokenValue(themeData.components.input.borderColor, 'border1-color')};
+  --input-border-color-focus: ${tokenValue(themeData.components.input.borderColorFocus, 'color3')};
+  --input-text-color: ${tokenValue(themeData.components.input.textColor, 'color2-300')};
+  --input-border-radius: ${tokenValue(themeData.components.input.borderRadius, 'border/radius/sm')};
+  --input-padding: ${tokenValue(themeData.components.input.padding, 'spacing/sm spacing/md')};
 
   /* Link */
-  --link-text-color: var(--color3);
-  --link-text-color-hover: var(--color3);
-  --link-decoration-hover: underline;
+  --link-text-color: ${tokenValue(themeData.components.link.textColor, 'color3')};
+  --link-text-color-hover: ${tokenValue(themeData.components.link.textColorHover, 'color3')};
+  --link-decoration-hover: ${themeData.components.link.decorationHover || 'underline'};
 
   /* Gradients */
   --gradient-bottom-overlay: ${themeData.gradients.bottomOverlay};
