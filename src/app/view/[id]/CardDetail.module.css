@@ -1,11 +1,11 @@
 .container {
   max-width: 800px;
   margin: 0 auto var(--spacing-xl);
-  padding: 0 var(--spacing-xl) var(--spacing-2xl);
-  background-color: var(--layout-background1-color);
-  color: var(--text1-color);
-  border-radius: var(--border-radius-md);
-  box-shadow: var(--shadow-md);
+  padding: 0 var(--reader-detail-padding-x) var(--reader-detail-padding-bottom);
+  background-color: var(--reader-detail-background-color);
+  color: var(--reader-body-color);
+  border-radius: var(--reader-detail-border-radius);
+  box-shadow: var(--reader-detail-shadow);
 }
 
 .adminEditBar {
@@ -44,9 +44,9 @@
   width: 100%;
   aspect-ratio: 4 / 5;
   overflow: hidden;
-  border-radius: var(--border-radius-lg);
+  border-radius: var(--reader-detail-border-radius);
   margin-bottom: var(--spacing-lg);
-  background-color: var(--layout-background2-color);
+  background-color: var(--reader-detail-cover-background-color);
 }
 
 .coverImageContainer.coverPortrait {
@@ -71,7 +71,10 @@
 
 .title {
   font-size: var(--font-size-3xl);
+  font-family: var(--reader-title-font-family);
   font-weight: var(--font-weight-bold);
+  line-height: var(--reader-title-line-height);
+  color: var(--reader-title-color);
   margin-bottom: var(--spacing-md);
 }
 
@@ -81,12 +84,14 @@
 
 .subtitle {
   font-size: var(--font-size-xl);
-  color: var(--text2-color);
+  color: var(--reader-meta-color);
   font-style: italic;
 }
 
 .content {
-  line-height: var(--line-height-normal);
+  font-family: var(--reader-body-font-family);
+  color: var(--reader-body-color);
+  line-height: var(--reader-body-line-height);
   font-size: var(--font-size-base);
 }
 
@@ -109,7 +114,11 @@
   margin: 0;
   padding: 0 0 0 var(--spacing-lg);
   border: none;
-  border-left: var(--border-width-thick) solid var(--border1-color);
+  border-left: var(--border-width-thick) solid var(--reader-detail-border-color);
+  color: var(--reader-quote-color);
+  font-family: var(--reader-quote-font-family);
+  font-size: var(--reader-quote-font-size);
+  line-height: var(--reader-quote-line-height);
   font-style: italic;
 }
 
@@ -120,21 +129,21 @@
 .quoteDetailFooter {
   margin-top: var(--spacing-lg);
   padding-top: var(--spacing-md);
-  border-top: var(--border-width-thin) solid var(--border1-color);
+  border-top: var(--border-width-thin) solid var(--reader-detail-border-color);
 }
 
 .quoteDetailCite {
   display: block;
-  font-size: var(--font-size-xl);
+  font-size: var(--reader-caption-font-size);
   font-style: normal;
-  color: var(--text2-color);
+  color: var(--reader-caption-color);
   text-align: right;
 }
 
 .gallery, .children {
   margin-top: var(--spacing-2xl);
   padding-top: var(--spacing-xl);
-  border-top: var(--border-width-thin) solid var(--border1-color);
+  border-top: var(--border-width-thin) solid var(--reader-detail-border-color);
 }
 
 @media (max-width: 768px) {

@@ -11,7 +11,6 @@ import {
   type ScopedThemeDocumentData,
 } from '@/lib/types/theme';
 import {
-  ADMIN_THEME_PRESET_META,
   THEME_PRESET_META,
   getAdminThemePresetDocument,
   getThemePresetDocument,
@@ -32,6 +31,14 @@ type SaveNotice = {
   message: string;
   detail?: string;
 };
+
+type ThemeRecord = Record<string, unknown>;
+
+const THEME_SAVE_ENABLED = false;
+
+const asThemeRecord = (value: unknown): ThemeRecord => (
+  value && typeof value === 'object' ? value as ThemeRecord : {}
+);
 
 // Color Palette Editor Component
 const PaletteColorEditor: React.FC<{
@@ -94,10 +101,6 @@ const PaletteColorEditor: React.FC<{
       const newHex = hslToHex(h, s, l);
       onColorChange(color.id, 'hex', newHex);
     }
-  };
-
-  const handleAssignmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onColorChange(color.id, 'name', e.target.value);
   };
 
   if (isThemeColor(color)) {
@@ -436,8 +439,8 @@ const ColorReferenceInput: React.FC<{
   label: string;
   value: string;
   onChange: (value: string) => void;
-  colors: any[];
-  themeColors?: any[];
+  colors: BaseColor[];
+  themeColors?: ThemeColor[];
 }> = ({ label, value, onChange, colors, themeColors = [] }) => {
   const [isValid, setIsValid] = useState(true);
   const [previewColor, setPreviewColor] = useState('');
@@ -591,7 +594,7 @@ const StateColorInput: React.FC<{
   label: string;
   value: string;
   onChange: (value: string) => void;
-  colors: any[];
+  colors: BaseColor[];
 }> = ({ label, value, onChange, colors }) => {
   const [previewColor, setPreviewColor] = useState('');
 
@@ -676,92 +679,6 @@ const SpacingMultiplierInput: React.FC<{
     />
   </div>
 );
-
-// Spacing Section with calculation logic
-const SpacingSection: React.FC<{
-  spacing: any;
-  onUnitChange: (value: string) => void;
-  onMultiplierChange: (size: string, value: string) => void;
-}> = ({ spacing, onUnitChange, onMultiplierChange }) => {
-  const unit = spacing?.unit || '8px';
-  
-  // Default multipliers if not set
-  const multipliers = {
-    xs: spacing?.xsMultiplier || '0.5',
-    sm: spacing?.smMultiplier || '1',
-    md: spacing?.mdMultiplier || '2',
-    lg: spacing?.lgMultiplier || '3',
-    xl: spacing?.xlMultiplier || '4',
-    '2xl': spacing?.['2xlMultiplier'] || '6',
-    '3xl': spacing?.['3xlMultiplier'] || '8',
-    '4xl': spacing?.['4xlMultiplier'] || '12'
-  };
-  
-  return (
-    <div className={styles.tokenCategory}>
-      <h3>Spacing</h3>
-      <div className={styles.tokenSubsection}>
-        <h4>Base Unit</h4>
-        <FontSizeTokenInput 
-          label="Unit" 
-          value={unit} 
-          onChange={onUnitChange} 
-        />
-      </div>
-      <div className={styles.tokenSubsection}>
-        <h4>Spacing Scale</h4>
-        <SpacingMultiplierInput 
-          label="XS" 
-          value={multipliers.xs} 
-          onChange={(v) => onMultiplierChange('xsMultiplier', v)} 
-        />
-        <SpacingMultiplierInput 
-          label="SM" 
-          value={multipliers.sm} 
-          onChange={(v) => onMultiplierChange('smMultiplier', v)} 
-        />
-        <SpacingMultiplierInput 
-          label="MD" 
-          value={multipliers.md} 
-          onChange={(v) => onMultiplierChange('mdMultiplier', v)} 
-        />
-        <SpacingMultiplierInput 
-          label="LG" 
-          value={multipliers.lg} 
-          onChange={(v) => onMultiplierChange('lgMultiplier', v)} 
-        />
-        <SpacingMultiplierInput 
-          label="XL" 
-          value={multipliers.xl} 
-          onChange={(v) => onMultiplierChange('xlMultiplier', v)} 
-        />
-        <SpacingMultiplierInput 
-          label="2XL" 
-          value={multipliers['2xl']} 
-          onChange={(v) => onMultiplierChange('2xlMultiplier', v)} 
-        />
-        <SpacingMultiplierInput 
-          label="3XL" 
-          value={multipliers['3xl']} 
-          onChange={(v) => onMultiplierChange('3xlMultiplier', v)} 
-        />
-        <SpacingMultiplierInput 
-          label="4XL" 
-          value={multipliers['4xl']} 
-          onChange={(v) => onMultiplierChange('4xlMultiplier', v)} 
-        />
-      </div>
-      <div className={styles.tokenSubsection}>
-        <h4>Fluid Spacing</h4>
-        <FontSizeTokenInput label="FSpc1" value={spacing?.fluidSpacing?.spacing1 || ''} onChange={(v) => onMultiplierChange('fluidSpacing.spacing1', v)} />
-        <FontSizeTokenInput label="FSpc2" value={spacing?.fluidSpacing?.spacing2 || ''} onChange={(v) => onMultiplierChange('fluidSpacing.spacing2', v)} />
-        <FontSizeTokenInput label="FSpc3" value={spacing?.fluidSpacing?.spacing3 || ''} onChange={(v) => onMultiplierChange('fluidSpacing.spacing3', v)} />
-      </div>
-    </div>
-  );
-};
-
-
 
 // Main Theme Admin Component
 export default function ThemeAdminPage() {
@@ -900,7 +817,7 @@ export default function ThemeAdminPage() {
       [section]: {
         ...prev![section as keyof StructuredThemeData],
         [subsection]: {
-          ...(prev![section as keyof StructuredThemeData] as any)?.[subsection],
+          ...asThemeRecord(asThemeRecord(prev![section as keyof StructuredThemeData])[subsection]),
           [key]: value
         }
       }
@@ -916,9 +833,11 @@ export default function ThemeAdminPage() {
       [section]: {
         ...prev![section as keyof StructuredThemeData],
         [subsection]: {
-          ...(prev![section as keyof StructuredThemeData] as any)?.[subsection],
+          ...asThemeRecord(asThemeRecord(prev![section as keyof StructuredThemeData])[subsection]),
           [subsubsection]: {
-            ...((prev![section as keyof StructuredThemeData] as any)?.[subsection] as any)?.[subsubsection],
+            ...asThemeRecord(
+              asThemeRecord(asThemeRecord(prev![section as keyof StructuredThemeData])[subsection])[subsubsection]
+            ),
             [key]: value
           }
         }
@@ -936,26 +855,19 @@ export default function ThemeAdminPage() {
     setSaveNotice(null);
     setDarkModeShift(doc.darkModeShift ?? 5);
     setActivePresetId(doc.activePresetId === 'journal' || doc.activePresetId === 'editorial' ? doc.activePresetId : id);
-    const { darkModeShift: _ds, activePresetId: _ap, ...structured } = doc;
+    const { darkModeShift: _darkModeShift, activePresetId: _activePresetId, ...structured } = doc;
+    void _darkModeShift;
+    void _activePresetId;
     setThemeData(structured as StructuredThemeData);
   };
 
-  const applyAdminPreset = (id: ThemeAdminPresetId) => {
-    const doc = getAdminThemePresetDocument(id);
-    setSaveNotice(null);
-    setAdminDarkModeShift(doc.darkModeShift ?? 5);
-    setActiveAdminPresetId(doc.activePresetId === 'admin' ? doc.activePresetId : id);
-    const { darkModeShift: _ds, activePresetId: _ap, ...structured } = doc;
-    setAdminThemeData(structured as StructuredThemeData);
-  };
-
-  const validateThemeData = (data: any): string[] => {
+  const validateThemeData = (data: StructuredThemeData): string[] => {
     const errors: string[] = [];
     
     console.log('Validating theme data:', data);
     
     // Helper function to validate color references recursively
-    const validateColorReferences = (obj: any, path: string = '') => {
+    const validateColorReferences = (obj: unknown, path: string = '') => {
       if (!obj || typeof obj !== 'object') return;
       
       for (const [key, value] of Object.entries(obj)) {
@@ -981,7 +893,7 @@ export default function ThemeAdminPage() {
     return errors;
   };
 
-  const isValidColorReference = (reference: string, palette: any[], themeColors: any[]): boolean => {
+  const isValidColorReference = (reference: string, palette: BaseColor[], themeColors: ThemeColor[]): boolean => {
     if (!reference.trim()) return true; // Empty is valid
     
     // Check for theme color format: "color1-200", "color2-100", etc.
@@ -1025,6 +937,15 @@ export default function ThemeAdminPage() {
 
   const saveTheme = async () => {
     if (!themeData || !adminThemeData) return;
+
+    if (!THEME_SAVE_ENABLED) {
+      setSaveNotice({
+        type: 'warning',
+        message: 'Theme saving is paused.',
+        detail: 'This page is a preview lab until the semantic theme model is ready.',
+      });
+      return;
+    }
     
     // Validate theme data before saving
     const validationErrors = [
@@ -1116,7 +1037,7 @@ export default function ThemeAdminPage() {
             disabled={saving}
             className={styles.saveButton}
           >
-            {saving ? 'Saving...' : 'Save Theme'}
+            {saving ? 'Saving...' : 'Save Paused'}
           </button>
         </div>
         {saveNotice ? (
@@ -1138,75 +1059,33 @@ export default function ThemeAdminPage() {
       </div>
 
       <main className={styles.mainContent}>
-        <section className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <h2>Design preset</h2>
-          </div>
-          <p className={styles.presetIntro}>
-            The reader preset governs family-facing content views. Pick a starting point, refine below, then Save. Active:{' '}
-            <strong>
-              {activePresetId === 'custom'
-                ? 'Custom'
-                : THEME_PRESET_META[activePresetId].label}
-            </strong>
-            .
-          </p>
-          <div className={styles.presetGrid}>
-            {(['journal', 'editorial'] as const).map((id) => (
-              <div key={id} className={styles.presetCard}>
-                <h3 className={styles.presetCardTitle}>{THEME_PRESET_META[id].label}</h3>
-                <p className={styles.presetCardText}>{THEME_PRESET_META[id].description}</p>
-                <button
-                  type="button"
-                  className={styles.presetApplyButton}
-                  onClick={() => applyPreset(id)}
-                  disabled={saving}
-                >
-                  Apply {THEME_PRESET_META[id].label}
-                </button>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <h2>Admin theme</h2>
-          </div>
-          <p className={styles.presetIntro}>
-            Admin theme governs authoring surfaces separately from the reader preset. It is tuned for
-            forms, dense grids, focus states, and long editing sessions. Active:{' '}
-            <strong>
-              {activeAdminPresetId === 'custom'
-                ? 'Custom'
-                : ADMIN_THEME_PRESET_META[activeAdminPresetId].label}
-            </strong>
-            .
-          </p>
-          <div className={styles.presetGrid}>
-            {(['admin'] as const).map((id) => (
-              <div key={id} className={styles.presetCard}>
-                <h3 className={styles.presetCardTitle}>{ADMIN_THEME_PRESET_META[id].label}</h3>
-                <p className={styles.presetCardText}>{ADMIN_THEME_PRESET_META[id].description}</p>
-                <button
-                  type="button"
-                  className={styles.presetApplyButton}
-                  onClick={() => applyAdminPreset(id)}
-                  disabled={saving}
-                >
-                  Apply {ADMIN_THEME_PRESET_META[id].label}
-                </button>
-              </div>
-            ))}
-          </div>
-        </section>
-
         <ThemeReaderPreview
           themeData={themeData}
           darkModeShift={darkModeShift}
           adminThemeData={adminThemeData}
           adminDarkModeShift={adminDarkModeShift}
+          readerControls={
+            <div className={styles.readerPreviewModeToggle}>
+              {(['journal', 'editorial'] as const).map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={activePresetId === id ? styles.readerPreviewModeActive : styles.readerPreviewModeBtn}
+                  onClick={() => applyPreset(id)}
+                  disabled={saving}
+                >
+                  {THEME_PRESET_META[id].label}
+                </button>
+              ))}
+            </div>
+          }
         />
+
+        <details className={styles.advancedPanel}>
+          <summary className={styles.advancedSummary}>
+            <span>Advanced tokens</span>
+            <small>Raw palette and token editing for exploration only</small>
+          </summary>
 
         {/* Color Palette Section */}
         <section className={styles.section}>
@@ -1564,6 +1443,7 @@ export default function ThemeAdminPage() {
             </div>
           </div>
         </section>
+        </details>
       </main>
     </div>
   );

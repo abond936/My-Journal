@@ -40,6 +40,13 @@
   --border-width-thin: 1px;
   --border-width-medium: 2px;
   --border-radius-lg: 0.75rem;
+  --card-background-color: var(--layout-background2-color);
+  --card-border-color: var(--border1-color);
+  --card-border-width: var(--border-width-thin);
+  --card-border-radius: var(--border-radius-lg);
+  --card-padding: var(--spacing-lg);
+  --card-shadow: var(--shadow-sm);
+  --card-shadow-hover: var(--shadow-md);
   --shadow-sm: 0 1px 2px -1px rgba(0, 0, 0, 0.1);
   --shadow-md: 0 3px 4px -2px rgba(0, 0, 0, 0.1);
   --font-size-sm: 1rem;
@@ -47,6 +54,7 @@
   --font-size-lg: 1.25rem;
   --font-size-2xl: 1.875rem;
   --font-weight-semibold: 600;
+  --line-height-tight: 1.25;
   --line-height-relaxed: 1.75;
   --gradient-bottom-overlay: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
   --gradient-bottom-overlay-strong: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
@@ -63,6 +71,40 @@
 
   /* Callout pushpin & similar raster watermarks (see docs/04-Theme-Design-Contract.md) */
   --card-watermark-raster-filter: none;
+
+  /* Reader semantic aliases */
+  --reader-title-color: var(--text1-color);
+  --reader-title-font-family: var(--body-font-family);
+  --reader-title-font-size: var(--font-size-base);
+  --reader-title-font-weight: var(--font-weight-semibold);
+  --reader-title-line-height: var(--line-height-tight);
+  --reader-body-color: var(--text1-color);
+  --reader-body-font-family: var(--body-font-family);
+  --reader-body-font-size: var(--font-size-sm);
+  --reader-body-line-height: var(--line-height-relaxed);
+  --reader-meta-color: var(--text2-color);
+  --reader-meta-font-size: var(--font-size-sm);
+  --reader-card-background-color: var(--card-background-color);
+  --reader-card-flat-background-color: var(--layout-background1-color);
+  --reader-card-border-color: var(--card-border-color);
+  --reader-card-border-width: var(--card-border-width);
+  --reader-card-border-radius: var(--card-border-radius);
+  --reader-card-shadow: var(--card-shadow);
+  --reader-card-shadow-hover: var(--card-shadow-hover);
+  --reader-card-padding: var(--card-padding);
+  --reader-detail-background-color: var(--layout-background1-color);
+  --reader-detail-cover-background-color: var(--card-background-color);
+  --reader-detail-border-color: var(--border1-color);
+  --reader-detail-border-radius: var(--border-radius-lg);
+  --reader-detail-shadow: var(--shadow-md);
+  --reader-detail-padding-x: var(--spacing-xl);
+  --reader-detail-padding-bottom: var(--spacing-2xl);
+  --reader-quote-color: var(--text1-color);
+  --reader-quote-font-family: var(--body-font-family);
+  --reader-quote-font-size: var(--font-size-lg);
+  --reader-quote-line-height: var(--line-height-relaxed);
+  --reader-caption-color: var(--text2-color);
+  --reader-caption-font-size: var(--font-size-sm);
 }
 
 [data-theme='dark'] {

@@ -20,8 +20,26 @@ const ADMIN_PREVIEW_SCOPE = 'themeAdminAdminPreview';
 const PREVIEW_DEBOUNCE_MS = 280;
 
 const now = 1_700_000_000_000;
-const previewTransparentPixel =
-  'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
+const svgPreviewImage = (primary: string, secondary: string, label: string) => (
+  `data:image/svg+xml;utf8,${encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-label="${label}">
+      <defs>
+        <linearGradient id="sky" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stop-color="${primary}" />
+          <stop offset="100%" stop-color="${secondary}" />
+        </linearGradient>
+      </defs>
+      <rect width="1200" height="760" fill="url(#sky)" />
+      <circle cx="950" cy="170" r="86" fill="rgba(255,255,255,.55)" />
+      <path d="M0 520 C160 455 260 585 420 515 C610 430 750 560 930 490 C1040 448 1120 462 1200 430 L1200 760 L0 760 Z" fill="rgba(255,255,255,.28)" />
+      <path d="M0 610 C180 550 320 650 520 590 C720 530 860 640 1200 565 L1200 760 L0 760 Z" fill="rgba(0,0,0,.20)" />
+    </svg>
+  `)}`
+);
+
+const lakePreviewImage = svgPreviewImage('#7ea6b8', '#d5b98d', 'Lake preview');
+const portraitPreviewImage = svgPreviewImage('#a58972', '#d9c8b4', 'Portrait preview');
 
 const lakeMedia: Media = {
   docId: 'preview-lake',
@@ -30,7 +48,7 @@ const lakeMedia: Media = {
   height: 760,
   size: 1,
   contentType: 'image/png',
-  storageUrl: previewTransparentPixel,
+  storageUrl: lakePreviewImage,
   storagePath: 'preview/lake-preview.png',
   source: 'local',
   sourcePath: 'preview/lake-preview.png',
@@ -44,7 +62,7 @@ const portraitMedia: Media = {
   filename: 'portrait-preview.png',
   width: 900,
   height: 1100,
-  storageUrl: previewTransparentPixel,
+  storageUrl: portraitPreviewImage,
 };
 
 const baseCard = {
@@ -115,13 +133,18 @@ export default function ThemeReaderPreview({
   darkModeShift,
   adminThemeData,
   adminDarkModeShift,
+  readerControls,
 }: {
   themeData: StructuredThemeData | null;
   darkModeShift: number;
   adminThemeData: StructuredThemeData | null;
   adminDarkModeShift: number;
+  readerControls?: React.ReactNode;
 }) {
-  const [previewMode, setPreviewMode] = useState<PreviewMode>('light');
+  const [previewMode, setPreviewMode] = useState<PreviewMode>(() => {
+    if (typeof document === 'undefined') return 'light';
+    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  });
   const [scopedCss, setScopedCss] = useState('');
 
   /** Stable serialized body; empty when theme is not ready for CSS generation. */
@@ -204,25 +227,25 @@ export default function ThemeReaderPreview({
   return (
     <div className={styles.readerPreviewSection}>
       <div className={styles.readerPreviewHeader}>
-        <h3 className={styles.readerPreviewTitle}>Reader preview</h3>
-        <p className={styles.readerPreviewHint}>
-          Preview only - applying presets changes this scoped sample until you choose Save Theme.
-        </p>
-        <div className={styles.readerPreviewModeToggle}>
-          <button
-            type="button"
-            className={previewMode === 'light' ? styles.readerPreviewModeActive : styles.readerPreviewModeBtn}
-            onClick={() => setPreviewMode('light')}
-          >
-            Light
-          </button>
-          <button
-            type="button"
-            className={previewMode === 'dark' ? styles.readerPreviewModeActive : styles.readerPreviewModeBtn}
-            onClick={() => setPreviewMode('dark')}
-          >
-            Dark
-          </button>
+        <h3 className={styles.readerPreviewTitle}>Theme preview</h3>
+        <div className={styles.previewHeaderControls}>
+          {readerControls}
+          <div className={styles.readerPreviewModeToggle}>
+            <button
+              type="button"
+              className={previewMode === 'light' ? styles.readerPreviewModeActive : styles.readerPreviewModeBtn}
+              onClick={() => setPreviewMode('light')}
+            >
+              Light
+            </button>
+            <button
+              type="button"
+              className={previewMode === 'dark' ? styles.readerPreviewModeActive : styles.readerPreviewModeBtn}
+              onClick={() => setPreviewMode('dark')}
+            >
+              Dark
+            </button>
+          </div>
         </div>
       </div>
       {scopedCss ? <style dangerouslySetInnerHTML={{ __html: scopedCss }} /> : null}
@@ -257,7 +280,7 @@ export default function ThemeReaderPreview({
             </aside>
             <main className={styles.readerPreviewMain}>
               <section className={styles.readerPreviewBlock}>
-                <div className={styles.previewKicker}>Feed preview - closed cards</div>
+                <div className={styles.previewKicker}>Closed cards</div>
                 <div className={styles.readerPreviewFeedGrid}>
                   {previewCards.map((card) => (
                     <div key={`${card.type}-${card.title}`} className={styles.readerPreviewFeedCell}>
@@ -268,7 +291,7 @@ export default function ThemeReaderPreview({
               </section>
 
               <section className={styles.readerPreviewBlock}>
-                <div className={styles.previewKicker}>Detail preview - opened cards</div>
+                <div className={styles.previewKicker}>Opened cards</div>
                 <div className={styles.readerPreviewOpenGrid}>
                   {[storyPreviewCard, galleryPreviewCard, questionPreviewCard].map((card) => (
                     <div key={`open-${card.type}`} className={styles.readerPreviewDetailFrame}>

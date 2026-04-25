@@ -1,9 +1,10 @@
 .renderer :global(.ProseMirror) {
   padding: calc(var(--spacing-md) - var(--font-size-sm)) var(--spacing-md);
-  background-color: var(--layout-background1-color);
-  color: var(--text1-color);
-  font-family: var(--body-font-family);
-  line-height: var(--line-height-normal);
+  background-color: var(--reader-detail-background-color);
+  color: var(--reader-body-color);
+  font-family: var(--reader-body-font-family);
+  font-size: var(--reader-body-font-size);
+  line-height: var(--reader-body-line-height);
 }
 
 .rendererTransparent :global(.ProseMirror) {
@@ -25,11 +26,12 @@
 .renderer :global(h1),
 .renderer :global(h2),
 .renderer :global(h3) {
-  font-family: var(--font-family-sans);
-  color: var(--text1-color);
+  font-family: var(--reader-title-font-family);
+  color: var(--reader-title-color);
   margin-top: var(--spacing-md);
   margin-bottom: var(--spacing-xs);
-  font-weight: var(--font-weight-bold);
+  font-weight: var(--reader-title-font-weight);
+  line-height: var(--reader-title-line-height);
 }
 
 .renderer :global(p) {
@@ -38,11 +40,14 @@
 }
 
 .renderer :global(blockquote) {
-  border-left: var(--border-width-thick) solid var(--color3);
+  border-left: var(--border-width-thick) solid var(--reader-detail-border-color);
   margin-left: 0;
   padding-left: var(--spacing-md);
   font-style: italic;
-  color: var(--text2-color);
+  color: var(--reader-quote-color);
+  font-family: var(--reader-quote-font-family);
+  font-size: var(--reader-quote-font-size);
+  line-height: var(--reader-quote-line-height);
 }
 
 .renderer :global(img) {
@@ -72,8 +77,8 @@
 
 .renderer :global(figcaption) {
   text-align: center;
-  font-size: var(--font-size-sm);
-  color: var(--text2-color);
+  font-size: var(--reader-caption-font-size);
+  color: var(--reader-caption-color);
   margin-top: var(--spacing-sm);
 }
 
@@ -90,7 +95,7 @@
 }
 
 .renderer :global(.card-inline-link--broken) {
-  color: var(--text2-color);
+  color: var(--reader-meta-color);
   text-decoration: line-through;
   cursor: default;
 } 

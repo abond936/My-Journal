@@ -3,6 +3,8 @@
 **Status:** Living specification — authoritative for *what* we tokenize and *why*, before code-only audits; and for **reader shell layout, responsive behavior, and navigation affordances** that must stay consistent with tokens (§9).  
 **See also:** `01-Vision-Architecture.md` (Frontend principles, visual direction), `02-Application.md` → Theme Management, Navigation, Layouts, `03-Implementation.md` (CSS Tokenization sequencing, responsive chrome).
 
+**Current implementation status (2026-04-25):** Theme infrastructure exists, but the theme system is not complete. Runtime CSS variables are generated from theme data and injected by the app, with `theme-data.json` / `theme.css` fallbacks. Theme Management is currently a **preview lab**: scoped reader/admin preview, Journal / Editorial reader preset toggles, light/dark preview controls, raw Advanced tokens, and **Save intentionally paused**. Journal / Editorial are partial preset bundles, not finished themes. Initial semantic aliases exist for reader cards, detail surfaces, rich text, meta/caption, and quotes; many reader/admin surfaces remain unmapped pending the inventory-driven contract/schema pass below.
+
 ---
 
 ## 1. Why this document exists
@@ -97,6 +99,67 @@ These are the **meanings** the UI must express. Implementations today use the li
 
 Values are edited in Theme Management and stored in structured theme data; components should reference **semantic / component variables**, not raw `--hex7`, except where the generator already centralizes mapping.
 
+### 4.2 Reader semantic aliases
+
+The reader semantic layer is the contract between design intent and component CSS. It is intentionally role-based: components should ask for "reader detail surface" or "reader card title," not a raw color slot. Early implementation may alias these names to existing primitive/component tokens, but the role names are the stable vocabulary Theme Management will eventually expose.
+
+**Rule:** A reader component may use primitive tokens for mechanical layout (`--spacing-*`, `--z-index-*`, literal media-query pixels per §9), but design-affecting color, type, radius, elevation, and content hierarchy should prefer the reader aliases below.
+
+| Role group | Token family | Scope | Status |
+| ---------- | ------------ | ----- | ------ |
+| Reader page | `--reader-page-*` | `/view` canvas, feed background, detail page surround | Planned |
+| Reader chrome | `--reader-chrome-*` | reader header/nav, sidebar/drawer, filter panels, mode controls | Planned |
+| Feed cards | `--reader-card-*` | closed feed/discovery cards only | Initial |
+| Detail page | `--reader-detail-*` | open card reading surface and cover frame | Initial |
+| Rich text | `--reader-body-*`, `--reader-title-*` | story bodies, Q&A answers, TipTap headings/lists | Initial |
+| Subtitle/excerpt | `--reader-subtitle-*`, `--reader-excerpt-*` | card/detail subtitles and feed/detail excerpts | Planned |
+| Meta text | `--reader-meta-*`, `--reader-caption-*` | dates, captions, attributions, secondary metadata | Initial |
+| Quote/Q&A | `--reader-quote-*`, `--reader-question-*`, `--reader-answer-*` | quote tiles/details and question/answer emphasis | Partial |
+| Discovery | `--reader-discovery-*` | Explore More, Similar, child-card rails, related sections | Planned |
+| Tags | `--reader-tag-*` plus dimension tokens | reader tag chips and active filter chips | Planned |
+| Media | `--reader-media-*` | gallery frames, image backgrounds, lightbox affordances | Planned |
+
+Initial aliases emitted by `buildThemeTokensCss()`:
+
+| Alias group | Initial mapping |
+| ----------- | --------------- |
+| `--reader-title-*` | Title color/family/size/weight/line-height map to `--text1-color`, `--body-font-family`, `--font-size-base`, `--font-weight-semibold`, and `--line-height-tight`. |
+| `--reader-subtitle-*` | Planned: subtitle color/family/size/weight/style/line-height for detail subtitles and card subtitles. Until emitted, subtitles use meta/body tokens. |
+| `--reader-excerpt-*` | Planned: excerpt color/family/size/line-height for feed teasers, Q&A teasers, and detail summaries. Until emitted, excerpts use meta/body tokens. |
+| `--reader-body-*` | Body color/family/size/line-height map to `--text1-color`, `--body-font-family`, `--font-size-sm`, and `--line-height-relaxed`. |
+| `--reader-meta-*` | Metadata scale maps to `--text2-color` and `--font-size-sm`. |
+| `--reader-caption-*` | Captions and attributions map to `--text2-color` and `--font-size-sm`. |
+| `--reader-card-*` | Closed-card surface, border, radius, shadow, hover shadow, and padding map to existing `--card-*`; flat reader tiles map to `--layout-background1-color`. |
+| `--reader-detail-*` | Open-card surface, cover background, border, radius, shadow, and horizontal/bottom padding map separately so detail pages do not inherit feed-tile assumptions. |
+| `--reader-quote-*` | Quote text family/size/line-height/color maps to body/text primitives while preserving later preset-specific treatment. |
+
+Planned aliases before presets are considered complete:
+
+| Alias group | Intended controls |
+| ----------- | ----------------- |
+| `--reader-page-background-color`, `--reader-page-text-color` | Overall reader canvas and default text contrast. |
+| `--reader-chrome-background-color`, `--reader-chrome-panel-color`, `--reader-chrome-border-color`, `--reader-chrome-text-color`, `--reader-chrome-muted-color` | Header, sidebar, drawer, filter chrome, and mode controls. |
+| `--reader-card-title-*`, `--reader-card-excerpt-*`, `--reader-card-meta-*` | Feed-card-specific hierarchy where tile titles/excerpts diverge from detail headings/body text. |
+| `--reader-detail-title-*`, `--reader-detail-subtitle-*`, `--reader-detail-excerpt-*`, `--reader-detail-meta-*` | Open-card header hierarchy, including subtitles, summaries/excerpts, and status/date-like text. |
+| `--reader-question-*`, `--reader-answer-*` | Q&A prompt and answer treatment, including no-cover Q&A tiles and open answer content. |
+| `--reader-discovery-background-color`, `--reader-discovery-title-*`, `--reader-discovery-card-*` | Explore More, Similar, child-card rails, and related sections. |
+| `--reader-tag-background-*`, `--reader-tag-text-color`, `--reader-tag-border-color`, `--reader-tag-active-*` | Tag chips, active filters, and dimension-specific scanability. |
+| `--reader-media-frame-background-color`, `--reader-media-caption-*`, `--reader-lightbox-*` | Gallery/detail media frames, captions, overlays, and lightbox surfaces. |
+
+Migration status:
+
+| Surface | Contract target | Status |
+| ------- | --------------- | ------ |
+| `V2ContentCard` | `--reader-card-*`, shared title/body/meta/quote/caption aliases | Initial migration complete |
+| `CardDetailPage` | `--reader-detail-*`, shared title/body/meta/quote/caption aliases | Initial migration complete |
+| `TipTapRenderer` | reader body/title/quote/caption aliases | Initial migration complete |
+| `DiscoverySection`, `ChildCardsRail` | `--reader-discovery-*` plus card aliases | Planned |
+| `InlineGallery`, media figures, lightbox | `--reader-media-*` plus caption aliases | Planned |
+| `GlobalSidebar`, reader filters, reader header/nav | `--reader-chrome-*`, `--reader-tag-*` | Planned |
+| Admin content tooling | `--admin-*` aliases separate from reader personality | Planned |
+
+Theme presets are not complete until each preset supplies enough underlying values to make the role groups above coherent in light and dark mode. Until then, Journal and Editorial are starting points, not finished themes.
+
 ---
 
 ## 5. Spacing, radius, elevation, motion
@@ -147,17 +210,21 @@ Presets are **bundles** of assignments to the roles above (plus typography roles
 
 **Preview:** Authoritative preview should mirror `**/view`** (sample feed + one detail), not only swatches — so “what I tune” matches “what family sees.” Success criterion: the preview should make it easier to answer “Would someone want to keep reading this?”
 
-**Persistence:** Theme data lives in **Firestore** `app_settings/theme` (written on Theme admin **Save** and via `npm run seed:theme-firestore`). The app **injects** `buildThemeTokensCss()` output in **RootLayout** (`<style id="theme-tokens">`) so variables apply in serverless deploys without committing regenerated CSS. `**theme-data.json`** stays the git backup and fallback when Firestore is empty or unreadable.
+**Current save posture:** Theme Management **must not** persist arbitrary preview/preset edits while the semantic contract and Firestore schema are incomplete. The visible Save control is paused; preview edits are diagnostic only.
+
+**Persistence target:** Theme data lives in **Firestore** `app_settings/theme` (written on Theme admin **Save** and via `npm run seed:theme-firestore`). The app **injects** `buildThemeTokensCss()` output in **RootLayout** (`<style id="theme-tokens">`) so variables apply in serverless deploys without committing regenerated CSS. `**theme-data.json`** stays the git backup and fallback when Firestore is empty or unreadable. Theme Management should be the product interface for editing this document; raw Firestore editing is not the intended user workflow.
 
 ---
 
 ## 8. Reconciliation workflow (design-led, not code-led)
 
-1. **Freeze v1 of this contract** (iterate here when product intent changes).
-2. **Map** `themeService.ts` / `theme-data.json` fields to each **role** (table above); add aliases only where it reduces confusion.
-3. **Migrate reader surfaces** (`src/components/view/`, shared chrome) to use role-backed variables; grep for raw `hex` / `rgba` against this checklist.
-4. **Admin** reuses tokens for shared components; dense admin-only layouts may stay pragmatic but should not introduce new rogue brand colors.
-5. **Implement presets** as data + preview + persistence.
+1. **Inventory surfaces first** - Build a table from actual reader/admin components: surface, file/component, visible elements (title, subtitle, excerpt, tags, controls, empty states, etc.), current token/CSS usage, required semantic token family, and migration status.
+2. **Freeze the semantic contract** - Promote the inventory into role families (`reader-page`, `reader-card`, `reader-detail`, `reader-subtitle`, `reader-excerpt`, `reader-discovery`, `reader-media`, `reader-chrome`, `admin-*`, etc.). Iterate here when product intent changes.
+3. **Define the theme schema** - Decide how semantic role values live in the Firestore theme document and preset bundles; keep `theme-data.json` as fallback/backup, not the product editing surface.
+4. **Map generator output** - Map `themeService.ts` / `theme-data.json` fields to each role; add aliases only where they clarify ownership and reduce component confusion.
+5. **Migrate surfaces in order** - Move reader surfaces (`src/components/view/`, shared rich text, discovery, media, chrome) to role-backed variables; grep for raw `hex` / `rgba` against this checklist.
+6. **Admin separately** - Admin reuses shared tokens where useful, but dense tooling and status/control states need `admin-*` aliases separate from reader personality.
+7. **Complete presets** - Only after the schema and surface coverage are coherent should Journal / Editorial be treated as complete data packages with preview + persistence.
 
 ---
 
@@ -247,5 +314,3 @@ This section defines the UX and token contract for system/status messaging so fe
 | 2026-04-10 | §4.1 base palette (3–14); persistence: Firestore + layout-injected tokens + `theme-data.json` fallback.                                               |
 | 2026-04-11 | §9 reader shell & responsive layout (breakpoints, sidebar toggle, feed columns); literal `px` in `@media`; §10 revision history (renumber).           |
 | 2026-04-16 | Added §10 in-app status messaging contract (message taxonomy, behavior, token/a11y rules, card-save narrow reference); moved revision history to §11. |
-
-

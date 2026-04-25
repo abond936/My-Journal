@@ -131,6 +131,34 @@
   padding-bottom: var(--spacing-4xl); /* Ensure content can scroll to bottom */
 }
 
+.advancedPanel {
+  margin-top: var(--spacing-2xl);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-lg);
+  background-color: var(--layout-background2-color);
+}
+
+.advancedSummary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  color: var(--text1-color);
+  cursor: pointer;
+  font-weight: var(--font-weight-semibold);
+}
+
+.advancedSummary small {
+  color: var(--text2-color);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-normal);
+}
+
+.advancedPanel .section {
+  padding: 0 var(--spacing-lg) var(--spacing-lg);
+}
+
 /* Sections */
 .section {
   margin-bottom: var(--spacing-3xl);
@@ -1274,13 +1302,15 @@
 /* --- Reader preview (tokens scoped to .themeAdminReaderPreview) --- */
 .readerPreviewSection {
   margin-bottom: var(--spacing-3xl);
-  padding: var(--spacing-lg);
-  border: var(--border-width-thin) solid var(--border1-color);
-  border-radius: var(--border-radius-lg);
-  background-color: var(--layout-background2-color);
 }
 
 .readerPreviewHeader {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--spacing-md);
+  width: 100%;
+  max-width: 2480px;
   margin-bottom: var(--spacing-md);
 }
 
@@ -1303,12 +1333,21 @@
   gap: var(--spacing-xs);
 }
 
+.previewHeaderControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+}
+
 .readerPreviewModeBtn,
 .readerPreviewModeActive {
   padding: var(--spacing-xs) var(--spacing-md);
   border-radius: var(--border-radius-sm);
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--button-outline-border-color);
   font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   font-family: var(--font-family-sans);
   cursor: pointer;
 }
@@ -1320,16 +1359,16 @@
 
 .readerPreviewModeActive {
   background: var(--button-solid-background-color);
-  color: var(--button-solid-text-color);
+  color: white;
   border-color: var(--button-solid-border-color);
 }
 
 .readerPreviewCanvas {
   width: 100%;
-  max-width: none;
+  max-width: 2480px;
+  margin: 0;
   border-radius: var(--border-radius-md);
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
   border: var(--border-width-thin) solid var(--border1-color);
   background-color: var(--body-background-color);
 }
@@ -1355,9 +1394,9 @@
 
 .readerPreviewViewport {
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
   gap: var(--spacing-lg);
-  width: 2240px;
+  width: 100%;
   padding: var(--spacing-lg);
   background-color: var(--body-background-color);
   color: var(--text1-color);
@@ -1373,6 +1412,7 @@
 
 .readerPreviewMain {
   display: grid;
+  grid-template-columns: minmax(0, max-content) minmax(0, max-content);
   gap: var(--spacing-xl);
   min-width: 0;
 }
@@ -1429,31 +1469,27 @@
 
 .readerPreviewFeedGrid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: var(--spacing-lg);
+  grid-template-columns: repeat(2, 380px);
+  gap: var(--spacing-md);
+  justify-content: start;
 }
 
 .readerPreviewFeedCell {
   min-width: 0;
 }
 
-.readerPreviewFeedCell :global(img),
-.readerPreviewDetailFrame :global(img) {
-  border: var(--border-width-medium) dashed var(--border2-color);
-  background:
-    linear-gradient(135deg, transparent 49%, var(--border1-color) 50%, transparent 51%),
-    linear-gradient(45deg, transparent 49%, var(--border1-color) 50%, transparent 51%),
-    var(--layout-background2-color);
-}
-
 .readerPreviewOpenGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--spacing-lg);
+  grid-template-columns: repeat(3, 380px);
+  gap: var(--spacing-md);
+  justify-content: start;
 }
 
 .readerPreviewDetailFrame {
+  box-sizing: border-box;
   min-width: 0;
+  width: 380px;
+  max-width: none;
   padding: var(--spacing-md);
   border: var(--border-width-thin) solid var(--border1-color);
   border-radius: var(--border-radius-md);
@@ -1468,14 +1504,22 @@
 }
 
 @media (max-width: 900px) {
-  .readerPreviewCanvas {
-    overflow-x: visible;
+  .readerPreviewHeader {
+    align-items: flex-start;
+    grid-template-columns: 1fr;
+  }
+
+  .previewHeaderControls {
+    justify-content: flex-start;
   }
 
   .readerPreviewViewport {
     grid-template-columns: 1fr;
-    width: auto;
     padding: var(--spacing-md);
+  }
+
+  .readerPreviewMain {
+    grid-template-columns: 1fr;
   }
 
   .readerPreviewFeedGrid,

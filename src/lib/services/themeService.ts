@@ -3,7 +3,6 @@ import * as path from 'path';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import {
-  BaseColor,
   StructuredThemeData,
   TypographyTokens,
   SpacingTokens,
@@ -450,6 +449,40 @@ export function buildThemeTokensCss(themeData: StructuredThemeData & { darkModeS
 
   /* Flat-tile raster watermarks (e.g. callout pushpin) */
   --card-watermark-raster-filter: none;
+
+  /* Reader semantic aliases */
+  --reader-title-color: var(--text1-color);
+  --reader-title-font-family: var(--body-font-family);
+  --reader-title-font-size: var(--font-size-base);
+  --reader-title-font-weight: var(--font-weight-semibold);
+  --reader-title-line-height: var(--line-height-tight);
+  --reader-body-color: var(--text1-color);
+  --reader-body-font-family: var(--body-font-family);
+  --reader-body-font-size: var(--font-size-sm);
+  --reader-body-line-height: var(--line-height-relaxed);
+  --reader-meta-color: var(--text2-color);
+  --reader-meta-font-size: var(--font-size-sm);
+  --reader-card-background-color: var(--card-background-color);
+  --reader-card-flat-background-color: var(--layout-background1-color);
+  --reader-card-border-color: var(--card-border-color);
+  --reader-card-border-width: var(--card-border-width);
+  --reader-card-border-radius: var(--card-border-radius);
+  --reader-card-shadow: var(--card-shadow);
+  --reader-card-shadow-hover: var(--card-shadow-hover);
+  --reader-card-padding: var(--card-padding);
+  --reader-detail-background-color: var(--layout-background1-color);
+  --reader-detail-cover-background-color: var(--card-background-color);
+  --reader-detail-border-color: var(--border1-color);
+  --reader-detail-border-radius: var(--border-radius-md);
+  --reader-detail-shadow: var(--shadow-md);
+  --reader-detail-padding-x: var(--spacing-xl);
+  --reader-detail-padding-bottom: var(--spacing-2xl);
+  --reader-quote-color: var(--text1-color);
+  --reader-quote-font-family: var(--body-font-family);
+  --reader-quote-font-size: var(--font-size-lg);
+  --reader-quote-line-height: var(--line-height-relaxed);
+  --reader-caption-color: var(--text2-color);
+  --reader-caption-font-size: var(--font-size-sm);
 }
 
 /*
@@ -502,7 +535,8 @@ export function buildThemeTokensCss(themeData: StructuredThemeData & { darkModeS
 export function themeDataForCssGeneration(
   data: StructuredThemeData & { darkModeShift?: number; activePresetId?: string }
 ): StructuredThemeData & { darkModeShift?: number } {
-  const { activePresetId: _omitPreset, ...rest } = data;
+  const rest: StructuredThemeData & { darkModeShift?: number; activePresetId?: string } = { ...data };
+  delete rest.activePresetId;
   return rest;
 }
 

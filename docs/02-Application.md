@@ -659,13 +659,17 @@ Legend:
 ✅ **Complete**
 
 - **Light/Dark Toggle** - Theme toggle in top navigation.
-- **Admin Page** - Theme admin for color and font parameters (`src/app/theme.css` as the runtime token sheet; admin persists into the theme model the app applies).
+- **Theme plumbing** - Runtime theme tokens are generated from the theme model (`theme-data.json` fallback / Firestore-backed theme document) and injected into the app; static `src/app/theme.css` remains the emergency fallback and global shell stylesheet.
+- **Theme preview lab** - Theme Management shows scoped reader/admin previews with Journal / Editorial reader preset toggles and light/dark preview controls; **Save is intentionally paused** while the semantic contract and schema are completed.
 📐 **Theme role** - Theme is part of the reader value proposition: clarity, tone, and immersion for family storytelling.
 📐 **AI assist role** - AI help is editorial and voice-preserving: improve clarity, pacing, and reader interest without inventing facts or replacing author voice.
 
 ⭕1 **Planned**
 
 - **CSS Tokenization** - Move **design-affecting** values—colors, typography scale, spacing rhythm, radii, shadows, and key surfaces—into `theme.css` variables (and Theme Management where appropriate) so literals in modules do not block **plug-and-play designs**. Not every numeric value in the app is a “theme” concern (e.g. one-off layout math); scope is what should change when switching designs. Grow coverage incrementally toward named presets.
+- **Theme contract inventory** - Complete an inventory-driven semantic theme contract before treating Journal / Editorial as finished themes: enumerate reader/admin surfaces, visible elements, current token use, required semantic token families, and migration status.
+- **Theme schema** - Define the structured Firestore theme document shape that stores semantic role values for reader/admin themes, with Theme Management as the editing interface; do not expose raw Firestore editing as the product workflow.
+- **Preset completion** - Expand Journal / Editorial from partial preset bundles into coherent light/dark design packages only after the semantic surface inventory and schema are defined.
 ❓ **Italic** - Is there a way to right lean the ink font?
 
 📘 **Design contract** - Semantic roles, preset intent (Journal vs Editorial), and reconciliation order: `docs/04-Theme-Design-Contract.md`.

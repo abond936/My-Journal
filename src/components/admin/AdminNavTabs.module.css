@@ -33,5 +33,6 @@
 
 .tab.active {
   background-color: var(--button-solid-background-color);
-  color: var(--button-solid-text-color);
+  color: white;
+  font-weight: var(--font-weight-bold);
 }

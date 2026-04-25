@@ -2,12 +2,12 @@
 .card {
   display: flex;
   flex-direction: column;
-  background-color: var(--layout-background2-color);
-  border-radius: var(--border-radius-lg);
+  background-color: var(--reader-card-background-color);
+  border-radius: var(--reader-card-border-radius);
   overflow: hidden;
   text-decoration: none;
-  color: var(--text1-color);
-  border: var(--border-width-thin) solid var(--border1-color);
+  color: var(--reader-body-color);
+  border: var(--reader-card-border-width) solid var(--reader-card-border-color);
   position: relative;
   transition: transform var(--transition-short) ease, box-shadow var(--transition-short) ease;
   /* Taller than square so portrait covers lose less top/bottom under object-fit: cover */
@@ -29,20 +29,20 @@
 
 .card:hover {
   transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--reader-card-shadow-hover);
   border-color: var(--color4-light);
 }
 
 /* Flat tiles (no “shaded” panel vs grid): match page surface, lighter hover */
 .card.quote,
 .card.callout {
-  background-color: var(--layout-background1-color);
+  background-color: var(--reader-card-flat-background-color);
 }
 
 .card.quote:hover,
 .card.callout:hover {
   box-shadow: none;
-  border-color: var(--border1-color);
+  border-color: var(--reader-card-border-color);
 }
 
 /* Pin may extend past the corner when scaleX(-1) uses a right-side origin; keep visible. */
@@ -83,7 +83,7 @@
 
 /* --- Content & Image Styles --- */
 .content {
-  padding: var(--spacing-lg);
+  padding: var(--reader-card-padding);
   display: flex;
   flex-direction: column;
   flex-grow: 1;
@@ -136,15 +136,18 @@
 }
 
 .title {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
+  font-family: var(--reader-title-font-family);
+  font-size: var(--reader-title-font-size);
+  font-weight: var(--reader-title-font-weight);
   margin: 0 0 var(--spacing-sm) 0;
-  line-height: var(--line-height-tight);
+  line-height: var(--reader-title-line-height);
+  color: var(--reader-title-color);
 }
 
 .description {
-  font-size: var(--font-size-xs);
-  color: var(--text2-color);
+  font-family: var(--reader-body-font-family);
+  font-size: var(--reader-body-font-size);
+  color: var(--reader-meta-color);
   line-height: 1.4;
   margin: 0;
 }
@@ -152,19 +155,19 @@
 /* --- Story & Gallery --- */
 .story .content {
   justify-content: flex-end;
-  color: var(--text1-color);
+  color: var(--reader-body-color);
   background: var(--gradient-bottom-overlay);
 }
 
 .story.aspectLandscape .content {
   position: relative;
   justify-content: flex-start;
-  background: var(--layout-background2-color);
-  color: var(--text1-color);
+  background: var(--reader-card-background-color);
+  color: var(--reader-body-color);
 }
 
 .story .title, .story .description {
-  color: var(--text1-color);
+  color: var(--reader-title-color);
 }
 
 .gallery .content {
@@ -184,11 +187,11 @@
   right: auto;
   width: auto;
   justify-content: flex-start;
-  background: var(--layout-background2-color);
+  background: var(--reader-card-background-color);
 }
 
 .gallery .title {
-  color: var(--text1-color);
+  color: var(--reader-title-color);
 }
 
 .swiperContainer {
@@ -201,7 +204,7 @@
 }
 
 .overlayContent .title {
-  color: var(--text1-color);
+  color: var(--reader-title-color);
 }
 
 /* --- Quote Card --- (large centered opening quote watermark) */
@@ -219,7 +222,7 @@
   font-size: clamp(7.5rem, 48vw, 13rem);
   font-weight: var(--font-weight-bold);
   font-family: Georgia, 'Times New Roman', serif;
-  color: var(--text1-color);
+  color: var(--reader-quote-color);
   opacity: 0.22;
   /* Opening-quote glyph sits high in the em box; nudge down to sit behind vertically centered body text */
   transform: translateY(clamp(0.75rem, 7%, 2.75rem));
@@ -245,10 +248,11 @@
   padding: 0;
   border: none;
   background: transparent;
-  font-size: var(--font-size-lg);
+  font-family: var(--reader-quote-font-family);
+  font-size: var(--reader-quote-font-size);
   font-style: italic;
-  line-height: var(--line-height-relaxed);
-  color: var(--text1-color);
+  line-height: var(--reader-quote-line-height);
+  color: var(--reader-quote-color);
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -273,9 +277,9 @@
 }
 .quoteCite {
   display: block;
-  font-size: var(--font-size-sm);
+  font-size: var(--reader-caption-font-size);
   font-style: normal;
-  color: var(--text2-color);
+  color: var(--reader-caption-color);
   text-align: center;
   margin-top: var(--spacing-xs);
   max-width: 100%;
@@ -286,7 +290,7 @@
 
 /* --- Q&A Card --- */
 .qa {
-  background-color: var(--layout-background1-color);
+  background-color: var(--reader-card-flat-background-color);
 }
 
 /* Large centered watermark when no cover (same pattern as quote/callout, but center + brighter) */
@@ -301,7 +305,7 @@
   font-size: clamp(6rem, 42vw, 14rem);
   font-weight: var(--font-weight-bold);
   line-height: 1;
-  color: var(--text1-color);
+  color: var(--reader-title-color);
   opacity: 0.3;
   z-index: 1;
   pointer-events: none;
@@ -316,7 +320,7 @@
 }
 
 .qa.aspectLandscape .content {
-  background: var(--layout-background1-color);
+  background: var(--reader-card-flat-background-color);
 }
 
 /* No cover: center question + optional excerpt over watermark */
@@ -335,11 +339,11 @@
 
 .qa:not(.qaWithCover) .qaQuestion {
   font-size: var(--font-size-xl);
-  line-height: var(--line-height-tight);
+  line-height: var(--reader-title-line-height);
 }
 
 .qa:not(.qaWithCover) .qaTeaser {
-  color: var(--text2-color);
+  color: var(--reader-meta-color);
   margin-top: var(--spacing-md);
 }
 
@@ -352,12 +356,12 @@
   width: 100%;
   justify-content: flex-end;
   background: var(--gradient-bottom-overlay);
-  color: var(--text1-color);
+  color: var(--reader-body-color);
 }
 
 .qa.qaWithCover .qaQuestion,
 .qa.qaWithCover .qaTeaser {
-  color: var(--text1-color);
+  color: var(--reader-title-color);
   max-width: 100%;
   min-width: 0;
   overflow-wrap: break-word;
@@ -375,14 +379,14 @@
 
 .qaQuestion {
   margin: 0;
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--reader-title-font-weight);
   font-size: var(--font-size-lg);
-  line-height: var(--line-height-tight);
+  line-height: var(--reader-title-line-height);
 }
 
 .qaTeaser {
   margin: var(--spacing-sm) 0 0 0;
-  font-size: var(--font-size-sm);
+  font-size: var(--reader-body-font-size);
   line-height: 1.5;
 }
 
@@ -391,8 +395,8 @@
   margin-top: var(--spacing-md);
   max-height: 40%;
   overflow-y: auto;
-  font-size: var(--font-size-sm);
-  color: var(--text1-color);
+  font-size: var(--reader-body-font-size);
+  color: var(--reader-body-color);
 }
 
 /* --- Callout Card --- Pin layer behind .content (same stacking idea as quote / Q&A watermarks). */
@@ -439,27 +443,28 @@
 }
 .calloutTitle {
   margin: 0;
+  font-family: var(--reader-title-font-family);
   font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-tight);
-  color: var(--text1-color);
+  font-weight: var(--reader-title-font-weight);
+  line-height: var(--reader-title-line-height);
+  color: var(--reader-title-color);
 }
 .calloutSubtitle {
   margin: 0;
-  font-size: var(--font-size-sm);
+  font-size: var(--reader-caption-font-size);
   line-height: 1.5;
-  color: var(--text2-color);
+  color: var(--reader-caption-color);
 }
 .calloutExcerpt {
   margin: 0;
-  font-size: var(--font-size-sm);
+  font-size: var(--reader-body-font-size);
   line-height: 1.5;
-  color: var(--text2-color);
+  color: var(--reader-meta-color);
 }
 .calloutBody {
   margin: 0;
-  font-size: var(--font-size-sm);
-  color: var(--text1-color);
+  font-size: var(--reader-body-font-size);
+  color: var(--reader-body-color);
 }
 .calloutBody :global(ul),
 .calloutBody :global(ol) {
@@ -481,8 +486,8 @@
 
 .inline:hover {
   transform: none;
-  box-shadow: var(--shadow-sm);
-  border-color: var(--border1-color);
+  box-shadow: var(--reader-card-shadow);
+  border-color: var(--reader-card-border-color);
 }
 
 .static {
@@ -492,16 +497,17 @@
 
 .static:hover {
   transform: none;
-  box-shadow: var(--shadow-sm);
-  border-color: var(--border1-color);
+  box-shadow: var(--reader-card-shadow);
+  border-color: var(--reader-card-border-color);
 }
 
 /* Inline content styles */
 .inlineContent {
   margin-top: var(--spacing-md);
-  font-size: var(--font-size-sm);
-  line-height: 1.6;
-  color: var(--text1-color);
+  font-family: var(--reader-body-font-family);
+  font-size: var(--reader-body-font-size);
+  line-height: var(--reader-body-line-height);
+  color: var(--reader-body-color);
 }
 
 .inlineContent :global(p) {
@@ -515,8 +521,8 @@
 .inlineContent :global(h5),
 .inlineContent :global(h6) {
   margin: var(--spacing-md) 0 var(--spacing-sm) 0;
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--reader-title-font-size);
+  font-weight: var(--reader-title-font-weight);
 }
 
 .inlineContent :global(ul),
@@ -531,7 +537,7 @@
 
 /* --- Collection Card --- */
 .collection {
-  background-color: var(--layout-background1-color);
+  background-color: var(--reader-card-flat-background-color);
   position: relative;
 }
 
@@ -541,9 +547,9 @@
   top: var(--spacing-sm);
   width: calc(100% - var(--spacing-md));
   height: calc(100% - var(--spacing-md));
-  background-color: var(--layout-background2-color);
-  border: var(--border-width-thin) solid var(--border1-color);
-  border-radius: var(--border-radius-md);
+  background-color: var(--reader-card-background-color);
+  border: var(--reader-card-border-width) solid var(--reader-card-border-color);
+  border-radius: var(--reader-card-border-radius);
   transition: transform var(--transition-short) ease;
   z-index: 1;
 }
@@ -559,8 +565,8 @@
 }
 
 .collectionCount {
-  font-size: var(--font-size-sm);
-  color: var(--text2-color);
+  font-size: var(--reader-meta-font-size);
+  color: var(--reader-meta-color);
   margin-top: var(--spacing-sm);
 }
 
