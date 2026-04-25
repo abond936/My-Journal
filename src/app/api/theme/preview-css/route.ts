@@ -52,7 +52,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const scope = body?.scope === 'admin' ? ADMIN_PREVIEW_SCOPE : READER_PREVIEW_SCOPE;
+    const customScope =
+      typeof body?.scopeSelector === 'string' && /^\.[A-Za-z0-9_-]+$/.test(body.scopeSelector)
+        ? body.scopeSelector
+        : null;
+    const scope = customScope ?? (body?.scope === 'admin' ? ADMIN_PREVIEW_SCOPE : READER_PREVIEW_SCOPE);
     const cleaned = themeDataForCssGeneration(themeData);
     const raw = buildThemeTokensCss(cleaned);
     const css = scopeThemeTokensCss(raw, scope);

@@ -3,6 +3,10 @@ import { getResolvedScopedThemeDocument, saveThemeData } from '@/lib/services/th
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
 
+function isThemeSaveEnabled(): boolean {
+  return false;
+}
+
 type ApiErrorPayload = {
   ok: false;
   code: string;
@@ -16,10 +20,10 @@ function errorResponse(payload: ApiErrorPayload, status: number) {
   return NextResponse.json(payload, { status });
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   const session = await getServerSession(authOptions);
 
-  if (!session || (session.user as any).role !== 'admin') {
+  if (!session || (session.user as { role?: string }).role !== 'admin') {
     return errorResponse(
       {
         ok: false,
@@ -55,7 +59,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
 
-  if (!session || (session.user as any).role !== 'admin') {
+  if (!session || (session.user as { role?: string }).role !== 'admin') {
     return errorResponse(
       {
         ok: false,
@@ -69,6 +73,19 @@ export async function POST(request: Request) {
   }
 
   try {
+    if (!isThemeSaveEnabled()) {
+      return errorResponse(
+        {
+          ok: false,
+          code: 'THEME_SAVE_PAUSED',
+          message: 'Theme saving is paused while the semantic theme model is finalized.',
+          severity: 'warning',
+          retryable: false,
+        },
+        409
+      );
+    }
+
     const themeData = await request.json();
     
     // Validate the theme data structure
@@ -104,4 +121,4 @@ export async function POST(request: Request) {
       500
     );
   }
-} 
+}

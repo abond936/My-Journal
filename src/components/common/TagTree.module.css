@@ -1,6 +1,6 @@
 .sidebar {
   width: 100%;
-  background-color: var(--layout-background2-color);
+  background-color: var(--reader-chrome-panel-color);
   padding: var(--spacing-lg) var(--spacing-md);
   height: 100%;
   overflow-y: auto;
@@ -10,7 +10,7 @@
   font-size: var(--font-size-3xl);
   font-weight: var(--font-weight-semibold);
   margin-bottom: var(--spacing-lg);
-  color: var(--text1-color);
+  color: var(--reader-chrome-text-color);
   padding-left: var(--spacing-sm);
 }
 
@@ -37,13 +37,13 @@
 .sectionHeader h3 {
   margin: 0;
   font-size: var(--font-size-2xl);
-  color: var(--text1-color);
+  color: var(--reader-chrome-text-color);
   font-weight: var(--font-weight-semibold);
 }
 
 .expandIcon {
   font-size: var(--font-size-sm);
-  color: var(--text2-color);
+  color: var(--reader-chrome-muted-color);
   transition: transform var(--transition-short) ease;
 }
 
@@ -64,7 +64,7 @@
 .subsectionList a {
   display: block;
   padding: var(--spacing-md) var(--spacing-md);
-  color: var(--text2-color);
+  color: var(--reader-chrome-muted-color);
   text-decoration: none;
   font-size: var(--font-size-lg);
   border-radius: var(--border-radius-md);
@@ -73,13 +73,13 @@
 }
 
 .subsectionList a:active {
-  background-color: var(--color1-200);
+  background-color: var(--reader-chrome-control-hover-background-color);
   transform: scale(0.98);
 }
 
 .subsectionList a.active {
-  background-color: var(--border1-color);
-  color: var(--text1-color);
+  background-color: var(--reader-chrome-border-color);
+  color: var(--reader-chrome-text-color);
   font-weight: var(--font-weight-medium);
 }
 
@@ -100,7 +100,7 @@
 .cardCount {
   margin-left: var(--spacing-xs);
   font-size: var(--font-size-xs);
-  color: var(--text2-color);
+  color: var(--reader-chrome-muted-color);
   opacity: 0.8;
 }
 
@@ -115,7 +115,7 @@
   min-height: 44px;
   margin: -6px 0;
   font-size: var(--font-size-xs);
-  color: var(--text1-color);
+  color: var(--reader-chrome-text-color);
   opacity: 0.7;
   transition: opacity var(--transition-short) ease;
   box-sizing: border-box;
@@ -173,7 +173,7 @@
 .tagName {
   cursor: pointer;
   font-family: var(--body-font-family);
-  color: var(--text1-color);
+  color: var(--reader-chrome-text-color);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-normal, 400);
   flex: 1;
@@ -197,7 +197,7 @@
     height: 100vh;
     position: sticky;
     top: 0;
-    border-right: var(--border-width-thin) solid var(--border1-color);
+    border-right: var(--border-width-thin) solid var(--reader-chrome-border-color);
     border-bottom: none;
     overflow-y: auto;
   }
@@ -220,8 +220,8 @@
   }
 
   .subsectionList a:hover {
-    background-color: var(--color1-200);
-    color: var(--text1-color);
+    background-color: var(--reader-chrome-control-hover-background-color);
+    color: var(--reader-chrome-text-color);
   }
 
   .checkbox {
@@ -237,4 +237,4 @@
     min-height: 36px;
     margin: -4px 0;
   }
-} 
+}

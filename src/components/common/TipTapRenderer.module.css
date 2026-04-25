@@ -84,13 +84,13 @@
 
 .renderer :global(.card-inline-link) {
   cursor: pointer;
-  color: var(--color3, #2563eb);
+  color: var(--reader-accent-color, #2563eb);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
 .renderer :global(.card-inline-link:focus-visible) {
-  outline: 2px solid var(--color3, #2563eb);
+  outline: 2px solid var(--reader-focus-ring-color, #2563eb);
   outline-offset: 2px;
 }
 

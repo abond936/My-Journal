@@ -5,7 +5,7 @@
 .header {
   margin-bottom: var(--spacing-xl);
   padding-bottom: var(--spacing-md);
-  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  border-bottom: var(--border-width-thin) solid var(--reader-page-border-color);
 }
 
 .header h1 {
@@ -27,14 +27,14 @@
 
 .emptyFeedTitle {
   margin: 0 0 var(--spacing-sm);
-  color: var(--text1-color);
+  color: var(--reader-page-text-color);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
 }
 
 .emptyFeedHint {
   margin: 0 0 var(--spacing-md);
-  color: var(--text2-color);
+  color: var(--reader-meta-color);
   font-size: var(--font-size-base);
   line-height: var(--line-height-relaxed);
 }
@@ -44,13 +44,13 @@
   font-size: var(--font-size-sm);
   cursor: pointer;
   border-radius: var(--border-radius-lg);
-  border: var(--border-width-medium) solid var(--border1-color);
-  background: var(--layout-background2-color);
-  color: var(--text1-color);
+  border: var(--border-width-medium) solid var(--reader-chrome-border-color);
+  background: var(--reader-chrome-panel-color);
+  color: var(--reader-chrome-text-color);
 }
 
 .emptyClearButton:hover {
-  background: var(--layout-background1-color);
+  background: var(--reader-chrome-control-background-color);
 }
 
 .groupSection {
@@ -63,8 +63,8 @@
   margin: 0;
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
-  color: var(--text1-color);
-  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  color: var(--reader-page-text-color);
+  border-bottom: var(--border-width-thin) solid var(--reader-page-border-color);
   padding-bottom: var(--spacing-xs);
 }
 
@@ -99,7 +99,7 @@
 .card {
   position: relative;
   aspect-ratio: 4 / 5;
-  background-color: var(--layout-background2-color);
+  background-color: var(--reader-media-frame-background-color);
 }
 
 .cardImage {
@@ -114,8 +114,8 @@
   left: 0;
   right: 0;
   padding: var(--spacing-lg);
-  background: var(--gradient-bottom-overlay-strong);
-  color: white;
+  background: var(--reader-card-overlay-strong-background);
+  color: var(--reader-card-overlay-text-color);
 }
 
 .cardTitle {
@@ -139,7 +139,7 @@
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
   align-items: center;
-  background-color: var(--layout-background2-color);
+  background-color: var(--reader-media-frame-background-color);
 }
 
 .horizontalScroll::-webkit-scrollbar {
@@ -158,8 +158,8 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: var(--color1-300);
-  color: white;
+  background: var(--reader-media-control-background-color);
+  color: var(--reader-media-control-text-color);
   border: none;
   width: var(--spacing-2xl);
   height: var(--spacing-2xl);
@@ -174,7 +174,7 @@
 }
 
 .galleryNav:hover {
-  background: var(--color1-200);
+  background: var(--reader-media-control-background-color-hover);
 }
 
 .prevButton {
@@ -183,4 +183,4 @@
 
 .nextButton {
   right: var(--spacing-sm);
-} 
+}

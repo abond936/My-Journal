@@ -661,6 +661,8 @@ Legend:
 - **Light/Dark Toggle** - Theme toggle in top navigation.
 - **Theme plumbing** - Runtime theme tokens are generated from the theme model (`theme-data.json` fallback / Firestore-backed theme document) and injected into the app; static `src/app/theme.css` remains the emergency fallback and global shell stylesheet.
 - **Theme preview lab** - Theme Management shows scoped reader/admin previews with Journal / Editorial reader preset toggles and light/dark preview controls; **Save is intentionally paused** while the semantic contract and schema are completed.
+- **Reader preview coverage** - Theme preview now exercises the actual reader surface more broadly: all five closed card types, open story/gallery/question detail, richer TipTap body content, sidebar/filter chrome, discovery and child rails, plus compact state samples (empty/loading/error/lightbox/collection/focus) so token changes can be judged against real content shapes.
+- **Reader semantic layer (partial)** - Reader-facing CSS now routes through a growing semantic token layer (`--reader-page-*`, `--reader-chrome-*`, `--reader-solid-*`, `--reader-card-*`, `--reader-detail-*`, `--reader-body/title-*`, `--reader-meta/caption-*`, `--reader-media/lightbox-*`, `--reader-discovery-*`). This is still an intermediate contract, not the final persisted theme schema.
 📐 **Theme role** - Theme is part of the reader value proposition: clarity, tone, and immersion for family storytelling.
 📐 **AI assist role** - AI help is editorial and voice-preserving: improve clarity, pacing, and reader interest without inventing facts or replacing author voice.
 

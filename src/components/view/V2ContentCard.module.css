@@ -30,7 +30,7 @@
 .card:hover {
   transform: translateY(-4px);
   box-shadow: var(--reader-card-shadow-hover);
-  border-color: var(--color4-light);
+  border-color: var(--reader-card-hover-border-color);
 }
 
 /* Flat tiles (no “shaded” panel vs grid): match page surface, lighter hover */
@@ -59,7 +59,7 @@
 }
 
 /* On larger screens, these will be controlled by a parent grid */
-@media (min-width: var(--breakpoint-md)) {
+@media (min-width: 768px) {
   .small { width: auto; }
   .medium { width: auto; }
   .large { width: auto; }
@@ -129,9 +129,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background-color: color-mix(in srgb, black 68%, transparent);
-  color: white;
-  border: var(--border-width-thin) solid color-mix(in srgb, white 22%, transparent);
+  background-color: var(--reader-card-badge-background-color);
+  color: var(--reader-card-badge-text-color);
+  border: var(--border-width-thin) solid var(--reader-card-badge-border-color);
   box-shadow: var(--shadow-sm);
 }
 
@@ -156,7 +156,7 @@
 .story .content {
   justify-content: flex-end;
   color: var(--reader-body-color);
-  background: var(--gradient-bottom-overlay);
+  background: var(--reader-card-overlay-background);
 }
 
 .story.aspectLandscape .content {
@@ -177,7 +177,7 @@
   right: 0;
   width: 100%;
   justify-content: flex-end;
-  background: var(--gradient-bottom-overlay-strong);
+  background: var(--reader-card-overlay-strong-background);
 }
 
 .gallery.aspectLandscape .content {
@@ -223,7 +223,7 @@
   font-weight: var(--font-weight-bold);
   font-family: Georgia, 'Times New Roman', serif;
   color: var(--reader-quote-color);
-  opacity: 0.22;
+  opacity: var(--reader-quote-watermark-opacity);
   /* Opening-quote glyph sits high in the em box; nudge down to sit behind vertically centered body text */
   transform: translateY(clamp(0.75rem, 7%, 2.75rem));
 }
@@ -306,7 +306,7 @@
   font-weight: var(--font-weight-bold);
   line-height: 1;
   color: var(--reader-title-color);
-  opacity: 0.3;
+  opacity: var(--reader-question-watermark-opacity);
   z-index: 1;
   pointer-events: none;
   /* Glyph bearings often sit low; nudge for optical vertical center */
@@ -343,7 +343,7 @@
 }
 
 .qa:not(.qaWithCover) .qaTeaser {
-  color: var(--reader-meta-color);
+  color: var(--reader-excerpt-color);
   margin-top: var(--spacing-md);
 }
 
@@ -355,7 +355,7 @@
   right: 0;
   width: 100%;
   justify-content: flex-end;
-  background: var(--gradient-bottom-overlay);
+  background: var(--reader-card-overlay-background);
   color: var(--reader-body-color);
 }
 
@@ -380,7 +380,7 @@
 .qaQuestion {
   margin: 0;
   font-weight: var(--reader-title-font-weight);
-  font-size: var(--font-size-lg);
+  font-size: var(--reader-question-font-size);
   line-height: var(--reader-title-line-height);
 }
 
@@ -419,7 +419,7 @@
   max-height: clamp(4.26rem, 26.8vw, 7.31rem);
   object-fit: contain;
   object-position: center;
-  opacity: 0.3;
+  opacity: var(--reader-callout-watermark-opacity);
   filter: var(--card-watermark-raster-filter, none);
   /* Mirror then tilt (opposite of prior rotate direction). */
   transform: scaleX(-1) rotate(-30deg);
@@ -565,7 +565,7 @@
 }
 
 .collectionCount {
-  font-size: var(--reader-meta-font-size);
+  font-size: var(--reader-caption-font-size);
   color: var(--reader-meta-color);
   margin-top: var(--spacing-sm);
 }
@@ -586,20 +586,20 @@
   font-weight: var(--font-weight-semibold);
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-sm);
-  background-color: var(--layout-background2-color);
-  color: var(--text1-color);
-  border: var(--border-width-thin) solid var(--border1-color);
+  background-color: var(--reader-chrome-panel-color);
+  color: var(--reader-chrome-text-color);
+  border: var(--border-width-thin) solid var(--reader-chrome-border-color);
   text-decoration: none;
   box-shadow: var(--shadow-sm);
   line-height: 1.2;
 }
 
 .adminEditLink:hover {
-  border-color: var(--color4-light);
-  color: var(--text1-color);
+  border-color: var(--reader-card-hover-border-color);
+  color: var(--reader-chrome-text-color);
 }
 
 .adminEditLink:focus-visible {
-  outline: 2px solid var(--color4-light);
+  outline: 2px solid var(--reader-focus-ring-color);
   outline-offset: 2px;
 }

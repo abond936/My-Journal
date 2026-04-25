@@ -215,7 +215,7 @@
   bottom: 0;
 }
 
-@media (max-width: var(--breakpoint-md)) {
+@media (max-width: 768px) {
   .adminLinksDesktopOnly {
     display: none;
   }
@@ -248,4 +248,4 @@
     left: var(--spacing-sm);
     min-width: unset;
   }
-} 
+}

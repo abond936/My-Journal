@@ -11,9 +11,7 @@ import {
   type ScopedThemeDocumentData,
 } from '@/lib/types/theme';
 import {
-  THEME_PRESET_META,
   getAdminThemePresetDocument,
-  getThemePresetDocument,
   type ThemeAdminPresetId,
   type ThemePresetId,
   type ThemeDocumentData,
@@ -33,12 +31,238 @@ type SaveNotice = {
 };
 
 type ThemeRecord = Record<string, unknown>;
+type ReaderDraftFontKey = 'systemSans' | 'serif' | 'display';
+type ReaderDraft = {
+  pageBgLight: string;
+  pageBgDark: string;
+  pageTextLight: string;
+  pageTextDark: string;
+  accent: string;
+  chromePanel: string;
+  cardBackground: string;
+  cardBorder: string;
+  solidBackground: string;
+  solidText: string;
+  solidBorder: string;
+  titleFont: ReaderDraftFontKey;
+  bodyFont: ReaderDraftFontKey;
+  quoteFont: ReaderDraftFontKey;
+  titleSize: string;
+  detailTitleSize: string;
+  bodySize: string;
+  subtitleSize: string;
+  cardRadius: string;
+  detailRadius: string;
+  cardShadow: string;
+  cardShadowHover: string;
+  detailShadow: string;
+  subtitleStyle: 'normal' | 'italic';
+  quoteWatermarkOpacity: string;
+  questionWatermarkOpacity: string;
+  calloutWatermarkOpacity: string;
+};
 
 const THEME_SAVE_ENABLED = false;
+const DRAFT_READER_SCOPE = 'themeAdminReaderDraftPreview';
+const DRAFT_ADMIN_SCOPE = 'themeAdminAdminDraftPreview';
+const READER_DRAFT_FONTS: Record<ReaderDraftFontKey, string> = {
+  systemSans: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+  serif: '"Georgia", "Times New Roman", serif',
+  display: '"Ink Free", "Segoe Script", "Brush Script MT", cursive',
+};
 
 const asThemeRecord = (value: unknown): ThemeRecord => (
   value && typeof value === 'object' ? value as ThemeRecord : {}
 );
+
+const hslToHexString = (h: number, s: number, l: number): string => hslToHex(h, s, l);
+
+const shiftHexLightness = (hex: string, delta: number): string => {
+  const { h, s, l } = hexToHsl(hex);
+  return hslToHexString(h, s, Math.max(0, Math.min(100, l + delta)));
+};
+
+const createInitialReaderDraft = (data: StructuredThemeData): ReaderDraft => {
+  const pageBgLight = data.themeColors.find((color) => color.id === 1)?.light.hex ?? '#eceef2';
+  const pageBgDark = data.themeColors.find((color) => color.id === 1)?.dark.hex ?? '#14161c';
+  const pageTextLight = data.themeColors.find((color) => color.id === 2)?.light.hex ?? '#16181d';
+  const pageTextDark = data.themeColors.find((color) => color.id === 2)?.dark.hex ?? '#eef0f4';
+  const accent = data.palette.find((color) => color.id === 3)?.hex ?? '#0f4c81';
+  return {
+    pageBgLight,
+    pageBgDark,
+    pageTextLight,
+    pageTextDark,
+    accent,
+    chromePanel: shiftHexLightness(pageBgLight, -3),
+    cardBackground: shiftHexLightness(pageBgLight, -2),
+    cardBorder: shiftHexLightness(pageBgLight, -6),
+    solidBackground: accent,
+    solidText: pageBgLight,
+    solidBorder: accent,
+    titleFont: 'systemSans',
+    bodyFont: 'systemSans',
+    quoteFont: 'serif',
+    titleSize: data.typography.fontSizes.base,
+    detailTitleSize: data.typography.fontSizes['3xl'],
+    bodySize: data.typography.fontSizes.sm,
+    subtitleSize: data.typography.fontSizes.xl,
+    cardRadius: data.borders.radius.md,
+    detailRadius: data.borders.radius.lg,
+    cardShadow: data.shadows.sm,
+    cardShadowHover: data.shadows.md,
+    detailShadow: data.shadows.md,
+    subtitleStyle: 'italic',
+    quoteWatermarkOpacity: '0.22',
+    questionWatermarkOpacity: '0.3',
+    calloutWatermarkOpacity: '0.3',
+  };
+};
+
+const buildReaderDraftScopedCss = (draft: ReaderDraft, readerScopeClass: string, adminScopeClass: string): string => `
+.${readerScopeClass} {
+  --reader-page-background-color: ${draft.pageBgLight};
+  --reader-page-text-color: ${draft.pageTextLight};
+  --reader-page-border-color: ${draft.cardBorder};
+  --reader-chrome-background-color: ${draft.pageBgLight};
+  --reader-chrome-panel-color: ${draft.chromePanel};
+  --reader-chrome-border-color: ${draft.cardBorder};
+  --reader-chrome-text-color: ${draft.pageTextLight};
+  --reader-chrome-muted-color: color-mix(in srgb, ${draft.pageTextLight} 65%, ${draft.pageBgLight});
+  --reader-chrome-control-background-color: ${draft.pageBgLight};
+  --reader-chrome-control-hover-background-color: ${draft.chromePanel};
+  --reader-chrome-control-subtle-hover-background-color: color-mix(in srgb, ${draft.pageTextLight} 15%, transparent);
+  --reader-solid-background-color: ${draft.solidBackground};
+  --reader-solid-text-color: ${draft.solidText};
+  --reader-solid-border-color: ${draft.solidBorder};
+  --reader-title-color: ${draft.pageTextLight};
+  --reader-title-font-family: ${READER_DRAFT_FONTS[draft.titleFont]};
+  --reader-title-font-size: ${draft.titleSize};
+  --reader-title-font-weight: var(--font-weight-semibold);
+  --reader-title-line-height: var(--line-height-tight);
+  --reader-detail-title-font-family: ${READER_DRAFT_FONTS[draft.titleFont]};
+  --reader-detail-title-font-size: ${draft.detailTitleSize};
+  --reader-detail-title-font-weight: var(--font-weight-bold);
+  --reader-detail-title-line-height: var(--line-height-tight);
+  --reader-subtitle-color: color-mix(in srgb, ${draft.pageTextLight} 72%, ${draft.pageBgLight});
+  --reader-subtitle-font-size: ${draft.subtitleSize};
+  --reader-subtitle-font-style: ${draft.subtitleStyle};
+  --reader-excerpt-color: color-mix(in srgb, ${draft.pageTextLight} 68%, ${draft.pageBgLight});
+  --reader-excerpt-font-size: ${draft.bodySize};
+  --reader-excerpt-line-height: var(--line-height-relaxed);
+  --reader-body-color: ${draft.pageTextLight};
+  --reader-body-font-family: ${READER_DRAFT_FONTS[draft.bodyFont]};
+  --reader-body-font-size: ${draft.bodySize};
+  --reader-body-line-height: var(--line-height-relaxed);
+  --reader-meta-color: color-mix(in srgb, ${draft.pageTextLight} 62%, ${draft.pageBgLight});
+  --reader-accent-color: ${draft.accent};
+  --reader-focus-ring-color: ${draft.accent};
+  --reader-contrast-text-color: ${draft.solidText};
+  --reader-overlay-scrim-color: color-mix(in srgb, ${draft.pageTextLight} 68%, transparent);
+  --reader-overlay-border-color: color-mix(in srgb, ${draft.pageBgLight} 22%, transparent);
+  --reader-overlay-strong-scrim-color: color-mix(in srgb, ${draft.pageTextLight} 92%, transparent);
+  --reader-card-hover-border-color: ${draft.accent};
+  --reader-card-background-color: ${draft.cardBackground};
+  --reader-card-flat-background-color: ${draft.pageBgLight};
+  --reader-card-border-color: ${draft.cardBorder};
+  --reader-card-border-width: var(--border-width-medium);
+  --reader-card-border-radius: ${draft.cardRadius};
+  --reader-card-shadow: ${draft.cardShadow};
+  --reader-card-shadow-hover: ${draft.cardShadowHover};
+  --reader-card-padding: var(--card-padding);
+  --reader-detail-background-color: ${draft.pageBgLight};
+  --reader-detail-cover-background-color: ${draft.cardBackground};
+  --reader-detail-border-color: ${draft.cardBorder};
+  --reader-detail-border-radius: ${draft.detailRadius};
+  --reader-detail-shadow: ${draft.detailShadow};
+  --reader-detail-padding-x: var(--spacing-xl);
+  --reader-detail-padding-bottom: var(--spacing-2xl);
+  --reader-question-font-size: ${draft.titleSize};
+  --reader-question-watermark-color: ${draft.pageTextLight};
+  --reader-question-watermark-opacity: ${draft.questionWatermarkOpacity};
+  --reader-callout-watermark-opacity: ${draft.calloutWatermarkOpacity};
+  --reader-quote-color: ${draft.pageTextLight};
+  --reader-quote-font-family: ${READER_DRAFT_FONTS[draft.quoteFont]};
+  --reader-quote-font-size: ${draft.subtitleSize};
+  --reader-quote-line-height: var(--line-height-relaxed);
+  --reader-quote-watermark-opacity: ${draft.quoteWatermarkOpacity};
+  --reader-caption-color: color-mix(in srgb, ${draft.pageTextLight} 62%, ${draft.pageBgLight});
+  --reader-caption-font-size: var(--font-size-sm);
+  --reader-tag-background-color: ${draft.solidBackground};
+  --reader-tag-text-color: ${draft.solidText};
+  --reader-tag-border-color: ${draft.solidBorder};
+  --reader-tag-muted-background-color: transparent;
+  --reader-tag-muted-text-color: color-mix(in srgb, ${draft.pageTextLight} 62%, ${draft.pageBgLight});
+  --reader-tag-muted-border-color: ${draft.cardBorder};
+  --reader-media-frame-background-color: ${draft.chromePanel};
+  --reader-media-placeholder-background-color: ${draft.pageBgLight};
+  --reader-media-control-background-color: ${draft.chromePanel};
+  --reader-media-control-background-color-hover: ${draft.cardBackground};
+  --reader-media-control-text-color: ${draft.solidText};
+  --reader-media-scrollbar-track-color: ${draft.chromePanel};
+  --reader-media-scrollbar-thumb-color: ${draft.cardBorder};
+  --reader-media-scrollbar-thumb-hover-color: ${draft.pageTextLight};
+  --reader-lightbox-overlay-background-color: color-mix(in srgb, ${draft.pageTextDark} 90%, transparent);
+  --reader-lightbox-control-background-color: color-mix(in srgb, ${draft.pageTextDark} 70%, transparent);
+  --reader-lightbox-control-border-color: color-mix(in srgb, ${draft.pageBgDark} 24%, transparent);
+  --reader-lightbox-control-text-color: ${draft.solidText};
+  --reader-lightbox-caption-text-color: ${draft.solidText};
+  --reader-discovery-border-color: ${draft.cardBorder};
+  --reader-discovery-title-color: ${draft.pageTextLight};
+  --reader-discovery-meta-color: color-mix(in srgb, ${draft.pageTextLight} 62%, ${draft.pageBgLight});
+  --reader-discovery-card-background-color: ${draft.pageBgLight};
+  --reader-discovery-card-border-color: ${draft.cardBorder};
+  --reader-discovery-card-hover-border-color: ${draft.accent};
+}
+
+.${readerScopeClass}[data-theme="dark"] {
+  --reader-page-background-color: ${draft.pageBgDark};
+  --reader-page-text-color: ${draft.pageTextDark};
+  --reader-page-border-color: color-mix(in srgb, ${draft.pageTextDark} 18%, ${draft.pageBgDark});
+  --reader-chrome-background-color: ${draft.pageBgDark};
+  --reader-chrome-panel-color: color-mix(in srgb, ${draft.pageBgDark} 88%, ${draft.pageTextDark});
+  --reader-chrome-border-color: color-mix(in srgb, ${draft.pageTextDark} 16%, ${draft.pageBgDark});
+  --reader-chrome-text-color: ${draft.pageTextDark};
+  --reader-chrome-muted-color: color-mix(in srgb, ${draft.pageTextDark} 64%, ${draft.pageBgDark});
+  --reader-chrome-control-background-color: ${draft.pageBgDark};
+  --reader-chrome-control-hover-background-color: color-mix(in srgb, ${draft.pageBgDark} 86%, ${draft.pageTextDark});
+  --reader-chrome-control-subtle-hover-background-color: color-mix(in srgb, ${draft.pageTextDark} 14%, transparent);
+  --reader-title-color: ${draft.pageTextDark};
+  --reader-subtitle-color: color-mix(in srgb, ${draft.pageTextDark} 72%, ${draft.pageBgDark});
+  --reader-excerpt-color: color-mix(in srgb, ${draft.pageTextDark} 68%, ${draft.pageBgDark});
+  --reader-body-color: ${draft.pageTextDark};
+  --reader-meta-color: color-mix(in srgb, ${draft.pageTextDark} 62%, ${draft.pageBgDark});
+  --reader-card-background-color: color-mix(in srgb, ${draft.pageBgDark} 88%, ${draft.pageTextDark});
+  --reader-card-flat-background-color: ${draft.pageBgDark};
+  --reader-card-border-color: color-mix(in srgb, ${draft.pageTextDark} 16%, ${draft.pageBgDark});
+  --reader-detail-background-color: ${draft.pageBgDark};
+  --reader-detail-cover-background-color: color-mix(in srgb, ${draft.pageBgDark} 88%, ${draft.pageTextDark});
+  --reader-detail-border-color: color-mix(in srgb, ${draft.pageTextDark} 16%, ${draft.pageBgDark});
+  --reader-question-watermark-color: ${draft.pageTextDark};
+  --reader-quote-color: ${draft.pageTextDark};
+  --reader-caption-color: color-mix(in srgb, ${draft.pageTextDark} 62%, ${draft.pageBgDark});
+  --reader-tag-muted-text-color: color-mix(in srgb, ${draft.pageTextDark} 62%, ${draft.pageBgDark});
+  --reader-tag-muted-border-color: color-mix(in srgb, ${draft.pageTextDark} 16%, ${draft.pageBgDark});
+  --reader-media-frame-background-color: color-mix(in srgb, ${draft.pageBgDark} 88%, ${draft.pageTextDark});
+  --reader-media-placeholder-background-color: ${draft.pageBgDark};
+  --reader-media-control-background-color: color-mix(in srgb, ${draft.pageBgDark} 88%, ${draft.pageTextDark});
+  --reader-media-control-background-color-hover: color-mix(in srgb, ${draft.pageBgDark} 82%, ${draft.pageTextDark});
+  --reader-media-scrollbar-track-color: color-mix(in srgb, ${draft.pageBgDark} 88%, ${draft.pageTextDark});
+  --reader-media-scrollbar-thumb-color: color-mix(in srgb, ${draft.pageTextDark} 16%, ${draft.pageBgDark});
+  --reader-media-scrollbar-thumb-hover-color: ${draft.pageTextDark};
+  --reader-discovery-border-color: color-mix(in srgb, ${draft.pageTextDark} 16%, ${draft.pageBgDark});
+  --reader-discovery-title-color: ${draft.pageTextDark};
+  --reader-discovery-meta-color: color-mix(in srgb, ${draft.pageTextDark} 62%, ${draft.pageBgDark});
+  --reader-discovery-card-background-color: ${draft.pageBgDark};
+  --reader-discovery-card-border-color: color-mix(in srgb, ${draft.pageTextDark} 16%, ${draft.pageBgDark});
+}
+
+.${adminScopeClass} {
+  --button-solid-background-color: ${draft.solidBackground};
+  --button-solid-text-color: ${draft.solidText};
+  --button-solid-border-color: ${draft.solidBorder};
+}
+`;
 
 // Color Palette Editor Component
 const PaletteColorEditor: React.FC<{
@@ -685,6 +909,7 @@ export default function ThemeAdminPage() {
   const router = useRouter();
   const [themeData, setThemeData] = useState<StructuredThemeData | null>(null);
   const [adminThemeData, setAdminThemeData] = useState<StructuredThemeData | null>(null);
+  const [readerDraft, setReaderDraft] = useState<ReaderDraft | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveNotice, setSaveNotice] = useState<SaveNotice | null>(null);
@@ -740,6 +965,12 @@ export default function ThemeAdminPage() {
 
     fetchThemeData();
   }, []);
+
+  useEffect(() => {
+    if (themeData && !readerDraft) {
+      setReaderDraft(createInitialReaderDraft(themeData));
+    }
+  }, [themeData, readerDraft]);
 
   const handleColorChange = (id: number, field: keyof BaseColor | keyof ThemeColor, value: string, variant?: 'light' | 'dark') => {
     if (!themeData) return;
@@ -848,17 +1079,6 @@ export default function ThemeAdminPage() {
   const toggleTheme = () => {
     setCurrentTheme(prev => prev === 'light' ? 'dark' : 'light');
     document.documentElement.setAttribute('data-theme', currentTheme === 'light' ? 'dark' : 'light');
-  };
-
-  const applyPreset = (id: ThemePresetId) => {
-    const doc = getThemePresetDocument(id);
-    setSaveNotice(null);
-    setDarkModeShift(doc.darkModeShift ?? 5);
-    setActivePresetId(doc.activePresetId === 'journal' || doc.activePresetId === 'editorial' ? doc.activePresetId : id);
-    const { darkModeShift: _darkModeShift, activePresetId: _activePresetId, ...structured } = doc;
-    void _darkModeShift;
-    void _activePresetId;
-    setThemeData(structured as StructuredThemeData);
   };
 
   const validateThemeData = (data: StructuredThemeData): string[] => {
@@ -1027,6 +1247,14 @@ export default function ThemeAdminPage() {
     );
   }
 
+  const updateReaderDraft = <K extends keyof ReaderDraft>(key: K, value: ReaderDraft[K]) => {
+    setReaderDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
+  };
+
+  const readerDraftCss = readerDraft
+    ? buildReaderDraftScopedCss(readerDraft, DRAFT_READER_SCOPE, DRAFT_ADMIN_SCOPE)
+    : '';
+
   return (
     <div className={styles.adminContainer}>
       <div className={styles.header}>
@@ -1059,24 +1287,167 @@ export default function ThemeAdminPage() {
       </div>
 
       <main className={styles.mainContent}>
+        {readerDraft ? (
+          <section className={styles.readerDraftWorkbench}>
+            <div className={styles.readerDraftHeader}>
+              <div>
+                <h2 className={styles.readerDraftTitle}>Reader Theme Draft</h2>
+                <p className={styles.readerDraftText}>
+                  Preview-only semantic controls. This does not change the live app theme.
+                </p>
+              </div>
+            </div>
+
+            <div className={styles.readerDraftGrid}>
+              <div className={styles.readerDraftCard}>
+                <h3>Page and Surfaces</h3>
+                <label className={styles.readerDraftField}>
+                  <span>Page light</span>
+                  <input type="color" value={readerDraft.pageBgLight} onChange={(e) => updateReaderDraft('pageBgLight', e.target.value)} />
+                </label>
+                <label className={styles.readerDraftField}>
+                  <span>Page dark</span>
+                  <input type="color" value={readerDraft.pageBgDark} onChange={(e) => updateReaderDraft('pageBgDark', e.target.value)} />
+                </label>
+                <label className={styles.readerDraftField}>
+                  <span>Chrome panel</span>
+                  <input type="color" value={readerDraft.chromePanel} onChange={(e) => updateReaderDraft('chromePanel', e.target.value)} />
+                </label>
+                <label className={styles.readerDraftField}>
+                  <span>Card background</span>
+                  <input type="color" value={readerDraft.cardBackground} onChange={(e) => updateReaderDraft('cardBackground', e.target.value)} />
+                </label>
+                <label className={styles.readerDraftField}>
+                  <span>Card border</span>
+                  <input type="color" value={readerDraft.cardBorder} onChange={(e) => updateReaderDraft('cardBorder', e.target.value)} />
+                </label>
+              </div>
+
+              <div className={styles.readerDraftCard}>
+                <h3>Text and Accent</h3>
+                <label className={styles.readerDraftField}>
+                  <span>Text light</span>
+                  <input type="color" value={readerDraft.pageTextLight} onChange={(e) => updateReaderDraft('pageTextLight', e.target.value)} />
+                </label>
+                <label className={styles.readerDraftField}>
+                  <span>Text dark</span>
+                  <input type="color" value={readerDraft.pageTextDark} onChange={(e) => updateReaderDraft('pageTextDark', e.target.value)} />
+                </label>
+                <label className={styles.readerDraftField}>
+                  <span>Accent</span>
+                  <input type="color" value={readerDraft.accent} onChange={(e) => updateReaderDraft('accent', e.target.value)} />
+                </label>
+                <label className={styles.readerDraftField}>
+                  <span>Solid fill</span>
+                  <input type="color" value={readerDraft.solidBackground} onChange={(e) => updateReaderDraft('solidBackground', e.target.value)} />
+                </label>
+                <label className={styles.readerDraftField}>
+                  <span>Solid text</span>
+                  <input type="color" value={readerDraft.solidText} onChange={(e) => updateReaderDraft('solidText', e.target.value)} />
+                </label>
+              </div>
+
+              <div className={styles.readerDraftCard}>
+                <h3>Type</h3>
+                <label className={styles.readerDraftField}>
+                  <span>Title font</span>
+                  <select value={readerDraft.titleFont} onChange={(e) => updateReaderDraft('titleFont', e.target.value as ReaderDraftFontKey)}>
+                    <option value="systemSans">System Sans</option>
+                    <option value="serif">Serif</option>
+                    <option value="display">Display</option>
+                  </select>
+                </label>
+                <label className={styles.readerDraftField}>
+                  <span>Body font</span>
+                  <select value={readerDraft.bodyFont} onChange={(e) => updateReaderDraft('bodyFont', e.target.value as ReaderDraftFontKey)}>
+                    <option value="systemSans">System Sans</option>
+                    <option value="serif">Serif</option>
+                  </select>
+                </label>
+                <label className={styles.readerDraftField}>
+                  <span>Quote font</span>
+                  <select value={readerDraft.quoteFont} onChange={(e) => updateReaderDraft('quoteFont', e.target.value as ReaderDraftFontKey)}>
+                    <option value="systemSans">System Sans</option>
+                    <option value="serif">Serif</option>
+                    <option value="display">Display</option>
+                  </select>
+                </label>
+                <label className={styles.readerDraftField}>
+                  <span>Title size</span>
+                  <input type="text" value={readerDraft.titleSize} onChange={(e) => updateReaderDraft('titleSize', e.target.value)} />
+                </label>
+                <label className={styles.readerDraftField}>
+                  <span>Detail title</span>
+                  <input type="text" value={readerDraft.detailTitleSize} onChange={(e) => updateReaderDraft('detailTitleSize', e.target.value)} />
+                </label>
+                <label className={styles.readerDraftField}>
+                  <span>Body size</span>
+                  <input type="text" value={readerDraft.bodySize} onChange={(e) => updateReaderDraft('bodySize', e.target.value)} />
+                </label>
+                <label className={styles.readerDraftField}>
+                  <span>Subtitle size</span>
+                  <input type="text" value={readerDraft.subtitleSize} onChange={(e) => updateReaderDraft('subtitleSize', e.target.value)} />
+                </label>
+                <label className={styles.readerDraftField}>
+                  <span>Subtitle style</span>
+                  <select value={readerDraft.subtitleStyle} onChange={(e) => updateReaderDraft('subtitleStyle', e.target.value as 'normal' | 'italic')}>
+                    <option value="italic">Italic</option>
+                    <option value="normal">Normal</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className={styles.readerDraftCard}>
+                <h3>Shape and Emphasis</h3>
+                <label className={styles.readerDraftField}>
+                  <span>Card radius</span>
+                  <input type="text" value={readerDraft.cardRadius} onChange={(e) => updateReaderDraft('cardRadius', e.target.value)} />
+                </label>
+                <label className={styles.readerDraftField}>
+                  <span>Detail radius</span>
+                  <input type="text" value={readerDraft.detailRadius} onChange={(e) => updateReaderDraft('detailRadius', e.target.value)} />
+                </label>
+                <label className={styles.readerDraftField}>
+                  <span>Card shadow</span>
+                  <input type="text" value={readerDraft.cardShadow} onChange={(e) => updateReaderDraft('cardShadow', e.target.value)} />
+                </label>
+                <label className={styles.readerDraftField}>
+                  <span>Card hover shadow</span>
+                  <input type="text" value={readerDraft.cardShadowHover} onChange={(e) => updateReaderDraft('cardShadowHover', e.target.value)} />
+                </label>
+                <label className={styles.readerDraftField}>
+                  <span>Detail shadow</span>
+                  <input type="text" value={readerDraft.detailShadow} onChange={(e) => updateReaderDraft('detailShadow', e.target.value)} />
+                </label>
+                <label className={styles.readerDraftField}>
+                  <span>Quote watermark</span>
+                  <input type="number" min="0" max="1" step="0.01" value={readerDraft.quoteWatermarkOpacity} onChange={(e) => updateReaderDraft('quoteWatermarkOpacity', e.target.value)} />
+                </label>
+                <label className={styles.readerDraftField}>
+                  <span>Question watermark</span>
+                  <input type="number" min="0" max="1" step="0.01" value={readerDraft.questionWatermarkOpacity} onChange={(e) => updateReaderDraft('questionWatermarkOpacity', e.target.value)} />
+                </label>
+                <label className={styles.readerDraftField}>
+                  <span>Callout watermark</span>
+                  <input type="number" min="0" max="1" step="0.01" value={readerDraft.calloutWatermarkOpacity} onChange={(e) => updateReaderDraft('calloutWatermarkOpacity', e.target.value)} />
+                </label>
+              </div>
+            </div>
+          </section>
+        ) : null}
+
         <ThemeReaderPreview
           themeData={themeData}
           darkModeShift={darkModeShift}
           adminThemeData={adminThemeData}
           adminDarkModeShift={adminDarkModeShift}
+          activePresetId="custom"
+          readerScopeClass={DRAFT_READER_SCOPE}
+          adminScopeClass={DRAFT_ADMIN_SCOPE}
+          extraScopedCss={readerDraftCss}
           readerControls={
             <div className={styles.readerPreviewModeToggle}>
-              {(['journal', 'editorial'] as const).map((id) => (
-                <button
-                  key={id}
-                  type="button"
-                  className={activePresetId === id ? styles.readerPreviewModeActive : styles.readerPreviewModeBtn}
-                  onClick={() => applyPreset(id)}
-                  disabled={saving}
-                >
-                  {THEME_PRESET_META[id].label}
-                </button>
-              ))}
+              <span className={styles.readerDraftBadge}>Draft semantic system preview</span>
             </div>
           }
         />

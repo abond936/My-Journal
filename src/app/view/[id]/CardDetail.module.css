@@ -18,7 +18,7 @@
 .adminEditTrigger {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
-  color: var(--color4-light);
+  color: var(--reader-accent-color);
   text-decoration: none;
 }
 
@@ -70,10 +70,10 @@
 }
 
 .title {
-  font-size: var(--font-size-3xl);
-  font-family: var(--reader-title-font-family);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--reader-title-line-height);
+  font-size: var(--reader-detail-title-font-size);
+  font-family: var(--reader-detail-title-font-family);
+  font-weight: var(--reader-detail-title-font-weight);
+  line-height: var(--reader-detail-title-line-height);
   color: var(--reader-title-color);
   margin-bottom: var(--spacing-md);
 }
@@ -83,9 +83,9 @@
 }
 
 .subtitle {
-  font-size: var(--font-size-xl);
-  color: var(--reader-meta-color);
-  font-style: italic;
+  font-size: var(--reader-subtitle-font-size);
+  color: var(--reader-subtitle-color);
+  font-style: var(--reader-subtitle-font-style);
 }
 
 .content {

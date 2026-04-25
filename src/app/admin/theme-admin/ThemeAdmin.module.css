@@ -1099,7 +1099,7 @@
   }
 }
 
-@media (max-width: var(--breakpoint-xl)) {
+@media (max-width: 1280px) {
   .paletteGrid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1125,7 +1125,11 @@
   }
 }
 
-@media (max-width: var(--breakpoint-md)) {
+@media (max-width: 768px) {
+  .readerDraftGrid {
+    grid-template-columns: 1fr;
+  }
+
   .adminContainer {
     padding: var(--spacing-lg);
   }
@@ -1304,6 +1308,92 @@
   margin-bottom: var(--spacing-3xl);
 }
 
+.readerDraftWorkbench {
+  display: grid;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+}
+
+.readerDraftHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+}
+
+.readerDraftTitle {
+  margin: 0 0 var(--spacing-xs);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text1-color);
+}
+
+.readerDraftText {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+  max-width: 58rem;
+}
+
+.readerDraftGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.readerDraftCard {
+  display: grid;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-md);
+  background-color: var(--layout-background2-color);
+}
+
+.readerDraftCard h3 {
+  margin: 0 0 var(--spacing-xs);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text1-color);
+}
+
+.readerDraftField {
+  display: grid;
+  gap: 6px;
+  color: var(--text2-color);
+  font-size: var(--font-size-sm);
+}
+
+.readerDraftField input,
+.readerDraftField select {
+  width: 100%;
+  min-width: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--input-background-color);
+  color: var(--text1-color);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+}
+
+.readerDraftField input[type='color'] {
+  min-height: 2.5rem;
+  padding: 4px;
+}
+
+.readerDraftBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-full);
+  background-color: var(--layout-background2-color);
+  color: var(--text1-color);
+  border: var(--border-width-thin) solid var(--border1-color);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
 .readerPreviewHeader {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -1367,10 +1457,9 @@
   width: 100%;
   max-width: 2480px;
   margin: 0;
-  border-radius: var(--border-radius-md);
-  overflow: hidden;
-  border: var(--border-width-thin) solid var(--border1-color);
-  background-color: var(--body-background-color);
+  overflow: visible;
+  background-color: var(--reader-page-background-color);
+  color: var(--reader-page-text-color);
 }
 
 .adminPreviewCanvas {
@@ -1388,8 +1477,8 @@
 
 .readerPreviewPage {
   padding: var(--spacing-md);
-  background-color: var(--body-background-color);
-  color: var(--text1-color);
+  background-color: var(--reader-page-background-color);
+  color: var(--reader-page-text-color);
 }
 
 .readerPreviewViewport {
@@ -1398,16 +1487,15 @@
   gap: var(--spacing-lg);
   width: 100%;
   padding: var(--spacing-lg);
-  background-color: var(--body-background-color);
-  color: var(--text1-color);
+  background-color: var(--reader-page-background-color);
+  color: var(--reader-page-text-color);
 }
 
 .readerPreviewSidebar {
-  background-color: var(--card-background-color);
-  border: var(--card-border-width) solid var(--card-border-color);
-  border-radius: var(--card-border-radius);
-  box-shadow: var(--card-shadow);
+  background-color: var(--reader-chrome-background-color);
+  border-right: var(--border-width-thin) solid var(--reader-chrome-border-color);
   padding: var(--spacing-md);
+  min-width: 0;
 }
 
 .readerPreviewMain {
@@ -1418,10 +1506,10 @@
 }
 
 .readerPreviewBlock {
-  padding: var(--spacing-md);
-  background-color: var(--layout-background2-color);
-  border: var(--border-width-thin) solid var(--border1-color);
-  border-radius: var(--border-radius-lg);
+  padding: 0;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
 }
 
 .readerPreviewModePill {
@@ -1429,11 +1517,24 @@
   margin-bottom: var(--spacing-md);
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-full);
-  background-color: var(--button-solid-background-color);
-  color: var(--button-solid-text-color);
+  background-color: var(--reader-solid-background-color);
+  color: var(--reader-solid-text-color);
   font-family: var(--font-family-sans);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
+}
+
+.readerPreviewSolidControl {
+  background-color: var(--reader-solid-background-color) !important;
+  color: var(--reader-solid-text-color) !important;
+  border-color: var(--reader-solid-border-color) !important;
+  font-weight: var(--font-weight-semibold);
+}
+
+.readerPreviewSolidChip {
+  background-color: var(--reader-solid-background-color) !important;
+  color: var(--reader-solid-text-color) !important;
+  border-color: var(--reader-solid-border-color) !important;
 }
 
 .readerPreviewFilterGroup {
@@ -1443,7 +1544,7 @@
 }
 
 .readerPreviewFilterTitle {
-  color: var(--text1-color);
+  color: var(--reader-chrome-text-color);
   font-family: var(--font-family-sans);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
@@ -1459,10 +1560,10 @@
 .readerPreviewChipRow span,
 .readerPreviewTagList span {
   padding: var(--spacing-xs) var(--spacing-sm);
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--reader-tag-muted-border-color);
   border-radius: var(--border-radius-full);
-  background-color: var(--button-outline-background-color);
-  color: var(--button-outline-text-color);
+  background-color: var(--reader-tag-muted-background-color);
+  color: var(--reader-tag-muted-text-color);
   font-family: var(--font-family-sans);
   font-size: var(--font-size-sm);
 }
@@ -1480,7 +1581,7 @@
 
 .readerPreviewOpenGrid {
   display: grid;
-  grid-template-columns: repeat(3, 380px);
+  grid-template-columns: repeat(2, minmax(320px, 380px));
   gap: var(--spacing-md);
   justify-content: start;
 }
@@ -1490,20 +1591,114 @@
   min-width: 0;
   width: 380px;
   max-width: none;
-  padding: var(--spacing-md);
-  border: var(--border-width-thin) solid var(--border1-color);
-  border-radius: var(--border-radius-md);
-  background-color: var(--layout-background2-color);
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background-color: transparent;
 }
 
 .readerPreviewDetailFrame article {
   max-width: none;
   margin: 0;
-  padding: 0;
-  box-shadow: none;
+}
+
+.readerPreviewExtrasGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(320px, 1fr));
+  gap: var(--spacing-lg);
+  align-items: start;
+  grid-column: 1 / -1;
+}
+
+.readerPreviewSurface,
+.readerPreviewSurfaceWide {
+  min-width: 0;
+}
+
+.readerPreviewSurfaceWide {
+  grid-column: 1 / -1;
+}
+
+.readerPreviewStatesSection {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.readerPreviewStatesGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(280px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.readerPreviewStateCard {
+  min-width: 0;
+  padding: var(--spacing-md);
+  border: var(--border-width-thin) solid var(--reader-page-border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--reader-page-background-color);
+}
+
+.readerPreviewStateNote {
+  margin: var(--spacing-sm) 0 0;
+  color: var(--reader-meta-color);
+  font-size: var(--font-size-xs);
+}
+
+.readerPreviewLightboxFrame {
+  position: relative;
+  min-height: 360px;
+  overflow: hidden;
+  border-radius: var(--border-radius-md);
+  background: var(--reader-lightbox-overlay-background-color);
+  isolation: isolate;
+}
+
+.readerPreviewStateCard :global(button[disabled]) {
+  cursor: default;
+  opacity: 0.8;
+}
+
+.readerPreviewLightboxImageWrap {
+  height: 240px;
+}
+
+.readerPreviewSidebarMini {
+  padding: var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--reader-chrome-border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--reader-chrome-background-color);
+}
+
+.readerPreviewControlStack {
+  display: grid;
+  gap: var(--spacing-sm);
+  justify-items: start;
+}
+
+.readerPreviewInlineLinkFocus {
+  color: var(--reader-accent-color);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  outline: 2px solid var(--reader-focus-ring-color);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.readerPreviewFocusButton {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: var(--border-width-thin) solid var(--reader-chrome-border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--reader-chrome-control-background-color);
+  color: var(--reader-chrome-text-color);
+  outline: 2px solid var(--reader-focus-ring-color);
+  outline-offset: 2px;
 }
 
 @media (max-width: 900px) {
+  .readerDraftGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .readerPreviewHeader {
     align-items: flex-start;
     grid-template-columns: 1fr;
@@ -1523,19 +1718,36 @@
   }
 
   .readerPreviewFeedGrid,
-  .readerPreviewOpenGrid {
+  .readerPreviewOpenGrid,
+  .readerPreviewExtrasGrid,
+  .readerPreviewStatesGrid {
     grid-template-columns: 1fr;
+  }
+
+  .readerPreviewSurfaceWide {
+    grid-column: auto;
   }
 }
 
 .previewKicker {
   margin-bottom: var(--spacing-sm);
-  color: var(--text2-color);
+  color: var(--reader-meta-color);
   font-family: var(--font-family-sans);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+.previewWarning {
+  max-width: 2480px;
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: var(--border-width-thin) solid var(--state-warning-border-color);
+  border-radius: var(--border-radius-md);
+  background-color: var(--state-warning-background-color);
+  color: var(--text1-color);
+  font-size: var(--font-size-sm);
 }
 
 .readerPreviewCard {

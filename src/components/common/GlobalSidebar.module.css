@@ -1,6 +1,6 @@
 .sidebar {
     width: var(--sidebar-width);
-    background-color: var(--layout-background1-color);
+    background-color: var(--reader-chrome-background-color);
     transition: margin-left var(--transition-short) ease-in-out;
     padding: var(--spacing-lg);
     padding-top: calc(var(--header-height) - var(--spacing-2xl));
@@ -32,7 +32,7 @@
     margin-bottom: var(--spacing-md);
     font-size: var(--font-size-xl);
     font-weight: var(--font-weight-semibold);
-    color: var(--text1-color);
+    color: var(--reader-chrome-text-color);
   }
 
   .modeTabs {
@@ -47,16 +47,17 @@
     font-size: var(--font-size-sm);
     font-family: var(--body-font-family);
     background: transparent;
-    border: var(--border-width-thin) solid var(--border1-color);
+    border: var(--border-width-thin) solid var(--reader-chrome-border-color);
     border-radius: var(--border-radius-md);
-    color: var(--text2-color);
+    color: var(--reader-chrome-muted-color);
     cursor: pointer;
   }
 
   .modeTabActive {
-    background-color: var(--button-solid-background-color);
-    color: var(--button-solid-text-color);
-    border-color: var(--button-solid-border-color);
+    background-color: var(--reader-solid-background-color, var(--button-solid-background-color));
+    color: var(--reader-solid-text-color, var(--button-solid-text-color));
+    border-color: var(--reader-solid-border-color, var(--button-solid-border-color));
+    font-weight: var(--font-weight-semibold);
   }
 
   .sidebarSection {
@@ -67,7 +68,7 @@
     margin: 0 0 var(--spacing-xs) 0;
     font-size: var(--font-size-base);
     font-weight: var(--font-weight-semibold);
-    color: var(--text1-color);
+    color: var(--reader-chrome-text-color);
     line-height: 1.3;
   }
 
@@ -79,7 +80,7 @@
     display: block;
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
-    color: var(--text2-color);
+    color: var(--reader-chrome-muted-color);
     margin-bottom: var(--spacing-xs);
   }
 
@@ -91,7 +92,7 @@
     display: block;
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
-    color: var(--text2-color);
+    color: var(--reader-chrome-muted-color);
     margin-bottom: var(--spacing-xs);
   }
 
@@ -100,10 +101,10 @@
     padding: var(--spacing-sm);
     font-size: var(--font-size-sm);
     font-family: var(--body-font-family);
-    border: var(--border-width-thin) solid var(--border1-color);
+    border: var(--border-width-thin) solid var(--reader-chrome-border-color);
     border-radius: var(--border-radius-md);
-    background-color: var(--layout-background1-color);
-    color: var(--text1-color);
+    background-color: var(--reader-chrome-control-background-color);
+    color: var(--reader-chrome-text-color);
     box-sizing: border-box;
   }
 
@@ -114,7 +115,7 @@
   .sortHint {
     margin: var(--spacing-xs) 0 0 0;
     font-size: var(--font-size-xs);
-    color: var(--text2-color);
+    color: var(--reader-chrome-muted-color);
     line-height: 1.4;
   }
 
@@ -127,16 +128,16 @@
     font-size: var(--font-size-sm);
     font-family: var(--body-font-family);
     background: transparent;
-    border: var(--border-width-thin) solid var(--border1-color);
+    border: var(--border-width-thin) solid var(--reader-chrome-border-color);
     border-radius: var(--border-radius-md);
-    color: var(--text1-color);
+    color: var(--reader-chrome-text-color);
     cursor: pointer;
     width: 100%;
     text-align: left;
   }
 
   .collectionBackButton:hover {
-    background-color: var(--layout-background2-color);
+    background-color: var(--reader-chrome-control-hover-background-color);
   }
 
   .collectionGroups {
@@ -154,7 +155,7 @@
   .collectionGroupLabel {
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-semibold);
-    color: var(--text2-color);
+    color: var(--reader-chrome-muted-color);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -177,27 +178,27 @@
     font-family: var(--body-font-family);
     text-align: left;
     background: transparent;
-    border: var(--border-width-thin) solid var(--border1-color);
+    border: var(--border-width-thin) solid var(--reader-chrome-border-color);
     border-radius: var(--border-radius-md);
-    color: var(--text1-color);
+    color: var(--reader-chrome-text-color);
     cursor: pointer;
     transition: background-color var(--transition-short);
   }
 
   .collectionItem:hover {
-    background-color: var(--layout-background2-color);
+    background-color: var(--reader-chrome-control-hover-background-color);
   }
 
   .collectionCount {
     margin-left: var(--spacing-xs);
     font-size: var(--font-size-xs);
-    color: var(--text2-color);
+    color: var(--reader-chrome-muted-color);
   }
 
   .collectionEmpty {
     padding: var(--spacing-md);
     font-size: var(--font-size-sm);
-    color: var(--text2-color);
+    color: var(--reader-chrome-muted-color);
   }
 
   .activeFilters {
@@ -209,7 +210,7 @@
     display: block;
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
-    color: var(--text1-color);
+    color: var(--reader-chrome-text-color);
     margin-bottom: var(--spacing-xs);
   }
 
@@ -224,16 +225,16 @@
     padding: 2px var(--spacing-sm);
     font-size: var(--font-size-xs);
     font-family: var(--body-font-family);
-    border: var(--border-width-thin) dashed var(--border1-color);
+    border: var(--border-width-thin) dashed var(--reader-chrome-border-color);
     border-radius: var(--border-radius-md);
     background: transparent;
-    color: var(--text2-color);
+    color: var(--reader-chrome-muted-color);
     cursor: pointer;
   }
 
   .activeFiltersResetTypes:hover {
-    color: var(--text1-color);
-    border-color: var(--text2-color);
+    color: var(--reader-chrome-text-color);
+    border-color: var(--reader-chrome-muted-color);
   }
 
   .filterChip {
@@ -242,11 +243,12 @@
     gap: var(--spacing-xs);
     padding: 2px var(--spacing-sm);
     font-size: var(--font-size-xs);
-    background-color: var(--button-solid-background-color);
-    color: var(--button-solid-text-color);
-    border: var(--border-width-thin) solid var(--button-solid-border-color);
+    background-color: var(--reader-solid-background-color, var(--button-solid-background-color));
+    color: var(--reader-solid-text-color, var(--button-solid-text-color));
+    border: var(--border-width-thin) solid var(--reader-solid-border-color, var(--button-solid-border-color));
     border-radius: var(--border-radius-md);
     max-width: 100%;
+    font-weight: var(--font-weight-semibold);
   }
 
   .filterChipRemove {
@@ -267,7 +269,7 @@
   }
 
   .filterChipRemove:hover {
-    background-color: color-mix(in srgb, var(--text1-color) 15%, transparent);
+    background-color: var(--reader-chrome-control-subtle-hover-background-color);
   }
 
   .dimensionTabs {
@@ -282,22 +284,23 @@
     font-size: var(--font-size-xs);
     font-family: var(--body-font-family);
     background: transparent;
-    border: var(--border-width-thin) solid var(--border1-color);
+    border: var(--border-width-thin) solid var(--reader-chrome-border-color);
     border-radius: var(--border-radius-md);
-    color: var(--text2-color);
+    color: var(--reader-chrome-muted-color);
     cursor: pointer;
     transition: background-color var(--transition-short), color var(--transition-short), border-color var(--transition-short);
   }
 
   .dimensionTab:hover {
-    background-color: var(--layout-background2-color);
-    color: var(--text1-color);
+    background-color: var(--reader-chrome-control-hover-background-color);
+    color: var(--reader-chrome-text-color);
   }
 
   .dimensionTabActive {
-    background-color: var(--button-solid-background-color);
-    color: var(--button-solid-text-color);
-    border-color: var(--button-solid-border-color);
+    background-color: var(--reader-solid-background-color, var(--button-solid-background-color));
+    color: var(--reader-solid-text-color, var(--button-solid-text-color));
+    border-color: var(--reader-solid-border-color, var(--button-solid-border-color));
+    font-weight: var(--font-weight-semibold);
   }
 
   .dimensionTabIcon {
@@ -338,24 +341,25 @@
     padding: 0 var(--spacing-sm);
     font-size: var(--font-size-xs);
     font-family: var(--body-font-family);
-    border: var(--border-width-thin) solid var(--border1-color);
+    border: var(--border-width-thin) solid var(--reader-chrome-border-color);
     border-radius: var(--border-radius-md);
     background: transparent;
-    color: var(--text2-color);
+    color: var(--reader-chrome-muted-color);
     cursor: pointer;
     transition: background-color var(--transition-short), color var(--transition-short),
       border-color var(--transition-short);
   }
 
   .cardTypeChip:hover {
-    background-color: var(--layout-background2-color);
-    color: var(--text1-color);
+    background-color: var(--reader-chrome-control-hover-background-color);
+    color: var(--reader-chrome-text-color);
   }
 
   .cardTypeChipActive {
-    background-color: var(--button-solid-background-color);
-    color: var(--button-solid-text-color);
-    border-color: var(--button-solid-border-color);
+    background-color: var(--reader-solid-background-color, var(--button-solid-background-color));
+    color: var(--reader-solid-text-color, var(--button-solid-text-color));
+    border-color: var(--reader-solid-border-color, var(--button-solid-border-color));
+    font-weight: var(--font-weight-semibold);
   }
 
   .typeSelectPlaceholder {
@@ -363,15 +367,15 @@
     padding: var(--spacing-sm);
     font-size: var(--font-size-base);
     font-family: var(--body-font-family);
-    border: var(--border-width-thin) solid var(--border1-color);
+    border: var(--border-width-thin) solid var(--reader-chrome-border-color);
     border-radius: var(--border-radius-md);
-    background-color: var(--layout-background1-color);
-    color: var(--text1-color);
+    background-color: var(--reader-chrome-control-background-color);
+    color: var(--reader-chrome-text-color);
   }
 
   .loadingPlaceholder {
     font-size: var(--font-size-sm);
-    color: var(--text2-color);
+    color: var(--reader-chrome-muted-color);
     padding: var(--spacing-md);
   }
 
@@ -392,26 +396,27 @@
     font-size: var(--font-size-xs);
     font-family: var(--body-font-family);
     background: transparent;
-    border: var(--border-width-thin) solid var(--border1-color);
+    border: var(--border-width-thin) solid var(--reader-chrome-border-color);
     border-radius: var(--border-radius-md);
-    color: var(--text2-color);
+    color: var(--reader-chrome-muted-color);
     cursor: pointer;
   }
 
   .viewTagSidebarTabActive {
-    background-color: var(--button-solid-background-color);
-    color: var(--button-solid-text-color);
-    border-color: var(--button-solid-border-color);
+    background-color: var(--reader-solid-background-color, var(--button-solid-background-color));
+    color: var(--reader-solid-text-color, var(--button-solid-text-color));
+    border-color: var(--reader-solid-border-color, var(--button-solid-border-color));
+    font-weight: var(--font-weight-semibold);
   }
 
   .filterControls {
     flex-shrink: 0; /* Never shrink - always keep buttons visible */
     margin-top: auto;
     padding: var(--spacing-md) 0 var(--spacing-md) 0;
-    background-color: var(--layout-background1-color);
+    background-color: var(--reader-chrome-background-color);
     display: flex;
     gap: var(--spacing-sm);
-    border-top: var(--border-width-thin) solid var(--border1-color);
+    border-top: var(--border-width-thin) solid var(--reader-chrome-border-color);
     position: relative;
     z-index: 100;
   }
@@ -419,19 +424,20 @@
   .applyButton, .clearButton {
     flex: 1;
     padding: var(--spacing-sm);
-    border: var(--border-width-thin) solid var(--border1-color);
+    border: var(--border-width-thin) solid var(--reader-chrome-border-color);
     border-radius: var(--border-radius-md);
-    background-color: var(--layout-background1-color);
-    color: var(--text1-color);
+    background-color: var(--reader-chrome-control-background-color);
+    color: var(--reader-chrome-text-color);
     cursor: pointer;
     font-size: var(--font-size-base);
     min-height: 40px;
   }
   
   .applyButton {
-    background-color: var(--button-solid-background-color);
-    color: var(--button-solid-text-color);
-    border-color: var(--button-solid-border-color);
+    background-color: var(--reader-solid-background-color, var(--button-solid-background-color));
+    color: var(--reader-solid-text-color, var(--button-solid-text-color));
+    border-color: var(--reader-solid-border-color, var(--button-solid-border-color));
+    font-weight: var(--font-weight-semibold);
   }
   
   .clearButton {
@@ -443,7 +449,7 @@
   align-items: flex-start;
   gap: var(--spacing-sm);
   font-size: var(--font-size-sm);
-  color: var(--text1-color);
+  color: var(--reader-chrome-text-color);
   cursor: pointer;
   line-height: 1.35;
 }
@@ -456,6 +462,6 @@
 .feedToggleHint {
   margin: var(--spacing-xs) 0 0 0;
   font-size: var(--font-size-sm);
-  color: var(--text2-color);
+  color: var(--reader-chrome-muted-color);
   line-height: 1.4;
 }

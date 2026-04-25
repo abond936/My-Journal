@@ -17,7 +17,7 @@ import {
   ScopedThemeDocumentData,
   ScopedThemeSettings,
 } from '@/lib/types/theme';
-import { getDefaultScopedThemeDocument } from '@/lib/theme/themePresets';
+import { getDefaultScopedThemeDocument, READER_PRESET_ALIAS_GROUPS } from '@/lib/theme/themePresets';
 
 /**
  * Server-side theme service: JSON backup, Firestore runtime source, CSS token generation.
@@ -169,6 +169,40 @@ const generateDarkModeColorScales = (themeColors: ThemeColor[]): string => {
   return css;
 };
 
+const generateThemeColorHslAliases = (themeColors: ThemeColor[], variant: 'light' | 'dark'): string => {
+  let css = '';
+
+  themeColors.forEach(color => {
+    if (color.id !== 1 && color.id !== 2) return;
+    const hsl = hexToHsl(color[variant].hex);
+    css += `  --h${color.id}: ${hsl.h}; /* Color ${color.id} ${variant} compatibility alias */\n`;
+    css += `  --s${color.id}: ${hsl.s}%;\n`;
+    css += `  --l${color.id}: ${hsl.l}%;\n`;
+  });
+
+  return css;
+};
+
+function generateReaderPresetAliasCss(activePresetId?: string): string {
+  if (activePresetId !== 'journal' && activePresetId !== 'editorial') return '';
+
+  const groups = READER_PRESET_ALIAS_GROUPS[activePresetId];
+  let css = `
+  /* Reader preset role aliases (${activePresetId}) */
+`;
+
+  Object.entries(groups).forEach(([role, aliases]) => {
+    const entries = Object.entries(aliases);
+    if (!entries.length) return;
+    css += `  /* ${role} */\n`;
+    entries.forEach(([name, value]) => {
+      css += `  ${name}: ${value};\n`;
+    });
+  });
+
+  return css;
+}
+
 /**
  * CSS variable blocks for :root and [data-theme="dark"] only (no global element rules).
  * Injected in RootLayout so tokens work on serverless without writing the repo.
@@ -194,7 +228,9 @@ function tokenValue(ref: string | undefined, fallback: string): string {
   return s;
 }
 
-export function buildThemeTokensCss(themeData: StructuredThemeData & { darkModeShift?: number }): string {
+export function buildThemeTokensCss(
+  themeData: StructuredThemeData & { darkModeShift?: number; activePresetId?: string }
+): string {
   let cssContent = `/*
   Unified Design System (v2) - Simplified 3-Shade Approach
   ==========================================
@@ -252,6 +288,11 @@ export function buildThemeTokensCss(themeData: StructuredThemeData & { darkModeS
 
     // Generate 3-shade color scales for theme colors (1 and 2)
     cssContent += generateColorScales(themeData.themeColors || []);
+
+    cssContent += `
+  /* Compatibility HSL aliases for legacy component overlays */
+`;
+    cssContent += generateThemeColorHslAliases(themeData.themeColors || [], 'light');
 
     // Generate base color definitions for colors 3-14
     cssContent += `
@@ -451,17 +492,53 @@ export function buildThemeTokensCss(themeData: StructuredThemeData & { darkModeS
   --card-watermark-raster-filter: none;
 
   /* Reader semantic aliases */
+  --reader-page-background-color: var(--layout-background1-color);
+  --reader-page-text-color: var(--text1-color);
+  --reader-page-border-color: var(--border1-color);
+  --reader-chrome-background-color: var(--layout-background1-color);
+  --reader-chrome-panel-color: var(--layout-background2-color);
+  --reader-chrome-border-color: var(--border1-color);
+  --reader-chrome-text-color: var(--text1-color);
+  --reader-chrome-muted-color: var(--text2-color);
+  --reader-chrome-control-background-color: var(--layout-background1-color);
+  --reader-chrome-control-hover-background-color: var(--layout-background2-color);
+  --reader-chrome-control-subtle-hover-background-color: color-mix(in srgb, var(--text1-color) 15%, transparent);
+  --reader-solid-background-color: var(--button-solid-background-color);
+  --reader-solid-text-color: var(--reader-contrast-text-color);
+  --reader-solid-border-color: var(--button-solid-border-color);
   --reader-title-color: var(--text1-color);
   --reader-title-font-family: var(--body-font-family);
   --reader-title-font-size: var(--font-size-base);
   --reader-title-font-weight: var(--font-weight-semibold);
   --reader-title-line-height: var(--line-height-tight);
+  --reader-detail-title-font-family: var(--reader-title-font-family);
+  --reader-detail-title-font-size: var(--font-size-3xl);
+  --reader-detail-title-font-weight: var(--font-weight-bold);
+  --reader-detail-title-line-height: var(--reader-title-line-height);
+  --reader-subtitle-color: var(--text2-color);
+  --reader-subtitle-font-size: var(--font-size-xl);
+  --reader-subtitle-font-style: italic;
+  --reader-excerpt-color: var(--text2-color);
+  --reader-excerpt-font-size: var(--font-size-sm);
+  --reader-excerpt-line-height: var(--line-height-relaxed);
   --reader-body-color: var(--text1-color);
   --reader-body-font-family: var(--body-font-family);
   --reader-body-font-size: var(--font-size-sm);
   --reader-body-line-height: var(--line-height-relaxed);
   --reader-meta-color: var(--text2-color);
-  --reader-meta-font-size: var(--font-size-sm);
+  --reader-accent-color: var(--color3);
+  --reader-focus-ring-color: var(--color3);
+  --reader-contrast-text-color: white;
+  --reader-overlay-scrim-color: color-mix(in srgb, var(--reader-page-text-color) 68%, transparent);
+  --reader-overlay-border-color: color-mix(in srgb, var(--reader-page-background-color) 22%, transparent);
+  --reader-overlay-strong-scrim-color: color-mix(in srgb, var(--reader-page-text-color) 92%, transparent);
+  --reader-card-hover-border-color: var(--color4-light, var(--color3));
+  --reader-card-overlay-background: var(--gradient-bottom-overlay);
+  --reader-card-overlay-strong-background: var(--gradient-bottom-overlay-strong);
+  --reader-card-overlay-text-color: var(--reader-contrast-text-color);
+  --reader-card-badge-background-color: var(--reader-overlay-scrim-color);
+  --reader-card-badge-text-color: var(--reader-contrast-text-color);
+  --reader-card-badge-border-color: var(--reader-overlay-border-color);
   --reader-card-background-color: var(--card-background-color);
   --reader-card-flat-background-color: var(--layout-background1-color);
   --reader-card-border-color: var(--card-border-color);
@@ -477,13 +554,45 @@ export function buildThemeTokensCss(themeData: StructuredThemeData & { darkModeS
   --reader-detail-shadow: var(--shadow-md);
   --reader-detail-padding-x: var(--spacing-xl);
   --reader-detail-padding-bottom: var(--spacing-2xl);
+  --reader-question-font-size: var(--font-size-lg);
+  --reader-question-watermark-color: var(--reader-title-color);
+  --reader-question-watermark-opacity: 0.3;
+  --reader-callout-watermark-opacity: 0.3;
   --reader-quote-color: var(--text1-color);
   --reader-quote-font-family: var(--body-font-family);
   --reader-quote-font-size: var(--font-size-lg);
   --reader-quote-line-height: var(--line-height-relaxed);
+  --reader-quote-watermark-opacity: 0.22;
   --reader-caption-color: var(--text2-color);
   --reader-caption-font-size: var(--font-size-sm);
-}
+  --reader-tag-background-color: var(--reader-solid-background-color);
+  --reader-tag-text-color: var(--reader-solid-text-color);
+  --reader-tag-border-color: var(--reader-solid-border-color);
+  --reader-tag-muted-background-color: transparent;
+  --reader-tag-muted-text-color: var(--text2-color);
+  --reader-tag-muted-border-color: var(--border1-color);
+  --reader-media-frame-background-color: var(--layout-background2-color);
+  --reader-media-placeholder-background-color: var(--reader-chrome-control-background-color);
+  --reader-media-control-background-color: var(--reader-chrome-control-background-color);
+  --reader-media-control-background-color-hover: var(--reader-chrome-control-hover-background-color);
+  --reader-media-control-text-color: var(--reader-contrast-text-color);
+  --reader-media-scrollbar-track-color: var(--layout-background2-color);
+  --reader-media-scrollbar-thumb-color: var(--border1-color);
+  --reader-media-scrollbar-thumb-hover-color: var(--text2-color);
+  --reader-lightbox-overlay-background-color: var(--lightbox-overlay-background-color, var(--reader-overlay-strong-scrim-color));
+  --reader-lightbox-control-background-color: var(--lightbox-control-background-color, var(--reader-overlay-scrim-color));
+  --reader-lightbox-control-border-color: var(--lightbox-control-border-color, var(--reader-overlay-border-color));
+  --reader-lightbox-control-text-color: var(--lightbox-control-text-color, var(--reader-contrast-text-color));
+  --reader-lightbox-caption-text-color: var(--lightbox-caption-text-color, var(--reader-contrast-text-color));
+  --reader-discovery-border-color: var(--border1-color);
+  --reader-discovery-title-color: var(--text1-color);
+  --reader-discovery-meta-color: var(--text2-color);
+  --reader-discovery-card-background-color: var(--layout-background1-color);
+  --reader-discovery-card-border-color: var(--border1-color);
+  --reader-discovery-card-hover-border-color: var(--color3);
+`;
+    cssContent += generateReaderPresetAliasCss(themeData.activePresetId);
+    cssContent += `}
 
 /*
  * =================================================================
@@ -502,6 +611,11 @@ export function buildThemeTokensCss(themeData: StructuredThemeData & { darkModeS
 
     // Generate dark mode color scale overrides
     cssContent += generateDarkModeColorScales(themeData.themeColors || []);
+
+    cssContent += `
+  /* Compatibility HSL aliases for legacy component overlays */
+`;
+    cssContent += generateThemeColorHslAliases(themeData.themeColors || [], 'dark');
 
     cssContent += `
   /* --- GLOBAL ELEMENT TOKEN OVERRIDES --- */
@@ -531,12 +645,11 @@ export function buildThemeTokensCss(themeData: StructuredThemeData & { darkModeS
   return cssContent;
 }
 
-/** Remove persisted-only fields before passing theme JSON into `buildThemeTokensCss`. */
+/** Shape persisted theme data for `buildThemeTokensCss` while preserving active reader preset id. */
 export function themeDataForCssGeneration(
   data: StructuredThemeData & { darkModeShift?: number; activePresetId?: string }
-): StructuredThemeData & { darkModeShift?: number } {
+): StructuredThemeData & { darkModeShift?: number; activePresetId?: string } {
   const rest: StructuredThemeData & { darkModeShift?: number; activePresetId?: string } = { ...data };
-  delete rest.activePresetId;
   return rest;
 }
 

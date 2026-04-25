@@ -10,6 +10,18 @@ import baseTheme from '../../../theme-data.json';
 export type ThemePresetId = ReaderThemePresetId;
 export type ThemeAdminPresetId = AdminThemePresetId;
 
+type ReaderPresetRole =
+  | 'page'
+  | 'chrome'
+  | 'card'
+  | 'detail'
+  | 'typeTreatments'
+  | 'media'
+  | 'discovery'
+  | 'tags';
+
+type ReaderPresetAliasGroups = Record<ReaderPresetRole, Record<string, string>>;
+
 export const THEME_PRESET_META: Record<
   ThemePresetId,
   { label: string; description: string }
@@ -34,6 +46,53 @@ export const ADMIN_THEME_PRESET_META: Record<
     label: 'Admin',
     description:
       'Neutral, higher-contrast authoring theme for dense grids, forms, focus states, and long editing sessions.',
+  },
+};
+
+export const READER_PRESET_ALIAS_GROUPS: Record<ThemePresetId, ReaderPresetAliasGroups> = {
+  journal: {
+    page: {},
+    chrome: {},
+    card: {
+      '--reader-card-hover-border-color': 'var(--color3)',
+    },
+    detail: {
+      '--reader-title-font-family': 'var(--font-family-serif)',
+      '--reader-detail-title-font-family': 'var(--font-family-serif)',
+      '--reader-detail-title-font-weight': 'var(--font-weight-semibold)',
+      '--reader-subtitle-font-style': 'italic',
+    },
+    typeTreatments: {
+      '--reader-quote-font-family': 'var(--font-family-serif)',
+      '--reader-quote-watermark-opacity': '0.2',
+      '--reader-question-watermark-opacity': '0.26',
+      '--reader-callout-watermark-opacity': '0.26',
+    },
+    media: {},
+    discovery: {},
+    tags: {},
+  },
+  editorial: {
+    page: {},
+    chrome: {},
+    card: {
+      '--reader-card-hover-border-color': 'var(--color3)',
+    },
+    detail: {
+      '--reader-title-font-family': 'var(--font-family-sans)',
+      '--reader-detail-title-font-family': 'var(--font-family-sans)',
+      '--reader-detail-title-font-weight': 'var(--font-weight-semibold)',
+      '--reader-subtitle-font-style': 'normal',
+    },
+    typeTreatments: {
+      '--reader-quote-font-family': 'var(--font-family-serif)',
+      '--reader-quote-watermark-opacity': '0.16',
+      '--reader-question-watermark-opacity': '0.22',
+      '--reader-callout-watermark-opacity': '0.22',
+    },
+    media: {},
+    discovery: {},
+    tags: {},
   },
 };
 
@@ -159,6 +218,7 @@ export function getThemePresetDocument(id: ThemePresetId): ThemeDocumentData {
 }
 
 export function getAdminThemePresetDocument(id: ThemeAdminPresetId): ThemeDocumentData {
+  void id;
   return buildAdminPreset();
 }
 
