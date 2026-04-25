@@ -16,8 +16,11 @@ import {
   ThemeColor,
   ScopedThemeDocumentData,
   ScopedThemeSettings,
+  ReaderThemeRecipes,
+  ThemeRecipeTokenRef,
 } from '@/lib/types/theme';
 import { getDefaultScopedThemeDocument, READER_PRESET_ALIAS_GROUPS } from '@/lib/theme/themePresets';
+import { DEFAULT_READER_THEME_RECIPES } from '@/lib/theme/readerThemeSystem';
 
 /**
  * Server-side theme service: JSON backup, Firestore runtime source, CSS token generation.
@@ -228,9 +231,80 @@ function tokenValue(ref: string | undefined, fallback: string): string {
   return s;
 }
 
+function getThemeRecipeRefValue(themeData: StructuredThemeData, ref: ThemeRecipeTokenRef): string {
+  const parts = ref.split('/');
+  switch (parts[0]) {
+    case 'font-family':
+      return themeData.typography.fontFamilies[parts[1] as keyof StructuredThemeData['typography']['fontFamilies']];
+    case 'font-size':
+      return themeData.typography.fontSizes[parts[1] as keyof StructuredThemeData['typography']['fontSizes']];
+    case 'font-weight': {
+      const map: Record<string, keyof StructuredThemeData['typography']['fontWeights']> = {
+        normal: 'normal',
+        medium: 'medium',
+        semibold: 'semibold',
+        bold: 'bold',
+      };
+      return themeData.typography.fontWeights[map[parts[1]]];
+    }
+    case 'line-height':
+      return themeData.typography.lineHeights[parts[1] as keyof StructuredThemeData['typography']['lineHeights']];
+    case 'spacing':
+      return `var(--spacing-${parts[1]})`;
+    case 'border':
+      return parts[1] === 'radius' ? themeData.borders.radius[parts[2] as keyof StructuredThemeData['borders']['radius']] : '';
+    case 'shadow':
+      return themeData.shadows[parts[1] as keyof StructuredThemeData['shadows']];
+    case 'palette':
+      return `var(--color${parts[1]})`;
+    case 'theme-color':
+      return themeData.themeColors.find((color) => String(color.id) === parts[1])?.[parts[2] as 'light' | 'dark']?.hex ?? '';
+    case 'layout': {
+      const path = parts.slice(1);
+      const layoutValue = path.reduce<unknown>((acc, key) => (acc && typeof acc === 'object' ? (acc as Record<string, unknown>)[key] : undefined), themeData.layout);
+      return typeof layoutValue === 'string' ? tokenValue(layoutValue, layoutValue) : '';
+    }
+    case 'component': {
+      const path = parts.slice(1);
+      const componentValue = path.reduce<unknown>((acc, key) => (acc && typeof acc === 'object' ? (acc as Record<string, unknown>)[key] : undefined), themeData.components);
+      return typeof componentValue === 'string' ? tokenValue(componentValue, componentValue) : '';
+    }
+    case 'state': {
+      const tone = parts[1] as keyof StructuredThemeData['states'];
+      const field = parts[2] === 'background' ? 'backgroundColor' : 'borderColor';
+      return tokenValue(themeData.states[tone][field], themeData.states[tone][field]);
+    }
+    case 'gradient':
+      return themeData.gradients[parts[1] as keyof StructuredThemeData['gradients']];
+    case 'literal': {
+      const literalPath = parts.slice(1).join('/');
+      if (literalPath === 'transparent') return 'transparent';
+      const value = literalPath.split('.').reduce<unknown>((acc, key) => (acc && typeof acc === 'object' ? (acc as Record<string, unknown>)[key] : undefined), themeData as unknown as Record<string, unknown>);
+      return typeof value === 'string' ? tokenValue(value, value) : literalPath;
+    }
+    default:
+      return '';
+  }
+}
+
+function mergeReaderThemeRecipes(recipes?: ReaderThemeRecipes): ReaderThemeRecipes {
+  return {
+    ...DEFAULT_READER_THEME_RECIPES,
+    ...recipes,
+    typography: { ...DEFAULT_READER_THEME_RECIPES.typography, ...recipes?.typography },
+    surfaces: { ...DEFAULT_READER_THEME_RECIPES.surfaces, ...recipes?.surfaces },
+    controls: { ...DEFAULT_READER_THEME_RECIPES.controls, ...recipes?.controls },
+    tags: { ...DEFAULT_READER_THEME_RECIPES.tags, ...recipes?.tags },
+    overlays: { ...DEFAULT_READER_THEME_RECIPES.overlays, ...recipes?.overlays },
+    iconography: { ...DEFAULT_READER_THEME_RECIPES.iconography, ...recipes?.iconography },
+    treatments: { ...DEFAULT_READER_THEME_RECIPES.treatments, ...recipes?.treatments },
+  };
+}
+
 export function buildThemeTokensCss(
-  themeData: StructuredThemeData & { darkModeShift?: number; activePresetId?: string }
+  themeData: StructuredThemeData & { darkModeShift?: number; activePresetId?: string; recipes?: ReaderThemeRecipes }
 ): string {
+  const recipes = mergeReaderThemeRecipes(themeData.recipes);
   let cssContent = `/*
   Unified Design System (v2) - Simplified 3-Shade Approach
   ==========================================
@@ -492,43 +566,79 @@ export function buildThemeTokensCss(
   --card-watermark-raster-filter: none;
 
   /* Reader semantic aliases */
-  --reader-page-background-color: var(--layout-background1-color);
+  --reader-page-background-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.page.background)};
   --reader-page-text-color: var(--text1-color);
-  --reader-page-border-color: var(--border1-color);
-  --reader-chrome-background-color: var(--layout-background1-color);
-  --reader-chrome-panel-color: var(--layout-background2-color);
-  --reader-chrome-border-color: var(--border1-color);
+  --reader-page-border-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.page.border)};
+  --reader-chrome-background-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.chrome.background)};
+  --reader-chrome-panel-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.chrome.background)};
+  --reader-chrome-border-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.chrome.border)};
   --reader-chrome-text-color: var(--text1-color);
   --reader-chrome-muted-color: var(--text2-color);
-  --reader-chrome-control-background-color: var(--layout-background1-color);
-  --reader-chrome-control-hover-background-color: var(--layout-background2-color);
+  --reader-chrome-control-background-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.chrome.background)};
+  --reader-chrome-control-hover-background-color: ${getThemeRecipeRefValue(themeData, recipes.controls.mediaControl.hoverBackground ?? recipes.surfaces.chrome.background)};
   --reader-chrome-control-subtle-hover-background-color: color-mix(in srgb, var(--text1-color) 15%, transparent);
-  --reader-solid-background-color: var(--button-solid-background-color);
-  --reader-solid-text-color: var(--reader-contrast-text-color);
-  --reader-solid-border-color: var(--button-solid-border-color);
-  --reader-title-color: var(--text1-color);
-  --reader-title-font-family: var(--body-font-family);
-  --reader-title-font-size: var(--font-size-base);
-  --reader-title-font-weight: var(--font-weight-semibold);
-  --reader-title-line-height: var(--line-height-tight);
-  --reader-detail-title-font-family: var(--reader-title-font-family);
-  --reader-detail-title-font-size: var(--font-size-3xl);
-  --reader-detail-title-font-weight: var(--font-weight-bold);
-  --reader-detail-title-line-height: var(--reader-title-line-height);
-  --reader-subtitle-color: var(--text2-color);
-  --reader-subtitle-font-size: var(--font-size-xl);
-  --reader-subtitle-font-style: italic;
-  --reader-excerpt-color: var(--text2-color);
-  --reader-excerpt-font-size: var(--font-size-sm);
-  --reader-excerpt-line-height: var(--line-height-relaxed);
-  --reader-body-color: var(--text1-color);
-  --reader-body-font-family: var(--body-font-family);
-  --reader-body-font-size: var(--font-size-sm);
-  --reader-body-line-height: var(--line-height-relaxed);
-  --reader-meta-color: var(--text2-color);
-  --reader-accent-color: var(--color3);
-  --reader-focus-ring-color: var(--color3);
-  --reader-contrast-text-color: white;
+  --reader-solid-background-color: ${getThemeRecipeRefValue(themeData, recipes.controls.solid.background)};
+  --reader-solid-text-color: ${getThemeRecipeRefValue(themeData, recipes.controls.solid.text)};
+  --reader-solid-border-color: ${getThemeRecipeRefValue(themeData, recipes.controls.solid.border)};
+  --reader-title-color: ${getThemeRecipeRefValue(themeData, recipes.typography.title.color)};
+  --reader-title-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.title.family)};
+  --reader-title-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.title.size)};
+  --reader-title-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.title.weight)};
+  --reader-title-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.title.lineHeight)};
+  --reader-story-title-color: ${getThemeRecipeRefValue(themeData, recipes.typography.storyTitle.color)};
+  --reader-story-title-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.storyTitle.family)};
+  --reader-story-title-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.storyTitle.size)};
+  --reader-story-title-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.storyTitle.weight)};
+  --reader-story-title-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.storyTitle.lineHeight)};
+  --reader-gallery-title-color: ${getThemeRecipeRefValue(themeData, recipes.typography.galleryTitle.color)};
+  --reader-gallery-title-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.galleryTitle.family)};
+  --reader-gallery-title-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.galleryTitle.size)};
+  --reader-gallery-title-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.galleryTitle.weight)};
+  --reader-gallery-title-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.galleryTitle.lineHeight)};
+  --reader-title-small-color: ${getThemeRecipeRefValue(themeData, recipes.typography.titleCompact.color)};
+  --reader-title-small-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.titleCompact.family)};
+  --reader-title-small-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.titleCompact.size)};
+  --reader-title-small-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.titleCompact.weight)};
+  --reader-title-small-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.titleCompact.lineHeight)};
+  --reader-detail-title-color: ${getThemeRecipeRefValue(themeData, recipes.typography.detailTitle.color)};
+  --reader-detail-title-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.detailTitle.family)};
+  --reader-detail-title-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.detailTitle.size)};
+  --reader-detail-title-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.detailTitle.weight)};
+  --reader-detail-title-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.detailTitle.lineHeight)};
+  --reader-story-detail-title-color: ${getThemeRecipeRefValue(themeData, recipes.typography.storyDetailTitle.color)};
+  --reader-story-detail-title-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.storyDetailTitle.family)};
+  --reader-story-detail-title-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.storyDetailTitle.size)};
+  --reader-story-detail-title-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.storyDetailTitle.weight)};
+  --reader-story-detail-title-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.storyDetailTitle.lineHeight)};
+  --reader-gallery-detail-title-color: ${getThemeRecipeRefValue(themeData, recipes.typography.galleryDetailTitle.color)};
+  --reader-gallery-detail-title-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.galleryDetailTitle.family)};
+  --reader-gallery-detail-title-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.galleryDetailTitle.size)};
+  --reader-gallery-detail-title-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.galleryDetailTitle.weight)};
+  --reader-gallery-detail-title-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.galleryDetailTitle.lineHeight)};
+  --reader-subtitle-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.subtitle.family)};
+  --reader-subtitle-color: ${getThemeRecipeRefValue(themeData, recipes.typography.subtitle.color)};
+  --reader-subtitle-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.subtitle.size)};
+  --reader-subtitle-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.subtitle.weight)};
+  --reader-subtitle-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.subtitle.lineHeight)};
+  --reader-subtitle-font-style: ${recipes.typography.subtitle.fontStyle ?? 'normal'};
+  --reader-excerpt-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.excerpt.family)};
+  --reader-excerpt-color: ${getThemeRecipeRefValue(themeData, recipes.typography.excerpt.color)};
+  --reader-excerpt-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.excerpt.size)};
+  --reader-excerpt-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.excerpt.weight)};
+  --reader-excerpt-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.excerpt.lineHeight)};
+  --reader-body-color: ${getThemeRecipeRefValue(themeData, recipes.typography.body.color)};
+  --reader-body-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.body.family)};
+  --reader-body-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.body.size)};
+  --reader-body-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.body.weight)};
+  --reader-body-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.body.lineHeight)};
+  --reader-meta-color: ${getThemeRecipeRefValue(themeData, recipes.typography.meta.color)};
+  --reader-meta-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.meta.family)};
+  --reader-meta-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.meta.size)};
+  --reader-meta-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.meta.weight)};
+  --reader-meta-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.meta.lineHeight)};
+  --reader-accent-color: ${getThemeRecipeRefValue(themeData, recipes.iconography.accent)};
+  --reader-focus-ring-color: ${getThemeRecipeRefValue(themeData, recipes.controls.focusRing.color)};
+  --reader-contrast-text-color: ${getThemeRecipeRefValue(themeData, recipes.controls.solid.text)};
   --reader-overlay-scrim-color: color-mix(in srgb, var(--reader-page-text-color) 68%, transparent);
   --reader-overlay-border-color: color-mix(in srgb, var(--reader-page-background-color) 22%, transparent);
   --reader-overlay-strong-scrim-color: color-mix(in srgb, var(--reader-page-text-color) 92%, transparent);
@@ -539,56 +649,74 @@ export function buildThemeTokensCss(
   --reader-card-badge-background-color: var(--reader-overlay-scrim-color);
   --reader-card-badge-text-color: var(--reader-contrast-text-color);
   --reader-card-badge-border-color: var(--reader-overlay-border-color);
-  --reader-card-background-color: var(--card-background-color);
-  --reader-card-flat-background-color: var(--layout-background1-color);
-  --reader-card-border-color: var(--card-border-color);
+  --reader-card-background-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.card.background)};
+  --reader-card-flat-background-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.page.background)};
+  --reader-card-border-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.card.border)};
   --reader-card-border-width: var(--card-border-width);
-  --reader-card-border-radius: var(--card-border-radius);
-  --reader-card-shadow: var(--card-shadow);
-  --reader-card-shadow-hover: var(--card-shadow-hover);
-  --reader-card-padding: var(--card-padding);
-  --reader-detail-background-color: var(--layout-background1-color);
-  --reader-detail-cover-background-color: var(--card-background-color);
-  --reader-detail-border-color: var(--border1-color);
-  --reader-detail-border-radius: var(--border-radius-md);
-  --reader-detail-shadow: var(--shadow-md);
-  --reader-detail-padding-x: var(--spacing-xl);
+  --reader-card-border-radius: ${getThemeRecipeRefValue(themeData, recipes.surfaces.card.radius ?? 'component/card/borderRadius')};
+  --reader-card-shadow: ${getThemeRecipeRefValue(themeData, recipes.surfaces.card.shadow ?? 'component/card/shadow')};
+  --reader-card-shadow-hover: ${getThemeRecipeRefValue(themeData, recipes.surfaces.card.shadowHover ?? 'component/card/shadowHover')};
+  --reader-card-padding: ${getThemeRecipeRefValue(themeData, recipes.surfaces.card.padding ?? 'component/card/padding')};
+  --reader-detail-background-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.detail.background)};
+  --reader-detail-cover-background-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.mediaFrame.background)};
+  --reader-detail-border-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.detail.border)};
+  --reader-detail-border-radius: ${getThemeRecipeRefValue(themeData, recipes.surfaces.detail.radius ?? 'border/radius/md')};
+  --reader-detail-shadow: ${getThemeRecipeRefValue(themeData, recipes.surfaces.detail.shadow ?? 'shadow/md')};
+  --reader-detail-padding-x: ${getThemeRecipeRefValue(themeData, recipes.surfaces.detail.padding ?? 'spacing/xl')};
   --reader-detail-padding-bottom: var(--spacing-2xl);
-  --reader-question-font-size: var(--font-size-lg);
+  --reader-question-color: ${getThemeRecipeRefValue(themeData, recipes.typography.question.color)};
+  --reader-question-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.question.family)};
+  --reader-question-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.question.size)};
+  --reader-question-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.question.weight)};
+  --reader-question-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.question.lineHeight)};
   --reader-question-watermark-color: var(--reader-title-color);
-  --reader-question-watermark-opacity: 0.3;
-  --reader-callout-watermark-opacity: 0.3;
-  --reader-quote-color: var(--text1-color);
-  --reader-quote-font-family: var(--body-font-family);
-  --reader-quote-font-size: var(--font-size-lg);
-  --reader-quote-line-height: var(--line-height-relaxed);
-  --reader-quote-watermark-opacity: 0.22;
-  --reader-caption-color: var(--text2-color);
-  --reader-caption-font-size: var(--font-size-sm);
-  --reader-tag-background-color: var(--reader-solid-background-color);
-  --reader-tag-text-color: var(--reader-solid-text-color);
-  --reader-tag-border-color: var(--reader-solid-border-color);
-  --reader-tag-muted-background-color: transparent;
-  --reader-tag-muted-text-color: var(--text2-color);
-  --reader-tag-muted-border-color: var(--border1-color);
-  --reader-media-frame-background-color: var(--layout-background2-color);
-  --reader-media-placeholder-background-color: var(--reader-chrome-control-background-color);
-  --reader-media-control-background-color: var(--reader-chrome-control-background-color);
-  --reader-media-control-background-color-hover: var(--reader-chrome-control-hover-background-color);
-  --reader-media-control-text-color: var(--reader-contrast-text-color);
-  --reader-media-scrollbar-track-color: var(--layout-background2-color);
-  --reader-media-scrollbar-thumb-color: var(--border1-color);
+  --reader-question-watermark-opacity: ${recipes.treatments.questionWatermarkOpacity};
+  --reader-callout-watermark-opacity: ${recipes.treatments.calloutWatermarkOpacity};
+  --reader-quote-color: ${getThemeRecipeRefValue(themeData, recipes.typography.quote.color)};
+  --reader-quote-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.quote.family)};
+  --reader-quote-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.quote.size)};
+  --reader-quote-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.quote.weight)};
+  --reader-quote-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.quote.lineHeight)};
+  --reader-quote-watermark-opacity: ${recipes.treatments.quoteWatermarkOpacity};
+  --reader-caption-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.caption.family)};
+  --reader-caption-color: ${getThemeRecipeRefValue(themeData, recipes.typography.caption.color)};
+  --reader-caption-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.caption.size)};
+  --reader-caption-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.caption.weight)};
+  --reader-caption-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.caption.lineHeight)};
+  --reader-callout-title-color: ${getThemeRecipeRefValue(themeData, recipes.typography.calloutTitle.color)};
+  --reader-callout-title-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.calloutTitle.family)};
+  --reader-callout-title-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.calloutTitle.size)};
+  --reader-callout-title-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.calloutTitle.weight)};
+  --reader-callout-title-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.calloutTitle.lineHeight)};
+  --reader-callout-body-color: ${getThemeRecipeRefValue(themeData, recipes.typography.calloutBody.color)};
+  --reader-callout-body-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.calloutBody.family)};
+  --reader-callout-body-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.calloutBody.size)};
+  --reader-callout-body-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.calloutBody.weight)};
+  --reader-callout-body-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.calloutBody.lineHeight)};
+  --reader-tag-background-color: ${getThemeRecipeRefValue(themeData, recipes.controls.solid.background)};
+  --reader-tag-text-color: ${getThemeRecipeRefValue(themeData, recipes.controls.solid.text)};
+  --reader-tag-border-color: ${getThemeRecipeRefValue(themeData, recipes.controls.solid.border)};
+  --reader-tag-muted-background-color: ${getThemeRecipeRefValue(themeData, recipes.tags.muted.background)};
+  --reader-tag-muted-text-color: ${getThemeRecipeRefValue(themeData, recipes.tags.muted.text)};
+  --reader-tag-muted-border-color: ${getThemeRecipeRefValue(themeData, recipes.tags.muted.border)};
+  --reader-media-frame-background-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.mediaFrame.background)};
+  --reader-media-placeholder-background-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.mediaFrame.background)};
+  --reader-media-control-background-color: ${getThemeRecipeRefValue(themeData, recipes.controls.mediaControl.background)};
+  --reader-media-control-background-color-hover: ${getThemeRecipeRefValue(themeData, recipes.controls.mediaControl.hoverBackground ?? recipes.controls.mediaControl.background)};
+  --reader-media-control-text-color: ${getThemeRecipeRefValue(themeData, recipes.controls.mediaControl.text)};
+  --reader-media-scrollbar-track-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.mediaFrame.background)};
+  --reader-media-scrollbar-thumb-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.mediaFrame.border)};
   --reader-media-scrollbar-thumb-hover-color: var(--text2-color);
-  --reader-lightbox-overlay-background-color: var(--lightbox-overlay-background-color, var(--reader-overlay-strong-scrim-color));
-  --reader-lightbox-control-background-color: var(--lightbox-control-background-color, var(--reader-overlay-scrim-color));
-  --reader-lightbox-control-border-color: var(--lightbox-control-border-color, var(--reader-overlay-border-color));
-  --reader-lightbox-control-text-color: var(--lightbox-control-text-color, var(--reader-contrast-text-color));
-  --reader-lightbox-caption-text-color: var(--lightbox-caption-text-color, var(--reader-contrast-text-color));
-  --reader-discovery-border-color: var(--border1-color);
+  --reader-lightbox-overlay-background-color: ${getThemeRecipeRefValue(themeData, recipes.overlays.lightbox.background)};
+  --reader-lightbox-control-background-color: ${getThemeRecipeRefValue(themeData, recipes.controls.lightboxControl.background)};
+  --reader-lightbox-control-border-color: ${getThemeRecipeRefValue(themeData, recipes.controls.lightboxControl.border)};
+  --reader-lightbox-control-text-color: ${getThemeRecipeRefValue(themeData, recipes.controls.lightboxControl.text)};
+  --reader-lightbox-caption-text-color: ${getThemeRecipeRefValue(themeData, recipes.overlays.lightbox.text)};
+  --reader-discovery-border-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.discovery.border)};
   --reader-discovery-title-color: var(--text1-color);
   --reader-discovery-meta-color: var(--text2-color);
-  --reader-discovery-card-background-color: var(--layout-background1-color);
-  --reader-discovery-card-border-color: var(--border1-color);
+  --reader-discovery-card-background-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.discovery.background)};
+  --reader-discovery-card-border-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.discovery.border)};
   --reader-discovery-card-hover-border-color: var(--color3);
 `;
     cssContent += generateReaderPresetAliasCss(themeData.activePresetId);
@@ -647,14 +775,14 @@ export function buildThemeTokensCss(
 
 /** Shape persisted theme data for `buildThemeTokensCss` while preserving active reader preset id. */
 export function themeDataForCssGeneration(
-  data: StructuredThemeData & { darkModeShift?: number; activePresetId?: string }
-): StructuredThemeData & { darkModeShift?: number; activePresetId?: string } {
-  const rest: StructuredThemeData & { darkModeShift?: number; activePresetId?: string } = { ...data };
+  data: StructuredThemeData & { darkModeShift?: number; activePresetId?: string; recipes?: ReaderThemeRecipes }
+): StructuredThemeData & { darkModeShift?: number; activePresetId?: string; recipes?: ReaderThemeRecipes } {
+  const rest: StructuredThemeData & { darkModeShift?: number; activePresetId?: string; recipes?: ReaderThemeRecipes } = { ...data };
   return rest;
 }
 
 type PersistedThemeData =
-  | (StructuredThemeData & { darkModeShift?: number; activePresetId?: string })
+  | (StructuredThemeData & { darkModeShift?: number; activePresetId?: string; recipes?: ReaderThemeRecipes })
   | ScopedThemeDocumentData;
 
 /** Firestore can hold a partial `data` object; building CSS from it throws or yields broken vars. */
@@ -678,7 +806,7 @@ function isScopedThemeDocument(data: unknown): data is ScopedThemeDocumentData {
 }
 
 function themeSettingsFromFlat(
-  data: (StructuredThemeData & { darkModeShift?: number; activePresetId?: string }) | null | undefined,
+  data: (StructuredThemeData & { darkModeShift?: number; activePresetId?: string; recipes?: ReaderThemeRecipes }) | null | undefined,
   fallback: ScopedThemeSettings
 ): ScopedThemeSettings {
   if (!isThemeDataViable(data)) return fallback;
@@ -692,6 +820,7 @@ function themeSettingsFromFlat(
         ? data.activePresetId
         : fallback.activePresetId ?? 'custom',
     darkModeShift: data.darkModeShift ?? fallback.darkModeShift ?? 5,
+    recipes: data.recipes ?? fallback.recipes,
   };
 }
 
@@ -705,6 +834,7 @@ export function normalizeThemeDocument(data: unknown): ScopedThemeDocumentData {
           ...data.reader.data,
           activePresetId: data.reader.activePresetId,
           darkModeShift: data.reader.darkModeShift,
+          recipes: data.reader.recipes,
         },
         fallback.reader
       ),
@@ -713,6 +843,7 @@ export function normalizeThemeDocument(data: unknown): ScopedThemeDocumentData {
           ...data.admin.data,
           activePresetId: data.admin.activePresetId,
           darkModeShift: data.admin.darkModeShift,
+          recipes: data.admin.recipes,
         },
         fallback.admin
       ),
@@ -722,7 +853,7 @@ export function normalizeThemeDocument(data: unknown): ScopedThemeDocumentData {
   return {
     ...fallback,
     reader: themeSettingsFromFlat(
-      data as (StructuredThemeData & { darkModeShift?: number; activePresetId?: string }) | null | undefined,
+      data as (StructuredThemeData & { darkModeShift?: number; activePresetId?: string; recipes?: ReaderThemeRecipes }) | null | undefined,
       fallback.reader
     ),
   };
@@ -732,13 +863,14 @@ export function normalizeThemeDocument(data: unknown): ScopedThemeDocumentData {
  * Theme for SSR: Firestore `app_settings/theme` when present and complete, else `theme-data.json`.
  */
 export async function getResolvedThemeData(): Promise<
-  StructuredThemeData & { darkModeShift?: number; activePresetId?: string }
+  StructuredThemeData & { darkModeShift?: number; activePresetId?: string; recipes?: ReaderThemeRecipes }
 > {
   const scoped = await getResolvedScopedThemeDocument();
   return {
     ...scoped.reader.data,
     darkModeShift: scoped.reader.darkModeShift ?? 5,
     activePresetId: scoped.reader.activePresetId,
+    recipes: scoped.reader.recipes,
   };
 }
 

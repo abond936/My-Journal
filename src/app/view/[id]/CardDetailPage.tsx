@@ -22,9 +22,15 @@ interface CardDetailPageProps {
   card: Card;
   childrenCards: Card[];
   suppressDiscovery?: boolean;
+  previewFullWidth?: boolean;
 }
 
-const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards, suppressDiscovery = false }) => {
+const CardDetailPage: React.FC<CardDetailPageProps> = ({
+  card,
+  childrenCards,
+  suppressDiscovery = false,
+  previewFullWidth = false,
+}) => {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'admin';
   const detailReturnTo = card.docId ? `/view/${card.docId}` : null;
@@ -44,7 +50,10 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards, su
   );
 
   return (
-    <article className={styles.container}>
+    <article
+      className={`${styles.container} ${previewFullWidth ? styles.previewFullWidth : ''}`}
+      data-card-type={card.type}
+    >
       {isAdmin && detailReturnTo && card.docId ? (
         <p className={styles.adminEditBar}>
           <ReaderCardEditModal cardId={card.docId} returnTo={detailReturnTo} className={styles.adminEditTrigger}>

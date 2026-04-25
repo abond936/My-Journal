@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import type { StructuredThemeData } from '@/lib/types/theme';
+import type { ReaderThemeRecipes, StructuredThemeData } from '@/lib/types/theme';
 import type { ThemePresetId } from '@/lib/theme/themePresets';
 import type { Card } from '@/lib/types/card';
 import type { Media } from '@/lib/types/photo';
@@ -10,7 +10,6 @@ import JournalImage from '@/components/common/JournalImage';
 import CardDetailPage from '@/app/view/[id]/CardDetailPage';
 import V2ContentCard from '@/components/view/V2ContentCard';
 import ChildCardsRail from '@/components/view/ChildCardsRail';
-import TipTapRenderer from '@/components/common/TipTapRenderer';
 import TagTree from '@/components/common/TagTree';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import styles from './ThemeAdmin.module.css';
@@ -220,7 +219,7 @@ const previewChildCards: Card[] = [
 ];
 
 const previewDiscoveryRelated: Card[] = [galleryPreviewCard, questionPreviewCard, quotePreviewCard];
-const previewDiscoveryRandom: Card[] = [calloutPreviewCard, storyPreviewCard, galleryPreviewCard];
+const previewDiscoveryRandom: Card[] = [quotePreviewCard, galleryPreviewCard];
 
 const previewTagTree: TagWithChildren[] = [
   {
@@ -400,6 +399,7 @@ function PreviewDiscoverySection() {
         <div className={discoveryStyles.cardRail} role="list" aria-label="Related cards">
           {previewDiscoveryRelated.map((card) => (
             <div key={`related-${card.docId}`} className={discoveryStyles.cardRailCell} role="listitem">
+              <div className={styles.readerPreviewRoleBadge}>Uses Title Small</div>
               <V2ContentCard card={card} size="small" fullWidth />
             </div>
           ))}
@@ -411,6 +411,7 @@ function PreviewDiscoverySection() {
         <div className={discoveryStyles.cardRail} role="list" aria-label="Random cards">
           {previewDiscoveryRandom.map((card) => (
             <div key={`random-${card.docId}`} className={discoveryStyles.cardRailCell} role="listitem">
+              <div className={styles.readerPreviewRoleBadge}>Uses Title Small</div>
               <V2ContentCard card={card} size="small" fullWidth />
             </div>
           ))}
@@ -420,150 +421,111 @@ function PreviewDiscoverySection() {
   );
 }
 
-function PreviewStatesStrip() {
+function PreviewFeedEmptyState() {
   return (
-    <section className={styles.readerPreviewStatesSection}>
-      <div className={styles.previewKicker}>States</div>
-      <div className={styles.readerPreviewStatesGrid}>
-        <div className={styles.readerPreviewStateCard}>
-          <div className={styles.previewKicker}>Feed empty</div>
-          <div className={feedStyles.emptyFeed}>
-            <p className={feedStyles.emptyFeedTitle}>No cards match the current view.</p>
-            <p className={feedStyles.emptyFeedHint}>
-              Tag, type, search, collection, or group by may be limiting results.
-            </p>
-            <button type="button" className={feedStyles.emptyClearButton}>Clear filters</button>
+    <div className={styles.readerPreviewStateCard}>
+      <div className={styles.previewKicker}>Feed empty</div>
+      <div className={feedStyles.emptyFeed}>
+        <p className={feedStyles.emptyFeedTitle}>No cards match the current view.</p>
+        <p className={feedStyles.emptyFeedHint}>
+          Tag, type, search, collection, or group by may be limiting results.
+        </p>
+        <button type="button" className={feedStyles.emptyClearButton}>Clear filters</button>
+      </div>
+    </div>
+  );
+}
+
+function PreviewDiscoveryLoadingState() {
+  return (
+    <div className={styles.readerPreviewStateCard}>
+      <div className={styles.previewKicker}>Discovery loading</div>
+      <section className={discoveryStyles.discoverySection}>
+        <h2 className={discoveryStyles.discoveryTitle}>Explore More</h2>
+        <div className={discoveryStyles.loadingContainer}>
+          <LoadingSpinner />
+          <p>Loading related content...</p>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function PreviewDiscoveryErrorState() {
+  return (
+    <div className={styles.readerPreviewStateCard}>
+      <div className={styles.previewKicker}>Discovery error</div>
+      <section className={discoveryStyles.discoverySection}>
+        <h2 className={discoveryStyles.discoveryTitle}>Explore More</h2>
+        <div className={discoveryStyles.errorContainer} role="alert">
+          <p>Unable to load suggestions. Try again in a moment.</p>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function PreviewGalleryLightboxState() {
+  return (
+    <div className={styles.readerPreviewStateCard}>
+      <div className={styles.previewKicker}>Gallery lightbox</div>
+      <div className={styles.readerPreviewLightboxFrame}>
+        <div
+          className={galleryStyles.lightboxOverlay}
+          style={{ position: 'absolute', inset: 0, padding: 'var(--spacing-md)' }}
+        >
+          <div
+            className={galleryStyles.lightboxCounter}
+            style={{ position: 'absolute', top: 'var(--spacing-md)', left: 'var(--spacing-md)' }}
+          >
+            2 / 8
           </div>
-        </div>
-
-        <div className={styles.readerPreviewStateCard}>
-          <div className={styles.previewKicker}>Discovery loading</div>
-          <section className={discoveryStyles.discoverySection}>
-            <h2 className={discoveryStyles.discoveryTitle}>Explore More</h2>
-            <div className={discoveryStyles.loadingContainer}>
-              <LoadingSpinner />
-              <p>Loading related content...</p>
-            </div>
-          </section>
-        </div>
-
-        <div className={styles.readerPreviewStateCard}>
-          <div className={styles.previewKicker}>Discovery error</div>
-          <section className={discoveryStyles.discoverySection}>
-            <h2 className={discoveryStyles.discoveryTitle}>Explore More</h2>
-            <div className={discoveryStyles.errorContainer} role="alert">
-              <p>Unable to load suggestions. Try again in a moment.</p>
-            </div>
-          </section>
-        </div>
-
-        <div className={styles.readerPreviewStateCard}>
-          <div className={styles.previewKicker}>Gallery lightbox</div>
-          <div className={styles.readerPreviewLightboxFrame}>
-            <div
-              className={galleryStyles.lightboxOverlay}
-              style={{ position: 'absolute', inset: 0, padding: 'var(--spacing-md)' }}
+          <div className={galleryStyles.lightboxInner} style={{ width: '100%', maxHeight: 'none' }}>
+            <button
+              type="button"
+              className={galleryStyles.lightboxClose}
+              style={{ position: 'absolute', top: 'var(--spacing-sm)', right: 'var(--spacing-sm)' }}
+              disabled
+              aria-disabled="true"
             >
-              <div
-                className={galleryStyles.lightboxCounter}
-                style={{ position: 'absolute', top: 'var(--spacing-md)', left: 'var(--spacing-md)' }}
-              >
-                2 / 8
-              </div>
-              <div className={galleryStyles.lightboxInner} style={{ width: '100%', maxHeight: 'none' }}>
-                <button
-                  type="button"
-                  className={galleryStyles.lightboxClose}
-                  style={{ position: 'absolute', top: 'var(--spacing-sm)', right: 'var(--spacing-sm)' }}
-                  disabled
-                  aria-disabled="true"
-                >
-                  Close
-                </button>
-                <div className={styles.readerPreviewLightboxImageWrap}>
-                  <JournalImage
-                    src={portraitPreviewImage}
-                    alt="Preview lightbox"
-                    className={galleryStyles.lightboxImage}
-                    width={900}
-                    height={1100}
-                    sizes="320px"
-                    style={{ objectFit: 'contain', objectPosition: 'center' }}
-                  />
-                </div>
-                <p className={galleryStyles.lightboxCaption}>Opening presents in the living room.</p>
-              </div>
-            </div>
-          </div>
-          <p className={styles.readerPreviewStateNote}>Static state sample only.</p>
-        </div>
-
-        <div className={styles.readerPreviewStateCard}>
-          <div className={styles.previewKicker}>Collection mode</div>
-          <div className={styles.readerPreviewSidebarMini}>
-            <div className={sidebarStyles.modeTabs} role="tablist" aria-label="Browsing mode">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={true}
-                className={`${sidebarStyles.modeTab} ${sidebarStyles.modeTabActive} ${styles.readerPreviewSolidControl}`}
-                style={previewSolidControlStyle}
-              >
-                Curated
-              </button>
-              <button type="button" role="tab" aria-selected={false} className={sidebarStyles.modeTab}>
-                Freeform
-              </button>
-            </div>
-            <div className={sidebarStyles.dimensionsBlock}>
-              <div className={sidebarStyles.dimensionTabs} role="tablist" aria-label="Dimensions">
-                <button type="button" role="tab" aria-selected={true} className={`${sidebarStyles.dimensionTab} ${sidebarStyles.dimensionTabActive} ${styles.readerPreviewSolidControl}`}>
-                  All
-                </button>
-                <button type="button" role="tab" aria-selected={false} className={sidebarStyles.dimensionTab}>
-                  Who
-                </button>
-                <button type="button" role="tab" aria-selected={false} className={sidebarStyles.dimensionTab}>
-                  What
-                </button>
-              </div>
-            </div>
-            <div className={sidebarStyles.collectionGroups}>
-              <div className={sidebarStyles.collectionGroup}>
-                <div className={sidebarStyles.collectionGroupLabel}>Who</div>
-                <ul className={sidebarStyles.collectionList}>
-                  <li>
-                    <button type="button" className={sidebarStyles.collectionItem}>
-                      Grandparents <span className={sidebarStyles.collectionCount}>(4)</span>
-                    </button>
-                  </li>
-                  <li>
-                    <button type="button" className={sidebarStyles.collectionItem}>
-                      Cousins <span className={sidebarStyles.collectionCount}>(3)</span>
-                    </button>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.readerPreviewStateCard}>
-          <div className={styles.previewKicker}>Focus and active</div>
-          <div className={styles.readerPreviewControlStack}>
-            <span className={styles.readerPreviewInlineLinkFocus} role="link" tabIndex={0}>
-              @Summer at the lake
-            </span>
-            <button type="button" className={`${sidebarStyles.cardTypeChip} ${sidebarStyles.cardTypeChipActive} ${styles.readerPreviewSolidControl}`}>
-              Story
+              Close
             </button>
-            <button type="button" className={styles.readerPreviewFocusButton}>
-              Focus ring sample
-            </button>
+            <div className={styles.readerPreviewLightboxImageWrap}>
+              <JournalImage
+                src={portraitPreviewImage}
+                alt="Preview lightbox"
+                className={galleryStyles.lightboxImage}
+                width={900}
+                height={1100}
+                sizes="320px"
+                style={{ objectFit: 'contain', objectPosition: 'center' }}
+              />
+            </div>
+            <p className={galleryStyles.lightboxCaption}>Opening presents in the living room.</p>
           </div>
         </div>
       </div>
-    </section>
+      <p className={styles.readerPreviewStateNote}>Static state sample only.</p>
+    </div>
+  );
+}
+
+function PreviewFocusState() {
+  return (
+    <div className={styles.readerPreviewStateCard}>
+      <div className={styles.previewKicker}>Focus and active</div>
+      <div className={styles.readerPreviewControlStack}>
+        <span className={styles.readerPreviewInlineLinkFocus} role="link" tabIndex={0}>
+          @Summer at the lake
+        </span>
+        <button type="button" className={`${sidebarStyles.cardTypeChip} ${sidebarStyles.cardTypeChipActive} ${styles.readerPreviewSolidControl}`}>
+          Story
+        </button>
+        <button type="button" className={styles.readerPreviewFocusButton}>
+          Focus ring sample
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -573,6 +535,7 @@ export default function ThemeReaderPreview({
   adminThemeData,
   adminDarkModeShift,
   activePresetId,
+  readerRecipes,
   readerControls,
   readerScopeClass = PREVIEW_SCOPE,
   adminScopeClass = ADMIN_PREVIEW_SCOPE,
@@ -583,6 +546,7 @@ export default function ThemeReaderPreview({
   adminThemeData: StructuredThemeData | null;
   adminDarkModeShift: number;
   activePresetId: ThemePresetId | 'custom';
+  readerRecipes?: ReaderThemeRecipes;
   readerControls?: React.ReactNode;
   readerScopeClass?: string;
   adminScopeClass?: string;
@@ -599,13 +563,13 @@ export default function ThemeReaderPreview({
     if (!themeData?.palette?.length || !themeData.themeColors?.length) return '';
     try {
       return JSON.stringify({
-        reader: { themeData, darkModeShift, activePresetId },
+        reader: { themeData, darkModeShift, activePresetId, recipes: readerRecipes },
         admin: { themeData: adminThemeData, darkModeShift: adminDarkModeShift },
       });
     } catch {
       return '';
     }
-  }, [themeData, darkModeShift, activePresetId, adminThemeData, adminDarkModeShift]);
+  }, [themeData, darkModeShift, activePresetId, readerRecipes, adminThemeData, adminDarkModeShift]);
 
   useEffect(() => {
     if (!previewBodyJson) {
@@ -619,7 +583,7 @@ export default function ThemeReaderPreview({
       (async () => {
         try {
           const body = JSON.parse(previewBodyJson) as {
-            reader: { themeData: StructuredThemeData; darkModeShift: number; activePresetId: ThemePresetId | 'custom' };
+            reader: { themeData: StructuredThemeData; darkModeShift: number; activePresetId: ThemePresetId | 'custom'; recipes?: ReaderThemeRecipes };
             admin: { themeData: StructuredThemeData | null; darkModeShift: number };
           };
           const [readerRes, adminRes] = await Promise.all([
@@ -631,6 +595,7 @@ export default function ThemeReaderPreview({
                 ...body.reader.themeData,
                 darkModeShift: body.reader.darkModeShift,
                 activePresetId: body.reader.activePresetId,
+                recipes: body.reader.recipes,
                 scopeSelector: `.${readerScopeClass}`,
               }),
             }),
@@ -686,7 +651,6 @@ export default function ThemeReaderPreview({
   return (
     <div className={styles.readerPreviewSection}>
       <div className={styles.readerPreviewHeader}>
-        <h3 className={styles.readerPreviewTitle}>Theme preview</h3>
         <div className={styles.previewHeaderControls}>
           {readerControls}
           <div className={styles.readerPreviewModeToggle}>
@@ -724,57 +688,87 @@ export default function ThemeReaderPreview({
             </aside>
             <main className={styles.readerPreviewMain}>
               <section className={styles.readerPreviewBlock}>
-                <div className={styles.previewKicker}>Closed cards</div>
-                <section className={feedStyles.groupSection} aria-labelledby="theme-preview-group">
-                  <h2 id="theme-preview-group" className={feedStyles.groupHeading}>
-                    Summer memories
-                  </h2>
-                </section>
-                <div className={styles.readerPreviewFeedGrid}>
+                <div className={styles.previewKicker}>Reader cards</div>
+                <div className={styles.readerPreviewCardColumns}>
                   {previewCards.map((card) => (
-                    <div key={`${card.type}-${card.title}`} className={styles.readerPreviewFeedCell}>
-                      <V2ContentCard card={card} fullWidth />
+                    <div key={`${card.type}-${card.title}`} className={styles.readerPreviewCardColumn}>
+                      <div className={styles.previewKicker}>{card.type === 'qa' ? 'Question' : card.type}</div>
+                      <div className={styles.readerPreviewFeedCell}>
+                        <div className={styles.readerPreviewRoleBadge}>Closed card</div>
+                        <V2ContentCard card={card} fullWidth />
+                      </div>
+
+                      {card.docId === storyPreviewCard.docId ? (
+                        <>
+                          <div className={styles.readerPreviewDetailFrame}>
+                            <div className={styles.readerPreviewRoleBadge}>Open card</div>
+                            <div className={styles.readerPreviewDetailFill}>
+                              <CardDetailPage
+                                card={card}
+                                childrenCards={[]}
+                                suppressDiscovery
+                                previewFullWidth
+                              />
+                            </div>
+                          </div>
+                        </>
+                      ) : null}
+
+                      {card.docId === galleryPreviewCard.docId ? (
+                        <>
+                          <div className={styles.readerPreviewDetailFrame}>
+                            <div className={styles.readerPreviewRoleBadge}>Open card</div>
+                            <div className={styles.readerPreviewDetailFill}>
+                              <CardDetailPage
+                                card={card}
+                                childrenCards={[]}
+                                suppressDiscovery
+                                previewFullWidth
+                              />
+                            </div>
+                          </div>
+                          <PreviewGalleryLightboxState />
+                        </>
+                      ) : null}
+
+                      {card.docId === questionPreviewCard.docId ? (
+                        <>
+                          <div className={styles.readerPreviewDetailFrame}>
+                            <div className={styles.readerPreviewRoleBadge}>Open card</div>
+                            <div className={styles.readerPreviewDetailFill}>
+                              <CardDetailPage
+                                card={card}
+                                childrenCards={[]}
+                                suppressDiscovery
+                                previewFullWidth
+                              />
+                            </div>
+                          </div>
+                          <PreviewDiscoveryLoadingState />
+                          <PreviewDiscoveryErrorState />
+                        </>
+                      ) : null}
+
+                      {card.docId === quotePreviewCard.docId ? (
+                        <>
+                          <div className={styles.readerPreviewColumnSurface}>
+                            <div className={styles.readerPreviewRoleBadge}>Child rail</div>
+                            <ChildCardsRail cards={previewChildCards} title="Child cards" />
+                          </div>
+                          <PreviewFeedEmptyState />
+                          <PreviewFocusState />
+                        </>
+                      ) : null}
+
+                      {card.docId === calloutPreviewCard.docId ? (
+                        <div className={styles.readerPreviewColumnSurface}>
+                          <div className={styles.readerPreviewRoleBadge}>Explore More</div>
+                          <PreviewDiscoverySection />
+                        </div>
+                      ) : null}
                     </div>
                   ))}
                 </div>
-              </section>
-
-              <section className={styles.readerPreviewBlock}>
-                <div className={styles.previewKicker}>Opened cards</div>
-                <div className={styles.readerPreviewOpenGrid}>
-                  {[storyPreviewCard, galleryPreviewCard, questionPreviewCard].map((card) => (
-                    <div key={`open-${card.docId}`} className={styles.readerPreviewDetailFrame}>
-                      <div className={styles.previewKicker}>Open {card.type === 'qa' ? 'question' : card.type}</div>
-                      <CardDetailPage
-                        card={card}
-                        childrenCards={card.type === 'story' ? previewChildCards : []}
-                        suppressDiscovery
-                      />
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              <section className={styles.readerPreviewBlock}>
-                <div className={styles.previewKicker}>Reader detail extras</div>
-                <div className={styles.readerPreviewExtrasGrid}>
-                  <div className={styles.readerPreviewSurface}>
-                    <div className={styles.previewKicker}>Rich text body</div>
-                    <TipTapRenderer content={previewStoryContent} />
-                  </div>
-                  <div className={styles.readerPreviewSurface}>
-                    <div className={styles.previewKicker}>Child rail</div>
-                    <ChildCardsRail cards={previewChildCards} />
-                  </div>
-                  <div className={styles.readerPreviewSurfaceWide}>
-                    <div className={styles.previewKicker}>Discovery</div>
-                    <PreviewDiscoverySection />
-                  </div>
-                </div>
-              </section>
-
-              <section className={styles.readerPreviewBlock}>
-                <PreviewStatesStrip />
               </section>
             </main>
           </div>

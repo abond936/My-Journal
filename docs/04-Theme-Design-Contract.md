@@ -1,9 +1,9 @@
 # Theme design contract (semantic tokens & presets)
 
-**Status:** Living specification — authoritative for *what* we tokenize and *why*, before code-only audits; and for **reader shell layout, responsive behavior, and navigation affordances** that must stay consistent with tokens (§9).  
+**Status:** Living specification — authoritative for *what* we tokenize and *why*, before code-only audits; and for **reader shell layout, responsive behavior, and navigation affordances** that must stay consistent with tokens (§10).
 **See also:** `01-Vision-Architecture.md` (Frontend principles, visual direction), `02-Application.md` → Theme Management, Navigation, Layouts, `03-Implementation.md` (CSS Tokenization sequencing, responsive chrome).
 
-**Current implementation status (2026-04-25):** Theme infrastructure exists, but the theme system is not complete. Runtime CSS variables are generated from theme data and injected by the app, with `theme-data.json` / `theme.css` fallbacks. Theme Management is currently a **preview lab**: scoped reader/admin preview, Journal / Editorial reader preset toggles, light/dark preview controls, raw Advanced tokens, and **Save intentionally paused**. The reader preview now covers the main closed-card set, open story/gallery/question detail, richer body content, sidebar chrome, discovery/child rails, and compact state samples so theme work can be judged against actual reader surfaces rather than swatches alone. Journal / Editorial are still partial preset bundles, not finished themes. The reader semantic layer now has working role groups for page, chrome, solid controls, cards, detail, body/title, meta/caption, tags, media/overlay, discovery, and type treatments, but the inventory/schema pass is still required before persistence is widened.
+**Current implementation status (2026-04-25):** Theme infrastructure exists, but the theme system is not complete. Runtime CSS variables are generated from theme data and injected by the app, with `theme-data.json` / `theme.css` fallbacks. Theme Management is currently a **workbench**: scoped reader/admin preview, Journal / Editorial reader preset toggles, light/dark preview controls, raw Advanced tokens, and a component-based **Reader Theme System** editor with preview on the left and component inventory / recipe editing on the right. **Save is intentionally paused**. The reader preview now covers the closed card set, open story/gallery/question detail, sidebar chrome, discovery/child rails, lightbox/state samples, and compact cards so theme work can be judged against real reader surfaces rather than swatches alone. Journal / Editorial are still partial preset bundles, not finished themes. The reader semantic layer now has working role groups for page, chrome, solid controls, cards, detail, body/title, meta/caption, tags, media/overlay, discovery, and type treatments, and the current editing model is moving from flat role names toward **component + variant + element** recipes backed by the existing atomic token set.
 
 ---
 
@@ -103,7 +103,7 @@ Values are edited in Theme Management and stored in structured theme data; compo
 
 The reader semantic layer is the contract between design intent and component CSS. It is intentionally role-based: components should ask for "reader detail surface" or "reader card title," not a raw color slot. Early implementation may alias these names to existing primitive/component tokens, but the role names are the stable vocabulary Theme Management will eventually expose.
 
-**Rule:** A reader component may use primitive tokens for mechanical layout (`--spacing-*`, `--z-index-*`, literal media-query pixels per §9), but design-affecting color, type, radius, elevation, and content hierarchy should prefer the reader aliases below.
+**Rule:** A reader component may use primitive tokens for mechanical layout (`--spacing-*`, `--z-index-*`, literal media-query pixels per §10), but design-affecting color, type, radius, elevation, and content hierarchy should prefer the reader aliases below.
 
 | Role group | Token family | Scope | Status |
 | ---------- | ------------ | ----- | ------ |
@@ -162,7 +162,149 @@ Theme presets are not complete until each preset supplies enough underlying valu
 
 ---
 
-## 5. Spacing, radius, elevation, motion
+## 5. Two-tier authoring model
+
+The app needs a middle layer between:
+
+- the **broad stored theme document** (`palette`, `themeColors`, `typography`, `spacing`, `borders`, `shadows`, `layout`, `components`, `states`, `gradients`) that already exists in Firestore / `theme-data.json`, and
+- the **component CSS** that needs a much smaller, stable vocabulary (`reader-title`, `reader-card`, `reader-detail`, `reader-solid`, etc.).
+
+That middle layer should be **two-tiered**, not a replacement system:
+
+### 5.1 Tier 1: summary roles (what the app is trying to style)
+
+These are the author-facing, app-facing summary elements. They should be understandable without opening CSS files.
+
+| Group | Summary role | Example consumers |
+| ----- | ------------ | ----------------- |
+| Typography | `Title` | full feed cards |
+| Typography | `Title Small` | Explore More, child rails, other constrained cards |
+| Typography | `Detail Title` | open card header |
+| Typography | `Subtitle` | story/gallery subtitles |
+| Typography | `Body` | story body, Q&A answer, callout body |
+| Typography | `Excerpt` | card summary text |
+| Typography | `Meta` | dates, small supporting metadata |
+| Typography | `Caption` | figure captions, gallery captions, quote attribution |
+| Typography | `Quote` | quote cards and quote detail |
+| Typography | `Question` | Q&A prompt treatment |
+| Typography | `Callout Title` | callout heading |
+| Surface | `Page` | reader canvas |
+| Surface | `Chrome` | sidebar, nav, filter panels |
+| Surface | `Card` | standard feed cards |
+| Surface | `Detail` | open card container |
+| Surface | `Discovery` | Explore More / Similar / child rails shell |
+| Surface | `Media Frame` | gallery frame, inline media frame |
+| Control | `Solid Control` | active tabs, chips, primary controls |
+| Control | `Filter Chip` | selected filters |
+| Control | `Media Control` | gallery buttons |
+| Control | `Lightbox Control` | lightbox buttons/caption chrome |
+| Overlay | `Card Overlay` | story/gallery image overlays |
+| Overlay | `Strong Overlay` | gallery/lightbox stronger scrims |
+| Tag | `Who / What / When / Where / Muted` | dimensional and neutral chips |
+| Icon | `Chrome / Solid / Overlay / Accent` | sidebar, pills, overlay badges, accent icons |
+
+### 5.2 Tier 2: atomic token recipes (how each summary role is defined)
+
+Each summary role is expressed using the exact tokens that already exist in Advanced/theme data. Examples:
+
+- `Title` -> `Sans`, `Base`, `Semibold`, `Tight`
+- `Title Small` -> `Sans`, `SM`, `Semibold`, `Tight`
+- `Detail Title` -> `Sans`, `3XL`, `Bold`, `Tight`
+- `Body` -> `Sans`, `SM`, `Normal`, `Relaxed`
+- `Quote` -> `Serif`, `LG`, `Normal`, `Relaxed`
+- `Solid Control` -> button solid background/text/border tokens
+- `Card` -> card background/border/radius/shadow/padding tokens
+
+This preserves **exact control**. The summary layer is not "warmer / looser / editorial" hand-waving; it is a named recipe built out of the precise font, size, weight, line-height, color, radius, and shadow tokens the app already has.
+
+### 5.3 Boundary between theme and component logic
+
+This is the part that caused the most confusion and needs to stay explicit:
+
+- Theme defines the **recipe** for `Title` and `Title Small`.
+- Component logic decides **when** to use `Title Small` (for example in Explore More or a narrower rail cell).
+- Theme defines the recipe for `Card` and `Detail`.
+- Component logic still owns layout triggers, aspect ratio handling, card width, rail width, breakpoints, and open/closed structure.
+
+So "small card title" belongs in the theme system as a **named variant**, but "this card is in a constrained rail, use the small title recipe" belongs in component code.
+
+### 5.2a Component-oriented authoring surface
+
+The current implementation direction is more concrete than a single flat list of summary roles. Theme authoring is now being organized around **real components and variants**, because that maps better to how the app is actually designed and reviewed.
+
+Examples:
+
+- `storyCard.closed.title`
+- `storyCard.open.subtitle`
+- `galleryCard.closed.title`
+- `galleryCard.open.caption`
+- `qaCard.closed.question`
+- `qaCard.discovery.question`
+- `quoteCard.closed.quote`
+- `calloutCard.closed.title`
+- `sidebar.chrome.solidControl`
+- `lightbox.default.caption`
+
+This is still the same two-tier model:
+
+- **Tier 1** = named component recipes the author can understand and edit
+- **Tier 2** = exact atomic token selections (`Sans`, `SM`, `Semibold`, `color3`, `shadow/md`, etc.)
+
+The important distinction is that component-oriented recipes avoid false sharing. A Story title and a Gallery title may start with the same recipe, but they must be able to diverge without fighting a single global `Title` control.
+
+Theme Management should reflect that directly:
+
+- the **preview stays visible while editing**
+- the **component inventory is the main authoring surface**
+- each component row should identify the **element** being styled and the **recipe** it uses
+- the **Advanced** token area remains below as the primitive reference / exact-value layer, not a competing second theme system
+
+### 5.4 Current implementation target
+
+The current reader work should converge on this flow:
+
+1. **Advanced / Firestore remains the exact value source** for atomic tokens.
+2. A **summary-role mapping layer** defines `Title`, `Title Small`, `Detail Title`, `Card`, `Detail`, `Solid Control`, etc.
+3. A **component recipe layer** assigns those roles or token recipes to concrete app surfaces such as Story closed title, Gallery open caption, Q&A discovery question, Sidebar active tab, and Lightbox caption.
+4. Theme CSS generation emits the resulting semantic/component variables.
+5. Components consume those variables and still own layout/context decisions such as compact rails, open vs closed structure, and responsive behavior.
+3. Reader components consume those summary roles through semantic CSS variables.
+4. Only missing controls get added to the atomic token set.
+
+The first concrete version of this mapping now lives in:
+
+- `src/lib/theme/readerThemeSystem.ts`
+
+That file is the working inventory of the "middle layer" for the current theme. It is intentionally reader-first and does not replace the Advanced tab.
+
+Current workbench behavior:
+
+- Theme Management preview sits beside the component inventory/editor so recipe changes can be judged immediately.
+- The preview uses the same reader CSS generation path as the app, but stays preview-only because Save is paused.
+- The current editor is component-oriented rather than primitive-oriented: select a component, then a variant, then an element recipe.
+- The Advanced token area remains the exact-value reference/source layer and is not replaced by the component editor.
+
+### 5.5 What should stay atomic vs summary vs component-owned
+
+| Layer | Belongs here |
+| ----- | ------------ |
+| Atomic tokens | font families, size scale, weights, line heights, palette slots, theme colors, radii, shadows, spacing scale, button/card/tag/input primitives |
+| Summary roles | title, title small, detail title, body, excerpt, meta, caption, quote, question, callout title/body, page/chrome/card/detail/discovery/media surfaces, solid/filter/media/lightbox controls |
+| Component-owned | whether a card is compact, rail width, feed grid layout, detail structure, breakpoint-triggered layout changes, image aspect-ratio decisions |
+
+### 5.6 Firestore implication
+
+For now, Firestore can continue storing the broad atomic theme document. The summary layer can be defined in code first and proven in preview/live reader behavior before any persistence change is considered.
+
+That means:
+
+- **no loss of precise control**
+- **no need to discard the existing Advanced token set**
+- **no need to save a separate vague preset model first**
+
+---
+
+## 6. Spacing, radius, elevation, motion
 
 
 | Role              | Meaning                 | Primary variables today                                               | Notes                                                                                                         |
@@ -175,7 +317,7 @@ Theme presets are not complete until each preset supplies enough underlying valu
 
 ---
 
-## 6. Named presets (v1 intent)
+## 7. Named presets (v1 intent)
 
 Presets are **bundles** of assignments to the roles above (plus typography roles). Theme Management should eventually offer **preset selection** first, then **advanced overrides** for the author.
 
@@ -197,7 +339,7 @@ Presets are **bundles** of assignments to the roles above (plus typography roles
 
 ---
 
-## 7. What Theme Management must do (target)
+## 8. What Theme Management must do (target)
 
 
 | Layer            | User-facing behavior                                                                                                                                                                                        |
@@ -216,7 +358,7 @@ Presets are **bundles** of assignments to the roles above (plus typography roles
 
 ---
 
-## 8. Reconciliation workflow (design-led, not code-led)
+## 9. Reconciliation workflow (design-led, not code-led)
 
 1. **Inventory surfaces first** - Build a table from actual reader/admin components: surface, file/component, visible elements (title, subtitle, excerpt, tags, controls, empty states, etc.), current token/CSS usage, required semantic token family, and migration status.
 2. **Freeze the semantic contract** - Promote the inventory into role families (`reader-page`, `reader-card`, `reader-detail`, `reader-subtitle`, `reader-excerpt`, `reader-discovery`, `reader-media`, `reader-chrome`, `reader-solid`, `admin-*`, etc.). Iterate here when product intent changes.
@@ -228,7 +370,7 @@ Presets are **bundles** of assignments to the roles above (plus typography roles
 
 ---
 
-## 9. Reader shell, responsive layout & navigation (contract)
+## 10. Reader shell, responsive layout & navigation (contract)
 
 This section is the **single product contract** for how the signed-in reader chrome behaves across desktop, tablet, and phone. It complements §2–§7 (tokens and presets): layout and breakpoints are specified here so implementation does not drift session-to-session.
 
@@ -260,7 +402,7 @@ Changes to breakpoints, toggle visibility, or feed column rules are **product de
 
 ---
 
-## 10. In-app status messaging contract
+## 11. In-app status messaging contract
 
 This section defines the UX and token contract for system/status messaging so feedback appears as part of the app (not browser/system chrome).
 
@@ -305,12 +447,14 @@ This section defines the UX and token contract for system/status messaging so fe
 
 ---
 
-## 11. Revision history
+## 12. Revision history
 
 
 | Date       | Change                                                                                                                                                |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-04-10 | Initial contract: semantic roles, type roles, two presets, Theme Management target, reconciliation order.                                             |
 | 2026-04-10 | §4.1 base palette (3–14); persistence: Firestore + layout-injected tokens + `theme-data.json` fallback.                                               |
-| 2026-04-11 | §9 reader shell & responsive layout (breakpoints, sidebar toggle, feed columns); literal `px` in `@media`; §10 revision history (renumber).           |
-| 2026-04-16 | Added §10 in-app status messaging contract (message taxonomy, behavior, token/a11y rules, card-save narrow reference); moved revision history to §11. |
+| 2026-04-11 | Reader shell & responsive layout section added (breakpoints, sidebar toggle, feed columns); literal `px` in `@media`. |
+| 2026-04-16 | Added in-app status messaging contract (message taxonomy, behavior, token/a11y rules, card-save narrow reference). |
+| 2026-04-25 | Added §5 two-tier authoring model: summary roles over existing atomic tokens, explicit compact-variant boundary, and reader-first middle-layer target. |
+| 2026-04-25 | Updated current status and §5 to reflect the component-based Reader Theme System workbench, side-by-side preview/editor workflow, and the move toward component + variant + element recipes. |

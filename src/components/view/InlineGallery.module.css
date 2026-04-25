@@ -166,10 +166,12 @@
 }
 
 .imageCaption {
-  font-size: var(--font-size-sm);
+  font-family: var(--reader-caption-font-family);
+  font-size: var(--reader-caption-font-size);
+  font-weight: var(--reader-caption-font-weight);
+  line-height: var(--reader-caption-line-height);
   color: var(--reader-caption-color);
   margin: 0;
-  line-height: 1.4;
   text-align: center;
 }
 
@@ -280,5 +282,8 @@
   margin: 0;
   text-align: center;
   color: var(--reader-lightbox-caption-text-color);
-  font-size: var(--font-size-sm);
+  font-family: var(--reader-caption-font-family);
+  font-size: var(--reader-caption-font-size);
+  font-weight: var(--reader-caption-font-weight);
+  line-height: var(--reader-caption-line-height);
 }

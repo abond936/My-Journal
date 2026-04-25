@@ -72,10 +72,6 @@
   box-sizing: border-box;
 }
 
-.fullWidth .title {
-  font-size: var(--font-size-base);
-}
-
 .fullWidth .description {
   font-size: var(--font-size-xs);
   line-height: 1.35;
@@ -144,11 +140,13 @@
   color: var(--reader-title-color);
 }
 
+
 .description {
-  font-family: var(--reader-body-font-family);
-  font-size: var(--reader-body-font-size);
-  color: var(--reader-meta-color);
-  line-height: 1.4;
+  font-family: var(--reader-excerpt-font-family);
+  font-size: var(--reader-excerpt-font-size);
+  font-weight: var(--reader-excerpt-font-weight);
+  color: var(--reader-excerpt-color);
+  line-height: var(--reader-excerpt-line-height);
   margin: 0;
 }
 
@@ -167,7 +165,14 @@
 }
 
 .story .title, .story .description {
-  color: var(--reader-title-color);
+  color: var(--reader-story-title-color);
+}
+
+.story .title {
+  font-family: var(--reader-story-title-font-family);
+  font-size: var(--reader-story-title-font-size);
+  font-weight: var(--reader-story-title-font-weight);
+  line-height: var(--reader-story-title-line-height);
 }
 
 .gallery .content {
@@ -191,7 +196,11 @@
 }
 
 .gallery .title {
-  color: var(--reader-title-color);
+  color: var(--reader-gallery-title-color);
+  font-family: var(--reader-gallery-title-font-family);
+  font-size: var(--reader-gallery-title-font-size);
+  font-weight: var(--reader-gallery-title-font-weight);
+  line-height: var(--reader-gallery-title-line-height);
 }
 
 .swiperContainer {
@@ -266,6 +275,11 @@
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
+  color: var(--reader-quote-color);
+  font-family: var(--reader-quote-font-family);
+  font-size: var(--reader-quote-font-size);
+  font-weight: var(--reader-quote-font-weight);
+  line-height: var(--reader-quote-line-height);
   overflow-wrap: break-word;
   word-break: break-word;
 }
@@ -277,7 +291,10 @@
 }
 .quoteCite {
   display: block;
+  font-family: var(--reader-caption-font-family);
   font-size: var(--reader-caption-font-size);
+  font-weight: var(--reader-caption-font-weight);
+  line-height: var(--reader-caption-line-height);
   font-style: normal;
   color: var(--reader-caption-color);
   text-align: center;
@@ -379,15 +396,20 @@
 
 .qaQuestion {
   margin: 0;
-  font-weight: var(--reader-title-font-weight);
+  font-family: var(--reader-question-font-family);
+  font-weight: var(--reader-question-font-weight);
   font-size: var(--reader-question-font-size);
-  line-height: var(--reader-title-line-height);
+  line-height: var(--reader-question-line-height);
+  color: var(--reader-question-color);
 }
 
 .qaTeaser {
   margin: var(--spacing-sm) 0 0 0;
-  font-size: var(--reader-body-font-size);
-  line-height: 1.5;
+  font-family: var(--reader-excerpt-font-family);
+  font-size: var(--reader-excerpt-font-size);
+  font-weight: var(--reader-excerpt-font-weight);
+  line-height: var(--reader-excerpt-line-height);
+  color: var(--reader-excerpt-color);
 }
 
 /* Inline + cover: TipTap below title/teaser inside overlay; keep readable */
@@ -443,28 +465,36 @@
 }
 .calloutTitle {
   margin: 0;
-  font-family: var(--reader-title-font-family);
-  font-size: var(--font-size-lg);
-  font-weight: var(--reader-title-font-weight);
-  line-height: var(--reader-title-line-height);
-  color: var(--reader-title-color);
+  font-family: var(--reader-callout-title-font-family);
+  font-size: var(--reader-callout-title-font-size);
+  font-weight: var(--reader-callout-title-font-weight);
+  line-height: var(--reader-callout-title-line-height);
+  color: var(--reader-callout-title-color);
 }
 .calloutSubtitle {
   margin: 0;
-  font-size: var(--reader-caption-font-size);
-  line-height: 1.5;
-  color: var(--reader-caption-color);
+  font-family: var(--reader-subtitle-font-family);
+  font-size: var(--reader-subtitle-font-size);
+  font-weight: var(--reader-subtitle-font-weight);
+  line-height: var(--reader-subtitle-line-height);
+  color: var(--reader-subtitle-color);
+  font-style: var(--reader-subtitle-font-style);
 }
 .calloutExcerpt {
   margin: 0;
-  font-size: var(--reader-body-font-size);
-  line-height: 1.5;
-  color: var(--reader-meta-color);
+  font-family: var(--reader-excerpt-font-family);
+  font-size: var(--reader-excerpt-font-size);
+  font-weight: var(--reader-excerpt-font-weight);
+  line-height: var(--reader-excerpt-line-height);
+  color: var(--reader-excerpt-color);
 }
 .calloutBody {
   margin: 0;
-  font-size: var(--reader-body-font-size);
-  color: var(--reader-body-color);
+  font-family: var(--reader-callout-body-font-family);
+  font-size: var(--reader-callout-body-font-size);
+  font-weight: var(--reader-callout-body-font-weight);
+  line-height: var(--reader-callout-body-line-height);
+  color: var(--reader-callout-body-color);
 }
 .calloutBody :global(ul),
 .calloutBody :global(ol) {
@@ -476,6 +506,16 @@
 }
 .callout .inlineContent {
   margin-top: 0;
+}
+
+.small .title,
+.small.qa .qaQuestion,
+.small .calloutTitle {
+  color: var(--reader-title-small-color);
+  font-family: var(--reader-title-small-font-family);
+  font-size: var(--reader-title-small-font-size);
+  font-weight: var(--reader-title-small-font-weight);
+  line-height: var(--reader-title-small-line-height);
 }
 
 /* --- Display Mode Styles --- */
@@ -506,6 +546,7 @@
   margin-top: var(--spacing-md);
   font-family: var(--reader-body-font-family);
   font-size: var(--reader-body-font-size);
+  font-weight: var(--reader-body-font-weight);
   line-height: var(--reader-body-line-height);
   color: var(--reader-body-color);
 }
@@ -565,7 +606,10 @@
 }
 
 .collectionCount {
+  font-family: var(--reader-caption-font-family);
   font-size: var(--reader-caption-font-size);
+  font-weight: var(--reader-caption-font-weight);
+  line-height: var(--reader-caption-line-height);
   color: var(--reader-meta-color);
   margin-top: var(--spacing-sm);
 }

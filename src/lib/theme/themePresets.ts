@@ -5,6 +5,7 @@ import {
   type ScopedThemeDocumentData,
   type StructuredThemeData,
 } from '@/lib/types/theme';
+import { DEFAULT_READER_THEME_RECIPES } from '@/lib/theme/readerThemeSystem';
 import baseTheme from '../../../theme-data.json';
 
 export type ThemePresetId = ReaderThemePresetId;
@@ -242,6 +243,7 @@ export function getDefaultScopedThemeDocument(): ScopedThemeDocumentData {
       data: readerData as StructuredThemeData,
       activePresetId: readerPresetId ?? 'journal',
       darkModeShift: readerDarkModeShift ?? 5,
+      recipes: DEFAULT_READER_THEME_RECIPES,
     },
     admin: {
       data: adminData as StructuredThemeData,

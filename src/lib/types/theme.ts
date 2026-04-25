@@ -301,10 +301,122 @@ export type ReaderThemePresetId = 'journal' | 'editorial';
 export type AdminThemePresetId = 'admin';
 export type ThemeScopeId = 'reader' | 'admin';
 
+export type ThemeRecipeTokenRef =
+  | `font-family/${'sans' | 'serif' | 'handwriting'}`
+  | `font-size/${'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl'}`
+  | `font-weight/${'normal' | 'medium' | 'semibold' | 'bold'}`
+  | `line-height/${'base' | 'tight' | 'relaxed'}`
+  | `spacing/${'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl'}`
+  | `border/radius/${'sm' | 'md' | 'lg' | 'xl' | 'full'}`
+  | `shadow/${'sm' | 'md' | 'lg' | 'xl'}`
+  | `theme-color/${1 | 2}/${'light' | 'dark'}`
+  | `palette/${number}`
+  | `layout/${string}`
+  | `component/${string}`
+  | `state/${'success' | 'error' | 'warning' | 'info'}/${'background' | 'border'}`
+  | `gradient/${'bottomOverlay' | 'bottomOverlayStrong'}`
+  | `literal/${string}`;
+
+export interface ReaderTypographyRoleRecipe {
+  family: ThemeRecipeTokenRef;
+  size: ThemeRecipeTokenRef;
+  weight: ThemeRecipeTokenRef;
+  lineHeight: ThemeRecipeTokenRef;
+  color: ThemeRecipeTokenRef;
+  fontStyle?: 'normal' | 'italic';
+}
+
+export interface ReaderSurfaceRoleRecipe {
+  background: ThemeRecipeTokenRef;
+  border: ThemeRecipeTokenRef;
+  radius?: ThemeRecipeTokenRef;
+  shadow?: ThemeRecipeTokenRef;
+  shadowHover?: ThemeRecipeTokenRef;
+  padding?: ThemeRecipeTokenRef;
+}
+
+export interface ReaderControlRoleRecipe {
+  background: ThemeRecipeTokenRef;
+  text: ThemeRecipeTokenRef;
+  border: ThemeRecipeTokenRef;
+  hoverBackground?: ThemeRecipeTokenRef;
+  hoverText?: ThemeRecipeTokenRef;
+}
+
+export interface ReaderOverlayRoleRecipe {
+  background: ThemeRecipeTokenRef;
+  text: ThemeRecipeTokenRef;
+  border?: ThemeRecipeTokenRef;
+}
+
+export interface ReaderThemeRecipes {
+  typography: {
+    title: ReaderTypographyRoleRecipe;
+    storyTitle: ReaderTypographyRoleRecipe;
+    galleryTitle: ReaderTypographyRoleRecipe;
+    titleCompact: ReaderTypographyRoleRecipe;
+    detailTitle: ReaderTypographyRoleRecipe;
+    storyDetailTitle: ReaderTypographyRoleRecipe;
+    galleryDetailTitle: ReaderTypographyRoleRecipe;
+    subtitle: ReaderTypographyRoleRecipe;
+    body: ReaderTypographyRoleRecipe;
+    excerpt: ReaderTypographyRoleRecipe;
+    meta: ReaderTypographyRoleRecipe;
+    caption: ReaderTypographyRoleRecipe;
+    quote: ReaderTypographyRoleRecipe;
+    question: ReaderTypographyRoleRecipe;
+    calloutTitle: ReaderTypographyRoleRecipe;
+    calloutBody: ReaderTypographyRoleRecipe;
+    tagLabel: ReaderTypographyRoleRecipe;
+  };
+  surfaces: {
+    page: ReaderSurfaceRoleRecipe;
+    chrome: ReaderSurfaceRoleRecipe;
+    card: ReaderSurfaceRoleRecipe;
+    detail: ReaderSurfaceRoleRecipe;
+    discovery: ReaderSurfaceRoleRecipe;
+    mediaFrame: ReaderSurfaceRoleRecipe;
+  };
+  controls: {
+    solid: ReaderControlRoleRecipe;
+    filterChip: ReaderControlRoleRecipe;
+    mediaControl: ReaderControlRoleRecipe;
+    lightboxControl: ReaderControlRoleRecipe;
+    link: Pick<ReaderControlRoleRecipe, 'text' | 'hoverBackground' | 'hoverText'>;
+    focusRing: {
+      color: ThemeRecipeTokenRef;
+    };
+  };
+  tags: {
+    who: ReaderControlRoleRecipe;
+    what: ReaderControlRoleRecipe;
+    when: ReaderControlRoleRecipe;
+    where: ReaderControlRoleRecipe;
+    muted: ReaderControlRoleRecipe;
+  };
+  overlays: {
+    card: ReaderOverlayRoleRecipe;
+    cardStrong: ReaderOverlayRoleRecipe;
+    lightbox: ReaderOverlayRoleRecipe;
+  };
+  iconography: {
+    chrome: ThemeRecipeTokenRef;
+    solid: ThemeRecipeTokenRef;
+    overlay: ThemeRecipeTokenRef;
+    accent: ThemeRecipeTokenRef;
+  };
+  treatments: {
+    quoteWatermarkOpacity: string;
+    questionWatermarkOpacity: string;
+    calloutWatermarkOpacity: string;
+  };
+}
+
 export interface ScopedThemeSettings {
   data: StructuredThemeData;
   activePresetId?: ReaderThemePresetId | AdminThemePresetId | 'custom';
   darkModeShift?: number;
+  recipes?: ReaderThemeRecipes;
 }
 
 export interface ScopedThemeDocumentData {
@@ -349,4 +461,4 @@ export const hexToHsl = (hex: string): { h: number; s: number; l: number } => {
     s: Math.round(s * 100),
     l: Math.round(l * 100)
   };
-}; 
+};

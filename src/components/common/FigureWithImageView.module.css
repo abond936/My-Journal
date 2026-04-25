@@ -85,11 +85,13 @@
 
 .caption {
   color: var(--reader-caption-color);
-  font-size: var(--font-size-sm);
+  font-family: var(--reader-caption-font-family);
+  font-size: var(--reader-caption-font-size);
+  font-weight: var(--reader-caption-font-weight);
   text-align: center;
   padding: var(--spacing-xs);
   margin-top: var(--spacing-xs);
-  line-height: var(--line-height-normal); /* Normal line-height for caption text */
+  line-height: var(--reader-caption-line-height);
 }
 
 .caption:focus {

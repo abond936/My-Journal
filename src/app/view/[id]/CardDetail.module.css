@@ -8,6 +8,33 @@
   box-shadow: var(--reader-detail-shadow);
 }
 
+.previewFullWidth {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  margin: 0 0 var(--spacing-xl) 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.previewFullWidth .header {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.previewFullWidth .title,
+.previewFullWidth .subtitle {
+  padding-left: var(--reader-card-padding);
+  padding-right: var(--reader-card-padding);
+}
+
+.previewFullWidth .content,
+.previewFullWidth .quoteDetailFooter,
+.previewFullWidth .adminEditBar {
+  padding-left: var(--reader-card-padding);
+  padding-right: var(--reader-card-padding);
+}
+
 .adminEditBar {
   margin: 0 0 var(--spacing-md);
   padding-top: var(--spacing-md);
@@ -74,8 +101,24 @@
   font-family: var(--reader-detail-title-font-family);
   font-weight: var(--reader-detail-title-font-weight);
   line-height: var(--reader-detail-title-line-height);
-  color: var(--reader-title-color);
+  color: var(--reader-detail-title-color);
   margin-bottom: var(--spacing-md);
+}
+
+.container[data-card-type='story'] .title {
+  font-size: var(--reader-story-detail-title-font-size);
+  font-family: var(--reader-story-detail-title-font-family);
+  font-weight: var(--reader-story-detail-title-font-weight);
+  line-height: var(--reader-story-detail-title-line-height);
+  color: var(--reader-story-detail-title-color);
+}
+
+.container[data-card-type='gallery'] .title {
+  font-size: var(--reader-gallery-detail-title-font-size);
+  font-family: var(--reader-gallery-detail-title-font-family);
+  font-weight: var(--reader-gallery-detail-title-font-weight);
+  line-height: var(--reader-gallery-detail-title-line-height);
+  color: var(--reader-gallery-detail-title-color);
 }
 
 .titleWithSubtitle {
@@ -83,16 +126,20 @@
 }
 
 .subtitle {
+  font-family: var(--reader-subtitle-font-family);
   font-size: var(--reader-subtitle-font-size);
+  font-weight: var(--reader-subtitle-font-weight);
+  line-height: var(--reader-subtitle-line-height);
   color: var(--reader-subtitle-color);
   font-style: var(--reader-subtitle-font-style);
 }
 
 .content {
   font-family: var(--reader-body-font-family);
+  font-weight: var(--reader-body-font-weight);
   color: var(--reader-body-color);
   line-height: var(--reader-body-line-height);
-  font-size: var(--font-size-base);
+  font-size: var(--reader-body-font-size);
 }
 
 .content h1,
@@ -134,7 +181,10 @@
 
 .quoteDetailCite {
   display: block;
+  font-family: var(--reader-caption-font-family);
   font-size: var(--reader-caption-font-size);
+  font-weight: var(--reader-caption-font-weight);
+  line-height: var(--reader-caption-line-height);
   font-style: normal;
   color: var(--reader-caption-color);
   text-align: right;

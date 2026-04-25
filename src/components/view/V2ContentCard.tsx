@@ -262,7 +262,6 @@ const CalloutCardContent: React.FC<{ card: Card }> = ({ card }) => {
   return (
     <div className={styles.content}>
       {titleText ? <h3 className={styles.calloutTitle}>{titleText}</h3> : null}
-      {!titleText && subtitleText ? <h3 className={styles.calloutTitle}>{subtitleText}</h3> : null}
       {titleText && subtitleText ? <p className={styles.calloutSubtitle}>{subtitleText}</p> : null}
       {hasExcerpt ? <p className={styles.calloutExcerpt}>{card.excerpt}</p> : null}
       {showBody ? (

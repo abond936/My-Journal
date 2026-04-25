@@ -8,6 +8,9 @@ import {
   BaseColor,
   ThemeColor,
   hexToHsl,
+  type ReaderThemeRecipes,
+  type ReaderTypographyRoleRecipe,
+  type ThemeRecipeTokenRef,
   type ScopedThemeDocumentData,
 } from '@/lib/types/theme';
 import {
@@ -16,6 +19,10 @@ import {
   type ThemePresetId,
   type ThemeDocumentData,
 } from '@/lib/theme/themePresets';
+import {
+  CURRENT_READER_THEME_COMPONENTS,
+  DEFAULT_READER_THEME_RECIPES,
+} from '@/lib/theme/readerThemeSystem';
 import ThemeReaderPreview from './ThemeReaderPreview';
 
 type ApiErrorResponse = {
@@ -31,238 +38,126 @@ type SaveNotice = {
 };
 
 type ThemeRecord = Record<string, unknown>;
-type ReaderDraftFontKey = 'systemSans' | 'serif' | 'display';
-type ReaderDraft = {
-  pageBgLight: string;
-  pageBgDark: string;
-  pageTextLight: string;
-  pageTextDark: string;
-  accent: string;
-  chromePanel: string;
-  cardBackground: string;
-  cardBorder: string;
-  solidBackground: string;
-  solidText: string;
-  solidBorder: string;
-  titleFont: ReaderDraftFontKey;
-  bodyFont: ReaderDraftFontKey;
-  quoteFont: ReaderDraftFontKey;
-  titleSize: string;
-  detailTitleSize: string;
-  bodySize: string;
-  subtitleSize: string;
-  cardRadius: string;
-  detailRadius: string;
-  cardShadow: string;
-  cardShadowHover: string;
-  detailShadow: string;
-  subtitleStyle: 'normal' | 'italic';
-  quoteWatermarkOpacity: string;
-  questionWatermarkOpacity: string;
-  calloutWatermarkOpacity: string;
-};
-
 const THEME_SAVE_ENABLED = false;
-const DRAFT_READER_SCOPE = 'themeAdminReaderDraftPreview';
-const DRAFT_ADMIN_SCOPE = 'themeAdminAdminDraftPreview';
-const READER_DRAFT_FONTS: Record<ReaderDraftFontKey, string> = {
-  systemSans: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-  serif: '"Georgia", "Times New Roman", serif',
-  display: '"Ink Free", "Segoe Script", "Brush Script MT", cursive',
-};
+const DEFAULT_SELECTED_RECIPE = 'typography:title';
 
 const asThemeRecord = (value: unknown): ThemeRecord => (
   value && typeof value === 'object' ? value as ThemeRecord : {}
 );
 
-const hslToHexString = (h: number, s: number, l: number): string => hslToHex(h, s, l);
+const formatRoleLabel = (value: string): string => value
+  .replace(/([a-z])([A-Z])/g, '$1 $2')
+  .replace(/^./, (char) => char.toUpperCase());
 
-const shiftHexLightness = (hex: string, delta: number): string => {
-  const { h, s, l } = hexToHsl(hex);
-  return hslToHexString(h, s, Math.max(0, Math.min(100, l + delta)));
-};
+const formatTokenRef = (value: ThemeRecipeTokenRef | string): string => value
+  .replace(/^literal\//, '')
+  .replace(/\//g, ' / ');
 
-const createInitialReaderDraft = (data: StructuredThemeData): ReaderDraft => {
-  const pageBgLight = data.themeColors.find((color) => color.id === 1)?.light.hex ?? '#eceef2';
-  const pageBgDark = data.themeColors.find((color) => color.id === 1)?.dark.hex ?? '#14161c';
-  const pageTextLight = data.themeColors.find((color) => color.id === 2)?.light.hex ?? '#16181d';
-  const pageTextDark = data.themeColors.find((color) => color.id === 2)?.dark.hex ?? '#eef0f4';
-  const accent = data.palette.find((color) => color.id === 3)?.hex ?? '#0f4c81';
-  return {
-    pageBgLight,
-    pageBgDark,
-    pageTextLight,
-    pageTextDark,
-    accent,
-    chromePanel: shiftHexLightness(pageBgLight, -3),
-    cardBackground: shiftHexLightness(pageBgLight, -2),
-    cardBorder: shiftHexLightness(pageBgLight, -6),
-    solidBackground: accent,
-    solidText: pageBgLight,
-    solidBorder: accent,
-    titleFont: 'systemSans',
-    bodyFont: 'systemSans',
-    quoteFont: 'serif',
-    titleSize: data.typography.fontSizes.base,
-    detailTitleSize: data.typography.fontSizes['3xl'],
-    bodySize: data.typography.fontSizes.sm,
-    subtitleSize: data.typography.fontSizes.xl,
-    cardRadius: data.borders.radius.md,
-    detailRadius: data.borders.radius.lg,
-    cardShadow: data.shadows.sm,
-    cardShadowHover: data.shadows.md,
-    detailShadow: data.shadows.md,
-    subtitleStyle: 'italic',
-    quoteWatermarkOpacity: '0.22',
-    questionWatermarkOpacity: '0.3',
-    calloutWatermarkOpacity: '0.3',
-  };
-};
+const FONT_FAMILY_OPTIONS: ThemeRecipeTokenRef[] = [
+  'font-family/sans',
+  'font-family/serif',
+  'font-family/handwriting',
+];
 
-const buildReaderDraftScopedCss = (draft: ReaderDraft, readerScopeClass: string, adminScopeClass: string): string => `
-.${readerScopeClass} {
-  --reader-page-background-color: ${draft.pageBgLight};
-  --reader-page-text-color: ${draft.pageTextLight};
-  --reader-page-border-color: ${draft.cardBorder};
-  --reader-chrome-background-color: ${draft.pageBgLight};
-  --reader-chrome-panel-color: ${draft.chromePanel};
-  --reader-chrome-border-color: ${draft.cardBorder};
-  --reader-chrome-text-color: ${draft.pageTextLight};
-  --reader-chrome-muted-color: color-mix(in srgb, ${draft.pageTextLight} 65%, ${draft.pageBgLight});
-  --reader-chrome-control-background-color: ${draft.pageBgLight};
-  --reader-chrome-control-hover-background-color: ${draft.chromePanel};
-  --reader-chrome-control-subtle-hover-background-color: color-mix(in srgb, ${draft.pageTextLight} 15%, transparent);
-  --reader-solid-background-color: ${draft.solidBackground};
-  --reader-solid-text-color: ${draft.solidText};
-  --reader-solid-border-color: ${draft.solidBorder};
-  --reader-title-color: ${draft.pageTextLight};
-  --reader-title-font-family: ${READER_DRAFT_FONTS[draft.titleFont]};
-  --reader-title-font-size: ${draft.titleSize};
-  --reader-title-font-weight: var(--font-weight-semibold);
-  --reader-title-line-height: var(--line-height-tight);
-  --reader-detail-title-font-family: ${READER_DRAFT_FONTS[draft.titleFont]};
-  --reader-detail-title-font-size: ${draft.detailTitleSize};
-  --reader-detail-title-font-weight: var(--font-weight-bold);
-  --reader-detail-title-line-height: var(--line-height-tight);
-  --reader-subtitle-color: color-mix(in srgb, ${draft.pageTextLight} 72%, ${draft.pageBgLight});
-  --reader-subtitle-font-size: ${draft.subtitleSize};
-  --reader-subtitle-font-style: ${draft.subtitleStyle};
-  --reader-excerpt-color: color-mix(in srgb, ${draft.pageTextLight} 68%, ${draft.pageBgLight});
-  --reader-excerpt-font-size: ${draft.bodySize};
-  --reader-excerpt-line-height: var(--line-height-relaxed);
-  --reader-body-color: ${draft.pageTextLight};
-  --reader-body-font-family: ${READER_DRAFT_FONTS[draft.bodyFont]};
-  --reader-body-font-size: ${draft.bodySize};
-  --reader-body-line-height: var(--line-height-relaxed);
-  --reader-meta-color: color-mix(in srgb, ${draft.pageTextLight} 62%, ${draft.pageBgLight});
-  --reader-accent-color: ${draft.accent};
-  --reader-focus-ring-color: ${draft.accent};
-  --reader-contrast-text-color: ${draft.solidText};
-  --reader-overlay-scrim-color: color-mix(in srgb, ${draft.pageTextLight} 68%, transparent);
-  --reader-overlay-border-color: color-mix(in srgb, ${draft.pageBgLight} 22%, transparent);
-  --reader-overlay-strong-scrim-color: color-mix(in srgb, ${draft.pageTextLight} 92%, transparent);
-  --reader-card-hover-border-color: ${draft.accent};
-  --reader-card-background-color: ${draft.cardBackground};
-  --reader-card-flat-background-color: ${draft.pageBgLight};
-  --reader-card-border-color: ${draft.cardBorder};
-  --reader-card-border-width: var(--border-width-medium);
-  --reader-card-border-radius: ${draft.cardRadius};
-  --reader-card-shadow: ${draft.cardShadow};
-  --reader-card-shadow-hover: ${draft.cardShadowHover};
-  --reader-card-padding: var(--card-padding);
-  --reader-detail-background-color: ${draft.pageBgLight};
-  --reader-detail-cover-background-color: ${draft.cardBackground};
-  --reader-detail-border-color: ${draft.cardBorder};
-  --reader-detail-border-radius: ${draft.detailRadius};
-  --reader-detail-shadow: ${draft.detailShadow};
-  --reader-detail-padding-x: var(--spacing-xl);
-  --reader-detail-padding-bottom: var(--spacing-2xl);
-  --reader-question-font-size: ${draft.titleSize};
-  --reader-question-watermark-color: ${draft.pageTextLight};
-  --reader-question-watermark-opacity: ${draft.questionWatermarkOpacity};
-  --reader-callout-watermark-opacity: ${draft.calloutWatermarkOpacity};
-  --reader-quote-color: ${draft.pageTextLight};
-  --reader-quote-font-family: ${READER_DRAFT_FONTS[draft.quoteFont]};
-  --reader-quote-font-size: ${draft.subtitleSize};
-  --reader-quote-line-height: var(--line-height-relaxed);
-  --reader-quote-watermark-opacity: ${draft.quoteWatermarkOpacity};
-  --reader-caption-color: color-mix(in srgb, ${draft.pageTextLight} 62%, ${draft.pageBgLight});
-  --reader-caption-font-size: var(--font-size-sm);
-  --reader-tag-background-color: ${draft.solidBackground};
-  --reader-tag-text-color: ${draft.solidText};
-  --reader-tag-border-color: ${draft.solidBorder};
-  --reader-tag-muted-background-color: transparent;
-  --reader-tag-muted-text-color: color-mix(in srgb, ${draft.pageTextLight} 62%, ${draft.pageBgLight});
-  --reader-tag-muted-border-color: ${draft.cardBorder};
-  --reader-media-frame-background-color: ${draft.chromePanel};
-  --reader-media-placeholder-background-color: ${draft.pageBgLight};
-  --reader-media-control-background-color: ${draft.chromePanel};
-  --reader-media-control-background-color-hover: ${draft.cardBackground};
-  --reader-media-control-text-color: ${draft.solidText};
-  --reader-media-scrollbar-track-color: ${draft.chromePanel};
-  --reader-media-scrollbar-thumb-color: ${draft.cardBorder};
-  --reader-media-scrollbar-thumb-hover-color: ${draft.pageTextLight};
-  --reader-lightbox-overlay-background-color: color-mix(in srgb, ${draft.pageTextDark} 90%, transparent);
-  --reader-lightbox-control-background-color: color-mix(in srgb, ${draft.pageTextDark} 70%, transparent);
-  --reader-lightbox-control-border-color: color-mix(in srgb, ${draft.pageBgDark} 24%, transparent);
-  --reader-lightbox-control-text-color: ${draft.solidText};
-  --reader-lightbox-caption-text-color: ${draft.solidText};
-  --reader-discovery-border-color: ${draft.cardBorder};
-  --reader-discovery-title-color: ${draft.pageTextLight};
-  --reader-discovery-meta-color: color-mix(in srgb, ${draft.pageTextLight} 62%, ${draft.pageBgLight});
-  --reader-discovery-card-background-color: ${draft.pageBgLight};
-  --reader-discovery-card-border-color: ${draft.cardBorder};
-  --reader-discovery-card-hover-border-color: ${draft.accent};
-}
+const FONT_SIZE_OPTIONS: ThemeRecipeTokenRef[] = [
+  'font-size/xs',
+  'font-size/sm',
+  'font-size/base',
+  'font-size/lg',
+  'font-size/xl',
+  'font-size/2xl',
+  'font-size/3xl',
+  'font-size/4xl',
+];
 
-.${readerScopeClass}[data-theme="dark"] {
-  --reader-page-background-color: ${draft.pageBgDark};
-  --reader-page-text-color: ${draft.pageTextDark};
-  --reader-page-border-color: color-mix(in srgb, ${draft.pageTextDark} 18%, ${draft.pageBgDark});
-  --reader-chrome-background-color: ${draft.pageBgDark};
-  --reader-chrome-panel-color: color-mix(in srgb, ${draft.pageBgDark} 88%, ${draft.pageTextDark});
-  --reader-chrome-border-color: color-mix(in srgb, ${draft.pageTextDark} 16%, ${draft.pageBgDark});
-  --reader-chrome-text-color: ${draft.pageTextDark};
-  --reader-chrome-muted-color: color-mix(in srgb, ${draft.pageTextDark} 64%, ${draft.pageBgDark});
-  --reader-chrome-control-background-color: ${draft.pageBgDark};
-  --reader-chrome-control-hover-background-color: color-mix(in srgb, ${draft.pageBgDark} 86%, ${draft.pageTextDark});
-  --reader-chrome-control-subtle-hover-background-color: color-mix(in srgb, ${draft.pageTextDark} 14%, transparent);
-  --reader-title-color: ${draft.pageTextDark};
-  --reader-subtitle-color: color-mix(in srgb, ${draft.pageTextDark} 72%, ${draft.pageBgDark});
-  --reader-excerpt-color: color-mix(in srgb, ${draft.pageTextDark} 68%, ${draft.pageBgDark});
-  --reader-body-color: ${draft.pageTextDark};
-  --reader-meta-color: color-mix(in srgb, ${draft.pageTextDark} 62%, ${draft.pageBgDark});
-  --reader-card-background-color: color-mix(in srgb, ${draft.pageBgDark} 88%, ${draft.pageTextDark});
-  --reader-card-flat-background-color: ${draft.pageBgDark};
-  --reader-card-border-color: color-mix(in srgb, ${draft.pageTextDark} 16%, ${draft.pageBgDark});
-  --reader-detail-background-color: ${draft.pageBgDark};
-  --reader-detail-cover-background-color: color-mix(in srgb, ${draft.pageBgDark} 88%, ${draft.pageTextDark});
-  --reader-detail-border-color: color-mix(in srgb, ${draft.pageTextDark} 16%, ${draft.pageBgDark});
-  --reader-question-watermark-color: ${draft.pageTextDark};
-  --reader-quote-color: ${draft.pageTextDark};
-  --reader-caption-color: color-mix(in srgb, ${draft.pageTextDark} 62%, ${draft.pageBgDark});
-  --reader-tag-muted-text-color: color-mix(in srgb, ${draft.pageTextDark} 62%, ${draft.pageBgDark});
-  --reader-tag-muted-border-color: color-mix(in srgb, ${draft.pageTextDark} 16%, ${draft.pageBgDark});
-  --reader-media-frame-background-color: color-mix(in srgb, ${draft.pageBgDark} 88%, ${draft.pageTextDark});
-  --reader-media-placeholder-background-color: ${draft.pageBgDark};
-  --reader-media-control-background-color: color-mix(in srgb, ${draft.pageBgDark} 88%, ${draft.pageTextDark});
-  --reader-media-control-background-color-hover: color-mix(in srgb, ${draft.pageBgDark} 82%, ${draft.pageTextDark});
-  --reader-media-scrollbar-track-color: color-mix(in srgb, ${draft.pageBgDark} 88%, ${draft.pageTextDark});
-  --reader-media-scrollbar-thumb-color: color-mix(in srgb, ${draft.pageTextDark} 16%, ${draft.pageBgDark});
-  --reader-media-scrollbar-thumb-hover-color: ${draft.pageTextDark};
-  --reader-discovery-border-color: color-mix(in srgb, ${draft.pageTextDark} 16%, ${draft.pageBgDark});
-  --reader-discovery-title-color: ${draft.pageTextDark};
-  --reader-discovery-meta-color: color-mix(in srgb, ${draft.pageTextDark} 62%, ${draft.pageBgDark});
-  --reader-discovery-card-background-color: ${draft.pageBgDark};
-  --reader-discovery-card-border-color: color-mix(in srgb, ${draft.pageTextDark} 16%, ${draft.pageBgDark});
-}
+const FONT_WEIGHT_OPTIONS: ThemeRecipeTokenRef[] = [
+  'font-weight/normal',
+  'font-weight/medium',
+  'font-weight/semibold',
+  'font-weight/bold',
+];
 
-.${adminScopeClass} {
-  --button-solid-background-color: ${draft.solidBackground};
-  --button-solid-text-color: ${draft.solidText};
-  --button-solid-border-color: ${draft.solidBorder};
-}
-`;
+const LINE_HEIGHT_OPTIONS: ThemeRecipeTokenRef[] = [
+  'line-height/base',
+  'line-height/tight',
+  'line-height/relaxed',
+];
+
+const COLOR_ROLE_OPTIONS: ThemeRecipeTokenRef[] = [
+  'literal/typography.textColors.text1',
+  'literal/typography.textColors.text2',
+  'component/tag/textColor',
+  'component/link/textColor',
+  'component/button/solid/textColor',
+  'palette/3',
+];
+
+const SURFACE_BACKGROUND_OPTIONS: ThemeRecipeTokenRef[] = [
+  'layout/background1Color',
+  'layout/background2Color',
+  'component/card/backgroundColor',
+  'component/input/backgroundColor',
+  'palette/3',
+];
+
+const SURFACE_BORDER_OPTIONS: ThemeRecipeTokenRef[] = [
+  'layout/border1Color',
+  'layout/border2Color',
+  'component/card/borderColor',
+  'component/button/solid/borderColor',
+  'component/input/borderColor',
+];
+
+const RADIUS_OPTIONS: ThemeRecipeTokenRef[] = [
+  'border/radius/sm',
+  'border/radius/md',
+  'border/radius/lg',
+  'border/radius/xl',
+  'border/radius/full',
+  'component/card/borderRadius',
+];
+
+const SHADOW_OPTIONS: ThemeRecipeTokenRef[] = [
+  'shadow/sm',
+  'shadow/md',
+  'shadow/lg',
+  'shadow/xl',
+  'component/card/shadow',
+  'component/card/shadowHover',
+];
+
+const PADDING_OPTIONS: ThemeRecipeTokenRef[] = [
+  'spacing/sm',
+  'spacing/md',
+  'spacing/lg',
+  'spacing/xl',
+  'component/card/padding',
+];
+
+const CONTROL_BACKGROUND_OPTIONS: ThemeRecipeTokenRef[] = [
+  'component/button/solid/backgroundColor',
+  'component/button/solid/backgroundColorHover',
+  'layout/background1Color',
+  'layout/background2Color',
+  'gradient/bottomOverlay',
+  'gradient/bottomOverlayStrong',
+  'literal/transparent',
+];
+
+const CONTROL_TEXT_OPTIONS: ThemeRecipeTokenRef[] = [
+  'component/button/solid/textColor',
+  'component/link/textColor',
+  'component/link/textColorHover',
+  'literal/typography.textColors.text1',
+  'literal/typography.textColors.text2',
+];
+
+const CONTROL_BORDER_OPTIONS: ThemeRecipeTokenRef[] = [
+  'component/button/solid/borderColor',
+  'layout/border1Color',
+  'layout/border2Color',
+  'component/card/borderColor',
+];
 
 // Color Palette Editor Component
 const PaletteColorEditor: React.FC<{
@@ -909,7 +804,10 @@ export default function ThemeAdminPage() {
   const router = useRouter();
   const [themeData, setThemeData] = useState<StructuredThemeData | null>(null);
   const [adminThemeData, setAdminThemeData] = useState<StructuredThemeData | null>(null);
-  const [readerDraft, setReaderDraft] = useState<ReaderDraft | null>(null);
+  const [readerRecipes, setReaderRecipes] = useState<ReaderThemeRecipes>(DEFAULT_READER_THEME_RECIPES);
+  const [selectedComponentId, setSelectedComponentId] = useState<string>(CURRENT_READER_THEME_COMPONENTS[0]?.id ?? 'canvas');
+  const [selectedRecipeId, setSelectedRecipeId] = useState<string>(DEFAULT_SELECTED_RECIPE);
+  const [showPreview, setShowPreview] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveNotice, setSaveNotice] = useState<SaveNotice | null>(null);
@@ -939,6 +837,7 @@ export default function ThemeAdminPage() {
           const scoped = data as ScopedThemeDocumentData;
           setThemeData(scoped.reader.data);
           setDarkModeShift(scoped.reader.darkModeShift || 5);
+          setReaderRecipes(scoped.reader.recipes ?? DEFAULT_READER_THEME_RECIPES);
           setActivePresetId(
             scoped.reader.activePresetId === 'journal' || scoped.reader.activePresetId === 'editorial'
               ? scoped.reader.activePresetId
@@ -950,6 +849,7 @@ export default function ThemeAdminPage() {
         } else {
           setThemeData(data);
           setDarkModeShift(data.darkModeShift || 5);
+          setReaderRecipes(DEFAULT_READER_THEME_RECIPES);
           const ap = (data as ThemeDocumentData).activePresetId;
           setActivePresetId(ap === 'journal' || ap === 'editorial' ? ap : 'custom');
           setAdminThemeData(defaultAdminData as StructuredThemeData);
@@ -965,12 +865,6 @@ export default function ThemeAdminPage() {
 
     fetchThemeData();
   }, []);
-
-  useEffect(() => {
-    if (themeData && !readerDraft) {
-      setReaderDraft(createInitialReaderDraft(themeData));
-    }
-  }, [themeData, readerDraft]);
 
   const handleColorChange = (id: number, field: keyof BaseColor | keyof ThemeColor, value: string, variant?: 'light' | 'dark') => {
     if (!themeData) return;
@@ -1190,6 +1084,7 @@ export default function ThemeAdminPage() {
           data: themeData,
           darkModeShift,
           activePresetId,
+          recipes: readerRecipes,
         },
         admin: {
           data: adminThemeData,
@@ -1247,13 +1142,522 @@ export default function ThemeAdminPage() {
     );
   }
 
-  const updateReaderDraft = <K extends keyof ReaderDraft>(key: K, value: ReaderDraft[K]) => {
-    setReaderDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
+  const updateTypographyRecipe = <K extends keyof ReaderThemeRecipes['typography']>(
+    role: K,
+    field: keyof ReaderTypographyRoleRecipe,
+    value: ReaderTypographyRoleRecipe[keyof ReaderTypographyRoleRecipe]
+  ) => {
+    setActivePresetId('custom');
+    setReaderRecipes((prev) => ({
+      ...prev,
+      typography: {
+        ...prev.typography,
+        [role]: {
+          ...prev.typography[role],
+          [field]: value,
+        },
+      },
+    }));
   };
 
-  const readerDraftCss = readerDraft
-    ? buildReaderDraftScopedCss(readerDraft, DRAFT_READER_SCOPE, DRAFT_ADMIN_SCOPE)
-    : '';
+  const updateSurfaceRecipe = <K extends keyof ReaderThemeRecipes['surfaces']>(
+    role: K,
+    field: keyof ReaderThemeRecipes['surfaces'][K],
+    value: ThemeRecipeTokenRef
+  ) => {
+    setActivePresetId('custom');
+    setReaderRecipes((prev) => ({
+      ...prev,
+      surfaces: {
+        ...prev.surfaces,
+        [role]: {
+          ...prev.surfaces[role],
+          [field]: value,
+        },
+      },
+    }));
+  };
+
+  const updateControlRecipe = <
+    K extends Exclude<keyof ReaderThemeRecipes['controls'], 'focusRing' | 'link'>
+  >(
+    role: K,
+    field: keyof ReaderThemeRecipes['controls'][K],
+    value: ThemeRecipeTokenRef
+  ) => {
+    setActivePresetId('custom');
+    setReaderRecipes((prev) => ({
+      ...prev,
+      controls: {
+        ...prev.controls,
+        [role]: {
+          ...prev.controls[role],
+          [field]: value,
+        },
+      },
+    }));
+  };
+
+  const updateLinkRecipe = (
+    field: keyof ReaderThemeRecipes['controls']['link'],
+    value: ThemeRecipeTokenRef
+  ) => {
+    setActivePresetId('custom');
+    setReaderRecipes((prev) => ({
+      ...prev,
+      controls: {
+        ...prev.controls,
+        link: {
+          ...prev.controls.link,
+          [field]: value,
+        },
+      },
+    }));
+  };
+
+  const updateFocusRingRecipe = (value: ThemeRecipeTokenRef) => {
+    setActivePresetId('custom');
+    setReaderRecipes((prev) => ({
+      ...prev,
+      controls: {
+        ...prev.controls,
+        focusRing: {
+          color: value,
+        },
+      },
+    }));
+  };
+
+  const updateTagRecipe = <K extends keyof ReaderThemeRecipes['tags']>(
+    role: K,
+    field: keyof ReaderThemeRecipes['tags'][K],
+    value: ThemeRecipeTokenRef
+  ) => {
+    setActivePresetId('custom');
+    setReaderRecipes((prev) => ({
+      ...prev,
+      tags: {
+        ...prev.tags,
+        [role]: {
+          ...prev.tags[role],
+          [field]: value,
+        },
+      },
+    }));
+  };
+
+  const updateOverlayRecipe = <K extends keyof ReaderThemeRecipes['overlays']>(
+    role: K,
+    field: keyof ReaderThemeRecipes['overlays'][K],
+    value: ThemeRecipeTokenRef
+  ) => {
+    setActivePresetId('custom');
+    setReaderRecipes((prev) => ({
+      ...prev,
+      overlays: {
+        ...prev.overlays,
+        [role]: {
+          ...prev.overlays[role],
+          [field]: value,
+        },
+      },
+    }));
+  };
+
+  const updateIconographyRecipe = (
+    role: keyof ReaderThemeRecipes['iconography'],
+    value: ThemeRecipeTokenRef
+  ) => {
+    setActivePresetId('custom');
+    setReaderRecipes((prev) => ({
+      ...prev,
+      iconography: {
+        ...prev.iconography,
+        [role]: value,
+      },
+    }));
+  };
+
+  const updateTreatmentRecipe = (
+    role: keyof ReaderThemeRecipes['treatments'],
+    value: string
+  ) => {
+    setActivePresetId('custom');
+    setReaderRecipes((prev) => ({
+      ...prev,
+      treatments: {
+        ...prev.treatments,
+        [role]: value,
+      },
+    }));
+  };
+
+  const renderTypographyEditor = (role: keyof ReaderThemeRecipes['typography']) => {
+    const recipe = readerRecipes.typography[role];
+    return (
+      <div className={styles.componentRecipeEditor}>
+        <label className={styles.architectureField}>
+          <span>Family</span>
+          <select value={recipe.family} onChange={(e) => updateTypographyRecipe(role, 'family', e.target.value as ThemeRecipeTokenRef)}>
+            {FONT_FAMILY_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+          </select>
+        </label>
+        <label className={styles.architectureField}>
+          <span>Size</span>
+          <select value={recipe.size} onChange={(e) => updateTypographyRecipe(role, 'size', e.target.value as ThemeRecipeTokenRef)}>
+            {FONT_SIZE_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+          </select>
+        </label>
+        <label className={styles.architectureField}>
+          <span>Weight</span>
+          <select value={recipe.weight} onChange={(e) => updateTypographyRecipe(role, 'weight', e.target.value as ThemeRecipeTokenRef)}>
+            {FONT_WEIGHT_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+          </select>
+        </label>
+        <label className={styles.architectureField}>
+          <span>Line height</span>
+          <select value={recipe.lineHeight} onChange={(e) => updateTypographyRecipe(role, 'lineHeight', e.target.value as ThemeRecipeTokenRef)}>
+            {LINE_HEIGHT_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+          </select>
+        </label>
+        <label className={styles.architectureField}>
+          <span>Color</span>
+          <select value={recipe.color} onChange={(e) => updateTypographyRecipe(role, 'color', e.target.value as ThemeRecipeTokenRef)}>
+            {COLOR_ROLE_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+          </select>
+        </label>
+        <label className={styles.architectureField}>
+          <span>Style</span>
+          <select value={recipe.fontStyle ?? 'normal'} onChange={(e) => updateTypographyRecipe(role, 'fontStyle', e.target.value as 'normal' | 'italic')}>
+            <option value="normal">normal</option>
+            <option value="italic">italic</option>
+          </select>
+        </label>
+      </div>
+    );
+  };
+
+  const renderSurfaceEditor = (role: keyof ReaderThemeRecipes['surfaces']) => {
+    const recipe = readerRecipes.surfaces[role];
+    return (
+      <div className={styles.componentRecipeEditor}>
+        <label className={styles.architectureField}>
+          <span>Background</span>
+          <select value={recipe.background} onChange={(e) => updateSurfaceRecipe(role, 'background', e.target.value as ThemeRecipeTokenRef)}>
+            {SURFACE_BACKGROUND_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+          </select>
+        </label>
+        <label className={styles.architectureField}>
+          <span>Border</span>
+          <select value={recipe.border} onChange={(e) => updateSurfaceRecipe(role, 'border', e.target.value as ThemeRecipeTokenRef)}>
+            {SURFACE_BORDER_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+          </select>
+        </label>
+        {recipe.radius ? (
+          <label className={styles.architectureField}>
+            <span>Radius</span>
+            <select value={recipe.radius} onChange={(e) => updateSurfaceRecipe(role, 'radius', e.target.value as ThemeRecipeTokenRef)}>
+              {RADIUS_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+            </select>
+          </label>
+        ) : null}
+        {recipe.shadow ? (
+          <label className={styles.architectureField}>
+            <span>Shadow</span>
+            <select value={recipe.shadow} onChange={(e) => updateSurfaceRecipe(role, 'shadow', e.target.value as ThemeRecipeTokenRef)}>
+              {SHADOW_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+            </select>
+          </label>
+        ) : null}
+        {recipe.shadowHover ? (
+          <label className={styles.architectureField}>
+            <span>Hover shadow</span>
+            <select value={recipe.shadowHover} onChange={(e) => updateSurfaceRecipe(role, 'shadowHover', e.target.value as ThemeRecipeTokenRef)}>
+              {SHADOW_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+            </select>
+          </label>
+        ) : null}
+        {recipe.padding ? (
+          <label className={styles.architectureField}>
+            <span>Padding</span>
+            <select value={recipe.padding} onChange={(e) => updateSurfaceRecipe(role, 'padding', e.target.value as ThemeRecipeTokenRef)}>
+              {PADDING_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+            </select>
+          </label>
+        ) : null}
+      </div>
+    );
+  };
+
+  const renderControlEditor = (role: keyof ReaderThemeRecipes['controls']) => {
+    if (role === 'focusRing') {
+      return (
+        <div className={styles.componentRecipeEditor}>
+          <label className={styles.architectureField}>
+            <span>Color</span>
+            <select value={readerRecipes.controls.focusRing.color} onChange={(e) => updateFocusRingRecipe(e.target.value as ThemeRecipeTokenRef)}>
+              {COLOR_ROLE_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+            </select>
+          </label>
+        </div>
+      );
+    }
+
+    if (role === 'link') {
+      const recipe = readerRecipes.controls.link;
+      return (
+        <div className={styles.componentRecipeEditor}>
+          <label className={styles.architectureField}>
+            <span>Text</span>
+            <select value={recipe.text} onChange={(e) => updateLinkRecipe('text', e.target.value as ThemeRecipeTokenRef)}>
+              {CONTROL_TEXT_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+            </select>
+          </label>
+          <label className={styles.architectureField}>
+            <span>Hover text</span>
+            <select value={recipe.hoverText ?? CONTROL_TEXT_OPTIONS[0]} onChange={(e) => updateLinkRecipe('hoverText', e.target.value as ThemeRecipeTokenRef)}>
+              {CONTROL_TEXT_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+            </select>
+          </label>
+          <label className={styles.architectureField}>
+            <span>Hover background</span>
+            <select value={recipe.hoverBackground ?? CONTROL_BACKGROUND_OPTIONS[0]} onChange={(e) => updateLinkRecipe('hoverBackground', e.target.value as ThemeRecipeTokenRef)}>
+              {CONTROL_BACKGROUND_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+            </select>
+          </label>
+        </div>
+      );
+    }
+
+    const recipe = readerRecipes.controls[role];
+    return (
+      <div className={styles.componentRecipeEditor}>
+        <label className={styles.architectureField}>
+          <span>Background</span>
+          <select value={recipe.background} onChange={(e) => updateControlRecipe(role, 'background', e.target.value as ThemeRecipeTokenRef)}>
+            {CONTROL_BACKGROUND_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+          </select>
+        </label>
+        <label className={styles.architectureField}>
+          <span>Text</span>
+          <select value={recipe.text} onChange={(e) => updateControlRecipe(role, 'text', e.target.value as ThemeRecipeTokenRef)}>
+            {CONTROL_TEXT_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+          </select>
+        </label>
+        <label className={styles.architectureField}>
+          <span>Border</span>
+          <select value={recipe.border} onChange={(e) => updateControlRecipe(role, 'border', e.target.value as ThemeRecipeTokenRef)}>
+            {CONTROL_BORDER_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+          </select>
+        </label>
+        {recipe.hoverBackground ? (
+          <label className={styles.architectureField}>
+            <span>Hover background</span>
+            <select value={recipe.hoverBackground} onChange={(e) => updateControlRecipe(role, 'hoverBackground', e.target.value as ThemeRecipeTokenRef)}>
+              {CONTROL_BACKGROUND_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+            </select>
+          </label>
+        ) : null}
+      </div>
+    );
+  };
+
+  const renderTagEditor = (role: keyof ReaderThemeRecipes['tags']) => {
+    const recipe = readerRecipes.tags[role];
+    return (
+      <div className={styles.componentRecipeEditor}>
+        <label className={styles.architectureField}>
+          <span>Background</span>
+          <select value={recipe.background} onChange={(e) => updateTagRecipe(role, 'background', e.target.value as ThemeRecipeTokenRef)}>
+            {CONTROL_BACKGROUND_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+          </select>
+        </label>
+        <label className={styles.architectureField}>
+          <span>Text</span>
+          <select value={recipe.text} onChange={(e) => updateTagRecipe(role, 'text', e.target.value as ThemeRecipeTokenRef)}>
+            {CONTROL_TEXT_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+          </select>
+        </label>
+        <label className={styles.architectureField}>
+          <span>Border</span>
+          <select value={recipe.border} onChange={(e) => updateTagRecipe(role, 'border', e.target.value as ThemeRecipeTokenRef)}>
+            {CONTROL_BORDER_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+          </select>
+        </label>
+        {recipe.hoverBackground ? (
+          <label className={styles.architectureField}>
+            <span>Hover background</span>
+            <select value={recipe.hoverBackground} onChange={(e) => updateTagRecipe(role, 'hoverBackground', e.target.value as ThemeRecipeTokenRef)}>
+              {CONTROL_BACKGROUND_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+            </select>
+          </label>
+        ) : null}
+      </div>
+    );
+  };
+
+  const renderOverlayEditor = (role: keyof ReaderThemeRecipes['overlays']) => {
+    const recipe = readerRecipes.overlays[role];
+    return (
+      <div className={styles.componentRecipeEditor}>
+        <label className={styles.architectureField}>
+          <span>Background</span>
+          <select value={recipe.background} onChange={(e) => updateOverlayRecipe(role, 'background', e.target.value as ThemeRecipeTokenRef)}>
+            {CONTROL_BACKGROUND_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+          </select>
+        </label>
+        <label className={styles.architectureField}>
+          <span>Text</span>
+          <select value={recipe.text} onChange={(e) => updateOverlayRecipe(role, 'text', e.target.value as ThemeRecipeTokenRef)}>
+            {CONTROL_TEXT_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+          </select>
+        </label>
+        {recipe.border ? (
+          <label className={styles.architectureField}>
+            <span>Border</span>
+            <select value={recipe.border} onChange={(e) => updateOverlayRecipe(role, 'border', e.target.value as ThemeRecipeTokenRef)}>
+              {CONTROL_BORDER_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+            </select>
+          </label>
+        ) : null}
+      </div>
+    );
+  };
+
+  const renderIconographyEditor = (role: keyof ReaderThemeRecipes['iconography']) => (
+    <div className={styles.componentRecipeEditor}>
+      <label className={styles.architectureField}>
+        <span>Color</span>
+        <select value={readerRecipes.iconography[role]} onChange={(e) => updateIconographyRecipe(role, e.target.value as ThemeRecipeTokenRef)}>
+          {COLOR_ROLE_OPTIONS.map((option) => <option key={option} value={option}>{formatTokenRef(option)}</option>)}
+        </select>
+      </label>
+    </div>
+  );
+
+  const renderTreatmentEditor = (role: keyof ReaderThemeRecipes['treatments']) => (
+    <div className={styles.componentRecipeEditor}>
+      <label className={styles.architectureField}>
+        <span>Value</span>
+        <input
+          type="text"
+          value={readerRecipes.treatments[role]}
+          onChange={(e) => updateTreatmentRecipe(role, e.target.value)}
+          className={styles.componentRecipeInput}
+        />
+      </label>
+    </div>
+  );
+
+  const renderBindingEditor = (kind: string, key: string) => {
+    switch (kind) {
+      case 'typography':
+        return renderTypographyEditor(key as keyof ReaderThemeRecipes['typography']);
+      case 'surface':
+        return renderSurfaceEditor(key as keyof ReaderThemeRecipes['surfaces']);
+      case 'control':
+        return renderControlEditor(key as keyof ReaderThemeRecipes['controls']);
+      case 'tag':
+        return renderTagEditor(key as keyof ReaderThemeRecipes['tags']);
+      case 'overlay':
+        return renderOverlayEditor(key as keyof ReaderThemeRecipes['overlays']);
+      case 'iconography':
+        return renderIconographyEditor(key as keyof ReaderThemeRecipes['iconography']);
+      case 'treatment':
+        return renderTreatmentEditor(key as keyof ReaderThemeRecipes['treatments']);
+      default:
+        return null;
+    }
+  };
+
+  const renderBindingSummary = (kind: string, key: string) => {
+    switch (kind) {
+      case 'typography': {
+        const recipe = readerRecipes.typography[key as keyof ReaderThemeRecipes['typography']];
+        return (
+          <div className={styles.architectureRecipe}>
+            <code>{formatTokenRef(recipe.family)}</code>
+            <code>{formatTokenRef(recipe.size)}</code>
+            <code>{formatTokenRef(recipe.weight)}</code>
+            <code>{formatTokenRef(recipe.lineHeight)}</code>
+            <code>{formatTokenRef(recipe.color)}</code>
+            {recipe.fontStyle ? <code>{recipe.fontStyle}</code> : null}
+          </div>
+        );
+      }
+      case 'surface': {
+        const recipe = readerRecipes.surfaces[key as keyof ReaderThemeRecipes['surfaces']];
+        return (
+          <div className={styles.architectureRecipe}>
+            <code>{formatTokenRef(recipe.background)}</code>
+            <code>{formatTokenRef(recipe.border)}</code>
+            {recipe.radius ? <code>{formatTokenRef(recipe.radius)}</code> : null}
+            {recipe.shadow ? <code>{formatTokenRef(recipe.shadow)}</code> : null}
+            {recipe.shadowHover ? <code>{formatTokenRef(recipe.shadowHover)}</code> : null}
+            {recipe.padding ? <code>{formatTokenRef(recipe.padding)}</code> : null}
+          </div>
+        );
+      }
+      case 'control': {
+        const recipe = readerRecipes.controls[key as keyof ReaderThemeRecipes['controls']];
+        if ('color' in recipe) {
+          return (
+            <div className={styles.architectureRecipe}>
+              <code>{formatTokenRef(recipe.color)}</code>
+            </div>
+          );
+        }
+        return (
+          <div className={styles.architectureRecipe}>
+            {'background' in recipe ? <code>{formatTokenRef(recipe.background)}</code> : null}
+            {'text' in recipe ? <code>{formatTokenRef(recipe.text)}</code> : null}
+            {'border' in recipe ? <code>{formatTokenRef(recipe.border)}</code> : null}
+            {'hoverBackground' in recipe && recipe.hoverBackground ? <code>{formatTokenRef(recipe.hoverBackground)}</code> : null}
+            {'hoverText' in recipe && recipe.hoverText ? <code>{formatTokenRef(recipe.hoverText)}</code> : null}
+          </div>
+        );
+      }
+      case 'tag': {
+        const recipe = readerRecipes.tags[key as keyof ReaderThemeRecipes['tags']];
+        return (
+          <div className={styles.architectureRecipe}>
+            <code>{formatTokenRef(recipe.background)}</code>
+            <code>{formatTokenRef(recipe.text)}</code>
+            <code>{formatTokenRef(recipe.border)}</code>
+            {recipe.hoverBackground ? <code>{formatTokenRef(recipe.hoverBackground)}</code> : null}
+          </div>
+        );
+      }
+      case 'overlay': {
+        const recipe = readerRecipes.overlays[key as keyof ReaderThemeRecipes['overlays']];
+        return (
+          <div className={styles.architectureRecipe}>
+            <code>{formatTokenRef(recipe.background)}</code>
+            <code>{formatTokenRef(recipe.text)}</code>
+            {recipe.border ? <code>{formatTokenRef(recipe.border)}</code> : null}
+          </div>
+        );
+      }
+      case 'iconography':
+        return (
+          <div className={styles.architectureRecipe}>
+            <code>{formatTokenRef(readerRecipes.iconography[key as keyof ReaderThemeRecipes['iconography']])}</code>
+          </div>
+        );
+      case 'treatment':
+        return (
+          <div className={styles.architectureRecipe}>
+            <code>{readerRecipes.treatments[key as keyof ReaderThemeRecipes['treatments']]}</code>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const [selectedKind, selectedKey] = selectedRecipeId.split(':') as [string, string];
+  const selectedComponent = CURRENT_READER_THEME_COMPONENTS.find((component) => component.id === selectedComponentId)
+    ?? CURRENT_READER_THEME_COMPONENTS[0];
 
   return (
     <div className={styles.adminContainer}>
@@ -1287,170 +1691,124 @@ export default function ThemeAdminPage() {
       </div>
 
       <main className={styles.mainContent}>
-        {readerDraft ? (
-          <section className={styles.readerDraftWorkbench}>
-            <div className={styles.readerDraftHeader}>
-              <div>
-                <h2 className={styles.readerDraftTitle}>Reader Theme Draft</h2>
-                <p className={styles.readerDraftText}>
-                  Preview-only semantic controls. This does not change the live app theme.
-                </p>
-              </div>
+        <div className={styles.themeWorkspaceGrid}>
+          <section className={`${styles.architectureWorkbench} ${styles.previewPane}`}>
+            <div className={styles.architectureHeader}>
+              <h2 className={styles.architectureTitle}>Preview</h2>
+              <button
+                type="button"
+                onClick={() => setShowPreview((prev) => !prev)}
+                className={styles.presetApplyButton}
+              >
+                {showPreview ? 'Hide preview' : 'Show preview'}
+              </button>
             </div>
-
-            <div className={styles.readerDraftGrid}>
-              <div className={styles.readerDraftCard}>
-                <h3>Page and Surfaces</h3>
-                <label className={styles.readerDraftField}>
-                  <span>Page light</span>
-                  <input type="color" value={readerDraft.pageBgLight} onChange={(e) => updateReaderDraft('pageBgLight', e.target.value)} />
-                </label>
-                <label className={styles.readerDraftField}>
-                  <span>Page dark</span>
-                  <input type="color" value={readerDraft.pageBgDark} onChange={(e) => updateReaderDraft('pageBgDark', e.target.value)} />
-                </label>
-                <label className={styles.readerDraftField}>
-                  <span>Chrome panel</span>
-                  <input type="color" value={readerDraft.chromePanel} onChange={(e) => updateReaderDraft('chromePanel', e.target.value)} />
-                </label>
-                <label className={styles.readerDraftField}>
-                  <span>Card background</span>
-                  <input type="color" value={readerDraft.cardBackground} onChange={(e) => updateReaderDraft('cardBackground', e.target.value)} />
-                </label>
-                <label className={styles.readerDraftField}>
-                  <span>Card border</span>
-                  <input type="color" value={readerDraft.cardBorder} onChange={(e) => updateReaderDraft('cardBorder', e.target.value)} />
-                </label>
-              </div>
-
-              <div className={styles.readerDraftCard}>
-                <h3>Text and Accent</h3>
-                <label className={styles.readerDraftField}>
-                  <span>Text light</span>
-                  <input type="color" value={readerDraft.pageTextLight} onChange={(e) => updateReaderDraft('pageTextLight', e.target.value)} />
-                </label>
-                <label className={styles.readerDraftField}>
-                  <span>Text dark</span>
-                  <input type="color" value={readerDraft.pageTextDark} onChange={(e) => updateReaderDraft('pageTextDark', e.target.value)} />
-                </label>
-                <label className={styles.readerDraftField}>
-                  <span>Accent</span>
-                  <input type="color" value={readerDraft.accent} onChange={(e) => updateReaderDraft('accent', e.target.value)} />
-                </label>
-                <label className={styles.readerDraftField}>
-                  <span>Solid fill</span>
-                  <input type="color" value={readerDraft.solidBackground} onChange={(e) => updateReaderDraft('solidBackground', e.target.value)} />
-                </label>
-                <label className={styles.readerDraftField}>
-                  <span>Solid text</span>
-                  <input type="color" value={readerDraft.solidText} onChange={(e) => updateReaderDraft('solidText', e.target.value)} />
-                </label>
-              </div>
-
-              <div className={styles.readerDraftCard}>
-                <h3>Type</h3>
-                <label className={styles.readerDraftField}>
-                  <span>Title font</span>
-                  <select value={readerDraft.titleFont} onChange={(e) => updateReaderDraft('titleFont', e.target.value as ReaderDraftFontKey)}>
-                    <option value="systemSans">System Sans</option>
-                    <option value="serif">Serif</option>
-                    <option value="display">Display</option>
-                  </select>
-                </label>
-                <label className={styles.readerDraftField}>
-                  <span>Body font</span>
-                  <select value={readerDraft.bodyFont} onChange={(e) => updateReaderDraft('bodyFont', e.target.value as ReaderDraftFontKey)}>
-                    <option value="systemSans">System Sans</option>
-                    <option value="serif">Serif</option>
-                  </select>
-                </label>
-                <label className={styles.readerDraftField}>
-                  <span>Quote font</span>
-                  <select value={readerDraft.quoteFont} onChange={(e) => updateReaderDraft('quoteFont', e.target.value as ReaderDraftFontKey)}>
-                    <option value="systemSans">System Sans</option>
-                    <option value="serif">Serif</option>
-                    <option value="display">Display</option>
-                  </select>
-                </label>
-                <label className={styles.readerDraftField}>
-                  <span>Title size</span>
-                  <input type="text" value={readerDraft.titleSize} onChange={(e) => updateReaderDraft('titleSize', e.target.value)} />
-                </label>
-                <label className={styles.readerDraftField}>
-                  <span>Detail title</span>
-                  <input type="text" value={readerDraft.detailTitleSize} onChange={(e) => updateReaderDraft('detailTitleSize', e.target.value)} />
-                </label>
-                <label className={styles.readerDraftField}>
-                  <span>Body size</span>
-                  <input type="text" value={readerDraft.bodySize} onChange={(e) => updateReaderDraft('bodySize', e.target.value)} />
-                </label>
-                <label className={styles.readerDraftField}>
-                  <span>Subtitle size</span>
-                  <input type="text" value={readerDraft.subtitleSize} onChange={(e) => updateReaderDraft('subtitleSize', e.target.value)} />
-                </label>
-                <label className={styles.readerDraftField}>
-                  <span>Subtitle style</span>
-                  <select value={readerDraft.subtitleStyle} onChange={(e) => updateReaderDraft('subtitleStyle', e.target.value as 'normal' | 'italic')}>
-                    <option value="italic">Italic</option>
-                    <option value="normal">Normal</option>
-                  </select>
-                </label>
-              </div>
-
-              <div className={styles.readerDraftCard}>
-                <h3>Shape and Emphasis</h3>
-                <label className={styles.readerDraftField}>
-                  <span>Card radius</span>
-                  <input type="text" value={readerDraft.cardRadius} onChange={(e) => updateReaderDraft('cardRadius', e.target.value)} />
-                </label>
-                <label className={styles.readerDraftField}>
-                  <span>Detail radius</span>
-                  <input type="text" value={readerDraft.detailRadius} onChange={(e) => updateReaderDraft('detailRadius', e.target.value)} />
-                </label>
-                <label className={styles.readerDraftField}>
-                  <span>Card shadow</span>
-                  <input type="text" value={readerDraft.cardShadow} onChange={(e) => updateReaderDraft('cardShadow', e.target.value)} />
-                </label>
-                <label className={styles.readerDraftField}>
-                  <span>Card hover shadow</span>
-                  <input type="text" value={readerDraft.cardShadowHover} onChange={(e) => updateReaderDraft('cardShadowHover', e.target.value)} />
-                </label>
-                <label className={styles.readerDraftField}>
-                  <span>Detail shadow</span>
-                  <input type="text" value={readerDraft.detailShadow} onChange={(e) => updateReaderDraft('detailShadow', e.target.value)} />
-                </label>
-                <label className={styles.readerDraftField}>
-                  <span>Quote watermark</span>
-                  <input type="number" min="0" max="1" step="0.01" value={readerDraft.quoteWatermarkOpacity} onChange={(e) => updateReaderDraft('quoteWatermarkOpacity', e.target.value)} />
-                </label>
-                <label className={styles.readerDraftField}>
-                  <span>Question watermark</span>
-                  <input type="number" min="0" max="1" step="0.01" value={readerDraft.questionWatermarkOpacity} onChange={(e) => updateReaderDraft('questionWatermarkOpacity', e.target.value)} />
-                </label>
-                <label className={styles.readerDraftField}>
-                  <span>Callout watermark</span>
-                  <input type="number" min="0" max="1" step="0.01" value={readerDraft.calloutWatermarkOpacity} onChange={(e) => updateReaderDraft('calloutWatermarkOpacity', e.target.value)} />
-                </label>
-              </div>
+            <div className={styles.paneBody}>
+              {showPreview ? (
+                <ThemeReaderPreview
+                  themeData={themeData}
+                  darkModeShift={darkModeShift}
+                  adminThemeData={adminThemeData}
+                  adminDarkModeShift={adminDarkModeShift}
+                  activePresetId={activePresetId}
+                  readerRecipes={readerRecipes}
+                />
+              ) : (
+                <div className={styles.previewStandby}>
+                  Preview is paused until you open it.
+                </div>
+              )}
             </div>
           </section>
-        ) : null}
 
-        <ThemeReaderPreview
-          themeData={themeData}
-          darkModeShift={darkModeShift}
-          adminThemeData={adminThemeData}
-          adminDarkModeShift={adminDarkModeShift}
-          activePresetId="custom"
-          readerScopeClass={DRAFT_READER_SCOPE}
-          adminScopeClass={DRAFT_ADMIN_SCOPE}
-          extraScopedCss={readerDraftCss}
-          readerControls={
-            <div className={styles.readerPreviewModeToggle}>
-              <span className={styles.readerDraftBadge}>Draft semantic system preview</span>
+          <section className={`${styles.architectureWorkbench} ${styles.systemPane}`}>
+            <div className={styles.architectureHeader}>
+              <h2 className={styles.architectureTitle}>Reader Theme System</h2>
             </div>
-          }
-        />
+            <div className={styles.paneBody}>
+              <section className={styles.architectureCard}>
+                <div className={styles.componentSelectorRow}>
+                  {CURRENT_READER_THEME_COMPONENTS.map((component) => (
+                    <button
+                      key={component.id}
+                      type="button"
+                      className={component.id === selectedComponentId ? styles.componentSelectorActive : styles.componentSelectorButton}
+                      onClick={() => setSelectedComponentId(component.id)}
+                    >
+                      {component.label}
+                    </button>
+                  ))}
+                </div>
+                <div className={styles.componentEditorPanel}>
+                  <div className={styles.componentEditorHeader}>
+                    <strong>Recipe editor</strong>
+                    <span>{formatRoleLabel(selectedKind)} / {formatRoleLabel(selectedKey)}</span>
+                  </div>
+                  {renderBindingEditor(selectedKind, selectedKey)}
+                </div>
+                <div className={styles.componentInventory}>
+                  {selectedComponent ? (
+                    <section key={selectedComponent.id} className={styles.componentSection}>
+                      <div className={styles.componentSectionHeader}>
+                        <div>
+                          <h4 className={styles.componentTitle}>{selectedComponent.label}</h4>
+                          <p className={styles.componentDescription}>{selectedComponent.description}</p>
+                        </div>
+                      </div>
+
+                      <div className={styles.componentVariantStack}>
+                        {selectedComponent.variants.map((variant) => (
+                          <div key={variant.id} className={styles.componentVariantCard}>
+                            <div className={styles.componentVariantHeader}>
+                              <strong>{variant.label}</strong>
+                              {variant.description ? <span>{variant.description}</span> : null}
+                            </div>
+                            <div className={styles.componentTableWrap}>
+                              <table className={styles.componentTable}>
+                                <thead>
+                                  <tr>
+                                    <th>Element</th>
+                                    <th>Recipe</th>
+                                    <th>Current tokens</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {variant.elements.map((element) => (
+                                    <tr
+                                      key={element.id}
+                                      className={selectedRecipeId === `${element.binding.kind}:${element.binding.key}` ? styles.componentRowSelected : undefined}
+                                    >
+                                      <td>
+                                        <div className={styles.componentElementLabel}>{element.label}</div>
+                                        {element.description ? (
+                                          <div className={styles.componentElementNote}>{element.description}</div>
+                                        ) : null}
+                                      </td>
+                                      <td>
+                                        <button
+                                          type="button"
+                                          className={styles.componentBindingButton}
+                                          onClick={() => setSelectedRecipeId(`${element.binding.kind}:${element.binding.key}`)}
+                                        >
+                                          {formatRoleLabel(element.binding.kind)} / {formatRoleLabel(element.binding.key)}
+                                        </button>
+                                      </td>
+                                      <td>{renderBindingSummary(element.binding.kind, element.binding.key)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  ) : null}
+                </div>
+              </section>
+            </div>
+          </section>
+        </div>
 
         <details className={styles.advancedPanel}>
           <summary className={styles.advancedSummary}>

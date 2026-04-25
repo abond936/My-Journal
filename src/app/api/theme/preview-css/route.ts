@@ -57,7 +57,10 @@ export async function POST(request: Request) {
         ? body.scopeSelector
         : null;
     const scope = customScope ?? (body?.scope === 'admin' ? ADMIN_PREVIEW_SCOPE : READER_PREVIEW_SCOPE);
-    const cleaned = themeDataForCssGeneration(themeData);
+    const cleaned = themeDataForCssGeneration({
+      ...themeData,
+      recipes: body?.recipes ?? themeData?.recipes,
+    });
     const raw = buildThemeTokensCss(cleaned);
     const css = scopeThemeTokensCss(raw, scope);
     return NextResponse.json({ css });
