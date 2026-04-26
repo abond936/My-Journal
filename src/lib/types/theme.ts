@@ -354,15 +354,25 @@ export interface ReaderThemeRecipes {
     title: ReaderTypographyRoleRecipe;
     storyTitle: ReaderTypographyRoleRecipe;
     galleryTitle: ReaderTypographyRoleRecipe;
+    galleryHeaderTitle: ReaderTypographyRoleRecipe;
     titleCompact: ReaderTypographyRoleRecipe;
     detailTitle: ReaderTypographyRoleRecipe;
     storyDetailTitle: ReaderTypographyRoleRecipe;
     galleryDetailTitle: ReaderTypographyRoleRecipe;
+    discoveryTitle: ReaderTypographyRoleRecipe;
+    discoveryMeta: ReaderTypographyRoleRecipe;
+    railSectionTitle: ReaderTypographyRoleRecipe;
+    railCardTitle: ReaderTypographyRoleRecipe;
     subtitle: ReaderTypographyRoleRecipe;
     body: ReaderTypographyRoleRecipe;
     excerpt: ReaderTypographyRoleRecipe;
     meta: ReaderTypographyRoleRecipe;
     caption: ReaderTypographyRoleRecipe;
+    supportTitle: ReaderTypographyRoleRecipe;
+    supportLabel: ReaderTypographyRoleRecipe;
+    supportMeta: ReaderTypographyRoleRecipe;
+    supportHint: ReaderTypographyRoleRecipe;
+    supportControl: ReaderTypographyRoleRecipe;
     quote: ReaderTypographyRoleRecipe;
     question: ReaderTypographyRoleRecipe;
     calloutTitle: ReaderTypographyRoleRecipe;
@@ -379,6 +389,8 @@ export interface ReaderThemeRecipes {
   };
   controls: {
     solid: ReaderControlRoleRecipe;
+    supportControl: ReaderControlRoleRecipe;
+    supportControlStrong: ReaderControlRoleRecipe;
     filterChip: ReaderControlRoleRecipe;
     mediaControl: ReaderControlRoleRecipe;
     lightboxControl: ReaderControlRoleRecipe;
@@ -423,6 +435,29 @@ export interface ScopedThemeDocumentData {
   version: 2;
   reader: ScopedThemeSettings;
   admin: ScopedThemeSettings;
+}
+
+/**
+ * Save-ready persisted theme contract.
+ * The stored document is always scoped (`reader` + `admin`) and always
+ * materializes the atomic theme data needed for runtime rendering.
+ * Preset ids are retained as metadata for UX and future editing flows.
+ */
+export interface PersistedThemeDocumentData extends ScopedThemeDocumentData {
+  version: 2;
+}
+
+export interface ResolvedScopedThemeSettings {
+  data: StructuredThemeData;
+  activePresetId: ReaderThemePresetId | AdminThemePresetId | 'custom';
+  darkModeShift: number;
+  recipes?: ReaderThemeRecipes;
+}
+
+export interface ResolvedScopedThemeDocumentData {
+  version: 2;
+  reader: ResolvedScopedThemeSettings;
+  admin: ResolvedScopedThemeSettings;
 }
 
 /**

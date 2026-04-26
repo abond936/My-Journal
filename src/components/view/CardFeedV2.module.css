@@ -9,8 +9,12 @@
 }
 
 .header h1 {
-  font-size: var(--font-size-2xl);
+  font-family: var(--reader-discovery-title-font-family);
+  font-size: var(--reader-discovery-title-font-size);
+  font-weight: var(--reader-discovery-title-font-weight);
+  line-height: var(--reader-discovery-title-line-height);
   margin: 0;
+  color: var(--reader-page-text-color);
 }
 
 .feedMain {
@@ -27,30 +31,39 @@
 
 .emptyFeedTitle {
   margin: 0 0 var(--spacing-sm);
-  color: var(--reader-page-text-color);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
+  color: var(--reader-support-title-color);
+  font-family: var(--reader-support-title-font-family);
+  font-size: var(--reader-support-title-font-size);
+  font-weight: var(--reader-support-title-font-weight);
+  line-height: var(--reader-support-title-line-height);
 }
 
 .emptyFeedHint {
   margin: 0 0 var(--spacing-md);
-  color: var(--reader-meta-color);
-  font-size: var(--font-size-base);
-  line-height: var(--line-height-relaxed);
+  color: var(--reader-support-hint-color);
+  font-family: var(--reader-support-hint-font-family);
+  font-size: var(--reader-support-hint-font-size);
+  font-weight: var(--reader-support-hint-font-weight);
+  line-height: var(--reader-support-hint-line-height);
 }
 
 .emptyClearButton {
   padding: var(--spacing-sm) var(--spacing-lg);
-  font-size: var(--font-size-sm);
+  font-family: var(--reader-support-control-font-family);
+  font-size: var(--reader-support-control-font-size);
+  font-weight: var(--reader-support-control-font-weight);
+  line-height: var(--reader-support-control-line-height);
   cursor: pointer;
   border-radius: var(--border-radius-lg);
-  border: var(--border-width-medium) solid var(--reader-chrome-border-color);
-  background: var(--reader-chrome-panel-color);
-  color: var(--reader-chrome-text-color);
+  border: var(--border-width-medium) solid var(--reader-support-control-border-color);
+  background: var(--reader-support-control-background-color);
+  color: var(--reader-support-control-text-color);
 }
 
 .emptyClearButton:hover {
-  background: var(--reader-chrome-control-background-color);
+  background: var(--reader-support-control-strong-background-color);
+  border-color: var(--reader-support-control-strong-border-color);
+  color: var(--reader-support-control-strong-text-color);
 }
 
 .groupSection {
@@ -61,8 +74,10 @@
 
 .groupHeading {
   margin: 0;
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
+  font-family: var(--reader-discovery-title-font-family);
+  font-size: var(--reader-discovery-title-font-size);
+  font-weight: var(--reader-discovery-title-font-weight);
+  line-height: var(--reader-discovery-title-line-height);
   color: var(--reader-page-text-color);
   border-bottom: var(--border-width-thin) solid var(--reader-page-border-color);
   padding-bottom: var(--spacing-xs);

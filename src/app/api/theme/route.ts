@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getResolvedScopedThemeDocument, saveThemeData } from '@/lib/services/themeService';
+import { getResolvedScopedThemeDocument, isPersistedThemeDocument, saveThemeData } from '@/lib/services/themeService';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
 
 function isThemeSaveEnabled(): boolean {
-  return false;
+  return true;
 }
 
 type ApiErrorPayload = {
@@ -88,15 +88,13 @@ export async function POST(request: Request) {
 
     const themeData = await request.json();
     
-    // Validate the theme data structure
-    const isScopedThemeDocument = themeData?.version === 2 && themeData.reader?.data && themeData.admin?.data;
-    const isLegacyThemeDocument = themeData?.palette && Array.isArray(themeData.palette);
-    if (!themeData || (!isScopedThemeDocument && !isLegacyThemeDocument)) {
+    // Save-ready contract: persisted themes must use the scoped reader/admin document shape.
+    if (!themeData || !isPersistedThemeDocument(themeData)) {
       return errorResponse(
         {
           ok: false,
           code: 'THEME_INVALID_STRUCTURE',
-          message: 'Invalid theme data structure.',
+          message: 'Invalid persisted theme document. Save expects the scoped reader/admin theme shape.',
           severity: 'error',
           retryable: false,
         },
@@ -104,8 +102,15 @@ export async function POST(request: Request) {
       );
     }
 
-    await saveThemeData(themeData);
-    return NextResponse.json({ success: true, message: 'Theme saved successfully' });
+    const result = await saveThemeData(themeData);
+    return NextResponse.json({
+      success: true,
+      message: result.backupSaved
+        ? 'Theme saved successfully.'
+        : 'Theme saved to Firestore, but the theme-data.json backup could not be updated.',
+      backupSaved: result.backupSaved,
+      backupError: result.backupError,
+    });
   } catch (error) {
     console.error('API Error saving theme data:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';

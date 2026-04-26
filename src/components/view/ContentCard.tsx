@@ -2,9 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import JournalImage from '@/components/common/JournalImage';
-import { Tag } from '@/lib/types/tag';
 import styles from './ContentCard.module.css';
 
 // Import Swiper components and styles
@@ -48,13 +46,15 @@ interface AlbumCardProps extends BaseCardProps {
   entryCount?: number;
   date?: string;
   tags?: string[];
+  coverPhoto?: {
+    source?: string;
+  };
 }
 
 type ContentCardProps = TagCardProps | EntryCardProps | AlbumCardProps;
 
 const ContentCard: React.FC<ContentCardProps> = (props) => {
   const {
-    id,
     title,
     description,
     imageUrl,
@@ -151,8 +151,20 @@ const ContentCard: React.FC<ContentCardProps> = (props) => {
     return props.type === 'entry' && (props as EntryCardProps).cardType === 'gallery';
   };
 
+  const getResolvedImageUrl = (): string | undefined => {
+    if (!imageUrl) return undefined;
+    if (isAlbum(props) && props.coverPhoto?.source === 'local') {
+      return `/api/images/local/file?path=${encodeURIComponent(imageUrl)}`;
+    }
+    return imageUrl;
+  };
+
   return (
-    <Link href={href} className={`${styles.card} ${styles[type]} ${styles[size]}`}>
+    <Link
+      href={href}
+      className={`${styles.card} ${styles[type]} ${styles[size]}`}
+      data-card-type={props.type === 'entry' ? props.cardType : props.type}
+    >
       {isGalleryEntry(props) && props.galleryMedia && props.galleryMedia.length > 0 ? (
         <Swiper
           modules={[Pagination, Navigation]}
@@ -209,11 +221,7 @@ const ContentCard: React.FC<ContentCardProps> = (props) => {
       ) : imageUrl ? (
         <div className={styles.imageContainer}>
           <JournalImage 
-            src={
-              (props as AlbumCardProps).type === 'album' && (props as any).coverPhoto?.source === 'local'
-                ? `/api/images/local/file?path=${encodeURIComponent(imageUrl)}`
-                : imageUrl
-            }
+            src={getResolvedImageUrl() ?? imageUrl}
             alt={title}
             className={styles.image}
             width={400}

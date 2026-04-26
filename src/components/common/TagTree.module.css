@@ -7,8 +7,10 @@
 }
 
 .title {
-  font-size: var(--font-size-3xl);
-  font-weight: var(--font-weight-semibold);
+  font-family: var(--reader-discovery-title-font-family);
+  font-size: var(--reader-discovery-title-font-size);
+  font-weight: var(--reader-discovery-title-font-weight);
+  line-height: var(--reader-discovery-title-line-height);
   margin-bottom: var(--spacing-lg);
   color: var(--reader-chrome-text-color);
   padding-left: var(--spacing-sm);
@@ -36,9 +38,11 @@
 
 .sectionHeader h3 {
   margin: 0;
-  font-size: var(--font-size-2xl);
+  font-family: var(--reader-discovery-title-font-family);
+  font-size: var(--reader-discovery-title-font-size);
   color: var(--reader-chrome-text-color);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--reader-discovery-title-font-weight);
+  line-height: var(--reader-discovery-title-line-height);
 }
 
 .expandIcon {
@@ -99,7 +103,10 @@
 
 .cardCount {
   margin-left: var(--spacing-xs);
-  font-size: var(--font-size-xs);
+  font-family: var(--reader-discovery-meta-font-family);
+  font-size: var(--reader-discovery-meta-font-size);
+  font-weight: var(--reader-discovery-meta-font-weight);
+  line-height: var(--reader-discovery-meta-line-height);
   color: var(--reader-chrome-muted-color);
   opacity: 0.8;
 }
@@ -172,13 +179,13 @@
 
 .tagName {
   cursor: pointer;
-  font-family: var(--body-font-family);
+  font-family: var(--reader-discovery-meta-font-family);
   color: var(--reader-chrome-text-color);
-  font-size: var(--font-size-sm);
+  font-size: var(--reader-discovery-meta-font-size);
   font-weight: var(--font-weight-normal, 400);
   flex: 1;
   min-width: 0;
-  line-height: 1.35;
+  line-height: var(--reader-discovery-meta-line-height);
   padding-top: 10px;
 }
 
@@ -211,12 +218,12 @@
   }
 
   .sectionHeader h3 {
-    font-size: var(--font-size-xl);
+    font-size: var(--reader-discovery-title-font-size);
   }
 
   .subsectionList a {
     padding: var(--spacing-sm) var(--spacing-md);
-    font-size: var(--font-size-base);
+    font-size: var(--reader-discovery-meta-font-size);
   }
 
   .subsectionList a:hover {

@@ -14,14 +14,19 @@
 }
 
 .galleryTitle {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
+  font-family: var(--reader-gallery-header-title-font-family);
+  font-size: var(--reader-gallery-header-title-font-size);
+  font-weight: var(--reader-gallery-header-title-font-weight);
+  line-height: var(--reader-gallery-header-title-line-height);
   margin: 0;
-  color: var(--reader-discovery-title-color);
+  color: var(--reader-gallery-header-title-color);
 }
 
 .imageCount {
-  font-size: var(--font-size-sm);
+  font-family: var(--reader-discovery-meta-font-family);
+  font-size: var(--reader-discovery-meta-font-size);
+  font-weight: var(--reader-discovery-meta-font-weight);
+  line-height: var(--reader-discovery-meta-line-height);
   color: var(--reader-discovery-meta-color);
   background: var(--reader-chrome-panel-color);
   padding: var(--spacing-xs) var(--spacing-sm);
@@ -183,7 +188,7 @@
   }
   
   .galleryTitle {
-    font-size: var(--font-size-xl);
+    font-size: var(--reader-gallery-header-title-font-size);
   }
   
   .imageItem {

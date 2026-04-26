@@ -8,8 +8,8 @@ import { CardProvider } from '@/components/providers/CardProvider';
 import AppShell from '@/components/common/AppShell';
 import {
   buildThemeTokensCss,
+  getPersistedThemeDocumentFromJson,
   getResolvedThemeData,
-  getThemeData,
   themeDataForCssGeneration,
 } from '@/lib/services/themeService';
 
@@ -28,7 +28,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
   if (!themeTokensCss) {
     try {
-      themeTokensCss = buildThemeTokensCss(themeDataForCssGeneration(await getThemeData()));
+      const fallbackDocument = await getPersistedThemeDocumentFromJson();
+      themeTokensCss = buildThemeTokensCss(
+        themeDataForCssGeneration({
+          ...fallbackDocument.reader.data,
+          darkModeShift: fallbackDocument.reader.darkModeShift,
+          activePresetId: fallbackDocument.reader.activePresetId,
+          recipes: fallbackDocument.reader.recipes,
+        })
+      );
     } catch (e) {
       console.error('[theme] Fallback theme-data.json build failed:', e);
     }

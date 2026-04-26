@@ -77,7 +77,7 @@ const StoryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card,
         {/* Add inline content for inline display mode */}
         {displayMode === 'inline' && card.content && (
           <div className={styles.inlineContent}>
-            <TipTapRenderer content={card.content} />
+            <TipTapRenderer content={card.content} headingVariant="story" />
           </div>
         )}
       </div>
@@ -210,7 +210,7 @@ const QACardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, di
           {card.excerpt && <p className={styles.qaTeaser}>{card.excerpt}</p>}
           {card.content && (
             <div className={styles.inlineContent}>
-              <TipTapRenderer content={card.content} surface="transparent" />
+              <TipTapRenderer content={card.content} surface="transparent" headingVariant="question" />
             </div>
           )}
         </div>
@@ -266,7 +266,7 @@ const CalloutCardContent: React.FC<{ card: Card }> = ({ card }) => {
       {hasExcerpt ? <p className={styles.calloutExcerpt}>{card.excerpt}</p> : null}
       {showBody ? (
         <div className={`${styles.inlineContent} ${styles.calloutBody}`}>
-          <TipTapRenderer content={card.content} surface="transparent" />
+          <TipTapRenderer content={card.content} surface="transparent" headingVariant="callout" />
         </div>
       ) : null}
     </div>

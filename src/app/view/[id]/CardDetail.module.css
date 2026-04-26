@@ -43,8 +43,10 @@
 
 .adminEditBar a,
 .adminEditTrigger {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
+  font-family: var(--reader-meta-font-family);
+  font-size: var(--reader-meta-font-size);
+  font-weight: var(--reader-meta-font-weight);
+  line-height: var(--reader-meta-line-height);
   color: var(--reader-accent-color);
   text-decoration: none;
 }

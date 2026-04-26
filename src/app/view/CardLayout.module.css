@@ -1,6 +1,6 @@
 .header {
-  background-color: var(--layout-background1-color);
-  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  background-color: var(--reader-chrome-background-color);
+  border-bottom: var(--border-width-thin) solid var(--reader-chrome-border-color);
   padding: var(--spacing-md) var(--spacing-xl);
   position: sticky;
   top: 0;
@@ -17,9 +17,11 @@
 }
 
 .logo {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--text1-color);
+  font-family: var(--reader-discovery-title-font-family);
+  font-size: var(--reader-discovery-title-font-size);
+  font-weight: var(--reader-discovery-title-font-weight);
+  line-height: var(--reader-discovery-title-line-height);
+  color: var(--reader-chrome-text-color);
   text-decoration: none;
 }
 

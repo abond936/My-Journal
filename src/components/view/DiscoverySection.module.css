@@ -9,8 +9,10 @@
 }
 
 .discoveryTitle {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
+  font-family: var(--reader-discovery-title-font-family);
+  font-size: var(--reader-discovery-title-font-size);
+  font-weight: var(--reader-discovery-title-font-weight);
+  line-height: var(--reader-discovery-title-line-height);
   margin: 0 0 var(--spacing-xs) 0;
   color: var(--reader-discovery-title-color);
 }
@@ -24,8 +26,10 @@
 }
 
 .groupTitle {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
+  font-family: var(--reader-discovery-meta-font-family);
+  font-size: var(--reader-discovery-meta-font-size);
+  font-weight: var(--reader-discovery-meta-font-weight);
+  line-height: var(--reader-discovery-meta-line-height);
   margin: 0 0 var(--spacing-xs) 0;
   color: var(--reader-discovery-meta-color);
 }
@@ -40,21 +44,27 @@
   align-items: center;
   justify-content: center;
   padding: var(--spacing-lg);
-  color: var(--reader-discovery-meta-color);
+  color: var(--reader-support-meta-color);
 }
 
 .loadingContainer p {
   margin-top: var(--spacing-sm);
-  font-size: var(--font-size-sm);
+  font-family: var(--reader-support-meta-font-family);
+  font-size: var(--reader-support-meta-font-size);
+  font-weight: var(--reader-support-meta-font-weight);
+  line-height: var(--reader-support-meta-line-height);
 }
 
 .errorContainer {
   padding: var(--spacing-sm);
-  background-color: var(--reader-chrome-panel-color);
-  border: var(--border-width-thin) solid var(--reader-discovery-border-color);
+  background-color: var(--reader-support-control-background-color);
+  border: var(--border-width-thin) solid var(--reader-support-control-border-color);
   border-radius: var(--border-radius-lg);
-  color: var(--reader-discovery-meta-color);
-  font-size: var(--font-size-sm);
+  color: var(--reader-support-hint-color);
+  font-family: var(--reader-support-hint-font-family);
+  font-size: var(--reader-support-hint-font-size);
+  font-weight: var(--reader-support-hint-font-weight);
+  line-height: var(--reader-support-hint-line-height);
 }
 
 .extrasLoadingRow {
@@ -64,7 +74,10 @@
   min-height: 2.5rem;
   margin-top: var(--spacing-xs);
   color: var(--reader-discovery-meta-color);
-  font-size: var(--font-size-sm);
+  font-family: var(--reader-discovery-meta-font-family);
+  font-size: var(--reader-discovery-meta-font-size);
+  font-weight: var(--reader-discovery-meta-font-weight);
+  line-height: var(--reader-discovery-meta-line-height);
 }
 
 /* Horizontal rails: compact tiles, swipe on narrow viewports */
@@ -96,7 +109,7 @@
   }
 
   .discoveryTitle {
-    font-size: var(--font-size-lg);
+    font-size: var(--reader-discovery-title-font-size);
     margin-bottom: var(--spacing-xs);
   }
 

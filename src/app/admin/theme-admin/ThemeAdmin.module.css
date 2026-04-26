@@ -1276,6 +1276,11 @@
   background-color: var(--layout-background2-color);
 }
 
+.presetCardActive {
+  border-color: var(--button-solid-border-color);
+  box-shadow: 0 0 0 1px var(--button-solid-border-color);
+}
+
 .presetCardTitle {
   margin: 0 0 var(--spacing-sm);
   font-size: var(--font-size-lg);
@@ -1817,7 +1822,8 @@
   }
 
   .architectureNotes,
-  .architectureGrid {
+  .architectureGrid,
+  .readerPreviewCoverageGrid {
     grid-template-columns: 1fr;
   }
 
@@ -2230,6 +2236,143 @@
   background-color: var(--state-warning-background-color);
   color: var(--text1-color);
   font-size: var(--font-size-sm);
+}
+
+.readerPreviewCoverage {
+  max-width: 2480px;
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-md);
+  background-color: var(--layout-background1-color);
+}
+
+.readerPreviewCoverageIntro,
+.readerPreviewCoverageText,
+.readerPreviewCoverageSurface,
+.readerPreviewCoverageNote,
+.readerPreviewCoverageFooter {
+  margin: 0;
+  color: var(--text2-color);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.readerPreviewCoverageGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.readerPreviewCoverageCard {
+  display: grid;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-md);
+  background-color: var(--layout-background2-color);
+}
+
+.readerPreviewCoverageTitle {
+  margin: 0;
+  color: var(--text1-color);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+.readerPreviewCoverageVariants {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+.readerPreviewCoverageVariant {
+  display: grid;
+  gap: 6px;
+  padding-top: var(--spacing-sm);
+  border-top: var(--border-width-thin) solid var(--border1-color);
+}
+
+.readerPreviewCoverageVariant:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.readerPreviewCoverageVariantHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  color: var(--text1-color);
+  font-size: var(--font-size-sm);
+}
+
+.readerPreviewCoverageStatus {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--border-radius-full);
+  background-color: var(--layout-background1-color);
+  color: var(--text2-color);
+  border: var(--border-width-thin) solid var(--border1-color);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.readerPreviewCoverageSurface {
+  color: var(--text1-color);
+}
+
+.readerPreviewCoverageElements {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.readerPreviewCoverageElement {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: var(--border-radius-full);
+  background-color: var(--layout-background1-color);
+  color: var(--text2-color);
+  border: var(--border-width-thin) solid var(--border1-color);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.2;
+}
+
+.readerPreviewCoverageFooter {
+  display: grid;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: var(--border-width-thin) solid var(--border1-color);
+}
+
+.readerPreviewCoverageList {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 4px;
+}
+
+.readerPreviewSupportHeading {
+  margin: 0 0 var(--spacing-xs);
+  color: var(--reader-support-title-color);
+  font-family: var(--reader-support-title-font-family);
+  font-size: var(--reader-support-title-font-size);
+  font-weight: var(--reader-support-title-font-weight);
+  line-height: var(--reader-support-title-line-height);
+}
+
+.readerPreviewSupportHint {
+  margin: 0 0 var(--spacing-sm);
+  color: var(--reader-support-hint-color);
+  font-family: var(--reader-support-hint-font-family);
+  font-size: var(--reader-support-hint-font-size);
+  font-weight: var(--reader-support-hint-font-weight);
+  line-height: var(--reader-support-hint-line-height);
 }
 
 .readerPreviewCard {

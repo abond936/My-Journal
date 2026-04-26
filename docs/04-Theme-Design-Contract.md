@@ -3,7 +3,7 @@
 **Status:** Living specification — authoritative for *what* we tokenize and *why*, before code-only audits; and for **reader shell layout, responsive behavior, and navigation affordances** that must stay consistent with tokens (§10).
 **See also:** `01-Vision-Architecture.md` (Frontend principles, visual direction), `02-Application.md` → Theme Management, Navigation, Layouts, `03-Implementation.md` (CSS Tokenization sequencing, responsive chrome).
 
-**Current implementation status (2026-04-25):** Theme infrastructure exists, but the theme system is not complete. Runtime CSS variables are generated from theme data and injected by the app, with `theme-data.json` / `theme.css` fallbacks. Theme Management is currently a **workbench**: scoped reader/admin preview, Journal / Editorial reader preset toggles, light/dark preview controls, raw Advanced tokens, and a component-based **Reader Theme System** editor with preview on the left and component inventory / recipe editing on the right. **Save is intentionally paused**. The reader preview now covers the closed card set, open story/gallery/question detail, sidebar chrome, discovery/child rails, lightbox/state samples, and compact cards so theme work can be judged against real reader surfaces rather than swatches alone. Journal / Editorial are still partial preset bundles, not finished themes. The reader semantic layer now has working role groups for page, chrome, solid controls, cards, detail, body/title, meta/caption, tags, media/overlay, discovery, and type treatments, and the current editing model is moving from flat role names toward **component + variant + element** recipes backed by the existing atomic token set.
+**Current implementation status (2026-04-25):** Theme infrastructure exists and the core save/load path is now live. Runtime CSS variables are generated from theme data and injected by the app, with `theme-data.json` / `theme.css` fallbacks. Theme Management is still a **workbench**, but it is now a saving workbench: scoped reader/admin preview, Journal / Editorial reader preset toggles, light/dark preview controls, raw Advanced tokens, and a component-based **Reader Theme System** editor with preview on the left and component inventory / recipe editing on the right. The reader preview now covers the closed card set, open story/gallery/question detail, sidebar chrome, discovery/child rails, lightbox/state samples, and support UI so theme work can be judged against real reader surfaces rather than swatches alone. Journal / Editorial are still partial preset bundles, not finished themes. The reader semantic layer now has working role groups for page, chrome, solid controls, cards, detail, body/title, meta/caption, tags, media/overlay, discovery, support UI, and type treatments, and the current editing model is moving from flat role names toward **component + variant + element** recipes backed by the existing atomic token set. The next finish line is not persistence; it is full **preview <-> role** truthfulness.
 
 ---
 
@@ -109,6 +109,7 @@ The reader semantic layer is the contract between design intent and component CS
 | ---------- | ------------ | ----- | ------ |
 | Reader page | `--reader-page-*` | `/view` canvas, feed background, detail page surround | Initial |
 | Reader chrome | `--reader-chrome-*` | reader header/nav, sidebar/drawer, filter panels, mode controls | Initial |
+| Reader support UI | `--reader-support-*` | sidebar titles/labels/hints, toolbars, selectors, helper states, support controls | Initial |
 | Solid controls | `--reader-solid-*`, `--reader-contrast-text-color` | active tabs/chips/buttons, badge/control contrast on strong fills | Initial |
 | Feed cards | `--reader-card-*` | closed feed/discovery cards only | Initial |
 | Detail page | `--reader-detail-*` | open card reading surface and cover frame | Initial |
@@ -118,7 +119,7 @@ The reader semantic layer is the contract between design intent and component CS
 | Type treatments | `--reader-quote-*`, `--reader-question-*`, `--reader-callout-*` | quote tiles/details, Q&A emphasis, callout watermark/text treatment | Partial |
 | Discovery | `--reader-discovery-*` | Explore More, Similar, child-card rails, related sections | Initial |
 | Tags | `--reader-tag-*` plus dimension tokens | reader tag chips and active filter chips | Initial |
-| Media / overlay | `--reader-media-*`, `--reader-lightbox-*`, overlay aliases | gallery frames, image backgrounds, overlay text, lightbox affordances | Initial |
+| Media / overlay | `--reader-media-*`, `--reader-lightbox-*`, overlay aliases | gallery frames, image backgrounds, overlay text, and gallery lightbox affordances | Initial |
 
 Initial aliases emitted by `buildThemeTokensCss()`:
 
@@ -143,6 +144,7 @@ Planned aliases before presets are considered complete:
 | `--reader-card-title-*`, `--reader-card-excerpt-*`, `--reader-card-meta-*` | Feed-card-specific hierarchy where tile titles/excerpts diverge from detail headings/body text. |
 | `--reader-detail-subtitle-*`, `--reader-detail-excerpt-*`, `--reader-detail-meta-*` | Open-card header hierarchy where detail needs more than the shared title/subtitle/excerpt/meta roles. |
 | `--reader-discovery-background-color`, `--reader-discovery-title-*`, `--reader-discovery-card-*` | Explore More, Similar, child-card rails, and related sections. |
+| `--reader-support-title-*`, `--reader-support-label-*`, `--reader-support-meta-*`, `--reader-support-hint-*`, `--reader-support-control-*` | Shared reader-adjacent support UI such as sidebars, selectors, toolbars, helper states, and neutral/active utility controls. |
 | `--reader-tag-active-*` | Extra tag/filter state roles only if active/filter chips need to diverge from the current shared solid-control role. |
 | `--admin-*` aliases parallel to reader | Dense authoring-specific semantics once admin leaves “shared where useful” and needs a separate saved contract. |
 
@@ -154,8 +156,9 @@ Migration status:
 | `CardDetailPage` | `--reader-detail-*`, shared title/body/meta/quote/caption aliases | Initial migration complete |
 | `TipTapRenderer` | reader body/title/quote/caption aliases | Initial migration complete |
 | `DiscoverySection`, `ChildCardsRail` | `--reader-discovery-*` plus card aliases | Initial migration complete |
-| `InlineGallery`, media figures, lightbox | `--reader-media-*` plus caption aliases | Initial migration complete |
+| `InlineGallery`, media figures, gallery lightbox | `--reader-media-*` plus caption aliases | Initial migration complete |
 | `GlobalSidebar`, reader filters, reader header/nav | `--reader-chrome-*`, `--reader-tag-*`, `--reader-solid-*` | Initial migration complete |
+| Shared support UI (`ImageToolbar`, `TagSelector`, sidebar controls/helper states) | `--reader-support-*` plus `--reader-chrome-*` where the container itself is chrome | Initial migration complete |
 | Admin content tooling | `--admin-*` aliases separate from reader personality | Planned |
 
 Theme presets are not complete until each preset supplies enough underlying values to make the role groups above coherent in light and dark mode. Until then, Journal and Editorial are starting points, not finished themes.
@@ -265,7 +268,7 @@ The current reader work should converge on this flow:
 
 1. **Advanced / Firestore remains the exact value source** for atomic tokens.
 2. A **summary-role mapping layer** defines `Title`, `Title Small`, `Detail Title`, `Card`, `Detail`, `Solid Control`, etc.
-3. A **component recipe layer** assigns those roles or token recipes to concrete app surfaces such as Story closed title, Gallery open caption, Q&A discovery question, Sidebar active tab, and Lightbox caption.
+3. A **component recipe layer** assigns those roles or token recipes to concrete app surfaces such as Story closed title, Gallery open caption, Q&A discovery question, Sidebar active tab, and gallery lightbox caption.
 4. Theme CSS generation emits the resulting semantic/component variables.
 5. Components consume those variables and still own layout/context decisions such as compact rails, open vs closed structure, and responsive behavior.
 3. Reader components consume those summary roles through semantic CSS variables.
@@ -280,9 +283,30 @@ That file is the working inventory of the "middle layer" for the current theme. 
 Current workbench behavior:
 
 - Theme Management preview sits beside the component inventory/editor so recipe changes can be judged immediately.
-- The preview uses the same reader CSS generation path as the app, but stays preview-only because Save is paused.
+- The preview uses the same reader CSS generation path as the app and now includes an explicit coverage ledger mapping each reader component variant to its preview surface.
 - The current editor is component-oriented rather than primitive-oriented: select a component, then a variant, then an element recipe.
 - The Advanced token area remains the exact-value reference/source layer and is not replaced by the component editor.
+
+Current wiring inventory (2026-04-25):
+
+| Surface | Runtime / preview owner today | Current state |
+| ------- | ----------------------------- | ------------- |
+| Root runtime token sheet | `src/app/layout.tsx` + `src/lib/services/themeService.ts` | **Live runtime** - SSR injects generated token CSS from Firestore-resolved theme data with `theme-data.json` fallback. |
+| Reader semantic aliases | `buildThemeTokensCss()` | **Live runtime** - Reader alias families (`--reader-page-*`, `--reader-card-*`, `--reader-detail-*`, etc.) are emitted from atomic theme data plus reader recipes. |
+| Reader preview canvas | `src/app/admin/theme-admin/ThemeReaderPreview.tsx` | **Live-aligned preview** - Uses scoped CSS built from the same generator path, exercises real reader components rather than swatches only, and now documents preview coverage per component variant. |
+| Reader preset application | `src/lib/theme/themePresets.ts` + `ThemeAdminPage.tsx` | **Workbench-wired + persisted** - Journal / Editorial now apply to the working draft as concrete theme-data transforms plus the active preset id, and Save persists the resolved scoped document. |
+| Reader recipe editor | `src/lib/theme/readerThemeSystem.ts` + `ThemeAdminPage.tsx` | **Workbench-wired** - Component/variant/element recipes edit the same draft that drives preview CSS. |
+| Advanced token editor | `ThemeAdminPage.tsx` | **Workbench-wired** - Atomic palette/token edits still act as the exact-value layer beneath recipes and move the draft to `custom`. |
+| Legacy reader cards | `src/components/view/ContentCard.module.css` + `CardGrid.module.css` | **Legacy-aligned** - Older reader card/grid files are being remapped to the semantic system for consistency, but `V2ContentCard` / `CardFeedV2` remain the canonical active reader path. |
+| Admin preview | `ThemeReaderPreview.tsx` scoped admin panel | **Preview-only / partial** - Validates basic authoring chrome, but admin does not yet have its own semantic alias family comparable to reader. |
+| Preset persistence | `/api/theme` + Firestore `app_settings/theme` | **Live** - Save persists the scoped version 2 document through Firestore first, then updates `theme-data.json` as a backup/fallback artifact. |
+
+Alignment gaps still to close:
+
+- **Legacy reader holdouts** - Some older reader files still sit outside the current semantic migration, especially legacy card/list styling such as `src/components/view/ContentCard.module.css`; treat those as explicit follow-up inventory, not as silent cleanup attached to active-path work.
+- **Admin semantics** - Admin uses preview/runtime tokens, but not yet a full `admin-*` semantic contract parallel to the reader layer.
+- **Preset completeness** - Journal / Editorial are real draft transforms now, but they are still partial bundles rather than complete light/dark design packages.
+- **Preview truthfulness** - Every reader role must have an obvious preview surface, and every previewed surface must map to a role or be explicitly classified as component-owned.
 
 ### 5.5 What should stay atomic vs summary vs component-owned
 
@@ -292,15 +316,58 @@ Current workbench behavior:
 | Summary roles | title, title small, detail title, body, excerpt, meta, caption, quote, question, callout title/body, page/chrome/card/detail/discovery/media surfaces, solid/filter/media/lightbox controls |
 | Component-owned | whether a card is compact, rail width, feed grid layout, detail structure, breakpoint-triggered layout changes, image aspect-ratio decisions |
 
-### 5.6 Firestore implication
+### 5.6 Preview-role reconciliation matrix
 
-For now, Firestore can continue storing the broad atomic theme document. The summary layer can be defined in code first and proven in preview/live reader behavior before any persistence change is considered.
+The reader preview is no longer allowed to be an approximate mood board. It is the working contract for which live reader surfaces each component recipe is expected to drive.
+
+| Component | Variant | Preview surface | Contract status |
+| --------- | ------- | --------------- | --------------- |
+| Canvas | Reader shell | Reader shell canvas + inline-link sample + focus-state sample | Canonical preview for page surface, body/meta text, inline links, and focus ring |
+| Story card | Closed | Story column -> closed `V2ContentCard` | Canonical |
+| Story card | Open | Story column -> open `CardDetailPage` | Canonical for story detail title, subtitle, body, figure frame, and caption |
+| Story card | Explore More | `Explore More` section -> compact story card | Canonical |
+| Gallery card | Closed | Gallery column -> closed `V2ContentCard` | Canonical |
+| Gallery card | Open | Gallery column -> open `CardDetailPage` plus `Gallery media state` sample | Canonical for gallery detail title, inline gallery header/count, caption, lightbox controls, and overlay behavior |
+| Gallery card | Explore More | `Explore More` section -> compact gallery card | Canonical |
+| Discovery and rails | Discovery section | `Explore More` section heading + group/meta copy | Canonical |
+| Discovery and rails | Child-card rail | Quote column -> `ChildCardsRail` sample | Canonical |
+| Question card | Closed | Question column -> closed `V2ContentCard` | Canonical |
+| Question card | Open | Question column -> open `CardDetailPage` | Canonical |
+| Question card | Explore More | `Explore More` section -> compact Q&A card | Canonical |
+| Quote card | Closed | Quote column -> closed `V2ContentCard` | Canonical |
+| Callout card | Closed | Callout column -> closed `V2ContentCard` | Canonical |
+| Sidebar and controls | Reader chrome | Sidebar open sample | Canonical for sidebar surface, support typography, filter chips, icon color, active controls, and neutral controls |
+| Support UI | Tooling and selectors | `Support UI` sample with `SearchBar`, `PhotoPicker`, `TagSelector`, and `ImageToolbar` | Canonical |
+| Support UI | Empty, loading, and error states | `Feed empty` + `Discovery loading/error` samples | Canonical |
+
+Preview coverage rule:
+
+- Every component/variant in `CURRENT_READER_THEME_COMPONENTS` must have an explicit preview surface in `ThemeReaderPreview.tsx`.
+- The preview surface should use the real live reader component where possible, not a generic swatch.
+- If a role cannot be judged from the current preview, that is a contract gap and should be fixed before more role proliferation.
+
+### 5.7 Component-owned exclusions
+
+The following decisions should remain component-owned unless product explicitly promotes them into the theme contract:
+
+- feed/grid layout width, column count, and compact-card placement
+- breakpoint-triggered drawer/sidebar placement behavior
+- image aspect ratios, crop behavior, and media-sizing math
+- hit-target sizing, pointer affordance, and disabled interaction behavior
+- animation timing, gesture behavior, and non-token layout offsets
+
+These may still be **previewed** so we can judge the surface in context, but they are not reader theme roles and should not quietly borrow the nearest typography/surface token label.
+
+### 5.8 Firestore implication
+
+Firestore is now the live persistence boundary for Theme Management. The saved document is the scoped version 2 reader/admin shape, while the semantic summary layer continues to be defined in code and proven in preview/live reader behavior.
 
 That means:
 
 - **no loss of precise control**
 - **no need to discard the existing Advanced token set**
 - **no need to save a separate vague preset model first**
+- **reader roles stay a code-level semantic layer over fully materialized atomic theme data**
 
 ---
 
@@ -352,9 +419,25 @@ Presets are **bundles** of assignments to the roles above (plus typography roles
 
 **Preview:** Authoritative preview should mirror `**/view`** (sample feed + one detail), not only swatches — so “what I tune” matches “what family sees.” Success criterion: the preview should make it easier to answer “Would someone want to keep reading this?”
 
-**Current save posture:** Theme Management **must not** persist arbitrary preview/preset edits while the semantic contract and Firestore schema are incomplete. The visible Save control is paused; preview edits are diagnostic only.
+**Preview/runtime convergence:** Preview CSS and live runtime CSS must compile from the same **resolved scoped theme model** (reader/admin settings, active preset id, dark-mode shift, and recipes). Preview must not use a looser ad hoc payload shape than runtime, and the preview ledger should make the role-to-surface mapping explicit.
 
-**Persistence target:** Theme data lives in **Firestore** `app_settings/theme` (written on Theme admin **Save** and via `npm run seed:theme-firestore`). The app **injects** `buildThemeTokensCss()` output in **RootLayout** (`<style id="theme-tokens">`) so variables apply in serverless deploys without committing regenerated CSS. `**theme-data.json`** stays the git backup and fallback when Firestore is empty or unreadable. Theme Management should be the product interface for editing this document; raw Firestore editing is not the intended user workflow.
+**Current save posture:** Theme Management now persists the scoped version 2 reader/admin document through the normal Save action. The remaining theme work is therefore about **truthful surface coverage and role mapping**, not about whether save exists.
+
+**Persistence target:** Theme data lives in **Firestore** `app_settings/theme` (written on Theme admin **Save** and via `npm run seed:theme-firestore`). The app **injects** `buildThemeTokensCss()` output in **RootLayout** (`<style id="theme-tokens">`) so variables apply in serverless deploys without committing regenerated CSS. `**theme-data.json`** stays the git backup and fallback when Firestore is empty or unreadable, and it may contain either the legacy flat reader shape or the scoped persisted document shape. Theme Management should be the product interface for editing this document; raw Firestore editing is not the intended user workflow.
+
+**Save-ready contract:** The persisted document is the scoped **version 2** shape:
+
+- `reader.data` = full materialized atomic `StructuredThemeData`
+- `reader.activePresetId` = `journal` | `editorial` | `custom`
+- `reader.darkModeShift` = persisted numeric value
+- `reader.recipes` = persisted reader recipe layer used for runtime CSS generation
+- `admin.data` = full materialized atomic `StructuredThemeData`
+- `admin.activePresetId` = `admin` | `custom`
+- `admin.darkModeShift` = persisted numeric value
+
+Preset ids are retained as **editing metadata / UX context**, but the saved document still stores the fully materialized atomic theme data needed to render immediately at runtime. `custom` means the saved draft no longer matches any shipped preset exactly; it does **not** mean preset context was lost or omitted.
+
+**Save-path rule:** The save endpoint should accept only this scoped persisted document shape. Legacy flat theme payloads may remain readable through normalization for fallback / migration, but they are **not** the save contract going forward. Firestore is the live durability boundary; any `theme-data.json` write is a secondary backup update and must not be required for the runtime save to succeed.
 
 ---
 
@@ -362,6 +445,7 @@ Presets are **bundles** of assignments to the roles above (plus typography roles
 
 1. **Inventory surfaces first** - Build a table from actual reader/admin components: surface, file/component, visible elements (title, subtitle, excerpt, tags, controls, empty states, etc.), current token/CSS usage, required semantic token family, and migration status.
 2. **Freeze the semantic contract** - Promote the inventory into role families (`reader-page`, `reader-card`, `reader-detail`, `reader-subtitle`, `reader-excerpt`, `reader-discovery`, `reader-media`, `reader-chrome`, `reader-solid`, `admin-*`, etc.). Iterate here when product intent changes.
+   Recurring support surfaces (selectors, toolbars, sidebar labels/hints, utility controls) should use the dedicated `reader-support-*` family rather than being assigned to the “closest” content/discovery role.
 3. **Define the theme schema** - Decide how semantic role values live in the Firestore theme document and preset bundles; keep `theme-data.json` as fallback/backup, not the product editing surface.
 4. **Map generator output** - Map `themeService.ts` / `theme-data.json` fields to each role; add aliases only where they clarify ownership and reduce component confusion.
 5. **Migrate surfaces in order** - Move reader surfaces (`src/components/view/`, shared rich text, discovery, media, chrome) to role-backed variables; grep for raw `hex` / `rgba` against this checklist.

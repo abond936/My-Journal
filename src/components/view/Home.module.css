@@ -7,7 +7,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: var(--layout-background1-color);
+  background-color: var(--reader-page-background-color);
+  color: var(--reader-page-text-color);
 }
 
 /* Content wrapper — vertical center as a group */
@@ -53,9 +54,10 @@
 }
 
 .welcomeText {
-  font-size: var(--font-size-xl);
-  line-height: var(--line-height-relaxed);
-  color: var(--text1-color);
+  font-family: var(--reader-body-font-family);
+  font-size: var(--reader-body-font-size);
+  line-height: var(--reader-body-line-height);
+  color: var(--reader-body-color);
 }
 
 /* Bottom corner styling */
@@ -124,20 +126,27 @@
 .inputField {
   width: 100%;
   padding: var(--spacing-md);
-  border: var(--border-width-thin) solid var(--border1-color);
-  border-radius: var(--border-radius-md);
-  background-color: var(--layout-background2-color);
-  color: var(--text1-color);
+  border: var(--border-width-thin) solid var(--reader-chrome-border-color);
+  border-radius: var(--reader-card-border-radius);
+  background-color: var(--reader-chrome-control-background-color);
+  color: var(--reader-chrome-text-color);
   font-size: var(--font-size-base);
 }
 
 .inputField::placeholder {
-  color: var(--text2-color);
+  color: var(--reader-chrome-muted-color);
+}
+
+.inputField:focus {
+  outline: 2px solid var(--reader-focus-ring-color);
+  outline-offset: 2px;
 }
 
 .errorMessage {
-  color: var(--state-error-text-color);
-  font-size: var(--font-size-sm);
+  color: var(--state-error-border-color);
+  font-family: var(--reader-meta-font-family);
+  font-size: var(--reader-meta-font-size);
+  line-height: var(--reader-meta-line-height);
   margin-bottom: var(--spacing-sm);
   text-align: center;
 }

@@ -40,6 +40,69 @@
   line-height: var(--reader-title-line-height);
 }
 
+.rendererDetailHeadings :global(h1),
+.rendererDetailHeadings :global(h2),
+.rendererDetailHeadings :global(h3) {
+  font-family: var(--reader-detail-title-font-family);
+  color: var(--reader-detail-title-color);
+  font-weight: var(--reader-detail-title-font-weight);
+  line-height: var(--reader-detail-title-line-height);
+}
+
+.rendererStoryHeadings :global(h1),
+.rendererStoryHeadings :global(h2),
+.rendererStoryHeadings :global(h3) {
+  font-family: var(--reader-story-title-font-family);
+  color: var(--reader-story-title-color);
+  font-weight: var(--reader-story-title-font-weight);
+  line-height: var(--reader-story-title-line-height);
+}
+
+.rendererGalleryHeadings :global(h1),
+.rendererGalleryHeadings :global(h2),
+.rendererGalleryHeadings :global(h3) {
+  font-family: var(--reader-gallery-title-font-family);
+  color: var(--reader-gallery-title-color);
+  font-weight: var(--reader-gallery-title-font-weight);
+  line-height: var(--reader-gallery-title-line-height);
+}
+
+.rendererQuestionHeadings :global(h1),
+.rendererQuestionHeadings :global(h2),
+.rendererQuestionHeadings :global(h3) {
+  font-family: var(--reader-question-font-family);
+  color: var(--reader-question-color);
+  font-weight: var(--reader-question-font-weight);
+  line-height: var(--reader-question-line-height);
+}
+
+.rendererCalloutHeadings :global(h1),
+.rendererCalloutHeadings :global(h2),
+.rendererCalloutHeadings :global(h3) {
+  font-family: var(--reader-callout-title-font-family);
+  color: var(--reader-callout-title-color);
+  font-weight: var(--reader-callout-title-font-weight);
+  line-height: var(--reader-callout-title-line-height);
+}
+
+.rendererStoryDetailHeadings :global(h1),
+.rendererStoryDetailHeadings :global(h2),
+.rendererStoryDetailHeadings :global(h3) {
+  font-family: var(--reader-story-detail-title-font-family);
+  color: var(--reader-story-detail-title-color);
+  font-weight: var(--reader-story-detail-title-font-weight);
+  line-height: var(--reader-story-detail-title-line-height);
+}
+
+.rendererGalleryDetailHeadings :global(h1),
+.rendererGalleryDetailHeadings :global(h2),
+.rendererGalleryDetailHeadings :global(h3) {
+  font-family: var(--reader-gallery-detail-title-font-family);
+  color: var(--reader-gallery-detail-title-color);
+  font-weight: var(--reader-gallery-detail-title-font-weight);
+  line-height: var(--reader-gallery-detail-title-line-height);
+}
+
 .renderer :global(p) {
   margin-top: 0;
   margin-bottom: var(--spacing-md);

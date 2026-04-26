@@ -13,14 +13,16 @@ import {
   ComponentTokens,
   StateTokens,
   GradientTokens,
+  PersistedThemeDocumentData,
   ThemeColor,
-  ScopedThemeDocumentData,
-  ScopedThemeSettings,
+  ResolvedScopedThemeDocumentData,
+  ResolvedScopedThemeSettings,
   ReaderThemeRecipes,
   ThemeRecipeTokenRef,
 } from '@/lib/types/theme';
 import { getDefaultScopedThemeDocument, READER_PRESET_ALIAS_GROUPS } from '@/lib/theme/themePresets';
 import { DEFAULT_READER_THEME_RECIPES } from '@/lib/theme/readerThemeSystem';
+import { scopeThemeTokensCss } from '@/lib/theme/scopeThemeTokensCss';
 
 /**
  * Server-side theme service: JSON backup, Firestore runtime source, CSS token generation.
@@ -68,37 +70,55 @@ const hexToHsl = (hex: string): { h: number; s: number; l: number } => {
   };
 };
 
+function getEmptyThemeData(): StructuredThemeData & { darkModeShift?: number } {
+  return {
+    palette: [],
+    themeColors: [],
+    darkModeShift: 5,
+    typography: {} as TypographyTokens,
+    spacing: {} as SpacingTokens,
+    borders: {} as BorderTokens,
+    shadows: {} as ShadowTokens,
+    zIndex: {} as ZIndexTokens,
+    layout: {} as LayoutTokens,
+    components: {} as ComponentTokens,
+    states: {} as StateTokens,
+    gradients: {} as GradientTokens,
+  };
+}
+
+async function readThemeJsonFile(): Promise<unknown> {
+  const jsonPath = path.join(process.cwd(), 'theme-data.json');
+  const jsonContent = await fs.readFile(jsonPath, 'utf-8');
+  return JSON.parse(jsonContent);
+}
+
+function coerceStructuredThemeData(
+  data: unknown
+): StructuredThemeData & { darkModeShift?: number; activePresetId?: string; recipes?: ReaderThemeRecipes } {
+  const normalized = normalizeThemeDocument(data);
+  return {
+    ...normalized.reader.data,
+    darkModeShift: normalized.reader.darkModeShift,
+    activePresetId: normalized.reader.activePresetId,
+    recipes: normalized.reader.recipes,
+  };
+}
+
 /**
- * Reads theme data from the JSON file
+ * Reads reader theme data from the JSON file.
+ * Accepts either the legacy flat shape or the scoped persisted document.
  */
 export const getThemeData = async (): Promise<StructuredThemeData & { darkModeShift?: number }> => {
   try {
-    const jsonPath = path.join(process.cwd(), 'theme-data.json');
-    const jsonContent = await fs.readFile(jsonPath, 'utf-8');
-    const themeData = JSON.parse(jsonContent);
-    
-    // Ensure we have the darkModeShift property
+    const themeData = coerceStructuredThemeData(await readThemeJsonFile());
     return {
       ...themeData,
-      darkModeShift: themeData.darkModeShift || 5
+      darkModeShift: themeData.darkModeShift ?? 5,
     };
   } catch (error) {
     console.error('Failed to read theme JSON file:', error);
-    // On error, return a default structure to prevent crashes
-    return {
-      palette: [],
-      themeColors: [],
-      darkModeShift: 5,
-      typography: {} as TypographyTokens,
-      spacing: {} as SpacingTokens,
-      borders: {} as BorderTokens,
-      shadows: {} as ShadowTokens,
-      zIndex: {} as ZIndexTokens,
-      layout: {} as LayoutTokens,
-      components: {} as ComponentTokens,
-      states: {} as StateTokens,
-      gradients: {} as GradientTokens,
-    };
+    return getEmptyThemeData();
   }
 };
 
@@ -595,6 +615,11 @@ export function buildThemeTokensCss(
   --reader-gallery-title-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.galleryTitle.size)};
   --reader-gallery-title-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.galleryTitle.weight)};
   --reader-gallery-title-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.galleryTitle.lineHeight)};
+  --reader-gallery-header-title-color: ${getThemeRecipeRefValue(themeData, recipes.typography.galleryHeaderTitle.color)};
+  --reader-gallery-header-title-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.galleryHeaderTitle.family)};
+  --reader-gallery-header-title-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.galleryHeaderTitle.size)};
+  --reader-gallery-header-title-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.galleryHeaderTitle.weight)};
+  --reader-gallery-header-title-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.galleryHeaderTitle.lineHeight)};
   --reader-title-small-color: ${getThemeRecipeRefValue(themeData, recipes.typography.titleCompact.color)};
   --reader-title-small-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.titleCompact.family)};
   --reader-title-small-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.titleCompact.size)};
@@ -615,6 +640,26 @@ export function buildThemeTokensCss(
   --reader-gallery-detail-title-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.galleryDetailTitle.size)};
   --reader-gallery-detail-title-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.galleryDetailTitle.weight)};
   --reader-gallery-detail-title-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.galleryDetailTitle.lineHeight)};
+  --reader-discovery-title-color: ${getThemeRecipeRefValue(themeData, recipes.typography.discoveryTitle.color)};
+  --reader-discovery-title-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.discoveryTitle.family)};
+  --reader-discovery-title-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.discoveryTitle.size)};
+  --reader-discovery-title-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.discoveryTitle.weight)};
+  --reader-discovery-title-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.discoveryTitle.lineHeight)};
+  --reader-discovery-meta-color: ${getThemeRecipeRefValue(themeData, recipes.typography.discoveryMeta.color)};
+  --reader-discovery-meta-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.discoveryMeta.family)};
+  --reader-discovery-meta-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.discoveryMeta.size)};
+  --reader-discovery-meta-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.discoveryMeta.weight)};
+  --reader-discovery-meta-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.discoveryMeta.lineHeight)};
+  --reader-rail-section-title-color: ${getThemeRecipeRefValue(themeData, recipes.typography.railSectionTitle.color)};
+  --reader-rail-section-title-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.railSectionTitle.family)};
+  --reader-rail-section-title-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.railSectionTitle.size)};
+  --reader-rail-section-title-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.railSectionTitle.weight)};
+  --reader-rail-section-title-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.railSectionTitle.lineHeight)};
+  --reader-rail-card-title-color: ${getThemeRecipeRefValue(themeData, recipes.typography.railCardTitle.color)};
+  --reader-rail-card-title-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.railCardTitle.family)};
+  --reader-rail-card-title-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.railCardTitle.size)};
+  --reader-rail-card-title-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.railCardTitle.weight)};
+  --reader-rail-card-title-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.railCardTitle.lineHeight)};
   --reader-subtitle-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.subtitle.family)};
   --reader-subtitle-color: ${getThemeRecipeRefValue(themeData, recipes.typography.subtitle.color)};
   --reader-subtitle-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.subtitle.size)};
@@ -683,6 +728,38 @@ export function buildThemeTokensCss(
   --reader-caption-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.caption.size)};
   --reader-caption-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.caption.weight)};
   --reader-caption-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.caption.lineHeight)};
+  --reader-support-title-color: ${getThemeRecipeRefValue(themeData, recipes.typography.supportTitle.color)};
+  --reader-support-title-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.supportTitle.family)};
+  --reader-support-title-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.supportTitle.size)};
+  --reader-support-title-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.supportTitle.weight)};
+  --reader-support-title-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.supportTitle.lineHeight)};
+  --reader-support-label-color: ${getThemeRecipeRefValue(themeData, recipes.typography.supportLabel.color)};
+  --reader-support-label-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.supportLabel.family)};
+  --reader-support-label-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.supportLabel.size)};
+  --reader-support-label-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.supportLabel.weight)};
+  --reader-support-label-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.supportLabel.lineHeight)};
+  --reader-support-meta-color: ${getThemeRecipeRefValue(themeData, recipes.typography.supportMeta.color)};
+  --reader-support-meta-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.supportMeta.family)};
+  --reader-support-meta-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.supportMeta.size)};
+  --reader-support-meta-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.supportMeta.weight)};
+  --reader-support-meta-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.supportMeta.lineHeight)};
+  --reader-support-hint-color: ${getThemeRecipeRefValue(themeData, recipes.typography.supportHint.color)};
+  --reader-support-hint-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.supportHint.family)};
+  --reader-support-hint-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.supportHint.size)};
+  --reader-support-hint-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.supportHint.weight)};
+  --reader-support-hint-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.supportHint.lineHeight)};
+  --reader-support-control-text-color: ${getThemeRecipeRefValue(themeData, recipes.typography.supportControl.color)};
+  --reader-support-control-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.supportControl.family)};
+  --reader-support-control-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.supportControl.size)};
+  --reader-support-control-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.supportControl.weight)};
+  --reader-support-control-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.supportControl.lineHeight)};
+  --reader-support-control-background-color: ${getThemeRecipeRefValue(themeData, recipes.controls.supportControl.background)};
+  --reader-support-control-border-color: ${getThemeRecipeRefValue(themeData, recipes.controls.supportControl.border)};
+  --reader-support-control-hover-background-color: ${getThemeRecipeRefValue(themeData, recipes.controls.supportControl.hoverBackground ?? recipes.controls.supportControl.background)};
+  --reader-support-control-strong-background-color: ${getThemeRecipeRefValue(themeData, recipes.controls.supportControlStrong.background)};
+  --reader-support-control-strong-text-color: ${getThemeRecipeRefValue(themeData, recipes.controls.supportControlStrong.text)};
+  --reader-support-control-strong-border-color: ${getThemeRecipeRefValue(themeData, recipes.controls.supportControlStrong.border)};
+  --reader-support-control-strong-hover-background-color: ${getThemeRecipeRefValue(themeData, recipes.controls.supportControlStrong.hoverBackground ?? recipes.controls.supportControlStrong.background)};
   --reader-callout-title-color: ${getThemeRecipeRefValue(themeData, recipes.typography.calloutTitle.color)};
   --reader-callout-title-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.calloutTitle.family)};
   --reader-callout-title-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.calloutTitle.size)};
@@ -781,9 +858,43 @@ export function themeDataForCssGeneration(
   return rest;
 }
 
+export function buildScopedThemeTokensCss(
+  settings: ResolvedScopedThemeSettings,
+  scopeSelector: string
+): string {
+  const raw = buildThemeTokensCss(
+    themeDataForCssGeneration({
+      ...settings.data,
+      darkModeShift: settings.darkModeShift,
+      activePresetId: settings.activePresetId,
+      recipes: settings.recipes,
+    })
+  );
+  return scopeThemeTokensCss(raw, scopeSelector);
+}
+
+export function buildScopedPreviewThemeCss(
+  document: ResolvedScopedThemeDocumentData,
+  scopes: {
+    reader: string;
+    admin: string;
+  }
+): { readerCss: string; adminCss: string; css: string } {
+  const readerCss = buildScopedThemeTokensCss(document.reader, scopes.reader);
+  const adminCss = buildScopedThemeTokensCss(document.admin, scopes.admin);
+  return {
+    readerCss,
+    adminCss,
+    css: `${readerCss}\n${adminCss}`,
+  };
+}
+
+type LegacyFlatThemeData =
+  StructuredThemeData & { darkModeShift?: number; activePresetId?: string; recipes?: ReaderThemeRecipes };
+
 type PersistedThemeData =
-  | (StructuredThemeData & { darkModeShift?: number; activePresetId?: string; recipes?: ReaderThemeRecipes })
-  | ScopedThemeDocumentData;
+  | LegacyFlatThemeData
+  | PersistedThemeDocumentData;
 
 /** Firestore can hold a partial `data` object; building CSS from it throws or yields broken vars. */
 function isThemeDataViable(
@@ -800,33 +911,40 @@ function isThemeDataViable(
   return true;
 }
 
-function isScopedThemeDocument(data: unknown): data is ScopedThemeDocumentData {
-  const row = data as Partial<ScopedThemeDocumentData> | null | undefined;
+export function isPersistedThemeDocument(data: unknown): data is PersistedThemeDocumentData {
+  const row = data as Partial<PersistedThemeDocumentData> | null | undefined;
   return row?.version === 2 && !!row.reader?.data && !!row.admin?.data;
 }
 
 function themeSettingsFromFlat(
   data: (StructuredThemeData & { darkModeShift?: number; activePresetId?: string; recipes?: ReaderThemeRecipes }) | null | undefined,
-  fallback: ScopedThemeSettings
-): ScopedThemeSettings {
+  fallback: ResolvedScopedThemeSettings
+): ResolvedScopedThemeSettings {
   if (!isThemeDataViable(data)) return fallback;
+  const {
+    darkModeShift,
+    activePresetId,
+    recipes,
+    ...themeData
+  } = data;
+
   return {
-    data,
+    data: themeData as StructuredThemeData,
     activePresetId:
-      data.activePresetId === 'journal' ||
-      data.activePresetId === 'editorial' ||
-      data.activePresetId === 'admin' ||
-      data.activePresetId === 'custom'
-        ? data.activePresetId
+      activePresetId === 'journal' ||
+      activePresetId === 'editorial' ||
+      activePresetId === 'admin' ||
+      activePresetId === 'custom'
+        ? activePresetId
         : fallback.activePresetId ?? 'custom',
-    darkModeShift: data.darkModeShift ?? fallback.darkModeShift ?? 5,
-    recipes: data.recipes ?? fallback.recipes,
+    darkModeShift: darkModeShift ?? fallback.darkModeShift ?? 5,
+    recipes: recipes ?? fallback.recipes,
   };
 }
 
-export function normalizeThemeDocument(data: unknown): ScopedThemeDocumentData {
+export function normalizeThemeDocument(data: unknown): ResolvedScopedThemeDocumentData {
   const fallback = getDefaultScopedThemeDocument();
-  if (isScopedThemeDocument(data)) {
+  if (isPersistedThemeDocument(data)) {
     return {
       version: 2,
       reader: themeSettingsFromFlat(
@@ -853,10 +971,42 @@ export function normalizeThemeDocument(data: unknown): ScopedThemeDocumentData {
   return {
     ...fallback,
     reader: themeSettingsFromFlat(
-      data as (StructuredThemeData & { darkModeShift?: number; activePresetId?: string; recipes?: ReaderThemeRecipes }) | null | undefined,
+      data as LegacyFlatThemeData | null | undefined,
       fallback.reader
     ),
   };
+}
+
+export function toPersistedThemeDocument(
+  data: PersistedThemeDocumentData | ResolvedScopedThemeDocumentData
+): PersistedThemeDocumentData {
+  const reader = {
+    data: data.reader.data,
+    activePresetId: data.reader.activePresetId,
+    darkModeShift: data.reader.darkModeShift,
+    ...(data.reader.recipes ? { recipes: data.reader.recipes } : {}),
+  };
+  const admin = {
+    data: data.admin.data,
+    activePresetId: data.admin.activePresetId,
+    darkModeShift: data.admin.darkModeShift,
+    ...(data.admin.recipes ? { recipes: data.admin.recipes } : {}),
+  };
+
+  return {
+    version: 2,
+    reader,
+    admin,
+  };
+}
+
+export async function getPersistedThemeDocumentFromJson(): Promise<PersistedThemeDocumentData> {
+  try {
+    return toPersistedThemeDocument(normalizeThemeDocument(await readThemeJsonFile()));
+  } catch (error) {
+    console.error('Failed to read persisted theme JSON document:', error);
+    return toPersistedThemeDocument(getDefaultScopedThemeDocument());
+  }
 }
 
 /**
@@ -878,8 +1028,8 @@ export async function getResolvedThemeData(): Promise<
  * Theme admin document: Firestore `app_settings/theme` when present and complete,
  * else `theme-data.json` as reader + Admin preset as admin.
  */
-export async function getResolvedScopedThemeDocument(): Promise<ScopedThemeDocumentData> {
-  const fromFile = normalizeThemeDocument(await getThemeData());
+export async function getResolvedScopedThemeDocument(): Promise<ResolvedScopedThemeDocumentData> {
+  const fromFile = normalizeThemeDocument(await getPersistedThemeDocumentFromJson());
   try {
     getAdminApp();
     const db = getFirestore();
@@ -887,7 +1037,7 @@ export async function getResolvedScopedThemeDocument(): Promise<ScopedThemeDocum
     if (snap.exists) {
       const row = snap.data();
       const data = row?.data as PersistedThemeData | undefined;
-      if (isScopedThemeDocument(data)) {
+      if (isPersistedThemeDocument(data)) {
         return normalizeThemeDocument(data);
       }
       if (isThemeDataViable(data as StructuredThemeData | undefined)) {
@@ -921,22 +1071,45 @@ async function persistThemeToFirestore(
 
 /** One-off / CI: push `theme-data.json` to Firestore so production matches repo without opening Theme admin. */
 export async function syncThemeFromJsonToFirestore(): Promise<void> {
-  const data = await getThemeData();
-  if (!data.palette?.length) {
-    throw new Error('theme-data.json has no palette; cannot sync to Firestore');
+  const data = await getPersistedThemeDocumentFromJson();
+  if (!data.reader.data.palette?.length) {
+    throw new Error('theme-data.json has no reader palette; cannot sync to Firestore');
   }
   await persistThemeToFirestore(data);
 }
 
-/** Writes `theme-data.json` (git-friendly backup) and Firestore (runtime source of truth). */
+async function writeThemeBackupFile(themeData: PersistedThemeDocumentData): Promise<void> {
+  const jsonPath = path.join(process.cwd(), 'theme-data.json');
+  await fs.writeFile(jsonPath, JSON.stringify(themeData, null, 2), 'utf-8');
+}
+
+export type ThemeSaveResult = {
+  firestoreSaved: true;
+  backupSaved: boolean;
+  backupError?: string;
+};
+
+/** Writes the save-ready scoped theme document to Firestore first, then updates the JSON backup best-effort. */
 export const saveThemeData = async (
-  themeData: PersistedThemeData
-): Promise<void> => {
+  themeData: PersistedThemeDocumentData
+): Promise<ThemeSaveResult> => {
   try {
-    const jsonPath = path.join(process.cwd(), 'theme-data.json');
-    await fs.writeFile(jsonPath, JSON.stringify(themeData, null, 2), 'utf-8');
     await persistThemeToFirestore(themeData);
-    console.log('Theme saved to theme-data.json and Firestore');
+    try {
+      await writeThemeBackupFile(themeData);
+      console.log('Theme saved to Firestore; theme-data.json backup updated.');
+      return {
+        firestoreSaved: true,
+        backupSaved: true,
+      };
+    } catch (backupError) {
+      console.warn('[theme] Firestore save succeeded, but theme-data.json backup write failed:', backupError);
+      return {
+        firestoreSaved: true,
+        backupSaved: false,
+        backupError: backupError instanceof Error ? backupError.message : String(backupError),
+      };
+    }
   } catch (error) {
     console.error('Failed to save theme data:', error);
     throw error;

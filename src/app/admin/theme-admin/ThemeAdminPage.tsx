@@ -11,10 +11,13 @@ import {
   type ReaderThemeRecipes,
   type ReaderTypographyRoleRecipe,
   type ThemeRecipeTokenRef,
-  type ScopedThemeDocumentData,
+  type PersistedThemeDocumentData,
+  type ResolvedScopedThemeDocumentData,
 } from '@/lib/types/theme';
 import {
-  getAdminThemePresetDocument,
+  getAdminPresetSettings,
+  getReaderPresetSettings,
+  THEME_PRESET_META,
   type ThemeAdminPresetId,
   type ThemePresetId,
   type ThemeDocumentData,
@@ -31,6 +34,13 @@ type ApiErrorResponse = {
   error?: string;
 };
 
+type ThemeSaveApiResponse = {
+  success: boolean;
+  message: string;
+  backupSaved?: boolean;
+  backupError?: string;
+};
+
 type SaveNotice = {
   type: 'success' | 'error' | 'warning';
   message: string;
@@ -38,8 +48,9 @@ type SaveNotice = {
 };
 
 type ThemeRecord = Record<string, unknown>;
-const THEME_SAVE_ENABLED = false;
+const THEME_SAVE_ENABLED = true;
 const DEFAULT_SELECTED_RECIPE = 'typography:title';
+const READER_PRESET_IDS: ThemePresetId[] = ['journal', 'editorial'];
 
 const asThemeRecord = (value: unknown): ThemeRecord => (
   value && typeof value === 'object' ? value as ThemeRecord : {}
@@ -158,6 +169,39 @@ const CONTROL_BORDER_OPTIONS: ThemeRecipeTokenRef[] = [
   'layout/border2Color',
   'component/card/borderColor',
 ];
+
+const mergeReaderRecipes = (recipes?: Partial<ReaderThemeRecipes> | null): ReaderThemeRecipes => ({
+  ...DEFAULT_READER_THEME_RECIPES,
+  ...recipes,
+  typography: {
+    ...DEFAULT_READER_THEME_RECIPES.typography,
+    ...(recipes?.typography ?? {}),
+  },
+  surfaces: {
+    ...DEFAULT_READER_THEME_RECIPES.surfaces,
+    ...(recipes?.surfaces ?? {}),
+  },
+  controls: {
+    ...DEFAULT_READER_THEME_RECIPES.controls,
+    ...(recipes?.controls ?? {}),
+  },
+  tags: {
+    ...DEFAULT_READER_THEME_RECIPES.tags,
+    ...(recipes?.tags ?? {}),
+  },
+  overlays: {
+    ...DEFAULT_READER_THEME_RECIPES.overlays,
+    ...(recipes?.overlays ?? {}),
+  },
+  iconography: {
+    ...DEFAULT_READER_THEME_RECIPES.iconography,
+    ...(recipes?.iconography ?? {}),
+  },
+  treatments: {
+    ...DEFAULT_READER_THEME_RECIPES.treatments,
+    ...(recipes?.treatments ?? {}),
+  },
+});
 
 // Color Palette Editor Component
 const PaletteColorEditor: React.FC<{
@@ -817,6 +861,19 @@ export default function ThemeAdminPage() {
   const [activePresetId, setActivePresetId] = useState<ThemePresetId | 'custom'>('custom');
   const [activeAdminPresetId, setActiveAdminPresetId] = useState<ThemeAdminPresetId | 'custom'>('admin');
 
+  const applyReaderPreset = useCallback((presetId: ThemePresetId) => {
+    const preset = getReaderPresetSettings(presetId);
+    setThemeData(preset.data);
+    setDarkModeShift(preset.darkModeShift);
+    setReaderRecipes(mergeReaderRecipes(preset.recipes));
+    setActivePresetId(presetId);
+    setSaveNotice({
+      type: 'warning',
+      message: `${THEME_PRESET_META[presetId].label} preset applied to the working draft.`,
+      detail: 'Save remains paused; preview changes are diagnostic only.',
+    });
+  }, []);
+
   useEffect(() => {
     const fetchThemeData = async () => {
       try {
@@ -826,18 +883,13 @@ export default function ThemeAdminPage() {
           const err = data as ApiErrorResponse;
           throw new Error(err.message || err.error || 'Failed to fetch theme data.');
         }
-        const adminPreset = getAdminThemePresetDocument('admin');
-        const {
-          darkModeShift: defaultAdminDarkModeShift,
-          activePresetId: defaultAdminPresetId,
-          ...defaultAdminData
-        } = adminPreset;
+        const adminPreset = getAdminPresetSettings('admin');
 
-        if ((data as ScopedThemeDocumentData)?.version === 2) {
-          const scoped = data as ScopedThemeDocumentData;
+        if ((data as ResolvedScopedThemeDocumentData)?.version === 2) {
+          const scoped = data as ResolvedScopedThemeDocumentData;
           setThemeData(scoped.reader.data);
           setDarkModeShift(scoped.reader.darkModeShift || 5);
-          setReaderRecipes(scoped.reader.recipes ?? DEFAULT_READER_THEME_RECIPES);
+          setReaderRecipes(mergeReaderRecipes(scoped.reader.recipes));
           setActivePresetId(
             scoped.reader.activePresetId === 'journal' || scoped.reader.activePresetId === 'editorial'
               ? scoped.reader.activePresetId
@@ -849,12 +901,12 @@ export default function ThemeAdminPage() {
         } else {
           setThemeData(data);
           setDarkModeShift(data.darkModeShift || 5);
-          setReaderRecipes(DEFAULT_READER_THEME_RECIPES);
+          setReaderRecipes(mergeReaderRecipes());
           const ap = (data as ThemeDocumentData).activePresetId;
           setActivePresetId(ap === 'journal' || ap === 'editorial' ? ap : 'custom');
-          setAdminThemeData(defaultAdminData as StructuredThemeData);
-          setAdminDarkModeShift(defaultAdminDarkModeShift ?? 5);
-          setActiveAdminPresetId(defaultAdminPresetId === 'admin' ? defaultAdminPresetId : 'admin');
+          setAdminThemeData(adminPreset.data);
+          setAdminDarkModeShift(adminPreset.darkModeShift);
+          setActiveAdminPresetId(adminPreset.activePresetId === 'admin' ? adminPreset.activePresetId : 'admin');
         }
       } catch (error) {
         console.error('Failed to fetch theme data:', error);
@@ -1078,7 +1130,7 @@ export default function ThemeAdminPage() {
     setSaving(true);
     setSaveNotice(null);
     try {
-      const dataToSave: ScopedThemeDocumentData = {
+      const dataToSave: PersistedThemeDocumentData = {
         version: 2,
         reader: {
           data: themeData,
@@ -1100,11 +1152,18 @@ export default function ThemeAdminPage() {
       });
       
       if (response.ok) {
+        const result = (await response.json().catch(() => ({
+          success: true,
+          message: 'Theme saved successfully.',
+        }))) as ThemeSaveApiResponse;
         router.refresh();
         setSaveNotice({
-          type: 'success',
-          message: 'Theme saved successfully.',
-          detail: 'Reader and Admin theme settings were persisted.',
+          type: result.backupSaved === false ? 'warning' : 'success',
+          message: result.message || 'Theme saved successfully.',
+          detail:
+            result.backupSaved === false
+              ? result.backupError || 'Firestore was updated, but the theme-data.json backup could not be written.'
+              : 'Reader and Admin theme settings were persisted.',
         });
       } else {
         const err = (await response.json().catch(() => ({}))) as ApiErrorResponse;
@@ -1574,6 +1633,7 @@ export default function ThemeAdminPage() {
     switch (kind) {
       case 'typography': {
         const recipe = readerRecipes.typography[key as keyof ReaderThemeRecipes['typography']];
+        if (!recipe) return <span className={styles.architectureEmptyState}>Unavailable</span>;
         return (
           <div className={styles.architectureRecipe}>
             <code>{formatTokenRef(recipe.family)}</code>
@@ -1587,6 +1647,7 @@ export default function ThemeAdminPage() {
       }
       case 'surface': {
         const recipe = readerRecipes.surfaces[key as keyof ReaderThemeRecipes['surfaces']];
+        if (!recipe) return <span className={styles.architectureEmptyState}>Unavailable</span>;
         return (
           <div className={styles.architectureRecipe}>
             <code>{formatTokenRef(recipe.background)}</code>
@@ -1600,6 +1661,7 @@ export default function ThemeAdminPage() {
       }
       case 'control': {
         const recipe = readerRecipes.controls[key as keyof ReaderThemeRecipes['controls']];
+        if (!recipe) return <span className={styles.architectureEmptyState}>Unavailable</span>;
         if ('color' in recipe) {
           return (
             <div className={styles.architectureRecipe}>
@@ -1619,6 +1681,7 @@ export default function ThemeAdminPage() {
       }
       case 'tag': {
         const recipe = readerRecipes.tags[key as keyof ReaderThemeRecipes['tags']];
+        if (!recipe) return <span className={styles.architectureEmptyState}>Unavailable</span>;
         return (
           <div className={styles.architectureRecipe}>
             <code>{formatTokenRef(recipe.background)}</code>
@@ -1630,6 +1693,7 @@ export default function ThemeAdminPage() {
       }
       case 'overlay': {
         const recipe = readerRecipes.overlays[key as keyof ReaderThemeRecipes['overlays']];
+        if (!recipe) return <span className={styles.architectureEmptyState}>Unavailable</span>;
         return (
           <div className={styles.architectureRecipe}>
             <code>{formatTokenRef(recipe.background)}</code>
@@ -1726,6 +1790,40 @@ export default function ThemeAdminPage() {
               <h2 className={styles.architectureTitle}>Reader Theme System</h2>
             </div>
             <div className={styles.paneBody}>
+              <section className={styles.architectureCard}>
+                <p className={styles.presetIntro}>
+                  Presets now apply to the working reader draft before recipe or token overrides. That keeps the
+                  workbench aligned to the actual theme model instead of treating Journal and Editorial as metadata only.
+                </p>
+                <div className={styles.presetGrid}>
+                  {READER_PRESET_IDS.map((presetId) => {
+                    const presetMeta = THEME_PRESET_META[presetId];
+                    const isActive = activePresetId === presetId;
+                    return (
+                      <article
+                        key={presetId}
+                        className={`${styles.presetCard} ${isActive ? styles.presetCardActive : ''}`}
+                      >
+                        <h3 className={styles.presetCardTitle}>{presetMeta.label}</h3>
+                        <p className={styles.presetCardText}>{presetMeta.description}</p>
+                        <button
+                          type="button"
+                          className={styles.presetApplyButton}
+                          onClick={() => applyReaderPreset(presetId)}
+                          disabled={isActive}
+                        >
+                          {isActive ? 'Applied to Draft' : 'Apply to Draft'}
+                        </button>
+                      </article>
+                    );
+                  })}
+                </div>
+                <p className={styles.presetIntro}>
+                  Active reader draft:{' '}
+                  <strong>{activePresetId === 'custom' ? 'Custom override set' : THEME_PRESET_META[activePresetId].label}</strong>.
+                  Any token or recipe edit after preset application moves the draft back to <strong>Custom</strong>.
+                </p>
+              </section>
               <section className={styles.architectureCard}>
                 <div className={styles.componentSelectorRow}>
                   {CURRENT_READER_THEME_COMPONENTS.map((component) => (

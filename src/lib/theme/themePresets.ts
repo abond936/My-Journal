@@ -1,7 +1,10 @@
 import {
   hexToHsl,
+  type PersistedThemeDocumentData,
   type AdminThemePresetId,
   type ReaderThemePresetId,
+  type ReaderThemeRecipes,
+  type ResolvedScopedThemeSettings,
   type ScopedThemeDocumentData,
   type StructuredThemeData,
 } from '@/lib/types/theme';
@@ -22,6 +25,109 @@ type ReaderPresetRole =
   | 'tags';
 
 type ReaderPresetAliasGroups = Record<ReaderPresetRole, Record<string, string>>;
+
+function cloneReaderRecipes(recipes: ReaderThemeRecipes): ReaderThemeRecipes {
+  return JSON.parse(JSON.stringify(recipes)) as ReaderThemeRecipes;
+}
+
+const JOURNAL_READER_RECIPES: ReaderThemeRecipes = (() => {
+  const recipes = cloneReaderRecipes(DEFAULT_READER_THEME_RECIPES);
+
+  recipes.typography.title.family = 'font-family/serif';
+  recipes.typography.title.weight = 'font-weight/medium';
+  recipes.typography.title.lineHeight = 'line-height/base';
+
+  recipes.typography.storyTitle.family = 'font-family/serif';
+  recipes.typography.storyTitle.size = 'font-size/lg';
+  recipes.typography.storyTitle.weight = 'font-weight/medium';
+  recipes.typography.storyTitle.lineHeight = 'line-height/base';
+
+  recipes.typography.galleryTitle.family = 'font-family/serif';
+  recipes.typography.galleryTitle.weight = 'font-weight/medium';
+  recipes.typography.galleryTitle.lineHeight = 'line-height/base';
+
+  recipes.typography.galleryHeaderTitle.family = 'font-family/serif';
+  recipes.typography.galleryHeaderTitle.weight = 'font-weight/medium';
+  recipes.typography.galleryHeaderTitle.lineHeight = 'line-height/base';
+
+  recipes.typography.titleCompact.weight = 'font-weight/medium';
+  recipes.typography.titleCompact.lineHeight = 'line-height/base';
+
+  recipes.typography.detailTitle.family = 'font-family/serif';
+  recipes.typography.detailTitle.weight = 'font-weight/semibold';
+  recipes.typography.detailTitle.lineHeight = 'line-height/base';
+
+  recipes.typography.storyDetailTitle.family = 'font-family/serif';
+  recipes.typography.storyDetailTitle.weight = 'font-weight/semibold';
+  recipes.typography.storyDetailTitle.lineHeight = 'line-height/base';
+
+  recipes.typography.galleryDetailTitle.family = 'font-family/serif';
+  recipes.typography.galleryDetailTitle.size = 'font-size/2xl';
+  recipes.typography.galleryDetailTitle.weight = 'font-weight/semibold';
+  recipes.typography.galleryDetailTitle.lineHeight = 'line-height/base';
+
+  recipes.typography.discoveryTitle.family = 'font-family/serif';
+  recipes.typography.discoveryTitle.weight = 'font-weight/medium';
+  recipes.typography.discoveryTitle.lineHeight = 'line-height/base';
+
+  recipes.typography.discoveryMeta.weight = 'font-weight/normal';
+  recipes.typography.discoveryMeta.lineHeight = 'line-height/base';
+
+  recipes.typography.railSectionTitle.family = 'font-family/serif';
+  recipes.typography.railSectionTitle.weight = 'font-weight/medium';
+  recipes.typography.railSectionTitle.lineHeight = 'line-height/base';
+
+  recipes.typography.railCardTitle.weight = 'font-weight/normal';
+  recipes.typography.railCardTitle.lineHeight = 'line-height/base';
+
+  recipes.typography.subtitle.family = 'font-family/serif';
+  recipes.typography.subtitle.size = 'font-size/lg';
+  recipes.typography.subtitle.lineHeight = 'line-height/relaxed';
+
+  recipes.typography.body.size = 'font-size/base';
+  recipes.typography.body.lineHeight = 'line-height/relaxed';
+
+  recipes.typography.excerpt.lineHeight = 'line-height/relaxed';
+
+  recipes.typography.caption.lineHeight = 'line-height/relaxed';
+
+  recipes.typography.supportTitle.weight = 'font-weight/medium';
+  recipes.typography.supportTitle.lineHeight = 'line-height/base';
+
+  recipes.typography.supportLabel.weight = 'font-weight/normal';
+  recipes.typography.supportMeta.weight = 'font-weight/normal';
+  recipes.typography.supportHint.lineHeight = 'line-height/relaxed';
+
+  recipes.typography.quote.weight = 'font-weight/normal';
+  recipes.typography.quote.lineHeight = 'line-height/relaxed';
+
+  recipes.typography.question.family = 'font-family/serif';
+  recipes.typography.question.size = 'font-size/xl';
+  recipes.typography.question.weight = 'font-weight/medium';
+  recipes.typography.question.lineHeight = 'line-height/base';
+
+  recipes.typography.calloutTitle.family = 'font-family/serif';
+  recipes.typography.calloutTitle.weight = 'font-weight/medium';
+  recipes.typography.calloutTitle.lineHeight = 'line-height/base';
+
+  recipes.typography.calloutBody.lineHeight = 'line-height/relaxed';
+
+  recipes.surfaces.card.padding = 'spacing/xl';
+  recipes.surfaces.detail.padding = 'spacing/2xl';
+
+  recipes.controls.supportControl.hoverBackground = 'layout/background1Color';
+  recipes.controls.supportControlStrong.hoverBackground = 'layout/background2Color';
+  recipes.controls.filterChip.hoverBackground = 'layout/background2Color';
+  recipes.controls.lightboxControl.background = 'layout/background2Color';
+
+  recipes.treatments.quoteWatermarkOpacity = '0.16';
+  recipes.treatments.questionWatermarkOpacity = '0.2';
+  recipes.treatments.calloutWatermarkOpacity = '0.2';
+
+  return recipes;
+})();
+
+const EDITORIAL_READER_RECIPES: ReaderThemeRecipes = cloneReaderRecipes(DEFAULT_READER_THEME_RECIPES);
 
 export const THEME_PRESET_META: Record<
   ThemePresetId,
@@ -65,9 +171,9 @@ export const READER_PRESET_ALIAS_GROUPS: Record<ThemePresetId, ReaderPresetAlias
     },
     typeTreatments: {
       '--reader-quote-font-family': 'var(--font-family-serif)',
-      '--reader-quote-watermark-opacity': '0.2',
-      '--reader-question-watermark-opacity': '0.26',
-      '--reader-callout-watermark-opacity': '0.26',
+      '--reader-quote-watermark-opacity': '0.16',
+      '--reader-question-watermark-opacity': '0.2',
+      '--reader-callout-watermark-opacity': '0.2',
     },
     media: {},
     discovery: {},
@@ -101,6 +207,14 @@ function cloneTheme(data: unknown): StructuredThemeData {
   return JSON.parse(JSON.stringify(data)) as StructuredThemeData;
 }
 
+function getBaseThemeData(data: unknown): StructuredThemeData {
+  const scoped = data as PersistedThemeDocumentData | null | undefined;
+  if (scoped?.version === 2 && scoped.reader?.data) {
+    return cloneTheme(scoped.reader.data);
+  }
+  return cloneTheme(data);
+}
+
 function patchThemeColor(themeData: StructuredThemeData, id: 1 | 2, variant: 'light' | 'dark', hex: string) {
   const tc = themeData.themeColors.find((c) => c.id === id);
   if (!tc) return;
@@ -128,35 +242,50 @@ export type ThemeDocumentData = StructuredThemeData & {
 };
 
 export function buildJournalPreset(): ThemeDocumentData {
-  const t = cloneTheme(baseTheme) as ThemeDocumentData;
+  const t = getBaseThemeData(baseTheme) as ThemeDocumentData;
   t.activePresetId = 'journal';
   t.darkModeShift = t.darkModeShift ?? 5;
   // Warmer “paper” surfaces (light); keep dark mode readable
-  patchThemeColor(t, 1, 'light', '#e6dfd6');
-  patchThemeColor(t, 1, 'dark', '#1c1916');
-  patchThemeColor(t, 2, 'light', '#2a2420');
-  patchThemeColor(t, 2, 'dark', '#f2ece6');
+  patchThemeColor(t, 1, 'light', '#f3eadf');
+  patchThemeColor(t, 1, 'dark', '#1b1613');
+  patchThemeColor(t, 2, 'light', '#31261f');
+  patchThemeColor(t, 2, 'dark', '#f5ede4');
   // Slightly warmer principal
-  patchPaletteHex(t, 3, '#1a5682');
+  patchPaletteHex(t, 3, '#76513a');
+  patchPaletteHex(t, 4, '#b89456');
   // Legible UI + body; handwriting kept for rare display use
   t.typography.fontFamilies.sans =
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
   t.typography.fontFamilies.serif = '"Georgia", "Times New Roman", serif';
   t.typography.fontFamilies.handwriting = '"Ink Free", "Segoe Script", "Brush Script MT", cursive';
+  t.typography.textColors.text2 = 'color2-100';
+  t.typography.fontWeights.medium = '450';
+  t.typography.fontWeights.semibold = '550';
+  t.typography.fontWeights.bold = '650';
+  t.typography.lineHeights.base = '1.6';
+  t.typography.lineHeights.tight = '1.3';
+  t.typography.lineHeights.relaxed = '1.85';
   t.borders.radius.sm = '0.3rem';
   t.borders.radius.md = '0.55rem';
   t.borders.radius.lg = '1rem';
   t.borders.radius.xl = '1.125rem';
-  t.shadows.strength = '12%';
-  t.shadows.strengthDark = '28%';
+  t.shadows.strength = '10%';
+  t.shadows.strengthDark = '24%';
+  t.layout.buttonMinWidth = '72px';
+  t.layout.sidebarWidthMobile = '272px';
+  t.components.button.outline.borderWidth = 'border/width/thin';
+  t.components.card.padding = 'spacing/xl';
+  t.components.card.borderWidth = 'border/width/thin';
   t.components.card.borderRadius = 'border/radius/lg';
   t.components.card.shadow = 'shadow/md';
   t.components.card.shadowHover = 'shadow/lg';
+  t.components.input.borderRadius = 'border/radius/md';
+  t.components.input.padding = 'spacing/md spacing/lg';
   return t;
 }
 
 export function buildEditorialPreset(): ThemeDocumentData {
-  const t = cloneTheme(baseTheme) as ThemeDocumentData;
+  const t = getBaseThemeData(baseTheme) as ThemeDocumentData;
   t.activePresetId = 'editorial';
   t.darkModeShift = t.darkModeShift ?? 5;
   patchThemeColor(t, 1, 'light', '#eceef2');
@@ -182,7 +311,7 @@ export function buildEditorialPreset(): ThemeDocumentData {
 }
 
 export function buildAdminPreset(): ThemeDocumentData {
-  const t = cloneTheme(baseTheme) as ThemeDocumentData;
+  const t = getBaseThemeData(baseTheme) as ThemeDocumentData;
   t.activePresetId = 'admin';
   t.darkModeShift = t.darkModeShift ?? 5;
   patchThemeColor(t, 1, 'light', '#e7eaf0');
@@ -223,32 +352,58 @@ export function getAdminThemePresetDocument(id: ThemeAdminPresetId): ThemeDocume
   return buildAdminPreset();
 }
 
+export function getReaderPresetRecipes(id: ThemePresetId): ReaderThemeRecipes {
+  return id === 'journal'
+    ? cloneReaderRecipes(JOURNAL_READER_RECIPES)
+    : cloneReaderRecipes(EDITORIAL_READER_RECIPES);
+}
+
+function toResolvedScopedThemeSettings(
+  theme: ThemeDocumentData,
+  fallbackPresetId: ThemePresetId | ThemeAdminPresetId,
+  recipes?: ReaderThemeRecipes
+): ResolvedScopedThemeSettings {
+  const {
+    activePresetId,
+    darkModeShift,
+    ...data
+  } = theme;
+
+  return {
+    data: data as StructuredThemeData,
+    activePresetId: activePresetId ?? fallbackPresetId,
+    darkModeShift: darkModeShift ?? 5,
+    recipes,
+  };
+}
+
+export function getReaderPresetSettings(
+  id: ThemePresetId,
+  recipes?: ReaderThemeRecipes
+): ResolvedScopedThemeSettings {
+  return toResolvedScopedThemeSettings(getThemePresetDocument(id), id, recipes ?? getReaderPresetRecipes(id));
+}
+
+export function getAdminPresetSettings(id: ThemeAdminPresetId): ResolvedScopedThemeSettings {
+  return toResolvedScopedThemeSettings(getAdminThemePresetDocument(id), id);
+}
+
 export function getDefaultScopedThemeDocument(): ScopedThemeDocumentData {
-  const reader = buildJournalPreset();
-  const admin = buildAdminPreset();
-  const {
-    activePresetId: readerPresetId,
-    darkModeShift: readerDarkModeShift,
-    ...readerData
-  } = reader;
-  const {
-    activePresetId: adminPresetId,
-    darkModeShift: adminDarkModeShift,
-    ...adminData
-  } = admin;
+  const reader = getReaderPresetSettings('journal');
+  const admin = getAdminPresetSettings('admin');
 
   return {
     version: 2,
     reader: {
-      data: readerData as StructuredThemeData,
-      activePresetId: readerPresetId ?? 'journal',
-      darkModeShift: readerDarkModeShift ?? 5,
-      recipes: DEFAULT_READER_THEME_RECIPES,
+      data: reader.data,
+      activePresetId: reader.activePresetId,
+      darkModeShift: reader.darkModeShift,
+      recipes: reader.recipes,
     },
     admin: {
-      data: adminData as StructuredThemeData,
-      activePresetId: adminPresetId ?? 'admin',
-      darkModeShift: adminDarkModeShift ?? 5,
+      data: admin.data,
+      activePresetId: admin.activePresetId,
+      darkModeShift: admin.darkModeShift,
     },
   };
 }

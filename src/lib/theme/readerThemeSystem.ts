@@ -86,6 +86,13 @@ export const CURRENT_READER_THEME_SYSTEM: ReaderThemeSummarySystem = {
         lineHeight: 'line-height/tight',
         color: 'literal/typography.textColors.text1',
       },
+      galleryHeaderTitle: {
+        family: 'font-family/sans',
+        size: 'font-size/lg',
+        weight: 'font-weight/semibold',
+        lineHeight: 'line-height/tight',
+        color: 'literal/typography.textColors.text1',
+      },
       titleCompact: {
         family: 'font-family/sans',
         size: 'font-size/sm',
@@ -112,6 +119,34 @@ export const CURRENT_READER_THEME_SYSTEM: ReaderThemeSummarySystem = {
         size: 'font-size/3xl',
         weight: 'font-weight/bold',
         lineHeight: 'line-height/tight',
+        color: 'literal/typography.textColors.text1',
+      },
+      discoveryTitle: {
+        family: 'font-family/sans',
+        size: 'font-size/lg',
+        weight: 'font-weight/semibold',
+        lineHeight: 'line-height/tight',
+        color: 'literal/typography.textColors.text1',
+      },
+      discoveryMeta: {
+        family: 'font-family/sans',
+        size: 'font-size/sm',
+        weight: 'font-weight/medium',
+        lineHeight: 'line-height/base',
+        color: 'literal/typography.textColors.text2',
+      },
+      railSectionTitle: {
+        family: 'font-family/sans',
+        size: 'font-size/lg',
+        weight: 'font-weight/semibold',
+        lineHeight: 'line-height/tight',
+        color: 'literal/typography.textColors.text1',
+      },
+      railCardTitle: {
+        family: 'font-family/sans',
+        size: 'font-size/sm',
+        weight: 'font-weight/medium',
+        lineHeight: 'line-height/base',
         color: 'literal/typography.textColors.text1',
       },
       subtitle: {
@@ -149,6 +184,41 @@ export const CURRENT_READER_THEME_SYSTEM: ReaderThemeSummarySystem = {
         weight: 'font-weight/normal',
         lineHeight: 'line-height/base',
         color: 'literal/typography.textColors.text2',
+      },
+      supportTitle: {
+        family: 'font-family/sans',
+        size: 'font-size/lg',
+        weight: 'font-weight/semibold',
+        lineHeight: 'line-height/tight',
+        color: 'literal/typography.textColors.text1',
+      },
+      supportLabel: {
+        family: 'font-family/sans',
+        size: 'font-size/sm',
+        weight: 'font-weight/medium',
+        lineHeight: 'line-height/base',
+        color: 'literal/typography.textColors.text1',
+      },
+      supportMeta: {
+        family: 'font-family/sans',
+        size: 'font-size/xs',
+        weight: 'font-weight/medium',
+        lineHeight: 'line-height/base',
+        color: 'literal/typography.textColors.text2',
+      },
+      supportHint: {
+        family: 'font-family/sans',
+        size: 'font-size/sm',
+        weight: 'font-weight/normal',
+        lineHeight: 'line-height/base',
+        color: 'literal/typography.textColors.text2',
+      },
+      supportControl: {
+        family: 'font-family/sans',
+        size: 'font-size/sm',
+        weight: 'font-weight/medium',
+        lineHeight: 'line-height/base',
+        color: 'literal/typography.textColors.text1',
       },
       quote: {
         family: 'font-family/serif',
@@ -225,6 +295,18 @@ export const CURRENT_READER_THEME_SYSTEM: ReaderThemeSummarySystem = {
     },
     controls: {
       solid: {
+        background: 'component/button/solid/backgroundColor',
+        text: 'component/button/solid/textColor',
+        border: 'component/button/solid/borderColor',
+        hoverBackground: 'component/button/solid/backgroundColorHover',
+      },
+      supportControl: {
+        background: 'component/input/backgroundColor',
+        text: 'component/input/textColor',
+        border: 'component/input/borderColor',
+        hoverBackground: 'layout/background2Color',
+      },
+      supportControlStrong: {
         background: 'component/button/solid/backgroundColor',
         text: 'component/button/solid/textColor',
         border: 'component/button/solid/borderColor',
@@ -376,7 +458,7 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
   {
     id: 'galleryCard',
     label: 'Gallery card',
-    description: 'Gallery cards, opened gallery detail, and media controls.',
+    description: 'Gallery cards, opened gallery detail, inline gallery header, and lightbox/media controls.',
     variants: [
       {
         id: 'closed',
@@ -394,6 +476,8 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
         elements: [
           { id: 'surface', label: 'Detail surface', binding: { kind: 'surface', key: 'detail' } },
           { id: 'title', label: 'Title', binding: { kind: 'typography', key: 'galleryDetailTitle' } },
+          { id: 'headerTitle', label: 'Inline gallery header', binding: { kind: 'typography', key: 'galleryHeaderTitle' } },
+          { id: 'headerMeta', label: 'Inline gallery count', binding: { kind: 'typography', key: 'discoveryMeta' } },
           { id: 'caption', label: 'Caption', binding: { kind: 'typography', key: 'caption' } },
           { id: 'body', label: 'Body text', binding: { kind: 'typography', key: 'body' } },
           { id: 'lightboxControl', label: 'Lightbox control', binding: { kind: 'control', key: 'lightboxControl' } },
@@ -405,8 +489,34 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
         label: 'Explore More',
         elements: [
           { id: 'surface', label: 'Rail card surface', binding: { kind: 'surface', key: 'card' } },
+          { id: 'sectionTitle', label: 'Section title', binding: { kind: 'typography', key: 'discoveryTitle' } },
           { id: 'title', label: 'Compact title', binding: { kind: 'typography', key: 'titleCompact' } },
           { id: 'caption', label: 'Caption', binding: { kind: 'typography', key: 'caption' } },
+          { id: 'meta', label: 'Group/meta text', binding: { kind: 'typography', key: 'discoveryMeta' } },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'discoverySupport',
+    label: 'Discovery and rails',
+    description: 'Discovery section headers, child-card rail headers, and compact rail card titles.',
+    variants: [
+      {
+        id: 'discovery',
+        label: 'Discovery section',
+        elements: [
+          { id: 'sectionTitle', label: 'Section title', binding: { kind: 'typography', key: 'discoveryTitle' } },
+          { id: 'meta', label: 'Group/meta text', binding: { kind: 'typography', key: 'discoveryMeta' } },
+        ],
+      },
+      {
+        id: 'childRail',
+        label: 'Child-card rail',
+        elements: [
+          { id: 'sectionTitle', label: 'Rail section title', binding: { kind: 'typography', key: 'railSectionTitle' } },
+          { id: 'countMeta', label: 'Rail count/meta', binding: { kind: 'typography', key: 'discoveryMeta' } },
+          { id: 'cardTitle', label: 'Rail card title', binding: { kind: 'typography', key: 'railCardTitle' } },
         ],
       },
     ],
@@ -485,13 +595,20 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
   {
     id: 'sidebar',
     label: 'Sidebar and controls',
-    description: 'Reader chrome, active controls, chips, and icon color.',
+    description: 'Reader chrome, support titles/labels, active controls, chips, and icon color.',
     variants: [
       {
         id: 'chrome',
         label: 'Reader chrome',
         elements: [
           { id: 'surface', label: 'Sidebar surface', binding: { kind: 'surface', key: 'chrome' } },
+          { id: 'supportTitle', label: 'Sidebar title', binding: { kind: 'typography', key: 'supportTitle' } },
+          { id: 'supportLabel', label: 'Control label', binding: { kind: 'typography', key: 'supportLabel' } },
+          { id: 'supportMeta', label: 'Support meta', binding: { kind: 'typography', key: 'supportMeta' } },
+          { id: 'supportHint', label: 'Hint text', binding: { kind: 'typography', key: 'supportHint' } },
+          { id: 'supportControl', label: 'Neutral control', binding: { kind: 'control', key: 'supportControl' } },
+          { id: 'supportControlType', label: 'Control text', binding: { kind: 'typography', key: 'supportControl' } },
+          { id: 'supportControlStrong', label: 'Active control', binding: { kind: 'control', key: 'supportControlStrong' } },
           { id: 'solidControl', label: 'Active tab / solid control', binding: { kind: 'control', key: 'solid' } },
           { id: 'filterChip', label: 'Filter chip', binding: { kind: 'control', key: 'filterChip' } },
           { id: 'icon', label: 'Chrome icon color', binding: { kind: 'iconography', key: 'chrome' } },
@@ -500,18 +617,32 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
     ],
   },
   {
-    id: 'lightbox',
-    label: 'Lightbox',
-    description: 'Overlay scrim, caption text, and lightbox buttons.',
+    id: 'supportUi',
+    label: 'Support UI',
+    description: 'Shared reader-adjacent tools plus empty/loading/error feedback states.',
     variants: [
       {
-        id: 'default',
-        label: 'Default',
+        id: 'tooling',
+        label: 'Tooling and selectors',
         elements: [
-          { id: 'overlay', label: 'Overlay', binding: { kind: 'overlay', key: 'lightbox' } },
-          { id: 'caption', label: 'Caption', binding: { kind: 'typography', key: 'caption' } },
-          { id: 'control', label: 'Control', binding: { kind: 'control', key: 'lightboxControl' } },
-          { id: 'icon', label: 'Overlay icon color', binding: { kind: 'iconography', key: 'overlay' } },
+          { id: 'title', label: 'Support title', binding: { kind: 'typography', key: 'supportTitle' } },
+          { id: 'label', label: 'Support label', binding: { kind: 'typography', key: 'supportLabel' } },
+          { id: 'meta', label: 'Support meta', binding: { kind: 'typography', key: 'supportMeta' } },
+          { id: 'hint', label: 'Support hint', binding: { kind: 'typography', key: 'supportHint' } },
+          { id: 'control', label: 'Neutral control', binding: { kind: 'control', key: 'supportControl' } },
+          { id: 'controlType', label: 'Control text', binding: { kind: 'typography', key: 'supportControl' } },
+          { id: 'controlStrong', label: 'Selected control', binding: { kind: 'control', key: 'supportControlStrong' } },
+        ],
+      },
+      {
+        id: 'states',
+        label: 'Empty, loading, and error states',
+        elements: [
+          { id: 'title', label: 'State title', binding: { kind: 'typography', key: 'supportTitle' } },
+          { id: 'meta', label: 'State meta', binding: { kind: 'typography', key: 'supportMeta' } },
+          { id: 'hint', label: 'State hint', binding: { kind: 'typography', key: 'supportHint' } },
+          { id: 'control', label: 'State action', binding: { kind: 'control', key: 'supportControl' } },
+          { id: 'controlType', label: 'State action text', binding: { kind: 'typography', key: 'supportControl' } },
         ],
       },
     ],

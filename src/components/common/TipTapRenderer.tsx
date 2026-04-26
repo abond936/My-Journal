@@ -13,12 +13,25 @@ interface TipTapRendererProps {
   content: string;
   /** Feed tiles: avoid ProseMirror panel fill (prevents a contrasting horizontal band on card surfaces). */
   surface?: 'default' | 'transparent';
+  headingVariant?:
+    | 'default'
+    | 'detail'
+    | 'storyDetail'
+    | 'galleryDetail'
+    | 'story'
+    | 'gallery'
+    | 'question'
+    | 'callout';
 }
 
 /**
  * Read-only TipTap output. Keeps extension parity with RichTextEditor for figures and @ card links.
  */
-const TipTapRenderer: React.FC<TipTapRendererProps> = ({ content, surface = 'default' }) => {
+const TipTapRenderer: React.FC<TipTapRendererProps> = ({
+  content,
+  surface = 'default',
+  headingVariant = 'default',
+}) => {
   const router = useRouter();
 
   const editor = useEditor({
@@ -86,11 +99,25 @@ const TipTapRenderer: React.FC<TipTapRendererProps> = ({ content, surface = 'def
 
   return (
     <div
-      className={
-        surface === 'transparent'
-          ? `${styles.renderer} ${styles.rendererTransparent}`
-          : styles.renderer
-      }
+      className={[
+        styles.renderer,
+        surface === 'transparent' ? styles.rendererTransparent : '',
+        headingVariant === 'detail'
+          ? styles.rendererDetailHeadings
+          : headingVariant === 'storyDetail'
+            ? styles.rendererStoryDetailHeadings
+            : headingVariant === 'galleryDetail'
+              ? styles.rendererGalleryDetailHeadings
+              : headingVariant === 'story'
+                ? styles.rendererStoryHeadings
+                : headingVariant === 'gallery'
+                  ? styles.rendererGalleryHeadings
+                  : headingVariant === 'question'
+                    ? styles.rendererQuestionHeadings
+                    : headingVariant === 'callout'
+                      ? styles.rendererCalloutHeadings
+                      : '',
+      ].filter(Boolean).join(' ')}
     >
       <EditorContent editor={editor} />
     </div>

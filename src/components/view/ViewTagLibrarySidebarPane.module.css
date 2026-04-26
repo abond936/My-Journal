@@ -7,13 +7,14 @@
 
 .intro {
   margin: 0;
-  font-size: var(--font-size-xs);
-  color: var(--text2-color);
+  font-family: var(--reader-meta-font-family);
+  font-size: var(--reader-meta-font-size);
+  color: var(--reader-chrome-muted-color);
   line-height: 1.45;
 }
 
 .intro a {
-  color: var(--color3);
+  color: var(--reader-link-text-color);
 }
 
 .scroll {
@@ -24,6 +25,7 @@
 
 .statusLine {
   margin: 0;
-  font-size: var(--font-size-xs);
-  color: var(--text2-color);
+  font-family: var(--reader-meta-font-family);
+  font-size: var(--reader-meta-font-size);
+  color: var(--reader-chrome-muted-color);
 }

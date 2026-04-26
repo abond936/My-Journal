@@ -27,13 +27,15 @@
     margin-left: 0;
   }
   
-  .title {
-    margin-top: 0;
-    margin-bottom: var(--spacing-md);
-    font-size: var(--font-size-xl);
-    font-weight: var(--font-weight-semibold);
-    color: var(--reader-chrome-text-color);
-  }
+.title {
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
+  font-family: var(--reader-support-title-font-family);
+  font-size: var(--reader-support-title-font-size);
+  font-weight: var(--reader-support-title-font-weight);
+  line-height: var(--reader-support-title-line-height);
+  color: var(--reader-support-title-color);
+}
 
   .modeTabs {
     display: grid;
@@ -44,67 +46,76 @@
 
   .modeTab {
     padding: var(--spacing-xs) var(--spacing-sm);
-    font-size: var(--font-size-sm);
-    font-family: var(--body-font-family);
-    background: transparent;
-    border: var(--border-width-thin) solid var(--reader-chrome-border-color);
+    font-family: var(--reader-support-control-font-family);
+    font-size: var(--reader-support-control-font-size);
+    font-weight: var(--reader-support-control-font-weight);
+    line-height: var(--reader-support-control-line-height);
+    background: var(--reader-support-control-background-color);
+    border: var(--border-width-thin) solid var(--reader-support-control-border-color);
     border-radius: var(--border-radius-md);
-    color: var(--reader-chrome-muted-color);
+    color: var(--reader-support-control-text-color);
     cursor: pointer;
   }
 
   .modeTabActive {
-    background-color: var(--reader-solid-background-color, var(--button-solid-background-color));
-    color: var(--reader-solid-text-color, var(--button-solid-text-color));
-    border-color: var(--reader-solid-border-color, var(--button-solid-border-color));
-    font-weight: var(--font-weight-semibold);
+    background-color: var(--reader-support-control-strong-background-color);
+    color: var(--reader-support-control-strong-text-color);
+    border-color: var(--reader-support-control-strong-border-color);
+    font-weight: var(--reader-support-control-font-weight);
   }
 
   .sidebarSection {
     margin-bottom: var(--spacing-md);
   }
 
-  .sectionHeading {
-    margin: 0 0 var(--spacing-xs) 0;
-    font-size: var(--font-size-base);
-    font-weight: var(--font-weight-semibold);
-    color: var(--reader-chrome-text-color);
-    line-height: 1.3;
-  }
+.sectionHeading {
+  margin: 0 0 var(--spacing-xs) 0;
+  font-family: var(--reader-support-title-font-family);
+  font-size: var(--reader-support-title-font-size);
+  font-weight: var(--reader-support-title-font-weight);
+  line-height: var(--reader-support-title-line-height);
+  color: var(--reader-support-title-color);
+}
 
   .dimensionsBlock {
     margin-bottom: var(--spacing-md);
   }
 
-  .dimensionsLabel {
-    display: block;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-    color: var(--reader-chrome-muted-color);
-    margin-bottom: var(--spacing-xs);
-  }
+.dimensionsLabel {
+  display: block;
+  font-family: var(--reader-support-label-font-family);
+  font-size: var(--reader-support-label-font-size);
+  font-weight: var(--reader-support-label-font-weight);
+  line-height: var(--reader-support-label-line-height);
+  color: var(--reader-support-label-color);
+  margin-bottom: var(--spacing-xs);
+}
 
   .searchBlock {
     margin-bottom: var(--spacing-md);
   }
 
-  .searchTagsLabel {
-    display: block;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-    color: var(--reader-chrome-muted-color);
-    margin-bottom: var(--spacing-xs);
-  }
+.searchTagsLabel {
+  display: block;
+  font-family: var(--reader-support-label-font-family);
+  font-size: var(--reader-support-label-font-size);
+  font-weight: var(--reader-support-label-font-weight);
+  line-height: var(--reader-support-label-line-height);
+  color: var(--reader-support-label-color);
+  margin-bottom: var(--spacing-xs);
+}
 
   .compactControl {
     width: 100%;
     padding: var(--spacing-sm);
-    font-size: var(--font-size-sm);
-    font-family: var(--body-font-family);
-    border: var(--border-width-thin) solid var(--reader-chrome-border-color);
+    font-family: var(--reader-support-control-font-family);
+    font-size: var(--reader-support-control-font-size);
+    font-weight: var(--reader-support-control-font-weight);
+    line-height: var(--reader-support-control-line-height);
+    border: var(--border-width-thin) solid var(--reader-support-control-border-color);
     border-radius: var(--border-radius-md);
-    background-color: var(--reader-chrome-control-background-color);
-    color: var(--reader-chrome-text-color);
+    background-color: var(--reader-support-control-background-color);
+    color: var(--reader-support-control-text-color);
     box-sizing: border-box;
   }
 
@@ -114,9 +125,11 @@
 
   .sortHint {
     margin: var(--spacing-xs) 0 0 0;
-    font-size: var(--font-size-xs);
-    color: var(--reader-chrome-muted-color);
-    line-height: 1.4;
+    font-family: var(--reader-support-hint-font-family);
+    font-size: var(--reader-support-hint-font-size);
+    font-weight: var(--reader-support-hint-font-weight);
+    line-height: var(--reader-support-hint-line-height);
+    color: var(--reader-support-hint-color);
   }
 
   .collectionBack {
@@ -125,19 +138,21 @@
 
   .collectionBackButton {
     padding: var(--spacing-sm);
-    font-size: var(--font-size-sm);
-    font-family: var(--body-font-family);
-    background: transparent;
-    border: var(--border-width-thin) solid var(--reader-chrome-border-color);
+    font-family: var(--reader-support-control-font-family);
+    font-size: var(--reader-support-control-font-size);
+    font-weight: var(--reader-support-control-font-weight);
+    line-height: var(--reader-support-control-line-height);
+    background: var(--reader-support-control-background-color);
+    border: var(--border-width-thin) solid var(--reader-support-control-border-color);
     border-radius: var(--border-radius-md);
-    color: var(--reader-chrome-text-color);
+    color: var(--reader-support-control-text-color);
     cursor: pointer;
     width: 100%;
     text-align: left;
   }
 
   .collectionBackButton:hover {
-    background-color: var(--reader-chrome-control-hover-background-color);
+    background-color: var(--reader-support-control-hover-background-color);
   }
 
   .collectionGroups {
@@ -153,9 +168,11 @@
   }
 
   .collectionGroupLabel {
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-semibold);
-    color: var(--reader-chrome-muted-color);
+    font-family: var(--reader-support-meta-font-family);
+    font-size: var(--reader-support-meta-font-size);
+    font-weight: var(--reader-support-meta-font-weight);
+    line-height: var(--reader-support-meta-line-height);
+    color: var(--reader-support-meta-color);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -174,31 +191,39 @@
     display: block;
     width: 100%;
     padding: var(--spacing-sm);
-    font-size: var(--font-size-sm);
-    font-family: var(--body-font-family);
+    font-family: var(--reader-support-control-font-family);
+    font-size: var(--reader-support-control-font-size);
+    font-weight: var(--reader-support-control-font-weight);
+    line-height: var(--reader-support-control-line-height);
     text-align: left;
-    background: transparent;
-    border: var(--border-width-thin) solid var(--reader-chrome-border-color);
+    background: var(--reader-support-control-background-color);
+    border: var(--border-width-thin) solid var(--reader-support-control-border-color);
     border-radius: var(--border-radius-md);
-    color: var(--reader-chrome-text-color);
+    color: var(--reader-support-control-text-color);
     cursor: pointer;
     transition: background-color var(--transition-short);
   }
 
   .collectionItem:hover {
-    background-color: var(--reader-chrome-control-hover-background-color);
+    background-color: var(--reader-support-control-hover-background-color);
   }
 
   .collectionCount {
     margin-left: var(--spacing-xs);
-    font-size: var(--font-size-xs);
-    color: var(--reader-chrome-muted-color);
+    font-family: var(--reader-support-meta-font-family);
+    font-size: var(--reader-support-meta-font-size);
+    font-weight: var(--reader-support-meta-font-weight);
+    line-height: var(--reader-support-meta-line-height);
+    color: var(--reader-support-meta-color);
   }
 
   .collectionEmpty {
     padding: var(--spacing-md);
-    font-size: var(--font-size-sm);
-    color: var(--reader-chrome-muted-color);
+    font-family: var(--reader-support-hint-font-family);
+    font-size: var(--reader-support-hint-font-size);
+    font-weight: var(--reader-support-hint-font-weight);
+    line-height: var(--reader-support-hint-line-height);
+    color: var(--reader-support-hint-color);
   }
 
   .activeFilters {
@@ -208,9 +233,11 @@
 
   .activeFiltersLabel {
     display: block;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    color: var(--reader-chrome-text-color);
+    font-family: var(--reader-support-label-font-family);
+    font-size: var(--reader-support-label-font-size);
+    font-weight: var(--reader-support-label-font-weight);
+    line-height: var(--reader-support-label-line-height);
+    color: var(--reader-support-label-color);
     margin-bottom: var(--spacing-xs);
   }
 
@@ -223,18 +250,20 @@
 
   .activeFiltersResetTypes {
     padding: 2px var(--spacing-sm);
-    font-size: var(--font-size-xs);
-    font-family: var(--body-font-family);
-    border: var(--border-width-thin) dashed var(--reader-chrome-border-color);
+    font-family: var(--reader-support-meta-font-family);
+    font-size: var(--reader-support-meta-font-size);
+    font-weight: var(--reader-support-meta-font-weight);
+    line-height: var(--reader-support-meta-line-height);
+    border: var(--border-width-thin) dashed var(--reader-support-control-border-color);
     border-radius: var(--border-radius-md);
     background: transparent;
-    color: var(--reader-chrome-muted-color);
+    color: var(--reader-support-meta-color);
     cursor: pointer;
   }
 
   .activeFiltersResetTypes:hover {
-    color: var(--reader-chrome-text-color);
-    border-color: var(--reader-chrome-muted-color);
+    color: var(--reader-support-control-text-color);
+    border-color: var(--reader-support-control-text-color);
   }
 
   .filterChip {
@@ -242,13 +271,15 @@
     align-items: center;
     gap: var(--spacing-xs);
     padding: 2px var(--spacing-sm);
-    font-size: var(--font-size-xs);
-    background-color: var(--reader-solid-background-color, var(--button-solid-background-color));
-    color: var(--reader-solid-text-color, var(--button-solid-text-color));
-    border: var(--border-width-thin) solid var(--reader-solid-border-color, var(--button-solid-border-color));
+    font-family: var(--reader-support-meta-font-family);
+    font-size: var(--reader-support-meta-font-size);
+    background-color: var(--reader-support-control-strong-background-color);
+    color: var(--reader-support-control-strong-text-color);
+    border: var(--border-width-thin) solid var(--reader-support-control-strong-border-color);
     border-radius: var(--border-radius-md);
     max-width: 100%;
-    font-weight: var(--font-weight-semibold);
+    font-weight: var(--reader-support-meta-font-weight);
+    line-height: var(--reader-support-meta-line-height);
   }
 
   .filterChipRemove {
@@ -281,26 +312,28 @@
 
   .dimensionTab {
     padding: var(--spacing-xs) var(--spacing-sm);
-    font-size: var(--font-size-xs);
-    font-family: var(--body-font-family);
-    background: transparent;
-    border: var(--border-width-thin) solid var(--reader-chrome-border-color);
+    font-family: var(--reader-support-control-font-family);
+    font-size: var(--reader-support-control-font-size);
+    font-weight: var(--reader-support-control-font-weight);
+    line-height: var(--reader-support-control-line-height);
+    background: var(--reader-support-control-background-color);
+    border: var(--border-width-thin) solid var(--reader-support-control-border-color);
     border-radius: var(--border-radius-md);
-    color: var(--reader-chrome-muted-color);
+    color: var(--reader-support-control-text-color);
     cursor: pointer;
     transition: background-color var(--transition-short), color var(--transition-short), border-color var(--transition-short);
   }
 
   .dimensionTab:hover {
-    background-color: var(--reader-chrome-control-hover-background-color);
-    color: var(--reader-chrome-text-color);
+    background-color: var(--reader-support-control-hover-background-color);
+    color: var(--reader-support-control-text-color);
   }
 
   .dimensionTabActive {
-    background-color: var(--reader-solid-background-color, var(--button-solid-background-color));
-    color: var(--reader-solid-text-color, var(--button-solid-text-color));
-    border-color: var(--reader-solid-border-color, var(--button-solid-border-color));
-    font-weight: var(--font-weight-semibold);
+    background-color: var(--reader-support-control-strong-background-color);
+    color: var(--reader-support-control-strong-text-color);
+    border-color: var(--reader-support-control-strong-border-color);
+    font-weight: var(--reader-support-control-font-weight);
   }
 
   .dimensionTabIcon {
@@ -339,43 +372,50 @@
   .cardTypeChip {
     min-height: 36px;
     padding: 0 var(--spacing-sm);
-    font-size: var(--font-size-xs);
-    font-family: var(--body-font-family);
-    border: var(--border-width-thin) solid var(--reader-chrome-border-color);
+    font-family: var(--reader-support-control-font-family);
+    font-size: var(--reader-support-control-font-size);
+    font-weight: var(--reader-support-control-font-weight);
+    line-height: var(--reader-support-control-line-height);
+    border: var(--border-width-thin) solid var(--reader-support-control-border-color);
     border-radius: var(--border-radius-md);
-    background: transparent;
-    color: var(--reader-chrome-muted-color);
+    background: var(--reader-support-control-background-color);
+    color: var(--reader-support-control-text-color);
     cursor: pointer;
     transition: background-color var(--transition-short), color var(--transition-short),
       border-color var(--transition-short);
   }
 
   .cardTypeChip:hover {
-    background-color: var(--reader-chrome-control-hover-background-color);
-    color: var(--reader-chrome-text-color);
+    background-color: var(--reader-support-control-hover-background-color);
+    color: var(--reader-support-control-text-color);
   }
 
   .cardTypeChipActive {
-    background-color: var(--reader-solid-background-color, var(--button-solid-background-color));
-    color: var(--reader-solid-text-color, var(--button-solid-text-color));
-    border-color: var(--reader-solid-border-color, var(--button-solid-border-color));
-    font-weight: var(--font-weight-semibold);
+    background-color: var(--reader-support-control-strong-background-color);
+    color: var(--reader-support-control-strong-text-color);
+    border-color: var(--reader-support-control-strong-border-color);
+    font-weight: var(--reader-support-control-font-weight);
   }
 
   .typeSelectPlaceholder {
     width: 100%;
     padding: var(--spacing-sm);
-    font-size: var(--font-size-base);
-    font-family: var(--body-font-family);
-    border: var(--border-width-thin) solid var(--reader-chrome-border-color);
+    font-family: var(--reader-support-control-font-family);
+    font-size: var(--reader-support-control-font-size);
+    font-weight: var(--reader-support-control-font-weight);
+    line-height: var(--reader-support-control-line-height);
+    border: var(--border-width-thin) solid var(--reader-support-control-border-color);
     border-radius: var(--border-radius-md);
-    background-color: var(--reader-chrome-control-background-color);
-    color: var(--reader-chrome-text-color);
+    background-color: var(--reader-support-control-background-color);
+    color: var(--reader-support-control-text-color);
   }
 
   .loadingPlaceholder {
-    font-size: var(--font-size-sm);
-    color: var(--reader-chrome-muted-color);
+    font-family: var(--reader-support-hint-font-family);
+    font-size: var(--reader-support-hint-font-size);
+    font-weight: var(--reader-support-hint-font-weight);
+    line-height: var(--reader-support-hint-line-height);
+    color: var(--reader-support-hint-color);
     padding: var(--spacing-md);
   }
 
@@ -393,20 +433,22 @@
 
   .viewTagSidebarTab {
     padding: var(--spacing-xs) var(--spacing-sm);
-    font-size: var(--font-size-xs);
-    font-family: var(--body-font-family);
-    background: transparent;
-    border: var(--border-width-thin) solid var(--reader-chrome-border-color);
+    font-family: var(--reader-support-control-font-family);
+    font-size: var(--reader-support-control-font-size);
+    font-weight: var(--reader-support-control-font-weight);
+    line-height: var(--reader-support-control-line-height);
+    background: var(--reader-support-control-background-color);
+    border: var(--border-width-thin) solid var(--reader-support-control-border-color);
     border-radius: var(--border-radius-md);
-    color: var(--reader-chrome-muted-color);
+    color: var(--reader-support-control-text-color);
     cursor: pointer;
   }
 
   .viewTagSidebarTabActive {
-    background-color: var(--reader-solid-background-color, var(--button-solid-background-color));
-    color: var(--reader-solid-text-color, var(--button-solid-text-color));
-    border-color: var(--reader-solid-border-color, var(--button-solid-border-color));
-    font-weight: var(--font-weight-semibold);
+    background-color: var(--reader-support-control-strong-background-color);
+    color: var(--reader-support-control-strong-text-color);
+    border-color: var(--reader-support-control-strong-border-color);
+    font-weight: var(--reader-support-control-font-weight);
   }
 
   .filterControls {
@@ -424,20 +466,23 @@
   .applyButton, .clearButton {
     flex: 1;
     padding: var(--spacing-sm);
-    border: var(--border-width-thin) solid var(--reader-chrome-border-color);
+    border: var(--border-width-thin) solid var(--reader-support-control-border-color);
     border-radius: var(--border-radius-md);
-    background-color: var(--reader-chrome-control-background-color);
-    color: var(--reader-chrome-text-color);
+    background-color: var(--reader-support-control-background-color);
+    color: var(--reader-support-control-text-color);
     cursor: pointer;
-    font-size: var(--font-size-base);
+    font-family: var(--reader-support-control-font-family);
+    font-size: var(--reader-support-control-font-size);
+    font-weight: var(--reader-support-control-font-weight);
+    line-height: var(--reader-support-control-line-height);
     min-height: 40px;
   }
   
   .applyButton {
-    background-color: var(--reader-solid-background-color, var(--button-solid-background-color));
-    color: var(--reader-solid-text-color, var(--button-solid-text-color));
-    border-color: var(--reader-solid-border-color, var(--button-solid-border-color));
-    font-weight: var(--font-weight-semibold);
+    background-color: var(--reader-support-control-strong-background-color);
+    color: var(--reader-support-control-strong-text-color);
+    border-color: var(--reader-support-control-strong-border-color);
+    font-weight: var(--reader-support-control-font-weight);
   }
   
   .clearButton {
@@ -448,10 +493,12 @@
   display: flex;
   align-items: flex-start;
   gap: var(--spacing-sm);
-  font-size: var(--font-size-sm);
-  color: var(--reader-chrome-text-color);
+  font-family: var(--reader-support-label-font-family);
+  font-size: var(--reader-support-label-font-size);
+  font-weight: var(--reader-support-label-font-weight);
+  line-height: var(--reader-support-label-line-height);
+  color: var(--reader-support-label-color);
   cursor: pointer;
-  line-height: 1.35;
 }
 
 .feedToggleRow input {
@@ -461,7 +508,9 @@
 
 .feedToggleHint {
   margin: var(--spacing-xs) 0 0 0;
-  font-size: var(--font-size-sm);
-  color: var(--reader-chrome-muted-color);
-  line-height: 1.4;
+  font-family: var(--reader-support-hint-font-family);
+  font-size: var(--reader-support-hint-font-size);
+  font-weight: var(--reader-support-hint-font-weight);
+  line-height: var(--reader-support-hint-line-height);
+  color: var(--reader-support-hint-color);
 }

@@ -4,16 +4,16 @@
   max-height: 240px;
   overflow-y: auto;
   padding: var(--spacing-xs);
-  background: var(--card-background-color);
-  border: var(--border-width-thin) solid var(--border1-color);
-  border-radius: var(--border-radius-md);
-  box-shadow: var(--shadow-md);
+  background: var(--reader-card-background-color);
+  border: var(--reader-card-border-width) solid var(--reader-card-border-color);
+  border-radius: var(--reader-card-border-radius);
+  box-shadow: var(--reader-card-shadow);
 }
 
 .empty {
   padding: var(--spacing-sm) var(--spacing-md);
   font-size: var(--font-size-xs);
-  color: var(--text2-color);
+  color: var(--reader-meta-color);
 }
 
 .item,
@@ -32,9 +32,9 @@
 
 .item:hover,
 .itemSelected {
-  background: var(--button-outline-background-color-hover);
+  background: var(--reader-chrome-control-hover-background-color);
 }
 
 .itemSelected {
-  outline: var(--border-width-thin) solid var(--border1-color);
+  outline: var(--border-width-thin) solid var(--reader-card-border-color);
 }

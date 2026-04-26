@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import type { ReaderThemeRecipes, StructuredThemeData } from '@/lib/types/theme';
+import type { Editor } from '@tiptap/core';
+import type { ReaderThemeRecipes, ScopedThemeDocumentData, StructuredThemeData } from '@/lib/types/theme';
 import type { ThemePresetId } from '@/lib/theme/themePresets';
 import type { Card } from '@/lib/types/card';
 import type { Media } from '@/lib/types/photo';
@@ -11,7 +12,12 @@ import CardDetailPage from '@/app/view/[id]/CardDetailPage';
 import V2ContentCard from '@/components/view/V2ContentCard';
 import ChildCardsRail from '@/components/view/ChildCardsRail';
 import TagTree from '@/components/common/TagTree';
+import TagSelector from '@/components/common/TagSelector';
+import SearchBar from '@/components/common/SearchBar';
+import PhotoPicker from '@/components/common/PhotoPicker';
+import ImageToolbar from '@/components/common/ImageToolbar';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { CURRENT_READER_THEME_COMPONENTS } from '@/lib/theme/readerThemeSystem';
 import styles from './ThemeAdmin.module.css';
 import feedStyles from '@/components/view/CardFeedV2.module.css';
 import discoveryStyles from '@/components/view/DiscoverySection.module.css';
@@ -24,10 +30,86 @@ type ApiErrorResponse = {
   error?: string;
 };
 
+type PreviewCoverageEntry = {
+  surface: string;
+  note?: string;
+};
+
 const PREVIEW_SCOPE = 'themeAdminReaderPreview';
 const ADMIN_PREVIEW_SCOPE = 'themeAdminAdminPreview';
 
 const PREVIEW_DEBOUNCE_MS = 280;
+const PREVIEW_COVERAGE_BY_VARIANT: Record<string, PreviewCoverageEntry> = {
+  'canvas.reader': {
+    surface: 'Reader shell canvas, inline link sample, and focus-state sample',
+    note: 'Covers page surface, body/meta text, inline links, and focus treatment in the scoped reader canvas.',
+  },
+  'storyCard.closed': {
+    surface: 'Story column -> Closed card',
+  },
+  'storyCard.open': {
+    surface: 'Story column -> Open card detail',
+    note: 'Includes story detail title, subtitle, body, figure frame, and caption roles.',
+  },
+  'storyCard.discovery': {
+    surface: 'Explore More section -> Compact story card',
+    note: 'Small discovery cards are rendered inside the Explore More section.',
+  },
+  'galleryCard.closed': {
+    surface: 'Gallery column -> Closed card',
+  },
+  'galleryCard.open': {
+    surface: 'Gallery column -> Open card detail + inline gallery header',
+    note: 'The lightbox control and overlay roles are previewed in the adjacent Gallery lightbox state sample.',
+  },
+  'galleryCard.discovery': {
+    surface: 'Explore More section -> Compact gallery card',
+    note: 'The discovery section also previews gallery discovery heading/meta roles.',
+  },
+  'discoverySupport.discovery': {
+    surface: 'Explore More section sample',
+    note: 'Exercises discovery section title plus group/meta text around compact rail cards.',
+  },
+  'discoverySupport.childRail': {
+    surface: 'Quote column -> Child rail sample',
+    note: 'Shows rail title, count/meta, and compact child-card title wiring.',
+  },
+  'qaCard.closed': {
+    surface: 'Question column -> Closed card',
+  },
+  'qaCard.open': {
+    surface: 'Question column -> Open card detail',
+  },
+  'qaCard.discovery': {
+    surface: 'Explore More section -> Compact Q&A card',
+  },
+  'quoteCard.closed': {
+    surface: 'Quote column -> Closed card',
+  },
+  'calloutCard.closed': {
+    surface: 'Callout column -> Closed card',
+  },
+  'sidebar.chrome': {
+    surface: 'Sidebar open sample',
+    note: 'Includes sidebar surface, support typography, filter chips, active tabs, icon color, and neutral controls.',
+  },
+  'supportUi.tooling': {
+    surface: 'Support UI state sample',
+    note: 'Uses SearchBar, PhotoPicker, TagSelector, ImageToolbar, and explicit neutral/selected control buttons.',
+  },
+  'supportUi.states': {
+    surface: 'Feed empty + Discovery loading/error state samples',
+    note: 'Classifies the reader feedback states under the shared support family instead of leaving them as unowned preview-only surfaces.',
+  },
+};
+
+const COMPONENT_OWNED_PREVIEW_BEHAVIORS = [
+  'Feed/grid layout, card width, and responsive column count',
+  'Breakpoint-triggered drawer behavior and sidebar placement',
+  'Image aspect ratios, crop behavior, and media sizing math',
+  'Hit-target sizing, pointer affordance, and disabled interaction behavior',
+  'Animation timing, gesture behavior, and non-token layout offsets',
+];
 
 const now = 1_700_000_000_000;
 
@@ -218,7 +300,7 @@ const previewChildCards: Card[] = [
   },
 ];
 
-const previewDiscoveryRelated: Card[] = [galleryPreviewCard, questionPreviewCard, quotePreviewCard];
+const previewDiscoveryRelated: Card[] = [storyPreviewCard, galleryPreviewCard, questionPreviewCard];
 const previewDiscoveryRandom: Card[] = [quotePreviewCard, galleryPreviewCard];
 
 const previewTagTree: TagWithChildren[] = [
@@ -277,6 +359,20 @@ const previewSolidControlStyle = {
   borderColor: 'var(--reader-solid-border-color)',
   fontWeight: 'var(--font-weight-semibold)',
 } as const;
+
+const previewSupportStrongControlStyle = {
+  backgroundColor: 'var(--reader-support-control-strong-background-color)',
+  color: 'var(--reader-support-control-strong-text-color)',
+  borderColor: 'var(--reader-support-control-strong-border-color)',
+} as const;
+
+const previewToolbarEditor = {
+  getAttributes: () => ({
+    'data-size': 'medium',
+    'data-alignment': 'center',
+    'data-wrap': 'off',
+  }),
+} as unknown as Editor;
 
 function PreviewSidebarChrome() {
   return (
@@ -468,7 +564,14 @@ function PreviewDiscoveryErrorState() {
 function PreviewGalleryLightboxState() {
   return (
     <div className={styles.readerPreviewStateCard}>
-      <div className={styles.previewKicker}>Gallery lightbox</div>
+      <div className={styles.previewKicker}>Gallery media state</div>
+      <div className={styles.readerPreviewRoleBadge}>Inline gallery header + lightbox controls</div>
+      <div className={styles.readerPreviewColumnSurface}>
+        <div className={galleryStyles.galleryHeader}>
+          <h3 className={galleryStyles.galleryTitle}>Birthday gallery</h3>
+          <span className={galleryStyles.imageCount}>8 images</span>
+        </div>
+      </div>
       <div className={styles.readerPreviewLightboxFrame}>
         <div
           className={galleryStyles.lightboxOverlay}
@@ -529,6 +632,136 @@ function PreviewFocusState() {
   );
 }
 
+function PreviewSupportUiState() {
+  return (
+    <div className={styles.readerPreviewStateCard}>
+      <div className={styles.previewKicker}>Support UI</div>
+      <div className={styles.readerPreviewControlStack}>
+        <div className={styles.readerPreviewRoleBadge}>Support title / label / hint</div>
+        <div className={styles.readerPreviewColumnSurface}>
+          <h3 className={styles.readerPreviewSupportHeading}>Utility surfaces</h3>
+          <p className={styles.readerPreviewSupportHint}>
+            These controls should preview the shared support family rather than borrowing from discovery or content roles.
+          </p>
+          <SearchBar />
+        </div>
+
+        <div className={styles.readerPreviewRoleBadge}>Support control / active control</div>
+        <div className={styles.readerPreviewColumnSurface}>
+          <PhotoPicker onSelect={() => {}} buttonText="Choose cover image" />
+        </div>
+
+        <div className={styles.readerPreviewRoleBadge}>Support meta / hint / control</div>
+        <div className={styles.readerPreviewColumnSurface}>
+          <TagSelector
+            tree={previewTagTree as unknown as Array<{
+              docId: string;
+              name: string;
+              description?: string;
+              children: Array<unknown>;
+            }>}
+            selectedTags={['tag-family']}
+            onTagsChange={() => {}}
+          />
+        </div>
+
+        <div className={styles.readerPreviewRoleBadge}>Support label / meta / control states</div>
+        <div className={styles.readerPreviewColumnSurface}>
+          <ImageToolbar
+            editor={previewToolbarEditor}
+            onAction={() => {}}
+            targetLabel="Lake preview"
+            currentSize="medium"
+            currentAlignment="center"
+            currentWrap="off"
+          />
+          <div style={{ display: 'flex', gap: 'var(--spacing-sm)', marginTop: 'var(--spacing-sm)' }}>
+            <button
+              type="button"
+              className={styles.adminPreviewSecondaryBtn}
+              style={{
+                fontFamily: 'var(--reader-support-control-font-family)',
+                fontSize: 'var(--reader-support-control-font-size)',
+                fontWeight: 'var(--reader-support-control-font-weight)',
+                lineHeight: 'var(--reader-support-control-line-height)',
+                backgroundColor: 'var(--reader-support-control-background-color)',
+                color: 'var(--reader-support-control-text-color)',
+                borderColor: 'var(--reader-support-control-border-color)',
+              }}
+            >
+              Neutral control
+            </button>
+            <button
+              type="button"
+              className={styles.adminPreviewSecondaryBtn}
+              style={{
+                ...previewSupportStrongControlStyle,
+                fontFamily: 'var(--reader-support-control-font-family)',
+                fontSize: 'var(--reader-support-control-font-size)',
+                fontWeight: 'var(--reader-support-control-font-weight)',
+                lineHeight: 'var(--reader-support-control-line-height)',
+              }}
+            >
+              Selected control
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PreviewCoverageLedger() {
+  return (
+    <section className={styles.readerPreviewCoverage}>
+      <div className={styles.previewKicker}>Preview coverage</div>
+      <div className={styles.readerPreviewCoverageIntro}>
+        Every reader-theme component variant below has a named preview surface. Anything not listed here should stay component-owned rather than silently borrowing the nearest role.
+      </div>
+      <div className={styles.readerPreviewCoverageGrid}>
+        {CURRENT_READER_THEME_COMPONENTS.map((component) => (
+          <article key={component.id} className={styles.readerPreviewCoverageCard}>
+            <h3 className={styles.readerPreviewCoverageTitle}>{component.label}</h3>
+            <p className={styles.readerPreviewCoverageText}>{component.description}</p>
+            <div className={styles.readerPreviewCoverageVariants}>
+              {component.variants.map((variant) => {
+                const coverage = PREVIEW_COVERAGE_BY_VARIANT[`${component.id}.${variant.id}`];
+                return (
+                  <div key={variant.id} className={styles.readerPreviewCoverageVariant}>
+                    <div className={styles.readerPreviewCoverageVariantHeader}>
+                      <strong>{variant.label}</strong>
+                      <span className={styles.readerPreviewCoverageStatus}>Previewed</span>
+                    </div>
+                    <p className={styles.readerPreviewCoverageSurface}>{coverage?.surface ?? 'Preview surface not mapped'}</p>
+                    {coverage?.note ? (
+                      <p className={styles.readerPreviewCoverageNote}>{coverage.note}</p>
+                    ) : null}
+                    <div className={styles.readerPreviewCoverageElements}>
+                      {variant.elements.map((element) => (
+                        <span key={element.id} className={styles.readerPreviewCoverageElement}>
+                          {element.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </article>
+        ))}
+      </div>
+      <div className={styles.readerPreviewCoverageFooter}>
+        <strong>Component-owned, not themed:</strong>
+        <ul className={styles.readerPreviewCoverageList}>
+          {COMPONENT_OWNED_PREVIEW_BEHAVIORS.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
 export default function ThemeReaderPreview({
   themeData,
   darkModeShift,
@@ -562,10 +795,21 @@ export default function ThemeReaderPreview({
   const previewBodyJson = useMemo(() => {
     if (!themeData?.palette?.length || !themeData.themeColors?.length) return '';
     try {
-      return JSON.stringify({
-        reader: { themeData, darkModeShift, activePresetId, recipes: readerRecipes },
-        admin: { themeData: adminThemeData, darkModeShift: adminDarkModeShift },
-      });
+      const previewDocument: ScopedThemeDocumentData = {
+        version: 2,
+        reader: {
+          data: themeData,
+          darkModeShift,
+          activePresetId,
+          recipes: readerRecipes,
+        },
+        admin: {
+          data: adminThemeData ?? themeData,
+          darkModeShift: adminDarkModeShift,
+          activePresetId: 'admin',
+        },
+      };
+      return JSON.stringify(previewDocument);
     } catch {
       return '';
     }
@@ -579,53 +823,30 @@ export default function ThemeReaderPreview({
     }
 
     const ctrl = new AbortController();
-    const t = window.setTimeout(() => {
-      (async () => {
-        try {
-          const body = JSON.parse(previewBodyJson) as {
-            reader: { themeData: StructuredThemeData; darkModeShift: number; activePresetId: ThemePresetId | 'custom'; recipes?: ReaderThemeRecipes };
-            admin: { themeData: StructuredThemeData | null; darkModeShift: number };
-          };
-          const [readerRes, adminRes] = await Promise.all([
-            fetch('/api/theme/preview-css', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              signal: ctrl.signal,
-              body: JSON.stringify({
-                ...body.reader.themeData,
-                darkModeShift: body.reader.darkModeShift,
-                activePresetId: body.reader.activePresetId,
-                recipes: body.reader.recipes,
-                scopeSelector: `.${readerScopeClass}`,
-              }),
+      const t = window.setTimeout(() => {
+        (async () => {
+          try {
+          const body = JSON.parse(previewBodyJson) as ScopedThemeDocumentData;
+          const previewRes = await fetch('/api/theme/preview-css', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: ctrl.signal,
+            body: JSON.stringify({
+              ...body,
+              readerScopeSelector: `.${readerScopeClass}`,
+              adminScopeSelector: `.${adminScopeClass}`,
             }),
-            body.admin.themeData
-              ? fetch('/api/theme/preview-css', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  signal: ctrl.signal,
-                  body: JSON.stringify({
-                    themeData: body.admin.themeData,
-                    darkModeShift: body.admin.darkModeShift,
-                    scope: 'admin',
-                    scopeSelector: `.${adminScopeClass}`,
-                  }),
-                })
-              : Promise.resolve(null),
-          ]);
-          const readerData = await readerRes.json();
-          const adminData = adminRes ? await adminRes.json() : { css: '' };
+          });
+          const previewData = await previewRes.json();
           if (
             !ctrl.signal.aborted &&
-            readerRes.ok &&
-            (!adminRes || adminRes.ok) &&
-            typeof readerData.css === 'string' &&
-            typeof adminData.css === 'string'
+            previewRes.ok &&
+            typeof previewData.css === 'string'
           ) {
-            setScopedCss(`${readerData.css}\n${adminData.css}`);
+            setScopedCss(previewData.css);
             setPreviewCssError(null);
           } else if (!ctrl.signal.aborted) {
-            const err = (!readerRes.ok ? readerData : adminData) as ApiErrorResponse;
+            const err = previewData as ApiErrorResponse;
             if (err.message || err.error) {
               console.error('[ThemeReaderPreview] preview CSS failed:', err.message || err.error);
             }
@@ -679,6 +900,7 @@ export default function ThemeReaderPreview({
           {previewCssError}
         </div>
       ) : null}
+      <PreviewCoverageLedger />
       <div className={styles.previewSamples}>
         <div className={`${readerScopeClass} ${styles.readerPreviewCanvas}`} data-theme={previewMode}>
           <div className={styles.readerPreviewViewport}>
@@ -744,8 +966,6 @@ export default function ThemeReaderPreview({
                               />
                             </div>
                           </div>
-                          <PreviewDiscoveryLoadingState />
-                          <PreviewDiscoveryErrorState />
                         </>
                       ) : null}
 
@@ -755,8 +975,12 @@ export default function ThemeReaderPreview({
                             <div className={styles.readerPreviewRoleBadge}>Child rail</div>
                             <ChildCardsRail cards={previewChildCards} title="Child cards" />
                           </div>
+                          <div className={styles.readerPreviewRoleBadge}>Support states</div>
                           <PreviewFeedEmptyState />
+                          <PreviewDiscoveryLoadingState />
+                          <PreviewDiscoveryErrorState />
                           <PreviewFocusState />
+                          <PreviewSupportUiState />
                         </>
                       ) : null}
 

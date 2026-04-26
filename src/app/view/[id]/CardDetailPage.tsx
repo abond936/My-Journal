@@ -36,6 +36,12 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
   const detailReturnTo = card.docId ? `/view/${card.docId}` : null;
   const isQa = card.type === 'qa';
   const isQuote = card.type === 'quote';
+  const detailHeadingVariant =
+    card.type === 'story'
+      ? 'storyDetail'
+      : card.type === 'gallery'
+        ? 'galleryDetail'
+        : 'detail';
   const quoteAttribution = isQuote ? formatQuoteAttribution(card.subtitle, card.excerpt) : '';
   const coverBucket = getAspectRatioBucket(card.coverImage);
   const coverRatio = getAspectRatioValue(coverBucket);
@@ -102,10 +108,10 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
         <section className={styles.content} aria-label={isQa ? 'Answer' : undefined}>
           {isQuote ? (
             <blockquote className={styles.quoteDetailQuote}>
-              <TipTapRenderer content={card.content} />
+              <TipTapRenderer content={card.content} headingVariant={detailHeadingVariant} />
             </blockquote>
           ) : (
-            <TipTapRenderer content={card.content} />
+            <TipTapRenderer content={card.content} headingVariant={detailHeadingVariant} />
           )}
         </section>
       )}

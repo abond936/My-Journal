@@ -3,32 +3,35 @@
   align-items: center;
   justify-content: center;
   padding: var(--spacing-md);
-  border: var(--border-width-medium) dashed var(--border1-color);
+  border: var(--border-width-medium) dashed var(--reader-support-control-border-color);
   border-radius: var(--border-radius-lg);
-  background-color: var(--layout-background2-color);
+  background-color: var(--reader-chrome-control-background-color);
   transition: all var(--transition-short) ease;
   cursor: pointer;
 }
 
 .container:hover,
 .dragActive {
-  border-color: var(--color3);
-  background-color: var(--color1-200);
+  border-color: var(--reader-support-control-strong-border-color);
+  background-color: var(--reader-support-control-hover-background-color);
 }
 
 .button {
   padding: var(--spacing-sm) var(--spacing-md);
-  background-color: var(--color3);
-  color: var(--color2);
-  border: none;
+  background-color: var(--reader-support-control-strong-background-color);
+  color: var(--reader-support-control-strong-text-color);
+  border: var(--border-width-thin) solid var(--reader-support-control-strong-border-color);
   border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-sm);
+  font-family: var(--reader-support-control-font-family);
+  font-size: var(--reader-support-control-font-size);
+  font-weight: var(--reader-support-control-font-weight);
+  line-height: var(--reader-support-control-line-height);
   cursor: pointer;
   transition: background-color var(--transition-short) ease;
 }
 
 .button:hover:not(:disabled) {
-  background-color: var(--color3-dark);
+  background-color: var(--reader-support-control-strong-hover-background-color);
 }
 
 .button:disabled {
@@ -37,6 +40,6 @@
 }
 
 .container:focus-within {
-  outline: var(--border-width-medium) solid var(--color3);
+  outline: var(--border-width-medium) solid var(--reader-focus-ring-color);
   outline-offset: var(--border-width-medium);
 } 

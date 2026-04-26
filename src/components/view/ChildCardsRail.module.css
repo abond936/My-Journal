@@ -14,14 +14,19 @@
 }
 
 .title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
+  font-family: var(--reader-rail-section-title-font-family);
+  font-size: var(--reader-rail-section-title-font-size);
+  font-weight: var(--reader-rail-section-title-font-weight);
+  line-height: var(--reader-rail-section-title-line-height);
   margin: 0;
-  color: var(--reader-discovery-title-color);
+  color: var(--reader-rail-section-title-color);
 }
 
 .count {
-  font-size: var(--font-size-sm);
+  font-family: var(--reader-discovery-meta-font-family);
+  font-size: var(--reader-discovery-meta-font-size);
+  font-weight: var(--reader-discovery-meta-font-weight);
+  line-height: var(--reader-discovery-meta-line-height);
   color: var(--reader-discovery-meta-color);
   background: var(--reader-chrome-panel-color);
   padding: var(--spacing-xs) var(--spacing-sm);
@@ -187,10 +192,11 @@
 .slideTitle {
   margin: 0;
   padding: 0 var(--spacing-sm) var(--spacing-sm);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--reader-discovery-title-color);
-  line-height: 1.35;
+  font-family: var(--reader-rail-card-title-font-family);
+  font-size: var(--reader-rail-card-title-font-size);
+  font-weight: var(--reader-rail-card-title-font-weight);
+  color: var(--reader-rail-card-title-color);
+  line-height: var(--reader-rail-card-title-line-height);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -209,7 +215,7 @@
   }
 
   .title {
-    font-size: var(--font-size-xl);
+    font-size: var(--reader-rail-section-title-font-size);
   }
 
   .slide {

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
-import { buildThemeTokensCss, themeDataForCssGeneration } from '@/lib/services/themeService';
-import { scopeThemeTokensCss } from '@/lib/theme/scopeThemeTokensCss';
+import { buildScopedPreviewThemeCss, normalizeThemeDocument } from '@/lib/services/themeService';
+import type { ResolvedScopedThemeDocumentData, ScopedThemeDocumentData } from '@/lib/types/theme';
 
 const READER_PREVIEW_SCOPE = '.themeAdminReaderPreview';
 const ADMIN_PREVIEW_SCOPE = '.themeAdminAdminPreview';
@@ -38,13 +38,32 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const themeData = body?.themeData ?? body;
-    if (!themeData?.palette || !Array.isArray(themeData.palette)) {
+    const readerScope =
+      typeof body?.readerScopeSelector === 'string' && /^\.[A-Za-z0-9_-]+$/.test(body.readerScopeSelector)
+        ? body.readerScopeSelector
+        : READER_PREVIEW_SCOPE;
+    const adminScope =
+      typeof body?.adminScopeSelector === 'string' && /^\.[A-Za-z0-9_-]+$/.test(body.adminScopeSelector)
+        ? body.adminScopeSelector
+        : ADMIN_PREVIEW_SCOPE;
+
+    const isScopedPreviewPayload =
+      body?.version === 2 &&
+      body?.reader?.data?.palette &&
+      Array.isArray(body?.reader?.data?.palette) &&
+      body?.admin?.data?.palette &&
+      Array.isArray(body?.admin?.data?.palette);
+
+    const normalized = isScopedPreviewPayload
+      ? normalizeThemeDocument(body as ScopedThemeDocumentData)
+      : null;
+
+    if (!normalized) {
       return errorResponse(
         {
           ok: false,
           code: 'THEME_PREVIEW_INVALID_BODY',
-          message: 'Invalid theme data.',
+          message: 'Invalid scoped theme preview data.',
           severity: 'error',
           retryable: false,
         },
@@ -52,18 +71,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const customScope =
-      typeof body?.scopeSelector === 'string' && /^\.[A-Za-z0-9_-]+$/.test(body.scopeSelector)
-        ? body.scopeSelector
-        : null;
-    const scope = customScope ?? (body?.scope === 'admin' ? ADMIN_PREVIEW_SCOPE : READER_PREVIEW_SCOPE);
-    const cleaned = themeDataForCssGeneration({
-      ...themeData,
-      recipes: body?.recipes ?? themeData?.recipes,
+    const css = buildScopedPreviewThemeCss(normalized as ResolvedScopedThemeDocumentData, {
+      reader: readerScope,
+      admin: adminScope,
     });
-    const raw = buildThemeTokensCss(cleaned);
-    const css = scopeThemeTokensCss(raw, scope);
-    return NextResponse.json({ css });
+    return NextResponse.json(css);
   } catch (error) {
     console.error('[preview-css]', error);
     const message = error instanceof Error ? error.message : 'Unknown error';

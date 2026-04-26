@@ -6,24 +6,32 @@
 
 .searchInput {
   padding: var(--spacing-sm) var(--spacing-sm);
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--reader-support-control-border-color);
   border-radius: var(--border-radius-md);
-  font-size: var(--font-size-base);
+  background-color: var(--reader-support-control-background-color);
+  color: var(--reader-support-control-text-color);
+  font-family: var(--reader-support-control-font-family);
+  font-size: var(--reader-support-control-font-size);
+  font-weight: var(--reader-support-control-font-weight);
+  line-height: var(--reader-support-control-line-height);
   flex-grow: 1;
   min-width: 200px;
 }
 
 .searchButton {
   padding: var(--spacing-sm) var(--spacing-md);
-  border: var(--border-width-thin) solid var(--color3);
-  background-color: var(--color3);
-  color: var(--color2);
+  border: var(--border-width-thin) solid var(--reader-support-control-strong-border-color);
+  background-color: var(--reader-support-control-strong-background-color);
+  color: var(--reader-support-control-strong-text-color);
   border-radius: var(--border-radius-md);
-  font-size: var(--font-size-base);
+  font-family: var(--reader-support-control-font-family);
+  font-size: var(--reader-support-control-font-size);
+  font-weight: var(--reader-support-control-font-weight);
+  line-height: var(--reader-support-control-line-height);
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .searchButton:hover {
-  background-color: var(--color3-light);
+  background-color: var(--reader-support-control-strong-hover-background-color);
 } 
