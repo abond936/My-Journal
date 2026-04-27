@@ -313,6 +313,7 @@ export type ThemeRecipeTokenRef =
   | `palette/${number}`
   | `layout/${string}`
   | `component/${string}`
+  | `semantic/reader/${'tonal-text-primary' | 'tonal-text-secondary' | 'contrast-on-fill-text' | 'overlay-contrast-text' | 'accent' | 'focus-ring' | 'canvas-surface' | 'canvas-border' | 'chrome-surface' | 'chrome-border' | 'field-surface' | 'field-border' | 'feedback-surface' | 'feedback-border' | 'media-frame-surface' | 'media-frame-border' | 'discovery-surface' | 'discovery-border' | 'media-control-surface' | 'media-control-border' | 'lightbox-control-surface' | 'lightbox-control-border' | 'overlay-scrim' | 'overlay-scrim-strong' | 'overlay-border'}`
   | `state/${'success' | 'error' | 'warning' | 'info'}/${'background' | 'border'}`
   | `gradient/${'bottomOverlay' | 'bottomOverlayStrong'}`
   | `literal/${string}`;
@@ -353,7 +354,10 @@ export interface ReaderThemeRecipes {
   typography: {
     title: ReaderTypographyRoleRecipe;
     storyTitle: ReaderTypographyRoleRecipe;
+    storyOverlayTitle: ReaderTypographyRoleRecipe;
+    storyExcerpt: ReaderTypographyRoleRecipe;
     galleryTitle: ReaderTypographyRoleRecipe;
+    galleryOverlayTitle: ReaderTypographyRoleRecipe;
     galleryHeaderTitle: ReaderTypographyRoleRecipe;
     titleCompact: ReaderTypographyRoleRecipe;
     detailTitle: ReaderTypographyRoleRecipe;
@@ -368,33 +372,49 @@ export interface ReaderThemeRecipes {
     excerpt: ReaderTypographyRoleRecipe;
     meta: ReaderTypographyRoleRecipe;
     caption: ReaderTypographyRoleRecipe;
-    supportTitle: ReaderTypographyRoleRecipe;
-    supportLabel: ReaderTypographyRoleRecipe;
-    supportMeta: ReaderTypographyRoleRecipe;
-    supportHint: ReaderTypographyRoleRecipe;
-    supportControl: ReaderTypographyRoleRecipe;
+    chromeTitle: ReaderTypographyRoleRecipe;
+    chromeLabel: ReaderTypographyRoleRecipe;
+    chromeMeta: ReaderTypographyRoleRecipe;
+    chromeHint: ReaderTypographyRoleRecipe;
+    fieldControl: ReaderTypographyRoleRecipe;
+    feedbackTitle: ReaderTypographyRoleRecipe;
+    feedbackMeta: ReaderTypographyRoleRecipe;
+    feedbackHint: ReaderTypographyRoleRecipe;
     quote: ReaderTypographyRoleRecipe;
     question: ReaderTypographyRoleRecipe;
+    questionOverlay: ReaderTypographyRoleRecipe;
     calloutTitle: ReaderTypographyRoleRecipe;
     calloutBody: ReaderTypographyRoleRecipe;
     tagLabel: ReaderTypographyRoleRecipe;
   };
   surfaces: {
-    page: ReaderSurfaceRoleRecipe;
-    chrome: ReaderSurfaceRoleRecipe;
+    canvasPage: ReaderSurfaceRoleRecipe;
+    canvasSection: ReaderSurfaceRoleRecipe;
+    chromeSidebar: ReaderSurfaceRoleRecipe;
+    chromeToolbar: ReaderSurfaceRoleRecipe;
+    chromeRail: ReaderSurfaceRoleRecipe;
+    feedbackPanel: ReaderSurfaceRoleRecipe;
+    feedbackSuccessPanel: ReaderSurfaceRoleRecipe;
+    feedbackWarningPanel: ReaderSurfaceRoleRecipe;
+    feedbackErrorPanel: ReaderSurfaceRoleRecipe;
+    feedbackInfoPanel: ReaderSurfaceRoleRecipe;
+    storyCardClosed: ReaderSurfaceRoleRecipe;
+    qaCardClosed: ReaderSurfaceRoleRecipe;
+    galleryCardClosed: ReaderSurfaceRoleRecipe;
     card: ReaderSurfaceRoleRecipe;
-    detail: ReaderSurfaceRoleRecipe;
-    discovery: ReaderSurfaceRoleRecipe;
-    mediaFrame: ReaderSurfaceRoleRecipe;
+    canvasDetail: ReaderSurfaceRoleRecipe;
+    cardDiscovery: ReaderSurfaceRoleRecipe;
+    canvasMediaFrame: ReaderSurfaceRoleRecipe;
   };
   controls: {
-    solid: ReaderControlRoleRecipe;
-    supportControl: ReaderControlRoleRecipe;
-    supportControlStrong: ReaderControlRoleRecipe;
-    filterChip: ReaderControlRoleRecipe;
+    chromeActiveTab: ReaderControlRoleRecipe;
+    fieldControl: ReaderControlRoleRecipe;
+    fieldControlStrong: ReaderControlRoleRecipe;
+    chromeFilterChip: ReaderControlRoleRecipe;
+    feedbackAction: ReaderControlRoleRecipe;
     mediaControl: ReaderControlRoleRecipe;
     lightboxControl: ReaderControlRoleRecipe;
-    link: Pick<ReaderControlRoleRecipe, 'text' | 'hoverBackground' | 'hoverText'>;
+    inlineLink: Pick<ReaderControlRoleRecipe, 'text' | 'hoverBackground' | 'hoverText'>;
     focusRing: {
       color: ThemeRecipeTokenRef;
     };

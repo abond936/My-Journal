@@ -70,91 +70,112 @@ export const CURRENT_READER_THEME_SYSTEM: ReaderThemeSummarySystem = {
         size: 'font-size/base',
         weight: 'font-weight/semibold',
         lineHeight: 'line-height/tight',
-        color: 'literal/typography.textColors.text1',
+        color: 'semantic/reader/tonal-text-primary',
       },
       storyTitle: {
         family: 'font-family/sans',
         size: 'font-size/base',
         weight: 'font-weight/semibold',
         lineHeight: 'line-height/tight',
-        color: 'literal/typography.textColors.text1',
+        color: 'semantic/reader/tonal-text-primary',
+      },
+      storyOverlayTitle: {
+        family: 'font-family/sans',
+        size: 'font-size/base',
+        weight: 'font-weight/semibold',
+        lineHeight: 'line-height/tight',
+        color: 'semantic/reader/overlay-contrast-text',
+      },
+      storyExcerpt: {
+        family: 'font-family/sans',
+        size: 'font-size/sm',
+        weight: 'font-weight/normal',
+        lineHeight: 'line-height/base',
+        color: 'semantic/reader/tonal-text-secondary',
       },
       galleryTitle: {
         family: 'font-family/sans',
         size: 'font-size/base',
         weight: 'font-weight/semibold',
         lineHeight: 'line-height/tight',
-        color: 'literal/typography.textColors.text1',
+        color: 'semantic/reader/tonal-text-primary',
+      },
+      galleryOverlayTitle: {
+        family: 'font-family/sans',
+        size: 'font-size/base',
+        weight: 'font-weight/semibold',
+        lineHeight: 'line-height/tight',
+        color: 'semantic/reader/overlay-contrast-text',
       },
       galleryHeaderTitle: {
         family: 'font-family/sans',
         size: 'font-size/lg',
         weight: 'font-weight/semibold',
         lineHeight: 'line-height/tight',
-        color: 'literal/typography.textColors.text1',
+        color: 'semantic/reader/tonal-text-primary',
       },
       titleCompact: {
         family: 'font-family/sans',
         size: 'font-size/sm',
         weight: 'font-weight/semibold',
         lineHeight: 'line-height/tight',
-        color: 'literal/typography.textColors.text1',
+        color: 'semantic/reader/tonal-text-primary',
       },
       detailTitle: {
         family: 'font-family/sans',
         size: 'font-size/3xl',
         weight: 'font-weight/bold',
         lineHeight: 'line-height/tight',
-        color: 'literal/typography.textColors.text1',
+        color: 'semantic/reader/tonal-text-primary',
       },
       storyDetailTitle: {
         family: 'font-family/sans',
         size: 'font-size/3xl',
         weight: 'font-weight/bold',
         lineHeight: 'line-height/tight',
-        color: 'literal/typography.textColors.text1',
+        color: 'semantic/reader/tonal-text-primary',
       },
       galleryDetailTitle: {
         family: 'font-family/sans',
         size: 'font-size/3xl',
         weight: 'font-weight/bold',
         lineHeight: 'line-height/tight',
-        color: 'literal/typography.textColors.text1',
+        color: 'semantic/reader/tonal-text-primary',
       },
       discoveryTitle: {
         family: 'font-family/sans',
         size: 'font-size/lg',
         weight: 'font-weight/semibold',
         lineHeight: 'line-height/tight',
-        color: 'literal/typography.textColors.text1',
+        color: 'semantic/reader/tonal-text-primary',
       },
       discoveryMeta: {
         family: 'font-family/sans',
         size: 'font-size/sm',
         weight: 'font-weight/medium',
         lineHeight: 'line-height/base',
-        color: 'literal/typography.textColors.text2',
+        color: 'semantic/reader/tonal-text-secondary',
       },
       railSectionTitle: {
         family: 'font-family/sans',
         size: 'font-size/lg',
         weight: 'font-weight/semibold',
         lineHeight: 'line-height/tight',
-        color: 'literal/typography.textColors.text1',
+        color: 'semantic/reader/tonal-text-primary',
       },
       railCardTitle: {
         family: 'font-family/sans',
         size: 'font-size/sm',
         weight: 'font-weight/medium',
         lineHeight: 'line-height/base',
-        color: 'literal/typography.textColors.text1',
+        color: 'semantic/reader/tonal-text-primary',
       },
       subtitle: {
         family: 'font-family/sans',
         size: 'font-size/xl',
         weight: 'font-weight/normal',
         lineHeight: 'line-height/base',
-        color: 'literal/typography.textColors.text2',
+        color: 'semantic/reader/tonal-text-secondary',
         fontStyle: 'italic',
       },
       body: {
@@ -162,70 +183,91 @@ export const CURRENT_READER_THEME_SYSTEM: ReaderThemeSummarySystem = {
         size: 'font-size/sm',
         weight: 'font-weight/normal',
         lineHeight: 'line-height/relaxed',
-        color: 'literal/typography.textColors.text1',
+        color: 'semantic/reader/tonal-text-primary',
       },
       excerpt: {
         family: 'font-family/sans',
         size: 'font-size/sm',
         weight: 'font-weight/normal',
         lineHeight: 'line-height/relaxed',
-        color: 'literal/typography.textColors.text2',
+        color: 'semantic/reader/tonal-text-secondary',
       },
       meta: {
         family: 'font-family/sans',
         size: 'font-size/xs',
         weight: 'font-weight/medium',
         lineHeight: 'line-height/base',
-        color: 'literal/typography.textColors.text2',
+        color: 'semantic/reader/tonal-text-secondary',
       },
       caption: {
         family: 'font-family/sans',
         size: 'font-size/sm',
         weight: 'font-weight/normal',
         lineHeight: 'line-height/base',
-        color: 'literal/typography.textColors.text2',
+        color: 'semantic/reader/tonal-text-secondary',
       },
-      supportTitle: {
+      chromeTitle: {
         family: 'font-family/sans',
         size: 'font-size/lg',
         weight: 'font-weight/semibold',
         lineHeight: 'line-height/tight',
-        color: 'literal/typography.textColors.text1',
+        color: 'semantic/reader/tonal-text-primary',
       },
-      supportLabel: {
+      chromeLabel: {
         family: 'font-family/sans',
         size: 'font-size/sm',
         weight: 'font-weight/medium',
         lineHeight: 'line-height/base',
-        color: 'literal/typography.textColors.text1',
+        color: 'semantic/reader/tonal-text-primary',
       },
-      supportMeta: {
+      chromeMeta: {
         family: 'font-family/sans',
         size: 'font-size/xs',
         weight: 'font-weight/medium',
         lineHeight: 'line-height/base',
-        color: 'literal/typography.textColors.text2',
+        color: 'semantic/reader/tonal-text-secondary',
       },
-      supportHint: {
+      chromeHint: {
         family: 'font-family/sans',
         size: 'font-size/sm',
         weight: 'font-weight/normal',
         lineHeight: 'line-height/base',
-        color: 'literal/typography.textColors.text2',
+        color: 'semantic/reader/tonal-text-secondary',
       },
-      supportControl: {
+      fieldControl: {
         family: 'font-family/sans',
         size: 'font-size/sm',
         weight: 'font-weight/medium',
         lineHeight: 'line-height/base',
-        color: 'literal/typography.textColors.text1',
+        color: 'semantic/reader/tonal-text-primary',
+      },
+      feedbackTitle: {
+        family: 'font-family/sans',
+        size: 'font-size/lg',
+        weight: 'font-weight/semibold',
+        lineHeight: 'line-height/tight',
+        color: 'semantic/reader/tonal-text-primary',
+      },
+      feedbackMeta: {
+        family: 'font-family/sans',
+        size: 'font-size/xs',
+        weight: 'font-weight/medium',
+        lineHeight: 'line-height/base',
+        color: 'semantic/reader/tonal-text-secondary',
+      },
+      feedbackHint: {
+        family: 'font-family/sans',
+        size: 'font-size/sm',
+        weight: 'font-weight/normal',
+        lineHeight: 'line-height/base',
+        color: 'semantic/reader/tonal-text-secondary',
       },
       quote: {
         family: 'font-family/serif',
         size: 'font-size/lg',
         weight: 'font-weight/normal',
         lineHeight: 'line-height/relaxed',
-        color: 'literal/typography.textColors.text1',
+        color: 'semantic/reader/tonal-text-primary',
         fontStyle: 'italic',
       },
       question: {
@@ -233,39 +275,120 @@ export const CURRENT_READER_THEME_SYSTEM: ReaderThemeSummarySystem = {
         size: 'font-size/lg',
         weight: 'font-weight/semibold',
         lineHeight: 'line-height/tight',
-        color: 'literal/typography.textColors.text1',
+        color: 'semantic/reader/tonal-text-primary',
+      },
+      questionOverlay: {
+        family: 'font-family/sans',
+        size: 'font-size/lg',
+        weight: 'font-weight/semibold',
+        lineHeight: 'line-height/tight',
+        color: 'semantic/reader/overlay-contrast-text',
       },
       calloutTitle: {
         family: 'font-family/sans',
         size: 'font-size/lg',
         weight: 'font-weight/semibold',
         lineHeight: 'line-height/tight',
-        color: 'literal/typography.textColors.text1',
+        color: 'semantic/reader/tonal-text-primary',
       },
       calloutBody: {
         family: 'font-family/sans',
         size: 'font-size/sm',
         weight: 'font-weight/normal',
         lineHeight: 'line-height/relaxed',
-        color: 'literal/typography.textColors.text1',
+        color: 'semantic/reader/tonal-text-primary',
       },
       tagLabel: {
         family: 'font-family/sans',
         size: 'font-size/xs',
         weight: 'font-weight/semibold',
         lineHeight: 'line-height/base',
-        color: 'component/tag/textColor',
+        color: 'semantic/reader/contrast-on-fill-text',
       },
     },
     surfaces: {
-      page: {
-        background: 'layout/background1Color',
-        border: 'layout/border1Color',
+      canvasPage: {
+        background: 'semantic/reader/canvas-surface',
+        border: 'semantic/reader/canvas-border',
       },
-      chrome: {
-        background: 'layout/background1Color',
-        border: 'layout/border1Color',
+      canvasSection: {
+        background: 'semantic/reader/canvas-surface',
+        border: 'semantic/reader/canvas-border',
         radius: 'border/radius/md',
+      },
+      chromeSidebar: {
+        background: 'semantic/reader/chrome-surface',
+        border: 'semantic/reader/chrome-border',
+        radius: 'border/radius/md',
+      },
+      chromeToolbar: {
+        background: 'semantic/reader/chrome-surface',
+        border: 'semantic/reader/chrome-border',
+        radius: 'border/radius/md',
+      },
+      chromeRail: {
+        background: 'semantic/reader/chrome-surface',
+        border: 'semantic/reader/chrome-border',
+        radius: 'border/radius/md',
+      },
+      feedbackPanel: {
+        background: 'semantic/reader/feedback-surface',
+        border: 'semantic/reader/feedback-border',
+        radius: 'border/radius/lg',
+        shadow: 'shadow/md',
+        padding: 'spacing/xl',
+      },
+      feedbackSuccessPanel: {
+        background: 'state/success/background',
+        border: 'state/success/border',
+        radius: 'border/radius/lg',
+        shadow: 'shadow/md',
+        padding: 'spacing/xl',
+      },
+      feedbackWarningPanel: {
+        background: 'state/warning/background',
+        border: 'state/warning/border',
+        radius: 'border/radius/lg',
+        shadow: 'shadow/md',
+        padding: 'spacing/xl',
+      },
+      feedbackErrorPanel: {
+        background: 'state/error/background',
+        border: 'state/error/border',
+        radius: 'border/radius/lg',
+        shadow: 'shadow/md',
+        padding: 'spacing/xl',
+      },
+      feedbackInfoPanel: {
+        background: 'state/info/background',
+        border: 'state/info/border',
+        radius: 'border/radius/lg',
+        shadow: 'shadow/md',
+        padding: 'spacing/xl',
+      },
+      storyCardClosed: {
+        background: 'component/card/backgroundColor',
+        border: 'component/card/borderColor',
+        radius: 'component/card/borderRadius',
+        shadow: 'component/card/shadow',
+        shadowHover: 'component/card/shadowHover',
+        padding: 'spacing/md',
+      },
+      qaCardClosed: {
+        background: 'component/card/backgroundColor',
+        border: 'component/card/borderColor',
+        radius: 'component/card/borderRadius',
+        shadow: 'component/card/shadow',
+        shadowHover: 'component/card/shadowHover',
+        padding: 'component/card/padding',
+      },
+      galleryCardClosed: {
+        background: 'component/card/backgroundColor',
+        border: 'component/card/borderColor',
+        radius: 'component/card/borderRadius',
+        shadow: 'component/card/shadow',
+        shadowHover: 'component/card/shadowHover',
+        padding: 'component/card/padding',
       },
       card: {
         background: 'component/card/backgroundColor',
@@ -275,116 +398,122 @@ export const CURRENT_READER_THEME_SYSTEM: ReaderThemeSummarySystem = {
         shadowHover: 'component/card/shadowHover',
         padding: 'component/card/padding',
       },
-      detail: {
+      canvasDetail: {
         background: 'layout/background1Color',
         border: 'layout/border1Color',
         radius: 'border/radius/lg',
         shadow: 'shadow/md',
         padding: 'spacing/xl',
       },
-      discovery: {
-        background: 'layout/background1Color',
-        border: 'layout/border1Color',
+      cardDiscovery: {
+        background: 'semantic/reader/discovery-surface',
+        border: 'semantic/reader/discovery-border',
         radius: 'border/radius/md',
       },
-      mediaFrame: {
-        background: 'layout/background2Color',
-        border: 'layout/border1Color',
+      canvasMediaFrame: {
+        background: 'semantic/reader/media-frame-surface',
+        border: 'semantic/reader/media-frame-border',
         radius: 'border/radius/lg',
       },
     },
     controls: {
-      solid: {
+      chromeActiveTab: {
         background: 'component/button/solid/backgroundColor',
-        text: 'component/button/solid/textColor',
+        text: 'semantic/reader/contrast-on-fill-text',
         border: 'component/button/solid/borderColor',
         hoverBackground: 'component/button/solid/backgroundColorHover',
       },
-      supportControl: {
-        background: 'component/input/backgroundColor',
+      fieldControl: {
+        background: 'semantic/reader/field-surface',
         text: 'component/input/textColor',
-        border: 'component/input/borderColor',
+        border: 'semantic/reader/field-border',
         hoverBackground: 'layout/background2Color',
       },
-      supportControlStrong: {
+      fieldControlStrong: {
         background: 'component/button/solid/backgroundColor',
-        text: 'component/button/solid/textColor',
+        text: 'semantic/reader/contrast-on-fill-text',
         border: 'component/button/solid/borderColor',
         hoverBackground: 'component/button/solid/backgroundColorHover',
       },
-      filterChip: {
+      chromeFilterChip: {
         background: 'component/button/solid/backgroundColor',
-        text: 'component/button/solid/textColor',
+        text: 'semantic/reader/contrast-on-fill-text',
         border: 'component/button/solid/borderColor',
         hoverBackground: 'component/button/solid/backgroundColorHover',
+      },
+      feedbackAction: {
+        background: 'semantic/reader/field-surface',
+        text: 'component/input/textColor',
+        border: 'semantic/reader/field-border',
+        hoverBackground: 'layout/background2Color',
       },
       mediaControl: {
-        background: 'layout/background2Color',
-        text: 'component/button/solid/textColor',
-        border: 'layout/border1Color',
-        hoverBackground: 'layout/background1Color',
+        background: 'semantic/reader/media-control-surface',
+        text: 'semantic/reader/contrast-on-fill-text',
+        border: 'semantic/reader/media-control-border',
+        hoverBackground: 'semantic/reader/chrome-surface',
       },
       lightboxControl: {
-        background: 'gradient/bottomOverlayStrong',
-        text: 'component/button/solid/textColor',
-        border: 'layout/border1Color',
+        background: 'semantic/reader/lightbox-control-surface',
+        text: 'semantic/reader/overlay-contrast-text',
+        border: 'semantic/reader/lightbox-control-border',
       },
-      link: {
-        text: 'component/link/textColor',
+      inlineLink: {
+        text: 'semantic/reader/accent',
         hoverBackground: 'literal/transparent',
         hoverText: 'component/link/textColorHover',
       },
       focusRing: {
-        color: 'palette/3',
+        color: 'semantic/reader/focus-ring',
       },
     },
     tags: {
       who: {
         background: 'component/tag/backgrounds/who',
-        text: 'component/tag/textColor',
+        text: 'semantic/reader/contrast-on-fill-text',
         border: 'component/tag/backgrounds/who',
       },
       what: {
         background: 'component/tag/backgrounds/what',
-        text: 'component/tag/textColor',
+        text: 'semantic/reader/contrast-on-fill-text',
         border: 'component/tag/backgrounds/what',
       },
       when: {
         background: 'component/tag/backgrounds/when',
-        text: 'component/tag/textColor',
+        text: 'semantic/reader/contrast-on-fill-text',
         border: 'component/tag/backgrounds/when',
       },
       where: {
         background: 'component/tag/backgrounds/where',
-        text: 'component/tag/textColor',
+        text: 'semantic/reader/contrast-on-fill-text',
         border: 'component/tag/backgrounds/where',
       },
       muted: {
         background: 'literal/transparent',
-        text: 'literal/typography.textColors.text2',
+        text: 'semantic/reader/tonal-text-secondary',
         border: 'layout/border1Color',
         hoverBackground: 'layout/background2Color',
       },
     },
     overlays: {
       card: {
-        background: 'gradient/bottomOverlay',
-        text: 'component/button/solid/textColor',
-        border: 'layout/border1Color',
+        background: 'semantic/reader/overlay-scrim',
+        text: 'semantic/reader/overlay-contrast-text',
+        border: 'semantic/reader/overlay-border',
       },
       cardStrong: {
-        background: 'gradient/bottomOverlayStrong',
-        text: 'component/button/solid/textColor',
-        border: 'layout/border1Color',
+        background: 'semantic/reader/overlay-scrim-strong',
+        text: 'semantic/reader/overlay-contrast-text',
+        border: 'semantic/reader/overlay-border',
       },
       lightbox: {
-        background: 'gradient/bottomOverlayStrong',
-        text: 'component/button/solid/textColor',
-        border: 'layout/border1Color',
+        background: 'semantic/reader/overlay-scrim-strong',
+        text: 'semantic/reader/overlay-contrast-text',
+        border: 'semantic/reader/overlay-border',
       },
     },
     iconography: {
-      chrome: 'literal/typography.textColors.text1',
+      chrome: 'semantic/reader/tonal-text-primary',
       solid: 'component/button/solid/textColor',
       overlay: 'component/button/solid/textColor',
       accent: 'palette/3',
@@ -407,10 +536,10 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
         id: 'reader',
         label: 'Reader shell',
         elements: [
-          { id: 'pageSurface', label: 'Page surface', binding: { kind: 'surface', key: 'page' } },
+          { id: 'pageSurface', label: 'Page surface', binding: { kind: 'surface', key: 'canvasPage' } },
           { id: 'bodyText', label: 'Body text', binding: { kind: 'typography', key: 'body' } },
           { id: 'metaText', label: 'Meta text', binding: { kind: 'typography', key: 'meta' } },
-          { id: 'inlineLink', label: 'Inline link', binding: { kind: 'control', key: 'link' } },
+          { id: 'inlineLink', label: 'Inline link', binding: { kind: 'control', key: 'inlineLink' } },
           { id: 'focusRing', label: 'Focus ring', binding: { kind: 'control', key: 'focusRing' } },
         ],
       },
@@ -425,9 +554,12 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
         id: 'closed',
         label: 'Closed card',
         elements: [
-          { id: 'surface', label: 'Card surface', binding: { kind: 'surface', key: 'card' } },
+          { id: 'surface', label: 'Card surface', binding: { kind: 'surface', key: 'storyCardClosed' } },
+          { id: 'contentPadding', label: 'Content padding', binding: { kind: 'token', key: 'storyClosedPadding' } },
           { id: 'title', label: 'Title', binding: { kind: 'typography', key: 'storyTitle' } },
-          { id: 'excerpt', label: 'Excerpt', binding: { kind: 'typography', key: 'excerpt' } },
+          { id: 'overlayTitle', label: 'Overlay title', binding: { kind: 'typography', key: 'storyOverlayTitle' } },
+          { id: 'excerpt', label: 'Excerpt', binding: { kind: 'typography', key: 'storyExcerpt' } },
+          { id: 'excerptLineHeight', label: 'Excerpt line height', binding: { kind: 'token', key: 'storyClosedExcerptLineHeight' } },
           { id: 'imageOverlay', label: 'Image overlay', binding: { kind: 'overlay', key: 'card' } },
         ],
       },
@@ -435,12 +567,12 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
         id: 'open',
         label: 'Open card',
         elements: [
-          { id: 'surface', label: 'Detail surface', binding: { kind: 'surface', key: 'detail' } },
+          { id: 'surface', label: 'Detail surface', binding: { kind: 'surface', key: 'canvasDetail' } },
           { id: 'title', label: 'Title', binding: { kind: 'typography', key: 'storyDetailTitle' } },
           { id: 'subtitle', label: 'Subtitle', binding: { kind: 'typography', key: 'subtitle' } },
           { id: 'body', label: 'Body', binding: { kind: 'typography', key: 'body' } },
           { id: 'caption', label: 'Figure caption', binding: { kind: 'typography', key: 'caption' } },
-          { id: 'mediaFrame', label: 'Media frame', binding: { kind: 'surface', key: 'mediaFrame' } },
+          { id: 'mediaFrame', label: 'Media frame', binding: { kind: 'surface', key: 'canvasMediaFrame' } },
         ],
       },
       {
@@ -464,9 +596,11 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
         id: 'closed',
         label: 'Closed card',
         elements: [
-          { id: 'surface', label: 'Card surface', binding: { kind: 'surface', key: 'card' } },
+          { id: 'surface', label: 'Card surface', binding: { kind: 'surface', key: 'galleryCardClosed' } },
+          { id: 'contentPadding', label: 'Content padding', binding: { kind: 'token', key: 'galleryClosedPadding' } },
           { id: 'title', label: 'Title', binding: { kind: 'typography', key: 'galleryTitle' } },
-          { id: 'mediaFrame', label: 'Media frame', binding: { kind: 'surface', key: 'mediaFrame' } },
+          { id: 'overlayTitle', label: 'Overlay title', binding: { kind: 'typography', key: 'galleryOverlayTitle' } },
+          { id: 'mediaFrame', label: 'Media frame', binding: { kind: 'surface', key: 'canvasMediaFrame' } },
           { id: 'imageOverlay', label: 'Image overlay', binding: { kind: 'overlay', key: 'cardStrong' } },
         ],
       },
@@ -474,7 +608,7 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
         id: 'open',
         label: 'Open card',
         elements: [
-          { id: 'surface', label: 'Detail surface', binding: { kind: 'surface', key: 'detail' } },
+          { id: 'surface', label: 'Detail surface', binding: { kind: 'surface', key: 'canvasDetail' } },
           { id: 'title', label: 'Title', binding: { kind: 'typography', key: 'galleryDetailTitle' } },
           { id: 'headerTitle', label: 'Inline gallery header', binding: { kind: 'typography', key: 'galleryHeaderTitle' } },
           { id: 'headerMeta', label: 'Inline gallery count', binding: { kind: 'typography', key: 'discoveryMeta' } },
@@ -530,8 +664,10 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
         id: 'closed',
         label: 'Closed card',
         elements: [
-          { id: 'surface', label: 'Card surface', binding: { kind: 'surface', key: 'card' } },
+          { id: 'surface', label: 'Card surface', binding: { kind: 'surface', key: 'qaCardClosed' } },
+          { id: 'contentPadding', label: 'Content padding', binding: { kind: 'token', key: 'questionClosedPadding' } },
           { id: 'question', label: 'Question', binding: { kind: 'typography', key: 'question' } },
+          { id: 'overlayQuestion', label: 'Overlay question', binding: { kind: 'typography', key: 'questionOverlay' } },
           { id: 'excerpt', label: 'Answer preview', binding: { kind: 'typography', key: 'excerpt' } },
         ],
       },
@@ -539,7 +675,7 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
         id: 'open',
         label: 'Open card',
         elements: [
-          { id: 'surface', label: 'Detail surface', binding: { kind: 'surface', key: 'detail' } },
+          { id: 'surface', label: 'Detail surface', binding: { kind: 'surface', key: 'canvasDetail' } },
           { id: 'question', label: 'Question', binding: { kind: 'typography', key: 'question' } },
           { id: 'answer', label: 'Answer body', binding: { kind: 'typography', key: 'body' } },
           { id: 'caption', label: 'Supporting caption', binding: { kind: 'typography', key: 'caption' } },
@@ -587,62 +723,107 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
           { id: 'subtitle', label: 'Subtitle', binding: { kind: 'typography', key: 'subtitle' } },
           { id: 'excerpt', label: 'Excerpt', binding: { kind: 'typography', key: 'excerpt' } },
           { id: 'body', label: 'Body', binding: { kind: 'typography', key: 'calloutBody' } },
+          { id: 'contentLineHeight', label: 'Content line spacing', binding: { kind: 'token', key: 'calloutContentLineHeight' } },
           { id: 'watermark', label: 'Watermark opacity', binding: { kind: 'treatment', key: 'calloutWatermarkOpacity' } },
         ],
       },
     ],
   },
   {
-    id: 'sidebar',
-    label: 'Sidebar and controls',
-    description: 'Reader chrome, support titles/labels, active controls, chips, and icon color.',
+    id: 'chrome',
+    label: 'Chrome',
+    description: 'Reader chrome around the content: sidebar framing, active tabs, chips, links, and icon color.',
     variants: [
       {
-        id: 'chrome',
-        label: 'Reader chrome',
+        id: 'sidebar',
+        label: 'Sidebar and navigation',
         elements: [
-          { id: 'surface', label: 'Sidebar surface', binding: { kind: 'surface', key: 'chrome' } },
-          { id: 'supportTitle', label: 'Sidebar title', binding: { kind: 'typography', key: 'supportTitle' } },
-          { id: 'supportLabel', label: 'Control label', binding: { kind: 'typography', key: 'supportLabel' } },
-          { id: 'supportMeta', label: 'Support meta', binding: { kind: 'typography', key: 'supportMeta' } },
-          { id: 'supportHint', label: 'Hint text', binding: { kind: 'typography', key: 'supportHint' } },
-          { id: 'supportControl', label: 'Neutral control', binding: { kind: 'control', key: 'supportControl' } },
-          { id: 'supportControlType', label: 'Control text', binding: { kind: 'typography', key: 'supportControl' } },
-          { id: 'supportControlStrong', label: 'Active control', binding: { kind: 'control', key: 'supportControlStrong' } },
-          { id: 'solidControl', label: 'Active tab / solid control', binding: { kind: 'control', key: 'solid' } },
-          { id: 'filterChip', label: 'Filter chip', binding: { kind: 'control', key: 'filterChip' } },
+          { id: 'surface', label: 'Sidebar surface', binding: { kind: 'surface', key: 'chromeSidebar' } },
+          { id: 'title', label: 'Sidebar title', binding: { kind: 'typography', key: 'chromeTitle' } },
+          { id: 'label', label: 'Chrome label', binding: { kind: 'typography', key: 'chromeLabel' } },
+          { id: 'meta', label: 'Chrome meta', binding: { kind: 'typography', key: 'chromeMeta' } },
+          { id: 'hint', label: 'Chrome hint', binding: { kind: 'typography', key: 'chromeHint' } },
+          { id: 'activeTab', label: 'Active tab', binding: { kind: 'control', key: 'chromeActiveTab' } },
+          { id: 'filterChip', label: 'Filter chip', binding: { kind: 'control', key: 'chromeFilterChip' } },
+          { id: 'inlineLink', label: 'Inline link', binding: { kind: 'control', key: 'inlineLink' } },
           { id: 'icon', label: 'Chrome icon color', binding: { kind: 'iconography', key: 'chrome' } },
         ],
       },
     ],
   },
   {
-    id: 'supportUi',
-    label: 'Support UI',
-    description: 'Shared reader-adjacent tools plus empty/loading/error feedback states.',
+    id: 'field',
+    label: 'Fields',
+    description: 'Neutral and selected reader controls, labels, hints, and control text.',
     variants: [
       {
-        id: 'tooling',
-        label: 'Tooling and selectors',
+        id: 'controls',
+        label: 'Controls and selectors',
         elements: [
-          { id: 'title', label: 'Support title', binding: { kind: 'typography', key: 'supportTitle' } },
-          { id: 'label', label: 'Support label', binding: { kind: 'typography', key: 'supportLabel' } },
-          { id: 'meta', label: 'Support meta', binding: { kind: 'typography', key: 'supportMeta' } },
-          { id: 'hint', label: 'Support hint', binding: { kind: 'typography', key: 'supportHint' } },
-          { id: 'control', label: 'Neutral control', binding: { kind: 'control', key: 'supportControl' } },
-          { id: 'controlType', label: 'Control text', binding: { kind: 'typography', key: 'supportControl' } },
-          { id: 'controlStrong', label: 'Selected control', binding: { kind: 'control', key: 'supportControlStrong' } },
+          { id: 'label', label: 'Field label', binding: { kind: 'typography', key: 'chromeLabel' } },
+          { id: 'meta', label: 'Field meta', binding: { kind: 'typography', key: 'chromeMeta' } },
+          { id: 'hint', label: 'Field hint', binding: { kind: 'typography', key: 'chromeHint' } },
+          { id: 'control', label: 'Neutral control', binding: { kind: 'control', key: 'fieldControl' } },
+          { id: 'controlText', label: 'Control text', binding: { kind: 'typography', key: 'fieldControl' } },
+          { id: 'controlStrong', label: 'Selected control', binding: { kind: 'control', key: 'fieldControlStrong' } },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'feedback',
+    label: 'Feedback',
+    description: 'Reader empty, loading, and error messaging plus action surfaces.',
+    variants: [
+      {
+        id: 'states',
+        label: 'States and notices',
+        elements: [
+          { id: 'surface', label: 'Feedback panel', binding: { kind: 'surface', key: 'feedbackPanel' } },
+          { id: 'title', label: 'State title', binding: { kind: 'typography', key: 'feedbackTitle' } },
+          { id: 'meta', label: 'State meta', binding: { kind: 'typography', key: 'feedbackMeta' } },
+          { id: 'hint', label: 'State hint', binding: { kind: 'typography', key: 'feedbackHint' } },
+          { id: 'action', label: 'State action', binding: { kind: 'control', key: 'feedbackAction' } },
         ],
       },
       {
-        id: 'states',
-        label: 'Empty, loading, and error states',
+        id: 'success',
+        label: 'Success state',
         elements: [
-          { id: 'title', label: 'State title', binding: { kind: 'typography', key: 'supportTitle' } },
-          { id: 'meta', label: 'State meta', binding: { kind: 'typography', key: 'supportMeta' } },
-          { id: 'hint', label: 'State hint', binding: { kind: 'typography', key: 'supportHint' } },
-          { id: 'control', label: 'State action', binding: { kind: 'control', key: 'supportControl' } },
-          { id: 'controlType', label: 'State action text', binding: { kind: 'typography', key: 'supportControl' } },
+          { id: 'surface', label: 'Success panel', binding: { kind: 'surface', key: 'feedbackSuccessPanel' } },
+          { id: 'title', label: 'Success title', binding: { kind: 'typography', key: 'feedbackTitle' } },
+          { id: 'meta', label: 'Success meta', binding: { kind: 'typography', key: 'feedbackMeta' } },
+          { id: 'action', label: 'Success action', binding: { kind: 'control', key: 'feedbackAction' } },
+        ],
+      },
+      {
+        id: 'warning',
+        label: 'Warning state',
+        elements: [
+          { id: 'surface', label: 'Warning panel', binding: { kind: 'surface', key: 'feedbackWarningPanel' } },
+          { id: 'title', label: 'Warning title', binding: { kind: 'typography', key: 'feedbackTitle' } },
+          { id: 'meta', label: 'Warning meta', binding: { kind: 'typography', key: 'feedbackMeta' } },
+          { id: 'action', label: 'Warning action', binding: { kind: 'control', key: 'feedbackAction' } },
+        ],
+      },
+      {
+        id: 'error',
+        label: 'Error state',
+        elements: [
+          { id: 'surface', label: 'Error panel', binding: { kind: 'surface', key: 'feedbackErrorPanel' } },
+          { id: 'title', label: 'Error title', binding: { kind: 'typography', key: 'feedbackTitle' } },
+          { id: 'meta', label: 'Error meta', binding: { kind: 'typography', key: 'feedbackMeta' } },
+          { id: 'action', label: 'Error action', binding: { kind: 'control', key: 'feedbackAction' } },
+        ],
+      },
+      {
+        id: 'info',
+        label: 'Info state',
+        elements: [
+          { id: 'surface', label: 'Info panel', binding: { kind: 'surface', key: 'feedbackInfoPanel' } },
+          { id: 'title', label: 'Info title', binding: { kind: 'typography', key: 'feedbackTitle' } },
+          { id: 'meta', label: 'Info meta', binding: { kind: 'typography', key: 'feedbackMeta' } },
+          { id: 'action', label: 'Info action', binding: { kind: 'control', key: 'feedbackAction' } },
         ],
       },
     ],
@@ -652,3 +833,96 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
 export const DEFAULT_READER_THEME_RECIPES: ReaderThemeRecipes = JSON.parse(
   JSON.stringify(CURRENT_READER_THEME_SYSTEM.recipes)
 ) as ReaderThemeRecipes;
+
+const cloneReaderThemeRecipes = (recipes: ReaderThemeRecipes): ReaderThemeRecipes => (
+  JSON.parse(JSON.stringify(recipes)) as ReaderThemeRecipes
+);
+
+type LegacyReaderThemeRecipes = Partial<{
+  typography: Partial<Record<'supportTitle' | 'supportLabel' | 'supportMeta' | 'supportHint' | 'supportControl', ReaderThemeRecipes['typography'][keyof ReaderThemeRecipes['typography']]>>;
+  surfaces: Partial<Record<'page' | 'chrome' | 'detail' | 'discovery' | 'mediaFrame', ReaderThemeRecipes['surfaces'][keyof ReaderThemeRecipes['surfaces']]>>;
+  controls: Partial<Record<'solid' | 'supportControl' | 'supportControlStrong' | 'filterChip' | 'link', ReaderThemeRecipes['controls'][keyof ReaderThemeRecipes['controls']]>>;
+}>;
+
+export function normalizeReaderThemeRecipes(
+  recipes?: Partial<ReaderThemeRecipes> | LegacyReaderThemeRecipes | null
+): Partial<ReaderThemeRecipes> | undefined {
+  if (!recipes) {
+    return undefined;
+  }
+
+  const normalized = cloneReaderThemeRecipes(DEFAULT_READER_THEME_RECIPES);
+
+  Object.assign(normalized.typography, recipes.typography);
+  Object.assign(normalized.surfaces, recipes.surfaces);
+  Object.assign(normalized.controls, recipes.controls);
+  Object.assign(normalized.tags, recipes.tags);
+  Object.assign(normalized.overlays, recipes.overlays);
+  Object.assign(normalized.iconography, recipes.iconography);
+  Object.assign(normalized.treatments, recipes.treatments);
+
+  const legacyTypography = recipes.typography as LegacyReaderThemeRecipes['typography'] | undefined;
+  if (legacyTypography?.supportTitle) {
+    normalized.typography.chromeTitle = legacyTypography.supportTitle;
+    normalized.typography.feedbackTitle = legacyTypography.supportTitle;
+  }
+  if (legacyTypography?.supportLabel) {
+    normalized.typography.chromeLabel = legacyTypography.supportLabel;
+  }
+  if (legacyTypography?.supportMeta) {
+    normalized.typography.chromeMeta = legacyTypography.supportMeta;
+    normalized.typography.feedbackMeta = legacyTypography.supportMeta;
+  }
+  if (legacyTypography?.supportHint) {
+    normalized.typography.chromeHint = legacyTypography.supportHint;
+    normalized.typography.feedbackHint = legacyTypography.supportHint;
+  }
+  if (legacyTypography?.supportControl) {
+    normalized.typography.fieldControl = legacyTypography.supportControl;
+  }
+
+  const legacySurfaces = recipes.surfaces as LegacyReaderThemeRecipes['surfaces'] | undefined;
+  if (legacySurfaces?.page) {
+    normalized.surfaces.canvasPage = legacySurfaces.page;
+    normalized.surfaces.canvasSection = legacySurfaces.page;
+  }
+  if (legacySurfaces?.chrome) {
+    normalized.surfaces.chromeSidebar = legacySurfaces.chrome;
+    normalized.surfaces.chromeToolbar = legacySurfaces.chrome;
+    normalized.surfaces.chromeRail = legacySurfaces.chrome;
+  }
+  if (legacySurfaces?.detail) {
+    normalized.surfaces.canvasDetail = legacySurfaces.detail;
+    normalized.surfaces.feedbackPanel = legacySurfaces.detail;
+    normalized.surfaces.feedbackSuccessPanel = legacySurfaces.detail;
+    normalized.surfaces.feedbackWarningPanel = legacySurfaces.detail;
+    normalized.surfaces.feedbackErrorPanel = legacySurfaces.detail;
+    normalized.surfaces.feedbackInfoPanel = legacySurfaces.detail;
+  }
+  if (legacySurfaces?.discovery) {
+    normalized.surfaces.cardDiscovery = legacySurfaces.discovery;
+  }
+  if (legacySurfaces?.mediaFrame) {
+    normalized.surfaces.canvasMediaFrame = legacySurfaces.mediaFrame;
+  }
+
+  const legacyControls = recipes.controls as LegacyReaderThemeRecipes['controls'] | undefined;
+  if (legacyControls?.solid) {
+    normalized.controls.chromeActiveTab = legacyControls.solid;
+  }
+  if (legacyControls?.supportControl) {
+    normalized.controls.fieldControl = legacyControls.supportControl;
+    normalized.controls.feedbackAction = legacyControls.supportControl;
+  }
+  if (legacyControls?.supportControlStrong) {
+    normalized.controls.fieldControlStrong = legacyControls.supportControlStrong;
+  }
+  if (legacyControls?.filterChip) {
+    normalized.controls.chromeFilterChip = legacyControls.filterChip;
+  }
+  if (legacyControls?.link) {
+    normalized.controls.inlineLink = legacyControls.link;
+  }
+
+  return normalized;
+}

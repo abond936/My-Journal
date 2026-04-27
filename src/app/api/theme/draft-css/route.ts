@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
-import { buildScopedPreviewThemeCss, normalizeThemeDocument } from '@/lib/services/themeService';
+import { buildScopedDraftThemeCss, normalizeThemeDocument } from '@/lib/services/themeService';
 import type { ResolvedScopedThemeDocumentData, ScopedThemeDocumentData } from '@/lib/types/theme';
 
-const READER_PREVIEW_SCOPE = '.themeAdminReaderPreview';
-const ADMIN_PREVIEW_SCOPE = '.themeAdminAdminPreview';
+const READER_DRAFT_SCOPE = '.themeDraftReaderScope';
+const ADMIN_DRAFT_SCOPE = '.themeDraftAdminScope';
 
 type ApiErrorPayload = {
   ok: false;
@@ -41,20 +41,20 @@ export async function POST(request: Request) {
     const readerScope =
       typeof body?.readerScopeSelector === 'string' && /^\.[A-Za-z0-9_-]+$/.test(body.readerScopeSelector)
         ? body.readerScopeSelector
-        : READER_PREVIEW_SCOPE;
+        : READER_DRAFT_SCOPE;
     const adminScope =
       typeof body?.adminScopeSelector === 'string' && /^\.[A-Za-z0-9_-]+$/.test(body.adminScopeSelector)
         ? body.adminScopeSelector
-        : ADMIN_PREVIEW_SCOPE;
+        : ADMIN_DRAFT_SCOPE;
 
-    const isScopedPreviewPayload =
+    const isScopedDraftPayload =
       body?.version === 2 &&
       body?.reader?.data?.palette &&
       Array.isArray(body?.reader?.data?.palette) &&
       body?.admin?.data?.palette &&
       Array.isArray(body?.admin?.data?.palette);
 
-    const normalized = isScopedPreviewPayload
+    const normalized = isScopedDraftPayload
       ? normalizeThemeDocument(body as ScopedThemeDocumentData)
       : null;
 
@@ -62,8 +62,8 @@ export async function POST(request: Request) {
       return errorResponse(
         {
           ok: false,
-          code: 'THEME_PREVIEW_INVALID_BODY',
-          message: 'Invalid scoped theme preview data.',
+          code: 'THEME_DRAFT_INVALID_BODY',
+          message: 'Invalid scoped theme draft data.',
           severity: 'error',
           retryable: false,
         },
@@ -71,19 +71,19 @@ export async function POST(request: Request) {
       );
     }
 
-    const css = buildScopedPreviewThemeCss(normalized as ResolvedScopedThemeDocumentData, {
+    const css = buildScopedDraftThemeCss(normalized as ResolvedScopedThemeDocumentData, {
       reader: readerScope,
       admin: adminScope,
     });
     return NextResponse.json(css);
   } catch (error) {
-    console.error('[preview-css]', error);
+    console.error('[theme-draft-css]', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
     return errorResponse(
       {
         ok: false,
-        code: 'THEME_PREVIEW_BUILD_FAILED',
-        message: 'Failed to build preview CSS.',
+        code: 'THEME_DRAFT_BUILD_FAILED',
+        message: 'Failed to build draft theme CSS.',
         severity: 'error',
         retryable: true,
         error: message,

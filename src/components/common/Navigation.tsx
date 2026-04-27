@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
@@ -45,10 +45,13 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
   const navRef = useRef<HTMLElement>(null);
 
   const pathname = usePathname();
-  const { theme } = useTheme();
+  const router = useRouter();
+  const { theme, isThemeAdminOpen, openThemeAdmin } = useTheme();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'admin';
   const { showBack, backHref } = useReaderBackTarget(pathname);
+  const isThemeAdminRoute = (pathname?.startsWith('/admin/theme-admin') ?? false) || isThemeAdminOpen;
+  const isGeneralAdminRoute = Boolean(pathname?.startsWith('/admin') && !isThemeAdminRoute);
 
   useEffect(() => {
     setMounted(true);
@@ -143,15 +146,18 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
             <span className={styles.adminLinksDesktopOnly}>
               <Link
                 href="/admin/studio"
-                className={`${styles.navLink} ${pathname?.startsWith('/admin') ? styles.active : ''}`}
+                className={`${styles.navLink} ${isGeneralAdminRoute ? styles.active : ''}`}
               >
                 Admin
               </Link>
               <Link
                 href="/admin/theme-admin"
-                className={`${styles.navLink} ${
-                  pathname?.startsWith('/admin/theme-admin') ? styles.active : ''
-                }`}
+                className={`${styles.navLink} ${isThemeAdminRoute ? styles.active : ''}`}
+                onClick={(event) => {
+                  event.preventDefault();
+                  openThemeAdmin();
+                  router.replace(pathname || '/view');
+                }}
               >
                 Theme Settings
               </Link>

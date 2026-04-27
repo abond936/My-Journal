@@ -359,12 +359,33 @@
           "lineHeight": "line-height/tight",
           "color": "literal/typography.textColors.text1"
         },
+        "storyOverlayTitle": {
+          "family": "font-family/sans",
+          "size": "font-size/base",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/overlay-contrast-text"
+        },
+        "storyExcerpt": {
+          "family": "font-family/sans",
+          "size": "font-size/sm",
+          "weight": "font-weight/normal",
+          "lineHeight": "line-height/base",
+          "color": "semantic/reader/tonal-text-secondary"
+        },
         "galleryTitle": {
           "family": "font-family/sans",
           "size": "font-size/base",
           "weight": "font-weight/semibold",
           "lineHeight": "line-height/tight",
           "color": "literal/typography.textColors.text1"
+        },
+        "galleryOverlayTitle": {
+          "family": "font-family/sans",
+          "size": "font-size/base",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/overlay-contrast-text"
         },
         "galleryHeaderTitle": {
           "family": "font-family/sans",
@@ -465,6 +486,105 @@
           "lineHeight": "line-height/base",
           "color": "literal/typography.textColors.text2"
         },
+        "chromeTitle": {
+          "family": "font-family/sans",
+          "size": "font-size/lg",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/tight",
+          "color": "literal/typography.textColors.text1"
+        },
+        "chromeLabel": {
+          "family": "font-family/sans",
+          "size": "font-size/sm",
+          "weight": "font-weight/medium",
+          "lineHeight": "line-height/base",
+          "color": "literal/typography.textColors.text1"
+        },
+        "chromeMeta": {
+          "family": "font-family/sans",
+          "size": "font-size/xs",
+          "weight": "font-weight/medium",
+          "lineHeight": "line-height/base",
+          "color": "literal/typography.textColors.text2"
+        },
+        "chromeHint": {
+          "family": "font-family/sans",
+          "size": "font-size/sm",
+          "weight": "font-weight/normal",
+          "lineHeight": "line-height/base",
+          "color": "literal/typography.textColors.text2"
+        },
+        "fieldControl": {
+          "family": "font-family/sans",
+          "size": "font-size/sm",
+          "weight": "font-weight/medium",
+          "lineHeight": "line-height/base",
+          "color": "literal/typography.textColors.text1"
+        },
+        "feedbackTitle": {
+          "family": "font-family/sans",
+          "size": "font-size/lg",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/tight",
+          "color": "literal/typography.textColors.text1"
+        },
+        "feedbackMeta": {
+          "family": "font-family/sans",
+          "size": "font-size/xs",
+          "weight": "font-weight/medium",
+          "lineHeight": "line-height/base",
+          "color": "literal/typography.textColors.text2"
+        },
+        "feedbackHint": {
+          "family": "font-family/sans",
+          "size": "font-size/sm",
+          "weight": "font-weight/normal",
+          "lineHeight": "line-height/base",
+          "color": "literal/typography.textColors.text2"
+        },
+        "quote": {
+          "family": "font-family/serif",
+          "size": "font-size/lg",
+          "weight": "font-weight/normal",
+          "lineHeight": "line-height/relaxed",
+          "color": "literal/typography.textColors.text1",
+          "fontStyle": "italic"
+        },
+        "question": {
+          "family": "font-family/sans",
+          "size": "font-size/lg",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/tight",
+          "color": "literal/typography.textColors.text1"
+        },
+        "questionOverlay": {
+          "family": "font-family/sans",
+          "size": "font-size/lg",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/overlay-contrast-text"
+        },
+        "calloutTitle": {
+          "family": "font-family/sans",
+          "size": "font-size/lg",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/tight",
+          "color": "literal/typography.textColors.text1"
+        },
+        "calloutBody": {
+          "family": "font-family/sans",
+          "size": "font-size/sm",
+          "weight": "font-weight/normal",
+          "lineHeight": "line-height/relaxed",
+          "color": "literal/typography.textColors.text1"
+        },
+        "tagLabel": {
+          "family": "font-family/sans",
+          "size": "font-size/xs",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/base",
+          "color": "component/tag/textColor"
+        },
         "supportTitle": {
           "family": "font-family/sans",
           "size": "font-size/lg",
@@ -499,53 +619,90 @@
           "weight": "font-weight/medium",
           "lineHeight": "line-height/base",
           "color": "literal/typography.textColors.text1"
-        },
-        "quote": {
-          "family": "font-family/serif",
-          "size": "font-size/lg",
-          "weight": "font-weight/normal",
-          "lineHeight": "line-height/relaxed",
-          "color": "literal/typography.textColors.text1",
-          "fontStyle": "italic"
-        },
-        "question": {
-          "family": "font-family/sans",
-          "size": "font-size/lg",
-          "weight": "font-weight/semibold",
-          "lineHeight": "line-height/tight",
-          "color": "literal/typography.textColors.text1"
-        },
-        "calloutTitle": {
-          "family": "font-family/sans",
-          "size": "font-size/lg",
-          "weight": "font-weight/semibold",
-          "lineHeight": "line-height/tight",
-          "color": "literal/typography.textColors.text1"
-        },
-        "calloutBody": {
-          "family": "font-family/sans",
-          "size": "font-size/sm",
-          "weight": "font-weight/normal",
-          "lineHeight": "line-height/relaxed",
-          "color": "literal/typography.textColors.text1"
-        },
-        "tagLabel": {
-          "family": "font-family/sans",
-          "size": "font-size/xs",
-          "weight": "font-weight/semibold",
-          "lineHeight": "line-height/base",
-          "color": "component/tag/textColor"
         }
       },
       "surfaces": {
-        "page": {
+        "canvasPage": {
           "background": "layout/background1Color",
           "border": "layout/border1Color"
         },
-        "chrome": {
+        "canvasSection": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color"
+        },
+        "chromeSidebar": {
           "background": "layout/background1Color",
           "border": "layout/border1Color",
           "radius": "border/radius/md"
+        },
+        "chromeToolbar": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color",
+          "radius": "border/radius/md"
+        },
+        "chromeRail": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color",
+          "radius": "border/radius/md"
+        },
+        "feedbackPanel": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color",
+          "radius": "border/radius/lg",
+          "shadow": "shadow/md",
+          "padding": "spacing/xl"
+        },
+        "feedbackSuccessPanel": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color",
+          "radius": "border/radius/lg",
+          "shadow": "shadow/md",
+          "padding": "spacing/xl"
+        },
+        "feedbackWarningPanel": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color",
+          "radius": "border/radius/lg",
+          "shadow": "shadow/md",
+          "padding": "spacing/xl"
+        },
+        "feedbackErrorPanel": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color",
+          "radius": "border/radius/lg",
+          "shadow": "shadow/md",
+          "padding": "spacing/xl"
+        },
+        "feedbackInfoPanel": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color",
+          "radius": "border/radius/lg",
+          "shadow": "shadow/md",
+          "padding": "spacing/xl"
+        },
+        "storyCardClosed": {
+          "background": "component/card/backgroundColor",
+          "border": "component/card/borderColor",
+          "radius": "component/card/borderRadius",
+          "shadow": "component/card/shadow",
+          "shadowHover": "component/card/shadowHover",
+          "padding": "spacing/md"
+        },
+        "qaCardClosed": {
+          "background": "component/card/backgroundColor",
+          "border": "component/card/borderColor",
+          "radius": "component/card/borderRadius",
+          "shadow": "component/card/shadow",
+          "shadowHover": "component/card/shadowHover",
+          "padding": "component/card/padding"
+        },
+        "galleryCardClosed": {
+          "background": "component/card/backgroundColor",
+          "border": "component/card/borderColor",
+          "radius": "component/card/borderRadius",
+          "shadow": "component/card/shadow",
+          "shadowHover": "component/card/shadowHover",
+          "padding": "component/card/padding"
         },
         "card": {
           "background": "component/card/backgroundColor",
@@ -554,6 +711,32 @@
           "shadow": "component/card/shadow",
           "shadowHover": "component/card/shadowHover",
           "padding": "component/card/padding"
+        },
+        "canvasDetail": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color",
+          "radius": "border/radius/lg",
+          "shadow": "shadow/md",
+          "padding": "spacing/xl"
+        },
+        "cardDiscovery": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color",
+          "radius": "border/radius/md"
+        },
+        "canvasMediaFrame": {
+          "background": "layout/background2Color",
+          "border": "layout/border1Color",
+          "radius": "border/radius/lg"
+        },
+        "page": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color"
+        },
+        "chrome": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color",
+          "radius": "border/radius/md"
         },
         "detail": {
           "background": "layout/background1Color",
@@ -574,6 +757,55 @@
         }
       },
       "controls": {
+        "chromeActiveTab": {
+          "background": "component/button/solid/backgroundColor",
+          "text": "component/button/solid/textColor",
+          "border": "component/button/solid/borderColor",
+          "hoverBackground": "component/button/solid/backgroundColorHover"
+        },
+        "fieldControl": {
+          "background": "component/input/backgroundColor",
+          "text": "component/input/textColor",
+          "border": "component/input/borderColor",
+          "hoverBackground": "layout/background2Color"
+        },
+        "fieldControlStrong": {
+          "background": "component/button/solid/backgroundColor",
+          "text": "component/button/solid/textColor",
+          "border": "component/button/solid/borderColor",
+          "hoverBackground": "component/button/solid/backgroundColorHover"
+        },
+        "chromeFilterChip": {
+          "background": "component/button/solid/backgroundColor",
+          "text": "component/button/solid/textColor",
+          "border": "component/button/solid/borderColor",
+          "hoverBackground": "component/button/solid/backgroundColorHover"
+        },
+        "feedbackAction": {
+          "background": "component/input/backgroundColor",
+          "text": "component/input/textColor",
+          "border": "component/input/borderColor",
+          "hoverBackground": "layout/background2Color"
+        },
+        "mediaControl": {
+          "background": "layout/background2Color",
+          "text": "component/button/solid/textColor",
+          "border": "layout/border1Color",
+          "hoverBackground": "layout/background1Color"
+        },
+        "lightboxControl": {
+          "background": "gradient/bottomOverlayStrong",
+          "text": "component/button/solid/textColor",
+          "border": "layout/border1Color"
+        },
+        "inlineLink": {
+          "text": "component/link/textColor",
+          "hoverBackground": "literal/transparent",
+          "hoverText": "component/link/textColorHover"
+        },
+        "focusRing": {
+          "color": "palette/3"
+        },
         "solid": {
           "background": "component/button/solid/backgroundColor",
           "text": "component/button/solid/textColor",
@@ -598,24 +830,10 @@
           "border": "component/button/solid/borderColor",
           "hoverBackground": "component/button/solid/backgroundColorHover"
         },
-        "mediaControl": {
-          "background": "layout/background2Color",
-          "text": "component/button/solid/textColor",
-          "border": "layout/border1Color",
-          "hoverBackground": "layout/background1Color"
-        },
-        "lightboxControl": {
-          "background": "gradient/bottomOverlayStrong",
-          "text": "component/button/solid/textColor",
-          "border": "layout/border1Color"
-        },
         "link": {
           "text": "component/link/textColor",
           "hoverBackground": "literal/transparent",
           "hoverText": "component/link/textColorHover"
-        },
-        "focusRing": {
-          "color": "palette/3"
         }
       },
       "tags": {

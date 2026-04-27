@@ -42,9 +42,20 @@ const JOURNAL_READER_RECIPES: ReaderThemeRecipes = (() => {
   recipes.typography.storyTitle.weight = 'font-weight/medium';
   recipes.typography.storyTitle.lineHeight = 'line-height/base';
 
+  recipes.typography.storyOverlayTitle.family = 'font-family/serif';
+  recipes.typography.storyOverlayTitle.size = 'font-size/lg';
+  recipes.typography.storyOverlayTitle.weight = 'font-weight/medium';
+  recipes.typography.storyOverlayTitle.lineHeight = 'line-height/base';
+
+  recipes.typography.storyExcerpt.lineHeight = 'line-height/base';
+
   recipes.typography.galleryTitle.family = 'font-family/serif';
   recipes.typography.galleryTitle.weight = 'font-weight/medium';
   recipes.typography.galleryTitle.lineHeight = 'line-height/base';
+
+  recipes.typography.galleryOverlayTitle.family = 'font-family/serif';
+  recipes.typography.galleryOverlayTitle.weight = 'font-weight/medium';
+  recipes.typography.galleryOverlayTitle.lineHeight = 'line-height/base';
 
   recipes.typography.galleryHeaderTitle.family = 'font-family/serif';
   recipes.typography.galleryHeaderTitle.weight = 'font-weight/medium';
@@ -91,12 +102,16 @@ const JOURNAL_READER_RECIPES: ReaderThemeRecipes = (() => {
 
   recipes.typography.caption.lineHeight = 'line-height/relaxed';
 
-  recipes.typography.supportTitle.weight = 'font-weight/medium';
-  recipes.typography.supportTitle.lineHeight = 'line-height/base';
+  recipes.typography.chromeTitle.weight = 'font-weight/medium';
+  recipes.typography.chromeTitle.lineHeight = 'line-height/base';
+  recipes.typography.feedbackTitle.weight = 'font-weight/medium';
+  recipes.typography.feedbackTitle.lineHeight = 'line-height/base';
 
-  recipes.typography.supportLabel.weight = 'font-weight/normal';
-  recipes.typography.supportMeta.weight = 'font-weight/normal';
-  recipes.typography.supportHint.lineHeight = 'line-height/relaxed';
+  recipes.typography.chromeLabel.weight = 'font-weight/normal';
+  recipes.typography.chromeMeta.weight = 'font-weight/normal';
+  recipes.typography.feedbackMeta.weight = 'font-weight/normal';
+  recipes.typography.chromeHint.lineHeight = 'line-height/relaxed';
+  recipes.typography.feedbackHint.lineHeight = 'line-height/relaxed';
 
   recipes.typography.quote.weight = 'font-weight/normal';
   recipes.typography.quote.lineHeight = 'line-height/relaxed';
@@ -106,6 +121,11 @@ const JOURNAL_READER_RECIPES: ReaderThemeRecipes = (() => {
   recipes.typography.question.weight = 'font-weight/medium';
   recipes.typography.question.lineHeight = 'line-height/base';
 
+  recipes.typography.questionOverlay.family = 'font-family/serif';
+  recipes.typography.questionOverlay.size = 'font-size/xl';
+  recipes.typography.questionOverlay.weight = 'font-weight/medium';
+  recipes.typography.questionOverlay.lineHeight = 'line-height/base';
+
   recipes.typography.calloutTitle.family = 'font-family/serif';
   recipes.typography.calloutTitle.weight = 'font-weight/medium';
   recipes.typography.calloutTitle.lineHeight = 'line-height/base';
@@ -113,11 +133,13 @@ const JOURNAL_READER_RECIPES: ReaderThemeRecipes = (() => {
   recipes.typography.calloutBody.lineHeight = 'line-height/relaxed';
 
   recipes.surfaces.card.padding = 'spacing/xl';
-  recipes.surfaces.detail.padding = 'spacing/2xl';
+  recipes.surfaces.canvasDetail.padding = 'spacing/2xl';
+  recipes.surfaces.feedbackPanel.padding = 'spacing/2xl';
 
-  recipes.controls.supportControl.hoverBackground = 'layout/background1Color';
-  recipes.controls.supportControlStrong.hoverBackground = 'layout/background2Color';
-  recipes.controls.filterChip.hoverBackground = 'layout/background2Color';
+  recipes.controls.fieldControl.hoverBackground = 'layout/background1Color';
+  recipes.controls.fieldControlStrong.hoverBackground = 'layout/background2Color';
+  recipes.controls.feedbackAction.hoverBackground = 'layout/background1Color';
+  recipes.controls.chromeFilterChip.hoverBackground = 'layout/background2Color';
   recipes.controls.lightboxControl.background = 'layout/background2Color';
 
   recipes.treatments.quoteWatermarkOpacity = '0.16';

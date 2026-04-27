@@ -2,7 +2,10 @@
   display: flex;
   flex-direction: column;
   width: 100%;
+  min-height: 100dvh;
+  height: 100dvh;
   font-family: var(--body-font-family);
+  overflow: hidden;
 }
 
 .simplifiedLayout input,
@@ -28,6 +31,19 @@
 
 .pageContent {
   flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pageShell {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .layout {

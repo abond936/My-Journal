@@ -39,9 +39,9 @@ export default function AdminPageWrapper({ children }: AdminPageWrapperProps) {
   }
 
   return (
-    <div style={{ width: '100%' }}>
+    <div className={styles.pageShell}>
       <div className={styles.pageContent}>{children}</div>
       <AdminFAB />
     </div>
   );
-} 
+}

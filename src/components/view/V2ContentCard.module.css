@@ -152,6 +152,7 @@
 
 /* --- Story & Gallery --- */
 .story .content {
+  padding: var(--reader-story-card-padding);
   justify-content: flex-end;
   color: var(--reader-body-color);
   background: var(--reader-card-overlay-background);
@@ -164,15 +165,32 @@
   color: var(--reader-body-color);
 }
 
-.story .title, .story .description {
-  color: var(--reader-story-title-color);
+.story .title {
+  color: var(--reader-story-overlay-title-color);
+  font-family: var(--reader-story-overlay-title-font-family);
+  font-size: var(--reader-story-overlay-title-font-size);
+  font-weight: var(--reader-story-overlay-title-font-weight);
+  line-height: var(--reader-story-overlay-title-line-height);
 }
 
-.story .title {
+.story .description {
+  color: var(--reader-story-excerpt-color);
+  font-family: var(--reader-story-excerpt-font-family);
+  font-size: var(--reader-story-excerpt-font-size);
+  font-weight: var(--reader-story-excerpt-font-weight);
+  line-height: var(--reader-story-excerpt-line-height);
+}
+
+.story.aspectLandscape .title {
+  color: var(--reader-story-title-color);
   font-family: var(--reader-story-title-font-family);
   font-size: var(--reader-story-title-font-size);
   font-weight: var(--reader-story-title-font-weight);
   line-height: var(--reader-story-title-line-height);
+}
+
+.story.aspectLandscape .description {
+  color: var(--reader-story-excerpt-color);
 }
 
 .gallery .content {
@@ -182,6 +200,7 @@
   right: 0;
   width: 100%;
   justify-content: flex-end;
+  padding: var(--reader-gallery-card-padding);
   background: var(--reader-card-overlay-strong-background);
 }
 
@@ -196,6 +215,14 @@
 }
 
 .gallery .title {
+  color: var(--reader-gallery-overlay-title-color);
+  font-family: var(--reader-gallery-overlay-title-font-family);
+  font-size: var(--reader-gallery-overlay-title-font-size);
+  font-weight: var(--reader-gallery-overlay-title-font-weight);
+  line-height: var(--reader-gallery-overlay-title-line-height);
+}
+
+.gallery.aspectLandscape .title {
   color: var(--reader-gallery-title-color);
   font-family: var(--reader-gallery-title-font-family);
   font-size: var(--reader-gallery-title-font-size);
@@ -372,13 +399,14 @@
   right: 0;
   width: 100%;
   justify-content: flex-end;
+  padding: var(--reader-question-card-padding);
   background: var(--reader-card-overlay-background);
   color: var(--reader-body-color);
 }
 
 .qa.qaWithCover .qaQuestion,
 .qa.qaWithCover .qaTeaser {
-  color: var(--reader-title-color);
+  color: var(--reader-overlay-contrast-text-color);
   max-width: 100%;
   min-width: 0;
   overflow-wrap: break-word;
@@ -388,6 +416,10 @@
 /* Match story feed tile title scale when question sits on the bottom gradient (cover hero). */
 .qa.qaWithCover .qaQuestion {
   font-size: var(--font-size-base);
+  color: var(--reader-question-overlay-color);
+  font-family: var(--reader-question-overlay-font-family);
+  font-weight: var(--reader-question-overlay-font-weight);
+  line-height: var(--reader-question-overlay-line-height);
 }
 
 .qa.qaWithCover .qaTeaser {
@@ -630,17 +662,18 @@
   font-weight: var(--font-weight-semibold);
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-sm);
-  background-color: var(--reader-chrome-panel-color);
-  color: var(--reader-chrome-text-color);
-  border: var(--border-width-thin) solid var(--reader-chrome-border-color);
+  background-color: var(--reader-overlay-scrim-color);
+  color: var(--reader-overlay-contrast-text-color);
+  border: var(--border-width-thin) solid var(--reader-overlay-border-color);
   text-decoration: none;
   box-shadow: var(--shadow-sm);
   line-height: 1.2;
+  backdrop-filter: blur(6px);
 }
 
 .adminEditLink:hover {
   border-color: var(--reader-card-hover-border-color);
-  color: var(--reader-chrome-text-color);
+  color: var(--reader-overlay-contrast-text-color);
 }
 
 .adminEditLink:focus-visible {

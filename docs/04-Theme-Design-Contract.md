@@ -3,7 +3,7 @@
 **Status:** Living specification — authoritative for *what* we tokenize and *why*, before code-only audits; and for **reader shell layout, responsive behavior, and navigation affordances** that must stay consistent with tokens (§10).
 **See also:** `01-Vision-Architecture.md` (Frontend principles, visual direction), `02-Application.md` → Theme Management, Navigation, Layouts, `03-Implementation.md` (CSS Tokenization sequencing, responsive chrome).
 
-**Current implementation status (2026-04-25):** Theme infrastructure exists and the core save/load path is now live. Runtime CSS variables are generated from theme data and injected by the app, with `theme-data.json` / `theme.css` fallbacks. Theme Management is still a **workbench**, but it is now a saving workbench: scoped reader/admin preview, Journal / Editorial reader preset toggles, light/dark preview controls, raw Advanced tokens, and a component-based **Reader Theme System** editor with preview on the left and component inventory / recipe editing on the right. The reader preview now covers the closed card set, open story/gallery/question detail, sidebar chrome, discovery/child rails, lightbox/state samples, and support UI so theme work can be judged against real reader surfaces rather than swatches alone. Journal / Editorial are still partial preset bundles, not finished themes. The reader semantic layer now has working role groups for page, chrome, solid controls, cards, detail, body/title, meta/caption, tags, media/overlay, discovery, support UI, and type treatments, and the current editing model is moving from flat role names toward **component + variant + element** recipes backed by the existing atomic token set. The next finish line is not persistence; it is full **preview <-> role** truthfulness.
+**Current implementation status (2026-04-26):** Theme infrastructure exists and the core save/load path is now live. Runtime CSS variables are generated from theme data and injected by the app, with `theme-data.json` / `theme.css` fallbacks. Theme Management is now treated as a dedicated editing workspace, and the product direction has shifted from a dedicated preview layer to a **live draft** that applies to the real app in-session and becomes permanent only on **Save**. Journal / Editorial are still not “final themes,” but they are real preset bundles with preset-specific recipe direction rather than only light atomic transforms. The reader semantic layer now has working role groups for page, chrome, solid controls, cards, detail, body/title, meta/caption, tags, media/overlay, discovery, support UI, and type treatments. However, the current editor vocabulary is still transitional: it mixes component ideas, attribute ideas, and token-bucket/storage names in ways that are hard to reason about. The next theme phase is therefore not just more token wiring; it is an author-facing model correction toward **Component -> Attribute -> Value** on top of the existing three-tier technical system (**atomic tokens**, **semantic token classes**, and **recipes**). The main remaining theme work is to harden that model end to end - especially light/dark behavior, contrast-sensitive token classes, admin semantics, compile-path truthfulness from editor to live app, and the editor vocabulary itself.
 
 ---
 
@@ -12,7 +12,7 @@
 Theme work has two legs:
 
 1. **Design contract (this file)** — Define semantic *roles* (surfaces, text, accents, type), how they behave on **mobile**, and how **named presets** express “journal / archival” vs “professional / editorial” without exposing 200 unrelated sliders first.
-2. **Implementation** — `theme.css` generation (`themeService.ts`), Theme admin UI, component CSS using `var(--…)`, and deploy-safe persistence.
+2. **Implementation** — `theme.css` generation (`themeService.ts`), Theme admin UI, component CSS using `var(--…)`, live draft application, and deploy-safe persistence.
 
 **Inventorying literals in `*.module.css` alone** optimizes consistency but does not guarantee a coherent product look. This contract is the checklist: new or migrated styles should map to a **role** (or be explicitly out of scope).
 Theme decisions are in service of the reading experience: comfort, tone, and willingness to keep reading a family story to the end.
@@ -104,6 +104,361 @@ Values are edited in Theme Management and stored in structured theme data; compo
 The reader semantic layer is the contract between design intent and component CSS. It is intentionally role-based: components should ask for "reader detail surface" or "reader card title," not a raw color slot. Early implementation may alias these names to existing primitive/component tokens, but the role names are the stable vocabulary Theme Management will eventually expose.
 
 **Rule:** A reader component may use primitive tokens for mechanical layout (`--spacing-*`, `--z-index-*`, literal media-query pixels per §10), but design-affecting color, type, radius, elevation, and content hierarchy should prefer the reader aliases below.
+
+### 4.3 Token classes vs recipe roles
+
+The biggest source of theme confusion is mixing **what a value is** with **what job a surface is doing**.
+
+- **Tokens define behavior class**. A token should answer “what kind of value is this?” Examples: tonal surface color, ordinary text color, border color, contrast-on-fill text, overlay/media contrast text, accent color, radius, spacing.
+- **Recipes define UI meaning**. A recipe should answer “what job is this element doing?” Examples: story title, selected sidebar control, lightbox control text, body copy, tag label, page surface.
+
+This contract relies on that split:
+
+| Layer | Question it answers | Examples |
+| ----- | ------------------- | -------- |
+| Tokens | “What class of value is this?” | `Text1`, `Text2`, `Background1`, `Border1`, solid-button text, overlay text |
+| Recipes | “What job is this element doing?” | story title, selected control, overlay caption, discovery meta, tag label |
+
+This is now the required architecture direction for Theme Management:
+
+| Layer | Responsibility | Examples |
+| ----- | -------------- | -------- |
+| Atomic tokens | Raw editable source values | palette entries, theme-color families, type scale, spacing, radius, shadows, primitive component tokens |
+| Semantic token classes | Behavior-aware reusable meaning | tonal text primary, tonal surface raised, contrast-on-fill text, overlay/media contrast text, border subtle, accent primary, focus ring |
+| Recipes | UI-job assignment | story closed title, gallery lightbox caption, sidebar active tab, support control selected, admin grid badge |
+
+**Rule:** app surfaces should not bind directly from component code to raw atomic token refs where a semantic class is required. Recipes should target semantic token classes; semantic token classes may resolve to atomic values.
+
+### 4.4 Author-facing editing model
+
+The technical three-tier system above is still the correct implementation architecture, but it is **not** the clearest author-facing editing vocabulary on its own. Theme Management should present a simpler model to the author:
+
+| Author-facing layer | Question it answers | Examples |
+| ------------------- | ------------------- | -------- |
+| **Component** | "What part of the app am I styling?" | Canvas, Header, Sidebar, Story Card, Gallery Card, Lightbox, Field, Feedback Panel |
+| **Attribute** | "What aspect of that component am I defining?" | background color, text color, border color, width, padding, radius, shadow, font family, font size |
+| **Value** | "What should that attribute be?" | `Canvas Surface`, `Overlay Contrast Text`, `320px`, `shadow-md`, `#f4efe6`, `serif` |
+
+The editing sentence should read:
+
+`[Component]` has `[Attribute]` = `[Value]`
+
+Examples:
+
+- `Canvas` has `background color` = `Canvas Surface`
+- `Sidebar` has `width` = `320px`
+- `Story Card` has `border radius` = `lg`
+
+This is the required authoring direction for Theme Management:
+
+- **Components are the primary navigation model.** The left side of Theme Management should let the author think in terms of Canvas, Sidebar, Header, Story Card, Gallery Card, Lightbox, Field, Feedback Panel, and similar app pieces.
+- **Attributes are the editable contract for a component.** Each component should expose only the attributes that are meaningful for it. Example: Sidebar may expose width, surface, text, border, and active-control styling; it should not expose unrelated token buckets.
+- **Values are typed selections.** The right side should offer valid values for the selected attribute: colors for color attributes, lengths for width/padding/radius, typography values for type attributes, shadows for shadow attributes, and so on.
+- **Storage names are not the editing model.** Internal token/storage names such as `layout`, `background1`, `border1`, or other implementation-era buckets may remain in code and persistence, but they should not be the primary author-facing concepts.
+- **Semantic classes remain important, but as values.** In the author-facing model, `Canvas Surface`, `Chrome Surface`, `Contrast On Fill Text`, and `Overlay Contrast Text` should appear as reusable values that satisfy an attribute - not as competing parallel navigation structures.
+- **Metric families must stay distinct.** `Padding`, `Spacing`, `Margin`, `Gap`, `Width`, `Height`, `Radius`, `Border Width`, and similar layout metrics are separate concepts in the editing model. If implementation currently reuses one numeric substrate behind the scenes, that is a temporary storage shortcut - not the author-facing contract.
+
+#### Author-facing typing rule
+
+Theme Management should eventually enforce typed matching between attributes and values:
+
+- background color -> color values only
+- text color -> color values only
+- width -> width values only
+- height -> height values only
+- padding -> padding values only
+- spacing / gap / margin -> spacing values only
+- radius -> radius values only
+- border width -> border-width values only
+- font family -> font-family values only
+- font size / line height -> typography scale values only
+- shadow -> shadow values only
+
+This prevents the author from having to reason about unrelated token buckets while editing.
+
+#### Metric-family rule
+
+For layout-like attributes, Theme Management should not collapse everything into one generic `length` bucket. The editor contract should distinguish:
+
+- **Padding values** - inset values for the inside of a component
+- **Spacing values** - rhythm values between items, sections, or repeated content
+- **Margin / gap values** - explicit separation values where those concepts are product-facing
+- **Sizing values** - width and height families
+- **Radius values** - corner curvature
+- **Border-width values** - stroke thickness
+
+If two attributes temporarily point to the same stored numeric scale in code, the editor should still preserve the distinct concept and naming. The author should not have to think "padding is really spacing" or "width is just another length."
+
+#### Transitional rule
+
+The current workspace is allowed to remain a transitional bridge while the refactor is underway, but all future editor redesign work should move **toward** `Component -> Attribute -> Value`, not further into token-bucket terminology.
+
+### 4.5 Initial component inventory
+
+The table below is the **first-pass canonical author-facing component inventory** for Theme Management. It is intentionally product-facing rather than storage-facing. This is the inventory the editor should gradually converge on before more token-bucket expansion.
+
+#### Reader-first component set
+
+| Component | What it means | First-pass attributes |
+| --------- | ------------- | --------------------- |
+| **Canvas** | The overall reader shell and page framing behind content | background color, text color, muted text color, border color, link color, focus ring color |
+| **Header** | The top app header/chrome band | background color, text color, icon color, border color, height |
+| **Sidebar** | Reader navigation/filter/support column or drawer | background color, title color, label color, meta color, hint color, icon color, border color, width, active control background color, active control text color, neutral control background color, neutral control text color |
+| **Field** | Shared inputs, selectors, chips, and neutral form-like controls | background color, text color, border color, focus border color, label color, hint color, selected background color, selected text color, selected border color, border radius, padding |
+| **Feedback Panel** | Neutral and stateful informational surfaces such as empty/loading/info/success/warning/error panels | background color, title color, text color, border color, action background color, action text color, action border color |
+| **Story Card** | Story feed card and story detail reading surface | background color, title color, subtitle color, body color, meta color, border color, border radius, shadow, padding |
+| **Gallery Card** | Gallery feed card, gallery detail surface, and media-adjacent framing | background color, title color, subtitle color, body color, meta color, border color, border radius, shadow, padding, media frame background color, media frame border color |
+| **Lightbox** | Fullscreen or overlay media-viewing surface | scrim color, text color, control background color, control text color, control border color, caption color |
+
+#### Optional near-term additions
+
+These are likely to become first-class components soon, but they are not required to freeze the initial schema:
+
+| Component | Why it may be separate |
+| --------- | ---------------------- |
+| **Discovery Rail** | Related/explore-more surfaces are starting to diverge from ordinary cards and chrome. |
+| **Quote Card** | Quote-specific treatment and watermark behavior may justify a separate author-facing component. |
+| **Question Card** | Q&A hierarchy may eventually diverge enough from Story Card to deserve a separate component. |
+| **Callout Card** | Emphasis/treatment behavior may justify its own component once the core model is stable. |
+
+#### Attribute typing for the initial set
+
+The initial inventory above should map to typed value groups as follows:
+
+| Attribute kind | Allowed value type |
+| -------------- | ------------------ |
+| `background color`, `text color`, `muted text color`, `border color`, `icon color`, `link color`, `scrim color`, `caption color` | color values |
+| `width`, `height`, `padding`, `border radius` | length values |
+| `shadow` | shadow values |
+
+The point is not to expose every possible value immediately. The point is to make the editing contract understandable: if the author selects `Sidebar -> width`, the system should offer width values; if the author selects `Canvas -> background color`, the system should offer color values.
+
+#### Initial attribute rules
+
+- **Canvas is about the overall shell, not every reader card.** Its job is the app framing, global body text, links, and focus contrast.
+- **Header and Sidebar are chrome components.** They are not generic “layout” buckets; they are concrete components with visible jobs.
+- **Field is a reusable component class.** It should own neutral controls, selected controls, labels, hints, and input-like behavior instead of hiding inside a vague support bucket.
+- **Feedback Panel owns stateful messaging surfaces.** Neutral/info/success/warning/error may later become variants of this component rather than unrelated recipe keys.
+- **Story Card and Gallery Card are separate components.** They may share many values, but they must be able to diverge without fighting a single generic card contract.
+- **Lightbox is its own component because overlay contrast is a different problem from ordinary tonal surfaces.**
+
+#### Internal mapping note
+
+The inventory above does **not** mean the persistence schema must stop using atomic tokens, semantic token classes, and recipes. It means the editor should translate from these author-facing components and attributes into the existing technical layers underneath.
+
+Examples:
+
+- `Canvas -> background color` may resolve to a semantic value such as `Canvas Surface`, which in turn resolves to atomic tokens like `layout/background1Color`.
+- `Sidebar -> width` may resolve directly to a length token or stored literal.
+- `Lightbox -> scrim color` may resolve to an overlay semantic class rather than a raw gradient token name.
+
+### 4.6 Current-system mapping for the initial inventory
+
+The table below maps the initial author-facing component inventory to the current theme system as it exists today. This is the bridge between the target editor model and the live implementation.
+
+| Target component | Current editor/component ids | Current recipe bindings | Current semantic/value families | Main mismatch to resolve |
+| ---------------- | ---------------------------- | ----------------------- | ------------------------------- | ------------------------ |
+| **Canvas** | `canvas -> reader` | `surfaces.canvasPage`, `typography.body`, `typography.meta`, `controls.inlineLink`, `controls.focusRing` | `semantic/reader/canvas-surface`, `semantic/reader/canvas-border`, tonal text, accent, focus ring | Fairly close already, but the current editor still exposes this as recipe bindings rather than a single component with explicit attributes like background color and text color. |
+| **Header** | No clean first-class reader component today | Indirectly inherits page/chrome tokens; some behavior currently comes through chrome/page aliases rather than a dedicated header recipe | `--reader-chrome-*`, layout/header atomic tokens, shared chrome values | This is the largest gap in the first-pass inventory. Header exists as a real UI concept in the app, but it is not yet a first-class author-facing component in the reader theme system. |
+| **Sidebar** | `chrome -> sidebar` | `surfaces.chromeSidebar`, `typography.chromeTitle`, `typography.chromeLabel`, `typography.chromeMeta`, `typography.chromeHint`, `controls.chromeActiveTab`, `controls.chromeFilterChip`, `controls.inlineLink`, `iconography.chrome` | `semantic/reader/chrome-surface`, `semantic/reader/chrome-border`, tonal text, contrast-on-fill text, accent | Close conceptually, but width is still outside the current recipe editor and some sidebar attributes are split between chrome, controls, and iconography rather than presented as one component contract. |
+| **Field** | `field -> controls` | `typography.chromeLabel`, `typography.chromeMeta`, `typography.chromeHint`, `controls.fieldControl`, `typography.fieldControl`, `controls.fieldControlStrong` | `semantic/reader/field-surface`, `semantic/reader/field-border`, tonal text, contrast-on-fill text | Mostly present, but still borrowing some chrome typography keys and lacks a clearer author-facing split between neutral control attributes and selected control attributes. |
+| **Feedback Panel** | `feedback -> states/success/warning/error/info` | `surfaces.feedbackPanel`, `surfaces.feedbackSuccessPanel`, `surfaces.feedbackWarningPanel`, `surfaces.feedbackErrorPanel`, `surfaces.feedbackInfoPanel`, `typography.feedbackTitle`, `typography.feedbackMeta`, `typography.feedbackHint`, `controls.feedbackAction` | `semantic/reader/feedback-surface`, `semantic/reader/feedback-border`, plus explicit `state/*` backgrounds/borders for state variants | Strong start. The main redesign task is vocabulary: this should become one component with variants and attributes rather than a cluster of recipe groups and panel keys. |
+| **Story Card** | `storyCard -> closed/open/discovery` | `surfaces.card`, `surfaces.canvasDetail`, `surfaces.canvasMediaFrame`, `typography.storyTitle`, `typography.storyDetailTitle`, `typography.subtitle`, `typography.body`, `typography.meta`, `typography.caption`, `overlays.card` | Card/detail/media semantic families, tonal text, overlay contrast text | Present but spread across closed/open/discovery variants, which is technically correct but still not presented as one coherent component with shared attributes and variant-specific overrides. |
+| **Gallery Card** | `galleryCard -> closed/open/discovery` | `surfaces.card`, `surfaces.canvasDetail`, `surfaces.canvasMediaFrame`, `typography.galleryTitle`, `typography.galleryDetailTitle`, `typography.galleryHeaderTitle`, `typography.discoveryMeta`, `typography.caption`, `typography.body`, `controls.lightboxControl`, `overlays.cardStrong`, `overlays.lightbox` | Card/detail/media/lightbox semantic families, overlay contrast text, media-control/lightbox-control semantics | Strong functional coverage, but it currently mixes card, media frame, and lightbox concerns across multiple recipe families instead of reading as one component with nested attributes. |
+| **Lightbox** | Partially inside `galleryCard -> open` | `controls.lightboxControl`, `overlays.lightbox`, caption through shared `typography.caption` / overlay contrast output | `semantic/reader/lightbox-control-surface`, `semantic/reader/lightbox-control-border`, `semantic/reader/overlay-scrim`, `semantic/reader/overlay-border`, overlay contrast text | Exists in runtime semantics, but not yet as a first-class standalone editor component. It is still treated as part of the gallery open variant instead of a component with its own attribute list. |
+
+#### What this mapping tells us
+
+- **Canvas, Sidebar, Field, and Feedback Panel are the closest to the target model today.** They already have recognizable current editor groups and semantic families.
+- **Story Card and Gallery Card are structurally present, but still recipe-first.** Their current model is organized around variants and bindings rather than explicit component attributes.
+- **Lightbox is semantically real but editor-second-class.** The runtime system already has dedicated lightbox semantics, but the editor still treats it as a subsection of gallery.
+- **Header is under-modeled.** It is a real component in the app but does not yet have a first-class place in the reader theme inventory.
+
+#### First implementation interpretation
+
+The first editor refactor should **not** try to invent everything from scratch. It should reuse the parts of the current system that already map cleanly:
+
+- `Canvas` can be built from the current `canvas -> reader` binding set.
+- `Sidebar` can be built from the current `chrome -> sidebar` binding set, plus a separate width/value attribute.
+- `Field` can be built from the current `field -> controls` binding set.
+- `Feedback Panel` can be built from the current `feedback` variants.
+- `Story Card` and `Gallery Card` can be built by grouping their current closed/open/discovery bindings under a component-first wrapper.
+- `Lightbox` should be split out from `galleryCard -> open` into its own author-facing component.
+- `Header` needs an explicit inventory and likely a new component entry rather than only relabeling existing bindings.
+
+#### Implementation warning
+
+Do **not** read this mapping as permission to keep the current editor vocabulary and just rename tabs. The point of the mapping is to make the refactor incremental while preserving the new author-facing model:
+
+- the current recipe system remains the technical substrate
+- the editor should translate that substrate into `Component -> Attribute -> Value`
+- gaps such as `Header` and `Lightbox` should be treated as explicit schema work, not hidden under existing buckets
+
+### 4.7 First editor-structure plan
+
+This section defines the **first concrete Theme Management editor structure** that should be built on top of the component inventory and mapping above.
+
+#### Left side: component-first navigation
+
+The left side of the workbench should stop behaving like a mixed recipe browser and instead present a component list in this order:
+
+1. `Canvas`
+2. `Header`
+3. `Sidebar`
+4. `Field`
+5. `Feedback Panel`
+6. `Story Card`
+7. `Gallery Card`
+8. `Lightbox`
+
+This ordering is intentional:
+
+- start with app framing first
+- then structural chrome
+- then shared controls/feedback
+- then content components
+- then overlay/media-specific behavior
+
+#### Left side: first visible attributes per component
+
+Each component should open with a **small first-pass attribute list**, not every possible sub-binding at once.
+
+| Component | First attributes to show |
+| --------- | ------------------------ |
+| **Canvas** | background color, text color, muted text color, link color, focus ring color |
+| **Header** | background color, text color, icon color, border color, height |
+| **Sidebar** | background color, title color, label color, meta color, hint color, icon color, width, active control background color, active control text color |
+| **Field** | label color, hint color, background color, text color, border color, selected background color, selected text color, padding, border radius |
+| **Feedback Panel** | background color, title color, text color, border color, action background color, action text color |
+| **Story Card** | background color, title color, subtitle color, body color, meta color, border color, border radius, shadow, padding |
+| **Gallery Card** | background color, title color, subtitle color, body color, meta color, media frame background color, media frame border color, border radius, shadow, padding |
+| **Lightbox** | scrim color, text color, control background color, control text color, control border color, caption color |
+
+These are the attributes the author should see first. Lower-frequency or more technical controls can still exist, but they should live under an explicit “More” or “Advanced component details” posture rather than being the default experience.
+
+#### Left side: variants without losing component-first structure
+
+Some components legitimately need variants. The editor should still keep the component as the primary unit and let variants sit **inside** it.
+
+First-pass variant structure:
+
+| Component | Variant model |
+| --------- | ------------- |
+| **Canvas** | no variant at first |
+| **Header** | no variant at first |
+| **Sidebar** | desktop / drawer only if behavior truly diverges visually |
+| **Field** | neutral / selected |
+| **Feedback Panel** | neutral / success / warning / error / info |
+| **Story Card** | closed / open / discovery |
+| **Gallery Card** | closed / open / discovery |
+| **Lightbox** | no variant at first |
+
+Rule:
+
+- variants are secondary
+- the author selects a component first
+- then sees the relevant variant selector only if that component actually needs it
+
+This avoids the current feeling that the editor is organized around implementation variants rather than app parts.
+
+#### Right side: value groups, not token buckets
+
+The right side should no longer default to categories such as `Layout`, `Components`, or other persistence-era buckets as the primary mental model. Instead, the right side should expose **typed value groups** based on the selected attribute.
+
+First-pass value groups:
+
+| Value group | Used for |
+| ----------- | -------- |
+| **Color Values** | background color, text color, border color, icon color, scrim color, caption color |
+| **Padding Values** | padding, inset, internal content padding |
+| **Spacing Values** | spacing between items, gaps, vertical rhythm, stack spacing |
+| **Sizing Values** | width, height |
+| **Radius Values** | border radius |
+| **Border Width Values** | border width |
+| **Typography Values** | font family, font size, line height, font weight |
+| **Shadow Values** | shadow |
+| **Semantic Values** | reusable meaning-based choices such as Canvas Surface, Chrome Surface, Contrast On Fill Text, Overlay Contrast Text |
+
+#### Right side: what appears for each attribute
+
+The right side should filter itself based on the selected attribute:
+
+| Selected attribute | Right-side value groups to show first |
+| ------------------ | ------------------------------------- |
+| background color | Semantic Values, then Color Values |
+| text color / title color / meta color / hint color | Semantic Values, then Color Values |
+| link color | Semantic Values, then Color Values |
+| icon color | Semantic Values, then Color Values |
+| scrim color | Semantic Values, then Color Values |
+| border color | Semantic Values, then Color Values |
+| width | Sizing Values |
+| height | Sizing Values |
+| padding / inset | Padding Values |
+| spacing / gap / margin | Spacing Values |
+| border radius | Radius Values |
+| border width | Border Width Values |
+| shadow | Shadow Values |
+| font family / size / line height / weight | Typography Values |
+
+This is the key to making the workbench feel understandable:
+
+- the left side says what part of the app and what property is being edited
+- the right side shows the kinds of values that are valid for that property
+
+#### Transitional accommodation
+
+The current token system still has to exist underneath this new structure. So the first refactor does **not** need to delete the old token buckets immediately. Instead:
+
+- keep the underlying token data model
+- keep semantic token classes
+- keep the recipe layer
+- but interpose a new editor presentation layer that translates them into component attributes and typed values
+
+In other words:
+
+- old buckets remain implementation storage
+- new groups become author-facing navigation
+
+#### First implementation cut
+
+The first UI refactor should be intentionally narrow:
+
+1. replace the current left-side navigation with the component list above
+2. show the first-pass attributes for `Canvas`, `Sidebar`, `Field`, and `Feedback Panel`
+3. filter the right side into typed value groups for those attributes
+4. leave `Story Card`, `Gallery Card`, `Lightbox`, and `Header` as the second wave once the first four are working clearly
+
+That order matches the current mapping strength and gives the editor the best chance of becoming understandable quickly.
+
+#### Token classes
+
+| Token class | Meaning | Typical examples | Light/dark behavior |
+| ----------- | ------- | ---------------- | ------------------- |
+| **Tonal** | Participates in the theme’s overall mood and should shift with mode | `color1-*`, `color2-*`, page/chrome/card surfaces, ordinary text, muted text, most borders | **Mode-aware** |
+| **Contrast-on-fill** | Must remain readable on strong fills such as solid buttons or selected chips | solid button text, selected control text, filled badge/chip text | Usually **mode-stable** |
+| **Overlay/media contrast** | Must remain readable on dark scrims, media overlays, lightbox chrome, or gradient overlays | lightbox control text, overlay labels, media captions on scrims | Usually **mode-stable** |
+| **Accent / palette** | Stable palette values not derived from the light/dark theme families | `color3`–`color14` | Usually **stable** |
+
+#### Assignment rule
+
+- Use **tonal tokens** for ordinary text, surfaces, and borders that should participate in the light/dark family shift.
+- Use **contrast-on-fill tokens** for text/icons on strong filled controls.
+- Use **overlay/media contrast tokens** for lightbox/media/overlay text and icons.
+- Do **not** use `color1-*` or `color2-*` for a job whose real requirement is “always readable on a strong fill” or “always readable on a dark overlay.”
+
+#### Light/dark vs contrast rule
+
+Light/dark switching and contrast safety are **different concerns** and must not be handled as one generic “color role” problem.
+
+- **Mode-aware tonal classes** shift with light/dark and establish the app’s mood.
+- **Contrast classes** exist to preserve readability against a known background context (strong fill, media overlay, scrim) and may remain substantially stable across modes.
+- **Recipes choose context**. A selected sidebar tab, a solid chip, a lightbox control label, and a story body paragraph should not all point at the same text source merely because they are all “text.”
+
+If a role’s real requirement is contrast safety rather than tonal participation, solve it in the semantic token-class layer, not with local component overrides.
+
+#### Practical implication
+
+`color1-*` and `color2-*` are not fixed colors; they are generated families that change between `:root` and `[data-theme="dark"]`. That makes them appropriate for background and ordinary text systems, but risky for contrast-critical jobs like filled-button text or overlay labels. When a surface needs stable readability rather than tonal participation, the fix belongs in the **token class** and **recipe assignment**, not only in ad hoc component CSS.
 
 | Role group | Token family | Scope | Status |
 | ---------- | ------------ | ----- | ------ |
@@ -293,7 +648,7 @@ Current wiring inventory (2026-04-25):
 | ------- | ----------------------------- | ------------- |
 | Root runtime token sheet | `src/app/layout.tsx` + `src/lib/services/themeService.ts` | **Live runtime** - SSR injects generated token CSS from Firestore-resolved theme data with `theme-data.json` fallback. |
 | Reader semantic aliases | `buildThemeTokensCss()` | **Live runtime** - Reader alias families (`--reader-page-*`, `--reader-card-*`, `--reader-detail-*`, etc.) are emitted from atomic theme data plus reader recipes. |
-| Reader preview canvas | `src/app/admin/theme-admin/ThemeReaderPreview.tsx` | **Live-aligned preview** - Uses scoped CSS built from the same generator path, exercises real reader components rather than swatches only, and now documents preview coverage per component variant. |
+| Theme editor draft application | Theme Management + app theme resolver | **Target direction** - Theme edits produce a scoped in-memory draft document that applies to the real app immediately for the current session; the same resolver path must feed draft and saved runtime output. |
 | Reader preset application | `src/lib/theme/themePresets.ts` + `ThemeAdminPage.tsx` | **Workbench-wired + persisted** - Journal / Editorial now apply to the working draft as concrete theme-data transforms plus the active preset id, and Save persists the resolved scoped document. |
 | Reader recipe editor | `src/lib/theme/readerThemeSystem.ts` + `ThemeAdminPage.tsx` | **Workbench-wired** - Component/variant/element recipes edit the same draft that drives preview CSS. |
 | Advanced token editor | `ThemeAdminPage.tsx` | **Workbench-wired** - Atomic palette/token edits still act as the exact-value layer beneath recipes and move the draft to `custom`. |
@@ -305,8 +660,8 @@ Alignment gaps still to close:
 
 - **Legacy reader holdouts** - Some older reader files still sit outside the current semantic migration, especially legacy card/list styling such as `src/components/view/ContentCard.module.css`; treat those as explicit follow-up inventory, not as silent cleanup attached to active-path work.
 - **Admin semantics** - Admin uses preview/runtime tokens, but not yet a full `admin-*` semantic contract parallel to the reader layer.
-- **Preset completeness** - Journal / Editorial are real draft transforms now, but they are still partial bundles rather than complete light/dark design packages.
-- **Preview truthfulness** - Every reader role must have an obvious preview surface, and every previewed surface must map to a role or be explicitly classified as component-owned.
+- **Preset completeness** - Journal / Editorial are real draft transforms with preset-specific recipe direction now, but they are still not complete finished light/dark design packages.
+- **Preview truthfulness maintenance** - Reader preview/role reconciliation is now largely in place; future surface additions must be entered into the preview ledger and explicitly classified as role-backed or component-owned instead of drifting ad hoc.
 
 ### 5.5 What should stay atomic vs summary vs component-owned
 
@@ -369,6 +724,16 @@ That means:
 - **no need to save a separate vague preset model first**
 - **reader roles stay a code-level semantic layer over fully materialized atomic theme data**
 
+### 5.9 Draft application rule
+
+Theme Management should operate on a **draft** scoped theme document before persistence.
+
+- Unsaved edits apply to the real app in-session.
+- **Save** persists the current draft to Firestore and updates the JSON backup best-effort.
+- **Discard / reset** restores the last saved theme.
+- Draft state must be visible to the author and easy to abandon if readability collapses.
+- The authoring surface may still provide focused editing panels, but the dedicated preview layer is no longer the source of truth for whether a theme “works.”
+
 ---
 
 ## 6. Spacing, radius, elevation, motion
@@ -391,9 +756,10 @@ Presets are **bundles** of assignments to the roles above (plus typography roles
 ### Preset A — **Journal** (working name)
 
 - **Intent:** Warm, personal, archival; feels like a family journal without looking like a draft.
-- **Typography:** Body/UI stay **neutral sans**; **display** available for select titles or marketing surfaces; optional **serif** for titles if contrast helps.
-- **Color:** Slightly warmer neutrals for `--color1-*`; accent (`--color3`) restrained but friendly.
-- **Shape:** Softer `--border-radius-lg` / card radius; moderate shadow.
+- **Typography:** Body/UI stay **neutral sans**, but Journal now leans more deliberately into **serif** for reader-facing story/gallery/detail hierarchy, with lighter title weight, roomier line height, and softer subtitle/support emphasis.
+- **Color:** Warmer paper-like neutrals for `--color1-*` / `theme-color/1`, warmer text values, and a less cold principal/accent family than the earlier blue-led Journal starting point.
+- **Shape:** Softer `--border-radius-lg` / card radius; moderate shadow, slightly roomier card/input padding, and gentler control density for a friendlier mobile feel.
+- **Current implementation direction (2026-04-25):** Journal is now being tuned toward a **warm literary premium** read: lighter type pressure, warmer surfaces, softer support chrome, stronger editorial hierarchy, and roomier rhythm before any new presentational roles such as a kicker are introduced.
 
 ### Preset B — **Editorial** (working name)
 
@@ -411,17 +777,23 @@ Presets are **bundles** of assignments to the roles above (plus typography roles
 
 | Layer            | User-facing behavior                                                                                                                                                                                        |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Presets**      | Pick **Journal** / **Editorial** (and future presets) on Theme Management; reader-scoped preview + Save persists `activePresetId` with full theme data (admin-chosen global design; no per-user theme yet). |
+| **Presets**      | Pick **Journal** / **Editorial** (and future presets) on Theme Management; the live draft applies to the real app and Save persists `activePresetId` with full theme data (admin-chosen global design; no per-user theme yet). |
 | **Overrides**    | Optional advanced panel: palette, fonts, spacing scale — same model as today, grouped by *role* where possible.                                                                                             |
 | **Light / dark** | Keep global `data-theme` toggle; preset supplies **pairs** or derivation rules.                                                                                                                             |
 | **Out of scope** | One-off layout math (e.g. a single modal width hack), animation keyframes that are not part of the design language — unless promoted to a token deliberately.                                               |
 
 
-**Preview:** Authoritative preview should mirror `**/view`** (sample feed + one detail), not only swatches — so “what I tune” matches “what family sees.” Success criterion: the preview should make it easier to answer “Would someone want to keep reading this?”
+**Live draft application:** Theme editing should apply directly to the real app via an unsaved draft theme so “what I tune” matches the actual reader/admin experience rather than a parallel preview approximation.
 
-**Preview/runtime convergence:** Preview CSS and live runtime CSS must compile from the same **resolved scoped theme model** (reader/admin settings, active preset id, dark-mode shift, and recipes). Preview must not use a looser ad hoc payload shape than runtime, and the preview ledger should make the role-to-surface mapping explicit.
+**Draft/runtime convergence:** Draft CSS and saved runtime CSS must compile from the same **resolved scoped theme model** (reader/admin settings, active preset id, dark-mode shift, semantic token-class assignments, and recipes). Authoring must not use a looser ad hoc payload shape than runtime.
 
 **Current save posture:** Theme Management now persists the scoped version 2 reader/admin document through the normal Save action. The remaining theme work is therefore about **truthful surface coverage and role mapping**, not about whether save exists.
+
+**Workspace posture:** Theme Management should continue to behave as a focused editing workspace rather than a document page. The editor surfaces are now the component/attribute work areas plus draft-state controls, with the value library/token system feeding them underneath. The workspace is still transitional today, but the target author-facing model is `Component -> Attribute -> Value`, not "token buckets on one side and mixed recipe names on the other."
+
+**Initial redesign scope:** The first editor refactor pass should target the initial component set in §4.5: `Canvas`, `Header`, `Sidebar`, `Field`, `Feedback Panel`, `Story Card`, `Gallery Card`, and `Lightbox`. Do not try to solve every possible reader/admin surface at once; stabilize this set first, then expand.
+
+**First editor structure:** The first concrete workbench structure is defined in §4.7. Theme Management should become component-first on the left and typed-value-first on the right. The narrow first implementation cut should focus on `Canvas`, `Sidebar`, `Field`, and `Feedback Panel` before the card/lightbox wave.
 
 **Persistence target:** Theme data lives in **Firestore** `app_settings/theme` (written on Theme admin **Save** and via `npm run seed:theme-firestore`). The app **injects** `buildThemeTokensCss()` output in **RootLayout** (`<style id="theme-tokens">`) so variables apply in serverless deploys without committing regenerated CSS. `**theme-data.json`** stays the git backup and fallback when Firestore is empty or unreadable, and it may contain either the legacy flat reader shape or the scoped persisted document shape. Theme Management should be the product interface for editing this document; raw Firestore editing is not the intended user workflow.
 
@@ -439,18 +811,25 @@ Preset ids are retained as **editing metadata / UX context**, but the saved docu
 
 **Save-path rule:** The save endpoint should accept only this scoped persisted document shape. Legacy flat theme payloads may remain readable through normalization for fallback / migration, but they are **not** the save contract going forward. Firestore is the live durability boundary; any `theme-data.json` write is a secondary backup update and must not be required for the runtime save to succeed.
 
+**Operator note:** Because Save persists fully materialized scoped theme data, changing a preset definition in code does **not** automatically rewrite the currently saved live theme. To adopt a refreshed Journal or Editorial definition, the preset must be re-applied in Theme Management and then saved. If the current live reader theme is `custom`, preserve it as a backup/snapshot before testing preset changes.
+
+**Reader/admin separation rule:** Reader and admin may share the same atomic token pool, but they should diverge where their UI jobs diverge. Admin should not be treated as a thin reader variant; it needs its own semantic families and recipes for dense controls, grid metadata, notices, focus states, and form-heavy authoring surfaces.
+
 ---
 
 ## 9. Reconciliation workflow (design-led, not code-led)
 
-1. **Inventory surfaces first** - Build a table from actual reader/admin components: surface, file/component, visible elements (title, subtitle, excerpt, tags, controls, empty states, etc.), current token/CSS usage, required semantic token family, and migration status.
-2. **Freeze the semantic contract** - Promote the inventory into role families (`reader-page`, `reader-card`, `reader-detail`, `reader-subtitle`, `reader-excerpt`, `reader-discovery`, `reader-media`, `reader-chrome`, `reader-solid`, `admin-*`, etc.). Iterate here when product intent changes.
+1. **Inventory components first** - Build a table from actual reader/admin components: component, visible elements, meaningful attributes, current token/CSS usage, required semantic token family, and migration status.
+2. **Freeze the author-facing component model** - Decide the canonical component list (Canvas, Header, Sidebar, Story Card, Gallery Card, Lightbox, Field, Feedback, etc.) and the allowed attributes for each. The initial frozen set is defined in §4.5. Iterate here when product intent changes.
+3. **Freeze the semantic contract** - Promote the inventory into semantic token-class families (`reader-page`, `reader-card`, `reader-detail`, `reader-subtitle`, `reader-excerpt`, `reader-discovery`, `reader-media`, `reader-chrome`, `reader-solid`, `admin-*`, etc.). Iterate here when product intent changes.
    Recurring support surfaces (selectors, toolbars, sidebar labels/hints, utility controls) should use the dedicated `reader-support-*` family rather than being assigned to the “closest” content/discovery role.
-3. **Define the theme schema** - Decide how semantic role values live in the Firestore theme document and preset bundles; keep `theme-data.json` as fallback/backup, not the product editing surface.
-4. **Map generator output** - Map `themeService.ts` / `theme-data.json` fields to each role; add aliases only where they clarify ownership and reduce component confusion.
-5. **Migrate surfaces in order** - Move reader surfaces (`src/components/view/`, shared rich text, discovery, media, chrome) to role-backed variables; grep for raw `hex` / `rgba` against this checklist.
-6. **Admin separately** - Admin reuses shared tokens where useful, but dense tooling and status/control states need `admin-*` aliases separate from reader personality.
-7. **Complete presets** - Only after the schema and surface coverage are coherent should Journal / Editorial be treated as complete data packages with preview + persistence.
+4. **Define typed value groups** - Decide the value families the editor exposes: colors, padding, spacing, sizing, border widths, radii, typography families, typography sizes, shadows, gradients, and reusable semantic classes. Attribute selection should constrain which value groups appear, and implementation shortcuts must not collapse distinct author-facing metric families into one generic length pool.
+5. **Define the theme schema** - Decide how atomic tokens, semantic token classes, and recipe assignments live in the Firestore theme document and preset bundles; keep `theme-data.json` as fallback/backup, not the product editing surface.
+6. **Map generator output** - Map `themeService.ts` / `theme-data.json` fields into semantic token classes first, then recipe outputs; add aliases only where they clarify ownership and reduce component confusion.
+7. **Unify authoring/runtime compilation** - Apply the same resolver path to draft editing and saved runtime output; remove preview-only compile assumptions.
+8. **Migrate surfaces in order** - Move reader surfaces (`src/components/view/`, shared rich text, discovery, media, chrome) to role-backed variables; grep for raw `hex` / `rgba` against this checklist.
+9. **Admin separately** - Admin reuses shared tokens where useful, but dense tooling and status/control states need `admin-*` semantic families and recipes separate from reader personality.
+10. **Complete presets** - Only after the schema and surface coverage are coherent should Journal / Editorial be treated as complete data packages with live draft application + persistence.
 
 ---
 
@@ -542,3 +921,10 @@ This section defines the UX and token contract for system/status messaging so fe
 | 2026-04-16 | Added in-app status messaging contract (message taxonomy, behavior, token/a11y rules, card-save narrow reference). |
 | 2026-04-25 | Added §5 two-tier authoring model: summary roles over existing atomic tokens, explicit compact-variant boundary, and reader-first middle-layer target. |
 | 2026-04-25 | Updated current status and §5 to reflect the component-based Reader Theme System workbench, side-by-side preview/editor workflow, and the move toward component + variant + element recipes. |
+| 2026-04-25 | Updated Sections 5-8 to reflect live save, preview/role reconciliation, support-state classification, gallery/media preview consolidation, and the rule that future surfaces must be added to the preview ledger or explicitly marked component-owned. |
+| 2026-04-25 | Refined the Journal preset contract to match the current warm-literary premium tuning work: warmer surfaces, lighter hierarchy, softer support chrome, roomier rhythm, and preset-specific recipe direction. |
+| 2026-04-26 | Updated current status and §8 to reflect the consolidated Theme Management workspace, the denser Tokens pane, collapsed-by-default token posture, and the current editing workflow. |
+| 2026-04-26 | Added §4.3 to clarify the mental model: tokens define value classes (tonal, contrast-on-fill, overlay/media contrast, accent), while recipes define UI jobs. This is now the contract for resolving light/dark and contrast assignment questions. |
+| 2026-04-26 | Reframed Theme Management around live draft application instead of a dedicated preview layer, formalized the three-tier model (atomic tokens -> semantic token classes -> recipes), and updated reconciliation steps to target one compile path for draft and saved runtime output. |
+| 2026-04-26 | Added §4.4 and updated §8-§9 to define the next author-facing refactor direction: `Component -> Attribute -> Value`, typed value groups, and the rule that internal token/storage bucket names are not the editing model. |
+| 2026-04-26 | Added §4.5 with the initial canonical component inventory and first-pass attribute list for the upcoming Theme Management editor refactor. |
