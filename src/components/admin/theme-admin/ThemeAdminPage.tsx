@@ -7,7 +7,6 @@ import {
   StructuredThemeData,
   BaseColor,
   ThemeColor,
-  hexToHsl,
   type ReaderThemeRecipes,
   type ReaderTypographyRoleRecipe,
   type ThemeRecipeTokenRef,
@@ -47,6 +46,7 @@ type SaveNotice = {
   message: string;
   detail?: string;
 };
+type NavigatorSectionId = 'core' | 'cards' | 'systems';
 
 type ThemeRecord = Record<string, unknown>;
 type TokenOptionGroup = {
@@ -74,6 +74,11 @@ type DisplayComponentSpec = {
   label: string;
   description: string;
   variants: DisplayComponentVariant[];
+};
+type ValueDetailRow = {
+  label: string;
+  token: string;
+  actual: string;
 };
 
 const THEME_SAVE_ENABLED = true;
@@ -108,6 +113,17 @@ const formatTokenRef = (value: ThemeRecipeTokenRef | string): string => {
     .split('/')
     .map(humanizeTokenSegment)
     .join(' / ');
+};
+
+const getNestedValue = (value: unknown, path: string[]): string | null => {
+  let current: unknown = value;
+  for (const segment of path) {
+    if (!current || typeof current !== 'object') {
+      return null;
+    }
+    current = (current as Record<string, unknown>)[segment];
+  }
+  return typeof current === 'string' ? current : null;
 };
 
 const getTokenOptionGroupLabel = (value: ThemeRecipeTokenRef, kind: ValueOptionKind = 'generic'): string => {
@@ -209,66 +225,49 @@ const COMPONENT_TAB_LABELS: Record<string, string> = {
   chrome: 'Sidebar',
   field: 'Field',
   feedback: 'Feedback Panel',
-  storyCard: 'Story',
-  galleryCard: 'Gallery',
-  qaCard: 'Question',
+  storyCard: 'Story Card',
+  galleryCard: 'Gallery Card',
+  qaCard: 'Question Card',
   discoverySupport: 'Discovery',
-  quoteCard: 'Quote',
-  calloutCard: 'Callout',
+  quoteCard: 'Quote Card',
+  calloutCard: 'Callout Card',
 };
 
 const COMPONENT_ORDER = [
   'canvas',
   'header',
   'chrome',
-  'field',
   'feedback',
+  'field',
+  'discoverySupport',
   'storyCard',
   'galleryCard',
   'qaCard',
-  'discoverySupport',
   'quoteCard',
   'calloutCard',
 ] as const;
 
-const PRIMARY_COMPONENT_IDS = ['canvas', 'header', 'chrome', 'field', 'feedback'] as const;
-const SECONDARY_COMPONENT_IDS = ['storyCard', 'galleryCard', 'qaCard', 'quoteCard', 'calloutCard', 'discoverySupport'] as const;
+const CORE_READER_COMPONENT_IDS = ['canvas', 'header', 'chrome', 'feedback'] as const;
+const READER_CONTROL_COMPONENT_IDS = ['field', 'discoverySupport'] as const;
+const CARD_COMPONENT_IDS = ['storyCard', 'galleryCard', 'qaCard', 'quoteCard', 'calloutCard'] as const;
 
-const PRIMARY_COMPONENT_DESCRIPTIONS: Record<string, string> = {
-  canvas: 'App framing, ordinary text, links, and focus treatment.',
-  header: 'Top app bar height, background, border, and borrowed chrome text/icon treatment.',
-  chrome: 'Sidebar chrome, active controls, chips, and icons.',
-  field: 'Neutral and selected controls, labels, and hints.',
-  feedback: 'Neutral and stateful feedback surfaces and actions.',
+const LEFT_PANE_COMPONENT_DESCRIPTIONS: Record<string, string> = {
+  canvas: 'Page background, text, links, and focus treatment.',
+  header: 'Top app bar: background, border, height, text, and icon.',
+  chrome: 'Reader navigation, filters, and sidebar chrome.',
+  feedback: 'Reader notices, empty states, and feedback actions.',
+  field: 'Shared field and selector styling used across reader controls.',
+  discoverySupport: 'Shared discovery surface and supporting discovery content.',
+  storyCard: 'Story card styling across closed, open, and discovery views.',
+  galleryCard: 'Gallery card styling across closed, open, and discovery views.',
+  qaCard: 'Question card styling across closed, open, and discovery views.',
+  quoteCard: 'Quote card styling in the closed reader feed.',
+  calloutCard: 'Callout card styling in the closed reader feed.',
 };
-
-const COMPONENT_BEHAVIOR_NOTES: Record<string, string> = {
-  canvas: 'App-level framing, ordinary tonal copy, inline links, and focus behavior.',
-  header: 'Top app header background, border, height, and current shared chrome text/icon treatment.',
-  chrome: 'Navigation, filters, active tabs, and other structural reader chrome.',
-  field: 'Neutral controls, selected field states, labels, and helper text.',
-  feedback: 'Empty/loading messaging plus explicit success, warning, error, and info panels.',
-  storyCard: 'Story feed cards and opened story detail surfaces.',
-  galleryCard: 'Gallery cards, media framing, and lightbox-related jobs.',
-  qaCard: 'Question/answer content hierarchy in feed and detail contexts.',
-  quoteCard: 'Quote-specific typography and decorative treatment.',
-  calloutCard: 'Emphasized callout messaging and watermark treatment.',
-  discoverySupport: 'Section headers, child rails, and compact discovery context.',
-};
-
-const VARIANT_BEHAVIOR_NOTES: Record<string, string> = {
-  reader: 'Reader shell behavior.',
-  sidebar: 'Structural navigation and chrome behavior.',
-  controls: 'Neutral and selected field/control behavior.',
-  states: 'Neutral feedback surfaces for empty and loading contexts.',
-  success: 'Positive confirmation state.',
-  warning: 'Caution state.',
-  error: 'Problem or failure state.',
-  info: 'Informational state.',
-  closed: 'Compact feed presentation.',
-  open: 'Expanded detail presentation.',
-  discovery: 'Discovery and related-content presentation.',
-  childRail: 'Supporting rail context.',
+const getNavigatorSectionForComponent = (componentId: string): NavigatorSectionId => {
+  if (CORE_READER_COMPONENT_IDS.includes(componentId as (typeof CORE_READER_COMPONENT_IDS)[number])) return 'core';
+  if (CARD_COMPONENT_IDS.includes(componentId as (typeof CARD_COMPONENT_IDS)[number])) return 'cards';
+  return 'systems';
 };
 
 const BINDING_KIND_LABELS: Record<string, string> = {
@@ -279,6 +278,8 @@ const BINDING_KIND_LABELS: Record<string, string> = {
   overlay: 'Overlay',
   iconography: 'Icon',
   treatment: 'Treatment',
+  token: 'Component Value',
+  layout: 'Layout',
 };
 
 const BINDING_KEY_LABELS: Record<string, string> = {
@@ -338,12 +339,12 @@ const ATTRIBUTE_LABELS: Record<string, string> = {
   'chrome.sidebar.filterChip': 'Filter Chip',
   'chrome.sidebar.inlineLink': 'Link Color',
   'chrome.sidebar.icon': 'Icon Color',
-  'field.controls.label': 'Label Color',
-  'field.controls.meta': 'Meta Color',
-  'field.controls.hint': 'Hint Color',
-  'field.controls.control': 'Background + Border',
-  'field.controls.controlText': 'Text Color',
-  'field.controls.controlStrong': 'Selected Control',
+  'field.controls.label': 'Shared Label Color',
+  'field.controls.meta': 'Shared Meta Color',
+  'field.controls.hint': 'Shared Hint Color',
+  'field.controls.control': 'Neutral Control Surface',
+  'field.controls.controlText': 'Shared Control Text',
+  'field.controls.controlStrong': 'Selected Control Surface',
   'field.controls.padding': 'Padding',
   'field.controls.borderRadius': 'Border Radius',
   'feedback.states.surface': 'Background + Border',
@@ -368,20 +369,36 @@ const ATTRIBUTE_LABELS: Record<string, string> = {
   'feedback.info.meta': 'Info Text Color',
   'feedback.info.action': 'Info Action',
   'storyCard.closed.surface': 'Surface',
-  'storyCard.closed.contentPadding': 'Content Padding',
+  'storyCard.closed.contentPadding': 'Card Padding',
   'storyCard.closed.title': 'Title',
   'storyCard.closed.overlayTitle': 'Overlay Title',
   'storyCard.closed.excerpt': 'Excerpt',
-  'storyCard.closed.excerptLineHeight': 'Excerpt Line Height',
+  'storyCard.closed.excerptLineHeight': 'Excerpt Line Spacing',
+  'storyCard.discovery.title': 'Compact Title',
+  'storyCard.discovery.excerpt': 'Excerpt',
+  'storyCard.discovery.meta': 'Meta',
   'galleryCard.closed.surface': 'Surface',
-  'galleryCard.closed.contentPadding': 'Content Padding',
+  'galleryCard.closed.contentPadding': 'Card Padding',
   'galleryCard.closed.title': 'Title',
   'galleryCard.closed.overlayTitle': 'Overlay Title',
+  'galleryCard.discovery.sectionTitle': 'Section Title',
+  'galleryCard.discovery.title': 'Compact Title',
+  'galleryCard.discovery.caption': 'Caption',
+  'galleryCard.discovery.meta': 'Group/Meta Text',
   'qaCard.closed.surface': 'Surface',
-  'qaCard.closed.contentPadding': 'Content Padding',
+  'qaCard.closed.contentPadding': 'Card Padding',
   'qaCard.closed.question': 'Question',
   'qaCard.closed.overlayQuestion': 'Overlay Question',
   'qaCard.closed.excerpt': 'Answer Preview',
+  'qaCard.discovery.question': 'Compact Question',
+  'qaCard.discovery.excerpt': 'Answer Preview',
+  'discoverySupport.discovery.surface': 'Shared Surface',
+  'discoverySupport.discovery.sectionTitle': 'Section Title',
+  'discoverySupport.discovery.meta': 'Group/Meta Text',
+  'discoverySupport.childRail.sectionTitle': 'Rail Section Title',
+  'discoverySupport.childRail.countMeta': 'Rail Count/Meta',
+  'discoverySupport.childRail.cardTitle': 'Rail Card Title',
+  'calloutCard.closed.contentLineHeight': 'Body Line Spacing',
 };
 const getAttributeLabel = (componentId: string, variantId: string, elementId: string, fallback: string): string => (
   ATTRIBUTE_LABELS[`${componentId}.${variantId}.${elementId}`] ?? fallback
@@ -402,17 +419,17 @@ const ATTRIBUTE_VALUE_TYPE_LABELS: Record<string, string> = {
   'chrome.sidebar.label': 'Color values',
   'chrome.sidebar.meta': 'Color values',
   'chrome.sidebar.hint': 'Color values',
-  'chrome.sidebar.activeTab': 'Color values',
+  'chrome.sidebar.activeTab': 'Shared control values',
   'chrome.sidebar.filterChip': 'Color values',
   'chrome.sidebar.inlineLink': 'Color values',
   'chrome.sidebar.icon': 'Color values',
   'chrome.sidebar.width': 'Width values',
-  'field.controls.label': 'Color values',
-  'field.controls.meta': 'Color values',
-  'field.controls.hint': 'Color values',
-  'field.controls.control': 'Color values',
-  'field.controls.controlText': 'Typography values',
-  'field.controls.controlStrong': 'Color values',
+  'field.controls.label': 'Shared typography values',
+  'field.controls.meta': 'Shared typography values',
+  'field.controls.hint': 'Shared typography values',
+  'field.controls.control': 'Shared control values',
+  'field.controls.controlText': 'Shared typography values',
+  'field.controls.controlStrong': 'Shared control values',
   'field.controls.padding': 'Padding values',
   'field.controls.borderRadius': 'Radius values',
   'feedback.states.surface': 'Color values',
@@ -442,15 +459,31 @@ const ATTRIBUTE_VALUE_TYPE_LABELS: Record<string, string> = {
   'storyCard.closed.overlayTitle': 'Typography values',
   'storyCard.closed.excerpt': 'Typography values',
   'storyCard.closed.excerptLineHeight': 'Line spacing values',
+  'storyCard.discovery.title': 'Typography values',
+  'storyCard.discovery.excerpt': 'Typography values',
+  'storyCard.discovery.meta': 'Typography values',
   'galleryCard.closed.surface': 'Color values',
   'galleryCard.closed.contentPadding': 'Padding values',
   'galleryCard.closed.title': 'Typography values',
   'galleryCard.closed.overlayTitle': 'Typography values',
+  'galleryCard.discovery.sectionTitle': 'Typography values',
+  'galleryCard.discovery.title': 'Typography values',
+  'galleryCard.discovery.caption': 'Typography values',
+  'galleryCard.discovery.meta': 'Typography values',
   'qaCard.closed.surface': 'Color values',
   'qaCard.closed.contentPadding': 'Padding values',
   'qaCard.closed.question': 'Typography values',
   'qaCard.closed.overlayQuestion': 'Typography values',
   'qaCard.closed.excerpt': 'Typography values',
+  'qaCard.discovery.question': 'Typography values',
+  'qaCard.discovery.excerpt': 'Typography values',
+  'discoverySupport.discovery.surface': 'Color values',
+  'discoverySupport.discovery.sectionTitle': 'Typography values',
+  'discoverySupport.discovery.meta': 'Typography values',
+  'discoverySupport.childRail.sectionTitle': 'Typography values',
+  'discoverySupport.childRail.countMeta': 'Typography values',
+  'discoverySupport.childRail.cardTitle': 'Typography values',
+  'calloutCard.closed.contentLineHeight': 'Line spacing values',
 };
 const getAttributeValueTypeLabel = (
   componentId: string,
@@ -463,7 +496,7 @@ const getAttributeValueTypeLabel = (
 const HEADER_COMPONENT_SPEC: DisplayComponentSpec = {
   id: 'header',
   label: 'Header',
-  description: 'Top app header using dedicated height/background/border values and current shared chrome text/icon styling.',
+  description: 'Top app header using local height, background, border, text, and icon values.',
   variants: [
     {
       id: 'main',
@@ -478,14 +511,14 @@ const HEADER_COMPONENT_SPEC: DisplayComponentSpec = {
         {
           id: 'textColor',
           label: 'Header text',
-          description: 'Header text currently follows shared chrome label styling.',
-          binding: { kind: 'typography', key: 'chromeLabel' },
+          description: 'Header text color value for back links, title treatment, and menu links.',
+          binding: { kind: 'token', key: 'headerTextColor' },
         },
         {
           id: 'iconColor',
           label: 'Header icon',
-          description: 'Header icons currently follow shared chrome icon styling.',
-          binding: { kind: 'iconography', key: 'chrome' },
+          description: 'Header icon color value for the hamburger and related header icons.',
+          binding: { kind: 'token', key: 'headerIconColor' },
         },
         {
           id: 'borderColor',
@@ -513,19 +546,19 @@ const SURFACE_LABELS: Record<string, string> = {
   'feedback.warning': 'Reader feedback / warning state',
   'feedback.error': 'Reader feedback / error state',
   'feedback.info': 'Reader feedback / info state',
-  'discoverySupport.discovery': 'Explore More / section heading and groups',
-  'discoverySupport.childRail': 'Quote column / child rail',
-  'storyCard.closed': 'Story column / closed card',
-  'storyCard.open': 'Story column / open card detail',
-  'storyCard.discovery': 'Explore More / compact story card',
-  'galleryCard.closed': 'Gallery column / closed card',
-  'galleryCard.open': 'Gallery column / open detail + gallery media state',
-  'galleryCard.discovery': 'Explore More / compact gallery card',
-  'qaCard.closed': 'Question column / closed card',
-  'qaCard.open': 'Question column / open card detail',
-  'qaCard.discovery': 'Explore More / compact question card',
-  'quoteCard.closed': 'Quote column / closed card',
-  'calloutCard.closed': 'Callout column / closed card',
+  'discoverySupport.discovery': 'Discovery / shared surface and headings',
+  'discoverySupport.childRail': 'Discovery / supporting rail',
+  'storyCard.closed': 'Story Card / closed state',
+  'storyCard.open': 'Story Card / open state',
+  'storyCard.discovery': 'Discovery / story content',
+  'galleryCard.closed': 'Gallery Card / closed state',
+  'galleryCard.open': 'Gallery Card / open state',
+  'galleryCard.discovery': 'Discovery / gallery content',
+  'qaCard.closed': 'Question Card / closed state',
+  'qaCard.open': 'Question Card / open state',
+  'qaCard.discovery': 'Discovery / question content',
+  'quoteCard.closed': 'Quote Card / closed state',
+  'calloutCard.closed': 'Callout Card / closed state',
 };
 
 const FONT_FAMILY_OPTIONS: ThemeRecipeTokenRef[] = [
@@ -711,592 +744,6 @@ const mergeReaderRecipes = (recipes?: Partial<ReaderThemeRecipes> | null): Reade
   };
 };
 
-// Color Palette Editor Component
-const PaletteColorEditor: React.FC<{
-  color: BaseColor | ThemeColor;
-  onColorChange: (id: number, field: keyof BaseColor | keyof ThemeColor, value: string, variant?: 'light' | 'dark') => void;
-  onHslChange: (id: number, h: string, s: string, l: string, variant?: 'light' | 'dark') => void;
-  darkModeShift: number;
-}> = ({ color, onColorChange, onHslChange, darkModeShift }) => {
-  const [showHsl, setShowHsl] = useState(false);
-
-  const isThemeColor = (color: BaseColor | ThemeColor): color is ThemeColor => {
-    return 'light' in color && 'dark' in color;
-  };
-
-  const handleHexChange = (e: React.ChangeEvent<HTMLInputElement>, variant?: 'light' | 'dark') => {
-    const newHex = e.target.value;
-    
-    if (isThemeColor(color)) {
-      onColorChange(color.id, 'hex', newHex, variant);
-      
-      // For colors 1 and 2, also update HSL values when hex is valid
-      if (/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(newHex)) {
-        const { h, s, l } = hexToHsl(newHex);
-        onHslChange(color.id, `${h}`, `${s}%`, `${l}%`, variant);
-      }
-    } else {
-      onColorChange(color.id, 'hex', newHex);
-      
-      // If it's a valid hex, auto-update HSL
-      if (/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(newHex)) {
-        const { h, s, l } = hexToHsl(newHex);
-        onHslChange(color.id, `${h}`, `${s}%`, `${l}%`);
-      }
-    }
-  };
-  
-  const handleHslSliderChange = (component: 'h' | 's' | 'l', value: string, variant?: 'light' | 'dark') => {
-    if (isThemeColor(color)) {
-      const variantData = variant === 'light' ? color.light : color.dark;
-      const newH = component === 'h' ? value : variantData.h;
-      const newS = component === 's' ? `${value}%` : variantData.s;
-      const newL = component === 'l' ? `${value}%` : variantData.l;
-      onHslChange(color.id, newH, newS, newL, variant);
-      
-      // Convert HSL back to HEX and update
-      const h = parseInt(newH, 10);
-      const s = parseInt(newS, 10);
-      const l = parseInt(newL, 10);
-      const newHex = hslToHex(h, s, l);
-      onColorChange(color.id, 'hex', newHex, variant);
-    } else {
-      const newH = component === 'h' ? value : color.h;
-      const newS = component === 's' ? `${value}%` : color.s;
-      const newL = component === 'l' ? `${value}%` : color.l;
-      onHslChange(color.id, newH, newS, newL);
-      
-      // Convert HSL back to HEX and update
-      const h = parseInt(newH, 10);
-      const s = parseInt(newS, 10);
-      const l = parseInt(newL, 10);
-      const newHex = hslToHex(h, s, l);
-      onColorChange(color.id, 'hex', newHex);
-    }
-  };
-
-  if (isThemeColor(color)) {
-    return (
-      <div className={styles.colorEditor}>
-        <div className={styles.paletteColorHeaderRow}>
-          <div className={styles.paletteColorHeader}>{color.id}</div>
-          <button
-            type="button"
-            className={styles.paletteHslToggle}
-            onClick={() => setShowHsl((current) => !current)}
-            aria-expanded={showHsl}
-          >
-            {showHsl ? 'Hide' : 'HSL'}
-          </button>
-        </div>
-        <div className={styles.paletteVariantStack}>
-          {(['light', 'dark'] as const).map((variant) => {
-            const variantColor = color[variant];
-            return (
-              <div key={variant} className={styles.paletteVariantSection}>
-                <div
-                  className={styles.paletteSwatch}
-                  style={{ backgroundColor: variantColor.hex }}
-                  title={`${variant}: ${variantColor.hex}`}
-                />
-                <div className={styles.paletteValueGrid}>
-                  <input
-                    type="text"
-                    value={variantColor.hex}
-                    onChange={(e) => handleHexChange(e, variant)}
-                    className={styles.paletteHexInput}
-                    title={`${variant} HEX color value`}
-                  />
-                  {showHsl ? (
-                    <div className={styles.paletteHslStack}>
-                      <div className={styles.paletteHslValue}>
-                        <label>H</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="360"
-                          value={parseInt(variantColor.h, 10) || 0}
-                          onChange={(e) => handleHslSliderChange('h', e.target.value, variant)}
-                          className={styles.hslSpinner}
-                        />
-                      </div>
-                      <div className={styles.paletteHslValue}>
-                        <label>S</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={parseInt(variantColor.s, 10) || 0}
-                          onChange={(e) => handleHslSliderChange('s', e.target.value, variant)}
-                          className={styles.hslSpinner}
-                        />
-                      </div>
-                      <div className={styles.paletteHslValue}>
-                        <label>L</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={parseInt(variantColor.l, 10) || 0}
-                          onChange={(e) => handleHslSliderChange('l', e.target.value, variant)}
-                          className={styles.hslSpinner}
-                        />
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  } else {
-    const h = parseInt(color.h, 10);
-    const s = parseInt(color.s, 10);
-    const l = parseInt(color.l, 10);
-    const darkL = Math.min(100, l + darkModeShift);
-
-    return (
-      <div className={styles.colorEditor}>
-        <div className={styles.paletteColorHeaderRow}>
-          <div className={styles.paletteColorHeader}>{color.id}</div>
-          <button
-            type="button"
-            className={styles.paletteHslToggle}
-            onClick={() => setShowHsl((current) => !current)}
-            aria-expanded={showHsl}
-          >
-            {showHsl ? 'Hide' : 'HSL'}
-          </button>
-        </div>
-        <div className={styles.paletteVariantStack}>
-          <div className={styles.paletteVariantSection}>
-            <div
-              className={styles.paletteSwatch}
-              style={{ backgroundColor: `hsl(${h}, ${s}%, ${l}%)` }}
-              title={`Light: ${color.hex}`}
-            />
-            <input
-              type="text"
-              value={color.hex}
-              onChange={handleHexChange}
-              className={styles.paletteHexInput}
-              title="HEX color value"
-            />
-            {showHsl ? (
-              <div className={styles.paletteHslStack}>
-                <div className={styles.paletteHslValue}>
-                  <label>H</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="360"
-                    value={isNaN(h) ? 0 : h}
-                    onChange={(e) => handleHslSliderChange('h', e.target.value)}
-                    className={styles.hslSpinner}
-                  />
-                </div>
-                <div className={styles.paletteHslValue}>
-                  <label>S</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={isNaN(s) ? 0 : s}
-                    onChange={(e) => handleHslSliderChange('s', e.target.value)}
-                    className={styles.hslSpinner}
-                  />
-                </div>
-                <div className={styles.paletteHslValue}>
-                  <label>L</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={isNaN(l) ? 0 : l}
-                    onChange={(e) => handleHslSliderChange('l', e.target.value)}
-                    className={styles.hslSpinner}
-                  />
-                </div>
-              </div>
-            ) : null}
-          </div>
-          <div className={styles.paletteVariantSection}>
-            <div
-              className={styles.paletteSwatch}
-              style={{ backgroundColor: `hsl(${h}, ${s}%, ${darkL}%)` }}
-              title={`Dark: hsl(${h}, ${s}%, ${darkL}%)`}
-            />
-            <input
-              type="text"
-              value={hslToHex(h, s, darkL)}
-              readOnly
-              className={styles.paletteHexInput}
-              title="Derived dark HEX color value"
-            />
-            {showHsl ? (
-              <div className={styles.paletteHslStack}>
-                <div className={styles.paletteHslValue}>
-                  <label>H</label>
-                  <input
-                    type="number"
-                    value={h}
-                    readOnly
-                    className={styles.hslSpinner}
-                  />
-                </div>
-                <div className={styles.paletteHslValue}>
-                  <label>S</label>
-                  <input
-                    type="number"
-                    value={s}
-                    readOnly
-                    className={styles.hslSpinner}
-                  />
-                </div>
-                <div className={styles.paletteHslValue}>
-                  <label>L</label>
-                  <input
-                    type="number"
-                    value={darkL}
-                    readOnly
-                    className={styles.hslSpinner}
-                  />
-                </div>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </div>
-    );
-  }
-};
-
-// Helper function to convert HSL to HEX
-const hslToHex = (h: number, s: number, l: number): string => {
-  const sDecimal = s / 100;
-  const lDecimal = l / 100;
-
-  const c = (1 - Math.abs(2 * lDecimal - 1)) * sDecimal;
-  const x = c * (1 - Math.abs((h / 60) % 2 - 1));
-  const m = lDecimal - c / 2;
-  let r = 0, g = 0, b = 0;
-
-  if (0 <= h && h < 60) {
-    r = c; g = x; b = 0;
-  } else if (60 <= h && h < 120) {
-    r = x; g = c; b = 0;
-  } else if (120 <= h && h < 180) {
-    r = 0; g = c; b = x;
-  } else if (180 <= h && h < 240) {
-    r = 0; g = x; b = c;
-  } else if (240 <= h && h < 300) {
-    r = x; g = 0; b = c;
-  } else if (300 <= h && h < 360) {
-    r = c; g = 0; b = x;
-  }
-
-  r = Math.round((r + m) * 255);
-  g = Math.round((g + m) * 255);
-  b = Math.round((b + m) * 255);
-
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-};
-
-// Token Input Component
-const TokenInput: React.FC<{
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  type?: 'text' | 'number';
-}> = ({ label, value, onChange, type = 'text' }) => (
-  <div className={styles.tokenInput}>
-    <label>{label}</label>
-    <input
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    />
-  </div>
-);
-
-// Font Size Token Input - Right-justified layout
-const FontSizeTokenInput: React.FC<{
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}> = ({ label, value, onChange }) => (
-  <div className={styles.fontSizeTokenInput}>
-    <label>{label}</label>
-    <input
-      type="text"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    />
-  </div>
-);
-
-// Extended Token Input - Wider input for complex formulas
-const ExtendedTokenInput: React.FC<{
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}> = ({ label, value, onChange }) => (
-  <div className={styles.extendedTokenInput}>
-    <label>{label}</label>
-    <input
-      type="text"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    />
-  </div>
-);
-
-// Color Reference Input - Right-justified layout with validation and preview
-const ColorReferenceInput: React.FC<{
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  colors: BaseColor[];
-  themeColors?: ThemeColor[];
-}> = ({ label, value, onChange, colors, themeColors = [] }) => {
-  const [isValid, setIsValid] = useState(true);
-  const [previewColor, setPreviewColor] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
-
-  const validateAndPreview = useCallback((inputValue: string) => {
-    if (!inputValue.trim()) {
-      setIsValid(true);
-      setPreviewColor('');
-      setErrorMessage('');
-      return;
-    }
-
-    // Parse input: "color1-100" or "color3"
-    const colorMatch = inputValue.match(/^color(\d+)(?:-(\d+))?$/);
-    if (!colorMatch) {
-      setIsValid(false);
-      setPreviewColor('');
-      setErrorMessage('Invalid format. Use "color1-100" for theme colors or "color3" for palette colors');
-      return;
-    }
-
-    const colorNum = parseInt(colorMatch[1], 10);
-    const step = colorMatch[2];
-
-    // Validate color number range
-    if (colorNum < 1 || colorNum > 14) {
-      setIsValid(false);
-      setPreviewColor('');
-      setErrorMessage('Color number must be between 1 and 14');
-      return;
-    }
-
-    // Find the color - check themeColors first for colors 1-2, then palette for colors 3-14
-    let color;
-    if (colorNum === 1 || colorNum === 2) {
-      color = themeColors.find(c => c.id === colorNum);
-      if (!color) {
-        setIsValid(false);
-        setPreviewColor('');
-        setErrorMessage(`Color ${colorNum} not found in theme colors`);
-        return;
-      }
-    } else {
-      color = colors.find(c => c.id === colorNum);
-      if (!color) {
-        setIsValid(false);
-        setPreviewColor('');
-        setErrorMessage(`Color ${colorNum} not found in palette`);
-        return;
-      }
-    }
-
-    // Validate format based on color type
-    if (colorNum === 1 || colorNum === 2) {
-      // Colors 1-2 need step specification
-      if (!step) {
-        setIsValid(false);
-        setPreviewColor('');
-        setErrorMessage(`Color ${colorNum} requires a step (e.g., "color${colorNum}-100")`);
-        return;
-      }
-      
-      const validSteps = ['100', '200', '300'];
-      if (!validSteps.includes(step)) {
-        setIsValid(false);
-        setPreviewColor('');
-        setErrorMessage(`Invalid step "${step}". Valid steps: ${validSteps.join(', ')}`);
-        return;
-      }
-
-      // Generate preview color matching CSS generation logic (theme colors 1–2 store HSL under light/dark)
-      const light = (color as ThemeColor).light;
-      const h = parseInt(light.h, 10);
-      const s = parseInt(String(light.s).replace('%', ''), 10);
-      const stepValue = parseInt(step, 10);
-      
-      let baseLightness;
-      if (colorNum === 1) {
-        // Color1 (background): 100=100%, 200=95%, 300=90%
-        baseLightness = Math.max(0, Math.min(100, 105 - (stepValue / 20)));
-      } else {
-        // Color2 (text): 100=20%, 200=15%, 300=10%
-        baseLightness = Math.max(0, Math.min(100, 25 - (stepValue / 20)));
-      }
-      
-      // Show light theme preview (for simplicity in admin interface)
-      setPreviewColor(`hsl(${h}, ${s}%, ${baseLightness}%)`);
-      setIsValid(true);
-      setErrorMessage('');
-    } else if (colorNum >= 3 && colorNum <= 14) {
-      // Colors 3-14 should not have step specification
-      if (step) {
-        setIsValid(false);
-        setPreviewColor('');
-        setErrorMessage(`Color ${colorNum} should not have a step specification (use just "color${colorNum}")`);
-        return;
-      }
-
-      // Generate preview color (base color)
-      const h = parseInt(color.h, 10);
-      const s = parseInt(color.s, 10);
-      const l = parseInt(color.l, 10);
-      setPreviewColor(`hsl(${h}, ${s}%, ${l}%)`);
-      setIsValid(true);
-      setErrorMessage('');
-    } else {
-      setIsValid(false);
-      setPreviewColor('');
-      setErrorMessage('Invalid color reference format');
-    }
-  }, [colors, themeColors]);
-
-  React.useEffect(() => {
-    validateAndPreview(value);
-  }, [value, validateAndPreview]);
-
-  return (
-    <div className={styles.colorReferenceInput}>
-      <div className={styles.colorInputRow}>
-        <label>{label}</label>
-        <div 
-          className={styles.colorPreview}
-          style={previewColor ? { backgroundColor: previewColor } : undefined}
-          title={previewColor ? `Preview: ${previewColor}` : undefined}
-          aria-hidden="true"
-        />
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => {
-            onChange(e.target.value);
-            validateAndPreview(e.target.value);
-          }}
-          className={`${styles.colorInput} ${!isValid ? styles.colorInputError : ''}`}
-          placeholder="color1-100 or color3"
-        />
-      </div>
-      {!isValid && (
-        <span className={styles.colorError}>
-          {errorMessage}
-        </span>
-      )}
-    </div>
-  );
-};
-
-// State Color Input - For states with color preview boxes
-const StateColorInput: React.FC<{
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  colors: BaseColor[];
-}> = ({ label, value, onChange, colors }) => {
-  const [previewColor, setPreviewColor] = useState('');
-
-  React.useEffect(() => {
-    if (value && colors) {
-      // Handle both old numeric format and new color format
-      let colorNum;
-      if (value.startsWith('color')) {
-        colorNum = parseInt(value.replace('color', ''), 10);
-      } else {
-        colorNum = parseInt(value, 10);
-      }
-      
-      const color = colors.find(c => c.id === colorNum);
-      if (color) {
-        const h = parseInt(color.h, 10);
-        const s = parseInt(color.s, 10);
-        const l = parseInt(color.l, 10);
-        setPreviewColor(`hsl(${h}, ${s}%, ${l}%)`);
-      } else {
-        setPreviewColor('');
-      }
-    } else {
-      setPreviewColor('');
-    }
-  }, [value, colors]);
-
-  return (
-    <div className={styles.colorReferenceInput}>
-      <div className={styles.colorInputRow}>
-        <label>{label}</label>
-        <div 
-          className={styles.colorPreview}
-          style={previewColor ? { backgroundColor: previewColor } : undefined}
-          title={previewColor ? `Preview: ${previewColor}` : undefined}
-          aria-hidden="true"
-        />
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className={styles.colorInput}
-          placeholder="color11-color14"
-        />
-      </div>
-    </div>
-  );
-};
-
-// Font Weight Input - Right-justified layout for editable values
-const FontWeightInput: React.FC<{
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}> = ({ label, value, onChange }) => (
-  <div className={styles.fontSizeTokenInput}>
-    <label>{label}</label>
-    <input
-      type="number"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    />
-  </div>
-);
-
-
-
-// Spacing Multiplier Input - Right-justified layout for multiplier values
-const SpacingMultiplierInput: React.FC<{
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}> = ({ label, value, onChange }) => (
-  <div className={styles.fontSizeTokenInput}>
-    <label>{label}</label>
-    <input
-      type="number"
-      step="0.25"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    />
-  </div>
-);
-
 // Main Theme Admin Component
 export default function ThemeAdminPage() {
   const router = useRouter();
@@ -1305,10 +752,10 @@ export default function ThemeAdminPage() {
   const [themeData, setThemeData] = useState<StructuredThemeData | null>(null);
   const [adminThemeData, setAdminThemeData] = useState<StructuredThemeData | null>(null);
   const [readerRecipes, setReaderRecipes] = useState<ReaderThemeRecipes>(DEFAULT_READER_THEME_RECIPES);
-  const [selectedComponentId, setSelectedComponentId] = useState<string>(PRIMARY_COMPONENT_IDS[0]);
+  const [selectedComponentId, setSelectedComponentId] = useState<string>(CORE_READER_COMPONENT_IDS[0]);
+  const [selectedNavigatorSection, setSelectedNavigatorSection] = useState<NavigatorSectionId>('core');
   const [selectedVariantId, setSelectedVariantId] = useState<string>('closed');
   const [selectedRecipeId, setSelectedRecipeId] = useState<string>(DEFAULT_SELECTED_RECIPE);
-  const [showRecipeEditor, setShowRecipeEditor] = useState(false);
   const [isNarrowWorkspace, setIsNarrowWorkspace] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -1328,13 +775,22 @@ export default function ThemeAdminPage() {
     })
     .filter((component): component is DisplayComponentSpec => Boolean(component));
 
-  const primaryReaderComponents = useMemo(() => PRIMARY_COMPONENT_IDS
+  const coreReaderComponents = useMemo(() => CORE_READER_COMPONENT_IDS
     .map((id) => orderedReaderComponents.find((component) => component.id === id))
     .filter((component): component is (typeof orderedReaderComponents)[number] => Boolean(component)), [orderedReaderComponents]);
 
-  const secondaryReaderComponents = useMemo(() => SECONDARY_COMPONENT_IDS
+  const readerControlComponents = useMemo(() => READER_CONTROL_COMPONENT_IDS
     .map((id) => orderedReaderComponents.find((component) => component.id === id))
     .filter((component): component is (typeof orderedReaderComponents)[number] => Boolean(component)), [orderedReaderComponents]);
+
+  const cardComponents = useMemo(() => CARD_COMPONENT_IDS
+    .map((id) => orderedReaderComponents.find((component) => component.id === id))
+    .filter((component): component is (typeof orderedReaderComponents)[number] => Boolean(component)), [orderedReaderComponents]);
+  const visibleNavigatorComponents = useMemo(() => {
+    if (selectedNavigatorSection === 'core') return coreReaderComponents;
+    if (selectedNavigatorSection === 'cards') return cardComponents;
+    return readerControlComponents;
+  }, [cardComponents, coreReaderComponents, readerControlComponents, selectedNavigatorSection]);
 
   const applyReaderPreset = useCallback((presetId: ThemePresetId) => {
     const preset = getReaderPresetSettings(presetId);
@@ -1440,60 +896,6 @@ export default function ThemeAdminPage() {
     fetchThemeData();
   }, [applyThemeDocument]);
 
-  const handleColorChange = (id: number, field: keyof BaseColor | keyof ThemeColor, value: string, variant?: 'light' | 'dark') => {
-    if (!themeData) return;
-    setActivePresetId('custom');
-
-    setThemeData(prev => {
-      const newData = { ...prev! };
-      
-      // Handle theme colors (1 and 2)
-      if (id === 1 || id === 2) {
-        const themeColor = newData.themeColors.find(color => color.id === id);
-        if (themeColor && variant) {
-          if (field === 'hex') {
-            themeColor[variant].hex = value;
-          } else if (field === 'name') {
-            themeColor.name = value;
-          }
-        }
-      } else {
-        // Handle regular palette colors (3-14)
-        newData.palette = newData.palette.map(color =>
-          color.id === id ? { ...color, [field]: value } : color
-        );
-      }
-      
-      return newData;
-    });
-  };
-
-  const handleHslChange = (id: number, h: string, s: string, l: string, variant?: 'light' | 'dark') => {
-    if (!themeData) return;
-    setActivePresetId('custom');
-
-    setThemeData(prev => {
-      const newData = { ...prev! };
-      
-      // Handle theme colors (1 and 2)
-      if (id === 1 || id === 2) {
-        const themeColor = newData.themeColors.find(color => color.id === id);
-        if (themeColor && variant) {
-          themeColor[variant].h = h;
-          themeColor[variant].s = s;
-          themeColor[variant].l = l;
-        }
-      } else {
-        // Handle regular palette colors (3-14)
-        newData.palette = newData.palette.map(color =>
-          color.id === id ? { ...color, h, s, l } : color
-        );
-      }
-      
-      return newData;
-    });
-  };
-
   const handleTokenChange = (section: string, key: string, value: string) => {
     if (!themeData) return;
     setActivePresetId('custom');
@@ -1518,27 +920,6 @@ export default function ThemeAdminPage() {
         [subsection]: {
           ...asThemeRecord(asThemeRecord(prev![section as keyof StructuredThemeData])[subsection]),
           [key]: value
-        }
-      }
-    }));
-  };
-
-  const handleDeepNestedTokenChange = (section: string, subsection: string, subsubsection: string, key: string, value: string) => {
-    if (!themeData) return;
-    setActivePresetId('custom');
-
-    setThemeData(prev => ({
-      ...prev!,
-      [section]: {
-        ...prev![section as keyof StructuredThemeData],
-        [subsection]: {
-          ...asThemeRecord(asThemeRecord(prev![section as keyof StructuredThemeData])[subsection]),
-          [subsubsection]: {
-            ...asThemeRecord(
-              asThemeRecord(asThemeRecord(prev![section as keyof StructuredThemeData])[subsection])[subsubsection]
-            ),
-            [key]: value
-          }
         }
       }
     }));
@@ -1746,30 +1127,13 @@ export default function ThemeAdminPage() {
     return JSON.stringify(currentDraftDocument) !== JSON.stringify(savedThemeDocument);
   }, [currentDraftDocument, savedThemeDocument]);
 
-  const formatReaderPresetLabel = useCallback((presetId: ThemePresetId | 'custom') => (
-    presetId === 'custom' ? 'Custom' : THEME_PRESET_META[presetId].label
-  ), []);
-
-  const savedReaderPresetLabel = useMemo(() => {
-    if (!savedThemeDocument) return 'Loading';
-    const savedPresetId = savedThemeDocument.reader.activePresetId;
-    return formatReaderPresetLabel(
-      savedPresetId === 'journal' || savedPresetId === 'editorial' ? savedPresetId : 'custom'
-    );
-  }, [formatReaderPresetLabel, savedThemeDocument]);
-
-  const currentDraftPresetLabel = useMemo(
-    () => formatReaderPresetLabel(activePresetId),
-    [activePresetId, formatReaderPresetLabel]
-  );
-
-  const draftStatusLabel = isDraftDirty || hasDraftThemeCss ? 'Unsaved draft' : 'Saved state';
-  const draftStatusDetail = isDraftDirty || hasDraftThemeCss
-    ? 'Live draft is applied to the app right now.'
-    : 'The saved reader theme is currently applied.';
-  const saveTargetDetail = isDraftDirty || hasDraftThemeCss
-    ? 'Save will replace the current active reader theme with this draft.'
-    : 'There is nothing new to save right now.';
+  const draftActive = isDraftDirty || hasDraftThemeCss;
+  const activeThemeLabel = activePresetId === 'custom'
+    ? 'Custom draft'
+    : `${THEME_PRESET_META[activePresetId].label} draft`;
+  const themeStatusDetail = draftActive
+    ? 'Unsaved changes are applied to the live app in this session.'
+    : 'No unsaved changes.';
 
   useEffect(() => {
     if (!currentDraftDocument || loading) return;
@@ -2347,6 +1711,40 @@ export default function ThemeAdminPage() {
             </label>
           </div>
         );
+      case 'headerTextColor':
+        return (
+          <div className={styles.componentRecipeEditor}>
+            <label className={styles.architectureField}>
+              <span>Header text color</span>
+              <input
+                type="text"
+                value={themeData.components?.header?.textColor || ''}
+                onChange={(e) => handleNestedTokenChange('components', 'header', 'textColor', e.target.value)}
+                className={styles.componentRecipeInput}
+              />
+              <small className={styles.fieldHint}>
+                Use a stored color value such as `color2-300` or another header text reference.
+              </small>
+            </label>
+          </div>
+        );
+      case 'headerIconColor':
+        return (
+          <div className={styles.componentRecipeEditor}>
+            <label className={styles.architectureField}>
+              <span>Header icon color</span>
+              <input
+                type="text"
+                value={themeData.components?.header?.iconColor || ''}
+                onChange={(e) => handleNestedTokenChange('components', 'header', 'iconColor', e.target.value)}
+                className={styles.componentRecipeInput}
+              />
+              <small className={styles.fieldHint}>
+                Use a stored color value such as `color2-300` or another header icon reference.
+              </small>
+            </label>
+          </div>
+        );
       case 'fieldPadding':
         return (
           <div className={styles.componentRecipeEditor}>
@@ -2385,7 +1783,7 @@ export default function ThemeAdminPage() {
         return (
           <div className={styles.componentRecipeEditor}>
             <label className={styles.architectureField}>
-              <span>Content padding</span>
+              <span>Card padding</span>
               <select
                 value={readerRecipes.surfaces.storyCardClosed.padding ?? 'component/card/padding'}
                 onChange={(e) => updateSurfaceRecipe('storyCardClosed', 'padding', e.target.value as ThemeRecipeTokenRef)}
@@ -2402,7 +1800,7 @@ export default function ThemeAdminPage() {
         return (
           <div className={styles.componentRecipeEditor}>
             <label className={styles.architectureField}>
-              <span>Excerpt line height</span>
+              <span>Excerpt line spacing</span>
               <select
                 value={readerRecipes.typography.storyExcerpt.lineHeight}
                 onChange={(e) => updateTypographyRecipe('storyExcerpt', 'lineHeight', e.target.value as ThemeRecipeTokenRef)}
@@ -2419,7 +1817,7 @@ export default function ThemeAdminPage() {
         return (
           <div className={styles.componentRecipeEditor}>
             <label className={styles.architectureField}>
-              <span>Content padding</span>
+              <span>Card padding</span>
               <select
                 value={readerRecipes.surfaces.qaCardClosed.padding ?? 'component/card/padding'}
                 onChange={(e) => updateSurfaceRecipe('qaCardClosed', 'padding', e.target.value as ThemeRecipeTokenRef)}
@@ -2436,7 +1834,7 @@ export default function ThemeAdminPage() {
         return (
           <div className={styles.componentRecipeEditor}>
             <label className={styles.architectureField}>
-              <span>Content padding</span>
+              <span>Card padding</span>
               <select
                 value={readerRecipes.surfaces.galleryCardClosed.padding ?? 'component/card/padding'}
                 onChange={(e) => updateSurfaceRecipe('galleryCardClosed', 'padding', e.target.value as ThemeRecipeTokenRef)}
@@ -2597,6 +1995,10 @@ export default function ThemeAdminPage() {
                   ? (themeData?.components?.header?.borderColor || 'Unset')
                   : key === 'headerHeight'
                     ? (themeData?.components?.header?.height || 'Unset')
+                : key === 'headerTextColor'
+                  ? (themeData?.components?.header?.textColor || 'Unset')
+                  : key === 'headerIconColor'
+                    ? (themeData?.components?.header?.iconColor || 'Unset')
                 : key === 'fieldPadding'
                 ? (themeData?.components?.input?.padding || 'Unset')
                 : key === 'fieldBorderRadius'
@@ -2617,6 +2019,168 @@ export default function ThemeAdminPage() {
         );
       default:
         return null;
+    }
+  };
+
+  const resolveValueReference = (value: string): string => {
+    if (!value) return 'Unset';
+    if (value.startsWith('font-family/')) {
+      const token = value.replace('font-family/', '') as keyof StructuredThemeData['typography']['fontFamilies'];
+      return themeData?.typography?.fontFamilies?.[token] || 'Unavailable';
+    }
+    if (value.startsWith('font-size/')) {
+      const token = value.replace('font-size/', '') as keyof StructuredThemeData['typography']['fontSizes'];
+      return themeData?.typography?.fontSizes?.[token] || 'Unavailable';
+    }
+    if (value.startsWith('font-weight/')) {
+      const token = value.replace('font-weight/', '') as keyof StructuredThemeData['typography']['fontWeights'];
+      return themeData?.typography?.fontWeights?.[token] || 'Unavailable';
+    }
+    if (value.startsWith('line-height/')) {
+      const token = value.replace('line-height/', '') as keyof StructuredThemeData['typography']['lineHeights'];
+      return themeData?.typography?.lineHeights?.[token] || 'Unavailable';
+    }
+    if (value.startsWith('spacing/')) {
+      const token = value.replace('spacing/', '') as keyof StructuredThemeData['spacing'];
+      return themeData?.spacing?.[token] as string || 'Unavailable';
+    }
+    if (value.startsWith('border/radius/')) {
+      const token = value.replace('border/radius/', '') as keyof StructuredThemeData['borders']['radius'];
+      return themeData?.borders?.radius?.[token] || 'Unavailable';
+    }
+    if (value.startsWith('shadow/')) {
+      const token = value.replace('shadow/', '') as keyof StructuredThemeData['shadows'];
+      return themeData?.shadows?.[token] as string || 'Unavailable';
+    }
+    if (value.startsWith('layout/')) {
+      const token = value.replace('layout/', '') as keyof StructuredThemeData['layout'];
+      return themeData?.layout?.[token] as string || 'Unavailable';
+    }
+    if (value.startsWith('component/')) {
+      const resolved = getNestedValue(themeData?.components, value.replace('component/', '').split('/'));
+      return resolved || 'Unavailable';
+    }
+    if (value.startsWith('state/')) {
+      const [, stateKey, stateField] = value.split('/');
+      if (!stateKey || !stateField) return 'Unavailable';
+      const fieldName = stateField === 'background' ? 'backgroundColor' : stateField === 'border' ? 'borderColor' : stateField;
+      return getNestedValue(themeData?.states, [stateKey, fieldName]) || 'Unavailable';
+    }
+    if (value.startsWith('gradient/')) {
+      const token = value.replace('gradient/', '') as keyof StructuredThemeData['gradients'];
+      return themeData?.gradients?.[token] || 'Unavailable';
+    }
+    if (value.startsWith('palette/')) {
+      const paletteId = Number(value.replace('palette/', ''));
+      return themeData?.palette?.find((entry) => entry.id === paletteId)?.hex || 'Unavailable';
+    }
+    if (value.startsWith('theme-color/')) {
+      const [, idText, variant] = value.split('/');
+      const themeColor = themeData?.themeColors?.find((entry) => entry.id === Number(idText));
+      if (!themeColor || (variant !== 'light' && variant !== 'dark')) return 'Unavailable';
+      return themeColor[variant].hex;
+    }
+    if (value.startsWith('semantic/reader/')) {
+      return 'Semantic reader alias';
+    }
+    if (value.startsWith('literal/')) {
+      return value.replace('literal/', '');
+    }
+    return value;
+  };
+
+  const getBindingValueRows = (kind: string, key: string): ValueDetailRow[] => {
+    switch (kind) {
+      case 'typography': {
+        const recipe = readerRecipes.typography[key as keyof ReaderThemeRecipes['typography']];
+        if (!recipe) return [];
+        return [
+          { label: 'Family', token: recipe.family, actual: resolveValueReference(recipe.family) },
+          { label: 'Size', token: recipe.size, actual: resolveValueReference(recipe.size) },
+          { label: 'Weight', token: recipe.weight, actual: resolveValueReference(recipe.weight) },
+          { label: 'Line height', token: recipe.lineHeight, actual: resolveValueReference(recipe.lineHeight) },
+          { label: 'Color role', token: recipe.color, actual: resolveValueReference(recipe.color) },
+        ];
+      }
+      case 'surface': {
+        const recipe = readerRecipes.surfaces[key as keyof ReaderThemeRecipes['surfaces']];
+        if (!recipe) return [];
+        return [
+          { label: 'Background', token: recipe.background, actual: resolveValueReference(recipe.background) },
+          { label: 'Border', token: recipe.border, actual: resolveValueReference(recipe.border) },
+          ...(recipe.radius ? [{ label: 'Radius', token: recipe.radius, actual: resolveValueReference(recipe.radius) }] : []),
+          ...(recipe.shadow ? [{ label: 'Shadow', token: recipe.shadow, actual: resolveValueReference(recipe.shadow) }] : []),
+          ...(recipe.shadowHover ? [{ label: 'Hover shadow', token: recipe.shadowHover, actual: resolveValueReference(recipe.shadowHover) }] : []),
+          ...(recipe.padding ? [{ label: 'Padding', token: recipe.padding, actual: resolveValueReference(recipe.padding) }] : []),
+        ];
+      }
+      case 'control': {
+        const recipe = readerRecipes.controls[key as keyof ReaderThemeRecipes['controls']];
+        if (!recipe) return [];
+        if ('color' in recipe) {
+          return [{ label: 'Color role', token: recipe.color, actual: resolveValueReference(recipe.color) }];
+        }
+        return [
+          ...('background' in recipe ? [{ label: 'Background', token: recipe.background, actual: resolveValueReference(recipe.background) }] : []),
+          ...('text' in recipe ? [{ label: 'Text', token: recipe.text, actual: resolveValueReference(recipe.text) }] : []),
+          ...('border' in recipe ? [{ label: 'Border', token: recipe.border, actual: resolveValueReference(recipe.border) }] : []),
+          ...('hoverBackground' in recipe && recipe.hoverBackground ? [{ label: 'Hover background', token: recipe.hoverBackground, actual: resolveValueReference(recipe.hoverBackground) }] : []),
+          ...('hoverText' in recipe && recipe.hoverText ? [{ label: 'Hover text', token: recipe.hoverText, actual: resolveValueReference(recipe.hoverText) }] : []),
+        ];
+      }
+      case 'tag': {
+        const recipe = readerRecipes.tags[key as keyof ReaderThemeRecipes['tags']];
+        if (!recipe) return [];
+        return [
+          { label: 'Background', token: recipe.background, actual: resolveValueReference(recipe.background) },
+          { label: 'Text', token: recipe.text, actual: resolveValueReference(recipe.text) },
+          { label: 'Border', token: recipe.border, actual: resolveValueReference(recipe.border) },
+          ...(recipe.hoverBackground ? [{ label: 'Hover background', token: recipe.hoverBackground, actual: resolveValueReference(recipe.hoverBackground) }] : []),
+        ];
+      }
+      case 'overlay': {
+        const recipe = readerRecipes.overlays[key as keyof ReaderThemeRecipes['overlays']];
+        if (!recipe) return [];
+        return [
+          { label: 'Background', token: recipe.background, actual: resolveValueReference(recipe.background) },
+          { label: 'Text', token: recipe.text, actual: resolveValueReference(recipe.text) },
+          ...(recipe.border ? [{ label: 'Border', token: recipe.border, actual: resolveValueReference(recipe.border) }] : []),
+        ];
+      }
+      case 'iconography':
+        return [{
+          label: 'Color role',
+          token: readerRecipes.iconography[key as keyof ReaderThemeRecipes['iconography']],
+          actual: resolveValueReference(readerRecipes.iconography[key as keyof ReaderThemeRecipes['iconography']]),
+        }];
+      case 'treatment': {
+        const value = readerRecipes.treatments[key as keyof ReaderThemeRecipes['treatments']];
+        return [{ label: 'Value', token: value, actual: resolveValueReference(value) }];
+      }
+      case 'layout': {
+        const value = themeData?.layout?.sidebarWidth || 'Unset';
+        return [{ label: 'Width', token: value, actual: resolveValueReference(value) }];
+      }
+      case 'token': {
+        const tokenValue = (
+          key === 'headerBackgroundColor' ? themeData?.components?.header?.backgroundColor :
+          key === 'headerBorderColor' ? themeData?.components?.header?.borderColor :
+          key === 'headerHeight' ? themeData?.components?.header?.height :
+          key === 'headerTextColor' ? themeData?.components?.header?.textColor :
+          key === 'headerIconColor' ? themeData?.components?.header?.iconColor :
+          key === 'fieldPadding' ? themeData?.components?.input?.padding :
+          key === 'fieldBorderRadius' ? themeData?.components?.input?.borderRadius :
+          key === 'storyClosedPadding' ? readerRecipes.surfaces.storyCardClosed.padding :
+          key === 'storyClosedExcerptLineHeight' ? readerRecipes.typography.storyExcerpt.lineHeight :
+          key === 'questionClosedPadding' ? readerRecipes.surfaces.qaCardClosed.padding :
+          key === 'galleryClosedPadding' ? readerRecipes.surfaces.galleryCardClosed.padding :
+          key === 'calloutContentLineHeight' ? readerRecipes.typography.calloutBody.lineHeight :
+          'Unset'
+        ) || 'Unset';
+        return [{ label: 'Stored value', token: tokenValue, actual: resolveValueReference(tokenValue) }];
+      }
+      default:
+        return [];
     }
   };
 
@@ -2684,12 +2248,12 @@ export default function ThemeAdminPage() {
   const selectedSurface = selectedComponent && selectedVariant
     ? SURFACE_LABELS[`${selectedComponent.id}.${selectedVariant.id}`]
     : null;
-  const selectedComponentBehaviorNote = selectedComponent ? COMPONENT_BEHAVIOR_NOTES[selectedComponent.id] : null;
-  const selectedVariantBehaviorNote = selectedVariant ? VARIANT_BEHAVIOR_NOTES[selectedVariant.id] : null;
-  const isPrimarySelectedComponent = selectedComponent ? PRIMARY_COMPONENT_IDS.includes(selectedComponent.id as (typeof PRIMARY_COMPONENT_IDS)[number]) : false;
   const selectedAttributeLabel = selectedComponent && selectedVariant && selectedElement
     ? getAttributeLabel(selectedComponent.id, selectedVariant.id, selectedElement.id, selectedElement.label)
     : formatBindingKeyLabel(selectedKey);
+  const selectedAttributeValueTypeLabel = selectedComponent && selectedVariant && selectedElement
+    ? getAttributeValueTypeLabel(selectedComponent.id, selectedVariant.id, selectedElement.id, selectedElement.binding.kind)
+    : formatBindingKindLabel(selectedKind);
 
   const workspaceColumns = `minmax(${MIN_SYSTEM_PANE_WIDTH}px, 1fr) minmax(${MIN_ADVANCED_PANE_WIDTH}px, 1fr)`;
 
@@ -2697,10 +2261,24 @@ export default function ThemeAdminPage() {
     <div className={styles.adminContainer}>
       <div className={styles.header}>
         <div className={styles.headerContent}>
-          <div className={styles.headerActions}>
-            <div className={`${styles.draftStatus} ${isDraftDirty || hasDraftThemeCss ? styles.draftStatusActive : ''}`}>
-              {isDraftDirty || hasDraftThemeCss ? 'Draft active in app' : 'Saved theme live'}
+          <div className={styles.headerIntro}>
+            <div className={styles.headerTitleRow}>
+              <span className={styles.headerEyebrow}>Workspace</span>
+              <div className={`${styles.draftStatus} ${draftActive ? styles.draftStatusActive : ''}`}>
+                {draftActive ? 'Unsaved changes' : 'Saved'}
+              </div>
             </div>
+            <h1 className={styles.headerTitle}>Theme Management</h1>
+            <p className={styles.headerSubtitle}>
+              Shape the reader experience through presets, component attributes, and shared values.
+            </p>
+            <div className={styles.headerMeta}>
+              <span><strong>Editing:</strong> {activeThemeLabel}</span>
+              <span><strong>Mode:</strong> {theme === 'dark' ? 'Dark' : 'Light'}</span>
+              <span>{themeStatusDetail}</span>
+            </div>
+          </div>
+          <div className={styles.headerActions}>
             <button
               type="button"
               onClick={toggleTheme}
@@ -2714,42 +2292,23 @@ export default function ThemeAdminPage() {
               disabled={!isDraftDirty}
               className={styles.secondaryActionButton}
             >
-              Discard Draft
+              Discard
+            </button>
+            <button
+              type="button"
+              disabled
+              className={styles.secondaryActionButton}
+              title="Save As will arrive in the next theme-management pass."
+            >
+              Save As
             </button>
             <button 
               onClick={saveTheme}
-              disabled={saving || !THEME_SAVE_ENABLED}
+              disabled={saving || !THEME_SAVE_ENABLED || !isDraftDirty}
               className={styles.saveButton}
             >
-              {saving ? 'Saving...' : THEME_SAVE_ENABLED ? 'Save Theme' : 'Save Paused'}
+              {saving ? 'Saving...' : THEME_SAVE_ENABLED ? 'Save' : 'Save Paused'}
             </button>
-          </div>
-        </div>
-        <div className={styles.workspaceStateBar} role="status" aria-live="polite">
-          <div className={styles.workspaceStateItem}>
-            <span className={styles.workspaceStateLabel}>Mode</span>
-            <strong className={styles.workspaceStateValue}>{theme === 'dark' ? 'Dark' : 'Light'}</strong>
-            <span className={styles.workspaceStateDetail}>You are previewing the live app in this mode.</span>
-          </div>
-          <div className={styles.workspaceStateItem}>
-            <span className={styles.workspaceStateLabel}>Started From</span>
-            <strong className={styles.workspaceStateValue}>{savedReaderPresetLabel}</strong>
-            <span className={styles.workspaceStateDetail}>This is the saved reader theme currently on record.</span>
-          </div>
-          <div className={styles.workspaceStateItem}>
-            <span className={styles.workspaceStateLabel}>Current Draft</span>
-            <strong className={styles.workspaceStateValue}>{currentDraftPresetLabel}</strong>
-            <span className={styles.workspaceStateDetail}>Recipe or token edits move the draft to Custom.</span>
-          </div>
-          <div className={styles.workspaceStateItem}>
-            <span className={styles.workspaceStateLabel}>{draftStatusLabel}</span>
-            <strong className={styles.workspaceStateValue}>{isDraftDirty || hasDraftThemeCss ? 'Not Saved Yet' : 'Up To Date'}</strong>
-            <span className={styles.workspaceStateDetail}>{draftStatusDetail}</span>
-          </div>
-          <div className={styles.workspaceStateItem}>
-            <span className={styles.workspaceStateLabel}>Save Target</span>
-            <strong className={styles.workspaceStateValue}>Active Reader Theme</strong>
-            <span className={styles.workspaceStateDetail}>{saveTargetDetail}</span>
           </div>
         </div>
         {saveNotice ? (
@@ -2778,7 +2337,10 @@ export default function ThemeAdminPage() {
         >
           <section className={`${styles.architectureWorkbench} ${styles.systemPane}`}>
             <div className={styles.architectureHeader}>
-              <h2 className={styles.architectureTitle}>Theme</h2>
+              <div>
+                <h2 className={styles.architectureTitle}>Components</h2>
+                <p className={styles.architectureText}>Choose the reader surfaces you want to shape, then edit their visible attributes.</p>
+              </div>
             </div>
             <div className={styles.paneBody}>
               <section className={styles.architectureCard}>
@@ -2807,208 +2369,115 @@ export default function ThemeAdminPage() {
                 </div>
                 <div className={styles.presetStatus}>
                   <strong>{activePresetId === 'custom' ? 'Custom' : THEME_PRESET_META[activePresetId].label}</strong>
-                  <span>Recipe or token edits after preset application move the working draft back to Custom.</span>
+                  <span>Further edits keep working in the current draft until you save or discard them.</span>
                 </div>
               </section>
               <section className={styles.architectureCard}>
                 <div className={styles.componentSelectorGroups}>
                   <section className={styles.componentSelectorGroup}>
                     <div className={styles.componentSelectorGroupHeader}>
-                      <strong>Components</strong>
-                      <span>Start with the main app pieces. These are the first workbench components in the new model.</span>
+                      <strong>Navigator</strong>
                     </div>
-                    <div className={styles.componentSelectorColumn}>
-                      {primaryReaderComponents.map((component) => (
+                    <div className={styles.navigatorSectionTabs}>
+                      <button
+                        type="button"
+                        className={selectedNavigatorSection === 'core' ? styles.navigatorSectionTabActive : styles.navigatorSectionTab}
+                        onClick={() => setSelectedNavigatorSection('core')}
+                      >
+                        Core Reader
+                      </button>
+                      <button
+                        type="button"
+                        className={selectedNavigatorSection === 'cards' ? styles.navigatorSectionTabActive : styles.navigatorSectionTab}
+                        onClick={() => setSelectedNavigatorSection('cards')}
+                      >
+                        Cards
+                      </button>
+                      <button
+                        type="button"
+                        className={selectedNavigatorSection === 'systems' ? styles.navigatorSectionTabActive : styles.navigatorSectionTab}
+                        onClick={() => setSelectedNavigatorSection('systems')}
+                      >
+                        Discovery & Controls
+                      </button>
+                    </div>
+                    <div className={styles.componentSelectorCompactList}>
+                      {visibleNavigatorComponents.map((component) => (
                         <button
                           key={component.id}
                           type="button"
                           className={component.id === selectedComponentId ? styles.componentSelectorActive : styles.componentSelectorButton}
                           onClick={() => {
+                            setSelectedNavigatorSection(getNavigatorSectionForComponent(component.id));
                             setSelectedComponentId(component.id);
                             setSelectedVariantId(component.variants[0]?.id ?? '');
                           }}
                         >
                           <strong>{COMPONENT_TAB_LABELS[component.id] ?? component.label}</strong>
-                          <span>{PRIMARY_COMPONENT_DESCRIPTIONS[component.id] ?? component.description}</span>
                         </button>
                       ))}
                     </div>
+                    {selectedComponent ? (
+                      <div className={styles.componentSelectorHint}>
+                        {LEFT_PANE_COMPONENT_DESCRIPTIONS[selectedComponent.id] ?? selectedComponent.description}
+                      </div>
+                    ) : null}
                   </section>
-                  {secondaryReaderComponents.length ? (
-                    <section className={styles.componentSelectorGroup}>
-                      <div className={styles.componentSelectorGroupHeader}>
-                        <strong>Later Wave</strong>
-                        <span>These components remain available, but the current refactor is centered on the first four above.</span>
-                      </div>
-                      <div className={styles.componentSelectorRow}>
-                        {secondaryReaderComponents.map((component) => (
-                          <button
-                            key={component.id}
-                            type="button"
-                            className={component.id === selectedComponentId ? styles.componentSelectorActive : styles.componentSelectorButton}
-                            onClick={() => {
-                              setSelectedComponentId(component.id);
-                              setSelectedVariantId(component.variants[0]?.id ?? '');
-                            }}
-                          >
-                            {COMPONENT_TAB_LABELS[component.id] ?? component.label}
-                          </button>
-                        ))}
-                      </div>
-                    </section>
-                  ) : null}
                 </div>
                 <div className={styles.componentEditorPanel}>
                   <div className={styles.componentEditorHeader}>
-                    <strong>Attribute editor</strong>
+                    <strong>{selectedComponent ? (COMPONENT_TAB_LABELS[selectedComponent.id] ?? selectedComponent.label) : 'Component'}</strong>
                     <span>{selectedAttributeLabel}</span>
                   </div>
-                  {selectedComponentBehaviorNote || selectedVariantBehaviorNote ? (
-                    <div className={styles.componentBehaviorNotes}>
-                      {selectedComponentBehaviorNote ? (
-                        <span><strong>Component:</strong> {selectedComponentBehaviorNote}</span>
-                      ) : null}
-                      {selectedVariantBehaviorNote ? (
-                        <span><strong>Variant:</strong> {selectedVariantBehaviorNote}</span>
-                      ) : null}
-                    </div>
-                  ) : null}
                   {selectedSurface ? (
                     <div className={styles.componentEditorMeta}>
-                      <span className={styles.componentEditorSurface}>Surface: {selectedSurface}</span>
+                      <span className={styles.componentEditorSurface}>{selectedSurface}</span>
                       {selectedVariant ? <span>Variant: {selectedVariant.label}</span> : null}
                     </div>
                   ) : null}
-                  <div className={styles.componentEditorActions}>
-                    <button
-                      type="button"
-                      className={styles.componentRecipeToggle}
-                      onClick={() => setShowRecipeEditor((prev) => !prev)}
-                    >
-                      {showRecipeEditor ? 'Hide value selectors' : 'Show value selectors'}
-                    </button>
-                  </div>
-                  <div className={styles.componentRecipeSummary}>
-                    {renderBindingSummary(selectedKind, selectedKey)}
-                  </div>
-                  {showRecipeEditor ? renderBindingEditor(selectedKind, selectedKey) : null}
-                </div>
-                <div className={styles.componentInventory}>
-                  {selectedComponent ? (
-                    <section key={selectedComponent.id} className={styles.componentSection}>
-                      <div className={styles.componentSectionHeader}>
-                        <div>
-                          <h4 className={styles.componentTitle}>{COMPONENT_TAB_LABELS[selectedComponent.id] ?? selectedComponent.label}</h4>
-                          <p className={styles.componentDescription}>{selectedComponent.description}</p>
-                        </div>
-                      </div>
-
-                      {selectedComponent.variants.length > 1 ? (
-                        <div className={styles.componentVariantTabs}>
-                          {selectedComponent.variants.map((variant) => (
-                            <button
-                              key={variant.id}
-                              type="button"
-                              className={variant.id === selectedVariant?.id ? styles.componentVariantTabActive : styles.componentVariantTab}
-                              onClick={() => setSelectedVariantId(variant.id)}
-                            >
-                              {variant.label}
-                            </button>
-                          ))}
-                        </div>
-                      ) : null}
-
-                      {selectedVariant ? (
-                        <div key={selectedVariant.id} className={styles.componentVariantCard}>
-                          <div className={styles.componentVariantHeader}>
-                            <strong>{isPrimarySelectedComponent ? `${COMPONENT_TAB_LABELS[selectedComponent.id] ?? selectedComponent.label} Attributes` : selectedVariant.label}</strong>
-                            {selectedVariant.description ? <span>{selectedVariant.description}</span> : null}
-                            {selectedComponent.variants.length > 1 && selectedVariantBehaviorNote ? <span>{selectedVariantBehaviorNote}</span> : null}
-                          </div>
-                          {isPrimarySelectedComponent ? (
-                            <div className={styles.componentAttributeGrid}>
-                              {selectedVariantElements.map((element) => (
-                                <article
-                                  key={element.id}
-                                  className={`${styles.componentAttributeCard} ${
-                                    selectedRecipeId === `${element.binding.kind}:${element.binding.key}` ? styles.componentAttributeCardSelected : ''
-                                  }`}
-                                >
-                                  <div className={styles.componentAttributeHeader}>
-                                    <strong>
-                                      {getAttributeLabel(selectedComponent.id, selectedVariant.id, element.id, element.label)}
-                                    </strong>
-                                    <span>{getAttributeValueTypeLabel(selectedComponent.id, selectedVariant.id, element.id, element.binding.kind)}</span>
-                                  </div>
-                                  {element.description ? (
-                                    <p className={styles.componentAttributeNote}>{element.description}</p>
-                                  ) : null}
-                                  <div className={styles.componentAttributeSummary}>
-                                    {renderBindingSummary(element.binding.kind, element.binding.key)}
-                                  </div>
-                                  <div className={styles.componentAttributeActions}>
-                                    <button
-                                      type="button"
-                                      className={styles.componentBindingButton}
-                                      onClick={() => {
-                                        setSelectedRecipeId(`${element.binding.kind}:${element.binding.key}`);
-                                        setShowRecipeEditor(true);
-                                      }}
-                                    >
-                                      Edit Attribute
-                                    </button>
-                                  </div>
-                                </article>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className={styles.componentTableWrap}>
-                              <table className={styles.componentTable}>
-                                <thead>
-                                  <tr>
-                                    <th>Attribute</th>
-                                    <th>Value Source</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {selectedVariantElements.map((element) => (
-                                    <tr
-                                      key={element.id}
-                                      className={selectedRecipeId === `${element.binding.kind}:${element.binding.key}` ? styles.componentRowSelected : undefined}
-                                    >
-                                      <td>
-                                        <div className={styles.componentElementLabel}>
-                                          {getAttributeLabel(selectedComponent.id, selectedVariant.id, element.id, element.label)}
-                                        </div>
-                                        {element.description ? (
-                                          <div className={styles.componentElementNote}>{element.description}</div>
-                                        ) : null}
-                                      </td>
-                                      <td>
-                                        <button
-                                          type="button"
-                                          className={styles.componentBindingButton}
-                                          onClick={() => {
-                                            setSelectedRecipeId(`${element.binding.kind}:${element.binding.key}`);
-                                            setShowRecipeEditor(true);
-                                          }}
-                                        >
-                                          Edit
-                                        </button>
-                                        <span className={styles.componentBindingLabel}>
-                                          {formatBindingKindLabel(element.binding.kind)} / {formatBindingKeyLabel(element.binding.key)}
-                                        </span>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          )}
-                        </div>
-                      ) : null}
-                    </section>
+                  {selectedComponent?.variants.length && selectedComponent.variants.length > 1 ? (
+                    <div className={styles.componentVariantTabs}>
+                      {selectedComponent.variants.map((variant) => (
+                        <button
+                          key={variant.id}
+                          type="button"
+                          className={variant.id === selectedVariant?.id ? styles.componentVariantTabActive : styles.componentVariantTab}
+                          onClick={() => setSelectedVariantId(variant.id)}
+                        >
+                          {variant.label}
+                        </button>
+                      ))}
+                    </div>
                   ) : null}
+                  <div className={styles.componentAttributeTabs}>
+                    {selectedVariantElements.map((element) => {
+                      const attributeId = `${element.binding.kind}:${element.binding.key}`;
+                      return (
+                        <button
+                          key={element.id}
+                          type="button"
+                          className={selectedRecipeId === attributeId ? styles.componentAttributeTabActive : styles.componentAttributeTab}
+                          onClick={() => setSelectedRecipeId(attributeId)}
+                        >
+                          {selectedComponent && selectedVariant
+                            ? getAttributeLabel(selectedComponent.id, selectedVariant.id, element.id, element.label)
+                            : element.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {selectedElement?.description ? (
+                    <div className={styles.componentBehaviorNotes}>
+                      <span>{selectedElement.description}</span>
+                    </div>
+                  ) : null}
+                  <div className={styles.componentActiveEditor}>
+                    <div className={styles.componentActiveEditorHeader}>
+                      <strong>{selectedAttributeLabel}</strong>
+                      <span>{selectedAttributeValueTypeLabel}</span>
+                    </div>
+                    {renderBindingEditor(selectedKind, selectedKey)}
+                  </div>
                 </div>
               </section>
             </div>
@@ -3018,376 +2487,43 @@ export default function ThemeAdminPage() {
             <div className={styles.architectureHeader}>
               <div>
                 <h2 className={styles.architectureTitle}>Values</h2>
+                <p className={styles.architectureText}>See the named values behind the selected attribute.</p>
               </div>
             </div>
             <div className={`${styles.paneBody} ${styles.advancedPaneBody}`}>
-        <section className={`${styles.section} ${styles.advancedSection}`}>
-            <div className={styles.sectionHeader}>
-              <h2>Colors</h2>
-              <div className={styles.paletteControls}>
-                <div className={styles.lightDarkVariation}>
-                  <label>Dark Mode Shift:</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={darkModeShift}
-                  onChange={(e) => {
-                    setActivePresetId('custom');
-                    setDarkModeShift(parseInt(e.target.value, 10));
-                  }}
-                  className={styles.variationInput}
-                />
-                <span>%</span>
-              </div>
-            </div>
-          </div>
-          <div className={styles.paletteMatrix}>
-            <div className={styles.paletteRowLabels} aria-hidden="true">
-              <div className={styles.paletteRowLabelSpacer} />
-              <div className={styles.paletteRowLabelVariants}>
-                <div className={styles.paletteRowLabelSection}>
-                  <div className={styles.paletteRowLabelSwatch}>Light</div>
-                  <div className={styles.paletteRowLabelValueSpacer} />
+              <section className={`${styles.section} ${styles.advancedSection}`}>
+                <div className={styles.sectionHeader}>
+                  <h2>{selectedAttributeLabel}</h2>
                 </div>
-                <div className={styles.paletteRowLabelSection}>
-                  <div className={styles.paletteRowLabelSwatch}>Dark</div>
-                  <div className={styles.paletteRowLabelValueSpacer} />
+                <div className={styles.contextValuePanel}>
+                  <div className={styles.contextValueMeta}>
+                    <span><strong>Component:</strong> {selectedComponent ? (COMPONENT_TAB_LABELS[selectedComponent.id] ?? selectedComponent.label) : 'None selected'}</span>
+                    {selectedVariant ? <span><strong>Variant:</strong> {selectedVariant.label}</span> : null}
+                    <span><strong>Value Type:</strong> {selectedAttributeValueTypeLabel}</span>
+                  </div>
+                  {selectedElement?.description ? (
+                    <p className={styles.contextValueNote}>{selectedElement.description}</p>
+                  ) : null}
+                  <div className={styles.contextValueSource}>
+                    <strong>Uses</strong>
+                    <div className={styles.componentRecipeSummary}>
+                      {renderBindingSummary(selectedKind, selectedKey)}
+                    </div>
+                  </div>
+                  <div className={styles.contextValueDetails}>
+                    <strong>Actual Values</strong>
+                    <div className={styles.valueDetailList}>
+                      {getBindingValueRows(selectedKind, selectedKey).map((row) => (
+                        <div key={`${row.label}:${row.token}`} className={styles.valueDetailRow}>
+                          <span className={styles.valueDetailLabel}>{row.label}</span>
+                          <code className={styles.valueDetailToken}>{formatTokenRef(row.token)}</code>
+                          <code className={styles.valueDetailActual}>{row.actual}</code>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <div className={styles.paletteGrid}>
-              {/* Render theme colors (1 and 2) first */}
-              {themeData.themeColors?.map((color) => (
-                <PaletteColorEditor
-                  key={color.id}
-                  color={color}
-                  onColorChange={handleColorChange}
-                  onHslChange={handleHslChange}
-                  darkModeShift={darkModeShift}
-                />
-              ))}
-              {/* Render regular palette colors (3-14) - filter out colors 1 and 2 */}
-              {themeData.palette.filter(color => color.id > 2).map((color) => (
-                <PaletteColorEditor
-                  key={color.id}
-                  color={color}
-                  onColorChange={handleColorChange}
-                  onHslChange={handleHslChange}
-                  darkModeShift={darkModeShift}
-                />
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className={`${styles.section} ${styles.advancedSection}`}>
-          <h2>Typography & Metrics</h2>
-          <div className={styles.tokenGrid4Column}>
-            {/* Column 1: Typography */}
-            <div className={styles.tokenCategory}>
-              <h3>Typography</h3>
-              
-              <div className={styles.tokenSubsection}>
-                <h4>Font Families</h4>
-                <TokenInput 
-                  label="Sans" 
-                  value={themeData.typography?.fontFamilies?.sans || ''} 
-                  onChange={(v) => handleNestedTokenChange('typography', 'fontFamilies', 'sans', v)} 
-                />
-                <TokenInput 
-                  label="Serif" 
-                  value={themeData.typography?.fontFamilies?.serif || ''} 
-                  onChange={(v) => handleNestedTokenChange('typography', 'fontFamilies', 'serif', v)} 
-                />
-                <TokenInput 
-                  label="Handwriting" 
-                  value={themeData.typography?.fontFamilies?.handwriting || ''} 
-                  onChange={(v) => handleNestedTokenChange('typography', 'fontFamilies', 'handwriting', v)} 
-                />
-              </div>
-
-              <div className={styles.tokenSubsection}>
-                <h4>Text Colors</h4>
-                <ColorReferenceInput label="Primary Text" value={themeData.typography?.textColors?.text1 || ''} onChange={(v) => handleNestedTokenChange('typography', 'textColors', 'text1', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <ColorReferenceInput label="Muted Text" value={themeData.typography?.textColors?.text2 || ''} onChange={(v) => handleNestedTokenChange('typography', 'textColors', 'text2', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-              </div>
-
-              <div className={styles.tokenSubsection}>
-                <h4>Font Sizes</h4>
-                <FontSizeTokenInput label="XS" value={themeData.typography?.fontSizes?.xs || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', 'xs', v)} />
-                <FontSizeTokenInput label="SM" value={themeData.typography?.fontSizes?.sm || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', 'sm', v)} />
-                <FontSizeTokenInput label="Base" value={themeData.typography?.fontSizes?.base || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', 'base', v)} />
-                <FontSizeTokenInput label="LG" value={themeData.typography?.fontSizes?.lg || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', 'lg', v)} />
-                <FontSizeTokenInput label="XL" value={themeData.typography?.fontSizes?.xl || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', 'xl', v)} />
-                <FontSizeTokenInput label="2XL" value={themeData.typography?.fontSizes?.['2xl'] || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', '2xl', v)} />
-                <FontSizeTokenInput label="3XL" value={themeData.typography?.fontSizes?.['3xl'] || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', '3xl', v)} />
-                <FontSizeTokenInput label="4XL" value={themeData.typography?.fontSizes?.['4xl'] || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', '4xl', v)} />
-                <FontSizeTokenInput label="5XL" value={themeData.typography?.fontSizes?.['5xl'] || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', '5xl', v)} />
-                <FontSizeTokenInput label="6XL" value={themeData.typography?.fontSizes?.['6xl'] || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', '6xl', v)} />
-              </div>
-
-              <div className={styles.tokenSubsection}>
-                <h4>Font Weights</h4>
-                <FontWeightInput label="Normal" value={themeData.typography?.fontWeights?.normal || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontWeights', 'normal', v)} />
-                <FontWeightInput label="Medium" value={themeData.typography?.fontWeights?.medium || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontWeights', 'medium', v)} />
-                <FontWeightInput label="Semibold" value={themeData.typography?.fontWeights?.semibold || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontWeights', 'semibold', v)} />
-                <FontWeightInput label="Bold" value={themeData.typography?.fontWeights?.bold || ''} onChange={(v) => handleNestedTokenChange('typography', 'fontWeights', 'bold', v)} />
-              </div>
-
-              <div className={styles.tokenSubsection}>
-                <h4>Line Heights</h4>
-                <FontSizeTokenInput label="Base" value={themeData.typography?.lineHeights?.base || ''} onChange={(v) => handleNestedTokenChange('typography', 'lineHeights', 'base', v)} />
-                <FontSizeTokenInput label="Tight" value={themeData.typography?.lineHeights?.tight || ''} onChange={(v) => handleNestedTokenChange('typography', 'lineHeights', 'tight', v)} />
-                <FontSizeTokenInput label="Relaxed" value={themeData.typography?.lineHeights?.relaxed || ''} onChange={(v) => handleNestedTokenChange('typography', 'lineHeights', 'relaxed', v)} />
-              </div>
-
-              <div className={styles.tokenSubsection}>
-                <h4>Fluid Sizes</h4>
-                <ExtendedTokenInput label="Fld1" value={themeData.typography?.fluidFontSizes?.size1 || ''} onChange={(v) => handleNestedTokenChange('typography', 'fluidFontSizes', 'size1', v)} />
-                <ExtendedTokenInput label="Fld2" value={themeData.typography?.fluidFontSizes?.size2 || ''} onChange={(v) => handleNestedTokenChange('typography', 'fluidFontSizes', 'size2', v)} />
-                <ExtendedTokenInput label="Fld3" value={themeData.typography?.fluidFontSizes?.size3 || ''} onChange={(v) => handleNestedTokenChange('typography', 'fluidFontSizes', 'size3', v)} />
-              </div>
-
-              <div className={styles.tokenSubsection}>
-                <h4>Breakpoints</h4>
-                <FontSizeTokenInput label="SM" value={themeData.layout?.breakpoints?.sm || ''} onChange={(v) => handleNestedTokenChange('layout', 'breakpoints', 'sm', v)} />
-                <FontSizeTokenInput label="MD" value={themeData.layout?.breakpoints?.md || ''} onChange={(v) => handleNestedTokenChange('layout', 'breakpoints', 'md', v)} />
-                <FontSizeTokenInput label="LG" value={themeData.layout?.breakpoints?.lg || ''} onChange={(v) => handleNestedTokenChange('layout', 'breakpoints', 'lg', v)} />
-                <FontSizeTokenInput label="XL" value={themeData.layout?.breakpoints?.xl || ''} onChange={(v) => handleNestedTokenChange('layout', 'breakpoints', 'xl', v)} />
-              </div>
-
-              <div className={styles.tokenSubsection}>
-                <h4>Z-Index</h4>
-                <FontSizeTokenInput label="Default" value={themeData.zIndex?.default || ''} onChange={(v) => handleTokenChange('zIndex', 'default', v)} />
-                <FontSizeTokenInput label="Content" value={themeData.zIndex?.content || ''} onChange={(v) => handleTokenChange('zIndex', 'content', v)} />
-                <FontSizeTokenInput label="Sticky" value={themeData.zIndex?.sticky || ''} onChange={(v) => handleTokenChange('zIndex', 'sticky', v)} />
-                <FontSizeTokenInput label="Modal Backdrop" value={themeData.zIndex?.modalBackdrop || ''} onChange={(v) => handleTokenChange('zIndex', 'modalBackdrop', v)} />
-                <FontSizeTokenInput label="Sidebar" value={themeData.zIndex?.sidebar || ''} onChange={(v) => handleTokenChange('zIndex', 'sidebar', v)} />
-                <FontSizeTokenInput label="Header" value={themeData.zIndex?.header || ''} onChange={(v) => handleTokenChange('zIndex', 'header', v)} />
-                <FontSizeTokenInput label="Modal" value={themeData.zIndex?.modal || ''} onChange={(v) => handleTokenChange('zIndex', 'modal', v)} />
-                <FontSizeTokenInput label="Tooltip" value={themeData.zIndex?.tooltip || ''} onChange={(v) => handleTokenChange('zIndex', 'tooltip', v)} />
-              </div>
-
-              <div className={styles.tokenSubsection}>
-                <h4>Gradients</h4>
-                <ExtendedTokenInput label="Bottom Overlay" value={themeData.gradients?.bottomOverlay || ''} onChange={(v) => handleTokenChange('gradients', 'bottomOverlay', v)} />
-                <ExtendedTokenInput label="Bottom Overlay Strong" value={themeData.gradients?.bottomOverlayStrong || ''} onChange={(v) => handleTokenChange('gradients', 'bottomOverlayStrong', v)} />
-              </div>
-            </div>
-
-            {/* Column 2: Spacing & Borders */}
-            <div className={styles.tokenCategory}>
-              <h3>Spacing, Borders & Radius</h3>
-              
-              <div className={styles.tokenSubsection}>
-                <h4>Base Spacing Unit</h4>
-                <FontSizeTokenInput 
-                  label="Unit" 
-                  value={themeData.spacing?.unit || ''} 
-                  onChange={(v) => handleTokenChange('spacing', 'unit', v)} 
-                />
-              </div>
-              
-              <div className={styles.tokenSubsection}>
-                <h4>Spacing Steps</h4>
-                <SpacingMultiplierInput 
-                  label="XS" 
-                  value={themeData.spacing?.xsMultiplier || ''} 
-                  onChange={(v) => handleTokenChange('spacing', 'xsMultiplier', v)} 
-                />
-                <SpacingMultiplierInput 
-                  label="SM" 
-                  value={themeData.spacing?.smMultiplier || ''} 
-                  onChange={(v) => handleTokenChange('spacing', 'smMultiplier', v)} 
-                />
-                <SpacingMultiplierInput 
-                  label="MD" 
-                  value={themeData.spacing?.mdMultiplier || ''} 
-                  onChange={(v) => handleTokenChange('spacing', 'mdMultiplier', v)} 
-                />
-                <SpacingMultiplierInput 
-                  label="LG" 
-                  value={themeData.spacing?.lgMultiplier || ''} 
-                  onChange={(v) => handleTokenChange('spacing', 'lgMultiplier', v)} 
-                />
-                <SpacingMultiplierInput 
-                  label="XL" 
-                  value={themeData.spacing?.xlMultiplier || ''} 
-                  onChange={(v) => handleTokenChange('spacing', 'xlMultiplier', v)} 
-                />
-                <SpacingMultiplierInput 
-                  label="2XL" 
-                  value={themeData.spacing?.['2xlMultiplier'] || ''} 
-                  onChange={(v) => handleTokenChange('spacing', '2xlMultiplier', v)} 
-                />
-                <SpacingMultiplierInput 
-                  label="3XL" 
-                  value={themeData.spacing?.['3xlMultiplier'] || ''} 
-                  onChange={(v) => handleTokenChange('spacing', '3xlMultiplier', v)} 
-                />
-                <SpacingMultiplierInput 
-                  label="4XL" 
-                  value={themeData.spacing?.['4xlMultiplier'] || ''} 
-                  onChange={(v) => handleTokenChange('spacing', '4xlMultiplier', v)} 
-                />
-              </div>
-
-              <div className={styles.tokenSubsection}>
-                <h4>Fluid Spacing Steps</h4>
-                <ExtendedTokenInput label="Step 1" value={themeData.spacing?.fluidSpacing?.spacing1 || ''} onChange={(v) => handleNestedTokenChange('spacing', 'fluidSpacing', 'spacing1', v)} />
-                <ExtendedTokenInput label="Step 2" value={themeData.spacing?.fluidSpacing?.spacing2 || ''} onChange={(v) => handleNestedTokenChange('spacing', 'fluidSpacing', 'spacing2', v)} />
-                <ExtendedTokenInput label="Step 3" value={themeData.spacing?.fluidSpacing?.spacing3 || ''} onChange={(v) => handleNestedTokenChange('spacing', 'fluidSpacing', 'spacing3', v)} />
-              </div>
-
-              <div className={styles.tokenSubsection}>
-                <h4>Border Colors</h4>
-                <ColorReferenceInput label="Border Tone 1" value={themeData.borders?.colors?.border1 || ''} onChange={(v) => handleNestedTokenChange('borders', 'colors', 'border1', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <ColorReferenceInput label="Border Tone 2" value={themeData.borders?.colors?.border2 || ''} onChange={(v) => handleNestedTokenChange('borders', 'colors', 'border2', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-              </div>
-
-              <div className={styles.tokenSubsection}>
-                <h4>Border Widths</h4>
-                <FontSizeTokenInput label="Thin" value={themeData.borders?.widths?.thin || ''} onChange={(v) => handleNestedTokenChange('borders', 'widths', 'thin', v)} />
-                <FontSizeTokenInput label="Medium" value={themeData.borders?.widths?.medium || ''} onChange={(v) => handleNestedTokenChange('borders', 'widths', 'medium', v)} />
-                <FontSizeTokenInput label="Thick" value={themeData.borders?.widths?.thick || ''} onChange={(v) => handleNestedTokenChange('borders', 'widths', 'thick', v)} />
-              </div>
-
-              <div className={styles.tokenSubsection}>
-                <h4>Border Radius</h4>
-                <FontSizeTokenInput label="SM" value={themeData.borders?.radius?.sm || ''} onChange={(v) => handleNestedTokenChange('borders', 'radius', 'sm', v)} />
-                <FontSizeTokenInput label="MD" value={themeData.borders?.radius?.md || ''} onChange={(v) => handleNestedTokenChange('borders', 'radius', 'md', v)} />
-                <FontSizeTokenInput label="LG" value={themeData.borders?.radius?.lg || ''} onChange={(v) => handleNestedTokenChange('borders', 'radius', 'lg', v)} />
-                <FontSizeTokenInput label="XL" value={themeData.borders?.radius?.xl || ''} onChange={(v) => handleNestedTokenChange('borders', 'radius', 'xl', v)} />
-                <FontSizeTokenInput label="Full" value={themeData.borders?.radius?.full || ''} onChange={(v) => handleNestedTokenChange('borders', 'radius', 'full', v)} />
-              </div>
-
-              <div className={styles.tokenSubsection}>
-                <h4>Box Shadows</h4>
-                <FontSizeTokenInput label="Strength (Light)" value={themeData.shadows?.strength || ''} onChange={(v) => handleTokenChange('shadows', 'strength', v)} />
-                <FontSizeTokenInput label="Strength (Dark)" value={themeData.shadows?.strengthDark || ''} onChange={(v) => handleTokenChange('shadows', 'strengthDark', v)} />
-                <ExtendedTokenInput label="Color" value={themeData.shadows?.color || ''} onChange={(v) => handleTokenChange('shadows', 'color', v)} />
-                <ExtendedTokenInput label="SM" value={themeData.shadows?.sm || ''} onChange={(v) => handleTokenChange('shadows', 'sm', v)} />
-                <ExtendedTokenInput label="MD" value={themeData.shadows?.md || ''} onChange={(v) => handleTokenChange('shadows', 'md', v)} />
-                <ExtendedTokenInput label="LG" value={themeData.shadows?.lg || ''} onChange={(v) => handleTokenChange('shadows', 'lg', v)} />
-                <ExtendedTokenInput label="XL" value={themeData.shadows?.xl || ''} onChange={(v) => handleTokenChange('shadows', 'xl', v)} />
-              </div>
-
-            </div>
-
-            {/* Column 3: Layout */}
-            <div className={styles.tokenCategory}>
-              <h3>Sizing & Structure</h3>
-              
-              <div className={styles.tokenSubsection}>
-                <h4>Global Surfaces & Sizes</h4>
-                <FontSizeTokenInput label="Container Max Width" value={themeData.layout?.containerMaxWidth || ''} onChange={(v) => handleTokenChange('layout', 'containerMaxWidth', v)} />
-                <ExtendedTokenInput label="Body Font Family" value={themeData.layout?.bodyFontFamily || ''} onChange={(v) => handleTokenChange('layout', 'bodyFontFamily', v)} />
-                <ColorReferenceInput label="Body Background" value={themeData.layout?.bodyBackgroundColor || 'color1-100'} onChange={(v) => handleTokenChange('layout', 'bodyBackgroundColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <ColorReferenceInput label="Surface Tone 1" value={themeData.layout?.background1Color || ''} onChange={(v) => handleTokenChange('layout', 'background1Color', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <ColorReferenceInput label="Surface Tone 2" value={themeData.layout?.background2Color || ''} onChange={(v) => handleTokenChange('layout', 'background2Color', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <ColorReferenceInput label="Layout Border Tone 1" value={themeData.layout?.border1Color || ''} onChange={(v) => handleTokenChange('layout', 'border1Color', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <ColorReferenceInput label="Layout Border Tone 2" value={themeData.layout?.border2Color || ''} onChange={(v) => handleTokenChange('layout', 'border2Color', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <FontSizeTokenInput label="Sidebar Width" value={themeData.layout?.sidebarWidth || ''} onChange={(v) => handleTokenChange('layout', 'sidebarWidth', v)} />
-                <FontSizeTokenInput label="Sidebar Width Mobile" value={themeData.layout?.sidebarWidthMobile || ''} onChange={(v) => handleTokenChange('layout', 'sidebarWidthMobile', v)} />
-                <FontSizeTokenInput label="Logo Max Height" value={themeData.layout?.logoMaxHeight || ''} onChange={(v) => handleTokenChange('layout', 'logoMaxHeight', v)} />
-                <FontSizeTokenInput label="Spinner Size" value={themeData.layout?.spinnerSize || ''} onChange={(v) => handleTokenChange('layout', 'spinnerSize', v)} />
-                <FontSizeTokenInput label="Form Min Width" value={themeData.layout?.formMinWidth || ''} onChange={(v) => handleTokenChange('layout', 'formMinWidth', v)} />
-                <FontSizeTokenInput label="Button Min Width" value={themeData.layout?.buttonMinWidth || ''} onChange={(v) => handleTokenChange('layout', 'buttonMinWidth', v)} />
-                <FontSizeTokenInput label="Icon Min Width" value={themeData.layout?.iconMinWidth || ''} onChange={(v) => handleTokenChange('layout', 'iconMinWidth', v)} />
-                <FontSizeTokenInput label="Transition Short" value={themeData.layout?.transitionShort || ''} onChange={(v) => handleTokenChange('layout', 'transitionShort', v)} />
-              </div>
-
-              <div className={styles.tokenSubsection}>
-                <h4>Header Primitives</h4>
-                <FontSizeTokenInput label="Height" value={themeData.components?.header?.height || ''} onChange={(v) => handleNestedTokenChange('components', 'header', 'height', v)} />
-                <ColorReferenceInput label="Background" value={themeData.components?.header?.backgroundColor || ''} onChange={(v) => handleNestedTokenChange('components', 'header', 'backgroundColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <ColorReferenceInput label="Border Color" value={themeData.components?.header?.borderColor || ''} onChange={(v) => handleNestedTokenChange('components', 'header', 'borderColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <FontSizeTokenInput label="Border Width" value={themeData.components?.header?.borderWidth || ''} onChange={(v) => handleNestedTokenChange('components', 'header', 'borderWidth', v)} />
-              </div>
-
-              <div className={styles.tokenSubsection}>
-                <h4>Field Primitives</h4>
-                <ColorReferenceInput label="Background" value={themeData.components?.input?.backgroundColor || ''} onChange={(v) => handleNestedTokenChange('components', 'input', 'backgroundColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <ColorReferenceInput label="Border Color" value={themeData.components?.input?.borderColor || ''} onChange={(v) => handleNestedTokenChange('components', 'input', 'borderColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <ColorReferenceInput label="Border Focus" value={themeData.components?.input?.borderColorFocus || ''} onChange={(v) => handleNestedTokenChange('components', 'input', 'borderColorFocus', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <ColorReferenceInput label="Text Color" value={themeData.components?.input?.textColor || ''} onChange={(v) => handleNestedTokenChange('components', 'input', 'textColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <FontSizeTokenInput label="Border Radius" value={themeData.components?.input?.borderRadius || ''} onChange={(v) => handleNestedTokenChange('components', 'input', 'borderRadius', v)} />
-                <FontSizeTokenInput label="Padding" value={themeData.components?.input?.padding || ''} onChange={(v) => handleNestedTokenChange('components', 'input', 'padding', v)} />
-              </div>
-
-              <div className={styles.tokenSubsection}>
-                <h4>Card Primitives</h4>
-                <ColorReferenceInput label="Background" value={themeData.components?.card?.backgroundColor || ''} onChange={(v) => handleNestedTokenChange('components', 'card', 'backgroundColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <FontSizeTokenInput label="Padding" value={themeData.components?.card?.padding || ''} onChange={(v) => handleNestedTokenChange('components', 'card', 'padding', v)} />
-                                  <ColorReferenceInput label="Border Color" value={themeData.components?.card?.borderColor || ''} onChange={(v) => handleNestedTokenChange('components', 'card', 'borderColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <FontSizeTokenInput label="Border Width" value={themeData.components?.card?.borderWidth || ''} onChange={(v) => handleNestedTokenChange('components', 'card', 'borderWidth', v)} />
-                <FontSizeTokenInput label="Border Radius" value={themeData.components?.card?.borderRadius || ''} onChange={(v) => handleNestedTokenChange('components', 'card', 'borderRadius', v)} />
-                <ExtendedTokenInput label="Shadow" value={themeData.components?.card?.shadow || ''} onChange={(v) => handleNestedTokenChange('components', 'card', 'shadow', v)} />
-                <ExtendedTokenInput label="Shadow Hover" value={themeData.components?.card?.shadowHover || ''} onChange={(v) => handleNestedTokenChange('components', 'card', 'shadowHover', v)} />
-              </div>
-
-            </div>
-
-            {/* Column 4: Components */}
-            <div className={styles.tokenCategory}>
-              <h3>Shared Component Values</h3>
-              
-              <div className={styles.tokenSubsection}>
-                <h4>Link Values</h4>
-                <ColorReferenceInput label="Text Color" value={themeData.components?.link?.textColor || ''} onChange={(v) => handleNestedTokenChange('components', 'link', 'textColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <ColorReferenceInput label="Text Color Hover" value={themeData.components?.link?.textColorHover || ''} onChange={(v) => handleNestedTokenChange('components', 'link', 'textColorHover', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <FontSizeTokenInput label="Decoration Hover" value={themeData.components?.link?.decorationHover || ''} onChange={(v) => handleNestedTokenChange('components', 'link', 'decorationHover', v)} />
-              </div>
-
-              <div className={styles.tokenSubsection}>
-                <h4>Tag Values</h4>
-                <FontSizeTokenInput label="Padding" value={themeData.components?.tag?.padding || ''} onChange={(v) => handleNestedTokenChange('components', 'tag', 'padding', v)} />
-                <FontSizeTokenInput label="Border Radius" value={themeData.components?.tag?.borderRadius || ''} onChange={(v) => handleNestedTokenChange('components', 'tag', 'borderRadius', v)} />
-                <FontWeightInput label="Font Weight" value={themeData.components?.tag?.fontWeight || ''} onChange={(v) => handleNestedTokenChange('components', 'tag', 'fontWeight', v)} />
-                <FontSizeTokenInput label="Font Size" value={themeData.components?.tag?.fontSize || ''} onChange={(v) => handleNestedTokenChange('components', 'tag', 'fontSize', v)} />
-                <TokenInput label="Font Family" value={themeData.components?.tag?.fontFamily || ''} onChange={(v) => handleNestedTokenChange('components', 'tag', 'fontFamily', v)} />
-                <ColorReferenceInput label="Text Color" value={themeData.components?.tag?.textColor || ''} onChange={(v) => handleNestedTokenChange('components', 'tag', 'textColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-              </div>
-
-              <div className={styles.tokenSubsection}>
-                <h4>Tag Backgrounds</h4>
-                <ColorReferenceInput label="Who BG" value={themeData.components?.tag?.backgrounds?.who || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'tag', 'backgrounds', 'who', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <ColorReferenceInput label="What BG" value={themeData.components?.tag?.backgrounds?.what || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'tag', 'backgrounds', 'what', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <ColorReferenceInput label="When BG" value={themeData.components?.tag?.backgrounds?.when || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'tag', 'backgrounds', 'when', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <ColorReferenceInput label="Where BG" value={themeData.components?.tag?.backgrounds?.where || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'tag', 'backgrounds', 'where', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-              </div>
-
-              <div className={styles.tokenSubsection}>
-                <h4>State Surfaces</h4>
-                <p style={{fontSize: '12px', color: 'var(--text2-color)', marginBottom: '8px'}}>Enter color number (11-14) for each state</p>
-                <StateColorInput label="Success BG" value={themeData.states?.success?.backgroundColor || '11'} onChange={(v) => handleNestedTokenChange('states', 'success', 'backgroundColor', v)} colors={themeData.palette} />
-                <StateColorInput label="Success Border" value={themeData.states?.success?.borderColor || '11'} onChange={(v) => handleNestedTokenChange('states', 'success', 'borderColor', v)} colors={themeData.palette} />
-                <StateColorInput label="Error BG" value={themeData.states?.error?.backgroundColor || '12'} onChange={(v) => handleNestedTokenChange('states', 'error', 'backgroundColor', v)} colors={themeData.palette} />
-                <StateColorInput label="Error Border" value={themeData.states?.error?.borderColor || '12'} onChange={(v) => handleNestedTokenChange('states', 'error', 'borderColor', v)} colors={themeData.palette} />
-                <StateColorInput label="Warning BG" value={themeData.states?.warning?.backgroundColor || '13'} onChange={(v) => handleNestedTokenChange('states', 'warning', 'backgroundColor', v)} colors={themeData.palette} />
-                <StateColorInput label="Warning Border" value={themeData.states?.warning?.borderColor || '13'} onChange={(v) => handleNestedTokenChange('states', 'warning', 'borderColor', v)} colors={themeData.palette} />
-                <StateColorInput label="Info BG" value={themeData.states?.info?.backgroundColor || '14'} onChange={(v) => handleNestedTokenChange('states', 'info', 'backgroundColor', v)} colors={themeData.palette} />
-                <StateColorInput label="Info Border" value={themeData.states?.info?.borderColor || '14'} onChange={(v) => handleNestedTokenChange('states', 'info', 'borderColor', v)} colors={themeData.palette} />
-              </div>
-
-              <div className={styles.tokenSubsection}>
-                <h4>Solid Button Values</h4>
-                <ColorReferenceInput label="Background" value={themeData.components?.button?.solid?.backgroundColor || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'solid', 'backgroundColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <ColorReferenceInput label="Background Hover" value={themeData.components?.button?.solid?.backgroundColorHover || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'solid', 'backgroundColorHover', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <ColorReferenceInput label="Border" value={themeData.components?.button?.solid?.borderColor || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'solid', 'borderColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <ColorReferenceInput label="Text" value={themeData.components?.button?.solid?.textColor || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'solid', 'textColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-              </div>
-
-              <div className={styles.tokenSubsection}>
-                <h4>Outline Button Values</h4>
-                <ColorReferenceInput label="Border" value={themeData.components?.button?.outline?.borderColor || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'outline', 'borderColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <ColorReferenceInput label="Text" value={themeData.components?.button?.outline?.textColor || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'outline', 'textColor', v)} colors={themeData.palette} themeColors={themeData.themeColors} />
-                <FontSizeTokenInput label="Border Width" value={themeData.components?.button?.outline?.borderWidth || ''} onChange={(v) => handleDeepNestedTokenChange('components', 'button', 'outline', 'borderWidth', v)} />
-              </div>
-            </div>
-          </div>
-        </section>
+              </section>
             </div>
           </section>
         </div>
@@ -3395,3 +2531,4 @@ export default function ThemeAdminPage() {
     </div>
   );
 }
+

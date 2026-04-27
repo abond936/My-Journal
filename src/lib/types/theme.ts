@@ -202,6 +202,8 @@ export interface ComponentTokens {
     backgroundColor: string;
     borderColor: string;
     borderWidth: string;
+    textColor: string;
+    iconColor: string;
   };
   button: {
     solid: {

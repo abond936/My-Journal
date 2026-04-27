@@ -555,11 +555,11 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
         label: 'Closed card',
         elements: [
           { id: 'surface', label: 'Card surface', binding: { kind: 'surface', key: 'storyCardClosed' } },
-          { id: 'contentPadding', label: 'Content padding', binding: { kind: 'token', key: 'storyClosedPadding' } },
+          { id: 'contentPadding', label: 'Card padding', binding: { kind: 'token', key: 'storyClosedPadding' } },
           { id: 'title', label: 'Title', binding: { kind: 'typography', key: 'storyTitle' } },
           { id: 'overlayTitle', label: 'Overlay title', binding: { kind: 'typography', key: 'storyOverlayTitle' } },
           { id: 'excerpt', label: 'Excerpt', binding: { kind: 'typography', key: 'storyExcerpt' } },
-          { id: 'excerptLineHeight', label: 'Excerpt line height', binding: { kind: 'token', key: 'storyClosedExcerptLineHeight' } },
+          { id: 'excerptLineHeight', label: 'Excerpt line spacing', binding: { kind: 'token', key: 'storyClosedExcerptLineHeight' } },
           { id: 'imageOverlay', label: 'Image overlay', binding: { kind: 'overlay', key: 'card' } },
         ],
       },
@@ -577,9 +577,8 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
       },
       {
         id: 'discovery',
-        label: 'Explore More',
+        label: 'Discovery content',
         elements: [
-          { id: 'surface', label: 'Rail card surface', binding: { kind: 'surface', key: 'card' } },
           { id: 'title', label: 'Compact title', binding: { kind: 'typography', key: 'titleCompact' } },
           { id: 'excerpt', label: 'Excerpt', binding: { kind: 'typography', key: 'excerpt' } },
           { id: 'meta', label: 'Meta', binding: { kind: 'typography', key: 'meta' } },
@@ -597,7 +596,7 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
         label: 'Closed card',
         elements: [
           { id: 'surface', label: 'Card surface', binding: { kind: 'surface', key: 'galleryCardClosed' } },
-          { id: 'contentPadding', label: 'Content padding', binding: { kind: 'token', key: 'galleryClosedPadding' } },
+          { id: 'contentPadding', label: 'Card padding', binding: { kind: 'token', key: 'galleryClosedPadding' } },
           { id: 'title', label: 'Title', binding: { kind: 'typography', key: 'galleryTitle' } },
           { id: 'overlayTitle', label: 'Overlay title', binding: { kind: 'typography', key: 'galleryOverlayTitle' } },
           { id: 'mediaFrame', label: 'Media frame', binding: { kind: 'surface', key: 'canvasMediaFrame' } },
@@ -620,9 +619,8 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
       },
       {
         id: 'discovery',
-        label: 'Explore More',
+        label: 'Discovery content',
         elements: [
-          { id: 'surface', label: 'Rail card surface', binding: { kind: 'surface', key: 'card' } },
           { id: 'sectionTitle', label: 'Section title', binding: { kind: 'typography', key: 'discoveryTitle' } },
           { id: 'title', label: 'Compact title', binding: { kind: 'typography', key: 'titleCompact' } },
           { id: 'caption', label: 'Caption', binding: { kind: 'typography', key: 'caption' } },
@@ -633,20 +631,21 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
   },
   {
     id: 'discoverySupport',
-    label: 'Discovery and rails',
-    description: 'Discovery section headers, child-card rail headers, and compact rail card titles.',
+    label: 'Discovery',
+    description: 'Shared discovery surface, section headers, and supporting rail context for supported discovery types.',
     variants: [
       {
         id: 'discovery',
-        label: 'Discovery section',
+        label: 'Shared surface',
         elements: [
+          { id: 'surface', label: 'Discovery surface', binding: { kind: 'surface', key: 'cardDiscovery' } },
           { id: 'sectionTitle', label: 'Section title', binding: { kind: 'typography', key: 'discoveryTitle' } },
           { id: 'meta', label: 'Group/meta text', binding: { kind: 'typography', key: 'discoveryMeta' } },
         ],
       },
       {
         id: 'childRail',
-        label: 'Child-card rail',
+        label: 'Supporting rail',
         elements: [
           { id: 'sectionTitle', label: 'Rail section title', binding: { kind: 'typography', key: 'railSectionTitle' } },
           { id: 'countMeta', label: 'Rail count/meta', binding: { kind: 'typography', key: 'discoveryMeta' } },
@@ -658,14 +657,14 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
   {
     id: 'qaCard',
     label: 'Question card',
-    description: 'Q&A cards where the question and answer can differ between closed and open views.',
+    description: 'Question cards where the question and answer can differ between closed and open views.',
     variants: [
       {
         id: 'closed',
         label: 'Closed card',
         elements: [
           { id: 'surface', label: 'Card surface', binding: { kind: 'surface', key: 'qaCardClosed' } },
-          { id: 'contentPadding', label: 'Content padding', binding: { kind: 'token', key: 'questionClosedPadding' } },
+          { id: 'contentPadding', label: 'Card padding', binding: { kind: 'token', key: 'questionClosedPadding' } },
           { id: 'question', label: 'Question', binding: { kind: 'typography', key: 'question' } },
           { id: 'overlayQuestion', label: 'Overlay question', binding: { kind: 'typography', key: 'questionOverlay' } },
           { id: 'excerpt', label: 'Answer preview', binding: { kind: 'typography', key: 'excerpt' } },
@@ -683,9 +682,8 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
       },
       {
         id: 'discovery',
-        label: 'Explore More',
+        label: 'Discovery content',
         elements: [
-          { id: 'surface', label: 'Rail card surface', binding: { kind: 'surface', key: 'card' } },
           { id: 'question', label: 'Compact question', binding: { kind: 'typography', key: 'titleCompact' } },
           { id: 'excerpt', label: 'Answer preview', binding: { kind: 'typography', key: 'excerpt' } },
         ],
@@ -723,7 +721,7 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
           { id: 'subtitle', label: 'Subtitle', binding: { kind: 'typography', key: 'subtitle' } },
           { id: 'excerpt', label: 'Excerpt', binding: { kind: 'typography', key: 'excerpt' } },
           { id: 'body', label: 'Body', binding: { kind: 'typography', key: 'calloutBody' } },
-          { id: 'contentLineHeight', label: 'Content line spacing', binding: { kind: 'token', key: 'calloutContentLineHeight' } },
+          { id: 'contentLineHeight', label: 'Body line spacing', binding: { kind: 'token', key: 'calloutContentLineHeight' } },
           { id: 'watermark', label: 'Watermark opacity', binding: { kind: 'treatment', key: 'calloutWatermarkOpacity' } },
         ],
       },
@@ -754,18 +752,18 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
   {
     id: 'field',
     label: 'Fields',
-    description: 'Neutral and selected reader controls, labels, hints, and control text.',
+    description: 'Neutral and selected reader controls, plus the shared label, meta, hint, and control-text roles they use.',
     variants: [
       {
         id: 'controls',
         label: 'Controls and selectors',
         elements: [
-          { id: 'label', label: 'Field label', binding: { kind: 'typography', key: 'chromeLabel' } },
-          { id: 'meta', label: 'Field meta', binding: { kind: 'typography', key: 'chromeMeta' } },
-          { id: 'hint', label: 'Field hint', binding: { kind: 'typography', key: 'chromeHint' } },
-          { id: 'control', label: 'Neutral control', binding: { kind: 'control', key: 'fieldControl' } },
-          { id: 'controlText', label: 'Control text', binding: { kind: 'typography', key: 'fieldControl' } },
-          { id: 'controlStrong', label: 'Selected control', binding: { kind: 'control', key: 'fieldControlStrong' } },
+          { id: 'label', label: 'Shared field label', description: 'Shared label role reused by reader fields and parts of sidebar chrome.', binding: { kind: 'typography', key: 'chromeLabel' } },
+          { id: 'meta', label: 'Shared field meta', description: 'Shared meta role reused by reader fields and nearby support chrome.', binding: { kind: 'typography', key: 'chromeMeta' } },
+          { id: 'hint', label: 'Shared field hint', description: 'Shared hint role reused by reader fields and nearby support chrome.', binding: { kind: 'typography', key: 'chromeHint' } },
+          { id: 'control', label: 'Neutral control surface', description: 'Shared background and border for neutral field-style controls.', binding: { kind: 'control', key: 'fieldControl' } },
+          { id: 'controlText', label: 'Shared control text', description: 'Shared text role used across neutral field-style controls.', binding: { kind: 'typography', key: 'fieldControl' } },
+          { id: 'controlStrong', label: 'Selected control surface', description: 'Shared background and border for selected field-style controls.', binding: { kind: 'control', key: 'fieldControlStrong' } },
         ],
       },
     ],

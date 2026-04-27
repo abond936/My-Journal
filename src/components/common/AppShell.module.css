@@ -41,6 +41,9 @@
     right: 0;
     height: var(--header-height);
     z-index: var(--z-index-header);
+    background: var(--header-background-color);
+    border-bottom: var(--header-border-width) solid var(--header-border-color);
+    box-sizing: border-box;
   }
   
   .contentWrapper {

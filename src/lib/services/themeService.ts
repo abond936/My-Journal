@@ -655,6 +655,8 @@ export function buildThemeTokensCss(
   --header-background-color: ${tokenValue(themeData.components.header.backgroundColor, 'color1-100')};
   --header-border-color: ${tokenValue(themeData.components.header.borderColor, 'border1-color')};
   --header-border-width: ${tokenValue(themeData.components.header.borderWidth, 'border/width/thin')};
+  --header-text-color: ${tokenValue(themeData.components.header.textColor, 'color2-300')};
+  --header-icon-color: ${tokenValue(themeData.components.header.iconColor, themeData.components.header.textColor || 'color2-300')};
 
   /* Button: Solid */
   --button-solid-background-color: ${tokenValue(themeData.components.button.solid.backgroundColor, 'color3')};
@@ -948,9 +950,9 @@ export function buildThemeTokensCss(
   --reader-callout-body-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.calloutBody.size)};
   --reader-callout-body-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.calloutBody.weight)};
   --reader-callout-body-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.calloutBody.lineHeight)};
-  --reader-tag-background-color: ${getThemeRecipeRefValue(themeData, recipes.controls.chromeActiveTab.background)};
-  --reader-tag-text-color: ${semantic.solidTextColor};
-  --reader-tag-border-color: ${getThemeRecipeRefValue(themeData, recipes.controls.chromeActiveTab.border)};
+  --reader-tag-background-color: ${getThemeRecipeRefValue(themeData, recipes.tags.muted.background)};
+  --reader-tag-text-color: ${getThemeRecipeRefValue(themeData, recipes.tags.muted.text)};
+  --reader-tag-border-color: ${getThemeRecipeRefValue(themeData, recipes.tags.muted.border)};
   --reader-tag-muted-background-color: ${getThemeRecipeRefValue(themeData, recipes.tags.muted.background)};
   --reader-tag-muted-text-color: ${getThemeRecipeRefValue(themeData, recipes.tags.muted.text)};
   --reader-tag-muted-border-color: ${getThemeRecipeRefValue(themeData, recipes.tags.muted.border)};

@@ -3,7 +3,13 @@
 **Status:** Living specification — authoritative for *what* we tokenize and *why*, before code-only audits; and for **reader shell layout, responsive behavior, and navigation affordances** that must stay consistent with tokens (§10).
 **See also:** `01-Vision-Architecture.md` (Frontend principles, visual direction), `02-Application.md` → Theme Management, Navigation, Layouts, `03-Implementation.md` (CSS Tokenization sequencing, responsive chrome).
 
-**Current implementation status (2026-04-26):** Theme infrastructure exists and the core save/load path is now live. Runtime CSS variables are generated from theme data and injected by the app, with `theme-data.json` / `theme.css` fallbacks. Theme Management is now treated as a dedicated editing workspace, and the product direction has shifted from a dedicated preview layer to a **live draft** that applies to the real app in-session and becomes permanent only on **Save**. Journal / Editorial are still not “final themes,” but they are real preset bundles with preset-specific recipe direction rather than only light atomic transforms. The reader semantic layer now has working role groups for page, chrome, solid controls, cards, detail, body/title, meta/caption, tags, media/overlay, discovery, support UI, and type treatments. However, the current editor vocabulary is still transitional: it mixes component ideas, attribute ideas, and token-bucket/storage names in ways that are hard to reason about. The next theme phase is therefore not just more token wiring; it is an author-facing model correction toward **Component -> Attribute -> Value** on top of the existing three-tier technical system (**atomic tokens**, **semantic token classes**, and **recipes**). The main remaining theme work is to harden that model end to end - especially light/dark behavior, contrast-sensitive token classes, admin semantics, compile-path truthfulness from editor to live app, and the editor vocabulary itself.
+**Current implementation status (2026-04-27):** Theme infrastructure exists and the core save/load path is now live. Runtime CSS variables are generated from theme data and injected by the app, with `theme-data.json` / `theme.css` fallbacks. Theme Management is now treated as a dedicated editing workspace, and the product direction has shifted from a dedicated preview layer to a **live draft** that applies to the real app in-session and becomes permanent only on **Save**. The workspace now behaves as a **floating, draggable, resizable workbench window** so the author can compare theme edits against the real reader surface without blurring or hiding the content being judged. Journal / Editorial are still not “final themes,” but they are real preset bundles with preset-specific recipe direction rather than only light atomic transforms. The reader semantic layer now has working role groups for page, chrome, solid controls, cards, detail, body/title, meta/caption, tags, media/overlay, discovery, support UI, and type treatments.
+
+The current editor structure is now clearer than the earlier mixed workbench:
+- the **left side** is the component editor: section navigation, component selection, variant selection, attribute selection, and direct editing of the selected attribute
+- the **right side** is the **Values** panel: it shows the named values behind the selected attribute and, where the system can resolve them, the actual underlying values such as font-family strings, font sizes, spacing values, radii, shadows, layout values, and stored component values
+
+The system is still transitional. The right side is no longer the old broad token-lab page, but it is also not yet a finished direct editor for all underlying system values. It is currently a **value-resolution panel**, not the final system-values workspace. The next theme phase is therefore still not just more token wiring; it remains an author-facing model correction toward **Component -> Attribute -> Value** on top of the existing three-tier technical system (**atomic tokens**, **semantic token classes**, and **recipes**), with special focus on compile-path truthfulness, vocabulary clarity, and the relationship between selected attributes and the values shown beside them.
 
 ---
 
@@ -153,7 +159,8 @@ This is the required authoring direction for Theme Management:
 
 - **Components are the primary navigation model.** The left side of Theme Management should let the author think in terms of Canvas, Sidebar, Header, Story Card, Gallery Card, Lightbox, Field, Feedback Panel, and similar app pieces.
 - **Attributes are the editable contract for a component.** Each component should expose only the attributes that are meaningful for it. Example: Sidebar may expose width, surface, text, border, and active-control styling; it should not expose unrelated token buckets.
-- **Values are typed selections.** The right side should offer valid values for the selected attribute: colors for color attributes, lengths for width/padding/radius, typography values for type attributes, shadows for shadow attributes, and so on.
+- **The left side is the active editor.** After selecting a component and variant, the author should also select the attribute and edit it there, rather than treating the right side as the primary editor surface.
+- **Values are typed selections and value truth.** The right side should offer the valid values for the selected attribute and show the named value(s) currently in use plus the resolved underlying values where possible: colors for color attributes, lengths for width/padding/radius, typography values for type attributes, shadows for shadow attributes, and so on.
 - **Storage names are not the editing model.** Internal token/storage names such as `layout`, `background1`, `border1`, or other implementation-era buckets may remain in code and persistence, but they should not be the primary author-facing concepts.
 - **Semantic classes remain important, but as values.** In the author-facing model, `Canvas Surface`, `Chrome Surface`, `Contrast On Fill Text`, and `Overlay Contrast Text` should appear as reusable values that satisfy an attribute - not as competing parallel navigation structures.
 - **Metric families must stay distinct.** `Padding`, `Spacing`, `Margin`, `Gap`, `Width`, `Height`, `Radius`, `Border Width`, and similar layout metrics are separate concepts in the editing model. If implementation currently reuses one numeric substrate behind the scenes, that is a temporary storage shortcut - not the author-facing contract.
@@ -206,20 +213,19 @@ The table below is the **first-pass canonical author-facing component inventory*
 | **Sidebar** | Reader navigation/filter/support column or drawer | background color, title color, label color, meta color, hint color, icon color, border color, width, active control background color, active control text color, neutral control background color, neutral control text color |
 | **Field** | Shared inputs, selectors, chips, and neutral form-like controls | background color, text color, border color, focus border color, label color, hint color, selected background color, selected text color, selected border color, border radius, padding |
 | **Feedback Panel** | Neutral and stateful informational surfaces such as empty/loading/info/success/warning/error panels | background color, title color, text color, border color, action background color, action text color, action border color |
-| **Story Card** | Story feed card and story detail reading surface | background color, title color, subtitle color, body color, meta color, border color, border radius, shadow, padding |
-| **Gallery Card** | Gallery feed card, gallery detail surface, and media-adjacent framing | background color, title color, subtitle color, body color, meta color, border color, border radius, shadow, padding, media frame background color, media frame border color |
+| **Story Card** | Story card in closed state, open reading state, and supported discovery treatment | surface, title, subtitle, body, meta, border, radius, shadow, card padding, discovery title/excerpt treatment |
+| **Gallery Card** | Gallery card in closed state, open reading state, supported discovery treatment, and media-adjacent framing | surface, title, subtitle, body, meta, border, radius, shadow, card padding, media frame background color, media frame border color |
+| **Question Card** | Question card in closed state, open reading state, and supported discovery treatment | surface, question, answer preview/body, meta, border, radius, shadow, card padding |
+| **Quote Card** | Quote card in closed state only | surface, quote text, attribution, watermark treatment |
+| **Callout Card** | Callout card in closed state only | surface, title, subtitle, body/excerpt, watermark treatment |
 | **Lightbox** | Fullscreen or overlay media-viewing surface | scrim color, text color, control background color, control text color, control border color, caption color |
 
-#### Optional near-term additions
+#### Variant and discovery rules
 
-These are likely to become first-class components soon, but they are not required to freeze the initial schema:
-
-| Component | Why it may be separate |
-| --------- | ---------------------- |
-| **Discovery Rail** | Related/explore-more surfaces are starting to diverge from ordinary cards and chrome. |
-| **Quote Card** | Quote-specific treatment and watermark behavior may justify a separate author-facing component. |
-| **Question Card** | Q&A hierarchy may eventually diverge enough from Story Card to deserve a separate component. |
-| **Callout Card** | Emphasis/treatment behavior may justify its own component once the core model is stable. |
+- **Closed-state rule** - All card types participate in Theme Management in their **closed** state.
+- **Open-state rule** - Only `Story Card`, `Gallery Card`, and `Question Card` participate in **open** state editing because those are the only card types that open in the reader.
+- **Discovery rule** - Discovery is one **shared support surface** across the app, not a separate design system per card type. It may vary in bounded ways for `Story Card`, `Gallery Card`, and `Question Card` (for example title, excerpt, or framing treatment), but it should not become a different discovery UI per type.
+- **Discovery exclusions** - `Quote Card` and `Callout Card` do **not** participate in discovery.
 
 #### Attribute typing for the initial set
 
@@ -265,6 +271,9 @@ The table below maps the initial author-facing component inventory to the curren
 | **Feedback Panel** | `feedback -> states/success/warning/error/info` | `surfaces.feedbackPanel`, `surfaces.feedbackSuccessPanel`, `surfaces.feedbackWarningPanel`, `surfaces.feedbackErrorPanel`, `surfaces.feedbackInfoPanel`, `typography.feedbackTitle`, `typography.feedbackMeta`, `typography.feedbackHint`, `controls.feedbackAction` | `semantic/reader/feedback-surface`, `semantic/reader/feedback-border`, plus explicit `state/*` backgrounds/borders for state variants | Strong start. The main redesign task is vocabulary: this should become one component with variants and attributes rather than a cluster of recipe groups and panel keys. |
 | **Story Card** | `storyCard -> closed/open/discovery` | `surfaces.card`, `surfaces.canvasDetail`, `surfaces.canvasMediaFrame`, `typography.storyTitle`, `typography.storyDetailTitle`, `typography.subtitle`, `typography.body`, `typography.meta`, `typography.caption`, `overlays.card` | Card/detail/media semantic families, tonal text, overlay contrast text | Present but spread across closed/open/discovery variants, which is technically correct but still not presented as one coherent component with shared attributes and variant-specific overrides. |
 | **Gallery Card** | `galleryCard -> closed/open/discovery` | `surfaces.card`, `surfaces.canvasDetail`, `surfaces.canvasMediaFrame`, `typography.galleryTitle`, `typography.galleryDetailTitle`, `typography.galleryHeaderTitle`, `typography.discoveryMeta`, `typography.caption`, `typography.body`, `controls.lightboxControl`, `overlays.cardStrong`, `overlays.lightbox` | Card/detail/media/lightbox semantic families, overlay contrast text, media-control/lightbox-control semantics | Strong functional coverage, but it currently mixes card, media frame, and lightbox concerns across multiple recipe families instead of reading as one component with nested attributes. |
+| **Question Card** | `qaCard -> closed/open/discovery` | `surfaces.qaCardClosed`, `surfaces.canvasDetail`, `typography.question`, `typography.questionOverlay`, `typography.body`, `typography.excerpt`, `typography.caption` | Card/detail semantic families, tonal text, overlay contrast text | Functionally present, but still described partly in Q&A language and still needs the same component-first treatment as Story and Gallery. |
+| **Quote Card** | `quoteCard -> closed` | `surfaces.card`, `typography.quote`, `typography.caption`, `treatments.quoteWatermarkOpacity` | Shared card surface, quote/caption typography, treatment values | Closed-state-only contract is clear, but it should remain outside discovery and should not be forced into the same open/detail model as other reader cards. |
+| **Callout Card** | `calloutCard -> closed` | `surfaces.card`, `typography.calloutTitle`, `typography.subtitle`, `typography.excerpt`, `typography.calloutBody`, `treatments.calloutWatermarkOpacity` | Shared card surface, callout typography, treatment values | Closed-state-only contract is clear, but it should remain outside discovery and should not inherit open/detail assumptions. |
 | **Lightbox** | Partially inside `galleryCard -> open` | `controls.lightboxControl`, `overlays.lightbox`, caption through shared `typography.caption` / overlay contrast output | `semantic/reader/lightbox-control-surface`, `semantic/reader/lightbox-control-border`, `semantic/reader/overlay-scrim`, `semantic/reader/overlay-border`, overlay contrast text | Exists in runtime semantics, but not yet as a first-class standalone editor component. It is still treated as part of the gallery open variant instead of a component with its own attribute list. |
 
 #### What this mapping tells us
@@ -282,7 +291,8 @@ The first editor refactor should **not** try to invent everything from scratch. 
 - `Sidebar` can be built from the current `chrome -> sidebar` binding set, plus a separate width/value attribute.
 - `Field` can be built from the current `field -> controls` binding set.
 - `Feedback Panel` can be built from the current `feedback` variants.
-- `Story Card` and `Gallery Card` can be built by grouping their current closed/open/discovery bindings under a component-first wrapper.
+- `Story Card`, `Gallery Card`, and `Question Card` can be built by grouping their current closed/open/discovery bindings under a component-first wrapper.
+- `Quote Card` and `Callout Card` should remain explicit closed-only components and should stay out of discovery.
 - `Lightbox` should be split out from `galleryCard -> open` into its own author-facing component.
 - `Header` needs an explicit inventory and likely a new component entry rather than only relabeling existing bindings.
 
@@ -309,7 +319,10 @@ The left side of the workbench should stop behaving like a mixed recipe browser 
 5. `Feedback Panel`
 6. `Story Card`
 7. `Gallery Card`
-8. `Lightbox`
+8. `Question Card`
+9. `Quote Card`
+10. `Callout Card`
+11. `Lightbox`
 
 This ordering is intentional:
 
@@ -330,8 +343,11 @@ Each component should open with a **small first-pass attribute list**, not every
 | **Sidebar** | background color, title color, label color, meta color, hint color, icon color, width, active control background color, active control text color |
 | **Field** | label color, hint color, background color, text color, border color, selected background color, selected text color, padding, border radius |
 | **Feedback Panel** | background color, title color, text color, border color, action background color, action text color |
-| **Story Card** | background color, title color, subtitle color, body color, meta color, border color, border radius, shadow, padding |
-| **Gallery Card** | background color, title color, subtitle color, body color, meta color, media frame background color, media frame border color, border radius, shadow, padding |
+| **Story Card** | closed/open surface, title color, subtitle color, body color, meta color, border color, border radius, shadow, card padding |
+| **Gallery Card** | closed/open surface, title color, subtitle color, body color, meta color, media frame background color, media frame border color, border radius, shadow, card padding |
+| **Question Card** | closed/open surface, question color, answer preview/body color, meta color, border color, border radius, shadow, card padding |
+| **Quote Card** | closed surface, quote text color, attribution color, watermark treatment |
+| **Callout Card** | closed surface, title color, subtitle color, body/excerpt color, watermark treatment |
 | **Lightbox** | scrim color, text color, control background color, control text color, control border color, caption color |
 
 These are the attributes the author should see first. Lower-frequency or more technical controls can still exist, but they should live under an explicit “More” or “Advanced component details” posture rather than being the default experience.
@@ -339,6 +355,10 @@ These are the attributes the author should see first. Lower-frequency or more te
 #### Left side: variants without losing component-first structure
 
 Some components legitimately need variants. The editor should still keep the component as the primary unit and let variants sit **inside** it.
+
+- `Story Card`, `Gallery Card`, and `Question Card` should expose `Closed`, `Open`, and `Discovery` variants.
+- `Quote Card` and `Callout Card` should expose `Closed` only.
+- `Discovery` remains one shared support surface family across the app and should not add separate quote/callout variants.
 
 First-pass variant structure:
 
@@ -789,11 +809,19 @@ Presets are **bundles** of assignments to the roles above (plus typography roles
 
 **Current save posture:** Theme Management now persists the scoped version 2 reader/admin document through the normal Save action. The remaining theme work is therefore about **truthful surface coverage and role mapping**, not about whether save exists.
 
-**Workspace posture:** Theme Management should continue to behave as a focused editing workspace rather than a document page. The editor surfaces are now the component/attribute work areas plus draft-state controls, with the value library/token system feeding them underneath. The workspace is still transitional today, but the target author-facing model is `Component -> Attribute -> Value`, not "token buckets on one side and mixed recipe names on the other."
+**Workspace posture:** Theme Management should continue to behave as a focused editing workspace rather than a document page. The shell should behave like a **floating workbench window** over the app - large enough to reveal the primary columns on open, **draggable**, **resizable**, and non-blocking to the reader surface being evaluated.
+
+The current editing split should now be treated as:
+- **left = editor**
+- **right = values**
+
+The left side owns component selection, variant selection, attribute selection, and the direct editing controls for the selected attribute. The right side owns the value-truth layer: named value references plus resolved underlying values where possible. The workspace is still transitional today, but the target author-facing model is `Component -> Attribute -> Value`, not "token buckets on one side and mixed recipe names on the other."
+
+**Save workflow posture:** The primary save mental model should remain document-like rather than implementation-heavy: one active draft, **Save** only when dirty, **Discard/reset** back to the last saved theme, and **Save As** for variant creation. Avoid top-level UI language such as “Started From,” “Current Draft,” or “Save Target” when those concepts make the editor harder to understand than the actual author workflow.
 
 **Initial redesign scope:** The first editor refactor pass should target the initial component set in §4.5: `Canvas`, `Header`, `Sidebar`, `Field`, `Feedback Panel`, `Story Card`, `Gallery Card`, and `Lightbox`. Do not try to solve every possible reader/admin surface at once; stabilize this set first, then expand.
 
-**First editor structure:** The first concrete workbench structure is defined in §4.7. Theme Management should become component-first on the left and typed-value-first on the right. The narrow first implementation cut should focus on `Canvas`, `Sidebar`, `Field`, and `Feedback Panel` before the card/lightbox wave.
+**First editor structure:** The first concrete workbench structure is defined in §4.7. The current implementation has now moved closer to the intended split: component-first editing on the left, values on the right. The next refinement is not to re-expand the old generic values lab, but to make the right-side values panel more truthful and complete about the underlying named values and real resolved values for the selected attribute.
 
 **Persistence target:** Theme data lives in **Firestore** `app_settings/theme` (written on Theme admin **Save** and via `npm run seed:theme-firestore`). The app **injects** `buildThemeTokensCss()` output in **RootLayout** (`<style id="theme-tokens">`) so variables apply in serverless deploys without committing regenerated CSS. `**theme-data.json`** stays the git backup and fallback when Firestore is empty or unreadable, and it may contain either the legacy flat reader shape or the scoped persisted document shape. Theme Management should be the product interface for editing this document; raw Firestore editing is not the intended user workflow.
 

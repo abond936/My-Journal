@@ -281,7 +281,9 @@
           "height": "120px",
           "backgroundColor": "color1-100",
           "borderColor": "color1-200",
-          "borderWidth": "border/width/thin"
+          "borderWidth": "border/width/thin",
+          "textColor": "color2-300",
+          "iconColor": "color2-300"
         },
         "button": {
           "solid": {
@@ -1175,7 +1177,9 @@
           "height": "120px",
           "backgroundColor": "color1-100",
           "borderColor": "color1-200",
-          "borderWidth": "border/width/thin"
+          "borderWidth": "border/width/thin",
+          "textColor": "color2-300",
+          "iconColor": "color2-300"
         },
         "button": {
           "solid": {
