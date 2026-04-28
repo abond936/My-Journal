@@ -286,7 +286,7 @@
   background: transparent;
   font-family: var(--reader-quote-font-family);
   font-size: var(--reader-quote-font-size);
-  font-style: italic;
+  font-style: var(--reader-quote-font-style);
   line-height: var(--reader-quote-line-height);
   color: var(--reader-quote-color);
   width: 100%;

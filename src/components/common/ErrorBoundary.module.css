@@ -1,8 +1,8 @@
 .errorContainer {
   padding: var(--spacing-lg);
   border-radius: var(--reader-card-border-radius);
-  background-color: var(--state-error-background-color);
-  border: var(--border-width-thin) solid var(--state-error-border-color);
+  background-color: var(--reader-feedback-error-panel-background-color);
+  border: var(--border-width-thin) solid var(--reader-feedback-error-panel-border-color);
   margin: var(--spacing-md) 0;
 }
 
@@ -21,7 +21,7 @@
 }
 
 .errorDetails {
-  background-color: var(--state-error-background-color);
+  background-color: var(--reader-feedback-panel-background-color);
   border-radius: var(--reader-card-border-radius);
   padding: var(--spacing-md);
 }

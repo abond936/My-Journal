@@ -88,6 +88,21 @@
   flex: 0 0 auto;
 }
 
+.workspaceToolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--spacing-sm);
+  flex: 0 0 auto;
+}
+
+.valuesControlRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
 .draftStatus {
   display: inline-flex;
   align-items: center;
@@ -144,6 +159,10 @@
   transition: all 0.2s ease;
 }
 
+.saveButtonActive {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--button-solid-background-color) 22%, transparent);
+}
+
 .secondaryActionButton:hover:not(:disabled) {
   border-color: var(--button-solid-border-color);
   background-color: color-mix(in srgb, var(--button-solid-background-color) 8%, transparent);
@@ -152,6 +171,44 @@
 .secondaryActionButton:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.secondaryActionButtonActive {
+  border-color: var(--button-solid-border-color);
+  background-color: color-mix(in srgb, var(--button-solid-background-color) 10%, transparent);
+  color: var(--text1-color);
+}
+
+.toggleGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-pill);
+  overflow: hidden;
+  background-color: var(--layout-background2-color);
+}
+
+.toggleButton,
+.toggleButtonActive {
+  padding: 6px 12px;
+  border: 0;
+  background-color: transparent;
+  color: var(--text2-color);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggleButton:hover {
+  background-color: color-mix(in srgb, var(--button-solid-background-color) 8%, transparent);
+  color: var(--text1-color);
+}
+
+.toggleButtonActive {
+  background-color: var(--button-solid-background-color);
+  color: white;
 }
 
 .saveNotice {
@@ -340,34 +397,26 @@
 }
 
 .paletteGrid {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: flex-start;
-  gap: 1px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding-bottom: var(--spacing-xs);
+  display: grid;
+  gap: var(--spacing-sm);
   min-width: 0;
 }
 
 .colorEditor {
-  flex: 0 0 96px;
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--spacing-sm);
+  min-width: 0;
+  padding: var(--spacing-xs) 0;
+  border-bottom: var(--border-width-thin) solid color-mix(in srgb, var(--border1-color) 70%, transparent);
+}
+
+.paletteColorHeaderBlock {
   display: grid;
   gap: 2px;
   min-width: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background-color: transparent;
-  box-shadow: none;
-}
-
-.paletteColorHeaderRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 2px;
-  width: 96px;
+  padding-top: 2px;
 }
 
 .paletteColorHeader {
@@ -375,6 +424,36 @@
   font-weight: var(--font-weight-semibold);
   color: var(--text1-color);
   line-height: 1.2;
+}
+
+.paletteColorSubhead {
+  font-size: 10px;
+  color: var(--text2-color);
+  line-height: 1.2;
+}
+
+.paletteHeaderHexStack {
+  display: grid;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.paletteHeaderHexInput {
+  width: 100%;
+  min-width: 0;
+  padding: 2px 4px;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--input-background-color);
+  color: var(--text1-color);
+  font-size: var(--font-size-xs);
+  font-family: var(--font-family-sans);
+}
+
+.paletteHeaderHexInput:focus {
+  outline: none;
+  border-color: var(--button-solid-background-color);
+  box-shadow: 0 0 0 1px hsla(var(--h3), var(--s3), var(--l3), 0.2);
 }
 
 .paletteHslToggle {
@@ -395,30 +474,57 @@
   color: var(--button-solid-background-color);
 }
 
-.paletteVariantStack {
+.paletteVariantPair {
   display: grid;
-  gap: 3px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-sm);
+  min-width: 0;
+}
+
+.paletteVariantSingle {
+  min-width: 0;
+}
+
+.paletteVariantCard {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
 }
 
 .paletteVariantSection {
   display: grid;
-  gap: 1px;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--spacing-xs);
+  min-width: 0;
+}
+
+.paletteVariantLabel {
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text2-color);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  line-height: 1;
 }
 
 .paletteSwatch {
-  width: 96px;
-  height: 72px;
+  width: 64px;
+  height: 60px;
   border: var(--border-width-thin) solid var(--border1-color);
   border-radius: var(--border-radius-sm);
 }
 
 .paletteValueGrid {
   display: grid;
-  gap: 1px;
+  gap: 4px;
+  min-width: 0;
 }
 
-.paletteSingleValueRow {
-  display: flex;
+.paletteSingleValueRow,
+.paletteHslRow {
+  display: block;
+  min-width: 0;
 }
 
 .paletteHexInput {
@@ -438,16 +544,10 @@
   box-shadow: 0 0 0 1px hsla(var(--h3), var(--s3), var(--l3), 0.2);
 }
 
-.paletteHslRow {
-  display: flex;
-  gap: var(--spacing-xs);
-  align-items: flex-end;
-  flex-wrap: nowrap;
-}
-
 .paletteHslStack {
   display: grid;
   gap: 1px;
+  min-width: 0;
 }
 
 .paletteHslValue {
@@ -458,7 +558,7 @@
 }
 
 .paletteHslValue label {
-  font-size: var(--font-size-xs);
+  font-size: 10px;
   font-weight: var(--font-weight-semibold);
   color: var(--text2-color);
   line-height: 1;
@@ -1127,6 +1227,7 @@
   box-shadow: 0 0 0 2px hsla(var(--h3), var(--s3), var(--l3), 0.2);
 }
 
+
 /* Add 4-column layout for design tokens */
 .tokenGrid4Column {
   display: grid;
@@ -1183,7 +1284,8 @@
   margin-right: var(--spacing-sm);
 }
 
-.fontSizeTokenInput input {
+.fontSizeTokenInput input,
+.fontSizeTokenInput select {
   padding: var(--input-padding);
   border: var(--border-width-thin) solid var(--input-border-color);
   border-radius: var(--input-border-radius);
@@ -1196,7 +1298,8 @@
   text-align: right;
 }
 
-.fontSizeTokenInput input:focus {
+.fontSizeTokenInput input:focus,
+.fontSizeTokenInput select:focus {
   outline: none;
   border-color: var(--input-border-color-focus);
   box-shadow: 0 0 0 2px hsla(var(--h3), var(--s3), var(--l3), 0.2);
@@ -1326,14 +1429,21 @@
   .tokenGrid4Column {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  .tokenGrid3Column {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 1280px) {
   .paletteGrid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
   }
   .tokenGrid4Column {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .tokenGrid3Column {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -1345,7 +1455,7 @@
   
   .colorEditor {
     max-width: 100%;
-    padding: calc(var(--spacing-sm) * 0.75); /* Smaller padding on mobile */
+    grid-template-columns: 1fr;
   }
   
   .colorScale {
@@ -1369,7 +1479,7 @@
   }
   
   .colorEditor {
-    padding: calc(var(--spacing-xs) * 0.75); /* Even smaller padding on mobile */
+    grid-template-columns: 1fr;
   }
   
   .topRow {
@@ -1812,10 +1922,17 @@
 
 .architectureField {
   display: grid;
-  gap: 6px;
+  grid-template-columns: minmax(88px, max-content) minmax(0, 220px);
+  align-items: center;
+  column-gap: var(--spacing-sm);
+  row-gap: 6px;
   min-width: 0;
   color: var(--text2-color);
   font-size: var(--font-size-xs);
+}
+
+.architectureField span {
+  white-space: nowrap;
 }
 
 .fieldHint {
@@ -1824,8 +1941,9 @@
   line-height: 1.45;
 }
 
-.architectureField select {
-  width: 100%;
+.architectureField select,
+.architectureField input {
+  width: min(220px, 100%);
   min-width: 0;
   padding: var(--spacing-xs) var(--spacing-sm);
   border: var(--border-width-thin) solid var(--border1-color);
@@ -1880,7 +1998,7 @@
 
 .navigatorSectionTabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--spacing-xs);
 }
 
@@ -1922,17 +2040,6 @@
 }
 
 .componentSelectorGroupHeader span {
-  color: var(--text2-color);
-  font-size: var(--font-size-xs);
-  line-height: 1.45;
-}
-
-.componentSelectorCompactList {
-  display: grid;
-  gap: var(--spacing-xs);
-}
-
-.componentSelectorHint {
   color: var(--text2-color);
   font-size: var(--font-size-xs);
   line-height: 1.45;
@@ -2065,46 +2172,13 @@
 
 .componentEditorHeader {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
   gap: var(--spacing-sm);
 }
 
 .componentEditorHeader strong {
   color: var(--text1-color);
   font-size: var(--font-size-base);
-}
-
-.componentEditorHeader span {
-  color: var(--text2-color);
-  font-size: var(--font-size-sm);
-}
-
-.componentEditorMeta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
-  color: var(--text2-color);
-  font-size: var(--font-size-sm);
-}
-
-.componentBehaviorNotes {
-  display: grid;
-  gap: 4px;
-  color: var(--text2-color);
-  font-size: var(--font-size-sm);
-  line-height: 1.45;
-}
-
-.componentBehaviorNotes strong {
-  color: var(--text1-color);
-  font-weight: var(--font-weight-semibold);
-}
-
-.componentEditorSurface {
-  color: var(--text1-color);
-  font-weight: var(--font-weight-medium);
 }
 
 .componentEditorActions {
@@ -2144,11 +2218,14 @@
   background-color: color-mix(in srgb, var(--layout-background2-color) 32%, transparent);
 }
 
+.componentGroupedEditor {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
 .componentActiveEditorHeader {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
   gap: var(--spacing-sm);
 }
 
@@ -2156,11 +2233,6 @@
   color: var(--text1-color);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
-}
-
-.componentActiveEditorHeader span {
-  color: var(--text2-color);
-  font-size: var(--font-size-xs);
 }
 
 .contextValuePanel {
@@ -2450,13 +2522,13 @@
 
 .componentRecipeEditor {
   display: grid;
-  grid-template-columns: repeat(2, minmax(170px, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--spacing-sm);
-  min-width: 340px;
+  min-width: 0;
 }
 
 .componentRecipeInput {
-  width: 100%;
+  width: min(220px, 100%);
   min-width: 0;
   padding: var(--spacing-xs) var(--spacing-sm);
   border: var(--border-width-thin) solid var(--border1-color);
@@ -2490,29 +2562,14 @@
 }
 
 .advancedPane .paletteGrid {
-  gap: 1px;
+  gap: var(--spacing-xs);
 }
 
-.advancedPane .tokenGrid4Column {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+.advancedPane .tokenGrid3Column {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px 30px;
   padding-bottom: var(--spacing-lg);
-}
-
-.advancedPane .tokenGrid4Column > .tokenCategory:nth-child(1) {
-  order: 1;
-}
-
-.advancedPane .tokenGrid4Column > .tokenCategory:nth-child(3) {
-  order: 2;
-}
-
-.advancedPane .tokenGrid4Column > .tokenCategory:nth-child(2) {
-  order: 3;
-}
-
-.advancedPane .tokenGrid4Column > .tokenCategory:nth-child(4) {
-  order: 4;
 }
 
 .advancedPane .tokenCategory {
@@ -2577,7 +2634,8 @@
 }
 
 .advancedPane .tokenInput input,
-.advancedPane .fontSizeTokenInput input {
+.advancedPane .fontSizeTokenInput input,
+.advancedPane .fontSizeTokenInput select {
   width: 100%;
   min-width: 72px;
   max-width: 84px;
@@ -2683,6 +2741,17 @@
   .componentRecipeEditor {
     grid-template-columns: 1fr;
     min-width: 240px;
+  }
+
+  .architectureField {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .architectureField select,
+  .architectureField input,
+  .componentRecipeInput {
+    width: 100%;
   }
 
   .previewPane,

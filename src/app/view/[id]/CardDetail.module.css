@@ -168,7 +168,7 @@
   font-family: var(--reader-quote-font-family);
   font-size: var(--reader-quote-font-size);
   line-height: var(--reader-quote-line-height);
-  font-style: italic;
+  font-style: var(--reader-quote-font-style);
 }
 
 .quoteDetailQuote :global(p:first-child) {

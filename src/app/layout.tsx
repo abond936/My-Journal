@@ -32,7 +32,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       themeTokensCss = buildThemeTokensCss(
         themeDataForCssGeneration({
           ...fallbackDocument.reader.data,
-          darkModeShift: fallbackDocument.reader.darkModeShift,
           activePresetId: fallbackDocument.reader.activePresetId,
           recipes: fallbackDocument.reader.recipes,
         })

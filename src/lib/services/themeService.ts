@@ -70,11 +70,10 @@ const hexToHsl = (hex: string): { h: number; s: number; l: number } => {
   };
 };
 
-function getEmptyThemeData(): StructuredThemeData & { darkModeShift?: number } {
+function getEmptyThemeData(): StructuredThemeData {
   return {
     palette: [],
     themeColors: [],
-    darkModeShift: 5,
     typography: {} as TypographyTokens,
     spacing: {} as SpacingTokens,
     borders: {} as BorderTokens,
@@ -95,11 +94,10 @@ async function readThemeJsonFile(): Promise<unknown> {
 
 function coerceStructuredThemeData(
   data: unknown
-): StructuredThemeData & { darkModeShift?: number; activePresetId?: string; recipes?: ReaderThemeRecipes } {
+): StructuredThemeData & { activePresetId?: string; recipes?: ReaderThemeRecipes } {
   const normalized = normalizeThemeDocument(data);
   return {
     ...normalized.reader.data,
-    darkModeShift: normalized.reader.darkModeShift,
     activePresetId: normalized.reader.activePresetId,
     recipes: normalized.reader.recipes,
   };
@@ -109,13 +107,9 @@ function coerceStructuredThemeData(
  * Reads reader theme data from the JSON file.
  * Accepts either the legacy flat shape or the scoped persisted document.
  */
-export const getThemeData = async (): Promise<StructuredThemeData & { darkModeShift?: number }> => {
+export const getThemeData = async (): Promise<StructuredThemeData> => {
   try {
-    const themeData = coerceStructuredThemeData(await readThemeJsonFile());
-    return {
-      ...themeData,
-      darkModeShift: themeData.darkModeShift ?? 5,
-    };
+    return coerceStructuredThemeData(await readThemeJsonFile());
   } catch (error) {
     console.error('Failed to read theme JSON file:', error);
     return getEmptyThemeData();
@@ -206,6 +200,19 @@ const generateThemeColorHslAliases = (themeColors: ThemeColor[], variant: 'light
   return css;
 };
 
+const generatePaletteColorHslAliases = (palette: StructuredThemeData['palette']): string => {
+  let css = '';
+
+  palette.forEach((color) => {
+    const hsl = hexToHsl(color.hex);
+    css += `  --h${color.id}: ${hsl.h}; /* ${color.name} */\n`;
+    css += `  --s${color.id}: ${hsl.s}%;\n`;
+    css += `  --l${color.id}: ${hsl.l}%;\n`;
+  });
+
+  return css;
+};
+
 function generateReaderPresetAliasCss(activePresetId?: string): string {
   if (activePresetId !== 'journal' && activePresetId !== 'editorial') return '';
 
@@ -254,8 +261,13 @@ function tokenValue(ref: string | undefined, fallback: string): string {
 function getThemeRecipeRefValue(themeData: StructuredThemeData, ref: ThemeRecipeTokenRef): string {
   const parts = ref.split('/');
   switch (parts[0]) {
-    case 'font-family':
-      return themeData.typography.fontFamilies[parts[1] as keyof StructuredThemeData['typography']['fontFamilies']];
+    case 'font-family': {
+      const familyKey = parts[1];
+      if (familyKey === 'sans') return themeData.typography.fontFamilies.sans1;
+      if (familyKey === 'serif') return themeData.typography.fontFamilies.serif1;
+      if (familyKey === 'handwriting') return themeData.typography.fontFamilies.handwriting1;
+      return themeData.typography.fontFamilies[familyKey as keyof StructuredThemeData['typography']['fontFamilies']];
+    }
     case 'font-size':
       return themeData.typography.fontSizes[parts[1] as keyof StructuredThemeData['typography']['fontSizes']];
     case 'font-weight': {
@@ -305,37 +317,37 @@ function getThemeRecipeRefValue(themeData: StructuredThemeData, ref: ThemeRecipe
         case 'reader/focus-ring':
           return 'var(--reader-focus-ring-color)';
         case 'reader/canvas-surface':
-          return 'var(--reader-canvas-surface-color)';
+          return 'var(--reader-page-background-color)';
         case 'reader/canvas-border':
-          return 'var(--reader-canvas-border-color)';
+          return 'var(--reader-page-border-color)';
         case 'reader/chrome-surface':
-          return 'var(--reader-chrome-surface-color)';
+          return 'var(--reader-chrome-background-color)';
         case 'reader/chrome-border':
-          return 'var(--reader-chrome-border-color-semantic)';
+          return 'var(--reader-chrome-border-color)';
         case 'reader/field-surface':
-          return 'var(--reader-field-surface-color)';
+          return 'var(--reader-support-control-background-color)';
         case 'reader/field-border':
-          return 'var(--reader-field-border-color)';
+          return 'var(--reader-support-control-border-color)';
         case 'reader/feedback-surface':
-          return 'var(--reader-feedback-surface-color)';
+          return 'var(--reader-feedback-panel-background-color)';
         case 'reader/feedback-border':
-          return 'var(--reader-feedback-border-color)';
+          return 'var(--reader-feedback-panel-border-color)';
         case 'reader/media-frame-surface':
-          return 'var(--reader-media-frame-surface-color)';
+          return 'var(--reader-media-frame-background-color)';
         case 'reader/media-frame-border':
-          return 'var(--reader-media-frame-border-color-semantic)';
+          return 'var(--reader-media-frame-border-color)';
         case 'reader/discovery-surface':
-          return 'var(--reader-discovery-surface-color)';
+          return 'var(--reader-discovery-card-background-color)';
         case 'reader/discovery-border':
-          return 'var(--reader-discovery-border-color-semantic)';
+          return 'var(--reader-discovery-border-color)';
         case 'reader/media-control-surface':
-          return 'var(--reader-media-control-surface-color)';
+          return 'var(--reader-media-control-background-color)';
         case 'reader/media-control-border':
-          return 'var(--reader-media-control-border-color-semantic)';
+          return 'var(--reader-media-control-border-color)';
         case 'reader/lightbox-control-surface':
-          return 'var(--reader-lightbox-control-surface-color)';
+          return 'var(--reader-lightbox-control-background-color)';
         case 'reader/lightbox-control-border':
-          return 'var(--reader-lightbox-control-border-color-semantic)';
+          return 'var(--reader-lightbox-control-border-color)';
         case 'reader/overlay-scrim':
           return 'var(--reader-overlay-scrim-color)';
         case 'reader/overlay-scrim-strong':
@@ -364,6 +376,14 @@ function getThemeRecipeRefValue(themeData: StructuredThemeData, ref: ThemeRecipe
   }
 }
 
+function resolveTypographyFontStyle(
+  themeData: StructuredThemeData,
+  fontStyle: 'normal' | 'italic' | undefined
+): string {
+  const styleKey = fontStyle ?? 'normal';
+  return themeData.typography.styles?.[styleKey] ?? styleKey;
+}
+
 function mergeReaderThemeRecipes(recipes?: ReaderThemeRecipes): ReaderThemeRecipes {
   const normalized = normalizeReaderThemeRecipes(recipes);
   return {
@@ -384,61 +404,38 @@ function resolveReaderSemanticClassValues(
 ): {
   tonalTextPrimaryColor: string;
   tonalTextSecondaryColor: string;
-  accentColor: string;
-  focusRingColor: string;
-  canvasSurfaceColor: string;
-  canvasBorderColor: string;
-  chromeSurfaceColor: string;
-  chromeBorderColor: string;
-  fieldSurfaceColor: string;
-  fieldBorderColor: string;
-  feedbackSurfaceColor: string;
-  feedbackBorderColor: string;
-  mediaFrameSurfaceColor: string;
-  mediaFrameBorderColor: string;
-  discoverySurfaceColor: string;
-  discoveryBorderColor: string;
-  mediaControlSurfaceColor: string;
-  mediaControlBorderColor: string;
-  lightboxControlSurfaceColor: string;
-  lightboxControlBorderColor: string;
   contrastOnFillTextColor: string;
-  solidTextColor: string;
-  strongSupportControlTextColor: string;
-  mediaControlTextColor: string;
-  lightboxControlTextColor: string;
   overlayContrastTextColor: string;
   overlayScrimColor: string;
   overlayBorderColor: string;
   overlayStrongScrimColor: string;
 } {
+  const resolveSemanticRecipeValue = (
+    ref: ThemeRecipeTokenRef | undefined,
+    semanticRef: ThemeRecipeTokenRef,
+    fallback: string
+  ): string => {
+    if (!ref || ref === semanticRef) {
+      return tokenValue(fallback, fallback);
+    }
+    return getThemeRecipeRefValue(themeData, ref);
+  };
+
+  const recipes = mergeReaderThemeRecipes(themeData.recipes);
+
   return {
     tonalTextPrimaryColor: 'var(--text1-color)',
     tonalTextSecondaryColor: 'var(--text2-color)',
-    accentColor: tokenValue(themeData.components.link.textColor, 'color3'),
-    focusRingColor: tokenValue(themeData.components.input.borderColorFocus, 'color3'),
-    canvasSurfaceColor: tokenValue(themeData.layout.background1Color, 'color1-100'),
-    canvasBorderColor: tokenValue(themeData.layout.border1Color, 'color1-200'),
-    chromeSurfaceColor: tokenValue(themeData.layout.background1Color, 'color1-100'),
-    chromeBorderColor: tokenValue(themeData.layout.border1Color, 'color1-200'),
-    fieldSurfaceColor: tokenValue(themeData.components.input.backgroundColor, 'color1-100'),
-    fieldBorderColor: tokenValue(themeData.components.input.borderColor, 'color1-200'),
-    feedbackSurfaceColor: tokenValue(themeData.layout.background1Color, 'color1-100'),
-    feedbackBorderColor: tokenValue(themeData.layout.border1Color, 'color1-200'),
-    mediaFrameSurfaceColor: tokenValue(themeData.layout.background2Color, 'color1-200'),
-    mediaFrameBorderColor: tokenValue(themeData.layout.border1Color, 'color1-200'),
-    discoverySurfaceColor: tokenValue(themeData.layout.background1Color, 'color1-100'),
-    discoveryBorderColor: tokenValue(themeData.layout.border1Color, 'color1-200'),
-    mediaControlSurfaceColor: tokenValue(themeData.layout.background2Color, 'color1-200'),
-    mediaControlBorderColor: tokenValue(themeData.layout.border1Color, 'color1-200'),
-    lightboxControlSurfaceColor: themeData.gradients.bottomOverlayStrong,
-    lightboxControlBorderColor: tokenValue(themeData.layout.border1Color, 'color1-200'),
-    contrastOnFillTextColor: tokenValue(themeData.components.button.solid.textColor, 'color1-100'),
-    solidTextColor: 'var(--reader-contrast-on-fill-text-color)',
-    strongSupportControlTextColor: 'var(--reader-contrast-on-fill-text-color)',
-    mediaControlTextColor: 'var(--reader-contrast-on-fill-text-color)',
-    lightboxControlTextColor: 'var(--reader-overlay-contrast-text-color)',
-    overlayContrastTextColor: tokenValue(themeData.components.button.solid.textColor, 'color1-100'),
+    contrastOnFillTextColor: resolveSemanticRecipeValue(
+      recipes.controls.chromeActiveTab.text,
+      'semantic/reader/contrast-on-fill-text',
+      'component/button/solid/textColor'
+    ),
+    overlayContrastTextColor: resolveSemanticRecipeValue(
+      recipes.overlays.card.text,
+      'semantic/reader/overlay-contrast-text',
+      'component/button/solid/textColor'
+    ),
     overlayScrimColor: 'color-mix(in srgb, var(--reader-page-text-color) 68%, transparent)',
     overlayBorderColor: 'color-mix(in srgb, var(--reader-page-background-color) 22%, transparent)',
     overlayStrongScrimColor: 'color-mix(in srgb, var(--reader-page-text-color) 92%, transparent)',
@@ -446,10 +443,20 @@ function resolveReaderSemanticClassValues(
 }
 
 export function buildThemeTokensCss(
-  themeData: StructuredThemeData & { darkModeShift?: number; activePresetId?: string; recipes?: ReaderThemeRecipes }
+  themeData: StructuredThemeData & { activePresetId?: string; recipes?: ReaderThemeRecipes }
 ): string {
   const recipes = mergeReaderThemeRecipes(themeData.recipes);
   const semantic = resolveReaderSemanticClassValues(themeData);
+  const resolveConcreteRecipeValue = (
+    ref: ThemeRecipeTokenRef | undefined,
+    semanticRef: ThemeRecipeTokenRef,
+    fallback: string
+  ): string => {
+    if (!ref || ref === semanticRef) {
+      return tokenValue(fallback, fallback);
+    }
+    return getThemeRecipeRefValue(themeData, ref);
+  };
   let cssContent = `/*
   Unified Design System (v2) - Simplified 3-Shade Approach
   ==========================================
@@ -488,17 +495,10 @@ export function buildThemeTokensCss(
     
     cssContent += `  /* --color15: */
   
-  /* Color Palette (HSL-based) */
+  /* Color Palette (HSL aliases derived from HEX) */
 `;
 
-    // Generate HSL component definitions for colors 3-14
-    themeData.palette.forEach(color => {
-      if (color.id > 2) { // Only colors 3-14 get HSL components
-        cssContent += `  --h${color.id}: ${color.h}; /* ${color.name} */\n`;
-        cssContent += `  --s${color.id}: ${color.s};\n`;
-        cssContent += `  --l${color.id}: ${color.l};\n`;
-      }
-    });
+    cssContent += generatePaletteColorHslAliases(themeData.palette || []);
     
     cssContent += `  /* --hue15: */
 
@@ -519,7 +519,7 @@ export function buildThemeTokensCss(
 `;
     themeData.palette.forEach(color => {
       if (color.id > 2) { // Only colors 3-14 get base color definitions
-        cssContent += `  --color${color.id}: hsl(var(--h${color.id}), var(--s${color.id}), var(--l${color.id}));\n`;
+        cssContent += `  --color${color.id}: var(--hex${color.id});\n`;
       }
     });
 
@@ -532,9 +532,17 @@ export function buildThemeTokensCss(
   --breakpoint-xl: ${themeData.layout.breakpoints.xl};
 
   /* Typography Scale */
-  --font-family-sans: ${themeData.typography.fontFamilies.sans};
-  --font-family-serif: ${themeData.typography.fontFamilies.serif};
-  --font-family-handwriting: ${themeData.typography.fontFamilies.handwriting};
+  --font-family-sans1: ${themeData.typography.fontFamilies.sans1};
+  --font-family-sans2: ${themeData.typography.fontFamilies.sans2};
+  --font-family-sans3: ${themeData.typography.fontFamilies.sans3};
+  --font-family-serif1: ${themeData.typography.fontFamilies.serif1};
+  --font-family-serif2: ${themeData.typography.fontFamilies.serif2};
+  --font-family-serif3: ${themeData.typography.fontFamilies.serif3};
+  --font-family-handwriting1: ${themeData.typography.fontFamilies.handwriting1};
+  --font-family-handwriting2: ${themeData.typography.fontFamilies.handwriting2};
+  --font-family-sans: var(--font-family-sans1);
+  --font-family-serif: var(--font-family-serif1);
+  --font-family-handwriting: var(--font-family-handwriting1);
 
   /* Fluid Typography */
   --font-size1-fluid: ${themeData.typography.fluidFontSizes.size1};
@@ -636,17 +644,29 @@ export function buildThemeTokensCss(
 
   /* States */
   --state-success-background-color: hsl(var(--h${stripColorRefForVar(themeData.states?.success?.backgroundColor, 'color11')}) / 0.15);
+  --state-success-background-color-hover: hsl(var(--h${stripColorRefForVar(themeData.states?.success?.backgroundColor, 'color11')}) / 0.24);
   --state-success-border-color: var(--color${stripColorRefForVar(themeData.states?.success?.borderColor, 'color11')});
+  --state-success-text-color: var(--color${stripColorRefForVar(themeData.states?.success?.borderColor, 'color11')});
+  --state-success-color: var(--state-success-text-color);
   --state-error-background-color: hsl(var(--h${stripColorRefForVar(themeData.states?.error?.backgroundColor, 'color12')}) / 0.15);
+  --state-error-background-color-hover: hsl(var(--h${stripColorRefForVar(themeData.states?.error?.backgroundColor, 'color12')}) / 0.24);
   --state-error-border-color: var(--color${stripColorRefForVar(themeData.states?.error?.borderColor, 'color12')});
+  --state-error-text-color: var(--color${stripColorRefForVar(themeData.states?.error?.borderColor, 'color12')});
+  --state-error-color: var(--state-error-text-color);
   --state-warning-background-color: hsl(var(--h${stripColorRefForVar(themeData.states?.warning?.backgroundColor, 'color13')}) / 0.15);
+  --state-warning-background-color-hover: hsl(var(--h${stripColorRefForVar(themeData.states?.warning?.backgroundColor, 'color13')}) / 0.24);
   --state-warning-border-color: var(--color${stripColorRefForVar(themeData.states?.warning?.borderColor, 'color13')});
+  --state-warning-text-color: var(--color${stripColorRefForVar(themeData.states?.warning?.borderColor, 'color13')});
+  --state-warning-color: var(--state-warning-text-color);
   --state-info-background-color: hsl(var(--h${stripColorRefForVar(themeData.states?.info?.backgroundColor, 'color14')}) / 0.15);
+  --state-info-background-color-hover: hsl(var(--h${stripColorRefForVar(themeData.states?.info?.backgroundColor, 'color14')}) / 0.24);
   --state-info-border-color: var(--color${stripColorRefForVar(themeData.states?.info?.borderColor, 'color14')});
+  --state-info-text-color: var(--color${stripColorRefForVar(themeData.states?.info?.borderColor, 'color14')});
+  --state-info-color: var(--state-info-text-color);
 
   /* Typography */
-  --text1-color: var(--color2-300);
-  --text2-color: var(--color2-200);
+  --text1-color: ${tokenValue(themeData.typography.textColors.text1, 'color2-300')};
+  --text2-color: ${tokenValue(themeData.typography.textColors.text2, 'color2-200')};
 
   /* --- 3. COMPONENT TOKENS --- */
   
@@ -713,35 +733,19 @@ export function buildThemeTokensCss(
   --card-watermark-raster-filter: none;
 
   /* Reader semantic aliases */
-  --reader-page-background-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.canvasPage.background)};
-  --reader-page-text-color: var(--text1-color);
-  --reader-page-border-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.canvasPage.border)};
-  --reader-canvas-surface-color: ${semantic.canvasSurfaceColor};
-  --reader-canvas-border-color: ${semantic.canvasBorderColor};
-  --reader-chrome-surface-color: ${semantic.chromeSurfaceColor};
-  --reader-chrome-border-color-semantic: ${semantic.chromeBorderColor};
-  --reader-field-surface-color: ${semantic.fieldSurfaceColor};
-  --reader-field-border-color: ${semantic.fieldBorderColor};
-  --reader-feedback-surface-color: ${semantic.feedbackSurfaceColor};
-  --reader-feedback-border-color: ${semantic.feedbackBorderColor};
-  --reader-media-frame-surface-color: ${semantic.mediaFrameSurfaceColor};
-  --reader-media-frame-border-color-semantic: ${semantic.mediaFrameBorderColor};
-  --reader-discovery-surface-color: ${semantic.discoverySurfaceColor};
-  --reader-discovery-border-color-semantic: ${semantic.discoveryBorderColor};
-  --reader-media-control-surface-color: ${semantic.mediaControlSurfaceColor};
-  --reader-media-control-border-color-semantic: ${semantic.mediaControlBorderColor};
-  --reader-lightbox-control-surface-color: ${semantic.lightboxControlSurfaceColor};
-  --reader-lightbox-control-border-color-semantic: ${semantic.lightboxControlBorderColor};
-  --reader-chrome-background-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.chromeSidebar.background)};
-  --reader-chrome-panel-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.chromeSidebar.background)};
-  --reader-chrome-border-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.chromeSidebar.border)};
-  --reader-chrome-text-color: var(--text1-color);
-  --reader-chrome-muted-color: var(--text2-color);
+  --reader-page-background-color: ${resolveConcreteRecipeValue(recipes.surfaces.canvasPage.background, 'semantic/reader/canvas-surface', 'layout/background1Color')};
+  --reader-page-text-color: ${getThemeRecipeRefValue(themeData, recipes.typography.body.color)};
+  --reader-page-border-color: ${resolveConcreteRecipeValue(recipes.surfaces.canvasPage.border, 'semantic/reader/canvas-border', 'layout/border1Color')};
+  --reader-chrome-background-color: ${resolveConcreteRecipeValue(recipes.surfaces.chromeSidebar.background, 'semantic/reader/chrome-surface', 'layout/background1Color')};
+  --reader-chrome-panel-color: ${resolveConcreteRecipeValue(recipes.surfaces.chromeSidebar.background, 'semantic/reader/chrome-surface', 'layout/background1Color')};
+  --reader-chrome-border-color: ${resolveConcreteRecipeValue(recipes.surfaces.chromeSidebar.border, 'semantic/reader/chrome-border', 'layout/border1Color')};
+  --reader-chrome-text-color: ${getThemeRecipeRefValue(themeData, recipes.typography.chromeLabel.color)};
+  --reader-chrome-muted-color: ${getThemeRecipeRefValue(themeData, recipes.typography.chromeMeta.color)};
   --reader-chrome-control-background-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.chromeSidebar.background)};
-  --reader-chrome-control-hover-background-color: ${getThemeRecipeRefValue(themeData, recipes.controls.mediaControl.hoverBackground ?? recipes.surfaces.chromeSidebar.background)};
-  --reader-chrome-control-subtle-hover-background-color: color-mix(in srgb, var(--text1-color) 15%, transparent);
+  --reader-chrome-control-hover-background-color: ${getThemeRecipeRefValue(themeData, recipes.controls.fieldControl.hoverBackground ?? recipes.controls.fieldControl.background)};
+  --reader-chrome-control-subtle-hover-background-color: color-mix(in srgb, var(--reader-chrome-text-color) 15%, transparent);
   --reader-solid-background-color: ${getThemeRecipeRefValue(themeData, recipes.controls.chromeActiveTab.background)};
-  --reader-solid-text-color: ${semantic.solidTextColor};
+  --reader-solid-text-color: ${getThemeRecipeRefValue(themeData, recipes.controls.chromeActiveTab.text)};
   --reader-solid-border-color: ${getThemeRecipeRefValue(themeData, recipes.controls.chromeActiveTab.border)};
   --reader-title-color: ${getThemeRecipeRefValue(themeData, recipes.typography.title.color)};
   --reader-title-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.title.family)};
@@ -811,8 +815,6 @@ export function buildThemeTokensCss(
   --reader-discovery-meta-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.discoveryMeta.size)};
   --reader-discovery-meta-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.discoveryMeta.weight)};
   --reader-discovery-meta-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.discoveryMeta.lineHeight)};
-  --reader-tonal-text-primary-color: ${semantic.tonalTextPrimaryColor};
-  --reader-tonal-text-secondary-color: ${semantic.tonalTextSecondaryColor};
   --reader-rail-section-title-color: ${getThemeRecipeRefValue(themeData, recipes.typography.railSectionTitle.color)};
   --reader-rail-section-title-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.railSectionTitle.family)};
   --reader-rail-section-title-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.railSectionTitle.size)};
@@ -828,7 +830,7 @@ export function buildThemeTokensCss(
   --reader-subtitle-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.subtitle.size)};
   --reader-subtitle-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.subtitle.weight)};
   --reader-subtitle-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.subtitle.lineHeight)};
-  --reader-subtitle-font-style: ${recipes.typography.subtitle.fontStyle ?? 'normal'};
+  --reader-subtitle-font-style: ${resolveTypographyFontStyle(themeData, recipes.typography.subtitle.fontStyle)};
   --reader-excerpt-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.excerpt.family)};
   --reader-excerpt-color: ${getThemeRecipeRefValue(themeData, recipes.typography.excerpt.color)};
   --reader-excerpt-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.excerpt.size)};
@@ -844,21 +846,21 @@ export function buildThemeTokensCss(
   --reader-meta-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.meta.size)};
   --reader-meta-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.meta.weight)};
   --reader-meta-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.meta.lineHeight)};
-  --reader-accent-color: ${semantic.accentColor};
-  --reader-focus-ring-color: ${semantic.focusRingColor};
+  --reader-accent-color: ${getThemeRecipeRefValue(themeData, recipes.controls.inlineLink.text)};
+  --reader-focus-ring-color: ${getThemeRecipeRefValue(themeData, recipes.controls.focusRing.color)};
   --reader-contrast-text-color: ${semantic.contrastOnFillTextColor};
   --reader-contrast-on-fill-text-color: ${semantic.contrastOnFillTextColor};
   --reader-overlay-contrast-text-color: ${semantic.overlayContrastTextColor};
   --reader-overlay-scrim-color: ${semantic.overlayScrimColor};
   --reader-overlay-border-color: ${semantic.overlayBorderColor};
   --reader-overlay-strong-scrim-color: ${semantic.overlayStrongScrimColor};
-  --reader-card-hover-border-color: var(--color4-light, var(--color3));
-  --reader-card-overlay-background: var(--gradient-bottom-overlay);
-  --reader-card-overlay-strong-background: var(--gradient-bottom-overlay-strong);
-  --reader-card-overlay-text-color: var(--reader-overlay-contrast-text-color);
-  --reader-card-badge-background-color: var(--reader-overlay-scrim-color);
-  --reader-card-badge-text-color: var(--reader-overlay-contrast-text-color);
-  --reader-card-badge-border-color: var(--reader-overlay-border-color);
+  --reader-card-hover-border-color: var(--reader-accent-color);
+  --reader-card-overlay-background: ${getThemeRecipeRefValue(themeData, recipes.overlays.card.background)};
+  --reader-card-overlay-strong-background: ${getThemeRecipeRefValue(themeData, recipes.overlays.cardStrong.background)};
+  --reader-card-overlay-text-color: ${getThemeRecipeRefValue(themeData, recipes.overlays.card.text)};
+  --reader-card-badge-background-color: ${getThemeRecipeRefValue(themeData, recipes.overlays.card.background)};
+  --reader-card-badge-text-color: ${getThemeRecipeRefValue(themeData, recipes.overlays.card.text)};
+  --reader-card-badge-border-color: ${getThemeRecipeRefValue(themeData, recipes.overlays.card.border)};
   --reader-card-background-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.card.background)};
   --reader-card-flat-background-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.canvasPage.background)};
   --reader-card-border-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.card.border)};
@@ -892,6 +894,7 @@ export function buildThemeTokensCss(
   --reader-quote-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.quote.size)};
   --reader-quote-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.quote.weight)};
   --reader-quote-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.quote.lineHeight)};
+  --reader-quote-font-style: ${resolveTypographyFontStyle(themeData, recipes.typography.quote.fontStyle)};
   --reader-quote-watermark-opacity: ${recipes.treatments.quoteWatermarkOpacity};
   --reader-caption-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.caption.family)};
   --reader-caption-color: ${getThemeRecipeRefValue(themeData, recipes.typography.caption.color)};
@@ -923,15 +926,15 @@ export function buildThemeTokensCss(
   --reader-support-control-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.fieldControl.size)};
   --reader-support-control-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.fieldControl.weight)};
   --reader-support-control-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.fieldControl.lineHeight)};
-  --reader-support-control-background-color: ${getThemeRecipeRefValue(themeData, recipes.controls.fieldControl.background)};
-  --reader-support-control-border-color: ${getThemeRecipeRefValue(themeData, recipes.controls.fieldControl.border)};
+  --reader-support-control-background-color: ${resolveConcreteRecipeValue(recipes.controls.fieldControl.background, 'semantic/reader/field-surface', 'component/input/backgroundColor')};
+  --reader-support-control-border-color: ${resolveConcreteRecipeValue(recipes.controls.fieldControl.border, 'semantic/reader/field-border', 'component/input/borderColor')};
   --reader-support-control-hover-background-color: ${getThemeRecipeRefValue(themeData, recipes.controls.fieldControl.hoverBackground ?? recipes.controls.fieldControl.background)};
   --reader-support-control-strong-background-color: ${getThemeRecipeRefValue(themeData, recipes.controls.fieldControlStrong.background)};
-  --reader-support-control-strong-text-color: ${semantic.strongSupportControlTextColor};
+  --reader-support-control-strong-text-color: ${getThemeRecipeRefValue(themeData, recipes.controls.fieldControlStrong.text)};
   --reader-support-control-strong-border-color: ${getThemeRecipeRefValue(themeData, recipes.controls.fieldControlStrong.border)};
   --reader-support-control-strong-hover-background-color: ${getThemeRecipeRefValue(themeData, recipes.controls.fieldControlStrong.hoverBackground ?? recipes.controls.fieldControlStrong.background)};
-  --reader-feedback-panel-background-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.feedbackPanel.background)};
-  --reader-feedback-panel-border-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.feedbackPanel.border)};
+  --reader-feedback-panel-background-color: ${resolveConcreteRecipeValue(recipes.surfaces.feedbackPanel.background, 'semantic/reader/feedback-surface', 'layout/background1Color')};
+  --reader-feedback-panel-border-color: ${resolveConcreteRecipeValue(recipes.surfaces.feedbackPanel.border, 'semantic/reader/feedback-border', 'layout/border1Color')};
   --reader-feedback-success-panel-background-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.feedbackSuccessPanel.background)};
   --reader-feedback-success-panel-border-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.feedbackSuccessPanel.border)};
   --reader-feedback-warning-panel-background-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.feedbackWarningPanel.background)};
@@ -956,25 +959,25 @@ export function buildThemeTokensCss(
   --reader-tag-muted-background-color: ${getThemeRecipeRefValue(themeData, recipes.tags.muted.background)};
   --reader-tag-muted-text-color: ${getThemeRecipeRefValue(themeData, recipes.tags.muted.text)};
   --reader-tag-muted-border-color: ${getThemeRecipeRefValue(themeData, recipes.tags.muted.border)};
-  --reader-media-frame-background-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.canvasMediaFrame.background)};
+  --reader-media-frame-background-color: ${resolveConcreteRecipeValue(recipes.surfaces.canvasMediaFrame.background, 'semantic/reader/media-frame-surface', 'layout/background2Color')};
+  --reader-media-frame-border-color: ${resolveConcreteRecipeValue(recipes.surfaces.canvasMediaFrame.border, 'semantic/reader/media-frame-border', 'layout/border1Color')};
   --reader-media-placeholder-background-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.canvasMediaFrame.background)};
-  --reader-media-control-background-color: ${getThemeRecipeRefValue(themeData, recipes.controls.mediaControl.background)};
+  --reader-media-control-background-color: ${resolveConcreteRecipeValue(recipes.controls.mediaControl.background, 'semantic/reader/media-control-surface', 'layout/background2Color')};
+  --reader-media-control-border-color: ${resolveConcreteRecipeValue(recipes.controls.mediaControl.border, 'semantic/reader/media-control-border', 'layout/border1Color')};
   --reader-media-control-background-color-hover: ${getThemeRecipeRefValue(themeData, recipes.controls.mediaControl.hoverBackground ?? recipes.controls.mediaControl.background)};
-  --reader-media-control-text-color: ${semantic.mediaControlTextColor};
+  --reader-media-control-text-color: ${getThemeRecipeRefValue(themeData, recipes.controls.mediaControl.text)};
   --reader-media-scrollbar-track-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.canvasMediaFrame.background)};
   --reader-media-scrollbar-thumb-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.canvasMediaFrame.border)};
   --reader-media-scrollbar-thumb-hover-color: var(--text2-color);
   --reader-lightbox-overlay-background-color: ${getThemeRecipeRefValue(themeData, recipes.overlays.lightbox.background)};
-  --reader-lightbox-control-background-color: ${getThemeRecipeRefValue(themeData, recipes.controls.lightboxControl.background)};
-  --reader-lightbox-control-border-color: ${getThemeRecipeRefValue(themeData, recipes.controls.lightboxControl.border)};
-  --reader-lightbox-control-text-color: ${semantic.lightboxControlTextColor};
+  --reader-lightbox-control-background-color: ${resolveConcreteRecipeValue(recipes.controls.lightboxControl.background, 'semantic/reader/lightbox-control-surface', 'gradient/bottomOverlayStrong')};
+  --reader-lightbox-control-border-color: ${resolveConcreteRecipeValue(recipes.controls.lightboxControl.border, 'semantic/reader/lightbox-control-border', 'layout/border1Color')};
+  --reader-lightbox-control-text-color: ${getThemeRecipeRefValue(themeData, recipes.controls.lightboxControl.text)};
   --reader-lightbox-caption-text-color: var(--reader-overlay-contrast-text-color);
-  --reader-discovery-border-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.cardDiscovery.border)};
-  --reader-discovery-title-color: var(--text1-color);
-  --reader-discovery-meta-color: var(--text2-color);
-  --reader-discovery-card-background-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.cardDiscovery.background)};
-  --reader-discovery-card-border-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.cardDiscovery.border)};
-  --reader-discovery-card-hover-border-color: var(--color3);
+  --reader-discovery-border-color: ${resolveConcreteRecipeValue(recipes.surfaces.cardDiscovery.border, 'semantic/reader/discovery-border', 'layout/border1Color')};
+  --reader-discovery-card-background-color: ${resolveConcreteRecipeValue(recipes.surfaces.cardDiscovery.background, 'semantic/reader/discovery-surface', 'layout/background1Color')};
+  --reader-discovery-card-border-color: var(--reader-discovery-border-color);
+  --reader-discovery-card-hover-border-color: var(--reader-accent-color);
 `;
     cssContent += generateReaderPresetAliasCss(themeData.activePresetId);
     cssContent += `}
@@ -1011,8 +1014,8 @@ export function buildThemeTokensCss(
   --border1-color: ${tokenValue(themeData.layout.border1Color, 'color1-200')};
   --border2-color: ${tokenValue(themeData.layout.border2Color, 'color1-300')};
 
-  --text1-color: var(--color2-300);
-  --text2-color: var(--color2-200);
+  --text1-color: ${tokenValue(themeData.typography.textColors.text1, 'color2-300')};
+  --text2-color: ${tokenValue(themeData.typography.textColors.text2, 'color2-200')};
 
   /* --- COMPONENT TOKEN OVERRIDES --- */
   --header-background-color: var(--color1-100);
@@ -1032,9 +1035,9 @@ export function buildThemeTokensCss(
 
 /** Shape persisted theme data for `buildThemeTokensCss` while preserving active reader preset id. */
 export function themeDataForCssGeneration(
-  data: StructuredThemeData & { darkModeShift?: number; activePresetId?: string; recipes?: ReaderThemeRecipes }
-): StructuredThemeData & { darkModeShift?: number; activePresetId?: string; recipes?: ReaderThemeRecipes } {
-  const rest: StructuredThemeData & { darkModeShift?: number; activePresetId?: string; recipes?: ReaderThemeRecipes } = { ...data };
+  data: StructuredThemeData & { activePresetId?: string; recipes?: ReaderThemeRecipes }
+): StructuredThemeData & { activePresetId?: string; recipes?: ReaderThemeRecipes } {
+  const rest: StructuredThemeData & { activePresetId?: string; recipes?: ReaderThemeRecipes } = { ...data };
   return rest;
 }
 
@@ -1045,7 +1048,6 @@ export function buildScopedThemeTokensCss(
   const raw = buildThemeTokensCss(
     themeDataForCssGeneration({
       ...settings.data,
-      darkModeShift: settings.darkModeShift,
       activePresetId: settings.activePresetId,
       recipes: settings.recipes,
     })
@@ -1070,7 +1072,7 @@ export function buildScopedDraftThemeCss(
 }
 
 type LegacyFlatThemeData =
-  StructuredThemeData & { darkModeShift?: number; activePresetId?: string; recipes?: ReaderThemeRecipes };
+  StructuredThemeData & { activePresetId?: string; recipes?: ReaderThemeRecipes };
 
 type PersistedThemeData =
   | LegacyFlatThemeData
@@ -1078,14 +1080,14 @@ type PersistedThemeData =
 
 /** Firestore can hold a partial `data` object; building CSS from it throws or yields broken vars. */
 function isThemeDataViable(
-  data: (StructuredThemeData & { darkModeShift?: number }) | null | undefined
+  data: StructuredThemeData | null | undefined
 ): boolean {
   if (!data?.palette?.length || !data.themeColors?.length) return false;
   const hasBg = data.themeColors.some((c) => c.id === 1);
   const hasText = data.themeColors.some((c) => c.id === 2);
   if (!hasBg || !hasText) return false;
   if (!data.layout?.breakpoints?.sm) return false;
-  if (!data.typography?.fontFamilies?.sans) return false;
+  if (!data.typography?.fontFamilies?.sans1) return false;
   if (!data.spacing?.unit) return false;
   if (!data.shadows?.strengthDark) return false;
   return true;
@@ -1097,12 +1099,11 @@ export function isPersistedThemeDocument(data: unknown): data is PersistedThemeD
 }
 
 function themeSettingsFromFlat(
-  data: (StructuredThemeData & { darkModeShift?: number; activePresetId?: string; recipes?: ReaderThemeRecipes }) | null | undefined,
+  data: (StructuredThemeData & { activePresetId?: string; recipes?: ReaderThemeRecipes }) | null | undefined,
   fallback: ResolvedScopedThemeSettings
 ): ResolvedScopedThemeSettings {
   if (!isThemeDataViable(data)) return fallback;
   const {
-    darkModeShift,
     activePresetId,
     recipes,
     ...themeData
@@ -1117,7 +1118,6 @@ function themeSettingsFromFlat(
       activePresetId === 'custom'
         ? activePresetId
         : fallback.activePresetId ?? 'custom',
-    darkModeShift: darkModeShift ?? fallback.darkModeShift ?? 5,
     recipes: recipes ?? fallback.recipes,
   };
 }
@@ -1131,7 +1131,6 @@ export function normalizeThemeDocument(data: unknown): ResolvedScopedThemeDocume
         {
           ...data.reader.data,
           activePresetId: data.reader.activePresetId,
-          darkModeShift: data.reader.darkModeShift,
           recipes: data.reader.recipes,
         },
         fallback.reader
@@ -1140,7 +1139,6 @@ export function normalizeThemeDocument(data: unknown): ResolvedScopedThemeDocume
         {
           ...data.admin.data,
           activePresetId: data.admin.activePresetId,
-          darkModeShift: data.admin.darkModeShift,
           recipes: data.admin.recipes,
         },
         fallback.admin
@@ -1163,13 +1161,11 @@ export function toPersistedThemeDocument(
   const reader = {
     data: data.reader.data,
     activePresetId: data.reader.activePresetId,
-    darkModeShift: data.reader.darkModeShift,
     ...(data.reader.recipes ? { recipes: data.reader.recipes } : {}),
   };
   const admin = {
     data: data.admin.data,
     activePresetId: data.admin.activePresetId,
-    darkModeShift: data.admin.darkModeShift,
     ...(data.admin.recipes ? { recipes: data.admin.recipes } : {}),
   };
 
@@ -1193,12 +1189,11 @@ export async function getPersistedThemeDocumentFromJson(): Promise<PersistedThem
  * Theme for SSR: Firestore `app_settings/theme` when present and complete, else `theme-data.json`.
  */
 export async function getResolvedThemeData(): Promise<
-  StructuredThemeData & { darkModeShift?: number; activePresetId?: string; recipes?: ReaderThemeRecipes }
+  StructuredThemeData & { activePresetId?: string; recipes?: ReaderThemeRecipes }
 > {
   const scoped = await getResolvedScopedThemeDocument();
   return {
     ...scoped.reader.data,
-    darkModeShift: scoped.reader.darkModeShift ?? 5,
     activePresetId: scoped.reader.activePresetId,
     recipes: scoped.reader.recipes,
   };
@@ -1221,10 +1216,7 @@ export async function getResolvedScopedThemeDocument(): Promise<ResolvedScopedTh
         return normalizeThemeDocument(data);
       }
       if (isThemeDataViable(data as StructuredThemeData | undefined)) {
-        return normalizeThemeDocument({
-          ...(data as StructuredThemeData),
-          darkModeShift: (data as { darkModeShift?: number }).darkModeShift ?? row?.darkModeShift ?? 5,
-        });
+        return normalizeThemeDocument(data as StructuredThemeData);
       }
       if ((data as StructuredThemeData | undefined)?.palette?.length) {
         console.warn(

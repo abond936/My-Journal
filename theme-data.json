@@ -140,9 +140,14 @@
           "text2": "color2-100"
         },
         "fontFamilies": {
-          "sans": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-          "serif": "\"Georgia\", \"Times New Roman\", serif",
-          "handwriting": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif"
+          "sans1": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
+          "sans2": "\"Helvetica Neue\", Helvetica, Arial, sans-serif",
+          "sans3": "\"Avenir Next\", Avenir, \"Segoe UI\", sans-serif",
+          "serif1": "\"Georgia\", \"Times New Roman\", serif",
+          "serif2": "\"Iowan Old Style\", \"Palatino Linotype\", \"Book Antiqua\", serif",
+          "serif3": "\"Baskerville\", \"Times New Roman\", serif",
+          "handwriting1": "\"Bradley Hand\", \"Segoe Print\", \"Ink Free\", cursive",
+          "handwriting2": "\"Snell Roundhand\", \"Brush Script MT\", cursive"
         },
         "fontSizes": {
           "xs": "0.875rem",
@@ -163,7 +168,6 @@
         },
         "fontWeights": {
           "normal": "400",
-          "increment": "100",
           "medium": "450",
           "semibold": "550",
           "bold": "650"
@@ -172,6 +176,10 @@
           "base": "1.6",
           "tight": "1.3",
           "relaxed": "1.85"
+        },
+        "styles": {
+          "normal": "normal",
+          "italic": "italic"
         }
       },
       "spacing": {
@@ -343,341 +351,306 @@
         "bottomOverlayStrong": "linear-gradient(transparent, rgba(0,0,0,0.9))"
       }
     },
-    "darkModeShift": 5,
     "activePresetId": "editorial",
     "recipes": {
       "typography": {
         "title": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/base",
           "weight": "font-weight/semibold",
           "lineHeight": "line-height/tight",
-          "color": "literal/typography.textColors.text1"
+          "color": "semantic/reader/tonal-text-primary"
         },
         "storyTitle": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/base",
           "weight": "font-weight/semibold",
           "lineHeight": "line-height/tight",
-          "color": "literal/typography.textColors.text1"
+          "color": "semantic/reader/tonal-text-primary"
         },
         "storyOverlayTitle": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/base",
           "weight": "font-weight/semibold",
           "lineHeight": "line-height/tight",
           "color": "semantic/reader/overlay-contrast-text"
         },
         "storyExcerpt": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/sm",
           "weight": "font-weight/normal",
           "lineHeight": "line-height/base",
           "color": "semantic/reader/tonal-text-secondary"
         },
         "galleryTitle": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/base",
           "weight": "font-weight/semibold",
           "lineHeight": "line-height/tight",
-          "color": "literal/typography.textColors.text1"
+          "color": "semantic/reader/tonal-text-primary"
         },
         "galleryOverlayTitle": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/base",
           "weight": "font-weight/semibold",
           "lineHeight": "line-height/tight",
           "color": "semantic/reader/overlay-contrast-text"
         },
         "galleryHeaderTitle": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/lg",
           "weight": "font-weight/semibold",
           "lineHeight": "line-height/tight",
-          "color": "literal/typography.textColors.text1"
+          "color": "semantic/reader/tonal-text-primary"
         },
         "titleCompact": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/sm",
           "weight": "font-weight/semibold",
           "lineHeight": "line-height/tight",
-          "color": "literal/typography.textColors.text1"
+          "color": "semantic/reader/tonal-text-primary"
         },
         "detailTitle": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/3xl",
           "weight": "font-weight/bold",
           "lineHeight": "line-height/tight",
-          "color": "literal/typography.textColors.text1"
+          "color": "semantic/reader/tonal-text-primary"
         },
         "storyDetailTitle": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/3xl",
           "weight": "font-weight/bold",
           "lineHeight": "line-height/tight",
-          "color": "literal/typography.textColors.text1"
+          "color": "semantic/reader/tonal-text-primary"
         },
         "galleryDetailTitle": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/3xl",
           "weight": "font-weight/bold",
           "lineHeight": "line-height/tight",
-          "color": "literal/typography.textColors.text1"
+          "color": "semantic/reader/tonal-text-primary"
         },
         "discoveryTitle": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/lg",
           "weight": "font-weight/semibold",
           "lineHeight": "line-height/tight",
-          "color": "literal/typography.textColors.text1"
+          "color": "semantic/reader/tonal-text-primary"
         },
         "discoveryMeta": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/sm",
           "weight": "font-weight/medium",
           "lineHeight": "line-height/base",
-          "color": "literal/typography.textColors.text2"
+          "color": "semantic/reader/tonal-text-secondary"
         },
         "railSectionTitle": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/lg",
           "weight": "font-weight/semibold",
           "lineHeight": "line-height/tight",
-          "color": "literal/typography.textColors.text1"
+          "color": "semantic/reader/tonal-text-primary"
         },
         "railCardTitle": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/sm",
           "weight": "font-weight/medium",
           "lineHeight": "line-height/base",
-          "color": "literal/typography.textColors.text1"
+          "color": "semantic/reader/tonal-text-primary"
         },
         "subtitle": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/xl",
           "weight": "font-weight/normal",
           "lineHeight": "line-height/base",
-          "color": "literal/typography.textColors.text2",
+          "color": "semantic/reader/tonal-text-secondary",
           "fontStyle": "italic"
         },
         "body": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/sm",
           "weight": "font-weight/normal",
           "lineHeight": "line-height/relaxed",
-          "color": "literal/typography.textColors.text1"
+          "color": "semantic/reader/tonal-text-primary"
         },
         "excerpt": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/sm",
           "weight": "font-weight/normal",
           "lineHeight": "line-height/relaxed",
-          "color": "literal/typography.textColors.text2"
+          "color": "semantic/reader/tonal-text-secondary"
         },
         "meta": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/xs",
           "weight": "font-weight/medium",
           "lineHeight": "line-height/base",
-          "color": "literal/typography.textColors.text2"
+          "color": "semantic/reader/tonal-text-secondary"
         },
         "caption": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/sm",
           "weight": "font-weight/normal",
           "lineHeight": "line-height/base",
-          "color": "literal/typography.textColors.text2"
+          "color": "semantic/reader/tonal-text-secondary"
         },
         "chromeTitle": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/lg",
           "weight": "font-weight/semibold",
           "lineHeight": "line-height/tight",
-          "color": "literal/typography.textColors.text1"
+          "color": "semantic/reader/tonal-text-primary"
         },
         "chromeLabel": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/sm",
           "weight": "font-weight/medium",
           "lineHeight": "line-height/base",
-          "color": "literal/typography.textColors.text1"
+          "color": "semantic/reader/tonal-text-primary"
         },
         "chromeMeta": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/xs",
           "weight": "font-weight/medium",
           "lineHeight": "line-height/base",
-          "color": "literal/typography.textColors.text2"
+          "color": "semantic/reader/tonal-text-secondary"
         },
         "chromeHint": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/sm",
           "weight": "font-weight/normal",
           "lineHeight": "line-height/base",
-          "color": "literal/typography.textColors.text2"
+          "color": "semantic/reader/tonal-text-secondary"
         },
         "fieldControl": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/sm",
           "weight": "font-weight/medium",
           "lineHeight": "line-height/base",
-          "color": "literal/typography.textColors.text1"
+          "color": "semantic/reader/tonal-text-primary"
         },
         "feedbackTitle": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/lg",
           "weight": "font-weight/semibold",
           "lineHeight": "line-height/tight",
-          "color": "literal/typography.textColors.text1"
+          "color": "semantic/reader/tonal-text-primary"
         },
         "feedbackMeta": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/xs",
           "weight": "font-weight/medium",
           "lineHeight": "line-height/base",
-          "color": "literal/typography.textColors.text2"
+          "color": "semantic/reader/tonal-text-secondary"
         },
         "feedbackHint": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/sm",
           "weight": "font-weight/normal",
           "lineHeight": "line-height/base",
-          "color": "literal/typography.textColors.text2"
+          "color": "semantic/reader/tonal-text-secondary"
         },
         "quote": {
-          "family": "font-family/serif",
+          "family": "font-family/serif1",
           "size": "font-size/lg",
           "weight": "font-weight/normal",
           "lineHeight": "line-height/relaxed",
-          "color": "literal/typography.textColors.text1",
+          "color": "semantic/reader/tonal-text-primary",
           "fontStyle": "italic"
         },
         "question": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/lg",
           "weight": "font-weight/semibold",
           "lineHeight": "line-height/tight",
-          "color": "literal/typography.textColors.text1"
+          "color": "semantic/reader/tonal-text-primary"
         },
         "questionOverlay": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/lg",
           "weight": "font-weight/semibold",
           "lineHeight": "line-height/tight",
           "color": "semantic/reader/overlay-contrast-text"
         },
         "calloutTitle": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/lg",
           "weight": "font-weight/semibold",
           "lineHeight": "line-height/tight",
-          "color": "literal/typography.textColors.text1"
+          "color": "semantic/reader/tonal-text-primary"
         },
         "calloutBody": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/sm",
           "weight": "font-weight/normal",
           "lineHeight": "line-height/relaxed",
-          "color": "literal/typography.textColors.text1"
+          "color": "semantic/reader/tonal-text-primary"
         },
         "tagLabel": {
-          "family": "font-family/sans",
+          "family": "font-family/sans1",
           "size": "font-size/xs",
           "weight": "font-weight/semibold",
           "lineHeight": "line-height/base",
-          "color": "component/tag/textColor"
-        },
-        "supportTitle": {
-          "family": "font-family/sans",
-          "size": "font-size/lg",
-          "weight": "font-weight/semibold",
-          "lineHeight": "line-height/tight",
-          "color": "literal/typography.textColors.text1"
-        },
-        "supportLabel": {
-          "family": "font-family/sans",
-          "size": "font-size/sm",
-          "weight": "font-weight/medium",
-          "lineHeight": "line-height/base",
-          "color": "literal/typography.textColors.text1"
-        },
-        "supportMeta": {
-          "family": "font-family/sans",
-          "size": "font-size/xs",
-          "weight": "font-weight/medium",
-          "lineHeight": "line-height/base",
-          "color": "literal/typography.textColors.text2"
-        },
-        "supportHint": {
-          "family": "font-family/sans",
-          "size": "font-size/sm",
-          "weight": "font-weight/normal",
-          "lineHeight": "line-height/base",
-          "color": "literal/typography.textColors.text2"
-        },
-        "supportControl": {
-          "family": "font-family/sans",
-          "size": "font-size/sm",
-          "weight": "font-weight/medium",
-          "lineHeight": "line-height/base",
-          "color": "literal/typography.textColors.text1"
+          "color": "semantic/reader/contrast-on-fill-text"
         }
       },
       "surfaces": {
         "canvasPage": {
-          "background": "layout/background1Color",
-          "border": "layout/border1Color"
+          "background": "semantic/reader/canvas-surface",
+          "border": "semantic/reader/canvas-border"
         },
         "canvasSection": {
-          "background": "layout/background1Color",
-          "border": "layout/border1Color"
+          "background": "semantic/reader/canvas-surface",
+          "border": "semantic/reader/canvas-border",
+          "radius": "border/radius/md"
         },
         "chromeSidebar": {
-          "background": "layout/background1Color",
-          "border": "layout/border1Color",
+          "background": "semantic/reader/chrome-surface",
+          "border": "semantic/reader/chrome-border",
           "radius": "border/radius/md"
         },
         "chromeToolbar": {
-          "background": "layout/background1Color",
-          "border": "layout/border1Color",
+          "background": "semantic/reader/chrome-surface",
+          "border": "semantic/reader/chrome-border",
           "radius": "border/radius/md"
         },
         "chromeRail": {
-          "background": "layout/background1Color",
-          "border": "layout/border1Color",
+          "background": "semantic/reader/chrome-surface",
+          "border": "semantic/reader/chrome-border",
           "radius": "border/radius/md"
         },
         "feedbackPanel": {
-          "background": "layout/background1Color",
-          "border": "layout/border1Color",
+          "background": "semantic/reader/feedback-surface",
+          "border": "semantic/reader/feedback-border",
           "radius": "border/radius/lg",
           "shadow": "shadow/md",
           "padding": "spacing/xl"
         },
         "feedbackSuccessPanel": {
-          "background": "layout/background1Color",
-          "border": "layout/border1Color",
+          "background": "state/success/background",
+          "border": "state/success/border",
           "radius": "border/radius/lg",
           "shadow": "shadow/md",
           "padding": "spacing/xl"
         },
         "feedbackWarningPanel": {
-          "background": "layout/background1Color",
-          "border": "layout/border1Color",
+          "background": "state/warning/background",
+          "border": "state/warning/border",
           "radius": "border/radius/lg",
           "shadow": "shadow/md",
           "padding": "spacing/xl"
         },
         "feedbackErrorPanel": {
-          "background": "layout/background1Color",
-          "border": "layout/border1Color",
+          "background": "state/error/background",
+          "border": "state/error/border",
           "radius": "border/radius/lg",
           "shadow": "shadow/md",
           "padding": "spacing/xl"
         },
         "feedbackInfoPanel": {
-          "background": "layout/background1Color",
-          "border": "layout/border1Color",
+          "background": "state/info/background",
+          "border": "state/info/border",
           "radius": "border/radius/lg",
           "shadow": "shadow/md",
           "padding": "spacing/xl"
@@ -722,169 +695,114 @@
           "padding": "spacing/xl"
         },
         "cardDiscovery": {
-          "background": "layout/background1Color",
-          "border": "layout/border1Color",
+          "background": "semantic/reader/discovery-surface",
+          "border": "semantic/reader/discovery-border",
           "radius": "border/radius/md"
         },
         "canvasMediaFrame": {
-          "background": "layout/background2Color",
-          "border": "layout/border1Color",
-          "radius": "border/radius/lg"
-        },
-        "page": {
-          "background": "layout/background1Color",
-          "border": "layout/border1Color"
-        },
-        "chrome": {
-          "background": "layout/background1Color",
-          "border": "layout/border1Color",
-          "radius": "border/radius/md"
-        },
-        "detail": {
-          "background": "layout/background1Color",
-          "border": "layout/border1Color",
-          "radius": "border/radius/lg",
-          "shadow": "shadow/md",
-          "padding": "spacing/xl"
-        },
-        "discovery": {
-          "background": "layout/background1Color",
-          "border": "layout/border1Color",
-          "radius": "border/radius/md"
-        },
-        "mediaFrame": {
-          "background": "layout/background2Color",
-          "border": "layout/border1Color",
+          "background": "semantic/reader/media-frame-surface",
+          "border": "semantic/reader/media-frame-border",
           "radius": "border/radius/lg"
         }
       },
       "controls": {
         "chromeActiveTab": {
           "background": "component/button/solid/backgroundColor",
-          "text": "component/button/solid/textColor",
+          "text": "semantic/reader/contrast-on-fill-text",
           "border": "component/button/solid/borderColor",
           "hoverBackground": "component/button/solid/backgroundColorHover"
         },
         "fieldControl": {
-          "background": "component/input/backgroundColor",
+          "background": "semantic/reader/field-surface",
           "text": "component/input/textColor",
-          "border": "component/input/borderColor",
+          "border": "semantic/reader/field-border",
           "hoverBackground": "layout/background2Color"
         },
         "fieldControlStrong": {
           "background": "component/button/solid/backgroundColor",
-          "text": "component/button/solid/textColor",
+          "text": "semantic/reader/contrast-on-fill-text",
           "border": "component/button/solid/borderColor",
           "hoverBackground": "component/button/solid/backgroundColorHover"
         },
         "chromeFilterChip": {
           "background": "component/button/solid/backgroundColor",
-          "text": "component/button/solid/textColor",
+          "text": "semantic/reader/contrast-on-fill-text",
           "border": "component/button/solid/borderColor",
           "hoverBackground": "component/button/solid/backgroundColorHover"
         },
         "feedbackAction": {
-          "background": "component/input/backgroundColor",
+          "background": "semantic/reader/field-surface",
           "text": "component/input/textColor",
-          "border": "component/input/borderColor",
+          "border": "semantic/reader/field-border",
           "hoverBackground": "layout/background2Color"
         },
         "mediaControl": {
-          "background": "layout/background2Color",
-          "text": "component/button/solid/textColor",
-          "border": "layout/border1Color",
-          "hoverBackground": "layout/background1Color"
+          "background": "semantic/reader/media-control-surface",
+          "text": "semantic/reader/contrast-on-fill-text",
+          "border": "semantic/reader/media-control-border",
+          "hoverBackground": "semantic/reader/chrome-surface"
         },
         "lightboxControl": {
-          "background": "gradient/bottomOverlayStrong",
-          "text": "component/button/solid/textColor",
-          "border": "layout/border1Color"
+          "background": "semantic/reader/lightbox-control-surface",
+          "text": "semantic/reader/overlay-contrast-text",
+          "border": "semantic/reader/lightbox-control-border"
         },
         "inlineLink": {
-          "text": "component/link/textColor",
+          "text": "semantic/reader/accent",
           "hoverBackground": "literal/transparent",
           "hoverText": "component/link/textColorHover"
         },
         "focusRing": {
-          "color": "palette/3"
-        },
-        "solid": {
-          "background": "component/button/solid/backgroundColor",
-          "text": "component/button/solid/textColor",
-          "border": "component/button/solid/borderColor",
-          "hoverBackground": "component/button/solid/backgroundColorHover"
-        },
-        "supportControl": {
-          "background": "component/input/backgroundColor",
-          "text": "component/input/textColor",
-          "border": "component/input/borderColor",
-          "hoverBackground": "layout/background2Color"
-        },
-        "supportControlStrong": {
-          "background": "component/button/solid/backgroundColor",
-          "text": "component/button/solid/textColor",
-          "border": "component/button/solid/borderColor",
-          "hoverBackground": "component/button/solid/backgroundColorHover"
-        },
-        "filterChip": {
-          "background": "component/button/solid/backgroundColor",
-          "text": "component/button/solid/textColor",
-          "border": "component/button/solid/borderColor",
-          "hoverBackground": "component/button/solid/backgroundColorHover"
-        },
-        "link": {
-          "text": "component/link/textColor",
-          "hoverBackground": "literal/transparent",
-          "hoverText": "component/link/textColorHover"
+          "color": "semantic/reader/focus-ring"
         }
       },
       "tags": {
         "who": {
           "background": "component/tag/backgrounds/who",
-          "text": "component/tag/textColor",
+          "text": "semantic/reader/contrast-on-fill-text",
           "border": "component/tag/backgrounds/who"
         },
         "what": {
           "background": "component/tag/backgrounds/what",
-          "text": "component/tag/textColor",
+          "text": "semantic/reader/contrast-on-fill-text",
           "border": "component/tag/backgrounds/what"
         },
         "when": {
           "background": "component/tag/backgrounds/when",
-          "text": "component/tag/textColor",
+          "text": "semantic/reader/contrast-on-fill-text",
           "border": "component/tag/backgrounds/when"
         },
         "where": {
           "background": "component/tag/backgrounds/where",
-          "text": "component/tag/textColor",
+          "text": "semantic/reader/contrast-on-fill-text",
           "border": "component/tag/backgrounds/where"
         },
         "muted": {
           "background": "literal/transparent",
-          "text": "literal/typography.textColors.text2",
+          "text": "semantic/reader/tonal-text-secondary",
           "border": "layout/border1Color",
           "hoverBackground": "layout/background2Color"
         }
       },
       "overlays": {
         "card": {
-          "background": "gradient/bottomOverlay",
-          "text": "component/button/solid/textColor",
-          "border": "layout/border1Color"
+          "background": "semantic/reader/overlay-scrim",
+          "text": "semantic/reader/overlay-contrast-text",
+          "border": "semantic/reader/overlay-border"
         },
         "cardStrong": {
-          "background": "gradient/bottomOverlayStrong",
-          "text": "component/button/solid/textColor",
-          "border": "layout/border1Color"
+          "background": "semantic/reader/overlay-scrim-strong",
+          "text": "semantic/reader/overlay-contrast-text",
+          "border": "semantic/reader/overlay-border"
         },
         "lightbox": {
-          "background": "gradient/bottomOverlayStrong",
-          "text": "component/button/solid/textColor",
-          "border": "layout/border1Color"
+          "background": "semantic/reader/overlay-scrim-strong",
+          "text": "semantic/reader/overlay-contrast-text",
+          "border": "semantic/reader/overlay-border"
         }
       },
       "iconography": {
-        "chrome": "literal/typography.textColors.text1",
+        "chrome": "semantic/reader/tonal-text-primary",
         "solid": "component/button/solid/textColor",
         "overlay": "component/button/solid/textColor",
         "accent": "palette/3"
@@ -1033,12 +951,17 @@
       "typography": {
         "textColors": {
           "text1": "color2-300",
-          "text2": "color2-200"
+          "text2": "color2-100"
         },
         "fontFamilies": {
-          "sans": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-          "serif": "\"Georgia\", \"Times New Roman\", serif",
-          "handwriting": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif"
+          "sans1": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
+          "sans2": "\"Helvetica Neue\", Helvetica, Arial, sans-serif",
+          "sans3": "\"Avenir Next\", Avenir, \"Segoe UI\", sans-serif",
+          "serif1": "\"Georgia\", \"Times New Roman\", serif",
+          "serif2": "\"Iowan Old Style\", \"Palatino Linotype\", \"Book Antiqua\", serif",
+          "serif3": "\"Baskerville\", \"Times New Roman\", serif",
+          "handwriting1": "\"Bradley Hand\", \"Segoe Print\", \"Ink Free\", cursive",
+          "handwriting2": "\"Snell Roundhand\", \"Brush Script MT\", cursive"
         },
         "fontSizes": {
           "xs": "0.875rem",
@@ -1059,15 +982,18 @@
         },
         "fontWeights": {
           "normal": "400",
-          "increment": "100",
-          "medium": "500",
-          "semibold": "600",
-          "bold": "700"
+          "medium": "450",
+          "semibold": "550",
+          "bold": "650"
         },
         "lineHeights": {
-          "base": "1.5",
-          "tight": "1.25",
-          "relaxed": "1.75"
+          "base": "1.6",
+          "tight": "1.3",
+          "relaxed": "1.85"
+        },
+        "styles": {
+          "normal": "normal",
+          "italic": "italic"
         }
       },
       "spacing": {
@@ -1140,11 +1066,11 @@
         "border1Color": "color1-200",
         "border2Color": "color1-300",
         "sidebarWidth": "300px",
-        "sidebarWidthMobile": "250px",
+        "sidebarWidthMobile": "272px",
         "logoMaxHeight": "120px",
         "spinnerSize": "50px",
         "formMinWidth": "120px",
-        "buttonMinWidth": "60px",
+        "buttonMinWidth": "72px",
         "iconMinWidth": "24px",
         "transitionShort": "0.2s",
         "breakpoints": {
@@ -1198,9 +1124,9 @@
         },
         "card": {
           "backgroundColor": "color1-200",
-          "padding": "spacing/lg",
+          "padding": "spacing/xl",
           "borderColor": "color1-200",
-          "borderWidth": "border/width/medium",
+          "borderWidth": "border/width/thin",
           "borderRadius": "border/radius/md",
           "shadow": "shadow/sm",
           "shadowHover": "shadow/md"
@@ -1231,7 +1157,7 @@
           "borderColorFocus": "color3",
           "textColor": "color2-300",
           "borderRadius": "border/radius-sm",
-          "padding": "spacing/sm spacing/md"
+          "padding": "spacing/md spacing/lg"
         }
       },
       "gradients": {
@@ -1239,7 +1165,6 @@
         "bottomOverlayStrong": "linear-gradient(transparent, rgba(0,0,0,0.9))"
       }
     },
-    "darkModeShift": 5,
     "activePresetId": "admin"
   }
 }

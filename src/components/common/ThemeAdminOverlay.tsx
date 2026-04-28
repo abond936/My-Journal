@@ -73,7 +73,7 @@ function constrainOverlayRect(rect: OverlayRect): OverlayRect {
 }
 
 export default function ThemeAdminOverlay() {
-  const { theme, isThemeAdminOpen, closeThemeAdmin } = useTheme();
+  const { isThemeAdminOpen, closeThemeAdmin } = useTheme();
   const interactionRef = useRef<InteractionState>(null);
   const [overlayRect, setOverlayRect] = useState<OverlayRect | null>(null);
 
@@ -259,17 +259,13 @@ export default function ThemeAdminOverlay() {
             className={styles.header}
             onMouseDown={startMove}
           >
-            <div className={styles.headerMeta}>
-              <span className={styles.modeBadge}>
-                {theme === 'dark' ? 'Dark mode' : 'Light mode'}
-              </span>
-            </div>
+            <div />
             <button
               type="button"
               className={styles.closeButton}
               onClick={closeThemeAdmin}
             >
-              Close
+              X
             </button>
           </div>
           <div className={styles.body}>

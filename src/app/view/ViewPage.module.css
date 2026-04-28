@@ -18,6 +18,10 @@
 }
 
 .errorState {
+  padding: var(--spacing-lg);
+  border-radius: var(--reader-card-border-radius);
+  background-color: var(--reader-feedback-error-panel-background-color);
+  border: var(--border-width-thin) solid var(--reader-feedback-error-panel-border-color);
   color: var(--reader-page-text-color);
 }
 

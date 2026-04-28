@@ -5,6 +5,8 @@
 
 **Current implementation status (2026-04-27):** Theme infrastructure exists and the core save/load path is now live. Runtime CSS variables are generated from theme data and injected by the app, with `theme-data.json` / `theme.css` fallbacks. Theme Management is now treated as a dedicated editing workspace, and the product direction has shifted from a dedicated preview layer to a **live draft** that applies to the real app in-session and becomes permanent only on **Save**. The workspace now behaves as a **floating, draggable, resizable workbench window** so the author can compare theme edits against the real reader surface without blurring or hiding the content being judged. Journal / Editorial are still not “final themes,” but they are real preset bundles with preset-specific recipe direction rather than only light atomic transforms. The reader semantic layer now has working role groups for page, chrome, solid controls, cards, detail, body/title, meta/caption, tags, media/overlay, discovery, support UI, and type treatments.
 
+**Runtime reconciliation status (2026-04-27):** The generator path is now substantially reconciled with the editor for foundations, chrome, controls, cards, overlays, discovery, media/lightbox surfaces, and most reader typography. Earlier runtime bypasses and bridge-only CSS outputs have been reduced significantly. The remaining explicit reader gap is **feedback success / warning / info panels**: those values are generated and editable, but the current reader UI does not yet render matching success/warning/info panel surfaces.
+
 The current editor structure is now clearer than the earlier mixed workbench:
 - the **left side** is the component editor: section navigation, component selection, variant selection, attribute selection, and direct editing of the selected attribute
 - the **right side** is the **Values** panel: it shows the named values behind the selected attribute and, where the system can resolve them, the actual underlying values such as font-family strings, font sizes, spacing values, radii, shadows, layout values, and stored component values
@@ -667,7 +669,7 @@ Current wiring inventory (2026-04-25):
 | Surface | Runtime / preview owner today | Current state |
 | ------- | ----------------------------- | ------------- |
 | Root runtime token sheet | `src/app/layout.tsx` + `src/lib/services/themeService.ts` | **Live runtime** - SSR injects generated token CSS from Firestore-resolved theme data with `theme-data.json` fallback. |
-| Reader semantic aliases | `buildThemeTokensCss()` | **Live runtime** - Reader alias families (`--reader-page-*`, `--reader-card-*`, `--reader-detail-*`, etc.) are emitted from atomic theme data plus reader recipes. |
+| Reader semantic aliases | `buildThemeTokensCss()` | **Live runtime / narrowed** - Reader alias families (`--reader-page-*`, `--reader-card-*`, `--reader-detail-*`, etc.) are emitted from atomic theme data plus reader recipes. Earlier bridge-only surface aliases have been reduced; only a small semantic helper layer remains where recipe resolution still benefits from it. |
 | Theme editor draft application | Theme Management + app theme resolver | **Target direction** - Theme edits produce a scoped in-memory draft document that applies to the real app immediately for the current session; the same resolver path must feed draft and saved runtime output. |
 | Reader preset application | `src/lib/theme/themePresets.ts` + `ThemeAdminPage.tsx` | **Workbench-wired + persisted** - Journal / Editorial now apply to the working draft as concrete theme-data transforms plus the active preset id, and Save persists the resolved scoped document. |
 | Reader recipe editor | `src/lib/theme/readerThemeSystem.ts` + `ThemeAdminPage.tsx` | **Workbench-wired** - Component/variant/element recipes edit the same draft that drives preview CSS. |
@@ -682,6 +684,7 @@ Alignment gaps still to close:
 - **Admin semantics** - Admin uses preview/runtime tokens, but not yet a full `admin-*` semantic contract parallel to the reader layer.
 - **Preset completeness** - Journal / Editorial are real draft transforms with preset-specific recipe direction now, but they are still not complete finished light/dark design packages.
 - **Preview truthfulness maintenance** - Reader preview/role reconciliation is now largely in place; future surface additions must be entered into the preview ledger and explicitly classified as role-backed or component-owned instead of drifting ad hoc.
+- **Reader feedback variants** - Reader **general feedback** and **error feedback** now have live consumers, but reader **success / warning / info** panel variants remain future-facing contract values until the reader UI exposes those message surfaces.
 
 ### 5.5 What should stay atomic vs summary vs component-owned
 
@@ -829,11 +832,9 @@ The left side owns component selection, variant selection, attribute selection, 
 
 - `reader.data` = full materialized atomic `StructuredThemeData`
 - `reader.activePresetId` = `journal` | `editorial` | `custom`
-- `reader.darkModeShift` = persisted numeric value
 - `reader.recipes` = persisted reader recipe layer used for runtime CSS generation
 - `admin.data` = full materialized atomic `StructuredThemeData`
 - `admin.activePresetId` = `admin` | `custom`
-- `admin.darkModeShift` = persisted numeric value
 
 Preset ids are retained as **editing metadata / UX context**, but the saved document still stores the fully materialized atomic theme data needed to render immediately at runtime. `custom` means the saved draft no longer matches any shipped preset exactly; it does **not** mean preset context was lost or omitted.
 
@@ -936,6 +937,13 @@ This section defines the UX and token contract for system/status messaging so fe
 - Cover-local save overlays should not compete with a global card-save overlay during the same operation.
 - This narrow implementation is the template for broader rollout across admin and reader surfaces.
 
+### 10.6 Current implementation status (2026-04-27)
+
+- **State styling is live** - The app already uses the shared `--state-*` families broadly for success / warning / error / info styling, so colored status treatments are not ad hoc.
+- **Reader feedback contract is partly consumed** - Reader **general feedback** and **error feedback** now have live consumers, but reader **success / warning / info** feedback panel variants are still future-facing until the reader UI exposes those surfaces.
+- **Messaging behavior is still mixed** - Themed state colors and some themed feedback panels are live, but broader behavior such as consistent notice components, confirmation dialogs, placement rules, and dismissal behavior is still only partially unified.
+- **Theme implication** - The feedback/state color system is now trustworthy enough to style real message surfaces, but the product still needs a fuller message-component rollout before every status path uses one consistent app-level messaging contract.
+
 ---
 
 ## 12. Revision history
@@ -956,3 +964,4 @@ This section defines the UX and token contract for system/status messaging so fe
 | 2026-04-26 | Reframed Theme Management around live draft application instead of a dedicated preview layer, formalized the three-tier model (atomic tokens -> semantic token classes -> recipes), and updated reconciliation steps to target one compile path for draft and saved runtime output. |
 | 2026-04-26 | Added §4.4 and updated §8-§9 to define the next author-facing refactor direction: `Component -> Attribute -> Value`, typed value groups, and the rule that internal token/storage bucket names are not the editing model. |
 | 2026-04-26 | Added §4.5 with the initial canonical component inventory and first-pass attribute list for the upcoming Theme Management editor refactor. |
+| 2026-04-27 | Updated current status, wiring inventory, and status-messaging notes to reflect the runtime reconciliation pass: editor-driven foundations/chrome/controls/cards/overlays/discovery/media surfaces now largely feed the live generator directly, earlier bridge-only outputs have been reduced, and the remaining explicit reader gap is success/warning/info feedback panels without live reader consumers yet. |

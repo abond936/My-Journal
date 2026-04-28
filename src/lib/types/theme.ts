@@ -45,9 +45,14 @@ export interface TypographyTokens {
     text2: string;
   };
   fontFamilies: {
-    sans: string;
-    serif: string;
-    handwriting: string;
+    sans1: string;
+    sans2: string;
+    sans3: string;
+    serif1: string;
+    serif2: string;
+    serif3: string;
+    handwriting1: string;
+    handwriting2: string;
   };
   fontSizes: {
     xs: string;
@@ -68,7 +73,6 @@ export interface TypographyTokens {
   };
   fontWeights: {
     normal: string;
-    increment: string;
     medium: string;
     semibold: string;
     bold: string;
@@ -77,6 +81,10 @@ export interface TypographyTokens {
     base: string;
     tight: string;
     relaxed: string;
+  };
+  styles: {
+    normal: string;
+    italic: string;
   };
 }
 
@@ -449,7 +457,6 @@ export interface ReaderThemeRecipes {
 export interface ScopedThemeSettings {
   data: StructuredThemeData;
   activePresetId?: ReaderThemePresetId | AdminThemePresetId | 'custom';
-  darkModeShift?: number;
   recipes?: ReaderThemeRecipes;
 }
 
@@ -472,7 +479,6 @@ export interface PersistedThemeDocumentData extends ScopedThemeDocumentData {
 export interface ResolvedScopedThemeSettings {
   data: StructuredThemeData;
   activePresetId: ReaderThemePresetId | AdminThemePresetId | 'custom';
-  darkModeShift: number;
   recipes?: ReaderThemeRecipes;
 }
 

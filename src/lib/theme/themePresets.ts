@@ -33,65 +33,65 @@ function cloneReaderRecipes(recipes: ReaderThemeRecipes): ReaderThemeRecipes {
 const JOURNAL_READER_RECIPES: ReaderThemeRecipes = (() => {
   const recipes = cloneReaderRecipes(DEFAULT_READER_THEME_RECIPES);
 
-  recipes.typography.title.family = 'font-family/serif';
+  recipes.typography.title.family = 'font-family/serif1';
   recipes.typography.title.weight = 'font-weight/medium';
   recipes.typography.title.lineHeight = 'line-height/base';
 
-  recipes.typography.storyTitle.family = 'font-family/serif';
+  recipes.typography.storyTitle.family = 'font-family/serif1';
   recipes.typography.storyTitle.size = 'font-size/lg';
   recipes.typography.storyTitle.weight = 'font-weight/medium';
   recipes.typography.storyTitle.lineHeight = 'line-height/base';
 
-  recipes.typography.storyOverlayTitle.family = 'font-family/serif';
+  recipes.typography.storyOverlayTitle.family = 'font-family/serif1';
   recipes.typography.storyOverlayTitle.size = 'font-size/lg';
   recipes.typography.storyOverlayTitle.weight = 'font-weight/medium';
   recipes.typography.storyOverlayTitle.lineHeight = 'line-height/base';
 
   recipes.typography.storyExcerpt.lineHeight = 'line-height/base';
 
-  recipes.typography.galleryTitle.family = 'font-family/serif';
+  recipes.typography.galleryTitle.family = 'font-family/serif1';
   recipes.typography.galleryTitle.weight = 'font-weight/medium';
   recipes.typography.galleryTitle.lineHeight = 'line-height/base';
 
-  recipes.typography.galleryOverlayTitle.family = 'font-family/serif';
+  recipes.typography.galleryOverlayTitle.family = 'font-family/serif1';
   recipes.typography.galleryOverlayTitle.weight = 'font-weight/medium';
   recipes.typography.galleryOverlayTitle.lineHeight = 'line-height/base';
 
-  recipes.typography.galleryHeaderTitle.family = 'font-family/serif';
+  recipes.typography.galleryHeaderTitle.family = 'font-family/serif1';
   recipes.typography.galleryHeaderTitle.weight = 'font-weight/medium';
   recipes.typography.galleryHeaderTitle.lineHeight = 'line-height/base';
 
   recipes.typography.titleCompact.weight = 'font-weight/medium';
   recipes.typography.titleCompact.lineHeight = 'line-height/base';
 
-  recipes.typography.detailTitle.family = 'font-family/serif';
+  recipes.typography.detailTitle.family = 'font-family/serif1';
   recipes.typography.detailTitle.weight = 'font-weight/semibold';
   recipes.typography.detailTitle.lineHeight = 'line-height/base';
 
-  recipes.typography.storyDetailTitle.family = 'font-family/serif';
+  recipes.typography.storyDetailTitle.family = 'font-family/serif1';
   recipes.typography.storyDetailTitle.weight = 'font-weight/semibold';
   recipes.typography.storyDetailTitle.lineHeight = 'line-height/base';
 
-  recipes.typography.galleryDetailTitle.family = 'font-family/serif';
+  recipes.typography.galleryDetailTitle.family = 'font-family/serif1';
   recipes.typography.galleryDetailTitle.size = 'font-size/2xl';
   recipes.typography.galleryDetailTitle.weight = 'font-weight/semibold';
   recipes.typography.galleryDetailTitle.lineHeight = 'line-height/base';
 
-  recipes.typography.discoveryTitle.family = 'font-family/serif';
+  recipes.typography.discoveryTitle.family = 'font-family/serif1';
   recipes.typography.discoveryTitle.weight = 'font-weight/medium';
   recipes.typography.discoveryTitle.lineHeight = 'line-height/base';
 
   recipes.typography.discoveryMeta.weight = 'font-weight/normal';
   recipes.typography.discoveryMeta.lineHeight = 'line-height/base';
 
-  recipes.typography.railSectionTitle.family = 'font-family/serif';
+  recipes.typography.railSectionTitle.family = 'font-family/serif1';
   recipes.typography.railSectionTitle.weight = 'font-weight/medium';
   recipes.typography.railSectionTitle.lineHeight = 'line-height/base';
 
   recipes.typography.railCardTitle.weight = 'font-weight/normal';
   recipes.typography.railCardTitle.lineHeight = 'line-height/base';
 
-  recipes.typography.subtitle.family = 'font-family/serif';
+  recipes.typography.subtitle.family = 'font-family/serif1';
   recipes.typography.subtitle.size = 'font-size/lg';
   recipes.typography.subtitle.lineHeight = 'line-height/relaxed';
 
@@ -116,17 +116,17 @@ const JOURNAL_READER_RECIPES: ReaderThemeRecipes = (() => {
   recipes.typography.quote.weight = 'font-weight/normal';
   recipes.typography.quote.lineHeight = 'line-height/relaxed';
 
-  recipes.typography.question.family = 'font-family/serif';
+  recipes.typography.question.family = 'font-family/serif1';
   recipes.typography.question.size = 'font-size/xl';
   recipes.typography.question.weight = 'font-weight/medium';
   recipes.typography.question.lineHeight = 'line-height/base';
 
-  recipes.typography.questionOverlay.family = 'font-family/serif';
+  recipes.typography.questionOverlay.family = 'font-family/serif1';
   recipes.typography.questionOverlay.size = 'font-size/xl';
   recipes.typography.questionOverlay.weight = 'font-weight/medium';
   recipes.typography.questionOverlay.lineHeight = 'line-height/base';
 
-  recipes.typography.calloutTitle.family = 'font-family/serif';
+  recipes.typography.calloutTitle.family = 'font-family/serif1';
   recipes.typography.calloutTitle.weight = 'font-weight/medium';
   recipes.typography.calloutTitle.lineHeight = 'line-height/base';
 
@@ -182,14 +182,11 @@ export const READER_PRESET_ALIAS_GROUPS: Record<ThemePresetId, ReaderPresetAlias
   journal: {
     page: {},
     chrome: {},
-    card: {
-      '--reader-card-hover-border-color': 'var(--color3)',
-    },
+    card: {},
     detail: {
       '--reader-title-font-family': 'var(--font-family-serif)',
       '--reader-detail-title-font-family': 'var(--font-family-serif)',
       '--reader-detail-title-font-weight': 'var(--font-weight-semibold)',
-      '--reader-subtitle-font-style': 'italic',
     },
     typeTreatments: {
       '--reader-quote-font-family': 'var(--font-family-serif)',
@@ -204,14 +201,11 @@ export const READER_PRESET_ALIAS_GROUPS: Record<ThemePresetId, ReaderPresetAlias
   editorial: {
     page: {},
     chrome: {},
-    card: {
-      '--reader-card-hover-border-color': 'var(--color3)',
-    },
+    card: {},
     detail: {
       '--reader-title-font-family': 'var(--font-family-sans)',
       '--reader-detail-title-font-family': 'var(--font-family-sans)',
       '--reader-detail-title-font-weight': 'var(--font-weight-semibold)',
-      '--reader-subtitle-font-style': 'normal',
     },
     typeTreatments: {
       '--reader-quote-font-family': 'var(--font-family-serif)',
@@ -257,16 +251,14 @@ function patchPaletteHex(themeData: StructuredThemeData, id: number, hex: string
   c.l = `${l}%`;
 }
 
-/** Full theme document matching `theme-data.json` + optional `activePresetId` / `darkModeShift`. */
+/** Full theme document matching `theme-data.json` + optional `activePresetId`. */
 export type ThemeDocumentData = StructuredThemeData & {
-  darkModeShift?: number;
   activePresetId?: ThemePresetId | ThemeAdminPresetId | 'custom';
 };
 
 export function buildJournalPreset(): ThemeDocumentData {
   const t = getBaseThemeData(baseTheme) as ThemeDocumentData;
   t.activePresetId = 'journal';
-  t.darkModeShift = t.darkModeShift ?? 5;
   // Warmer “paper” surfaces (light); keep dark mode readable
   patchThemeColor(t, 1, 'light', '#f3eadf');
   patchThemeColor(t, 1, 'dark', '#1b1613');
@@ -276,10 +268,15 @@ export function buildJournalPreset(): ThemeDocumentData {
   patchPaletteHex(t, 3, '#76513a');
   patchPaletteHex(t, 4, '#b89456');
   // Legible UI + body; handwriting kept for rare display use
-  t.typography.fontFamilies.sans =
+  t.typography.fontFamilies.sans1 =
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
-  t.typography.fontFamilies.serif = '"Georgia", "Times New Roman", serif';
-  t.typography.fontFamilies.handwriting = '"Ink Free", "Segoe Script", "Brush Script MT", cursive';
+  t.typography.fontFamilies.sans2 = '"Helvetica Neue", Helvetica, Arial, sans-serif';
+  t.typography.fontFamilies.sans3 = '"Avenir Next", Avenir, "Segoe UI", sans-serif';
+  t.typography.fontFamilies.serif1 = '"Georgia", "Times New Roman", serif';
+  t.typography.fontFamilies.serif2 = '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif';
+  t.typography.fontFamilies.serif3 = '"Baskerville", "Times New Roman", serif';
+  t.typography.fontFamilies.handwriting1 = '"Ink Free", "Segoe Script", "Brush Script MT", cursive';
+  t.typography.fontFamilies.handwriting2 = '"Snell Roundhand", "Brush Script MT", cursive';
   t.typography.textColors.text2 = 'color2-100';
   t.typography.fontWeights.medium = '450';
   t.typography.fontWeights.semibold = '550';
@@ -309,17 +306,21 @@ export function buildJournalPreset(): ThemeDocumentData {
 export function buildEditorialPreset(): ThemeDocumentData {
   const t = getBaseThemeData(baseTheme) as ThemeDocumentData;
   t.activePresetId = 'editorial';
-  t.darkModeShift = t.darkModeShift ?? 5;
   patchThemeColor(t, 1, 'light', '#eceef2');
   patchThemeColor(t, 1, 'dark', '#14161c');
   patchThemeColor(t, 2, 'light', '#16181d');
   patchThemeColor(t, 2, 'dark', '#eef0f4');
   patchPaletteHex(t, 3, '#0f4c81');
   patchPaletteHex(t, 4, '#c9a227');
-  t.typography.fontFamilies.sans =
+  t.typography.fontFamilies.sans1 =
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
-  t.typography.fontFamilies.serif = '"Georgia", "Times New Roman", serif';
-  t.typography.fontFamilies.handwriting = t.typography.fontFamilies.sans;
+  t.typography.fontFamilies.sans2 = '"Helvetica Neue", Helvetica, Arial, sans-serif';
+  t.typography.fontFamilies.sans3 = '"Avenir Next", Avenir, "Segoe UI", sans-serif';
+  t.typography.fontFamilies.serif1 = '"Georgia", "Times New Roman", serif';
+  t.typography.fontFamilies.serif2 = '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif';
+  t.typography.fontFamilies.serif3 = '"Baskerville", "Times New Roman", serif';
+  t.typography.fontFamilies.handwriting1 = '"Bradley Hand", "Segoe Print", "Ink Free", cursive';
+  t.typography.fontFamilies.handwriting2 = '"Snell Roundhand", "Brush Script MT", cursive';
   t.borders.radius.sm = '0.125rem';
   t.borders.radius.md = '0.375rem';
   t.borders.radius.lg = '0.5rem';
@@ -335,7 +336,6 @@ export function buildEditorialPreset(): ThemeDocumentData {
 export function buildAdminPreset(): ThemeDocumentData {
   const t = getBaseThemeData(baseTheme) as ThemeDocumentData;
   t.activePresetId = 'admin';
-  t.darkModeShift = t.darkModeShift ?? 5;
   patchThemeColor(t, 1, 'light', '#e7eaf0');
   patchThemeColor(t, 1, 'dark', '#111827');
   patchThemeColor(t, 2, 'light', '#111827');
@@ -346,10 +346,15 @@ export function buildAdminPreset(): ThemeDocumentData {
   patchPaletteHex(t, 12, '#b91c1c');
   patchPaletteHex(t, 13, '#b45309');
   patchPaletteHex(t, 14, '#0369a1');
-  t.typography.fontFamilies.sans =
+  t.typography.fontFamilies.sans1 =
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
-  t.typography.fontFamilies.serif = '"Georgia", "Times New Roman", serif';
-  t.typography.fontFamilies.handwriting = t.typography.fontFamilies.sans;
+  t.typography.fontFamilies.sans2 = '"Helvetica Neue", Helvetica, Arial, sans-serif';
+  t.typography.fontFamilies.sans3 = '"Avenir Next", Avenir, "Segoe UI", sans-serif';
+  t.typography.fontFamilies.serif1 = '"Georgia", "Times New Roman", serif';
+  t.typography.fontFamilies.serif2 = '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif';
+  t.typography.fontFamilies.serif3 = '"Baskerville", "Times New Roman", serif';
+  t.typography.fontFamilies.handwriting1 = '"Bradley Hand", "Segoe Print", "Ink Free", cursive';
+  t.typography.fontFamilies.handwriting2 = '"Snell Roundhand", "Brush Script MT", cursive';
   t.spacing.unit = '4px';
   t.borders.radius.sm = '0.2rem';
   t.borders.radius.md = '0.35rem';
@@ -387,14 +392,12 @@ function toResolvedScopedThemeSettings(
 ): ResolvedScopedThemeSettings {
   const {
     activePresetId,
-    darkModeShift,
     ...data
   } = theme;
 
   return {
     data: data as StructuredThemeData,
     activePresetId: activePresetId ?? fallbackPresetId,
-    darkModeShift: darkModeShift ?? 5,
     recipes,
   };
 }
@@ -419,13 +422,11 @@ export function getDefaultScopedThemeDocument(): ScopedThemeDocumentData {
     reader: {
       data: reader.data,
       activePresetId: reader.activePresetId,
-      darkModeShift: reader.darkModeShift,
       recipes: reader.recipes,
     },
     admin: {
       data: admin.data,
       activePresetId: admin.activePresetId,
-      darkModeShift: admin.darkModeShift,
     },
   };
 }

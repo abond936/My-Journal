@@ -57,8 +57,8 @@
 
 .errorContainer {
   padding: var(--spacing-sm);
-  background-color: var(--reader-support-control-background-color);
-  border: var(--border-width-thin) solid var(--reader-support-control-border-color);
+  background-color: var(--reader-feedback-panel-background-color);
+  border: var(--border-width-thin) solid var(--reader-feedback-panel-border-color);
   border-radius: var(--border-radius-lg);
   color: var(--reader-support-hint-color);
   font-family: var(--reader-support-hint-font-family);

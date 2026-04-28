@@ -4,7 +4,7 @@
   display: flex; /* Use flexbox for robust alignment */
   flex-direction: column; /* Stack image and caption vertically */
   margin: var(--spacing-md) 0;
-  border: var(--border-width-thin) solid transparent; /* Border for spacing, transparent by default */
+  border: var(--border-width-thin) solid var(--reader-media-frame-border-color);
   border-radius: var(--border-radius-md);
   padding: var(--spacing-xs);
   background-color: var(--reader-media-frame-background-color);
@@ -107,6 +107,7 @@
   height: var(--spacing-xl);
   background-color: var(--reader-media-control-background-color);
   color: var(--reader-media-control-text-color);
+  border: var(--border-width-thin) solid var(--reader-media-control-border-color);
   border-radius: var(--border-radius-md);
   cursor: grab;
   display: flex;

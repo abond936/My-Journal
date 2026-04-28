@@ -46,7 +46,7 @@
   transform: translateY(-50%);
   background: var(--reader-media-control-background-color);
   color: var(--reader-media-control-text-color);
-  border: none;
+  border: var(--border-width-thin) solid var(--reader-media-control-border-color);
   width: var(--spacing-2xl);
   height: var(--spacing-2xl);
   border-radius: var(--border-radius-full);
@@ -135,6 +135,7 @@
   border-radius: var(--border-radius-lg);
   overflow: hidden;
   background: var(--reader-media-frame-background-color);
+  border: var(--border-width-thin) solid var(--reader-media-frame-border-color);
   aspect-ratio: 3/2;
 }
 

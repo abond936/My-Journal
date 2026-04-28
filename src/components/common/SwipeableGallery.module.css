@@ -5,7 +5,7 @@
   margin: 0 auto;
   overflow: hidden;
   background-color: var(--reader-media-frame-background-color);
-  border: var(--border-width-thin) solid var(--reader-discovery-border-color);
+  border: var(--border-width-thin) solid var(--reader-media-frame-border-color);
   border-radius: var(--reader-card-border-radius);
 }
 
