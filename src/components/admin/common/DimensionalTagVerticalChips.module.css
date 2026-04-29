@@ -28,12 +28,12 @@
 }
 
 .dimBlockDivider {
-  border-top: var(--border-width-thin) solid var(--border1-color);
+  border-top: var(--border-width-thin) solid var(--admin-window-border-color);
 }
 
 .empty {
   font: var(--admin-grid-overlay-font);
-  color: var(--text2-color);
+  color: var(--admin-support-meta-color);
   /* `font` shorthand resets style; restore after */
   font-style: italic;
 }
@@ -50,8 +50,8 @@
   padding: 0 1px 0 2px;
   border: none;
   border-radius: var(--border-radius-sm);
-  background: color-mix(in srgb, var(--layout-background2-color) 50%, transparent);
-  color: var(--text1-color);
+  background: color-mix(in srgb, var(--admin-window-background-color) 70%, transparent);
+  color: var(--admin-support-label-color);
   font: var(--admin-grid-overlay-font);
   text-align: left;
 }

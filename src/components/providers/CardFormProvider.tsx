@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { mutate as globalMutate } from 'swr';
 import { Card, CardUpdate, cardSchema, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 import { Media } from '@/lib/types/photo';
@@ -10,6 +11,7 @@ import {
   persistableSnapshotsEqual,
 } from '@/lib/utils/cardUtils';
 import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
+import { useOptionalCardContext } from '@/components/providers/CardProvider';
 
 /** Fields refreshed from Studio shell after relationship DnD / PATCH (same card `docId`). */
 export type ShellRelationshipSnapshot = Pick<
@@ -49,7 +51,7 @@ interface FormContextValue {
   allTags: Tag[];
   
   // Field Updates
-  setField: (field: keyof CardUpdate, value: any) => void;
+  setField: <K extends keyof CardUpdate>(field: K, value: CardUpdate[K]) => void;
   updateCoverImage: (media: Media | null, focalPoint?: { x: number; y: number }) => void;
   updateTags: (newTags: Tag[]) => void;
   updateChildIds: (newChildIds: string[]) => void;
@@ -156,6 +158,7 @@ function mergeInitialCard(card: Card | null): CardUpdate {
  * CardFormProvider Component
  */
 export function CardFormProvider({ children, initialCard, allTags, onSave }: FormProviderProps) {
+  const cardContext = useOptionalCardContext();
   const [formState, setFormState] = useState<FormState>(() => {
     const card = mergeInitialCard(initialCard);
     return {
@@ -305,7 +308,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
   }, [isDirty]);
 
-  const setField = useCallback((field: keyof CardUpdate, value: any) => {
+  const setField = useCallback(<K extends keyof CardUpdate>(field: K, value: CardUpdate[K]) => {
     setFormState((prev) => {
       if (!prev.cardData) return prev;
       if (value === prev.cardData[field]) return prev;
@@ -423,9 +426,12 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
         const payload = dehydrateCardForSave(dataToSave);
 
         // Remove derived fields – server will regenerate
-        delete (payload as any).filterTags;
+        delete (payload as { filterTags?: unknown }).filterTags;
 
         const savedCard = await onSave(payload);
+        if (savedCard) {
+          cardContext?.patchVisibleCard(savedCard);
+        }
 
         const baseline =
           savedCard != null
@@ -446,7 +452,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
         return false;
       }
     },
-    [validateForm, batchStateUpdate, onSave, formState.cardData, mergeEditorContentInto]
+    [validateForm, batchStateUpdate, onSave, formState.cardData, mergeEditorContentInto, cardContext]
   );
 
   const persistFieldPatch = useCallback(
@@ -469,6 +475,44 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
         if (!savedCard) {
           return false;
         }
+        cardContext?.patchVisibleCard(savedCard);
+
+        void globalMutate(
+          (key) => typeof key === 'string' && key.startsWith('/api/cards?'),
+          (current) => {
+            if (!current) return current;
+
+            const patchItems = (items: unknown) => {
+              if (!Array.isArray(items)) return items;
+              return items.map((item) => {
+                if (!item || typeof item !== 'object') return item;
+                return (item as Card).docId === savedCard.docId ? savedCard : item;
+              });
+            };
+
+            if (Array.isArray(current)) {
+              return current.map((page) => {
+                if (!page || typeof page !== 'object' || !('items' in page)) return page;
+                return {
+                  ...page,
+                  items: patchItems((page as { items?: unknown }).items),
+                };
+              });
+            }
+
+            if (typeof current === 'object' && 'items' in current) {
+              return {
+                ...current,
+                items: patchItems((current as { items?: unknown }).items),
+              };
+            }
+
+            return current;
+          },
+          {
+            revalidate: false,
+          }
+        );
 
         const savedBaseline = mergeInitialCard(savedCard);
         const keysToSync = new Set<keyof CardUpdate>(
@@ -503,7 +547,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
         return false;
       }
     },
-    [onSave]
+    [onSave, cardContext]
   );
 
   const resetForm = useCallback(() => {

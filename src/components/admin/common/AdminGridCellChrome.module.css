@@ -7,8 +7,8 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  background: var(--layout-background1-color);
-  border: var(--border-width-thin) solid var(--border1-color);
+  background: var(--admin-window-background-color);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
   border-radius: var(--border-radius-md);
   overflow: hidden;
   cursor: pointer;
@@ -16,13 +16,13 @@
 }
 
 .cell:hover {
-  border-color: var(--color3);
+  border-color: var(--admin-chrome-active-control-border-color);
   box-shadow: var(--shadow-sm);
 }
 
 .cell.selected {
-  border-color: var(--color1);
-  box-shadow: 0 0 0 2px var(--color1);
+  border-color: var(--admin-chrome-active-control-border-color);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--admin-chrome-active-control-border-color) 70%, transparent);
 }
 
 .thumbStack {
@@ -125,7 +125,7 @@
   width: 16px;
   height: 16px;
   cursor: pointer;
-  accent-color: var(--color1);
+  accent-color: var(--admin-chrome-active-control-background-color);
 }
 
 /* Type/status/source/assigned — tokenized with dimensional tags on same cells */
@@ -135,9 +135,9 @@
   font: var(--admin-grid-overlay-font);
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  background: color-mix(in srgb, var(--layout-background1-color) 50%, transparent);
-  color: var(--text1-color);
-  border: var(--border-width-thin) solid color-mix(in srgb, var(--border1-color) 50%, transparent);
+  background: color-mix(in srgb, var(--admin-window-background-color) 50%, transparent);
+  color: var(--admin-chrome-text-color);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-window-border-color) 50%, transparent);
   backdrop-filter: blur(4px);
 }
 
@@ -145,11 +145,11 @@
   padding: 2px 5px;
   border-radius: var(--border-radius-sm);
   font: var(--admin-grid-overlay-font);
-  color: var(--text2-color);
+  color: var(--admin-chrome-meta-color);
   text-transform: none;
   letter-spacing: 0.02em;
-  background: color-mix(in srgb, var(--layout-background1-color) 50%, transparent);
-  border: var(--border-width-thin) solid color-mix(in srgb, var(--border1-color) 50%, transparent);
+  background: color-mix(in srgb, var(--admin-window-background-color) 50%, transparent);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-window-border-color) 50%, transparent);
   backdrop-filter: blur(4px);
 }
 
@@ -198,7 +198,7 @@
   font: var(--admin-grid-overlay-font);
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  background: color-mix(in srgb, var(--layout-background2-color) 55%, transparent);
+  background: color-mix(in srgb, var(--admin-window-background-color) 55%, transparent);
   color: #fff;
   border: none;
   text-shadow: 0 1px 2px rgb(0 0 0 / 40%);
@@ -209,9 +209,9 @@
   width: 24px;
   height: 24px;
   padding: 0;
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
   border-radius: var(--border-radius-sm);
-  background: color-mix(in srgb, var(--layout-background1-color) 90%, transparent);
+  background: color-mix(in srgb, var(--admin-window-background-color) 90%, transparent);
   cursor: pointer;
   font-size: 12px;
   line-height: 1;
@@ -231,13 +231,13 @@
   width: 24px;
   height: 24px;
   padding: 0;
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
   border-radius: var(--border-radius-sm);
-  background: color-mix(in srgb, var(--layout-background1-color) 90%, transparent);
+  background: color-mix(in srgb, var(--admin-window-background-color) 90%, transparent);
   cursor: grab;
   font-size: 9px;
   line-height: 1;
-  color: var(--text2-color);
+  color: var(--admin-chrome-meta-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -264,10 +264,10 @@
   font-size: 9px;
   line-height: 1;
   cursor: grab;
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
   border-radius: var(--border-radius-sm);
-  background: color-mix(in srgb, var(--layout-background1-color) 92%, transparent);
-  color: var(--text2-color);
+  background: color-mix(in srgb, var(--admin-window-background-color) 92%, transparent);
+  color: var(--admin-chrome-meta-color);
   backdrop-filter: blur(4px);
 }
 

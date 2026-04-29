@@ -55,6 +55,7 @@ export interface TypographyTokens {
     handwriting2: string;
   };
   fontSizes: {
+    xxs: string;
     xs: string;
     sm: string;
     base: string;
@@ -169,9 +170,12 @@ export interface ZIndexTokens {
 /**
  * Gradient tokens
  */
+export type CanvasTextureToken = 'none' | 'fineGrain' | 'paperWash';
+
 export interface GradientTokens {
   bottomOverlay: string;
   bottomOverlayStrong: string;
+  canvasTexture?: CanvasTextureToken;
 }
 
 /**
@@ -313,7 +317,7 @@ export type ThemeScopeId = 'reader' | 'admin';
 
 export type ThemeRecipeTokenRef =
   | `font-family/${'sans' | 'serif' | 'handwriting'}`
-  | `font-size/${'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl'}`
+  | `font-size/${'xxs' | 'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl'}`
   | `font-weight/${'normal' | 'medium' | 'semibold' | 'bold'}`
   | `line-height/${'base' | 'tight' | 'relaxed'}`
   | `spacing/${'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl'}`
@@ -323,9 +327,10 @@ export type ThemeRecipeTokenRef =
   | `palette/${number}`
   | `layout/${string}`
   | `component/${string}`
-  | `semantic/reader/${'tonal-text-primary' | 'tonal-text-secondary' | 'contrast-on-fill-text' | 'overlay-contrast-text' | 'accent' | 'focus-ring' | 'canvas-surface' | 'canvas-border' | 'chrome-surface' | 'chrome-border' | 'field-surface' | 'field-border' | 'feedback-surface' | 'feedback-border' | 'media-frame-surface' | 'media-frame-border' | 'discovery-surface' | 'discovery-border' | 'media-control-surface' | 'media-control-border' | 'lightbox-control-surface' | 'lightbox-control-border' | 'overlay-scrim' | 'overlay-scrim-strong' | 'overlay-border'}`
+  | `semantic/reader/${'tonal-text-primary' | 'tonal-text-secondary' | 'contrast-on-fill-text' | 'overlay-contrast-text' | 'accent' | 'focus-ring' | 'canvas-surface' | 'canvas-border' | 'chrome-surface' | 'chrome-border' | 'field-surface' | 'field-border' | 'feedback-surface' | 'feedback-border' | 'media-frame-surface' | 'media-frame-border' | 'discovery-surface' | 'discovery-border' | 'media-control-surface' | 'media-control-border' | 'lightbox-control-surface' | 'lightbox-control-border' | 'overlay-scrim' | 'overlay-scrim-strong' | 'overlay-border' | 'covered-fade' | 'covered-fade-strong'}`
   | `state/${'success' | 'error' | 'warning' | 'info'}/${'background' | 'border'}`
   | `gradient/${'bottomOverlay' | 'bottomOverlayStrong'}`
+  | `shared/card/${'background' | 'border' | 'radius' | 'shadow' | 'shadowHover' | 'padding'}`
   | `literal/${string}`;
 
 export interface ReaderTypographyRoleRecipe {
@@ -382,11 +387,13 @@ export interface ReaderThemeRecipes {
     excerpt: ReaderTypographyRoleRecipe;
     meta: ReaderTypographyRoleRecipe;
     caption: ReaderTypographyRoleRecipe;
-    chromeTitle: ReaderTypographyRoleRecipe;
-    chromeLabel: ReaderTypographyRoleRecipe;
+    chromeText: ReaderTypographyRoleRecipe;
     chromeMeta: ReaderTypographyRoleRecipe;
-    chromeHint: ReaderTypographyRoleRecipe;
-    fieldControl: ReaderTypographyRoleRecipe;
+    supportTitle: ReaderTypographyRoleRecipe;
+    supportLabel: ReaderTypographyRoleRecipe;
+    supportMeta: ReaderTypographyRoleRecipe;
+    supportHint: ReaderTypographyRoleRecipe;
+    supportControlText: ReaderTypographyRoleRecipe;
     feedbackTitle: ReaderTypographyRoleRecipe;
     feedbackMeta: ReaderTypographyRoleRecipe;
     feedbackHint: ReaderTypographyRoleRecipe;
@@ -411,16 +418,21 @@ export interface ReaderThemeRecipes {
     storyCardClosed: ReaderSurfaceRoleRecipe;
     qaCardClosed: ReaderSurfaceRoleRecipe;
     galleryCardClosed: ReaderSurfaceRoleRecipe;
+    quoteCardClosed: ReaderSurfaceRoleRecipe;
+    calloutCardClosed: ReaderSurfaceRoleRecipe;
     card: ReaderSurfaceRoleRecipe;
     canvasDetail: ReaderSurfaceRoleRecipe;
     cardDiscovery: ReaderSurfaceRoleRecipe;
     canvasMediaFrame: ReaderSurfaceRoleRecipe;
+    windowSurface: ReaderSurfaceRoleRecipe;
+    windowFrame: ReaderSurfaceRoleRecipe;
+    windowElevation: ReaderSurfaceRoleRecipe;
   };
   controls: {
     chromeActiveTab: ReaderControlRoleRecipe;
-    fieldControl: ReaderControlRoleRecipe;
-    fieldControlStrong: ReaderControlRoleRecipe;
-    chromeFilterChip: ReaderControlRoleRecipe;
+    supportControl: ReaderControlRoleRecipe;
+    supportControlStrong: ReaderControlRoleRecipe;
+    supportChip: ReaderControlRoleRecipe;
     feedbackAction: ReaderControlRoleRecipe;
     mediaControl: ReaderControlRoleRecipe;
     lightboxControl: ReaderControlRoleRecipe;
@@ -437,9 +449,9 @@ export interface ReaderThemeRecipes {
     muted: ReaderControlRoleRecipe;
   };
   overlays: {
-    card: ReaderOverlayRoleRecipe;
-    cardStrong: ReaderOverlayRoleRecipe;
-    lightbox: ReaderOverlayRoleRecipe;
+    coveredFade: ReaderOverlayRoleRecipe;
+    galleryOverlay: ReaderOverlayRoleRecipe;
+    lightboxBackdrop: ReaderOverlayRoleRecipe;
   };
   iconography: {
     chrome: ThemeRecipeTokenRef;
@@ -451,6 +463,7 @@ export interface ReaderThemeRecipes {
     quoteWatermarkOpacity: string;
     questionWatermarkOpacity: string;
     calloutWatermarkOpacity: string;
+    calloutBodyListLineHeight: ThemeRecipeTokenRef;
   };
 }
 

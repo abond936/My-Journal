@@ -17,10 +17,10 @@
 }
 
 .logo {
-  font-family: var(--reader-discovery-title-font-family);
-  font-size: var(--reader-discovery-title-font-size);
-  font-weight: var(--reader-discovery-title-font-weight);
-  line-height: var(--reader-discovery-title-line-height);
+  font-family: var(--reader-chrome-text-font-family);
+  font-size: var(--reader-chrome-text-font-size);
+  font-weight: var(--reader-chrome-text-font-weight);
+  line-height: var(--reader-chrome-text-line-height);
   color: var(--reader-chrome-text-color);
   text-decoration: none;
 }

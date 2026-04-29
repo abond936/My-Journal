@@ -6,11 +6,12 @@ import ThemeAdminPage from '@/components/admin/theme-admin/ThemeAdminPage';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import styles from './ThemeAdminOverlay.module.css';
 
-const DEFAULT_OVERLAY_WIDTH = 1380;
+const DEFAULT_OVERLAY_WIDTH = 1794;
 const DEFAULT_OVERLAY_HEIGHT = 860;
 const MIN_OVERLAY_WIDTH = 860;
 const MIN_OVERLAY_HEIGHT = 620;
 const VIEWPORT_MARGIN = 24;
+const LEGACY_DEFAULT_OVERLAY_WIDTH = 1380;
 
 type OverlayRect = {
   width: number;
@@ -90,7 +91,14 @@ export default function ThemeAdminOverlay() {
           typeof parsed.left === 'number' &&
           typeof parsed.top === 'number'
         ) {
-          setOverlayRect(constrainOverlayRect(parsed as OverlayRect));
+          const upgradedRect: OverlayRect = {
+            ...(parsed as OverlayRect),
+            width:
+              parsed.width === LEGACY_DEFAULT_OVERLAY_WIDTH
+                ? DEFAULT_OVERLAY_WIDTH
+                : parsed.width,
+          };
+          setOverlayRect(constrainOverlayRect(upgradedRect));
           return;
         }
       } catch {
@@ -268,7 +276,7 @@ export default function ThemeAdminOverlay() {
               X
             </button>
           </div>
-          <div className={styles.body}>
+          <div className={`themeDraftAdminScope ${styles.body}`}>
             <ThemeAdminPage />
           </div>
         </aside>

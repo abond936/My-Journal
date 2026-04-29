@@ -24,9 +24,6 @@ export default function ViewTagLibrarySidebarPane() {
 
   return (
     <div className={styles.wrap}>
-      <p className={styles.intro}>
-        Drag by the handle to reorder; hold <strong>Shift</strong> to reparent. Use <code>+</code> to add a child.
-      </p>
       {loading ? <p className={styles.statusLine}>Loading tags…</p> : null}
       {error ? <p className={tagAdminStyles.error}>{error.toString()}</p> : null}
       {isSaving ? <p className={styles.statusLine}>Saving…</p> : null}
@@ -35,6 +32,7 @@ export default function ViewTagLibrarySidebarPane() {
           <TagAdminList
             tagTree={tagTree}
             stackDimensionColumns
+            hideDimensionColumnHeadings
             onReorder={handleReorder}
             onReparent={handleReparent}
             onCreateTag={handleCreateTag}

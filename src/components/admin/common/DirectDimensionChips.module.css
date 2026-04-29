@@ -15,8 +15,8 @@
   padding: 1px 4px;
   border-radius: var(--border-radius-sm);
   border: none;
-  background: var(--layout-background2-color);
-  color: var(--text1-color);
+  background: var(--admin-window-background-color);
+  color: var(--admin-support-label-color);
 }
 
 .chipEmpty {
@@ -28,8 +28,8 @@
   padding: 1px 4px;
   border-radius: var(--border-radius-sm);
   border: none;
-  background: var(--layout-background2-color);
-  color: var(--text2-color);
+  background: var(--admin-window-background-color);
+  color: var(--admin-support-meta-color);
   font-style: italic;
 }
 
@@ -44,7 +44,7 @@
 
 .chipMore {
   flex-shrink: 0;
-  color: var(--text2-color);
+  color: var(--admin-support-meta-color);
   font-weight: var(--font-weight-medium);
 }
 
@@ -63,10 +63,10 @@
   align-items: center;
   gap: 4px;
   box-sizing: border-box;
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
   border-radius: var(--border-radius-sm);
-  background: var(--layout-background3-color, var(--layout-background2-color));
-  color: var(--text1-color);
+  background: var(--admin-window-background-color);
+  color: var(--admin-support-label-color);
   font-size: 15px;
   line-height: 1.2;
   padding: 2px 6px;
@@ -92,7 +92,7 @@
 }
 
 .railDimDivider {
-  border-top: var(--border-width-thin) solid var(--border1-color);
+  border-top: var(--border-width-thin) solid var(--admin-window-border-color);
 }
 
 .railLinePill {
@@ -143,6 +143,6 @@
 }
 
 .railEmpty {
-  color: var(--text2-color);
+  color: var(--admin-support-meta-color);
   font-style: italic;
 }

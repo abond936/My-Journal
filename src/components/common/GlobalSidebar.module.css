@@ -1,6 +1,7 @@
 .sidebar {
-    width: var(--sidebar-width);
-    background-color: var(--reader-chrome-background-color);
+    width: 100%;
+    box-sizing: border-box;
+    background-color: var(--reader-sidebar-background-color);
     transition: margin-left var(--transition-short) ease-in-out;
     padding: var(--spacing-lg);
     padding-top: calc(var(--header-height) - var(--spacing-2xl));
@@ -30,18 +31,29 @@
 .title {
   margin-top: 0;
   margin-bottom: var(--spacing-md);
-  font-family: var(--reader-support-title-font-family);
-  font-size: var(--reader-support-title-font-size);
-  font-weight: var(--reader-support-title-font-weight);
-  line-height: var(--reader-support-title-line-height);
-  color: var(--reader-support-title-color);
+  font-family: var(--reader-chrome-text-font-family);
+  font-size: var(--reader-chrome-text-font-size);
+  font-weight: var(--reader-chrome-text-font-weight);
+  line-height: var(--reader-chrome-text-line-height);
+  color: var(--reader-chrome-text-color);
 }
 
   .modeTabs {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--spacing-xs);
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-xs);
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    padding-bottom: var(--spacing-xs);
+    background-color: var(--reader-sidebar-background-color);
+  }
+
+  .modeActions {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: var(--spacing-sm);
   }
 
   .modeTab {
@@ -58,50 +70,50 @@
   }
 
   .modeTabActive {
-    background-color: var(--reader-support-control-strong-background-color);
-    color: var(--reader-support-control-strong-text-color);
-    border-color: var(--reader-support-control-strong-border-color);
+    background-color: var(--reader-chrome-active-control-background-color);
+    color: var(--reader-chrome-active-control-text-color);
+    border-color: var(--reader-chrome-active-control-border-color);
     font-weight: var(--reader-support-control-font-weight);
   }
 
   .sidebarSection {
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
   }
 
 .sectionHeading {
   margin: 0 0 var(--spacing-xs) 0;
-  font-family: var(--reader-support-title-font-family);
-  font-size: var(--reader-support-title-font-size);
-  font-weight: var(--reader-support-title-font-weight);
-  line-height: var(--reader-support-title-line-height);
-  color: var(--reader-support-title-color);
+  font-family: var(--reader-chrome-text-font-family);
+  font-size: var(--reader-chrome-text-font-size);
+  font-weight: var(--reader-chrome-text-font-weight);
+  line-height: var(--reader-chrome-text-line-height);
+  color: var(--reader-chrome-text-color);
 }
 
   .dimensionsBlock {
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
   }
 
 .dimensionsLabel {
   display: block;
-  font-family: var(--reader-support-label-font-family);
-  font-size: var(--reader-support-label-font-size);
-  font-weight: var(--reader-support-label-font-weight);
-  line-height: var(--reader-support-label-line-height);
-  color: var(--reader-support-label-color);
+  font-family: var(--reader-chrome-text-font-family);
+  font-size: var(--reader-chrome-text-font-size);
+  font-weight: var(--reader-chrome-text-font-weight);
+  line-height: var(--reader-chrome-text-line-height);
+  color: var(--reader-chrome-text-color);
   margin-bottom: var(--spacing-xs);
 }
 
   .searchBlock {
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
   }
 
 .searchTagsLabel {
   display: block;
-  font-family: var(--reader-support-label-font-family);
-  font-size: var(--reader-support-label-font-size);
-  font-weight: var(--reader-support-label-font-weight);
-  line-height: var(--reader-support-label-line-height);
-  color: var(--reader-support-label-color);
+  font-family: var(--reader-chrome-text-font-family);
+  font-size: var(--reader-chrome-text-font-size);
+  font-weight: var(--reader-chrome-text-font-weight);
+  line-height: var(--reader-chrome-text-line-height);
+  color: var(--reader-chrome-text-color);
   margin-bottom: var(--spacing-xs);
 }
 
@@ -158,63 +170,100 @@
   .collectionGroups {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md);
+    gap: 2px;
   }
 
-  .collectionGroup {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xs);
-  }
-
-  .collectionGroupLabel {
-    font-family: var(--reader-support-meta-font-family);
-    font-size: var(--reader-support-meta-font-size);
-    font-weight: var(--reader-support-meta-font-weight);
-    line-height: var(--reader-support-meta-line-height);
-    color: var(--reader-support-meta-color);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .collectionList {
+  .collectionTreeList {
     list-style: none;
     padding: 0;
     margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
   }
 
-  .collectionList li {
-    margin-bottom: var(--spacing-xs);
+  .collectionTreeNode {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .collectionRow {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .collectionExpandButton {
+    all: unset;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 1.2rem;
+    min-width: 1.2rem;
+    min-height: 1.35rem;
+    color: var(--reader-chrome-text-color);
+    cursor: pointer;
+    opacity: 0.75;
+    box-sizing: border-box;
+  }
+
+  .collectionExpandButton:hover:not(:disabled) {
+    opacity: 1;
+  }
+
+  .collectionExpandButton:disabled {
+    cursor: default;
+    opacity: 0.28;
+  }
+
+  .collectionExpandIcon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    line-height: 1;
   }
 
   .collectionItem {
     display: block;
+    flex: 1 1 auto;
     width: 100%;
-    padding: var(--spacing-sm);
+    padding: 1px var(--spacing-xs);
     font-family: var(--reader-support-control-font-family);
-    font-size: var(--reader-support-control-font-size);
+    font-size: var(--font-size-xs);
     font-weight: var(--reader-support-control-font-weight);
     line-height: var(--reader-support-control-line-height);
     text-align: left;
-    background: var(--reader-support-control-background-color);
-    border: var(--border-width-thin) solid var(--reader-support-control-border-color);
-    border-radius: var(--border-radius-md);
+    background: transparent;
+    border: none;
+    border-radius: var(--border-radius-sm);
     color: var(--reader-support-control-text-color);
     cursor: pointer;
     transition: background-color var(--transition-short);
+  }
+
+  .collectionItemActive {
+    background-color: var(--reader-chrome-active-control-background-color);
+    color: var(--reader-chrome-active-control-text-color);
   }
 
   .collectionItem:hover {
     background-color: var(--reader-support-control-hover-background-color);
   }
 
+  .collectionItemLabel {
+    display: inline-block;
+    min-width: 0;
+  }
+
   .collectionCount {
     margin-left: var(--spacing-xs);
-    font-family: var(--reader-support-meta-font-family);
-    font-size: var(--reader-support-meta-font-size);
-    font-weight: var(--reader-support-meta-font-weight);
-    line-height: var(--reader-support-meta-line-height);
-    color: var(--reader-support-meta-color);
+    font-family: var(--reader-chrome-meta-font-family);
+    font-size: var(--reader-chrome-meta-font-size);
+    font-weight: var(--reader-chrome-meta-font-weight);
+    line-height: var(--reader-chrome-meta-line-height);
+    color: var(--reader-chrome-muted-color);
   }
 
   .collectionEmpty {
@@ -233,11 +282,11 @@
 
   .activeFiltersLabel {
     display: block;
-    font-family: var(--reader-support-label-font-family);
-    font-size: var(--reader-support-label-font-size);
-    font-weight: var(--reader-support-label-font-weight);
-    line-height: var(--reader-support-label-line-height);
-    color: var(--reader-support-label-color);
+    font-family: var(--reader-chrome-text-font-family);
+    font-size: var(--reader-chrome-text-font-size);
+    font-weight: var(--reader-chrome-text-font-weight);
+    line-height: var(--reader-chrome-text-line-height);
+    color: var(--reader-chrome-text-color);
     margin-bottom: var(--spacing-xs);
   }
 
@@ -250,14 +299,14 @@
 
   .activeFiltersResetTypes {
     padding: 2px var(--spacing-sm);
-    font-family: var(--reader-support-meta-font-family);
-    font-size: var(--reader-support-meta-font-size);
-    font-weight: var(--reader-support-meta-font-weight);
-    line-height: var(--reader-support-meta-line-height);
+    font-family: var(--reader-chrome-meta-font-family);
+    font-size: var(--reader-chrome-meta-font-size);
+    font-weight: var(--reader-chrome-meta-font-weight);
+    line-height: var(--reader-chrome-meta-line-height);
     border: var(--border-width-thin) dashed var(--reader-support-control-border-color);
     border-radius: var(--border-radius-md);
     background: transparent;
-    color: var(--reader-support-meta-color);
+    color: var(--reader-chrome-muted-color);
     cursor: pointer;
   }
 
@@ -271,15 +320,15 @@
     align-items: center;
     gap: var(--spacing-xs);
     padding: 2px var(--spacing-sm);
-    font-family: var(--reader-support-meta-font-family);
-    font-size: var(--reader-support-meta-font-size);
-    background-color: var(--reader-support-control-strong-background-color);
-    color: var(--reader-support-control-strong-text-color);
-    border: var(--border-width-thin) solid var(--reader-support-control-strong-border-color);
+    font-family: var(--reader-support-control-font-family);
+    font-size: var(--reader-support-control-font-size);
+    background-color: var(--reader-support-chip-background-color);
+    color: var(--reader-support-chip-text-color);
+    border: var(--border-width-thin) solid var(--reader-support-chip-border-color);
     border-radius: var(--border-radius-md);
     max-width: 100%;
-    font-weight: var(--reader-support-meta-font-weight);
-    line-height: var(--reader-support-meta-line-height);
+    font-weight: var(--reader-support-control-font-weight);
+    line-height: var(--reader-support-control-line-height);
   }
 
   .filterChipRemove {
@@ -300,18 +349,19 @@
   }
 
   .filterChipRemove:hover {
-    background-color: var(--reader-chrome-control-subtle-hover-background-color);
+    background-color: var(--reader-support-chip-hover-background-color);
   }
 
   .dimensionTabs {
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-xs);
+    flex-wrap: nowrap;
+    gap: 2px;
     margin-bottom: 0;
   }
 
   .dimensionTab {
-    padding: var(--spacing-xs) var(--spacing-sm);
+    flex: 1 1 0;
+    padding: 2px;
     font-family: var(--reader-support-control-font-family);
     font-size: var(--reader-support-control-font-size);
     font-weight: var(--reader-support-control-font-weight);
@@ -330,9 +380,9 @@
   }
 
   .dimensionTabActive {
-    background-color: var(--reader-support-control-strong-background-color);
-    color: var(--reader-support-control-strong-text-color);
-    border-color: var(--reader-support-control-strong-border-color);
+    background-color: var(--reader-chrome-active-control-background-color);
+    color: var(--reader-chrome-active-control-text-color);
+    border-color: var(--reader-chrome-active-control-border-color);
     font-weight: var(--reader-support-control-font-weight);
   }
 
@@ -340,14 +390,14 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 2.25rem;
-    min-height: 2.25rem;
-    padding: var(--spacing-xs);
+    min-width: 1.9rem;
+    min-height: 1.9rem;
+    padding: 2px;
   }
 
   .dimensionTabIcon svg {
-    width: 1.15rem;
-    height: 1.15rem;
+    width: 1.05rem;
+    height: 1.05rem;
     flex-shrink: 0;
   }
 
@@ -365,13 +415,15 @@
 
   .cardTypeChips {
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-xs);
+    flex-wrap: nowrap;
+    gap: 2px;
   }
 
   .cardTypeChip {
-    min-height: 36px;
-    padding: 0 var(--spacing-sm);
+    flex: 1 1 0;
+    min-width: 1.9rem;
+    min-height: 1.9rem;
+    padding: 2px;
     font-family: var(--reader-support-control-font-family);
     font-size: var(--reader-support-control-font-size);
     font-weight: var(--reader-support-control-font-weight);
@@ -391,10 +443,24 @@
   }
 
   .cardTypeChipActive {
-    background-color: var(--reader-support-control-strong-background-color);
-    color: var(--reader-support-control-strong-text-color);
-    border-color: var(--reader-support-control-strong-border-color);
+    background-color: var(--reader-chrome-active-control-background-color);
+    color: var(--reader-chrome-active-control-text-color);
+    border-color: var(--reader-chrome-active-control-border-color);
     font-weight: var(--reader-support-control-font-weight);
+  }
+
+  .cardTypeChipIcon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+  }
+
+  .cardTypeChipIcon svg {
+    width: 1.05rem;
+    height: 1.05rem;
+    flex-shrink: 0;
   }
 
   .typeSelectPlaceholder {
@@ -420,7 +486,7 @@
   }
 
   .navigation {
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
   }
 
   /* Admin + /view only: switch between feed filters and full tag library editing */
@@ -428,7 +494,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--spacing-xs);
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
   }
 
   .viewTagSidebarTab {
@@ -445,59 +511,69 @@
   }
 
   .viewTagSidebarTabActive {
-    background-color: var(--reader-support-control-strong-background-color);
-    color: var(--reader-support-control-strong-text-color);
-    border-color: var(--reader-support-control-strong-border-color);
+    background-color: var(--reader-chrome-active-control-background-color);
+    color: var(--reader-chrome-active-control-text-color);
+    border-color: var(--reader-chrome-active-control-border-color);
     font-weight: var(--reader-support-control-font-weight);
   }
 
-  .filterControls {
-    flex-shrink: 0; /* Never shrink - always keep buttons visible */
-    margin-top: auto;
-    padding: var(--spacing-md) 0 var(--spacing-md) 0;
-    background-color: var(--reader-chrome-background-color);
+  .filterControlsInline {
     display: flex;
-    gap: var(--spacing-sm);
-    border-top: var(--border-width-thin) solid var(--reader-chrome-border-color);
-    position: relative;
-    z-index: 100;
+    justify-content: flex-start;
   }
-  
-  .applyButton, .clearButton {
-    flex: 1;
-    padding: var(--spacing-sm);
-    border: var(--border-width-thin) solid var(--reader-support-control-border-color);
+
+  .clearButtonCompact {
+    padding: 3px var(--spacing-sm);
+    border: var(--border-width-thin) solid var(--reader-chrome-active-control-border-color);
     border-radius: var(--border-radius-md);
-    background-color: var(--reader-support-control-background-color);
-    color: var(--reader-support-control-text-color);
+    background-color: var(--reader-chrome-active-control-background-color);
+    color: var(--reader-chrome-active-control-text-color);
     cursor: pointer;
     font-family: var(--reader-support-control-font-family);
     font-size: var(--reader-support-control-font-size);
     font-weight: var(--reader-support-control-font-weight);
     line-height: var(--reader-support-control-line-height);
-    min-height: 40px;
+    min-height: 28px;
   }
-  
-  .applyButton {
-    background-color: var(--reader-support-control-strong-background-color);
-    color: var(--reader-support-control-strong-text-color);
-    border-color: var(--reader-support-control-strong-border-color);
-    font-weight: var(--reader-support-control-font-weight);
+
+  .clearButtonCompact:hover {
+    background-color: var(--reader-support-control-hover-background-color);
+    color: var(--reader-support-control-hover-text-color);
+    border-color: var(--reader-support-control-hover-border-color);
   }
-  
-  .clearButton {
-    background-color: transparent;
+
+  .inlineFieldRow {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+
+  .inlineFieldLabel {
+    margin: 0;
+    white-space: nowrap;
+    font-family: var(--reader-chrome-text-font-family);
+    font-size: var(--reader-chrome-text-font-size);
+    font-weight: var(--reader-chrome-text-font-weight);
+    line-height: var(--reader-chrome-text-line-height);
+    color: var(--reader-chrome-text-color);
+  }
+
+  .compactControlInline {
+    min-width: 0;
+    padding-top: var(--spacing-xs);
+    padding-bottom: var(--spacing-xs);
   }
 
 .feedToggleRow {
   display: flex;
   align-items: flex-start;
   gap: var(--spacing-sm);
-  font-family: var(--reader-support-label-font-family);
-  font-size: var(--reader-support-label-font-size);
-  font-weight: var(--reader-support-label-font-weight);
-  line-height: var(--reader-support-label-line-height);
-  color: var(--reader-support-label-color);
+  font-family: var(--reader-chrome-text-font-family);
+  font-size: var(--reader-chrome-text-font-size);
+  font-weight: var(--reader-chrome-text-font-weight);
+  line-height: var(--reader-chrome-text-line-height);
+  color: var(--reader-chrome-text-color);
   cursor: pointer;
 }
 

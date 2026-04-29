@@ -109,8 +109,21 @@
 }
 
 .enterButton {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border: var(--border-width-thin) solid var(--reader-support-control-strong-border-color);
+  border-radius: var(--border-radius-md);
+  background-color: var(--reader-support-control-strong-background-color);
+  color: var(--reader-support-control-strong-text-color);
+  font-family: var(--reader-support-control-font-family);
+  font-size: var(--reader-support-control-font-size);
+  font-weight: var(--reader-support-control-font-weight);
+  line-height: var(--reader-support-control-line-height);
   cursor: pointer;
   transition: background-color var(--transition-short), transform var(--transition-short);
+}
+
+.enterButton:hover {
+  background-color: var(--reader-support-control-strong-hover-background-color);
 }
 
 /* Add new styles for the login form */
@@ -126,15 +139,18 @@
 .inputField {
   width: 100%;
   padding: var(--spacing-md);
-  border: var(--border-width-thin) solid var(--reader-chrome-border-color);
+  border: var(--border-width-thin) solid var(--reader-support-control-border-color);
   border-radius: var(--reader-card-border-radius);
-  background-color: var(--reader-chrome-control-background-color);
-  color: var(--reader-chrome-text-color);
-  font-size: var(--font-size-base);
+  background-color: var(--reader-support-control-background-color);
+  color: var(--reader-support-control-text-color);
+  font-family: var(--reader-support-control-font-family);
+  font-size: var(--reader-support-control-font-size);
+  font-weight: var(--reader-support-control-font-weight);
+  line-height: var(--reader-support-control-line-height);
 }
 
 .inputField::placeholder {
-  color: var(--reader-chrome-muted-color);
+  color: var(--reader-support-hint-color);
 }
 
 .inputField:focus {
@@ -143,10 +159,11 @@
 }
 
 .errorMessage {
-  color: var(--state-error-border-color);
-  font-family: var(--reader-meta-font-family);
-  font-size: var(--reader-meta-font-size);
-  line-height: var(--reader-meta-line-height);
+  color: var(--reader-feedback-hint-color);
+  font-family: var(--reader-feedback-hint-font-family);
+  font-size: var(--reader-feedback-hint-font-size);
+  font-weight: var(--reader-feedback-hint-font-weight);
+  line-height: var(--reader-feedback-hint-line-height);
   margin-bottom: var(--spacing-sm);
   text-align: center;
 }

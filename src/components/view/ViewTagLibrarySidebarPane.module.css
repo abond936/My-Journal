@@ -7,10 +7,11 @@
 
 .intro {
   margin: 0;
-  font-family: var(--reader-meta-font-family);
-  font-size: var(--reader-meta-font-size);
+  font-family: var(--reader-chrome-meta-font-family);
+  font-size: var(--reader-chrome-meta-font-size);
   color: var(--reader-chrome-muted-color);
-  line-height: 1.45;
+  font-weight: var(--reader-chrome-meta-font-weight);
+  line-height: var(--reader-chrome-meta-line-height);
 }
 
 .intro a {
@@ -25,7 +26,9 @@
 
 .statusLine {
   margin: 0;
-  font-family: var(--reader-meta-font-family);
-  font-size: var(--reader-meta-font-size);
+  font-family: var(--reader-chrome-meta-font-family);
+  font-size: var(--reader-chrome-meta-font-size);
+  font-weight: var(--reader-chrome-meta-font-weight);
+  line-height: var(--reader-chrome-meta-line-height);
   color: var(--reader-chrome-muted-color);
 }

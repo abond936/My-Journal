@@ -1,7 +1,7 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background-color: hsla(var(--h1), var(--s1), var(--l1), 0.5);
+  background-color: var(--color-overlay-dark);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -9,9 +9,10 @@
 }
 
 .container {
-  background-color: var(--layout-background1-color);
-  border-radius: 8px;
-  box-shadow: 0 4px 6px hsla(var(--h1), var(--s1), var(--l1), 0.1);
+  background-color: var(--admin-window-background-color);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border-radius: var(--admin-window-border-radius);
+  box-shadow: var(--admin-window-shadow);
   width: 90%;
   max-width: var(--layout-container-max-width);
   height: 90vh;
@@ -22,91 +23,104 @@
 
 .header {
   padding: 1rem;
-  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  border-bottom: var(--border-width-thin) solid var(--admin-window-border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: var(--layout-background1-color);
+  background-color: var(--admin-window-background-color);
 }
 
 .title {
-  font-size: 1.25rem;
-  font-weight: 600;
   margin: 0;
+  color: var(--admin-chrome-text-color);
+  font-family: var(--admin-chrome-text-font-family);
+  font-size: var(--admin-chrome-text-font-size);
+  font-weight: var(--admin-chrome-text-font-weight);
+  line-height: var(--admin-chrome-text-line-height);
 }
 
 .closeButton {
-  background: none;
-  border: none;
+  background: color-mix(in srgb, var(--admin-window-background-color) 90%, transparent);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border-radius: var(--border-radius-full);
   font-size: 1.5rem;
-  color: var(--text2-color);
+  color: var(--admin-chrome-text-color);
   cursor: pointer;
   padding: 0.5rem;
   line-height: 1;
 }
 
 .closeButton:hover {
-  color: var(--text1-color);
+  background: var(--admin-chrome-control-hover-background-color);
 }
 
 .sourceTabs {
   display: flex;
   gap: 0;
   padding: 0 1rem;
-  border-bottom: var(--border-width-thin) solid var(--border1-color);
-  background-color: var(--layout-background2-color);
+  border-bottom: var(--border-width-thin) solid var(--admin-window-border-color);
+  background-color: var(--admin-window-background-color);
 }
 
 .sourceTab {
   padding: 0.65rem 1.25rem;
-  border: none;
+  border: var(--border-width-thin) solid transparent;
   background: transparent;
-  color: var(--text2-color);
-  font-size: 0.9375rem;
-  font-weight: 500;
+  color: var(--admin-chrome-meta-color);
+  font-family: var(--admin-chrome-text-font-family);
+  font-size: var(--admin-chrome-text-font-size);
+  font-weight: var(--admin-chrome-text-font-weight);
+  line-height: var(--admin-chrome-text-line-height);
   cursor: pointer;
-  border-bottom: 3px solid transparent;
+  border-bottom-width: 3px;
   margin-bottom: -1px;
 }
 
 .sourceTab:hover {
-  color: var(--text1-color);
+  color: var(--admin-chrome-text-color);
+  background: var(--admin-chrome-control-hover-background-color);
 }
 
 .sourceTabActive {
-  color: var(--text1-color);
-  border-bottom-color: var(--color3);
+  color: var(--admin-chrome-active-control-text-color);
+  background: var(--admin-chrome-active-control-background-color);
+  border-color: var(--admin-chrome-active-control-border-color);
 }
 
 .sourceHint {
   margin: 0;
   padding: 0.5rem 1rem 0.75rem;
-  font-size: 0.8125rem;
-  color: var(--text2-color);
-  line-height: 1.4;
-  border-bottom: var(--border-width-thin) solid var(--border1-color);
-  background-color: var(--layout-background1-color);
+  color: var(--admin-support-hint-color);
+  font-family: var(--admin-support-hint-font-family);
+  font-size: var(--admin-support-hint-font-size);
+  font-weight: var(--admin-support-hint-font-weight);
+  line-height: var(--admin-support-hint-line-height);
+  border-bottom: var(--border-width-thin) solid var(--admin-window-border-color);
+  background-color: var(--admin-window-background-color);
 }
 
 .content {
   flex: 1;
   display: flex;
   overflow: hidden;
-  background-color: var(--layout-background1-color);
+  background-color: var(--admin-window-background-color);
 }
 
 .albumList {
   width: 350px;
-  border-right: var(--border-width-thin) solid var(--border1-color);
+  border-right: var(--border-width-thin) solid var(--admin-window-border-color);
   padding: 1rem;
   overflow-y: auto;
-  background-color: var(--layout-background2-color);
+  background-color: var(--admin-window-background-color);
 }
 
 .albumTitle {
-  font-weight: 500;
   margin-bottom: 0.5rem;
-  color: var(--text1-color);
+  color: var(--admin-support-title-color);
+  font-family: var(--admin-support-title-font-family);
+  font-size: var(--admin-support-title-font-size);
+  font-weight: var(--admin-support-title-font-weight);
+  line-height: var(--admin-support-title-line-height);
 }
 
 .treeToolbar {
@@ -118,16 +132,19 @@
 
 .treeToolButton {
   padding: 0.25rem 0.5rem;
-  font-size: 0.75rem;
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-radius: 4px;
-  background: var(--layout-background1-color);
-  color: var(--text1-color);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
   cursor: pointer;
 }
 
 .treeToolButton:hover {
-  background: var(--layout-background2-color);
+  background: var(--admin-support-control-hover-background-color);
 }
 
 .treeNode {
@@ -145,7 +162,7 @@
   border: none;
   padding: 0.125rem;
   cursor: pointer;
-  color: var(--text2-color);
+  color: var(--admin-support-meta-color);
   font-size: 0.75rem;
   line-height: 1;
   display: flex;
@@ -160,16 +177,20 @@
   border-radius: 4px;
   flex: 1;
   transition: background-color 0.2s;
-  font-size: 0.875rem;
+  color: var(--admin-support-label-color);
+  font-family: var(--admin-support-label-font-family);
+  font-size: var(--admin-support-label-font-size);
+  font-weight: var(--admin-support-label-font-weight);
+  line-height: var(--admin-support-label-line-height);
 }
 
 .treeNodeName:hover {
-  background-color: var(--layout-background2-color);
+  background-color: var(--admin-chrome-control-hover-background-color);
 }
 
 .treeNodeSelected {
-  background-color: var(--color4-light);
-  font-weight: 500;
+  background-color: var(--admin-chrome-active-control-background-color);
+  color: var(--admin-chrome-active-control-text-color);
 }
 
 .treeChildren {
@@ -180,7 +201,7 @@
   flex: 1;
   padding: 1rem;
   overflow-y: auto;
-  background-color: var(--layout-background1-color);
+  background-color: var(--admin-window-background-color);
 }
 
 .grid {
@@ -207,7 +228,7 @@
 }
 
 .photoItemSelected {
-  border-color: var(--color3);
+  border-color: var(--admin-chrome-active-control-border-color);
 }
 
 .checkmark {
@@ -216,8 +237,8 @@
   right: 5px;
   width: 20px;
   height: 20px;
-  background-color: var(--color3);
-  color: var(--layout-background1-color);
+  background-color: var(--admin-chrome-active-control-background-color);
+  color: var(--admin-chrome-active-control-text-color);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -236,7 +257,11 @@
 .loading {
   padding: 2rem;
   text-align: center;
-  color: var(--text2-color);
+  color: var(--admin-support-hint-color);
+  font-family: var(--admin-support-hint-font-family);
+  font-size: var(--admin-support-hint-font-size);
+  font-weight: var(--admin-support-hint-font-weight);
+  line-height: var(--admin-support-hint-line-height);
 }
 
 .error {
@@ -255,7 +280,7 @@
 .retryButton {
   padding: 0.5rem 1rem;
   background-color: var(--color-danger);
-  color: var(--layout-background1-color);
+  color: var(--state-error-text-color);
   border: none;
   border-radius: var(--border-radius);
   cursor: pointer;
@@ -268,17 +293,22 @@
 }
 
 .noContent {
-  color: var(--text2-color);
+  color: var(--admin-support-meta-color);
   padding: 2rem;
   text-align: center;
-  background-color: var(--layout-background2-color);
+  background-color: var(--admin-window-background-color);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
   border-radius: 4px;
   margin: 1rem;
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
 }
 
 .footer {
   padding: 1rem;
-  border-top: var(--border-width-thin) solid var(--border2-color);
+  border-top: var(--border-width-thin) solid var(--admin-window-border-color);
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -289,9 +319,11 @@
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
-  font-size: 0.875rem;
-  line-height: 1.35;
-  color: var(--text2-color);
+  color: var(--admin-support-label-color);
+  font-family: var(--admin-support-label-font-family);
+  font-size: var(--admin-support-label-font-size);
+  font-weight: var(--admin-support-label-font-weight);
+  line-height: var(--admin-support-label-line-height);
   cursor: pointer;
 }
 
@@ -303,33 +335,37 @@
 .importMetadataNotice {
   margin: 0;
   padding: 0.5rem 0.65rem;
-  font-size: 0.8125rem;
-  line-height: 1.4;
-  color: var(--text1-color);
-  background-color: var(--layout-background2-color);
+  color: var(--admin-support-label-color);
+  background-color: var(--admin-support-control-background-color);
   border-radius: 6px;
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-left-width: 3px;
-  border-left-color: var(--color3);
+  border-left-color: var(--admin-chrome-active-control-background-color);
+  font-family: var(--admin-support-label-font-family);
+  font-size: var(--admin-support-label-font-size);
+  font-weight: var(--admin-support-label-font-weight);
+  line-height: var(--admin-support-label-line-height);
 }
 
 .importProgressHint {
   margin: 0;
   padding: 0.5rem 0.65rem;
-  font-size: 0.8125rem;
-  line-height: 1.4;
-  color: var(--text1-color);
-  background-color: var(--layout-background2-color);
+  color: var(--admin-support-meta-color);
+  background-color: var(--admin-support-control-background-color);
   border-radius: 6px;
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
 }
 
 .importProgressCode {
   font-size: 0.78em;
   padding: 0.05rem 0.25rem;
   border-radius: 3px;
-  background-color: var(--layout-background1-color);
-  border: var(--border-width-thin) solid var(--border1-color);
+  background-color: var(--admin-window-background-color);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
 }
 
 .footerRow {
@@ -339,21 +375,24 @@
 
 .doneButton {
   padding: 0.75rem 1.5rem;
-  border: none;
-  background-color: var(--color3);
-  color: var(--layout-background1-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
+  background-color: var(--admin-support-control-strong-background-color);
+  color: var(--admin-support-control-strong-text-color);
   border-radius: 4px;
   cursor: pointer;
-  font-size: 1rem;
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
   transition: background-color 0.2s;
 }
 
 .doneButton:hover {
-  background-color: var(--color3-dark);
+  background-color: var(--admin-support-control-strong-hover-background-color);
 }
 
 .doneButton:disabled {
-  background-color: var(--border1-color);
+  background-color: var(--admin-support-control-border-color);
   cursor: not-allowed;
 }
 
@@ -363,7 +402,7 @@
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  background-color: var(--layout-background1-color);
+  background-color: var(--admin-window-background-color);
 }
 
 /* Tag block + row filters + search + hint: cap height so the grid keeps most of the panel; scroll inside here. */
@@ -374,19 +413,21 @@
   overflow-x: hidden;
   overflow-y: auto;
   flex-shrink: 1;
-  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  border-bottom: var(--border-width-thin) solid var(--admin-window-border-color);
 }
 
 .libraryTagSection {
   padding: 0.65rem 1rem;
-  border-bottom: var(--border-width-thin) solid var(--border1-color);
-  background-color: var(--layout-background2-color);
+  border-bottom: var(--border-width-thin) solid var(--admin-window-border-color);
+  background-color: var(--admin-window-background-color);
 }
 
 .libraryTagSectionLabel {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--text2-color);
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
   text-transform: uppercase;
   letter-spacing: 0.02em;
   margin: 0 0 0.25rem;
@@ -394,9 +435,11 @@
 
 .libraryTagSectionHint {
   margin: 0 0 0.5rem;
-  font-size: 0.75rem;
-  color: var(--text2-color);
-  line-height: 1.35;
+  color: var(--admin-support-hint-color);
+  font-family: var(--admin-support-hint-font-family);
+  font-size: var(--admin-support-hint-font-size);
+  font-weight: var(--admin-support-hint-font-weight);
+  line-height: var(--admin-support-hint-line-height);
 }
 
 .libraryMacroTagSelector {
@@ -413,8 +456,8 @@
   align-items: flex-end;
   gap: 0.5rem 0.75rem;
   padding: 0.65rem 1rem;
-  border-bottom: var(--border-width-thin) solid var(--border1-color);
-  background-color: var(--layout-background2-color);
+  border-bottom: var(--border-width-thin) solid var(--admin-window-border-color);
+  background-color: var(--admin-window-background-color);
 }
 
 .libraryFilterGroup {
@@ -425,20 +468,25 @@
 }
 
 .libraryFilterGroup label {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--text2-color);
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
 
 .libraryFilterSelect {
   padding: 0.35rem 0.5rem;
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-radius: 4px;
-  font-size: 0.8125rem;
-  background: var(--input-background-color);
-  color: var(--text1-color);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
   max-width: 140px;
 }
 
@@ -446,8 +494,11 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.8125rem;
-  color: var(--text1-color);
+  color: var(--admin-support-label-color);
+  font-family: var(--admin-support-label-font-family);
+  font-size: var(--admin-support-label-font-size);
+  font-weight: var(--admin-support-label-font-weight);
+  line-height: var(--admin-support-label-line-height);
   cursor: pointer;
   margin: 0;
   white-space: nowrap;
@@ -460,56 +511,67 @@
 .libraryClearFilters {
   margin-left: auto;
   padding: 0.35rem 0.65rem;
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-radius: 4px;
-  background: var(--layout-background1-color);
-  color: var(--text1-color);
-  font-size: 0.8125rem;
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
   cursor: pointer;
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
 }
 
 .libraryClearFilters:hover {
-  background: var(--button-outline-background-color-hover);
+  background: var(--admin-support-control-hover-background-color);
 }
 
 .libraryHint {
   margin: 0;
   padding: 0.35rem 1rem 0.5rem;
-  font-size: 0.75rem;
-  color: var(--text2-color);
-  line-height: 1.35;
+  color: var(--admin-support-hint-color);
+  font-family: var(--admin-support-hint-font-family);
+  font-size: var(--admin-support-hint-font-size);
+  font-weight: var(--admin-support-hint-font-weight);
+  line-height: var(--admin-support-hint-line-height);
 }
 
 .libraryToolbar {
   display: flex;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
-  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  border-bottom: var(--border-width-thin) solid var(--admin-window-border-color);
 }
 
 .librarySearchInput {
   flex: 1;
   min-width: 0;
   padding: 0.5rem 0.75rem;
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-radius: 4px;
-  font-size: 0.875rem;
-  background: var(--input-background-color);
-  color: var(--text1-color);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
 }
 
 .librarySearchButton {
   padding: 0.5rem 1rem;
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-radius: 4px;
-  background: var(--layout-background2-color);
-  color: var(--text1-color);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
   cursor: pointer;
-  font-size: 0.875rem;
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
 }
 
 .librarySearchButton:hover {
-  background: var(--layout-background1-color);
+  background: var(--admin-support-control-hover-background-color);
 }
 
 /* Single flex child so grid + load-more share one bounded column; min-height:0 allows inner scroll. */
@@ -552,7 +614,7 @@
   right: 0;
   padding: 0.25rem 0.35rem;
   font-size: 0.6875rem;
-  color: var(--layout-background1-color);
+  color: var(--admin-overlay-text-color);
   background: linear-gradient(transparent, hsla(0, 0%, 0%, 0.75));
   white-space: nowrap;
   overflow: hidden;
@@ -569,16 +631,19 @@
 
 .libraryLoadMore {
   padding: 0.5rem 1.25rem;
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-radius: 4px;
-  background: var(--layout-background2-color);
-  color: var(--text1-color);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
   cursor: pointer;
-  font-size: 0.875rem;
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
 }
 
 .libraryLoadMore:hover:not(:disabled) {
-  background: var(--layout-background1-color);
+  background: var(--admin-support-control-hover-background-color);
 }
 
 .libraryLoadMore:disabled {

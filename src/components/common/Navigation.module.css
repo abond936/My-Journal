@@ -4,7 +4,7 @@
   height: 100%;
   display: flex;
   align-items: center;
-  color: var(--header-text-color);
+  color: var(--reader-header-text-color);
 }
 
 .navContainer {
@@ -54,7 +54,7 @@
 }
 
 .backLink {
-  color: var(--header-text-color);
+  color: var(--reader-header-text-color);
   text-decoration: none;
   font-size: var(--font-size-base);
   padding: var(--spacing-sm) var(--spacing-md);
@@ -70,7 +70,7 @@
 }
 
 .logo {
-  color: var(--header-text-color);
+  color: var(--reader-header-text-color);
   text-decoration: none;
   transition: color var(--transition-short) ease;
   display: flex;
@@ -98,13 +98,13 @@
 
 .navLinks {
   position: absolute;
-  top: calc(100% + var(--spacing-xs));
+  top: calc(100% - var(--spacing-xs));
   right: var(--spacing-md);
   min-width: 220px;
-  background: var(--reader-chrome-background-color);
-  border: var(--border-width-thin) solid var(--reader-chrome-border-color);
-  border-radius: var(--reader-card-border-radius);
-  box-shadow: var(--reader-card-shadow);
+  background: var(--reader-window-background-color);
+  border: var(--border-width-thin) solid var(--reader-window-border-color);
+  border-radius: var(--reader-window-border-radius);
+  box-shadow: var(--reader-window-shadow);
   display: none;
   flex-direction: column;
   gap: var(--spacing-xs);
@@ -121,7 +121,7 @@
 }
 
 .navLink {
-  color: var(--header-text-color);
+  color: var(--reader-header-text-color);
   text-decoration: none;
   font-size: var(--font-size-base);
   transition: color var(--transition-short) ease;
@@ -134,8 +134,8 @@
 }
 
 .navLink.active {
-  background-color: var(--reader-solid-background-color);
-  color: var(--reader-solid-text-color);
+  background-color: var(--reader-chrome-active-control-background-color);
+  color: var(--reader-chrome-active-control-text-color);
 }
 
 .menuButton {
@@ -161,8 +161,8 @@
 
 .signOutButton {
   border: none;
-  background: var(--reader-chrome-control-background-color);
-  color: var(--header-text-color);
+  background: var(--reader-header-background-color);
+  color: var(--reader-header-text-color);
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--reader-card-border-radius);
   cursor: pointer;
@@ -171,14 +171,14 @@
 
 .signOutButton:hover {
   background: var(--state-error-background-color);
-  color: var(--header-text-color);
+  color: var(--reader-header-text-color);
 }
 
 .hamburger {
   display: block;
   width: var(--spacing-xl);
   height: var(--border-width-thin);
-  background: var(--header-icon-color);
+  background: var(--reader-header-icon-color);
   position: relative;
   transition: background var(--transition-short) ease;
 }
@@ -189,7 +189,7 @@
   position: absolute;
   width: var(--spacing-xl);
   height: var(--border-width-thin);
-  background: var(--header-icon-color);
+  background: var(--reader-header-icon-color);
   transition: transform var(--transition-short) ease;
   left: 0;
 }

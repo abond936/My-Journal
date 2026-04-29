@@ -5,7 +5,7 @@
   padding: var(--spacing-md);
   border: var(--border-width-medium) dashed var(--reader-support-control-border-color);
   border-radius: var(--border-radius-lg);
-  background-color: var(--reader-chrome-control-background-color);
+  background-color: var(--reader-support-control-background-color);
   transition: all var(--transition-short) ease;
   cursor: pointer;
 }

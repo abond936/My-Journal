@@ -30,8 +30,11 @@
 }
 
 .studioCardFieldLabel {
-  font-size: var(--font-size-xs);
-  color: var(--text2-color);
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
   white-space: nowrap;
 }
 
@@ -42,19 +45,26 @@
   padding: var(--spacing-xs) var(--spacing-sm);
   font-size: var(--font-size-sm);
   line-height: 1.25;
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-radius: var(--border-radius-sm);
-  background: var(--input-background-color);
-  color: var(--text1-color);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
 }
 
 .studioCardSelect {
   padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: var(--font-size-sm);
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-radius: var(--border-radius-sm);
-  background: var(--input-background-color);
-  color: var(--text1-color);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
 }
 
 .studioCardMacroBlock {
@@ -76,13 +86,19 @@
 }
 
 .toolbarLabel {
-  font-size: var(--font-size-sm);
-  color: var(--text2-color);
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
 }
 
 .catalogHint {
-  font-size: var(--font-size-sm);
-  color: var(--text2-color);
+  color: var(--admin-support-hint-color);
+  font-family: var(--admin-support-hint-font-family);
+  font-size: var(--admin-support-hint-font-size);
+  font-weight: var(--admin-support-hint-font-weight);
+  line-height: var(--admin-support-hint-line-height);
 }
 
 /* Matches `media-admin` embedded Clear — resets all row filters + tag selection */
@@ -91,12 +107,17 @@
   padding: 4px var(--spacing-sm);
   font-size: var(--font-size-xs);
   border-radius: var(--border-radius-sm);
-  border: var(--border-width-thin) solid var(--border1-color);
-  background: var(--layout-background2-color);
-  color: var(--text1-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
   cursor: pointer;
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
 }
 
 .studioCardClearButton:hover {
-  border-color: var(--text2-color);
+  background: var(--admin-support-control-hover-background-color);
+  border-color: var(--admin-support-control-strong-border-color);
 }

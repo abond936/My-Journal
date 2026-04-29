@@ -18,24 +18,28 @@
   align-items: center;
   gap: var(--spacing-md);
   padding: var(--spacing-md);
-  background: var(--layout-background2-color);
+  background: var(--admin-window-background-color);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
   border-radius: var(--border-radius-md);
   margin-bottom: var(--spacing-md);
 }
 
 .bulkButton {
   padding: var(--spacing-sm) var(--spacing-md);
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-radius: var(--border-radius-sm);
-  background: var(--layout-background1-color);
-  color: var(--text1-color);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
   cursor: pointer;
-  font-size: var(--font-size-sm);
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
   transition: background-color var(--transition-short);
 }
 
 .bulkButton:hover {
-  background: var(--layout-background2-color);
+  background: var(--admin-support-control-hover-background-color);
 }
 
 .bulkButton.deleteButton {
@@ -70,18 +74,18 @@
 .tableContainerFull {
   overflow: auto;
   max-height: calc(100vh - var(--media-admin-chrome-offset, 240px) - var(--spacing-xl));
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
   border-radius: var(--border-radius-md);
-  background: var(--layout-background1-color);
+  background: var(--admin-window-background-color);
   --media-admin-header-top: 0px;
 }
 
 .tableContainerCompact {
   overflow: auto;
   max-height: min(70vh, 760px);
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
   border-radius: var(--border-radius-md);
-  background: var(--layout-background1-color);
+  background: var(--admin-window-background-color);
 }
 
 /* Reclaim horizontal space from default `spacing-sm` cell padding (× many columns). */
@@ -106,7 +110,7 @@
   min-width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  background: var(--layout-background1-color);
+  background: var(--admin-window-background-color);
 }
 
 .table th,
@@ -114,7 +118,7 @@
   padding: var(--spacing-sm);
   text-align: left;
   vertical-align: top;
-  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  border-bottom: var(--border-width-thin) solid var(--admin-window-border-color);
 }
 
 /* Match `card-admin` `.entriesTable` row checkboxes (18px). */
@@ -129,14 +133,17 @@
 }
 
 .table th {
-  background: var(--layout-background2-color);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text1-color);
+  background: var(--admin-window-background-color);
+  color: var(--admin-chrome-text-color);
+  font-family: var(--admin-chrome-text-font-family);
+  font-size: var(--admin-chrome-text-font-size);
+  font-weight: var(--admin-chrome-text-font-weight);
+  line-height: var(--admin-chrome-text-line-height);
   user-select: none;
 }
 
 .table tr:hover {
-  background: var(--layout-background2-color);
+  background: var(--admin-chrome-control-hover-background-color);
 }
 
 .headerCell {
@@ -144,11 +151,13 @@
   top: var(--media-admin-header-top, var(--media-admin-chrome-offset, 120px));
   z-index: 52;
   padding: var(--spacing-sm);
-  background: var(--layout-background2-color);
-  border-bottom: var(--border-width-thin) solid var(--border1-color);
-  font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-sm);
-  color: var(--text1-color);
+  background: var(--admin-window-background-color);
+  border-bottom: var(--border-width-thin) solid var(--admin-window-border-color);
+  color: var(--admin-chrome-text-color);
+  font-family: var(--admin-chrome-text-font-family);
+  font-size: var(--admin-chrome-text-font-size);
+  font-weight: var(--admin-chrome-text-font-weight);
+  line-height: var(--admin-chrome-text-line-height);
   text-align: left;
   user-select: none;
 }
@@ -159,7 +168,7 @@
 }
 
 .resizableHeader.resizing {
-  background: var(--layout-background1-color);
+  background: var(--admin-window-background-color);
 }
 
 .headerContent {
@@ -186,7 +195,7 @@
 
 .resizeHandle:hover,
 .resizing .resizeHandle {
-  background: var(--button-solid-background-color);
+  background: var(--admin-chrome-active-control-background-color);
 }
 
 .checkboxCell {
@@ -194,8 +203,8 @@
   top: var(--media-admin-header-top, var(--media-admin-chrome-offset, 120px));
   z-index: 52;
   padding: 3px 4px;
-  background: var(--layout-background2-color);
-  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  background: var(--admin-window-background-color);
+  border-bottom: var(--border-width-thin) solid var(--admin-window-border-color);
   text-align: center;
   vertical-align: top;
   /* Match `CardAdminList` checkbox column (40px). */
@@ -208,7 +217,11 @@
 .emptyState {
   text-align: center;
   padding: var(--spacing-2xl);
-  color: var(--text2-color);
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
   font-style: italic;
 }
 

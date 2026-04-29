@@ -102,15 +102,15 @@ const JOURNAL_READER_RECIPES: ReaderThemeRecipes = (() => {
 
   recipes.typography.caption.lineHeight = 'line-height/relaxed';
 
-  recipes.typography.chromeTitle.weight = 'font-weight/medium';
-  recipes.typography.chromeTitle.lineHeight = 'line-height/base';
+  recipes.typography.supportTitle.weight = 'font-weight/medium';
+  recipes.typography.supportTitle.lineHeight = 'line-height/base';
   recipes.typography.feedbackTitle.weight = 'font-weight/medium';
   recipes.typography.feedbackTitle.lineHeight = 'line-height/base';
 
-  recipes.typography.chromeLabel.weight = 'font-weight/normal';
-  recipes.typography.chromeMeta.weight = 'font-weight/normal';
+  recipes.typography.supportLabel.weight = 'font-weight/normal';
+  recipes.typography.supportMeta.weight = 'font-weight/normal';
   recipes.typography.feedbackMeta.weight = 'font-weight/normal';
-  recipes.typography.chromeHint.lineHeight = 'line-height/relaxed';
+  recipes.typography.supportHint.lineHeight = 'line-height/relaxed';
   recipes.typography.feedbackHint.lineHeight = 'line-height/relaxed';
 
   recipes.typography.quote.weight = 'font-weight/normal';
@@ -136,10 +136,10 @@ const JOURNAL_READER_RECIPES: ReaderThemeRecipes = (() => {
   recipes.surfaces.canvasDetail.padding = 'spacing/2xl';
   recipes.surfaces.feedbackPanel.padding = 'spacing/2xl';
 
-  recipes.controls.fieldControl.hoverBackground = 'layout/background1Color';
-  recipes.controls.fieldControlStrong.hoverBackground = 'layout/background2Color';
+  recipes.controls.supportControl.hoverBackground = 'layout/background1Color';
+  recipes.controls.supportControlStrong.hoverBackground = 'layout/background2Color';
   recipes.controls.feedbackAction.hoverBackground = 'layout/background1Color';
-  recipes.controls.chromeFilterChip.hoverBackground = 'layout/background2Color';
+  recipes.controls.supportChip.hoverBackground = 'layout/background2Color';
   recipes.controls.lightboxControl.background = 'layout/background2Color';
 
   recipes.treatments.quoteWatermarkOpacity = '0.16';
@@ -149,7 +149,119 @@ const JOURNAL_READER_RECIPES: ReaderThemeRecipes = (() => {
   return recipes;
 })();
 
-const EDITORIAL_READER_RECIPES: ReaderThemeRecipes = cloneReaderRecipes(DEFAULT_READER_THEME_RECIPES);
+const EDITORIAL_READER_RECIPES: ReaderThemeRecipes = (() => {
+  const recipes = cloneReaderRecipes(DEFAULT_READER_THEME_RECIPES);
+
+  recipes.typography.title.family = 'font-family/serif1';
+  recipes.typography.title.weight = 'font-weight/medium';
+  recipes.typography.title.lineHeight = 'line-height/base';
+
+  recipes.typography.storyTitle.family = 'font-family/serif1';
+  recipes.typography.storyTitle.size = 'font-size/lg';
+  recipes.typography.storyTitle.weight = 'font-weight/medium';
+  recipes.typography.storyTitle.lineHeight = 'line-height/base';
+
+  recipes.typography.storyOverlayTitle.family = 'font-family/serif1';
+  recipes.typography.storyOverlayTitle.size = 'font-size/lg';
+  recipes.typography.storyOverlayTitle.weight = 'font-weight/medium';
+  recipes.typography.storyOverlayTitle.lineHeight = 'line-height/base';
+
+  recipes.typography.galleryTitle.family = 'font-family/serif1';
+  recipes.typography.galleryTitle.size = 'font-size/lg';
+  recipes.typography.galleryTitle.weight = 'font-weight/medium';
+  recipes.typography.galleryTitle.lineHeight = 'line-height/base';
+
+  recipes.typography.galleryOverlayTitle.family = 'font-family/serif1';
+  recipes.typography.galleryOverlayTitle.size = 'font-size/lg';
+  recipes.typography.galleryOverlayTitle.weight = 'font-weight/medium';
+  recipes.typography.galleryOverlayTitle.lineHeight = 'line-height/base';
+
+  recipes.typography.galleryHeaderTitle.family = 'font-family/serif1';
+  recipes.typography.galleryHeaderTitle.weight = 'font-weight/medium';
+  recipes.typography.galleryHeaderTitle.lineHeight = 'line-height/base';
+
+  recipes.typography.titleCompact.family = 'font-family/serif1';
+  recipes.typography.titleCompact.weight = 'font-weight/medium';
+  recipes.typography.titleCompact.lineHeight = 'line-height/base';
+
+  recipes.typography.detailTitle.family = 'font-family/serif1';
+  recipes.typography.detailTitle.weight = 'font-weight/semibold';
+  recipes.typography.detailTitle.lineHeight = 'line-height/base';
+
+  recipes.typography.storyDetailTitle.family = 'font-family/serif1';
+  recipes.typography.storyDetailTitle.weight = 'font-weight/semibold';
+  recipes.typography.storyDetailTitle.lineHeight = 'line-height/base';
+
+  recipes.typography.galleryDetailTitle.family = 'font-family/serif2';
+  recipes.typography.galleryDetailTitle.weight = 'font-weight/semibold';
+  recipes.typography.galleryDetailTitle.lineHeight = 'line-height/base';
+
+  recipes.typography.discoveryTitle.family = 'font-family/serif1';
+  recipes.typography.discoveryTitle.weight = 'font-weight/semibold';
+  recipes.typography.discoveryTitle.lineHeight = 'line-height/base';
+
+  recipes.typography.railSectionTitle.family = 'font-family/serif1';
+  recipes.typography.railSectionTitle.weight = 'font-weight/medium';
+  recipes.typography.railSectionTitle.lineHeight = 'line-height/base';
+
+  recipes.typography.question.family = 'font-family/serif3';
+  recipes.typography.question.size = 'font-size/lg';
+  recipes.typography.question.weight = 'font-weight/semibold';
+  recipes.typography.question.lineHeight = 'line-height/base';
+
+  recipes.typography.questionOverlay.family = 'font-family/serif3';
+  recipes.typography.questionOverlay.size = 'font-size/lg';
+  recipes.typography.questionOverlay.weight = 'font-weight/semibold';
+  recipes.typography.questionOverlay.lineHeight = 'line-height/base';
+
+  recipes.typography.calloutTitle.family = 'font-family/serif1';
+  recipes.typography.calloutTitle.weight = 'font-weight/medium';
+  recipes.typography.calloutTitle.lineHeight = 'line-height/base';
+
+  recipes.typography.calloutBody.lineHeight = 'line-height/relaxed';
+  recipes.typography.quote.lineHeight = 'line-height/relaxed';
+
+  recipes.surfaces.storyCardClosed.background = 'shared/card/background';
+  recipes.surfaces.storyCardClosed.border = 'shared/card/border';
+  recipes.surfaces.storyCardClosed.radius = 'shared/card/radius';
+  recipes.surfaces.storyCardClosed.shadow = 'shared/card/shadow';
+  recipes.surfaces.storyCardClosed.shadowHover = 'shared/card/shadowHover';
+  recipes.surfaces.storyCardClosed.padding = 'spacing/md';
+  recipes.surfaces.qaCardClosed.background = 'shared/card/background';
+  recipes.surfaces.qaCardClosed.border = 'shared/card/border';
+  recipes.surfaces.qaCardClosed.radius = 'shared/card/radius';
+  recipes.surfaces.qaCardClosed.shadow = 'shared/card/shadow';
+  recipes.surfaces.qaCardClosed.shadowHover = 'shared/card/shadowHover';
+  recipes.surfaces.qaCardClosed.padding = 'spacing/md';
+  recipes.surfaces.galleryCardClosed.background = 'shared/card/background';
+  recipes.surfaces.galleryCardClosed.border = 'shared/card/border';
+  recipes.surfaces.galleryCardClosed.radius = 'shared/card/radius';
+  recipes.surfaces.galleryCardClosed.shadow = 'shared/card/shadow';
+  recipes.surfaces.galleryCardClosed.shadowHover = 'shared/card/shadowHover';
+  recipes.surfaces.galleryCardClosed.padding = 'spacing/xl';
+  recipes.surfaces.quoteCardClosed = {
+    background: 'layout/background1Color',
+    border: 'layout/border1Color',
+    radius: 'border/radius/lg',
+    shadow: 'shadow/sm',
+    padding: 'spacing/xl',
+  };
+  recipes.surfaces.calloutCardClosed = {
+    background: 'layout/background1Color',
+    border: 'layout/border1Color',
+    radius: 'border/radius/lg',
+    shadow: 'shadow/md',
+    padding: 'spacing/xl',
+  };
+
+  recipes.overlays.coveredFade.background = 'semantic/reader/covered-fade-strong';
+
+  recipes.treatments.quoteWatermarkOpacity = '0.16';
+  recipes.treatments.questionWatermarkOpacity = '0.22';
+  recipes.treatments.calloutWatermarkOpacity = '0.22';
+
+  return recipes;
+})();
 
 export const THEME_PRESET_META: Record<
   ThemePresetId,
@@ -163,7 +275,7 @@ export const THEME_PRESET_META: Record<
   editorial: {
     label: 'Editorial',
     description:
-      'Cool neutrals, tighter radii, system sans throughout for a calm product look.',
+      'Cool blue-gray neutrals, serif-led content titles, and restrained chrome for a publication-style reading feel.',
   },
 };
 
@@ -203,8 +315,8 @@ export const READER_PRESET_ALIAS_GROUPS: Record<ThemePresetId, ReaderPresetAlias
     chrome: {},
     card: {},
     detail: {
-      '--reader-title-font-family': 'var(--font-family-sans)',
-      '--reader-detail-title-font-family': 'var(--font-family-sans)',
+      '--reader-title-font-family': 'var(--font-family-serif)',
+      '--reader-detail-title-font-family': 'var(--font-family-serif)',
       '--reader-detail-title-font-weight': 'var(--font-weight-semibold)',
     },
     typeTreatments: {
@@ -259,6 +371,7 @@ export type ThemeDocumentData = StructuredThemeData & {
 export function buildJournalPreset(): ThemeDocumentData {
   const t = getBaseThemeData(baseTheme) as ThemeDocumentData;
   t.activePresetId = 'journal';
+  t.gradients.canvasTexture = 'none';
   // Warmer “paper” surfaces (light); keep dark mode readable
   patchThemeColor(t, 1, 'light', '#f3eadf');
   patchThemeColor(t, 1, 'dark', '#1b1613');
@@ -306,10 +419,11 @@ export function buildJournalPreset(): ThemeDocumentData {
 export function buildEditorialPreset(): ThemeDocumentData {
   const t = getBaseThemeData(baseTheme) as ThemeDocumentData;
   t.activePresetId = 'editorial';
-  patchThemeColor(t, 1, 'light', '#eceef2');
-  patchThemeColor(t, 1, 'dark', '#14161c');
-  patchThemeColor(t, 2, 'light', '#16181d');
-  patchThemeColor(t, 2, 'dark', '#eef0f4');
+  t.gradients.canvasTexture = 'none';
+  patchThemeColor(t, 1, 'light', '#c0c6d3');
+  patchThemeColor(t, 1, 'dark', '#151b28');
+  patchThemeColor(t, 2, 'light', '#363e4e');
+  patchThemeColor(t, 2, 'dark', '#eef2f6');
   patchPaletteHex(t, 3, '#0f4c81');
   patchPaletteHex(t, 4, '#c9a227');
   t.typography.fontFamilies.sans1 =
@@ -336,12 +450,13 @@ export function buildEditorialPreset(): ThemeDocumentData {
 export function buildAdminPreset(): ThemeDocumentData {
   const t = getBaseThemeData(baseTheme) as ThemeDocumentData;
   t.activePresetId = 'admin';
-  patchThemeColor(t, 1, 'light', '#e7eaf0');
-  patchThemeColor(t, 1, 'dark', '#111827');
-  patchThemeColor(t, 2, 'light', '#111827');
-  patchThemeColor(t, 2, 'dark', '#f8fafc');
-  patchPaletteHex(t, 3, '#1d4ed8');
-  patchPaletteHex(t, 4, '#64748b');
+  t.gradients.canvasTexture = 'none';
+  patchThemeColor(t, 1, 'light', '#dde3ec');
+  patchThemeColor(t, 1, 'dark', '#121926');
+  patchThemeColor(t, 2, 'light', '#1f2937');
+  patchThemeColor(t, 2, 'dark', '#eef2f7');
+  patchPaletteHex(t, 3, '#0f4c81');
+  patchPaletteHex(t, 4, '#b08a3e');
   patchPaletteHex(t, 11, '#15803d');
   patchPaletteHex(t, 12, '#b91c1c');
   patchPaletteHex(t, 13, '#b45309');

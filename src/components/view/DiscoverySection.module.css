@@ -44,15 +44,15 @@
   align-items: center;
   justify-content: center;
   padding: var(--spacing-lg);
-  color: var(--reader-support-meta-color);
+  color: var(--reader-discovery-meta-color);
 }
 
 .loadingContainer p {
   margin-top: var(--spacing-sm);
-  font-family: var(--reader-support-meta-font-family);
-  font-size: var(--reader-support-meta-font-size);
-  font-weight: var(--reader-support-meta-font-weight);
-  line-height: var(--reader-support-meta-line-height);
+  font-family: var(--reader-discovery-meta-font-family);
+  font-size: var(--reader-discovery-meta-font-size);
+  font-weight: var(--reader-discovery-meta-font-weight);
+  line-height: var(--reader-discovery-meta-line-height);
 }
 
 .errorContainer {
@@ -60,11 +60,11 @@
   background-color: var(--reader-feedback-panel-background-color);
   border: var(--border-width-thin) solid var(--reader-feedback-panel-border-color);
   border-radius: var(--border-radius-lg);
-  color: var(--reader-support-hint-color);
-  font-family: var(--reader-support-hint-font-family);
-  font-size: var(--reader-support-hint-font-size);
-  font-weight: var(--reader-support-hint-font-weight);
-  line-height: var(--reader-support-hint-line-height);
+  color: var(--reader-feedback-hint-color);
+  font-family: var(--reader-feedback-hint-font-family);
+  font-size: var(--reader-feedback-hint-font-size);
+  font-weight: var(--reader-feedback-hint-font-weight);
+  line-height: var(--reader-feedback-hint-line-height);
 }
 
 .extrasLoadingRow {

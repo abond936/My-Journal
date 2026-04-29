@@ -20,7 +20,42 @@
 .feedMain {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xl);
+  gap: var(--spacing-md);
+}
+
+.curatedContextBar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: var(--border-width-thin) solid var(--reader-page-border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--reader-window-background-color);
+  box-shadow: var(--reader-window-shadow);
+  margin-bottom: var(--spacing-sm);
+}
+
+.curatedContextLabel {
+  margin: 0;
+  color: var(--reader-page-muted-color);
+  font-family: var(--reader-chrome-meta-font-family);
+  font-size: var(--reader-chrome-meta-font-size);
+  font-weight: var(--reader-chrome-meta-font-weight);
+  line-height: var(--reader-chrome-meta-line-height);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.curatedContextTitle {
+  margin: 0;
+  color: var(--reader-page-text-color);
+  font-family: var(--reader-discovery-title-font-family);
+  font-size: var(--reader-discovery-title-font-size);
+  font-weight: var(--reader-discovery-title-font-weight);
+  line-height: var(--reader-discovery-title-line-height);
 }
 
 .emptyFeed {
@@ -31,20 +66,20 @@
 
 .emptyFeedTitle {
   margin: 0 0 var(--spacing-sm);
-  color: var(--reader-support-title-color);
-  font-family: var(--reader-support-title-font-family);
-  font-size: var(--reader-support-title-font-size);
-  font-weight: var(--reader-support-title-font-weight);
-  line-height: var(--reader-support-title-line-height);
+  color: var(--reader-feedback-title-color);
+  font-family: var(--reader-feedback-title-font-family);
+  font-size: var(--reader-feedback-title-font-size);
+  font-weight: var(--reader-feedback-title-font-weight);
+  line-height: var(--reader-feedback-title-line-height);
 }
 
 .emptyFeedHint {
   margin: 0 0 var(--spacing-md);
-  color: var(--reader-support-hint-color);
-  font-family: var(--reader-support-hint-font-family);
-  font-size: var(--reader-support-hint-font-size);
-  font-weight: var(--reader-support-hint-font-weight);
-  line-height: var(--reader-support-hint-line-height);
+  color: var(--reader-feedback-hint-color);
+  font-family: var(--reader-feedback-hint-font-family);
+  font-size: var(--reader-feedback-hint-font-size);
+  font-weight: var(--reader-feedback-hint-font-weight);
+  line-height: var(--reader-feedback-hint-line-height);
 }
 
 .emptyClearButton {
@@ -55,15 +90,15 @@
   line-height: var(--reader-support-control-line-height);
   cursor: pointer;
   border-radius: var(--border-radius-lg);
-  border: var(--border-width-medium) solid var(--reader-support-control-border-color);
-  background: var(--reader-support-control-background-color);
-  color: var(--reader-support-control-text-color);
+  border: var(--border-width-medium) solid var(--reader-feedback-action-border-color);
+  background: var(--reader-feedback-action-background-color);
+  color: var(--reader-feedback-action-text-color);
 }
 
 .emptyClearButton:hover {
-  background: var(--reader-support-control-strong-background-color);
-  border-color: var(--reader-support-control-strong-border-color);
-  color: var(--reader-support-control-strong-text-color);
+  background: var(--reader-feedback-action-hover-background-color);
+  border-color: var(--reader-feedback-action-border-color);
+  color: var(--reader-feedback-action-hover-text-color);
 }
 
 .groupSection {
@@ -85,14 +120,29 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: var(--spacing-lg);
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  gap: var(--spacing-sm);
 }
 
 /* Reader shell contract: `docs/04-Theme-Design-Contract.md` §9.4 — literal px for layout breakpoints */
 @media (max-width: 768px) {
+  .page {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .curatedContextBar {
+    top: 0;
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
   .grid {
     grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
   }
 }
 
@@ -129,7 +179,7 @@
   left: 0;
   right: 0;
   padding: var(--spacing-lg);
-  background: var(--reader-card-overlay-strong-background);
+  background: var(--reader-gallery-overlay-background);
   color: var(--reader-card-overlay-text-color);
 }
 

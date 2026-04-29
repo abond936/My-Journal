@@ -3,13 +3,13 @@
 **Status:** Living specification — authoritative for *what* we tokenize and *why*, before code-only audits; and for **reader shell layout, responsive behavior, and navigation affordances** that must stay consistent with tokens (§10).
 **See also:** `01-Vision-Architecture.md` (Frontend principles, visual direction), `02-Application.md` → Theme Management, Navigation, Layouts, `03-Implementation.md` (CSS Tokenization sequencing, responsive chrome).
 
-**Current implementation status (2026-04-27):** Theme infrastructure exists and the core save/load path is now live. Runtime CSS variables are generated from theme data and injected by the app, with `theme-data.json` / `theme.css` fallbacks. Theme Management is now treated as a dedicated editing workspace, and the product direction has shifted from a dedicated preview layer to a **live draft** that applies to the real app in-session and becomes permanent only on **Save**. The workspace now behaves as a **floating, draggable, resizable workbench window** so the author can compare theme edits against the real reader surface without blurring or hiding the content being judged. Journal / Editorial are still not “final themes,” but they are real preset bundles with preset-specific recipe direction rather than only light atomic transforms. The reader semantic layer now has working role groups for page, chrome, solid controls, cards, detail, body/title, meta/caption, tags, media/overlay, discovery, support UI, and type treatments.
+**Current implementation status (2026-04-29):** Theme infrastructure exists and the structural overhaul phase is now effectively complete. Runtime CSS variables are generated from theme data and injected by the app, with `theme-data.json` / `theme.css` fallbacks. Theme Management is now a **floating, draggable, resizable live-draft workbench** with explicit **Reader / Workbench** scope switching, saved reader/admin scoped persistence, and direct Workbench targets for **Header, Sidebar, Shell, Tabs, Controls, and Feedback**. Journal / Editorial are still not “final themes,” but they are now real preset bundles on top of a far more truthful editor/runtime contract rather than partial styling experiments. The reader semantic layer has working role groups for page, chrome, controls, cards, detail, body/title, meta/caption, tags, media/overlay, discovery, support UI, type treatments, and the separate admin alias family used by the workbench runtime. Closed-card backgrounds are now authorable more truthfully as **General** plus per-card `Use General` / curated override choices for the main reader card families.
 
-**Runtime reconciliation status (2026-04-27):** The generator path is now substantially reconciled with the editor for foundations, chrome, controls, cards, overlays, discovery, media/lightbox surfaces, and most reader typography. Earlier runtime bypasses and bridge-only CSS outputs have been reduced significantly. The remaining explicit reader gap is **feedback success / warning / info panels**: those values are generated and editable, but the current reader UI does not yet render matching success/warning/info panel surfaces.
+**Runtime reconciliation status (2026-04-29):** The generator path is now materially reconciled with the editor for foundations, chrome, controls, cards, overlays, discovery, media/lightbox surfaces, and most reader typography. Earlier runtime bypasses and bridge-only CSS outputs have been reduced significantly, broken fallback alias paths have been repaired, and scoped reader/admin draft generation now follows the same compile path guarded by canaries. The remaining explicit reader gap is **feedback success / warning / info panels**: those values are generated and editable, but the current reader UI does not yet render matching success/warning/info panel surfaces.
 
 The current editor structure is now clearer than the earlier mixed workbench:
 - the **left side** is the component editor: section navigation, component selection, variant selection, attribute selection, and direct editing of the selected attribute
-- the **right side** is the **Values** panel: it shows the named values behind the selected attribute and, where the system can resolve them, the actual underlying values such as font-family strings, font sizes, spacing values, radii, shadows, layout values, and stored component values
+- the **right side** is the **Values** panel: it shows the named values behind the selected attribute, highlights the most relevant value groups, and where the system can resolve them, the actual underlying values such as font-family strings, font sizes, spacing values, radii, shadows, layout values, state colors, and stored component values
 
 The system is still transitional. The right side is no longer the old broad token-lab page, but it is also not yet a finished direct editor for all underlying system values. It is currently a **value-resolution panel**, not the final system-values workspace. The next theme phase is therefore still not just more token wiring; it remains an author-facing model correction toward **Component -> Attribute -> Value** on top of the existing three-tier technical system (**atomic tokens**, **semantic token classes**, and **recipes**), with special focus on compile-path truthfulness, vocabulary clarity, and the relationship between selected attributes and the values shown beside them.
 
@@ -185,6 +185,30 @@ Theme Management should eventually enforce typed matching between attributes and
 
 This prevents the author from having to reason about unrelated token buckets while editing.
 
+#### Shared vs local role map
+
+Theme Management must tell the author whether a control is changing one thing or a deliberately shared family:
+
+- **Local** - owned by one component or one explicit variant. Example: `Story Card -> Closed -> Overlay Text`.
+- **Shared** - intentionally reused across multiple surfaces that are meant to stay in sync. Example: `General -> Covered Fade`.
+
+The editor should describe shared impact in plain language before the value is changed:
+
+- `Covered Fade` - shared by **Story cards** and **Question cards with a cover image**
+- `Gallery Overlay` - shared by **covered Gallery cards** and **gallery overlay chips**
+- `Lightbox Backdrop` - shared by the **fullscreen gallery lightbox**
+- `Field Label / Meta / Hint / Control` - shared by **reader fields and nearby support chrome**
+
+This is the required rule going forward: a shared role may exist only when all consumers are doing the **same visual job**.
+
+Examples:
+
+- `fade` and `wash` are different jobs and may not share one role
+- covered-card overlays and lightbox backdrops are different jobs and may not share one role
+- a control that appears local in the editor may not secretly edit a broader shared role without that shared impact being shown
+
+The authoring model must therefore prefer a few truthful shared roles over broad abstract buckets such as `cardStrong` that hide multiple visual intentions behind one name.
+
 #### Metric-family rule
 
 For layout-like attributes, Theme Management should not collapse everything into one generic `length` bucket. The editor contract should distinguish:
@@ -212,8 +236,9 @@ The table below is the **first-pass canonical author-facing component inventory*
 | --------- | ------------- | --------------------- |
 | **Canvas** | The overall reader shell and page framing behind content | background color, text color, muted text color, border color, link color, focus ring color |
 | **Header** | The top app header/chrome band | background color, text color, icon color, border color, height |
-| **Sidebar** | Reader navigation/filter/support column or drawer | background color, title color, label color, meta color, hint color, icon color, border color, width, active control background color, active control text color, neutral control background color, neutral control text color |
-| **Field** | Shared inputs, selectors, chips, and neutral form-like controls | background color, text color, border color, focus border color, label color, hint color, selected background color, selected text color, selected border color, border radius, padding |
+| **Sidebar** | Reader navigation/filter/support column or drawer | background color, icon color, border color, width, active control background color, active control text color |
+| **Window** | Floating reader windows and dialog shells that must read clearly above the page | surface, frame/border color, radius, elevation/shadow |
+| **Field / Support UI** | Shared inputs, selectors, chips, helper labels, helper text, and neutral form-like controls | title color, label color, meta color, hint color, neutral control background color, neutral control text color, neutral control border color, selected background color, selected text color, selected border color, chip background color, chip text color, border radius, padding |
 | **Feedback Panel** | Neutral and stateful informational surfaces such as empty/loading/info/success/warning/error panels | background color, title color, text color, border color, action background color, action text color, action border color |
 | **Story Card** | Story card in closed state, open reading state, and supported discovery treatment | surface, title, subtitle, body, meta, border, radius, shadow, card padding, discovery title/excerpt treatment |
 | **Gallery Card** | Gallery card in closed state, open reading state, supported discovery treatment, and media-adjacent framing | surface, title, subtitle, body, meta, border, radius, shadow, card padding, media frame background color, media frame border color |
@@ -267,36 +292,37 @@ The table below maps the initial author-facing component inventory to the curren
 | Target component | Current editor/component ids | Current recipe bindings | Current semantic/value families | Main mismatch to resolve |
 | ---------------- | ---------------------------- | ----------------------- | ------------------------------- | ------------------------ |
 | **Canvas** | `canvas -> reader` | `surfaces.canvasPage`, `typography.body`, `typography.meta`, `controls.inlineLink`, `controls.focusRing` | `semantic/reader/canvas-surface`, `semantic/reader/canvas-border`, tonal text, accent, focus ring | Fairly close already, but the current editor still exposes this as recipe bindings rather than a single component with explicit attributes like background color and text color. |
-| **Header** | No clean first-class reader component today | Indirectly inherits page/chrome tokens; some behavior currently comes through chrome/page aliases rather than a dedicated header recipe | `--reader-chrome-*`, layout/header atomic tokens, shared chrome values | This is the largest gap in the first-pass inventory. Header exists as a real UI concept in the app, but it is not yet a first-class author-facing component in the reader theme system. |
-| **Sidebar** | `chrome -> sidebar` | `surfaces.chromeSidebar`, `typography.chromeTitle`, `typography.chromeLabel`, `typography.chromeMeta`, `typography.chromeHint`, `controls.chromeActiveTab`, `controls.chromeFilterChip`, `controls.inlineLink`, `iconography.chrome` | `semantic/reader/chrome-surface`, `semantic/reader/chrome-border`, tonal text, contrast-on-fill text, accent | Close conceptually, but width is still outside the current recipe editor and some sidebar attributes are split between chrome, controls, and iconography rather than presented as one component contract. |
-| **Field** | `field -> controls` | `typography.chromeLabel`, `typography.chromeMeta`, `typography.chromeHint`, `controls.fieldControl`, `typography.fieldControl`, `controls.fieldControlStrong` | `semantic/reader/field-surface`, `semantic/reader/field-border`, tonal text, contrast-on-fill text | Mostly present, but still borrowing some chrome typography keys and lacks a clearer author-facing split between neutral control attributes and selected control attributes. |
+| **Header** | `header -> main` | `surfaces.chromeToolbar`, plus direct header tokens for text/icon color and structural tokens for height/logo max height | `--reader-header-*`, layout/header atomic tokens, shared chrome values | Now first-class in both the authoring layer and the live runtime split. Header text/icon remain direct header-owned values rather than being borrowed from the sidebar/support families. |
+| **Sidebar** | `sidebar -> main` | `surfaces.chromeSidebar`, `typography.chromeText`, `typography.chromeMeta`, `controls.chromeActiveTab`, `controls.inlineLink`, `iconography.chrome`, plus width tokens | `semantic/reader/chrome-surface`, `semantic/reader/chrome-border`, explicit chrome text/meta roles, contrast-on-fill text, accent | Now first-class in the authoring layer and less coupled to support/discovery typography. Sidebar-specific chrome text and meta now drive the live sidebar title, section labels, navigation copy, and secondary count/meta text instead of borrowing support copy roles. |
+| **Window** | `window -> floating` | `surfaces.windowSurface`, `surfaces.windowFrame`, `surfaces.windowElevation` | shared surface, frame/border, radius, and elevation/shadow values | Now split into separate visual jobs so authors can change the panel fill, its edge contrast, and its lift above the page independently without guessing which part they are actually editing. |
+| **Field** | `field -> controls` | `typography.supportTitle`, `typography.supportLabel`, `typography.supportMeta`, `typography.supportHint`, `controls.supportControl`, `typography.supportControlText`, `controls.supportControlStrong`, `controls.supportChip` | `semantic/reader/field-surface`, `semantic/reader/field-border`, tonal text, contrast-on-fill text | Much more truthful now: support copy and control styling are grouped together as one shared support family instead of borrowing chrome typography names. |
 | **Feedback Panel** | `feedback -> states/success/warning/error/info` | `surfaces.feedbackPanel`, `surfaces.feedbackSuccessPanel`, `surfaces.feedbackWarningPanel`, `surfaces.feedbackErrorPanel`, `surfaces.feedbackInfoPanel`, `typography.feedbackTitle`, `typography.feedbackMeta`, `typography.feedbackHint`, `controls.feedbackAction` | `semantic/reader/feedback-surface`, `semantic/reader/feedback-border`, plus explicit `state/*` backgrounds/borders for state variants | Strong start. The main redesign task is vocabulary: this should become one component with variants and attributes rather than a cluster of recipe groups and panel keys. |
-| **Story Card** | `storyCard -> closed/open/discovery` | `surfaces.card`, `surfaces.canvasDetail`, `surfaces.canvasMediaFrame`, `typography.storyTitle`, `typography.storyDetailTitle`, `typography.subtitle`, `typography.body`, `typography.meta`, `typography.caption`, `overlays.card` | Card/detail/media semantic families, tonal text, overlay contrast text | Present but spread across closed/open/discovery variants, which is technically correct but still not presented as one coherent component with shared attributes and variant-specific overrides. |
-| **Gallery Card** | `galleryCard -> closed/open/discovery` | `surfaces.card`, `surfaces.canvasDetail`, `surfaces.canvasMediaFrame`, `typography.galleryTitle`, `typography.galleryDetailTitle`, `typography.galleryHeaderTitle`, `typography.discoveryMeta`, `typography.caption`, `typography.body`, `controls.lightboxControl`, `overlays.cardStrong`, `overlays.lightbox` | Card/detail/media/lightbox semantic families, overlay contrast text, media-control/lightbox-control semantics | Strong functional coverage, but it currently mixes card, media frame, and lightbox concerns across multiple recipe families instead of reading as one component with nested attributes. |
+| **Story Card** | `storyCard -> closed/open/discovery` | `surfaces.card`, `surfaces.canvasDetail`, `surfaces.canvasMediaFrame`, `typography.storyTitle`, `typography.storyDetailTitle`, `typography.subtitle`, `typography.body`, `typography.meta`, `typography.caption`, `overlays.coveredFade` | Card/detail/media semantic families, tonal text, overlay contrast text | Present but spread across closed/open/discovery variants, which is technically correct but still not presented as one coherent component with shared attributes and variant-specific overrides. |
+| **Gallery Card** | `galleryCard -> closed/open/discovery` | `surfaces.card`, `surfaces.canvasDetail`, `surfaces.canvasMediaFrame`, `typography.galleryTitle`, `typography.galleryDetailTitle`, `typography.galleryHeaderTitle`, `typography.discoveryMeta`, `typography.caption`, `typography.body`, `controls.lightboxControl`, `overlays.galleryOverlay`, `overlays.lightboxBackdrop` | Card/detail/media/lightbox semantic families, overlay contrast text, media-control/lightbox-control semantics | Strong functional coverage, but it currently mixes card, media frame, and lightbox concerns across multiple recipe families instead of reading as one component with nested attributes. |
 | **Question Card** | `qaCard -> closed/open/discovery` | `surfaces.qaCardClosed`, `surfaces.canvasDetail`, `typography.question`, `typography.questionOverlay`, `typography.body`, `typography.excerpt`, `typography.caption` | Card/detail semantic families, tonal text, overlay contrast text | Functionally present, but still described partly in Q&A language and still needs the same component-first treatment as Story and Gallery. |
 | **Quote Card** | `quoteCard -> closed` | `surfaces.card`, `typography.quote`, `typography.caption`, `treatments.quoteWatermarkOpacity` | Shared card surface, quote/caption typography, treatment values | Closed-state-only contract is clear, but it should remain outside discovery and should not be forced into the same open/detail model as other reader cards. |
 | **Callout Card** | `calloutCard -> closed` | `surfaces.card`, `typography.calloutTitle`, `typography.subtitle`, `typography.excerpt`, `typography.calloutBody`, `treatments.calloutWatermarkOpacity` | Shared card surface, callout typography, treatment values | Closed-state-only contract is clear, but it should remain outside discovery and should not inherit open/detail assumptions. |
-| **Lightbox** | Partially inside `galleryCard -> open` | `controls.lightboxControl`, `overlays.lightbox`, caption through shared `typography.caption` / overlay contrast output | `semantic/reader/lightbox-control-surface`, `semantic/reader/lightbox-control-border`, `semantic/reader/overlay-scrim`, `semantic/reader/overlay-border`, overlay contrast text | Exists in runtime semantics, but not yet as a first-class standalone editor component. It is still treated as part of the gallery open variant instead of a component with its own attribute list. |
+| **Lightbox** | `lightbox -> fullscreen` | `controls.lightboxControl`, `overlays.lightboxBackdrop`, shared `typography.caption` | `semantic/reader/lightbox-control-surface`, `semantic/reader/lightbox-control-border`, `semantic/reader/overlay-scrim`, `semantic/reader/overlay-border`, overlay contrast text | Now promoted to a first-class editor component so fullscreen media is no longer hidden under Gallery authoring. Caption remains intentionally shared with the broader media-caption role. |
 
 #### What this mapping tells us
 
-- **Canvas, Sidebar, Field, and Feedback Panel are the closest to the target model today.** They already have recognizable current editor groups and semantic families.
+- **Canvas, Header, Sidebar, Field, and Feedback Panel are now the closest to the target model today.** They already have recognizable editor groups and semantic families.
 - **Story Card and Gallery Card are structurally present, but still recipe-first.** Their current model is organized around variants and bindings rather than explicit component attributes.
-- **Lightbox is semantically real but editor-second-class.** The runtime system already has dedicated lightbox semantics, but the editor still treats it as a subsection of gallery.
-- **Header is under-modeled.** It is a real component in the app but does not yet have a first-class place in the reader theme inventory.
+- **Lightbox is now structurally first-class.** The remaining work is to keep its shared caption/control relationships visible rather than hiding them behind Gallery terminology.
+- **Header is now first-class in the authoring layer.** The remaining question is whether it needs more dedicated runtime roles or whether shared chrome semantics remain sufficient.
 
 #### First implementation interpretation
 
 The first editor refactor should **not** try to invent everything from scratch. It should reuse the parts of the current system that already map cleanly:
 
 - `Canvas` can be built from the current `canvas -> reader` binding set.
-- `Sidebar` can be built from the current `chrome -> sidebar` binding set, plus a separate width/value attribute.
+- `Sidebar` now uses its own author-facing component, while still binding to the shared chrome/sidebar runtime roles plus width values.
 - `Field` can be built from the current `field -> controls` binding set.
 - `Feedback Panel` can be built from the current `feedback` variants.
 - `Story Card`, `Gallery Card`, and `Question Card` can be built by grouping their current closed/open/discovery bindings under a component-first wrapper.
 - `Quote Card` and `Callout Card` should remain explicit closed-only components and should stay out of discovery.
-- `Lightbox` should be split out from `galleryCard -> open` into its own author-facing component.
-- `Header` needs an explicit inventory and likely a new component entry rather than only relabeling existing bindings.
+- `Lightbox` should remain split out from `galleryCard -> open` as its own author-facing component.
+- `Header` should remain a dedicated component entry rather than collapsing back into generic chrome naming.
 
 #### Implementation warning
 
@@ -304,7 +330,7 @@ Do **not** read this mapping as permission to keep the current editor vocabulary
 
 - the current recipe system remains the technical substrate
 - the editor should translate that substrate into `Component -> Attribute -> Value`
-- gaps such as `Header` and `Lightbox` should be treated as explicit schema work, not hidden under existing buckets
+- gaps beyond the current authoring layer should be treated as explicit schema work, not hidden under existing buckets
 
 ### 4.7 First editor-structure plan
 
@@ -448,7 +474,7 @@ The first UI refactor should be intentionally narrow:
 1. replace the current left-side navigation with the component list above
 2. show the first-pass attributes for `Canvas`, `Sidebar`, `Field`, and `Feedback Panel`
 3. filter the right side into typed value groups for those attributes
-4. leave `Story Card`, `Gallery Card`, `Lightbox`, and `Header` as the second wave once the first four are working clearly
+4. finish the remaining card, lightbox, and header surfaces only after the shared/local ownership model is truthful and testable
 
 That order matches the current mapping strength and gives the editor the best chance of becoming understandable quickly.
 
@@ -482,6 +508,65 @@ If a role’s real requirement is contrast safety rather than tonal participatio
 
 `color1-*` and `color2-*` are not fixed colors; they are generated families that change between `:root` and `[data-theme="dark"]`. That makes them appropriate for background and ordinary text systems, but risky for contrast-critical jobs like filled-button text or overlay labels. When a surface needs stable readability rather than tonal participation, the fix belongs in the **token class** and **recipe assignment**, not only in ad hoc component CSS.
 
+#### Adaptive vs fixed values
+
+The editor must distinguish between two different kinds of choices:
+
+- **Adaptive semantic values** change between light and dark mode because their job is contextual, not literal.
+- **Fixed raw values** stay exactly the same in both modes because they represent a literal color, gradient, shadow, or measurement.
+
+Mode behavior must also be defined by **value family**, not by one blanket rule:
+
+- **Contrast-sensitive colors and overlays** usually need adaptive semantic handling.
+- **Typography roles** are usually semantic by job because hierarchy and contrast must remain readable across modes.
+- **Shadows** should normally stay as shared shadow values (`SM`, `MD`, `LG`, `XL`) with global mode adaptation driven by `Strength Light` and `Strength Dark`, not by a second adaptive-vs-fixed shadow picker family.
+- **Spacing, radius, sizing, and similar structural values** should normally stay fixed shared values.
+
+Examples:
+
+- `Overlay Wash (Adaptive)` is semantic and may resolve differently in light and dark mode.
+- `Covered Fade (Adaptive)` is semantic and is the preferred role for story/question cover fades that must remain readable across modes without becoming a one-mode-only raw gradient.
+- `Gradient Fade (Fixed)` is a literal gradient and will remain the same in both modes unless the theme model explicitly stores separate mode variants.
+- `Shadow LG` is a shared elevation value. Its light/dark behavior should come from the theme’s global shadow-strength handling, not from a separate semantic shadow toggle.
+
+Rule:
+
+- Use **adaptive semantic values** when the visual job is contextual and must remain readable across modes.
+- Use **fixed raw values** when the design intent is a literal reusable treatment that should not automatically shift with mode.
+- Never present a fixed raw value as though it were mode-aware.
+- Do not treat shadows like overlays: components choose a shared shadow size, while the theme’s light/dark shadow strengths control how strongly that elevation renders in each mode.
+
+This distinction must remain visible in Theme Management labels and help text so the author can predict whether a choice will adapt or stay literal.
+
+### 4.8 Regression and canary verification
+
+Theme refactors are only complete when the same role map is verified across a small set of canary surfaces. Lint alone is not enough; the system needs semantic regression checks that catch hidden coupling and draft/runtime drift.
+
+#### Canary surfaces
+
+Every structural theme change should be checked against these surfaces:
+
+1. `Page / Canvas background`
+2. `Reader header / chrome`
+3. `Sidebar support labels and controls`
+4. `Story covered card`
+5. `Question covered card`
+6. `Gallery covered card`
+7. `Lightbox backdrop`
+8. `Floating window / modal surface, frame, and elevation`
+9. `Feedback panel states`
+
+#### Verification rules
+
+- **Compiler canaries** should assert that explicit current roles win over legacy aliases during normalization.
+- **Compiler canaries** should assert that split shared roles emit distinct CSS variables for covered fades, gallery overlays, and lightbox backdrops.
+- **Compiler canaries** should assert that shared support roles, feedback-action roles, and window roles emit the expected runtime variables.
+- **Visual canaries** should be reviewed whenever role ownership changes so an unrelated surface does not silently restyle.
+
+#### Safety rule
+
+If a role change modifies one of the canary surfaces outside its declared ownership, the refactor is not done. That is a hidden-coupling failure, not a tuning issue.
+
 | Role group | Token family | Scope | Status |
 | ---------- | ------------ | ----- | ------ |
 | Reader page | `--reader-page-*` | `/view` canvas, feed background, detail page surround | Initial |
@@ -510,7 +595,7 @@ Initial aliases emitted by `buildThemeTokensCss()`:
 | `--reader-caption-*` | Captions and attributions map to `--text2-color` and `--font-size-sm`. |
 | `--reader-card-*` | Closed-card surface, border, radius, shadow, hover shadow, and padding map to existing `--card-*`; flat reader tiles map to `--layout-background1-color`. |
 | `--reader-detail-*` | Open-card surface, cover background, border, radius, shadow, and horizontal/bottom padding map separately so detail pages do not inherit feed-tile assumptions. |
-| `--reader-solid-*` | Strong-fill controls derive from button-solid tokens so sidebar active states, tag/filter chips, and similar controls share one semantic contrast path. |
+| `--reader-solid-*` | Compatibility alias for the explicit chrome active-control role. Active sidebar/header navigation states should now bind through `--reader-chrome-active-control-*`, while the legacy `solid` names remain as a bridge for older consumers. |
 | `--reader-quote-*` | Quote text family/size/line-height/color maps to body/text primitives while preserving later preset-specific treatment. |
 | `--reader-media-*`, `--reader-lightbox-*`, overlay aliases | Media frame/control/lightbox and overlay contrast roles map to the current reader chrome/contrast primitives so media affordances stop depending on scattered hardcoded black/white values. |
 
@@ -534,7 +619,7 @@ Migration status:
 | `TipTapRenderer` | reader body/title/quote/caption aliases | Initial migration complete |
 | `DiscoverySection`, `ChildCardsRail` | `--reader-discovery-*` plus card aliases | Initial migration complete |
 | `InlineGallery`, media figures, gallery lightbox | `--reader-media-*` plus caption aliases | Initial migration complete |
-| `GlobalSidebar`, reader filters, reader header/nav | `--reader-chrome-*`, `--reader-tag-*`, `--reader-solid-*` | Initial migration complete |
+| `GlobalSidebar`, reader filters, reader header/nav | `--reader-chrome-*`, `--reader-chrome-active-control-*`, `--reader-tag-*`, legacy `--reader-solid-*` bridge | Initial migration complete |
 | Shared support UI (`ImageToolbar`, `TagSelector`, sidebar controls/helper states) | `--reader-support-*` plus `--reader-chrome-*` where the container itself is chrome | Initial migration complete |
 | Admin content tooling | `--admin-*` aliases separate from reader personality | Planned |
 
@@ -669,22 +754,22 @@ Current wiring inventory (2026-04-25):
 | Surface | Runtime / preview owner today | Current state |
 | ------- | ----------------------------- | ------------- |
 | Root runtime token sheet | `src/app/layout.tsx` + `src/lib/services/themeService.ts` | **Live runtime** - SSR injects generated token CSS from Firestore-resolved theme data with `theme-data.json` fallback. |
-| Reader semantic aliases | `buildThemeTokensCss()` | **Live runtime / narrowed** - Reader alias families (`--reader-page-*`, `--reader-card-*`, `--reader-detail-*`, etc.) are emitted from atomic theme data plus reader recipes. Earlier bridge-only surface aliases have been reduced; only a small semantic helper layer remains where recipe resolution still benefits from it. |
-| Theme editor draft application | Theme Management + app theme resolver | **Target direction** - Theme edits produce a scoped in-memory draft document that applies to the real app immediately for the current session; the same resolver path must feed draft and saved runtime output. |
+| Reader semantic aliases | `buildThemeTokensCss()` | **Live runtime / narrowed** - Reader alias families (`--reader-page-*`, `--reader-header-*`, `--reader-sidebar-*`, `--reader-card-*`, `--reader-detail-*`, etc.) are emitted from atomic theme data plus reader recipes. Earlier bridge-only surface aliases have been reduced; only a small semantic helper layer remains where recipe resolution still benefits from it. |
+| Theme editor draft application | Theme Management + app theme resolver | **Live scoped draft** - Theme edits produce a scoped in-memory reader/admin draft document that applies to the real app immediately for the current session; the same resolver path feeds draft and saved runtime output. |
 | Reader preset application | `src/lib/theme/themePresets.ts` + `ThemeAdminPage.tsx` | **Workbench-wired + persisted** - Journal / Editorial now apply to the working draft as concrete theme-data transforms plus the active preset id, and Save persists the resolved scoped document. |
-| Reader recipe editor | `src/lib/theme/readerThemeSystem.ts` + `ThemeAdminPage.tsx` | **Workbench-wired** - Component/variant/element recipes edit the same draft that drives preview CSS. |
+| Reader recipe editor | `src/lib/theme/readerThemeSystem.ts` + `ThemeAdminPage.tsx` | **Workbench-wired** - Component/variant/element recipes edit the same draft that drives preview CSS, with first-class authoring targets for Header, Sidebar, Window, and Lightbox. |
 | Advanced token editor | `ThemeAdminPage.tsx` | **Workbench-wired** - Atomic palette/token edits still act as the exact-value layer beneath recipes and move the draft to `custom`. |
 | Legacy reader cards | `src/components/view/ContentCard.module.css` + `CardGrid.module.css` | **Legacy-aligned** - Older reader card/grid files are being remapped to the semantic system for consistency, but `V2ContentCard` / `CardFeedV2` remain the canonical active reader path. |
-| Admin preview | `ThemeReaderPreview.tsx` scoped admin panel | **Preview-only / partial** - Validates basic authoring chrome, but admin does not yet have its own semantic alias family comparable to reader. |
+| Admin preview | `ThemeReaderPreview.tsx` scoped admin panel + Theme Management workbench target | **Workbench-wired / partial** - Admin/workbench now has an explicit authoring target and saved scoped CSS, while preview coverage still focuses on proving the main workbench shell and control families rather than every admin screen individually. |
 | Preset persistence | `/api/theme` + Firestore `app_settings/theme` | **Live** - Save persists the scoped version 2 document through Firestore first, then updates `theme-data.json` as a backup/fallback artifact. |
 
 Alignment gaps still to close:
 
 - **Legacy reader holdouts** - Some older reader files still sit outside the current semantic migration, especially legacy card/list styling such as `src/components/view/ContentCard.module.css`; treat those as explicit follow-up inventory, not as silent cleanup attached to active-path work.
-- **Admin semantics** - Admin uses preview/runtime tokens, but not yet a full `admin-*` semantic contract parallel to the reader layer.
+- **Admin semantics** - Admin now has live `admin-*` runtime aliases and an explicit workbench authoring target, but it still does not have a separate recipe layer parallel to the reader component recipe system.
 - **Preset completeness** - Journal / Editorial are real draft transforms with preset-specific recipe direction now, but they are still not complete finished light/dark design packages.
 - **Preview truthfulness maintenance** - Reader preview/role reconciliation is now largely in place; future surface additions must be entered into the preview ledger and explicitly classified as role-backed or component-owned instead of drifting ad hoc.
-- **Reader feedback variants** - Reader **general feedback** and **error feedback** now have live consumers, but reader **success / warning / info** panel variants remain future-facing contract values until the reader UI exposes those message surfaces.
+- **Reader feedback variants** - Reader **general feedback**, **error feedback**, and the shared **feedback action** role now have live consumers, but reader **success / warning / info** panel variants remain future-facing contract values until the reader UI exposes those message surfaces.
 
 ### 5.5 What should stay atomic vs summary vs component-owned
 
@@ -714,6 +799,7 @@ The reader preview is no longer allowed to be an approximate mood board. It is t
 | Question card | Explore More | `Explore More` section -> compact Q&A card | Canonical |
 | Quote card | Closed | Quote column -> closed `V2ContentCard` | Canonical |
 | Callout card | Closed | Callout column -> closed `V2ContentCard` | Canonical |
+| Header | Reader chrome | Top navigation/header shell sample | Canonical for header surface and header-owned chrome framing |
 | Sidebar and controls | Reader chrome | Sidebar open sample | Canonical for sidebar surface, support typography, filter chips, icon color, active controls, and neutral controls |
 | Support UI | Tooling and selectors | `Support UI` sample with `SearchBar`, `PhotoPicker`, `TagSelector`, and `ImageToolbar` | Canonical |
 | Support UI | Empty, loading, and error states | `Feed empty` + `Discovery loading/error` samples | Canonical |
@@ -860,6 +946,29 @@ Preset ids are retained as **editing metadata / UX context**, but the saved docu
 9. **Admin separately** - Admin reuses shared tokens where useful, but dense tooling and status/control states need `admin-*` semantic families and recipes separate from reader personality.
 10. **Complete presets** - Only after the schema and surface coverage are coherent should Journal / Editorial be treated as complete data packages with live draft application + persistence.
 
+### 9.1 Canary verification rule
+
+Theme work is not complete when lint passes. Structural theme changes must also pass a small canary set that verifies core role ownership and compile-path truthfulness.
+
+The minimum canary surfaces are:
+
+- page / canvas background
+- reader header / chrome
+- sidebar and support labels / controls
+- story covered card
+- question covered card
+- gallery covered card
+- lightbox backdrop
+- floating window / modal surface, frame, and elevation
+- feedback panel states
+
+For structural theme refactors, these canaries should be checked at two levels:
+
+- **compiler-level checks** - verify that normalization and CSS emission resolve the intended role names and do not let legacy aliases silently override newer explicit roles
+- **surface-level checks** - verify that the main consumers still render the intended visual jobs without unrelated regressions
+
+This is now a contract rule: if a role refactor changes one canary by accident while editing another, the refactor is incomplete.
+
 ---
 
 ## 10. Reader shell, responsive layout & navigation (contract)
@@ -944,6 +1053,23 @@ This section defines the UX and token contract for system/status messaging so fe
 - **Messaging behavior is still mixed** - Themed state colors and some themed feedback panels are live, but broader behavior such as consistent notice components, confirmation dialogs, placement rules, and dismissal behavior is still only partially unified.
 - **Theme implication** - The feedback/state color system is now trustworthy enough to style real message surfaces, but the product still needs a fuller message-component rollout before every status path uses one consistent app-level messaging contract.
 
+### 10.7 Current authoring-system status (2026-04-28)
+
+- **Workbench alignment is now largely structural** - Theme Management, Studio, shared admin dialogs, import flows, and admin drag states now mostly consume the same `Window`, `chrome`, `support`, and `feedback` role families that the editor exposes, instead of styling themselves through raw layout and button primitives.
+- **Most remaining reader meta usage is intentional** - Reader-facing content surfaces may still use reader meta or caption roles where that is the actual visual job. Those are no longer the same hidden admin/workbench coupling problem that drove this overhaul.
+- **Compatibility fallbacks are now minimal and explicit** - The remaining modal-shell fallback path is the raw layout/token safety net under the `admin` layer, not a hidden bridge back through reader-shaped aliases. Treat it as delivery safety, not the authoring contract.
+- **Shared foundation plus explicit admin/runtime aliases are now live** - The server runtime now emits an `admin` alias family for `Window`, `chrome`, `support`, and `feedback` roles. Admin/workbench shells can style against those explicit names instead of depending on reader-shaped aliases inside the admin scope.
+- **Saved admin scope is now live, not draft-only** - The server-rendered theme injection now includes the saved admin-scoped CSS under the admin shell scope, so admin/workbench surfaces can diverge from the reader using the stored admin theme data even when Theme Management is closed.
+- **Theme Management now has an explicit mixed boundary** - The workbench shell and admin-side controls can use `admin` roles, while the live reader preview intentionally keeps `reader` roles so the preview remains truthful about what will happen in the reader.
+- **Theme Management now has an explicit reader/workbench scope split** - The editor can switch between `Reader` and `Workbench`, and workbench components now write to the saved `admin` scoped theme data instead of pretending those surfaces are reader recipe targets.
+- **Workbench component coverage is now first-class** - Workbench Header, Sidebar, Shell, Tabs, Controls, and Feedback are now direct editor targets so dense admin/tooling surfaces no longer have to be styled indirectly through nearby reader-oriented buckets.
+- **Values-panel coordination is now materially better** - The editor now keeps the full value library visible while highlighting the most relevant value groups for the selected attribute and surfacing the current binding directly, which makes the current `Component -> Attribute -> Value` transition more truthful in day-to-day use.
+- **Covered fades now have a safe adaptive default** - Story/question cover fades now default to `Covered Fade (Adaptive)` instead of a fixed raw gradient, while fixed gradient values remain available only for deliberate non-adaptive use.
+- **Compile-path parity is now guarded directly** - The compiler canary suite now checks adaptive-vs-fixed overlay behavior, shipped preset compilation, and scoped reader/admin draft generation so the editor/runtime contract is less likely to drift silently.
+- **The structural overhaul phase is complete** - Hidden shared-role cleanup, the reader/admin split, adaptive-vs-fixed overlay distinction, shipped fallback cleanup, and draft/runtime parity are now in place together.
+- **The current reader-feed baseline is simpler than the old orientation split** - Closed `Story`, `Gallery`, and `Question` cards currently use a shared, landscape-leaning stacked composition with media on top and text below rather than the earlier portrait-overlay default. Treat this as the active reader baseline while the broader presentation matrix is still being finished and validated.
+- **What remains is theme validation, not theme architecture repair** - The next steps are to validate multiple finished themes visually in both modes, tune any remaining role families that prove weak in live use, and remove compatibility fallbacks only after those validation passes are stable.
+
 ---
 
 ## 12. Revision history
@@ -965,3 +1091,7 @@ This section defines the UX and token contract for system/status messaging so fe
 | 2026-04-26 | Added §4.4 and updated §8-§9 to define the next author-facing refactor direction: `Component -> Attribute -> Value`, typed value groups, and the rule that internal token/storage bucket names are not the editing model. |
 | 2026-04-26 | Added §4.5 with the initial canonical component inventory and first-pass attribute list for the upcoming Theme Management editor refactor. |
 | 2026-04-27 | Updated current status, wiring inventory, and status-messaging notes to reflect the runtime reconciliation pass: editor-driven foundations/chrome/controls/cards/overlays/discovery/media surfaces now largely feed the live generator directly, earlier bridge-only outputs have been reduced, and the remaining explicit reader gap is success/warning/info feedback panels without live reader consumers yet. |
+| 2026-04-28 | Split misleading shared overlay roles into `Covered Fade`, `Gallery Overlay`, and `Lightbox Backdrop`; promoted shared support UI and floating window roles in the reader theme model; and formalized the rule that shared roles must declare one visual job and disclose their shared impact in Theme Management. |
+| 2026-04-28 | Promoted `Lightbox` to a first-class authoring component, split `Header` and `Sidebar` into direct authoring targets, wired separate header/sidebar runtime surfaces, documented adaptive-vs-fixed value behavior, and added regression/canary verification rules so legacy aliases, split shared roles, feedback actions, and core themed surfaces can be checked systematically during refactors. |
+| 2026-04-28 | Split `Window` into explicit `surface`, `frame`, and `elevation` roles across the authoring model and runtime compiler so floating dialogs no longer hide those jobs inside one bundled window recipe. |
+| 2026-04-29 | Updated current status to reflect the completed structural theme overhaul, explicit Reader / Workbench scope routing, coordinated Values-panel authoring, the new truthful closed-card background controls, and the current stacked feed-card baseline used while the broader presentation matrix remains under validation. |

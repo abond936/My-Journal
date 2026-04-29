@@ -105,31 +105,31 @@
           "id": 1,
           "name": "background",
           "light": {
-            "hex": "#eceef2",
-            "h": "220",
-            "s": "19%",
-            "l": "94%"
+            "hex": "#bac0cf",
+            "h": "221",
+            "s": "18%",
+            "l": "77%"
           },
           "dark": {
-            "hex": "#14161c",
-            "h": "225",
-            "s": "17%",
-            "l": "9%"
+            "hex": "#151b28",
+            "h": "221",
+            "s": "30%",
+            "l": "12%"
           }
         },
         {
           "id": 2,
           "name": "text",
           "light": {
-            "hex": "#16181d",
-            "h": "223",
-            "s": "14%",
-            "l": "10%"
+            "hex": "#363e4e",
+            "h": "222",
+            "s": "18%",
+            "l": "26%"
           },
           "dark": {
-            "hex": "#eef0f4",
-            "h": "220",
-            "s": "21%",
+            "hex": "#eef2f6",
+            "h": "215",
+            "s": "30%",
             "l": "95%"
           }
         }
@@ -150,8 +150,9 @@
           "handwriting2": "\"Snell Roundhand\", \"Brush Script MT\", cursive"
         },
         "fontSizes": {
-          "xs": "0.875rem",
-          "sm": "1rem",
+          "xxs": "0.6rem",
+          "xs": "0.75rem",
+          "sm": "0.875rem",
           "base": "1.125rem",
           "lg": "1.25rem",
           "xl": "1.5rem",
@@ -251,7 +252,7 @@
         "background2Color": "color1-200",
         "border1Color": "color1-200",
         "border2Color": "color1-300",
-        "sidebarWidth": "300px",
+        "sidebarWidth": "320px",
         "sidebarWidthMobile": "272px",
         "logoMaxHeight": "120px",
         "spinnerSize": "50px",
@@ -363,7 +364,7 @@
         },
         "storyTitle": {
           "family": "font-family/sans1",
-          "size": "font-size/base",
+          "size": "font-size/sm",
           "weight": "font-weight/semibold",
           "lineHeight": "line-height/tight",
           "color": "semantic/reader/tonal-text-primary"
@@ -377,14 +378,15 @@
         },
         "storyExcerpt": {
           "family": "font-family/sans1",
-          "size": "font-size/sm",
+          "size": "font-size/xs",
           "weight": "font-weight/normal",
-          "lineHeight": "line-height/base",
-          "color": "semantic/reader/tonal-text-secondary"
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/tonal-text-secondary",
+          "fontStyle": "italic"
         },
         "galleryTitle": {
           "family": "font-family/sans1",
-          "size": "font-size/base",
+          "size": "font-size/sm",
           "weight": "font-weight/semibold",
           "lineHeight": "line-height/tight",
           "color": "semantic/reader/tonal-text-primary"
@@ -418,21 +420,21 @@
           "color": "semantic/reader/tonal-text-primary"
         },
         "storyDetailTitle": {
-          "family": "font-family/sans1",
+          "family": "font-family/serif1",
           "size": "font-size/3xl",
           "weight": "font-weight/bold",
           "lineHeight": "line-height/tight",
           "color": "semantic/reader/tonal-text-primary"
         },
         "galleryDetailTitle": {
-          "family": "font-family/sans1",
+          "family": "font-family/serif2",
           "size": "font-size/3xl",
           "weight": "font-weight/bold",
           "lineHeight": "line-height/tight",
           "color": "semantic/reader/tonal-text-primary"
         },
         "discoveryTitle": {
-          "family": "font-family/sans1",
+          "family": "font-family/serif1",
           "size": "font-size/lg",
           "weight": "font-weight/semibold",
           "lineHeight": "line-height/tight",
@@ -461,7 +463,7 @@
         },
         "subtitle": {
           "family": "font-family/sans1",
-          "size": "font-size/xl",
+          "size": "font-size/base",
           "weight": "font-weight/normal",
           "lineHeight": "line-height/base",
           "color": "semantic/reader/tonal-text-secondary",
@@ -495,35 +497,49 @@
           "lineHeight": "line-height/base",
           "color": "semantic/reader/tonal-text-secondary"
         },
-        "chromeTitle": {
-          "family": "font-family/sans1",
-          "size": "font-size/lg",
-          "weight": "font-weight/semibold",
-          "lineHeight": "line-height/tight",
-          "color": "semantic/reader/tonal-text-primary"
-        },
-        "chromeLabel": {
+        "chromeText": {
           "family": "font-family/sans1",
           "size": "font-size/sm",
-          "weight": "font-weight/medium",
+          "weight": "font-weight/semibold",
           "lineHeight": "line-height/base",
           "color": "semantic/reader/tonal-text-primary"
         },
         "chromeMeta": {
           "family": "font-family/sans1",
           "size": "font-size/xs",
+          "weight": "font-weight/normal",
+          "lineHeight": "line-height/base",
+          "color": "semantic/reader/tonal-text-secondary"
+        },
+        "supportTitle": {
+          "family": "font-family/sans1",
+          "size": "font-size/lg",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/tonal-text-primary"
+        },
+        "supportLabel": {
+          "family": "font-family/sans1",
+          "size": "font-size/sm",
+          "weight": "font-weight/medium",
+          "lineHeight": "line-height/base",
+          "color": "semantic/reader/tonal-text-primary"
+        },
+        "supportMeta": {
+          "family": "font-family/sans1",
+          "size": "font-size/xs",
           "weight": "font-weight/medium",
           "lineHeight": "line-height/base",
           "color": "semantic/reader/tonal-text-secondary"
         },
-        "chromeHint": {
+        "supportHint": {
           "family": "font-family/sans1",
           "size": "font-size/sm",
           "weight": "font-weight/normal",
           "lineHeight": "line-height/base",
           "color": "semantic/reader/tonal-text-secondary"
         },
-        "fieldControl": {
+        "supportControlText": {
           "family": "font-family/sans1",
           "size": "font-size/sm",
           "weight": "font-weight/medium",
@@ -555,13 +571,13 @@
           "family": "font-family/serif1",
           "size": "font-size/lg",
           "weight": "font-weight/normal",
-          "lineHeight": "line-height/relaxed",
+          "lineHeight": "line-height/base",
           "color": "semantic/reader/tonal-text-primary",
           "fontStyle": "italic"
         },
         "question": {
-          "family": "font-family/sans1",
-          "size": "font-size/lg",
+          "family": "font-family/serif3",
+          "size": "font-size/base",
           "weight": "font-weight/semibold",
           "lineHeight": "line-height/tight",
           "color": "semantic/reader/tonal-text-primary"
@@ -578,14 +594,16 @@
           "size": "font-size/lg",
           "weight": "font-weight/semibold",
           "lineHeight": "line-height/tight",
-          "color": "semantic/reader/tonal-text-primary"
+          "color": "semantic/reader/tonal-text-primary",
+          "fontStyle": "normal"
         },
         "calloutBody": {
           "family": "font-family/sans1",
           "size": "font-size/sm",
           "weight": "font-weight/normal",
-          "lineHeight": "line-height/relaxed",
-          "color": "semantic/reader/tonal-text-primary"
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/tonal-text-primary",
+          "fontStyle": "italic"
         },
         "tagLabel": {
           "family": "font-family/sans1",
@@ -593,11 +611,39 @@
           "weight": "font-weight/semibold",
           "lineHeight": "line-height/base",
           "color": "semantic/reader/contrast-on-fill-text"
+        },
+        "chromeTitle": {
+          "family": "font-family/sans1",
+          "size": "font-size/lg",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/tonal-text-primary"
+        },
+        "chromeLabel": {
+          "family": "font-family/sans1",
+          "size": "font-size/sm",
+          "weight": "font-weight/medium",
+          "lineHeight": "line-height/base",
+          "color": "semantic/reader/tonal-text-primary"
+        },
+        "chromeHint": {
+          "family": "font-family/sans1",
+          "size": "font-size/sm",
+          "weight": "font-weight/normal",
+          "lineHeight": "line-height/base",
+          "color": "semantic/reader/tonal-text-secondary"
+        },
+        "fieldControl": {
+          "family": "font-family/sans1",
+          "size": "font-size/sm",
+          "weight": "font-weight/medium",
+          "lineHeight": "line-height/base",
+          "color": "semantic/reader/tonal-text-primary"
         }
       },
       "surfaces": {
         "canvasPage": {
-          "background": "semantic/reader/canvas-surface",
+          "background": "layout/background1Color",
           "border": "semantic/reader/canvas-border"
         },
         "canvasSection": {
@@ -607,12 +653,12 @@
         },
         "chromeSidebar": {
           "background": "semantic/reader/chrome-surface",
-          "border": "semantic/reader/chrome-border",
+          "border": "layout/border2Color",
           "radius": "border/radius/md"
         },
         "chromeToolbar": {
           "background": "semantic/reader/chrome-surface",
-          "border": "semantic/reader/chrome-border",
+          "border": "layout/background1Color",
           "radius": "border/radius/md"
         },
         "chromeRail": {
@@ -656,7 +702,7 @@
           "padding": "spacing/xl"
         },
         "storyCardClosed": {
-          "background": "component/card/backgroundColor",
+          "background": "layout/background2Color",
           "border": "component/card/borderColor",
           "radius": "component/card/borderRadius",
           "shadow": "component/card/shadow",
@@ -664,23 +710,37 @@
           "padding": "spacing/md"
         },
         "qaCardClosed": {
-          "background": "component/card/backgroundColor",
+          "background": "layout/background2Color",
           "border": "component/card/borderColor",
           "radius": "component/card/borderRadius",
           "shadow": "component/card/shadow",
           "shadowHover": "component/card/shadowHover",
-          "padding": "component/card/padding"
+          "padding": "spacing/md"
         },
         "galleryCardClosed": {
-          "background": "component/card/backgroundColor",
+          "background": "layout/background2Color",
           "border": "component/card/borderColor",
           "radius": "component/card/borderRadius",
           "shadow": "component/card/shadow",
           "shadowHover": "component/card/shadowHover",
           "padding": "component/card/padding"
         },
+        "quoteCardClosed": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color",
+          "radius": "border/radius/lg",
+          "shadow": "shadow/sm",
+          "padding": "spacing/xl"
+        },
+        "calloutCardClosed": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color",
+          "radius": "border/radius/lg",
+          "shadow": "shadow/md",
+          "padding": "spacing/xl"
+        },
         "card": {
-          "background": "component/card/backgroundColor",
+          "background": "layout/background2Color",
           "border": "component/card/borderColor",
           "radius": "component/card/borderRadius",
           "shadow": "component/card/shadow",
@@ -703,6 +763,30 @@
           "background": "semantic/reader/media-frame-surface",
           "border": "semantic/reader/media-frame-border",
           "radius": "border/radius/lg"
+        },
+        "windowSurface": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color",
+          "radius": "border/radius/md",
+          "shadow": "shadow/lg"
+        },
+        "windowFrame": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color",
+          "radius": "border/radius/md",
+          "shadow": "shadow/lg"
+        },
+        "windowElevation": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color",
+          "radius": "border/radius/md",
+          "shadow": "shadow/lg"
+        },
+        "windowPanel": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color",
+          "radius": "border/radius/md",
+          "shadow": "shadow/lg"
         }
       },
       "controls": {
@@ -712,19 +796,19 @@
           "border": "component/button/solid/borderColor",
           "hoverBackground": "component/button/solid/backgroundColorHover"
         },
-        "fieldControl": {
+        "supportControl": {
           "background": "semantic/reader/field-surface",
           "text": "component/input/textColor",
           "border": "semantic/reader/field-border",
           "hoverBackground": "layout/background2Color"
         },
-        "fieldControlStrong": {
+        "supportControlStrong": {
           "background": "component/button/solid/backgroundColor",
           "text": "semantic/reader/contrast-on-fill-text",
           "border": "component/button/solid/borderColor",
           "hoverBackground": "component/button/solid/backgroundColorHover"
         },
-        "chromeFilterChip": {
+        "supportChip": {
           "background": "component/button/solid/backgroundColor",
           "text": "semantic/reader/contrast-on-fill-text",
           "border": "component/button/solid/borderColor",
@@ -754,6 +838,24 @@
         },
         "focusRing": {
           "color": "semantic/reader/focus-ring"
+        },
+        "fieldControl": {
+          "background": "semantic/reader/field-surface",
+          "text": "component/input/textColor",
+          "border": "semantic/reader/field-border",
+          "hoverBackground": "layout/background2Color"
+        },
+        "fieldControlStrong": {
+          "background": "component/button/solid/backgroundColor",
+          "text": "semantic/reader/contrast-on-fill-text",
+          "border": "component/button/solid/borderColor",
+          "hoverBackground": "component/button/solid/backgroundColorHover"
+        },
+        "chromeFilterChip": {
+          "background": "component/button/solid/backgroundColor",
+          "text": "semantic/reader/contrast-on-fill-text",
+          "border": "component/button/solid/borderColor",
+          "hoverBackground": "component/button/solid/backgroundColorHover"
         }
       },
       "tags": {
@@ -785,8 +887,23 @@
         }
       },
       "overlays": {
+        "coveredFade": {
+          "background": "gradient/bottomOverlay",
+          "text": "semantic/reader/overlay-contrast-text",
+          "border": "semantic/reader/overlay-border"
+        },
+        "galleryOverlay": {
+          "background": "semantic/reader/overlay-scrim-strong",
+          "text": "semantic/reader/overlay-contrast-text",
+          "border": "semantic/reader/overlay-border"
+        },
+        "lightboxBackdrop": {
+          "background": "semantic/reader/overlay-scrim-strong",
+          "text": "semantic/reader/overlay-contrast-text",
+          "border": "semantic/reader/overlay-border"
+        },
         "card": {
-          "background": "semantic/reader/overlay-scrim",
+          "background": "gradient/bottomOverlay",
           "text": "semantic/reader/overlay-contrast-text",
           "border": "semantic/reader/overlay-border"
         },
@@ -808,9 +925,10 @@
         "accent": "palette/3"
       },
       "treatments": {
-        "quoteWatermarkOpacity": "0.16",
+        "quoteWatermarkOpacity": "0.80",
         "questionWatermarkOpacity": "0.22",
-        "calloutWatermarkOpacity": "0.22"
+        "calloutWatermarkOpacity": "0.22",
+        "calloutBodyListLineHeight": "line-height/tight"
       }
     }
   },
@@ -964,6 +1082,7 @@
           "handwriting2": "\"Snell Roundhand\", \"Brush Script MT\", cursive"
         },
         "fontSizes": {
+          "xxs": "0.75rem",
           "xs": "0.875rem",
           "sm": "1rem",
           "base": "1.125rem",

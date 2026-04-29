@@ -28,7 +28,8 @@
   font-weight: var(--reader-discovery-meta-font-weight);
   line-height: var(--reader-discovery-meta-line-height);
   color: var(--reader-discovery-meta-color);
-  background: var(--reader-chrome-panel-color);
+  background: var(--reader-discovery-card-background-color);
+  border: var(--border-width-thin) solid var(--reader-discovery-card-border-color);
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-full);
 }

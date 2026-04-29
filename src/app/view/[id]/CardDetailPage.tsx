@@ -70,7 +70,7 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
       <header
         className={`${styles.header} ${!card.subtitle || isQuote ? styles.noSubtitle : ''}`}
       >
-        {card.coverImage && (
+        {card.coverImage && card.type !== 'gallery' && (
           <div className={`${styles.coverImageContainer} ${coverFrameClass}`}>
             <JournalImage
               src={getDisplayUrl(card.coverImage)}

@@ -1,11 +1,11 @@
 .editorContainer {
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--reader-support-control-border-color);
   border-radius: var(--border-radius-md);
   padding: var(--spacing-md);
-  background-color: var(--layout-background1-color);
+  background-color: var(--reader-support-control-background-color);
   position: relative;
   overflow: hidden;
-  font-family: var(--body-font-family);
+  font-family: var(--reader-support-control-font-family);
 }
 
 /**
@@ -24,7 +24,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  border-bottom: var(--border-width-thin) solid var(--reader-support-control-border-color);
   padding-bottom: var(--spacing-sm);
   margin-bottom: var(--spacing-sm);
 }
@@ -38,24 +38,28 @@
 
 .toolbarHint {
   font-size: 0.75rem;
-  color: var(--text2-color, #666);
+  color: var(--reader-support-hint-color);
   user-select: none;
   margin-left: var(--spacing-xs);
 }
 
 .toolbarButton {
   padding: var(--spacing-xs) var(--spacing-sm);
-  border: var(--border-width-thin) solid var(--border1-color);
-  background-color: var(--layout-background1-color);
-  color: var(--text1-color);
+  border: var(--border-width-thin) solid var(--reader-support-control-border-color);
+  background-color: var(--reader-support-control-background-color);
+  color: var(--reader-support-control-text-color);
   cursor: pointer;
   border-radius: var(--border-radius-md);
+  font-family: var(--reader-support-control-font-family);
+  font-size: var(--reader-support-control-font-size);
+  font-weight: var(--reader-support-control-font-weight);
+  line-height: var(--reader-support-control-line-height);
 }
 
 .toolbarButton.active {
-  background-color: var(--layout-background2-color);
-  border-color: var(--border1-color);
-  color: var(--text1-color);
+  background-color: var(--reader-support-control-strong-background-color);
+  border-color: var(--reader-support-control-strong-border-color);
+  color: var(--reader-support-control-strong-text-color);
 }
 
 .toolbarButton.condensed {
@@ -93,7 +97,7 @@
 }
 
 .isDisabled {
-  background-color: var(--layout-background1-color);
+  background-color: var(--reader-support-control-background-color);
   cursor: not-allowed;
 }
 

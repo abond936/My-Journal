@@ -4,16 +4,19 @@
   max-height: 240px;
   overflow-y: auto;
   padding: var(--spacing-xs);
-  background: var(--reader-card-background-color);
-  border: var(--reader-card-border-width) solid var(--reader-card-border-color);
-  border-radius: var(--reader-card-border-radius);
-  box-shadow: var(--reader-card-shadow);
+  background: var(--reader-window-background-color);
+  border: var(--border-width-thin) solid var(--reader-window-border-color);
+  border-radius: var(--reader-window-border-radius);
+  box-shadow: var(--reader-window-shadow);
 }
 
 .empty {
   padding: var(--spacing-sm) var(--spacing-md);
-  font-size: var(--font-size-xs);
-  color: var(--reader-meta-color);
+  font-family: var(--reader-chrome-meta-font-family);
+  font-size: var(--reader-chrome-meta-font-size);
+  font-weight: var(--reader-chrome-meta-font-weight);
+  line-height: var(--reader-chrome-meta-line-height);
+  color: var(--reader-chrome-muted-color);
 }
 
 .item,
@@ -36,5 +39,5 @@
 }
 
 .itemSelected {
-  outline: var(--border-width-thin) solid var(--reader-card-border-color);
+  outline: var(--border-width-thin) solid var(--reader-chrome-active-control-border-color);
 }

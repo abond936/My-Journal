@@ -10,21 +10,8 @@
   border: var(--reader-card-border-width) solid var(--reader-card-border-color);
   position: relative;
   transition: transform var(--transition-short) ease, box-shadow var(--transition-short) ease;
-  /* Taller than square so portrait covers lose less top/bottom under object-fit: cover */
-  aspect-ratio: 4 / 5;
-}
-
-.card.aspectPortrait {
-  aspect-ratio: 4 / 5;
-}
-
-.card.aspectLandscape {
-  /* Keep grid rhythm close to portrait cards; landscape media gets its own top frame. */
-  aspect-ratio: 4 / 5;
-}
-
-.card.aspectSquare {
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 6 / 5;
+  min-height: 0;
 }
 
 .card:hover {
@@ -33,10 +20,46 @@
   border-color: var(--reader-card-hover-border-color);
 }
 
+.card.story {
+  background-color: var(--reader-story-card-background-color);
+  border-color: var(--reader-story-card-border-color);
+  border-radius: var(--reader-story-card-border-radius);
+  box-shadow: var(--reader-story-card-shadow);
+}
+
+.card.story:hover {
+  box-shadow: var(--reader-story-card-shadow-hover);
+}
+
+.card.gallery {
+  background-color: var(--reader-gallery-card-background-color);
+  border-color: var(--reader-gallery-card-border-color);
+  border-radius: var(--reader-gallery-card-border-radius);
+  box-shadow: var(--reader-gallery-card-shadow);
+}
+
+.card.gallery:hover {
+  box-shadow: var(--reader-gallery-card-shadow-hover);
+}
+
 /* Flat tiles (no “shaded” panel vs grid): match page surface, lighter hover */
 .card.quote,
 .card.callout {
   background-color: var(--reader-card-flat-background-color);
+}
+
+.card.quote {
+  background-color: var(--reader-quote-card-background-color);
+  border-color: var(--reader-quote-card-border-color);
+  border-radius: var(--reader-quote-card-border-radius);
+  box-shadow: var(--reader-quote-card-shadow);
+}
+
+.card.callout {
+  background-color: var(--reader-callout-card-background-color);
+  border-color: var(--reader-callout-card-border-color);
+  border-radius: var(--reader-callout-card-border-radius);
+  box-shadow: var(--reader-callout-card-shadow);
 }
 
 .card.quote:hover,
@@ -65,6 +88,24 @@
   .large { width: auto; }
 }
 
+@media (max-width: 768px) {
+  .card.story,
+  .card.gallery,
+  .card.qa {
+    aspect-ratio: auto;
+  }
+
+  .story:not(:has(.imageContainer)),
+  .gallery:not(:has(.imageContainer)),
+  .qa:not(.qaWithCover) {
+    min-height: 12.5rem;
+  }
+
+  .imageContainer {
+    aspect-ratio: 4 / 3;
+  }
+}
+
 /* Fill a fixed-width parent (e.g. horizontal discovery rail). Overrides .small % width. */
 .fullWidth {
   width: 100% !important;
@@ -85,22 +126,18 @@
   flex-grow: 1;
   position: relative;
   z-index: 2;
+  gap: var(--spacing-xs);
 }
 
 .imageContainer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-}
-
-/* Landscape cards on content feed: image on top, text in remaining space. */
-.card.aspectLandscape .imageContainer {
   position: relative;
+  width: 100%;
+  aspect-ratio: 6 / 5;
   height: auto;
-  aspect-ratio: 3 / 2;
+  z-index: 0;
+  overflow: hidden;
+  background: var(--reader-media-frame-background-color);
+  border-bottom: var(--border-width-thin) solid var(--reader-media-frame-border-color);
 }
 
 .image {
@@ -133,9 +170,9 @@
 
 .title {
   font-family: var(--reader-title-font-family);
-  font-size: var(--reader-title-font-size);
+  font-size: var(--font-size-sm);
   font-weight: var(--reader-title-font-weight);
-  margin: 0 0 var(--spacing-sm) 0;
+  margin: 0;
   line-height: var(--reader-title-line-height);
   color: var(--reader-title-color);
 }
@@ -143,34 +180,36 @@
 
 .description {
   font-family: var(--reader-excerpt-font-family);
-  font-size: var(--reader-excerpt-font-size);
+  font-size: var(--font-size-xs);
   font-weight: var(--reader-excerpt-font-weight);
   color: var(--reader-excerpt-color);
-  line-height: var(--reader-excerpt-line-height);
+  line-height: 1.35;
   margin: 0;
+  min-height: calc(1em * 1.35);
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.descriptionPlaceholder {
+  opacity: 0;
 }
 
 /* --- Story & Gallery --- */
 .story .content {
-  padding: var(--reader-story-card-padding);
-  justify-content: flex-end;
-  color: var(--reader-body-color);
-  background: var(--reader-card-overlay-background);
-}
-
-.story.aspectLandscape .content {
-  position: relative;
+  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
   justify-content: flex-start;
-  background: var(--reader-card-background-color);
   color: var(--reader-body-color);
 }
 
 .story .title {
-  color: var(--reader-story-overlay-title-color);
-  font-family: var(--reader-story-overlay-title-font-family);
-  font-size: var(--reader-story-overlay-title-font-size);
-  font-weight: var(--reader-story-overlay-title-font-weight);
-  line-height: var(--reader-story-overlay-title-line-height);
+  color: var(--reader-story-title-color);
+  font-family: var(--reader-story-title-font-family);
+  font-size: var(--reader-story-title-font-size);
+  font-weight: var(--reader-story-title-font-weight);
+  line-height: var(--reader-story-title-line-height);
 }
 
 .story .description {
@@ -179,50 +218,24 @@
   font-size: var(--reader-story-excerpt-font-size);
   font-weight: var(--reader-story-excerpt-font-weight);
   line-height: var(--reader-story-excerpt-line-height);
-}
-
-.story.aspectLandscape .title {
-  color: var(--reader-story-title-color);
-  font-family: var(--reader-story-title-font-family);
-  font-size: var(--reader-story-title-font-size);
-  font-weight: var(--reader-story-title-font-weight);
-  line-height: var(--reader-story-title-line-height);
-}
-
-.story.aspectLandscape .description {
-  color: var(--reader-story-excerpt-color);
+  font-style: var(--reader-story-excerpt-font-style);
 }
 
 .gallery .content {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-  justify-content: flex-end;
-  padding: var(--reader-gallery-card-padding);
-  background: var(--reader-card-overlay-strong-background);
-}
-
-.gallery.aspectLandscape .content {
   position: relative;
-  bottom: auto;
-  left: auto;
-  right: auto;
   width: auto;
   justify-content: flex-start;
-  background: var(--reader-card-background-color);
+  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+  background: var(--reader-gallery-card-background-color);
+}
+
+.story:not(:has(.imageContainer)) .content,
+.gallery:not(:has(.imageContainer)) .content,
+.qa:not(.qaWithCover) .content {
+  justify-content: flex-end;
 }
 
 .gallery .title {
-  color: var(--reader-gallery-overlay-title-color);
-  font-family: var(--reader-gallery-overlay-title-font-family);
-  font-size: var(--reader-gallery-overlay-title-font-size);
-  font-weight: var(--reader-gallery-overlay-title-font-weight);
-  line-height: var(--reader-gallery-overlay-title-line-height);
-}
-
-.gallery.aspectLandscape .title {
   color: var(--reader-gallery-title-color);
   font-family: var(--reader-gallery-title-font-family);
   font-size: var(--reader-gallery-title-font-size);
@@ -334,7 +347,14 @@
 
 /* --- Q&A Card --- */
 .qa {
-  background-color: var(--reader-card-flat-background-color);
+  background-color: var(--reader-question-card-background-color);
+  border-color: var(--reader-question-card-border-color);
+  border-radius: var(--reader-question-card-border-radius);
+  box-shadow: var(--reader-question-card-shadow);
+}
+
+.qa:hover {
+  box-shadow: var(--reader-question-card-shadow-hover);
 }
 
 /* Large centered watermark when no cover (same pattern as quote/callout, but center + brighter) */
@@ -363,10 +383,6 @@
   min-width: 0;
 }
 
-.qa.aspectLandscape .content {
-  background: var(--reader-card-flat-background-color);
-}
-
 /* No cover: center question + optional excerpt over watermark */
 .qa:not(.qaWithCover) .content {
   flex: 1;
@@ -393,55 +409,55 @@
 
 /* Cover hero: same bottom overlay pattern as story */
 .qa.qaWithCover .content {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-  justify-content: flex-end;
+  position: relative;
+  width: auto;
+  justify-content: flex-start;
   padding: var(--reader-question-card-padding);
-  background: var(--reader-card-overlay-background);
   color: var(--reader-body-color);
 }
 
 .qa.qaWithCover .qaQuestion,
 .qa.qaWithCover .qaTeaser {
-  color: var(--reader-overlay-contrast-text-color);
+  color: var(--reader-question-color);
   max-width: 100%;
   min-width: 0;
   overflow-wrap: break-word;
   word-break: break-word;
 }
 
-/* Match story feed tile title scale when question sits on the bottom gradient (cover hero). */
 .qa.qaWithCover .qaQuestion {
-  font-size: var(--font-size-base);
-  color: var(--reader-question-overlay-color);
-  font-family: var(--reader-question-overlay-font-family);
-  font-weight: var(--reader-question-overlay-font-weight);
-  line-height: var(--reader-question-overlay-line-height);
+  font-size: var(--reader-question-font-size);
+  font-family: var(--reader-question-font-family);
+  font-weight: var(--reader-question-font-weight);
+  line-height: var(--reader-question-line-height);
 }
 
 .qa.qaWithCover .qaTeaser {
-  opacity: 0.92;
+  color: var(--reader-excerpt-color);
 }
 
 .qaQuestion {
   margin: 0;
   font-family: var(--reader-question-font-family);
   font-weight: var(--reader-question-font-weight);
-  font-size: var(--reader-question-font-size);
+  font-size: var(--font-size-sm);
   line-height: var(--reader-question-line-height);
   color: var(--reader-question-color);
 }
 
 .qaTeaser {
-  margin: var(--spacing-sm) 0 0 0;
+  margin: 0;
   font-family: var(--reader-excerpt-font-family);
-  font-size: var(--reader-excerpt-font-size);
+  font-size: var(--font-size-xs);
   font-weight: var(--reader-excerpt-font-weight);
-  line-height: var(--reader-excerpt-line-height);
+  line-height: 1.35;
   color: var(--reader-excerpt-color);
+  min-height: calc(1em * 1.35);
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Inline + cover: TipTap below title/teaser inside overlay; keep readable */
@@ -489,7 +505,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
   justify-content: flex-start;
   text-align: left;
   padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-lg) var(--spacing-md);
@@ -503,38 +519,24 @@
   line-height: var(--reader-callout-title-line-height);
   color: var(--reader-callout-title-color);
 }
-.calloutSubtitle {
-  margin: 0;
-  font-family: var(--reader-subtitle-font-family);
-  font-size: var(--reader-subtitle-font-size);
-  font-weight: var(--reader-subtitle-font-weight);
-  line-height: var(--reader-subtitle-line-height);
-  color: var(--reader-subtitle-color);
-  font-style: var(--reader-subtitle-font-style);
-}
-.calloutExcerpt {
-  margin: 0;
-  font-family: var(--reader-excerpt-font-family);
-  font-size: var(--reader-excerpt-font-size);
-  font-weight: var(--reader-excerpt-font-weight);
-  line-height: var(--reader-excerpt-line-height);
-  color: var(--reader-excerpt-color);
-}
 .calloutBody {
   margin: 0;
   font-family: var(--reader-callout-body-font-family);
   font-size: var(--reader-callout-body-font-size);
   font-weight: var(--reader-callout-body-font-weight);
   line-height: var(--reader-callout-body-line-height);
+  font-style: var(--reader-callout-body-font-style);
   color: var(--reader-callout-body-color);
 }
 .calloutBody :global(ul),
 .calloutBody :global(ol) {
-  margin: var(--spacing-xs) 0;
+  margin: 0 0 var(--spacing-xs) 0;
   padding-left: var(--spacing-lg);
+  line-height: var(--reader-callout-body-list-line-height);
 }
 .calloutBody :global(li) {
   margin: var(--spacing-xs) 0;
+  line-height: var(--reader-callout-body-list-line-height);
 }
 .callout .inlineContent {
   margin-top: 0;

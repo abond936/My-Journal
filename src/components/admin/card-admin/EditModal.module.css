@@ -12,9 +12,11 @@
 }
 
 .modal {
-    background-color: var(--layout-background1-color);
+    background-color: var(--admin-window-background-color, var(--layout-background1-color));
     padding: var(--spacing-2xl);
-    border-radius: var(--border-radius-md);
+    border-radius: var(--admin-window-border-radius, var(--border-radius-md));
+    border: var(--border-width-thin) solid var(--admin-window-border-color, var(--color-border-primary));
+    box-shadow: var(--admin-window-shadow, var(--shadow-lg));
     width: 90%;
     max-width: 500px;
     max-height: min(92vh, 900px);
@@ -39,7 +41,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: var(--border-width-thin) solid var(--color-border-primary);
+    border-bottom: var(--border-width-thin) solid var(--admin-window-border-color, var(--color-border-primary));
     padding-bottom: var(--spacing-md);
     margin-bottom: var(--spacing-md);
     flex-shrink: 0;
@@ -47,12 +49,25 @@
 
 .header h3 {
     margin: 0;
+    color: var(--admin-chrome-text-color, var(--text1-color));
+    font-family: var(--admin-chrome-text-font-family, inherit);
+    font-size: var(--admin-chrome-text-font-size, var(--font-size-lg));
+    font-weight: var(--admin-chrome-text-font-weight, var(--font-weight-medium));
+    line-height: var(--admin-chrome-text-line-height, var(--line-height-base));
 }
 
 .closeButton {
-    background: none;
-    border: none;
+    background: color-mix(in srgb, var(--admin-window-background-color, var(--layout-background1-color)) 90%, transparent);
+    border: var(--border-width-thin) solid var(--admin-window-border-color, var(--color-border-primary));
+    border-radius: var(--border-radius-full);
+    width: 2rem;
+    height: 2rem;
     font-size: var(--font-size-xl);
     cursor: pointer;
-    color: var(--text1-color);
+    color: var(--admin-chrome-text-color, var(--text1-color));
+    line-height: 1;
+}
+
+.closeButton:hover {
+    background: var(--admin-chrome-control-hover-background-color, color-mix(in srgb, var(--admin-window-background-color, var(--layout-background1-color)) 82%, transparent));
 }

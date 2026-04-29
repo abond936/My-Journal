@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import useSWR, { mutate as globalMutate } from 'swr';
 import CardForm from '@/components/admin/card-admin/CardForm';
 import { CardFormProvider, useCardForm } from '@/components/providers/CardFormProvider';
+import { useOptionalCardContext } from '@/components/providers/CardProvider';
 import { StudioCardFormStudioProvider } from '@/components/admin/studio/studioCardFormStudioContext';
 import type { Card, CardUpdate } from '@/lib/types/card';
 import type { Tag } from '@/lib/types/tag';
@@ -15,10 +16,16 @@ import {
 } from '@/lib/utils/cardDeleteWarnings';
 import styles from './ReaderCardEditModal.module.css';
 import studioStyles from '@/components/admin/studio/StudioWorkspace.module.css';
-import modalStyles from '@/components/admin/card-admin/EditModal.module.css';
 
 const fetcher = (url: string) =>
   fetch(url, { cache: 'no-store', credentials: 'same-origin' }).then((res) => res.json());
+
+type ModalFrame = {
+  width: number;
+  height: number;
+  x: number;
+  y: number;
+};
 
 function ModalActions({
   onClose,
@@ -103,6 +110,57 @@ function ModalActions({
   );
 }
 
+function ModalTitleBar({
+  title,
+  onDragStart,
+  onClose,
+}: {
+  title: string;
+  onDragStart: (event: React.PointerEvent<HTMLDivElement>) => void;
+  onClose: () => void;
+}) {
+  const { confirmLeaveIfDirty, formState } = useCardForm();
+  const { isSaving } = formState;
+
+  const handleClose = useCallback(() => {
+    if (!confirmLeaveIfDirty()) return;
+    onClose();
+  }, [confirmLeaveIfDirty, onClose]);
+
+  return (
+    <div className={styles.titleBar} onPointerDown={onDragStart}>
+      <div className={styles.titleBarDragAffordance} aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
+      <h2 className={styles.titleBarTitle}>{title}</h2>
+      <button
+        type="button"
+        className={styles.titleBarCloseButton}
+        onClick={handleClose}
+        disabled={isSaving}
+        aria-label="Close compose window"
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
+function ReaderModalBaselineSync({ syncKey }: { syncKey: string }) {
+  const { syncPersistableBaseline } = useCardForm();
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      syncPersistableBaseline();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [syncKey, syncPersistableBaseline]);
+
+  return null;
+}
+
 export default function ReaderCardEditModal({
   cardId,
   returnTo,
@@ -117,10 +175,18 @@ export default function ReaderCardEditModal({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const cardContext = useOptionalCardContext();
   const [isOpen, setIsOpen] = useState(false);
   const [activeCardId, setActiveCardId] = useState(cardId);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
+  const [modalFrame, setModalFrame] = useState<ModalFrame | null>(null);
+  const modalRef = useRef<HTMLDivElement | null>(null);
+  const pointerStateRef = useRef<
+    | { mode: 'drag'; startX: number; startY: number; frame: ModalFrame }
+    | { mode: 'resize'; startX: number; startY: number; frame: ModalFrame }
+    | null
+  >(null);
 
   const { data: card, mutate: mutateCard } = useSWR<Card | null>(
     isOpen ? `/api/cards/${activeCardId}` : null,
@@ -135,15 +201,116 @@ export default function ReaderCardEditModal({
 
   const modalReady = Boolean(card && tags);
 
+  const buildDefaultFrame = useCallback((): ModalFrame => {
+    if (typeof window === 'undefined') {
+      return { width: 800, height: 1500, x: 24, y: 96 };
+    }
+
+    const margin = 24;
+    const maxWidth = Math.max(560, window.innerWidth - margin * 2);
+    const headerClearance = 88;
+    const maxHeight = Math.max(900, window.innerHeight - margin - headerClearance);
+    const width = Math.min(800, maxWidth);
+    const height = Math.min(1500, maxHeight);
+
+    return {
+      width,
+      height,
+      x: Math.max(margin, Math.round((window.innerWidth - width) / 2)),
+      y: headerClearance,
+    };
+  }, []);
+
   const openModal = () => {
     onBeforeOpen?.();
     setActiveCardId(cardId);
+    setModalFrame((current) => current ?? buildDefaultFrame());
     setIsOpen(true);
   };
 
   const closeModal = useCallback(() => {
     setIsOpen(false);
   }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      pointerStateRef.current = null;
+      document.body.style.userSelect = '';
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const state = pointerStateRef.current;
+      if (!state) return;
+
+      const margin = 16;
+      const topClearance = 88;
+      const maxWidth = Math.max(560, window.innerWidth - margin * 2);
+      const maxHeight = Math.max(900, window.innerHeight - margin - topClearance);
+
+      if (state.mode === 'drag') {
+        const nextX = Math.min(
+          Math.max(margin, window.innerWidth - state.frame.width - margin),
+          Math.max(margin, state.frame.x + (event.clientX - state.startX))
+        );
+        const nextY = Math.min(
+          Math.max(topClearance, window.innerHeight - state.frame.height - margin),
+          Math.max(topClearance, state.frame.y + (event.clientY - state.startY))
+        );
+        setModalFrame({ ...state.frame, x: nextX, y: nextY });
+        return;
+      }
+
+      const nextWidth = Math.min(maxWidth, Math.max(560, state.frame.width + (event.clientX - state.startX)));
+      const nextHeight = Math.min(maxHeight, Math.max(720, state.frame.height + (event.clientY - state.startY)));
+      setModalFrame({ ...state.frame, width: nextWidth, height: nextHeight });
+    };
+
+    const stopPointerAction = () => {
+      pointerStateRef.current = null;
+      document.body.style.userSelect = '';
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', stopPointerAction);
+    window.addEventListener('pointercancel', stopPointerAction);
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', stopPointerAction);
+      window.removeEventListener('pointercancel', stopPointerAction);
+    };
+  }, [isOpen]);
+
+  const handleResizeStart = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!modalFrame) return;
+    if (event.button !== 0) return;
+    pointerStateRef.current = {
+      mode: 'resize',
+      startX: event.clientX,
+      startY: event.clientY,
+      frame: modalFrame,
+    };
+    document.body.style.userSelect = 'none';
+    event.preventDefault();
+  }, [modalFrame]);
+
+  const handleDragStart = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if ((event.target as HTMLElement).closest('button')) return;
+    if (!modalFrame) return;
+    if (event.button !== 0) return;
+    pointerStateRef.current = {
+      mode: 'drag',
+      startX: event.clientX,
+      startY: event.clientY,
+      frame: modalFrame,
+    };
+    document.body.style.userSelect = 'none';
+    event.preventDefault();
+  }, [modalFrame]);
 
   const handleSave = useCallback(
     async (cardData: CardUpdate): Promise<Card | null> => {
@@ -159,13 +326,46 @@ export default function ReaderCardEditModal({
         throw new Error(savedData.error || 'Failed to save card.');
       }
       await mutateCard(savedData, false);
-      void globalMutate((key) => typeof key === 'string' && key.startsWith('/api/cards?'), undefined, {
-        revalidate: true,
-      });
-      router.refresh();
+      cardContext?.patchVisibleCard(savedData);
+      void globalMutate(
+        (key) => typeof key === 'string' && key.startsWith('/api/cards?'),
+        (current) => {
+          if (!current) return current;
+
+          const patchItems = (items: unknown) => {
+            if (!Array.isArray(items)) return items;
+            return items.map((item) => {
+              if (!item || typeof item !== 'object') return item;
+              return (item as Card).docId === savedData.docId ? savedData : item;
+            });
+          };
+
+          if (Array.isArray(current)) {
+            return current.map((page) => {
+              if (!page || typeof page !== 'object' || !('items' in page)) return page;
+              return {
+                ...page,
+                items: patchItems((page as { items?: unknown }).items),
+              };
+            });
+          }
+
+          if (typeof current === 'object' && 'items' in current) {
+            return {
+              ...current,
+              items: patchItems((current as { items?: unknown }).items),
+            };
+          }
+
+          return current;
+        },
+        {
+          revalidate: false,
+        }
+      );
       return savedData;
     },
-    [activeCardId, mutateCard, router]
+    [activeCardId, mutateCard, cardContext]
   );
 
   const handleDelete = useCallback(async () => {
@@ -233,16 +433,19 @@ export default function ReaderCardEditModal({
     }
     return (
       <CardFormProvider key={activeCardId} initialCard={card} allTags={tags} onSave={handleSave}>
+        <ReaderModalBaselineSync syncKey={activeCardId} />
         <div className={styles.modalShell}>
           <div className={styles.modalHeader}>
-            <h2 className={styles.modalTitle}>Compose</h2>
-            <ModalActions
-              onClose={closeModal}
-              onDelete={handleDelete}
-              onDuplicate={handleDuplicate}
-              isDeleting={isDeleting}
-              isDuplicating={isDuplicating}
-            />
+            <ModalTitleBar title="Compose" onDragStart={handleDragStart} onClose={closeModal} />
+            <div className={styles.modalActions}>
+              <ModalActions
+                onClose={closeModal}
+                onDelete={handleDelete}
+                onDuplicate={handleDuplicate}
+                isDeleting={isDeleting}
+                isDuplicating={isDuplicating}
+              />
+            </div>
           </div>
           <div className={styles.modalScroll}>
             <StudioCardFormStudioProvider value={{ studioShellCardForm: true }}>
@@ -257,6 +460,7 @@ export default function ReaderCardEditModal({
     card,
     closeModal,
     handleDelete,
+    handleDragStart,
     handleDuplicate,
     handleSave,
     isDeleting,
@@ -270,10 +474,26 @@ export default function ReaderCardEditModal({
       <button type="button" className={[styles.triggerButton, className ?? ''].join(' ').trim()} onClick={openModal}>
         {children}
       </button>
-      {isOpen ? (
-        <div className={modalStyles.overlay}>
-          <div className={`${modalStyles.modal} ${modalStyles.modalWide}`} onClick={(e) => e.stopPropagation()}>
-            <div className={modalStyles.body}>{modalBody}</div>
+      {isOpen && modalFrame ? (
+        <div className={styles.readerOverlay}>
+          <div
+            ref={modalRef}
+            className={styles.readerModal}
+            style={{
+              width: `${modalFrame.width}px`,
+              height: `${modalFrame.height}px`,
+              left: `${modalFrame.x}px`,
+              top: `${modalFrame.y}px`,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.readerBody}>{modalBody}</div>
+            <div
+              className={styles.resizeHandle}
+              onPointerDown={handleResizeStart}
+              role="presentation"
+              aria-hidden="true"
+            />
           </div>
         </div>
       ) : null}

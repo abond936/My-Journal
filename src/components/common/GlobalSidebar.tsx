@@ -12,12 +12,23 @@ import {
 } from '@/components/providers/CardProvider';
 import TagTree from '@/components/common/TagTree';
 import { filterTreesBySearch } from '@/lib/utils/tagUtils';
-import { groupCollectionsByDimension } from '@/lib/utils/cardUtils';
+import { listCollectionRootCards, normalizeCuratedChildIds } from '@/lib/utils/curatedCollectionTree';
 import ViewTagLibrarySidebarPane from '@/components/view/ViewTagLibrarySidebarPane';
-import { User, Square, Calendar, MapPin } from 'lucide-react';
+import {
+  User,
+  Square,
+  Calendar,
+  MapPin,
+  BookOpen,
+  Image,
+  CircleHelp,
+  Quote,
+  Megaphone,
+} from 'lucide-react';
 import styles from './GlobalSidebar.module.css';
 
 const VIEW_TAG_SIDEBAR_TAB_KEY = 'myjournal-view-sidebar-tag-tab';
+const CURATED_TREE_EXPANDED_KEY = 'myjournal-curated-tree-expanded';
 
 interface GlobalSidebarProps {
   isOpen: boolean;
@@ -33,6 +44,17 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
   const [viewTagSidebarTab, setViewTagSidebarTab] = useState<'filter' | 'library'>(() => {
     if (typeof window === 'undefined') return 'filter';
     return sessionStorage.getItem(VIEW_TAG_SIDEBAR_TAB_KEY) === 'library' ? 'library' : 'filter';
+  });
+  const [expandedCollectionIds, setExpandedCollectionIds] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    const raw = sessionStorage.getItem(CURATED_TREE_EXPANDED_KEY);
+    if (!raw) return new Set();
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? new Set(parsed.filter((id): id is string => typeof id === 'string')) : new Set();
+    } catch {
+      return new Set();
+    }
   });
   const {
     tags,
@@ -55,6 +77,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     collectionId,
     setCollectionId,
     collectionCards,
+    collectionTreeCards,
     feedSort,
     setFeedSort,
     feedGroupBy,
@@ -80,25 +103,24 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     quote: 'Quote',
     callout: 'Callout',
   };
+  const cardTypeIcons: Record<string, React.ComponentType<{ strokeWidth?: number }>> = {
+    story: BookOpen,
+    gallery: Image,
+    qa: CircleHelp,
+    quote: Quote,
+    callout: Megaphone,
+  };
 
   const hasActiveFilters = isFeedCardTypesFilterActive || selectedFilterTagIds.length > 0;
 
   const clearCardTypeFilters = () => setCardType('all');
   const removeTagFilter = (tagId: string) => {
-    setFilterTags(selectedFilterTagIds.filter(id => id !== tagId));
+    setFilterTags(selectedFilterTagIds.filter((id) => id !== tagId));
   };
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  const CURATED_DIMENSION_TABS = [
-    { id: 'all', label: 'All' },
-    { id: 'who', label: 'Who' },
-    { id: 'what', label: 'What' },
-    { id: 'when', label: 'When' },
-    { id: 'where', label: 'Where' },
-  ] as const;
 
   const FREEFORM_DIMENSION_TABS = [
     { id: 'who', label: 'Who', Icon: User },
@@ -131,12 +153,28 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     if (typeof window !== 'undefined') sessionStorage.setItem(VIEW_TAG_SIDEBAR_TAB_KEY, tab);
   }, []);
 
-  const collectionsByDimension = useMemo(
-    () => groupCollectionsByDimension(collectionCards),
-    [collectionCards]
+  const collectionCardById = useMemo(
+    () => new Map(collectionTreeCards.filter((card) => card.docId).map((card) => [card.docId!, card])),
+    [collectionTreeCards]
   );
 
-  const DIMENSION_GROUP_ORDER = ['who', 'what', 'when', 'where', 'uncategorized'] as const;
+  const collectionRoots = useMemo(() => listCollectionRootCards(collectionTreeCards), [collectionTreeCards]);
+
+  useEffect(() => {
+    if (collectionTreeCards.length === 0) return;
+    setExpandedCollectionIds((current) => {
+      if (current.size > 0) return current;
+      const defaults = collectionTreeCards
+        .filter((card) => card.docId && normalizeCuratedChildIds(card.childrenIds).length > 0)
+        .map((card) => card.docId as string);
+      return new Set(defaults);
+    });
+  }, [collectionTreeCards]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    sessionStorage.setItem(CURATED_TREE_EXPANDED_KEY, JSON.stringify(Array.from(expandedCollectionIds)));
+  }, [expandedCollectionIds]);
 
   const filteredTagTree = useMemo(() => {
     const treeForTab =
@@ -147,17 +185,12 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
   const handleSelectionChange = (tagId: string, isSelected: boolean) => {
     const newSelection = isSelected
       ? (selectedFilterTagIds.includes(tagId) ? selectedFilterTagIds : [...selectedFilterTagIds, tagId])
-      : selectedFilterTagIds.filter(id => id !== tagId);
+      : selectedFilterTagIds.filter((id) => id !== tagId);
     setFilterTags(newSelection);
   };
 
   const handleClearFiltersClick = () => {
     clearFilters();
-    if (browseMode === 'curated') {
-      setCollectionId(null);
-      setActiveDimension('collections');
-      return;
-    }
     setActiveDimension('who');
   };
 
@@ -174,6 +207,69 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
       setCollectionId(null);
       setActiveDimension('who');
     }
+  };
+
+  const toggleCollectionExpanded = useCallback((cardId: string) => {
+    setExpandedCollectionIds((current) => {
+      const next = new Set(current);
+      if (next.has(cardId)) {
+        next.delete(cardId);
+      } else {
+        next.add(cardId);
+      }
+      return next;
+    });
+  }, []);
+
+  const renderCollectionNode = (cardId: string, level: number, seen: Set<string>): React.ReactNode => {
+    const card = collectionCardById.get(cardId);
+    if (!card?.docId || seen.has(card.docId)) return null;
+
+    const nextSeen = new Set(seen);
+    nextSeen.add(card.docId);
+
+    const children = normalizeCuratedChildIds(card.childrenIds)
+      .map((childId) => collectionCardById.get(childId))
+      .filter((child): child is NonNullable<typeof child> => Boolean(child?.docId));
+    const isSelected = collectionId === card.docId;
+    const hasChildren = children.length > 0;
+    const isExpanded = hasChildren && expandedCollectionIds.has(card.docId);
+
+    return (
+      <li key={card.docId} className={styles.collectionTreeNode}>
+        <div className={styles.collectionRow} style={{ marginLeft: `${level * 0.65}rem` }}>
+          <button
+            type="button"
+            className={styles.collectionExpandButton}
+            onClick={() => hasChildren && toggleCollectionExpanded(card.docId!)}
+            aria-expanded={hasChildren ? isExpanded : undefined}
+            aria-label={
+              hasChildren
+                ? `${isExpanded ? 'Collapse' : 'Expand'} ${card.title || card.subtitle || 'Untitled'}`
+                : undefined
+            }
+            disabled={!hasChildren}
+          >
+            {hasChildren ? <span className={styles.collectionExpandIcon}>{isExpanded ? '▼' : '▶'}</span> : null}
+          </button>
+          <button
+            type="button"
+            className={`${styles.collectionItem} ${isSelected ? styles.collectionItemActive : ''}`}
+            onClick={() => setCollectionId(card.docId!)}
+          >
+            <span className={styles.collectionItemLabel}>{card.title || card.subtitle || 'Untitled'}</span>
+            {card.childrenIds?.length ? (
+              <span className={styles.collectionCount}>({card.childrenIds.length})</span>
+            ) : null}
+          </button>
+        </div>
+        {hasChildren && isExpanded ? (
+          <ul className={styles.collectionTreeList}>
+            {children.map((child) => renderCollectionNode(child.docId!, level + 1, nextSeen))}
+          </ul>
+        ) : null}
+      </li>
+    );
   };
 
   return (
@@ -203,20 +299,37 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
           </div>
           {isTagMode ? (
             <>
+              <div className={styles.modeActions}>
+                <button
+                  type="button"
+                  onClick={handleClearFiltersClick}
+                  className={styles.clearButtonCompact}
+                >
+                  Clear filters
+                </button>
+              </div>
               <div className={styles.sidebarSection}>
                 <h3 className={styles.sectionHeading}>Cards</h3>
                 <div className={styles.cardTypeChips} role="group" aria-label="Filter by card type">
                   {FEED_CARD_TYPES_ORDER.map((t) => {
                     const on = feedCardTypes.has(t);
+                    const Icon = cardTypeIcons[t];
                     return (
                       <button
                         key={t}
                         type="button"
                         className={`${styles.cardTypeChip} ${on ? styles.cardTypeChipActive : ''}`}
                         aria-pressed={on}
+                        aria-label={cardTypeLabels[t] ?? t}
+                        title={cardTypeLabels[t] ?? t}
                         onClick={() => toggleFeedCardType(t)}
                       >
-                        {cardTypeLabels[t] ?? t}
+                        <span className={styles.srOnly}>{cardTypeLabels[t] ?? t}</span>
+                        {Icon ? (
+                          <span className={styles.cardTypeChipIcon} aria-hidden>
+                            <Icon strokeWidth={2} />
+                          </span>
+                        ) : null}
                       </button>
                     );
                   })}
@@ -224,7 +337,9 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
               </div>
 
               <div className={styles.sidebarSection}>
-                <h3 className={styles.sectionHeading}>Tags</h3>
+                {!showViewTagLibrary || viewTagSidebarTab === 'filter' ? (
+                  <h3 className={styles.sectionHeading}>Tags</h3>
+                ) : null}
                 {showViewTagLibrary ? (
                   <div className={styles.viewTagSidebarTabs} role="tablist" aria-label="Tag sidebar mode">
                     <button
@@ -247,7 +362,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                     </button>
                   </div>
                 ) : null}
-                {(!showViewTagLibrary || viewTagSidebarTab === 'filter') ? (
+                {!showViewTagLibrary || viewTagSidebarTab === 'filter' ? (
                   <>
                     <div className={styles.dimensionsBlock}>
                       <div
@@ -281,9 +396,9 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                       <input
                         id="tag-search-input"
                         type="search"
-                        placeholder="Search tags…"
+                        placeholder="Search tags..."
                         value={tagSearch}
-                        onChange={e => setTagSearch(e.target.value)}
+                        onChange={(e) => setTagSearch(e.target.value)}
                         className={styles.compactControl}
                         aria-label="Search tags in tree"
                       />
@@ -316,8 +431,8 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                               All card types
                             </button>
                           ) : null}
-                          {selectedFilterTagIds.map(tagId => {
-                            const tagName = tags?.find(t => t.docId === tagId)?.name ?? tagId;
+                          {selectedFilterTagIds.map((tagId) => {
+                            const tagName = tags?.find((t) => t.docId === tagId)?.name ?? tagId;
                             return (
                               <span key={tagId} className={styles.filterChip}>
                                 {tagName}
@@ -340,45 +455,49 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
               </div>
 
               <div className={styles.sidebarSection}>
-                <h3 className={styles.sectionHeading}>Sort by</h3>
-                <select
-                  id="feed-sort-select"
-                  value={feedSort}
-                  onChange={e => setFeedSort(e.target.value as FeedSortOrder)}
-                  className={styles.compactControl}
-                  aria-label="Sort card feed"
-                >
-                  <option value="random">Random</option>
-                  <option value="whenDesc">When (Desc)</option>
-                  <option value="whenAsc">When (Asc)</option>
-                  <option value="createdDesc">Created (Desc)</option>
-                  <option value="createdAsc">Created (Asc)</option>
-                  <option value="titleAsc">Title (A-Z)</option>
-                  <option value="titleDesc">Title (Z-A)</option>
-                  <option value="whoAsc">Who (A-Z)</option>
-                  <option value="whoDesc">Who (Z-A)</option>
-                  <option value="whatAsc">What (A-Z)</option>
-                  <option value="whatDesc">What (Z-A)</option>
-                  <option value="whereAsc">Where (A-Z)</option>
-                  <option value="whereDesc">Where (Z-A)</option>
-                </select>
+                <div className={styles.inlineFieldRow}>
+                  <label htmlFor="feed-sort-select" className={styles.inlineFieldLabel}>Sort by</label>
+                  <select
+                    id="feed-sort-select"
+                    value={feedSort}
+                    onChange={(e) => setFeedSort(e.target.value as FeedSortOrder)}
+                    className={`${styles.compactControl} ${styles.compactControlInline}`}
+                    aria-label="Sort card feed"
+                  >
+                    <option value="random">Random</option>
+                    <option value="whenDesc">When (Desc)</option>
+                    <option value="whenAsc">When (Asc)</option>
+                    <option value="createdDesc">Created (Desc)</option>
+                    <option value="createdAsc">Created (Asc)</option>
+                    <option value="titleAsc">Title (A-Z)</option>
+                    <option value="titleDesc">Title (Z-A)</option>
+                    <option value="whoAsc">Who (A-Z)</option>
+                    <option value="whoDesc">Who (Z-A)</option>
+                    <option value="whatAsc">What (A-Z)</option>
+                    <option value="whatDesc">What (Z-A)</option>
+                    <option value="whereAsc">Where (A-Z)</option>
+                    <option value="whereDesc">Where (Z-A)</option>
+                  </select>
+                </div>
               </div>
 
               <div className={styles.sidebarSection}>
-                <h3 className={styles.sectionHeading}>Group by</h3>
-                <select
-                  id="feed-group-select"
-                  value={feedGroupBy}
-                  onChange={e => setFeedGroupBy(e.target.value as FeedGroupBy)}
-                  className={styles.compactControl}
-                  aria-label="Group card feed"
-                >
-                  <option value="none">None</option>
-                  <option value="when">When</option>
-                  <option value="who">Who</option>
-                  <option value="where">Where</option>
-                  <option value="what">What</option>
-                </select>
+                <div className={styles.inlineFieldRow}>
+                  <label htmlFor="feed-group-select" className={styles.inlineFieldLabel}>Group by</label>
+                  <select
+                    id="feed-group-select"
+                    value={feedGroupBy}
+                    onChange={(e) => setFeedGroupBy(e.target.value as FeedGroupBy)}
+                    className={`${styles.compactControl} ${styles.compactControlInline}`}
+                    aria-label="Group card feed"
+                  >
+                    <option value="none">None</option>
+                    <option value="when">When</option>
+                    <option value="who">Who</option>
+                    <option value="where">Where</option>
+                    <option value="what">What</option>
+                  </select>
+                </div>
               </div>
 
               <nav className={styles.navigation}>
@@ -403,80 +522,18 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
               </nav>
             </>
           ) : (
-            <>
-              <div className={styles.dimensionsBlock}>
-                <div className={styles.dimensionTabs} role="tablist" aria-label="Dimensions">
-                  {CURATED_DIMENSION_TABS.map(({ id, label }) => (
-                    <button
-                      key={id}
-                      type="button"
-                      role="tab"
-                      aria-selected={activeDimension === id}
-                      className={`${styles.dimensionTab} ${activeDimension === id ? styles.dimensionTabActive : ''}`}
-                      onClick={() => setActiveDimension(id)}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <nav className={styles.navigation}>
-                {collectionId ? (
-                  <div className={styles.collectionBack}>
-                    <button
-                      type="button"
-                      className={styles.collectionBackButton}
-                      onClick={() => setCollectionId(null)}
-                      aria-label="Back to collections list"
-                    >
-                      ← Back to collections
-                    </button>
-                  </div>
+            <nav className={styles.navigation}>
+              <div className={styles.collectionGroups}>
+                {collectionCards.length === 0 ? (
+                  <div className={styles.collectionEmpty}>No collections yet.</div>
                 ) : (
-                  <div className={styles.collectionGroups}>
-                    {collectionCards.length === 0 ? (
-                      <div className={styles.collectionEmpty}>No collections yet.</div>
-                    ) : (
-                      DIMENSION_GROUP_ORDER.map(dimKey => {
-                        const cardsInGroup = collectionsByDimension[dimKey] ?? [];
-                        if (cardsInGroup.length === 0) return null;
-                        const groupLabel =
-                          dimKey === 'uncategorized'
-                            ? 'Uncategorized'
-                            : dimKey.charAt(0).toUpperCase() + dimKey.slice(1);
-                        return (
-                          <div key={dimKey} className={styles.collectionGroup}>
-                            <div className={styles.collectionGroupLabel}>{groupLabel}</div>
-                            <ul className={styles.collectionList}>
-                              {cardsInGroup.map(card => (
-                                <li key={card.docId}>
-                                  <button
-                                    type="button"
-                                    className={styles.collectionItem}
-                                    onClick={() => setCollectionId(card.docId!)}
-                                  >
-                                    {card.title || card.subtitle || 'Untitled'}
-                                    {card.childrenIds && (
-                                      <span className={styles.collectionCount}>({card.childrenIds.length})</span>
-                                    )}
-                                  </button>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
+                  <ul className={styles.collectionTreeList}>
+                    {collectionRoots.map((root) => renderCollectionNode(root.docId!, 0, new Set()))}
+                  </ul>
                 )}
-              </nav>
-            </>
+              </div>
+            </nav>
           )}
-          <div className={styles.filterControls}>
-            <button type="button" onClick={handleClearFiltersClick} className={styles.clearButton}>
-              Clear filters
-            </button>
-          </div>
         </>
       )}
     </div>

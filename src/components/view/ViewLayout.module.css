@@ -21,6 +21,7 @@
   transform: translateY(-50%);
   z-index: 100;
   background: var(--reader-chrome-control-background-color);
+  color: var(--reader-chrome-text-color);
   border: var(--border-width-thin) solid var(--reader-chrome-border-color);
   border-radius: 50%;
   width: var(--spacing-xl);
@@ -29,6 +30,10 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  font-family: var(--reader-chrome-meta-font-family);
+  font-size: var(--reader-chrome-meta-font-size);
+  font-weight: var(--reader-chrome-meta-font-weight);
+  line-height: var(--reader-chrome-meta-line-height);
   transition: all var(--transition-short) ease;
 }
 
@@ -42,7 +47,7 @@
   top: calc(var(--header-height) * 2); /* Start below navigation */
   bottom: 0;
   width: var(--sidebar-width-mobile);
-  background: var(--reader-chrome-background-color);
+  background: var(--reader-sidebar-background-color);
   transition: transform var(--transition-short) ease;
   z-index: 90;
   overflow-y: auto;
@@ -74,9 +79,9 @@
 .topNavContainer {
   position: sticky;
   top: 0;
-  background-color: var(--reader-chrome-background-color);
+  background-color: var(--reader-header-background-color);
   z-index: 10;
-  border-bottom: var(--border-width-thin) solid var(--reader-chrome-border-color);
+  border-bottom: var(--border-width-thin) solid var(--reader-header-border-color);
 }
 
 .pageContent {

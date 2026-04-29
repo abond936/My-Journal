@@ -305,6 +305,33 @@ async function computeCardMediaSignalsFromMediaIds(
   return computeMediaSignalBuckets(Array.from(tagIds), allTags);
 }
 
+async function getExistingMediaDocIdsInTransaction(
+  transaction: FirebaseFirestore.Transaction,
+  mediaIds: Iterable<string>
+): Promise<Set<string>> {
+  const uniqueIds = Array.from(
+    new Set(
+      Array.from(mediaIds).filter(
+        (id): id is string => typeof id === 'string' && id.trim().length > 0
+      )
+    )
+  );
+
+  if (uniqueIds.length === 0) {
+    return new Set<string>();
+  }
+
+  const refs = uniqueIds.map((id) => firestore.collection(MEDIA_COLLECTION).doc(id));
+  const docs = await transaction.getAll(...refs);
+  const existingIds = new Set<string>();
+  for (const doc of docs) {
+    if (doc.exists) {
+      existingIds.add(doc.id);
+    }
+  }
+  return existingIds;
+}
+
 async function wouldCreateCycle(
   transaction: FirebaseFirestore.Transaction,
   parentId: string,
@@ -981,7 +1008,12 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       // Maintain referencedByCardIds on media docs
       const mediaRemoved = [...oldMediaIds].filter(id => !newMediaIds.has(id));
       const mediaAdded = [...newMediaIds].filter(id => !oldMediaIds.has(id));
+      const existingReferencedMediaIds = await getExistingMediaDocIdsInTransaction(
+        transaction,
+        [...mediaRemoved, ...mediaAdded]
+      );
       for (const mediaId of mediaRemoved) {
+        if (!existingReferencedMediaIds.has(mediaId)) continue;
         const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
         transaction.update(mediaRef, {
           referencedByCardIds: FieldValue.arrayRemove(cardId),
@@ -989,6 +1021,9 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         });
       }
       for (const mediaId of mediaAdded) {
+        if (!existingReferencedMediaIds.has(mediaId)) {
+          throw new Error(`Referenced media with ID ${mediaId} not found.`);
+        }
         const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
         transaction.update(mediaRef, {
           referencedByCardIds: FieldValue.arrayUnion(cardId),
@@ -1025,8 +1060,15 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         const coverImageFocalPoint = cleanedUpdate.coverImageFocalPoint;
         const coverImageId = cleanedUpdate.coverImageId ?? existingData.coverImageId;
         if (coverImageId && typeof coverImageId === 'string' && coverImageFocalPoint && 'x' in coverImageFocalPoint && 'y' in coverImageFocalPoint) {
-          const coverRef = firestore.collection(MEDIA_COLLECTION).doc(coverImageId);
-          transaction.update(coverRef, { objectPosition: `${coverImageFocalPoint.x} ${coverImageFocalPoint.y}`, updatedAt: Date.now() });
+          const coverExists = existingReferencedMediaIds.has(coverImageId)
+            || (await getExistingMediaDocIdsInTransaction(transaction, [coverImageId])).has(coverImageId);
+          if (coverExists) {
+            const coverRef = firestore.collection(MEDIA_COLLECTION).doc(coverImageId);
+            transaction.update(coverRef, {
+              objectPosition: `${coverImageFocalPoint.x} ${coverImageFocalPoint.y}`,
+              updatedAt: Date.now(),
+            });
+          }
         }
       }
 
@@ -1117,12 +1159,14 @@ export async function updateCardCover(
         throw new Error(`Card with ID ${cardId} not found.`);
       }
 
-      if (nextCoverId && nextCoverId !== existingCoverId) {
-        const nextCoverRef = firestore.collection(MEDIA_COLLECTION).doc(nextCoverId);
-        const nextCoverSnap = await transaction.get(nextCoverRef);
-        if (!nextCoverSnap.exists) {
-          throw new Error(`Cover media with ID ${nextCoverId} not found.`);
-        }
+      const checkedMediaIds = [
+        existingCoverId,
+        nextCoverId,
+      ].filter((id): id is string => typeof id === 'string' && id.trim().length > 0);
+      const existingMediaIds = await getExistingMediaDocIdsInTransaction(transaction, checkedMediaIds);
+
+      if (nextCoverId && !existingMediaIds.has(nextCoverId)) {
+        throw new Error(`Cover media with ID ${nextCoverId} not found.`);
       }
 
       const cardUpdate: Record<string, unknown> = {
@@ -1151,11 +1195,13 @@ export async function updateCardCover(
       transaction.update(docRef, cardUpdate);
 
       if (coverChanged && existingCoverId && existingCoverId !== nextCoverId) {
-        const oldCoverRef = firestore.collection(MEDIA_COLLECTION).doc(existingCoverId);
-        transaction.update(oldCoverRef, {
-          referencedByCardIds: FieldValue.arrayRemove(cardId),
-          updatedAt: Date.now(),
-        });
+        if (existingMediaIds.has(existingCoverId)) {
+          const oldCoverRef = firestore.collection(MEDIA_COLLECTION).doc(existingCoverId);
+          transaction.update(oldCoverRef, {
+            referencedByCardIds: FieldValue.arrayRemove(cardId),
+            updatedAt: Date.now(),
+          });
+        }
       }
 
       if (coverChanged && nextCoverId && nextCoverId !== existingCoverId) {
@@ -1167,11 +1213,13 @@ export async function updateCardCover(
       }
 
       if (focalProvided && focalPoint && nextCoverId) {
-        const coverRef = firestore.collection(MEDIA_COLLECTION).doc(nextCoverId);
-        transaction.update(coverRef, {
-          objectPosition: `${focalPoint.x} ${focalPoint.y}`,
-          updatedAt: Date.now(),
-        });
+        if (existingMediaIds.has(nextCoverId)) {
+          const coverRef = firestore.collection(MEDIA_COLLECTION).doc(nextCoverId);
+          transaction.update(coverRef, {
+            objectPosition: `${focalPoint.x} ${focalPoint.y}`,
+            updatedAt: Date.now(),
+          });
+        }
       }
     });
 
@@ -1387,13 +1435,13 @@ export async function updateCardGallery(
       };
 
   await firestore.runTransaction(async (transaction) => {
-    if (mediaAdded.length > 0) {
-      const addedRefs = mediaAdded.map((id) => firestore.collection(MEDIA_COLLECTION).doc(id));
-      const addedDocs = await transaction.getAll(...addedRefs);
-      for (const mediaDoc of addedDocs) {
-        if (!mediaDoc.exists) {
-          throw new Error(`Gallery media with ID ${mediaDoc.id} not found.`);
-        }
+    const existingMediaIds = await getExistingMediaDocIdsInTransaction(transaction, [
+      ...mediaRemoved,
+      ...mediaAdded,
+    ]);
+    for (const mediaId of mediaAdded) {
+      if (!existingMediaIds.has(mediaId)) {
+        throw new Error(`Gallery media with ID ${mediaId} not found.`);
       }
     }
 
@@ -1407,6 +1455,7 @@ export async function updateCardGallery(
     });
 
     for (const mediaId of mediaRemoved) {
+      if (!existingMediaIds.has(mediaId)) continue;
       const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
       transaction.update(mediaRef, {
         referencedByCardIds: FieldValue.arrayRemove(cardId),
@@ -1813,12 +1862,37 @@ export async function getCardsByCollectionId(
   } = {}
 ): Promise<{ items: Card[]; lastDocId?: string; hasMore: boolean }> {
   const collectionCard = await getCardById(collectionId);
-  if (!collectionCard || !collectionCard.childrenIds || collectionCard.childrenIds.length === 0) {
+  if (!collectionCard) {
     return { items: [], hasMore: false };
   }
 
   const { limit = 10, lastDocId, hydrationMode = 'full' } = options;
-  const result = await getPaginatedCardsByIds(collectionCard.childrenIds, { limit, lastDocId });
+  const childIds = normalizeChildrenIds(collectionCard.childrenIds, collectionId);
+
+  let result:
+    | { items: Card[]; lastDocId?: string; hasMore: boolean }
+    | { items: Card[]; hasMore: false; lastDocId?: undefined };
+
+  if (!lastDocId) {
+    if (childIds.length === 0) {
+      result = { items: [collectionCard], hasMore: false };
+    } else {
+      const childLimit = Math.max(limit - 1, 0);
+      const childResult =
+        childLimit > 0
+          ? await getPaginatedCardsByIds(childIds, { limit: childLimit })
+          : { items: [], hasMore: childIds.length > 0, lastDocId: undefined };
+      result = {
+        items: [collectionCard, ...childResult.items],
+        hasMore: childResult.hasMore,
+        lastDocId: childResult.lastDocId,
+      };
+    }
+  } else if (childIds.length === 0) {
+    result = { items: [], hasMore: false };
+  } else {
+    result = await getPaginatedCardsByIds(childIds, { limit, lastDocId });
+  }
 
   if (hydrationMode === 'cover-only') {
     result.items = await _hydrateCoverImagesOnly(result.items);
@@ -1839,8 +1913,33 @@ const COLLECTIONS_LIST_LIMIT = 500;
  */
 export async function getCollectionCards(
   status: Card['status'] | 'all' = 'published',
-  options: { limit?: number; hydrationMode?: 'full' | 'cover-only' } = {}
+  options: {
+    limit?: number;
+    hydrationMode?: 'full' | 'cover-only';
+    includeDescendants?: boolean;
+  } = {}
 ): Promise<Card[]> {
+  const fetchCardsByIdsRaw = async (ids: string[]): Promise<Card[]> => {
+    if (!ids.length) return [];
+
+    const idChunks: string[][] = [];
+    for (let i = 0; i < ids.length; i += 30) {
+      idChunks.push(ids.slice(i, i + 30));
+    }
+
+    const cards: Card[] = [];
+    const collectionRef = firestore.collection(CARDS_COLLECTION);
+    for (const chunk of idChunks) {
+      if (!chunk.length) continue;
+      const query = collectionRef.where(FieldPath.documentId(), 'in', chunk);
+      const snapshot = await query.get();
+      snapshot.forEach((doc) => {
+        cards.push({ ...(doc.data() as Card), docId: doc.id });
+      });
+    }
+    return cards;
+  };
+
   let query: FirebaseFirestore.Query = firestore
     .collection(CARDS_COLLECTION)
     .where('isCollectionRoot', '==', true);
@@ -1851,9 +1950,46 @@ export async function getCollectionCards(
   query = query.limit(options.limit ?? COLLECTIONS_LIST_LIMIT);
 
   const snapshot = await query.get();
-  const cards = snapshot.docs
+  const rootCards = snapshot.docs
     .map(doc => ({ docId: doc.id, ...doc.data() } as Card))
     .sort(compareCollectionRootCards);
+
+  let cards = rootCards;
+
+  if (options.includeDescendants) {
+    const cardsById = new Map(rootCards.filter((card) => card.docId).map((card) => [card.docId!, card]));
+    const pendingIds: string[] = [];
+    const queuedIds = new Set(cardsById.keys());
+
+    for (const root of rootCards) {
+      for (const childId of normalizeChildrenIds(root.childrenIds)) {
+        if (!queuedIds.has(childId)) {
+          queuedIds.add(childId);
+          pendingIds.push(childId);
+        }
+      }
+    }
+
+    while (pendingIds.length > 0) {
+      const batchIds = pendingIds.splice(0, 120);
+      const fetchedCards = await fetchCardsByIdsRaw(batchIds);
+      for (const card of fetchedCards) {
+        if (!card.docId) continue;
+        if (status !== 'all' && card.status !== status) continue;
+        if (!cardsById.has(card.docId)) {
+          cardsById.set(card.docId, card);
+        }
+        for (const childId of normalizeChildrenIds(card.childrenIds)) {
+          if (!queuedIds.has(childId)) {
+            queuedIds.add(childId);
+            pendingIds.push(childId);
+          }
+        }
+      }
+    }
+
+    cards = Array.from(cardsById.values());
+  }
 
   if (options.hydrationMode === 'cover-only') {
     return _hydrateCoverImagesOnly(cards);

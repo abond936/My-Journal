@@ -2,7 +2,7 @@
   position: fixed;
   inset: 0;
   z-index: var(--z-index-modal);
-  background: color-mix(in srgb, var(--layout-background1-color) 85%, black);
+  background: var(--color-overlay-dark);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -13,31 +13,37 @@
   max-width: 320px;
   width: 100%;
   padding: var(--spacing-lg);
-  border-radius: var(--border-radius-md);
-  background: var(--layout-background1-color);
-  border: var(--border-width-thin) solid var(--border1-color);
-  box-shadow: var(--shadow-md);
+  border-radius: var(--admin-window-border-radius);
+  background: var(--admin-window-background-color);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  box-shadow: var(--admin-window-shadow);
 }
 
 .message {
   margin: 0 0 var(--spacing-md);
-  color: var(--text1-color);
-  font-size: var(--font-size-base);
-  line-height: 1.4;
+  color: var(--admin-feedback-hint-color);
+  font-family: var(--admin-feedback-hint-font-family);
+  font-size: var(--admin-feedback-hint-font-size);
+  font-weight: var(--admin-feedback-hint-font-weight);
+  line-height: var(--admin-feedback-hint-line-height);
   text-align: center;
 }
 
 .button {
   width: 100%;
   padding: var(--spacing-sm) var(--spacing-md);
-  border: none;
+  border: var(--border-width-thin) solid var(--admin-feedback-action-border-color);
   border-radius: var(--border-radius-md);
-  background: var(--button-solid-background-color);
-  color: var(--button-solid-text-color);
-  font-weight: var(--font-weight-bold);
+  background: var(--admin-feedback-action-background-color);
+  color: var(--admin-feedback-action-text-color);
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
   cursor: pointer;
 }
 
 .button:hover {
-  filter: brightness(1.05);
+  background: var(--admin-feedback-action-hover-background-color);
+  color: var(--admin-feedback-action-hover-text-color);
 }

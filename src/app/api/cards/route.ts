@@ -189,6 +189,7 @@ export async function GET(request: Request) {
     const childrenIds_contains = searchParams.get('childrenIds_contains') || undefined;
     const collectionId = searchParams.get('collectionId') || undefined;
     const collectionsOnly = searchParams.get('collectionsOnly') === 'true';
+    const includeDescendants = searchParams.get('includeDescendants') === 'true';
     const hydrationParam = searchParams.get('hydration');
     const hydrationMode: 'full' | 'cover-only' =
       hydrationParam === 'cover-only' ? 'cover-only' : 'full';
@@ -226,7 +227,10 @@ export async function GET(request: Request) {
     try {
       // List cards that are collections (have children)
       if (collectionsOnly) {
-        const collectionCards = await getCollectionCards(status, { hydrationMode });
+        const collectionCards = await getCollectionCards(status, {
+          hydrationMode,
+          includeDescendants,
+        });
         return NextResponse.json({ items: collectionCards, hasMore: false });
       }
 

@@ -191,6 +191,23 @@ const CardForm: React.FC = () => {
     }
   }, [updateCoverImage]);
 
+  const handleCoverImageCommit = useCallback(async (newCoverImage: Media | null, newPosition?: string) => {
+    if (!newCoverImage || newPosition === undefined) return;
+
+    const parts = newPosition.trim().split(/\s+/);
+    const xPercent = parseFloat(parts[0] ?? '50') || 50;
+    const yPercent = parseFloat(parts[1] ?? '50') || 50;
+    const focalPoint = {
+      x: (xPercent / 100) * newCoverImage.width,
+      y: (yPercent / 100) * newCoverImage.height,
+    };
+
+    await persistFieldPatch({
+      coverImageId: newCoverImage.docId,
+      coverImageFocalPoint: focalPoint,
+    });
+  }, [persistFieldPatch]);
+
   const handleGalleryUpdate = useCallback((newGallery: HydratedGalleryMediaItem[]) => {
     setField('galleryMedia', newGallery);
   }, [setField]);
@@ -423,7 +440,7 @@ const CardForm: React.FC = () => {
       )}
       {studioShellForm && !studioShellDnd ? (
         <DndContext onDragEnd={() => undefined}>
-          <form id="card-form" onSubmit={handleSubmit} className={styles.form}>
+          <form id="card-form" onSubmit={handleSubmit} className={clsx(styles.form, styles.compactShellForm)}>
             <div className={styles.mainContent}>
               {saveNotice ? (
                 <div
@@ -566,6 +583,7 @@ const CardForm: React.FC = () => {
                       : '50% 50%'
                   }
                   onChange={handleCoverImageChange}
+                  onCommit={handleCoverImageCommit}
                   isSaving={isSaving}
                   showSavingOverlay={false}
                   error={errors.coverImage}
@@ -823,6 +841,7 @@ const CardForm: React.FC = () => {
                       : '50% 50%'
                   }
                   onChange={handleCoverImageChange}
+                  onCommit={handleCoverImageCommit}
                   isSaving={isSaving}
                   showSavingOverlay={false}
                   error={errors.coverImage}
@@ -838,6 +857,7 @@ const CardForm: React.FC = () => {
                     : '50% 50%'
                 }
                 onChange={handleCoverImageChange}
+                onCommit={handleCoverImageCommit}
                 isSaving={isSaving}
                 showSavingOverlay={false}
                 error={errors.coverImage}

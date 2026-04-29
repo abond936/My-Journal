@@ -49,15 +49,18 @@ export default function TagTree({
     const isSelected = selectedTags.includes(tag.docId);
     const hasChildren = tag.children && tag.children.length > 0;
     const isDefaultExpanded = tag.defaultExpanded !== false;
+    const showDefaultExpandButton = Boolean(showDefaultExpandControl && hasChildren && onSetDefaultExpanded);
 
     return (
       <div
         key={tag.docId}
         className={styles.tagItem}
-        style={{ paddingLeft: `${level * 0.2}rem` }}
       >
         <div className={styles.tagHeader}>
-          <div className={styles.tagHeaderLeading}>
+          <div
+            className={`${styles.tagHeaderLeading} ${showDefaultExpandButton ? styles.tagHeaderLeadingWithDefault : styles.tagHeaderLeadingCompact}`}
+            style={{ marginLeft: `${level * 0.35}rem` }}
+          >
             <button
               className={styles.expandButton}
               onClick={() => toggleExpanded(tag.docId)}
@@ -70,7 +73,7 @@ export default function TagTree({
                 </span>
               )}
             </button>
-            {showDefaultExpandControl && hasChildren && onSetDefaultExpanded && (
+            {showDefaultExpandButton && (
               <button
                 type="button"
                 className={styles.defaultExpandButton}

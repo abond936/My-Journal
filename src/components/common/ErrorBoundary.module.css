@@ -13,10 +13,11 @@
 }
 
 .errorTitle {
-  color: var(--reader-page-text-color);
-  font-family: var(--reader-title-font-family);
-  font-size: var(--reader-title-font-size);
-  font-weight: var(--reader-title-font-weight);
+  color: var(--reader-feedback-title-color);
+  font-family: var(--reader-feedback-title-font-family);
+  font-size: var(--reader-feedback-title-font-size);
+  font-weight: var(--reader-feedback-title-font-weight);
+  line-height: var(--reader-feedback-title-line-height);
   margin: 0;
 }
 
@@ -28,8 +29,11 @@
 
 .errorDetails summary {
   cursor: pointer;
-  color: var(--reader-page-text-color);
-  font-weight: var(--font-weight-medium);
+  color: var(--reader-feedback-meta-color);
+  font-family: var(--reader-feedback-meta-font-family);
+  font-size: var(--reader-feedback-meta-font-size);
+  font-weight: var(--reader-feedback-meta-font-weight);
+  line-height: var(--reader-feedback-meta-line-height);
 }
 
 .errorStack {
@@ -51,18 +55,21 @@
   align-items: center;
   justify-content: center;
   padding: var(--spacing-sm) var(--spacing-md);
-  font-size: var(--reader-meta-font-size);
-  font-weight: var(--font-weight-medium);
+  font-family: var(--reader-support-control-font-family);
+  font-size: var(--reader-support-control-font-size);
+  font-weight: var(--reader-support-control-font-weight);
+  line-height: var(--reader-support-control-line-height);
   border-radius: var(--reader-card-border-radius);
-  background-color: var(--reader-solid-background-color);
-  color: var(--reader-solid-text-color);
-  border: none;
+  background-color: var(--reader-feedback-action-background-color);
+  color: var(--reader-feedback-action-text-color);
+  border: var(--border-width-thin) solid var(--reader-feedback-action-border-color);
   cursor: pointer;
   transition: background-color var(--transition-short);
 }
 
 .retryButton:hover {
-  background-color: var(--reader-solid-background-color);
+  background-color: var(--reader-feedback-action-hover-background-color);
+  color: var(--reader-feedback-action-hover-text-color);
 }
 
 .retryButton:focus {

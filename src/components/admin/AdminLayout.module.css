@@ -22,8 +22,8 @@
 
 .topNavContainer {
   padding: 0 var(--spacing-lg);
-  border-bottom: var(--border-width-thin) solid var(--border1-color);
-  background-color: var(--layout-background1-color);
+  border-bottom: var(--border-width-thin) solid var(--admin-window-border-color);
+  background-color: var(--admin-window-background-color);
   position: sticky;
   top: 0;
   z-index: 60;
@@ -65,9 +65,9 @@
     position: absolute;
     top: var(--spacing-sm);
     z-index: var(--z-index-sidebar);
-    background-color: var(--layout-background1-color);
-    color: var(--text1-color);
-    border: var(--border-width-thin) solid var(--border1-color);
+    background-color: var(--admin-chrome-control-background-color);
+    color: var(--admin-chrome-text-color);
+    border: var(--border-width-thin) solid var(--admin-chrome-border-color);
     border-radius: var(--border-radius-full);
     width: var(--icon-min-width);  /* Tokenized magic number */
     height: var(--icon-min-width); /* Tokenized magic number */
@@ -75,7 +75,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: var(--font-size-2xl);
+    font-family: var(--admin-chrome-meta-font-family);
+    font-size: var(--admin-chrome-meta-font-size);
+    font-weight: var(--admin-chrome-meta-font-weight);
+    line-height: var(--admin-chrome-meta-line-height);
     transition: left var(--transition-short) ease;
   }
   
@@ -89,7 +92,7 @@
   
   .sidebar {
     width: var(--sidebar-width);
-    background-color: var(--layout-background1-color);
+    background-color: var(--admin-sidebar-background-color);
     transition: margin-left var(--transition-short) ease;
     padding: var(--spacing-lg);
     overflow-y: auto;
@@ -122,8 +125,8 @@
     bottom: 0;
     margin-top: var(--spacing-md);
     padding: var(--spacing-md) 0;
-    border-top: var(--border-width-thin) solid var(--border1-color);
-    background-color: var(--layout-background1-color);
+    border-top: var(--border-width-thin) solid var(--admin-sidebar-border-color);
+    background-color: var(--admin-sidebar-background-color);
     display: flex;
     gap: var(--spacing-sm);
   }
@@ -131,18 +134,21 @@
   .applyButton, .clearButton {
     flex: 1;
     padding: var(--spacing-sm);
-    border: var(--border-width-thin) solid var(--border1-color);
+    border: var(--border-width-thin) solid var(--admin-support-control-border-color);
     border-radius: var(--border-radius-md);
-    background-color: var(--layout-background2-color);
-    color: var(--text1-color);
+    background-color: var(--admin-support-control-background-color);
+    color: var(--admin-support-control-text-color);
     cursor: pointer;
-    font-size: var(--font-size-base);
+    font-family: var(--admin-support-control-font-family);
+    font-size: var(--admin-support-control-font-size);
+    font-weight: var(--admin-support-control-font-weight);
+    line-height: var(--admin-support-control-line-height);
   }
   
   .applyButton {
-    background-color: var(--button-solid-background-color);
-    color: var(--button-solid-text-color);
-    border-color: var(--button-solid-border-color);
+    background-color: var(--admin-chrome-active-control-background-color);
+    color: var(--admin-chrome-active-control-text-color);
+    border-color: var(--admin-chrome-active-control-border-color);
   }
   
   .clearButton {
@@ -152,7 +158,8 @@
 .accessMessage {
   padding: var(--spacing-lg);
   max-width: 36rem;
-  color: var(--text1-color);
+  color: var(--admin-support-label-color);
   line-height: 1.5;
   font-size: var(--font-size-base);
 }
+

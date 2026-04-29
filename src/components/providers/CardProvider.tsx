@@ -71,6 +71,7 @@ export interface ICardContext {
   activeDimension: ActiveDimension;
   collectionId: string | null;
   collectionCards: Card[]; // Flat list of collection parent cards
+  collectionTreeCards: Card[]; // Full curated hierarchy payload for sidebar/tree views
   feedSort: FeedSortOrder;
   feedGroupBy: FeedGroupBy;
   cardDimensionMissing: CardDimensionMissing;
@@ -107,6 +108,7 @@ export interface ICardContext {
   loadingMore: boolean;
   hasMore: boolean;
   loadMore: () => void;
+  patchVisibleCard: (savedCard: Card) => void;
   mutate: SWRInfiniteResponse<PaginatedResult<Card>>['mutate'];
   isValidating: boolean;
 }
@@ -357,9 +359,9 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     return response.json();
   }, [isAdmin, needsFullHydration]);
 
-  // Fetch collection list when Collections dimension is active with no selection
+  // Keep the collections tree loaded for curated mode, even when a collection is selected.
   const shouldFetchCollections =
-    isFetchActive && activeDimension === 'collections' && !collectionId;
+    isFetchActive && activeDimension === 'collections';
   const collectionsUrl = shouldFetchCollections
     ? `/api/cards?collectionsOnly=true&status=${isAdmin ? 'all' : 'published'}${isAdmin && !needsFullHydration ? '&hydration=cover-only' : ''}`
     : null;
@@ -373,6 +375,22 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     { revalidateOnFocus: false }
   );
   const collectionCards = useMemo(() => collectionListData?.items ?? [], [collectionListData]);
+  const collectionTreeUrl = shouldFetchCollections
+    ? `/api/cards?collectionsOnly=true&includeDescendants=true&status=${isAdmin ? 'all' : 'published'}${isAdmin && !needsFullHydration ? '&hydration=cover-only' : ''}`
+    : null;
+  const { data: collectionTreeData } = useSWR<{ items: Card[] }>(
+    collectionTreeUrl,
+    (url) => {
+      const urlObj = new URL(url, window.location.origin);
+      if (isAdmin && !needsFullHydration) urlObj.searchParams.set('hydration', 'cover-only');
+      return fetch(urlObj.toString()).then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.statusText))));
+    },
+    { revalidateOnFocus: false }
+  );
+  const collectionTreeCards = useMemo(
+    () => collectionTreeData?.items ?? collectionCards,
+    [collectionTreeData, collectionCards]
+  );
 
   const {
     data,
@@ -559,6 +577,21 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     return orderedPaginatedCards;
   }, [activeDimension, collectionId, collectionCards, orderedPaginatedCards]);
 
+  const patchVisibleCard = useCallback((savedCard: Card) => {
+    if (!savedCard?.docId) return;
+
+    void mutate(
+      (currentPages) => {
+        if (!currentPages) return currentPages;
+        return currentPages.map((page) => ({
+          ...page,
+          items: page.items.map((item) => (item.docId === savedCard.docId ? savedCard : item)),
+        }));
+      },
+      { revalidate: false }
+    );
+  }, [mutate]);
+
   const tagNameById = useMemo(
     () => new Map(allTags?.filter((t) => t.docId).map((t) => [t.docId!, t.name]) ?? []),
     [allTags]
@@ -618,11 +651,13 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       activeDimension,
       collectionId,
       collectionCards,
+      collectionTreeCards,
       feedSort,
       feedGroupBy,
       cardDimensionMissing,
       feedSections,
       loadMore,
+      patchVisibleCard,
       mutate,
       toggleTag,
       setCardType,
@@ -655,11 +690,13 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       activeDimension,
       collectionId,
       collectionCards,
+      collectionTreeCards,
       feedSort,
       feedGroupBy,
       cardDimensionMissing,
       feedSections,
       loadMore,
+      patchVisibleCard,
       mutate,
       toggleTag,
       setCardType,
@@ -687,4 +724,6 @@ export const useCardContext = (): ICardContext => {
     throw new Error('useCardContext must be used within a CardProvider');
   }
   return context;
-}; 
+};
+
+export const useOptionalCardContext = (): ICardContext | undefined => useContext(CardContext);

@@ -95,7 +95,7 @@
   left: 0;
   right: 0;
   height: 100%;
-  background: var(--reader-card-overlay-background);
+  background: var(--reader-covered-fade-background);
   z-index: 1;
 }
 
@@ -258,13 +258,13 @@
 }
 
 .overlay .tag {
-  background-color: var(--reader-card-overlay-strong-background);
+  background-color: var(--reader-gallery-overlay-background);
   color: var(--reader-card-overlay-text-color);
   border-color: transparent;
 }
 
 .overlay .tag:hover {
-  background-color: var(--reader-card-overlay-strong-background);
+  background-color: var(--reader-gallery-overlay-background);
 }
 
 .counts {

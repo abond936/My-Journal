@@ -1,9 +1,9 @@
 .toolbar {
   position: absolute;
-  background: var(--reader-chrome-background-color);
-  border: var(--border-width-thin) solid var(--reader-chrome-border-color);
-  border-radius: var(--reader-card-border-radius);
-  box-shadow: var(--reader-card-shadow);
+  background: var(--reader-window-background-color);
+  border: var(--border-width-thin) solid var(--reader-window-border-color);
+  border-radius: var(--reader-window-border-radius);
+  box-shadow: var(--reader-window-shadow);
   padding: var(--spacing-md);
   z-index: var(--z-index-sticky);
   min-width: 200px;

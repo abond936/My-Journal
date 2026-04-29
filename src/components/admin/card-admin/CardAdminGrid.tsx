@@ -392,10 +392,10 @@ function CardAdminGridStudioCell({
           transform: rowDnd.transform ? CSS.Translate.toString(rowDnd.transform) : undefined,
           borderRadius: rowDnd.isDragging ? 'var(--border-radius-md)' : undefined,
           background: rowDnd.isDragging
-            ? 'color-mix(in srgb, var(--layout-background1-color) 92%, var(--color3) 8%)'
+            ? 'color-mix(in srgb, var(--admin-window-background-color) 92%, var(--admin-chrome-active-control-background-color) 8%)'
             : undefined,
           boxShadow: rowDnd.isDragging
-            ? '0 14px 28px color-mix(in srgb, var(--text1-color) 14%, transparent), 0 0 0 1px color-mix(in srgb, var(--color3) 24%, transparent)'
+            ? '0 14px 28px color-mix(in srgb, var(--admin-chrome-text-color) 14%, transparent), 0 0 0 1px color-mix(in srgb, var(--admin-chrome-active-control-background-color) 24%, transparent)'
             : undefined,
         }
       : undefined;

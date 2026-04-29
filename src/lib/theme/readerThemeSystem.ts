@@ -20,7 +20,10 @@ export type ReaderThemeBindingKind =
   | 'tag'
   | 'overlay'
   | 'iconography'
-  | 'treatment';
+  | 'treatment'
+  | 'token'
+  | 'sharedSurface'
+  | 'feedbackStates';
 
 export interface ReaderThemeComponentBinding {
   kind: ReaderThemeBindingKind;
@@ -206,35 +209,49 @@ export const CURRENT_READER_THEME_SYSTEM: ReaderThemeSummarySystem = {
         lineHeight: 'line-height/base',
         color: 'semantic/reader/tonal-text-secondary',
       },
-      chromeTitle: {
+      chromeText: {
         family: 'font-family/sans1',
         size: 'font-size/lg',
-        weight: 'font-weight/semibold',
-        lineHeight: 'line-height/tight',
-        color: 'semantic/reader/tonal-text-primary',
-      },
-      chromeLabel: {
-        family: 'font-family/sans1',
-        size: 'font-size/sm',
         weight: 'font-weight/medium',
         lineHeight: 'line-height/base',
         color: 'semantic/reader/tonal-text-primary',
       },
       chromeMeta: {
         family: 'font-family/sans1',
+        size: 'font-size/sm',
+        weight: 'font-weight/medium',
+        lineHeight: 'line-height/base',
+        color: 'semantic/reader/tonal-text-secondary',
+      },
+      supportTitle: {
+        family: 'font-family/sans1',
+        size: 'font-size/lg',
+        weight: 'font-weight/semibold',
+        lineHeight: 'line-height/tight',
+        color: 'semantic/reader/tonal-text-primary',
+      },
+      supportLabel: {
+        family: 'font-family/sans1',
+        size: 'font-size/sm',
+        weight: 'font-weight/medium',
+        lineHeight: 'line-height/base',
+        color: 'semantic/reader/tonal-text-primary',
+      },
+      supportMeta: {
+        family: 'font-family/sans1',
         size: 'font-size/xs',
         weight: 'font-weight/medium',
         lineHeight: 'line-height/base',
         color: 'semantic/reader/tonal-text-secondary',
       },
-      chromeHint: {
+      supportHint: {
         family: 'font-family/sans1',
         size: 'font-size/sm',
         weight: 'font-weight/normal',
         lineHeight: 'line-height/base',
         color: 'semantic/reader/tonal-text-secondary',
       },
-      fieldControl: {
+      supportControlText: {
         family: 'font-family/sans1',
         size: 'font-size/sm',
         weight: 'font-weight/medium',
@@ -367,35 +384,49 @@ export const CURRENT_READER_THEME_SYSTEM: ReaderThemeSummarySystem = {
         padding: 'spacing/xl',
       },
       storyCardClosed: {
-        background: 'component/card/backgroundColor',
-        border: 'component/card/borderColor',
-        radius: 'component/card/borderRadius',
-        shadow: 'component/card/shadow',
-        shadowHover: 'component/card/shadowHover',
+        background: 'shared/card/background',
+        border: 'shared/card/border',
+        radius: 'shared/card/radius',
+        shadow: 'shared/card/shadow',
+        shadowHover: 'shared/card/shadowHover',
         padding: 'spacing/md',
       },
       qaCardClosed: {
-        background: 'component/card/backgroundColor',
-        border: 'component/card/borderColor',
-        radius: 'component/card/borderRadius',
-        shadow: 'component/card/shadow',
-        shadowHover: 'component/card/shadowHover',
+        background: 'shared/card/background',
+        border: 'shared/card/border',
+        radius: 'shared/card/radius',
+        shadow: 'shared/card/shadow',
+        shadowHover: 'shared/card/shadowHover',
         padding: 'component/card/padding',
       },
       galleryCardClosed: {
-        background: 'component/card/backgroundColor',
-        border: 'component/card/borderColor',
-        radius: 'component/card/borderRadius',
-        shadow: 'component/card/shadow',
-        shadowHover: 'component/card/shadowHover',
+        background: 'shared/card/background',
+        border: 'shared/card/border',
+        radius: 'shared/card/radius',
+        shadow: 'shared/card/shadow',
+        shadowHover: 'shared/card/shadowHover',
         padding: 'component/card/padding',
+      },
+      quoteCardClosed: {
+        background: 'layout/background1Color',
+        border: 'layout/border1Color',
+        radius: 'border/radius/lg',
+        shadow: 'shadow/sm',
+        padding: 'spacing/xl',
+      },
+      calloutCardClosed: {
+        background: 'layout/background1Color',
+        border: 'layout/border1Color',
+        radius: 'border/radius/lg',
+        shadow: 'shadow/md',
+        padding: 'spacing/xl',
       },
       card: {
         background: 'component/card/backgroundColor',
         border: 'component/card/borderColor',
         radius: 'component/card/borderRadius',
-        shadow: 'component/card/shadow',
-        shadowHover: 'component/card/shadowHover',
+        shadow: 'shadow/sm',
+        shadowHover: 'shadow/md',
         padding: 'component/card/padding',
       },
       canvasDetail: {
@@ -415,6 +446,22 @@ export const CURRENT_READER_THEME_SYSTEM: ReaderThemeSummarySystem = {
         border: 'semantic/reader/media-frame-border',
         radius: 'border/radius/lg',
       },
+      windowSurface: {
+        background: 'layout/background1Color',
+        border: 'layout/border1Color',
+        radius: 'border/radius/md',
+      },
+      windowFrame: {
+        background: 'layout/background1Color',
+        border: 'layout/border1Color',
+        radius: 'border/radius/md',
+      },
+      windowElevation: {
+        background: 'layout/background1Color',
+        border: 'layout/border1Color',
+        radius: 'border/radius/md',
+        shadow: 'shadow/lg',
+      },
     },
     controls: {
       chromeActiveTab: {
@@ -423,19 +470,19 @@ export const CURRENT_READER_THEME_SYSTEM: ReaderThemeSummarySystem = {
         border: 'component/button/solid/borderColor',
         hoverBackground: 'component/button/solid/backgroundColorHover',
       },
-      fieldControl: {
+      supportControl: {
         background: 'semantic/reader/field-surface',
         text: 'component/input/textColor',
         border: 'semantic/reader/field-border',
         hoverBackground: 'layout/background2Color',
       },
-      fieldControlStrong: {
+      supportControlStrong: {
         background: 'component/button/solid/backgroundColor',
         text: 'semantic/reader/contrast-on-fill-text',
         border: 'component/button/solid/borderColor',
         hoverBackground: 'component/button/solid/backgroundColorHover',
       },
-      chromeFilterChip: {
+      supportChip: {
         background: 'component/button/solid/backgroundColor',
         text: 'semantic/reader/contrast-on-fill-text',
         border: 'component/button/solid/borderColor',
@@ -496,17 +543,17 @@ export const CURRENT_READER_THEME_SYSTEM: ReaderThemeSummarySystem = {
       },
     },
     overlays: {
-      card: {
-        background: 'semantic/reader/overlay-scrim',
+      coveredFade: {
+        background: 'semantic/reader/covered-fade',
         text: 'semantic/reader/overlay-contrast-text',
         border: 'semantic/reader/overlay-border',
       },
-      cardStrong: {
+      galleryOverlay: {
         background: 'semantic/reader/overlay-scrim-strong',
         text: 'semantic/reader/overlay-contrast-text',
         border: 'semantic/reader/overlay-border',
       },
-      lightbox: {
+      lightboxBackdrop: {
         background: 'semantic/reader/overlay-scrim-strong',
         text: 'semantic/reader/overlay-contrast-text',
         border: 'semantic/reader/overlay-border',
@@ -522,6 +569,7 @@ export const CURRENT_READER_THEME_SYSTEM: ReaderThemeSummarySystem = {
       quoteWatermarkOpacity: '0.16',
       questionWatermarkOpacity: '0.22',
       calloutWatermarkOpacity: '0.22',
+      calloutBodyListLineHeight: 'line-height/relaxed',
     },
   },
 };
@@ -554,13 +602,13 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
         id: 'closed',
         label: 'Closed card',
         elements: [
-          { id: 'surface', label: 'Card surface', binding: { kind: 'surface', key: 'storyCardClosed' } },
+          { id: 'surface', label: 'Background', binding: { kind: 'surface', key: 'storyCardClosed' } },
           { id: 'contentPadding', label: 'Card padding', binding: { kind: 'token', key: 'storyClosedPadding' } },
           { id: 'title', label: 'Title', binding: { kind: 'typography', key: 'storyTitle' } },
           { id: 'overlayTitle', label: 'Overlay title', binding: { kind: 'typography', key: 'storyOverlayTitle' } },
           { id: 'excerpt', label: 'Excerpt', binding: { kind: 'typography', key: 'storyExcerpt' } },
           { id: 'excerptLineHeight', label: 'Excerpt line spacing', binding: { kind: 'token', key: 'storyClosedExcerptLineHeight' } },
-          { id: 'imageOverlay', label: 'Image overlay', binding: { kind: 'overlay', key: 'card' } },
+          { id: 'imageOverlay', label: 'Image overlay', binding: { kind: 'overlay', key: 'coveredFade' } },
         ],
       },
       {
@@ -589,18 +637,18 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
   {
     id: 'galleryCard',
     label: 'Gallery card',
-    description: 'Gallery cards, opened gallery detail, inline gallery header, and lightbox/media controls.',
+    description: 'Gallery cards, opened gallery detail, and inline gallery header content.',
     variants: [
       {
         id: 'closed',
         label: 'Closed card',
         elements: [
-          { id: 'surface', label: 'Card surface', binding: { kind: 'surface', key: 'galleryCardClosed' } },
+          { id: 'surface', label: 'Background', binding: { kind: 'surface', key: 'galleryCardClosed' } },
           { id: 'contentPadding', label: 'Card padding', binding: { kind: 'token', key: 'galleryClosedPadding' } },
           { id: 'title', label: 'Title', binding: { kind: 'typography', key: 'galleryTitle' } },
           { id: 'overlayTitle', label: 'Overlay title', binding: { kind: 'typography', key: 'galleryOverlayTitle' } },
           { id: 'mediaFrame', label: 'Media frame', binding: { kind: 'surface', key: 'canvasMediaFrame' } },
-          { id: 'imageOverlay', label: 'Image overlay', binding: { kind: 'overlay', key: 'cardStrong' } },
+          { id: 'imageOverlay', label: 'Image overlay', binding: { kind: 'overlay', key: 'galleryOverlay' } },
         ],
       },
       {
@@ -613,8 +661,6 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
           { id: 'headerMeta', label: 'Inline gallery count', binding: { kind: 'typography', key: 'discoveryMeta' } },
           { id: 'caption', label: 'Caption', binding: { kind: 'typography', key: 'caption' } },
           { id: 'body', label: 'Body text', binding: { kind: 'typography', key: 'body' } },
-          { id: 'lightboxControl', label: 'Lightbox control', binding: { kind: 'control', key: 'lightboxControl' } },
-          { id: 'lightboxOverlay', label: 'Lightbox overlay', binding: { kind: 'overlay', key: 'lightbox' } },
         ],
       },
       {
@@ -625,6 +671,22 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
           { id: 'title', label: 'Compact title', binding: { kind: 'typography', key: 'titleCompact' } },
           { id: 'caption', label: 'Caption', binding: { kind: 'typography', key: 'caption' } },
           { id: 'meta', label: 'Group/meta text', binding: { kind: 'typography', key: 'discoveryMeta' } },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'lightbox',
+    label: 'Lightbox',
+    description: 'Fullscreen gallery media backdrop and controls that must remain visually distinct from card overlays.',
+    variants: [
+      {
+        id: 'fullscreen',
+        label: 'Fullscreen media',
+        elements: [
+          { id: 'control', label: 'Lightbox control', binding: { kind: 'control', key: 'lightboxControl' } },
+          { id: 'backdrop', label: 'Lightbox backdrop', binding: { kind: 'overlay', key: 'lightboxBackdrop' } },
+          { id: 'caption', label: 'Caption', binding: { kind: 'typography', key: 'caption' } },
         ],
       },
     ],
@@ -663,7 +725,7 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
         id: 'closed',
         label: 'Closed card',
         elements: [
-          { id: 'surface', label: 'Card surface', binding: { kind: 'surface', key: 'qaCardClosed' } },
+          { id: 'surface', label: 'Background', binding: { kind: 'surface', key: 'qaCardClosed' } },
           { id: 'contentPadding', label: 'Card padding', binding: { kind: 'token', key: 'questionClosedPadding' } },
           { id: 'question', label: 'Question', binding: { kind: 'typography', key: 'question' } },
           { id: 'overlayQuestion', label: 'Overlay question', binding: { kind: 'typography', key: 'questionOverlay' } },
@@ -699,7 +761,7 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
         id: 'closed',
         label: 'Closed card',
         elements: [
-          { id: 'surface', label: 'Card surface', binding: { kind: 'surface', key: 'card' } },
+          { id: 'surface', label: 'Background', binding: { kind: 'surface', key: 'quoteCardClosed' } },
           { id: 'quote', label: 'Quote text', binding: { kind: 'typography', key: 'quote' } },
           { id: 'attribution', label: 'Attribution', binding: { kind: 'typography', key: 'caption' } },
           { id: 'watermark', label: 'Watermark opacity', binding: { kind: 'treatment', key: 'quoteWatermarkOpacity' } },
@@ -710,18 +772,16 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
   {
     id: 'calloutCard',
     label: 'Callout card',
-    description: 'Callouts have their own emphasis and watermark treatment in the feed.',
+    description: 'Callouts are closed feed tiles that use title plus body only, with their own emphasis and watermark treatment.',
     variants: [
       {
         id: 'closed',
         label: 'Closed card',
         elements: [
-          { id: 'surface', label: 'Card surface', binding: { kind: 'surface', key: 'card' } },
+          { id: 'surface', label: 'Background', binding: { kind: 'surface', key: 'calloutCardClosed' } },
           { id: 'title', label: 'Title', binding: { kind: 'typography', key: 'calloutTitle' } },
-          { id: 'subtitle', label: 'Subtitle', binding: { kind: 'typography', key: 'subtitle' } },
-          { id: 'excerpt', label: 'Excerpt', binding: { kind: 'typography', key: 'excerpt' } },
           { id: 'body', label: 'Body', binding: { kind: 'typography', key: 'calloutBody' } },
-          { id: 'contentLineHeight', label: 'Body line spacing', binding: { kind: 'token', key: 'calloutContentLineHeight' } },
+          { id: 'bulletLineHeight', label: 'Bullet line height', binding: { kind: 'token', key: 'calloutBulletLineHeight' } },
           { id: 'watermark', label: 'Watermark opacity', binding: { kind: 'treatment', key: 'calloutWatermarkOpacity' } },
         ],
       },
@@ -737,12 +797,9 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
         label: 'Sidebar and navigation',
         elements: [
           { id: 'surface', label: 'Sidebar surface', binding: { kind: 'surface', key: 'chromeSidebar' } },
-          { id: 'title', label: 'Sidebar title', binding: { kind: 'typography', key: 'chromeTitle' } },
-          { id: 'label', label: 'Chrome label', binding: { kind: 'typography', key: 'chromeLabel' } },
-          { id: 'meta', label: 'Chrome meta', binding: { kind: 'typography', key: 'chromeMeta' } },
-          { id: 'hint', label: 'Chrome hint', binding: { kind: 'typography', key: 'chromeHint' } },
+          { id: 'text', label: 'Sidebar text', binding: { kind: 'typography', key: 'chromeText' } },
+          { id: 'meta', label: 'Sidebar meta', binding: { kind: 'typography', key: 'chromeMeta' } },
           { id: 'activeTab', label: 'Active tab', binding: { kind: 'control', key: 'chromeActiveTab' } },
-          { id: 'filterChip', label: 'Filter chip', binding: { kind: 'control', key: 'chromeFilterChip' } },
           { id: 'inlineLink', label: 'Inline link', binding: { kind: 'control', key: 'inlineLink' } },
           { id: 'icon', label: 'Chrome icon color', binding: { kind: 'iconography', key: 'chrome' } },
         ],
@@ -758,12 +815,30 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
         id: 'controls',
         label: 'Controls and selectors',
         elements: [
-          { id: 'label', label: 'Shared field label', description: 'Shared label role reused by reader fields and parts of sidebar chrome.', binding: { kind: 'typography', key: 'chromeLabel' } },
-          { id: 'meta', label: 'Shared field meta', description: 'Shared meta role reused by reader fields and nearby support chrome.', binding: { kind: 'typography', key: 'chromeMeta' } },
-          { id: 'hint', label: 'Shared field hint', description: 'Shared hint role reused by reader fields and nearby support chrome.', binding: { kind: 'typography', key: 'chromeHint' } },
-          { id: 'control', label: 'Neutral control surface', description: 'Shared background and border for neutral field-style controls.', binding: { kind: 'control', key: 'fieldControl' } },
-          { id: 'controlText', label: 'Shared control text', description: 'Shared text role used across neutral field-style controls.', binding: { kind: 'typography', key: 'fieldControl' } },
-          { id: 'controlStrong', label: 'Selected control surface', description: 'Shared background and border for selected field-style controls.', binding: { kind: 'control', key: 'fieldControlStrong' } },
+          { id: 'title', label: 'Support title', description: 'Shared support title role reused by empty states, helper panels, and nearby chrome.', binding: { kind: 'typography', key: 'supportTitle' } },
+          { id: 'label', label: 'Support label', description: 'Shared label role reused by reader fields and support chrome.', binding: { kind: 'typography', key: 'supportLabel' } },
+          { id: 'meta', label: 'Support meta', description: 'Shared meta role reused by reader fields and support chrome.', binding: { kind: 'typography', key: 'supportMeta' } },
+          { id: 'hint', label: 'Support hint', description: 'Shared hint role reused by reader fields and support chrome.', binding: { kind: 'typography', key: 'supportHint' } },
+          { id: 'control', label: 'Neutral control surface', description: 'Shared background and border for neutral field-style controls.', binding: { kind: 'control', key: 'supportControl' } },
+          { id: 'controlText', label: 'Shared control text', description: 'Shared text role used across neutral field-style controls.', binding: { kind: 'typography', key: 'supportControlText' } },
+          { id: 'controlStrong', label: 'Selected control surface', description: 'Shared background and border for selected field-style controls.', binding: { kind: 'control', key: 'supportControlStrong' } },
+          { id: 'chip', label: 'Support chip', description: 'Shared chip treatment used for filter chips and similar support controls.', binding: { kind: 'control', key: 'supportChip' } },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'window',
+    label: 'Window',
+    description: 'Floating reader windows and dialog shells that should read clearly above the page.',
+    variants: [
+      {
+        id: 'floating',
+        label: 'Floating',
+        elements: [
+          { id: 'surface', label: 'Window surface', binding: { kind: 'surface', key: 'windowSurface' } },
+          { id: 'frame', label: 'Window frame', binding: { kind: 'surface', key: 'windowFrame' } },
+          { id: 'elevation', label: 'Window elevation', binding: { kind: 'surface', key: 'windowElevation' } },
         ],
       },
     ],
@@ -837,9 +912,10 @@ const cloneReaderThemeRecipes = (recipes: ReaderThemeRecipes): ReaderThemeRecipe
 );
 
 type LegacyReaderThemeRecipes = Partial<{
-  typography: Partial<Record<'supportTitle' | 'supportLabel' | 'supportMeta' | 'supportHint' | 'supportControl', ReaderThemeRecipes['typography'][keyof ReaderThemeRecipes['typography']]>>;
-  surfaces: Partial<Record<'page' | 'chrome' | 'detail' | 'discovery' | 'mediaFrame', ReaderThemeRecipes['surfaces'][keyof ReaderThemeRecipes['surfaces']]>>;
-  controls: Partial<Record<'solid' | 'supportControl' | 'supportControlStrong' | 'filterChip' | 'link', ReaderThemeRecipes['controls'][keyof ReaderThemeRecipes['controls']]>>;
+  typography: Partial<Record<'supportTitle' | 'supportLabel' | 'supportMeta' | 'supportHint' | 'supportControl' | 'chromeTitle' | 'chromeLabel' | 'chromeMeta' | 'chromeHint' | 'fieldControl', ReaderThemeRecipes['typography'][keyof ReaderThemeRecipes['typography']]>>;
+  surfaces: Partial<Record<'page' | 'chrome' | 'detail' | 'discovery' | 'mediaFrame' | 'windowPanel', ReaderThemeRecipes['surfaces'][keyof ReaderThemeRecipes['surfaces']]>>;
+  controls: Partial<Record<'solid' | 'supportControl' | 'supportControlStrong' | 'filterChip' | 'link' | 'fieldControl' | 'fieldControlStrong' | 'chromeFilterChip', ReaderThemeRecipes['controls'][keyof ReaderThemeRecipes['controls']]>>;
+  overlays: Partial<Record<'card' | 'cardStrong' | 'lightbox', ReaderThemeRecipes['overlays'][keyof ReaderThemeRecipes['overlays']]>>;
 }>;
 
 export function normalizeReaderThemeRecipes(
@@ -859,37 +935,63 @@ export function normalizeReaderThemeRecipes(
   Object.assign(normalized.iconography, recipes.iconography);
   Object.assign(normalized.treatments, recipes.treatments);
 
+  const incomingTypography = recipes.typography as Record<string, unknown> | undefined;
+  const incomingSurfaces = recipes.surfaces as Record<string, unknown> | undefined;
+  const incomingControls = recipes.controls as Record<string, unknown> | undefined;
+  const incomingOverlays = recipes.overlays as Record<string, unknown> | undefined;
+
   const legacyTypography = recipes.typography as LegacyReaderThemeRecipes['typography'] | undefined;
-  if (legacyTypography?.supportTitle) {
-    normalized.typography.chromeTitle = legacyTypography.supportTitle;
+  if (legacyTypography?.supportTitle && !incomingTypography?.supportTitle) {
+    normalized.typography.supportTitle = legacyTypography.supportTitle;
     normalized.typography.feedbackTitle = legacyTypography.supportTitle;
   }
-  if (legacyTypography?.supportLabel) {
-    normalized.typography.chromeLabel = legacyTypography.supportLabel;
+  if (legacyTypography?.chromeTitle && !incomingTypography?.supportTitle) {
+    normalized.typography.supportTitle = legacyTypography.chromeTitle;
   }
-  if (legacyTypography?.supportMeta) {
-    normalized.typography.chromeMeta = legacyTypography.supportMeta;
+  if (legacyTypography?.supportLabel && !incomingTypography?.supportLabel) {
+    normalized.typography.supportLabel = legacyTypography.supportLabel;
+  }
+  if (legacyTypography?.chromeLabel && !incomingTypography?.chromeText) {
+    normalized.typography.chromeText = legacyTypography.chromeLabel;
+  }
+  if (legacyTypography?.chromeLabel && !incomingTypography?.supportLabel && !incomingTypography?.chromeText) {
+    normalized.typography.supportLabel = legacyTypography.chromeLabel;
+  }
+  if (legacyTypography?.supportMeta && !incomingTypography?.supportMeta) {
+    normalized.typography.supportMeta = legacyTypography.supportMeta;
     normalized.typography.feedbackMeta = legacyTypography.supportMeta;
   }
-  if (legacyTypography?.supportHint) {
-    normalized.typography.chromeHint = legacyTypography.supportHint;
+  if (legacyTypography?.chromeMeta && !incomingTypography?.chromeMeta) {
+    normalized.typography.chromeMeta = legacyTypography.chromeMeta;
+  }
+  if (legacyTypography?.chromeMeta && !incomingTypography?.supportMeta && !incomingTypography?.chromeMeta) {
+    normalized.typography.supportMeta = legacyTypography.chromeMeta;
+  }
+  if (legacyTypography?.supportHint && !incomingTypography?.supportHint) {
+    normalized.typography.supportHint = legacyTypography.supportHint;
     normalized.typography.feedbackHint = legacyTypography.supportHint;
   }
-  if (legacyTypography?.supportControl) {
-    normalized.typography.fieldControl = legacyTypography.supportControl;
+  if (legacyTypography?.chromeHint && !incomingTypography?.supportHint) {
+    normalized.typography.supportHint = legacyTypography.chromeHint;
+  }
+  if (legacyTypography?.supportControl && !incomingTypography?.supportControlText) {
+    normalized.typography.supportControlText = legacyTypography.supportControl;
+  }
+  if (legacyTypography?.fieldControl && !incomingTypography?.supportControlText) {
+    normalized.typography.supportControlText = legacyTypography.fieldControl;
   }
 
   const legacySurfaces = recipes.surfaces as LegacyReaderThemeRecipes['surfaces'] | undefined;
-  if (legacySurfaces?.page) {
+  if (legacySurfaces?.page && !incomingSurfaces?.canvasPage) {
     normalized.surfaces.canvasPage = legacySurfaces.page;
     normalized.surfaces.canvasSection = legacySurfaces.page;
   }
-  if (legacySurfaces?.chrome) {
+  if (legacySurfaces?.chrome && !incomingSurfaces?.chromeSidebar) {
     normalized.surfaces.chromeSidebar = legacySurfaces.chrome;
     normalized.surfaces.chromeToolbar = legacySurfaces.chrome;
     normalized.surfaces.chromeRail = legacySurfaces.chrome;
   }
-  if (legacySurfaces?.detail) {
+  if (legacySurfaces?.detail && !incomingSurfaces?.canvasDetail) {
     normalized.surfaces.canvasDetail = legacySurfaces.detail;
     normalized.surfaces.feedbackPanel = legacySurfaces.detail;
     normalized.surfaces.feedbackSuccessPanel = legacySurfaces.detail;
@@ -897,29 +999,65 @@ export function normalizeReaderThemeRecipes(
     normalized.surfaces.feedbackErrorPanel = legacySurfaces.detail;
     normalized.surfaces.feedbackInfoPanel = legacySurfaces.detail;
   }
-  if (legacySurfaces?.discovery) {
+  if (legacySurfaces?.discovery && !incomingSurfaces?.cardDiscovery) {
     normalized.surfaces.cardDiscovery = legacySurfaces.discovery;
   }
-  if (legacySurfaces?.mediaFrame) {
+  if (legacySurfaces?.mediaFrame && !incomingSurfaces?.canvasMediaFrame) {
     normalized.surfaces.canvasMediaFrame = legacySurfaces.mediaFrame;
+  }
+  if (legacySurfaces?.windowPanel) {
+    if (!incomingSurfaces?.windowSurface) {
+      normalized.surfaces.windowSurface = legacySurfaces.windowPanel;
+    }
+    if (!incomingSurfaces?.windowFrame) {
+      normalized.surfaces.windowFrame = legacySurfaces.windowPanel;
+    }
+    if (!incomingSurfaces?.windowElevation) {
+      normalized.surfaces.windowElevation = legacySurfaces.windowPanel;
+    }
   }
 
   const legacyControls = recipes.controls as LegacyReaderThemeRecipes['controls'] | undefined;
-  if (legacyControls?.solid) {
+  if (legacyControls?.solid && !incomingControls?.chromeActiveTab) {
     normalized.controls.chromeActiveTab = legacyControls.solid;
   }
-  if (legacyControls?.supportControl) {
-    normalized.controls.fieldControl = legacyControls.supportControl;
-    normalized.controls.feedbackAction = legacyControls.supportControl;
+  if (legacyControls?.supportControl && !incomingControls?.supportControl) {
+    normalized.controls.supportControl = legacyControls.supportControl;
+    if (!incomingControls?.feedbackAction) {
+      normalized.controls.feedbackAction = legacyControls.supportControl;
+    }
   }
-  if (legacyControls?.supportControlStrong) {
-    normalized.controls.fieldControlStrong = legacyControls.supportControlStrong;
+  if (legacyControls?.fieldControl && !incomingControls?.supportControl) {
+    normalized.controls.supportControl = legacyControls.fieldControl;
   }
-  if (legacyControls?.filterChip) {
-    normalized.controls.chromeFilterChip = legacyControls.filterChip;
+  if (legacyControls?.supportControlStrong && !incomingControls?.supportControlStrong) {
+    normalized.controls.supportControlStrong = legacyControls.supportControlStrong;
   }
-  if (legacyControls?.link) {
+  if (legacyControls?.fieldControlStrong && !incomingControls?.supportControlStrong) {
+    normalized.controls.supportControlStrong = legacyControls.fieldControlStrong;
+  }
+  if (legacyControls?.filterChip && !incomingControls?.supportChip) {
+    normalized.controls.supportChip = legacyControls.filterChip;
+  }
+  if (legacyControls?.chromeFilterChip && !incomingControls?.supportChip) {
+    normalized.controls.supportChip = legacyControls.chromeFilterChip;
+  }
+  if (legacyControls?.link && !incomingControls?.inlineLink) {
     normalized.controls.inlineLink = legacyControls.link;
+  }
+
+  const legacyOverlays = recipes.overlays as LegacyReaderThemeRecipes['overlays'] | undefined;
+  if (legacyOverlays?.card && !incomingOverlays?.coveredFade) {
+    normalized.overlays.coveredFade = legacyOverlays.card;
+  }
+  if (legacyOverlays?.cardStrong && !incomingOverlays?.galleryOverlay) {
+    normalized.overlays.galleryOverlay = legacyOverlays.cardStrong;
+  }
+  if (legacyOverlays?.cardStrong && !incomingOverlays?.lightboxBackdrop) {
+    normalized.overlays.lightboxBackdrop = legacyOverlays.cardStrong;
+  }
+  if (legacyOverlays?.lightbox && !incomingOverlays?.lightboxBackdrop) {
+    normalized.overlays.lightboxBackdrop = legacyOverlays.lightbox;
   }
 
   return normalized;

@@ -353,7 +353,7 @@ export default function ImportFolderModal({
             <h3 className={styles.albumTitle}>
               {mode === 'single' ? 'Select Folder' : 'Select Root Folder'}
             </h3>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text2-color)', marginBottom: '0.5rem' }}>
+            <p style={{ fontSize: '0.75rem', color: 'var(--admin-support-meta-color)', marginBottom: '0.5rem' }}>
               {mode === 'single'
                 ? 'Album folder (with yEdited/xNormalized) or folder with images.'
                 : 'Root folder to search for all xNormalized subdirs.'}
@@ -438,7 +438,7 @@ export default function ImportFolderModal({
                         </label>
                       </div>
                       {importAsCard && (
-                        <p style={{ fontSize: '0.875rem', color: 'var(--text2-color)', marginTop: '0.5rem' }}>
+                        <p style={{ fontSize: '0.875rem', color: 'var(--admin-support-meta-color)', marginTop: '0.5rem' }}>
                           Card title: &quot;{preview.title}&quot;
                         </p>
                       )}
@@ -448,12 +448,12 @@ export default function ImportFolderModal({
                         </p>
                       )}
                       {preview.willNormalize && (
-                        <p style={{ fontSize: '0.875rem', color: 'var(--color3)', marginTop: '0.5rem' }}>
+                        <p style={{ fontSize: '0.875rem', color: 'var(--admin-support-label-color)', marginTop: '0.5rem' }}>
                           Images will be WebP-optimized in memory during import (no local xNormalized folder). Only
                           files named like <code>…__X.jpg</code> are included.
                         </p>
                       )}
-                      <p style={{ fontSize: '0.875rem', color: 'var(--text2-color)', marginTop: '0.25rem' }}>
+                      <p style={{ fontSize: '0.875rem', color: 'var(--admin-support-meta-color)', marginTop: '0.25rem' }}>
                         Metadata (captions) imported when available. Duplicates skipped when importing images only.
                       </p>
                     </>
@@ -500,10 +500,10 @@ export default function ImportFolderModal({
                 type="button"
                 style={{
                   padding: '0.5rem 1rem',
-                  border: '1px solid var(--border1-color)',
+                  border: '1px solid var(--admin-support-control-border-color)',
                   borderRadius: '4px',
-                  background: 'var(--layout-background2-color)',
-                  color: 'var(--text1-color)',
+                  background: 'var(--admin-support-control-background-color)',
+                  color: 'var(--admin-support-control-text-color)',
                   cursor: isImporting ? 'not-allowed' : 'pointer',
                 }}
               >
