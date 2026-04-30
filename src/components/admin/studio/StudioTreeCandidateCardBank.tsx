@@ -120,29 +120,79 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
   const [tagFilterModalOpen, setTagFilterModalOpen] = useState(false);
   const [rulesExpanded, setRulesExpanded] = useState(false);
   const [dimensionFilters, setDimensionFilters] = useState<DimensionFilterState>(DEFAULT_DIMENSION_FILTERS);
+  const [isStreamingMore, setIsStreamingMore] = useState(false);
 
+  // Catalog load: first chunk paints fast (250 cards), remaining pages stream in
+  // background under the server's stable `created desc` order. Filters operate
+  // on whatever is loaded; the streaming indicator next to the Clear button
+  // tells the operator a request like search may be working against a partial
+  // set. See docs/01-Vision-Architecture.md → Frontend Principles (chunked list
+  // delivery + stable ordering).
   useEffect(() => {
     let cancelled = false;
     setLoadingCatalog(true);
+    setIsStreamingMore(false);
+
+    const PAGE_SIZE = 250;
+    const MAX_PAGES = 20; // safety stop ~5,000 cards
+
     (async () => {
-      try {
+      let lastDocId: string | undefined;
+      let firstChunkPainted = false;
+      const accumulated: Card[] = [];
+      const seen = new Set<string>();
+
+      for (let page = 0; page < MAX_PAGES; page++) {
         const params = new URLSearchParams({
-          limit: '2500',
+          limit: String(PAGE_SIZE),
+          page: String(page),
           status: 'all',
           hydration: 'cover-only',
           sortBy: 'created',
           sortDir: 'desc',
         });
-        const res = await fetch(`/api/cards?${params.toString()}`);
-        const data = (await res.json().catch(() => ({}))) as { items?: Card[] };
-        if (!cancelled && res.ok && Array.isArray(data.items)) {
-          setFullCatalog(data.items);
-          setCatalogOverrides({});
+        if (lastDocId) params.set('lastDocId', lastDocId);
+
+        let pageData: { items?: Card[]; hasMore?: boolean; lastDocId?: string } = {};
+        let ok = false;
+        try {
+          const res = await fetch(`/api/cards?${params.toString()}`);
+          ok = res.ok;
+          if (ok) pageData = (await res.json().catch(() => ({}))) as typeof pageData;
+        } catch {
+          ok = false;
         }
-      } finally {
-        if (!cancelled) setLoadingCatalog(false);
+        if (cancelled) return;
+        if (!ok) break;
+
+        const items = Array.isArray(pageData.items) ? pageData.items : [];
+        for (const item of items) {
+          if (item.docId && !seen.has(item.docId)) {
+            accumulated.push(item);
+            seen.add(item.docId);
+          }
+        }
+
+        setFullCatalog([...accumulated]);
+
+        if (!firstChunkPainted) {
+          setCatalogOverrides({});
+          setLoadingCatalog(false);
+          firstChunkPainted = true;
+          if (pageData.hasMore && items.length > 0) {
+            setIsStreamingMore(true);
+          }
+        }
+
+        if (!pageData.hasMore || items.length === 0) break;
+        lastDocId = pageData.lastDocId;
       }
+
+      if (cancelled) return;
+      if (!firstChunkPainted) setLoadingCatalog(false);
+      setIsStreamingMore(false);
     })();
+
     return () => {
       cancelled = true;
     };
@@ -573,6 +623,20 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
         <button type="button" className={styles.studioCardClearButton} onClick={handleClearAllFilters}>
           Clear
         </button>
+        {isStreamingMore ? (
+          <span
+            aria-live="polite"
+            style={{
+              fontSize: '0.75rem',
+              color: 'var(--color-muted, #888)',
+              alignSelf: 'center',
+              marginLeft: '0.5rem',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Loading more cards… ({fullCatalog.length} loaded)
+          </span>
+        ) : null}
       </div>
 
       <div className={styles.studioCardMacroBlock}>

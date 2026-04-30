@@ -306,6 +306,8 @@ export default function CollectionsAdminClient({
   const [dragOverlaySourceMedia, setDragOverlaySourceMedia] = useState<Media | null>(null);
   const lastValidOverIdRef = useRef<string | null>(null);
   const hasInitializedTreeExpansionRef = useRef(false);
+  /** Stale-stream guard: each `load()` call increments this; chunks for older calls bail. */
+  const loadRequestIdRef = useRef(0);
   const [bulkParentId, setBulkParentId] = useState<string | null>(null);
   const [bulkSearch, setBulkSearch] = useState('');
   const [bulkStatus, setBulkStatus] = useState<'all' | 'draft' | 'published'>('all');
@@ -497,60 +499,125 @@ export default function CollectionsAdminClient({
     };
   }, [wideCenterLayout, wTree, wUnparent]);
 
+  // First chunk paints fast (250 cards), remaining pages stream in background under
+  // server's stable `created desc` order. Roots fetch (capped at 200) runs in parallel
+  // with page 0. The Studio bank's "Loading more cards…" indicator covers the streaming
+  // window — no separate indicator here. See docs/01-Vision-Architecture.md → Frontend
+  // Principles (chunked list delivery + stable ordering).
   const load = async (opts?: { soft?: boolean }) => {
     const soft = opts?.soft === true;
+    const requestId = ++loadRequestIdRef.current;
+    const isCurrent = () => loadRequestIdRef.current === requestId;
+
     if (!soft) {
       setLoading(true);
     }
     setError(null);
-    try {
-      const [res, rootsRes] = await Promise.all([
-        fetch('/api/cards?limit=1000&status=all&hydration=cover-only&sort=newest'),
-        fetch('/api/cards?collectionsOnly=true&status=all&hydration=cover-only&limit=200'),
-      ]);
-      const data = (await res.json()) as CardsResponse & { error?: string };
-      const rootsData = (await rootsRes.json()) as CardsResponse & { error?: string };
-      if (!res.ok) throw new Error(data.error || 'Failed to load cards');
-      if (!rootsRes.ok) throw new Error(rootsData.error || 'Failed to load collection roots');
 
-      const merged = new Map<string, Card>();
-      for (const card of data.items || []) {
-        if (card.docId) merged.set(card.docId, card);
-      }
-      for (const card of rootsData.items || []) {
-        if (!card.docId) continue;
-        const prev = merged.get(card.docId);
-        merged.set(card.docId, prev ? { ...prev, ...card } : card);
-      }
-      const items = Array.from(merged.values());
-      if (soft) {
-        setCards((prev) => {
-          if (prev.length === 0) return items;
-          const merged = new Map<string, Card>();
-          for (const c of prev) {
-            if (c.docId) merged.set(c.docId, c);
-          }
-          for (const c of items) {
-            if (!c.docId) continue;
-            const old = merged.get(c.docId);
-            if (!old) {
-              merged.set(c.docId, c);
-              continue;
-            }
-            const next: Card = { ...old, ...c };
-            // cover-only / partial API rows can omit fields; shallow spread would wipe tree state.
-            if (!Object.hasOwn(c, 'childrenIds')) next.childrenIds = old.childrenIds;
-            merged.set(c.docId, next);
-          }
-          return Array.from(merged.values());
+    const PAGE_SIZE = 250;
+    const MAX_PAGES = 20; // safety stop ~5,000 cards
+    let firstChunkPainted = false;
+
+    try {
+      const rootsPromise = fetch(
+        '/api/cards?collectionsOnly=true&status=all&hydration=cover-only&limit=200'
+      );
+      const accumulated = new Map<string, Card>();
+      const rootsById = new Map<string, Card>();
+      let rootsApplied = false;
+      let lastDocId: string | undefined;
+
+      for (let page = 0; page < MAX_PAGES; page++) {
+        const params = new URLSearchParams({
+          limit: String(PAGE_SIZE),
+          page: String(page),
+          status: 'all',
+          hydration: 'cover-only',
+          sortBy: 'created',
+          sortDir: 'desc',
         });
-      } else {
-        setCards(items);
+        if (lastDocId) params.set('lastDocId', lastDocId);
+
+        const res = await fetch(`/api/cards?${params.toString()}`);
+        if (!isCurrent()) return;
+        const data = (await res.json().catch(() => ({}))) as CardsResponse & {
+          error?: string;
+          hasMore?: boolean;
+          lastDocId?: string;
+        };
+        if (!res.ok) throw new Error(data.error || 'Failed to load cards');
+        if (!isCurrent()) return;
+
+        for (const c of data.items || []) {
+          if (c.docId) accumulated.set(c.docId, c);
+        }
+
+        if (!rootsApplied) {
+          const rootsRes = await rootsPromise;
+          if (!isCurrent()) return;
+          const rootsData = (await rootsRes.json().catch(() => ({}))) as CardsResponse & {
+            error?: string;
+          };
+          if (!rootsRes.ok) {
+            throw new Error(rootsData.error || 'Failed to load collection roots');
+          }
+          for (const c of rootsData.items || []) {
+            if (c.docId) rootsById.set(c.docId, c);
+          }
+          rootsApplied = true;
+        }
+        if (!isCurrent()) return;
+
+        // Merge accumulated cards with roots (roots overlay the standard payload).
+        const merged = new Map<string, Card>();
+        for (const [id, c] of accumulated) merged.set(id, c);
+        for (const [id, c] of rootsById) {
+          const prev = merged.get(id);
+          merged.set(id, prev ? { ...prev, ...c } : c);
+        }
+        const items = Array.from(merged.values());
+
+        if (soft || firstChunkPainted) {
+          // After first chunk in non-soft mode, also use merge semantics — preserves
+          // any tree state (e.g. childrenIds) that earlier passes set when later
+          // cover-only payloads omit those fields.
+          setCards((prev) => {
+            if (prev.length === 0) return items;
+            const out = new Map<string, Card>();
+            for (const c of prev) {
+              if (c.docId) out.set(c.docId, c);
+            }
+            for (const c of items) {
+              if (!c.docId) continue;
+              const old = out.get(c.docId);
+              if (!old) {
+                out.set(c.docId, c);
+                continue;
+              }
+              const next: Card = { ...old, ...c };
+              if (!Object.hasOwn(c, 'childrenIds')) next.childrenIds = old.childrenIds;
+              out.set(c.docId, next);
+            }
+            return Array.from(out.values());
+          });
+        } else {
+          setCards(items);
+        }
+
+        if (!firstChunkPainted) {
+          firstChunkPainted = true;
+          if (!soft) setLoading(false);
+        }
+
+        if (!data.hasMore || (data.items || []).length === 0) break;
+        lastDocId = data.lastDocId;
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load cards');
+      if (isCurrent()) {
+        setError(e instanceof Error ? e.message : 'Failed to load cards');
+      }
     } finally {
-      if (!soft) {
+      if (isCurrent() && !soft && !firstChunkPainted) {
         setLoading(false);
       }
     }
