@@ -12,9 +12,9 @@
 }
 
 .chip {
-  border: 1px solid var(--border1-color);
-  background: var(--layout-background2-color);
-  color: var(--text1-color);
+  border: 1px solid var(--admin-window-border-color);
+  background: var(--admin-window-background-color);
+  color: var(--admin-support-label-color);
   border-radius: var(--border-radius-sm);
   font-size: 11px;
   padding: 2px 6px;
@@ -28,9 +28,9 @@
 
 .input {
   width: 100%;
-  border: 1px solid var(--border1-color);
-  background: var(--input-background-color);
-  color: var(--text1-color);
+  border: 1px solid var(--admin-support-control-border-color);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
   border-radius: var(--border-radius-sm);
   font-size: 12px;
   padding: 4px 6px;
@@ -42,15 +42,15 @@
   gap: 2px;
   max-height: 120px;
   overflow-y: auto;
-  border: 1px solid var(--border1-color);
+  border: 1px solid var(--admin-window-border-color);
   border-radius: var(--border-radius-sm);
-  background: var(--layout-background1-color);
+  background: var(--admin-window-background-color);
 }
 
 .suggestion {
   border: none;
   background: transparent;
-  color: var(--text1-color);
+  color: var(--admin-support-label-color);
   text-align: left;
   font-size: 11px;
   padding: 4px 6px;
@@ -58,10 +58,10 @@
 }
 
 .suggestion:hover {
-  background: var(--layout-background2-color);
+  background: var(--admin-chrome-control-hover-background-color);
 }
 
 .error {
-  color: var(--state-error-text-color);
+  color: var(--admin-feedback-hint-color);
   font-size: 11px;
 }

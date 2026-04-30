@@ -290,4 +290,15 @@ export function parseDimensionalTagParamsFromSearchParams(
 
 export function dimensionalTagMapHasFilters(map: DimensionalTagIdMap): boolean {
   return DIMENSION_KEYS.some((k) => (map[k]?.length ?? 0) > 0);
+}
+
+/** Flatten a dimensional map to tag id list (for MacroTagSelector / UI round-trip). */
+export function flattenDimensionalTagMapToTagIds(m: DimensionalTagIdMap): string[] {
+  const ids: string[] = [];
+  for (const k of DIMENSION_KEYS) {
+    for (const id of m[k] ?? []) {
+      if (id) ids.push(id);
+    }
+  }
+  return ids;
 } 

@@ -2,28 +2,32 @@
   display: flex;
   gap: 0.5rem;
   margin-bottom: 1rem;
-  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  border-bottom: var(--border-width-thin) solid var(--admin-window-border-color);
   padding-bottom: 0.5rem;
 }
 
 .modeTab {
   padding: 0.375rem 0.75rem;
-  border: none;
+  border: var(--border-width-thin) solid transparent;
   background: transparent;
-  color: var(--text2-color);
+  color: var(--admin-chrome-meta-color);
   cursor: pointer;
-  font-size: 0.875rem;
+  font-family: var(--admin-chrome-meta-font-family);
+  font-size: var(--admin-chrome-meta-font-size);
+  font-weight: var(--admin-chrome-meta-font-weight);
+  line-height: var(--admin-chrome-meta-line-height);
   border-radius: var(--border-radius-sm);
 }
 
 .modeTab:hover {
-  color: var(--text1-color);
-  background: var(--layout-background2-color);
+  color: var(--admin-chrome-text-color);
+  background: var(--admin-chrome-control-hover-background-color);
 }
 
 .modeTab.active {
-  color: var(--color3);
-  font-weight: 600;
+  color: var(--admin-chrome-active-control-text-color);
+  background: var(--admin-chrome-active-control-background-color);
+  border-color: var(--admin-chrome-active-control-border-color);
 }
 
 .importTypeRow {
@@ -31,13 +35,20 @@
   align-items: center;
   gap: 0.5rem;
   margin-top: 0.5rem;
-  font-size: 0.875rem;
+  color: var(--admin-support-label-color);
+  font-family: var(--admin-support-label-font-family);
+  font-size: var(--admin-support-label-font-size);
+  font-weight: var(--admin-support-label-font-weight);
+  line-height: var(--admin-support-label-line-height);
 }
 
 .batchPreview {
   overflow-y: auto;
   max-height: 300px;
-  font-size: 0.875rem;
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
 }
 
 .batchPreviewList {
@@ -48,7 +59,7 @@
 
 .batchPreviewItem {
   padding: 0.25rem 0;
-  border-bottom: 1px solid var(--border1-color);
+  border-bottom: var(--border-width-thin) solid var(--admin-support-control-border-color);
   display: flex;
   justify-content: space-between;
   gap: 1rem;
@@ -57,14 +68,23 @@
 .batchSummary {
   margin-top: 0.75rem;
   padding-top: 0.75rem;
-  border-top: var(--border-width-thin) solid var(--border1-color);
-  font-weight: 500;
+  border-top: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  color: var(--admin-support-title-color);
+  font-family: var(--admin-support-title-font-family);
+  font-size: var(--admin-support-title-font-size);
+  font-weight: var(--admin-support-title-font-weight);
+  line-height: var(--admin-support-title-line-height);
 }
 
 .batchResult {
   margin-top: 1rem;
   padding: 0.75rem;
-  background: var(--layout-background2-color);
+  background: var(--admin-support-control-background-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-radius: var(--border-radius-sm);
-  font-size: 0.875rem;
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
 }

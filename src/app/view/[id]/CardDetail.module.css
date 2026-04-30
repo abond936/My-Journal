@@ -1,11 +1,38 @@
 .container {
   max-width: 800px;
   margin: 0 auto var(--spacing-xl);
-  padding: 0 var(--spacing-xl) var(--spacing-xl);
-  background-color: var(--layout-background1-color);
-  color: var(--text1-color);
-  border-radius: var(--border-radius-md);
-  box-shadow: var(--shadow-md);
+  padding: 0 var(--reader-detail-padding-x) var(--reader-detail-padding-bottom);
+  background-color: var(--reader-detail-background-color);
+  color: var(--reader-body-color);
+  border-radius: var(--reader-detail-border-radius);
+  box-shadow: var(--reader-detail-shadow);
+}
+
+.previewFullWidth {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  margin: 0 0 var(--spacing-xl) 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.previewFullWidth .header {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.previewFullWidth .title,
+.previewFullWidth .subtitle {
+  padding-left: var(--reader-card-padding);
+  padding-right: var(--reader-card-padding);
+}
+
+.previewFullWidth .content,
+.previewFullWidth .quoteDetailFooter,
+.previewFullWidth .adminEditBar {
+  padding-left: var(--reader-card-padding);
+  padding-right: var(--reader-card-padding);
 }
 
 .adminEditBar {
@@ -14,14 +41,18 @@
   text-align: right;
 }
 
-.adminEditBar a {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color4-light);
+.adminEditBar a,
+.adminEditTrigger {
+  font-family: var(--reader-meta-font-family);
+  font-size: var(--reader-meta-font-size);
+  font-weight: var(--reader-meta-font-weight);
+  line-height: var(--reader-meta-line-height);
+  color: var(--reader-accent-color);
   text-decoration: none;
 }
 
-.adminEditBar a:hover {
+.adminEditBar a:hover,
+.adminEditTrigger:hover {
   text-decoration: underline;
 }
 
@@ -42,9 +73,9 @@
   width: 100%;
   aspect-ratio: 4 / 5;
   overflow: hidden;
-  border-radius: var(--border-radius-lg);
+  border-radius: var(--reader-detail-border-radius);
   margin-bottom: var(--spacing-lg);
-  background-color: var(--layout-background2-color);
+  background-color: var(--reader-detail-cover-background-color);
 }
 
 .coverImageContainer.coverPortrait {
@@ -68,9 +99,28 @@
 }
 
 .title {
-  font-size: var(--font-size-3xl);
-  font-weight: var(--font-weight-bold);
+  font-size: var(--reader-detail-title-font-size);
+  font-family: var(--reader-detail-title-font-family);
+  font-weight: var(--reader-detail-title-font-weight);
+  line-height: var(--reader-detail-title-line-height);
+  color: var(--reader-detail-title-color);
   margin-bottom: var(--spacing-md);
+}
+
+.container[data-card-type='story'] .title {
+  font-size: var(--reader-story-detail-title-font-size);
+  font-family: var(--reader-story-detail-title-font-family);
+  font-weight: var(--reader-story-detail-title-font-weight);
+  line-height: var(--reader-story-detail-title-line-height);
+  color: var(--reader-story-detail-title-color);
+}
+
+.container[data-card-type='gallery'] .title {
+  font-size: var(--reader-gallery-detail-title-font-size);
+  font-family: var(--reader-gallery-detail-title-font-family);
+  font-weight: var(--reader-gallery-detail-title-font-weight);
+  line-height: var(--reader-gallery-detail-title-line-height);
+  color: var(--reader-gallery-detail-title-color);
 }
 
 .titleWithSubtitle {
@@ -78,14 +128,20 @@
 }
 
 .subtitle {
-  font-size: var(--font-size-xl);
-  color: var(--text2-color);
-  font-style: italic;
+  font-family: var(--reader-subtitle-font-family);
+  font-size: var(--reader-subtitle-font-size);
+  font-weight: var(--reader-subtitle-font-weight);
+  line-height: var(--reader-subtitle-line-height);
+  color: var(--reader-subtitle-color);
+  font-style: var(--reader-subtitle-font-style);
 }
 
 .content {
-  line-height: var(--line-height-normal);
-  font-size: var(--font-size-base);
+  font-family: var(--reader-body-font-family);
+  font-weight: var(--reader-body-font-weight);
+  color: var(--reader-body-color);
+  line-height: var(--reader-body-line-height);
+  font-size: var(--reader-body-font-size);
 }
 
 .content h1,
@@ -107,8 +163,12 @@
   margin: 0;
   padding: 0 0 0 var(--spacing-lg);
   border: none;
-  border-left: var(--border-width-thick) solid var(--border1-color);
-  font-style: italic;
+  border-left: var(--border-width-thick) solid var(--reader-detail-border-color);
+  color: var(--reader-quote-color);
+  font-family: var(--reader-quote-font-family);
+  font-size: var(--reader-quote-font-size);
+  line-height: var(--reader-quote-line-height);
+  font-style: var(--reader-quote-font-style);
 }
 
 .quoteDetailQuote :global(p:first-child) {
@@ -118,26 +178,29 @@
 .quoteDetailFooter {
   margin-top: var(--spacing-lg);
   padding-top: var(--spacing-md);
-  border-top: var(--border-width-thin) solid var(--border1-color);
+  border-top: var(--border-width-thin) solid var(--reader-detail-border-color);
 }
 
 .quoteDetailCite {
   display: block;
-  font-size: var(--font-size-xl);
+  font-family: var(--reader-caption-font-family);
+  font-size: var(--reader-caption-font-size);
+  font-weight: var(--reader-caption-font-weight);
+  line-height: var(--reader-caption-line-height);
   font-style: normal;
-  color: var(--text2-color);
+  color: var(--reader-caption-color);
   text-align: right;
 }
 
 .gallery, .children {
   margin-top: var(--spacing-2xl);
   padding-top: var(--spacing-xl);
-  border-top: var(--border-width-thin) solid var(--border1-color);
+  border-top: var(--border-width-thin) solid var(--reader-detail-border-color);
 }
 
 @media (max-width: 768px) {
   .container {
-    padding: 0 var(--spacing-sm) var(--spacing-lg);
+    padding: 0 var(--spacing-sm) var(--spacing-2xl);
     border-radius: 0;
     box-shadow: none;
   }

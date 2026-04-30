@@ -5,6 +5,7 @@ import { getAdminApp } from '@/lib/config/firebase/admin';
 import { getFirestore } from 'firebase-admin/firestore';
 import {
   authorizeJournalUserCredentials,
+  getJournalUserByDocId,
   hasJournalUserWithUsername,
   normalizeJournalUsername,
 } from '@/lib/auth/journalUsersFirestore';
@@ -76,6 +77,19 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user && 'role' in user) {
         token.role = (user as { role?: string }).role;
+      }
+      // Legacy JWTs may omit `role`; backfill so admin layout and client session agree.
+      if (!token.role && token.sub) {
+        if (token.sub === 'admin') {
+          token.role = 'admin';
+        } else {
+          try {
+            const row = await getJournalUserByDocId(token.sub);
+            if (row?.role) token.role = row.role;
+          } catch {
+            /* ignore */
+          }
+        }
       }
       return token;
     },

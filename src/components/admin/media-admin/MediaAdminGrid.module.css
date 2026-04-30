@@ -1,6 +1,8 @@
 .container {
   padding: 0;
   max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 .selectAllRow {
@@ -9,7 +11,11 @@
   gap: var(--spacing-sm);
   padding: var(--spacing-sm) 0 var(--spacing-md);
   font-size: var(--font-size-sm);
-  color: var(--text2-color);
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
 }
 
 .selectAllRow input {
@@ -22,44 +28,9 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
   gap: var(--spacing-md);
-}
-
-.cell {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  background: var(--layout-background1-color);
-  border: var(--border-width-thin) solid var(--border1-color);
-  border-radius: var(--border-radius-md);
-  overflow: hidden;
-  cursor: pointer;
-  transition: border-color var(--transition-short), box-shadow var(--transition-short);
-}
-
-.cell:hover {
-  border-color: var(--color3);
-  box-shadow: var(--shadow-sm);
-}
-
-.cell.selected {
-  border-color: var(--color1);
-  box-shadow: 0 0 0 2px var(--color1);
-}
-
-.checkboxWrap {
-  position: absolute;
-  top: var(--spacing-xs);
-  left: var(--spacing-xs);
-  z-index: 2;
-}
-
-.checkboxWrap input {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-  accent-color: var(--color1);
+  min-width: 0;
 }
 
 .thumbnailWrap {
@@ -67,57 +38,57 @@
   width: 100%;
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  background: var(--layout-background2-color);
+  background: var(--admin-window-background-color);
 }
 
-.thumbnail {
+.thumbnailNatural {
   object-fit: cover;
 }
 
-.captionOverlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  background: var(--gradient-bottom-overlay);
-  color: white;
-  font-size: var(--font-size-xs);
-  line-height: 1.3;
-  max-height: 40%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-.filename {
-  padding: var(--spacing-sm);
+.mediaTitle {
+  padding: var(--spacing-sm) var(--spacing-sm) 0;
   font-size: var(--font-size-sm);
-  color: var(--text1-color);
-  word-break: break-word;
+  font-weight: var(--font-weight-semibold);
+  color: var(--admin-support-label-color);
   line-height: 1.3;
+  overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  overflow: hidden;
+  word-break: break-word;
 }
 
-.identityBlock {
-  padding: 0 var(--spacing-sm) var(--spacing-sm);
+.metaRow {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 8px var(--spacing-sm) 0;
 }
 
-.identityLine {
-  font-size: var(--font-size-xs);
-  color: var(--text2-color);
-  font-family: monospace;
-  white-space: nowrap;
+.tagChipsInline {
+  padding: 6px var(--spacing-sm) 0;
+  min-width: 0;
+}
+
+.mediaMeta {
+  padding: 4px var(--spacing-sm) 0;
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
   overflow: hidden;
-  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  word-break: break-word;
+}
+
+.tagSearchFoot {
+  margin-top: auto;
+  padding: 8px var(--spacing-sm) var(--spacing-sm);
+  min-width: 0;
 }
 
 .inlineActions {
@@ -127,17 +98,20 @@
 }
 
 .inlineActionButton {
-  border: var(--border-width-thin) solid var(--border1-color);
-  background: var(--layout-background1-color);
-  color: var(--text1-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
   border-radius: var(--border-radius-sm);
   padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: var(--font-size-xs);
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
   cursor: pointer;
 }
 
 .inlineActionButton:hover {
-  background: var(--layout-background2-color);
+  background: var(--admin-support-control-hover-background-color);
 }
 
 .saveNotice {
@@ -146,15 +120,51 @@
   color: var(--state-success-border-color);
 }
 
+.cellStudioSource {
+  position: relative;
+}
+
+.studioGridDragHandle {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  line-height: 1;
+  cursor: grab;
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border-radius: var(--border-radius-sm);
+  background: color-mix(in srgb, var(--admin-window-background-color) 92%, transparent);
+  color: var(--admin-chrome-meta-color);
+}
+
+.studioGridDragHandle:active {
+  cursor: grabbing;
+}
+
+.cellClickSurface {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  cursor: pointer;
+}
+
 .emptyState {
   text-align: center;
   padding: var(--spacing-2xl);
-  color: var(--text2-color);
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
   font-style: italic;
 }
 
 @media (max-width: 768px) {
   .grid {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
   }
 }

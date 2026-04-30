@@ -2,16 +2,13 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useTheme } from '@/components/providers/ThemeProvider';
 import styles from './AdminNavTabs.module.css';
 
-const tabs = [
-  { name: 'Cards', href: '/admin/card-admin' },
-  { name: 'Media', href: '/admin/media-admin' },
-  { name: 'Triage', href: '/admin/media-triage' },
+/** Primary admin IA: Studio plus remaining dedicated admin pages. */
+const primaryTabs = [
   { name: 'Studio', href: '/admin/studio' },
-  { name: 'Collections', href: '/admin/collections' },
-  { name: 'Tags', href: '/admin/tag-admin' },
   { name: 'Questions', href: '/admin/question-admin' },
   { name: 'Theme', href: '/admin/theme-admin' },
   { name: 'Users', href: '/admin/journal-users' },
@@ -19,22 +16,32 @@ const tabs = [
 
 export default function AdminNavTabs() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { isThemeAdminOpen, openThemeAdmin } = useTheme();
 
   return (
-    <nav className={styles.nav}>
-      {tabs.map(link => {
-        const isActive = pathname.startsWith(link.href);
-        return (
-          <Link
-            key={link.name}
-            href={link.href}
-            className={`${styles.tab} ${isActive ? styles.active : ''}`}
-          >
-            {link.name}
-          </Link>
-        );
-      })}
+    <nav className={styles.nav} aria-label="Admin sections">
+      <div className={styles.navPrimary}>
+        {primaryTabs.map((link) => {
+          const isActive = link.href === '/admin/theme-admin'
+            ? isThemeAdminOpen || pathname.startsWith(link.href)
+            : pathname.startsWith(link.href);
+          return (
+            <Link
+              key={link.name}
+              href={link.href}
+              className={`${styles.tab} ${isActive ? styles.active : ''}`}
+              onClick={link.href === '/admin/theme-admin' ? (event) => {
+                event.preventDefault();
+                openThemeAdmin();
+                router.replace(pathname || '/admin/studio');
+              } : undefined}
+            >
+              {link.name}
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
-} 
-
+}

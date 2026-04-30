@@ -4,10 +4,10 @@
   display: flex; /* Use flexbox for robust alignment */
   flex-direction: column; /* Stack image and caption vertically */
   margin: var(--spacing-md) 0;
-  border: var(--border-width-thin) solid transparent; /* Border for spacing, transparent by default */
+  border: var(--border-width-thin) solid var(--reader-media-frame-border-color);
   border-radius: var(--border-radius-md);
   padding: var(--spacing-xs);
-  background-color: var(--layout-background2-color);
+  background-color: var(--reader-media-frame-background-color);
   box-sizing: border-box; /* Ensures padding and border are included in the width */
 }
 
@@ -84,16 +84,18 @@
 }
 
 .caption {
-  color: var(--text2-color);
-  font-size: var(--font-size-sm);
+  color: var(--reader-caption-color);
+  font-family: var(--reader-caption-font-family);
+  font-size: var(--reader-caption-font-size);
+  font-weight: var(--reader-caption-font-weight);
   text-align: center;
   padding: var(--spacing-xs);
   margin-top: var(--spacing-xs);
-  line-height: var(--line-height-normal); /* Normal line-height for caption text */
+  line-height: var(--reader-caption-line-height);
 }
 
 .caption:focus {
-  outline: var(--border-width-thin) solid var(--color3);
+  outline: var(--border-width-thin) solid var(--reader-focus-ring-color);
 }
 
 /* --- UI Elements --- */
@@ -103,8 +105,9 @@
   right: var(--spacing-sm);
   width: var(--spacing-xl);
   height: var(--spacing-xl);
-  background-color: var(--color1-300);
-  color: var(--color2);
+  background-color: var(--reader-media-control-background-color);
+  color: var(--reader-media-control-text-color);
+  border: var(--border-width-thin) solid var(--reader-media-control-border-color);
   border-radius: var(--border-radius-md);
   cursor: grab;
   display: flex;

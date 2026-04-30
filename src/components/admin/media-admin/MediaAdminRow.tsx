@@ -4,14 +4,23 @@ import React, { useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import JournalImage from '@/components/common/JournalImage';
 import EditModal from '@/components/admin/card-admin/EditModal';
-import { DirectDimensionChipCell } from '@/components/admin/common/DirectDimensionChips';
 import { Media } from '@/lib/types/photo';
 import { useMedia } from '@/components/providers/MediaProvider';
 import { useTag } from '@/components/providers/TagProvider';
+import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
 import { parseObjectPositionToPercents } from '@/lib/utils/parseObjectPositionPercent';
-import { getCoreTagsByDimension } from '@/lib/utils/tagDisplay';
+import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import { isMediaAssigned } from '@/lib/utils/mediaAssignmentSeek';
+import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
 import styles from './MediaAdminRow.module.css';
+
+export type MediaAdminRowStudioDragBind = {
+  attributes: DraggableAttributes;
+  listeners: DraggableSyntheticListeners;
+  setNodeRef: (el: HTMLElement | null) => void;
+  setActivatorNodeRef: (el: HTMLElement | null) => void;
+  style: React.CSSProperties;
+};
 
 interface ColumnConfig {
   key: string;
@@ -25,27 +34,28 @@ interface ColumnConfig {
 interface MediaAdminRowProps {
   media: Media;
   columns: ColumnConfig[];
+  /** Table density: compact Studio uses tighter cells + badge for column budget. */
+  listVariant?: 'full' | 'compact';
   isSelected: boolean;
-  onToggleSelection: () => void;
+  onSelectionCheckboxClick: (e: React.MouseEvent | React.KeyboardEvent) => void;
+  /** When set (Studio + `DndContext`), row is draggable as `source:{mediaId}` for cover/gallery drops. */
+  studioDragBind?: MediaAdminRowStudioDragBind;
 }
 
-export default function MediaAdminRow({ 
-  media, 
-  columns, 
-  isSelected, 
-  onToggleSelection 
+/** Row props without internal Studio drag binding (used by `MediaAdminRowStudioSource`). */
+export type MediaAdminRowBaseProps = Omit<MediaAdminRowProps, 'studioDragBind'>;
+
+export default function MediaAdminRow({
+  media,
+  columns,
+  listVariant = 'full',
+  isSelected,
+  onSelectionCheckboxClick,
+  studioDragBind,
 }: MediaAdminRowProps) {
   const focalInActions = !columns.some((c) => c.key === 'objectPosition');
   const { deleteMedia, updateMedia, fetchMedia, currentPage } = useMedia();
-  const { tags } = useTag();
-  const tagNameMap = React.useMemo(
-    () => new Map(tags.filter((t) => t.docId).map((t) => [t.docId as string, t.name])),
-    [tags]
-  );
-  const core = React.useMemo(
-    () => getCoreTagsByDimension(media),
-    [media.docId, media.tags, media.who, media.what, media.when, media.where]
-  );
+  const { tags: allTags } = useTag();
   const [isEditingCaption, setIsEditingCaption] = useState(false);
   const [captionValue, setCaptionValue] = useState(media.caption || '');
   const [focalModalOpen, setFocalModalOpen] = useState(false);
@@ -125,14 +135,13 @@ export default function MediaAdminRow({
 
       case 'thumbnail':
         return (
-          <div className={styles.thumbnail}>
-            <JournalImage 
-              src={media.storageUrl} 
+          <div className={styles.thumbnailCellInner}>
+            <JournalImage
+              src={getDisplayUrl(media)}
               alt={media.filename}
-              width={96}
-              height={96}
-              className={styles.thumbnailImage}
-              sizes="96px"
+              fill
+              className={styles.thumbnailImageFill}
+              sizes="(max-width: 768px) 96px, 128px"
               style={{
                 objectFit: 'cover',
                 objectPosition: media.objectPosition || '50% 50%',
@@ -228,43 +237,14 @@ export default function MediaAdminRow({
           </span>
         );
 
-      case 'who':
+      case 'tags':
         return (
-          <DirectDimensionChipCell
-            ids={core.who}
-            tagNameMap={tagNameMap}
-            dimension="who"
-            variant="table"
-          />
-        );
-
-      case 'what':
-        return (
-          <DirectDimensionChipCell
-            ids={core.what}
-            tagNameMap={tagNameMap}
-            dimension="what"
-            variant="table"
-          />
-        );
-
-      case 'when':
-        return (
-          <DirectDimensionChipCell
-            ids={core.when}
-            tagNameMap={tagNameMap}
-            dimension="when"
-            variant="table"
-          />
-        );
-
-      case 'where':
-        return (
-          <DirectDimensionChipCell
-            ids={core.where}
-            tagNameMap={tagNameMap}
-            dimension="where"
-            variant="table"
+          <CardDimensionalTagCommandBar
+            card={{ tags: media.tags ?? [] }}
+            allTags={allTags ?? []}
+            variant="compact"
+            hideDimensionRowLabels
+            onUpdateTags={(next) => updateMedia(media.docId, { tags: next })}
           />
         );
 
@@ -283,7 +263,7 @@ export default function MediaAdminRow({
                 type="button"
                 onClick={() => setFocalModalOpen(true)}
                 className={styles.actionButton}
-                title="Default focal (crop)"
+                title="Set default focal point (crop)"
                 disabled={replacing}
               >
                 Focal
@@ -297,20 +277,22 @@ export default function MediaAdminRow({
               onChange={handleReplaceFileChange}
             />
             <button
+              type="button"
               onClick={handleReplaceClick}
               className={styles.actionButton}
               title="Replace image file"
               disabled={replacing}
             >
-              {replacing ? '...' : '↺'}
+              {replacing ? '…' : 'Replace'}
             </button>
-            <button 
+            <button
+              type="button"
               onClick={handleDelete}
               className={`${styles.actionButton} ${styles.deleteButton}`}
               title="Delete"
               disabled={replacing}
             >
-              🗑️
+              Delete
             </button>
           </div>
         );
@@ -330,18 +312,53 @@ export default function MediaAdminRow({
 
   return (
     <>
-      <tr className={`${styles.row} ${isSelected ? styles.selected : ''}`}>
-        <td className={styles.checkboxCell}>
+      <tr
+        ref={studioDragBind?.setNodeRef}
+        style={studioDragBind?.style}
+        className={`${styles.row} ${isSelected ? styles.selected : ''} ${
+          listVariant === 'compact' ? styles.rowCompact : ''
+        }`}
+      >
+        <td className={`${styles.checkboxCell} ${studioDragBind ? styles.checkboxCellWithStudioHandle : ''}`}>
+          {studioDragBind ? (
+            <button
+              type="button"
+              ref={studioDragBind.setActivatorNodeRef}
+              className={styles.studioSourceDragHandle}
+              aria-label="Drag to selected card cover or gallery. Space to pick up, arrows to move, Space to drop."
+              title="Drag to Cover or Gallery (Studio Card edit)"
+              data-studio-dnd-return-focus={media.docId ? `source:${media.docId}` : undefined}
+              {...studioDragBind.attributes}
+              {...studioDragBind.listeners}
+            >
+              ⋮⋮
+            </button>
+          ) : null}
           <input
             type="checkbox"
+            readOnly
             checked={isSelected}
-            onChange={onToggleSelection}
+            onClick={(e) => onSelectionCheckboxClick(e)}
+            onKeyDown={(e) => {
+              if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                onSelectionCheckboxClick(e);
+              }
+            }}
           />
         </td>
         {columns.map((column) => (
-          <td 
+          <td
             key={column.key}
-            className={styles.cell}
+            className={
+              column.key === 'thumbnail'
+                ? `${styles.cell} ${styles.thumbnailCell}`
+                : column.key === 'tags'
+                  ? `${styles.cell} ${styles.tagCommandCell}`
+                  : column.key === 'actions'
+                    ? `${styles.cell} ${styles.actionsCell}`
+                    : styles.cell
+            }
             style={{ width: column.width }}
           >
             {renderCell(column)}

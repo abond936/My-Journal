@@ -7,6 +7,8 @@ import {
   findDanglingCardMediaReferences,
   findDerivedFieldViolations,
 } from '@/lib/integrity/invariantChecks';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 function makeTagLookup(tags: IntegrityTag[]): Map<string, IntegrityTag> {
   return new Map(tags.map((t) => [t.docId, t]));
@@ -104,5 +106,14 @@ describe('Integrity gate invariants', () => {
         actual: [],
       },
     ]);
+  });
+
+  it('keeps local import implementation embedded-only (no sidecar reads)', async () => {
+    const sourcePath = path.join(process.cwd(), 'src/lib/services/images/imageImportService.ts');
+    const source = await fs.readFile(sourcePath, 'utf8');
+
+    expect(source).toContain('readEmbeddedCaptionAndKeywords');
+    expect(source).not.toContain('readSidecarMetadata');
+    expect(source).not.toContain("'.json'");
   });
 });

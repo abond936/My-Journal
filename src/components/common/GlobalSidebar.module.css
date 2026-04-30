@@ -1,14 +1,23 @@
 .sidebar {
-    width: var(--sidebar-width);
-    background-color: var(--layout-background1-color);
+    width: 100%;
+    box-sizing: border-box;
+    background-color: var(--reader-sidebar-background-color);
     transition: margin-left var(--transition-short) ease-in-out;
     padding: var(--spacing-lg);
     padding-top: calc(var(--header-height) - var(--spacing-2xl));
     padding-bottom: var(--spacing-md);
     overflow-y: auto;
+    overscroll-behavior: contain;
     display: flex;
     flex-direction: column;
     height: 100%;
+  }
+
+  @media (max-width: 768px) {
+    .sidebar {
+      padding: var(--spacing-md);
+      padding-top: calc(var(--header-height) - var(--spacing-xl));
+    }
   }
   
   .sidebar.closed {
@@ -19,83 +28,106 @@
     margin-left: 0;
   }
   
-  .title {
-    margin-top: 0;
-    margin-bottom: var(--spacing-md);
-    font-size: var(--font-size-xl);
-    font-weight: var(--font-weight-semibold);
-    color: var(--text1-color);
-  }
+.title {
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
+  font-family: var(--reader-chrome-text-font-family);
+  font-size: var(--reader-chrome-text-font-size);
+  font-weight: var(--reader-chrome-text-font-weight);
+  line-height: var(--reader-chrome-text-line-height);
+  color: var(--reader-chrome-text-color);
+}
 
   .modeTabs {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--spacing-xs);
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-xs);
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    padding-bottom: var(--spacing-xs);
+    background-color: var(--reader-sidebar-background-color);
+  }
+
+  .modeActions {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: var(--spacing-sm);
   }
 
   .modeTab {
     padding: var(--spacing-xs) var(--spacing-sm);
-    font-size: var(--font-size-sm);
-    font-family: var(--body-font-family);
-    background: transparent;
-    border: var(--border-width-thin) solid var(--border1-color);
+    font-family: var(--reader-support-control-font-family);
+    font-size: var(--reader-support-control-font-size);
+    font-weight: var(--reader-support-control-font-weight);
+    line-height: var(--reader-support-control-line-height);
+    background: var(--reader-support-control-background-color);
+    border: var(--border-width-thin) solid var(--reader-support-control-border-color);
     border-radius: var(--border-radius-md);
-    color: var(--text2-color);
+    color: var(--reader-support-control-text-color);
     cursor: pointer;
   }
 
   .modeTabActive {
-    background-color: var(--button-solid-background-color);
-    color: var(--button-solid-text-color);
-    border-color: var(--button-solid-border-color);
+    background-color: var(--reader-chrome-active-control-background-color);
+    color: var(--reader-chrome-active-control-text-color);
+    border-color: var(--reader-chrome-active-control-border-color);
+    font-weight: var(--reader-support-control-font-weight);
   }
 
   .sidebarSection {
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
   }
 
-  .sectionHeading {
-    margin: 0 0 var(--spacing-xs) 0;
-    font-size: var(--font-size-base);
-    font-weight: var(--font-weight-semibold);
-    color: var(--text1-color);
-    line-height: 1.3;
-  }
+.sectionHeading {
+  margin: 0 0 var(--spacing-xs) 0;
+  font-family: var(--reader-chrome-text-font-family);
+  font-size: var(--reader-chrome-text-font-size);
+  font-weight: var(--reader-chrome-text-font-weight);
+  line-height: var(--reader-chrome-text-line-height);
+  color: var(--reader-chrome-text-color);
+}
 
   .dimensionsBlock {
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
   }
 
-  .dimensionsLabel {
-    display: block;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-    color: var(--text2-color);
-    margin-bottom: var(--spacing-xs);
-  }
+.dimensionsLabel {
+  display: block;
+  font-family: var(--reader-chrome-text-font-family);
+  font-size: var(--reader-chrome-text-font-size);
+  font-weight: var(--reader-chrome-text-font-weight);
+  line-height: var(--reader-chrome-text-line-height);
+  color: var(--reader-chrome-text-color);
+  margin-bottom: var(--spacing-xs);
+}
 
   .searchBlock {
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
   }
 
-  .searchTagsLabel {
-    display: block;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-    color: var(--text2-color);
-    margin-bottom: var(--spacing-xs);
-  }
+.searchTagsLabel {
+  display: block;
+  font-family: var(--reader-chrome-text-font-family);
+  font-size: var(--reader-chrome-text-font-size);
+  font-weight: var(--reader-chrome-text-font-weight);
+  line-height: var(--reader-chrome-text-line-height);
+  color: var(--reader-chrome-text-color);
+  margin-bottom: var(--spacing-xs);
+}
 
   .compactControl {
     width: 100%;
     padding: var(--spacing-sm);
-    font-size: var(--font-size-sm);
-    font-family: var(--body-font-family);
-    border: var(--border-width-thin) solid var(--border1-color);
+    font-family: var(--reader-support-control-font-family);
+    font-size: var(--reader-support-control-font-size);
+    font-weight: var(--reader-support-control-font-weight);
+    line-height: var(--reader-support-control-line-height);
+    border: var(--border-width-thin) solid var(--reader-support-control-border-color);
     border-radius: var(--border-radius-md);
-    background-color: var(--layout-background1-color);
-    color: var(--text1-color);
+    background-color: var(--reader-support-control-background-color);
+    color: var(--reader-support-control-text-color);
     box-sizing: border-box;
   }
 
@@ -105,9 +137,11 @@
 
   .sortHint {
     margin: var(--spacing-xs) 0 0 0;
-    font-size: var(--font-size-xs);
-    color: var(--text2-color);
-    line-height: 1.4;
+    font-family: var(--reader-support-hint-font-family);
+    font-size: var(--reader-support-hint-font-size);
+    font-weight: var(--reader-support-hint-font-weight);
+    line-height: var(--reader-support-hint-line-height);
+    color: var(--reader-support-hint-color);
   }
 
   .collectionBack {
@@ -116,80 +150,129 @@
 
   .collectionBackButton {
     padding: var(--spacing-sm);
-    font-size: var(--font-size-sm);
-    font-family: var(--body-font-family);
-    background: transparent;
-    border: var(--border-width-thin) solid var(--border1-color);
+    font-family: var(--reader-support-control-font-family);
+    font-size: var(--reader-support-control-font-size);
+    font-weight: var(--reader-support-control-font-weight);
+    line-height: var(--reader-support-control-line-height);
+    background: var(--reader-support-control-background-color);
+    border: var(--border-width-thin) solid var(--reader-support-control-border-color);
     border-radius: var(--border-radius-md);
-    color: var(--text1-color);
+    color: var(--reader-support-control-text-color);
     cursor: pointer;
     width: 100%;
     text-align: left;
   }
 
   .collectionBackButton:hover {
-    background-color: var(--layout-background2-color);
+    background-color: var(--reader-support-control-hover-background-color);
   }
 
   .collectionGroups {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md);
+    gap: 2px;
   }
 
-  .collectionGroup {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xs);
-  }
-
-  .collectionGroupLabel {
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-semibold);
-    color: var(--text2-color);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .collectionList {
+  .collectionTreeList {
     list-style: none;
     padding: 0;
     margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
   }
 
-  .collectionList li {
-    margin-bottom: var(--spacing-xs);
+  .collectionTreeNode {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .collectionRow {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .collectionExpandButton {
+    all: unset;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 1.2rem;
+    min-width: 1.2rem;
+    min-height: 1.35rem;
+    color: var(--reader-chrome-text-color);
+    cursor: pointer;
+    opacity: 0.75;
+    box-sizing: border-box;
+  }
+
+  .collectionExpandButton:hover:not(:disabled) {
+    opacity: 1;
+  }
+
+  .collectionExpandButton:disabled {
+    cursor: default;
+    opacity: 0.28;
+  }
+
+  .collectionExpandIcon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    line-height: 1;
   }
 
   .collectionItem {
     display: block;
+    flex: 1 1 auto;
     width: 100%;
-    padding: var(--spacing-sm);
-    font-size: var(--font-size-sm);
-    font-family: var(--body-font-family);
+    padding: 1px var(--spacing-xs);
+    font-family: var(--reader-support-control-font-family);
+    font-size: var(--font-size-xs);
+    font-weight: var(--reader-support-control-font-weight);
+    line-height: var(--reader-support-control-line-height);
     text-align: left;
     background: transparent;
-    border: var(--border-width-thin) solid var(--border1-color);
-    border-radius: var(--border-radius-md);
-    color: var(--text1-color);
+    border: none;
+    border-radius: var(--border-radius-sm);
+    color: var(--reader-support-control-text-color);
     cursor: pointer;
     transition: background-color var(--transition-short);
   }
 
+  .collectionItemActive {
+    background-color: var(--reader-chrome-active-control-background-color);
+    color: var(--reader-chrome-active-control-text-color);
+  }
+
   .collectionItem:hover {
-    background-color: var(--layout-background2-color);
+    background-color: var(--reader-support-control-hover-background-color);
+  }
+
+  .collectionItemLabel {
+    display: inline-block;
+    min-width: 0;
   }
 
   .collectionCount {
     margin-left: var(--spacing-xs);
-    font-size: var(--font-size-xs);
-    color: var(--text2-color);
+    font-family: var(--reader-chrome-meta-font-family);
+    font-size: var(--reader-chrome-meta-font-size);
+    font-weight: var(--reader-chrome-meta-font-weight);
+    line-height: var(--reader-chrome-meta-line-height);
+    color: var(--reader-chrome-muted-color);
   }
 
   .collectionEmpty {
     padding: var(--spacing-md);
-    font-size: var(--font-size-sm);
-    color: var(--text2-color);
+    font-family: var(--reader-support-hint-font-family);
+    font-size: var(--reader-support-hint-font-size);
+    font-weight: var(--reader-support-hint-font-weight);
+    line-height: var(--reader-support-hint-line-height);
+    color: var(--reader-support-hint-color);
   }
 
   .activeFilters {
@@ -199,9 +282,11 @@
 
   .activeFiltersLabel {
     display: block;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    color: var(--text1-color);
+    font-family: var(--reader-chrome-text-font-family);
+    font-size: var(--reader-chrome-text-font-size);
+    font-weight: var(--reader-chrome-text-font-weight);
+    line-height: var(--reader-chrome-text-line-height);
+    color: var(--reader-chrome-text-color);
     margin-bottom: var(--spacing-xs);
   }
 
@@ -209,6 +294,25 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-xs);
+    align-items: center;
+  }
+
+  .activeFiltersResetTypes {
+    padding: 2px var(--spacing-sm);
+    font-family: var(--reader-chrome-meta-font-family);
+    font-size: var(--reader-chrome-meta-font-size);
+    font-weight: var(--reader-chrome-meta-font-weight);
+    line-height: var(--reader-chrome-meta-line-height);
+    border: var(--border-width-thin) dashed var(--reader-support-control-border-color);
+    border-radius: var(--border-radius-md);
+    background: transparent;
+    color: var(--reader-chrome-muted-color);
+    cursor: pointer;
+  }
+
+  .activeFiltersResetTypes:hover {
+    color: var(--reader-support-control-text-color);
+    border-color: var(--reader-support-control-text-color);
   }
 
   .filterChip {
@@ -216,12 +320,15 @@
     align-items: center;
     gap: var(--spacing-xs);
     padding: 2px var(--spacing-sm);
-    font-size: var(--font-size-xs);
-    background-color: var(--button-solid-background-color);
-    color: var(--button-solid-text-color);
-    border: var(--border-width-thin) solid var(--button-solid-border-color);
+    font-family: var(--reader-support-control-font-family);
+    font-size: var(--reader-support-control-font-size);
+    background-color: var(--reader-support-chip-background-color);
+    color: var(--reader-support-chip-text-color);
+    border: var(--border-width-thin) solid var(--reader-support-chip-border-color);
     border-radius: var(--border-radius-md);
     max-width: 100%;
+    font-weight: var(--reader-support-control-font-weight);
+    line-height: var(--reader-support-control-line-height);
   }
 
   .filterChipRemove {
@@ -242,102 +349,232 @@
   }
 
   .filterChipRemove:hover {
-    background-color: color-mix(in srgb, var(--text1-color) 15%, transparent);
+    background-color: var(--reader-support-chip-hover-background-color);
   }
 
   .dimensionTabs {
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-xs);
+    flex-wrap: nowrap;
+    gap: 2px;
     margin-bottom: 0;
   }
 
   .dimensionTab {
-    padding: var(--spacing-xs) var(--spacing-sm);
-    font-size: var(--font-size-xs);
-    font-family: var(--body-font-family);
-    background: transparent;
-    border: var(--border-width-thin) solid var(--border1-color);
+    flex: 1 1 0;
+    padding: 2px;
+    font-family: var(--reader-support-control-font-family);
+    font-size: var(--reader-support-control-font-size);
+    font-weight: var(--reader-support-control-font-weight);
+    line-height: var(--reader-support-control-line-height);
+    background: var(--reader-support-control-background-color);
+    border: var(--border-width-thin) solid var(--reader-support-control-border-color);
     border-radius: var(--border-radius-md);
-    color: var(--text2-color);
+    color: var(--reader-support-control-text-color);
     cursor: pointer;
     transition: background-color var(--transition-short), color var(--transition-short), border-color var(--transition-short);
   }
 
   .dimensionTab:hover {
-    background-color: var(--layout-background2-color);
-    color: var(--text1-color);
+    background-color: var(--reader-support-control-hover-background-color);
+    color: var(--reader-support-control-text-color);
   }
 
   .dimensionTabActive {
-    background-color: var(--button-solid-background-color);
-    color: var(--button-solid-text-color);
-    border-color: var(--button-solid-border-color);
+    background-color: var(--reader-chrome-active-control-background-color);
+    color: var(--reader-chrome-active-control-text-color);
+    border-color: var(--reader-chrome-active-control-border-color);
+    font-weight: var(--reader-support-control-font-weight);
+  }
+
+  .dimensionTabIcon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.9rem;
+    min-height: 1.9rem;
+    padding: 2px;
+  }
+
+  .dimensionTabIcon svg {
+    width: 1.05rem;
+    height: 1.05rem;
+    flex-shrink: 0;
+  }
+
+  .srOnly {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .cardTypeChips {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 2px;
+  }
+
+  .cardTypeChip {
+    flex: 1 1 0;
+    min-width: 1.9rem;
+    min-height: 1.9rem;
+    padding: 2px;
+    font-family: var(--reader-support-control-font-family);
+    font-size: var(--reader-support-control-font-size);
+    font-weight: var(--reader-support-control-font-weight);
+    line-height: var(--reader-support-control-line-height);
+    border: var(--border-width-thin) solid var(--reader-support-control-border-color);
+    border-radius: var(--border-radius-md);
+    background: var(--reader-support-control-background-color);
+    color: var(--reader-support-control-text-color);
+    cursor: pointer;
+    transition: background-color var(--transition-short), color var(--transition-short),
+      border-color var(--transition-short);
+  }
+
+  .cardTypeChip:hover {
+    background-color: var(--reader-support-control-hover-background-color);
+    color: var(--reader-support-control-text-color);
+  }
+
+  .cardTypeChipActive {
+    background-color: var(--reader-chrome-active-control-background-color);
+    color: var(--reader-chrome-active-control-text-color);
+    border-color: var(--reader-chrome-active-control-border-color);
+    font-weight: var(--reader-support-control-font-weight);
+  }
+
+  .cardTypeChipIcon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+  }
+
+  .cardTypeChipIcon svg {
+    width: 1.05rem;
+    height: 1.05rem;
+    flex-shrink: 0;
   }
 
   .typeSelectPlaceholder {
     width: 100%;
     padding: var(--spacing-sm);
-    font-size: var(--font-size-base);
-    font-family: var(--body-font-family);
-    border: var(--border-width-thin) solid var(--border1-color);
+    font-family: var(--reader-support-control-font-family);
+    font-size: var(--reader-support-control-font-size);
+    font-weight: var(--reader-support-control-font-weight);
+    line-height: var(--reader-support-control-line-height);
+    border: var(--border-width-thin) solid var(--reader-support-control-border-color);
     border-radius: var(--border-radius-md);
-    background-color: var(--layout-background1-color);
-    color: var(--text1-color);
+    background-color: var(--reader-support-control-background-color);
+    color: var(--reader-support-control-text-color);
   }
 
   .loadingPlaceholder {
-    font-size: var(--font-size-sm);
-    color: var(--text2-color);
+    font-family: var(--reader-support-hint-font-family);
+    font-size: var(--reader-support-hint-font-size);
+    font-weight: var(--reader-support-hint-font-weight);
+    line-height: var(--reader-support-hint-line-height);
+    color: var(--reader-support-hint-color);
     padding: var(--spacing-md);
   }
 
   .navigation {
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
   }
-  
-  .filterControls {
-    flex-shrink: 0; /* Never shrink - always keep buttons visible */
-    margin-top: auto;
-    padding: var(--spacing-md) 0 var(--spacing-md) 0;
-    background-color: var(--layout-background1-color);
-    display: flex;
-    gap: var(--spacing-sm);
-    border-top: var(--border-width-thin) solid var(--border1-color);
-    position: relative;
-    z-index: 100;
+
+  /* Admin + /view only: switch between feed filters and full tag library editing */
+  .viewTagSidebarTabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-sm);
   }
-  
-  .applyButton, .clearButton {
-    flex: 1;
-    padding: var(--spacing-sm);
-    border: var(--border-width-thin) solid var(--border1-color);
+
+  .viewTagSidebarTab {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-family: var(--reader-support-control-font-family);
+    font-size: var(--reader-support-control-font-size);
+    font-weight: var(--reader-support-control-font-weight);
+    line-height: var(--reader-support-control-line-height);
+    background: var(--reader-support-control-background-color);
+    border: var(--border-width-thin) solid var(--reader-support-control-border-color);
     border-radius: var(--border-radius-md);
-    background-color: var(--layout-background1-color);
-    color: var(--text1-color);
+    color: var(--reader-support-control-text-color);
     cursor: pointer;
-    font-size: var(--font-size-base);
-    min-height: 40px;
   }
-  
-  .applyButton {
-    background-color: var(--button-solid-background-color);
-    color: var(--button-solid-text-color);
-    border-color: var(--button-solid-border-color);
+
+  .viewTagSidebarTabActive {
+    background-color: var(--reader-chrome-active-control-background-color);
+    color: var(--reader-chrome-active-control-text-color);
+    border-color: var(--reader-chrome-active-control-border-color);
+    font-weight: var(--reader-support-control-font-weight);
   }
-  
-  .clearButton {
-    background-color: transparent;
+
+  .filterControlsInline {
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  .clearButtonCompact {
+    padding: 3px var(--spacing-sm);
+    border: var(--border-width-thin) solid var(--reader-chrome-active-control-border-color);
+    border-radius: var(--border-radius-md);
+    background-color: var(--reader-chrome-active-control-background-color);
+    color: var(--reader-chrome-active-control-text-color);
+    cursor: pointer;
+    font-family: var(--reader-support-control-font-family);
+    font-size: var(--reader-support-control-font-size);
+    font-weight: var(--reader-support-control-font-weight);
+    line-height: var(--reader-support-control-line-height);
+    min-height: 28px;
+  }
+
+  .clearButtonCompact:hover {
+    background-color: var(--reader-support-control-hover-background-color);
+    color: var(--reader-support-control-hover-text-color);
+    border-color: var(--reader-support-control-hover-border-color);
+  }
+
+  .inlineFieldRow {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+
+  .inlineFieldLabel {
+    margin: 0;
+    white-space: nowrap;
+    font-family: var(--reader-chrome-text-font-family);
+    font-size: var(--reader-chrome-text-font-size);
+    font-weight: var(--reader-chrome-text-font-weight);
+    line-height: var(--reader-chrome-text-line-height);
+    color: var(--reader-chrome-text-color);
+  }
+
+  .compactControlInline {
+    min-width: 0;
+    padding-top: var(--spacing-xs);
+    padding-bottom: var(--spacing-xs);
   }
 
 .feedToggleRow {
   display: flex;
   align-items: flex-start;
   gap: var(--spacing-sm);
-  font-size: var(--font-size-sm);
-  color: var(--text1-color);
+  font-family: var(--reader-chrome-text-font-family);
+  font-size: var(--reader-chrome-text-font-size);
+  font-weight: var(--reader-chrome-text-font-weight);
+  line-height: var(--reader-chrome-text-line-height);
+  color: var(--reader-chrome-text-color);
   cursor: pointer;
-  line-height: 1.35;
 }
 
 .feedToggleRow input {
@@ -347,7 +584,9 @@
 
 .feedToggleHint {
   margin: var(--spacing-xs) 0 0 0;
-  font-size: var(--font-size-sm);
-  color: var(--text2-color);
-  line-height: 1.4;
+  font-family: var(--reader-support-hint-font-family);
+  font-size: var(--reader-support-hint-font-size);
+  font-weight: var(--reader-support-hint-font-weight);
+  line-height: var(--reader-support-hint-line-height);
+  color: var(--reader-support-hint-color);
 }

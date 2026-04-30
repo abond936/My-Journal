@@ -5,8 +5,8 @@
   width: var(--spacing-2xl);
   height: var(--spacing-2xl);
   border-radius: 50%;
-  background-color: var(--layout-background2-color);
-  color: var(--text1-color);
+  background-color: var(--reader-chrome-control-background-color);
+  color: var(--reader-chrome-text-color);
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
@@ -17,13 +17,13 @@
 }
 
 .themeToggle:hover {
-  background-color: var(--layout-background1-color);
+  background-color: var(--reader-chrome-control-hover-background-color);
   transform: scale(1.05);
 }
 
 .themeToggle:focus {
   outline: none;
-  box-shadow: 0 0 0 var(--border-width-medium) var(--color3);
+  box-shadow: 0 0 0 var(--border-width-medium) var(--reader-focus-ring-color);
 }
 
 .themeToggle svg {

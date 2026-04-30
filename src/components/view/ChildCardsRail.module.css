@@ -3,7 +3,7 @@
 .section {
   margin-top: var(--spacing-xl);
   padding-top: var(--spacing-lg);
-  border-top: var(--border-width-thin) solid var(--border1-color);
+  border-top: var(--border-width-thin) solid var(--reader-discovery-border-color);
 }
 
 .header {
@@ -14,16 +14,22 @@
 }
 
 .title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
+  font-family: var(--reader-rail-section-title-font-family);
+  font-size: var(--reader-rail-section-title-font-size);
+  font-weight: var(--reader-rail-section-title-font-weight);
+  line-height: var(--reader-rail-section-title-line-height);
   margin: 0;
-  color: var(--text1-color);
+  color: var(--reader-rail-section-title-color);
 }
 
 .count {
-  font-size: var(--font-size-sm);
-  color: var(--text2-color);
-  background: var(--layout-background2-color);
+  font-family: var(--reader-discovery-meta-font-family);
+  font-size: var(--reader-discovery-meta-font-size);
+  font-weight: var(--reader-discovery-meta-font-weight);
+  line-height: var(--reader-discovery-meta-line-height);
+  color: var(--reader-discovery-meta-color);
+  background: var(--reader-discovery-card-background-color);
+  border: var(--border-width-thin) solid var(--reader-discovery-card-border-color);
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-full);
 }
@@ -38,8 +44,8 @@
   position: absolute;
   top: 42%;
   transform: translateY(-50%);
-  background: var(--color1-300);
-  color: white;
+  background: var(--reader-media-control-background-color);
+  color: var(--reader-media-control-text-color);
   border: none;
   width: var(--spacing-2xl);
   height: var(--spacing-2xl);
@@ -58,7 +64,7 @@
 }
 
 .navButton:hover {
-  background: var(--color1-200);
+  background: var(--reader-media-control-background-color-hover);
   transform: translateY(-50%) scale(1.05);
 }
 
@@ -76,7 +82,7 @@
 }
 
 .navButton:focus {
-  outline: 2px solid var(--color3);
+  outline: 2px solid var(--reader-focus-ring-color);
   outline-offset: 2px;
 }
 
@@ -104,17 +110,17 @@
   }
 
   .scroll::-webkit-scrollbar-track {
-    background: var(--layout-background2-color);
+    background: var(--reader-media-scrollbar-track-color);
     border-radius: 3px;
   }
 
   .scroll::-webkit-scrollbar-thumb {
-    background: var(--border1-color);
+    background: var(--reader-media-scrollbar-thumb-color);
     border-radius: 3px;
   }
 
   .scroll::-webkit-scrollbar-thumb:hover {
-    background: var(--text2-color);
+    background: var(--reader-media-scrollbar-thumb-hover-color);
   }
 }
 
@@ -132,25 +138,25 @@
   color: inherit;
   border-radius: var(--border-radius-lg);
   overflow: hidden;
-  background: var(--layout-background1-color);
-  border: var(--border-width-thin) solid var(--border1-color);
+  background: var(--reader-discovery-card-background-color);
+  border: var(--border-width-thin) solid var(--reader-discovery-card-border-color);
   transition: border-color var(--transition-short), box-shadow var(--transition-short);
 }
 
 .slideLink:hover {
-  border-color: var(--color3);
+  border-color: var(--reader-discovery-card-hover-border-color);
   box-shadow: var(--shadow-sm);
 }
 
 .slideLink:focus-visible {
-  outline: 2px solid var(--color3);
+  outline: 2px solid var(--reader-focus-ring-color);
   outline-offset: 2px;
 }
 
 .thumb {
   position: relative;
   width: 100%;
-  background: var(--layout-background2-color);
+  background: var(--reader-media-frame-background-color);
   aspect-ratio: 4 / 5;
   overflow: hidden;
 }
@@ -181,16 +187,17 @@
   align-items: center;
   justify-content: center;
   font-size: var(--font-size-sm);
-  color: var(--text2-color);
+  color: var(--reader-discovery-meta-color);
 }
 
 .slideTitle {
   margin: 0;
   padding: 0 var(--spacing-sm) var(--spacing-sm);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--text1-color);
-  line-height: 1.35;
+  font-family: var(--reader-rail-card-title-font-family);
+  font-size: var(--reader-rail-card-title-font-size);
+  font-weight: var(--reader-rail-card-title-font-weight);
+  color: var(--reader-rail-card-title-color);
+  line-height: var(--reader-rail-card-title-line-height);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -198,7 +205,7 @@
 }
 
 .scroll:focus {
-  outline: 2px solid var(--color3);
+  outline: 2px solid var(--reader-focus-ring-color);
   outline-offset: 2px;
 }
 
@@ -209,7 +216,7 @@
   }
 
   .title {
-    font-size: var(--font-size-xl);
+    font-size: var(--reader-rail-section-title-font-size);
   }
 
   .slide {

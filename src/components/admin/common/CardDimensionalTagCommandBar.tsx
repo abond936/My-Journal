@@ -20,16 +20,25 @@ function norm(s: string): string {
 }
 
 export interface CardDimensionalTagCommandBarProps {
-  card: Card;
+  /** Tag assignment only; full `Card` is accepted at call sites. */
+  card: Pick<Card, 'tags'>;
   allTags: Tag[];
   onUpdateTags: (nextTagIds: string[]) => void | Promise<void>;
   disabled?: boolean;
   className?: string;
-  variant?: 'default' | 'compact';
+  variant?: 'default' | 'compact' | 'searchOnly';
   /** e.g. full MacroTagSelector trigger, aligned to the right of the dimension chip row */
   trailingSlot?: React.ReactNode;
   /** Form-level tag validation message / outline (e.g. when full selector is hidden on card edit). */
   tagError?: string;
+  /** Search field placeholder (default matches Media toolbar “Edit tags…"). */
+  searchPlaceholder?: string;
+  /** When true, do not render per-dimension “Who/What/…” row labels (header-only layout, e.g. card admin table). */
+  hideDimensionRowLabels?: boolean;
+  /** Card admin table: larger chips, tighter toolbar; use with `variant="compact"`. */
+  tableEmbed?: boolean;
+  /** Narrow contexts (e.g. media grid tile): smaller typeahead suggestion rows. */
+  suggestionsDensity?: 'default' | 'dense';
 }
 
 export default function CardDimensionalTagCommandBar({
@@ -41,6 +50,10 @@ export default function CardDimensionalTagCommandBar({
   variant = 'default',
   trailingSlot,
   tagError,
+  searchPlaceholder = 'Edit tags…',
+  hideDimensionRowLabels = false,
+  tableEmbed = false,
+  suggestionsDensity = 'default',
 }: CardDimensionalTagCommandBarProps) {
   const [query, setQuery] = useState('');
   const [highlightIndex, setHighlightIndex] = useState(-1);
@@ -154,49 +167,54 @@ export default function CardDimensionalTagCommandBar({
       className={clsx(
         styles.wrap,
         variant === 'compact' && styles.wrapCompact,
+        variant === 'searchOnly' && styles.wrapSearchOnly,
+        tableEmbed && styles.wrapTable,
+        suggestionsDensity === 'dense' && styles.wrapDenseSuggestions,
         tagError && styles.wrapError,
         className
       )}
       onClick={(ev) => ev.stopPropagation()}
     >
-      <div className={styles.chipsToolbar}>
-        <div className={styles.dimensionRow}>
-          {DIMENSION_ORDER.map((dim) => (
-            <div key={dim} className={styles.dimCell}>
-              <div className={styles.dimLabel}>{DIMENSION_LABEL[dim]}</div>
-              <div className={styles.chipStrip}>
-                {core[dim].length === 0 ? (
-                  <span className={styles.chipEmpty}>—</span>
-                ) : (
-                  core[dim].map((id) => (
-                    <button
-                      key={id}
-                      type="button"
-                      className={styles.chip}
-                      disabled={disabled || saving}
-                      title={`Remove ${tagById.get(id)?.name ?? id}`}
-                      onClick={() => void removeTag(id)}
-                    >
-                      {tagById.get(id)?.name ?? id}
-                      <span className={styles.chipX} aria-hidden>
-                        ×
-                      </span>
-                    </button>
-                  ))
-                )}
+      {variant !== 'searchOnly' ? (
+        <div className={styles.chipsToolbar}>
+          <div className={styles.dimensionRow}>
+            {DIMENSION_ORDER.map((dim) => (
+              <div key={dim} className={styles.dimCell}>
+                {hideDimensionRowLabels ? null : <div className={styles.dimLabel}>{DIMENSION_LABEL[dim]}</div>}
+                <div className={styles.chipStrip}>
+                  {core[dim].length === 0 ? (
+                    <span className={styles.chipEmpty}>—</span>
+                  ) : (
+                    core[dim].map((id) => (
+                      <button
+                        key={id}
+                        type="button"
+                        className={styles.chip}
+                        disabled={disabled || saving}
+                        title={`Remove ${tagById.get(id)?.name ?? id}`}
+                        onClick={() => void removeTag(id)}
+                      >
+                        {tagById.get(id)?.name ?? id}
+                        <span className={styles.chipX} aria-hidden>
+                          ×
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+          {trailingSlot ? <div className={styles.trailing}>{trailingSlot}</div> : null}
         </div>
-        {trailingSlot ? <div className={styles.trailing}>{trailingSlot}</div> : null}
-      </div>
+      ) : null}
 
-      <div className={styles.searchRow}>
+      <div className={clsx(styles.searchRow, variant === 'searchOnly' && styles.searchRowFoot)}>
         <input
           ref={searchInputRef}
           type="text"
-          className={styles.searchInput}
-          placeholder="Search all tags by name or path…"
+          className={clsx(styles.searchInput, variant === 'searchOnly' && styles.searchInputFoot)}
+          placeholder={searchPlaceholder}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onSearchKeyDown}

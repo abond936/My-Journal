@@ -11,6 +11,19 @@ getAdminApp();
 
 type RouteParams = Promise<{ id: string }>;
 
+type ApiErrorPayload = {
+    ok: false;
+    code: string;
+    message: string;
+    severity: 'error' | 'warning';
+    retryable: boolean;
+    error?: string;
+};
+
+function errorResponse(payload: ApiErrorPayload, status: number) {
+    return NextResponse.json(payload, { status });
+}
+
 /**
  * @swagger
  * /api/tags/{id}:
@@ -39,10 +52,16 @@ type RouteParams = Promise<{ id: string }>;
 export async function GET(request: NextRequest, { params }: { params: RouteParams }) {
     const session = await getServerSession(authOptions);
     if (!session) {
-        return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
-            status: 401,
-            headers: { 'Content-Type': 'application/json' },
-        });
+        return errorResponse(
+            {
+                ok: false,
+                code: 'AUTH_UNAUTHORIZED',
+                message: 'Unauthorized.',
+                severity: 'error',
+                retryable: false,
+            },
+            401
+        );
     }
 
     try {
@@ -50,7 +69,16 @@ export async function GET(request: NextRequest, { params }: { params: RouteParam
         const tag = await getTagById(id);
 
         if (!tag) {
-            return new NextResponse('Tag not found', { status: 404 });
+            return errorResponse(
+                {
+                    ok: false,
+                    code: 'TAG_NOT_FOUND',
+                    message: 'Tag not found.',
+                    severity: 'error',
+                    retryable: false,
+                },
+                404
+            );
         }
         
         // Convert timestamps to dates for API response
@@ -63,7 +91,18 @@ export async function GET(request: NextRequest, { params }: { params: RouteParam
         return NextResponse.json(tagWithDates);
     } catch (error) {
         console.error(`API Error fetching tag`, error);
-        return new NextResponse('Internal server error', { status: 500 });
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return errorResponse(
+            {
+                ok: false,
+                code: 'TAG_FETCH_FAILED',
+                message: 'Internal server error.',
+                severity: 'error',
+                retryable: true,
+                error: message,
+            },
+            500
+        );
     }
 }
 
@@ -103,10 +142,16 @@ export async function GET(request: NextRequest, { params }: { params: RouteParam
 export async function PUT(request: NextRequest, { params }: { params: RouteParams }) {
     const session = await getServerSession(authOptions);
     if (session?.user?.role !== 'admin') {
-        return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
-            status: 403,
-            headers: { 'Content-Type': 'application/json' },
-        });
+        return errorResponse(
+            {
+                ok: false,
+                code: 'AUTH_FORBIDDEN',
+                message: 'Forbidden.',
+                severity: 'error',
+                retryable: false,
+            },
+            403
+        );
     }
 
     try {
@@ -115,12 +160,30 @@ export async function PUT(request: NextRequest, { params }: { params: RouteParam
 
         // Validate required fields for full update
         if (!body.name) {
-            return new NextResponse('Tag name is required for full update', { status: 400 });
+            return errorResponse(
+                {
+                    ok: false,
+                    code: 'TAG_NAME_REQUIRED',
+                    message: 'Tag name is required for full update.',
+                    severity: 'error',
+                    retryable: false,
+                },
+                400
+            );
         }
 
         const existingTag = await getTagById(id);
         if (!existingTag) {
-            return new NextResponse('Tag not found', { status: 404 });
+            return errorResponse(
+                {
+                    ok: false,
+                    code: 'TAG_NOT_FOUND',
+                    message: 'Tag not found.',
+                    severity: 'error',
+                    retryable: false,
+                },
+                404
+            );
         }
 
         // For PUT, we update all fields except docId and createdAt
@@ -139,17 +202,43 @@ export async function PUT(request: NextRequest, { params }: { params: RouteParam
         
         // Handle specific error for tag not found
         if (error instanceof Error && error.message.includes('not found')) {
-            return new NextResponse('Tag not found', { status: 404 });
+            return errorResponse(
+                {
+                    ok: false,
+                    code: 'TAG_NOT_FOUND',
+                    message: 'Tag not found.',
+                    severity: 'error',
+                    retryable: false,
+                },
+                404
+            );
         }
 
         if (error instanceof Error && error.message.includes('Tag with this name already exists')) {
-            return new NextResponse(JSON.stringify({ error: 'Tag with this name already exists' }), {
-                status: 409,
-                headers: { 'Content-Type': 'application/json' },
-            });
+            return errorResponse(
+                {
+                    ok: false,
+                    code: 'TAG_NAME_CONFLICT',
+                    message: 'Tag with this name already exists.',
+                    severity: 'error',
+                    retryable: false,
+                },
+                409
+            );
         }
-        
-        return new NextResponse('Internal server error', { status: 500 });
+
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return errorResponse(
+            {
+                ok: false,
+                code: 'TAG_UPDATE_FAILED',
+                message: 'Internal server error.',
+                severity: 'error',
+                retryable: true,
+                error: message,
+            },
+            500
+        );
     }
 }
 
@@ -189,10 +278,16 @@ export async function PUT(request: NextRequest, { params }: { params: RouteParam
 export async function PATCH(request: NextRequest, { params }: { params: RouteParams }) {
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'admin') {
-        return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
-            status: 403,
-            headers: { 'Content-Type': 'application/json' },
-        });
+        return errorResponse(
+            {
+                ok: false,
+                code: 'AUTH_FORBIDDEN',
+                message: 'Forbidden.',
+                severity: 'error',
+                retryable: false,
+            },
+            403
+        );
     }
 
     try {
@@ -200,7 +295,16 @@ export async function PATCH(request: NextRequest, { params }: { params: RoutePar
         const body: Partial<Omit<Tag, 'docId' | 'createdAt'>> = await request.json();
 
         if (Object.keys(body).length === 0) {
-            return new NextResponse('Request body cannot be empty', { status: 400 });
+            return errorResponse(
+                {
+                    ok: false,
+                    code: 'TAG_PATCH_BODY_REQUIRED',
+                    message: 'Request body cannot be empty.',
+                    severity: 'error',
+                    retryable: false,
+                },
+                400
+            );
         }
 
         const updatedTag = await updateTag(id, body);
@@ -218,17 +322,43 @@ export async function PATCH(request: NextRequest, { params }: { params: RoutePar
         
         // Handle specific error for tag not found
         if (error instanceof Error && error.message.includes('not found')) {
-            return new NextResponse('Tag not found', { status: 404 });
+            return errorResponse(
+                {
+                    ok: false,
+                    code: 'TAG_NOT_FOUND',
+                    message: 'Tag not found.',
+                    severity: 'error',
+                    retryable: false,
+                },
+                404
+            );
         }
 
         if (error instanceof Error && error.message.includes('Tag with this name already exists')) {
-            return new NextResponse(JSON.stringify({ error: 'Tag with this name already exists' }), {
-                status: 409,
-                headers: { 'Content-Type': 'application/json' },
-            });
+            return errorResponse(
+                {
+                    ok: false,
+                    code: 'TAG_NAME_CONFLICT',
+                    message: 'Tag with this name already exists.',
+                    severity: 'error',
+                    retryable: false,
+                },
+                409
+            );
         }
-        
-        return new NextResponse('Internal server error', { status: 500 });
+
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return errorResponse(
+            {
+                ok: false,
+                code: 'TAG_UPDATE_FAILED',
+                message: 'Internal server error.',
+                severity: 'error',
+                retryable: true,
+                error: message,
+            },
+            500
+        );
     }
 }
 
@@ -256,10 +386,16 @@ export async function PATCH(request: NextRequest, { params }: { params: RoutePar
 export async function DELETE(request: NextRequest, { params }: { params: RouteParams }) {
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'admin') {
-        return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
-            status: 403,
-            headers: { 'Content-Type': 'application/json' },
-        });
+        return errorResponse(
+            {
+                ok: false,
+                code: 'AUTH_FORBIDDEN',
+                message: 'Forbidden.',
+                severity: 'error',
+                retryable: false,
+            },
+            403
+        );
     }
 
     try {
@@ -268,6 +404,17 @@ export async function DELETE(request: NextRequest, { params }: { params: RoutePa
         return new NextResponse(null, { status: 204 });
     } catch (error) {
         console.error(`API Error deleting tag`, error);
-        return new NextResponse('Internal server error', { status: 500 });
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return errorResponse(
+            {
+                ok: false,
+                code: 'TAG_DELETE_FAILED',
+                message: 'Internal server error.',
+                severity: 'error',
+                retryable: true,
+                error: message,
+            },
+            500
+        );
     }
 } 

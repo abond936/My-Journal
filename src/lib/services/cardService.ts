@@ -1,5 +1,5 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
-import { Card, cardSchema, GalleryMediaItem } from '@/lib/types/card';
+import { Card, cardSchema } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 import {
   updateTagCountsForCard,
@@ -9,24 +9,28 @@ import {
   getTagAncestors,
   organizeTagsByDimension,
 } from '@/lib/firebase/tagService';
-import { getFirestore, FieldPath, FieldValue, Transaction } from 'firebase-admin/firestore';
+import { getFirestore, FieldPath, FieldValue } from 'firebase-admin/firestore';
 import {
   deleteFromStorageWithRetry,
   deleteMediaAsset,
   markStorageForLaterDeletion,
 } from './images/imageImportService';
 import { extractMediaFromContent, stripContentImageSrc, hydrateContentImageSrc, removeMediaFromContent, generateExcerpt } from '@/lib/utils/cardUtils';
-import { compareCuratedRootCards } from '@/lib/utils/curatedCollectionTree';
 import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 import { buildTagMap, computeJournalWhenSortKeys } from '@/lib/utils/journalWhenSort';
 import { getPublicStorageUrl } from '@/lib/utils/storageUrl';
 import { Media } from '@/lib/types/photo';
+import { AppError, ErrorCode } from '@/lib/types/error';
 import { unlinkCardFromAllQuestions } from '@/lib/services/questionService';
 import { syncCardToTypesense, removeCardFromTypesense } from '@/lib/services/typesenseService';
 import {
   removeMediaFromTypesense,
   syncMediaToTypesenseById,
 } from '@/lib/services/typesenseMediaService';
+import {
+  compareCollectionRootCards,
+  nextCollectionRootOrderForAppend,
+} from '@/lib/utils/curatedCollectionTree';
 
 /**
  * Retry utility with exponential backoff for critical operations.
@@ -78,10 +82,33 @@ async function withRetry<T>(
 
 const adminApp = getAdminApp();
 const firestore = adminApp.firestore();
-const bucket = adminApp.storage().bucket();
 const CARDS_COLLECTION = 'cards';
 const MEDIA_COLLECTION = 'media';
+const QUESTIONS_COLLECTION = 'questions';
 
+async function assertValidQuestionBackedQa(
+  candidate: Partial<Card>,
+  existing?: Partial<Card>
+): Promise<void> {
+  const finalType = candidate.type ?? existing?.type ?? 'story';
+  if (finalType !== 'qa') return;
+
+  const questionId = candidate.questionId ?? existing?.questionId;
+  if (!questionId) {
+    throw new AppError(
+      ErrorCode.VALIDATION_ERROR,
+      'Q&A cards must be created from a question-bank prompt.'
+    );
+  }
+
+  const questionSnap = await firestore.collection(QUESTIONS_COLLECTION).doc(questionId).get();
+  if (!questionSnap.exists) {
+    throw new AppError(
+      ErrorCode.VALIDATION_ERROR,
+      'Q&A card questionId must reference an existing question.'
+    );
+  }
+}
 
 /**
  * Derives focal point (pixel coords) from media.objectPosition.
@@ -137,6 +164,12 @@ function getMediaIdsFromCard(card: {
   return ids;
 }
 
+function stripHydratedGalleryItem<T extends { media?: unknown }>(item: T): Omit<T, 'media'> {
+  const clone = { ...item };
+  delete clone.media;
+  return clone;
+}
+
 function normalizeChildrenIds(childrenIds: unknown, selfId?: string): string[] {
   if (!Array.isArray(childrenIds)) return [];
   const seen = new Set<string>();
@@ -150,13 +183,48 @@ function normalizeChildrenIds(childrenIds: unknown, selfId?: string): string[] {
   return Array.from(seen);
 }
 
+function adoptDeletedCardChildren(
+  parentChildrenIds: unknown,
+  deletedCardId: string,
+  adoptedChildIds: string[]
+): string[] {
+  const parentChildren = normalizeChildrenIds(parentChildrenIds);
+  if (adoptedChildIds.length === 0) {
+    return parentChildren.filter((id) => id !== deletedCardId);
+  }
+
+  const next: string[] = [];
+  const seen = new Set<string>();
+  for (const childId of parentChildren) {
+    if (childId === deletedCardId) {
+      for (const adoptedChildId of adoptedChildIds) {
+        if (!seen.has(adoptedChildId)) {
+          next.push(adoptedChildId);
+          seen.add(adoptedChildId);
+        }
+      }
+      continue;
+    }
+    if (!seen.has(childId)) {
+      next.push(childId);
+      seen.add(childId);
+    }
+  }
+  return next;
+}
+
 /**
  * True when this card should appear in curated collection lists (denormalized; server-maintained).
- * Matches legacy `getCollectionCards` filter: has at least one child or `curatedRoot === true`.
+ * Denormalized collection-listing helper: a card is nav-eligible when it has children.
  */
-export function computeCuratedNavEligible(card: Pick<Card, 'childrenIds' | 'curatedRoot'>): boolean {
+export function computeCuratedNavEligible(card: Pick<Card, 'childrenIds' | 'isCollectionRoot'>): boolean {
   const children = normalizeChildrenIds(card.childrenIds);
-  return children.length > 0 || card.curatedRoot === true;
+  return children.length > 0 || card.isCollectionRoot === true;
+}
+
+async function getExistingCollectionRoots(): Promise<Card[]> {
+  const snap = await firestore.collection(CARDS_COLLECTION).where('isCollectionRoot', '==', true).get();
+  return snap.docs.map((doc) => ({ docId: doc.id, ...doc.data() } as Card));
 }
 
 function computeDimensionSortKeys(
@@ -237,7 +305,32 @@ async function computeCardMediaSignalsFromMediaIds(
   return computeMediaSignalBuckets(Array.from(tagIds), allTags);
 }
 
-type ParentChildrenAdjust = { childrenIds: string[]; curatedRoot: boolean };
+async function getExistingMediaDocIdsInTransaction(
+  transaction: FirebaseFirestore.Transaction,
+  mediaIds: Iterable<string>
+): Promise<Set<string>> {
+  const uniqueIds = Array.from(
+    new Set(
+      Array.from(mediaIds).filter(
+        (id): id is string => typeof id === 'string' && id.trim().length > 0
+      )
+    )
+  );
+
+  if (uniqueIds.length === 0) {
+    return new Set<string>();
+  }
+
+  const refs = uniqueIds.map((id) => firestore.collection(MEDIA_COLLECTION).doc(id));
+  const docs = await transaction.getAll(...refs);
+  const existingIds = new Set<string>();
+  for (const doc of docs) {
+    if (doc.exists) {
+      existingIds.add(doc.id);
+    }
+  }
+  return existingIds;
+}
 
 async function wouldCreateCycle(
   transaction: FirebaseFirestore.Transaction,
@@ -587,6 +680,17 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
 
   // Validate and apply defaults using Zod
   const validatedData = cardSchema.partial().parse(cardData);
+  await assertValidQuestionBackedQa(validatedData);
+  const requestedRoot = validatedData.isCollectionRoot === true;
+  let resolvedRootOrder = validatedData.collectionRootOrder;
+  if (requestedRoot && typeof resolvedRootOrder !== 'number') {
+    const existingRoots = await getExistingCollectionRoots();
+    resolvedRootOrder = nextCollectionRootOrderForAppend(existingRoots);
+  }
+  delete (validatedData as Partial<Card>).isCollectionRoot;
+  delete (validatedData as Partial<Card>).collectionRootOrder;
+  delete (validatedData as Partial<Card>).curatedRoot;
+  delete (validatedData as Partial<Card>).curatedRootOrder;
   delete (validatedData as Partial<Card>).curatedNavEligible;
 
   const selectedTags = validatedData.tags || [];
@@ -600,22 +704,6 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
   await withRetry(async () => {
     return firestore.runTransaction(async (transaction) => {
       const normalizedChildren = normalizeChildrenIds(validatedData.childrenIds);
-      const parentDetachUpdates = new Map<string, ParentChildrenAdjust>();
-
-      for (const childId of normalizedChildren) {
-        const parentQuery = firestore
-          .collection(CARDS_COLLECTION)
-          .where('childrenIds', 'array-contains', childId);
-        const parentSnap = await transaction.get(parentQuery);
-        for (const parentDoc of parentSnap.docs) {
-          const parentData = parentDoc.data() as Card;
-          const updatedChildren = normalizeChildrenIds(parentData.childrenIds).filter(id => id !== childId);
-          parentDetachUpdates.set(parentDoc.id, {
-            childrenIds: updatedChildren,
-            curatedRoot: parentData.curatedRoot === true,
-          });
-        }
-      }
 
       const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord({ tags: selectedTags });
       const allTagsForJournal = await getAllTags();
@@ -646,6 +734,7 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
         ...(validatedData.excerptAuto ? { excerpt: autoExcerpt || null } : {}),
         tags: selectedTags,
         childrenIds: normalizedChildren,
+        ...(requestedRoot ? { isCollectionRoot: true, collectionRootOrder: resolvedRootOrder ?? 10 } : {}),
         contentMedia: contentMediaIds,
         galleryMedia: validatedData.galleryMedia || [],
         filterTags,
@@ -666,25 +755,12 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
         updatedAt: Date.now(),
         curatedNavEligible: computeCuratedNavEligible({
           childrenIds: normalizedChildren,
-          curatedRoot: validatedData.curatedRoot === true,
+          isCollectionRoot: requestedRoot,
         }),
       };
 
       // 1. Create the new card document
       transaction.set(docRef, newCard);
-
-      // 1b. Enforce single-parent across all existing parents of each child.
-      for (const [parentId, adjust] of parentDetachUpdates.entries()) {
-        const parentRef = firestore.collection(CARDS_COLLECTION).doc(parentId);
-        transaction.update(parentRef, {
-          childrenIds: adjust.childrenIds,
-          curatedNavEligible: computeCuratedNavEligible({
-            childrenIds: adjust.childrenIds,
-            curatedRoot: adjust.curatedRoot,
-          }),
-          updatedAt: Date.now(),
-        });
-      }
 
       // 2. Update tag counts using centralized function
       await updateTagCountsForCard(null, newCard, transaction);
@@ -758,16 +834,10 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         throw new Error(`Card with ID ${cardId} not found.`);
       }
       const existingData = docSnap.data() as Card;
-      
-
-  
       // --- Start Firestore Batch Write ---
   
       const dehydratedGalleryMedia =
-        cardData.galleryMedia?.map(item => {
-          const { media, ...rest } = item;
-          return rest;
-        }) || [];
+        cardData.galleryMedia?.map((item) => stripHydratedGalleryItem(item)) || [];
       
       // Sanitize content HTML and derive content media IDs. Only when content is in payload.
       const sanitizedContent = cardData.content ? stripContentImageSrc(cardData.content) : cardData.content;
@@ -794,6 +864,10 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
 
       // Remove transient fields that shouldn't be saved.
       delete updatePayload.coverImage;
+      delete updatePayload.isCollectionRoot;
+      delete updatePayload.collectionRootOrder;
+      delete updatePayload.curatedRoot;
+      delete updatePayload.curatedRootOrder;
       delete updatePayload.curatedNavEligible;
   
       // Validate the incoming partial data against the card schema.
@@ -802,7 +876,7 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
 
   
       // Helper to recursively strip undefined values (Firestore disallows them)
-      const removeUndefinedDeep = (val: any): any => {
+      const removeUndefinedDeep = (val: unknown): unknown => {
         if (Array.isArray(val)) {
           return val.map(removeUndefinedDeep);
         }
@@ -816,7 +890,7 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         return val;
       };
   
-      const cleanedUpdate = removeUndefinedDeep(validatedUpdate);
+      const cleanedUpdate = removeUndefinedDeep(validatedUpdate) as Partial<Card>;
 
       const mergedType = (cleanedUpdate.type ?? existingData.type) as Card['type'];
       const rawDisplay =
@@ -827,50 +901,59 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       }
 
       // If no fields remain after cleaning, nothing to update â€“ return current data
+      if (mergedType === 'qa') {
+        const questionId = (cleanedUpdate.questionId ?? existingData.questionId) as string | undefined;
+        if (!questionId) {
+          throw new AppError(
+            ErrorCode.VALIDATION_ERROR,
+            'Q&A cards must be created from a question-bank prompt.'
+          );
+        }
+        const questionSnap = await transaction.get(firestore.collection(QUESTIONS_COLLECTION).doc(questionId));
+        if (!questionSnap.exists) {
+          throw new AppError(
+            ErrorCode.VALIDATION_ERROR,
+            'Q&A card questionId must reference an existing question.'
+          );
+        }
+      }
+
       if (Object.keys(cleanedUpdate).length === 0) {
         return existingData;
       }
 
-      const parentDetachUpdates = new Map<string, ParentChildrenAdjust>();
       if ('childrenIds' in cleanedUpdate) {
         const normalizedChildren = normalizeChildrenIds(cleanedUpdate.childrenIds, cardId);
         cleanedUpdate.childrenIds = normalizedChildren;
 
+        const prevChildren = normalizeChildrenIds(existingData.childrenIds, cardId);
+        const prevChildSet = new Set(prevChildren);
         for (const childId of normalizedChildren) {
-          const hasCycle = await wouldCreateCycle(transaction, cardId, childId);
-          if (hasCycle) {
-            throw new Error(`Cannot set child ${childId}; this would create a cycle.`);
+          if (prevChildSet.has(childId)) continue;
+          const childRef = firestore.collection(CARDS_COLLECTION).doc(childId);
+          const childSnap = await transaction.get(childRef);
+          if (!childSnap.exists) {
+            throw new AppError(
+              ErrorCode.CURATED_COLLECTION_CHILD_NOT_FOUND,
+              `Cannot add child ${childId}: card not found.`,
+              { childId, parentCardId: cardId }
+            );
           }
         }
 
         for (const childId of normalizedChildren) {
-          const parentQuery = firestore
-            .collection(CARDS_COLLECTION)
-            .where('childrenIds', 'array-contains', childId);
-          const parentSnap = await transaction.get(parentQuery);
-          for (const parentDoc of parentSnap.docs) {
-            if (parentDoc.id === cardId) continue;
-            const parentData = parentDoc.data() as Card;
-            const updatedChildren = normalizeChildrenIds(parentData.childrenIds).filter(id => id !== childId);
-            parentDetachUpdates.set(parentDoc.id, {
-              childrenIds: updatedChildren,
-              curatedRoot: parentData.curatedRoot === true,
-            });
+          const hasCycle = await wouldCreateCycle(transaction, cardId, childId);
+          if (hasCycle) {
+            throw new AppError(
+              ErrorCode.CURATED_COLLECTION_CYCLE,
+              `Cannot set child ${childId}; this would create a cycle.`,
+              { childId, parentCardId: cardId }
+            );
           }
         }
       }
   
       // Determine tag changes and prepare derived tag data BEFORE any writes
-      const oldTags = new Set(existingData.tags || []);
-      const newTags = new Set(cardData.tags || []);
-      const tagsAdded = [...newTags].filter(t => !oldTags.has(t));
-      const tagsRemoved = [...oldTags].filter(t => !newTags.has(t));
-      
-
-
-      const wasPublished = existingData.status === 'published';
-      const isPublished = cardData.status === 'published';
-
       // Prepare derived tag data (reads) BEFORE any writes to comply with Firestore transaction rules
       const finalTags = ('tags' in cleanedUpdate) ? (cleanedUpdate.tags ?? existingData.tags) : existingData.tags;
 
@@ -917,31 +1000,20 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       const finalChildrenForNav = 'childrenIds' in cleanedUpdate
         ? cleanedUpdate.childrenIds!
         : normalizeChildrenIds(existingData.childrenIds, cardId);
-      const finalCuratedRootForNav =
-        'curatedRoot' in cleanedUpdate
-          ? cleanedUpdate.curatedRoot === true
-          : existingData.curatedRoot === true;
       cleanedUpdate.curatedNavEligible = computeCuratedNavEligible({
         childrenIds: finalChildrenForNav,
-        curatedRoot: finalCuratedRootForNav,
+        isCollectionRoot: existingData.isCollectionRoot,
       });
-
-      for (const [parentId, adjust] of parentDetachUpdates.entries()) {
-        const parentRef = firestore.collection(CARDS_COLLECTION).doc(parentId);
-        transaction.update(parentRef, {
-          childrenIds: adjust.childrenIds,
-          curatedNavEligible: computeCuratedNavEligible({
-            childrenIds: adjust.childrenIds,
-            curatedRoot: adjust.curatedRoot,
-          }),
-          updatedAt: Date.now(),
-        });
-      }
 
       // Maintain referencedByCardIds on media docs
       const mediaRemoved = [...oldMediaIds].filter(id => !newMediaIds.has(id));
       const mediaAdded = [...newMediaIds].filter(id => !oldMediaIds.has(id));
+      const existingReferencedMediaIds = await getExistingMediaDocIdsInTransaction(
+        transaction,
+        [...mediaRemoved, ...mediaAdded]
+      );
       for (const mediaId of mediaRemoved) {
+        if (!existingReferencedMediaIds.has(mediaId)) continue;
         const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
         transaction.update(mediaRef, {
           referencedByCardIds: FieldValue.arrayRemove(cardId),
@@ -949,6 +1021,9 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         });
       }
       for (const mediaId of mediaAdded) {
+        if (!existingReferencedMediaIds.has(mediaId)) {
+          throw new Error(`Referenced media with ID ${mediaId} not found.`);
+        }
         const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
         transaction.update(mediaRef, {
           referencedByCardIds: FieldValue.arrayUnion(cardId),
@@ -966,7 +1041,16 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
 
       // 4. Update the card document with the new data.
       if (Object.keys(cleanedUpdate).length > 0) {
-        transaction.update(docRef, cleanedUpdate);
+        transaction.update(
+          docRef,
+          'childrenIds' in cleanedUpdate
+            ? {
+                ...cleanedUpdate,
+                curatedRoot: FieldValue.delete(),
+                curatedRootOrder: FieldValue.delete(),
+              }
+            : cleanedUpdate
+        );
       }
   
       // 5. Tag counts were already adjusted earlier.
@@ -976,8 +1060,15 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         const coverImageFocalPoint = cleanedUpdate.coverImageFocalPoint;
         const coverImageId = cleanedUpdate.coverImageId ?? existingData.coverImageId;
         if (coverImageId && typeof coverImageId === 'string' && coverImageFocalPoint && 'x' in coverImageFocalPoint && 'y' in coverImageFocalPoint) {
-          const coverRef = firestore.collection(MEDIA_COLLECTION).doc(coverImageId);
-          transaction.update(coverRef, { objectPosition: `${coverImageFocalPoint.x} ${coverImageFocalPoint.y}`, updatedAt: Date.now() });
+          const coverExists = existingReferencedMediaIds.has(coverImageId)
+            || (await getExistingMediaDocIdsInTransaction(transaction, [coverImageId])).has(coverImageId);
+          if (coverExists) {
+            const coverRef = firestore.collection(MEDIA_COLLECTION).doc(coverImageId);
+            transaction.update(coverRef, {
+              objectPosition: `${coverImageFocalPoint.x} ${coverImageFocalPoint.y}`,
+              updatedAt: Date.now(),
+            });
+          }
         }
       }
 
@@ -1008,6 +1099,596 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
 
       return updatedCard;
   });
+}
+
+/**
+ * Narrow cover-only mutation path.
+ * Preserves card↔media backrefs, cover-derived media signals, and search sync
+ * without paying the cost of the broad `updateCard()` pipeline.
+ */
+export async function updateCardCover(
+  cardId: string,
+  updates: Partial<Pick<Card, 'coverImageId' | 'coverImageFocalPoint'>>
+): Promise<Card> {
+  const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
+  const preSnap = await docRef.get();
+  if (!preSnap.exists) {
+    throw new Error(`Card with ID ${cardId} not found.`);
+  }
+
+  const existingData = preSnap.data() as Card;
+  const existingCoverId = existingData.coverImageId ?? null;
+  const hasCoverIdUpdate = Object.prototype.hasOwnProperty.call(updates, 'coverImageId');
+  const nextCoverIdRaw = updates.coverImageId;
+  const nextCoverId = hasCoverIdUpdate
+    ? typeof nextCoverIdRaw === 'string' && nextCoverIdRaw.trim().length > 0
+      ? nextCoverIdRaw
+      : null
+    : existingCoverId;
+  const focalProvided = Object.prototype.hasOwnProperty.call(updates, 'coverImageFocalPoint');
+  const focalPoint = updates.coverImageFocalPoint;
+
+  const isCoverUnchanged = !hasCoverIdUpdate || existingCoverId === nextCoverId;
+  const isFocalUnchanged =
+    !focalProvided ||
+    (existingData.coverImageFocalPoint?.x === focalPoint?.x &&
+      existingData.coverImageFocalPoint?.y === focalPoint?.y);
+  if (isCoverUnchanged && isFocalUnchanged) {
+    const card = await getCardById(cardId);
+    if (!card) {
+      throw new Error(`Failed to fetch card with ID ${cardId}`);
+    }
+    return card;
+  }
+
+  const oldMediaIds = getMediaIdsFromCard(existingData);
+  const newMediaIds = new Set(oldMediaIds);
+  if (existingCoverId) newMediaIds.delete(existingCoverId);
+  if (nextCoverId) newMediaIds.add(nextCoverId);
+
+  const allTags = await getAllTags();
+  const mediaSignals = await computeCardMediaSignalsFromMediaIds(newMediaIds, allTags);
+  const clearingCover = hasCoverIdUpdate && nextCoverId === null;
+  const coverChanged = hasCoverIdUpdate && existingCoverId !== nextCoverId;
+  const shouldClearCardFocalPoint = clearingCover || (coverChanged && !focalProvided);
+
+  return withRetry(async () => {
+    await firestore.runTransaction(async (transaction) => {
+      const snap = await transaction.get(docRef);
+      if (!snap.exists) {
+        throw new Error(`Card with ID ${cardId} not found.`);
+      }
+
+      const checkedMediaIds = [
+        existingCoverId,
+        nextCoverId,
+      ].filter((id): id is string => typeof id === 'string' && id.trim().length > 0);
+      const existingMediaIds = await getExistingMediaDocIdsInTransaction(transaction, checkedMediaIds);
+
+      if (nextCoverId && !existingMediaIds.has(nextCoverId)) {
+        throw new Error(`Cover media with ID ${nextCoverId} not found.`);
+      }
+
+      const cardUpdate: Record<string, unknown> = {
+        updatedAt: Date.now(),
+        mediaWho: mediaSignals.mediaWho,
+        mediaWhat: mediaSignals.mediaWhat,
+        mediaWhen: mediaSignals.mediaWhen,
+        mediaWhere: mediaSignals.mediaWhere,
+        coverImage: FieldValue.delete(),
+      };
+
+      if (hasCoverIdUpdate) {
+        if (clearingCover) {
+          cardUpdate.coverImageId = FieldValue.delete();
+        } else {
+          cardUpdate.coverImageId = nextCoverId;
+        }
+      }
+
+      if (focalProvided && focalPoint && nextCoverId) {
+        cardUpdate.coverImageFocalPoint = focalPoint;
+      } else if (shouldClearCardFocalPoint) {
+        cardUpdate.coverImageFocalPoint = FieldValue.delete();
+      }
+
+      transaction.update(docRef, cardUpdate);
+
+      if (coverChanged && existingCoverId && existingCoverId !== nextCoverId) {
+        if (existingMediaIds.has(existingCoverId)) {
+          const oldCoverRef = firestore.collection(MEDIA_COLLECTION).doc(existingCoverId);
+          transaction.update(oldCoverRef, {
+            referencedByCardIds: FieldValue.arrayRemove(cardId),
+            updatedAt: Date.now(),
+          });
+        }
+      }
+
+      if (coverChanged && nextCoverId && nextCoverId !== existingCoverId) {
+        const nextCoverRef = firestore.collection(MEDIA_COLLECTION).doc(nextCoverId);
+        transaction.update(nextCoverRef, {
+          referencedByCardIds: FieldValue.arrayUnion(cardId),
+          updatedAt: Date.now(),
+        });
+      }
+
+      if (focalProvided && focalPoint && nextCoverId) {
+        if (existingMediaIds.has(nextCoverId)) {
+          const coverRef = firestore.collection(MEDIA_COLLECTION).doc(nextCoverId);
+          transaction.update(coverRef, {
+            objectPosition: `${focalPoint.x} ${focalPoint.y}`,
+            updatedAt: Date.now(),
+          });
+        }
+      }
+    });
+
+    const updatedCard = await getCardById(cardId);
+    if (!updatedCard) {
+      throw new Error(`Failed to fetch updated card with ID ${cardId}`);
+    }
+
+    void syncCardToTypesense(updatedCard);
+    const syncMediaIds = new Set<string>();
+    if (existingCoverId) syncMediaIds.add(existingCoverId);
+    if (nextCoverId) syncMediaIds.add(nextCoverId);
+    syncMediaIds.forEach((mediaId) => void syncMediaToTypesenseById(mediaId));
+
+    return updatedCard;
+  });
+}
+
+function normalizeGalleryMembership(
+  galleryMedia: Card['galleryMedia']
+): Array<{ mediaId: string; caption?: string; objectPosition?: string }> {
+  return (galleryMedia || [])
+    .filter((item): item is NonNullable<Card['galleryMedia']>[number] => Boolean(item?.mediaId))
+    .map((item) => ({
+      mediaId: item.mediaId,
+      ...(item.caption !== undefined ? { caption: item.caption } : {}),
+      ...(item.objectPosition !== undefined ? { objectPosition: item.objectPosition } : {}),
+    }))
+    .sort((a, b) => {
+      const mediaCmp = a.mediaId.localeCompare(b.mediaId);
+      if (mediaCmp !== 0) return mediaCmp;
+      const captionCmp = (a.caption ?? '').localeCompare(b.caption ?? '');
+      if (captionCmp !== 0) return captionCmp;
+      return (a.objectPosition ?? '').localeCompare(b.objectPosition ?? '');
+    });
+}
+
+export function isGalleryReorderOnlyPayload(
+  existingCard: Pick<Card, 'galleryMedia'>,
+  updates: Partial<Pick<Card, 'galleryMedia'>>
+): boolean {
+  const keys = Object.keys(updates as Record<string, unknown>);
+  if (keys.length !== 1 || keys[0] !== 'galleryMedia') return false;
+  if (!Array.isArray(updates.galleryMedia)) return false;
+
+  const existing = existingCard.galleryMedia || [];
+  const next = updates.galleryMedia || [];
+  if (existing.length !== next.length) return false;
+
+  const existingMembership = JSON.stringify(normalizeGalleryMembership(existing));
+  const nextMembership = JSON.stringify(normalizeGalleryMembership(next));
+  return existingMembership === nextMembership;
+}
+
+export function isGalleryOnlyPayload(
+  updates: Partial<Pick<Card, 'galleryMedia'>>
+): boolean {
+  const keys = Object.keys(updates as Record<string, unknown>);
+  return keys.length === 1 && keys[0] === 'galleryMedia' && Array.isArray(updates.galleryMedia);
+}
+
+export function isChildrenReorderOnlyPayload(
+  existingCard: Pick<Card, 'childrenIds'>,
+  updates: Partial<Pick<Card, 'childrenIds'>>
+): boolean {
+  const keys = Object.keys(updates as Record<string, unknown>);
+  if (keys.length !== 1 || keys[0] !== 'childrenIds') return false;
+  if (!Array.isArray(updates.childrenIds)) return false;
+
+  const existing = normalizeChildrenIds(existingCard.childrenIds);
+  const next = normalizeChildrenIds(updates.childrenIds);
+  if (existing.length !== next.length) return false;
+  if (existing.length <= 1) return false;
+
+  const existingSorted = [...existing].sort((a, b) => a.localeCompare(b));
+  const nextSorted = [...next].sort((a, b) => a.localeCompare(b));
+  return existingSorted.every((id, index) => id === nextSorted[index]);
+}
+
+export function isChildrenOnlyPayload(
+  updates: Partial<Pick<Card, 'childrenIds'>>
+): boolean {
+  const keys = Object.keys(updates as Record<string, unknown>);
+  return keys.length === 1 && keys[0] === 'childrenIds' && Array.isArray(updates.childrenIds);
+}
+
+export function isCollectionRootOnlyPayload(
+  updates: Partial<Pick<Card, 'isCollectionRoot' | 'collectionRootOrder'>>
+): boolean {
+  const keys = Object.keys(updates as Record<string, unknown>);
+  return (
+    keys.length > 0 &&
+    keys.every((key) => key === 'isCollectionRoot' || key === 'collectionRootOrder')
+  );
+}
+
+type CardMetadataUpdates = Partial<
+  Pick<Card, 'title' | 'subtitle' | 'excerpt' | 'excerptAuto' | 'type' | 'displayMode' | 'questionId'>
+>;
+
+const CARD_METADATA_ONLY_KEYS = new Set<keyof CardMetadataUpdates>([
+  'title',
+  'subtitle',
+  'excerpt',
+  'excerptAuto',
+  'type',
+  'displayMode',
+  'questionId',
+]);
+
+export function isCardMetadataOnlyPayload(
+  updates: CardMetadataUpdates
+): boolean {
+  const keys = Object.keys(updates as Record<string, unknown>) as Array<keyof CardMetadataUpdates>;
+  return keys.length > 0 && keys.every((key) => CARD_METADATA_ONLY_KEYS.has(key));
+}
+
+/**
+ * Narrow gallery reorder path.
+ * Membership must remain unchanged; only the list order is updated.
+ */
+export async function updateCardGalleryOrder(
+  cardId: string,
+  galleryMedia: NonNullable<Card['galleryMedia']>
+): Promise<Card> {
+  const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
+  const preSnap = await docRef.get();
+  if (!preSnap.exists) {
+    throw new Error(`Card with ID ${cardId} not found.`);
+  }
+
+  const existingData = preSnap.data() as Card;
+  if (!isGalleryReorderOnlyPayload(existingData, { galleryMedia })) {
+    throw new Error('Gallery reorder fast path requires unchanged gallery membership.');
+  }
+
+  const reordered = galleryMedia.map((item, index) => {
+    const rest = stripHydratedGalleryItem(item);
+    return {
+      ...rest,
+      order: index,
+    };
+  });
+
+  await docRef.update({
+    galleryMedia: reordered,
+    updatedAt: Date.now(),
+  });
+
+  const updatedCard = await getCardById(cardId);
+  if (!updatedCard) {
+    throw new Error(`Failed to fetch updated card with ID ${cardId}`);
+  }
+
+  void syncCardToTypesense(updatedCard);
+  return updatedCard;
+}
+
+/**
+ * Narrow gallery-only mutation path.
+ * Handles reorder, add/remove membership, and slot metadata updates without
+ * paying the cost of the broad `updateCard()` pipeline.
+ */
+export async function updateCardGallery(
+  cardId: string,
+  galleryMedia: NonNullable<Card['galleryMedia']>
+): Promise<Card> {
+  const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
+  const preSnap = await docRef.get();
+  if (!preSnap.exists) {
+    throw new Error(`Card with ID ${cardId} not found.`);
+  }
+
+  const existingData = preSnap.data() as Card;
+  const dehydratedGalleryMedia = galleryMedia.map((item, index) => {
+    const rest = stripHydratedGalleryItem(item);
+    return {
+      ...rest,
+      order: index,
+    };
+  });
+
+  const oldGalleryIds = new Set(
+    (existingData.galleryMedia || [])
+      .map((item) => item.mediaId)
+      .filter((id): id is string => typeof id === 'string' && id.trim().length > 0)
+  );
+  const newGalleryIds = new Set(
+    dehydratedGalleryMedia
+      .map((item) => item.mediaId)
+      .filter((id): id is string => typeof id === 'string' && id.trim().length > 0)
+  );
+  const mediaRemoved = [...oldGalleryIds].filter((id) => !newGalleryIds.has(id));
+  const mediaAdded = [...newGalleryIds].filter((id) => !oldGalleryIds.has(id));
+
+  const oldAllMediaIds = getMediaIdsFromCard(existingData);
+  const newAllMediaIds = getMediaIdsFromCard({
+    ...existingData,
+    galleryMedia: dehydratedGalleryMedia,
+  });
+  const mediaSetChanged =
+    oldAllMediaIds.size !== newAllMediaIds.size ||
+    [...oldAllMediaIds].some((id) => !newAllMediaIds.has(id));
+
+  const allTags = mediaSetChanged ? await getAllTags() : null;
+  const mediaSignals = mediaSetChanged
+    ? await computeCardMediaSignalsFromMediaIds(newAllMediaIds, allTags || [])
+    : {
+        mediaWho: existingData.mediaWho ?? [],
+        mediaWhat: existingData.mediaWhat ?? [],
+        mediaWhen: existingData.mediaWhen ?? [],
+        mediaWhere: existingData.mediaWhere ?? [],
+      };
+
+  await firestore.runTransaction(async (transaction) => {
+    const existingMediaIds = await getExistingMediaDocIdsInTransaction(transaction, [
+      ...mediaRemoved,
+      ...mediaAdded,
+    ]);
+    for (const mediaId of mediaAdded) {
+      if (!existingMediaIds.has(mediaId)) {
+        throw new Error(`Gallery media with ID ${mediaId} not found.`);
+      }
+    }
+
+    transaction.update(docRef, {
+      galleryMedia: dehydratedGalleryMedia,
+      mediaWho: mediaSignals.mediaWho,
+      mediaWhat: mediaSignals.mediaWhat,
+      mediaWhen: mediaSignals.mediaWhen,
+      mediaWhere: mediaSignals.mediaWhere,
+      updatedAt: Date.now(),
+    });
+
+    for (const mediaId of mediaRemoved) {
+      if (!existingMediaIds.has(mediaId)) continue;
+      const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
+      transaction.update(mediaRef, {
+        referencedByCardIds: FieldValue.arrayRemove(cardId),
+        updatedAt: Date.now(),
+      });
+    }
+    for (const mediaId of mediaAdded) {
+      const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
+      transaction.update(mediaRef, {
+        referencedByCardIds: FieldValue.arrayUnion(cardId),
+        updatedAt: Date.now(),
+      });
+    }
+  });
+
+  const updatedCard = await getCardById(cardId);
+  if (!updatedCard) {
+    throw new Error(`Failed to fetch updated card with ID ${cardId}`);
+  }
+
+  void syncCardToTypesense(updatedCard);
+  const syncMediaIds = new Set<string>([...mediaRemoved, ...mediaAdded]);
+  syncMediaIds.forEach((mediaId) => void syncMediaToTypesenseById(mediaId));
+  return updatedCard;
+}
+
+/**
+ * Narrow children reorder path.
+ * Membership must remain unchanged; only the sequence is updated.
+ */
+export async function updateCardChildrenOrder(
+  cardId: string,
+  childrenIds: string[]
+): Promise<Card> {
+  const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
+  const preSnap = await docRef.get();
+  if (!preSnap.exists) {
+    throw new Error(`Card with ID ${cardId} not found.`);
+  }
+
+  const existingData = preSnap.data() as Card;
+  if (!isChildrenReorderOnlyPayload(existingData, { childrenIds })) {
+    throw new Error('Children reorder fast path requires unchanged child membership.');
+  }
+
+  const normalizedChildren = normalizeChildrenIds(childrenIds, cardId);
+  await docRef.update({
+    childrenIds: normalizedChildren,
+    updatedAt: Date.now(),
+  });
+
+  const updatedCard = await getCardById(cardId);
+  if (!updatedCard) {
+    throw new Error(`Failed to fetch updated card with ID ${cardId}`);
+  }
+
+  void syncCardToTypesense(updatedCard);
+  return updatedCard;
+}
+
+/**
+ * Narrow collection-root mutation path.
+ * Handles explicit top-level root placement and ordering without broad card recomputation.
+ */
+export async function updateCardCollectionRoot(
+  cardId: string,
+  updates: Partial<Pick<Card, 'isCollectionRoot' | 'collectionRootOrder'>>
+): Promise<Card> {
+  const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
+  const preSnap = await docRef.get();
+  if (!preSnap.exists) {
+    throw new Error(`Card with ID ${cardId} not found.`);
+  }
+
+  const existingData = preSnap.data() as Card;
+  const hasRootFlag = Object.prototype.hasOwnProperty.call(updates, 'isCollectionRoot');
+  const nextIsRoot = hasRootFlag ? updates.isCollectionRoot === true : existingData.isCollectionRoot === true;
+  let nextRootOrder =
+    typeof updates.collectionRootOrder === 'number'
+      ? updates.collectionRootOrder
+      : existingData.collectionRootOrder;
+
+  if (nextIsRoot && typeof nextRootOrder !== 'number') {
+    const existingRoots = await getExistingCollectionRoots();
+    nextRootOrder = nextCollectionRootOrderForAppend(existingRoots, cardId);
+  }
+
+  const payload: Record<string, unknown> = {
+    isCollectionRoot: nextIsRoot,
+    curatedNavEligible: computeCuratedNavEligible({
+      childrenIds: existingData.childrenIds,
+      isCollectionRoot: nextIsRoot,
+    }),
+    curatedRoot: FieldValue.delete(),
+    curatedRootOrder: FieldValue.delete(),
+    updatedAt: Date.now(),
+  };
+
+  if (nextIsRoot && typeof nextRootOrder === 'number') {
+    payload.collectionRootOrder = nextRootOrder;
+  } else {
+    payload.collectionRootOrder = FieldValue.delete();
+  }
+
+  await docRef.update(payload);
+
+  const updatedCard = await getCardById(cardId);
+  if (!updatedCard) {
+    throw new Error(`Failed to fetch updated card with ID ${cardId}`);
+  }
+
+  void syncCardToTypesense(updatedCard);
+  return updatedCard;
+}
+
+/**
+ * Narrow children-only mutation path.
+ * Handles attach/detach/reorder while preserving curated-tree integrity
+ * without paying the cost of the broad `updateCard()` pipeline.
+ */
+export async function updateCardChildren(
+  cardId: string,
+  childrenIds: string[]
+): Promise<Card> {
+  const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
+  const preSnap = await docRef.get();
+  if (!preSnap.exists) {
+    throw new Error(`Card with ID ${cardId} not found.`);
+  }
+
+  const existingData = preSnap.data() as Card;
+  const normalizedChildren = normalizeChildrenIds(childrenIds, cardId);
+  const prevChildren = normalizeChildrenIds(existingData.childrenIds, cardId);
+  const prevChildSet = new Set(prevChildren);
+
+  await firestore.runTransaction(async (transaction) => {
+    for (const childId of normalizedChildren) {
+      if (prevChildSet.has(childId)) continue;
+      const childRef = firestore.collection(CARDS_COLLECTION).doc(childId);
+      const childSnap = await transaction.get(childRef);
+      if (!childSnap.exists) {
+        throw new AppError(
+          ErrorCode.CURATED_COLLECTION_CHILD_NOT_FOUND,
+          `Cannot add child ${childId}: card not found.`,
+          { childId, parentCardId: cardId }
+        );
+      }
+    }
+
+    for (const childId of normalizedChildren) {
+      const hasCycle = await wouldCreateCycle(transaction, cardId, childId);
+      if (hasCycle) {
+        throw new AppError(
+          ErrorCode.CURATED_COLLECTION_CYCLE,
+          `Cannot set child ${childId}; this would create a cycle.`,
+          { childId, parentCardId: cardId }
+        );
+      }
+    }
+
+    transaction.update(docRef, {
+      childrenIds: normalizedChildren,
+      curatedNavEligible: computeCuratedNavEligible({
+        childrenIds: normalizedChildren,
+        isCollectionRoot: existingData.isCollectionRoot,
+      }),
+      curatedRoot: FieldValue.delete(),
+      curatedRootOrder: FieldValue.delete(),
+      updatedAt: Date.now(),
+    });
+  });
+
+  const updatedCard = await getCardById(cardId);
+  if (!updatedCard) {
+    throw new Error(`Failed to fetch updated card with ID ${cardId}`);
+  }
+
+  void syncCardToTypesense(updatedCard);
+  return updatedCard;
+}
+
+/**
+ * Narrow metadata-only mutation path.
+ * Handles lightweight card edits that don't affect tags, media, status, or structure.
+ */
+export async function updateCardMetadata(
+  cardId: string,
+  updates: CardMetadataUpdates
+): Promise<Card> {
+  const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
+  const preSnap = await docRef.get();
+  if (!preSnap.exists) {
+    throw new Error(`Card with ID ${cardId} not found.`);
+  }
+
+  const existingData = preSnap.data() as Card;
+  await assertValidQuestionBackedQa(updates, existingData);
+  const cleanedUpdates = Object.fromEntries(
+    Object.entries(updates).filter(([, value]) => value !== undefined)
+  ) as CardMetadataUpdates;
+
+  if (Object.keys(cleanedUpdates).length === 0) {
+    return existingData;
+  }
+
+  const mergedType = (cleanedUpdates.type ?? existingData.type) as Card['type'];
+  const rawDisplay =
+    cleanedUpdates.displayMode !== undefined ? cleanedUpdates.displayMode : existingData.displayMode;
+  const normalizedDisplay = normalizeDisplayModeForType(mergedType, rawDisplay);
+
+  const updatePayload: Partial<Card> = {
+    ...cleanedUpdates,
+    ...(Object.prototype.hasOwnProperty.call(cleanedUpdates, 'title')
+      ? { title_lowercase: (cleanedUpdates.title ?? '').toLowerCase() }
+      : {}),
+    ...(
+      Object.prototype.hasOwnProperty.call(cleanedUpdates, 'type') ||
+      Object.prototype.hasOwnProperty.call(cleanedUpdates, 'displayMode')
+        ? { displayMode: normalizedDisplay }
+        : {}
+    ),
+    updatedAt: Date.now(),
+  };
+
+  await docRef.update(updatePayload);
+
+  const updatedCard = await getCardById(cardId);
+  if (!updatedCard) {
+    throw new Error(`Failed to fetch updated card with ID ${cardId}`);
+  }
+
+  void syncCardToTypesense(updatedCard);
+  return updatedCard;
 }
 
 /**
@@ -1181,12 +1862,37 @@ export async function getCardsByCollectionId(
   } = {}
 ): Promise<{ items: Card[]; lastDocId?: string; hasMore: boolean }> {
   const collectionCard = await getCardById(collectionId);
-  if (!collectionCard || !collectionCard.childrenIds || collectionCard.childrenIds.length === 0) {
+  if (!collectionCard) {
     return { items: [], hasMore: false };
   }
 
   const { limit = 10, lastDocId, hydrationMode = 'full' } = options;
-  const result = await getPaginatedCardsByIds(collectionCard.childrenIds, { limit, lastDocId });
+  const childIds = normalizeChildrenIds(collectionCard.childrenIds, collectionId);
+
+  let result:
+    | { items: Card[]; lastDocId?: string; hasMore: boolean }
+    | { items: Card[]; hasMore: false; lastDocId?: undefined };
+
+  if (!lastDocId) {
+    if (childIds.length === 0) {
+      result = { items: [collectionCard], hasMore: false };
+    } else {
+      const childLimit = Math.max(limit - 1, 0);
+      const childResult =
+        childLimit > 0
+          ? await getPaginatedCardsByIds(childIds, { limit: childLimit })
+          : { items: [], hasMore: childIds.length > 0, lastDocId: undefined };
+      result = {
+        items: [collectionCard, ...childResult.items],
+        hasMore: childResult.hasMore,
+        lastDocId: childResult.lastDocId,
+      };
+    }
+  } else if (childIds.length === 0) {
+    result = { items: [], hasMore: false };
+  } else {
+    result = await getPaginatedCardsByIds(childIds, { limit, lastDocId });
+  }
 
   if (hydrationMode === 'cover-only') {
     result.items = await _hydrateCoverImagesOnly(result.items);
@@ -1207,20 +1913,83 @@ const COLLECTIONS_LIST_LIMIT = 500;
  */
 export async function getCollectionCards(
   status: Card['status'] | 'all' = 'published',
-  options: { limit?: number; hydrationMode?: 'full' | 'cover-only' } = {}
+  options: {
+    limit?: number;
+    hydrationMode?: 'full' | 'cover-only';
+    includeDescendants?: boolean;
+  } = {}
 ): Promise<Card[]> {
+  const fetchCardsByIdsRaw = async (ids: string[]): Promise<Card[]> => {
+    if (!ids.length) return [];
+
+    const idChunks: string[][] = [];
+    for (let i = 0; i < ids.length; i += 30) {
+      idChunks.push(ids.slice(i, i + 30));
+    }
+
+    const cards: Card[] = [];
+    const collectionRef = firestore.collection(CARDS_COLLECTION);
+    for (const chunk of idChunks) {
+      if (!chunk.length) continue;
+      const query = collectionRef.where(FieldPath.documentId(), 'in', chunk);
+      const snapshot = await query.get();
+      snapshot.forEach((doc) => {
+        cards.push({ ...(doc.data() as Card), docId: doc.id });
+      });
+    }
+    return cards;
+  };
+
   let query: FirebaseFirestore.Query = firestore
     .collection(CARDS_COLLECTION)
-    .where('curatedNavEligible', '==', true);
+    .where('isCollectionRoot', '==', true);
 
   if (status && status !== 'all') {
     query = query.where('status', '==', status);
   }
-  query = query.orderBy('createdAt', 'desc').limit(options.limit ?? COLLECTIONS_LIST_LIMIT);
+  query = query.limit(options.limit ?? COLLECTIONS_LIST_LIMIT);
 
   const snapshot = await query.get();
-  const cards: Card[] = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Card));
-  cards.sort(compareCuratedRootCards);
+  const rootCards = snapshot.docs
+    .map(doc => ({ docId: doc.id, ...doc.data() } as Card))
+    .sort(compareCollectionRootCards);
+
+  let cards = rootCards;
+
+  if (options.includeDescendants) {
+    const cardsById = new Map(rootCards.filter((card) => card.docId).map((card) => [card.docId!, card]));
+    const pendingIds: string[] = [];
+    const queuedIds = new Set(cardsById.keys());
+
+    for (const root of rootCards) {
+      for (const childId of normalizeChildrenIds(root.childrenIds)) {
+        if (!queuedIds.has(childId)) {
+          queuedIds.add(childId);
+          pendingIds.push(childId);
+        }
+      }
+    }
+
+    while (pendingIds.length > 0) {
+      const batchIds = pendingIds.splice(0, 120);
+      const fetchedCards = await fetchCardsByIdsRaw(batchIds);
+      for (const card of fetchedCards) {
+        if (!card.docId) continue;
+        if (status !== 'all' && card.status !== status) continue;
+        if (!cardsById.has(card.docId)) {
+          cardsById.set(card.docId, card);
+        }
+        for (const childId of normalizeChildrenIds(card.childrenIds)) {
+          if (!queuedIds.has(childId)) {
+            queuedIds.add(childId);
+            pendingIds.push(childId);
+          }
+        }
+      }
+    }
+
+    cards = Array.from(cardsById.values());
+  }
 
   if (options.hydrationMode === 'cover-only') {
     return _hydrateCoverImagesOnly(cards);
@@ -1429,7 +2198,7 @@ export async function bulkApplyTagDelta(
 
 /**
  * Creates a duplicate of an existing card as a draft.
- * Copies content, tags, media references, and gallery but not children or curatedRoot.
+ * Copies content, tags, media references, and gallery but not children.
  * The new card goes through full createCard() to get proper tag counts, Typesense sync, etc.
  */
 export async function duplicateCard(sourceCardId: string): Promise<Card> {
@@ -1448,7 +2217,7 @@ export async function duplicateCard(sourceCardId: string): Promise<Card> {
     displayMode: source.displayMode,
     coverImageId: source.coverImageId,
     coverImageFocalPoint: source.coverImageFocalPoint,
-    galleryMedia: source.galleryMedia?.map(({ media, ...rest }) => rest) ?? [],
+    galleryMedia: source.galleryMedia?.map((item) => stripHydratedGalleryItem(item)) ?? [],
     contentMedia: source.contentMedia,
     tags: source.tags ?? [],
   };
@@ -1491,6 +2260,15 @@ export async function deleteCard(cardId: string): Promise<void> {
         return;
     }
     const cardToDelete = cardSnap.data() as Card;
+    const directChildIds = normalizeChildrenIds(cardToDelete.childrenIds, cardId);
+
+    if (cardToDelete.isCollectionRoot === true && directChildIds.length > 0) {
+      throw new AppError(
+        ErrorCode.CONFLICT,
+        'Cannot delete a root card that still has children.',
+        { cardId, childCount: directChildIds.length }
+      );
+    }
 
     // Collect media IDs for transaction cleanup work
     const mediaToDelete: string[] = [];
@@ -1540,13 +2318,15 @@ export async function deleteCard(cardId: string): Promise<void> {
 
         for (const parentDoc of parentCardsSnapshot.docs) {
           const parentData = parentDoc.data() as Card;
-          const updatedChildrenIds = (parentData.childrenIds || []).filter(id => id !== cardId);
+          const updatedChildrenIds = adoptDeletedCardChildren(parentData.childrenIds, cardId, directChildIds);
           transaction.update(parentDoc.ref, {
             childrenIds: updatedChildrenIds,
             curatedNavEligible: computeCuratedNavEligible({
               childrenIds: updatedChildrenIds,
-              curatedRoot: parentData.curatedRoot === true,
+              isCollectionRoot: parentData.isCollectionRoot,
             }),
+            curatedRoot: FieldValue.delete(),
+            curatedRootOrder: FieldValue.delete(),
             updatedAt: Date.now(),
           });
         }
@@ -1668,6 +2448,8 @@ export async function getCards(options: {
   q?: string;
   status?: Card['status'] | 'all';
   type?: Card['type'] | 'all';
+  /** When 2+ values, Firestore `in` filter (OR). Omit when using single `type`. */
+  types?: Card['type'][];
   tags?: string[];
   dimensionalTags?: {
     who?: string[];
@@ -1694,6 +2476,7 @@ export async function getCards(options: {
     q,
     status = 'published',
     type = 'all',
+    types: typesIn,
     tags,
     dimensionalTags,
     dimensionMissing,
@@ -1704,6 +2487,17 @@ export async function getCards(options: {
     sortBy = 'when',
     sortDir = 'desc',
   } = options;
+
+  const multiTypes =
+    typesIn && typesIn.length > 1 ? [...new Set(typesIn)].slice(0, 10) : undefined;
+  const singleTypeFilter =
+    multiTypes !== undefined
+      ? undefined
+      : typesIn && typesIn.length === 1
+        ? typesIn[0]
+        : type && type !== 'all'
+          ? type
+          : undefined;
 
   let query: FirebaseFirestore.Query = firestore.collection(CARDS_COLLECTION);
   const trimmedQuery = q?.trim() ?? '';
@@ -1742,9 +2536,11 @@ export async function getCards(options: {
     query = query.where('status', '==', status);
   }
 
-  // Filter by type
-  if (type && type !== 'all') {
-    query = query.where('type', '==', type);
+  // Filter by type (single == or multi in)
+  if (multiTypes && multiTypes.length > 1) {
+    query = query.where('type', 'in', multiTypes);
+  } else if (singleTypeFilter) {
+    query = query.where('type', '==', singleTypeFilter);
   }
 
   // Filter by dimensional tags
@@ -1848,7 +2644,11 @@ export async function getCards(options: {
   if (hasSearch && cards.length === 0) {
     let fallbackQuery: FirebaseFirestore.Query = firestore.collection(CARDS_COLLECTION);
     if (status && status !== 'all') fallbackQuery = fallbackQuery.where('status', '==', status);
-    if (type && type !== 'all') fallbackQuery = fallbackQuery.where('type', '==', type);
+    if (multiTypes && multiTypes.length > 1) {
+      fallbackQuery = fallbackQuery.where('type', 'in', multiTypes);
+    } else if (singleTypeFilter) {
+      fallbackQuery = fallbackQuery.where('type', '==', singleTypeFilter);
+    }
     if (tags && tags.length > 0) {
       tags.forEach((tag) => {
         fallbackQuery = fallbackQuery.where(`filterTags.${tag}`, '==', true);
@@ -1945,5 +2745,3 @@ export async function getParentCardsByChildId(
 }
 
  
-
-

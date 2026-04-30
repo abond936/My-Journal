@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useCallback, useState, useMemo, useEffect } from 'react';
+import { DndContext } from '@dnd-kit/core';
 import { Card, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { Media } from '@/lib/types/photo';
 import { dehydrateCardForSave, extractMediaFromContent, generateExcerpt } from '@/lib/utils/cardUtils';
@@ -12,14 +13,17 @@ import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensio
 import ChildCardManager from '@/components/admin/card-admin/ChildCardManager';
 import RichTextEditor, { RichTextEditorRef } from '@/components/common/RichTextEditor';
 import styles from './CardForm.module.css';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
 import { useCardForm } from '@/components/providers/CardFormProvider';
 import clsx from 'clsx';
 import PhotoPicker from '@/components/admin/card-admin/PhotoPicker';
 import LoadingOverlay from '@/components/admin/card-admin/LoadingOverlay';
 import { getAllowedDisplayModes, normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 import { arrayMove } from '@dnd-kit/sortable';
+import { useStudioCardFormStudioOptional } from '@/components/admin/studio/studioCardFormStudioContext';
+import { useStudioShellOptional } from '@/components/admin/studio/StudioShellContext';
+import { StudioDropZone } from '@/components/admin/studio/studioRelationshipDndPrimitives';
+import StudioCardFormGallery from '@/components/admin/studio/StudioCardFormGallery';
+import StudioCardFormChildren from '@/components/admin/studio/StudioCardFormChildren';
 
 type CardDraftOption = {
   title: string;
@@ -60,17 +64,34 @@ function formatCardApiError(data: Record<string, unknown>): string {
 
 const CardForm: React.FC = () => {
   const {
-    formState: { cardData, isSaving, errors },
+    formState: { cardData, isSaving, errors, formRevision, lastSavedState },
     allTags,
     setField,
     updateCoverImage,
     handleSave,
+    persistFieldPatch,
     updateContentMedia,
     registerEditorContentGetter,
     commitGalleryMediaPersisted,
   } = useCardForm();
 
+  const studioFormCtx = useStudioCardFormStudioOptional();
+  const studioShellForm = Boolean(studioFormCtx?.studioShellCardForm);
+  const studioShellDnd = Boolean(studioFormCtx?.enableStudioShellDnd);
+  const studioShell = useStudioShellOptional();
+
   const editorRef = useRef<RichTextEditorRef>(null);
+
+  useEffect(() => {
+    if (!studioShellDnd || !studioShell?.bodyMediaInsertRef) return;
+    const r = studioShell.bodyMediaInsertRef;
+    r.current = (media: Media) => {
+      editorRef.current?.insertImage(media);
+    };
+    return () => {
+      r.current = null;
+    };
+  }, [studioShellDnd, studioShell]);
 
   useEffect(() => {
     return registerEditorContentGetter(
@@ -94,21 +115,50 @@ const CardForm: React.FC = () => {
   const handleExcerptChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setField('excerpt', e.target.value), [setField]);
   const isExcerptAuto = cardData.excerptAuto !== false;
   const autoExcerptPreview = useMemo(() => generateExcerpt(cardData.content), [cardData.content]);
+  const autoExcerptDisplay = autoExcerptPreview || cardData.excerpt || 'Excerpt will be generated from content when saved.';
   const handleExcerptAutoToggle = useCallback(() => {
     const newAuto = !isExcerptAuto;
     setField('excerptAuto', newAuto);
     if (newAuto) setField('excerpt', null);
-  }, [isExcerptAuto, setField]);
-  const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => setField('status', e.target.value as Card['status']), [setField]);
+    if (
+      lastSavedState.cardData.excerptAuto === newAuto &&
+      (!newAuto || (lastSavedState.cardData.excerpt ?? null) === null)
+    ) {
+      return;
+    }
+    void persistFieldPatch({
+      excerptAuto: newAuto,
+      ...(newAuto ? { excerpt: null } : {}),
+    });
+  }, [isExcerptAuto, lastSavedState.cardData, persistFieldPatch, setField]);
+  const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const nextStatus = e.target.value as Card['status'];
+    setField('status', nextStatus);
+    if (lastSavedState.cardData.status === nextStatus) return;
+    void persistFieldPatch({ status: nextStatus });
+  }, [lastSavedState.cardData.status, persistFieldPatch, setField]);
   const handleTypeChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       const nextType = e.target.value as Card['type'];
+      const nextDisplayMode = normalizeDisplayModeForType(nextType, cardData.displayMode);
       setField('type', nextType);
-      setField('displayMode', normalizeDisplayModeForType(nextType, cardData.displayMode));
+      setField('displayMode', nextDisplayMode);
+      if (
+        lastSavedState.cardData.type === nextType &&
+        lastSavedState.cardData.displayMode === nextDisplayMode
+      ) {
+        return;
+      }
+      void persistFieldPatch({ type: nextType, displayMode: nextDisplayMode });
     },
-    [setField, cardData.displayMode]
+    [persistFieldPatch, setField, cardData.displayMode, lastSavedState.cardData.displayMode, lastSavedState.cardData.type]
   );
-  const handleDisplayModeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => setField('displayMode', e.target.value as Card['displayMode']), [setField]);
+  const handleDisplayModeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const nextDisplayMode = e.target.value as Card['displayMode'];
+    setField('displayMode', nextDisplayMode);
+    if (lastSavedState.cardData.displayMode === nextDisplayMode) return;
+    void persistFieldPatch({ displayMode: nextDisplayMode });
+  }, [lastSavedState.cardData.displayMode, persistFieldPatch, setField]);
   const handleContentChange = useCallback((content: string) => {
     setField('content', content);
     updateContentMedia(extractMediaFromContent(content));
@@ -116,7 +166,15 @@ const CardForm: React.FC = () => {
   
   const handleTagsChange = useCallback((newTagIds: string[]) => {
     setField('tags', newTagIds);
-  }, [setField]);
+    const savedTags = lastSavedState.cardData.tags || [];
+    if (
+      savedTags.length === newTagIds.length &&
+      savedTags.every((tagId, index) => tagId === newTagIds[index])
+    ) {
+      return;
+    }
+    void persistFieldPatch({ tags: newTagIds });
+  }, [lastSavedState.cardData.tags, persistFieldPatch, setField]);
 
   const handleCoverImageChange = useCallback((newCoverImage: Media | null, newPosition?: string) => {
     if (newCoverImage && newPosition !== undefined) {
@@ -132,6 +190,23 @@ const CardForm: React.FC = () => {
       updateCoverImage(newCoverImage);
     }
   }, [updateCoverImage]);
+
+  const handleCoverImageCommit = useCallback(async (newCoverImage: Media | null, newPosition?: string) => {
+    if (!newCoverImage || newPosition === undefined) return;
+
+    const parts = newPosition.trim().split(/\s+/);
+    const xPercent = parseFloat(parts[0] ?? '50') || 50;
+    const yPercent = parseFloat(parts[1] ?? '50') || 50;
+    const focalPoint = {
+      x: (xPercent / 100) * newCoverImage.width,
+      y: (yPercent / 100) * newCoverImage.height,
+    };
+
+    await persistFieldPatch({
+      coverImageId: newCoverImage.docId,
+      coverImageFocalPoint: focalPoint,
+    });
+  }, [persistFieldPatch]);
 
   const handleGalleryUpdate = useCallback((newGallery: HydratedGalleryMediaItem[]) => {
     setField('galleryMedia', newGallery);
@@ -206,6 +281,34 @@ const CardForm: React.FC = () => {
     const tagIds = new Set(cardData.tags || []);
     return allTags.filter(tag => tagIds.has(tag.docId));
   }, [cardData.tags, allTags]);
+
+  const persistTitleOnBlur = useCallback(() => {
+    const nextTitle = (cardData.title || '').trim();
+    if (!cardData.docId || !nextTitle) return;
+    if ((lastSavedState.cardData.title || '') === nextTitle) return;
+    void persistFieldPatch({ title: nextTitle });
+  }, [cardData.docId, cardData.title, lastSavedState.cardData.title, persistFieldPatch]);
+
+  const persistSubtitleOnBlur = useCallback(() => {
+    if (!cardData.docId) return;
+    const nextSubtitle = cardData.subtitle || null;
+    if ((lastSavedState.cardData.subtitle || null) === nextSubtitle) return;
+    void persistFieldPatch({ subtitle: nextSubtitle });
+  }, [cardData.docId, cardData.subtitle, lastSavedState.cardData.subtitle, persistFieldPatch]);
+
+  const persistExcerptOnBlur = useCallback(() => {
+    if (!cardData.docId || isExcerptAuto) return;
+    const nextExcerpt = cardData.excerpt || null;
+    if ((lastSavedState.cardData.excerpt || null) === nextExcerpt) return;
+    void persistFieldPatch({ excerpt: nextExcerpt });
+  }, [cardData.docId, cardData.excerpt, isExcerptAuto, lastSavedState.cardData.excerpt, persistFieldPatch]);
+
+  const handleSingleLineFieldEnter = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.blur();
+  }, []);
 
   const allowedDisplayModes = useMemo(
     () => getAllowedDisplayModes(cardData.type ?? 'story'),
@@ -305,8 +408,22 @@ const CardForm: React.FC = () => {
     [setField, updateContentMedia]
   );
 
+  const bodyRichTextEditor = (
+    <RichTextEditor
+      key={formRevision}
+      currentCardId={cardData.docId}
+      ref={editorRef}
+      initialContent={cardData.content}
+      onChange={handleContentChange}
+      onAddImage={handleAddImageToContent}
+      error={errors.content}
+      className={clsx(errors.content && styles.inputError)}
+      chainWheelToScrollParent={studioShellForm}
+    />
+  );
+
   return (
-    <DndProvider backend={HTML5Backend}>
+    <>
       <LoadingOverlay
         isVisible={isSaving}
         title="Saving card..."
@@ -321,6 +438,258 @@ const CardForm: React.FC = () => {
           filterTagIds={cardData.tags ?? []}
         />
       )}
+      {studioShellForm && !studioShellDnd ? (
+        <DndContext onDragEnd={() => undefined}>
+          <form id="card-form" onSubmit={handleSubmit} className={clsx(styles.form, styles.compactShellForm)}>
+            <div className={styles.mainContent}>
+              {saveNotice ? (
+                <div
+                  className={clsx(
+                    styles.saveNotice,
+                    saveNotice.type === 'success' ? styles.saveNoticeSuccess : styles.saveNoticeError
+                  )}
+                  role={saveNotice.type === 'error' ? 'alert' : 'status'}
+                  aria-live="polite"
+                >
+                  {saveNotice.message}
+                </div>
+              ) : null}
+              <div className={styles.header}>
+                <input
+                  type="text"
+                  value={cardData.title}
+                  onChange={handleTitleChange}
+                  onBlur={persistTitleOnBlur}
+                  onKeyDown={handleSingleLineFieldEnter}
+                  placeholder="Card Title"
+                  className={clsx(styles.titleInput, errors.title && styles.inputError)}
+                />
+                <input
+                  type="text"
+                  value={cardData.subtitle || ''}
+                  onChange={handleSubtitleChange}
+                  onBlur={persistSubtitleOnBlur}
+                  onKeyDown={handleSingleLineFieldEnter}
+                  placeholder="Subtitle"
+                  className={styles.subtitleInput}
+                />
+                <div
+                  className={clsx(styles.excerptSection, studioShellForm && styles.excerptSectionStudio)}
+                >
+                  {studioShellForm ? (
+                    <>
+                      <label className={styles.excerptToggle}>
+                        <input
+                          type="checkbox"
+                          checked={isExcerptAuto}
+                          onChange={handleExcerptAutoToggle}
+                        />
+                        <span className={styles.excerptToggleLabel}>Auto-generate from content</span>
+                      </label>
+                      {isExcerptAuto ? (
+                        <div className={styles.excerptPreview}>
+                          {autoExcerptDisplay}
+                        </div>
+                      ) : (
+                        <textarea
+                          value={cardData.excerpt || ''}
+                          onChange={handleExcerptChange}
+                          onBlur={persistExcerptOnBlur}
+                          placeholder="Write a custom excerpt…"
+                          className={styles.excerptInput}
+                          rows={2}
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {isExcerptAuto ? (
+                        <div className={styles.excerptPreview}>
+                          {autoExcerptDisplay}
+                        </div>
+                      ) : (
+                        <textarea
+                          value={cardData.excerpt || ''}
+                          onChange={handleExcerptChange}
+                          onBlur={persistExcerptOnBlur}
+                          placeholder="Write a custom excerpt…"
+                          className={styles.excerptInput}
+                          rows={2}
+                        />
+                      )}
+                      <label className={styles.excerptToggle}>
+                        <input
+                          type="checkbox"
+                          checked={isExcerptAuto}
+                          onChange={handleExcerptAutoToggle}
+                        />
+                        <span className={styles.excerptToggleLabel}>Auto-generate from content</span>
+                      </label>
+                    </>
+                  )}
+                </div>
+                <div className={styles.statusSection}>
+                  <div className={styles.selectGroup}>
+                    <label htmlFor="status-select" className={styles.selectLabel}>Status</label>
+                    <select
+                      id="status-select"
+                      value={cardData.status}
+                      onChange={handleStatusChange}
+                      className={clsx(styles.statusSelect, errors.status && styles.inputError)}
+                    >
+                      <option value="draft">Draft</option>
+                      <option value="published">Published</option>
+                    </select>
+                  </div>
+                  <div className={styles.selectGroup}>
+                    <label htmlFor="type-select" className={styles.selectLabel}>Type</label>
+                    <select
+                      id="type-select"
+                      value={cardData.type}
+                      onChange={handleTypeChange}
+                      className={clsx(styles.statusSelect, errors.type && styles.inputError)}
+                    >
+                      <option value="story">Story</option>
+                      {cardData.type === 'qa' && <option value="qa">Q&A</option>}
+                      <option value="quote">Quote</option>
+                      <option value="callout">Callout</option>
+                      <option value="gallery">Gallery</option>
+                    </select>
+                  </div>
+                  <div className={styles.selectGroup}>
+                    <label htmlFor="display-mode-select" className={styles.selectLabel}>Display Mode</label>
+                    <select
+                      id="display-mode-select"
+                      value={normalizeDisplayModeForType(cardData.type ?? 'story', cardData.displayMode)}
+                      onChange={handleDisplayModeChange}
+                      className={clsx(styles.statusSelect, errors.displayMode && styles.inputError)}
+                    >
+                      {allowedDisplayModes.map((mode) => (
+                        <option key={mode} value={mode}>
+                          {mode === 'inline' ? 'Inline' : mode === 'navigate' ? 'Navigate' : 'Static'}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.coverPhotoSection}>
+                <CoverPhotoContainer
+                  coverImage={cardData.coverImage}
+                  objectPosition={
+                    cardData.coverImageFocalPoint
+                      ? `${(cardData.coverImageFocalPoint.x / (cardData.coverImage?.width || 1)) * 100}% ${(cardData.coverImageFocalPoint.y / (cardData.coverImage?.height || 1)) * 100}%`
+                      : '50% 50%'
+                  }
+                  onChange={handleCoverImageChange}
+                  onCommit={handleCoverImageCommit}
+                  isSaving={isSaving}
+                  showSavingOverlay={false}
+                  error={errors.coverImage}
+                  filterTagIds={cardData.tags ?? []}
+                />
+              </div>
+
+              <div className={styles.tagsSection}>
+                <CardDimensionalTagCommandBar
+                  card={cardData}
+                  allTags={allTags}
+                  disabled={isSaving}
+                  variant={studioShellForm ? 'compact' : 'default'}
+                  onUpdateTags={handleTagsChange}
+                  tagError={errors.tags}
+                  className={styles.tagCommandBar}
+                  trailingSlot={null}
+                />
+              </div>
+
+              <div className={styles.editorSection}>
+                <h4 className={styles.sectionTitle}>Content</h4>
+                {bodyRichTextEditor}
+              </div>
+
+              <div className={styles.aiAssistSection}>
+                <h4 className={styles.sectionTitle}>AI Assist</h4>
+                <div className={styles.aiAssistTopRow}>
+                  <div className={styles.aiAssistActionGroup}>
+                    <button
+                      type="button"
+                      className={styles.aiAssistButton}
+                      onClick={() => void requestDraftSuggestions(false)}
+                      disabled={isSuggestingDrafts || isSaving}
+                    >
+                      {isSuggestingDrafts ? 'Generating…' : 'Draft'}
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.aiAssistButton}
+                      onClick={() => void requestDraftSuggestions(true)}
+                      disabled={isSuggestingDrafts || draftOptions.length === 0}
+                    >
+                      Revision
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.aiAssistClearButton}
+                      onClick={clearDraftSuggestions}
+                      disabled={isSuggestingDrafts || (draftOptions.length === 0 && !draftSuggestionError)}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <label className={styles.aiAssistToggle}>
+                    <input
+                      type="checkbox"
+                      checked={includeHistoricalContext}
+                      onChange={(e) => setIncludeHistoricalContext(e.target.checked)}
+                      disabled={isSuggestingDrafts}
+                    />
+                    Include historical context
+                  </label>
+                </div>
+                {draftSuggestionError && (
+                  <p className={styles.aiAssistError}>{draftSuggestionError}</p>
+                )}
+                {draftOptions.length > 0 && (
+                  <div className={styles.aiDraftOptions}>
+                    {draftOptions.map((opt, idx) => (
+                      <div key={`draft-${idx}`} className={styles.aiDraftCard}>
+                        <div className={styles.aiDraftHeading}>
+                          {opt.rationale ? <span>{opt.rationale}</span> : null}
+                        </div>
+                        <div className={styles.aiDraftPreview}>
+                          <p><strong>Title:</strong> {opt.title || '(empty)'}</p>
+                          <p><strong>Subtitle:</strong> {opt.subtitle || '(empty)'}</p>
+                          <p><strong>Content:</strong> {opt.content || '(empty)'}</p>
+                        </div>
+                        <div className={styles.aiDraftActions}>
+                          <button type="button" onClick={() => applyDraftOption(opt, 'all')}>Apply Full</button>
+                          <button type="button" onClick={() => applyDraftOption(opt, 'title')}>Apply Title</button>
+                          <button type="button" onClick={() => applyDraftOption(opt, 'subtitle')}>Apply Subtitle</button>
+                          <button type="button" onClick={() => applyDraftOption(opt, 'content')}>Apply Content</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.gallerySection}>
+                <StudioCardFormGallery
+                  disabled={isSaving}
+                  onSetAsCover={handleSetGalleryItemAsCover}
+                  currentCoverMediaId={cardData.coverImageId || null}
+                />
+              </div>
+
+              <div className={styles.childrenSection}>
+                <StudioCardFormChildren disabled={isSaving} />
+              </div>
+            </div>
+          </form>
+        </DndContext>
+      ) : (
       <form id="card-form" onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.mainContent}>
           {saveNotice ? (
@@ -340,6 +709,8 @@ const CardForm: React.FC = () => {
               type="text"
               value={cardData.title}
               onChange={handleTitleChange}
+              onBlur={persistTitleOnBlur}
+              onKeyDown={handleSingleLineFieldEnter}
               placeholder="Card Title"
               className={clsx(styles.titleInput, errors.title && styles.inputError)}
             />
@@ -347,31 +718,65 @@ const CardForm: React.FC = () => {
               type="text"
               value={cardData.subtitle || ''}
               onChange={handleSubtitleChange}
+              onBlur={persistSubtitleOnBlur}
+              onKeyDown={handleSingleLineFieldEnter}
               placeholder="Subtitle"
               className={styles.subtitleInput}
             />
-            <div className={styles.excerptSection}>
-              {isExcerptAuto ? (
-                <div className={styles.excerptPreview}>
-                  {autoExcerptPreview || 'Excerpt will be generated from content when saved.'}
-                </div>
+            <div
+              className={clsx(styles.excerptSection, studioShellForm && styles.excerptSectionStudio)}
+            >
+              {studioShellForm ? (
+                <>
+                  <label className={styles.excerptToggle}>
+                    <input
+                      type="checkbox"
+                      checked={isExcerptAuto}
+                      onChange={handleExcerptAutoToggle}
+                    />
+                    <span className={styles.excerptToggleLabel}>Auto-generate from content</span>
+                  </label>
+                  {isExcerptAuto ? (
+                    <div className={styles.excerptPreview}>
+                      {autoExcerptDisplay}
+                    </div>
+                  ) : (
+                    <textarea
+                      value={cardData.excerpt || ''}
+                      onChange={handleExcerptChange}
+                      onBlur={persistExcerptOnBlur}
+                      placeholder="Write a custom excerpt…"
+                      className={styles.excerptInput}
+                      rows={2}
+                    />
+                  )}
+                </>
               ) : (
-                <textarea
-                  value={cardData.excerpt || ''}
-                  onChange={handleExcerptChange}
-                  placeholder="Write a custom excerpt…"
-                  className={styles.excerptInput}
-                  rows={2}
-                />
+                <>
+                  {isExcerptAuto ? (
+                    <div className={styles.excerptPreview}>
+                      {autoExcerptDisplay}
+                    </div>
+                  ) : (
+                    <textarea
+                      value={cardData.excerpt || ''}
+                      onChange={handleExcerptChange}
+                      onBlur={persistExcerptOnBlur}
+                      placeholder="Write a custom excerpt…"
+                      className={styles.excerptInput}
+                      rows={2}
+                    />
+                  )}
+                  <label className={styles.excerptToggle}>
+                    <input
+                      type="checkbox"
+                      checked={isExcerptAuto}
+                      onChange={handleExcerptAutoToggle}
+                    />
+                    <span className={styles.excerptToggleLabel}>Auto-generate from content</span>
+                  </label>
+                </>
               )}
-              <label className={styles.excerptToggle}>
-                <input
-                  type="checkbox"
-                  checked={isExcerptAuto}
-                  onChange={handleExcerptAutoToggle}
-                />
-                <span className={styles.excerptToggleLabel}>Auto-generate from content</span>
-              </label>
             </div>
             <div className={styles.statusSection}>
               <div className={styles.selectGroup}>
@@ -395,7 +800,7 @@ const CardForm: React.FC = () => {
                   className={clsx(styles.statusSelect, errors.type && styles.inputError)}
                 >
                   <option value="story">Story</option>
-                  <option value="qa">Q&A</option>
+                  {cardData.type === 'qa' && <option value="qa">Q&A</option>}
                   <option value="quote">Quote</option>
                   <option value="callout">Callout</option>
                   <option value="gallery">Gallery</option>
@@ -420,18 +825,45 @@ const CardForm: React.FC = () => {
           </div>
 
           <div className={styles.coverPhotoSection}>
-            <CoverPhotoContainer
-              coverImage={cardData.coverImage}
-              objectPosition={cardData.coverImageFocalPoint ? 
-                `${(cardData.coverImageFocalPoint.x / (cardData.coverImage?.width || 1)) * 100}% ${(cardData.coverImageFocalPoint.y / (cardData.coverImage?.height || 1)) * 100}%` : 
-                '50% 50%'
-              }
-              onChange={handleCoverImageChange}
-              isSaving={isSaving}
-              showSavingOverlay={false}
-              error={errors.coverImage}
-              filterTagIds={cardData.tags ?? []}
-            />
+            {studioShellDnd ? (
+              <StudioDropZone
+                id="drop:cover"
+                accepts={['source', 'gallery']}
+                ariaLabel="Cover drop target: drop source or gallery media here to set cover"
+                className={styles.studioCoverDropZone}
+                eligibleHint="Release here to make this the cover"
+              >
+                <CoverPhotoContainer
+                  coverImage={cardData.coverImage}
+                  objectPosition={
+                    cardData.coverImageFocalPoint
+                      ? `${(cardData.coverImageFocalPoint.x / (cardData.coverImage?.width || 1)) * 100}% ${(cardData.coverImageFocalPoint.y / (cardData.coverImage?.height || 1)) * 100}%`
+                      : '50% 50%'
+                  }
+                  onChange={handleCoverImageChange}
+                  onCommit={handleCoverImageCommit}
+                  isSaving={isSaving}
+                  showSavingOverlay={false}
+                  error={errors.coverImage}
+                  filterTagIds={cardData.tags ?? []}
+                />
+              </StudioDropZone>
+            ) : (
+              <CoverPhotoContainer
+                coverImage={cardData.coverImage}
+                objectPosition={
+                  cardData.coverImageFocalPoint
+                    ? `${(cardData.coverImageFocalPoint.x / (cardData.coverImage?.width || 1)) * 100}% ${(cardData.coverImageFocalPoint.y / (cardData.coverImage?.height || 1)) * 100}%`
+                    : '50% 50%'
+                }
+                onChange={handleCoverImageChange}
+                onCommit={handleCoverImageCommit}
+                isSaving={isSaving}
+                showSavingOverlay={false}
+                error={errors.coverImage}
+                filterTagIds={cardData.tags ?? []}
+              />
+            )}
           </div>
 
           <div className={styles.tagsSection}>
@@ -439,42 +871,52 @@ const CardForm: React.FC = () => {
               card={cardData}
               allTags={allTags}
               disabled={isSaving}
+              variant={studioShellForm ? 'compact' : 'default'}
               onUpdateTags={handleTagsChange}
               tagError={errors.tags}
               className={styles.tagCommandBar}
               trailingSlot={
-                <button
-                  type="button"
-                  className={macroTagStyles.editButton}
-                  disabled={isSaving}
-                  onClick={() => setTagMacroExpanded(true)}
-                >
-                  Edit tags
-                </button>
+                studioShellForm ? null : (
+                  <button
+                    type="button"
+                    className={macroTagStyles.editButton}
+                    disabled={isSaving}
+                    onClick={() => setTagMacroExpanded(true)}
+                  >
+                    Edit tags
+                  </button>
+                )
               }
             />
-            <MacroTagSelector
-              selectedTags={selectedTagObjects}
-              allTags={allTags}
-              onChange={handleTagsChange}
-              expanded={tagMacroExpanded}
-              onExpandedChange={setTagMacroExpanded}
-              collapsedSummary="none"
-              className={clsx(styles.tagSelector, errors.tags && styles.inputError)}
-            />
+            {!studioShellForm ? (
+              <MacroTagSelector
+                selectedTags={selectedTagObjects}
+                allTags={allTags}
+                onChange={handleTagsChange}
+                expanded={tagMacroExpanded}
+                onExpandedChange={setTagMacroExpanded}
+                collapsedSummary="none"
+                className={clsx(styles.tagSelector, errors.tags && styles.inputError)}
+              />
+            ) : null}
           </div>
 
           <div className={styles.editorSection}>
             <h4 className={styles.sectionTitle}>Content</h4>
-            <RichTextEditor
-              currentCardId={cardData.docId}
-              ref={editorRef}
-              initialContent={cardData.content}
-              onChange={handleContentChange}
-              onAddImage={handleAddImageToContent}
-              error={errors.content}
-              className={clsx(errors.content && styles.inputError)}
-            />
+            {studioShellDnd ? (
+              <StudioDropZone
+                id="drop:body"
+                accepts={['source']}
+                ariaLabel="Drop media from bank into body"
+                className={styles.studioBodyDropZone}
+                alwaysRegister
+                eligibleHint="Release here to insert into the story"
+              >
+                {bodyRichTextEditor}
+              </StudioDropZone>
+            ) : (
+              bodyRichTextEditor
+            )}
           </div>
 
           <div className={styles.aiAssistSection}>
@@ -544,28 +986,41 @@ const CardForm: React.FC = () => {
           </div>
 
           <div className={styles.gallerySection}>
-            <GalleryManager
-              galleryMedia={(cardData.galleryMedia || []) as HydratedGalleryMediaItem[]}
-              onUpdate={handleGalleryUpdate}
-              onPersistGalleryAfterSlotSave={persistGalleryAfterSlotSave}
-              onSetAsCover={handleSetGalleryItemAsCover}
-              currentCoverMediaId={cardData.coverImageId || null}
-              error={errors.galleryMedia}
-              filterTagIds={cardData.tags ?? []}
-            />
+            {studioShellForm ? (
+              <StudioCardFormGallery
+                disabled={isSaving}
+                onSetAsCover={handleSetGalleryItemAsCover}
+                currentCoverMediaId={cardData.coverImageId || null}
+              />
+            ) : (
+              <GalleryManager
+                galleryMedia={(cardData.galleryMedia || []) as HydratedGalleryMediaItem[]}
+                onUpdate={handleGalleryUpdate}
+                onPersistGalleryAfterSlotSave={persistGalleryAfterSlotSave}
+                onSetAsCover={handleSetGalleryItemAsCover}
+                currentCoverMediaId={cardData.coverImageId || null}
+                error={errors.galleryMedia}
+                filterTagIds={cardData.tags ?? []}
+              />
+            )}
           </div>
 
           <div className={styles.childrenSection}>
-            <ChildCardManager
-              cardId={cardData.docId}
-              childrenIds={cardData.childrenIds || []}
-              onUpdate={handleChildCardsChange}
-              error={errors.childrenIds}
-            />
+            {studioShellForm ? (
+              <StudioCardFormChildren disabled={isSaving} />
+            ) : (
+              <ChildCardManager
+                cardId={cardData.docId}
+                childrenIds={cardData.childrenIds || []}
+                onUpdate={handleChildCardsChange}
+                error={errors.childrenIds}
+              />
+            )}
           </div>
         </div>
       </form>
-    </DndProvider>
+      )}
+    </>
   );
 };
 

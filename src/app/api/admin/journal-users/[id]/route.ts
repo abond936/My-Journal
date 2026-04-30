@@ -14,13 +14,36 @@ const patchBodySchema = z
     message: 'At least one field required',
   });
 
+type ApiErrorPayload = {
+  ok: false;
+  code: string;
+  message: string;
+  severity: 'error' | 'warning';
+  retryable: boolean;
+  error?: string;
+  issues?: unknown;
+};
+
+function errorResponse(payload: ApiErrorPayload, status: number) {
+  return NextResponse.json(payload, { status });
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') {
-    return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'AUTH_FORBIDDEN',
+        message: 'Forbidden.',
+        severity: 'error',
+        retryable: false,
+      },
+      403
+    );
   }
 
   const { id } = await params;
@@ -29,24 +52,58 @@ export async function PATCH(
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ message: 'Invalid JSON' }, { status: 400 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'USER_UPDATE_INVALID_JSON',
+        message: 'Invalid JSON.',
+        severity: 'error',
+        retryable: false,
+      },
+      400
+    );
   }
 
   const parsed = patchBodySchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json(
-      { message: 'Invalid body', issues: parsed.error.flatten() },
-      { status: 400 }
+    return errorResponse(
+      {
+        ok: false,
+        code: 'USER_UPDATE_INVALID_BODY',
+        message: 'Invalid body.',
+        severity: 'error',
+        retryable: false,
+        issues: parsed.error.flatten(),
+      },
+      400
     );
   }
 
   const existing = await getJournalUserByDocId(id);
   if (!existing) {
-    return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'USER_NOT_FOUND',
+        message: 'User not found.',
+        severity: 'error',
+        retryable: false,
+      },
+      404
+    );
   }
 
   if (parsed.data.disabled === true && session.user?.id === id) {
-    return NextResponse.json({ message: 'You cannot disable your own account' }, { status: 400 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'USER_DISABLE_SELF_FORBIDDEN',
+        message: 'You cannot disable your own account.',
+        severity: 'error',
+        retryable: false,
+      },
+      400
+    );
   }
 
   try {
@@ -61,6 +118,17 @@ export async function PATCH(
     const status =
       message.includes('only enabled admin') || message.includes('not found') ? 400 : 500;
     console.error('[/api/admin/journal-users PATCH]', error);
-    return NextResponse.json({ message, error: message }, { status });
+    const code = status === 400 ? 'USER_UPDATE_CONSTRAINT_FAILED' : 'USER_UPDATE_FAILED';
+    return errorResponse(
+      {
+        ok: false,
+        code,
+        message,
+        severity: 'error',
+        retryable: status === 500,
+        error: message,
+      },
+      status
+    );
   }
 }

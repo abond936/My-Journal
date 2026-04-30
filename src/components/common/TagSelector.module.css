@@ -7,18 +7,23 @@
   width: 100%;
   padding: var(--spacing-sm);
   margin-bottom: var(--spacing-sm);
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--reader-support-control-border-color);
   border-radius: var(--border-radius-md);
-  font-size: var(--font-size-base);
+  background: var(--reader-support-control-background-color);
+  color: var(--reader-support-control-text-color);
+  font-family: var(--reader-support-control-font-family);
+  font-size: var(--reader-support-control-font-size);
+  font-weight: var(--reader-support-control-font-weight);
+  line-height: var(--reader-support-control-line-height);
 }
 
 .tagList {
   max-height: var(--spacing-4xl);
   overflow-y: auto;
   padding: var(--spacing-xs);
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--reader-chrome-border-color);
   border-radius: var(--border-radius-md);
-  background: var(--layout-background1-color);
+  background: var(--reader-chrome-background-color);
 }
 
 .tagItem {
@@ -35,10 +40,10 @@
   width: var(--spacing-xl);
   height: var(--spacing-xl);
   padding: 0;
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--reader-support-control-border-color);
   border-radius: var(--border-radius-md);
-  background: var(--layout-background2-color);
-  color: var(--text1-color);
+  background: var(--reader-support-control-background-color);
+  color: var(--reader-support-control-text-color);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -47,8 +52,8 @@
 }
 
 .expandButton:hover {
-  background: var(--color1-200);
-  border-color: var(--color3);
+  background: var(--reader-support-control-hover-background-color);
+  border-color: var(--reader-support-control-strong-border-color);
 }
 
 .expandIcon {
@@ -58,11 +63,14 @@
 
 .tag {
   padding: var(--spacing-xs) var(--spacing-sm);
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--reader-support-control-border-color);
   border-radius: var(--border-radius-md);
-  background: var(--layout-background2-color);
-  color: var(--text1-color);
-  font-size: var(--font-size-sm);
+  background: var(--reader-support-control-background-color);
+  color: var(--reader-support-control-text-color);
+  font-family: var(--reader-support-control-font-family);
+  font-size: var(--reader-support-control-font-size);
+  font-weight: var(--reader-support-control-font-weight);
+  line-height: var(--reader-support-control-line-height);
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
@@ -70,19 +78,19 @@
 }
 
 .tag:hover {
-  background: var(--color1-200);
-  border-color: var(--color3);
+  background: var(--reader-support-control-hover-background-color);
+  border-color: var(--reader-support-control-strong-border-color);
 }
 
 .tag.selected {
-  background: var(--color3);
-  color: var(--color2);
-  border-color: var(--color3);
+  background: var(--reader-support-control-strong-background-color);
+  color: var(--reader-support-control-strong-text-color);
+  border-color: var(--reader-support-control-strong-border-color);
 }
 
 .children {
   margin-left: var(--spacing-md);
-  border-left: var(--border-width-thin) solid var(--border2-color);
+  border-left: var(--border-width-thin) solid var(--reader-chrome-border-color);
   padding-left: var(--spacing-sm);
 }
 
@@ -90,10 +98,13 @@
 .error {
   padding: var(--spacing-sm);
   text-align: center;
-  color: var(--text2-color);
-  font-size: var(--font-size-sm);
+  color: var(--reader-support-hint-color);
+  font-family: var(--reader-support-hint-font-family);
+  font-size: var(--reader-support-hint-font-size);
+  font-weight: var(--reader-support-hint-font-weight);
+  line-height: var(--reader-support-hint-line-height);
 }
 
 .error {
-  color: var(--text1-color);
-} 
+  color: var(--reader-support-label-color);
+}

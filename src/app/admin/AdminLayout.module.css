@@ -41,9 +41,9 @@
 }
 
 .section a.active {
-  background: var(--layout-background1-color);
-  color: var(--text1-color);
-  font-weight: 500;
+  background: var(--button-solid-background-color);
+  color: white;
+  font-weight: var(--font-weight-bold);
 }
 
 .main {

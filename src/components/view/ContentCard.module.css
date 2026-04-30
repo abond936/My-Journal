@@ -1,33 +1,33 @@
 .card {
   display: block;
-  background-color: var(--layout-background2-color);
-  border-radius: var(--border-radius-lg);
+  background-color: var(--reader-card-background-color);
+  border-radius: var(--reader-card-border-radius);
   overflow: hidden;
   transition: transform var(--transition-short) ease-in-out, box-shadow var(--transition-short) ease-in-out;
   text-decoration: none;
-  color: var(--text1-color);
-  border: var(--border-width-thin) solid var(--border1-color);
+  color: var(--reader-body-color);
+  border: var(--reader-card-border-width) solid var(--reader-card-border-color);
   position: relative;
 }
 
 .card:hover {
   transform: translateY(calc(-1 * var(--spacing-xs)));
-  box-shadow: var(--shadow-lg);
-  border-color: var(--color4-light);
+  box-shadow: var(--reader-card-shadow-hover);
+  border-color: var(--reader-card-hover-border-color);
 }
 
 /* Type-specific styles */
 .card.tag {
-  background-color: var(--layout-background1-color);
-  border-color: var(--color4);
+  background-color: var(--reader-card-flat-background-color);
+  border-color: var(--reader-discovery-card-border-color);
 }
 
 .card.entry {
-  background-color: var(--layout-background2-color);
+  background-color: var(--reader-card-background-color);
 }
 
 .card.album {
-  background-color: var(--layout-background2-color);
+  background-color: var(--reader-card-background-color);
 }
 
 /* Size variations */
@@ -74,7 +74,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: var(--layout-background2-color);
+  background-color: var(--reader-card-background-color);
 }
 
 /* Overlay layout */
@@ -95,7 +95,7 @@
   left: 0;
   right: 0;
   height: 100%;
-  background: var(--gradient-bottom-overlay);
+  background: var(--reader-covered-fade-background);
   z-index: 1;
 }
 
@@ -105,7 +105,7 @@
   left: 0;
   right: 0;
   padding: var(--spacing-lg);
-  color: var(--color2);
+  color: var(--reader-card-overlay-text-color);
   z-index: 2;
   background: none;
   display: flex;
@@ -125,42 +125,78 @@
 
 .title {
   margin: 0;
-  font-size: var(--font-size-lg);
-  color: var(--text1-color);
-  line-height: 1.4;
+  font-family: var(--reader-title-font-family);
+  font-size: var(--reader-title-font-size);
+  font-weight: var(--reader-title-font-weight);
+  color: var(--reader-title-color);
+  line-height: var(--reader-title-line-height);
+}
+
+.card[data-card-type='story'] .title {
+  font-family: var(--reader-story-title-font-family);
+  font-size: var(--reader-story-title-font-size);
+  font-weight: var(--reader-story-title-font-weight);
+  color: var(--reader-story-title-color);
+  line-height: var(--reader-story-title-line-height);
+}
+
+.card[data-card-type='gallery'] .title {
+  font-family: var(--reader-gallery-title-font-family);
+  font-size: var(--reader-gallery-title-font-size);
+  font-weight: var(--reader-gallery-title-font-weight);
+  color: var(--reader-gallery-title-color);
+  line-height: var(--reader-gallery-title-line-height);
+}
+
+.card[data-card-type='qa'] .title {
+  font-family: var(--reader-question-font-family);
+  font-size: var(--reader-question-font-size);
+  font-weight: var(--reader-question-font-weight);
+  color: var(--reader-question-color);
+  line-height: var(--reader-question-line-height);
+}
+
+.card[data-card-type='callout'] .title {
+  font-family: var(--reader-callout-title-font-family);
+  font-size: var(--reader-callout-title-font-size);
+  font-weight: var(--reader-callout-title-font-weight);
+  color: var(--reader-callout-title-color);
+  line-height: var(--reader-callout-title-line-height);
 }
 
 .overlay .title {
-  color: var(--color2);
+  color: var(--reader-card-overlay-text-color);
   margin-bottom: var(--spacing-sm);
 }
 
 .large .title {
-  font-size: var(--font-size-2xl);
+  font-size: var(--reader-detail-title-font-size);
 }
 
 .small .title {
-  font-size: var(--font-size-base);
+  font-size: var(--reader-title-small-font-size);
 }
 
 .description {
   margin: 0;
-  font-size: var(--font-size-sm);
-  color: var(--text2-color);
+  font-family: var(--reader-excerpt-font-family);
+  font-size: var(--reader-excerpt-font-size);
+  font-weight: var(--reader-excerpt-font-weight);
+  color: var(--reader-excerpt-color);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  line-height: var(--line-height-relaxed);
+  line-height: var(--reader-excerpt-line-height);
 }
 
 .overlay .description {
-  color: var(--color2);
+  color: var(--reader-card-overlay-text-color);
   margin-top: var(--spacing-sm);
 }
 
 .large .description {
-  font-size: var(--font-size-base);
+  font-size: var(--reader-body-font-size);
   -webkit-line-clamp: 3;
 }
 
@@ -170,14 +206,17 @@
 
 /* Tag-specific styles */
 .dimension {
-  font-size: var(--font-size-xs);
-  color: var(--color4);
+  font-family: var(--reader-meta-font-family);
+  font-size: var(--reader-meta-font-size);
+  font-weight: var(--reader-meta-font-weight);
+  line-height: var(--reader-meta-line-height);
+  color: var(--reader-meta-color);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .overlay .dimension {
-  color: var(--color2);
+  color: var(--reader-card-overlay-text-color);
 }
 
 .tags {
@@ -188,50 +227,56 @@
 }
 
 .tag {
-  font-size: var(--font-size-xs);
+  font-family: var(--tag-font-family);
+  font-size: var(--tag-font-size);
+  font-weight: var(--tag-font-weight);
   padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--reader-card-border-radius);
   cursor: pointer;
-  transition: background-color var(--transition-short);
+  transition: background-color var(--transition-short), border-color var(--transition-short);
+  border: var(--border-width-thin) solid transparent;
 }
 
 .personTag {
-  background-color: var(--tag-who-bg-color);
-  color: var(--tag-text-color);
+  background-color: var(--tag-who-bg-color, var(--reader-tag-background-color));
+  color: var(--reader-contrast-text-color);
+  border-color: var(--tag-who-bg-color, var(--reader-tag-border-color));
 }
 
 .personTag:hover {
-  background-color: var(--tag-who-bg-color);
+  background-color: var(--tag-who-bg-color, var(--reader-tag-background-color));
 }
 
 .placeTag {
-  background-color: var(--tag-where-bg-color);
-  color: var(--tag-text-color);
+  background-color: var(--tag-where-bg-color, var(--reader-tag-background-color));
+  color: var(--reader-contrast-text-color);
+  border-color: var(--tag-where-bg-color, var(--reader-tag-border-color));
 }
 
 .placeTag:hover {
-  background-color: var(--tag-where-bg-color);
+  background-color: var(--tag-where-bg-color, var(--reader-tag-background-color));
 }
 
 .overlay .tag {
-  background-color: hsla(var(--h2), var(--s2), var(--l2), 0.2);
-  color: var(--color2);
+  background-color: var(--reader-gallery-overlay-background);
+  color: var(--reader-card-overlay-text-color);
+  border-color: transparent;
 }
 
 .overlay .tag:hover {
-  background-color: hsla(var(--h2), var(--s2), var(--l2), 0.3);
+  background-color: var(--reader-gallery-overlay-background);
 }
 
 .counts {
   display: flex;
   gap: var(--spacing-md);
   font-size: var(--font-size-sm);
-  color: var(--text2-color);
+  color: var(--reader-meta-color);
   margin-top: auto;
 }
 
 .overlay .counts {
-  color: var(--color2);
+  color: var(--reader-card-overlay-text-color);
 }
 
 .count {
@@ -242,11 +287,11 @@
 
 .date {
   font-size: var(--font-size-sm);
-  color: var(--text2-color);
+  color: var(--reader-meta-color);
 }
 
 .overlay .date {
-  color: var(--color2);
+  color: var(--reader-card-overlay-text-color);
 }
 
 /* Responsive Design */
@@ -310,8 +355,8 @@
 
 .swiperContainer .swiper-button-next,
 .swiperContainer .swiper-button-prev {
-  color: var(--color2);
-  background: hsla(var(--h1), var(--s1), var(--l1), 0.5);
+  color: var(--reader-media-control-text-color);
+  background: var(--reader-media-control-background-color);
   border-radius: 50%;
   width: var(--spacing-xl);
   height: var(--spacing-xl);
@@ -323,7 +368,7 @@
 }
 
 .swiperContainer .swiper-pagination-bullet {
-  background: var(--color2);
+  background: var(--reader-media-control-text-color);
   opacity: 0.5;
 }
 

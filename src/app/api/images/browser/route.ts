@@ -3,10 +3,32 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
 import { importFromBuffer } from '@/lib/services/images/imageImportService';
 
+type ApiErrorPayload = {
+  ok: false;
+  code: string;
+  message: string;
+  severity: 'error' | 'warning';
+  retryable: boolean;
+  error?: string;
+};
+
+function errorResponse(payload: ApiErrorPayload, status: number) {
+  return NextResponse.json(payload, { status });
+}
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') {
-    return new NextResponse('Forbidden', { status: 403 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'AUTH_FORBIDDEN',
+        message: 'Forbidden.',
+        severity: 'error',
+        retryable: false,
+      },
+      403
+    );
   }
 
   try {
@@ -14,11 +36,29 @@ export async function POST(req: NextRequest) {
     const file = formData.get('file') as File | null;
 
     if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+      return errorResponse(
+        {
+          ok: false,
+          code: 'MEDIA_UPLOAD_FILE_REQUIRED',
+          message: 'No file provided.',
+          severity: 'error',
+          retryable: false,
+        },
+        400
+      );
     }
 
     if (!file.type.startsWith('image/')) {
-        return NextResponse.json({ message: 'Invalid file type. Only images are allowed.' }, { status: 400 });
+      return errorResponse(
+        {
+          ok: false,
+          code: 'MEDIA_UPLOAD_FILE_TYPE_INVALID',
+          message: 'Invalid file type. Only images are allowed.',
+          severity: 'error',
+          retryable: false,
+        },
+        400
+      );
     }
     
     const fileBuffer = Buffer.from(await file.arrayBuffer());
@@ -30,6 +70,16 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Error uploading file:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-    return NextResponse.json({ error: `Failed to upload file: ${errorMessage}` }, { status: 500 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'MEDIA_UPLOAD_FAILED',
+        message: 'Failed to upload file.',
+        severity: 'error',
+        retryable: true,
+        error: errorMessage,
+      },
+      500
+    );
   }
 } 

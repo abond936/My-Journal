@@ -1,6 +1,16 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  type Dispatch,
+  type SetStateAction,
+} from 'react';
 import { usePathname } from 'next/navigation';
 import { Media } from '@/lib/types/photo';
 import { useCardContext } from '@/components/providers/CardProvider';
@@ -9,6 +19,8 @@ import {
   appendDimensionalTagQueryParams,
   dimensionalTagMapHasFilters,
   groupSelectedTagIdsByDimension,
+  mergeDimensionalTagMaps,
+  type DimensionalTagIdMap,
 } from '@/lib/utils/tagUtils';
 
 interface MediaListResponse {
@@ -29,6 +41,69 @@ interface MediaListResponse {
     nextCursor?: string | null;
     prevCursor?: string | null;
   };
+}
+
+type ApiErrorResponse = {
+  message?: string;
+  code?: string;
+  severity?: 'error' | 'warning';
+  retryable?: boolean;
+  error?: string;
+};
+
+export type MediaErrorSeverity = 'error' | 'warning';
+
+export type MediaUiError = Error & {
+  code?: string;
+  severity?: MediaErrorSeverity;
+  retryable?: boolean;
+};
+
+function toUserFacingError(prefix: string, payload: ApiErrorResponse, fallback: string): MediaUiError {
+  const parts: string[] = [];
+  if (typeof payload.message === 'string' && payload.message.trim()) {
+    parts.push(payload.message);
+  } else {
+    parts.push(fallback);
+  }
+  if (typeof payload.code === 'string' && payload.code.trim()) {
+    parts.push(`(${payload.code})`);
+  }
+  if (typeof payload.retryable === 'boolean') {
+    parts.push(payload.retryable ? 'Retryable.' : 'Not retryable.');
+  }
+  const error = new Error(`${prefix}: ${parts.join(' ')}`) as MediaUiError;
+  if (typeof payload.code === 'string' && payload.code.trim()) {
+    error.code = payload.code;
+  }
+  if (payload.severity === 'warning' || payload.severity === 'error') {
+    error.severity = payload.severity;
+  }
+  if (typeof payload.retryable === 'boolean') {
+    error.retryable = payload.retryable;
+  }
+  return error;
+}
+
+function applyMediaTagMutation(
+  existingTags: string[] | undefined,
+  nextTags: string[],
+  mode: 'add' | 'replace' | 'remove'
+): string[] {
+  if (mode === 'replace') return [...nextTags];
+  const tagSet = new Set(existingTags ?? []);
+  if (mode === 'add') {
+    nextTags.forEach((tagId) => tagSet.add(tagId));
+    return Array.from(tagSet);
+  }
+  nextTags.forEach((tagId) => tagSet.delete(tagId));
+  return Array.from(tagSet);
+}
+
+export function getMediaErrorSeverity(error: Error | null): MediaErrorSeverity {
+  if (!error) return 'error';
+  const maybeMediaError = error as MediaUiError;
+  return maybeMediaError.severity === 'warning' ? 'warning' : 'error';
 }
 
 export interface MediaFilters {
@@ -64,10 +139,15 @@ interface MediaContextType {
   // Filter actions
   setFilter: (key: keyof MediaFilters, value: string) => void;
   clearFilters: () => void;
+  /** Admin Studio: who/what/when/where tag ids for GET /api/media (single MacroTagSelector in embedded Studio). */
+  dimensionalQueryOverlay: DimensionalTagIdMap;
+  setDimensionalQueryOverlay: (
+    map: DimensionalTagIdMap | ((prev: DimensionalTagIdMap) => DimensionalTagIdMap)
+  ) => void;
   
   // Selection
   selectedMediaIds: string[];
-  setSelectedMediaIds: (ids: string[]) => void;
+  setSelectedMediaIds: Dispatch<SetStateAction<string[]>>;
   toggleMediaSelection: (id: string) => void;
   selectAll: () => void;
   selectNone: () => void;
@@ -85,9 +165,7 @@ const defaultFilters: MediaFilters = {
 
 export function MediaProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isMediaListRoute = Boolean(
-    pathname?.startsWith('/admin/media-admin') || pathname?.startsWith('/admin/media-triage')
-  );
+  const isMediaListRoute = Boolean(pathname?.startsWith('/admin/studio'));
 
   const { selectedTags } = useCardContext();
   const { tags: allTags } = useTag();
@@ -109,11 +187,45 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const [cursorStack, setCursorStack] = useState<(string | null)[]>([]);
   const [filters, setFilters] = useState<MediaFilters>(defaultFilters);
   const [selectedMediaIds, setSelectedMediaIds] = useState<string[]>([]);
+  const [dimensionalQueryOverlay, setDimensionalQueryOverlayState] = useState<DimensionalTagIdMap>({});
+  const dimensionalQueryOverlayRef = useRef<DimensionalTagIdMap>({});
   const lastMediaEngineRef = useRef<'typesense' | 'firestore' | null>(null);
+
+  const adjustPaginationAfterDelete = useCallback((deletedCount: number) => {
+    if (deletedCount <= 0) return;
+    setPagination((prev) => {
+      if (!prev) return prev;
+      const nextTotal =
+        typeof prev.total === 'number' ? Math.max(0, prev.total - deletedCount) : prev.total;
+      const nextTotalPages =
+        typeof nextTotal === 'number' ? Math.max(1, Math.ceil(nextTotal / prev.limit)) : prev.totalPages;
+      const nextPage = typeof prev.page === 'number' ? prev.page : currentPage;
+      return {
+        ...prev,
+        total: nextTotal,
+        totalPages: nextTotalPages,
+        hasNext:
+          typeof nextTotalPages === 'number'
+            ? nextPage < nextTotalPages
+            : prev.hasNext,
+      };
+    });
+  }, [currentPage]);
+
+  const setDimensionalQueryOverlay = useCallback(
+    (mapOrFn: DimensionalTagIdMap | ((prev: DimensionalTagIdMap) => DimensionalTagIdMap)) => {
+      setDimensionalQueryOverlayState((prev) => {
+        const next = typeof mapOrFn === 'function' ? mapOrFn(prev) : mapOrFn;
+        dimensionalQueryOverlayRef.current = next;
+        return next;
+      });
+    },
+    []
+  );
 
   const buildQueryString = useCallback((
     mediaFilters: MediaFilters,
-    dimMap: ReturnType<typeof groupSelectedTagIdsByDimension>,
+    dimMap: DimensionalTagIdMap,
     opts?: { cursor?: string; prevCursor?: string; listPage?: number }
   ) => {
     const params = new URLSearchParams();
@@ -140,9 +252,16 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const updatedFilters = { ...filters, ...newFilters };
+      const isStudioPath = pathname?.startsWith('/admin/studio');
+      /** Embedded Studio: media list uses only the overlay; full-page and PhotoPicker merge card context + overlay. */
+      const cardDimensionalForFetch = isStudioPath ? ({} as DimensionalTagIdMap) : dimensionalTagMap;
+      const mergedDimensional = mergeDimensionalTagMaps(
+        cardDimensionalForFetch,
+        dimensionalQueryOverlayRef.current
+      );
       const assignmentSeek =
         updatedFilters.assignment === 'unassigned' || updatedFilters.assignment === 'assigned';
-      const tagSeek = dimensionalTagMapHasFilters(dimensionalTagMap);
+      const tagSeek = dimensionalTagMapHasFilters(mergedDimensional);
       const useSeekPagination = assignmentSeek || tagSeek;
       const typesensePaging = lastMediaEngineRef.current === 'typesense';
       let opts: { cursor?: string; prevCursor?: string; listPage?: number } | undefined;
@@ -167,23 +286,18 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         opts = { cursor: cursorStack[page - 2]! };
       }
 
-      const queryString = buildQueryString(updatedFilters, dimensionalTagMap, opts);
+      const queryString = buildQueryString(updatedFilters, mergedDimensional, opts);
       const response = await fetch(`/api/media?${queryString}`);
       if (!response.ok) {
-        const errBody = await response.json().catch(() => ({})) as {
-          message?: string;
-          code?: string;
-        };
+        const errBody = (await response.json().catch(() => ({}))) as ApiErrorResponse;
         if (response.status === 503 && errBody.code === 'SEARCH_UNAVAILABLE') {
-          throw new Error(
-            typeof errBody.message === 'string'
-              ? errBody.message
-              : 'Media search requires Typesense. Clear search or configure TYPESENSE_* env vars.'
+          throw toUserFacingError(
+            'Media search unavailable',
+            errBody,
+            'Media search requires Typesense. Clear search or configure TYPESENSE_* env vars.'
           );
         }
-        throw new Error(
-          typeof errBody.message === 'string' ? errBody.message : `Failed to fetch media: ${response.statusText}`
-        );
+        throw toUserFacingError('Failed to fetch media', errBody, response.statusText);
       }
 
       const data: MediaListResponse = await response.json();
@@ -216,7 +330,16 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [filters, buildQueryString, currentPage, nextCursor, prevCursor, cursorStack, dimensionalTagMap]);
+  }, [
+    filters,
+    buildQueryString,
+    currentPage,
+    nextCursor,
+    prevCursor,
+    cursorStack,
+    dimensionalTagMap,
+    pathname,
+  ]);
 
   const updateMedia = useCallback(async (id: string, updates: Partial<Media>): Promise<Media | undefined> => {
     try {
@@ -226,20 +349,27 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify(updates),
       });
 
+      const body = (await response.json().catch(() => ({}))) as ApiErrorResponse & { media?: Media };
+
       if (!response.ok) {
-        throw new Error(`Failed to update media: ${response.statusText}`);
+        throw toUserFacingError('Failed to update media', body, response.statusText);
       }
 
-      // Refresh the current page to get updated data
+      const updated = body.media;
+      if (updated?.docId) {
+        setMedia((prev) => prev.map((m) => (m.docId === id ? { ...updated, docId: updated.docId } : m)));
+        return updated;
+      }
+
       await fetchMedia(currentPage);
-      return media.find(m => m.docId === id);
+      return undefined;
     } catch (err) {
       const error = err instanceof Error ? err : new Error('An unknown error occurred');
       setError(error);
       console.error('Error updating media:', error);
       return undefined;
     }
-  }, [fetchMedia, currentPage, media]);
+  }, [fetchMedia, currentPage]);
 
   const deleteMedia = useCallback(async (id: string) => {
     try {
@@ -248,19 +378,14 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        const errBody = await response.json().catch(() => ({}));
-        const detail =
-          typeof (errBody as { error?: string }).error === 'string'
-            ? (errBody as { error: string }).error
-            : typeof (errBody as { message?: string }).message === 'string'
-              ? (errBody as { message: string }).message
-              : response.statusText;
-        throw new Error(`Failed to delete media: ${detail}`);
+        const payload = (await response.json().catch(() => ({}))) as ApiErrorResponse;
+        throw toUserFacingError('Failed to delete media', payload, response.statusText);
       }
 
       // Remove from local state
       setMedia(prev => prev.filter(m => m.docId !== id));
       setSelectedMediaIds(prev => prev.filter(selectedId => selectedId !== id));
+      adjustPaginationAfterDelete(1);
       
       // Refresh pagination if needed
       if (pagination && media.length === 1 && currentPage > 1) {
@@ -271,7 +396,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       setError(error);
       console.error('Error deleting media:', error);
     }
-  }, [fetchMedia, currentPage, pagination, media.length]);
+  }, [adjustPaginationAfterDelete, fetchMedia, currentPage, pagination, media.length]);
 
   const deleteMultipleMedia = useCallback(async (ids: string[]) => {
     if (ids.length === 0) return;
@@ -285,7 +410,10 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         const results = await Promise.allSettled(
           chunk.map(async (id) => {
             const response = await fetch(`/api/images/${id}`, { method: 'DELETE' });
-            if (!response.ok) throw new Error(`Failed to delete ${id}`);
+            if (!response.ok) {
+              const payload = (await response.json().catch(() => ({}))) as ApiErrorResponse;
+              throw toUserFacingError(`Failed to delete ${id}`, payload, response.statusText);
+            }
             return id;
           })
         );
@@ -299,11 +427,10 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       if (deletedIds.length > 0) {
         setMedia((prev) => prev.filter((m) => !deletedIds.includes(m.docId)));
         setSelectedMediaIds((prev) => prev.filter((id) => !deletedIds.includes(id)));
+        adjustPaginationAfterDelete(deletedIds.length);
 
         if (pagination && media.length <= deletedIds.length && currentPage > 1) {
           await fetchMedia(currentPage - 1);
-        } else {
-          await fetchMedia(currentPage);
         }
       }
     } catch (err) {
@@ -311,7 +438,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       setError(error);
       console.error('Error deleting multiple media:', error);
     }
-  }, [fetchMedia, currentPage, pagination, media.length]);
+  }, [adjustPaginationAfterDelete, fetchMedia, currentPage, pagination, media.length]);
 
   const bulkApplyTags = useCallback(
     async (mediaIds: string[], tags: string[], mode: 'add' | 'replace' | 'remove' = 'add') => {
@@ -324,17 +451,27 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
           body: JSON.stringify({ mediaIds, tags, mode }),
         });
         if (!response.ok) {
-          const data = await response.json().catch(() => ({}));
-          throw new Error(typeof data.message === 'string' ? data.message : response.statusText);
+          const data = (await response.json().catch(() => ({}))) as ApiErrorResponse;
+          throw toUserFacingError('Bulk tag update failed', data, response.statusText);
         }
-        await fetchMedia(currentPage);
+        const idSet = new Set(mediaIds);
+        setMedia((prev) =>
+          prev.map((item) =>
+            item.docId && idSet.has(item.docId)
+              ? {
+                  ...item,
+                  tags: applyMediaTagMutation(item.tags, tags, mode),
+                }
+              : item
+          )
+        );
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
         setError(error);
         throw error;
       }
     },
-    [fetchMedia, currentPage]
+    []
   );
 
   const setFilter = useCallback((key: keyof MediaFilters, value: string) => {
@@ -343,6 +480,8 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
 
   const clearFilters = useCallback(() => {
     lastMediaEngineRef.current = null;
+    dimensionalQueryOverlayRef.current = {};
+    setDimensionalQueryOverlayState({});
     setFilters(defaultFilters);
     setCursorStack([]);
     setNextCursor(null);
@@ -387,6 +526,8 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     bulkApplyTags,
     setFilter,
     clearFilters,
+    dimensionalQueryOverlay,
+    setDimensionalQueryOverlay,
     selectedMediaIds,
     setSelectedMediaIds,
     toggleMediaSelection,

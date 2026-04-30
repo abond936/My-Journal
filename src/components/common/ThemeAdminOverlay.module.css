@@ -1,0 +1,235 @@
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-index-modal) + 1);
+  pointer-events: none;
+  background: transparent;
+}
+
+.overlay {
+  position: absolute;
+  min-width: 760px;
+  min-height: 620px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border-radius: var(--admin-window-border-radius);
+  background: var(--admin-window-background-color);
+  box-shadow: var(--admin-window-shadow);
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.resizeHandle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 18px;
+  cursor: col-resize;
+  z-index: 3;
+}
+
+.resizeHandle::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  height: 72px;
+  width: 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--admin-window-border-color) 88%, transparent);
+}
+
+.resizeHandle:hover::before {
+  background: var(--admin-chrome-active-control-border-color);
+}
+
+.resizeCorner {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 28px;
+  height: 28px;
+  cursor: nwse-resize;
+  z-index: 3;
+}
+
+.resizeCorner::before {
+  content: '';
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  width: 12px;
+  height: 12px;
+  border-right: 2px solid color-mix(in srgb, var(--admin-window-border-color) 88%, transparent);
+  border-bottom: 2px solid color-mix(in srgb, var(--admin-window-border-color) 88%, transparent);
+}
+
+.resizeCorner:hover::before {
+  border-right-color: var(--admin-chrome-active-control-border-color);
+  border-bottom-color: var(--admin-chrome-active-control-border-color);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: var(--border-width-thin) solid var(--admin-window-border-color);
+  background: color-mix(in srgb, var(--admin-window-background-color) 96%, transparent);
+  cursor: move;
+  user-select: none;
+}
+
+.headerMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.modeBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border-radius: var(--border-radius-full);
+  background: color-mix(in srgb, var(--admin-window-background-color) 94%, transparent);
+  color: var(--admin-chrome-text-color);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.2;
+}
+
+.closeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border-radius: var(--border-radius-full);
+  background: color-mix(in srgb, var(--admin-window-background-color) 90%, transparent);
+  color: var(--admin-chrome-text-color);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  border-color: var(--admin-chrome-active-control-border-color);
+  background: var(--admin-chrome-control-hover-background-color);
+}
+
+.body {
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.body > * {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+.themeLinkedOverlay {
+  --admin-header-background-color: var(--reader-header-background-color);
+  --admin-header-border-color: var(--reader-header-border-color);
+  --admin-header-text-color: var(--reader-header-text-color);
+  --admin-header-icon-color: var(--reader-header-icon-color);
+  --admin-sidebar-background-color: var(--reader-sidebar-background-color);
+  --admin-sidebar-border-color: var(--reader-sidebar-border-color);
+  --admin-chrome-background-color: var(--reader-chrome-background-color);
+  --admin-chrome-panel-color: var(--reader-chrome-panel-color);
+  --admin-chrome-border-color: var(--reader-chrome-border-color);
+  --admin-chrome-text-color: var(--reader-chrome-text-color);
+  --admin-chrome-text-font-family: var(--reader-chrome-text-font-family);
+  --admin-chrome-text-font-size: var(--reader-chrome-text-font-size);
+  --admin-chrome-text-font-weight: var(--reader-chrome-text-font-weight);
+  --admin-chrome-text-line-height: var(--reader-chrome-text-line-height);
+  --admin-chrome-meta-color: var(--reader-chrome-muted-color);
+  --admin-chrome-meta-font-family: var(--reader-chrome-meta-font-family);
+  --admin-chrome-meta-font-size: var(--reader-chrome-meta-font-size);
+  --admin-chrome-meta-font-weight: var(--reader-chrome-meta-font-weight);
+  --admin-chrome-meta-line-height: var(--reader-chrome-meta-line-height);
+  --admin-chrome-control-background-color: var(--reader-chrome-control-background-color);
+  --admin-chrome-control-hover-background-color: var(--reader-chrome-control-hover-background-color);
+  --admin-chrome-control-subtle-hover-background-color: var(--reader-chrome-control-subtle-hover-background-color);
+  --admin-chrome-active-control-background-color: var(--reader-chrome-active-control-background-color);
+  --admin-chrome-active-control-text-color: var(--reader-chrome-active-control-text-color);
+  --admin-chrome-active-control-border-color: var(--reader-chrome-active-control-border-color);
+  --admin-window-background-color: var(--reader-window-background-color);
+  --admin-window-border-color: var(--reader-window-border-color);
+  --admin-window-border-radius: var(--reader-window-border-radius);
+  --admin-window-shadow: var(--reader-window-shadow);
+  --admin-window-frame-color: var(--reader-window-border-color);
+  --admin-support-title-color: var(--reader-support-title-color);
+  --admin-support-title-font-family: var(--reader-support-title-font-family);
+  --admin-support-title-font-size: var(--reader-support-title-font-size);
+  --admin-support-title-font-weight: var(--reader-support-title-font-weight);
+  --admin-support-title-line-height: var(--reader-support-title-line-height);
+  --admin-support-label-color: var(--reader-support-label-color);
+  --admin-support-label-font-family: var(--reader-support-label-font-family);
+  --admin-support-label-font-size: var(--reader-support-label-font-size);
+  --admin-support-label-font-weight: var(--reader-support-label-font-weight);
+  --admin-support-label-line-height: var(--reader-support-label-line-height);
+  --admin-support-meta-color: var(--reader-support-meta-color);
+  --admin-support-meta-font-family: var(--reader-support-meta-font-family);
+  --admin-support-meta-font-size: var(--reader-support-meta-font-size);
+  --admin-support-meta-font-weight: var(--reader-support-meta-font-weight);
+  --admin-support-meta-line-height: var(--reader-support-meta-line-height);
+  --admin-support-hint-color: var(--reader-support-hint-color);
+  --admin-support-hint-font-family: var(--reader-support-hint-font-family);
+  --admin-support-hint-font-size: var(--reader-support-hint-font-size);
+  --admin-support-hint-font-weight: var(--reader-support-hint-font-weight);
+  --admin-support-hint-line-height: var(--reader-support-hint-line-height);
+  --admin-support-control-text-color: var(--reader-support-control-text-color);
+  --admin-support-control-font-family: var(--reader-support-control-font-family);
+  --admin-support-control-font-size: var(--reader-support-control-font-size);
+  --admin-support-control-font-weight: var(--reader-support-control-font-weight);
+  --admin-support-control-line-height: var(--reader-support-control-line-height);
+  --admin-support-control-background-color: var(--reader-support-control-background-color);
+  --admin-support-control-border-color: var(--reader-support-control-border-color);
+  --admin-support-control-hover-background-color: var(--reader-support-control-hover-background-color);
+  --admin-support-control-strong-background-color: var(--reader-support-control-strong-background-color);
+  --admin-support-control-strong-text-color: var(--reader-support-control-strong-text-color);
+  --admin-support-control-strong-border-color: var(--reader-support-control-strong-border-color);
+  --admin-support-control-strong-hover-background-color: var(--reader-support-control-strong-hover-background-color);
+  --admin-feedback-title-color: var(--reader-feedback-title-color);
+  --admin-feedback-hint-color: var(--reader-feedback-hint-color);
+}
+
+@media (max-width: 960px) {
+  .scrim {
+    pointer-events: auto;
+  }
+
+  .overlay {
+    position: fixed;
+    top: var(--header-height);
+    left: 0;
+    width: 100vw;
+    height: calc(100vh - var(--header-height));
+    min-width: 100vw;
+    min-height: calc(100vh - var(--header-height));
+    border-radius: 0;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+  }
+
+  .resizeHandle {
+    display: none;
+  }
+
+  .resizeCorner {
+    display: none;
+  }
+}
+

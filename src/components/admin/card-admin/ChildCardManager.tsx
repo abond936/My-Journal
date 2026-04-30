@@ -2,14 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
+import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import {
   arrayMove,
   SortableContext,
@@ -18,6 +11,7 @@ import {
 import styles from './ChildCardManager.module.css';
 import { SortableItem } from './SortableItem';
 import { useChildCards } from '@/lib/hooks/useChildCards';
+import { useDefaultDndSensors } from '@/lib/hooks/useDefaultDndSensors';
 import clsx from 'clsx';
 
 interface ChildCardManagerProps {
@@ -29,7 +23,6 @@ interface ChildCardManagerProps {
 }
 
 export default function ChildCardManager({
-  cardId: _cardId,
   childrenIds,
   onUpdate,
   error,
@@ -45,13 +38,7 @@ export default function ChildCardManager({
     onUpdate(childrenIds.filter(id => id !== idToRemove));
   };
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 6,
-      },
-    })
-  );
+  const sensors = useDefaultDndSensors();
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -69,10 +56,10 @@ export default function ChildCardManager({
       <h4 className={styles.sectionTitle}>Child Cards</h4>
       <p className={styles.hint}>
         Reorder or remove children. Add or reparent in{' '}
-        <Link href="/admin/collections" className={styles.collectionsLink}>
-          Card Management/Collections
-        </Link>
-        .
+        <Link href="/admin/studio" className={styles.collectionsLink}>
+          Studio
+        </Link>{' '}
+        (Tree tab).
       </p>
 
       {error && <p className={styles.error}>{error}</p>}
@@ -81,7 +68,7 @@ export default function ChildCardManager({
         {areChildrenLoading && <p>Loading child cards...</p>}
         {childrenError && <p className={styles.error}>{childrenError}</p>}
         {!areChildrenLoading && !childrenError && childCards.length === 0 && (
-          <p>No child cards. Use Collections to attach children.</p>
+          <p>No child cards. Use Studio (Tree tab) to attach children.</p>
         )}
         {!areChildrenLoading && !childrenError && childCards.length > 0 && (
           <DndContext
@@ -96,7 +83,7 @@ export default function ChildCardManager({
                     <div className={styles.childItem}>
                       <span className={styles.childTitleRow}>
                         <Link
-                          href={`/admin/card-admin/${child.docId}/edit`}
+                          href={`/admin/studio?card=${encodeURIComponent(child.docId)}`}
                           className={styles.childEditLink}
                         >
                           {child.title || '(Untitled)'}

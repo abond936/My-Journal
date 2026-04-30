@@ -5,5 +5,5 @@
 export function scopeThemeTokensCss(css: string, scopeSelector: string): string {
   return css
     .replace(/^:root\s*\{/m, `${scopeSelector} {`)
-    .replace(/^\[data-theme="dark"\]\s*\{/m, `${scopeSelector}[data-theme="dark"] {`);
+    .replace(/^\[data-theme="dark"\]\s*\{/m, `[data-theme="dark"] ${scopeSelector} {`);
 }

@@ -4,6 +4,19 @@ import { authOptions } from '@/lib/auth/authOptions';
 import { bulkApplyMediaTags } from '@/lib/services/images/imageImportService';
 import { recomputeCardsMediaSignalsForMediaIds } from '@/lib/services/cardService';
 
+type ApiErrorPayload = {
+  ok: false;
+  code: string;
+  message: string;
+  severity: 'error' | 'warning';
+  retryable: boolean;
+  error?: string;
+};
+
+function errorResponse(payload: ApiErrorPayload, status: number) {
+  return NextResponse.json(payload, { status });
+}
+
 /**
  * POST — bulk-edit tags on many media docs.
  * mode:
@@ -14,7 +27,16 @@ import { recomputeCardsMediaSignalsForMediaIds } from '@/lib/services/cardServic
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') {
-    return new NextResponse('Forbidden', { status: 403 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'AUTH_FORBIDDEN',
+        message: 'Forbidden.',
+        severity: 'error',
+        retryable: false,
+      },
+      403
+    );
   }
 
   try {
@@ -23,19 +45,55 @@ export async function POST(request: NextRequest) {
     const tags = body.tags;
     const mode = body.mode;
     if (!Array.isArray(mediaIds) || mediaIds.length === 0) {
-      return NextResponse.json({ message: 'mediaIds must be a non-empty array.' }, { status: 400 });
+      return errorResponse(
+        {
+          ok: false,
+          code: 'MEDIA_TAGS_MEDIA_IDS_REQUIRED',
+          message: 'mediaIds must be a non-empty array.',
+          severity: 'error',
+          retryable: false,
+        },
+        400
+      );
     }
     if (!Array.isArray(tags)) {
-      return NextResponse.json({ message: 'tags must be an array of string IDs.' }, { status: 400 });
+      return errorResponse(
+        {
+          ok: false,
+          code: 'MEDIA_TAGS_TAG_IDS_INVALID',
+          message: 'tags must be an array of string IDs.',
+          severity: 'error',
+          retryable: false,
+        },
+        400
+      );
     }
     if (mode !== undefined && mode !== 'add' && mode !== 'replace' && mode !== 'remove') {
-      return NextResponse.json({ message: 'mode must be one of: add, replace, remove.' }, { status: 400 });
+      return errorResponse(
+        {
+          ok: false,
+          code: 'MEDIA_TAGS_MODE_INVALID',
+          message: 'mode must be one of: add, replace, remove.',
+          severity: 'error',
+          retryable: false,
+        },
+        400
+      );
     }
     const ids = mediaIds.filter((id): id is string => typeof id === 'string' && id.length > 0);
     const tagList = tags.filter((id): id is string => typeof id === 'string');
     const effectiveMode = (mode === 'replace' || mode === 'remove' || mode === 'add') ? mode : 'add';
     if (ids.length === 0) {
-      return NextResponse.json({ message: 'No valid media IDs.' }, { status: 400 });
+      return errorResponse(
+        {
+          ok: false,
+          code: 'MEDIA_TAGS_MEDIA_IDS_INVALID',
+          message: 'No valid media IDs.',
+          severity: 'error',
+          retryable: false,
+        },
+        400
+      );
     }
 
     const { updatedIds } = await bulkApplyMediaTags(ids, tagList, effectiveMode);
@@ -47,6 +105,16 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[POST /api/admin/media/tags]', message);
-    return NextResponse.json({ message: 'Failed to update media tags.', error: message }, { status: 500 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'MEDIA_TAGS_BULK_UPDATE_FAILED',
+        message: 'Failed to update media tags.',
+        severity: 'error',
+        retryable: true,
+        error: message,
+      },
+      500
+    );
   }
 }

@@ -2,6 +2,14 @@
 
 Run from the repo root. Most maintenance scripts need Firebase Admin env vars (see `01-Vision-Architecture.md` → **TECHNICAL** → **Scripts**; `.env` loading notes there).
 
+## Backup model (operator)
+
+| Plane | What | Where |
+|--------|------|--------|
+| **Code** | Committed source | Git remote (`origin`); do not rely on a second full local tree copy. |
+| **Data** | Firestore (+ index/rules, optional Typesense export) | `npm run backup:database` → OneDrive `Firebase Backups/run-<timestamp>/` (see table row below; needs `ONEDRIVE_PATH`). |
+| **Repo-root secrets** | `.env*`, `service-account.json`, `*-firebase-adminsdk-*.json` | `npm run backup-codebase` → `CODEBASE_SECRETS_BACKUP_DIR` or default `C:\Users\alanb\CodeBase Backups\` (5 rolling zips + logs). Optional: register a daily Windows task with **`src/lib/scripts/utils/setup-backup-task.ps1`** (run **PowerShell as Administrator**; script resolves repo root via `git`). |
+
 ## Firebase Admin CLI (dotenv)
 
 **Import order:** If a script has a top-level `import … from '@/lib/config/firebase/admin'` (or anything that pulls in `admin.ts`), Node evaluates that import **before** any `dotenv.config()` in the same file. Firebase Admin then starts with **missing** `FIREBASE_SERVICE_ACCOUNT_*` and fails (e.g. invalid `project_id`).
@@ -19,7 +27,7 @@ Run from the repo root. Most maintenance scripts need Firebase Admin env vars (s
 | `npm run lint` | ESLint |
 | `npm test` | Jest |
 | `npm run generate-migration-plan` | Migration plan helper |
-| `npm run backup-codebase` | Local codebase backup utility |
+| `npm run backup-codebase` | **Local secrets only** — zips **repo root** files Git does not track: `.env*`, `service-account.json`, `*-firebase-adminsdk-*.json`. Output dir: `CODEBASE_SECRETS_BACKUP_DIR` or `C:\Users\alanb\CodeBase Backups\`; keeps 5 zips. **Not** a second copy of the source tree (use Git remote). If none of those files exist, writes a log only. |
 | `npm run backup:database` | Full Firestore (all root collections) + copy `firestore.indexes.json` / `firestore.rules` + optional Typesense `cards`/`media` JSONL → OneDrive `Firebase Backups/run-<timestamp>/` (needs `ONEDRIVE_PATH` + service account; `tsx -r dotenv/config`). Does not download Storage bytes. |
 | `npm run deploy:firestore:indexes` | Deploy **only** Firestore composite indexes from `src/lib/config/firebase/firestore.indexes.json` (paths set in root `firebase.json`). Runs `npx firebase-tools@13 deploy --only firestore:indexes` from the repo root (no global CLI required). Project: `.firebaserc` default (`my-journal-936`). Requires Firebase CLI auth (`npx firebase-tools@13 login` once, or use a CI token). Not the same as Admin service-account scripts. New indexes can take several minutes to finish building in the Firebase console. |
 | `npm run export:csv` | Export data to CSV |

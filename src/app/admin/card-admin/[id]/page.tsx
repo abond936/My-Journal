@@ -1,16 +1,10 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import React, { use } from 'react';
-import CardAdminClientPage from './CardAdminClientPage';
-
-interface EditCardPageProps {
-  params: Promise<{
-    id: string;
-  }>;
+export default async function CardAdminLegacyCardPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  redirect(`/admin/studio?card=${encodeURIComponent(id)}`);
 }
-
-export default function EditCardPage({ params }: EditCardPageProps) {
-  const { id } = use(params);
-  const isNew = id === 'new';
-  return <CardAdminClientPage cardId={isNew ? null : id} />;
-} 

@@ -1,10 +1,9 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import JournalImage from '@/components/common/JournalImage';
-import { Card } from '@/lib/types/card';
+import { Card, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import {
   getAspectRatioBucket,
@@ -17,18 +16,32 @@ import InlineGallery from '@/components/view/InlineGallery';
 import ChildCardsRail from '@/components/view/ChildCardsRail';
 import DiscoverySection from '@/components/view/DiscoverySection';
 import { formatQuoteAttribution } from '@/lib/utils/cardUtils';
+import ReaderCardEditModal from '@/components/view/ReaderCardEditModal';
 
 interface CardDetailPageProps {
   card: Card;
   childrenCards: Card[];
+  suppressDiscovery?: boolean;
+  previewFullWidth?: boolean;
 }
 
-const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) => {
+const CardDetailPage: React.FC<CardDetailPageProps> = ({
+  card,
+  childrenCards,
+  suppressDiscovery = false,
+  previewFullWidth = false,
+}) => {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'admin';
   const detailReturnTo = card.docId ? `/view/${card.docId}` : null;
   const isQa = card.type === 'qa';
   const isQuote = card.type === 'quote';
+  const detailHeadingVariant =
+    card.type === 'story'
+      ? 'storyDetail'
+      : card.type === 'gallery'
+        ? 'galleryDetail'
+        : 'detail';
   const quoteAttribution = isQuote ? formatQuoteAttribution(card.subtitle, card.excerpt) : '';
   const coverBucket = getAspectRatioBucket(card.coverImage);
   const coverRatio = getAspectRatioValue(coverBucket);
@@ -38,22 +51,26 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) 
       : coverBucket === 'square'
         ? styles.coverSquare
         : styles.coverPortrait;
+  const hydratedGalleryItems = (card.galleryMedia ?? []).filter(
+    (item): item is HydratedGalleryMediaItem => Boolean(item.media)
+  );
 
   return (
-    <article className={styles.container}>
+    <article
+      className={`${styles.container} ${previewFullWidth ? styles.previewFullWidth : ''}`}
+      data-card-type={card.type}
+    >
       {isAdmin && detailReturnTo && card.docId ? (
         <p className={styles.adminEditBar}>
-          <Link
-            href={`/admin/card-admin/${card.docId}/edit?returnTo=${encodeURIComponent(detailReturnTo)}`}
-          >
+          <ReaderCardEditModal cardId={card.docId} returnTo={detailReturnTo} className={styles.adminEditTrigger}>
             Edit card
-          </Link>
+          </ReaderCardEditModal>
         </p>
       ) : null}
       <header
         className={`${styles.header} ${!card.subtitle || isQuote ? styles.noSubtitle : ''}`}
       >
-        {card.coverImage && (
+        {card.coverImage && card.type !== 'gallery' && (
           <div className={`${styles.coverImageContainer} ${coverFrameClass}`}>
             <JournalImage
               src={getDisplayUrl(card.coverImage)}
@@ -91,10 +108,10 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) 
         <section className={styles.content} aria-label={isQa ? 'Answer' : undefined}>
           {isQuote ? (
             <blockquote className={styles.quoteDetailQuote}>
-              <TipTapRenderer content={card.content} />
+              <TipTapRenderer content={card.content} headingVariant={detailHeadingVariant} />
             </blockquote>
           ) : (
-            <TipTapRenderer content={card.content} />
+            <TipTapRenderer content={card.content} headingVariant={detailHeadingVariant} />
           )}
         </section>
       )}
@@ -110,19 +127,21 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({ card, childrenCards }) 
       ) : null}
 
       {/* Inline Gallery */}
-      {card.galleryMedia && card.galleryMedia.length > 0 && (
+      {hydratedGalleryItems.length > 0 && (
         <InlineGallery 
-          media={card.galleryMedia.filter(item => item.media) as any} 
+          media={hydratedGalleryItems}
           title="Gallery"
         />
       )}
 
       {/* Discovery Section */}
-      <DiscoverySection
-        currentCard={card}
-        childrenCards={childrenCards}
-        suppressChildCardsGroup={card.type === 'story' && childrenCards.length > 0}
-      />
+      {!suppressDiscovery ? (
+        <DiscoverySection
+          currentCard={card}
+          childrenCards={childrenCards}
+          suppressChildCardsGroup={card.type === 'story' && childrenCards.length > 0}
+        />
+      ) : null}
     </article>
   );
 };

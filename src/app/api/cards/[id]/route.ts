@@ -1,7 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
-import { deleteCard, getCardById, updateCard, getPaginatedCardsByIds } from '@/lib/services/cardService';
+import {
+  deleteCard,
+  getCardById,
+  updateCard,
+  updateCardCover,
+  updateCardGallery,
+  updateCardGalleryOrder,
+  isGalleryOnlyPayload,
+  isGalleryReorderOnlyPayload,
+  updateCardChildren,
+  updateCardChildrenOrder,
+  updateCardCollectionRoot,
+  updateCardMetadata,
+  isCardMetadataOnlyPayload,
+  isChildrenOnlyPayload,
+  isChildrenReorderOnlyPayload,
+  isCollectionRootOnlyPayload,
+  getPaginatedCardsByIds,
+} from '@/lib/services/cardService';
 import { Card, cardUpdateValidationSchema } from '@/lib/types/card';
 import { PaginatedResult } from '@/lib/types/services';
 import { withErrorHandler } from '@/lib/middleware/errorHandler';
@@ -15,6 +33,12 @@ type RouteParams = Promise<{ id: string }>;
 
 // Use centralized validation schema for consistency
 const cardUpdateSchema = cardUpdateValidationSchema;
+
+function isCoverOnlyPatch(payload: Record<string, unknown>): boolean {
+  const keys = Object.keys(payload).filter((key) => key !== 'coverImage');
+  if (keys.length === 0) return false;
+  return keys.every((key) => key === 'coverImageId' || key === 'coverImageFocalPoint');
+}
 
 /**
  * GET a card by ID.
@@ -36,8 +60,8 @@ export async function GET(
     // Get ID from params
     const { id } = await params;
 
-    // Validate ID format (example validation)
-    if (!/^[a-zA-Z0-9-]+$/.test(id)) {
+    // Firestore document IDs must not contain `/` (path segment); allow common id chars (incl. `_`, `.`).
+    if (!id || id.length > 1500 || id.includes('/')) {
       throw new AppError(
         ErrorCode.VALIDATION_ERROR,
         'Invalid card ID format',
@@ -58,11 +82,11 @@ export async function GET(
     const limitParam = searchParams.get('limit');
     
     // If limit is not provided or invalid, use default
-    const limit = limitParam 
+    const limit = limitParam
       ? z.coerce
           .number()
           .min(1)
-          .max(100)
+          .max(250)
           .catch(10) // Use 10 as fallback if parsing fails
           .parse(limitParam)
       : 10;
@@ -164,8 +188,26 @@ export async function PATCH(
       );
     }
 
-    // Perform the update
-    const updatedCard = await updateCard(id, validatedData);
+    const updatedCard = isCoverOnlyPatch(validatedData)
+      ? await updateCardCover(id, {
+          ...(Object.prototype.hasOwnProperty.call(validatedData, 'coverImageId')
+            ? { coverImageId: validatedData.coverImageId ?? null }
+            : {}),
+          coverImageFocalPoint: validatedData.coverImageFocalPoint,
+        })
+      : isGalleryReorderOnlyPayload(existingCard, validatedData)
+        ? await updateCardGalleryOrder(id, validatedData.galleryMedia!)
+        : isGalleryOnlyPayload(validatedData)
+          ? await updateCardGallery(id, validatedData.galleryMedia!)
+        : isChildrenReorderOnlyPayload(existingCard, validatedData)
+          ? await updateCardChildrenOrder(id, validatedData.childrenIds!)
+        : isChildrenOnlyPayload(validatedData)
+          ? await updateCardChildren(id, validatedData.childrenIds!)
+        : isCollectionRootOnlyPayload(validatedData)
+          ? await updateCardCollectionRoot(id, validatedData)
+        : isCardMetadataOnlyPayload(validatedData)
+          ? await updateCardMetadata(id, validatedData)
+        : await updateCard(id, validatedData);
     
     return NextResponse.json(updatedCard);
   });
@@ -199,11 +241,11 @@ export async function DELETE(
       );
     }
 
-    // Check if card can be deleted (example business rule)
-    if (existingCard.childrenIds?.length > 0) {
+    // Root cards with children require explicit restructuring first.
+    if (existingCard.isCollectionRoot === true && existingCard.childrenIds?.length > 0) {
       throw new AppError(
         ErrorCode.CONFLICT,
-        'Cannot delete card with children',
+        'Cannot delete a root card that still has children',
         { childCount: existingCard.childrenIds.length }
       );
     }

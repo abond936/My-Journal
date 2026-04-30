@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { DND_POINTER_IGNORE_ATTR } from '@/lib/hooks/useDefaultDndSensors';
 import styles from './MediaAdminList.module.css';
 
 interface MediaResizableHeaderProps {
@@ -54,17 +55,16 @@ export default function MediaResizableHeader({
   }, [isResizing, handleMouseMove, handleMouseUp]);
 
   return (
-    <th 
-      className={`${styles.headerCell} ${isResizing ? styles.resizing : ''}`}
+    <th
+      className={`${styles.headerCell} ${styles.resizableHeader} ${isResizing ? styles.resizing : ''}`}
       style={{ width: `${width}px` }}
     >
-      <div className={styles.headerContent}>
-        <span>{children}</span>
-        <div 
-          className={styles.resizeHandle}
-          onMouseDown={handleMouseDown}
-        />
-      </div>
+      <div className={styles.headerContent}>{children}</div>
+      <div
+        className={styles.resizeHandle}
+        {...{ [DND_POINTER_IGNORE_ATTR]: '' }}
+        onMouseDown={handleMouseDown}
+      />
     </th>
   );
 } 

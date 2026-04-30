@@ -192,6 +192,8 @@ export interface SearchCardsFilteredOptions {
   /** User text search; omit or empty for browse-all (`*`). */
   textQuery?: string;
   type?: string;
+  /** OR filter on card type when 2+ values; takes precedence over single `type`. */
+  types?: string[];
   status?: string;
   /** AND: every id must appear in `filter_tag_ids` (inherited + direct). */
   tags?: string[];
@@ -275,7 +277,11 @@ export async function searchCardsFiltered(
   if (!client) throw new Error('Typesense not configured');
 
   const filterParts: string[] = [];
-  if (options.type && options.type !== 'all') {
+  if (options.types && options.types.length > 1) {
+    filterParts.push(
+      `(${options.types.map((t) => `type:=${escapeFilterValue(t)}`).join(' || ')})`
+    );
+  } else if (options.type && options.type !== 'all') {
     filterParts.push(`type:=${escapeFilterValue(options.type)}`);
   }
   if (options.status && options.status !== 'all') {

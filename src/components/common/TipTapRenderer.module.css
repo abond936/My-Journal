@@ -1,14 +1,21 @@
 .renderer :global(.ProseMirror) {
   padding: calc(var(--spacing-md) - var(--font-size-sm)) var(--spacing-md);
-  background-color: var(--layout-background1-color);
-  color: var(--text1-color);
-  font-family: var(--body-font-family);
-  line-height: var(--line-height-normal);
+  background-color: var(--reader-detail-background-color);
+  color: var(--reader-body-color);
+  font-family: var(--reader-body-font-family);
+  font-size: var(--reader-body-font-size);
+  font-weight: var(--reader-body-font-weight);
+  line-height: var(--reader-body-line-height);
 }
 
 .rendererTransparent :global(.ProseMirror) {
   padding: 0;
   background-color: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
 }
 
 /* Avoid a second vertical “bar” inside quote/callout tiles when body uses blockquote */
@@ -25,11 +32,75 @@
 .renderer :global(h1),
 .renderer :global(h2),
 .renderer :global(h3) {
-  font-family: var(--font-family-sans);
-  color: var(--text1-color);
+  font-family: var(--reader-title-font-family);
+  color: var(--reader-title-color);
   margin-top: var(--spacing-md);
   margin-bottom: var(--spacing-xs);
-  font-weight: var(--font-weight-bold);
+  font-weight: var(--reader-title-font-weight);
+  line-height: var(--reader-title-line-height);
+}
+
+.rendererDetailHeadings :global(h1),
+.rendererDetailHeadings :global(h2),
+.rendererDetailHeadings :global(h3) {
+  font-family: var(--reader-detail-title-font-family);
+  color: var(--reader-detail-title-color);
+  font-weight: var(--reader-detail-title-font-weight);
+  line-height: var(--reader-detail-title-line-height);
+}
+
+.rendererStoryHeadings :global(h1),
+.rendererStoryHeadings :global(h2),
+.rendererStoryHeadings :global(h3) {
+  font-family: var(--reader-story-title-font-family);
+  color: var(--reader-story-title-color);
+  font-weight: var(--reader-story-title-font-weight);
+  line-height: var(--reader-story-title-line-height);
+}
+
+.rendererGalleryHeadings :global(h1),
+.rendererGalleryHeadings :global(h2),
+.rendererGalleryHeadings :global(h3) {
+  font-family: var(--reader-gallery-title-font-family);
+  color: var(--reader-gallery-title-color);
+  font-weight: var(--reader-gallery-title-font-weight);
+  line-height: var(--reader-gallery-title-line-height);
+}
+
+.rendererQuestionHeadings :global(h1),
+.rendererQuestionHeadings :global(h2),
+.rendererQuestionHeadings :global(h3) {
+  font-family: var(--reader-question-font-family);
+  color: var(--reader-question-color);
+  font-weight: var(--reader-question-font-weight);
+  line-height: var(--reader-question-line-height);
+}
+
+.rendererCalloutHeadings :global(h1),
+.rendererCalloutHeadings :global(h2),
+.rendererCalloutHeadings :global(h3) {
+  font-family: var(--reader-callout-title-font-family);
+  color: var(--reader-callout-title-color);
+  font-weight: var(--reader-callout-title-font-weight);
+  line-height: var(--reader-callout-title-line-height);
+}
+
+.rendererStoryDetailHeadings :global(h1),
+.rendererStoryDetailHeadings :global(h2),
+.rendererStoryDetailHeadings :global(h3) {
+  font-family: var(--reader-story-detail-title-font-family);
+  color: var(--reader-story-detail-title-color);
+  font-weight: var(--reader-story-detail-title-font-weight);
+  line-height: var(--reader-story-detail-title-line-height);
+}
+
+.rendererGalleryDetailHeadings :global(h1),
+.rendererGalleryDetailHeadings :global(h2),
+.rendererGalleryDetailHeadings :global(h3) {
+  font-family: var(--reader-gallery-detail-title-font-family);
+  color: var(--reader-gallery-detail-title-color);
+  font-weight: var(--reader-gallery-detail-title-font-weight);
+  line-height: var(--reader-gallery-detail-title-line-height);
 }
 
 .renderer :global(p) {
@@ -38,11 +109,14 @@
 }
 
 .renderer :global(blockquote) {
-  border-left: var(--border-width-thick) solid var(--color3);
+  border-left: var(--border-width-thick) solid var(--reader-detail-border-color);
   margin-left: 0;
   padding-left: var(--spacing-md);
   font-style: italic;
-  color: var(--text2-color);
+  color: var(--reader-quote-color);
+  font-family: var(--reader-quote-font-family);
+  font-size: var(--reader-quote-font-size);
+  line-height: var(--reader-quote-line-height);
 }
 
 .renderer :global(img) {
@@ -72,25 +146,28 @@
 
 .renderer :global(figcaption) {
   text-align: center;
-  font-size: var(--font-size-sm);
-  color: var(--text2-color);
+  font-family: var(--reader-caption-font-family);
+  font-size: var(--reader-caption-font-size);
+  font-weight: var(--reader-caption-font-weight);
+  line-height: var(--reader-caption-line-height);
+  color: var(--reader-caption-color);
   margin-top: var(--spacing-sm);
 }
 
 .renderer :global(.card-inline-link) {
   cursor: pointer;
-  color: var(--color3, #2563eb);
+  color: var(--reader-accent-color, #2563eb);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
 .renderer :global(.card-inline-link:focus-visible) {
-  outline: 2px solid var(--color3, #2563eb);
+  outline: 2px solid var(--reader-focus-ring-color, #2563eb);
   outline-offset: 2px;
 }
 
 .renderer :global(.card-inline-link--broken) {
-  color: var(--text2-color);
+  color: var(--reader-meta-color);
   text-decoration: line-through;
   cursor: default;
 } 

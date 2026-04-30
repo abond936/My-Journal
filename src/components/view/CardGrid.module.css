@@ -41,10 +41,12 @@
 }
 
 .cardTitle {
-  font-size: var(--font-size-xl);
+  font-family: var(--reader-discovery-title-font-family);
+  font-size: var(--reader-discovery-title-font-size);
   margin-bottom: var(--spacing-sm);
-  color: var(--text1-color);
-  font-weight: var(--font-weight-semibold);
+  color: var(--reader-discovery-title-color);
+  font-weight: var(--reader-discovery-title-font-weight);
+  line-height: var(--reader-discovery-title-line-height);
 }
 
 .cardMedia {
@@ -56,9 +58,10 @@
 }
 
 .cardExcerpt {
-  font-size: var(--font-size-base);
-  line-height: 1.5;
-  color: var(--text2-color);
+  font-family: var(--reader-excerpt-font-family);
+  font-size: var(--reader-excerpt-font-size);
+  line-height: var(--reader-excerpt-line-height);
+  color: var(--reader-excerpt-color);
   margin-bottom: var(--spacing-md);
   flex-grow: 1;
 }
@@ -69,11 +72,14 @@
   align-items: center;
   justify-content: space-between;
   margin-top: auto;
-  font-size: var(--font-size-sm);
+  font-family: var(--reader-discovery-meta-font-family);
+  font-size: var(--reader-discovery-meta-font-size);
+  font-weight: var(--reader-discovery-meta-font-weight);
+  line-height: var(--reader-discovery-meta-line-height);
 }
 
 .cardDate {
-  color: var(--text2-color);
+  color: var(--reader-discovery-meta-color);
 }
 
 .cardTags {
@@ -84,41 +90,47 @@
 
 .tag {
   padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
+  border-radius: var(--reader-card-border-radius);
+  font-family: var(--tag-font-family);
+  font-size: var(--tag-font-size);
+  font-weight: var(--tag-font-weight);
   cursor: pointer;
-  transition: background-color var(--transition-short);
-  background-color: var(--color1-200);
-  color: var(--text2-color);
+  transition: background-color var(--transition-short), border-color var(--transition-short);
+  background-color: var(--reader-tag-muted-background-color);
+  color: var(--reader-tag-muted-text-color);
+  border: var(--border-width-thin) solid var(--reader-tag-muted-border-color);
 }
 
 .personTag {
-  background-color: var(--tag-who-bg-color);
-  color: var(--color2);
+  background-color: var(--tag-who-bg-color, var(--reader-tag-background-color));
+  color: var(--reader-contrast-text-color);
+  border-color: var(--tag-who-bg-color, var(--reader-tag-border-color));
 }
 
 .personTag:hover {
-  background-color: var(--tag-who-bg-color);
+  background-color: var(--tag-who-bg-color, var(--reader-tag-background-color));
 }
 
 .placeTag {
-  background-color: var(--tag-where-bg-color);
-  color: var(--color2);
+  background-color: var(--tag-where-bg-color, var(--reader-tag-background-color));
+  color: var(--reader-contrast-text-color);
+  border-color: var(--tag-where-bg-color, var(--reader-tag-border-color));
 }
 
 .placeTag:hover {
-  background-color: var(--tag-where-bg-color);
+  background-color: var(--tag-where-bg-color, var(--reader-tag-background-color));
 }
 
 .cardLink {
   display: inline-block;
   margin-top: var(--spacing-md);
   font-weight: 500;
-  color: var(--color3);
+  color: var(--reader-chrome-text-color);
   text-decoration: none;
 }
 
 .cardLink:hover {
+  color: var(--reader-link-hover-text-color, var(--reader-link-text-color));
   text-decoration: underline;
 }
 

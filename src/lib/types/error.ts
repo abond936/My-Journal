@@ -14,7 +14,12 @@ export enum ErrorCode {
   
   // Custom application errors
   MEDIA_PROCESSING_ERROR = 'MEDIA_PROCESSING_ERROR',
-  TAG_OPERATION_ERROR = 'TAG_OPERATION_ERROR'
+  TAG_OPERATION_ERROR = 'TAG_OPERATION_ERROR',
+
+  /** Curated collection `childrenIds` would create a parent/child cycle. */
+  CURATED_COLLECTION_CYCLE = 'CURATED_COLLECTION_CYCLE',
+  /** A new `childrenIds` entry references a missing card document. */
+  CURATED_COLLECTION_CHILD_NOT_FOUND = 'CURATED_COLLECTION_CHILD_NOT_FOUND',
 }
 
 // Standard API error response interface
@@ -75,12 +80,14 @@ export function getStatusCodeForError(code: ErrorCode): number {
     case ErrorCode.VALIDATION_ERROR:
       return 400;
     case ErrorCode.NOT_FOUND:
+    case ErrorCode.CURATED_COLLECTION_CHILD_NOT_FOUND:
       return 404;
     case ErrorCode.UNAUTHORIZED:
       return 401;
     case ErrorCode.FORBIDDEN:
       return 403;
     case ErrorCode.CONFLICT:
+    case ErrorCode.CURATED_COLLECTION_CYCLE:
       return 409;
     case ErrorCode.EXTERNAL_SERVICE_ERROR:
     case ErrorCode.MEDIA_PROCESSING_ERROR:

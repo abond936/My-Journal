@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { Card } from '@/lib/types/card';
 import { useCardContext } from '@/components/providers/CardProvider';
@@ -33,12 +33,45 @@ export default function CardFeedV2({
   const {
     clearFilters,
     selectedTags,
-    cardType,
+    isFeedCardTypesFilterActive,
     searchTerm,
     activeDimension,
     collectionId,
+    collectionTreeCards,
     feedGroupBy,
   } = useCardContext();
+
+  const activeCollectionCard =
+    activeDimension === 'collections' && collectionId
+      ? collectionTreeCards.find((card) => card.docId === collectionId) ?? null
+      : null;
+  const curatedContextRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const body = document.body;
+    const root = document.documentElement;
+
+    if (!activeCollectionCard || !curatedContextRef.current) {
+      body.classList.remove('curated-feed-active');
+      root.style.removeProperty('--curated-context-bar-height');
+      return;
+    }
+
+    const updateHeight = () => {
+      const height = curatedContextRef.current?.offsetHeight ?? 0;
+      root.style.setProperty('--curated-context-bar-height', `${height}px`);
+    };
+
+    body.classList.add('curated-feed-active');
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+
+    return () => {
+      body.classList.remove('curated-feed-active');
+      root.style.removeProperty('--curated-context-bar-height');
+      window.removeEventListener('resize', updateHeight);
+    };
+  }, [activeCollectionCard]);
 
   if (loading) {
     return (
@@ -55,7 +88,7 @@ export default function CardFeedV2({
 
   if (isEmpty) {
     const hasTagOrTypeFilters =
-      selectedTags.length > 0 || cardType !== 'all' || Boolean(searchTerm?.trim());
+      selectedTags.length > 0 || isFeedCardTypesFilterActive || Boolean(searchTerm?.trim());
     const hasCollectionOrGroup =
       collectionId !== null || feedGroupBy !== 'none' || activeDimension === 'collections';
     const likelyFiltered = hasTagOrTypeFilters || hasCollectionOrGroup;
@@ -105,6 +138,14 @@ export default function CardFeedV2({
 
   return (
     <main className={styles.feedMain}>
+      {activeCollectionCard ? (
+        <div ref={curatedContextRef} className={styles.curatedContextBar}>
+          <div className={styles.curatedContextLabel}>Collection</div>
+          <h2 className={styles.curatedContextTitle}>
+            {activeCollectionCard.title || activeCollectionCard.subtitle || 'Untitled'}
+          </h2>
+        </div>
+      ) : null}
       {sections && sections.length > 0 ? (
         sections.map((section, idx) => {
           const sid = `feed-grp-${idx}`;

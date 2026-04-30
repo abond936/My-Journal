@@ -1,34 +1,38 @@
 .container {
-    border: var(--border-width-thin) solid var(--border1-color);
+    border: var(--border-width-thin) solid var(--admin-support-control-border-color);
     border-radius: var(--border-radius-md);
     padding: var(--spacing-md);
     margin-top: var(--spacing-xl);
-    background-color: var(--layout-background1-color);
+    background-color: var(--admin-support-control-background-color);
 }
 
 .sectionTitle {
     margin: 0 0 var(--spacing-sm) 0;
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-semibold);
-    color: var(--text1-color);
+    color: var(--admin-support-title-color);
+    font-family: var(--admin-support-title-font-family);
+    font-size: var(--admin-support-title-font-size);
+    font-weight: var(--admin-support-title-font-weight);
+    line-height: var(--admin-support-title-line-height);
 }
 
 .hint {
-    font-size: var(--font-size-sm);
-    color: var(--text2-color);
+    color: var(--admin-support-hint-color);
+    font-family: var(--admin-support-hint-font-family);
+    font-size: var(--admin-support-hint-font-size);
+    font-weight: var(--admin-support-hint-font-weight);
+    line-height: var(--admin-support-hint-line-height);
     margin: 0 0 var(--spacing-md) 0;
-    line-height: 1.5;
 }
 
 .collectionsLink {
-    color: var(--color3);
+    color: var(--admin-chrome-active-control-background-color);
     font-weight: var(--font-weight-medium);
     text-decoration: underline;
     text-underline-offset: 2px;
 }
 
 .collectionsLink:hover {
-    color: hsl(var(--h3), var(--s3), 35%);
+    color: var(--admin-chrome-active-control-text-color);
 }
 
 .childList {
@@ -46,7 +50,7 @@
     justify-content: space-between;
     align-items: center;
     padding: var(--spacing-sm);
-    background-color: var(--layout-background1-color);
+    background-color: var(--admin-window-background-color);
     border-radius: var(--border-radius-sm);
     margin-bottom: var(--spacing-sm);
     transition: background-color var(--transition-short);
@@ -57,7 +61,7 @@
 }
 
 .childItem:hover {
-    background-color: var(--layout-background2-color);
+    background-color: var(--admin-chrome-control-hover-background-color);
 }
 
 .childTitleRow {
@@ -69,19 +73,22 @@
 }
 
 .childEditLink {
-    color: var(--text1-color);
+    color: var(--admin-support-label-color);
     font-weight: var(--font-weight-medium);
     text-decoration: none;
 }
 
 .childEditLink:hover {
     text-decoration: underline;
-    color: var(--color3);
+    color: var(--admin-chrome-active-control-background-color);
 }
 
 .childInfo {
-    font-size: var(--font-size-xs);
-    color: var(--text2-color);
+    color: var(--admin-support-meta-color);
+    font-family: var(--admin-support-meta-font-family);
+    font-size: var(--admin-support-meta-font-size);
+    font-weight: var(--admin-support-meta-font-weight);
+    line-height: var(--admin-support-meta-line-height);
 }
 
 .removeButton {
@@ -125,9 +132,9 @@
     min-width: 24px;
     margin-bottom: var(--spacing-sm);
     border-radius: var(--border-radius-sm);
-    background: var(--layout-background1-color);
-    border: var(--border-width-thin) solid var(--border1-color);
-    color: var(--text2-color);
+    background: var(--admin-window-background-color);
+    border: var(--border-width-thin) solid var(--admin-window-border-color);
+    color: var(--admin-chrome-meta-color);
     cursor: grab;
     user-select: none;
     font-weight: 700;
@@ -144,11 +151,14 @@
 }
 
 .childList p {
-    color: var(--text2-color);
-    font-size: var(--font-size-xs);
+    color: var(--admin-support-meta-color);
+    font-family: var(--admin-support-meta-font-family);
+    font-size: var(--admin-support-meta-font-size);
+    font-weight: var(--admin-support-meta-font-weight);
+    line-height: var(--admin-support-meta-line-height);
     text-align: center;
     padding: var(--spacing-md);
-    background-color: var(--layout-background1-color);
+    background-color: var(--admin-window-background-color);
     border-radius: var(--border-radius-sm);
     margin: 0;
 }

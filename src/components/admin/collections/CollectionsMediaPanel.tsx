@@ -2,14 +2,19 @@
 
 import React, { useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useMedia } from '@/components/providers/MediaProvider';
+import { getMediaErrorSeverity, useMedia } from '@/components/providers/MediaProvider';
 import MediaAdminList from '@/components/admin/media-admin/MediaAdminList';
 import styles from '@/app/admin/collections/page.module.css';
 
 /**
  * Compact media table for Collections / Studio: loads media on mount, assignment filter + pagination.
  */
-export default function CollectionsMediaPanel() {
+type CollectionsMediaPanelProps = {
+  /** When true (Admin Studio embedded column), rows register as `source:*` for cover/gallery drops. */
+  studioSourceDraggable?: boolean;
+};
+
+export default function CollectionsMediaPanel({ studioSourceDraggable = false }: CollectionsMediaPanelProps) {
   const {
     fetchMedia,
     loading,
@@ -52,13 +57,14 @@ export default function CollectionsMediaPanel() {
   const showPaginationControls =
     !!pag &&
     (pag.seekMode ? pag.hasNext || currentPage > 1 : (pag.totalPages ?? 1) > 1);
+  const errorSeverity = getMediaErrorSeverity(error);
 
   return (
     <section className={`${styles.panel} ${styles.mediaPanel}`}>
       <h2>Media</h2>
       <p className={styles.hint}>
         Compact columns for this layout.{' '}
-        <Link href="/admin/media-admin">Open full Media admin</Link> for search, grid view, and bulk tags.
+        <Link href="/admin/studio">Open Studio</Link> for search, grid view, and bulk tags.
       </p>
       <div className={styles.mediaPanelToolbar}>
         <label className={styles.mediaToolbarLabel}>
@@ -86,10 +92,12 @@ export default function CollectionsMediaPanel() {
           </div>
         ) : null}
       </div>
-      {error ? <p className={styles.error}>{error.message}</p> : null}
+      {error ? (
+        <p className={errorSeverity === 'warning' ? styles.warning : styles.error}>{error.message}</p>
+      ) : null}
       {loading ? <p className={styles.mediaLoading}>Loading media…</p> : null}
       <div className={`${styles.panelScroll} ${styles.mediaPanelScroll}`}>
-        <MediaAdminList variant="compact" />
+        <MediaAdminList variant="compact" studioSourceDraggable={studioSourceDraggable} />
       </div>
       {showPaginationControls && pag ? (
         <div className={styles.mediaPagination}>

@@ -1,9 +1,10 @@
 .navigation {
-  background: var(--layout-background1-color);
+  background: transparent;
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
+  color: var(--reader-header-text-color);
 }
 
 .navContainer {
@@ -53,11 +54,11 @@
 }
 
 .backLink {
-  color: var(--text1-color);
+  color: var(--reader-header-text-color);
   text-decoration: none;
   font-size: var(--font-size-base);
   padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--reader-card-border-radius);
   min-height: 44px;
   display: inline-flex;
   align-items: center;
@@ -65,11 +66,11 @@
 }
 
 .backLink:hover {
-  background: var(--layout-background2-color);
+  background: var(--reader-chrome-control-hover-background-color);
 }
 
 .logo {
-  color: var(--text1-color);
+  color: var(--reader-header-text-color);
   text-decoration: none;
   transition: color var(--transition-short) ease;
   display: flex;
@@ -97,13 +98,13 @@
 
 .navLinks {
   position: absolute;
-  top: calc(100% + var(--spacing-xs));
+  top: calc(100% - var(--spacing-xs));
   right: var(--spacing-md);
   min-width: 220px;
-  background: var(--layout-background1-color);
-  border: var(--border-width-thin) solid var(--border1-color);
-  border-radius: var(--border-radius-md);
-  box-shadow: var(--shadow-md);
+  background: var(--reader-window-background-color);
+  border: var(--border-width-thin) solid var(--reader-window-border-color);
+  border-radius: var(--reader-window-border-radius);
+  box-shadow: var(--reader-window-shadow);
   display: none;
   flex-direction: column;
   gap: var(--spacing-xs);
@@ -120,21 +121,21 @@
 }
 
 .navLink {
-  color: var(--text1-color);
+  color: var(--reader-header-text-color);
   text-decoration: none;
   font-size: var(--font-size-base);
   transition: color var(--transition-short) ease;
   padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--reader-card-border-radius);
 }
 
 .navLink:hover {
-  background: var(--layout-background2-color);
+  background: var(--reader-chrome-control-hover-background-color);
 }
 
 .navLink.active {
-  background-color: var(--button-solid-background-color);
-  color: var(--button-solid-text-color);
+  background-color: var(--reader-chrome-active-control-background-color);
+  color: var(--reader-chrome-active-control-text-color);
 }
 
 .menuButton {
@@ -160,24 +161,24 @@
 
 .signOutButton {
   border: none;
-  background: var(--layout-background2-color);
-  color: var(--text1-color);
+  background: var(--reader-header-background-color);
+  color: var(--reader-header-text-color);
   padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--reader-card-border-radius);
   cursor: pointer;
   text-align: left;
 }
 
 .signOutButton:hover {
   background: var(--state-error-background-color);
-  color: var(--state-error-text-color);
+  color: var(--reader-header-text-color);
 }
 
 .hamburger {
   display: block;
   width: var(--spacing-xl);
   height: var(--border-width-thin);
-  background: var(--text1-color);
+  background: var(--reader-header-icon-color);
   position: relative;
   transition: background var(--transition-short) ease;
 }
@@ -188,7 +189,7 @@
   position: absolute;
   width: var(--spacing-xl);
   height: var(--border-width-thin);
-  background: var(--text1-color);
+  background: var(--reader-header-icon-color);
   transition: transform var(--transition-short) ease;
   left: 0;
 }
@@ -215,7 +216,7 @@
   bottom: 0;
 }
 
-@media (max-width: var(--breakpoint-md)) {
+@media (max-width: 768px) {
   .adminLinksDesktopOnly {
     display: none;
   }
@@ -248,4 +249,4 @@
     left: var(--spacing-sm);
     min-width: unset;
   }
-} 
+}

@@ -1,9 +1,9 @@
 .toolbar {
   position: absolute;
-  background: var(--layout-background2-color);
-  border: var(--border-width-thin) solid var(--border1-color);
-  border-radius: var(--border-radius-md);
-  box-shadow: var(--shadow-md);
+  background: var(--reader-window-background-color);
+  border: var(--border-width-thin) solid var(--reader-window-border-color);
+  border-radius: var(--reader-window-border-radius);
+  box-shadow: var(--reader-window-shadow);
   padding: var(--spacing-md);
   z-index: var(--z-index-sticky);
   min-width: 200px;
@@ -19,9 +19,11 @@
 
 .toolbarGroup label {
   display: block;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--text2-color);
+  font-family: var(--reader-support-label-font-family);
+  font-size: var(--reader-support-label-font-size);
+  font-weight: var(--reader-support-label-font-weight);
+  line-height: var(--reader-support-label-line-height);
+  color: var(--reader-support-label-color);
   margin-bottom: var(--spacing-sm);
 }
 
@@ -29,18 +31,21 @@
 .toolbarGroup input {
   width: 100%;
   padding: var(--spacing-sm);
-  border: var(--border-width-thin) solid var(--border1-color);
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-sm);
-  color: var(--text1-color);
-  background-color: var(--layout-background2-color);
+  border: var(--border-width-thin) solid var(--reader-support-control-border-color);
+  border-radius: var(--reader-card-border-radius);
+  font-family: var(--reader-support-control-font-family);
+  font-size: var(--reader-support-control-font-size);
+  font-weight: var(--reader-support-control-font-weight);
+  line-height: var(--reader-support-control-line-height);
+  color: var(--reader-support-control-text-color);
+  background-color: var(--reader-support-control-background-color);
 }
 
 .toolbarGroup select:focus,
 .toolbarGroup input:focus {
   outline: none;
-  border-color: var(--color3);
-  box-shadow: 0 0 0 3px hsla(var(--h3), var(--s3), var(--l3), 0.1);
+  border-color: var(--reader-focus-ring-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--reader-focus-ring-color) 18%, transparent);
 }
 
 .closeButton {
@@ -50,14 +55,14 @@
   background: none;
   border: none;
   font-size: var(--font-size-xl);
-  color: var(--text2-color);
+  color: var(--reader-support-meta-color);
   cursor: pointer;
   padding: var(--spacing-xs);
   line-height: 1;
 }
 
 .closeButton:hover {
-  color: var(--text1-color);
+  color: var(--reader-support-control-text-color);
 }
 
 .imageToolbar {
@@ -72,8 +77,11 @@
 
 .targetInfo {
   width: 100%;
-  font-size: var(--font-size-xs);
-  color: var(--text2-color);
+  font-family: var(--reader-support-meta-font-family);
+  font-size: var(--reader-support-meta-font-size);
+  font-weight: var(--reader-support-meta-font-weight);
+  line-height: var(--reader-support-meta-line-height);
+  color: var(--reader-support-meta-color);
 }
 
 .toolbarSection {
@@ -84,8 +92,11 @@
 
 .toolbarSection label {
   margin-right: var(--spacing-sm);
-  font-size: var(--font-size-sm);
-  color: var(--text1-color);
+  font-family: var(--reader-support-label-font-family);
+  font-size: var(--reader-support-label-font-size);
+  font-weight: var(--reader-support-label-font-weight);
+  line-height: var(--reader-support-label-line-height);
+  color: var(--reader-support-label-color);
 }
 
 .buttonGroup {
@@ -93,20 +104,23 @@
 }
 
 .toolbarButton {
-  background-color: var(--layout-background1-color);
-  color: var(--text1-color);
-  border: var(--border-width-thin) solid var(--border1-color);
+  background-color: var(--reader-support-control-background-color);
+  color: var(--reader-support-control-text-color);
+  border: var(--border-width-thin) solid var(--reader-support-control-border-color);
   padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: var(--font-size-sm);
+  font-family: var(--reader-support-control-font-family);
+  font-size: var(--reader-support-control-font-size);
+  font-weight: var(--reader-support-control-font-weight);
+  line-height: var(--reader-support-control-line-height);
   cursor: pointer;
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--reader-card-border-radius);
   transition: background-color 0.2s;
 }
 
 .toolbarButton.active {
-  background-color: var(--color3);
-  color: white;
-  border-color: var(--color3);
+  background-color: var(--reader-support-control-strong-background-color);
+  color: var(--reader-support-control-strong-text-color);
+  border-color: var(--reader-support-control-strong-border-color);
 }
 
 .toolbarButton:not(:last-child) {
@@ -114,14 +128,14 @@
 }
 
 .dangerButton {
-  color: var(--color12);
-  border-color: var(--color12);
+  color: var(--state-error-border-color);
+  border-color: var(--state-error-border-color);
 }
 
 .dangerButton:hover {
-  background-color: var(--color12);
-  color: white;
-} 
+  background-color: var(--state-error-background-color);
+  color: var(--reader-chrome-text-color);
+}
 
 .toolbarButton:disabled {
   cursor: not-allowed;

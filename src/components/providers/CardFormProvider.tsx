@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { mutate as globalMutate } from 'swr';
 import { Card, CardUpdate, cardSchema, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 import { Media } from '@/lib/types/photo';
@@ -10,6 +11,13 @@ import {
   persistableSnapshotsEqual,
 } from '@/lib/utils/cardUtils';
 import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
+import { useOptionalCardContext } from '@/components/providers/CardProvider';
+
+/** Fields refreshed from Studio shell after relationship DnD / PATCH (same card `docId`). */
+export type ShellRelationshipSnapshot = Pick<
+  CardUpdate,
+  'coverImageId' | 'coverImage' | 'coverImageFocalPoint' | 'galleryMedia' | 'childrenIds' | 'contentMedia'
+>;
 
 /**
  * FormState Interface
@@ -28,6 +36,9 @@ interface FormState {
   lastSavedState: {
     cardData: CardUpdate;
   };
+
+  /** Bumps on `resetForm` so RichTextEditor can remount and match reverted `cardData.content`. */
+  formRevision: number;
 }
 
 /**
@@ -40,13 +51,14 @@ interface FormContextValue {
   allTags: Tag[];
   
   // Field Updates
-  setField: (field: keyof CardUpdate, value: any) => void;
+  setField: <K extends keyof CardUpdate>(field: K, value: CardUpdate[K]) => void;
   updateCoverImage: (media: Media | null, focalPoint?: { x: number; y: number }) => void;
   updateTags: (newTags: Tag[]) => void;
   updateChildIds: (newChildIds: string[]) => void;
   
   // Form Actions
   handleSave: (overrides?: Partial<CardUpdate>) => Promise<boolean>;
+  persistFieldPatch: (patch: Partial<CardUpdate>) => Promise<boolean>;
   resetForm: () => void;
   
   // Validation
@@ -73,6 +85,13 @@ interface FormContextValue {
    * and align lastSavedState so isDirty / leave guards match Firestore (avoids editor vs cardData drift).
    */
   commitGalleryMediaPersisted: (nextGallery: HydratedGalleryMediaItem[]) => void;
+
+  /**
+   * Studio: merge shell-refetched relationship fields into `cardData` only (not `lastSavedState`).
+   * Relationship DnD PATCHes the server first; this keeps the form UI in sync while leaving Compose
+   * Save enabled until a full save aligns the dirty baseline.
+   */
+  applyShellRelationshipSync: (snap: Partial<ShellRelationshipSnapshot>) => void;
 }
 
 /**
@@ -139,6 +158,7 @@ function mergeInitialCard(card: Card | null): CardUpdate {
  * CardFormProvider Component
  */
 export function CardFormProvider({ children, initialCard, allTags, onSave }: FormProviderProps) {
+  const cardContext = useOptionalCardContext();
   const [formState, setFormState] = useState<FormState>(() => {
     const card = mergeInitialCard(initialCard);
     return {
@@ -148,6 +168,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       lastSavedState: {
         cardData: card,
       },
+      formRevision: 0,
     };
   });
 
@@ -163,7 +184,8 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
             errors: {},
             lastSavedState: {
               cardData: mergedCard
-            }
+            },
+            formRevision: 0,
           };
         }
         return prevState;
@@ -246,6 +268,36 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     [mergeEditorContentInto]
   );
 
+  const applyShellRelationshipSync = useCallback((snap: Partial<ShellRelationshipSnapshot>) => {
+    const keys = [
+      'coverImageId',
+      'coverImage',
+      'coverImageFocalPoint',
+      'galleryMedia',
+      'childrenIds',
+      'contentMedia',
+    ] as const satisfies readonly (keyof ShellRelationshipSnapshot)[];
+    setFormState((prev) => {
+      let nextCard = prev.cardData;
+      for (const k of keys) {
+        if (!Object.prototype.hasOwnProperty.call(snap, k)) continue;
+        const v = snap[k];
+        nextCard = { ...nextCard, [k]: v } as CardUpdate;
+      }
+      const mergedCard = mergeEditorContentInto(nextCard);
+      const wasPristine = persistableSnapshotsEqual(prev.cardData, prev.lastSavedState.cardData);
+      return {
+        ...prev,
+        cardData: mergedCard,
+        lastSavedState: wasPristine
+          ? {
+              cardData: mergedCard,
+            }
+          : prev.lastSavedState,
+      };
+    });
+  }, [mergeEditorContentInto]);
+
   useEffect(() => {
     if (!isDirty) return;
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -256,7 +308,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
   }, [isDirty]);
 
-  const setField = useCallback((field: keyof CardUpdate, value: any) => {
+  const setField = useCallback(<K extends keyof CardUpdate>(field: K, value: CardUpdate[K]) => {
     setFormState((prev) => {
       if (!prev.cardData) return prev;
       if (value === prev.cardData[field]) return prev;
@@ -374,9 +426,12 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
         const payload = dehydrateCardForSave(dataToSave);
 
         // Remove derived fields – server will regenerate
-        delete (payload as any).filterTags;
+        delete (payload as { filterTags?: unknown }).filterTags;
 
         const savedCard = await onSave(payload);
+        if (savedCard) {
+          cardContext?.patchVisibleCard(savedCard);
+        }
 
         const baseline =
           savedCard != null
@@ -397,19 +452,115 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
         return false;
       }
     },
-    [validateForm, batchStateUpdate, onSave, formState.cardData, mergeEditorContentInto]
+    [validateForm, batchStateUpdate, onSave, formState.cardData, mergeEditorContentInto, cardContext]
+  );
+
+  const persistFieldPatch = useCallback(
+    async (patch: Partial<CardUpdate>): Promise<boolean> => {
+      const currentDocId = cardDataRef.current.docId;
+      if (!currentDocId) {
+        return false;
+      }
+
+      const cleanedPatch = Object.fromEntries(
+        Object.entries(patch).filter(([, value]) => value !== undefined)
+      ) as Partial<CardUpdate>;
+
+      if (Object.keys(cleanedPatch).length === 0) {
+        return true;
+      }
+
+      try {
+        const savedCard = await onSave(cleanedPatch);
+        if (!savedCard) {
+          return false;
+        }
+        cardContext?.patchVisibleCard(savedCard);
+
+        void globalMutate(
+          (key) => typeof key === 'string' && key.startsWith('/api/cards?'),
+          (current) => {
+            if (!current) return current;
+
+            const patchItems = (items: unknown) => {
+              if (!Array.isArray(items)) return items;
+              return items.map((item) => {
+                if (!item || typeof item !== 'object') return item;
+                return (item as Card).docId === savedCard.docId ? savedCard : item;
+              });
+            };
+
+            if (Array.isArray(current)) {
+              return current.map((page) => {
+                if (!page || typeof page !== 'object' || !('items' in page)) return page;
+                return {
+                  ...page,
+                  items: patchItems((page as { items?: unknown }).items),
+                };
+              });
+            }
+
+            if (typeof current === 'object' && 'items' in current) {
+              return {
+                ...current,
+                items: patchItems((current as { items?: unknown }).items),
+              };
+            }
+
+            return current;
+          },
+          {
+            revalidate: false,
+          }
+        );
+
+        const savedBaseline = mergeInitialCard(savedCard);
+        const keysToSync = new Set<keyof CardUpdate>(
+          Object.keys(cleanedPatch) as Array<keyof CardUpdate>
+        );
+        if (keysToSync.has('type') || keysToSync.has('displayMode')) {
+          keysToSync.add('type');
+          keysToSync.add('displayMode');
+        }
+
+        setFormState((prev) => {
+          const nextCardData = { ...prev.cardData };
+          const nextLastSaved = { ...prev.lastSavedState.cardData };
+
+          keysToSync.forEach((key) => {
+            nextCardData[key] = savedBaseline[key];
+            nextLastSaved[key] = savedBaseline[key];
+          });
+
+          return {
+            ...prev,
+            cardData: nextCardData,
+            lastSavedState: {
+              cardData: nextLastSaved,
+            },
+          };
+        });
+
+        return true;
+      } catch (error) {
+        console.error('[persistFieldPatch] Error during partial save:', error);
+        return false;
+      }
+    },
+    [onSave, cardContext]
   );
 
   const resetForm = useCallback(() => {
     const card = mergeInitialCard(initialCard);
-    setFormState({
+    setFormState((prev) => ({
       cardData: card,
       isSaving: false,
       errors: {},
       lastSavedState: {
         cardData: card,
       },
-    });
+      formRevision: prev.formRevision + 1,
+    }));
   }, [initialCard]);
 
   const contextValue = useMemo(
@@ -422,6 +573,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       updateChildIds,
       updateContentMedia,
       handleSave,
+      persistFieldPatch,
       resetForm,
       validateForm,
       isDirty,
@@ -429,6 +581,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       registerEditorContentGetter,
       syncPersistableBaseline,
       commitGalleryMediaPersisted,
+      applyShellRelationshipSync,
     }),
     [
       formState,
@@ -439,6 +592,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       updateChildIds,
       updateContentMedia,
       handleSave,
+      persistFieldPatch,
       resetForm,
       validateForm,
       isDirty,
@@ -446,6 +600,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       registerEditorContentGetter,
       syncPersistableBaseline,
       commitGalleryMediaPersisted,
+      applyShellRelationshipSync,
     ]
   );
 

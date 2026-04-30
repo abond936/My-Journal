@@ -8,11 +8,12 @@ This file is an **index only**. Canonical instructions are not duplicated here (
 | Agent process (assess → recommend → wait; explicit approval before edits) | `.cursor/rules/# AI_InteractionRules.mdc` |
 | **Editor-first review** — apply edits in the workspace so the author uses the **IDE diff** (accept/reject); do **not** paste full `git diff` / large before-after blocks in chat unless the author asks | `.cursor/rules/# AI_InteractionRules.mdc` → **EXECUTE** |
 | **Change scope** (approved surface only; ask before adjacent UI/API/context edits) | `.cursor/rules/# AI_InteractionRules.mdc` → **Change scope boundary** |
+| **Lint on touched code** (fix delta you introduce; no mandatory whole-file ESLint; opportunistic trivial only) | `.cursor/rules/# AI_InteractionRules.mdc` → **Lint and type hygiene on touched code** |
 | Vision, principles, tech stack, decisions | `docs/01-Vision-Architecture.md` |
 | **Data planes, mutation scope, Typesense limits, list refresh** (normative—read before writes/admin list changes) | `docs/01-Vision-Architecture.md` → **TECHNICAL** → **Backend** / **Frontend** *Principles* + Backend 📐 |
 | **Product invariants vs efficiency** (counts, derived tags—no shortcuts that break them; escalate conflicts) | `.cursor/rules/# AI_InteractionRules.mdc` → **Product invariants vs efficiency**; `docs/01-Vision-Architecture.md` → **Denormalized counts** principle + 📐 **Contract vs product** |
 | App areas: features (buckets + 📐/📘) per section | `docs/02-Application.md` |
-| Execution plan, phased sequencing (`⭕1` only) | `docs/03-Implementation.md` |
+| Execution plan, phased sequencing (`⭕1` only); **Studio v1 shipped** vs **remaining** (`📐 **Studio program status (2026-04-22)**`, **§ Studio sequence**) | `docs/03-Implementation.md`; `docs/02-Application.md` → **Administration** ✅ / ⭕1, `📐 **Studio unified shell contract**`, `📐 **Studio media & body (2026-04-22)**` |
 | Theme: semantic tokens, presets, reader shell & responsive layout (§9), design-led reconciliation | `docs/04-Theme-Design-Contract.md` |
 | Guided archive / AI clustering & story elicitation (seed spec) | `docs/05-Guided-Archive-Assistance.md` |
 | Firebase Admin / Firestore CLI scripts (dotenv preload, import order) | `docs/NPM-SCRIPTS.md` → **Firebase Admin CLI (dotenv)** |
@@ -21,7 +22,7 @@ This file is an **index only**. Canonical instructions are not duplicated here (
 
 For new work: the author states **what**; the agent proposes **how** after assessment. Implement only after explicit approval. If something important is adjacent but **not** specified (extra files, shared state, separate screens), **ask** before adding it to the edit set—do not bundle it by default.
 
-**Operational:** Run **`npm run backup:database`** from the repo root before large Firestore-changing work (e.g. mass import) when the author expects the agent to handle backups; it requires a local `.env` with Firebase Admin + `ONEDRIVE_PATH` (and optional Typesense vars). See `docs/NPM-SCRIPTS.md` → **Firebase Admin CLI (dotenv)** and the `backup:database` row.
+**Operational:** **Data:** Run **`npm run backup:database`** from the repo root before large Firestore-changing work (e.g. mass import) when the author expects the agent to handle backups; it requires a local `.env` with Firebase Admin + `ONEDRIVE_PATH` (and optional Typesense vars). See `docs/NPM-SCRIPTS.md` → **Firebase Admin CLI (dotenv)** and the `backup:database` row. **Secrets (local):** `npm run backup-codebase` zips only repo-root `.env*` and Firebase service-account JSON; default output **`C:\Users\alanb\CodeBase Backups\`** (or `CODEBASE_SECRETS_BACKUP_DIR`). **Code** lives on the Git remote—no duplicate full-tree local backup. See `docs/01-Vision-Architecture.md` → **Backup**.
 
 ## Cursor Cloud specific instructions
 

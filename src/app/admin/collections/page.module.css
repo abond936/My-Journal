@@ -32,6 +32,16 @@
   line-height: 1.4;
 }
 
+.masterModeHint {
+  margin: var(--spacing-sm) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--text2-color);
+}
+
+.masterModeHint code {
+  font-size: 0.9em;
+}
+
 .layout {
   display: grid;
   /* grid-template-columns set inline when wide (tree | handle | unparent | handle | media). */
@@ -39,6 +49,8 @@
   align-items: stretch;
   min-height: 0;
   flex: 1;
+  /* Keep wide tables / grid cards from painting over sibling columns (grid overflow is visible by default). */
+  overflow: hidden;
 }
 
 .layout > *:not(.colResizeHandle) {
@@ -52,6 +64,7 @@
   align-items: stretch;
   min-height: 0;
   flex: 1;
+  overflow: hidden;
 }
 
 .colResizeHandle {
@@ -80,6 +93,26 @@
   max-height: calc(100dvh - var(--admin-tabs-height, 56px) - 20rem);
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.panel > h2,
+.panel > .hint,
+.panel > .controlsRow {
+  position: relative;
+  z-index: 2;
+  background: var(--layout-background1-color);
+}
+
+/* Admin Studio: shared column headings (Organization, Cards, matches Media/Compose in sibling modules). */
+.panelStudioColumnTitle {
+  flex-shrink: 0;
+  margin: 0 0 var(--spacing-sm);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  color: var(--text1-color);
 }
 
 .panelScroll {
@@ -201,19 +234,43 @@
 }
 
 .treeNode {
-  margin-bottom: var(--spacing-sm);
+  /* Tight vertical rhythm (Explorer-like); insert-before band + pointerWithin collision still target drops. */
+  margin-bottom: 2px;
 }
 
 .nodeDropZone,
 .unparentDropZone,
 .treeRootDropZone {
   border-radius: var(--border-radius-sm);
+  transition:
+    background var(--transition-short) ease,
+    border-color var(--transition-short) ease,
+    box-shadow var(--transition-short) ease,
+    outline-color var(--transition-short) ease;
+}
+
+.unparentDropZone {
+  min-height: 120px;
+}
+
+.unparentRowDropZone {
+  width: 100%;
+  border-radius: var(--border-radius-sm);
+  transition:
+    background var(--transition-short) ease,
+    border-color var(--transition-short) ease,
+    box-shadow var(--transition-short) ease;
 }
 
 .treeRootDropZone {
-  min-height: 8rem;
+  min-height: 4rem;
   border: var(--border-width-thin) dashed var(--border1-color);
-  padding: var(--spacing-sm);
+  padding: var(--spacing-xs);
+  transition:
+    background var(--transition-short) ease,
+    border-color var(--transition-short) ease,
+    box-shadow var(--transition-short) ease,
+    transform var(--transition-short) ease;
 }
 
 .emptyTreeHint {
@@ -222,9 +279,58 @@
   font-size: var(--font-size-sm);
 }
 
+/* When the tree has roots, `tree-root` is only this strip so it does not overlap row insert bands. */
+.treeRootAppendStrip {
+  margin-top: var(--spacing-sm);
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.treeRootAppendHint {
+  margin: 0;
+  color: var(--text2-color);
+  font-size: var(--font-size-xs);
+  text-align: center;
+  line-height: 1.35;
+}
+
 .dropTargetActive {
-  outline: 2px solid var(--button-solid-border-color);
-  background: color-mix(in srgb, var(--button-solid-background-color) 12%, transparent);
+  outline: 2px solid color-mix(in srgb, var(--button-solid-border-color) 80%, white 8%);
+  outline-offset: 0;
+  border-color: color-mix(in srgb, var(--button-solid-border-color) 65%, var(--border1-color));
+  background: color-mix(in srgb, var(--button-solid-background-color) 16%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--button-solid-border-color) 22%, transparent),
+    0 10px 22px color-mix(in srgb, var(--button-solid-background-color) 12%, transparent);
+}
+
+.unparentRowDropZoneActive {
+  background: color-mix(in srgb, var(--color3) 11%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color3) 40%, transparent);
+}
+
+/* Nesting on card title: clear “become last child here” bar (distinct from insert-before sibling line). */
+.nodeTitleDropZoneNestActive {
+  outline: none;
+  background: color-mix(in srgb, var(--color3) 12%, transparent);
+  position: relative;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--color3) 28%, transparent),
+    0 8px 18px color-mix(in srgb, var(--color3) 10%, transparent);
+}
+
+.nodeTitleDropZoneNestActive::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--color3);
+  border-radius: 999px 999px 0 0;
+  pointer-events: none;
 }
 
 .nodeRow,
@@ -248,28 +354,78 @@
   min-width: 0;
   display: flex;
   align-items: center;
+  gap: var(--spacing-xs);
 }
 
-/* Full-width “gap” above each row: insert sibling before this card (title = nest as last child). */
+.nodeDragContent {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.treeDragHandle {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--border-radius-sm);
+  color: var(--text2-color);
+  cursor: grab;
+  user-select: none;
+  line-height: 1;
+}
+
+.treeDragHandle:hover {
+  background: color-mix(in srgb, var(--layout-background2-color) 80%, transparent);
+  color: var(--text1-color);
+}
+
+.treeDragHandle:active {
+  cursor: grabbing;
+}
+
+/* Full-width band above each row: insert sibling before this card (title = nest as last child). */
 .treeInsertBeforeWrap {
   width: 100%;
-  margin-top: -4px;
-  padding-top: 4px;
-  margin-bottom: 1px;
+  margin-top: 0;
+  padding-top: 0;
+  margin-bottom: 0;
   box-sizing: border-box;
 }
 
 .treeInsertBeforeZone {
   width: 100%;
-  min-height: 8px;
+  min-height: 10px;
   border-radius: var(--border-radius-sm);
   cursor: copy;
-  background: color-mix(in srgb, var(--border1-color) 22%, transparent);
+  background: transparent;
+  position: relative;
 }
 
+/* Explorer-style insertion bar between rows (pointer is over “insert before this card”). */
 .treeInsertBeforeZoneActive {
-  outline: 2px solid var(--button-solid-border-color);
-  background: color-mix(in srgb, var(--button-solid-background-color) 18%, transparent);
+  background: transparent;
+}
+
+.treeInsertBeforeZoneActive::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 3px;
+  background: var(--color3);
+  border-radius: 999px;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--layout-background1-color) 85%, var(--color3)),
+    0 2px 6px color-mix(in srgb, var(--color3) 30%, transparent);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .nodeTitleDropZone {
@@ -278,12 +434,23 @@
   border-radius: var(--border-radius-sm);
 }
 
+/*
+ * When a row is expanded, the first child’s “insert before” band sits directly under the title row.
+ * The pointer often lands only in that band, so collisions pick insertBefore:firstChild instead of
+ * parent:parentId. A short column + pulled-up insert band creates overlap; curatedTreeCollisionDetection
+ * already prefers parent:* over insertBefore:* when both contain the pointer.
+ */
+.parentNestHitColumn {
+  display: block;
+}
+
 .treeExpandButton {
   all: unset;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   width: var(--spacing-sm);
   height: var(--spacing-sm);
   font-size: var(--font-size-xs);
@@ -305,12 +472,19 @@
   font-size: 0.75rem;
   opacity: 0.6;
   line-height: 1;
+  flex-shrink: 0;
+  pointer-events: none;
 }
 
 .nodeRow {
   border: var(--border-width-thin) dashed transparent;
   border-radius: var(--border-radius-sm);
-  padding: 1px var(--spacing-xs);
+  padding: 0 var(--spacing-xs);
+}
+
+.nodeRowSelected {
+  border-color: color-mix(in srgb, var(--color3) 55%, var(--border1-color));
+  background: color-mix(in srgb, var(--color3) 9%, transparent);
 }
 
 .nodeActions {
@@ -343,14 +517,19 @@
 }
 
 .listRowWrap {
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: 2px;
 }
 
 .listRow {
   border: var(--border-width-thin) solid var(--border1-color);
   border-radius: var(--border-radius-sm);
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: 2px var(--spacing-sm);
   background: var(--layout-background2-color);
+}
+
+.listRowSelected {
+  border-color: color-mix(in srgb, var(--color3) 55%, var(--border1-color));
+  background: color-mix(in srgb, var(--color3) 10%, var(--layout-background2-color));
 }
 
 .draggingStatus {
@@ -367,6 +546,66 @@
   border-left: 4px solid var(--state-warning-border-color, #b45309);
 }
 
+/* DragOverlay child: root node is sized in TSX (max-content). Chip stays transparent so the list shows through. */
+.dragOverlayCard {
+  max-width: min(22rem, 90vw);
+  padding: calc(var(--spacing-xs) + 1px) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--color3) 42%, var(--border1-color));
+  background: color-mix(in srgb, var(--layout-background1-color) 92%, var(--color3) 8%);
+  color: var(--text1-color);
+  text-shadow: none;
+  box-shadow:
+    0 14px 32px color-mix(in srgb, var(--text1-color) 16%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color3) 26%, transparent);
+  cursor: grabbing;
+  pointer-events: none;
+}
+
+.dragOverlayTitle {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.dragOverlaySource {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs);
+  border-radius: var(--border-radius-md);
+  border: var(--border-width-thin) solid var(--border1-color);
+  background: var(--layout-background1-color);
+  box-shadow:
+    0 4px 14px color-mix(in srgb, var(--text1-color) 18%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color3) 35%, transparent);
+  cursor: grabbing;
+  max-width: min(16rem, 88vw);
+}
+
+.dragOverlaySourceThumb {
+  position: relative;
+  width: 120px;
+  height: 84px;
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  background: var(--layout-background2-color);
+}
+
+.dragOverlaySourceImg {
+  object-fit: cover;
+}
+
+.dragOverlaySourceCaption {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text1-color);
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .hintStrong {
   color: var(--text1-color);
   font-weight: var(--font-weight-semibold);
@@ -374,6 +613,11 @@
 
 .error {
   color: var(--state-error-text-color);
+  margin-bottom: var(--spacing-sm);
+}
+
+.warning {
+  color: var(--state-warning-text-color);
   margin-bottom: var(--spacing-sm);
 }
 
@@ -503,6 +747,33 @@
 
 .studioEmbeddedHint a {
   color: var(--color3);
+}
+
+/* Studio: first column = Tags | Tree tabs */
+.panelStudioLeftTabs {
+  max-height: calc(100dvh - var(--admin-tabs-height, 56px) - 10rem);
+}
+
+/* Wraps card-admin viewToggleButtonGroup for Tags | Tree (matches Grid | Table). */
+.studioLeftTabToggleRow {
+  margin: 0 0 var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.studioLeftTabPanel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.studioLeftTreeHeading {
+  margin: 0 0 var(--spacing-xs);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text1-color);
+  flex-shrink: 0;
 }
 
 @media (max-width: 980px) {

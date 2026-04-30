@@ -71,19 +71,9 @@ export default function CardsPage() {
   
   if (error) {
     return (
-      <div className={styles.page} role="alert">
-        <p style={{ color: 'var(--text1-color)', marginBottom: '0.5rem' }}>
-          Could not load the feed.
-        </p>
-        <pre
-          style={{
-            fontSize: '0.875rem',
-            whiteSpace: 'pre-wrap',
-            color: 'var(--text2-color)',
-          }}
-        >
-          {error instanceof Error ? error.message : String(error)}
-        </pre>
+      <div className={`${styles.page} ${styles.errorState}`} role="alert">
+        <p className={styles.errorTitle}>Could not load the feed.</p>
+        <pre className={styles.errorDetail}>{error instanceof Error ? error.message : String(error)}</pre>
       </div>
     );
   }
@@ -97,7 +87,7 @@ export default function CardsPage() {
         loadMoreRef={loadMoreRef}
         onSaveScrollPosition={onSaveScrollPosition}
       />
-      {loadingMore && <div style={{ textAlign: 'center', padding: '2rem' }}>Loading more...</div>}
+      {loadingMore && <div className={styles.loadingMore}>Loading more...</div>}
       <AdminFAB />
     </div>
   );

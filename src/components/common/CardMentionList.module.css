@@ -4,16 +4,19 @@
   max-height: 240px;
   overflow-y: auto;
   padding: var(--spacing-xs);
-  background: var(--card-background-color);
-  border: var(--border-width-thin) solid var(--border1-color);
-  border-radius: var(--border-radius-md);
-  box-shadow: var(--shadow-md);
+  background: var(--reader-window-background-color);
+  border: var(--border-width-thin) solid var(--reader-window-border-color);
+  border-radius: var(--reader-window-border-radius);
+  box-shadow: var(--reader-window-shadow);
 }
 
 .empty {
   padding: var(--spacing-sm) var(--spacing-md);
-  font-size: var(--font-size-xs);
-  color: var(--text2-color);
+  font-family: var(--reader-chrome-meta-font-family);
+  font-size: var(--reader-chrome-meta-font-size);
+  font-weight: var(--reader-chrome-meta-font-weight);
+  line-height: var(--reader-chrome-meta-line-height);
+  color: var(--reader-chrome-muted-color);
 }
 
 .item,
@@ -32,9 +35,9 @@
 
 .item:hover,
 .itemSelected {
-  background: var(--button-outline-background-color-hover);
+  background: var(--reader-chrome-control-hover-background-color);
 }
 
 .itemSelected {
-  outline: var(--border-width-thin) solid var(--border1-color);
+  outline: var(--border-width-thin) solid var(--reader-chrome-active-control-border-color);
 }

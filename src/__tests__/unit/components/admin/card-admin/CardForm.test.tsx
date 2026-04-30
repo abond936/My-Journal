@@ -1,46 +1,50 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CardForm from '@/components/admin/card-admin/CardForm';
 import { CardFormProvider } from '@/components/providers/CardFormProvider';
 import { Card } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 
-// Mock child components
+jest.mock('react-dnd', () => ({
+  DndProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+jest.mock('react-dnd-html5-backend', () => ({
+  HTML5Backend: {},
+}));
+
 jest.mock('@/components/admin/card-admin/CoverPhotoContainer', () => {
-  return function MockCoverPhotoContainer({ onChange }: { onChange: (media: any) => void }) {
-    return (
-      <button
-        data-testid="mock-cover-photo"
-        onClick={() => onChange({ id: 'test-media-1', url: 'test.jpg' })}
-      >
-        Mock Cover Photo
-      </button>
-    );
+  return function MockCoverPhotoContainer() {
+    return <div data-testid="mock-cover-photo">Mock Cover Photo</div>;
   };
 });
 
 jest.mock('@/components/admin/card-admin/GalleryManager', () => {
-  return function MockGalleryManager({ onChange }: { onChange: (media: any[]) => void }) {
-    return (
-      <button
-        data-testid="mock-gallery"
-        onClick={() => onChange([{ id: 'test-media-1', url: 'test.jpg' }])}
-      >
-        Mock Gallery
-      </button>
-    );
+  return function MockGalleryManager() {
+    return <div data-testid="mock-gallery">Mock Gallery</div>;
   };
 });
 
 jest.mock('@/components/admin/card-admin/MacroTagSelector', () => {
-  return function MockMacroTagSelector({ onChange }: { onChange: (tags: string[]) => void }) {
+  return function MockMacroTagSelector() {
+    return <div data-testid="mock-tag-selector">Mock Tag Selector</div>;
+  };
+});
+
+jest.mock('@/components/admin/common/CardDimensionalTagCommandBar', () => {
+  return function MockCardDimensionalTagCommandBar({
+    onUpdateTags,
+  }: {
+    onUpdateTags?: (tags: string[]) => void;
+  }) {
     return (
       <button
-        data-testid="mock-tag-selector"
-        onClick={() => onChange(['tag-1', 'tag-2'])}
+        type="button"
+        data-testid="mock-tag-command-bar"
+        onClick={() => onUpdateTags?.(['tag-1', 'tag-2'])}
       >
-        Mock Tag Selector
+        Mock Tag Command Bar
       </button>
     );
   };
@@ -53,21 +57,66 @@ jest.mock('@/components/admin/card-admin/ChildCardManager', () => {
 });
 
 jest.mock('@/components/common/RichTextEditor', () => {
-  return function MockRichTextEditor({ onChange }: { onChange: (content: string) => void }) {
+  return React.forwardRef(function MockRichTextEditor(
+    {
+      initialContent,
+      onChange,
+    }: {
+      initialContent?: string;
+      onChange: (content: string) => void;
+    },
+    ref
+  ) {
+    const [value, setValue] = React.useState(initialContent || '');
+    React.useImperativeHandle(ref, () => ({
+      getContent: () => value,
+      insertImage: jest.fn(),
+    }));
     return (
       <textarea
         data-testid="mock-editor"
-        onChange={(e) => onChange(e.target.value)}
+        value={value}
+        onChange={(e) => {
+          setValue(e.target.value);
+          onChange(e.target.value);
+        }}
       />
     );
+  });
+});
+
+jest.mock('@/components/admin/studio/studioCardFormStudioContext', () => ({
+  useStudioCardFormStudioOptional: () => null,
+}));
+
+jest.mock('@/components/admin/studio/StudioShellContext', () => ({
+  useStudioShellOptional: () => null,
+}));
+
+jest.mock('@/components/admin/studio/studioRelationshipDndPrimitives', () => ({
+  StudioDropZone: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+jest.mock('@/components/admin/studio/StudioCardFormGallery', () => {
+  return function MockStudioCardFormGallery() {
+    return <div data-testid="mock-studio-gallery">Mock Studio Gallery</div>;
   };
 });
 
-// Mock card data
+jest.mock('@/components/admin/studio/StudioCardFormChildren', () => {
+  return function MockStudioCardFormChildren() {
+    return <div data-testid="mock-studio-children">Mock Studio Children</div>;
+  };
+});
+
 const mockCard: Card = {
-  id: 'test-card-1',
+  docId: 'test-card-1',
   title: 'Test Card',
-  content: 'Test content',
+  title_lowercase: 'test card',
+  subtitle: null,
+  excerpt: null,
+  excerptAuto: true,
+  content: '<p>Test content</p>',
   status: 'draft',
   type: 'story',
   displayMode: 'inline',
@@ -84,170 +133,111 @@ const mockCard: Card = {
   coverImage: null,
   contentMedia: [],
   galleryMedia: [],
-  
 };
 
-// Mock tags
 const mockTags: Tag[] = [
-  { id: 'tag-1', name: 'Tag 1', dimension: 'what', color: '#000000' },
-  { id: 'tag-2', name: 'Tag 2', dimension: 'what', color: '#000000' },
+  { docId: 'tag-1', name: 'Tag 1', dimension: 'what', color: '#000000' } as Tag,
+  { docId: 'tag-2', name: 'Tag 2', dimension: 'what', color: '#000000' } as Tag,
 ];
 
 describe('CardForm', () => {
   const mockOnSave = jest.fn();
 
-  const renderCardForm = () => {
-    return render(
+  const renderCardForm = () =>
+    render(
       <CardFormProvider initialCard={mockCard} allTags={mockTags} onSave={mockOnSave}>
         <CardForm />
       </CardFormProvider>
     );
-  };
 
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('renders all form sections', () => {
+  it('renders all main form sections', () => {
     renderCardForm();
 
     expect(screen.getByPlaceholderText('Card Title')).toBeInTheDocument();
     expect(screen.getByTestId('mock-editor')).toBeInTheDocument();
     expect(screen.getByTestId('mock-cover-photo')).toBeInTheDocument();
     expect(screen.getByTestId('mock-gallery')).toBeInTheDocument();
-    expect(screen.getByTestId('mock-tag-selector')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-tag-command-bar')).toBeInTheDocument();
     expect(screen.getByTestId('mock-child-manager')).toBeInTheDocument();
   });
 
-  it('updates title field', async () => {
+  it('saves title on blur for existing cards', async () => {
+    mockOnSave.mockResolvedValue({
+      ...mockCard,
+      title: 'Renamed Card',
+      title_lowercase: 'renamed card',
+    });
+
     renderCardForm();
 
     const titleInput = screen.getByPlaceholderText('Card Title');
     await userEvent.clear(titleInput);
-    await userEvent.type(titleInput, 'New Title');
+    await userEvent.type(titleInput, 'Renamed Card');
+    titleInput.blur();
 
-    expect(titleInput).toHaveValue('New Title');
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalledWith(expect.objectContaining({ title: 'Renamed Card' }));
+    });
   });
 
-  it('updates content field', async () => {
+  it('saves subtitle on blur', async () => {
+    mockOnSave.mockResolvedValue({
+      ...mockCard,
+      subtitle: 'A subtitle',
+    });
+
+    renderCardForm();
+
+    const subtitleInput = screen.getByPlaceholderText('Subtitle');
+    await userEvent.type(subtitleInput, 'A subtitle');
+    subtitleInput.blur();
+
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalledWith({ subtitle: 'A subtitle' });
+    });
+  });
+
+  it('saves status on change', async () => {
+    mockOnSave.mockResolvedValue({
+      ...mockCard,
+      status: 'published',
+    });
+
+    renderCardForm();
+
+    const statusSelect = screen.getByLabelText('Status');
+    await userEvent.selectOptions(statusSelect, 'published');
+
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalledWith({ status: 'published' });
+    });
+  });
+
+  it('saves tags on command-bar update', async () => {
+    mockOnSave.mockResolvedValue({
+      ...mockCard,
+      tags: ['tag-1', 'tag-2'],
+    });
+
+    renderCardForm();
+
+    await userEvent.click(screen.getByTestId('mock-tag-command-bar'));
+
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalledWith({ tags: ['tag-1', 'tag-2'] });
+    });
+  });
+
+  it('does not save rich text on change alone', async () => {
     renderCardForm();
 
     const editor = screen.getByTestId('mock-editor');
-    await userEvent.type(editor, 'New content');
+    await userEvent.type(editor, 'Updated body');
 
-    expect(editor).toHaveValue('New content');
+    expect(mockOnSave).not.toHaveBeenCalled();
   });
-
-  it('updates status field', async () => {
-    renderCardForm();
-
-    const statusSelect = screen.getByRole('combobox');
-    await userEvent.selectOptions(statusSelect, 'published');
-
-    expect(statusSelect).toHaveValue('published');
-  });
-
-  it('handles cover photo updates', async () => {
-    renderCardForm();
-
-    const coverPhotoButton = screen.getByTestId('mock-cover-photo');
-    await userEvent.click(coverPhotoButton);
-
-    await waitFor(() => {
-      expect(mockOnSave).toHaveBeenCalledWith(
-        expect.objectContaining({
-          coverImageId: 'test-media-1'
-        }),
-        expect.any(Array)
-      );
-    });
-  });
-
-  it('handles gallery updates', async () => {
-    renderCardForm();
-
-    const galleryButton = screen.getByTestId('mock-gallery');
-    await userEvent.click(galleryButton);
-
-    await waitFor(() => {
-      expect(mockOnSave).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.any(Array)
-      );
-    });
-  });
-
-  it('handles tag selection', async () => {
-    renderCardForm();
-
-    const tagButton = screen.getByTestId('mock-tag-selector');
-    await userEvent.click(tagButton);
-
-    await waitFor(() => {
-      expect(mockOnSave).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.arrayContaining([
-          expect.objectContaining({ id: 'tag-1' }),
-          expect.objectContaining({ id: 'tag-2' })
-        ])
-      );
-    });
-  });
-
-  it('shows validation errors', async () => {
-    renderCardForm();
-
-    const titleInput = screen.getByPlaceholderText('Card Title');
-    await userEvent.clear(titleInput);
-
-    const submitButton = screen.getByRole('button', { name: /save/i });
-    await userEvent.click(submitButton);
-
-    expect(await screen.findByText(/title is required/i)).toBeInTheDocument();
-  });
-
-  it('calls onSave with updated data when form is valid', async () => {
-    renderCardForm();
-
-    const titleInput = screen.getByPlaceholderText('Card Title');
-    await userEvent.clear(titleInput);
-    await userEvent.type(titleInput, 'New Title');
-
-    const submitButton = screen.getByRole('button', { name: /save/i });
-    await userEvent.click(submitButton);
-
-    await waitFor(() => {
-      expect(mockOnSave).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: 'New Title'
-        }),
-        expect.any(Array)
-      );
-    });
-  });
-
-  it('shows loading state during save', async () => {
-    mockOnSave.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)));
-    renderCardForm();
-
-    const submitButton = screen.getByRole('button', { name: /save/i });
-    await userEvent.click(submitButton);
-
-    expect(await screen.findByText(/saving/i)).toBeInTheDocument();
-  });
-
-  it('prevents navigation when form is dirty', async () => {
-    renderCardForm();
-
-    const titleInput = screen.getByPlaceholderText('Card Title');
-    await userEvent.clear(titleInput);
-    await userEvent.type(titleInput, 'New Title');
-
-    // Check if beforeunload event is prevented
-    const beforeunloadEvent = new Event('beforeunload');
-    beforeunloadEvent.preventDefault = jest.fn();
-    window.dispatchEvent(beforeunloadEvent);
-
-    expect(beforeunloadEvent.preventDefault).toHaveBeenCalled();
-  });
-}); 
+});

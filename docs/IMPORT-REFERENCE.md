@@ -25,7 +25,8 @@ See **`normalize-images-README.md`** for full CLI behavior.
 ## Captions and metadata on import
 
 - **Local / folder import** reads **embedded metadata only** via **`exiftool-vendored`** (no `.json` sidecars). Captions are taken from common IPTC/XMP/EXIF fields (e.g. `CaptionAbstract`, `Description`, `ImageDescription`, `UserComment`, `Headline`).
-- **Keywords** from the same read (`Keywords`, `Subject`, `HierarchicalSubject`, etc.) are mapped to **Firestore tag IDs** by **exact tag name**, then **case-insensitive** fallback. Labels under **`cardseed|…` / `cardseed/…`** and top-level section roots (`WHO`, `WHAT`, …) are **ignored** for media tagging.
+- **Keywords** from the same read (`Keywords`, `Subject`, `HierarchicalSubject`, etc.) are mapped to **Firestore tag IDs** by **exact tag name**, then **case-insensitive** fallback.
+- Labels under **`cardseed|…` / `cardseed/…`** and top-level section roots (`WHO`, `WHAT`, …) are **ignored** for media tagging.
 - **Card title** on folder import remains the **imported folder name** (path basename), not cardseed keywords.
 - **`npm run normalize:images`** and JSON sidecars remain a **separate local pipeline** (backup, inspection); they are **not** read during app import.
 

@@ -1,17 +1,10 @@
-import React from 'react';
-import CardAdminClientPage from '../CardAdminClientPage';
-import styles from './page.module.css';
+import { redirect } from 'next/navigation';
 
-export default async function EditCardPage({
+export default async function CardAdminLegacyEditPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  // Explicitly awaiting params because Next.js is passing a promise in this environment.
   const { id } = await params;
-  return (
-    <div className={styles.page}>
-      <CardAdminClientPage cardId={id} />
-    </div>
-  );
+  redirect(`/admin/studio?card=${encodeURIComponent(id)}`);
 }

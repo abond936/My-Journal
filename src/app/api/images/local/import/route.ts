@@ -25,6 +25,19 @@ export type LocalImportBatchErrorItem = {
   message: string;
 };
 
+type ApiErrorPayload = {
+  ok: false;
+  code: string;
+  message: string;
+  severity: 'error' | 'warning';
+  retryable: boolean;
+  error?: string;
+};
+
+function errorResponse(payload: ApiErrorPayload, status: number) {
+  return NextResponse.json(payload, { status });
+}
+
 function normalizeSourcePaths(raw: unknown): string[] | null {
   if (!Array.isArray(raw)) return null;
   const out: string[] = [];
@@ -43,7 +56,16 @@ export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
 
   if (!session || session.user.role !== 'admin') {
-    return new NextResponse('Forbidden', { status: 403 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'AUTH_FORBIDDEN',
+        message: 'Forbidden.',
+        severity: 'error',
+        retryable: false,
+      },
+      403
+    );
   }
 
   let sourcePathForLog: string | undefined;
@@ -57,20 +79,29 @@ export async function POST(request: NextRequest) {
       typeof body.sourcePath === 'string' && body.sourcePath.trim() ? body.sourcePath.trim() : undefined;
 
     if (batchPaths && singlePath) {
-      return NextResponse.json(
-        { message: 'Provide either sourcePath or sourcePaths, not both.' },
-        { status: 400 }
+      return errorResponse(
+        {
+          ok: false,
+          code: 'MEDIA_IMPORT_PATH_INPUT_INVALID',
+          message: 'Provide either sourcePath or sourcePaths, not both.',
+          severity: 'error',
+          retryable: false,
+        },
+        400
       );
     }
 
     if (batchPaths) {
       if (batchPaths.length > MAX_SOURCE_PATHS_PER_REQUEST) {
-        return NextResponse.json(
+        return errorResponse(
           {
+            ok: false,
             message: `At most ${MAX_SOURCE_PATHS_PER_REQUEST} paths per request.`,
             code: 'BATCH_TOO_LARGE',
+            severity: 'error',
+            retryable: false,
           },
-          { status: 400 }
+          400
         );
       }
 
@@ -168,9 +199,15 @@ export async function POST(request: NextRequest) {
     }
 
     if (!singlePath) {
-      return NextResponse.json(
-        { message: 'sourcePath or non-empty sourcePaths array is required.' },
-        { status: 400 }
+      return errorResponse(
+        {
+          ok: false,
+          code: 'MEDIA_IMPORT_PATH_REQUIRED',
+          message: 'sourcePath or non-empty sourcePaths array is required.',
+          severity: 'error',
+          retryable: false,
+        },
+        400
       );
     }
 
@@ -210,6 +247,16 @@ export async function POST(request: NextRequest) {
             }
           : error,
     });
-    return NextResponse.json({ message: 'Error importing image.', error: errorMessage }, { status: 500 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'MEDIA_IMPORT_LOCAL_FAILED',
+        message: 'Error importing image.',
+        severity: 'error',
+        retryable: true,
+        error: errorMessage,
+      },
+      500
+    );
   }
 }

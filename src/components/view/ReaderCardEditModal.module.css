@@ -1,0 +1,204 @@
+.triggerButton {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.readerOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-index-modal);
+  background-color: var(--color-overlay-dark);
+  align-items: flex-start;
+  overflow: hidden;
+}
+
+.readerModal {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-width: 560px;
+  min-height: 900px;
+  background-color: var(--reader-window-background-color);
+  border-radius: var(--reader-window-border-radius);
+  padding: var(--spacing-md);
+  border: var(--border-width-thin) solid var(--reader-window-border-color);
+  box-shadow: var(--reader-window-shadow);
+  overflow: hidden;
+}
+
+.readerBody {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding-top: var(--spacing-sm);
+}
+
+.modalShell {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0;
+  text-align: left;
+  min-height: 0;
+}
+
+.modalHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--spacing-xs);
+  margin-bottom: 0;
+  padding-bottom: var(--spacing-sm);
+  border-bottom: var(--border-width-thin) solid
+    color-mix(in srgb, var(--reader-window-border-color) 84%, transparent);
+}
+
+.titleBar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  box-sizing: border-box;
+  cursor: move;
+  user-select: none;
+  touch-action: none;
+  padding: 0.7rem 0.9rem;
+  border-radius: calc(var(--reader-window-border-radius) - 6px);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--reader-window-border-color) 88%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--reader-window-border-color) 100%, transparent);
+  background:
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, white 18%, var(--reader-window-background-color)) 0%,
+      color-mix(in srgb, white 7%, var(--reader-window-background-color)) 52%,
+      color-mix(in srgb, black 4%, var(--reader-window-background-color)) 100%
+    );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, white 44%, transparent) inset,
+    0 -1px 0 color-mix(in srgb, black 10%, transparent) inset,
+    0 10px 18px color-mix(in srgb, black 7%, transparent);
+}
+
+.titleBarDragAffordance {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 3px;
+  flex-shrink: 0;
+  padding: 2px var(--spacing-sm) 2px 0;
+  margin-right: var(--spacing-xs);
+  border-right: var(--border-width-thin) solid
+    color-mix(in srgb, var(--reader-window-border-color) 70%, transparent);
+}
+
+.titleBarDragAffordance span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--reader-chrome-text-color) 72%, transparent);
+}
+
+.titleBarTitle {
+  margin: 0;
+  flex: 1;
+  font-family: var(--reader-chrome-text-font-family);
+  font-size: var(--reader-chrome-text-font-size);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--reader-chrome-text-line-height);
+  color: var(--reader-chrome-text-color);
+  letter-spacing: 0.01em;
+}
+
+.titleBarCloseButton {
+  flex-shrink: 0;
+  width: 2.35rem;
+  height: 2rem;
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--reader-window-border-color) 78%, transparent);
+  border-radius: var(--border-radius-sm);
+  background: color-mix(in srgb, var(--reader-window-background-color) 72%, white 28%);
+  color: var(--reader-chrome-text-color);
+  font-size: 1.2rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 1px 0 color-mix(in srgb, white 32%, transparent) inset;
+  transition: background-color 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+
+.titleBarCloseButton:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--reader-chrome-control-hover-background-color) 78%, white 8%);
+  border-color: color-mix(in srgb, var(--reader-window-border-color) 100%, transparent);
+  transform: translateY(-1px);
+}
+
+.titleBarCloseButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.modalActions {
+  width: 100%;
+}
+
+.modalScroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+.modalScroll :global(form#card-form) {
+  padding: var(--spacing-sm);
+  gap: var(--spacing-md);
+  max-width: none;
+  margin: 0;
+}
+
+.resizeHandle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 34px;
+  height: 34px;
+  cursor: nwse-resize;
+  z-index: 5;
+  touch-action: none;
+  background: linear-gradient(
+    135deg,
+    transparent 0 42%,
+    color-mix(in srgb, var(--reader-window-border-color) 22%, transparent) 42% 100%
+  );
+  border-bottom-right-radius: var(--border-radius-md);
+}
+
+.resizeHandle::before {
+  content: '';
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  width: 16px;
+  height: 16px;
+  border-right: 2px solid color-mix(in srgb, var(--reader-chrome-text-color) 50%, transparent);
+  border-bottom: 2px solid color-mix(in srgb, var(--reader-chrome-text-color) 50%, transparent);
+  opacity: 1;
+}
+
+.resizeHandle::after {
+  content: '';
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid color-mix(in srgb, var(--reader-chrome-text-color) 30%, transparent);
+  border-bottom: 2px solid color-mix(in srgb, var(--reader-chrome-text-color) 30%, transparent);
+}

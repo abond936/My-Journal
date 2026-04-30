@@ -2,47 +2,71 @@
 .card {
   display: flex;
   flex-direction: column;
-  background-color: var(--layout-background2-color);
-  border-radius: var(--border-radius-lg);
+  background-color: var(--reader-card-background-color);
+  border-radius: var(--reader-card-border-radius);
   overflow: hidden;
   text-decoration: none;
-  color: var(--text1-color);
-  border: var(--border-width-thin) solid var(--border1-color);
+  color: var(--reader-body-color);
+  border: var(--reader-card-border-width) solid var(--reader-card-border-color);
   position: relative;
   transition: transform var(--transition-short) ease, box-shadow var(--transition-short) ease;
-  /* Taller than square so portrait covers lose less top/bottom under object-fit: cover */
-  aspect-ratio: 4 / 5;
-}
-
-.card.aspectPortrait {
-  aspect-ratio: 4 / 5;
-}
-
-.card.aspectLandscape {
-  /* Keep grid rhythm close to portrait cards; landscape media gets its own top frame. */
-  aspect-ratio: 4 / 5;
-}
-
-.card.aspectSquare {
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 6 / 5;
+  min-height: 0;
+  min-width: 0;
 }
 
 .card:hover {
   transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--color4-light);
+  box-shadow: var(--reader-card-shadow-hover);
+  border-color: var(--reader-card-hover-border-color);
+}
+
+.card.story {
+  background-color: var(--reader-story-card-background-color);
+  border-color: var(--reader-story-card-border-color);
+  border-radius: var(--reader-story-card-border-radius);
+  box-shadow: var(--reader-story-card-shadow);
+}
+
+.card.story:hover {
+  box-shadow: var(--reader-story-card-shadow-hover);
+}
+
+.card.gallery {
+  background-color: var(--reader-gallery-card-background-color);
+  border-color: var(--reader-gallery-card-border-color);
+  border-radius: var(--reader-gallery-card-border-radius);
+  box-shadow: var(--reader-gallery-card-shadow);
+}
+
+.card.gallery:hover {
+  box-shadow: var(--reader-gallery-card-shadow-hover);
 }
 
 /* Flat tiles (no “shaded” panel vs grid): match page surface, lighter hover */
 .card.quote,
 .card.callout {
-  background-color: var(--layout-background1-color);
+  background-color: var(--reader-card-flat-background-color);
+}
+
+.card.quote {
+  background-color: var(--reader-quote-card-background-color);
+  border-color: var(--reader-quote-card-border-color);
+  border-radius: var(--reader-quote-card-border-radius);
+  box-shadow: var(--reader-quote-card-shadow);
+}
+
+.card.callout {
+  background-color: var(--reader-callout-card-background-color);
+  border-color: var(--reader-callout-card-border-color);
+  border-radius: var(--reader-callout-card-border-radius);
+  box-shadow: var(--reader-callout-card-shadow);
 }
 
 .card.quote:hover,
 .card.callout:hover {
   box-shadow: none;
-  border-color: var(--border1-color);
+  border-color: var(--reader-card-border-color);
 }
 
 /* Pin may extend past the corner when scaleX(-1) uses a right-side origin; keep visible. */
@@ -59,10 +83,35 @@
 }
 
 /* On larger screens, these will be controlled by a parent grid */
-@media (min-width: var(--breakpoint-md)) {
+@media (min-width: 768px) {
   .small { width: auto; }
   .medium { width: auto; }
   .large { width: auto; }
+}
+
+@media (max-width: 768px) {
+  .card.story,
+  .card.gallery,
+  .card.qa {
+    aspect-ratio: auto;
+  }
+
+  .story:not(:has(.imageContainer)),
+  .gallery:not(:has(.imageContainer)),
+  .qa:not(.qaWithCover) {
+    aspect-ratio: 6 / 5;
+  }
+
+  .imageContainer {
+    aspect-ratio: 16 / 9;
+  }
+
+  .story:not(:has(.imageContainer)) .content,
+  .gallery:not(:has(.imageContainer)) .content,
+  .qa:not(.qaWithCover) .content {
+    justify-content: flex-start;
+    padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm);
+  }
 }
 
 /* Fill a fixed-width parent (e.g. horizontal discovery rail). Overrides .small % width. */
@@ -72,10 +121,6 @@
   box-sizing: border-box;
 }
 
-.fullWidth .title {
-  font-size: var(--font-size-base);
-}
-
 .fullWidth .description {
   font-size: var(--font-size-xs);
   line-height: 1.35;
@@ -83,28 +128,24 @@
 
 /* --- Content & Image Styles --- */
 .content {
-  padding: var(--spacing-lg);
+  padding: var(--reader-card-padding);
   display: flex;
   flex-direction: column;
   flex-grow: 1;
   position: relative;
   z-index: 2;
+  gap: var(--spacing-xs);
 }
 
 .imageContainer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-}
-
-/* Landscape cards on content feed: image on top, text in remaining space. */
-.card.aspectLandscape .imageContainer {
   position: relative;
+  width: 100%;
+  aspect-ratio: 6 / 5;
   height: auto;
-  aspect-ratio: 3 / 2;
+  z-index: 0;
+  overflow: hidden;
+  background: var(--reader-media-frame-background-color);
+  border-bottom: var(--border-width-thin) solid var(--reader-media-frame-border-color);
 }
 
 .image {
@@ -129,66 +170,85 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background-color: color-mix(in srgb, black 68%, transparent);
-  color: white;
-  border: var(--border-width-thin) solid color-mix(in srgb, white 22%, transparent);
+  background-color: var(--reader-card-badge-background-color);
+  color: var(--reader-card-badge-text-color);
+  border: var(--border-width-thin) solid var(--reader-card-badge-border-color);
   box-shadow: var(--shadow-sm);
 }
 
 .title {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  margin: 0 0 var(--spacing-sm) 0;
-  line-height: var(--line-height-tight);
+  font-family: var(--reader-title-font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--reader-title-font-weight);
+  margin: 0;
+  line-height: var(--reader-title-line-height);
+  color: var(--reader-title-color);
 }
 
+
 .description {
+  font-family: var(--reader-excerpt-font-family);
   font-size: var(--font-size-xs);
-  color: var(--text2-color);
-  line-height: 1.4;
+  font-weight: var(--reader-excerpt-font-weight);
+  color: var(--reader-excerpt-color);
+  line-height: 1.35;
   margin: 0;
+  min-height: calc(1em * 1.35);
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.descriptionPlaceholder {
+  opacity: 0;
 }
 
 /* --- Story & Gallery --- */
 .story .content {
-  justify-content: flex-end;
-  color: var(--text1-color);
-  background: var(--gradient-bottom-overlay);
-}
-
-.story.aspectLandscape .content {
-  position: relative;
+  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
   justify-content: flex-start;
-  background: var(--layout-background2-color);
-  color: var(--text1-color);
+  color: var(--reader-body-color);
 }
 
-.story .title, .story .description {
-  color: var(--text1-color);
+.story .title {
+  color: var(--reader-story-title-color);
+  font-family: var(--reader-story-title-font-family);
+  font-size: var(--reader-story-title-font-size);
+  font-weight: var(--reader-story-title-font-weight);
+  line-height: var(--reader-story-title-line-height);
+}
+
+.story .description {
+  color: var(--reader-story-excerpt-color);
+  font-family: var(--reader-story-excerpt-font-family);
+  font-size: var(--reader-story-excerpt-font-size);
+  font-weight: var(--reader-story-excerpt-font-weight);
+  line-height: var(--reader-story-excerpt-line-height);
+  font-style: var(--reader-story-excerpt-font-style);
 }
 
 .gallery .content {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-  justify-content: flex-end;
-  background: var(--gradient-bottom-overlay-strong);
-}
-
-.gallery.aspectLandscape .content {
   position: relative;
-  bottom: auto;
-  left: auto;
-  right: auto;
   width: auto;
   justify-content: flex-start;
-  background: var(--layout-background2-color);
+  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+  background: var(--reader-gallery-card-background-color);
+}
+
+.story:not(:has(.imageContainer)) .content,
+.gallery:not(:has(.imageContainer)) .content,
+.qa:not(.qaWithCover) .content {
+  justify-content: flex-end;
 }
 
 .gallery .title {
-  color: var(--text1-color);
+  color: var(--reader-gallery-title-color);
+  font-family: var(--reader-gallery-title-font-family);
+  font-size: var(--reader-gallery-title-font-size);
+  font-weight: var(--reader-gallery-title-font-weight);
+  line-height: var(--reader-gallery-title-line-height);
 }
 
 .swiperContainer {
@@ -201,7 +261,7 @@
 }
 
 .overlayContent .title {
-  color: var(--text1-color);
+  color: var(--reader-title-color);
 }
 
 /* --- Quote Card --- (large centered opening quote watermark) */
@@ -219,8 +279,8 @@
   font-size: clamp(7.5rem, 48vw, 13rem);
   font-weight: var(--font-weight-bold);
   font-family: Georgia, 'Times New Roman', serif;
-  color: var(--text1-color);
-  opacity: 0.22;
+  color: var(--reader-quote-color);
+  opacity: var(--reader-quote-watermark-opacity);
   /* Opening-quote glyph sits high in the em box; nudge down to sit behind vertically centered body text */
   transform: translateY(clamp(0.75rem, 7%, 2.75rem));
 }
@@ -245,10 +305,11 @@
   padding: 0;
   border: none;
   background: transparent;
-  font-size: var(--font-size-lg);
-  font-style: italic;
-  line-height: var(--line-height-relaxed);
-  color: var(--text1-color);
+  font-family: var(--reader-quote-font-family);
+  font-size: var(--reader-quote-font-size);
+  font-style: var(--reader-quote-font-style);
+  line-height: var(--reader-quote-line-height);
+  color: var(--reader-quote-color);
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -262,6 +323,11 @@
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
+  color: var(--reader-quote-color);
+  font-family: var(--reader-quote-font-family);
+  font-size: var(--reader-quote-font-size);
+  font-weight: var(--reader-quote-font-weight);
+  line-height: var(--reader-quote-line-height);
   overflow-wrap: break-word;
   word-break: break-word;
 }
@@ -273,9 +339,12 @@
 }
 .quoteCite {
   display: block;
-  font-size: var(--font-size-sm);
+  font-family: var(--reader-caption-font-family);
+  font-size: var(--reader-caption-font-size);
+  font-weight: var(--reader-caption-font-weight);
+  line-height: var(--reader-caption-line-height);
   font-style: normal;
-  color: var(--text2-color);
+  color: var(--reader-caption-color);
   text-align: center;
   margin-top: var(--spacing-xs);
   max-width: 100%;
@@ -286,7 +355,14 @@
 
 /* --- Q&A Card --- */
 .qa {
-  background-color: var(--layout-background1-color);
+  background-color: var(--reader-question-card-background-color);
+  border-color: var(--reader-question-card-border-color);
+  border-radius: var(--reader-question-card-border-radius);
+  box-shadow: var(--reader-question-card-shadow);
+}
+
+.qa:hover {
+  box-shadow: var(--reader-question-card-shadow-hover);
 }
 
 /* Large centered watermark when no cover (same pattern as quote/callout, but center + brighter) */
@@ -301,8 +377,8 @@
   font-size: clamp(6rem, 42vw, 14rem);
   font-weight: var(--font-weight-bold);
   line-height: 1;
-  color: var(--text1-color);
-  opacity: 0.3;
+  color: var(--reader-title-color);
+  opacity: var(--reader-question-watermark-opacity);
   z-index: 1;
   pointer-events: none;
   /* Glyph bearings often sit low; nudge for optical vertical center */
@@ -313,10 +389,6 @@
   position: relative;
   z-index: 2;
   min-width: 0;
-}
-
-.qa.aspectLandscape .content {
-  background: var(--layout-background1-color);
 }
 
 /* No cover: center question + optional excerpt over watermark */
@@ -335,55 +407,65 @@
 
 .qa:not(.qaWithCover) .qaQuestion {
   font-size: var(--font-size-xl);
-  line-height: var(--line-height-tight);
+  line-height: var(--reader-title-line-height);
 }
 
 .qa:not(.qaWithCover) .qaTeaser {
-  color: var(--text2-color);
+  color: var(--reader-excerpt-color);
   margin-top: var(--spacing-md);
 }
 
 /* Cover hero: same bottom overlay pattern as story */
 .qa.qaWithCover .content {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-  justify-content: flex-end;
-  background: var(--gradient-bottom-overlay);
-  color: var(--text1-color);
+  position: relative;
+  width: auto;
+  justify-content: flex-start;
+  padding: var(--reader-question-card-padding);
+  color: var(--reader-body-color);
 }
 
 .qa.qaWithCover .qaQuestion,
 .qa.qaWithCover .qaTeaser {
-  color: var(--text1-color);
+  color: var(--reader-question-color);
   max-width: 100%;
   min-width: 0;
   overflow-wrap: break-word;
   word-break: break-word;
 }
 
-/* Match story feed tile title scale when question sits on the bottom gradient (cover hero). */
 .qa.qaWithCover .qaQuestion {
-  font-size: var(--font-size-base);
+  font-size: var(--reader-question-font-size);
+  font-family: var(--reader-question-font-family);
+  font-weight: var(--reader-question-font-weight);
+  line-height: var(--reader-question-line-height);
 }
 
 .qa.qaWithCover .qaTeaser {
-  opacity: 0.92;
+  color: var(--reader-excerpt-color);
 }
 
 .qaQuestion {
   margin: 0;
-  font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-lg);
-  line-height: var(--line-height-tight);
+  font-family: var(--reader-question-font-family);
+  font-weight: var(--reader-question-font-weight);
+  font-size: var(--font-size-sm);
+  line-height: var(--reader-question-line-height);
+  color: var(--reader-question-color);
 }
 
 .qaTeaser {
-  margin: var(--spacing-sm) 0 0 0;
-  font-size: var(--font-size-sm);
-  line-height: 1.5;
+  margin: 0;
+  font-family: var(--reader-excerpt-font-family);
+  font-size: var(--font-size-xs);
+  font-weight: var(--reader-excerpt-font-weight);
+  line-height: 1.35;
+  color: var(--reader-excerpt-color);
+  min-height: calc(1em * 1.35);
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Inline + cover: TipTap below title/teaser inside overlay; keep readable */
@@ -391,8 +473,8 @@
   margin-top: var(--spacing-md);
   max-height: 40%;
   overflow-y: auto;
-  font-size: var(--font-size-sm);
-  color: var(--text1-color);
+  font-size: var(--reader-body-font-size);
+  color: var(--reader-body-color);
 }
 
 /* --- Callout Card --- Pin layer behind .content (same stacking idea as quote / Q&A watermarks). */
@@ -415,7 +497,7 @@
   max-height: clamp(4.26rem, 26.8vw, 7.31rem);
   object-fit: contain;
   object-position: center;
-  opacity: 0.3;
+  opacity: var(--reader-callout-watermark-opacity);
   filter: var(--card-watermark-raster-filter, none);
   /* Mirror then tilt (opposite of prior rotate direction). */
   transform: scaleX(-1) rotate(-30deg);
@@ -431,7 +513,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
   justify-content: flex-start;
   text-align: left;
   padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-lg) var(--spacing-md);
@@ -439,38 +521,43 @@
 }
 .calloutTitle {
   margin: 0;
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-tight);
-  color: var(--text1-color);
-}
-.calloutSubtitle {
-  margin: 0;
-  font-size: var(--font-size-sm);
-  line-height: 1.5;
-  color: var(--text2-color);
-}
-.calloutExcerpt {
-  margin: 0;
-  font-size: var(--font-size-sm);
-  line-height: 1.5;
-  color: var(--text2-color);
+  font-family: var(--reader-callout-title-font-family);
+  font-size: var(--reader-callout-title-font-size);
+  font-weight: var(--reader-callout-title-font-weight);
+  line-height: var(--reader-callout-title-line-height);
+  color: var(--reader-callout-title-color);
 }
 .calloutBody {
   margin: 0;
-  font-size: var(--font-size-sm);
-  color: var(--text1-color);
+  font-family: var(--reader-callout-body-font-family);
+  font-size: var(--reader-callout-body-font-size);
+  font-weight: var(--reader-callout-body-font-weight);
+  line-height: var(--reader-callout-body-line-height);
+  font-style: var(--reader-callout-body-font-style);
+  color: var(--reader-callout-body-color);
 }
 .calloutBody :global(ul),
 .calloutBody :global(ol) {
-  margin: var(--spacing-xs) 0;
+  margin: 0 0 var(--spacing-xs) 0;
   padding-left: var(--spacing-lg);
+  line-height: var(--reader-callout-body-list-line-height);
 }
 .calloutBody :global(li) {
   margin: var(--spacing-xs) 0;
+  line-height: var(--reader-callout-body-list-line-height);
 }
 .callout .inlineContent {
   margin-top: 0;
+}
+
+.small .title,
+.small.qa .qaQuestion,
+.small .calloutTitle {
+  color: var(--reader-title-small-color);
+  font-family: var(--reader-title-small-font-family);
+  font-size: var(--reader-title-small-font-size);
+  font-weight: var(--reader-title-small-font-weight);
+  line-height: var(--reader-title-small-line-height);
 }
 
 /* --- Display Mode Styles --- */
@@ -481,8 +568,8 @@
 
 .inline:hover {
   transform: none;
-  box-shadow: var(--shadow-sm);
-  border-color: var(--border1-color);
+  box-shadow: var(--reader-card-shadow);
+  border-color: var(--reader-card-border-color);
 }
 
 .static {
@@ -492,16 +579,18 @@
 
 .static:hover {
   transform: none;
-  box-shadow: var(--shadow-sm);
-  border-color: var(--border1-color);
+  box-shadow: var(--reader-card-shadow);
+  border-color: var(--reader-card-border-color);
 }
 
 /* Inline content styles */
 .inlineContent {
   margin-top: var(--spacing-md);
-  font-size: var(--font-size-sm);
-  line-height: 1.6;
-  color: var(--text1-color);
+  font-family: var(--reader-body-font-family);
+  font-size: var(--reader-body-font-size);
+  font-weight: var(--reader-body-font-weight);
+  line-height: var(--reader-body-line-height);
+  color: var(--reader-body-color);
 }
 
 .inlineContent :global(p) {
@@ -515,8 +604,8 @@
 .inlineContent :global(h5),
 .inlineContent :global(h6) {
   margin: var(--spacing-md) 0 var(--spacing-sm) 0;
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--reader-title-font-size);
+  font-weight: var(--reader-title-font-weight);
 }
 
 .inlineContent :global(ul),
@@ -531,7 +620,7 @@
 
 /* --- Collection Card --- */
 .collection {
-  background-color: var(--layout-background1-color);
+  background-color: var(--reader-card-flat-background-color);
   position: relative;
 }
 
@@ -541,9 +630,9 @@
   top: var(--spacing-sm);
   width: calc(100% - var(--spacing-md));
   height: calc(100% - var(--spacing-md));
-  background-color: var(--layout-background2-color);
-  border: var(--border-width-thin) solid var(--border1-color);
-  border-radius: var(--border-radius-md);
+  background-color: var(--reader-card-background-color);
+  border: var(--reader-card-border-width) solid var(--reader-card-border-color);
+  border-radius: var(--reader-card-border-radius);
   transition: transform var(--transition-short) ease;
   z-index: 1;
 }
@@ -559,8 +648,11 @@
 }
 
 .collectionCount {
-  font-size: var(--font-size-sm);
-  color: var(--text2-color);
+  font-family: var(--reader-caption-font-family);
+  font-size: var(--reader-caption-font-size);
+  font-weight: var(--reader-caption-font-weight);
+  line-height: var(--reader-caption-line-height);
+  color: var(--reader-meta-color);
   margin-top: var(--spacing-sm);
 }
 
@@ -580,20 +672,21 @@
   font-weight: var(--font-weight-semibold);
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-sm);
-  background-color: var(--layout-background2-color);
-  color: var(--text1-color);
-  border: var(--border-width-thin) solid var(--border1-color);
+  background-color: var(--reader-overlay-scrim-color);
+  color: var(--reader-overlay-contrast-text-color);
+  border: var(--border-width-thin) solid var(--reader-overlay-border-color);
   text-decoration: none;
   box-shadow: var(--shadow-sm);
   line-height: 1.2;
+  backdrop-filter: blur(6px);
 }
 
 .adminEditLink:hover {
-  border-color: var(--color4-light);
-  color: var(--text1-color);
+  border-color: var(--reader-card-hover-border-color);
+  color: var(--reader-overlay-contrast-text-color);
 }
 
 .adminEditLink:focus-visible {
-  outline: 2px solid var(--color4-light);
+  outline: 2px solid var(--reader-focus-ring-color);
   outline-offset: 2px;
 }

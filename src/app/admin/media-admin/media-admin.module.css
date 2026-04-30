@@ -4,6 +4,203 @@
   margin: 0 auto;
 }
 
+/* Admin Studio: full media-admin chrome in a bounded column */
+.containerEmbedded {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  /* Top padding matches Collections `.panel` so column titles align with Organization / Cards. */
+  padding: var(--spacing-md) var(--spacing-xs) var(--spacing-xs) var(--spacing-xs);
+  overflow: hidden;
+}
+
+.containerEmbedded .stickyTop {
+  position: relative;
+  top: auto;
+  z-index: 1;
+  flex-shrink: 0;
+  max-height: none;
+  overflow: visible;
+}
+
+/* Studio embedded: filter row (Search first, then Source…), tags, Grid|Table */
+.studioMediaEmbeddedStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+  min-width: 0;
+}
+
+/* Same flex basis as `StudioTreeCandidateCardBank` `.studioPaneSearchField` */
+.studioPaneSearchField {
+  flex: 0 0 14rem;
+  min-width: 12rem;
+  max-width: 18rem;
+}
+
+/* Single-line search (replaces overly tall flex-stretched input) */
+.studioMediaSearchInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  line-height: 1.25;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--input-background-color);
+  color: var(--text1-color);
+}
+
+.studioViewToggleRow {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.studioSyncToggle {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+  margin: 0 0 var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+  line-height: 1.4;
+  max-width: 40rem;
+  cursor: pointer;
+}
+
+.studioSyncToggle input {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.studioMediaRowOne {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: flex-end;
+  width: 100%;
+}
+
+.studioMediaMacroBlock {
+  min-width: 0;
+}
+
+.studioMediaMacroTagSelector {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.studioInlineLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+  min-width: 0;
+}
+
+.studioFilterSelect {
+  min-width: 4.25rem;
+  max-width: 11rem;
+  padding: 4px var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  border-radius: var(--border-radius-sm);
+  border: var(--border-width-thin) solid var(--border1-color);
+  background: var(--input-background-color);
+  color: var(--text1-color);
+}
+
+.studioFilterSelectFull {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 4px var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  border-radius: var(--border-radius-sm);
+  border: var(--border-width-thin) solid var(--border1-color);
+  background: var(--input-background-color);
+  color: var(--text1-color);
+}
+
+.studioClearButton {
+  align-self: flex-end;
+  padding: 4px var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  border-radius: var(--border-radius-sm);
+  border: var(--border-width-thin) solid var(--border1-color);
+  background: var(--layout-background2-color);
+  color: var(--text1-color);
+  cursor: pointer;
+}
+
+/* Who | What | When | Where — Card over Media in each column */
+.studioMediaDimMatrix {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--spacing-sm);
+  width: 100%;
+  align-items: start;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.studioDimColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  min-width: 0;
+  padding: var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+  background: color-mix(in srgb, var(--layout-background2-color) 92%, transparent);
+  border: var(--border-width-thin) solid var(--border1-color);
+}
+
+.studioDimColumnTitle {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text1-color);
+  text-align: center;
+  padding-bottom: 2px;
+  border-bottom: var(--border-width-thin) solid var(--border1-color);
+}
+
+.studioDimStackedBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.studioDimBadge {
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text2-color);
+}
+
+.embeddedMediaBody {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.stickyTop .embeddedTitle {
+  flex-shrink: 0;
+  margin: 0 0 var(--spacing-sm);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  color: var(--text1-color);
+}
+
 /* Whole controls strip sticks below admin tabs while table scrolls under it. */
 .stickyTop {
   position: sticky;
@@ -65,7 +262,7 @@
   margin-bottom: var(--spacing-md);
 }
 
-.stickyControls .toolbar {
+.stickyControls .bulkActions {
   margin-bottom: var(--spacing-md);
   border-radius: 0;
 }
@@ -165,23 +362,37 @@
   border-color: var(--color3);
 }
 
-/* View toggle + bulk actions toolbar */
-.toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md);
-  background: var(--layout-background2-color);
-  border-radius: var(--border-radius-md);
-  margin-bottom: var(--spacing-md);
-}
-
+/* Match `card-admin` `.bulkActions`: one bar, fixed min height; count left, actions right. */
 .bulkActions {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  min-height: 44px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--layout-background2-color);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--spacing-md);
   gap: var(--spacing-md);
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.bulkActions > span {
+  flex-shrink: 0;
+}
+
+.bulkActionGroup {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: var(--spacing-md);
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex: 0 1 auto;
 }
 
 .bulkButton {
@@ -197,21 +408,6 @@
 
 .bulkButton:hover {
   background: var(--layout-background2-color);
-}
-
-.bulkButton.createCardButton {
-  background: var(--color1);
-  color: white;
-  border-color: var(--color1);
-}
-
-.bulkButton.createCardButton:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-.bulkButton.createCardButton:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
 }
 
 .bulkButton.deleteButton {
@@ -353,12 +549,21 @@
   margin: var(--spacing-md) 0;
 }
 
+.warning {
+  color: var(--state-warning-text-color);
+  padding: var(--spacing-md);
+  background: var(--state-warning-background-color);
+  border: var(--border-width-thin) solid var(--state-warning-border-color);
+  border-radius: var(--border-radius-sm);
+  margin: var(--spacing-md) 0;
+}
+
 @media (max-width: 768px) {
   .container {
     padding: var(--spacing-md);
   }
 
-  .toolbar {
+  .bulkActions {
     flex-direction: column;
     align-items: stretch;
   }

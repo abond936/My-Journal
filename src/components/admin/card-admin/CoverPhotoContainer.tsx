@@ -15,6 +15,7 @@ interface CoverPhotoContainerProps {
   coverImage: Media | null;
   objectPosition?: string;
   onChange: (newCoverImage: Media | null, newPosition?: string) => void;
+  onCommit?: (newCoverImage: Media | null, newPosition?: string) => void;
   error?: string;
   className?: string;
   isSaving: boolean;
@@ -28,6 +29,7 @@ export default function CoverPhotoContainer({
   coverImage, 
   objectPosition,
   onChange,
+  onCommit,
   error,
   className,
   isSaving,
@@ -41,6 +43,8 @@ export default function CoverPhotoContainer({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const pasteAreaRef = useRef<HTMLDivElement>(null);
+  const latestHorizontalRef = useRef(50);
+  const latestVerticalRef = useRef(50);
 
   const uploadFile = useCallback(
     async (file: File) => {
@@ -88,9 +92,13 @@ export default function CoverPhotoContainer({
       const y = parseFloat(parts[1] ?? '50') || 50;
       setHorizontalPosition(Math.round(x));
       setVerticalPosition(Math.round(y));
+      latestHorizontalRef.current = Math.round(x);
+      latestVerticalRef.current = Math.round(y);
     } else {
       setHorizontalPosition(50);
       setVerticalPosition(50);
+      latestHorizontalRef.current = 50;
+      latestVerticalRef.current = 50;
     }
   }, [objectPosition]);
 
@@ -136,6 +144,10 @@ export default function CoverPhotoContainer({
   const handlePositionChange = useCallback((horizontal: number, vertical: number) => {
     onChange(coverImage, `${horizontal}% ${vertical}%`);
   }, [onChange, coverImage]);
+
+  const commitPositionChange = useCallback((horizontal: number, vertical: number) => {
+    onCommit?.(coverImage, `${horizontal}% ${vertical}%`);
+  }, [coverImage, onCommit]);
   
   const displayError = error || portraitError || uploadError;
   const coverBucket = getAspectRatioBucket(coverImage);
@@ -220,9 +232,16 @@ export default function CoverPhotoContainer({
                 value={horizontalPosition}
                 onChange={(e) => {
                   const newHorizontal = parseInt(e.target.value);
+                  latestHorizontalRef.current = newHorizontal;
                   setHorizontalPosition(newHorizontal);
                   handlePositionChange(newHorizontal, verticalPosition);
                 }}
+                onPointerUp={() =>
+                  commitPositionChange(latestHorizontalRef.current, latestVerticalRef.current)
+                }
+                onBlur={() =>
+                  commitPositionChange(latestHorizontalRef.current, latestVerticalRef.current)
+                }
                 className={styles.slider}
                 disabled={isSaving || isUploading}
               />
@@ -237,10 +256,16 @@ export default function CoverPhotoContainer({
                 value={verticalPosition}
                 onChange={(e) => {
                   const newVertical = parseInt(e.target.value);
+                  latestVerticalRef.current = newVertical;
                   setVerticalPosition(newVertical);
-
                   handlePositionChange(horizontalPosition, newVertical);
                 }}
+                onPointerUp={() =>
+                  commitPositionChange(latestHorizontalRef.current, latestVerticalRef.current)
+                }
+                onBlur={() =>
+                  commitPositionChange(latestHorizontalRef.current, latestVerticalRef.current)
+                }
                 className={styles.slider}
                 disabled={isSaving || isUploading}
               />

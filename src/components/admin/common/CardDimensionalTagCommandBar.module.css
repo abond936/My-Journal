@@ -37,10 +37,17 @@
 
 /* Match MacroTagSelector `.dimensionLabel` */
 .dimLabel {
-  color: var(--text2-color);
+  color: var(--admin-support-meta-color);
   font-style: italic;
   font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-sm);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  line-height: var(--admin-support-meta-line-height);
+}
+
+.wrapCompact .dimLabel {
+  font-weight: var(--font-weight-normal);
+  font-size: var(--font-size-xs);
 }
 
 .chipStrip {
@@ -53,9 +60,9 @@
 
 /* Match MacroTagSelector `.tagNode` / `.tagName` */
 .chip {
-  border: var(--border-width-thin) solid var(--border1-color);
-  background: var(--layout-background2-color);
-  color: var(--text1-color);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  background: var(--admin-window-background-color);
+  color: var(--admin-support-label-color);
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-tight);
@@ -73,8 +80,11 @@
 }
 
 .chipEmpty {
-  font-size: var(--font-size-sm);
-  color: var(--text2-color);
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
   font-style: italic;
 }
 
@@ -96,20 +106,23 @@
   min-width: 0;
   width: 100%;
   padding: var(--spacing-sm) var(--spacing-md);
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-radius: var(--border-radius-md);
-  font-size: var(--font-size-base);
-  background: var(--layout-background2-color);
-  color: var(--text1-color);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
 }
 
 .searchInput::placeholder {
-  color: var(--text2-color);
+  color: var(--admin-support-hint-color);
 }
 
 .searchInput:focus {
   outline: none;
-  border-color: var(--button-solid-background-color);
+  border-color: var(--admin-support-control-strong-border-color);
 }
 
 .searchInput:disabled {
@@ -122,21 +135,21 @@
   gap: 0;
   max-height: 200px;
   overflow-y: auto;
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
   border-radius: var(--border-radius-sm);
-  background: var(--layout-background1-color);
+  background: var(--admin-window-background-color);
 }
 
 .suggestion {
   border: none;
   background: transparent;
-  color: var(--text1-color);
+  color: var(--admin-support-label-color);
   text-align: left;
   font-size: var(--font-size-sm);
   line-height: var(--line-height-tight);
   padding: var(--spacing-sm) var(--spacing-md);
   cursor: pointer;
-  border-bottom: var(--border-width-thin) solid var(--border1-color);
+  border-bottom: var(--border-width-thin) solid var(--admin-window-border-color);
 }
 
 .suggestion:last-child {
@@ -145,7 +158,7 @@
 
 .suggestion:hover,
 .suggestionActive {
-  background: var(--layout-background2-color);
+  background: var(--admin-chrome-control-hover-background-color);
 }
 
 .dimBadge {
@@ -153,7 +166,7 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
-  color: var(--text2-color);
+  color: var(--admin-support-meta-color);
   margin-right: var(--spacing-sm);
   min-width: 2.25rem;
 }
@@ -163,8 +176,11 @@
 }
 
 .error {
-  color: var(--state-error-text-color);
-  font-size: var(--font-size-sm);
+  color: var(--admin-feedback-hint-color);
+  font-family: var(--admin-feedback-hint-font-family);
+  font-size: var(--admin-feedback-hint-font-size);
+  font-weight: var(--admin-feedback-hint-font-weight);
+  line-height: var(--admin-feedback-hint-line-height);
 }
 
 .wrapError {
@@ -179,6 +195,101 @@
   font-size: var(--font-size-sm);
 }
 
+.wrapCompact .chip {
+  font-size: var(--font-size-xs);
+}
+
+/*
+ * Table-embedded command bar (card admin `entriesTable`, etc.): toolbar inset + row rhythm only.
+ * Chip type stays the same scale as `.wrapCompact .chip` (`--font-size-xs`) — do not override with
+ * a larger px/calc block here; that regressed card-table chips when `tableEmbed` was wired to this class.
+ */
+.wrapTable .chipsToolbar {
+  padding-left: 2ch;
+  box-sizing: border-box;
+}
+
+.wrapTable .dimensionRow {
+  gap: var(--spacing-xs);
+}
+
+.wrapTable .dimCell {
+  gap: 2px;
+}
+
+.wrapTable .chip,
+.wrapTable .chipEmpty {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-tight);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  min-width: 0;
+}
+
+.wrapTable .chipEmpty {
+  font-style: normal;
+}
+
+.wrapTable .chipStrip {
+  min-height: 0;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
 .wrapCompact .suggestions {
   max-height: 140px;
+}
+
+.wrapSearchOnly {
+  gap: var(--spacing-xs);
+  align-items: flex-start;
+}
+
+.searchRowFoot {
+  justify-content: flex-start;
+}
+
+.searchInputFoot {
+  flex: 0 1 auto;
+  width: 100%;
+  max-width: min(100%, 10.5rem);
+  align-self: flex-start;
+  padding: 4px 8px;
+  font-size: var(--font-size-xs);
+  border-radius: var(--border-radius-sm);
+}
+
+.wrapSearchOnly .suggestions {
+  max-height: 140px;
+}
+
+.wrapSearchOnly .suggestion {
+  font-size: var(--font-size-xs);
+  padding: 6px 8px;
+}
+
+.wrapSearchOnly .dimBadge {
+  font-size: 0.625rem;
+  min-width: 1.5rem;
+  margin-right: 6px;
+}
+
+.wrapDenseSuggestions .suggestion {
+  font-size: var(--font-size-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  line-height: var(--line-height-tight);
+}
+
+.wrapDenseSuggestions .dimBadge {
+  font-size: 0.625rem;
+  min-width: 1.5rem;
+  margin-right: var(--spacing-xs);
+}
+
+.wrapDenseSuggestions .pathLine {
+  font-size: var(--font-size-xs);
+}
+
+.wrapDenseSuggestions .error {
+  font-size: var(--font-size-xs);
 }

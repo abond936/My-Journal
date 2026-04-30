@@ -8,8 +8,6 @@ import JournalImage from '@/components/common/JournalImage';
 import { Card } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils'; // Corrected import path
 import {
-  getAspectRatioBucket,
-  getAspectRatioValue,
   getObjectPositionForAspectRatio,
 } from '@/lib/utils/objectPositionUtils';
 import { getEffectiveGalleryObjectPosition } from '@/lib/utils/galleryObjectPosition';
@@ -17,10 +15,13 @@ import TipTapRenderer from '@/components/common/TipTapRenderer';
 import { extractMediaFromContent, formatQuoteAttribution } from '@/lib/utils/cardUtils';
 import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 import styles from './V2ContentCard.module.css';
+import ReaderCardEditModal from '@/components/view/ReaderCardEditModal';
 
 // Simple horizontal slider
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
+
+const CLOSED_FEED_MEDIA_ASPECT_RATIO = '6/5';
 
 /** Canonical media id for the card cover (for deduping gallery slides). */
 function getCoverMediaId(card: Card): string | undefined {
@@ -37,10 +38,17 @@ function hasBodyText(card: Card): boolean {
   return content.length > 0;
 }
 
+function getSupportingLine(...values: Array<string | null | undefined>): string {
+  for (const value of values) {
+    const trimmed = typeof value === 'string' ? value.trim() : '';
+    if (trimmed) return trimmed;
+  }
+  return '';
+}
+
 // --- Card Type Renderers ---
 
 const StoryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => {
-  const coverRatio = getAspectRatioValue(getAspectRatioBucket(card.coverImage));
   const objectPosition =
     card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
       ? getObjectPositionForAspectRatio(
@@ -49,10 +57,12 @@ const StoryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card,
             y: card.coverImageFocalPoint.y ?? 0,
           },
           { width: card.coverImage.width, height: card.coverImage.height },
-          coverRatio,
+          CLOSED_FEED_MEDIA_ASPECT_RATIO,
           400
         )
       : 'center';
+
+  const supportingLine = getSupportingLine(card.subtitle, card.excerpt);
 
   return (
     <>
@@ -72,11 +82,13 @@ const StoryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card,
       )}
       <div className={styles.content}>
         <h3 className={styles.title}>{card.title}</h3>
-        {card.excerpt && <p className={styles.description}>{card.excerpt}</p>}
+        <p className={`${styles.description} ${supportingLine ? '' : styles.descriptionPlaceholder}`}>
+          {supportingLine || '\u00A0'}
+        </p>
         {/* Add inline content for inline display mode */}
         {displayMode === 'inline' && card.content && (
           <div className={styles.inlineContent}>
-            <TipTapRenderer content={card.content} />
+            <TipTapRenderer content={card.content} headingVariant="story" />
           </div>
         )}
       </div>
@@ -85,9 +97,8 @@ const StoryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card,
 };
 
 // Gallery feed: Swiper with cover as first slide when set; gallery items omit any row whose mediaId matches cover (dedupe).
-const GalleryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => {
+const GalleryCardContent: React.FC<{ card: Card }> = ({ card }) => {
   const coverId = useMemo(() => getCoverMediaId(card), [card]);
-  const coverRatio = getAspectRatioValue(getAspectRatioBucket(card.coverImage));
 
   const gallerySlides = useMemo(() => {
     const items = (card.galleryMedia ?? []).filter((item) => item.media);
@@ -103,13 +114,15 @@ const GalleryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ car
             y: card.coverImageFocalPoint.y ?? 0,
           },
           { width: card.coverImage.width, height: card.coverImage.height },
-          coverRatio,
+          CLOSED_FEED_MEDIA_ASPECT_RATIO,
           400
         )
       : 'center';
 
   const hasCoverSlide = Boolean(card.coverImage);
   const showSwiper = hasCoverSlide || gallerySlides.length > 0;
+
+  const supportingLine = getSupportingLine(card.subtitle, card.excerpt);
 
   return (
     <>
@@ -149,6 +162,9 @@ const GalleryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ car
       ) : null}
       <div className={styles.content}>
         <h3 className={styles.title}>{card.title}</h3>
+        <p className={`${styles.description} ${supportingLine ? '' : styles.descriptionPlaceholder}`}>
+          {supportingLine || '\u00A0'}
+        </p>
       </div>
     </>
   );
@@ -158,7 +174,7 @@ const GalleryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ car
  * Quote feed tile: **Content** = quote (TipTap). Title is omitted here (see `/view/[id]` detail header).
  * **Attribution** = `subtitle` preferred, else `excerpt` (em dash added by `formatQuoteAttribution` when missing).
  */
-const QuoteCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card }) => {
+const QuoteCardContent: React.FC<{ card: Card }> = ({ card }) => {
   const attribution = formatQuoteAttribution(card.subtitle, card.excerpt);
   return (
     <div className={styles.content}>
@@ -173,7 +189,6 @@ const QuoteCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card 
 };
 
 const QACardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => {
-  const coverRatio = getAspectRatioValue(getAspectRatioBucket(card.coverImage));
   const objectPosition =
     card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
       ? getObjectPositionForAspectRatio(
@@ -182,10 +197,12 @@ const QACardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, di
             y: card.coverImageFocalPoint.y ?? 0,
           },
           { width: card.coverImage.width, height: card.coverImage.height },
-          coverRatio,
+          CLOSED_FEED_MEDIA_ASPECT_RATIO,
           400
         )
       : 'center';
+
+  const supportingLine = getSupportingLine(card.subtitle, card.excerpt);
 
   if (displayMode === 'inline') {
     return (
@@ -206,10 +223,12 @@ const QACardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, di
         )}
         <div className={styles.content}>
           <h3 className={styles.qaQuestion}>{card.title}</h3>
-          {card.excerpt && <p className={styles.qaTeaser}>{card.excerpt}</p>}
+          <p className={`${styles.qaTeaser} ${supportingLine ? '' : styles.descriptionPlaceholder}`}>
+            {supportingLine || '\u00A0'}
+          </p>
           {card.content && (
             <div className={styles.inlineContent}>
-              <TipTapRenderer content={card.content} surface="transparent" />
+              <TipTapRenderer content={card.content} surface="transparent" headingVariant="question" />
             </div>
           )}
         </div>
@@ -221,7 +240,9 @@ const QACardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, di
     return (
       <div className={styles.content}>
         <h3 className={styles.qaQuestion}>{card.title}</h3>
-        {card.excerpt ? <p className={styles.qaTeaser}>{card.excerpt}</p> : null}
+        <p className={`${styles.qaTeaser} ${supportingLine ? '' : styles.descriptionPlaceholder}`}>
+          {supportingLine || '\u00A0'}
+        </p>
       </div>
     );
   }
@@ -245,7 +266,9 @@ const QACardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, di
       )}
       <div className={styles.content}>
         <h3 className={styles.qaQuestion}>{card.title}</h3>
-        {card.excerpt ? <p className={styles.qaTeaser}>{card.excerpt}</p> : null}
+        <p className={`${styles.qaTeaser} ${supportingLine ? '' : styles.descriptionPlaceholder}`}>
+          {supportingLine || '\u00A0'}
+        </p>
       </div>
     </>
   );
@@ -254,19 +277,14 @@ const QACardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, di
 const CalloutCardContent: React.FC<{ card: Card }> = ({ card }) => {
   /** Callouts are static-only in product rules; feed still shows TipTap like quote tiles. */
   const showBody = Boolean(card.content?.trim());
-  const hasExcerpt = Boolean(card.excerpt?.trim());
   const titleText = card.title?.trim() ?? '';
-  const subtitleText = card.subtitle?.trim() ?? '';
 
   return (
     <div className={styles.content}>
       {titleText ? <h3 className={styles.calloutTitle}>{titleText}</h3> : null}
-      {!titleText && subtitleText ? <h3 className={styles.calloutTitle}>{subtitleText}</h3> : null}
-      {titleText && subtitleText ? <p className={styles.calloutSubtitle}>{subtitleText}</p> : null}
-      {hasExcerpt ? <p className={styles.calloutExcerpt}>{card.excerpt}</p> : null}
       {showBody ? (
         <div className={`${styles.inlineContent} ${styles.calloutBody}`}>
-          <TipTapRenderer content={card.content} surface="transparent" />
+          <TipTapRenderer content={card.content} surface="transparent" headingVariant="callout" />
         </div>
       ) : null}
     </div>
@@ -314,17 +332,7 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
     (displayMode === 'navigate' || displayMode === 'inline')
       ? styles.qaWithCover
       : '';
-  const frameSource =
-    card.coverImage ||
-    (card.galleryMedia?.find((item) => item.media)?.media as { width?: number; height?: number } | undefined);
-  const aspectBucket = getAspectRatioBucket(frameSource);
-  const aspectClass =
-    aspectBucket === 'landscape'
-      ? styles.aspectLandscape
-      : aspectBucket === 'square'
-        ? styles.aspectSquare
-        : styles.aspectPortrait;
-  const className = `${styles.card} ${cardTypeClass} ${sizeClass} ${displayModeClass} ${qaWithCoverClass} ${fullWidth ? styles.fullWidth : ''} ${aspectClass}`.trim();
+  const className = `${styles.card} ${cardTypeClass} ${sizeClass} ${displayModeClass} ${qaWithCoverClass} ${fullWidth ? styles.fullWidth : ''}`.trim();
   const cardSupportsMediaBadge =
     card.type === 'story' || card.type === 'gallery' || card.type === 'qa';
   const cardSupportsTextBadge = card.type === 'story' || card.type === 'gallery';
@@ -350,17 +358,14 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
       ? addFocusCardToReturnTo(adminEditReturnTo, card.docId)
       : adminEditReturnTo;
 
-  const editHref =
-    card.docId && isAdmin
-      ? `/admin/card-admin/${card.docId}/edit?returnTo=${encodeURIComponent(returnToWithFocus)}`
-      : null;
+  const canEdit = Boolean(card.docId && isAdmin);
 
   const renderContent = () => {
     switch (card.type) {
       case 'gallery':
-        return <GalleryCardContent card={card} displayMode={displayMode} />;
+        return <GalleryCardContent card={card} />;
       case 'quote':
-        return <QuoteCardContent card={card} displayMode={displayMode} />;
+        return <QuoteCardContent card={card} />;
       case 'qa':
         return <QACardContent card={card} displayMode={displayMode} />;
       case 'callout':
@@ -429,20 +434,21 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
       </div>
     );
 
-  if (!editHref) {
+  if (!canEdit) {
     return body;
   }
 
   return (
     <div className={styles.cardShell}>
       {body}
-      <Link
-        href={editHref}
+      <ReaderCardEditModal
+        cardId={card.docId!}
+        returnTo={returnToWithFocus}
         className={styles.adminEditLink}
-        onClick={() => onBeforeNavigateToAdminEdit?.()}
+        onBeforeOpen={onBeforeNavigateToAdminEdit}
       >
         Edit
-      </Link>
+      </ReaderCardEditModal>
     </div>
   );
 };

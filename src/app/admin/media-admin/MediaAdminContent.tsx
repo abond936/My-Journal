@@ -1,19 +1,33 @@
 'use client';
 
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useMedia, type MediaFilters } from '@/components/providers/MediaProvider';
+import { getMediaErrorSeverity, useMedia, type MediaFilters } from '@/components/providers/MediaProvider';
 import { useTag } from '@/components/providers/TagProvider';
-import MediaAdminList from '@/components/admin/media-admin/MediaAdminList';
 import MediaAdminGrid from '@/components/admin/media-admin/MediaAdminGrid';
 import EditModal from '@/components/admin/card-admin/EditModal';
 import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
+import cardAdminStyles from '@/app/admin/card-admin/card-admin.module.css';
 import styles from './media-admin.module.css';
+import {
+  flattenDimensionalTagMapToTagIds,
+  groupSelectedTagIdsByDimension,
+} from '@/lib/utils/tagUtils';
 
-const MEDIA_VIEW_MODE_KEY = 'media-admin-view-mode';
-type ViewMode = 'grid' | 'table';
+export type MediaAdminContentProps = {
+  /** When true (e.g. Admin Studio column), use compact scroll layout. */
+  embedded?: boolean;
+  /** When embedded in Studio, rows register as drag sources for cover/gallery. */
+  studioSourceDraggable?: boolean;
+};
+
 type DimensionKey = 'who' | 'what' | 'when' | 'where';
 type DimensionFilterMode = 'any' | 'hasAny' | 'isEmpty' | 'matches';
+type ApiErrorResponse = {
+  message?: string;
+  code?: string;
+  details?: string[];
+};
 
 type DimensionFilterState = Record<
   DimensionKey,
@@ -30,11 +44,12 @@ const DEFAULT_DIMENSION_FILTERS: DimensionFilterState = {
   where: { mode: 'any', tagId: '' },
 };
 
-export default function MediaAdminContent() {
+export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
+  const { embedded = false, studioSourceDraggable = false } = props;
   const router = useRouter();
-  const { 
-    loading, 
-    error, 
+  const {
+    loading,
+    error,
     pagination,
     filters,
     setFilter,
@@ -46,21 +61,19 @@ export default function MediaAdminContent() {
     deleteMultipleMedia,
     setSelectedMediaIds,
     bulkApplyTags,
+    dimensionalQueryOverlay,
+    setDimensionalQueryOverlay,
   } = useMedia();
 
   const { tags: allTags } = useTag();
+  const errorSeverity = getMediaErrorSeverity(error);
 
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    if (typeof window === 'undefined') return 'grid';
-    const saved = localStorage.getItem(MEDIA_VIEW_MODE_KEY);
-    return (saved === 'table' ? 'table' : 'grid') as ViewMode;
-  });
-
+  // Embedded Studio: load the media list when the pane mounts (Studio is not the media-admin route in MediaProvider).
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(MEDIA_VIEW_MODE_KEY, viewMode);
-    }
-  }, [viewMode]);
+    if (!embedded) return;
+    void fetchMedia(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount / embedded only
+  }, [embedded]);
 
   const handleBulkDelete = async () => {
     if (selectedMediaIds.length === 0) return;
@@ -75,6 +88,7 @@ export default function MediaAdminContent() {
   const [bulkTagMode, setBulkTagMode] = useState<'add' | 'replace' | 'remove'>('add');
   const [duplicateTriageMode, setDuplicateTriageMode] = useState(false);
   const [dimensionFilters, setDimensionFilters] = useState<DimensionFilterState>(DEFAULT_DIMENSION_FILTERS);
+  const [clientSort, setClientSort] = useState<'none' | 'filenameAsc' | 'filenameDesc'>('none');
 
   const handleOpenBulkTags = () => {
     setPendingBulkTags([]);
@@ -106,7 +120,7 @@ export default function MediaAdminContent() {
           mediaId,
           order,
         }))
-        .filter(item => item.mediaId);
+        .filter((item) => item.mediaId);
 
       if (galleryMedia.length === 0) {
         alert('No valid media selected.');
@@ -127,13 +141,13 @@ export default function MediaAdminContent() {
       });
 
       if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.error || err.details?.[0] || `HTTP ${response.status}`);
+        const err = (await response.json().catch(() => ({}))) as ApiErrorResponse;
+        throw new Error(err.message || err.details?.[0] || `HTTP ${response.status}`);
       }
 
       const newCard = await response.json();
       setSelectedMediaIds([]);
-      router.push(`/admin/card-admin/${newCard.docId}/edit`);
+      router.push(`/admin/studio?card=${encodeURIComponent(newCard.docId)}`);
     } catch (err) {
       console.error('Create card from selection failed:', err);
       alert(err instanceof Error ? err.message : 'Failed to create card.');
@@ -159,7 +173,19 @@ export default function MediaAdminContent() {
     clearFilters();
     setDuplicateTriageMode(false);
     setDimensionFilters(DEFAULT_DIMENSION_FILTERS);
+    setClientSort('none');
   };
+
+  const handleStudioDimensionalFilterChange = (newIds: string[]) => {
+    const next = groupSelectedTagIdsByDimension(newIds, allTags);
+    setDimensionalQueryOverlay(Object.keys(next).length === 0 ? {} : next);
+    void fetchMedia(1);
+  };
+
+  const studioSelectedFilterTags = useMemo(() => {
+    const ids = new Set(flattenDimensionalTagMapToTagIds(dimensionalQueryOverlay));
+    return allTags.filter((t) => t.docId && ids.has(t.docId!));
+  }, [allTags, dimensionalQueryOverlay]);
 
   const updateDimensionFilter = (
     dimension: DimensionKey,
@@ -174,7 +200,6 @@ export default function MediaAdminContent() {
     }));
   };
 
-  /** Whole controls block (title/toggle/search/filters/toolbar) stays sticky above the table. */
   const stickyTopRef = useRef<HTMLDivElement | null>(null);
 
   useLayoutEffect(() => {
@@ -200,181 +225,254 @@ export default function MediaAdminContent() {
     };
   }, []);
 
-  return (
-    <div className={styles.container}>
-      <div className={styles.stickyTop} ref={stickyTopRef}>
-        <h1>Media Management</h1>
+  const mainBody = (
+    <>
+      {loading && <p>Loading media...</p>}
+      {error && (
+        <p className={errorSeverity === 'warning' ? styles.warning : styles.error}>{error.message}</p>
+      )}
 
-        <div className={styles.viewToggleBar}>
-          <span className={styles.viewToggleButtonGroup}>
+      {!loading && !error && (
+        <MediaAdminGrid
+          sourcePathFirst={duplicateTriageMode}
+          dimensionFilters={dimensionFilters}
+          studioSourceDraggable={embedded && studioSourceDraggable}
+          clientSort={embedded ? clientSort : 'none'}
+        />
+      )}
+
+      {pagination &&
+        (pagination.seekMode
+          ? pagination.hasNext || currentPage > 1
+          : (pagination.totalPages ?? 1) > 1) && (
+          <div className={styles.pagination}>
             <button
               type="button"
-              className={`${styles.viewToggleButton} ${viewMode === 'grid' ? styles.viewToggleActive : ''}`}
-              onClick={() => setViewMode('grid')}
-              aria-pressed={viewMode === 'grid'}
+              onClick={() => fetchMedia(currentPage - 1)}
+              disabled={!pagination.hasPrev}
+              className={styles.pageButton}
             >
-              Grid
+              Previous
             </button>
-            <button
-              type="button"
-              className={`${styles.viewToggleButton} ${viewMode === 'table' ? styles.viewToggleActive : ''}`}
-              onClick={() => setViewMode('table')}
-              aria-pressed={viewMode === 'table'}
-            >
-              Table
-            </button>
-          </span>
-        </div>
-
-        <div className={styles.searchRow}>
-          <div className={styles.filterGroup}>
-            <label htmlFor="media-admin-search">Search (filename, caption, path, tag names)</label>
-            <input
-              id="media-admin-search"
-              type="search"
-              placeholder="Requires Typesense when non-empty…"
-              value={filters.search}
-              onChange={(e) => handleSearch(e.target.value)}
-              className={styles.searchInputWide}
-            />
-          </div>
-        </div>
-
-        {/* Secondary filters */}
-        <div className={styles.filters}>
-          <div className={styles.filterGroup}>
-            <label>Source:</label>
-            <select 
-              value={filters.source} 
-              onChange={(e) => handleFilterChange('source', e.target.value)}
-            >
-              <option value="all">All</option>
-              <option value="local">Local</option>
-              <option value="paste">Paste</option>
-            </select>
-          </div>
-
-          <div className={styles.filterGroup}>
-            <label>Dimensions:</label>
-            <select 
-              value={filters.dimensions} 
-              onChange={(e) => handleFilterChange('dimensions', e.target.value)}
-            >
-              <option value="all">All</option>
-              <option value="portrait">Portrait</option>
-              <option value="landscape">Landscape</option>
-              <option value="square">Square</option>
-            </select>
-          </div>
-
-          <div className={styles.filterGroup}>
-            <label>Caption:</label>
-            <select 
-              value={filters.hasCaption} 
-              onChange={(e) => handleFilterChange('hasCaption', e.target.value)}
-            >
-              <option value="all">All</option>
-              <option value="with">With Caption</option>
-              <option value="without">Without Caption</option>
-            </select>
-          </div>
-
-          <div className={styles.filterGroup}>
-            <label>On cards:</label>
-            <select
-              value={filters.assignment}
-              onChange={(e) => handleFilterChange('assignment', e.target.value)}
-              title="Uses referencedByCardIds on each media doc (maintained when cards save)"
-            >
-              <option value="all">All</option>
-              <option value="unassigned">Unassigned (not on any card)</option>
-              <option value="assigned">Assigned (cover, gallery, or content)</option>
-            </select>
-          </div>
-          {filters.assignment === 'unassigned' && (
-            <div className={styles.filterGroup}>
-              <label>Duplicate triage:</label>
-              <select
-                value={duplicateTriageMode ? 'sourcePath' : 'none'}
-                onChange={(e) => setDuplicateTriageMode(e.target.value === 'sourcePath')}
-              >
-                <option value="none">Normal order</option>
-                <option value="sourcePath">Source-path first</option>
-              </select>
-            </div>
-          )}
-
-          <button onClick={handleClearFilters} className={styles.clearButton}>
-            Clear Filters
-          </button>
-        </div>
-        <div className={styles.filters}>
-          {(['who', 'what', 'when', 'where'] as DimensionKey[]).map((dimension) => {
-            const state = dimensionFilters[dimension];
-            const options = allTags.filter((t) => t.dimension === dimension && t.docId);
-            return (
-              <div className={styles.filterGroup} key={dimension}>
-                <label>{dimension[0]!.toUpperCase() + dimension.slice(1)}:</label>
-                <select
-                  value={state.mode}
-                  onChange={(e) =>
-                    updateDimensionFilter(dimension, { mode: e.target.value as DimensionFilterMode })
-                  }
-                >
-                  <option value="any">Any</option>
-                  <option value="hasAny">Has any</option>
-                  <option value="isEmpty">Is empty</option>
-                  <option value="matches">Matches tag</option>
-                </select>
-                {state.mode === 'matches' && (
-                  <select
-                    value={state.tagId}
-                    onChange={(e) => updateDimensionFilter(dimension, { tagId: e.target.value })}
-                  >
-                    <option value="">Select tag…</option>
-                    {options.map((tag) => (
-                      <option key={tag.docId} value={tag.docId}>
-                        {tag.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Bulk actions bar */}
-        {!loading && !error && (
-          <div className={styles.toolbar}>
-            <div className={styles.bulkActions}>
-              {selectedMediaIds.length > 0 ? (
+            <span className={styles.pageInfo}>
+              {pagination.seekMode ? (
                 <>
-                  <span>{selectedMediaIds.length} item(s) selected</span>
-                  <button
-                    onClick={handleCreateCardFromSelection}
-                    disabled={isCreatingCard}
-                    className={`${styles.bulkButton} ${styles.createCardButton}`}
-                  >
-                    {isCreatingCard ? 'Creating…' : 'Create card from selection'}
-                  </button>
-                  <button type="button" onClick={handleOpenBulkTags} className={styles.bulkButton}>
-                    Edit tags…
-                  </button>
-                  <button onClick={selectNone} className={styles.bulkButton}>
-                    Clear Selection
-                  </button>
-                  <button
-                    onClick={handleBulkDelete}
-                    className={`${styles.bulkButton} ${styles.deleteButton}`}
-                  >
-                    Delete Selected
-                  </button>
+                  Page {currentPage}
+                  {pagination.hasNext ? ' · more available (Next)' : ''}
+                  <span className={styles.paginationHint}>
+                    {' '}
+                    - scans newest first; Clear filters returns to page 1
+                  </span>
                 </>
               ) : (
-                <span>No items selected</span>
+                <>
+                  Page {pagination.page ?? currentPage} of {pagination.totalPages ?? 1}
+                  {pagination.total != null && ` (${pagination.total} total items)`}
+                </>
               )}
-            </div>
+            </span>
+            <button
+              type="button"
+              onClick={() => fetchMedia(currentPage + 1)}
+              disabled={!pagination.hasNext}
+              className={styles.pageButton}
+            >
+              Next
+            </button>
+          </div>
+        )}
+    </>
+  );
+
+  return (
+    <div className={embedded ? `${styles.container} ${styles.containerEmbedded}` : styles.container}>
+      <div className={styles.stickyTop} ref={stickyTopRef}>
+        <h2 className={styles.embeddedTitle}>Media</h2>
+        <div className={styles.studioMediaEmbeddedStack}>
+          <div className={styles.studioMediaRowOne}>
+            <label
+              className={`${styles.studioInlineLabel} ${styles.studioPaneSearchField}`}
+              htmlFor="media-admin-search-studio"
+            >
+              Search
+              <input
+                id="media-admin-search-studio"
+                type="search"
+                placeholder="Typesense when non-empty..."
+                value={filters.search}
+                onChange={(e) => handleSearch(e.target.value)}
+                className={styles.studioMediaSearchInput}
+                autoComplete="off"
+                aria-label="Search media (filename, caption, path, tag names)"
+              />
+            </label>
+            <label className={styles.studioInlineLabel}>
+              Source
+              <select
+                className={styles.studioFilterSelect}
+                value={filters.source}
+                onChange={(e) => handleFilterChange('source', e.target.value)}
+              >
+                <option value="all">All</option>
+                <option value="local">Local</option>
+                <option value="paste">Paste</option>
+              </select>
+            </label>
+            <label className={styles.studioInlineLabel}>
+              Caption
+              <select
+                className={styles.studioFilterSelect}
+                value={filters.hasCaption}
+                onChange={(e) => handleFilterChange('hasCaption', e.target.value)}
+              >
+                <option value="all">All</option>
+                <option value="with">With</option>
+                <option value="without">Without</option>
+              </select>
+            </label>
+            <label className={styles.studioInlineLabel}>
+              Shape
+              <select
+                className={styles.studioFilterSelect}
+                value={filters.dimensions}
+                onChange={(e) => handleFilterChange('dimensions', e.target.value)}
+              >
+                <option value="all">All</option>
+                <option value="portrait">Portrait</option>
+                <option value="landscape">Landscape</option>
+                <option value="square">Square</option>
+              </select>
+            </label>
+            <label className={styles.studioInlineLabel}>
+              Assigned
+              <select
+                className={styles.studioFilterSelect}
+                value={filters.assignment}
+                onChange={(e) => handleFilterChange('assignment', e.target.value)}
+                title="Cover, gallery, or content references"
+              >
+                <option value="all">All</option>
+                <option value="unassigned">Unassigned</option>
+                <option value="assigned">Assigned</option>
+              </select>
+            </label>
+            {filters.assignment === 'unassigned' ? (
+              <label className={styles.studioInlineLabel}>
+                Dupes
+                <select
+                  className={styles.studioFilterSelect}
+                  value={duplicateTriageMode ? 'sourcePath' : 'none'}
+                  onChange={(e) => setDuplicateTriageMode(e.target.value === 'sourcePath')}
+                >
+                  <option value="none">Normal</option>
+                  <option value="sourcePath">Source path</option>
+                </select>
+              </label>
+            ) : null}
+            <label className={styles.studioInlineLabel}>
+              Sort
+              <select
+                className={styles.studioFilterSelect}
+                value={clientSort}
+                onChange={(e) =>
+                  setClientSort(e.target.value as 'none' | 'filenameAsc' | 'filenameDesc')
+                }
+              >
+                <option value="none">Default</option>
+                <option value="filenameAsc">File A-Z</option>
+                <option value="filenameDesc">File Z-A</option>
+              </select>
+            </label>
+            <button type="button" onClick={handleClearFilters} className={styles.studioClearButton}>
+              Clear
+            </button>
+          </div>
+          <div className={styles.studioMediaMacroBlock}>
+            <MacroTagSelector
+              className={styles.studioMediaMacroTagSelector}
+              selectedTags={studioSelectedFilterTags}
+              allTags={allTags}
+              onChange={handleStudioDimensionalFilterChange}
+              collapsedSummary="sparseTrees"
+            />
+          </div>
+          <div className={styles.studioMediaDimMatrix}>
+            {(['who', 'what', 'when', 'where'] as DimensionKey[]).map((dimension) => {
+              const state = dimensionFilters[dimension];
+              const options = allTags.filter((t) => t.dimension === dimension && t.docId);
+              return (
+                <div key={dimension} className={styles.studioDimColumn}>
+                  <div className={styles.studioDimColumnTitle}>
+                    {dimension[0]!.toUpperCase() + dimension.slice(1)}
+                  </div>
+                  <div className={styles.studioDimStackedBlock}>
+                    <span className={styles.studioDimBadge}>Media</span>
+                    <select
+                      className={styles.studioFilterSelectFull}
+                      value={state.mode}
+                      onChange={(e) =>
+                        updateDimensionFilter(dimension, {
+                          mode: e.target.value as DimensionFilterMode,
+                        })
+                      }
+                    >
+                      <option value="any">Any</option>
+                      <option value="hasAny">Has any</option>
+                      <option value="isEmpty">Is empty</option>
+                      <option value="matches">Matches tag</option>
+                    </select>
+                    {state.mode === 'matches' ? (
+                      <select
+                        className={styles.studioFilterSelectFull}
+                        value={state.tagId}
+                        onChange={(e) => updateDimensionFilter(dimension, { tagId: e.target.value })}
+                      >
+                        <option value="">Select tag...</option>
+                        {options.map((tag) => (
+                          <option key={tag.docId} value={tag.docId}>
+                            {tag.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        {!loading && !error && (
+          <div className={cardAdminStyles.bulkActions}>
+            <span>
+              {selectedMediaIds.length === 0
+                ? 'No media selected'
+                : `${selectedMediaIds.length} media selected`}
+            </span>
+            {selectedMediaIds.length > 0 ? (
+              <div className={cardAdminStyles.actions}>
+                <button
+                  type="button"
+                  onClick={handleCreateCardFromSelection}
+                  disabled={isCreatingCard}
+                  className={cardAdminStyles.actionButton}
+                >
+                  {isCreatingCard ? 'Creating...' : 'Create card from selection'}
+                </button>
+                <button type="button" onClick={handleOpenBulkTags} className={cardAdminStyles.actionButton}>
+                  Edit tags...
+                </button>
+                <button type="button" onClick={selectNone} className={cardAdminStyles.actionButton}>
+                  Clear Selection
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBulkDelete}
+                  className={`${cardAdminStyles.actionButton} ${cardAdminStyles.deleteButton}`}
+                >
+                  Delete Selected
+                </button>
+              </div>
+            ) : null}
           </div>
         )}
       </div>
@@ -403,64 +501,13 @@ export default function MediaAdminContent() {
           startExpanded
           onSaveSelection={handleSaveBulkTagSelection}
           onRequestClose={() => setBulkTagModalOpen(false)}
-          selectedTags={allTags.filter(t => t.docId && pendingBulkTags.includes(t.docId))}
+          selectedTags={allTags.filter((t) => t.docId && pendingBulkTags.includes(t.docId))}
           allTags={allTags}
           onChange={setPendingBulkTags}
         />
       </EditModal>
 
-      {/* Loading and Error States */}
-      {loading && <p>Loading media...</p>}
-      {error && <p className={styles.error}>{error.toString()}</p>}
-
-      {/* Media list or grid */}
-      {!loading && !error && (
-        viewMode === 'grid'
-          ? <MediaAdminGrid sourcePathFirst={duplicateTriageMode} dimensionFilters={dimensionFilters} />
-          : <MediaAdminList sourcePathFirst={duplicateTriageMode} dimensionFilters={dimensionFilters} />
-      )}
-
-      {/* Pagination */}
-      {pagination &&
-        (pagination.seekMode
-          ? pagination.hasNext || currentPage > 1
-          : (pagination.totalPages ?? 1) > 1) && (
-        <div className={styles.pagination}>
-          <button
-            type="button"
-            onClick={() => fetchMedia(currentPage - 1)}
-            disabled={!pagination.hasPrev}
-            className={styles.pageButton}
-          >
-            Previous
-          </button>
-          <span className={styles.pageInfo}>
-            {pagination.seekMode ? (
-              <>
-                Page {currentPage}
-                {pagination.hasNext ? ' · more available (Next)' : ''}
-                <span className={styles.paginationHint}>
-                  {' '}
-                  — scans newest first; Clear filters returns to page 1
-                </span>
-              </>
-            ) : (
-              <>
-                Page {pagination.page ?? currentPage} of {pagination.totalPages ?? 1}
-                {pagination.total != null && ` (${pagination.total} total items)`}
-              </>
-            )}
-          </span>
-          <button
-            type="button"
-            onClick={() => fetchMedia(currentPage + 1)}
-            disabled={!pagination.hasNext}
-            className={styles.pageButton}
-          >
-            Next
-          </button>
-        </div>
-      )}
+      <div className={styles.embeddedMediaBody}>{mainBody}</div>
     </div>
   );
-} 
+}

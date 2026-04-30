@@ -7,9 +7,10 @@ import { TagProvider } from '@/components/providers/TagProvider';
 import { CardProvider } from '@/components/providers/CardProvider';
 import AppShell from '@/components/common/AppShell';
 import {
+  buildScopedThemeTokensCss,
   buildThemeTokensCss,
-  getResolvedThemeData,
-  getThemeData,
+  getPersistedThemeDocumentFromJson,
+  getResolvedScopedThemeDocument,
   themeDataForCssGeneration,
 } from '@/lib/services/themeService';
 
@@ -21,14 +22,33 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   let themeTokensCss = '';
   try {
-    const themeData = await getResolvedThemeData();
-    themeTokensCss = buildThemeTokensCss(themeDataForCssGeneration(themeData));
+    const themeDocument = await getResolvedScopedThemeDocument();
+    themeTokensCss = [
+      buildThemeTokensCss(
+        themeDataForCssGeneration({
+          ...themeDocument.reader.data,
+          activePresetId: themeDocument.reader.activePresetId,
+          recipes: themeDocument.reader.recipes,
+        })
+      ),
+      buildScopedThemeTokensCss(themeDocument.admin, '.themeDraftAdminScope'),
+    ].join('\n');
   } catch (e) {
     console.error('[theme] Failed to build theme tokens for layout:', e);
   }
   if (!themeTokensCss) {
     try {
-      themeTokensCss = buildThemeTokensCss(themeDataForCssGeneration(await getThemeData()));
+      const fallbackDocument = await getPersistedThemeDocumentFromJson();
+      themeTokensCss = [
+        buildThemeTokensCss(
+          themeDataForCssGeneration({
+            ...fallbackDocument.reader.data,
+            activePresetId: fallbackDocument.reader.activePresetId,
+            recipes: fallbackDocument.reader.recipes,
+          })
+        ),
+        buildScopedThemeTokensCss(fallbackDocument.admin, '.themeDraftAdminScope'),
+      ].join('\n');
     } catch (e) {
       console.error('[theme] Fallback theme-data.json build failed:', e);
     }

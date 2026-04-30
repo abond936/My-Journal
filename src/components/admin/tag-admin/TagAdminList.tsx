@@ -6,9 +6,6 @@ import type { TagWithChildren } from '@/components/providers/TagProvider';
 import { TagAdminRow } from './TagAdminRow';
 import {
   DndContext,
-  PointerSensor,
-  useSensor,
-  useSensors,
   DragEndEvent,
   DragOverEvent,
   DragStartEvent,
@@ -21,6 +18,7 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useDefaultDndSensors } from '@/lib/hooks/useDefaultDndSensors';
 import styles from '@/app/admin/tag-admin/tag-admin.module.css';
 
 type TagRow = TagWithChildren & { depth: number };
@@ -157,7 +155,6 @@ function SortableTag({
   }
 
   const isOverTag = dragState.overId === tag.docId;
-  const isValidDrop = isOverTag && dragState.isValidDrop;
   const dropIndicator = isOverTag && dragState.isValidDrop && !dragState.isReparenting ? dragState.dropIndicator : null;
   const isReparentTarget = isOverTag && dragState.isReparenting;
   const showReorderHighlight = isOverTag && dragState.isValidDrop && !dragState.isReparenting;
@@ -180,6 +177,7 @@ function SortableTag({
   );
 }
 
+/** Used by `/admin/tag-admin` (default layout) and Studio (optional `stackDimensionColumns`). */
 interface TagAdminListProps {
   tagTree: TagWithChildren[];
   onUpdateTag: (id: string, tagData: Partial<Omit<Tag, 'docId'>>) => Promise<Tag | undefined>;
@@ -189,6 +187,8 @@ interface TagAdminListProps {
   onReparent: (activeId: string, overId: string) => void;
   /** When true, each dimension stays in its own full-width row (e.g. resizable Studio tags pane). */
   stackDimensionColumns?: boolean;
+  /** Studio embedded: hide Who/What/When/Where column titles. */
+  hideDimensionColumnHeadings?: boolean;
 }
 
 interface DimensionColumn {
@@ -212,7 +212,9 @@ function TagAdminDimensionColumn({
   onUpdateTag,
   onDeleteTag,
   onCreateTag,
+  hideDimensionColumnHeadings,
 }: {
+  hideDimensionColumnHeadings?: boolean;
   col: DimensionColumn;
   tagMap: Map<string, TagRow>;
   isShiftPressed: boolean;
@@ -234,7 +236,7 @@ function TagAdminDimensionColumn({
       reparentTarget: string | null;
     }>
   >;
-  sensors: ReturnType<typeof useSensors>;
+  sensors: ReturnType<typeof useDefaultDndSensors>;
   collisionDetection: CollisionDetection;
   onReorder: TagAdminListProps['onReorder'];
   onReparent: TagAdminListProps['onReparent'];
@@ -370,7 +372,9 @@ function TagAdminDimensionColumn({
 
   return (
     <section className={styles.dimensionColumn}>
-      <h2 className={styles.dimensionColumnHeading}>{col.title}</h2>
+      {hideDimensionColumnHeadings ? null : (
+        <h2 className={styles.dimensionColumnHeading}>{col.title}</h2>
+      )}
       <div className={styles.dimensionColumnDndRoot}>
         <DndContext
           sensors={sensors}
@@ -419,6 +423,7 @@ export function TagAdminList({
   onReorder,
   onReparent,
   stackDimensionColumns = false,
+  hideDimensionColumnHeadings = false,
 }: TagAdminListProps) {
   const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
   const [dragState, setDragState] = useState<{
@@ -476,7 +481,7 @@ export function TagAdminList({
 
   const columnCollisionDetection = useMemo(() => makeColumnCollisionDetection(), []);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const sensors = useDefaultDndSensors();
 
   const handleToggleCollapse = useCallback((tagId: string) => {
     setCollapsedNodes((prev) => {
@@ -518,6 +523,7 @@ export function TagAdminList({
           <TagAdminDimensionColumn
             key={col.id}
             col={col}
+            hideDimensionColumnHeadings={hideDimensionColumnHeadings}
             tagMap={tagMap}
             isShiftPressed={isShiftPressed}
             dragState={dragState}

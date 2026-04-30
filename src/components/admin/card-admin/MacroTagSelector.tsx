@@ -303,7 +303,7 @@ function ExpandedView({
         <div className={styles.searchBar}>
           <input
             type="text"
-            placeholder="Search tags…"
+            placeholder="Edit tags…"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             className={styles.searchInput}

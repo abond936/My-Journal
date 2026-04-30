@@ -1,15 +1,18 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CardFormProvider, useCardForm } from '@/components/providers/CardFormProvider';
 import { Card } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 
-// Mock card data
 const mockCard: Card = {
-  id: 'test-card-1',
+  docId: 'test-card-1',
   title: 'Test Card',
-  content: 'Test content',
+  title_lowercase: 'test card',
+  subtitle: null,
+  excerpt: null,
+  excerptAuto: true,
+  content: '<p>Test content</p>',
   status: 'draft',
   type: 'story',
   displayMode: 'inline',
@@ -26,49 +29,37 @@ const mockCard: Card = {
   coverImage: null,
   contentMedia: [],
   galleryMedia: [],
-  
 };
 
-// Mock tags
 const mockTags: Tag[] = [
-  { id: 'tag-1', name: 'Tag 1', dimension: 'what', color: '#000000' },
-  { id: 'tag-2', name: 'Tag 2', dimension: 'what', color: '#000000' },
+  { docId: 'tag-1', name: 'Tag 1', dimension: 'what', color: '#000000' } as Tag,
+  { docId: 'tag-2', name: 'Tag 2', dimension: 'what', color: '#000000' } as Tag,
 ];
 
-// Test component that uses the form context
-const TestComponent = () => {
-  const { formState, updateField, updateTags, handleSave } = useCardForm();
+function TestComponent() {
+  const { formState, setField, updateTags, handleSave, persistFieldPatch, isDirty } = useCardForm();
   return (
     <div>
       <input
-        type="text"
         data-testid="title-input"
         value={formState.cardData.title || ''}
-        onChange={(e) => updateField('title', e.target.value)}
+        onChange={(e) => setField('title', e.target.value)}
       />
-      <select
-        data-testid="tag-select"
-        multiple
-        value={formState.tags.map(t => t.id)}
-        onChange={(e) => {
-          const selectedTags = Array.from(e.target.selectedOptions).map(option => 
-            mockTags.find(t => t.id === option.value)!
-          );
-          updateTags(selectedTags);
-        }}
-      >
-        {mockTags.map(tag => (
-          <option key={tag.id} value={tag.id}>{tag.name}</option>
-        ))}
-      </select>
-      <button onClick={handleSave} data-testid="save-button">Save</button>
-      {formState.errors.title && (
-        <span data-testid="title-error">{formState.errors.title}</span>
-      )}
-      {formState.isSaving && <span data-testid="saving-indicator">Saving...</span>}
+      <button type="button" data-testid="patch-button" onClick={() => void persistFieldPatch({ title: 'Patched Title' })}>
+        Patch
+      </button>
+      <button type="button" data-testid="tag-button" onClick={() => updateTags(mockTags)}>
+        Set Tags
+      </button>
+      <button type="button" data-testid="save-button" onClick={() => void handleSave()}>
+        Save
+      </button>
+      <span data-testid="dirty-flag">{isDirty ? 'dirty' : 'clean'}</span>
+      {formState.errors.title ? <span data-testid="title-error">{formState.errors.title}</span> : null}
+      {formState.isSaving ? <span data-testid="saving-indicator">Saving...</span> : null}
     </div>
   );
-};
+}
 
 describe('CardFormProvider', () => {
   const mockOnSave = jest.fn();
@@ -85,6 +76,7 @@ describe('CardFormProvider', () => {
     );
 
     expect(screen.getByTestId('title-input')).toHaveValue('Test Card');
+    expect(screen.getByTestId('dirty-flag')).toHaveTextContent('clean');
   });
 
   it('updates form state when fields change', async () => {
@@ -99,9 +91,16 @@ describe('CardFormProvider', () => {
     await userEvent.type(titleInput, 'New Title');
 
     expect(titleInput).toHaveValue('New Title');
+    expect(screen.getByTestId('dirty-flag')).toHaveTextContent('dirty');
   });
 
-  it('validates fields and shows errors', async () => {
+  it('allows blank titles under the current partial-save schema', async () => {
+    mockOnSave.mockResolvedValue({
+      ...mockCard,
+      title: '',
+      title_lowercase: '',
+    });
+
     render(
       <CardFormProvider initialCard={mockCard} allTags={mockTags} onSave={mockOnSave}>
         <TestComponent />
@@ -110,13 +109,21 @@ describe('CardFormProvider', () => {
 
     const titleInput = screen.getByTestId('title-input');
     await userEvent.clear(titleInput);
-    const saveButton = screen.getByTestId('save-button');
-    await userEvent.click(saveButton);
+    await userEvent.click(screen.getByTestId('save-button'));
 
-    expect(await screen.findByTestId('title-error')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalledWith(expect.objectContaining({ title: '' }));
+    });
+    expect(screen.queryByTestId('title-error')).not.toBeInTheDocument();
   });
 
   it('calls onSave with updated data when form is valid', async () => {
+    mockOnSave.mockResolvedValue({
+      ...mockCard,
+      title: 'New Title',
+      title_lowercase: 'new title',
+    });
+
     render(
       <CardFormProvider initialCard={mockCard} allTags={mockTags} onSave={mockOnSave}>
         <TestComponent />
@@ -126,20 +133,18 @@ describe('CardFormProvider', () => {
     const titleInput = screen.getByTestId('title-input');
     await userEvent.clear(titleInput);
     await userEvent.type(titleInput, 'New Title');
-
-    const saveButton = screen.getByTestId('save-button');
-    await userEvent.click(saveButton);
+    await userEvent.click(screen.getByTestId('save-button'));
 
     await waitFor(() => {
-      expect(mockOnSave).toHaveBeenCalledWith(
-        expect.objectContaining({ title: 'New Title' }),
-        expect.any(Array)
-      );
+      expect(mockOnSave).toHaveBeenCalledWith(expect.objectContaining({ title: 'New Title' }));
     });
+    expect(screen.getByTestId('dirty-flag')).toHaveTextContent('clean');
   });
 
   it('shows loading state during save', async () => {
-    mockOnSave.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)));
+    mockOnSave.mockImplementation(
+      () => new Promise<Card>((resolve) => setTimeout(() => resolve(mockCard), 100))
+    );
 
     render(
       <CardFormProvider initialCard={mockCard} allTags={mockTags} onSave={mockOnSave}>
@@ -147,52 +152,47 @@ describe('CardFormProvider', () => {
       </CardFormProvider>
     );
 
-    const saveButton = screen.getByTestId('save-button');
-    await userEvent.click(saveButton);
-
+    await userEvent.click(screen.getByTestId('save-button'));
     expect(await screen.findByTestId('saving-indicator')).toBeInTheDocument();
   });
 
-  it('handles tag selection', async () => {
+  it('handles tag selection via updateTags', async () => {
     render(
       <CardFormProvider initialCard={mockCard} allTags={mockTags} onSave={mockOnSave}>
         <TestComponent />
       </CardFormProvider>
     );
 
-    const tagSelect = screen.getByTestId('tag-select');
-    await userEvent.selectOptions(tagSelect, ['tag-1', 'tag-2']);
-
-    const saveButton = screen.getByTestId('save-button');
-    await userEvent.click(saveButton);
+    await userEvent.click(screen.getByTestId('tag-button'));
+    await userEvent.click(screen.getByTestId('save-button'));
 
     await waitFor(() => {
       expect(mockOnSave).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.arrayContaining([
-          expect.objectContaining({ id: 'tag-1' }),
-          expect.objectContaining({ id: 'tag-2' })
-        ])
+        expect.objectContaining({ tags: ['tag-1', 'tag-2'] })
       );
     });
   });
 
-  it('maintains dirty state', async () => {
+  it('persists field patches without resetting unsaved form state', async () => {
+    mockOnSave.mockResolvedValue({
+      ...mockCard,
+      title: 'Patched Title',
+      title_lowercase: 'patched title',
+    });
+
     render(
       <CardFormProvider initialCard={mockCard} allTags={mockTags} onSave={mockOnSave}>
         <TestComponent />
       </CardFormProvider>
     );
 
-    const titleInput = screen.getByTestId('title-input');
-    await userEvent.clear(titleInput);
-    await userEvent.type(titleInput, 'New Title');
+    await userEvent.clear(screen.getByTestId('title-input'));
+    await userEvent.type(screen.getByTestId('title-input'), 'Locally Edited');
+    await userEvent.click(screen.getByTestId('patch-button'));
 
-    // Check if beforeunload event is prevented
-    const beforeunloadEvent = new Event('beforeunload');
-    beforeunloadEvent.preventDefault = jest.fn();
-    window.dispatchEvent(beforeunloadEvent);
-
-    expect(beforeunloadEvent.preventDefault).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalledWith({ title: 'Patched Title' });
+    });
+    expect(screen.getByTestId('title-input')).toHaveValue('Patched Title');
   });
-}); 
+});

@@ -19,6 +19,31 @@ import {
   type TypesenseCardSortField,
 } from '@/lib/services/typesenseService';
 
+type ApiErrorPayload = {
+  ok: false;
+  code: string;
+  message: string;
+  severity: 'error' | 'warning';
+  retryable: boolean;
+  error?: string;
+  details?: string[];
+};
+
+function errorResponse(payload: ApiErrorPayload, status: number) {
+  return NextResponse.json(payload, { status });
+}
+
+const CARD_TYPES_QUERY = new Set<string>(['story', 'qa', 'quote', 'callout', 'gallery']);
+
+function parseCardTypesList(raw: string | null): Card['type'][] | undefined {
+  if (!raw?.trim()) return undefined;
+  const out = raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter((t): t is Card['type'] => CARD_TYPES_QUERY.has(t));
+  return out.length ? [...new Set(out)] : undefined;
+}
+
 export const dynamic = 'force-dynamic';
 
 /**
@@ -130,13 +155,31 @@ export async function GET(request: Request) {
     
     // Security check: Only admins can request 'draft' or 'all' cards
     if ((status === 'draft' || status === 'all') && !isAdmin) {
-      return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return errorResponse(
+        {
+          ok: false,
+          code: 'AUTH_FORBIDDEN',
+          message: 'Forbidden.',
+          severity: 'error',
+          retryable: false,
+        },
+        403
+      );
     }
 
-    const type = (searchParams.get('type') as Card['type'] | 'all') || 'all';
+    const typesListParsed = parseCardTypesList(searchParams.get('types'));
+    let type: Card['type'] | 'all' = (searchParams.get('type') as Card['type'] | 'all') || 'all';
+    if (type !== 'all' && !CARD_TYPES_QUERY.has(type)) type = 'all';
+
+    let typesForService: Card['type'][] | undefined;
+    if (typesListParsed?.length) {
+      if (typesListParsed.length === 1) {
+        type = typesListParsed[0];
+      } else {
+        typesForService = typesListParsed;
+        type = 'all';
+      }
+    }
     const q = searchParams.get('q') || undefined;
     const searchScopeParam = searchParams.get('searchScope');
     const searchScope: 'default' | 'admin-title' =
@@ -146,6 +189,7 @@ export async function GET(request: Request) {
     const childrenIds_contains = searchParams.get('childrenIds_contains') || undefined;
     const collectionId = searchParams.get('collectionId') || undefined;
     const collectionsOnly = searchParams.get('collectionsOnly') === 'true';
+    const includeDescendants = searchParams.get('includeDescendants') === 'true';
     const hydrationParam = searchParams.get('hydration');
     const hydrationMode: 'full' | 'cover-only' =
       hydrationParam === 'cover-only' ? 'cover-only' : 'full';
@@ -183,7 +227,10 @@ export async function GET(request: Request) {
     try {
       // List cards that are collections (have children)
       if (collectionsOnly) {
-        const collectionCards = await getCollectionCards(status, { hydrationMode });
+        const collectionCards = await getCollectionCards(status, {
+          hydrationMode,
+          includeDescendants,
+        });
         return NextResponse.json({ items: collectionCards, hasMore: false });
       }
 
@@ -255,6 +302,8 @@ export async function GET(request: Request) {
           const searchResult = await searchCardsFiltered({
             textQuery: q?.trim() || undefined,
             type,
+            types:
+              typesForService && typesForService.length > 1 ? typesForService : undefined,
             status,
             tags: tags?.filter((t): t is string => Boolean(t?.trim())),
             dimensionalTags:
@@ -300,6 +349,7 @@ export async function GET(request: Request) {
         q,
         status,
         type,
+        types: typesForService,
         tags,
         dimensionalTags: Object.keys(dimensionalTags).length > 0 ? dimensionalTags : undefined,
         dimensionMissing: hasDimensionMissingFilters ? dimensionMissing : undefined,
@@ -319,12 +369,32 @@ export async function GET(request: Request) {
     } catch (error) {
       console.error('Error in GET /api/cards:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      return NextResponse.json({ error: 'Internal Server Error', detailedError: errorMessage }, { status: 500 });
+      return errorResponse(
+        {
+          ok: false,
+          code: 'CARD_LIST_FAILED',
+          message: 'Internal server error.',
+          severity: 'error',
+          retryable: true,
+          error: errorMessage,
+        },
+        500
+      );
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error('Error in GET /api/cards:', errorMessage);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'CARD_LIST_FAILED',
+        message: 'Internal server error.',
+        severity: 'error',
+        retryable: true,
+        error: errorMessage,
+      },
+      500
+    );
   }
 }
 
@@ -355,10 +425,16 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') {
-    return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return errorResponse(
+      {
+        ok: false,
+        code: 'AUTH_FORBIDDEN',
+        message: 'Forbidden.',
+        severity: 'error',
+        retryable: false,
+      },
+      403
+    );
   }
 
   try {
@@ -381,14 +457,31 @@ export async function POST(request: Request) {
       }
       
       console.log('[POST /api/cards] Error messages:', errorMessages);
-      
-      return new NextResponse(JSON.stringify({ 
-        error: 'Validation failed',
-        details: errorMessages 
-      }), { 
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
+
+      return errorResponse(
+        {
+          ok: false,
+          code: 'CARD_CREATE_VALIDATION_FAILED',
+          message: 'Validation failed.',
+          severity: 'error',
+          retryable: false,
+          details: errorMessages,
+        },
+        400
+      );
+    }
+
+    if (validationResult.data.type === 'qa') {
+      return errorResponse(
+        {
+          ok: false,
+          code: 'CARD_CREATE_QA_REQUIRES_QUESTION',
+          message: 'Q&A cards must be created from a question-bank prompt.',
+          severity: 'error',
+          retryable: false,
+        },
+        400
+      );
     }
     
     // The createCard service function will handle defaults and timestamps
@@ -398,8 +491,28 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error creating card:', error);
     if (error instanceof SyntaxError) {
-      return new NextResponse(JSON.stringify({ error: 'Invalid JSON format' }), { status: 400 });
+      return errorResponse(
+        {
+          ok: false,
+          code: 'CARD_CREATE_INVALID_JSON',
+          message: 'Invalid JSON format.',
+          severity: 'error',
+          retryable: false,
+        },
+        400
+      );
     }
-    return new NextResponse('Internal server error', { status: 500 });
+    const message = error instanceof Error ? error.message : 'An unknown error occurred';
+    return errorResponse(
+      {
+        ok: false,
+        code: 'CARD_CREATE_FAILED',
+        message: 'Internal server error.',
+        severity: 'error',
+        retryable: true,
+        error: message,
+      },
+      500
+    );
   }
 } 

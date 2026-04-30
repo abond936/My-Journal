@@ -20,11 +20,13 @@ export default async function RootAdminLayout({
 
   return (
     <MediaProvider>
-      <AdminLayout>
-        <AdminPageWrapper>
-          {children}
-        </AdminPageWrapper>
-      </AdminLayout>
+      <div className="themeDraftAdminScope">
+        <AdminLayout>
+          <AdminPageWrapper>
+            {children}
+          </AdminPageWrapper>
+        </AdminLayout>
+      </div>
     </MediaProvider>
   );
 } 

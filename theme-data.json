@@ -1,342 +1,1287 @@
 {
-  "palette": [
-    {
-      "id": 3,
-      "hex": "#0f4c81",
-      "h": "208",
-      "s": "79%",
-      "l": "28%",
-      "name": "principal"
-    },
-    {
-      "id": 4,
-      "hex": "#c9a227",
-      "h": "46",
-      "s": "68%",
-      "l": "47%",
-      "name": "accent"
-    },
-    {
-      "id": 5,
-      "hex": "#8A3A0E",
-      "h": "20",
-      "s": "80%",
-      "l": "30%",
-      "name": "alt1"
-    },
-    {
-      "id": 6,
-      "hex": "#0E3A4A",
-      "h": "198",
-      "s": "63%",
-      "l": "18%",
-      "name": "alt2"
-    },
-    {
-      "id": 7,
-      "hex": "#2C5A1F",
-      "h": "102",
-      "s": "50%",
-      "l": "24%",
-      "name": "alt3"
-    },
-    {
-      "id": 8,
-      "hex": "#5A1F4F",
-      "h": "311",
-      "s": "49%",
-      "l": "24%",
-      "name": "alt4"
-    },
-    {
-      "id": 9,
-      "hex": "#6A4F29",
-      "h": "35",
-      "s": "44%",
-      "l": "29%",
-      "name": "alt5"
-    },
-    {
-      "id": 10,
-      "hex": "#B08A3E",
-      "h": "41",
-      "s": "49%",
-      "l": "47%",
-      "name": "alt6"
-    },
-    {
-      "id": 11,
-      "hex": "#059669",
-      "h": "160",
-      "s": "94%",
-      "l": "30%",
-      "name": "success"
-    },
-    {
-      "id": 12,
-      "hex": "#dc2626",
-      "h": "0",
-      "s": "71%",
-      "l": "50%",
-      "name": "error"
-    },
-    {
-      "id": 13,
-      "hex": "#d97706",
-      "h": "34",
-      "s": "96%",
-      "l": "43%",
-      "name": "warning"
-    },
-    {
-      "id": 14,
-      "hex": "#2563eb",
-      "h": "221",
-      "s": "81%",
-      "l": "55%",
-      "name": "info"
-    }
-  ],
-  "themeColors": [
-    {
-      "id": 1,
-      "name": "background",
-      "light": {
-        "hex": "#eceef2",
-        "h": "220",
-        "s": "19%",
-        "l": "94%"
+  "version": 2,
+  "reader": {
+    "data": {
+      "palette": [
+        {
+          "id": 3,
+          "hex": "#0f4c81",
+          "h": "208",
+          "s": "79%",
+          "l": "28%",
+          "name": "principal"
+        },
+        {
+          "id": 4,
+          "hex": "#c9a227",
+          "h": "46",
+          "s": "68%",
+          "l": "47%",
+          "name": "accent"
+        },
+        {
+          "id": 5,
+          "hex": "#8A3A0E",
+          "h": "20",
+          "s": "80%",
+          "l": "30%",
+          "name": "alt1"
+        },
+        {
+          "id": 6,
+          "hex": "#0E3A4A",
+          "h": "198",
+          "s": "63%",
+          "l": "18%",
+          "name": "alt2"
+        },
+        {
+          "id": 7,
+          "hex": "#2C5A1F",
+          "h": "102",
+          "s": "50%",
+          "l": "24%",
+          "name": "alt3"
+        },
+        {
+          "id": 8,
+          "hex": "#5A1F4F",
+          "h": "311",
+          "s": "49%",
+          "l": "24%",
+          "name": "alt4"
+        },
+        {
+          "id": 9,
+          "hex": "#6A4F29",
+          "h": "35",
+          "s": "44%",
+          "l": "29%",
+          "name": "alt5"
+        },
+        {
+          "id": 10,
+          "hex": "#B08A3E",
+          "h": "41",
+          "s": "49%",
+          "l": "47%",
+          "name": "alt6"
+        },
+        {
+          "id": 11,
+          "hex": "#059669",
+          "h": "160",
+          "s": "94%",
+          "l": "30%",
+          "name": "success"
+        },
+        {
+          "id": 12,
+          "hex": "#dc2626",
+          "h": "0",
+          "s": "71%",
+          "l": "50%",
+          "name": "error"
+        },
+        {
+          "id": 13,
+          "hex": "#d97706",
+          "h": "34",
+          "s": "96%",
+          "l": "43%",
+          "name": "warning"
+        },
+        {
+          "id": 14,
+          "hex": "#2563eb",
+          "h": "221",
+          "s": "81%",
+          "l": "55%",
+          "name": "info"
+        }
+      ],
+      "themeColors": [
+        {
+          "id": 1,
+          "name": "background",
+          "light": {
+            "hex": "#bac0cf",
+            "h": "221",
+            "s": "18%",
+            "l": "77%"
+          },
+          "dark": {
+            "hex": "#151b28",
+            "h": "221",
+            "s": "30%",
+            "l": "12%"
+          }
+        },
+        {
+          "id": 2,
+          "name": "text",
+          "light": {
+            "hex": "#363e4e",
+            "h": "222",
+            "s": "18%",
+            "l": "26%"
+          },
+          "dark": {
+            "hex": "#eef2f6",
+            "h": "215",
+            "s": "30%",
+            "l": "95%"
+          }
+        }
+      ],
+      "typography": {
+        "textColors": {
+          "text1": "color2-300",
+          "text2": "color2-100"
+        },
+        "fontFamilies": {
+          "sans1": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
+          "sans2": "\"Helvetica Neue\", Helvetica, Arial, sans-serif",
+          "sans3": "\"Avenir Next\", Avenir, \"Segoe UI\", sans-serif",
+          "serif1": "\"Georgia\", \"Times New Roman\", serif",
+          "serif2": "\"Iowan Old Style\", \"Palatino Linotype\", \"Book Antiqua\", serif",
+          "serif3": "\"Baskerville\", \"Times New Roman\", serif",
+          "handwriting1": "\"Bradley Hand\", \"Segoe Print\", \"Ink Free\", cursive",
+          "handwriting2": "\"Snell Roundhand\", \"Brush Script MT\", cursive"
+        },
+        "fontSizes": {
+          "xs": "0.6rem",
+          "sm": "0.875rem",
+          "base": "1.125rem",
+          "lg": "1.25rem",
+          "xl": "1.5rem",
+          "2xl": "1.875rem",
+          "3xl": "2.5rem",
+          "4xl": "3rem",
+          "5xl": "3.75rem",
+          "6xl": "4rem"
+        },
+        "fluidFontSizes": {
+          "size1": "clamp(1.5rem, 1rem + 2.5vw, 3rem)",
+          "size2": "clamp(1.25rem, 0.8rem + 2.25vw, 2.25rem)",
+          "size3": "clamp(1rem, 0.75rem + 1.25vw, 1.5rem)"
+        },
+        "fontWeights": {
+          "normal": "400",
+          "medium": "450",
+          "semibold": "550",
+          "bold": "650"
+        },
+        "lineHeights": {
+          "base": "1.6",
+          "tight": "1.3",
+          "relaxed": "1.85"
+        },
+        "styles": {
+          "normal": "normal",
+          "italic": "italic"
+        }
       },
-      "dark": {
-        "hex": "#14161c",
-        "h": "225",
-        "s": "17%",
-        "l": "9%"
-      }
-    },
-    {
-      "id": 2,
-      "name": "text",
-      "light": {
-        "hex": "#16181d",
-        "h": "223",
-        "s": "14%",
-        "l": "10%"
+      "spacing": {
+        "unit": "4px",
+        "xs": "1",
+        "sm": "2",
+        "md": "4",
+        "lg": "6",
+        "xl": "8",
+        "2xl": "12",
+        "3xl": "16",
+        "4xl": "24",
+        "fluidSpacing": {
+          "spacing1": "clamp(1rem, 0.5rem + 2.5vw, 2rem)",
+          "spacing2": "clamp(2rem, 1rem + 5vw, 4rem)",
+          "spacing3": "clamp(4rem, 2rem + 10vw, 8rem)"
+        },
+        "xsMultiplier": "1",
+        "smMultiplier": "2",
+        "lgMultiplier": "6",
+        "xlMultiplier": "8",
+        "2xlMultiplier": "12",
+        "3xlMultiplier": "16",
+        "4xlMultiplier": "24",
+        "mdMultiplier": "4"
       },
-      "dark": {
-        "hex": "#eef0f4",
-        "h": "220",
-        "s": "21%",
-        "l": "95%"
-      }
-    }
-  ],
-  "typography": {
-    "textColors": {
-      "text1": "color2-300",
-      "text2": "color2-200"
-    },
-    "fontFamilies": {
-      "sans": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      "serif": "\"Georgia\", \"Times New Roman\", serif",
-      "handwriting": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif"
-    },
-    "fontSizes": {
-      "xs": "0.875rem",
-      "sm": "1rem",
-      "base": "1.125rem",
-      "lg": "1.25rem",
-      "xl": "1.5rem",
-      "2xl": "1.875rem",
-      "3xl": "2.5rem",
-      "4xl": "3rem",
-      "5xl": "3.75rem",
-      "6xl": "4rem"
-    },
-    "fluidFontSizes": {
-      "size1": "clamp(1.5rem, 1rem + 2.5vw, 3rem)",
-      "size2": "clamp(1.25rem, 0.8rem + 2.25vw, 2.25rem)",
-      "size3": "clamp(1rem, 0.75rem + 1.25vw, 1.5rem)"
-    },
-    "fontWeights": {
-      "normal": "400",
-      "increment": "100",
-      "medium": "500",
-      "semibold": "600",
-      "bold": "700"
-    },
-    "lineHeights": {
-      "base": "1.5",
-      "tight": "1.25",
-      "relaxed": "1.75"
-    }
-  },
-  "spacing": {
-    "unit": "4px",
-    "xs": "1",
-    "sm": "2",
-    "md": "4",
-    "lg": "6",
-    "xl": "8",
-    "2xl": "12",
-    "3xl": "16",
-    "4xl": "24",
-    "fluidSpacing": {
-      "spacing1": "clamp(1rem, 0.5rem + 2.5vw, 2rem)",
-      "spacing2": "clamp(2rem, 1rem + 5vw, 4rem)",
-      "spacing3": "clamp(4rem, 2rem + 10vw, 8rem)"
-    },
-    "xsMultiplier": "1",
-    "smMultiplier": "2",
-    "lgMultiplier": "6",
-    "xlMultiplier": "8",
-    "2xlMultiplier": "12",
-    "3xlMultiplier": "16",
-    "4xlMultiplier": "24",
-    "mdMultiplier": "4"
-  },
-  "borders": {
-    "colors": {
-      "border1": "color1-200",
-      "border2": "color1-300"
-    },
-    "widths": {
-      "thin": "1px",
-      "medium": "2px",
-      "thick": "3px"
-    },
-    "radius": {
-      "sm": "0.125rem",
-      "md": "0.375rem",
-      "lg": "0.5rem",
-      "xl": "0.625rem",
-      "full": "9999px"
-    }
-  },
-  "shadows": {
-    "strength": "8%",
-    "strengthDark": "22%",
-    "color": "hsl(var(--h2) / var(--shadow-strength))",
-    "sm": "0 1px 2px -1px var(--shadow-color)",
-    "md": "0 3px 4px -2px var(--shadow-color), 0 7px 10px -4px var(--shadow-color)",
-    "lg": "0 5px 8px -3px var(--shadow-color), 0 12px 18px -5px var(--shadow-color)",
-    "xl": "0 10px 15px -5px var(--shadow-color), 0 25px 35px -10px var(--shadow-color)"
-  },
-  "zIndex": {
-    "default": "1",
-    "content": "10",
-    "sticky": "100",
-    "modalBackdrop": "1000",
-    "sidebar": "1100",
-    "header": "1200",
-    "modal": "1300",
-    "tooltip": "1400"
-  },
-  "layout": {
-    "containerMaxWidth": "1200px",
-    "bodyFontFamily": "font-family-sans",
-    "bodyBackgroundColor": "color1-100",
-    "background1Color": "color1-100",
-    "background2Color": "color1-200",
-    "border1Color": "color1-200",
-    "border2Color": "color1-300",
-    "sidebarWidth": "300px",
-    "sidebarWidthMobile": "250px",
-    "logoMaxHeight": "120px",
-    "spinnerSize": "50px",
-    "formMinWidth": "120px",
-    "buttonMinWidth": "60px",
-    "iconMinWidth": "24px",
-    "transitionShort": "0.2s",
-    "breakpoints": {
-      "sm": "640px",
-      "md": "768px",
-      "lg": "1024px",
-      "xl": "1280px"
-    }
-  },
-  "states": {
-    "success": {
-      "backgroundColor": "color11",
-      "borderColor": "color11"
-    },
-    "error": {
-      "backgroundColor": "color12",
-      "borderColor": "color12"
-    },
-    "warning": {
-      "backgroundColor": "color13",
-      "borderColor": "color13"
-    },
-    "info": {
-      "backgroundColor": "color14",
-      "borderColor": "color14"
-    }
-  },
-  "components": {
-    "header": {
-      "height": "120px",
-      "backgroundColor": "color1-100",
-      "borderColor": "color1-200",
-      "borderWidth": "border/width/thin"
-    },
-    "button": {
-      "solid": {
-        "backgroundColor": "color3",
-        "backgroundColorHover": "color3",
-        "borderColor": "color3",
-        "textColor": "color1-100"
+      "borders": {
+        "colors": {
+          "border1": "color1-200",
+          "border2": "color1-300"
+        },
+        "widths": {
+          "thin": "1px",
+          "medium": "2px",
+          "thick": "3px"
+        },
+        "radius": {
+          "sm": "0.125rem",
+          "md": "0.375rem",
+          "lg": "0.5rem",
+          "xl": "0.625rem",
+          "full": "9999px"
+        }
       },
-      "outline": {
-        "backgroundColor": "transparent",
-        "backgroundColorHover": "hsla(var(--h3), var(--s3), var(--l3), 0.1)",
-        "borderColor": "color1-200",
-        "textColor": "color2-300",
-        "borderWidth": "border/width/medium"
+      "shadows": {
+        "strength": "8%",
+        "strengthDark": "22%",
+        "color": "hsl(var(--h2) / var(--shadow-strength))",
+        "sm": "0 1px 2px -1px var(--shadow-color)",
+        "md": "0 3px 4px -2px var(--shadow-color), 0 7px 10px -4px var(--shadow-color)",
+        "lg": "0 5px 8px -3px var(--shadow-color), 0 12px 18px -5px var(--shadow-color)",
+        "xl": "0 10px 15px -5px var(--shadow-color), 0 25px 35px -10px var(--shadow-color)"
+      },
+      "zIndex": {
+        "default": "1",
+        "content": "10",
+        "sticky": "100",
+        "modalBackdrop": "1000",
+        "sidebar": "1100",
+        "header": "1200",
+        "modal": "1300",
+        "tooltip": "1400"
+      },
+      "layout": {
+        "containerMaxWidth": "1200px",
+        "bodyFontFamily": "font-family-sans",
+        "bodyBackgroundColor": "color1-100",
+        "background1Color": "color1-100",
+        "background2Color": "color1-200",
+        "border1Color": "color1-200",
+        "border2Color": "color1-300",
+        "sidebarWidth": "320px",
+        "sidebarWidthMobile": "272px",
+        "logoMaxHeight": "120px",
+        "spinnerSize": "50px",
+        "formMinWidth": "120px",
+        "buttonMinWidth": "72px",
+        "iconMinWidth": "24px",
+        "transitionShort": "0.2s",
+        "breakpoints": {
+          "sm": "640px",
+          "md": "768px",
+          "lg": "1024px",
+          "xl": "1280px"
+        }
+      },
+      "states": {
+        "success": {
+          "backgroundColor": "color11",
+          "borderColor": "color11"
+        },
+        "error": {
+          "backgroundColor": "color12",
+          "borderColor": "color12"
+        },
+        "warning": {
+          "backgroundColor": "color13",
+          "borderColor": "color13"
+        },
+        "info": {
+          "backgroundColor": "color14",
+          "borderColor": "color14"
+        }
+      },
+      "components": {
+        "header": {
+          "height": "120px",
+          "backgroundColor": "color1-100",
+          "borderColor": "color1-200",
+          "borderWidth": "border/width/thin",
+          "textColor": "color2-300",
+          "iconColor": "color2-300"
+        },
+        "button": {
+          "solid": {
+            "backgroundColor": "color3",
+            "backgroundColorHover": "color3",
+            "borderColor": "color3",
+            "textColor": "theme-color/2/dark"
+          },
+          "outline": {
+            "backgroundColor": "transparent",
+            "backgroundColorHover": "hsla(var(--h3), var(--s3), var(--l3), 0.1)",
+            "borderColor": "color1-200",
+            "textColor": "color2-300",
+            "borderWidth": "border/width/thin"
+          }
+        },
+        "card": {
+          "backgroundColor": "color1-200",
+          "padding": "spacing/xl",
+          "borderColor": "color1-200",
+          "borderWidth": "border/width/thin",
+          "borderRadius": "border/radius/md",
+          "shadow": "shadow/sm",
+          "shadowHover": "shadow/md"
+        },
+        "tag": {
+          "padding": "spacing/xs spacing/sm",
+          "borderRadius": "border/radius/full",
+          "fontWeight": "font/weight/medium",
+          "fontSize": "font/size/sm",
+          "fontFamily": "font/family/sans",
+          "textColor": "color1-100",
+          "backgrounds": {
+            "who": "color5",
+            "what": "color6",
+            "when": "color7",
+            "where": "color8",
+            "reflection": "color9"
+          }
+        },
+        "link": {
+          "textColor": "color3",
+          "textColorHover": "color3",
+          "decorationHover": "underline"
+        },
+        "input": {
+          "backgroundColor": "color1-100",
+          "borderColor": "color1-200",
+          "borderColorFocus": "color3",
+          "textColor": "color2-300",
+          "borderRadius": "border/radius/md",
+          "padding": "spacing/md spacing/lg"
+        }
+      },
+      "gradients": {
+        "bottomOverlay": "linear-gradient(transparent, rgba(0,0,0,0.7))",
+        "bottomOverlayStrong": "linear-gradient(transparent, rgba(0,0,0,0.9))"
       }
     },
-    "card": {
-      "backgroundColor": "color1-200",
-      "padding": "spacing/lg",
-      "borderColor": "color1-200",
-      "borderWidth": "border/width/medium",
-      "borderRadius": "border/radius/md",
-      "shadow": "shadow/sm",
-      "shadowHover": "shadow/md"
-    },
-    "tag": {
-      "padding": "spacing/xs spacing/sm",
-      "borderRadius": "border/radius/full",
-      "fontWeight": "font/weight/medium",
-      "fontSize": "font/size/sm",
-      "fontFamily": "font/family/sans",
-      "textColor": "color1-100",
-      "backgrounds": {
-        "who": "color5",
-        "what": "color6",
-        "when": "color7",
-        "where": "color8",
-        "reflection": "color9"
+    "activePresetId": "editorial",
+    "recipes": {
+      "typography": {
+        "title": {
+          "family": "font-family/sans1",
+          "size": "font-size/base",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/tonal-text-primary"
+        },
+        "storyTitle": {
+          "family": "font-family/sans1",
+          "size": "font-size/sm",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/tonal-text-primary"
+        },
+        "storyOverlayTitle": {
+          "family": "font-family/sans1",
+          "size": "font-size/base",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/overlay-contrast-text"
+        },
+        "storyExcerpt": {
+          "family": "font-family/sans1",
+          "size": "font-size/xs",
+          "weight": "font-weight/normal",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/tonal-text-secondary",
+          "fontStyle": "italic"
+        },
+        "galleryTitle": {
+          "family": "font-family/sans1",
+          "size": "font-size/sm",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/tonal-text-primary"
+        },
+        "galleryOverlayTitle": {
+          "family": "font-family/sans1",
+          "size": "font-size/base",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/overlay-contrast-text"
+        },
+        "galleryHeaderTitle": {
+          "family": "font-family/sans1",
+          "size": "font-size/lg",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/tonal-text-primary"
+        },
+        "titleCompact": {
+          "family": "font-family/sans1",
+          "size": "font-size/sm",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/tonal-text-primary"
+        },
+        "detailTitle": {
+          "family": "font-family/sans1",
+          "size": "font-size/3xl",
+          "weight": "font-weight/bold",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/tonal-text-primary"
+        },
+        "storyDetailTitle": {
+          "family": "font-family/serif1",
+          "size": "font-size/3xl",
+          "weight": "font-weight/bold",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/tonal-text-primary"
+        },
+        "galleryDetailTitle": {
+          "family": "font-family/serif2",
+          "size": "font-size/3xl",
+          "weight": "font-weight/bold",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/tonal-text-primary"
+        },
+        "discoveryTitle": {
+          "family": "font-family/serif1",
+          "size": "font-size/lg",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/tonal-text-primary"
+        },
+        "discoveryMeta": {
+          "family": "font-family/sans1",
+          "size": "font-size/sm",
+          "weight": "font-weight/medium",
+          "lineHeight": "line-height/base",
+          "color": "semantic/reader/tonal-text-secondary"
+        },
+        "railSectionTitle": {
+          "family": "font-family/sans1",
+          "size": "font-size/lg",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/tonal-text-primary"
+        },
+        "railCardTitle": {
+          "family": "font-family/sans1",
+          "size": "font-size/sm",
+          "weight": "font-weight/medium",
+          "lineHeight": "line-height/base",
+          "color": "semantic/reader/tonal-text-primary"
+        },
+        "subtitle": {
+          "family": "font-family/sans1",
+          "size": "font-size/base",
+          "weight": "font-weight/normal",
+          "lineHeight": "line-height/base",
+          "color": "semantic/reader/tonal-text-secondary",
+          "fontStyle": "italic"
+        },
+        "body": {
+          "family": "font-family/sans1",
+          "size": "font-size/sm",
+          "weight": "font-weight/normal",
+          "lineHeight": "line-height/relaxed",
+          "color": "semantic/reader/tonal-text-primary"
+        },
+        "excerpt": {
+          "family": "font-family/sans1",
+          "size": "font-size/sm",
+          "weight": "font-weight/normal",
+          "lineHeight": "line-height/relaxed",
+          "color": "semantic/reader/tonal-text-secondary"
+        },
+        "meta": {
+          "family": "font-family/sans1",
+          "size": "font-size/xs",
+          "weight": "font-weight/medium",
+          "lineHeight": "line-height/base",
+          "color": "semantic/reader/tonal-text-secondary"
+        },
+        "caption": {
+          "family": "font-family/sans1",
+          "size": "font-size/sm",
+          "weight": "font-weight/normal",
+          "lineHeight": "line-height/base",
+          "color": "semantic/reader/tonal-text-secondary"
+        },
+        "chromeText": {
+          "family": "font-family/sans1",
+          "size": "font-size/sm",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/base",
+          "color": "semantic/reader/tonal-text-primary"
+        },
+        "chromeMeta": {
+          "family": "font-family/sans1",
+          "size": "font-size/xs",
+          "weight": "font-weight/normal",
+          "lineHeight": "line-height/base",
+          "color": "semantic/reader/tonal-text-secondary"
+        },
+        "supportTitle": {
+          "family": "font-family/sans1",
+          "size": "font-size/lg",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/tonal-text-primary"
+        },
+        "supportLabel": {
+          "family": "font-family/sans1",
+          "size": "font-size/sm",
+          "weight": "font-weight/medium",
+          "lineHeight": "line-height/base",
+          "color": "semantic/reader/tonal-text-primary"
+        },
+        "supportMeta": {
+          "family": "font-family/sans1",
+          "size": "font-size/xs",
+          "weight": "font-weight/medium",
+          "lineHeight": "line-height/base",
+          "color": "semantic/reader/tonal-text-secondary"
+        },
+        "supportHint": {
+          "family": "font-family/sans1",
+          "size": "font-size/sm",
+          "weight": "font-weight/normal",
+          "lineHeight": "line-height/base",
+          "color": "semantic/reader/tonal-text-secondary"
+        },
+        "supportControlText": {
+          "family": "font-family/sans1",
+          "size": "font-size/sm",
+          "weight": "font-weight/medium",
+          "lineHeight": "line-height/base",
+          "color": "semantic/reader/tonal-text-primary"
+        },
+        "feedbackTitle": {
+          "family": "font-family/sans1",
+          "size": "font-size/lg",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/tonal-text-primary"
+        },
+        "feedbackMeta": {
+          "family": "font-family/sans1",
+          "size": "font-size/xs",
+          "weight": "font-weight/medium",
+          "lineHeight": "line-height/base",
+          "color": "semantic/reader/tonal-text-secondary"
+        },
+        "feedbackHint": {
+          "family": "font-family/sans1",
+          "size": "font-size/sm",
+          "weight": "font-weight/normal",
+          "lineHeight": "line-height/base",
+          "color": "semantic/reader/tonal-text-secondary"
+        },
+        "quote": {
+          "family": "font-family/serif1",
+          "size": "font-size/lg",
+          "weight": "font-weight/normal",
+          "lineHeight": "line-height/base",
+          "color": "semantic/reader/tonal-text-primary",
+          "fontStyle": "italic"
+        },
+        "question": {
+          "family": "font-family/serif3",
+          "size": "font-size/base",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/tonal-text-primary"
+        },
+        "questionOverlay": {
+          "family": "font-family/sans1",
+          "size": "font-size/lg",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/overlay-contrast-text"
+        },
+        "calloutTitle": {
+          "family": "font-family/sans1",
+          "size": "font-size/lg",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/tonal-text-primary",
+          "fontStyle": "normal"
+        },
+        "calloutBody": {
+          "family": "font-family/sans1",
+          "size": "font-size/sm",
+          "weight": "font-weight/normal",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/tonal-text-primary",
+          "fontStyle": "italic"
+        },
+        "tagLabel": {
+          "family": "font-family/sans1",
+          "size": "font-size/xs",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/base",
+          "color": "semantic/reader/contrast-on-fill-text"
+        },
+        "chromeTitle": {
+          "family": "font-family/sans1",
+          "size": "font-size/lg",
+          "weight": "font-weight/semibold",
+          "lineHeight": "line-height/tight",
+          "color": "semantic/reader/tonal-text-primary"
+        },
+        "chromeLabel": {
+          "family": "font-family/sans1",
+          "size": "font-size/sm",
+          "weight": "font-weight/medium",
+          "lineHeight": "line-height/base",
+          "color": "semantic/reader/tonal-text-primary"
+        },
+        "chromeHint": {
+          "family": "font-family/sans1",
+          "size": "font-size/sm",
+          "weight": "font-weight/normal",
+          "lineHeight": "line-height/base",
+          "color": "semantic/reader/tonal-text-secondary"
+        },
+        "fieldControl": {
+          "family": "font-family/sans1",
+          "size": "font-size/sm",
+          "weight": "font-weight/medium",
+          "lineHeight": "line-height/base",
+          "color": "semantic/reader/tonal-text-primary"
+        }
+      },
+      "surfaces": {
+        "canvasPage": {
+          "background": "layout/background1Color",
+          "border": "semantic/reader/canvas-border"
+        },
+        "canvasSection": {
+          "background": "semantic/reader/canvas-surface",
+          "border": "semantic/reader/canvas-border",
+          "radius": "border/radius/md"
+        },
+        "chromeSidebar": {
+          "background": "semantic/reader/chrome-surface",
+          "border": "layout/border2Color",
+          "radius": "border/radius/md"
+        },
+        "chromeToolbar": {
+          "background": "semantic/reader/chrome-surface",
+          "border": "layout/background1Color",
+          "radius": "border/radius/md"
+        },
+        "chromeRail": {
+          "background": "semantic/reader/chrome-surface",
+          "border": "semantic/reader/chrome-border",
+          "radius": "border/radius/md"
+        },
+        "feedbackPanel": {
+          "background": "semantic/reader/feedback-surface",
+          "border": "semantic/reader/feedback-border",
+          "radius": "border/radius/lg",
+          "shadow": "shadow/md",
+          "padding": "spacing/xl"
+        },
+        "feedbackSuccessPanel": {
+          "background": "state/success/background",
+          "border": "state/success/border",
+          "radius": "border/radius/lg",
+          "shadow": "shadow/md",
+          "padding": "spacing/xl"
+        },
+        "feedbackWarningPanel": {
+          "background": "state/warning/background",
+          "border": "state/warning/border",
+          "radius": "border/radius/lg",
+          "shadow": "shadow/md",
+          "padding": "spacing/xl"
+        },
+        "feedbackErrorPanel": {
+          "background": "state/error/background",
+          "border": "state/error/border",
+          "radius": "border/radius/lg",
+          "shadow": "shadow/md",
+          "padding": "spacing/xl"
+        },
+        "feedbackInfoPanel": {
+          "background": "state/info/background",
+          "border": "state/info/border",
+          "radius": "border/radius/lg",
+          "shadow": "shadow/md",
+          "padding": "spacing/xl"
+        },
+        "storyCardClosed": {
+          "background": "layout/background2Color",
+          "border": "component/card/borderColor",
+          "radius": "component/card/borderRadius",
+          "shadow": "component/card/shadow",
+          "shadowHover": "component/card/shadowHover",
+          "padding": "spacing/md"
+        },
+        "qaCardClosed": {
+          "background": "layout/background2Color",
+          "border": "component/card/borderColor",
+          "radius": "component/card/borderRadius",
+          "shadow": "component/card/shadow",
+          "shadowHover": "component/card/shadowHover",
+          "padding": "spacing/md"
+        },
+        "galleryCardClosed": {
+          "background": "layout/background2Color",
+          "border": "component/card/borderColor",
+          "radius": "component/card/borderRadius",
+          "shadow": "component/card/shadow",
+          "shadowHover": "component/card/shadowHover",
+          "padding": "component/card/padding"
+        },
+        "quoteCardClosed": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color",
+          "radius": "border/radius/lg",
+          "shadow": "shadow/sm",
+          "padding": "spacing/xl"
+        },
+        "calloutCardClosed": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color",
+          "radius": "border/radius/lg",
+          "shadow": "shadow/md",
+          "padding": "spacing/xl"
+        },
+        "card": {
+          "background": "layout/background2Color",
+          "border": "component/card/borderColor",
+          "radius": "component/card/borderRadius",
+          "shadow": "component/card/shadow",
+          "shadowHover": "component/card/shadowHover",
+          "padding": "component/card/padding"
+        },
+        "canvasDetail": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color",
+          "radius": "border/radius/lg",
+          "shadow": "shadow/md",
+          "padding": "spacing/xl"
+        },
+        "cardDiscovery": {
+          "background": "semantic/reader/discovery-surface",
+          "border": "semantic/reader/discovery-border",
+          "radius": "border/radius/md"
+        },
+        "canvasMediaFrame": {
+          "background": "semantic/reader/media-frame-surface",
+          "border": "semantic/reader/media-frame-border",
+          "radius": "border/radius/lg"
+        },
+        "windowSurface": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color",
+          "radius": "border/radius/md",
+          "shadow": "shadow/lg"
+        },
+        "windowFrame": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color",
+          "radius": "border/radius/md",
+          "shadow": "shadow/lg"
+        },
+        "windowElevation": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color",
+          "radius": "border/radius/md",
+          "shadow": "shadow/lg"
+        },
+        "windowPanel": {
+          "background": "layout/background1Color",
+          "border": "layout/border1Color",
+          "radius": "border/radius/md",
+          "shadow": "shadow/lg"
+        }
+      },
+      "controls": {
+        "chromeActiveTab": {
+          "background": "component/button/solid/backgroundColor",
+          "text": "semantic/reader/contrast-on-fill-text",
+          "border": "component/button/solid/borderColor",
+          "hoverBackground": "component/button/solid/backgroundColorHover"
+        },
+        "supportControl": {
+          "background": "semantic/reader/field-surface",
+          "text": "component/input/textColor",
+          "border": "semantic/reader/field-border",
+          "hoverBackground": "layout/background2Color"
+        },
+        "supportControlStrong": {
+          "background": "component/button/solid/backgroundColor",
+          "text": "semantic/reader/contrast-on-fill-text",
+          "border": "component/button/solid/borderColor",
+          "hoverBackground": "component/button/solid/backgroundColorHover"
+        },
+        "supportChip": {
+          "background": "component/button/solid/backgroundColor",
+          "text": "semantic/reader/contrast-on-fill-text",
+          "border": "component/button/solid/borderColor",
+          "hoverBackground": "component/button/solid/backgroundColorHover"
+        },
+        "feedbackAction": {
+          "background": "semantic/reader/field-surface",
+          "text": "component/input/textColor",
+          "border": "semantic/reader/field-border",
+          "hoverBackground": "layout/background2Color"
+        },
+        "mediaControl": {
+          "background": "semantic/reader/media-control-surface",
+          "text": "semantic/reader/contrast-on-fill-text",
+          "border": "semantic/reader/media-control-border",
+          "hoverBackground": "semantic/reader/chrome-surface"
+        },
+        "lightboxControl": {
+          "background": "semantic/reader/lightbox-control-surface",
+          "text": "semantic/reader/overlay-contrast-text",
+          "border": "semantic/reader/lightbox-control-border"
+        },
+        "inlineLink": {
+          "text": "semantic/reader/accent",
+          "hoverBackground": "literal/transparent",
+          "hoverText": "component/link/textColorHover"
+        },
+        "focusRing": {
+          "color": "semantic/reader/focus-ring"
+        },
+        "fieldControl": {
+          "background": "semantic/reader/field-surface",
+          "text": "component/input/textColor",
+          "border": "semantic/reader/field-border",
+          "hoverBackground": "layout/background2Color"
+        },
+        "fieldControlStrong": {
+          "background": "component/button/solid/backgroundColor",
+          "text": "semantic/reader/contrast-on-fill-text",
+          "border": "component/button/solid/borderColor",
+          "hoverBackground": "component/button/solid/backgroundColorHover"
+        },
+        "chromeFilterChip": {
+          "background": "component/button/solid/backgroundColor",
+          "text": "semantic/reader/contrast-on-fill-text",
+          "border": "component/button/solid/borderColor",
+          "hoverBackground": "component/button/solid/backgroundColorHover"
+        }
+      },
+      "tags": {
+        "who": {
+          "background": "component/tag/backgrounds/who",
+          "text": "semantic/reader/contrast-on-fill-text",
+          "border": "component/tag/backgrounds/who"
+        },
+        "what": {
+          "background": "component/tag/backgrounds/what",
+          "text": "semantic/reader/contrast-on-fill-text",
+          "border": "component/tag/backgrounds/what"
+        },
+        "when": {
+          "background": "component/tag/backgrounds/when",
+          "text": "semantic/reader/contrast-on-fill-text",
+          "border": "component/tag/backgrounds/when"
+        },
+        "where": {
+          "background": "component/tag/backgrounds/where",
+          "text": "semantic/reader/contrast-on-fill-text",
+          "border": "component/tag/backgrounds/where"
+        },
+        "muted": {
+          "background": "literal/transparent",
+          "text": "semantic/reader/tonal-text-secondary",
+          "border": "layout/border1Color",
+          "hoverBackground": "layout/background2Color"
+        }
+      },
+      "overlays": {
+        "coveredFade": {
+          "background": "gradient/bottomOverlay",
+          "text": "semantic/reader/overlay-contrast-text",
+          "border": "semantic/reader/overlay-border"
+        },
+        "galleryOverlay": {
+          "background": "semantic/reader/overlay-scrim-strong",
+          "text": "semantic/reader/overlay-contrast-text",
+          "border": "semantic/reader/overlay-border"
+        },
+        "lightboxBackdrop": {
+          "background": "semantic/reader/overlay-scrim-strong",
+          "text": "semantic/reader/overlay-contrast-text",
+          "border": "semantic/reader/overlay-border"
+        },
+        "card": {
+          "background": "gradient/bottomOverlay",
+          "text": "semantic/reader/overlay-contrast-text",
+          "border": "semantic/reader/overlay-border"
+        },
+        "cardStrong": {
+          "background": "semantic/reader/overlay-scrim-strong",
+          "text": "semantic/reader/overlay-contrast-text",
+          "border": "semantic/reader/overlay-border"
+        },
+        "lightbox": {
+          "background": "semantic/reader/overlay-scrim-strong",
+          "text": "semantic/reader/overlay-contrast-text",
+          "border": "semantic/reader/overlay-border"
+        }
+      },
+      "iconography": {
+        "chrome": "semantic/reader/tonal-text-primary",
+        "solid": "component/button/solid/textColor",
+        "overlay": "component/button/solid/textColor",
+        "accent": "palette/3"
+      },
+      "treatments": {
+        "quoteWatermarkOpacity": "0.80",
+        "questionWatermarkOpacity": "0.22",
+        "calloutWatermarkOpacity": "0.22",
+        "calloutBodyListLineHeight": "line-height/tight"
       }
-    },
-    "link": {
-      "textColor": "color3",
-      "textColorHover": "color3",
-      "decorationHover": "underline"
-    },
-    "input": {
-      "backgroundColor": "color1-100",
-      "borderColor": "color1-200",
-      "borderColorFocus": "color3",
-      "textColor": "color2-300",
-      "borderRadius": "border/radius/sm",
-      "padding": "spacing/sm spacing/md"
     }
   },
-  "gradients": {
-    "bottomOverlay": "linear-gradient(transparent, rgba(0,0,0,0.7))",
-    "bottomOverlayStrong": "linear-gradient(transparent, rgba(0,0,0,0.9))"
-  },
-  "darkModeShift": 5,
-  "activePresetId": "editorial"
+  "admin": {
+    "data": {
+      "palette": [
+        {
+          "id": 3,
+          "hex": "#1d4ed8",
+          "h": "224",
+          "s": "76%",
+          "l": "48%",
+          "name": "principal"
+        },
+        {
+          "id": 4,
+          "hex": "#64748b",
+          "h": "215",
+          "s": "16%",
+          "l": "47%",
+          "name": "accent"
+        },
+        {
+          "id": 5,
+          "hex": "#8A3A0E",
+          "h": "20",
+          "s": "80%",
+          "l": "30%",
+          "name": "alt1"
+        },
+        {
+          "id": 6,
+          "hex": "#0E3A4A",
+          "h": "198",
+          "s": "63%",
+          "l": "18%",
+          "name": "alt2"
+        },
+        {
+          "id": 7,
+          "hex": "#2C5A1F",
+          "h": "102",
+          "s": "50%",
+          "l": "24%",
+          "name": "alt3"
+        },
+        {
+          "id": 8,
+          "hex": "#5A1F4F",
+          "h": "311",
+          "s": "49%",
+          "l": "24%",
+          "name": "alt4"
+        },
+        {
+          "id": 9,
+          "hex": "#6A4F29",
+          "h": "35",
+          "s": "44%",
+          "l": "29%",
+          "name": "alt5"
+        },
+        {
+          "id": 10,
+          "hex": "#B08A3E",
+          "h": "41",
+          "s": "49%",
+          "l": "47%",
+          "name": "alt6"
+        },
+        {
+          "id": 11,
+          "hex": "#15803d",
+          "h": "142",
+          "s": "72%",
+          "l": "29%",
+          "name": "success"
+        },
+        {
+          "id": 12,
+          "hex": "#b91c1c",
+          "h": "0",
+          "s": "74%",
+          "l": "42%",
+          "name": "error"
+        },
+        {
+          "id": 13,
+          "hex": "#b45309",
+          "h": "26",
+          "s": "90%",
+          "l": "37%",
+          "name": "warning"
+        },
+        {
+          "id": 14,
+          "hex": "#0369a1",
+          "h": "201",
+          "s": "96%",
+          "l": "32%",
+          "name": "info"
+        }
+      ],
+      "themeColors": [
+        {
+          "id": 1,
+          "name": "background",
+          "light": {
+            "hex": "#e7eaf0",
+            "h": "220",
+            "s": "23%",
+            "l": "92%"
+          },
+          "dark": {
+            "hex": "#111827",
+            "h": "221",
+            "s": "39%",
+            "l": "11%"
+          }
+        },
+        {
+          "id": 2,
+          "name": "text",
+          "light": {
+            "hex": "#111827",
+            "h": "221",
+            "s": "39%",
+            "l": "11%"
+          },
+          "dark": {
+            "hex": "#f8fafc",
+            "h": "210",
+            "s": "40%",
+            "l": "98%"
+          }
+        }
+      ],
+      "typography": {
+        "textColors": {
+          "text1": "color2-300",
+          "text2": "color2-100"
+        },
+        "fontFamilies": {
+          "sans1": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
+          "sans2": "\"Helvetica Neue\", Helvetica, Arial, sans-serif",
+          "sans3": "\"Avenir Next\", Avenir, \"Segoe UI\", sans-serif",
+          "serif1": "\"Georgia\", \"Times New Roman\", serif",
+          "serif2": "\"Iowan Old Style\", \"Palatino Linotype\", \"Book Antiqua\", serif",
+          "serif3": "\"Baskerville\", \"Times New Roman\", serif",
+          "handwriting1": "\"Bradley Hand\", \"Segoe Print\", \"Ink Free\", cursive",
+          "handwriting2": "\"Snell Roundhand\", \"Brush Script MT\", cursive"
+        },
+        "fontSizes": {
+          "xs": "0.875rem",
+          "sm": "1rem",
+          "base": "1.125rem",
+          "lg": "1.25rem",
+          "xl": "1.5rem",
+          "2xl": "1.875rem",
+          "3xl": "2.5rem",
+          "4xl": "3rem",
+          "5xl": "3.75rem",
+          "6xl": "4rem"
+        },
+        "fluidFontSizes": {
+          "size1": "clamp(1.5rem, 1rem + 2.5vw, 3rem)",
+          "size2": "clamp(1.25rem, 0.8rem + 2.25vw, 2.25rem)",
+          "size3": "clamp(1rem, 0.75rem + 1.25vw, 1.5rem)"
+        },
+        "fontWeights": {
+          "normal": "400",
+          "medium": "450",
+          "semibold": "550",
+          "bold": "650"
+        },
+        "lineHeights": {
+          "base": "1.6",
+          "tight": "1.3",
+          "relaxed": "1.85"
+        },
+        "styles": {
+          "normal": "normal",
+          "italic": "italic"
+        }
+      },
+      "spacing": {
+        "unit": "4px",
+        "xs": "1",
+        "sm": "2",
+        "md": "4",
+        "lg": "6",
+        "xl": "8",
+        "2xl": "12",
+        "3xl": "16",
+        "4xl": "24",
+        "fluidSpacing": {
+          "spacing1": "clamp(1rem, 0.5rem + 2.5vw, 2rem)",
+          "spacing2": "clamp(2rem, 1rem + 5vw, 4rem)",
+          "spacing3": "clamp(4rem, 2rem + 10vw, 8rem)"
+        },
+        "xsMultiplier": "1",
+        "smMultiplier": "2",
+        "lgMultiplier": "6",
+        "xlMultiplier": "8",
+        "2xlMultiplier": "12",
+        "3xlMultiplier": "16",
+        "4xlMultiplier": "24",
+        "mdMultiplier": "4"
+      },
+      "borders": {
+        "colors": {
+          "border1": "color1-200",
+          "border2": "color1-300"
+        },
+        "widths": {
+          "thin": "1px",
+          "medium": "2px",
+          "thick": "3px"
+        },
+        "radius": {
+          "sm": "0.2rem",
+          "md": "0.35rem",
+          "lg": "0.5rem",
+          "xl": "0.625rem",
+          "full": "9999px"
+        }
+      },
+      "shadows": {
+        "strength": "7%",
+        "strengthDark": "24%",
+        "color": "hsl(var(--h2) / var(--shadow-strength))",
+        "sm": "0 1px 2px -1px var(--shadow-color)",
+        "md": "0 3px 4px -2px var(--shadow-color), 0 7px 10px -4px var(--shadow-color)",
+        "lg": "0 5px 8px -3px var(--shadow-color), 0 12px 18px -5px var(--shadow-color)",
+        "xl": "0 10px 15px -5px var(--shadow-color), 0 25px 35px -10px var(--shadow-color)"
+      },
+      "zIndex": {
+        "default": "1",
+        "content": "10",
+        "sticky": "100",
+        "modalBackdrop": "1000",
+        "sidebar": "1100",
+        "header": "1200",
+        "modal": "1300",
+        "tooltip": "1400"
+      },
+      "layout": {
+        "containerMaxWidth": "1200px",
+        "bodyFontFamily": "font-family-sans",
+        "bodyBackgroundColor": "color1-100",
+        "background1Color": "color1-100",
+        "background2Color": "color1-200",
+        "border1Color": "color1-200",
+        "border2Color": "color1-300",
+        "sidebarWidth": "300px",
+        "sidebarWidthMobile": "272px",
+        "logoMaxHeight": "120px",
+        "spinnerSize": "50px",
+        "formMinWidth": "120px",
+        "buttonMinWidth": "72px",
+        "iconMinWidth": "24px",
+        "transitionShort": "0.2s",
+        "breakpoints": {
+          "sm": "640px",
+          "md": "768px",
+          "lg": "1024px",
+          "xl": "1280px"
+        }
+      },
+      "states": {
+        "success": {
+          "backgroundColor": "color11",
+          "borderColor": "color11"
+        },
+        "error": {
+          "backgroundColor": "color12",
+          "borderColor": "color12"
+        },
+        "warning": {
+          "backgroundColor": "color13",
+          "borderColor": "color13"
+        },
+        "info": {
+          "backgroundColor": "color14",
+          "borderColor": "color14"
+        }
+      },
+      "components": {
+        "header": {
+          "height": "120px",
+          "backgroundColor": "color1-100",
+          "borderColor": "color1-200",
+          "borderWidth": "border/width/thin",
+          "textColor": "color2-300",
+          "iconColor": "color2-300"
+        },
+        "button": {
+          "solid": {
+            "backgroundColor": "color3",
+            "backgroundColorHover": "color3",
+            "borderColor": "color3",
+            "textColor": "theme-color/2/dark"
+          },
+          "outline": {
+            "backgroundColor": "transparent",
+            "backgroundColorHover": "hsla(var(--h3), var(--s3), var(--l3), 0.1)",
+            "borderColor": "color1-200",
+            "textColor": "color2-300",
+            "borderWidth": "border/width/thin"
+          }
+        },
+        "card": {
+          "backgroundColor": "color1-200",
+          "padding": "spacing/xl",
+          "borderColor": "color1-200",
+          "borderWidth": "border/width/thin",
+          "borderRadius": "border/radius/md",
+          "shadow": "shadow/sm",
+          "shadowHover": "shadow/md"
+        },
+        "tag": {
+          "padding": "spacing/xs spacing/sm",
+          "borderRadius": "border/radius/full",
+          "fontWeight": "font/weight/medium",
+          "fontSize": "font/size/sm",
+          "fontFamily": "font/family/sans",
+          "textColor": "color1-100",
+          "backgrounds": {
+            "who": "color5",
+            "what": "color6",
+            "when": "color7",
+            "where": "color8",
+            "reflection": "color9"
+          }
+        },
+        "link": {
+          "textColor": "color3",
+          "textColorHover": "color3",
+          "decorationHover": "underline"
+        },
+        "input": {
+          "backgroundColor": "color1-100",
+          "borderColor": "color1-200",
+          "borderColorFocus": "color3",
+          "textColor": "color2-300",
+          "borderRadius": "border/radius-sm",
+          "padding": "spacing/md spacing/lg"
+        }
+      },
+      "gradients": {
+        "bottomOverlay": "linear-gradient(transparent, rgba(0,0,0,0.7))",
+        "bottomOverlayStrong": "linear-gradient(transparent, rgba(0,0,0,0.9))"
+      }
+    },
+    "activePresetId": "admin"
+  }
 }

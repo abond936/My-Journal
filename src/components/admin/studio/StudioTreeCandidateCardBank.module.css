@@ -1,0 +1,123 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  flex: 1;
+  overflow-x: hidden;
+}
+
+.studioCardFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: flex-end;
+  margin-bottom: var(--spacing-sm);
+}
+
+/* Matched in media-admin `studioPaneSearchField` — keeps Tags + Grid/Table rows aligned across Studio columns. */
+.studioPaneSearchField {
+  flex: 0 0 14rem;
+  min-width: 12rem;
+  max-width: 18rem;
+}
+
+.studioCardField {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.studioCardFieldLabel {
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
+  white-space: nowrap;
+}
+
+.studioCardSearchInput {
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  line-height: 1.25;
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
+}
+
+.studioCardSelect {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
+}
+
+.studioCardMacroBlock {
+  margin-bottom: var(--spacing-sm);
+  min-width: 0;
+}
+
+.studioCardMacroTagSelector {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.toolbarLabel {
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
+}
+
+.catalogHint {
+  color: var(--admin-support-hint-color);
+  font-family: var(--admin-support-hint-font-family);
+  font-size: var(--admin-support-hint-font-size);
+  font-weight: var(--admin-support-hint-font-weight);
+  line-height: var(--admin-support-hint-line-height);
+}
+
+/* Matches `media-admin` embedded Clear — resets all row filters + tag selection */
+.studioCardClearButton {
+  align-self: flex-end;
+  padding: 4px var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  border-radius: var(--border-radius-sm);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
+  cursor: pointer;
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
+}
+
+.studioCardClearButton:hover {
+  background: var(--admin-support-control-hover-background-color);
+  border-color: var(--admin-support-control-strong-border-color);
+}

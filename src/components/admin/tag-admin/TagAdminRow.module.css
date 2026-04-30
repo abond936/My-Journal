@@ -13,7 +13,7 @@
 }
 
 .tagContent:hover {
-  background: var(--layout-background2-color);
+  background: var(--admin-chrome-control-hover-background-color);
 }
 
 .expander {
@@ -33,7 +33,7 @@
   width: var(--spacing-xs);
   height: var(--spacing-sm);
   font-size: var(--font-size-xs);
-  color: var(--text1-color);
+  color: var(--admin-chrome-text-color);
   opacity: 0.5;
 }
 
@@ -56,13 +56,16 @@
 }
 
 .tagName:hover {
-  background-color: hsla(var(--h1), var(--s1), var(--l1), 0.1);
+  background-color: var(--admin-chrome-control-hover-background-color);
 }
 
 .cardCount {
   margin-left: var(--spacing-xs);
-  font-size: var(--font-size-sm);
-  color: var(--text2-color);
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
   opacity: 0.8;
 }
 
@@ -70,8 +73,10 @@
   width: 100%;
   font-size: var(--font-size-base);
   padding: var(--border-width-thin) var(--spacing-xs);
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-radius: var(--border-radius-sm);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
   line-height: var(--line-height-tight);
 }
 
@@ -114,29 +119,38 @@
 .addChildInput {
   flex-grow: 1;
   padding: var(--border-width-thin) var(--spacing-xs);
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-sm);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
   line-height: var(--line-height-tight);
 }
 
 .addChildButton {
   padding: var(--spacing-xs) var(--spacing-xs);
-  border: var(--border-width-thin) solid var(--border1-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-radius: var(--border-radius-sm);
-  background: var(--layout-background2-color);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
   cursor: pointer;
-  font-size: var(--font-size-sm);
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
   flex-shrink: 0;
   line-height: var(--line-height-tight);
 }
 
 .addChildButton:hover {
-  background: var(--border1-color);
+  background: var(--admin-support-control-hover-background-color);
 }
 
 .topLevelParent {
   font-weight: var(--font-weight-bold);
   font-size: var(--font-size-lg);
-  color: var(--text1-color);
-} 
+  color: var(--admin-support-label-color);
+}

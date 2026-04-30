@@ -1,0 +1,171 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  max-width: 100%;
+  align-self: stretch;
+  font: var(--admin-grid-overlay-font);
+}
+
+.rootInline {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.dimBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 1px 0;
+  min-width: 0;
+}
+
+.dimBlockInline {
+  padding: 0;
+}
+
+.dimBlockDivider {
+  border-top: var(--border-width-thin) solid var(--admin-window-border-color);
+}
+
+.empty {
+  font: var(--admin-grid-overlay-font);
+  color: var(--admin-support-meta-color);
+  /* `font` shorthand resets style; restore after */
+  font-style: italic;
+}
+
+.tagRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1px;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 0 1px 0 2px;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  background: color-mix(in srgb, var(--admin-window-background-color) 70%, transparent);
+  color: var(--admin-support-label-color);
+  font: var(--admin-grid-overlay-font);
+  text-align: left;
+}
+
+.tagRowInline {
+  width: auto;
+  min-height: 24px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  gap: 5px;
+  font-size: 12px;
+}
+
+.tagTextBlock {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.tagDimWho {
+  background: color-mix(in srgb, var(--tag-who-bg-color) 50%, transparent);
+  color: #fff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 35%);
+}
+
+.tagDimWhat {
+  background: color-mix(in srgb, var(--tag-what-bg-color) 50%, transparent);
+  color: #fff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 35%);
+}
+
+.tagDimWhen {
+  background: color-mix(in srgb, var(--tag-when-bg-color) 50%, transparent);
+  color: #fff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 35%);
+}
+
+.tagDimWhere {
+  background: color-mix(in srgb, var(--tag-where-bg-color) 50%, transparent);
+  color: #fff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 35%);
+}
+
+.removeX {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  margin-left: auto;
+  /* Compact hit box: keeps rail row short; use padding for easier taps than the glyph alone. */
+  min-width: 18px;
+  min-height: 18px;
+  padding: 0 1px;
+  box-sizing: border-box;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  background: color-mix(in srgb, rgb(0 0 0) 15%, transparent);
+  color: inherit;
+  font: inherit;
+  font-size: 1.05em;
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.removeXInline {
+  min-width: 15px;
+  min-height: 15px;
+  padding: 0;
+  margin-left: 0;
+  background: transparent;
+  font-size: 0.9em;
+}
+
+.removeXInline:hover:not(:disabled) {
+  background: color-mix(in srgb, rgb(0 0 0) 18%, transparent);
+}
+
+.removeX:hover:not(:disabled) {
+  filter: brightness(1.12);
+  background: color-mix(in srgb, rgb(0 0 0) 25%, transparent);
+}
+
+.removeX:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.tagRowDisabled {
+  opacity: 0.55;
+}
+
+.tagName {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: clip;
+}
+
+.tagRowInline .tagName {
+  flex: 0 1 auto;
+  max-width: 8.5rem;
+}
+
+.tagMore {
+  flex-shrink: 0;
+  font: inherit;
+  line-height: 1;
+  color: inherit;
+  opacity: 0.95;
+}

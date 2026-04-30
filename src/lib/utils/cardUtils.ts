@@ -1,5 +1,4 @@
 import { Card, CardUpdate } from '@/lib/types/card';
-import { compareCuratedRootCards } from '@/lib/utils/curatedCollectionTree';
 
 const DIMENSIONS = ['who', 'what', 'when', 'where'] as const;
 
@@ -47,7 +46,7 @@ export function generateExcerpt(html: string | null | undefined, maxLength = EXC
  * Groups collection cards by dimension (who, what, when, where).
  * A collection appears in every dimension group it has tags for (Option B).
  * Uncategorized: collections with no tags in any dimension.
- * Within each group, sorted by `curatedRootOrder` (if set), then title A–Z.
+ * Within each group, preserve the incoming top-level collection order.
  */
 export function groupCollectionsByDimension(cards: Card[]): Record<string, Card[]> {
   const groups: Record<string, Card[]> = {
@@ -76,10 +75,6 @@ export function groupCollectionsByDimension(cards: Card[]): Record<string, Card[
         groups[dim].push(card);
       }
     }
-  }
-
-  for (const key of Object.keys(groups)) {
-    groups[key].sort(compareCuratedRootCards);
   }
 
   return groups;

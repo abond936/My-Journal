@@ -41,6 +41,9 @@
     right: 0;
     height: var(--header-height);
     z-index: var(--z-index-header);
+    background: var(--reader-header-background-color);
+    border-bottom: var(--header-border-width) solid var(--reader-header-border-color);
+    box-sizing: border-box;
   }
   
   .contentWrapper {
@@ -54,26 +57,30 @@
     z-index: 1;
   }
   
-  .sidebarToggle {
+.sidebarToggle {
   position: fixed;
   left: var(--spacing-md);
   top: calc(var(--header-height) + var(--spacing-xs));
   z-index: var(--z-index-sidebar);
-  background: var(--layout-background1-color);
-  color: var(--text1-color);
-  border: none;
+  background: var(--reader-chrome-control-background-color);
+  color: var(--reader-chrome-text-color);
+  border: var(--border-width-thin) solid var(--reader-chrome-border-color);
+  border-radius: var(--border-radius-md);
   width: var(--spacing-xl);
   height: var(--spacing-xl);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--font-size-xl);
+  font-family: var(--reader-chrome-meta-font-family);
+  font-size: var(--reader-chrome-meta-font-size);
+  font-weight: var(--reader-chrome-meta-font-weight);
+  line-height: var(--reader-chrome-meta-line-height);
   transition: all var(--transition-short) ease;
 }
   
   .sidebarToggle:hover {
-    background: var(--layout-background2-color);
+    background: var(--reader-chrome-control-hover-background-color);
     transform: scale(1.05);
   }
   
@@ -98,15 +105,35 @@
     display: none;
   }
   
+.mainContent {
+  flex: 1;
+  min-height: 0; /* critical: without this, overflow-y may never show content in flex layouts */
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--spacing-lg);
+  min-width: 0;
+  background-color: var(--reader-page-background-color);
+  background-image: var(--reader-page-texture);
+  background-repeat: repeat, no-repeat;
+  background-size: 4px 4px, 100% 100%;
+  background-position: 0 0, center top;
+}
+
+@media (max-width: 1024px) {
   .mainContent {
-    flex: 1;
-    min-height: 0; /* critical: without this, overflow-y may never show content in flex layouts */
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: var(--spacing-lg);
-    min-width: 0;
+    padding-left: 0;
+    padding-right: 0;
   }
-  
+
+  :global(body.curated-feed-active) .mainContent {
+    padding-top: 0;
+  }
+
+  :global(body.curated-feed-active) .sidebarToggle {
+    top: calc(var(--header-height) + var(--curated-context-bar-height, 0px));
+  }
+}
+
   /* On small screens, the main content takes the full width */
   /* Literal width: custom properties are not reliable inside @media in all browsers. */
   @media (max-width: 768px) {
@@ -143,7 +170,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: color-mix(in srgb, black 38%, transparent);
+      background: var(--color-overlay-dark);
       opacity: 0;
       pointer-events: none;
       transition: opacity var(--transition-short) ease;
@@ -166,9 +193,13 @@
       width: auto;
       height: auto;
       padding: var(--spacing-xs);
-      border: var(--border-width-thin) solid var(--border1-color);
+      border: var(--border-width-thin) solid var(--reader-chrome-border-color);
       border-radius: var(--border-radius-md);
       box-shadow: var(--shadow-sm);
+    }
+
+    :global(body.curated-feed-active) .sidebarToggle {
+      top: calc(var(--header-height) + var(--curated-context-bar-height, 0px));
     }
 
     .appShell::before,
