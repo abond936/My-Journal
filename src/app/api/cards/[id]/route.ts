@@ -14,10 +14,12 @@ import {
   updateCardChildrenOrder,
   updateCardCollectionRoot,
   updateCardMetadata,
+  updateCardTags,
   isCardMetadataOnlyPayload,
   isChildrenOnlyPayload,
   isChildrenReorderOnlyPayload,
   isCollectionRootOnlyPayload,
+  isTagsOnlyPayload,
   getPaginatedCardsByIds,
 } from '@/lib/services/cardService';
 import { Card, cardUpdateValidationSchema } from '@/lib/types/card';
@@ -209,6 +211,8 @@ export async function PATCH(
           ? await updateCardChildren(id, validatedData.childrenIds!)
         : isCollectionRootOnlyPayload(validatedData)
           ? await updateCardCollectionRoot(id, validatedData)
+        : isTagsOnlyPayload(validatedData)
+          ? await updateCardTags(id, validatedData.tags!)
         : isCardMetadataOnlyPayload(validatedData)
           ? await updateCardMetadata(id, validatedData)
         : await updateCard(id, validatedData);

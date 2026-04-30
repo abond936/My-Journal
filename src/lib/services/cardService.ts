@@ -227,7 +227,7 @@ async function getExistingCollectionRoots(): Promise<Card[]> {
   return snap.docs.map((doc) => ({ docId: doc.id, ...doc.data() } as Card));
 }
 
-function computeDimensionSortKeys(
+export function computeDimensionSortKeys(
   directTagIds: string[] | undefined,
   allTags: Tag[]
 ): Pick<Card, 'whoSortKey' | 'whatSortKey' | 'whereSortKey'> {
@@ -1301,6 +1301,13 @@ export function isGalleryOnlyPayload(
   return keys.length === 1 && keys[0] === 'galleryMedia' && Array.isArray(updates.galleryMedia);
 }
 
+export function isTagsOnlyPayload(
+  updates: Partial<Pick<Card, 'tags'>>
+): boolean {
+  const keys = Object.keys(updates as Record<string, unknown>);
+  return keys.length === 1 && keys[0] === 'tags' && Array.isArray(updates.tags);
+}
+
 export function isChildrenReorderOnlyPayload(
   existingCard: Pick<Card, 'childrenIds'>,
   updates: Partial<Pick<Card, 'childrenIds'>>
@@ -1709,6 +1716,95 @@ export async function updateCardMetadata(
 
   void syncCardToTypesense(updatedCard);
   return updatedCard;
+}
+
+/**
+ * Narrow tag-only mutation path.
+ *
+ * Preserves all product invariants (`docs/01-Vision-Architecture.md` →
+ * Backend Principles **Denormalized counts**, **Mutation scope**):
+ * - Tag `cardCount` accuracy via `updateTagCountsForCard` (same helper the
+ *   wide path calls).
+ * - Card derived tag fields via `mergeDerivedTagsForCardRecord`:
+ *   `filterTags`, `who`, `what`, `when`, `where`.
+ * - Sort keys: `journalWhenSortAsc/Desc`, `whoSortKey`, `whatSortKey`,
+ *   `whereSortKey`.
+ * - Typesense card projection: `syncCardToTypesense` post-tx.
+ *
+ * Skips work that is provably unaffected by a card-tag change:
+ * - Media id diff / `referencedByCardIds` (no media-membership change).
+ * - `mediaWho/What/When/Where` (these aggregate tags on referenced **media
+ *   docs**; a card-tag edit doesn't change those).
+ * - `syncMediaToTypesenseById` for referenced media (those media docs are
+ *   unchanged).
+ * - Cover focal-point updates, content sanitization, child-cycle / Q&A
+ *   validation, `curatedNavEligible`.
+ */
+export async function updateCardTags(cardId: string, tags: string[]): Promise<Card> {
+  const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
+
+  const cleanedTags = (tags || []).filter((t): t is string => typeof t === 'string' && t.length > 0);
+
+  // Pre-read the tag catalog once outside the transaction; helpers below are
+  // pure on this snapshot and do not need to be inside the tx (transaction
+  // reads are reserved for the parent card + tag-count updates).
+  const allTagsForJournal = await getAllTags();
+  const tagPathLookup = buildTagMap(allTagsForJournal);
+  const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(
+    { tags: cleanedTags },
+    undefined,
+    allTagsForJournal
+  );
+  const journalWhenSort = computeJournalWhenSortKeys(
+    dimensionalTags.when || [],
+    tagPathLookup
+  );
+  const dimensionSortKeys = computeDimensionSortKeys(cleanedTags, allTagsForJournal);
+
+  return withRetry(async () => {
+    await firestore.runTransaction(async (transaction) => {
+      const docSnap = await transaction.get(docRef);
+      if (!docSnap.exists) {
+        throw new Error(`Card with ID ${cardId} not found.`);
+      }
+      const existingData = docSnap.data() as Card;
+
+      const updatePayload: Partial<Card> = {
+        tags: cleanedTags,
+        filterTags,
+        who: dimensionalTags.who || [],
+        what: dimensionalTags.what || [],
+        when: dimensionalTags.when || [],
+        where: dimensionalTags.where || [],
+        journalWhenSortAsc: journalWhenSort.journalWhenSortAsc,
+        journalWhenSortDesc: journalWhenSort.journalWhenSortDesc,
+        whoSortKey: dimensionSortKeys.whoSortKey,
+        whatSortKey: dimensionSortKeys.whatSortKey,
+        whereSortKey: dimensionSortKeys.whereSortKey,
+        updatedAt: Date.now(),
+      };
+
+      // Tag-count maintenance MUST happen in the same transaction as the
+      // card write. Same helper signature the wide path uses; status is
+      // unchanged by a tag-only edit, so the helper sees `wasPublished ===
+      // isPublished` and only counts the tag delta.
+      await updateTagCountsForCard(
+        existingData,
+        { ...existingData, ...updatePayload },
+        transaction,
+        tagPathLookup
+      );
+
+      transaction.update(docRef, updatePayload);
+    });
+
+    const updatedCard = await getCardById(cardId);
+    if (!updatedCard) {
+      throw new Error(`Failed to fetch updated card with ID ${cardId}`);
+    }
+    void syncCardToTypesense(updatedCard);
+    return updatedCard;
+  });
 }
 
 /**
