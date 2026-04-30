@@ -509,7 +509,10 @@ export default function StudioWorkspace() {
     if (!opts?.quiet) setCardLoading(true);
     setCardError(null);
     const id = cardId.trim();
-    const res = await fetch(`/api/cards/${encodeURIComponent(id)}?limit=100`, {
+    // Studio reads `selectedCard.childrenIds` (IDs only, free with parent fetch)
+    // but never the hydrated `children` array. Skip child hydration entirely —
+    // saves up to 100 child Firestore reads + media hydrations per card click.
+    const res = await fetch(`/api/cards/${encodeURIComponent(id)}?children=skip`, {
       cache: 'no-store',
       credentials: 'same-origin',
     });

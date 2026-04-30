@@ -80,7 +80,14 @@ export async function GET(
     // Parse query parameters with validation
     const { searchParams } = new URL(request.url);
     const limitParam = searchParams.get('limit');
-    
+    const childrenMode = searchParams.get('children');
+
+    // `?children=skip` lets callers that only need parent-card fields opt out of
+    // child hydration. The parent's own `childrenIds` (just IDs, no extra reads)
+    // still comes back for any caller that needs the count or list. See
+    // docs/01-Vision-Architecture.md → Backend Principles (narrow read paths).
+    const skipChildren = childrenMode === 'skip';
+
     // If limit is not provided or invalid, use default
     const limit = limitParam
       ? z.coerce
@@ -90,16 +97,13 @@ export async function GET(
           .catch(10) // Use 10 as fallback if parsing fails
           .parse(limitParam)
       : 10;
-    
+
     const lastDocId = searchParams.get('lastDocId');
 
-    // Fetch children with pagination
-    const childrenResult: PaginatedResult<Card> = await getPaginatedCardsByIds(
-      card.childrenIds || [],
-      { limit, lastDocId }
-    );
+    const childrenResult: PaginatedResult<Card> = skipChildren
+      ? { items: [], hasMore: false, lastDocId: undefined }
+      : await getPaginatedCardsByIds(card.childrenIds || [], { limit, lastDocId });
 
-    // Construct the response
     const responseData = {
       ...card,
       children: childrenResult.items,

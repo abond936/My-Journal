@@ -188,8 +188,11 @@ export default function ReaderCardEditModal({
     | null
   >(null);
 
+  // Modal reads parent fields incl. `childrenIds?.length` for delete-warning
+  // text but never the hydrated children array — pass `?children=skip` to drop
+  // the unused child reads + media hydrations on every modal open.
   const { data: card, mutate: mutateCard } = useSWR<Card | null>(
-    isOpen ? `/api/cards/${activeCardId}` : null,
+    isOpen ? `/api/cards/${activeCardId}?children=skip` : null,
     fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
