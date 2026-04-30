@@ -12,6 +12,7 @@
   transition: transform var(--transition-short) ease, box-shadow var(--transition-short) ease;
   aspect-ratio: 6 / 5;
   min-height: 0;
+  min-width: 0;
 }
 
 .card:hover {
@@ -98,11 +99,18 @@
   .story:not(:has(.imageContainer)),
   .gallery:not(:has(.imageContainer)),
   .qa:not(.qaWithCover) {
-    min-height: 12.5rem;
+    aspect-ratio: 6 / 5;
   }
 
   .imageContainer {
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 16 / 9;
+  }
+
+  .story:not(:has(.imageContainer)) .content,
+  .gallery:not(:has(.imageContainer)) .content,
+  .qa:not(.qaWithCover) .content {
+    justify-content: flex-start;
+    padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm);
   }
 }
 

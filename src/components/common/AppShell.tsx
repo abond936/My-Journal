@@ -12,6 +12,8 @@ interface AppShellProps {
   children: React.ReactNode;
 }
 
+const MOBILE_BREAKPOINT_QUERY = '(max-width: 768px)';
+
 export default function AppShell({ children }: AppShellProps) {
   const { status } = useSession();
   const pathname = usePathname();
@@ -21,12 +23,36 @@ export default function AppShell({ children }: AppShellProps) {
 
   const isAuthenticated = status === 'authenticated';
 
-  // Automatically hide sidebar on small screens initially
+  // Keep shell sidebar state aligned with the mobile breakpoint.
   useEffect(() => {
-    if (window.innerWidth < 768) {
-      setSidebarOpen(false);
-    }
-  }, []);
+    if (typeof window === 'undefined') return;
+
+    const mediaQuery = window.matchMedia(MOBILE_BREAKPOINT_QUERY);
+
+    const syncSidebarForViewport = (isMobile: boolean) => {
+      if (pathname === '/' || pathname?.startsWith('/admin/studio')) {
+        return;
+      }
+
+      setSidebarOpen((current) => {
+        if (isMobile) return false;
+        if (!current) return true;
+        return current;
+      });
+    };
+
+    syncSidebarForViewport(mediaQuery.matches);
+
+    const handleChange = (event: MediaQueryListEvent) => {
+      syncSidebarForViewport(event.matches);
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange);
+    };
+  }, [pathname]);
 
   // Update sidebar state when route changes
   useEffect(() => {

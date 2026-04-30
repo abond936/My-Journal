@@ -150,8 +150,7 @@
           "handwriting2": "\"Snell Roundhand\", \"Brush Script MT\", cursive"
         },
         "fontSizes": {
-          "xxs": "0.6rem",
-          "xs": "0.75rem",
+          "xs": "0.6rem",
           "sm": "0.875rem",
           "base": "1.125rem",
           "lg": "1.25rem",
@@ -299,7 +298,7 @@
             "backgroundColor": "color3",
             "backgroundColorHover": "color3",
             "borderColor": "color3",
-            "textColor": "color1-100"
+            "textColor": "theme-color/2/dark"
           },
           "outline": {
             "backgroundColor": "transparent",
@@ -1082,7 +1081,6 @@
           "handwriting2": "\"Snell Roundhand\", \"Brush Script MT\", cursive"
         },
         "fontSizes": {
-          "xxs": "0.75rem",
           "xs": "0.875rem",
           "sm": "1rem",
           "base": "1.125rem",
@@ -1231,7 +1229,7 @@
             "backgroundColor": "color3",
             "backgroundColorHover": "color3",
             "borderColor": "color3",
-            "textColor": "color1-100"
+            "textColor": "theme-color/2/dark"
           },
           "outline": {
             "backgroundColor": "transparent",

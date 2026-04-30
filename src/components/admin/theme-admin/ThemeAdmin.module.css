@@ -2073,13 +2073,22 @@
 
 .architectureField {
   display: grid;
-  grid-template-columns: minmax(88px, max-content) minmax(0, 220px);
+  grid-template-columns: minmax(88px, max-content) minmax(0, max-content);
   align-items: center;
   column-gap: var(--spacing-sm);
-  row-gap: 6px;
+  row-gap: 4px;
   min-width: 0;
   color: var(--reader-support-meta-color);
   font-size: var(--font-size-xs);
+}
+
+.fieldControlRow {
+  display: grid;
+  grid-template-columns: 180px 180px;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-width: 0;
+  justify-content: flex-start;
 }
 
 .architectureField span {
@@ -2094,15 +2103,35 @@
 
 .architectureField select,
 .architectureField input {
-  width: min(220px, 100%);
+  width: 180px;
   min-width: 0;
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: 5px 8px;
   border: var(--border-width-thin) solid var(--reader-support-control-border-color);
   border-radius: var(--border-radius-sm);
   background-color: var(--reader-support-control-background-color);
   color: var(--reader-support-control-text-color);
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-sm);
+  font-size: 11px;
+  text-align: left;
+}
+
+.darkPreviewPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border: var(--border-width-thin) solid var(--reader-support-control-border-color);
+  border-radius: var(--border-radius-md);
+  background-color: var(--reader-support-control-background-color);
+  color: var(--reader-support-meta-color);
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
+  justify-content: flex-start;
+  text-align: left;
+  min-width: 0;
+  width: 180px;
+  box-sizing: border-box;
 }
 
 .architectureRecipe {
@@ -2155,14 +2184,14 @@
 
 .navigatorSectionTab,
 .navigatorSectionTabActive {
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: 6px 10px;
   border: var(--border-width-thin) solid var(--reader-window-border-color);
   border-radius: var(--border-radius-md);
-  background-color: transparent;
-  color: var(--reader-support-label-color);
+  background-color: var(--reader-support-control-background-color);
+  color: var(--reader-support-control-text-color);
   font-size: var(--font-size-xs);
   font-family: var(--font-family-sans);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-semibold);
   line-height: 1.3;
   text-align: center;
   cursor: pointer;
@@ -2198,10 +2227,10 @@
 
 .componentSelectorButton,
 .componentSelectorActive {
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: 6px 10px;
   border: var(--border-width-thin) solid var(--reader-window-border-color);
-  border-radius: var(--border-radius-full);
-  font-size: var(--font-size-sm);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-xs);
   font-family: var(--font-family-sans);
   cursor: pointer;
 }
@@ -2218,7 +2247,7 @@
 
 .componentSelectorColumn .componentSelectorButton strong,
 .componentSelectorColumn .componentSelectorActive strong {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
 }
 
@@ -2231,8 +2260,8 @@
 }
 
 .componentSelectorButton {
-  background-color: transparent;
-  color: var(--reader-chrome-text-color);
+  background-color: var(--reader-support-control-background-color);
+  color: var(--reader-support-control-text-color);
   text-align: left;
 }
 
@@ -2292,15 +2321,15 @@
 .componentVariantTabActive {
   padding: 6px 10px;
   border: var(--border-width-thin) solid var(--reader-window-border-color);
-  border-radius: var(--border-radius-full);
-  font-size: var(--font-size-sm);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-xs);
   font-family: var(--font-family-sans);
   cursor: pointer;
 }
 
 .componentVariantTab {
-  background-color: transparent;
-  color: var(--reader-chrome-text-color);
+  background-color: var(--reader-support-control-background-color);
+  color: var(--reader-support-control-text-color);
 }
 
 .componentVariantTabActive {
@@ -2388,17 +2417,19 @@
 .componentAttributeTabActive {
   padding: 6px 10px;
   border: var(--border-width-thin) solid var(--reader-window-border-color);
-  border-radius: var(--border-radius-full);
-  background-color: transparent;
-  color: var(--reader-chrome-text-color);
-  font-size: var(--font-size-sm);
+  border-radius: var(--border-radius-md);
+  background-color: var(--reader-support-control-background-color);
+  color: var(--reader-support-control-text-color);
+  font-size: var(--font-size-xs);
   font-family: var(--font-family-sans);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
 }
 
 .componentAttributeTabActive {
-  background-color: color-mix(in srgb, var(--reader-chrome-active-control-background-color) 12%, transparent);
+  background-color: var(--reader-chrome-active-control-background-color);
   border-color: var(--reader-chrome-active-control-border-color);
+  color: var(--reader-chrome-active-control-text-color);
 }
 
 .componentActiveEditor {
@@ -2417,7 +2448,9 @@
 
 .componentActiveEditorHeader {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
   gap: var(--spacing-sm);
 }
 
@@ -2426,6 +2459,7 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
 }
+
 
 .contextValuePanel {
   display: grid;

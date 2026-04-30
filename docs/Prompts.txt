@@ -37,10 +37,11 @@ Updates
 Media 
     - selecting card in grid and table are not stable
     - decide/fix card/media pagination
-    - Tailor AI Assist to be AI Story Assist. 
+- tailor AI Assist to be AI Story Assist. 
         - create choices
-        - create a 'voice' file from existing stories
+        - create a 'voice' from existing stories
     -children in the tree and out of the tree?
-
+- hamburger menu highlights two choices when in Theme Management
+- add drop cap to tiptap
 
 
