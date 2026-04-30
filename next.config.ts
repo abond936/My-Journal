@@ -6,6 +6,12 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   reactStrictMode: true,
+  // Keep ExifTool packages as runtime Node externals (not bundled by webpack).
+  // Card/media read routes no longer import this graph; the import-side routes
+  // (`/api/import/*`, `/api/images/local/import`, `/api/images/browser`) load it
+  // at runtime. Silences `Module not found: 'exiftool-vendored.pl'` on platforms
+  // where the optional Perl-side platform package is not installed (Windows dev).
+  serverExternalPackages: ['exiftool-vendored', 'exiftool-vendored.pl'],
   experimental: {
     serverActions: {
       allowedOrigins: ['localhost:3000'],

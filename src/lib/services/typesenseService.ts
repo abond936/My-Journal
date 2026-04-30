@@ -333,13 +333,17 @@ export async function searchCardsFiltered(
 
   const tsPage = Math.max(1, options.page + 1);
 
+  // Defensive cap: Typesense Cloud rejects per_page > 250 with HTTP 422.
+  // See docs/01-Vision-Architecture.md → Typesense list limits.
+  const safePerPage = Math.min(Math.max(1, options.perPage || 50), 250);
+
   const result = await client.collections(CARDS_COLLECTION).documents().search({
     q,
     query_by: queryBy,
     query_by_weights: queryByWeights,
     filter_by: filterParts.length > 0 ? filterParts.join(' && ') : undefined,
     page: tsPage,
-    per_page: options.perPage,
+    per_page: safePerPage,
     sort_by: buildListSort(sortByResolved, sortDirResolved, hasText),
   });
 

@@ -160,10 +160,12 @@ The primary users are the author (admin) creating the content and his family con
 
 *Principles*
 - **UI Alignment** - Align UI behavior with **validated server contracts** (types/schemas); the client does not override server authority on writes. Clear **presentation and client-state** boundaries; business rules stay in services/API layer.
+- **State domains** - Complex admin shells (especially **Studio**) should separate **global structural truth** (tag taxonomy, collections structure) from **pane-local working sets** (filtered cards/media lists) and from the **active editing context** (selected card). One pane's visible subset must not silently redefine another pane's universe.
 - **Design surfaces** - The reader (`/view`) UI is the primary **designed** surface—typography, color rhythm, spacing, and tone. Admin may stay denser for workflows but should **reuse the same design tokens** (and previews where it matters) so what the author sees while authoring matches what the family sees when reading.
 - **Swappable looks** - Theme Management should move toward **named design packages** (coherent font, color, and spacing choices) selected as a whole, not only isolated slider tweaks. **Tokenization** (CSS variables in `theme.css` driven from persisted theme data) is the practical path to plug-and-play designs.
 - **List stability** - After mutations, update the **smallest** sufficient UI state: patch a row, remove/add ids in the current page, or refetch **one** page or cursor scope—not entire unbounded lists by default. Reserve full catalog refetch for recovery, unknown membership change, or explicit user refresh.
 - **Authoritative confirmation** - Separate **optimistic** display from **confirmed** server state where it improves perceived speed; do not block the UI on secondary work (search index sync, full media hydration) when the user action can be acknowledged from Firestore alone.
+- **Preview then hydrate** - In authoring shells with an active object (for example, the selected card in **Studio**), selection should populate local context from the best available preview immediately, then enrich from background hydration. Hydration failure should degrade detail, not blank the active editing surface.
 - **Surface simplification** - Prefer fewer, stronger interaction models for authoring when capability is preserved. Simplification should remove parallel UI patterns, not remove the tagging and relationship power the product depends on.
 
 *Features*

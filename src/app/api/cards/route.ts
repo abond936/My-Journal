@@ -292,7 +292,19 @@ export async function GET(request: Request) {
         });
       };
 
-      if (isTypesenseConfigured()) {
+      // Only dispatch to Typesense for queries that actually need it: text search,
+      // multi-dimensional tag filters, or missing-dimension filters. Plain catalog
+      // listings (no `q`, no dim filter) skip Typesense and go directly to the
+      // Firestore path below — avoids a wasted (and `per_page>250`-rejected) roundtrip.
+      // Mirrors the gate in `/api/media`. See docs/01-Vision-Architecture.md →
+      // Typesense list limits + 📐 Filtered population & stable ordering.
+      const wantTypesense =
+        isTypesenseConfigured() &&
+        (Boolean(q?.trim()) ||
+          Object.keys(dimensionalTags).length > 0 ||
+          hasDimensionMissingFilters);
+
+      if (wantTypesense) {
         try {
           const pageIdx = Math.max(0, parseInt(searchParams.get('page') ?? '0', 10) || 0);
           const sortByResolved: TypesenseCardSortField =

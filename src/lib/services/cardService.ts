@@ -14,7 +14,7 @@ import {
   deleteFromStorageWithRetry,
   deleteMediaAsset,
   markStorageForLaterDeletion,
-} from './images/imageImportService';
+} from './images/mediaStorage';
 import { extractMediaFromContent, stripContentImageSrc, hydrateContentImageSrc, removeMediaFromContent, generateExcerpt } from '@/lib/utils/cardUtils';
 import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 import { buildTagMap, computeJournalWhenSortKeys } from '@/lib/utils/journalWhenSort';

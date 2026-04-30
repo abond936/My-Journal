@@ -272,12 +272,16 @@ export async function searchMediaTypesense(
   const sortBy =
     q === '*' ? 'created_at:desc' : '_text_match:desc,created_at:desc';
 
+  // Defensive cap: Typesense Cloud rejects per_page > 250 with HTTP 422.
+  // See docs/01-Vision-Architecture.md → Typesense list limits.
+  const safePerPage = Math.min(Math.max(1, params.perPage || 50), 250);
+
   const result = await client.collections(MEDIA_COLLECTION).documents().search({
     q,
     query_by: 'searchable',
     filter_by: filterParts.length > 0 ? filterParts.join(' && ') : undefined,
     page: params.page,
-    per_page: params.perPage,
+    per_page: safePerPage,
     sort_by: sortBy,
   });
 
