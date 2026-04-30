@@ -7,6 +7,7 @@ import { useTag } from '@/components/providers/TagProvider';
 import MediaAdminGrid from '@/components/admin/media-admin/MediaAdminGrid';
 import EditModal from '@/components/admin/card-admin/EditModal';
 import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
+import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
 import cardAdminStyles from '@/app/admin/card-admin/card-admin.module.css';
 import styles from './media-admin.module.css';
 import {
@@ -86,6 +87,8 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const [pendingBulkTags, setPendingBulkTags] = useState<string[]>([]);
   const [bulkTagApplying, setBulkTagApplying] = useState(false);
   const [bulkTagMode, setBulkTagMode] = useState<'add' | 'replace' | 'remove'>('add');
+  const [tagFilterModalOpen, setTagFilterModalOpen] = useState(false);
+  const [rulesExpanded, setRulesExpanded] = useState(false);
   const [duplicateTriageMode, setDuplicateTriageMode] = useState(false);
   const [dimensionFilters, setDimensionFilters] = useState<DimensionFilterState>(DEFAULT_DIMENSION_FILTERS);
   const [clientSort, setClientSort] = useState<'none' | 'filenameAsc' | 'filenameDesc'>('none');
@@ -388,57 +391,78 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
             </button>
           </div>
           <div className={styles.studioMediaMacroBlock}>
-            <MacroTagSelector
+            <CardDimensionalTagCommandBar
               className={styles.studioMediaMacroTagSelector}
-              selectedTags={studioSelectedFilterTags}
+              card={{ tags: studioSelectedFilterTags.map((tag) => tag.docId!).filter(Boolean) }}
               allTags={allTags}
-              onChange={handleStudioDimensionalFilterChange}
-              collapsedSummary="sparseTrees"
-            />
-          </div>
-          <div className={styles.studioMediaDimMatrix}>
-            {(['who', 'what', 'when', 'where'] as DimensionKey[]).map((dimension) => {
-              const state = dimensionFilters[dimension];
-              const options = allTags.filter((t) => t.dimension === dimension && t.docId);
-              return (
-                <div key={dimension} className={styles.studioDimColumn}>
-                  <div className={styles.studioDimColumnTitle}>
-                    {dimension[0]!.toUpperCase() + dimension.slice(1)}
-                  </div>
-                  <div className={styles.studioDimStackedBlock}>
-                    <span className={styles.studioDimBadge}>Media</span>
-                    <select
-                      className={styles.studioFilterSelectFull}
-                      value={state.mode}
-                      onChange={(e) =>
-                        updateDimensionFilter(dimension, {
-                          mode: e.target.value as DimensionFilterMode,
-                        })
-                      }
-                    >
-                      <option value="any">Any</option>
-                      <option value="hasAny">Has any</option>
-                      <option value="isEmpty">Is empty</option>
-                      <option value="matches">Matches tag</option>
-                    </select>
-                    {state.mode === 'matches' ? (
-                      <select
-                        className={styles.studioFilterSelectFull}
-                        value={state.tagId}
-                        onChange={(e) => updateDimensionFilter(dimension, { tagId: e.target.value })}
-                      >
-                        <option value="">Select tag...</option>
-                        {options.map((tag) => (
-                          <option key={tag.docId} value={tag.docId}>
-                            {tag.name}
-                          </option>
-                        ))}
-                      </select>
-                    ) : null}
-                  </div>
+              onUpdateTags={handleStudioDimensionalFilterChange}
+              variant="compact"
+              searchPlaceholder="Edit tags..."
+              trailingSlot={
+                <div className={styles.studioTagsActions}>
+                  <button
+                    type="button"
+                    className={styles.studioTagsEditButton}
+                    onClick={() => setTagFilterModalOpen(true)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.studioTagsEditButton}
+                    aria-expanded={rulesExpanded}
+                    onClick={() => setRulesExpanded((open) => !open)}
+                  >
+                    Rules
+                  </button>
                 </div>
-              );
-            })}
+              }
+              footerContent={
+                rulesExpanded ? (
+                  <div className={styles.studioMediaRuleMatrix}>
+                    {(['who', 'what', 'when', 'where'] as DimensionKey[]).map((dimension) => {
+                      const state = dimensionFilters[dimension];
+                      const options = allTags.filter((t) => t.dimension === dimension && t.docId);
+                      return (
+                        <div key={dimension} className={styles.studioMediaRuleColumn}>
+                          <div className={styles.studioMediaRuleTitle}>
+                            {dimension[0]!.toUpperCase() + dimension.slice(1)}
+                          </div>
+                          <select
+                            className={styles.studioFilterSelectFull}
+                            value={state.mode}
+                            onChange={(e) =>
+                              updateDimensionFilter(dimension, {
+                                mode: e.target.value as DimensionFilterMode,
+                              })
+                            }
+                          >
+                            <option value="any">Any</option>
+                            <option value="hasAny">Has any</option>
+                            <option value="isEmpty">Is empty</option>
+                            <option value="matches">Matches tag</option>
+                          </select>
+                          {state.mode === 'matches' ? (
+                            <select
+                              className={styles.studioFilterSelectFull}
+                              value={state.tagId}
+                              onChange={(e) => updateDimensionFilter(dimension, { tagId: e.target.value })}
+                            >
+                              <option value="">Select tag...</option>
+                              {options.map((tag) => (
+                                <option key={tag.docId} value={tag.docId}>
+                                  {tag.name}
+                                </option>
+                              ))}
+                            </select>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null
+              }
+            />
           </div>
         </div>
         {!loading && !error && (
@@ -504,6 +528,19 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
           selectedTags={allTags.filter((t) => t.docId && pendingBulkTags.includes(t.docId))}
           allTags={allTags}
           onChange={setPendingBulkTags}
+        />
+      </EditModal>
+      <EditModal
+        isOpen={tagFilterModalOpen}
+        onClose={() => setTagFilterModalOpen(false)}
+        title="Media filters"
+      >
+        <MacroTagSelector
+          startExpanded
+          selectedTags={studioSelectedFilterTags}
+          allTags={allTags}
+          onChange={handleStudioDimensionalFilterChange}
+          collapsedSummary="none"
         />
       </EditModal>
 

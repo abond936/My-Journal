@@ -160,9 +160,8 @@
   text-transform: uppercase;
   letter-spacing: 0.02em;
   background: color-mix(in srgb, var(--state-warning-border-color) 50%, transparent);
-  color: #fff;
+  color: var(--admin-support-control-strong-text-color);
   border: none;
-  text-shadow: 0 1px 2px rgb(0 0 0 / 35%);
   backdrop-filter: blur(4px);
 }
 
@@ -173,9 +172,8 @@
   text-transform: uppercase;
   letter-spacing: 0.02em;
   background: color-mix(in srgb, var(--state-success-border-color) 50%, transparent);
-  color: #fff;
+  color: var(--admin-support-control-strong-text-color);
   border: none;
-  text-shadow: 0 1px 2px rgb(0 0 0 / 35%);
   backdrop-filter: blur(4px);
 }
 
@@ -186,9 +184,8 @@
   text-transform: uppercase;
   letter-spacing: 0.02em;
   background: color-mix(in srgb, var(--state-success-border-color) 50%, transparent);
-  color: #fff;
+  color: var(--admin-support-control-strong-text-color);
   border: none;
-  text-shadow: 0 1px 2px rgb(0 0 0 / 35%);
   backdrop-filter: blur(4px);
 }
 
@@ -199,9 +196,8 @@
   text-transform: uppercase;
   letter-spacing: 0.02em;
   background: color-mix(in srgb, var(--admin-window-background-color) 55%, transparent);
-  color: #fff;
+  color: var(--admin-chrome-text-color);
   border: none;
-  text-shadow: 0 1px 2px rgb(0 0 0 / 40%);
   backdrop-filter: blur(4px);
 }
 

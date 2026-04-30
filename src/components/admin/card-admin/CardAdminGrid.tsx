@@ -232,6 +232,27 @@ function CardAdminGridPlainCell({
       overlayLeftRail={
         undefined
       }
+      overlayBottom={
+        <div className={styles.overlayBottomRow}>
+          <div className={styles.overlayBottomStart}>
+            <span className={chromeStyles.metaBadge}>{card.type}</span>
+            <span
+              className={
+                card.status === 'draft' ? chromeStyles.metaBadgeDraft : chromeStyles.metaBadgePublished
+              }
+            >
+              {card.status}
+            </span>
+          </div>
+          {secondaryMeta ? (
+            <div className={styles.overlayBottomEnd}>
+              <span className={styles.overlayParentBadge} title={secondaryMeta.title ?? secondaryMeta.label}>
+                {secondaryMeta.label}
+              </span>
+            </div>
+          ) : null}
+        </div>
+      }
       belowMeta={undefined}
       thumbnail={
         <div
@@ -259,16 +280,6 @@ function CardAdminGridPlainCell({
       }
       belowThumbnail={
         <>
-          <div className={styles.metaRow}>
-            <span className={chromeStyles.metaBadge}>{card.type}</span>
-            <span
-              className={
-                card.status === 'draft' ? chromeStyles.metaBadgeDraft : chromeStyles.metaBadgePublished
-              }
-            >
-              {card.status}
-            </span>
-          </div>
           <div className={styles.title} title={card.title}>
             {card.title || 'Untitled'}
           </div>
@@ -280,11 +291,6 @@ function CardAdminGridPlainCell({
             variant="inline"
             onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
           />
-          {secondaryMeta ? (
-            <div className={styles.secondaryMeta} title={secondaryMeta.title ?? secondaryMeta.label}>
-              {secondaryMeta.label}
-            </div>
-          ) : null}
           {!compactStudioGrid && captionLine ? (
             <div className={styles.caption} title={captionLine}>
               {captionLine}
@@ -504,6 +510,27 @@ function CardAdminGridStudioCell({
       overlayLeftRail={
         undefined
       }
+      overlayBottom={
+        <div className={styles.overlayBottomRow}>
+          <div className={styles.overlayBottomStart}>
+            <span className={chromeStyles.metaBadge}>{card.type}</span>
+            <span
+              className={
+                card.status === 'draft' ? chromeStyles.metaBadgeDraft : chromeStyles.metaBadgePublished
+              }
+            >
+              {card.status}
+            </span>
+          </div>
+          {secondaryMeta ? (
+            <div className={styles.overlayBottomEnd}>
+              <span className={styles.overlayParentBadge} title={secondaryMeta.title ?? secondaryMeta.label}>
+                {secondaryMeta.label}
+              </span>
+            </div>
+          ) : null}
+        </div>
+      }
       belowMeta={undefined}
       thumbnail={
         <div
@@ -531,16 +558,6 @@ function CardAdminGridStudioCell({
       }
       belowThumbnail={
         <>
-          <div className={styles.metaRow}>
-            <span className={chromeStyles.metaBadge}>{card.type}</span>
-            <span
-              className={
-                card.status === 'draft' ? chromeStyles.metaBadgeDraft : chromeStyles.metaBadgePublished
-              }
-            >
-              {card.status}
-            </span>
-          </div>
           <div className={styles.title} title={card.title}>
             {card.title || 'Untitled'}
           </div>
@@ -552,11 +569,6 @@ function CardAdminGridStudioCell({
             variant="inline"
             onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
           />
-          {secondaryMeta ? (
-            <div className={styles.secondaryMeta} title={secondaryMeta.title ?? secondaryMeta.label}>
-              {secondaryMeta.label}
-            </div>
-          ) : null}
           {!compactStudioGrid && captionLine ? (
             <div className={styles.caption} title={captionLine}>
               {captionLine}

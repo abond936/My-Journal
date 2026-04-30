@@ -236,50 +236,52 @@ export default function ThemeAdminOverlay() {
 
   return (
     <AdminDesktopOnlyGate>
-      <div
-        className={styles.scrim}
-      >
-        <aside
-          className={`${styles.overlay} ${styles.themeLinkedOverlay}`}
-          aria-label="Theme Management workbench"
-          role="dialog"
-          style={{
-            width: `${overlayRect.width}px`,
-            height: `${overlayRect.height}px`,
-            left: `${overlayRect.left}px`,
-            top: `${overlayRect.top}px`,
-          }}
-          onMouseDown={(event) => event.stopPropagation()}
+      <div className="themeDraftAdminScope">
+        <div
+          className={styles.scrim}
         >
-          <div
-            className={styles.resizeHandle}
-            onMouseDown={(event) => startResize('resize-right', event)}
-            role="separator"
-            aria-orientation="vertical"
-            aria-label="Resize Theme Management workbench"
-          />
-          <div
-            className={styles.resizeCorner}
-            onMouseDown={(event) => startResize('resize-corner', event)}
-            aria-hidden="true"
-          />
-          <div
-            className={styles.header}
-            onMouseDown={startMove}
+          <aside
+            className={styles.overlay}
+            aria-label="Theme Management workbench"
+            role="dialog"
+            style={{
+              width: `${overlayRect.width}px`,
+              height: `${overlayRect.height}px`,
+              left: `${overlayRect.left}px`,
+              top: `${overlayRect.top}px`,
+            }}
+            onMouseDown={(event) => event.stopPropagation()}
           >
-            <div />
-            <button
-              type="button"
-              className={styles.closeButton}
-              onClick={closeThemeAdmin}
+            <div
+              className={styles.resizeHandle}
+              onMouseDown={(event) => startResize('resize-right', event)}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize Theme Management workbench"
+            />
+            <div
+              className={styles.resizeCorner}
+              onMouseDown={(event) => startResize('resize-corner', event)}
+              aria-hidden="true"
+            />
+            <div
+              className={styles.header}
+              onMouseDown={startMove}
             >
-              X
-            </button>
-          </div>
-          <div className={`${styles.body} ${styles.themeLinkedOverlay}`}>
-            <ThemeAdminPage />
-          </div>
-        </aside>
+              <div />
+              <button
+                type="button"
+                className={styles.closeButton}
+                onClick={closeThemeAdmin}
+              >
+                X
+              </button>
+            </div>
+            <div className={styles.body}>
+              <ThemeAdminPage />
+            </div>
+          </aside>
+        </div>
       </div>
     </AdminDesktopOnlyGate>
   );

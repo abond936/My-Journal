@@ -759,11 +759,11 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
         }),
       };
 
-      // 1. Create the new card document
-      transaction.set(docRef, newCard);
+      // 1. Update tag counts before transaction writes begin.
+      await updateTagCountsForCard(null, newCard, transaction, buildTagMap(allTagsForJournal));
 
-      // 2. Update tag counts using centralized function
-      await updateTagCountsForCard(null, newCard, transaction);
+      // 2. Create the new card document
+      transaction.set(docRef, newCard);
 
       // 3. Collect all media IDs referenced by the new card (for referencedByCardIds).
       const mediaIdsReferenced = new Set<string>();
@@ -971,9 +971,6 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
 
       const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord({ tags: finalTags || [] });
 
-      // --- Update tag counts using centralized function ---
-      await updateTagCountsForCard(existingData, { ...existingData, ...cleanedUpdate }, transaction);
-
       cleanedUpdate.filterTags = filterTags;
       cleanedUpdate.who = dimensionalTags.who || [];
       cleanedUpdate.what = dimensionalTags.what || [];
@@ -981,9 +978,10 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       cleanedUpdate.where = dimensionalTags.where || [];
 
       const allTagsForJournal = await getAllTags();
+      const tagPathLookup = buildTagMap(allTagsForJournal);
       const journalWhenSort = computeJournalWhenSortKeys(
         cleanedUpdate.when || [],
-        buildTagMap(allTagsForJournal)
+        tagPathLookup
       );
       const dimensionSortKeys = computeDimensionSortKeys(finalTags || [], allTagsForJournal);
       const mediaSignals = await computeCardMediaSignalsFromMediaIds(newMediaIds, allTagsForJournal);
@@ -1005,13 +1003,39 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         isCollectionRoot: existingData.isCollectionRoot,
       });
 
-      // Maintain referencedByCardIds on media docs
+      // Finish all transaction reads before any writes begin.
       const mediaRemoved = [...oldMediaIds].filter(id => !newMediaIds.has(id));
       const mediaAdded = [...newMediaIds].filter(id => !oldMediaIds.has(id));
+      const coverImageFocalPoint = cleanedUpdate.coverImageFocalPoint;
+      const coverImageId = cleanedUpdate.coverImageId ?? existingData.coverImageId;
+      const checkedMediaIds = [
+        ...mediaRemoved,
+        ...mediaAdded,
+        ...(
+          !clearingCover &&
+          coverImageId &&
+          typeof coverImageId === 'string' &&
+          coverImageFocalPoint &&
+          'x' in coverImageFocalPoint &&
+          'y' in coverImageFocalPoint
+            ? [coverImageId]
+            : []
+        ),
+      ];
       const existingReferencedMediaIds = await getExistingMediaDocIdsInTransaction(
         transaction,
-        [...mediaRemoved, ...mediaAdded]
+        checkedMediaIds
       );
+
+      // --- Update tag counts using centralized function ---
+      await updateTagCountsForCard(
+        existingData,
+        { ...existingData, ...cleanedUpdate },
+        transaction,
+        tagPathLookup
+      );
+
+      // Maintain referencedByCardIds on media docs
       for (const mediaId of mediaRemoved) {
         if (!existingReferencedMediaIds.has(mediaId)) continue;
         const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
@@ -1057,12 +1081,8 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
 
       // 6. If a new coverImageFocalPoint was provided (and we're not clearing cover), update the media doc.
       if (!isClearingCover) {
-        const coverImageFocalPoint = cleanedUpdate.coverImageFocalPoint;
-        const coverImageId = cleanedUpdate.coverImageId ?? existingData.coverImageId;
         if (coverImageId && typeof coverImageId === 'string' && coverImageFocalPoint && 'x' in coverImageFocalPoint && 'y' in coverImageFocalPoint) {
-          const coverExists = existingReferencedMediaIds.has(coverImageId)
-            || (await getExistingMediaDocIdsInTransaction(transaction, [coverImageId])).has(coverImageId);
-          if (coverExists) {
+          if (existingReferencedMediaIds.has(coverImageId)) {
             const coverRef = firestore.collection(MEDIA_COLLECTION).doc(coverImageId);
             transaction.update(coverRef, {
               objectPosition: `${coverImageFocalPoint.x} ${coverImageFocalPoint.y}`,

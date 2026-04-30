@@ -42,7 +42,6 @@ import { EMBEDDED_ADMIN_WIDE_MIN_WIDTH_PX } from '@/lib/admin/embeddedWideMinWid
 import { fetchAdminCardSnapshot } from '@/lib/utils/fetchAdminCardSnapshot';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import styles from '@/app/admin/collections/page.module.css';
-import cardAdminStyles from '@/app/admin/card-admin/card-admin.module.css';
 import CollectionsMediaPanel from '@/components/admin/collections/CollectionsMediaPanel';
 import type { EmbeddedUnparentedBankContext } from '@/components/admin/collections/embeddedUnparentedBankContext';
 import { isCuratedTreeDndEnabled } from '@/lib/config/curatedTreeDnd';
@@ -1093,12 +1092,12 @@ export default function CollectionsAdminClient({
               <section className={`${styles.panel} ${styles.panelStudioLeftTabs}`}>
                 <h2 className={styles.panelStudioColumnTitle}>Organize</h2>
                 <div className={styles.studioLeftTabToggleRow}>
-                  <div className={cardAdminStyles.viewToggleButtonGroup} role="tablist" aria-label="Tags and curated tree">
+                  <div className={styles.studioLeftTabButtonGroup} role="tablist" aria-label="Tags and curated tree">
                     <button
                       type="button"
                       role="tab"
                       aria-selected={studioLeftTab === 'tags'}
-                      className={`${cardAdminStyles.viewToggleButton} ${studioLeftTab === 'tags' ? cardAdminStyles.viewToggleActive : ''}`}
+                      className={`${styles.studioLeftTabButton} ${studioLeftTab === 'tags' ? styles.studioLeftTabButtonActive : ''}`}
                       onClick={() => setStudioLeftTab('tags')}
                     >
                       Tags
@@ -1107,7 +1106,7 @@ export default function CollectionsAdminClient({
                       type="button"
                       role="tab"
                       aria-selected={studioLeftTab === 'tree'}
-                      className={`${cardAdminStyles.viewToggleButton} ${studioLeftTab === 'tree' ? cardAdminStyles.viewToggleActive : ''}`}
+                      className={`${styles.studioLeftTabButton} ${studioLeftTab === 'tree' ? styles.studioLeftTabButtonActive : ''}`}
                       onClick={() => setStudioLeftTab('tree')}
                     >
                       Collections

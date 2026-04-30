@@ -42,7 +42,7 @@
 
 .section a.active {
   background: var(--button-solid-background-color);
-  color: white;
+  color: var(--button-solid-text-color);
   font-weight: var(--font-weight-bold);
 }
 
@@ -82,7 +82,7 @@
 .unauthorized button {
   padding: var(--spacing-md) var(--spacing-lg);
   background-color: var(--button-solid-background-color);
-  color: white;
+  color: var(--button-solid-text-color);
   border: none;
   border-radius: var(--border-radius-md);
   cursor: pointer;

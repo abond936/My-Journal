@@ -11,7 +11,7 @@
 .rootInline {
   flex-direction: row;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
   align-items: center;
 }
 
@@ -58,11 +58,11 @@
 
 .tagRowInline {
   width: auto;
-  min-height: 24px;
-  padding: 3px 8px;
-  border-radius: 999px;
-  gap: 5px;
-  font-size: 12px;
+  min-height: 20px;
+  padding: 1px 5px;
+  border-radius: 2px;
+  gap: 4px;
+  font-size: 11px;
 }
 
 .tagTextBlock {
@@ -77,26 +77,22 @@
 
 .tagDimWho {
   background: color-mix(in srgb, var(--tag-who-bg-color) 50%, transparent);
-  color: #fff;
-  text-shadow: 0 1px 2px rgb(0 0 0 / 35%);
+  color: var(--admin-support-control-strong-text-color);
 }
 
 .tagDimWhat {
   background: color-mix(in srgb, var(--tag-what-bg-color) 50%, transparent);
-  color: #fff;
-  text-shadow: 0 1px 2px rgb(0 0 0 / 35%);
+  color: var(--admin-support-control-strong-text-color);
 }
 
 .tagDimWhen {
   background: color-mix(in srgb, var(--tag-when-bg-color) 50%, transparent);
-  color: #fff;
-  text-shadow: 0 1px 2px rgb(0 0 0 / 35%);
+  color: var(--admin-support-control-strong-text-color);
 }
 
 .tagDimWhere {
   background: color-mix(in srgb, var(--tag-where-bg-color) 50%, transparent);
-  color: #fff;
-  text-shadow: 0 1px 2px rgb(0 0 0 / 35%);
+  color: var(--admin-support-control-strong-text-color);
 }
 
 .removeX {
@@ -113,7 +109,7 @@
   box-sizing: border-box;
   border: none;
   border-radius: var(--border-radius-sm);
-  background: color-mix(in srgb, rgb(0 0 0) 15%, transparent);
+  background: color-mix(in srgb, var(--admin-window-border-color) 30%, transparent);
   color: inherit;
   font: inherit;
   font-size: 1.05em;
@@ -132,12 +128,12 @@
 }
 
 .removeXInline:hover:not(:disabled) {
-  background: color-mix(in srgb, rgb(0 0 0) 18%, transparent);
+  background: color-mix(in srgb, var(--admin-window-border-color) 36%, transparent);
 }
 
 .removeX:hover:not(:disabled) {
   filter: brightness(1.12);
-  background: color-mix(in srgb, rgb(0 0 0) 25%, transparent);
+  background: color-mix(in srgb, var(--admin-window-border-color) 48%, transparent);
 }
 
 .removeX:disabled {

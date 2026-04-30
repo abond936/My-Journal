@@ -12,8 +12,8 @@
   min-height: 0;
   margin: 0;
   /* Top padding matches Collections `.panel` so column titles align with Organization / Cards. */
-  padding: var(--spacing-md) var(--spacing-xs) var(--spacing-xs) var(--spacing-xs);
-  overflow: hidden;
+  padding: calc(var(--spacing-md) + 2px) var(--spacing-xs) var(--spacing-xs) var(--spacing-xs);
+  overflow: visible;
 }
 
 .containerEmbedded .stickyTop {
@@ -29,8 +29,8 @@
 .studioMediaEmbeddedStack {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-sm);
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-xs);
   min-width: 0;
 }
 
@@ -94,6 +94,29 @@
   max-width: 100%;
 }
 
+.studioTagsEditButton {
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  border-radius: 2px;
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--font-size-xs);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: 1.2;
+  padding: 2px 7px;
+  cursor: pointer;
+}
+
+.studioTagsEditButton:hover {
+  background: var(--admin-support-control-hover-background-color);
+}
+
+.studioTagsActions {
+  display: inline-flex;
+  gap: var(--spacing-xs);
+  align-items: center;
+}
+
 .studioInlineLabel {
   display: flex;
   flex-direction: column;
@@ -138,48 +161,24 @@
 }
 
 /* Who | What | When | Where — Card over Media in each column */
-.studioMediaDimMatrix {
+.studioMediaRuleMatrix {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
   width: 100%;
   align-items: start;
-  overflow-x: auto;
-  padding-bottom: 2px;
 }
 
-.studioDimColumn {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-  min-width: 0;
-  padding: var(--spacing-xs);
-  border-radius: var(--border-radius-sm);
-  background: color-mix(in srgb, var(--layout-background2-color) 92%, transparent);
-  border: var(--border-width-thin) solid var(--border1-color);
-}
-
-.studioDimColumnTitle {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text1-color);
-  text-align: center;
-  padding-bottom: 2px;
-  border-bottom: var(--border-width-thin) solid var(--border1-color);
-}
-
-.studioDimStackedBlock {
+.studioMediaRuleColumn {
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
 }
 
-.studioDimBadge {
-  font-size: 10px;
+.studioMediaRuleTitle {
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   color: var(--text2-color);
 }
 
@@ -194,11 +193,15 @@
 
 .stickyTop .embeddedTitle {
   flex-shrink: 0;
-  margin: 0 0 var(--spacing-sm);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-tight);
-  color: var(--text1-color);
+  margin: 0 0 var(--spacing-xs);
+  display: block;
+  padding-top: 2px;
+  font-family: var(--admin-support-title-font-family);
+  font-size: var(--admin-support-title-font-size);
+  font-weight: var(--admin-support-title-font-weight);
+  line-height: var(--admin-support-title-line-height);
+  color: var(--admin-support-title-color);
+  overflow: visible;
 }
 
 /* Whole controls strip sticks below admin tabs while table scrolls under it. */
@@ -357,7 +360,7 @@
 
 .viewToggleButton.viewToggleActive {
   background: var(--color3);
-  color: white;
+  color: var(--button-solid-text-color);
   font-weight: var(--font-weight-medium);
   border-color: var(--color3);
 }

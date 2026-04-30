@@ -9,14 +9,14 @@
   display: flex;
   flex-direction: row;
   align-items: flex-end;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
   min-width: 0;
 }
 
 .dimensionRow {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
   min-width: 0;
   flex: 1 1 0;
 }
@@ -63,10 +63,10 @@
   border: var(--border-width-thin) solid var(--admin-window-border-color);
   background: var(--admin-window-background-color);
   color: var(--admin-support-label-color);
-  border-radius: var(--border-radius-sm);
+  border-radius: 2px;
   font-size: var(--font-size-sm);
   line-height: var(--line-height-tight);
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: 1px 5px;
   cursor: pointer;
   max-width: 100%;
   overflow: hidden;
@@ -195,8 +195,16 @@
   font-size: var(--font-size-sm);
 }
 
+.footerContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  min-width: 0;
+}
+
 .wrapCompact .chip {
   font-size: var(--font-size-xs);
+  padding: 0 5px;
 }
 
 /*
@@ -252,10 +260,10 @@
 .searchInputFoot {
   flex: 0 1 auto;
   width: 100%;
-  max-width: min(100%, 10.5rem);
+  max-width: min(100%, 12rem);
   align-self: flex-start;
-  padding: 4px 8px;
-  font-size: var(--font-size-xs);
+  padding: 3px 7px;
+  font-size: 11px;
   border-radius: var(--border-radius-sm);
 }
 

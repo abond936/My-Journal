@@ -252,7 +252,7 @@
 }
 
 .rowWrapper:hover {
-  background-color: hsla(var(--h3), var(--s3), var(--l3), 0.05);
+  background-color: color-mix(in srgb, var(--color3) 5%, transparent);
 }
 
 /* Drop indicator styles */
@@ -294,17 +294,17 @@
 }
 
 .dragHandle:hover {
-  background-color: hsla(var(--h3), var(--s3), var(--l3), 0.1);
+  background-color: color-mix(in srgb, var(--color3) 10%, transparent);
 }
 
 .dragHandle:active {
   cursor: grabbing;
-  background-color: hsla(var(--h3), var(--s3), var(--l3), 0.2);
+  background-color: color-mix(in srgb, var(--color3) 20%, transparent);
 }
 
 /* Valid drop zone highlighting */
 .rowWrapper[data-valid-drop="true"] {
-  background-color: hsla(var(--h3), var(--s3), var(--l3), 0.05);
+  background-color: color-mix(in srgb, var(--color3) 5%, transparent);
   border: var(--border-width-thin) dashed var(--color3);
   border-radius: var(--border-radius-sm);
 }
@@ -312,7 +312,7 @@
 /* Invalid drop zone indication */
 .rowWrapper[data-valid-drop="false"] {
   opacity: 0.6;
-  background-color: hsla(var(--h12), var(--s12), var(--l12), 0.05);
+  background-color: color-mix(in srgb, var(--state-error-border-color) 8%, transparent);
 }
 
 /* Reparenting visual feedback */
@@ -320,7 +320,7 @@
   background-color: var(--state-success-background-color);
   border: var(--border-width-medium) solid var(--state-success-border-color);
   border-radius: var(--border-radius-sm);
-  box-shadow: 0 0 8px hsla(var(--h11), var(--s11), var(--l11), 0.3);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--state-success-border-color) 30%, transparent);
 }
 
 .rowWrapper[data-reparent-target="true"]::before {
@@ -329,7 +329,7 @@
 
 /* Enhanced valid drop zone highlighting for reordering */
 .rowWrapper[data-valid-drop="true"]:not([data-reparent-target="true"]) {
-  background-color: hsla(var(--h3), var(--s3), var(--l3), 0.05);
+  background-color: color-mix(in srgb, var(--color3) 5%, transparent);
   border: var(--border-width-thin) dashed var(--color3);
   border-radius: var(--border-radius-sm);
 }

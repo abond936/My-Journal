@@ -286,7 +286,7 @@
       },
       "components": {
         "header": {
-          "height": "120px",
+          "height": "80px",
           "backgroundColor": "color1-100",
           "borderColor": "color1-200",
           "borderWidth": "border/width/thin",
@@ -514,7 +514,7 @@
           "family": "font-family/sans1",
           "size": "font-size/lg",
           "weight": "font-weight/semibold",
-          "lineHeight": "line-height/tight",
+          "lineHeight": "line-height/base",
           "color": "semantic/reader/tonal-text-primary"
         },
         "supportLabel": {
@@ -549,7 +549,7 @@
           "family": "font-family/sans1",
           "size": "font-size/lg",
           "weight": "font-weight/semibold",
-          "lineHeight": "line-height/tight",
+          "lineHeight": "line-height/base",
           "color": "semantic/reader/tonal-text-primary"
         },
         "feedbackMeta": {

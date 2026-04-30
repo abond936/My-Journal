@@ -443,7 +443,7 @@ tr.rowCompact > td.cell {
 
 .actionButton.deleteButton:hover:not(:disabled) {
   background: var(--state-error-background-color);
-  color: white;
+  color: var(--state-error-text-color);
 }
 
 .actionButton.deleteButton:disabled {

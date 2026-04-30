@@ -10,9 +10,9 @@
 .studioCardFilters {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
   align-items: flex-end;
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-xs);
 }
 
 /* Matched in media-admin `studioPaneSearchField` — keeps Tags + Grid/Table rows aligned across Studio columns. */
@@ -68,13 +68,56 @@
 }
 
 .studioCardMacroBlock {
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-xs);
   min-width: 0;
 }
 
 .studioCardMacroTagSelector {
   min-width: 0;
   max-width: 100%;
+}
+
+.studioTagsEditButton {
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  border-radius: 2px;
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--font-size-xs);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: 1.2;
+  padding: 2px 7px;
+  cursor: pointer;
+}
+
+.studioTagsEditButton:hover {
+  background: var(--admin-support-control-hover-background-color);
+}
+
+.studioTagsActions {
+  display: inline-flex;
+  gap: var(--spacing-xs);
+  align-items: center;
+}
+
+.studioRuleMatrix {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--spacing-xs);
+  min-width: 0;
+}
+
+.studioRuleColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.studioRuleColumnTitle {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--admin-support-meta-color);
 }
 
 .toolbar {

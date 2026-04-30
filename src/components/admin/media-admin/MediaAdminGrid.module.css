@@ -58,14 +58,6 @@
   word-break: break-word;
 }
 
-.metaRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-  padding: 8px var(--spacing-sm) 0;
-}
-
 .tagChipsInline {
   padding: 6px var(--spacing-sm) 0;
   min-width: 0;
@@ -88,6 +80,23 @@
 .tagSearchFoot {
   margin-top: auto;
   padding: 8px var(--spacing-sm) var(--spacing-sm);
+  min-width: 0;
+}
+
+.overlayBottomRow {
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+  min-width: 0;
+}
+
+.overlayBottomStart {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
   min-width: 0;
 }
 

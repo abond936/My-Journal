@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useCallback, useMemo } from 'react';
-import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import React, { useMemo } from 'react';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useCardForm } from '@/components/providers/CardFormProvider';
 import { useChildCards } from '@/lib/hooks/useChildCards';
 import {
@@ -38,18 +38,6 @@ export default function StudioCardFormChildren({ disabled }: { disabled: boolean
     [orderedChildIds]
   );
 
-  const moveChild = useCallback(
-    (childId: string, direction: 'up' | 'down') => {
-      const ids = [...orderedChildIds];
-      const i = ids.indexOf(childId);
-      if (i < 0) return;
-      const j = direction === 'up' ? i - 1 : i + 1;
-      if (j < 0 || j >= ids.length) return;
-      setField('childrenIds', arrayMove(ids, i, j));
-    },
-    [orderedChildIds, setField]
-  );
-
   return (
     <div>
       <h4 className={styles.studioFormSectionTitle}>Children</h4>
@@ -60,7 +48,7 @@ export default function StudioCardFormChildren({ disabled }: { disabled: boolean
           {orderedChildIds.length ? (
             <SortableContext items={studioChildSortableIds} strategy={verticalListSortingStrategy}>
               <ul className={styles.childList}>
-                {orderedChildIds.map((childId, index) => {
+                {orderedChildIds.map((childId) => {
                   const child = childById.get(childId);
                   const childTitle = child ? cardLabel(child.title, child.subtitle) : childId;
                   return (
@@ -79,25 +67,7 @@ export default function StudioCardFormChildren({ disabled }: { disabled: boolean
                           <div className={styles.inlineActions}>
                             <button
                               type="button"
-                              className={styles.inlineActionButton}
-                              disabled={disabled || index === 0}
-                              onClick={() => moveChild(childId, 'up')}
-                              aria-label={`Move child up: ${childTitle}`}
-                            >
-                              Move up
-                            </button>
-                            <button
-                              type="button"
-                              className={styles.inlineActionButton}
-                              disabled={disabled || index >= orderedChildIds.length - 1}
-                              onClick={() => moveChild(childId, 'down')}
-                              aria-label={`Move child down: ${childTitle}`}
-                            >
-                              Move down
-                            </button>
-                            <button
-                              type="button"
-                              className={styles.inlineActionButton}
+                              className={`${styles.inlineActionButton} ${styles.inlineActionIconButton}`}
                               disabled={disabled}
                               onClick={() =>
                                 setField(
@@ -105,8 +75,10 @@ export default function StudioCardFormChildren({ disabled }: { disabled: boolean
                                   orderedChildIds.filter((id) => id !== childId)
                                 )
                               }
+                              aria-label={`Remove child: ${childTitle}`}
+                              title={`Remove child: ${childTitle}`}
                             >
-                              Remove
+                              ×
                             </button>
                           </div>
                         </div>

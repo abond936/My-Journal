@@ -39,6 +39,8 @@ export interface CardDimensionalTagCommandBarProps {
   tableEmbed?: boolean;
   /** Narrow contexts (e.g. media grid tile): smaller typeahead suggestion rows. */
   suggestionsDensity?: 'default' | 'dense';
+  /** Optional unified secondary block, such as advanced tag rules. */
+  footerContent?: React.ReactNode;
 }
 
 export default function CardDimensionalTagCommandBar({
@@ -54,6 +56,7 @@ export default function CardDimensionalTagCommandBar({
   hideDimensionRowLabels = false,
   tableEmbed = false,
   suggestionsDensity = 'default',
+  footerContent,
 }: CardDimensionalTagCommandBarProps) {
   const [query, setQuery] = useState('');
   const [highlightIndex, setHighlightIndex] = useState(-1);
@@ -70,7 +73,7 @@ export default function CardDimensionalTagCommandBar({
   const tagById = useMemo(() => buildTagByIdMap(allTags), [allTags]);
   const resolvedDimension = useMemo(() => buildResolvedTagDimensionMap(allTags), [allTags]);
 
-  const currentTags = card.tags || [];
+  const currentTags = useMemo(() => card.tags ?? [], [card.tags]);
   const selectedSet = useMemo(() => new Set(currentTags), [currentTags]);
 
   const core = useMemo(
@@ -220,7 +223,6 @@ export default function CardDimensionalTagCommandBar({
           onKeyDown={onSearchKeyDown}
           disabled={disabled || saving}
           aria-autocomplete="list"
-          aria-expanded={query.trim().length > 0 && suggestions.length > 0}
         />
       </div>
 
@@ -248,6 +250,7 @@ export default function CardDimensionalTagCommandBar({
 
       {saveError ? <div className={styles.errorMessage}>{saveError}</div> : null}
       {tagError ? <div className={styles.errorMessage}>{tagError}</div> : null}
+      {footerContent ? <div className={styles.footerContent}>{footerContent}</div> : null}
     </div>
   );
 }

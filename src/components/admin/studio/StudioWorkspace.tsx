@@ -652,7 +652,7 @@ export default function StudioWorkspace() {
       <div className={styles.page}>
         <div className={cardAdminPageStyles.stickyTop}>
           <div className={styles.studioHeaderRow}>
-            <h1 className={cardAdminPageStyles.title}>Content Management</h1>
+            <h1 className={`${cardAdminPageStyles.title} ${styles.studioPageTitle}`}>Content Management</h1>
             <div className={styles.studioPaneToolbar} aria-label="Studio panes">
               <button
                 type="button"

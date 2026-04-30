@@ -87,14 +87,14 @@
 .panel {
   border: var(--border-width-thin) solid var(--border1-color);
   border-radius: var(--border-radius-md);
-  padding: var(--spacing-md);
+  padding: calc(var(--spacing-md) + 2px) var(--spacing-md) var(--spacing-md);
   background: var(--layout-background1-color);
   min-height: 0;
   max-height: calc(100dvh - var(--admin-tabs-height, 56px) - 20rem);
   display: flex;
   flex-direction: column;
   min-width: 0;
-  overflow-x: hidden;
+  overflow: visible;
 }
 
 .panel > h2,
@@ -108,11 +108,15 @@
 /* Admin Studio: shared column headings (Organization, Cards, matches Media/Compose in sibling modules). */
 .panelStudioColumnTitle {
   flex-shrink: 0;
-  margin: 0 0 var(--spacing-sm);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-tight);
-  color: var(--text1-color);
+  margin: 0 0 var(--spacing-xs);
+  display: block;
+  padding-top: 2px;
+  font-family: var(--admin-support-title-font-family);
+  font-size: var(--admin-support-title-font-size);
+  font-weight: var(--admin-support-title-font-weight);
+  line-height: var(--admin-support-title-line-height);
+  color: var(--admin-support-title-color);
+  overflow: visible;
 }
 
 .panelScroll {
@@ -297,7 +301,7 @@
 }
 
 .dropTargetActive {
-  outline: 2px solid color-mix(in srgb, var(--button-solid-border-color) 80%, white 8%);
+  outline: 2px solid color-mix(in srgb, var(--button-solid-border-color) 80%, var(--layout-background1-color) 8%);
   outline-offset: 0;
   border-color: color-mix(in srgb, var(--button-solid-border-color) 65%, var(--border1-color));
   background: color-mix(in srgb, var(--button-solid-background-color) 16%, transparent);
@@ -543,7 +547,7 @@
 }
 
 .draggingStatusReparent {
-  border-left: 4px solid var(--state-warning-border-color, #b45309);
+  border-left: 4px solid var(--state-warning-border-color);
 }
 
 /* DragOverlay child: root node is sized in TSX (max-content). Chip stays transparent so the list shows through. */
@@ -624,7 +628,7 @@
 .modalBackdrop {
   position: fixed;
   inset: 0;
-  background: color-mix(in srgb, #000 45%, transparent);
+  background: var(--color-overlay-dark);
   z-index: 120;
   display: flex;
   align-items: center;
@@ -758,6 +762,36 @@
 .studioLeftTabToggleRow {
   margin: 0 0 var(--spacing-sm);
   flex-shrink: 0;
+}
+
+.studioLeftTabButtonGroup {
+  display: inline-flex;
+  gap: var(--spacing-xs);
+}
+
+.studioLeftTabButton {
+  min-height: 28px;
+  padding: 0.22rem 0.58rem;
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--admin-window-background-color);
+  color: var(--admin-chrome-meta-color);
+  font-family: var(--admin-chrome-text-font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--admin-chrome-text-font-weight);
+  line-height: 1.15;
+  cursor: pointer;
+}
+
+.studioLeftTabButton:hover {
+  border-color: var(--admin-chrome-active-control-border-color);
+  color: var(--admin-chrome-text-color);
+}
+
+.studioLeftTabButtonActive {
+  background: var(--admin-chrome-active-control-background-color);
+  border-color: var(--admin-chrome-active-control-border-color);
+  color: var(--admin-chrome-active-control-text-color);
 }
 
 .studioLeftTabPanel {

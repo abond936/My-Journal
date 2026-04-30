@@ -807,7 +807,7 @@ const FOUNDATION_COMPONENT_SPEC: DisplayComponentSpec = {
       elements: [
         {
           id: 'pageSurface',
-          label: 'Foundation background',
+          label: 'Background',
           description: 'Base page and canvas surface for the reader experience.',
           binding: { kind: 'surface', key: 'canvasPage' },
         },
@@ -1347,6 +1347,7 @@ export default function ThemeAdminPage() {
   const [selectedNavigatorSection, setSelectedNavigatorSection] = useState<NavigatorSectionId>('foundation');
   const [selectedVariantId, setSelectedVariantId] = useState<string>('closed');
   const [selectedRecipeId, setSelectedRecipeId] = useState<string>(DEFAULT_SELECTED_RECIPE);
+  const [valuesPaneVisible, setValuesPaneVisible] = useState(false);
   const [isNarrowWorkspace, setIsNarrowWorkspace] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -2895,7 +2896,9 @@ export default function ThemeAdminPage() {
   const selectedElement = selectedRecipeId
     ? selectedVariantElements.find((element) => `${element.binding.kind}:${element.binding.key}` === selectedRecipeId) ?? null
     : null;
-  const workspaceColumns = `minmax(${MIN_SYSTEM_PANE_WIDTH}px, 1fr) minmax(${MIN_ADVANCED_PANE_WIDTH}px, 1fr)`;
+  const workspaceColumns = valuesPaneVisible
+    ? `minmax(${MIN_SYSTEM_PANE_WIDTH}px, 0.75fr) minmax(${MIN_ADVANCED_PANE_WIDTH}px, 1.25fr)`
+    : 'minmax(0, 1fr)';
   const valuesThemeData = activeThemeData;
 
   const renderRecoveredValuesWorkspace = () => {
@@ -2926,30 +2929,6 @@ export default function ThemeAdminPage() {
                   />
                 ))}
               </div>
-              <div className={styles.tokenSubsection}>
-                <h4>Overlays</h4>
-                <label className={styles.architectureField}>
-                  <span>Canvas texture</span>
-                  <select
-                    value={valuesThemeData.gradients.canvasTexture ?? 'none'}
-                    onChange={(e) => handleTokenChange('gradients', 'canvasTexture', e.target.value)}
-                  >
-                    {CANVAS_TEXTURE_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                  </select>
-                </label>
-                <ExtendedTokenInput
-                  label="Gradient Fade"
-                  value={valuesThemeData.gradients.bottomOverlay}
-                  onChange={(v) => handleTokenChange('gradients', 'bottomOverlay', v)}
-                />
-                <ExtendedTokenInput
-                  label="Gradient Fade Strong"
-                  value={valuesThemeData.gradients.bottomOverlayStrong}
-                  onChange={(v) => handleTokenChange('gradients', 'bottomOverlayStrong', v)}
-                />
-              </div>
             </div>
 
             <div className={styles.tokenCategory}>
@@ -2969,7 +2948,7 @@ export default function ThemeAdminPage() {
                 <h4>Sizes</h4>
                 <FontSizeTokenInput label="XXS" value={valuesThemeData.typography.fontSizes.xxs} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', 'xxs', v)} />
                 <FontSizeTokenInput label="XS" value={valuesThemeData.typography.fontSizes.xs} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', 'xs', v)} />
-                <FontSizeTokenInput label="SM" value={valuesThemeData.typography.fontSizes.sm} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', 'sm', v)} tokenPath="font-size/sm" />
+                <FontSizeTokenInput label="SM" value={valuesThemeData.typography.fontSizes.sm} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', 'sm', v)} />
                 <FontSizeTokenInput label="Base" value={valuesThemeData.typography.fontSizes.base} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', 'base', v)} />
                 <FontSizeTokenInput label="LG" value={valuesThemeData.typography.fontSizes.lg} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', 'lg', v)} />
                 <FontSizeTokenInput label="XL" value={valuesThemeData.typography.fontSizes.xl} onChange={(v) => handleNestedTokenChange('typography', 'fontSizes', 'xl', v)} />
@@ -3015,6 +2994,30 @@ export default function ThemeAdminPage() {
             <div className={styles.tokenCategory}>
               <h3>Structure</h3>
               <div className={styles.tokenSubsection}>
+                <h4>Overlays</h4>
+                <label className={styles.architectureField}>
+                  <span>Canvas texture</span>
+                  <select
+                    value={valuesThemeData.gradients.canvasTexture ?? 'none'}
+                    onChange={(e) => handleTokenChange('gradients', 'canvasTexture', e.target.value)}
+                  >
+                    {CANVAS_TEXTURE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
+                <ExtendedTokenInput
+                  label="Gradient Fade"
+                  value={valuesThemeData.gradients.bottomOverlay}
+                  onChange={(v) => handleTokenChange('gradients', 'bottomOverlay', v)}
+                />
+                <ExtendedTokenInput
+                  label="Gradient Fade Strong"
+                  value={valuesThemeData.gradients.bottomOverlayStrong}
+                  onChange={(v) => handleTokenChange('gradients', 'bottomOverlayStrong', v)}
+                />
+              </div>
+              <div className={styles.tokenSubsection}>
                 <h4>Card Spacing</h4>
                 <FontSizeTokenInput label="Unit" value={valuesThemeData.spacing.unit} onChange={(v) => handleTokenChange('spacing', 'unit', v)} />
                 <SpacingMultiplierInput label="SM Factor" value={valuesThemeData.spacing.smMultiplier || ''} onChange={(v) => handleTokenChange('spacing', 'smMultiplier', v)} />
@@ -3039,7 +3042,7 @@ export default function ThemeAdminPage() {
               </div>
               <div className={styles.tokenSubsection}>
                 <h4>Radii</h4>
-                <FontSizeTokenInput label="SM" value={valuesThemeData.borders.radius.sm} onChange={(v) => handleNestedTokenChange('borders', 'radius', 'sm', v)} tokenPath="border/radius/sm" />
+                <FontSizeTokenInput label="SM" value={valuesThemeData.borders.radius.sm} onChange={(v) => handleNestedTokenChange('borders', 'radius', 'sm', v)} />
                 <FontSizeTokenInput label="MD" value={valuesThemeData.borders.radius.md} onChange={(v) => handleNestedTokenChange('borders', 'radius', 'md', v)} />
                 <FontSizeTokenInput label="LG" value={valuesThemeData.borders.radius.lg} onChange={(v) => handleNestedTokenChange('borders', 'radius', 'lg', v)} />
                 <FontSizeTokenInput label="XL" value={valuesThemeData.borders.radius.xl} onChange={(v) => handleNestedTokenChange('borders', 'radius', 'xl', v)} />
@@ -3050,7 +3053,7 @@ export default function ThemeAdminPage() {
                 <FontSizeTokenInput label="Strength Light" value={valuesThemeData.shadows.strength} onChange={(v) => handleTokenChange('shadows', 'strength', v)} />
                 <FontSizeTokenInput label="Strength Dark" value={valuesThemeData.shadows.strengthDark} onChange={(v) => handleTokenChange('shadows', 'strengthDark', v)} />
                 <ExtendedTokenInput label="Color" value={valuesThemeData.shadows.color} onChange={(v) => handleTokenChange('shadows', 'color', v)} />
-                <ExtendedTokenInput label="SM" value={valuesThemeData.shadows.sm} onChange={(v) => handleTokenChange('shadows', 'sm', v)} tokenPath="shadow/sm" />
+                <ExtendedTokenInput label="SM" value={valuesThemeData.shadows.sm} onChange={(v) => handleTokenChange('shadows', 'sm', v)} />
                 <ExtendedTokenInput label="MD" value={valuesThemeData.shadows.md} onChange={(v) => handleTokenChange('shadows', 'md', v)} />
                 <ExtendedTokenInput label="LG" value={valuesThemeData.shadows.lg} onChange={(v) => handleTokenChange('shadows', 'lg', v)} />
                 <ExtendedTokenInput label="XL" value={valuesThemeData.shadows.xl} onChange={(v) => handleTokenChange('shadows', 'xl', v)} />
@@ -3129,6 +3132,14 @@ export default function ThemeAdminPage() {
                 </button>
               ))}
             </div>
+            <button
+              type="button"
+              className={styles.secondaryActionButton}
+              onClick={() => setValuesPaneVisible((current) => !current)}
+              aria-pressed={valuesPaneVisible}
+            >
+              {valuesPaneVisible ? 'Hide Values' : 'Show Values'}
+            </button>
           </div>
         </div>
         <div
@@ -3146,9 +3157,6 @@ export default function ThemeAdminPage() {
               <section className={styles.architectureCard}>
                 <div className={styles.componentSelectorGroups}>
                   <section className={styles.componentSelectorGroup}>
-                    <div className={styles.componentSelectorGroupHeader}>
-                      <strong>Theme</strong>
-                    </div>
                     <div className={styles.navigatorSectionTabs}>
                       <button
                         type="button"
@@ -3253,16 +3261,18 @@ export default function ThemeAdminPage() {
             </div>
           </section>
 
-          <section className={`${styles.architectureWorkbench} ${styles.advancedPane}`}>
-            <div className={styles.architectureHeader}>
-              <div>
-                <h2 className={styles.architectureTitle}>Values</h2>
+          {valuesPaneVisible ? (
+            <section className={`${styles.architectureWorkbench} ${styles.advancedPane}`}>
+              <div className={styles.architectureHeader}>
+                <div>
+                  <h2 className={styles.architectureTitle}>Values</h2>
+                </div>
               </div>
-            </div>
-            <div className={`${styles.paneBody} ${styles.advancedPaneBody}`}>
-              {renderRecoveredValuesWorkspace()}
-            </div>
-          </section>
+              <div className={`${styles.paneBody} ${styles.advancedPaneBody}`}>
+                {renderRecoveredValuesWorkspace()}
+              </div>
+            </section>
+          ) : null}
         </div>
       </main>
     </div>

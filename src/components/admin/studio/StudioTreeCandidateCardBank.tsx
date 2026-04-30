@@ -5,6 +5,7 @@ import { useTag } from '@/components/providers/TagProvider';
 import CardAdminGrid from '@/components/admin/card-admin/CardAdminGrid';
 import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
 import EditModal from '@/components/admin/card-admin/EditModal';
+import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
 import type { EmbeddedUnparentedBankContext } from '@/components/admin/collections/embeddedUnparentedBankContext';
 import {
   listCuratedTreeAttachCandidates,
@@ -26,6 +27,15 @@ import mediaAdminStyles from '@/app/admin/media-admin/media-admin.module.css';
 import styles from './StudioTreeCandidateCardBank.module.css';
 
 type CandidateSort = 'titleAsc' | 'titleDesc' | 'createdDesc' | 'createdAsc';
+type DimensionKey = 'who' | 'what' | 'when' | 'where';
+type DimensionFilterMode = 'any' | 'hasAny' | 'isEmpty' | 'matches';
+type DimensionFilterState = Record<
+  DimensionKey,
+  {
+    mode: DimensionFilterMode;
+    tagId: string;
+  }
+>;
 
 type CardTypeFilter = 'all' | NonNullable<Card['type']>;
 type DisplayModeFilter = 'all' | NonNullable<Card['displayMode']>;
@@ -34,6 +44,13 @@ type CatalogOverrideMap = Record<string, Card | null>;
 function cardDisplayMode(card: Card): NonNullable<Card['displayMode']> {
   return card.displayMode ?? 'navigate';
 }
+
+const DEFAULT_DIMENSION_FILTERS: DimensionFilterState = {
+  who: { mode: 'any', tagId: '' },
+  what: { mode: 'any', tagId: '' },
+  when: { mode: 'any', tagId: '' },
+  where: { mode: 'any', tagId: '' },
+};
 
 function cardMatchesOnCardDimensionalMap(card: Card, dt: DimensionalTagIdMap): boolean {
   if (!dimensionalTagMapHasFilters(dt)) return true;
@@ -100,6 +117,9 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
   const [filterTagIds, setFilterTagIds] = useState<string[]>([]);
   const [typeFilter, setTypeFilter] = useState<CardTypeFilter>('all');
   const [displayModeFilter, setDisplayModeFilter] = useState<DisplayModeFilter>('all');
+  const [tagFilterModalOpen, setTagFilterModalOpen] = useState(false);
+  const [rulesExpanded, setRulesExpanded] = useState(false);
+  const [dimensionFilters, setDimensionFilters] = useState<DimensionFilterState>(DEFAULT_DIMENSION_FILTERS);
 
   useEffect(() => {
     let cancelled = false;
@@ -145,9 +165,17 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
       if (typeFilter !== 'all' && card.type !== typeFilter) return false;
       if (displayModeFilter !== 'all' && cardDisplayMode(card) !== displayModeFilter) return false;
       if (!cardMatchesOnCardDimensionalMap(card, onCardTagDimensionalMap)) return false;
+      for (const dimension of DIMENSION_KEYS) {
+        const state = dimensionFilters[dimension];
+        const ids = Array.isArray(card[dimension]) ? (card[dimension] as string[]) : [];
+        if (state.mode === 'any') continue;
+        if (state.mode === 'hasAny' && ids.length === 0) return false;
+        if (state.mode === 'isEmpty' && ids.length > 0) return false;
+        if (state.mode === 'matches' && state.tagId && !ids.includes(state.tagId)) return false;
+      }
       return true;
     },
-    [search, typeFilter, displayModeFilter, onCardTagDimensionalMap]
+    [search, typeFilter, displayModeFilter, onCardTagDimensionalMap, dimensionFilters]
   );
 
   const handleClearAllFilters = useCallback(() => {
@@ -157,8 +185,22 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
     setTypeFilter('all');
     setDisplayModeFilter('all');
     setFilterTagIds([]);
+    setDimensionFilters(DEFAULT_DIMENSION_FILTERS);
     setBulkSelectedCardIds(new Set());
   }, [setSearch, setStatusFilter]);
+
+  const updateDimensionFilter = useCallback(
+    (dimension: DimensionKey, patch: Partial<{ mode: DimensionFilterMode; tagId: string }>) => {
+      setDimensionFilters((prev) => ({
+        ...prev,
+        [dimension]: {
+          ...prev[dimension],
+          ...patch,
+        },
+      }));
+    },
+    []
+  );
 
   const mergedCatalog = useMemo(
     () => applyCatalogOverrides(mergeCardCatalogs(fullCatalog, collectionCards), catalogOverrides),
@@ -534,12 +576,77 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
       </div>
 
       <div className={styles.studioCardMacroBlock}>
-        <MacroTagSelector
+        <CardDimensionalTagCommandBar
           className={styles.studioCardMacroTagSelector}
-          selectedTags={selectedFilterTags}
+          card={{ tags: filterTagIds }}
           allTags={allTags || []}
-          onChange={(newIds) => setFilterTagIds(newIds)}
-          collapsedSummary="sparseTrees"
+          onUpdateTags={(next) => setFilterTagIds(next)}
+          variant="compact"
+          searchPlaceholder="Edit tags..."
+          trailingSlot={
+            <div className={styles.studioTagsActions}>
+              <button
+                type="button"
+                className={styles.studioTagsEditButton}
+                onClick={() => setTagFilterModalOpen(true)}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                className={styles.studioTagsEditButton}
+                aria-expanded={rulesExpanded}
+                onClick={() => setRulesExpanded((open) => !open)}
+              >
+                Rules
+              </button>
+            </div>
+          }
+          footerContent={
+            rulesExpanded ? (
+              <div className={styles.studioRuleMatrix}>
+                {(DIMENSION_KEYS as DimensionKey[]).map((dimension) => {
+                  const state = dimensionFilters[dimension];
+                  const options = (allTags || []).filter((t) => t.dimension === dimension && t.docId);
+                  return (
+                    <div key={dimension} className={styles.studioRuleColumn}>
+                      <div className={styles.studioRuleColumnTitle}>
+                        {dimension[0]!.toUpperCase() + dimension.slice(1)}
+                      </div>
+                      <select
+                        className={styles.studioCardSelect}
+                        value={state.mode}
+                        onChange={(e) =>
+                          updateDimensionFilter(dimension, {
+                            mode: e.target.value as DimensionFilterMode,
+                          })
+                        }
+                      >
+                        <option value="any">Any</option>
+                        <option value="hasAny">Has any</option>
+                        <option value="isEmpty">Is empty</option>
+                        <option value="matches">Matches tag</option>
+                      </select>
+                      {state.mode === 'matches' ? (
+                        <select
+                          className={styles.studioCardSelect}
+                          value={state.tagId}
+                          onChange={(e) => updateDimensionFilter(dimension, { tagId: e.target.value })}
+                        >
+                          <option value="">Select tag...</option>
+                          {options.map((tag) => (
+                            <option key={tag.docId} value={tag.docId}>
+                              {tag.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null
+          }
         />
       </div>
       {loadingCatalog ? (
@@ -663,6 +770,19 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
           selectedTags={(allTags || []).filter((t) => t.docId && pendingBulkTags.includes(t.docId!))}
           allTags={allTags || []}
           onChange={setPendingBulkTags}
+        />
+      </EditModal>
+      <EditModal
+        isOpen={tagFilterModalOpen}
+        onClose={() => setTagFilterModalOpen(false)}
+        title="Card filters"
+      >
+        <MacroTagSelector
+          startExpanded
+          selectedTags={selectedFilterTags}
+          allTags={allTags || []}
+          onChange={setFilterTagIds}
+          collapsedSummary="none"
         />
       </EditModal>
     </div>

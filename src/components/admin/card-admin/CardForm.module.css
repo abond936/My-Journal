@@ -463,6 +463,28 @@
 }
 
 .compactShellForm .statusSection {
-  flex-wrap: wrap;
-  align-items: flex-start;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.compactShellForm .selectGroup {
+  flex: 1 1 0;
+  min-width: 0;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.compactShellForm .selectLabel {
+  flex: 0 0 auto;
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.compactShellForm .statusSelect {
+  min-width: 0;
+  width: 100%;
+  padding: 0.38rem 0.5rem;
 }

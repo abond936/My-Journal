@@ -171,6 +171,16 @@ function MediaAdminGridCell({
         ) : null
       }
       overlayLeftRail={undefined}
+      overlayBottom={
+        <div className={styles.overlayBottomRow}>
+          <div className={styles.overlayBottomStart}>
+            <span className={chromeStyles.metaBadgeMuted}>{media.source}</span>
+            <span className={assigned ? chromeStyles.metaBadgeAssigned : chromeStyles.metaBadgeUnassigned}>
+              {assigned ? 'Assigned' : 'Unassigned'}
+            </span>
+          </div>
+        </div>
+      }
       belowMeta={undefined}
       thumbnail={
         <div className={styles.thumbnailWrap} style={aspectStyle} title={thumbnailTooltip}>
@@ -185,12 +195,6 @@ function MediaAdminGridCell({
       }
       belowThumbnail={
         <>
-          <div className={styles.metaRow}>
-            <span className={chromeStyles.metaBadgeMuted}>{media.source}</span>
-            <span className={assigned ? chromeStyles.metaBadgeAssigned : chromeStyles.metaBadgeUnassigned}>
-              {assigned ? 'Assigned' : 'Unassigned'}
-            </span>
-          </div>
           {displayTitle ? (
             <div className={styles.mediaTitle} title={displayTitle}>
               {displayTitle}

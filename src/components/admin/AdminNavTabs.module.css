@@ -2,9 +2,9 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--spacing-md);
-  row-gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
+  gap: var(--spacing-sm);
+  row-gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-md);
   border-bottom: var(--border-width-thin) solid var(--admin-window-border-color);
   background-color: var(--admin-window-background-color);
 }
@@ -13,19 +13,19 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: var(--spacing-xs);
   min-width: 0;
 }
 
 .tab {
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: 0.3rem 0.6rem;
   border-radius: var(--border-radius-md);
   color: var(--admin-chrome-text-color);
   text-decoration: none;
   font-family: var(--admin-chrome-text-font-family);
-  font-size: var(--admin-chrome-text-font-size);
+  font-size: var(--font-size-sm);
   font-weight: var(--admin-chrome-text-font-weight);
-  line-height: var(--admin-chrome-text-line-height);
+  line-height: 1.2;
   transition: background-color var(--transition-short) ease-in-out, color var(--transition-short) ease-in-out;
 }
 

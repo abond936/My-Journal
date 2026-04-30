@@ -99,7 +99,7 @@
 .button {
   border: var(--border-width-thin) solid var(--color3);
   background: var(--color3);
-  color: white;
+  color: var(--button-solid-text-color);
 }
 
 .buttonSecondary {

@@ -217,14 +217,14 @@
   cursor: pointer;
   border-radius: 4px;
   overflow: hidden;
-  box-shadow: 0 1px 3px hsla(var(--h1), var(--s1), var(--l1), 0.1);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--admin-window-border-color) 22%, transparent);
   transition: transform 0.2s, box-shadow 0.2s;
   border: 2px solid transparent;
 }
 
 .photoItem:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 6px hsla(var(--h1), var(--s1), var(--l1), 0.1);
+  box-shadow: 0 4px 6px color-mix(in srgb, var(--admin-window-border-color) 22%, transparent);
 }
 
 .photoItemSelected {
@@ -615,7 +615,7 @@
   padding: 0.25rem 0.35rem;
   font-size: 0.6875rem;
   color: var(--admin-overlay-text-color);
-  background: linear-gradient(transparent, hsla(0, 0%, 0%, 0.75));
+  background: linear-gradient(transparent, color-mix(in srgb, var(--admin-overlay-text-color) 75%, transparent));
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
