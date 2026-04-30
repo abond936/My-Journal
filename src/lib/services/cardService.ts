@@ -1308,6 +1308,14 @@ export function isTagsOnlyPayload(
   return keys.length === 1 && keys[0] === 'tags' && Array.isArray(updates.tags);
 }
 
+export function isStatusOnlyPayload(
+  updates: Partial<Pick<Card, 'status'>>
+): boolean {
+  const keys = Object.keys(updates as Record<string, unknown>);
+  if (keys.length !== 1 || keys[0] !== 'status') return false;
+  return updates.status === 'draft' || updates.status === 'published';
+}
+
 export function isChildrenReorderOnlyPayload(
   existingCard: Pick<Card, 'childrenIds'>,
   updates: Partial<Pick<Card, 'childrenIds'>>
@@ -1808,6 +1816,63 @@ export async function updateCardTags(cardId: string, tags: string[]): Promise<Ca
 }
 
 /**
+ * Narrow status-only mutation path (draft ↔ published toggle).
+ *
+ * Status changes affect tag `cardCount` (only published cards count toward
+ * the count); `updateTagCountsForCard` handles all four transitions
+ * (was/is published) so the same helper used by the wide path keeps counts
+ * accurate. Status does not change derived tag fields (filterTags,
+ * who/what/when/where, sort keys), media, or content — those calls are
+ * skipped relative to the wide path.
+ *
+ * Preserves: tag cardCount accuracy, Typesense card projection sync.
+ */
+export async function updateCardStatus(
+  cardId: string,
+  status: 'draft' | 'published'
+): Promise<Card> {
+  if (status !== 'draft' && status !== 'published') {
+    throw new Error(`Invalid status '${status}'; expected 'draft' or 'published'.`);
+  }
+
+  const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
+
+  // Pre-read the tag catalog once outside the transaction; tag-count helper
+  // accepts the precomputed lookup so the transaction body stays read-light.
+  const allTagsForJournal = await getAllTags();
+  const tagPathLookup = buildTagMap(allTagsForJournal);
+
+  return withRetry(async () => {
+    await firestore.runTransaction(async (transaction) => {
+      const docSnap = await transaction.get(docRef);
+      if (!docSnap.exists) {
+        throw new Error(`Card with ID ${cardId} not found.`);
+      }
+      const existingData = docSnap.data() as Card;
+
+      // Same helper the wide path uses; correctly handles all 4 transitions
+      // (draft↔published × was/is). Tag set is unchanged so the helper sees
+      // an empty tag-delta but still applies the published/draft transition.
+      await updateTagCountsForCard(
+        existingData,
+        { ...existingData, status },
+        transaction,
+        tagPathLookup
+      );
+
+      transaction.update(docRef, { status, updatedAt: Date.now() });
+    });
+
+    const updatedCard = await getCardById(cardId);
+    if (!updatedCard) {
+      throw new Error(`Failed to fetch updated card with ID ${cardId}`);
+    }
+    void syncCardToTypesense(updatedCard);
+    return updatedCard;
+  });
+}
+
+/**
  * Retrieves a card by its ID from Firestore.
  * @param id - The ID of the card to retrieve.
  * @returns The card data, or null if not found.
@@ -2196,8 +2261,11 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
 
   for (let i = 0; i < cardIds.length; i += BULK_UPDATE_TAGS_CHUNK_SIZE) {
     const chunk = cardIds.slice(i, i + BULK_UPDATE_TAGS_CHUNK_SIZE);
+    // Built inside the transaction (reset on retry); Typesense sync happens after commit.
+    const pendingSyncs: Card[] = [];
 
     await firestore.runTransaction(async (transaction) => {
+      pendingSyncs.length = 0;
       const cardRefs = chunk.map(id => firestore.collection(CARDS_COLLECTION).doc(id));
       const cardDocs = await transaction.getAll(...cardRefs);
 
@@ -2214,7 +2282,7 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
         const cardId = cardDoc.id;
 
         const cardRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
-        transaction.update(cardRef, {
+        const updatePayload = {
           tags,
           filterTags: derived.filterTags,
           who: derived.who,
@@ -2227,9 +2295,23 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
           journalWhenSortAsc: derived.journalWhenSortAsc,
           journalWhenSortDesc: derived.journalWhenSortDesc,
           updatedAt: Date.now(),
-        });
+        };
+        transaction.update(cardRef, updatePayload);
+        pendingSyncs.push({
+          ...(cardDoc.data() as Card),
+          ...updatePayload,
+          docId: cardId,
+        } as Card);
       }
     });
+
+    // Indexed fields (tags, derived dimensional arrays, sort keys) changed; fire
+    // post-commit Typesense sync per card. Fire-and-forget — same pattern as
+    // single-card paths. See docs/01-Vision-Architecture.md → Backend Principles
+    // **Mutation scope** (sync indexed-field changes).
+    for (const updatedCard of pendingSyncs) {
+      void syncCardToTypesense(updatedCard);
+    }
   }
 }
 
@@ -2259,8 +2341,11 @@ export async function bulkApplyTagDelta(
 
   for (let i = 0; i < cardIds.length; i += BULK_UPDATE_TAGS_CHUNK_SIZE) {
     const chunk = cardIds.slice(i, i + BULK_UPDATE_TAGS_CHUNK_SIZE);
+    // Only cards whose tag set actually changed get pushed; reset on retry.
+    const pendingSyncs: Card[] = [];
 
     await firestore.runTransaction(async (transaction) => {
+      pendingSyncs.length = 0;
       const cardRefs = chunk.map((id) => firestore.collection(CARDS_COLLECTION).doc(id));
       const cardDocs = await transaction.getAll(...cardRefs);
 
@@ -2293,7 +2378,7 @@ export async function bulkApplyTagDelta(
           tagLookup
         );
 
-        transaction.update(cardDoc.ref, {
+        const updatePayload = {
           tags: nextTags,
           filterTags: derived.filterTags,
           who: derived.who,
@@ -2306,9 +2391,19 @@ export async function bulkApplyTagDelta(
           journalWhenSortAsc: derived.journalWhenSortAsc,
           journalWhenSortDesc: derived.journalWhenSortDesc,
           updatedAt: Date.now(),
-        });
+        };
+        transaction.update(cardDoc.ref, updatePayload);
+        pendingSyncs.push({
+          ...cardData,
+          ...updatePayload,
+          docId: cardDoc.id,
+        } as Card);
       }
     });
+
+    for (const updatedCard of pendingSyncs) {
+      void syncCardToTypesense(updatedCard);
+    }
   }
 }
 
