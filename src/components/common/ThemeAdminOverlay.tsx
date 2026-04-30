@@ -240,7 +240,7 @@ export default function ThemeAdminOverlay() {
         className={styles.scrim}
       >
         <aside
-          className={styles.overlay}
+          className={`${styles.overlay} ${styles.themeLinkedOverlay}`}
           aria-label="Theme Management workbench"
           role="dialog"
           style={{
@@ -276,7 +276,7 @@ export default function ThemeAdminOverlay() {
               X
             </button>
           </div>
-          <div className={`themeDraftAdminScope ${styles.body}`}>
+          <div className={`${styles.body} ${styles.themeLinkedOverlay}`}>
             <ThemeAdminPage />
           </div>
         </aside>

@@ -95,6 +95,46 @@ function getEmptyThemeData(): StructuredThemeData {
   };
 }
 
+function normalizeLegacyContrastTextToken(themeData: StructuredThemeData): StructuredThemeData {
+  if (themeData.components?.button?.solid?.textColor !== 'color1-100') return themeData;
+
+  return {
+    ...themeData,
+    components: {
+      ...themeData.components,
+      button: {
+        ...themeData.components.button,
+        solid: {
+          ...themeData.components.button.solid,
+          textColor: 'theme-color/2/dark',
+        },
+      },
+    },
+  };
+}
+
+function normalizeLegacyReaderRecipes(recipes?: ReaderThemeRecipes): ReaderThemeRecipes | undefined {
+  if (!recipes) return recipes;
+
+  if (
+    recipes.controls?.chromeActiveTab?.text !== 'semantic/reader/tonal-text-secondary' ||
+    recipes.controls?.supportControlStrong?.text !== 'semantic/reader/contrast-on-fill-text'
+  ) {
+    return recipes;
+  }
+
+  return {
+    ...recipes,
+    controls: {
+      ...recipes.controls,
+      chromeActiveTab: {
+        ...recipes.controls.chromeActiveTab,
+        text: 'semantic/reader/contrast-on-fill-text',
+      },
+    },
+  };
+}
+
 async function readThemeJsonFile(): Promise<unknown> {
   const jsonPath = path.join(process.cwd(), 'theme-data.json');
   const jsonContent = await fs.readFile(jsonPath, 'utf-8');
@@ -204,6 +244,18 @@ const generateThemeColorHslAliases = (themeColors: ThemeColor[], variant: 'light
     css += `  --h${color.id}: ${hsl.h}; /* Color ${color.id} ${variant} compatibility alias */\n`;
     css += `  --s${color.id}: ${hsl.s}%;\n`;
     css += `  --l${color.id}: ${hsl.l}%;\n`;
+  });
+
+  return css;
+};
+
+const generateThemeColorVariantVars = (themeColors: ThemeColor[]): string => {
+  let css = '';
+
+  themeColors.forEach((color) => {
+    if (color.id !== 1 && color.id !== 2) return;
+    css += `  --theme-color-${color.id}-light: ${color.light.hex};\n`;
+    css += `  --theme-color-${color.id}-dark: ${color.dark.hex};\n`;
   });
 
   return css;
@@ -443,7 +495,7 @@ function mergeReaderThemeRecipes(recipes?: ReaderThemeRecipes): ReaderThemeRecip
 }
 
 function resolveReaderSemanticClassValues(
-  themeData: StructuredThemeData
+  themeData: StructuredThemeData & { recipes?: ReaderThemeRecipes }
 ): {
   tonalTextPrimaryColor: string;
   tonalTextSecondaryColor: string;
@@ -551,6 +603,11 @@ export function buildThemeTokensCss(
 
     // Generate 3-shade color scales for theme colors (1 and 2)
     cssContent += generateColorScales(themeData.themeColors || []);
+
+    cssContent += `
+  /* Fixed theme-color variants */
+`;
+    cssContent += generateThemeColorVariantVars(themeData.themeColors || []);
 
     cssContent += `
   /* Compatibility HSL aliases for legacy component overlays */
@@ -727,7 +784,7 @@ export function buildThemeTokensCss(
   --button-solid-background-color: ${tokenValue(themeData.components.button.solid.backgroundColor, 'color3')};
   --button-solid-background-color-hover: ${tokenValue(themeData.components.button.solid.backgroundColorHover, 'color3')};
   --button-solid-border-color: ${tokenValue(themeData.components.button.solid.borderColor, 'color3')};
-  --button-solid-text-color: ${tokenValue(themeData.components.button.solid.textColor, 'white')};
+  --button-solid-text-color: ${tokenValue(themeData.components.button.solid.textColor, 'theme-color/2/dark')};
   
   /* Button: Outline */
   --button-outline-background-color: ${tokenValue(themeData.components.button.outline.backgroundColor, 'transparent')};
@@ -1334,11 +1391,12 @@ function themeSettingsFromFlat(
   const {
     activePresetId,
     recipes,
-    ...themeData
+    ...rawThemeData
   } = data;
+  const themeData = normalizeLegacyContrastTextToken(rawThemeData as StructuredThemeData);
 
   return {
-    data: themeData as StructuredThemeData,
+    data: themeData,
     activePresetId:
       activePresetId === 'journal' ||
       activePresetId === 'editorial' ||
@@ -1346,7 +1404,7 @@ function themeSettingsFromFlat(
       activePresetId === 'custom'
         ? activePresetId
         : fallback.activePresetId ?? 'custom',
-    recipes: recipes ?? fallback.recipes,
+    recipes: normalizeLegacyReaderRecipes(recipes) ?? fallback.recipes,
   };
 }
 
