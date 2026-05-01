@@ -337,16 +337,16 @@ export default function CollectionsAdminClient({
   const [wUnparent, setWUnparent] = useState(296);
   const wTreeRef = useRef(wTree);
   const wUnparentRef = useRef(wUnparent);
-  const dragActiveRef = useRef(false);
-  const [colDrag, setColDrag] = useState<
+  const colDragSessionRef = useRef<
     | { which: 1; startX: number; startTree: number; startUnparent: number }
     | { which: 2; startX: number; startWidth: number; target: 'tree' | 'cards'; fixedLeading: number }
     | null
   >(null);
+  const colDragRafRef = useRef<number | null>(null);
+  const pendingCenterWidthsRef = useRef<{ tree: number; unparent: number } | null>(null);
 
   wTreeRef.current = wTree;
   wUnparentRef.current = wUnparent;
-  dragActiveRef.current = colDrag !== null;
 
   useEffect(() => {
     const stored = readCenterColumnWidths();
@@ -380,9 +380,30 @@ export default function CollectionsAdminClient({
     }
   }, []);
 
+  const applyCenterGridTemplate = useCallback(
+    (tree: number, unparent: number) => {
+      const el = layoutRef.current;
+      if (!el || !wideCenterLayout) return;
+      if (!showOrganizationPane && !showCardsPane) {
+        el.style.gridTemplateColumns = `minmax(${MIN_MEDIA_COL}px, 1fr)`;
+        return;
+      }
+      if (!showOrganizationPane) {
+        el.style.gridTemplateColumns = `${unparent}px ${COL_HANDLE}px minmax(${MIN_MEDIA_COL}px, 1fr)`;
+        return;
+      }
+      if (!showCardsPane) {
+        el.style.gridTemplateColumns = `${tree}px ${COL_HANDLE}px minmax(${MIN_MEDIA_COL}px, 1fr)`;
+        return;
+      }
+      el.style.gridTemplateColumns = `${tree}px ${COL_HANDLE}px ${unparent}px ${COL_HANDLE}px minmax(${MIN_MEDIA_COL}px, 1fr)`;
+    },
+    [showCardsPane, showOrganizationPane, wideCenterLayout]
+  );
+
   const normalizeWidthsToContainer = useCallback(() => {
     const el = layoutRef.current;
-    if (!el || !wideCenterLayout || dragActiveRef.current) return;
+    if (!el || !wideCenterLayout || colDragSessionRef.current) return;
     const gapPx = parseGapPx(el);
     const usable = el.clientWidth - 2 * COL_HANDLE - 4 * gapPx;
     if (usable < MIN_TREE_COL + MIN_UNPARENT_COL + MIN_MEDIA_COL) return;
@@ -432,64 +453,96 @@ export default function CollectionsAdminClient({
   }, [wideCenterLayout, normalizeWidthsToContainer]);
 
   useEffect(() => {
-    if (!colDrag) return;
-    const el = layoutRef.current;
-
-    const onMove = (e: PointerEvent) => {
-      if (!el) return;
-      const gapPx = parseGapPx(el);
-      const usable = el.clientWidth - 2 * COL_HANDLE - 4 * gapPx;
-      const dx = e.clientX - colDrag.startX;
-
-      if (colDrag.which === 1) {
-        const s = colDrag.startTree + colDrag.startUnparent;
-        const newTree = clamp(colDrag.startTree + dx, MIN_TREE_COL, s - MIN_UNPARENT_COL);
-        const newUnparent = s - newTree;
-        setWTree(newTree);
-        setWUnparent(newUnparent);
-      } else {
-        const maxWidth = usable - colDrag.fixedLeading - MIN_MEDIA_COL;
-        const minWidth = colDrag.target === 'tree' ? MIN_TREE_COL : MIN_UNPARENT_COL;
-        const raw = colDrag.startWidth + dx;
-        const nextWidth = maxWidth < minWidth ? minWidth : clamp(raw, minWidth, maxWidth);
-        if (colDrag.target === 'tree') {
-          setWTree(nextWidth);
-        } else {
-          setWUnparent(nextWidth);
-        }
-      }
-    };
-
-    const onUp = () => {
-      persistCenterWidths(wTreeRef.current, wUnparentRef.current);
-      setColDrag(null);
-    };
-
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
-    window.addEventListener('pointercancel', onUp);
     return () => {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-      window.removeEventListener('pointercancel', onUp);
+      if (colDragRafRef.current != null) {
+        window.cancelAnimationFrame(colDragRafRef.current);
+        colDragRafRef.current = null;
+      }
+      pendingCenterWidthsRef.current = null;
+      colDragSessionRef.current = null;
     };
-  }, [colDrag, persistCenterWidths]);
+  }, []);
 
   const onColResizePointerDown = useCallback(
     (which: 1 | 2) => (e: React.PointerEvent) => {
       if (!wideCenterLayout) return;
       e.preventDefault();
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      const targetEl = e.currentTarget as HTMLElement;
+      targetEl.setPointerCapture(e.pointerId);
       if (which === 1) {
-        setColDrag({ which: 1, startX: e.clientX, startTree: wTree, startUnparent: wUnparent });
+        colDragSessionRef.current = { which: 1, startX: e.clientX, startTree: wTreeRef.current, startUnparent: wUnparentRef.current };
       } else {
         const target: 'tree' | 'cards' = showCardsPane ? 'cards' : 'tree';
-        const startWidth = target === 'cards' ? wUnparent : wTree;
-        const fixedLeading = showOrganizationPane && showCardsPane ? wTree : 0;
-        setColDrag({ which: 2, startX: e.clientX, startWidth, target, fixedLeading });
+        const startWidth = target === 'cards' ? wUnparentRef.current : wTreeRef.current;
+        const fixedLeading = showOrganizationPane && showCardsPane ? wTreeRef.current : 0;
+        colDragSessionRef.current = { which: 2, startX: e.clientX, startWidth, target, fixedLeading };
       }
+
+      const onMove = (ev: PointerEvent) => {
+        const session = colDragSessionRef.current;
+        const el = layoutRef.current;
+        if (!session || !el) return;
+        const gapPx = parseGapPx(el);
+        const usable = el.clientWidth - 2 * COL_HANDLE - 4 * gapPx;
+        const dx = ev.clientX - session.startX;
+
+        let nextTree = wTreeRef.current;
+        let nextUnparent = wUnparentRef.current;
+
+        if (session.which === 1) {
+          const s = session.startTree + session.startUnparent;
+          nextTree = clamp(session.startTree + dx, MIN_TREE_COL, s - MIN_UNPARENT_COL);
+          nextUnparent = s - nextTree;
+        } else {
+          const maxWidth = usable - session.fixedLeading - MIN_MEDIA_COL;
+          const minWidth = session.target === 'tree' ? MIN_TREE_COL : MIN_UNPARENT_COL;
+          const raw = session.startWidth + dx;
+          const nextWidth = maxWidth < minWidth ? minWidth : clamp(raw, minWidth, maxWidth);
+          if (session.target === 'tree') {
+            nextTree = nextWidth;
+          } else {
+            nextUnparent = nextWidth;
+          }
+        }
+
+        pendingCenterWidthsRef.current = { tree: nextTree, unparent: nextUnparent };
+        if (colDragRafRef.current != null) return;
+        colDragRafRef.current = window.requestAnimationFrame(() => {
+          colDragRafRef.current = null;
+          const pending = pendingCenterWidthsRef.current;
+          if (!pending) return;
+          applyCenterGridTemplate(pending.tree, pending.unparent);
+        });
+      };
+
+      const onUp = (ev: PointerEvent) => {
+        const session = colDragSessionRef.current;
+        if (!session) return;
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointercancel', onUp);
+        try {
+          targetEl.releasePointerCapture(ev.pointerId);
+        } catch {
+          /* ignore */
+        }
+        if (colDragRafRef.current != null) {
+          window.cancelAnimationFrame(colDragRafRef.current);
+          colDragRafRef.current = null;
+        }
+        const committed = pendingCenterWidthsRef.current ?? { tree: wTreeRef.current, unparent: wUnparentRef.current };
+        pendingCenterWidthsRef.current = null;
+        colDragSessionRef.current = null;
+        setWTree(committed.tree);
+        setWUnparent(committed.unparent);
+        persistCenterWidths(committed.tree, committed.unparent);
+      };
+
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointercancel', onUp);
     },
-    [showCardsPane, showOrganizationPane, wideCenterLayout, wTree, wUnparent]
+    [applyCenterGridTemplate, persistCenterWidths, showCardsPane, showOrganizationPane, wideCenterLayout]
   );
 
   const centerGridStyle = useMemo((): React.CSSProperties | undefined => {

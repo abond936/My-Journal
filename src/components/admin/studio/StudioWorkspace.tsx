@@ -92,6 +92,19 @@ function rowWidthForCardEditResize(row: HTMLElement): number {
   return w > 0 ? w : row.offsetWidth;
 }
 
+function renderedColumnWidth(el: HTMLDivElement | null, fallback: number): number {
+  if (!el) return fallback;
+  const width = el.getBoundingClientRect().width;
+  return width > 0 ? width : fallback;
+}
+
+function applyColumnWidth(el: HTMLDivElement | null, width: number, minWidthPx: number) {
+  if (!el) return;
+  el.style.flex = `0 0 ${width}px`;
+  el.style.width = `${width}px`;
+  el.style.minWidth = `${minWidthPx}px`;
+}
+
 type StudioPaneVisibility = {
   organizationCollapsed: boolean;
   cardsCollapsed: boolean;
@@ -185,11 +198,17 @@ export default function StudioWorkspace() {
   const cardEditWidthRef = useRef(cardEditWidth);
   const questionsWidthRef = useRef(questionsWidth);
   const studioMediaCardRowRef = useRef<HTMLDivElement | null>(null);
+  const cardEditColumnRef = useRef<HTMLDivElement | null>(null);
+  const questionsColumnRef = useRef<HTMLDivElement | null>(null);
   /** True while dragging card-edit width (skip ResizeObserver clamp). */
   const cardEditResizeActiveRef = useRef(false);
   const cardEditResizeSessionRef = useRef<{ startX: number; startW: number; pointerId: number } | null>(null);
   const questionsResizeActiveRef = useRef(false);
   const questionsResizeSessionRef = useRef<{ startX: number; startW: number; pointerId: number } | null>(null);
+  const cardEditDragRafRef = useRef<number | null>(null);
+  const questionsDragRafRef = useRef<number | null>(null);
+  const pendingCardEditWidthRef = useRef<number | null>(null);
+  const pendingQuestionsWidthRef = useRef<number | null>(null);
   const collectionsRefreshRef = useRef<(() => void) | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(() => requestedCardId);
   const [selectedCard, setSelectedCard] = useState<StudioCardContext | null>(null);
@@ -236,22 +255,34 @@ export default function StudioWorkspace() {
     selectedCardCacheOrderRef.current.push(cardId);
     return cached;
   }, []);
+  const getKnownCardPreview = useCallback(
+    (cardId: string | null) => {
+      if (!cardId) return null;
+      const trimmedId = cardId.trim();
+      if (!trimmedId) return null;
+      if (selectedCardRef.current?.docId === trimmedId) {
+        return selectedCardRef.current;
+      }
+      return getCachedSelectedCard(trimmedId);
+    },
+    [getCachedSelectedCard]
+  );
   const selectCard = useCallback(
     (cardId: string, previewCard?: Card | StudioCardContext | null) => {
       const trimmedId = cardId.trim();
       if (!trimmedId) return;
       setSelectedCardId(trimmedId);
-      const cachedPreview = getCachedSelectedCard(trimmedId);
+      const knownPreview = getKnownCardPreview(trimmedId);
       const nextPreview =
         previewCard?.docId === trimmedId
           ? (previewCard as StudioCardContext)
-          : cachedPreview;
+          : knownPreview;
       if (nextPreview) {
         cacheSelectedCard(nextPreview);
         setSelectedCard(nextPreview);
       }
     },
-    [cacheSelectedCard, getCachedSelectedCard]
+    [cacheSelectedCard, getKnownCardPreview]
   );
 
   useEffect(() => {
@@ -291,6 +322,27 @@ export default function StudioWorkspace() {
   cardEditWidthRef.current = cardEditWidth;
   questionsWidthRef.current = questionsWidth;
   selectedCardRef.current = selectedCard;
+
+  const scheduleLiveCardEditWidth = useCallback((next: number) => {
+    pendingCardEditWidthRef.current = next;
+    if (cardEditDragRafRef.current != null) return;
+    cardEditDragRafRef.current = window.requestAnimationFrame(() => {
+      cardEditDragRafRef.current = null;
+      const pending = pendingCardEditWidthRef.current;
+      if (pending == null) return;
+      applyColumnWidth(cardEditColumnRef.current, pending, MIN_CARD_EDIT_PX);
+    });
+  }, []);
+  const scheduleLiveQuestionsWidth = useCallback((next: number) => {
+    pendingQuestionsWidthRef.current = next;
+    if (questionsDragRafRef.current != null) return;
+    questionsDragRafRef.current = window.requestAnimationFrame(() => {
+      questionsDragRafRef.current = null;
+      const pending = pendingQuestionsWidthRef.current;
+      if (pending == null) return;
+      applyColumnWidth(questionsColumnRef.current, pending, MIN_QUESTIONS_PX);
+    });
+  }, []);
 
   useEffect(() => {
     const stored = readStoredCardEditWidth();
@@ -383,6 +435,14 @@ export default function StudioWorkspace() {
     return () => {
       rowResizeObserverRef.current?.disconnect();
       rowResizeObserverRef.current = null;
+      if (cardEditDragRafRef.current != null) {
+        window.cancelAnimationFrame(cardEditDragRafRef.current);
+        cardEditDragRafRef.current = null;
+      }
+      if (questionsDragRafRef.current != null) {
+        window.cancelAnimationFrame(questionsDragRafRef.current);
+        questionsDragRafRef.current = null;
+      }
     };
   }, []);
 
@@ -401,7 +461,7 @@ export default function StudioWorkspace() {
       cardEditResizeActiveRef.current = true;
       cardEditResizeSessionRef.current = {
         startX: e.clientX,
-        startW: cardEditWidthRef.current,
+        startW: renderedColumnWidth(cardEditColumnRef.current, cardEditWidthRef.current),
         pointerId: e.pointerId,
       };
 
@@ -418,7 +478,7 @@ export default function StudioWorkspace() {
         const dx = ev.clientX - session.startX;
         // Handle is left of Compose: drag left → wider Compose; drag right → narrower (invert raw dx).
         const next = clamp(session.startW + dx, bounds.minEdit, bounds.maxEdit);
-        setCardEditWidth(next);
+        scheduleLiveCardEditWidth(next);
       };
 
       const end = (ev: PointerEvent) => {
@@ -434,8 +494,17 @@ export default function StudioWorkspace() {
         }
         cardEditResizeActiveRef.current = false;
         cardEditResizeSessionRef.current = null;
+        const committedWidth =
+          pendingCardEditWidthRef.current ??
+          renderedColumnWidth(cardEditColumnRef.current, cardEditWidthRef.current);
+        setCardEditWidth(committedWidth);
+        pendingCardEditWidthRef.current = null;
+        if (cardEditDragRafRef.current != null) {
+          window.cancelAnimationFrame(cardEditDragRafRef.current);
+          cardEditDragRafRef.current = null;
+        }
         try {
-          localStorage.setItem(STUDIO_CARD_EDIT_WIDTH_KEY, String(cardEditWidthRef.current));
+          localStorage.setItem(STUDIO_CARD_EDIT_WIDTH_KEY, String(committedWidth));
         } catch {
           /* ignore */
         }
@@ -445,7 +514,7 @@ export default function StudioWorkspace() {
       window.addEventListener('pointerup', end);
       window.addEventListener('pointercancel', end);
     },
-    [paneVisibility.mediaCollapsed, paneVisibility.questionsCollapsed, wideLayout]
+    [paneVisibility.mediaCollapsed, paneVisibility.questionsCollapsed, scheduleLiveCardEditWidth, wideLayout]
   );
 
   const onCardEditResizeDoubleClick = useCallback(
@@ -462,6 +531,8 @@ export default function StudioWorkspace() {
       if (!bounds) return;
       const next = clamp(DEFAULT_CARD_EDIT_WIDTH, bounds.minEdit, bounds.maxEdit);
       setCardEditWidth(next);
+      pendingCardEditWidthRef.current = null;
+      applyColumnWidth(cardEditColumnRef.current, next, MIN_CARD_EDIT_PX);
       try {
         localStorage.setItem(STUDIO_CARD_EDIT_WIDTH_KEY, String(next));
       } catch {
@@ -481,7 +552,7 @@ export default function StudioWorkspace() {
       questionsResizeActiveRef.current = true;
       questionsResizeSessionRef.current = {
         startX: e.clientX,
-        startW: questionsWidthRef.current,
+        startW: renderedColumnWidth(questionsColumnRef.current, questionsWidthRef.current),
         pointerId: e.pointerId,
       };
 
@@ -493,12 +564,12 @@ export default function StudioWorkspace() {
         const bounds = questionsWidthBounds(rowWidthForCardEditResize(row), {
           compose: !paneVisibility.composeCollapsed,
           media: !paneVisibility.mediaCollapsed,
-          composeWidth: cardEditWidthRef.current,
+          composeWidth: renderedColumnWidth(cardEditColumnRef.current, cardEditWidthRef.current),
         });
         if (!bounds) return;
         const dx = ev.clientX - session.startX;
         const next = clamp(session.startW + dx, bounds.minQuestions, bounds.maxQuestions);
-        setQuestionsWidth(next);
+        scheduleLiveQuestionsWidth(next);
       };
 
       const end = (ev: PointerEvent) => {
@@ -514,8 +585,17 @@ export default function StudioWorkspace() {
         }
         questionsResizeActiveRef.current = false;
         questionsResizeSessionRef.current = null;
+        const committedWidth =
+          pendingQuestionsWidthRef.current ??
+          renderedColumnWidth(questionsColumnRef.current, questionsWidthRef.current);
+        setQuestionsWidth(committedWidth);
+        pendingQuestionsWidthRef.current = null;
+        if (questionsDragRafRef.current != null) {
+          window.cancelAnimationFrame(questionsDragRafRef.current);
+          questionsDragRafRef.current = null;
+        }
         try {
-          localStorage.setItem(STUDIO_QUESTIONS_WIDTH_KEY, String(questionsWidthRef.current));
+          localStorage.setItem(STUDIO_QUESTIONS_WIDTH_KEY, String(committedWidth));
         } catch {
           /* ignore */
         }
@@ -525,7 +605,7 @@ export default function StudioWorkspace() {
       window.addEventListener('pointerup', end);
       window.addEventListener('pointercancel', end);
     },
-    [paneVisibility.composeCollapsed, paneVisibility.mediaCollapsed, wideLayout]
+    [paneVisibility.composeCollapsed, paneVisibility.mediaCollapsed, scheduleLiveQuestionsWidth, wideLayout]
   );
 
   const onQuestionsResizeDoubleClick = useCallback(
@@ -538,11 +618,13 @@ export default function StudioWorkspace() {
       const bounds = questionsWidthBounds(rowWidthForCardEditResize(row), {
         compose: !paneVisibility.composeCollapsed,
         media: !paneVisibility.mediaCollapsed,
-        composeWidth: cardEditWidthRef.current,
+        composeWidth: renderedColumnWidth(cardEditColumnRef.current, cardEditWidthRef.current),
       });
       if (!bounds) return;
       const next = clamp(DEFAULT_QUESTIONS_WIDTH, bounds.minQuestions, bounds.maxQuestions);
       setQuestionsWidth(next);
+      pendingQuestionsWidthRef.current = null;
+      applyColumnWidth(questionsColumnRef.current, next, MIN_QUESTIONS_PX);
       try {
         localStorage.setItem(STUDIO_QUESTIONS_WIDTH_KEY, String(next));
       } catch {
@@ -675,6 +757,7 @@ export default function StudioWorkspace() {
       selectedCardId,
       setSelectedCardId,
       selectCard,
+      getKnownCardPreview,
       selectedCard,
       setSelectedCard,
       cardLoading,
@@ -693,6 +776,7 @@ export default function StudioWorkspace() {
       selectedCardId,
       setSelectedCardId,
       selectCard,
+      getKnownCardPreview,
       selectedCard,
       setSelectedCard,
       cardLoading,
@@ -798,6 +882,7 @@ export default function StudioWorkspace() {
                     >
                       {showComposePane ? (
                         <div
+                          ref={cardEditColumnRef}
                           className={styles.studioCardEditInBankColumn}
                           style={
                             wideLayout && (showQuestionsPane || showMediaPane)
@@ -833,6 +918,7 @@ export default function StudioWorkspace() {
                       ) : null}
                       {showQuestionsPane ? (
                         <div
+                          ref={questionsColumnRef}
                           className={styles.studioQuestionsColumn}
                           style={
                             wideLayout && (showComposePane || showMediaPane)

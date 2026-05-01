@@ -13,6 +13,7 @@ export type StudioShellContextValue = {
   selectedCardId: string | null;
   setSelectedCardId: (id: string | null) => void;
   selectCard: (cardId: string, previewCard?: Card | StudioCardContext | null) => void;
+  getKnownCardPreview: (cardId: string | null) => StudioCardContext | null;
   selectedCard: StudioCardContext | null;
   setSelectedCard: (card: StudioCardContext | null) => void;
   cardLoading: boolean;

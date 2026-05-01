@@ -104,7 +104,7 @@ function QuestionTagTree({
 
 export default function StudioQuestionsPane() {
   const router = useRouter();
-  const { selectCard, refreshCollectionsCardList } = useStudioShell();
+  const { selectCard, getKnownCardPreview, refreshCollectionsCardList } = useStudioShell();
   const { tags: allTags, dimensionTree } = useTag();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
@@ -226,7 +226,8 @@ export default function StudioQuestionsPane() {
     try {
       const existingCardId = question.usedByCardIds[0];
       if (existingCardId) {
-        selectCard(existingCardId);
+        const previewCard = getKnownCardPreview(existingCardId);
+        selectCard(existingCardId, previewCard);
         router.replace(`/admin/studio?card=${encodeURIComponent(existingCardId)}`);
         return;
       }
@@ -255,7 +256,7 @@ export default function StudioQuestionsPane() {
     } finally {
       setBusyId(null);
     }
-  }, [refreshCollectionsCardList, router, selectCard]);
+  }, [getKnownCardPreview, refreshCollectionsCardList, router, selectCard]);
 
   const unlinkQuestionCard = useCallback(async (question: Question) => {
     const cardId = question.usedByCardIds[0];
