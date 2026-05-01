@@ -1360,8 +1360,8 @@ export function isChildrenOnlyPayload(
 }
 
 export function isCollectionRootOnlyPayload(
-  updates: Partial<Pick<Card, 'isCollectionRoot' | 'collectionRootOrder'>>
-): boolean {
+  updates: Partial<Card>
+): updates is Partial<Pick<Card, 'isCollectionRoot' | 'collectionRootOrder'>> {
   const keys = Object.keys(updates as Record<string, unknown>);
   return (
     keys.length > 0 &&
