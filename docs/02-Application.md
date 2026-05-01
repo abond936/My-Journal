@@ -129,7 +129,7 @@ Legend:
 
 - **Hierarchical Tag Tree** - Tag tree for filtering content by **Cards** toggles and active dimension (per-dimension tree in **Freeform**).
 - **Mobile** - Left sidebar uses a **drawer** (overlay + backdrop) at `max-width: 768px`; **sidebar toggle (←/→) remains visible at all widths** so filters are always reachable; no bottom navigation bar. Narrow Explore panel uses slightly tighter padding and scroll containment. Details: `docs/04-Theme-Design-Contract.md` §9.
-- **Cards** - Five **toggle chips** (Story, Gallery, Q&A, Quote, Callout); all five active = no type filter. Subsets map to `types` on `GET /api/cards` (and discovery `/api/cards/random`). Admin card list applies the same inclusion set client-side.
+- **Cards** - Five **toggle chips** (Story, Gallery, Question, Quote, Callout); all five active = no type filter. Subsets map to `types` on `GET /api/cards` (and discovery `/api/cards/random`). Admin card list applies the same inclusion set client-side.
 - **Tag Dimension (Freeform)** - **Who | What | When | Where** only (no **All** tab); dimension switcher uses **icons** (torso, square, calendar, pin). Default dimension **Who** (stored `all` migrates to **Who**).
 - **Tag Dimension (Curated)** - **All | Who | What | When | Where** for collection grouping (text labels).
 - **Persistence** - Remembers selections across page refreshes (dimension, browse mode, tag library tab); **Cards** chip set resets to all five on full refresh unless extended later.
@@ -183,11 +183,11 @@ Legend:
 - **Main Feed** - Mixed content types with seamless transitions between related content.
 - **Mobile-First** - Touch scrolling, responsive design, news feed feel.
 - **Curated or FreeForm** - Author-ordered or user-explored.
-- **Display types (enforced)** - Story → navigate; gallery → navigate or inline; Q&A → navigate or inline; callout → static; quote → static. Coerced in `createCard` / `updateCard` (`cardDisplayMode.ts`); admin pickers in `CardForm` / `EditableDisplayModeCell`. Reader feed linking: `V2ContentCard` (`navigate` + story | gallery | qa only).
+- **Display types (enforced)** - Story → navigate; gallery → navigate or inline; Question → navigate or inline; callout → static; quote → static. Coerced in `createCard` / `updateCard` (`cardDisplayMode.ts`); admin pickers in `CardForm` / `EditableDisplayModeCell`. Reader feed linking: `V2ContentCard` (`navigate` + story | gallery | qa only).
 
 ⭕2 **Future**
 
-- **Card Cues** - Show small type badge on compact cards (`Story`, `Q&A`, `Gallery`, `Callout`, `Quote`).
+- **Card Cues** - Show small type badge on compact cards (`Story`, `Question`, `Gallery`, `Callout`, `Quote`).
 
 ---
 
@@ -239,7 +239,7 @@ Legend:
 | story   | inline       | Non-interactive tile with title + excerpt/content preview                         | Optional only when explicitly curated; non-interactive by default | N/A (not used as open behavior)                       | Allow `Read more` for long preview text                   | Orientation-aware ratio bucket per variant                             |
 | gallery | navigate     | Interactive tile with cover-first media                                           | Primary rail candidate; horizontal sequence of gallery tiles      | Detail page with gallery and related blocks           | No excerpt requirement; title-first                       | Orientation-aware ratio bucket per variant                             |
 | gallery | inline       | Non-interactive tile; inline gallery preview allowed                              | Optional curated rail for quick browse                            | N/A (not used as open behavior)                       | Not excerpt-driven                                        | Orientation-aware ratio bucket per variant                             |
-| qa      | navigate     | Interactive question tile opens detail answer page                                | Optional themed rail (for grouped Q&A runs)                       | Question + answer detail structure                    | Teaser optional; no `Read more` requirement in v1         | Orientation-aware ratio bucket per variant when cover exists           |
+| qa      | navigate     | Interactive question tile opens detail answer page                                | Optional themed rail (for grouped Question runs)                  | Question + answer detail structure                    | Teaser optional; no `Read more` requirement in v1         | Orientation-aware ratio bucket per variant when cover exists           |
 | qa      | inline       | Non-interactive tile with question + answer preview                               | Optional curated rail                                             | N/A (not used as open behavior)                       | Preview-first; no `Read more` requirement in v1           | Orientation-aware ratio bucket per variant when cover exists           |
 | quote   | static       | Non-interactive quote tile                                                        | Optional quote rail for themed runs                               | Render quote body + attribution when opened directly  | Not excerpt-driven                                        | No cover required; if cover exists, use orientation-aware ratio bucket |
 | callout | static       | Non-interactive callout tile                                                      | Optional callout rail                                             | Render callout content when opened directly           | Not excerpt-driven                                        | No cover required; if cover exists, use orientation-aware ratio bucket |
@@ -276,7 +276,7 @@ Legend:
 
 - **Open Card** - Clicking a navigate card opens `CardDetailPage.tsx` via server-side fetch (`getCardById`, `getCardsByIds` for children). Conditionally renders card components.
 - **Conditional Render** - Render page components based on card data presence.
-- **Q&A, Quote & Callout detail** - Question: kicker "Question", "Answer" + TipTap. Quote: title; blockquote body; attribution footer from `subtitle`/`excerpt` via `formatQuoteAttribution`. Callout: standard title / subtitle / TipTap (no extra chrome).
+- **Question, Quote & Callout detail** - Question: kicker "Question", "Answer" + TipTap. Quote: title; blockquote body; attribution footer from `subtitle`/`excerpt` via `formatQuoteAttribution`. Callout: standard title / subtitle / TipTap (no extra chrome).
 - **Title** - Render first.
 - **Subtitle** - If present, render next.
 - **Cover Image** - If present, render next.
@@ -322,7 +322,7 @@ Legend:
 - **Media Management** - Assigned/unassigned filtering, replace-in-place, card-reference-aware delete.
 - **Collections Management** - Parent/unparent cards, reorder cards.
 - **Tag Management** - Hierarchical admin, DnD/reparenting, inline edits.
-- **Question Management** - Studio prompt-bank pane with CRUD, untagged cleanup, and Q&A card linkage workflow.
+- **Question Management** - Studio prompt-bank pane with CRUD, untagged cleanup, and Question card linkage workflow.
 - **User Management** - Users model and admin user workflow.
 - **Theme Management** - Set parameters for colors, fonts, etc.
 - **Scripts** - `package.json` scripts for migrations, reconciliation, one-off repairs, and emergencies. See `01-Vision-Architecture.md` → **TECHNICAL** → **Scripts** and `docs/NPM-SCRIPTS.md`.
@@ -607,22 +607,22 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 
 *Principles*
 
-- **Prompts** - Use questions as prompts for Q&A cards.
+- **Prompts** - Use questions as prompts for Question cards.
 - **Flexible** - Accommodate short and long answers.
 - **Dimensional** - Group questions through the existing Who / What / When / Where tag tree rather than a separate prompt taxonomy. Questions may be temporarily untagged during QA-card migration/cleanup and should surface in an explicit **Untagged** view until the author assigns generic prompt tags.
-- **Prompt tags vs answer tags** - Question tags classify the **prompt** and should generally be generic (for example `Father`, `Mother`). Card tags classify the **answer** and may be specific (for example `Robert`, `Sandra`). Question tags seed a newly created Q&A card only at creation time; after that, question and card tags are independent.
+- **Prompt tags vs answer tags** - Question tags classify the **prompt** and should generally be generic (for example `Father`, `Mother`). Card tags classify the **answer** and may be specific (for example `Robert`, `Sandra`). Question tags seed a newly created Question card only at creation time; after that, question and card tags are independent.
 
 *Features*
 ✅ **Complete**
 
-- **Data Model** - Firestore `questions` collection. Schema: `src/lib/types/question.ts`. Service: `questionService.ts`. Questions carry optional dimensional `tagIds` and `usedByCardIds`; Q&A cards carry `questionId`.
+- **Data Model** - Firestore `questions` collection. Schema: `src/lib/types/question.ts`. Service: `questionService.ts`. Questions carry optional dimensional `tagIds` and `usedByCardIds`; Question cards carry `questionId`.
 - **UI** - `/admin/question-admin`.
-- **Studio Pane** - Studio includes a collapsible Questions pane between Compose and Media for dimensional tree browsing, **Untagged** cleanup filtering, included/not-included filtering, add/edit, and opening or creating the linked Q&A card in Compose.
-- **APIs** - Admin-only CRUD (`/api/admin/questions`, `/api/admin/questions/[id]`), link/unlink Q&A card, create Q&A card from prompt.
+- **Studio Pane** - Studio includes a collapsible Questions pane between Compose and Media for dimensional tree browsing, **Untagged** cleanup filtering, included/not-included filtering, add/edit, and opening or creating the linked Question card in Compose.
+- **APIs** - Admin-only CRUD (`/api/admin/questions`, `/api/admin/questions/[id]`), link/unlink Question card, create Question card from prompt.
 - **Filter** - List/filter in UI: text, tags (substring), used vs unused.
-- **Create Card** - Create Q&A card from question prompt. Adds `questionId` to the card, copies current question dimensional tags to the card as a starting point, adds card ID to `usedByCardIds`, and updates `usageCount`. General card creation does not create new Q&A cards; Q&A authoring is question-backed.
-- **Link/Unlink** - Manual link/unlink between question and card IDs. Unlink converts the linked Q&A card to draft Story and removes `questionId`; do not leave orphan Q&A cards.
-- **Bootstrap** - `npm run bootstrap:questions-from-qa` dry-runs creation of question-bank prompts from existing unlinked Q&A cards; `-- --apply` writes linked question records and card `questionId` values. **Run 2026-04-25:** after backup `C:\Users\alanb\OneDrive\Firebase Backups\run-2026-04-25T01-36-00-057Z`, applied 158 untagged question records; final dry run reported 202/202 QA cards linked.
+- **Create Card** - Create Question card from question prompt. Adds `questionId` to the card, copies current question dimensional tags to the card as a starting point, adds card ID to `usedByCardIds`, and updates `usageCount`. General card creation does not create new Question cards; Question-card authoring is question-backed.
+- **Link/Unlink** - Manual link/unlink between question and card IDs. Unlink converts the linked Question card to draft Story and removes `questionId`; do not leave orphan Question cards.
+- **Bootstrap** - `npm run bootstrap:questions-from-qa` dry-runs creation of question-bank prompts from existing unlinked Question cards; `-- --apply` writes linked question records and card `questionId` values. **Run 2026-04-25:** after backup `C:\Users\alanb\OneDrive\Firebase Backups\run-2026-04-25T01-36-00-057Z`, applied 158 untagged question records; final dry run reported 202/202 Question cards linked.
 
 ⭕2 **Future**
 
@@ -686,7 +686,7 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 - **Runtime theme wiring (substantially reconciled)** - The live generator path is now largely reconciled with the editor for foundations, chrome, controls, cards, overlays, discovery, and media/lightbox surfaces. Earlier runtime bypasses and bridge-only outputs have been reduced so the editor is much closer to being the real source of truth for what the app renders.
 - **Closed-card surface controls** - Theme Management now keeps `General` as the shared closed-card baseline while also allowing per-card closed backgrounds (`Story`, `Gallery`, `Question`, `Quote`, `Callout`) to choose either `Use General` or a curated surface value. Runtime wiring now honors those card-family closed surfaces directly.
 - **Reader semantic layer (narrowed)** - Reader-facing CSS still uses a smaller semantic family (`--reader-page-*`, `--reader-chrome-*`, `--reader-solid-*`, `--reader-card-*`, `--reader-detail-*`, `--reader-body/title-*`, `--reader-meta/caption-*`, `--reader-media/lightbox-*`, `--reader-discovery-*`), but much of the earlier bridge-only layer has been collapsed in favor of concrete app-consumed variables. The remaining semantic layer exists to keep role-backed recipe resolution understandable rather than to hide actual styling decisions from the editor.
-- **Component recipe direction** - The current editing model is moving from flat role names toward **component + variant + element** recipes so Story, Gallery, Q&A, Quote, Callout, sidebar, discovery rails, and lightbox surfaces can diverge cleanly while still using the shared atomic token set underneath. The next editor redesign step is to expose that to the author as **Component -> Attribute -> Value** rather than mixed recipe names plus token-bucket terminology.
+- **Component recipe direction** - The current editing model is moving from flat role names toward **component + variant + element** recipes so Story, Gallery, Question, Quote, Callout, sidebar, discovery rails, and lightbox surfaces can diverge cleanly while still using the shared atomic token set underneath. The next editor redesign step is to expose that to the author as **Component -> Attribute -> Value** rather than mixed recipe names plus token-bucket terminology.
 - **Three-tier theme model (direction)** - Theme work is now grounded in three explicit layers: **atomic tokens** (palette, type scale, spacing, radii, shadows, raw component primitives), **semantic token classes** (tonal surface/text, contrast-on-fill, overlay/media contrast, borders, accent, focus, state families), and **recipes** (UI-job assignments such as story title, gallery lightbox caption, sidebar active tab, admin notice). App surfaces should consume recipes through semantic classes rather than binding directly to raw atomic token refs.
 - **Live draft application (direction)** - The intended loop is now **tokens -> semantic classes -> recipes -> live draft app -> Save -> applied app**. Unsaved theme edits should apply immediately to the real app for the current session, with explicit Save to persist and explicit discard/reset to restore the last saved theme.
 - **Primitives remain the base layer** - The underlying token and recipe system remains the exact value source/reference layer. The current right-side values panel is beginning to expose that layer more honestly by showing the named value behind the selected attribute and, where resolvable, the actual underlying value; broader direct system-value editing is still a later refinement rather than the current primary interaction.

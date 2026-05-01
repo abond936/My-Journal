@@ -7,10 +7,10 @@ import { CSS } from '@dnd-kit/utilities';
 import { useCuratedTreeDropHighlight } from '@/components/admin/card-admin/curatedTreeDropHighlightContext';
 import type { Card } from '@/lib/types/card';
 import type { Media } from '@/lib/types/photo';
-import type { StudioCardContext } from '@/components/admin/studio/studioCardTypes';
+import type { StudioSelectedDetail } from '@/components/admin/studio/studioCardTypes';
 import styles from './StudioWorkspace.module.css';
 
-export type { StudioCardContext } from '@/components/admin/studio/studioCardTypes';
+export type { StudioSelectedDetail } from '@/components/admin/studio/studioCardTypes';
 
 export function StudioGallerySortableRow({
   id,
@@ -184,7 +184,7 @@ export async function handleStudioRelationshipDragEnd(
   event: { active: { id: unknown }; over: { id: unknown } | null },
   ctx: {
     actionBusy: boolean;
-    selectedCard: StudioCardContext | null;
+    selectedCardDetail: StudioSelectedDetail | null;
     selectedCardId: string | null;
     patchSelectedCard: (payload: Partial<Card>, msg?: string) => Promise<void>;
     setActionInfo: (s: string | null) => void;
@@ -193,7 +193,7 @@ export async function handleStudioRelationshipDragEnd(
   }
 ): Promise<boolean> {
   const { active, over } = event;
-  if (ctx.actionBusy || !ctx.selectedCard || !ctx.selectedCardId) return false;
+  if (ctx.actionBusy || !ctx.selectedCardDetail || !ctx.selectedCardId) return false;
   if (!over || active.id === over.id) return false;
 
   const activeId = String(active.id);
@@ -201,7 +201,7 @@ export async function handleStudioRelationshipDragEnd(
 
   const afterId = ctx.selectedCardId ? `studioChildAfter:${ctx.selectedCardId}` : null;
   if (activeId.startsWith('studioChild:') && afterId && overId === afterId) {
-    const ids = [...(ctx.selectedCard.childrenIds || [])];
+    const ids = [...(ctx.selectedCardDetail.childrenIds || [])];
     const childId = activeId.slice('studioChild:'.length);
     const oldIndex = ids.indexOf(childId);
     if (oldIndex < 0) return true;
@@ -212,7 +212,7 @@ export async function handleStudioRelationshipDragEnd(
   }
 
   if (activeId.startsWith('studioChild:') && overId.startsWith('studioChild:')) {
-    const ids = ctx.selectedCard.childrenIds || [];
+    const ids = ctx.selectedCardDetail.childrenIds || [];
     const itemIds = ids.map((cid) => `studioChild:${cid}`);
     const oldIndex = itemIds.indexOf(activeId);
     const newIndex = itemIds.indexOf(overId);
@@ -223,7 +223,7 @@ export async function handleStudioRelationshipDragEnd(
   }
 
   if (activeId.startsWith('gallery:') && overId.startsWith('gallery:')) {
-    const items = ctx.selectedCard.galleryMedia || [];
+    const items = ctx.selectedCardDetail.galleryMedia || [];
     const itemIds = items.map((item) => `gallery:${item.mediaId}:${item.order}`);
     const oldIndex = itemIds.indexOf(activeId);
     const newIndex = itemIds.indexOf(overId);
@@ -253,7 +253,7 @@ export async function handleStudioRelationshipDragEnd(
     }
 
     if (overId === 'drop:gallery') {
-      const gallery = ctx.selectedCard.galleryMedia || [];
+      const gallery = ctx.selectedCardDetail.galleryMedia || [];
       const exists = gallery.some((g) => g.mediaId === mediaId);
       if (exists) {
         ctx.setActionInfo('Media is already in gallery.');

@@ -61,6 +61,7 @@ export type FeedSortOrder =
   | 'whereDesc';
 
 export type { FeedGroupBy };
+export type FeedSections = { heading: string; cards: Card[] }[] | null;
 
 export interface ICardContext {
   // Filter state
@@ -76,7 +77,9 @@ export interface ICardContext {
   feedGroupBy: FeedGroupBy;
   cardDimensionMissing: CardDimensionMissing;
   /** Grouped sections for the main feed; null when grouping is off or not applicable. */
-  feedSections: { heading: string; cards: Card[] }[] | null;
+  feedSections: FeedSections;
+  visibleCards: Card[];
+  visibleFeedSections: FeedSections;
 
   // Filter actions
   toggleTag: (tagId: string) => void;
@@ -105,6 +108,8 @@ export interface ICardContext {
   cards: Card[];
   error: unknown;
   isLoading: boolean;
+  isInitialLoading: boolean;
+  isRefreshing: boolean;
   loadingMore: boolean;
   hasMore: boolean;
   loadMore: () => void;
@@ -248,6 +253,10 @@ export const CardProvider = ({ children }: CardProviderProps) => {
    * the existing permutation and only shuffle newly loaded cards (append), so earlier rows do not jump.
    */
   const randomFeedOrderCacheRef = useRef<{ orderedDocIds: string[]; idSet: Set<string> } | null>(null);
+  const lastVisibleReaderSnapshotRef = useRef<{
+    cards: Card[];
+    feedSections: FeedSections;
+  }>({ cards: [], feedSections: null });
 
   const setFeedSort = useCallback((order: FeedSortOrder) => {
     setFeedSortState(order);
@@ -602,8 +611,39 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     if (feedGroupBy === 'none' || isCollectionsListMode) return null;
     return groupCardsForFeed(cards, feedGroupBy, tagNameById);
   }, [cards, feedGroupBy, tagNameById, isCollectionsListMode]);
+  const isReaderRoute = pathname?.startsWith('/view') ?? false;
+  const hasRenderableSections = Boolean(feedSections?.some((section) => section.cards.length > 0));
+  const hasRenderableCards = cards.length > 0 || hasRenderableSections;
+  const readerBackgroundLoading = isCollectionsListMode ? collectionsLoading : isValidating;
+
+  useEffect(() => {
+    if (!isReaderRoute || !hasRenderableCards) return;
+    lastVisibleReaderSnapshotRef.current = {
+      cards,
+      feedSections,
+    };
+  }, [isReaderRoute, hasRenderableCards, cards, feedSections]);
+
+  const hasVisibleReaderSnapshot = Boolean(
+    lastVisibleReaderSnapshotRef.current.cards.length > 0 ||
+      lastVisibleReaderSnapshotRef.current.feedSections?.some((section) => section.cards.length > 0)
+  );
+  const shouldUseVisibleReaderSnapshot =
+    isReaderRoute && !hasRenderableCards && readerBackgroundLoading && hasVisibleReaderSnapshot;
+  const visibleCards = shouldUseVisibleReaderSnapshot
+    ? lastVisibleReaderSnapshotRef.current.cards
+    : cards;
+  const visibleFeedSections = shouldUseVisibleReaderSnapshot
+    ? lastVisibleReaderSnapshotRef.current.feedSections
+    : feedSections;
   const isLoading = isCollectionsListMode ? collectionsLoading : (swrLoading && !data);
+  const isInitialLoading = isLoading && !shouldUseVisibleReaderSnapshot;
   const loadingMore = swrLoading && size > 1;
+  const isRefreshing =
+    isReaderRoute &&
+    !isInitialLoading &&
+    !loadingMore &&
+    (shouldUseVisibleReaderSnapshot || Boolean(readerBackgroundLoading));
   const hasMore = isCollectionsListMode ? false : (data?.[data.length - 1]?.hasMore ?? false);
   
   const loadMore = useCallback(() => {
@@ -637,8 +677,11 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   const value = useMemo(
     () => ({
       cards,
+      visibleCards,
       error,
       isLoading,
+      isInitialLoading,
+      isRefreshing,
       loadingMore,
       hasMore,
       selectedTags: selectedFilterTagIds,
@@ -656,6 +699,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       feedGroupBy,
       cardDimensionMissing,
       feedSections,
+      visibleFeedSections,
       loadMore,
       patchVisibleCard,
       mutate,
@@ -676,8 +720,11 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     }),
     [
       cards,
+      visibleCards,
       error,
       isLoading,
+      isInitialLoading,
+      isRefreshing,
       loadingMore,
       hasMore,
       selectedFilterTagIds,
@@ -695,6 +742,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       feedGroupBy,
       cardDimensionMissing,
       feedSections,
+      visibleFeedSections,
       loadMore,
       patchVisibleCard,
       mutate,

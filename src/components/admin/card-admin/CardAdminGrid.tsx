@@ -29,6 +29,7 @@ import {
   buildStudioCollectionCardDragData,
   isStudioCollectionCardDragData,
 } from '@/lib/dnd/studioDragContract';
+import type { StudioCatalogCard } from '@/components/admin/studio/studioCardTypes';
 
 interface CardAdminGridProps {
   cards: Card[];
@@ -56,6 +57,14 @@ interface CardAdminGridProps {
   compactStudioGrid?: boolean;
 }
 
+const CARD_TYPE_LABELS: Record<Card['type'], string> = {
+  story: 'Story',
+  gallery: 'Gallery',
+  qa: 'Question',
+  quote: 'Quote',
+  callout: 'Callout',
+};
+
 function coverAspectStyle(cover: Card['coverImage'], uniform = false): React.CSSProperties {
   if (uniform) {
     return { aspectRatio: '4 / 3' };
@@ -66,6 +75,11 @@ function coverAspectStyle(cover: Card['coverImage'], uniform = false): React.CSS
     return { aspectRatio: `${w} / ${h}` };
   }
   return { aspectRatio: '4 / 5' };
+}
+
+function previewImage(card: Card): Card['coverImage'] {
+  const studioCard = card as Card & Partial<StudioCatalogCard>;
+  return card.coverImage ?? studioCard.displayThumbnail ?? null;
 }
 
 function pickCaption(card: Card): string {
@@ -156,6 +170,7 @@ function CardAdminGridPlainCell({
   };
 
   const captionLine = pickCaption(card);
+  const preview = previewImage(card);
   const thumbnailTooltip = useMemo(
     () => buildCardThumbnailTooltip(card, allTags),
     [card, allTags]
@@ -196,7 +211,6 @@ function CardAdminGridPlainCell({
             readOnly
             checked={isSelected}
             onClick={(e) => {
-              e.preventDefault();
               e.stopPropagation();
               handleBulkPointer(e);
             }}
@@ -235,7 +249,7 @@ function CardAdminGridPlainCell({
       overlayBottom={
         <div className={styles.overlayBottomRow}>
           <div className={styles.overlayBottomStart}>
-            <span className={chromeStyles.metaBadge}>{card.type}</span>
+            <span className={chromeStyles.metaBadge}>{CARD_TYPE_LABELS[card.type]}</span>
             <span
               className={
                 card.status === 'draft' ? chromeStyles.metaBadgeDraft : chromeStyles.metaBadgePublished
@@ -257,13 +271,13 @@ function CardAdminGridPlainCell({
       thumbnail={
         <div
           className={styles.thumbnailWrap}
-          style={coverAspectStyle(card.coverImage, compactStudioGrid)}
+          style={coverAspectStyle(preview, compactStudioGrid)}
           title={thumbnailTooltip}
           onClick={onImageColumnClick}
         >
-          {card.coverImage ? (
+          {preview ? (
             <JournalImage
-              src={getDisplayUrl(card.coverImage)}
+              src={getDisplayUrl(preview)}
               alt={card.title || 'Cover'}
               fill
               className={styles.thumbnailNatural}
@@ -418,6 +432,7 @@ function CardAdminGridStudioCell({
   };
 
   const captionLine = pickCaption(card);
+  const preview = previewImage(card);
   const thumbnailTooltip = useMemo(
     () => buildCardThumbnailTooltip(card, allTags),
     [card, allTags]
@@ -460,7 +475,6 @@ function CardAdminGridStudioCell({
             readOnly
             checked={isSelected}
             onClick={(e) => {
-              e.preventDefault();
               e.stopPropagation();
               handleBulkPointer(e);
             }}
@@ -513,7 +527,7 @@ function CardAdminGridStudioCell({
       overlayBottom={
         <div className={styles.overlayBottomRow}>
           <div className={styles.overlayBottomStart}>
-            <span className={chromeStyles.metaBadge}>{card.type}</span>
+            <span className={chromeStyles.metaBadge}>{CARD_TYPE_LABELS[card.type]}</span>
             <span
               className={
                 card.status === 'draft' ? chromeStyles.metaBadgeDraft : chromeStyles.metaBadgePublished
@@ -535,13 +549,13 @@ function CardAdminGridStudioCell({
       thumbnail={
         <div
           className={styles.thumbnailWrap}
-          style={coverAspectStyle(card.coverImage, compactStudioGrid)}
+          style={coverAspectStyle(preview, compactStudioGrid)}
           title={thumbnailTooltip}
           onClick={onImageColumnClick}
         >
-          {card.coverImage ? (
+          {preview ? (
             <JournalImage
-              src={getDisplayUrl(card.coverImage)}
+              src={getDisplayUrl(preview)}
               alt={card.title || 'Cover'}
               fill
               className={styles.thumbnailNatural}

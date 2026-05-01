@@ -111,6 +111,9 @@ export const cardSchema = z.object({
   
   // The populated cover image Media object.
   coverImage: z.any().optional().nullable(),
+  // Preview-only thumbnail for list/grid surfaces when no true cover exists.
+  displayThumbnail: z.any().optional().nullable(),
+  displayThumbnailSource: z.enum(['cover', 'gallery']).optional().nullable(),
 });
 
 export type Card = z.infer<typeof cardSchema>;

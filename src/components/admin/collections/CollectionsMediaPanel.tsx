@@ -6,6 +6,13 @@ import { getMediaErrorSeverity, useMedia } from '@/components/providers/MediaPro
 import MediaAdminList from '@/components/admin/media-admin/MediaAdminList';
 import styles from '@/app/admin/collections/page.module.css';
 
+const DEFAULT_DIMENSION_FILTERS = {
+  who: { mode: 'any' as const, tagId: '' },
+  what: { mode: 'any' as const, tagId: '' },
+  when: { mode: 'any' as const, tagId: '' },
+  where: { mode: 'any' as const, tagId: '' },
+};
+
 /**
  * Compact media table for Collections / Studio: loads media on mount, assignment filter + pagination.
  */
@@ -97,7 +104,11 @@ export default function CollectionsMediaPanel({ studioSourceDraggable = false }:
       ) : null}
       {loading ? <p className={styles.mediaLoading}>Loading media…</p> : null}
       <div className={`${styles.panelScroll} ${styles.mediaPanelScroll}`}>
-        <MediaAdminList variant="compact" studioSourceDraggable={studioSourceDraggable} />
+        <MediaAdminList
+          variant="compact"
+          dimensionFilters={DEFAULT_DIMENSION_FILTERS}
+          studioSourceDraggable={studioSourceDraggable}
+        />
       </div>
       {showPaginationControls && pag ? (
         <div className={styles.mediaPagination}>

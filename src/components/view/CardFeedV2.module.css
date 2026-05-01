@@ -23,6 +23,23 @@
   gap: var(--spacing-md);
 }
 
+.refreshingNotice {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  align-self: flex-start;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--reader-page-border-color);
+  border-radius: var(--border-radius-full);
+  background: color-mix(in srgb, var(--reader-window-background-color) 92%, var(--reader-page-text-color) 8%);
+  box-shadow: var(--reader-window-shadow);
+  color: var(--reader-page-muted-color);
+  font-family: var(--reader-chrome-meta-font-family);
+  font-size: var(--reader-chrome-meta-font-size);
+  font-weight: var(--reader-chrome-meta-font-weight);
+  line-height: var(--reader-chrome-meta-line-height);
+}
+
 .curatedContextBar {
   position: sticky;
   top: 0;

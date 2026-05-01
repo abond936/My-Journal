@@ -5,6 +5,19 @@
   min-width: 0;
   flex: 1;
   overflow-x: hidden;
+  overflow-y: hidden;
+}
+
+.controls {
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.resultsScroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  min-width: 0;
 }
 
 .studioCardFilters {
@@ -78,20 +91,20 @@
 }
 
 .studioTagsEditButton {
-  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
-  border-radius: 2px;
-  background: var(--admin-support-control-background-color);
-  color: var(--admin-support-control-text-color);
-  font-family: var(--admin-support-control-font-family);
-  font-size: var(--font-size-xs);
-  font-weight: var(--admin-support-control-font-weight);
-  line-height: 1.2;
-  padding: 2px 7px;
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-window-border-color) 50%, transparent);
+  border-radius: var(--border-radius-sm);
+  background: color-mix(in srgb, var(--admin-window-background-color) 50%, transparent);
+  color: var(--admin-chrome-meta-color);
+  font: var(--admin-grid-overlay-font);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  padding: 2px 5px;
   cursor: pointer;
+  backdrop-filter: blur(4px);
 }
 
 .studioTagsEditButton:hover {
-  background: var(--admin-support-control-hover-background-color);
+  background: color-mix(in srgb, var(--admin-window-background-color) 68%, transparent);
 }
 
 .studioTagsActions {

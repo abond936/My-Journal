@@ -17,6 +17,7 @@ interface CardFeedProps {
   /** When set, render grouped sections instead of a flat grid. */
   sections?: CardFeedSection[] | null;
   loading: boolean;
+  refreshing?: boolean;
   loadMoreRef: (node?: Element | null | undefined) => void;
   onSaveScrollPosition: () => void;
 }
@@ -25,6 +26,7 @@ export default function CardFeedV2({
   cards,
   sections,
   loading,
+  refreshing = false,
   loadMoreRef,
   onSaveScrollPosition,
 }: CardFeedProps) {
@@ -138,6 +140,11 @@ export default function CardFeedV2({
 
   return (
     <main className={styles.feedMain}>
+      {refreshing ? (
+        <div className={styles.refreshingNotice} aria-live="polite">
+          Refreshing the journal view...
+        </div>
+      ) : null}
       {activeCollectionCard ? (
         <div ref={curatedContextRef} className={styles.curatedContextBar}>
           <div className={styles.curatedContextLabel}>Collection</div>

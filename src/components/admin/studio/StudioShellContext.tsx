@@ -3,7 +3,12 @@
 import React, { createContext, useContext, type MutableRefObject } from 'react';
 import type { Card } from '@/lib/types/card';
 import type { Media } from '@/lib/types/photo';
-import type { StudioCardContext } from '@/components/admin/studio/studioCardTypes';
+import type {
+  StudioActiveCardViewModel,
+  StudioSelectedDetail,
+  StudioSelectedLoadState,
+  StudioSelectedPreview,
+} from '@/components/admin/studio/studioCardTypes';
 
 /**
  * Session-scoped Studio state: one **card** selection + **media bank** selection + loaders/patch.
@@ -12,16 +17,22 @@ import type { StudioCardContext } from '@/components/admin/studio/studioCardType
 export type StudioShellContextValue = {
   selectedCardId: string | null;
   setSelectedCardId: (id: string | null) => void;
-  selectCard: (cardId: string, previewCard?: Card | StudioCardContext | null) => void;
-  getKnownCardPreview: (cardId: string | null) => StudioCardContext | null;
-  selectedCard: StudioCardContext | null;
-  setSelectedCard: (card: StudioCardContext | null) => void;
+  selectCard: (cardId: string, previewCard?: Card | StudioSelectedPreview | StudioSelectedDetail | null) => void;
+  getKnownCardPreview: (cardId: string | null) => StudioSelectedPreview | null;
+  selectedPreview: StudioSelectedPreview | null;
+  setSelectedPreview: (card: StudioSelectedPreview | null) => void;
+  selectedDetail: StudioSelectedDetail | null;
+  setSelectedDetail: (card: StudioSelectedDetail | null) => void;
+  selectedLoadState: StudioSelectedLoadState;
+  activeCardViewModel: StudioActiveCardViewModel;
   cardLoading: boolean;
   cardError: string | null;
-  loadSelectedCard: (cardId: string, opts?: { quiet?: boolean }) => Promise<StudioCardContext>;
+  loadSelectedCard: (cardId: string, opts?: { quiet?: boolean }) => Promise<StudioSelectedDetail>;
   patchSelectedCard: (payload: Partial<Card>, successMessage?: string) => Promise<void>;
   /** Refresh embedded Collections card list/tree after card body save or equivalent (no-op if not wired). */
   refreshCollectionsCardList: () => void;
+  /** Immediately replace/upsert a saved card into the shared Studio card universe before background refresh catches up. */
+  upsertCollectionsCardList: (card: Card | StudioSelectedPreview | StudioSelectedDetail | null) => void;
   /** Media bank multi-select (same backing store as `MediaProvider`). */
   selectedMediaIds: string[];
   setSelectedMediaIds: (ids: string[]) => void;

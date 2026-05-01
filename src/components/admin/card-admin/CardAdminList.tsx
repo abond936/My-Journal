@@ -25,6 +25,7 @@ import {
   buildStudioCollectionCardDragData,
   isStudioCollectionCardDragData,
 } from '@/lib/dnd/studioDragContract';
+import type { StudioCatalogCard } from '@/components/admin/studio/studioCardTypes';
 
 const COLUMN_WIDTHS_KEY = 'cardAdminColumnWidths';
 const STUDIO_CURATED_DRAG_COL = 36;
@@ -59,12 +60,14 @@ const DIM_COL: Record<TagDimension, 'dimWho' | 'dimWhat' | 'dimWhen' | 'dimWhere
 
 function CardListCoverCell({ card, coverWidth }: { card: Card; coverWidth: number }) {
   const w = Math.max(coverWidth, COVER_COLUMN_MIN);
+  const preview = (card.coverImage ??
+    ((card as Card & Partial<StudioCatalogCard>).displayThumbnail ?? null));
   return (
     <td className={styles.coverImageCell} style={{ width: w, minWidth: w }}>
       <div className={styles.coverImageCellInner}>
-        {card.coverImage ? (
+        {preview ? (
           <JournalImage
-            src={getDisplayUrl(card.coverImage)}
+            src={getDisplayUrl(preview)}
             alt="Cover"
             className={styles.coverThumbnailFill}
             fill

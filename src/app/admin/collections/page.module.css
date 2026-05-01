@@ -126,6 +126,14 @@
   overflow-y: auto;
 }
 
+.panelViewport {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .mediaPanelScroll {
   overflow-x: auto;
 }
@@ -255,6 +263,10 @@
 
 .unparentDropZone {
   min-height: 120px;
+}
+
+.unparentDropZone.panelViewport {
+  min-height: 0;
 }
 
 .unparentRowDropZone {

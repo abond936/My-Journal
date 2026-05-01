@@ -57,6 +57,7 @@ import {
   isStudioCollectionCardDragData,
   parseCollectionCardDragId,
 } from '@/lib/dnd/studioDragContract';
+import { mergeStudioCatalogCard, toStudioCatalogCard } from '@/components/admin/studio/studioCardProjection';
 
 const COLLECTIONS_CENTER_COLUMNS_KEY = 'collectionsCenterPaneWidths';
 const COLLECTIONS_TREE_EXPANSION_KEY = 'collectionsTreeExpandedIds';
@@ -273,6 +274,7 @@ function TreeRootDropZone({ className, children, readOnly }: TreeRootDropZonePro
 
 export type EmbeddedStudioSlotContext = {
   refreshCards: () => void;
+  upsertCard: (card: Card) => void;
 };
 
 export default function CollectionsAdminClient({
@@ -552,6 +554,19 @@ export default function CollectionsAdminClient({
     };
   }, [wideCenterLayout, wTree, wUnparent]);
 
+  const upsertEmbeddedCard = useCallback((card: Card) => {
+    if (!card?.docId) return;
+    setCards((prev) => {
+      const index = prev.findIndex((entry) => entry.docId === card.docId);
+      if (index === -1) return [toStudioCatalogCard(card), ...prev];
+      const existing = toStudioCatalogCard(prev[index]);
+      const nextCard = mergeStudioCatalogCard(existing, card);
+      const next = [...prev];
+      next[index] = nextCard;
+      return next;
+    });
+  }, []);
+
   // First chunk paints fast (250 cards), remaining pages stream in background under
   // server's stable `created desc` order. Roots fetch (capped at 200) runs in parallel
   // with page 0. The Studio bank's "Loading more cards…" indicator covers the streaming
@@ -577,6 +592,7 @@ export default function CollectionsAdminClient({
       let rootsApplied = false;
       let lastDocId: string | undefined;
       let page = 0;
+      let finalItems: Card[] = [];
 
       while (true) {
         const params = new URLSearchParams({
@@ -627,6 +643,7 @@ export default function CollectionsAdminClient({
           merged.set(id, prev ? { ...prev, ...c } : c);
         }
         const items = Array.from(merged.values());
+        finalItems = items;
 
         if (soft || firstChunkPainted) {
           // After first chunk in non-soft mode, also use merge semantics — preserves
@@ -642,17 +659,15 @@ export default function CollectionsAdminClient({
               if (!c.docId) continue;
               const old = out.get(c.docId);
               if (!old) {
-                out.set(c.docId, c);
+                out.set(c.docId, toStudioCatalogCard(c));
                 continue;
               }
-              const next: Card = { ...old, ...c };
-              if (!Object.hasOwn(c, 'childrenIds')) next.childrenIds = old.childrenIds;
-              out.set(c.docId, next);
+              out.set(c.docId, mergeStudioCatalogCard(toStudioCatalogCard(old), c));
             }
             return Array.from(out.values());
           });
         } else {
-          setCards(items);
+          setCards(items.map((card) => toStudioCatalogCard(card)));
         }
 
         if (!firstChunkPainted) {
@@ -663,6 +678,22 @@ export default function CollectionsAdminClient({
         if (!data.hasMore || (data.items || []).length === 0) break;
         lastDocId = data.lastDocId;
         page += 1;
+      }
+
+      if (isCurrent()) {
+        setCards((prev) => {
+          if (finalItems.length === 0) return [];
+          const prevById = new Map<string, Card>();
+          for (const card of prev) {
+            if (card.docId) prevById.set(card.docId, card);
+          }
+          return finalItems.map((card) => {
+            const existing = card.docId ? prevById.get(card.docId) : null;
+            return existing
+              ? mergeStudioCatalogCard(toStudioCatalogCard(existing), card)
+              : toStudioCatalogCard(card);
+          });
+        });
       }
     } catch (e) {
       if (isCurrent()) {
@@ -690,8 +721,8 @@ export default function CollectionsAdminClient({
     if (!cards.length || selectedCardId) return;
     const fallback = rootedCollections[0]?.docId ?? cards[0]?.docId ?? null;
     setSelectedCardId(fallback);
-    if (fallback) onSelectCard?.(fallback);
-  }, [cards, selectedCardId, rootedCollections, onSelectCard]);
+    if (fallback) onSelectCard?.(fallback, cardById.get(fallback) ?? null);
+  }, [cards, selectedCardId, rootedCollections, onSelectCard, cardById]);
 
   const handleSelectCard = useCallback(
     (cardId: string) => {
@@ -1378,7 +1409,7 @@ export default function CollectionsAdminClient({
               ) : null}
               <UnparentDropZone
                 readOnly={treeDropZonesReadOnly}
-                className={`${styles.unparentDropZone} ${styles.panelScroll}`}
+                className={`${styles.unparentDropZone} ${studioAttachBank ? styles.panelViewport : styles.panelScroll}`}
                 suppressActiveHighlight={studioAttachBank}
               >
                 {studioAttachBank ? (
@@ -1450,7 +1481,10 @@ export default function CollectionsAdminClient({
 
             {embeddedRightSlot ? (
               typeof embeddedRightSlot === 'function' ? (
-                embeddedRightSlot({ refreshCards: () => void load({ soft: true }) })
+                embeddedRightSlot({
+                  refreshCards: () => void load({ soft: true }),
+                  upsertCard: upsertEmbeddedCard,
+                })
               ) : (
                 embeddedRightSlot
               )
@@ -1594,7 +1628,7 @@ export default function CollectionsAdminClient({
                   <option value="all">All types</option>
                   <option value="story">Story</option>
                   <option value="gallery">Gallery</option>
-                  <option value="qa">Q&A</option>
+                  <option value="qa">Question</option>
                   <option value="quote">Quote</option>
                   <option value="callout">Callout</option>
                 </select>

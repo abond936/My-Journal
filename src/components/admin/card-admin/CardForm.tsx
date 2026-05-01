@@ -192,9 +192,15 @@ const CardForm: React.FC = () => {
   }, [updateCoverImage]);
 
   const handleCoverImageCommit = useCallback(async (newCoverImage: Media | null, newPosition?: string) => {
-    if (!newCoverImage || newPosition === undefined) return;
+    if (!newCoverImage) {
+      await persistFieldPatch({
+        coverImageId: null,
+        coverImageFocalPoint: null,
+      });
+      return;
+    }
 
-    const parts = newPosition.trim().split(/\s+/);
+    const parts = (newPosition ?? '50% 50%').trim().split(/\s+/);
     const xPercent = parseFloat(parts[0] ?? '50') || 50;
     const yPercent = parseFloat(parts[1] ?? '50') || 50;
     const focalPoint = {
@@ -550,7 +556,7 @@ const CardForm: React.FC = () => {
                       className={clsx(styles.statusSelect, errors.type && styles.inputError)}
                     >
                       <option value="story">Story</option>
-                      {cardData.type === 'qa' && <option value="qa">Q&A</option>}
+                      {cardData.type === 'qa' && <option value="qa">Question</option>}
                       <option value="quote">Quote</option>
                       <option value="callout">Callout</option>
                       <option value="gallery">Gallery</option>
@@ -800,7 +806,7 @@ const CardForm: React.FC = () => {
                   className={clsx(styles.statusSelect, errors.type && styles.inputError)}
                 >
                   <option value="story">Story</option>
-                  {cardData.type === 'qa' && <option value="qa">Q&A</option>}
+                  {cardData.type === 'qa' && <option value="qa">Question</option>}
                   <option value="quote">Quote</option>
                   <option value="callout">Callout</option>
                   <option value="gallery">Gallery</option>

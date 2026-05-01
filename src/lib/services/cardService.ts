@@ -556,6 +556,13 @@ async function _hydrateCards(cards: Card[]): Promise<Card[]> {
         media: mediaMap.get(item.mediaId),
       }));
     }
+    hydratedCard.displayThumbnail =
+      hydratedCard.coverImage ?? hydratedCard.galleryMedia?.[0]?.media ?? null;
+    hydratedCard.displayThumbnailSource = hydratedCard.coverImage
+      ? 'cover'
+      : hydratedCard.galleryMedia?.[0]?.media
+        ? 'gallery'
+        : null;
     // Hydrate content for rendering (server-side only)
     if (hydratedCard.content) {
       hydratedCard.content = hydrateContentImageSrc(hydratedCard.content, mediaMap);
@@ -607,6 +614,8 @@ async function _hydrateCoverImagesOnly(cards: Card[]): Promise<Card[]> {
     const hydratedCard = { ...card };
     if (hydratedCard.coverImageId) {
       hydratedCard.coverImage = mediaMap.get(hydratedCard.coverImageId) || null;
+      hydratedCard.displayThumbnail = hydratedCard.coverImage;
+      hydratedCard.displayThumbnailSource = hydratedCard.coverImage ? 'cover' : null;
       if (hydratedCard.coverImage && !hydratedCard.coverImageFocalPoint) {
         hydratedCard.coverImageFocalPoint = deriveFocalPointFromObjectPosition(
           hydratedCard.coverImage.objectPosition || '50% 50%',
@@ -616,6 +625,8 @@ async function _hydrateCoverImagesOnly(cards: Card[]): Promise<Card[]> {
       }
     } else {
       hydratedCard.coverImage = null;
+      hydratedCard.displayThumbnail = null;
+      hydratedCard.displayThumbnailSource = null;
     }
     // Leave galleryMedia and contentMedia as dehydrated (just IDs)
     return hydratedCard;
@@ -654,17 +665,24 @@ async function _hydrateFirstGallerySlideWhereNoCover(cards: Card[]): Promise<Car
 
   return cards.map(card => {
     if (card.coverImage || !card.galleryMedia?.[0]?.mediaId) {
-      return card;
+      return {
+        ...card,
+        displayThumbnail: card.coverImage ?? card.displayThumbnail ?? null,
+        displayThumbnailSource: card.coverImage ? 'cover' : card.displayThumbnailSource ?? null,
+      };
     }
     const media = mediaMap.get(card.galleryMedia[0].mediaId);
     if (!media) {
-      return card;
+      return {
+        ...card,
+        displayThumbnail: null,
+        displayThumbnailSource: null,
+      };
     }
     return {
       ...card,
-      galleryMedia: card.galleryMedia.map((item, i) =>
-        i === 0 ? { ...item, media } : item
-      ),
+      displayThumbnail: media,
+      displayThumbnailSource: 'gallery',
     };
   });
 }

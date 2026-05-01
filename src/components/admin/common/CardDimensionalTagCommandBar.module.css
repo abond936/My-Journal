@@ -60,18 +60,20 @@
 
 /* Match MacroTagSelector `.tagNode` / `.tagName` */
 .chip {
-  border: var(--border-width-thin) solid var(--admin-window-border-color);
-  background: var(--admin-window-background-color);
-  color: var(--admin-support-label-color);
-  border-radius: 2px;
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-tight);
-  padding: 1px 5px;
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-window-border-color) 50%, transparent);
+  background: color-mix(in srgb, var(--admin-window-background-color) 50%, transparent);
+  color: var(--admin-chrome-text-color);
+  border-radius: var(--border-radius-sm);
+  font: var(--admin-grid-overlay-font);
+  letter-spacing: 0.02em;
+  line-height: 1;
+  padding: 2px 5px;
   cursor: pointer;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  backdrop-filter: blur(4px);
 }
 
 .chip:disabled {
@@ -81,11 +83,13 @@
 
 .chipEmpty {
   color: var(--admin-support-meta-color);
-  font-family: var(--admin-support-meta-font-family);
-  font-size: var(--admin-support-meta-font-size);
-  font-weight: var(--admin-support-meta-font-weight);
-  line-height: var(--admin-support-meta-line-height);
-  font-style: italic;
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-window-border-color) 50%, transparent);
+  border-radius: var(--border-radius-sm);
+  background: color-mix(in srgb, var(--admin-window-background-color) 50%, transparent);
+  font: var(--admin-grid-overlay-font);
+  line-height: 1;
+  padding: 2px 5px;
+  backdrop-filter: blur(4px);
 }
 
 .chipX {
@@ -113,7 +117,7 @@
   font-family: var(--admin-support-control-font-family);
   font-size: var(--admin-support-control-font-size);
   font-weight: var(--admin-support-control-font-weight);
-  line-height: var(--admin-support-control-line-height);
+  line-height: 1.1;
 }
 
 .searchInput::placeholder {
@@ -203,8 +207,9 @@
 }
 
 .wrapCompact .chip {
-  font-size: var(--font-size-xs);
-  padding: 0 5px;
+  font: var(--admin-grid-overlay-font);
+  padding: 2px 5px;
+  line-height: 1;
 }
 
 /*
@@ -227,9 +232,9 @@
 
 .wrapTable .chip,
 .wrapTable .chipEmpty {
-  font-size: var(--font-size-xs);
-  line-height: var(--line-height-tight);
-  padding: var(--spacing-xs) var(--spacing-sm);
+  font: var(--admin-grid-overlay-font);
+  line-height: 1;
+  padding: 2px 5px;
   border-radius: var(--border-radius-sm);
   min-width: 0;
 }

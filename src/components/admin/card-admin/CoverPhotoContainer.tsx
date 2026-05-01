@@ -59,13 +59,14 @@ export default function CoverPhotoContainer({
         const media: Media = data.media ?? data;
         if (!media?.docId) throw new Error('Invalid response');
         onChange(media, '50% 50%');
+        void onCommit?.(media, '50% 50%');
       } catch (err) {
         setUploadError(err instanceof Error ? err.message : 'Failed to upload image');
       } finally {
         setIsUploading(false);
       }
     },
-    [onChange]
+    [onChange, onCommit]
   );
 
   const onDrop = useCallback(
@@ -127,6 +128,7 @@ export default function CoverPhotoContainer({
   const handlePhotoSelect = (media: Media) => {
     setIsPickerOpen(false);
     onChange(media, '50% 50%');
+    void onCommit?.(media, '50% 50%');
   };
 
   const handleRemovePhoto = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
@@ -134,7 +136,8 @@ export default function CoverPhotoContainer({
     setHorizontalPosition(50);
     setVerticalPosition(50);
     onChange(null, '50% 50%');
-  }, [onChange, swallowButtonEvent]);
+    void onCommit?.(null, '50% 50%');
+  }, [onChange, onCommit, swallowButtonEvent]);
 
   const handleOpenPicker = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     swallowButtonEvent(e);

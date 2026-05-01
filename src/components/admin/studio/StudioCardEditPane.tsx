@@ -31,11 +31,12 @@ export default function StudioCardEditPane({
   const router = useRouter();
   const {
     selectedCardId,
-    selectedCard,
+    activeCardViewModel,
     cardLoading,
     cardError,
-    setSelectedCard,
+    setSelectedDetail,
     refreshCollectionsCardList,
+    upsertCollectionsCardList,
   } = useStudioShell();
   const { tags: allTags } = useTag();
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -54,9 +55,11 @@ export default function StudioCardEditPane({
       throwIfJsonApiFailed(res, data, 'Failed to save card');
       if (isCreate && data.docId) {
         onCardCreated?.(data.docId);
+        upsertCollectionsCardList(data as StudioCardContext);
         router.replace(`/admin/studio?card=${encodeURIComponent(data.docId)}`);
       } else if (selectedCardId) {
-        setSelectedCard(data as StudioCardContext);
+        setSelectedDetail(data as StudioCardContext);
+        upsertCollectionsCardList(data as StudioCardContext);
       }
       refreshCollectionsCardList();
       void globalMutate(
@@ -66,15 +69,15 @@ export default function StudioCardEditPane({
       );
       return data;
     },
-    [onCardCreated, refreshCollectionsCardList, router, selectedCardId, setSelectedCard]
+    [onCardCreated, refreshCollectionsCardList, router, selectedCardId, setSelectedDetail, upsertCollectionsCardList]
   );
 
   const initialCard = useMemo(() => {
-    if (!selectedCard) return null;
-    return studioContextToInitialCard(selectedCard);
-  }, [selectedCard]);
+    if (!activeCardViewModel.card) return null;
+    return studioContextToInitialCard(activeCardViewModel.card as StudioCardContext);
+  }, [activeCardViewModel.card]);
   const isTransitioningToDifferentCard = Boolean(
-    selectedCardId && selectedCard?.docId && selectedCard.docId !== selectedCardId
+    selectedCardId && activeCardViewModel.card?.docId && activeCardViewModel.card.docId !== selectedCardId
   );
 
   const handleWheelCapture = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
@@ -90,7 +93,7 @@ export default function StudioCardEditPane({
 
   /** Remount only when switching cards — not on `updatedAt` churn from relationship panel PATCHes (would wipe dirty form). */
   const providerKey =
-    selectedCard?.docId ?? selectedCardId ?? (newCardRequested ? 'new' : 'none');
+    activeCardViewModel.card?.docId ?? selectedCardId ?? (newCardRequested ? 'new' : 'none');
 
   if (!selectedCardId && !newCardRequested) {
     return (
@@ -103,7 +106,7 @@ export default function StudioCardEditPane({
     );
   }
 
-  if (cardLoading && !selectedCard) {
+  if (cardLoading && !activeCardViewModel.card) {
     return (
       <aside className={styles.cardEditPlaceholder} aria-label="Compose">
         <h2 className={styles.studioComposeTitle}>Compose</h2>
@@ -133,10 +136,10 @@ export default function StudioCardEditPane({
   return (
     <aside className={styles.studioCardEditHost} aria-label="Compose">
       <h2 className={styles.studioComposeTitle}>Compose</h2>
-      {cardError && initialCard ? (
-        <p className={styles.cardEditPlaceholderError}>{cardError}</p>
+      {activeCardViewModel.status === 'degraded' && activeCardViewModel.error && initialCard ? (
+        <p className={styles.cardEditPlaceholderError}>{activeCardViewModel.error}</p>
       ) : null}
-      {isTransitioningToDifferentCard ? (
+      {activeCardViewModel.status === 'preview' || isTransitioningToDifferentCard ? (
         <p className={styles.cardEditPlaceholderMeta}>Loading selected card...</p>
       ) : null}
       <CardFormProvider

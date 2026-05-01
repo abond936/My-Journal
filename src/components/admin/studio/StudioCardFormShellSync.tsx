@@ -18,10 +18,35 @@ function pickRelationshipSnapshot(card: StudioCardContext): Partial<ShellRelatio
 
 function relationshipSignature(card: StudioCardContext): string {
   const gm = card.galleryMedia || [];
-  const galleryPart = gm.map((g) => `${g.mediaId}:${g.order}`).join('|');
+  const cover = card.coverImage;
+  const coverSignature = cover
+      ? [
+          cover.docId ?? '',
+          cover.storageUrl ?? '',
+          cover.filename ?? '',
+          cover.objectPosition ?? '',
+        ].join('~')
+      : 'no-cover';
+  const galleryPart = gm
+    .map((g) => {
+      const media = g.media;
+      const mediaSignature = media
+        ? [
+            media.docId ?? '',
+            media.storageUrl ?? '',
+            media.filename ?? '',
+            media.objectPosition ?? '',
+          ].join('~')
+        : 'no-media';
+      return `${g.mediaId}:${g.order}:${mediaSignature}`;
+    })
+    .join('|');
   return [
     card.updatedAt ?? '',
     card.coverImageId ?? '',
+    coverSignature,
+    card.coverImageFocalPoint?.x ?? '',
+    card.coverImageFocalPoint?.y ?? '',
     (card.childrenIds || []).join(','),
     galleryPart,
     (card.contentMedia || []).join(','),
@@ -34,7 +59,7 @@ function relationshipSignature(card: StudioCardContext): string {
  * Only updates `cardData` so Compose Save / dirty state reflect pending full-form baseline.
  */
 export default function StudioCardFormShellSync() {
-  const { selectedCard, selectedCardId } = useStudioShell();
+  const { selectedDetail, selectedCardId } = useStudioShell();
   const { formState, applyShellRelationshipSync } = useCardForm();
   const lastApplied = useRef<string>('');
 
@@ -43,13 +68,13 @@ export default function StudioCardFormShellSync() {
   }, [selectedCardId]);
 
   useEffect(() => {
-    if (!selectedCardId || !selectedCard?.docId) return;
-    if (selectedCard.docId !== formState.cardData.docId) return;
-    const sig = relationshipSignature(selectedCard);
+    if (!selectedCardId || !selectedDetail?.docId) return;
+    if (selectedDetail.docId !== formState.cardData.docId) return;
+    const sig = relationshipSignature(selectedDetail);
     if (sig === lastApplied.current) return;
     lastApplied.current = sig;
-    applyShellRelationshipSync(pickRelationshipSnapshot(selectedCard));
-  }, [selectedCard, selectedCardId, formState.cardData.docId, applyShellRelationshipSync]);
+    applyShellRelationshipSync(pickRelationshipSnapshot(selectedDetail));
+  }, [selectedDetail, selectedCardId, formState.cardData.docId, applyShellRelationshipSync]);
 
   return null;
 }

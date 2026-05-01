@@ -99,7 +99,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
   const cardTypeLabels: Record<string, string> = {
     story: 'Story',
     gallery: 'Gallery',
-    qa: 'Q&A',
+    qa: 'Question',
     quote: 'Quote',
     callout: 'Callout',
   };

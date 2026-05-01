@@ -9,11 +9,22 @@ import MediaAdminContent from '@/app/admin/media-admin/MediaAdminContent';
 import StudioCardEditPane from '@/components/admin/studio/StudioCardEditPane';
 import StudioQuestionsPane from '@/components/admin/studio/StudioQuestionsPane';
 import { handleStudioRelationshipDragEnd } from '@/components/admin/studio/studioRelationshipDndPrimitives';
-import type { StudioCardContext } from '@/components/admin/studio/studioCardTypes';
+import type {
+  StudioActiveCardViewModel,
+  StudioCardContext,
+  StudioSelectedDetail,
+  StudioSelectedLoadState,
+  StudioSelectedPreview,
+} from '@/components/admin/studio/studioCardTypes';
 import {
   StudioShellProvider,
   type StudioShellContextValue,
 } from '@/components/admin/studio/StudioShellContext';
+import {
+  mergeStudioCatalogCard,
+  toStudioSelectedDetail,
+  toStudioSelectedPreview,
+} from '@/components/admin/studio/studioCardProjection';
 import type { Media } from '@/lib/types/photo';
 import { useMedia } from '@/components/providers/MediaProvider';
 import type { Card } from '@/lib/types/card';
@@ -211,10 +222,13 @@ export default function StudioWorkspace() {
   const pendingQuestionsWidthRef = useRef<number | null>(null);
   const collectionsRefreshRef = useRef<(() => void) | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(() => requestedCardId);
-  const [selectedCard, setSelectedCard] = useState<StudioCardContext | null>(null);
-  const selectedCardRef = useRef<StudioCardContext | null>(null);
-  const selectedCardCacheRef = useRef(new Map<string, StudioCardContext>());
+  const [selectedPreview, setSelectedPreview] = useState<StudioSelectedPreview | null>(null);
+  const [selectedDetail, setSelectedDetail] = useState<StudioSelectedDetail | null>(null);
+  const selectedPreviewRef = useRef<StudioSelectedPreview | null>(null);
+  const selectedDetailRef = useRef<StudioSelectedDetail | null>(null);
+  const selectedCardCacheRef = useRef(new Map<string, StudioSelectedPreview>());
   const selectedCardCacheOrderRef = useRef<string[]>([]);
+  const [selectedLoadState, setSelectedLoadState] = useState<StudioSelectedLoadState>('idle');
   const [cardLoading, setCardLoading] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -231,13 +245,14 @@ export default function StudioWorkspace() {
   } = useMedia();
 
   const bodyMediaInsertRef = useRef<((m: Media) => void) | null>(null);
+  const collectionsUpsertCardRef = useRef<((card: Card) => void) | null>(null);
   const resolveBankMediaById = useCallback(
     (id: string) => bankMediaPage.find((m) => m.docId === id) ?? resolveMediaById(id),
     [bankMediaPage, resolveMediaById]
   );
-  const cacheSelectedCard = useCallback((card: StudioCardContext | null) => {
+  const cacheSelectedCard = useCallback((card: StudioSelectedPreview | StudioSelectedDetail | null) => {
     if (!card?.docId) return;
-    selectedCardCacheRef.current.set(card.docId, card);
+    selectedCardCacheRef.current.set(card.docId, toStudioSelectedPreview(card));
     selectedCardCacheOrderRef.current = selectedCardCacheOrderRef.current.filter((id) => id !== card.docId);
     selectedCardCacheOrderRef.current.push(card.docId);
     while (selectedCardCacheOrderRef.current.length > STUDIO_SELECTED_CARD_CACHE_LIMIT) {
@@ -260,26 +275,31 @@ export default function StudioWorkspace() {
       if (!cardId) return null;
       const trimmedId = cardId.trim();
       if (!trimmedId) return null;
-      if (selectedCardRef.current?.docId === trimmedId) {
-        return selectedCardRef.current;
+      if (selectedDetailRef.current?.docId === trimmedId) {
+        return toStudioSelectedPreview(selectedDetailRef.current);
+      }
+      if (selectedPreviewRef.current?.docId === trimmedId) {
+        return selectedPreviewRef.current;
       }
       return getCachedSelectedCard(trimmedId);
     },
     [getCachedSelectedCard]
   );
   const selectCard = useCallback(
-    (cardId: string, previewCard?: Card | StudioCardContext | null) => {
+    (cardId: string, previewCard?: Card | StudioSelectedPreview | StudioSelectedDetail | null) => {
       const trimmedId = cardId.trim();
       if (!trimmedId) return;
       setSelectedCardId(trimmedId);
+      setSelectedDetail((current) => (current?.docId === trimmedId ? current : null));
+      setSelectedLoadState('loading');
       const knownPreview = getKnownCardPreview(trimmedId);
       const nextPreview =
         previewCard?.docId === trimmedId
-          ? (previewCard as StudioCardContext)
+          ? toStudioSelectedPreview(previewCard)
           : knownPreview;
       if (nextPreview) {
         cacheSelectedCard(nextPreview);
-        setSelectedCard(nextPreview);
+        setSelectedPreview(nextPreview);
       }
     },
     [cacheSelectedCard, getKnownCardPreview]
@@ -295,8 +315,12 @@ export default function StudioWorkspace() {
   }, [requestedCardId]);
 
   useEffect(() => {
-    cacheSelectedCard(selectedCard);
-  }, [cacheSelectedCard, selectedCard]);
+    cacheSelectedCard(selectedPreview);
+  }, [cacheSelectedCard, selectedPreview]);
+
+  useEffect(() => {
+    cacheSelectedCard(selectedDetail);
+  }, [cacheSelectedCard, selectedDetail]);
 
   useEffect(() => {
     const mq = window.matchMedia(`(min-width: ${EMBEDDED_ADMIN_WIDE_MIN_WIDTH_PX}px)`);
@@ -321,7 +345,8 @@ export default function StudioWorkspace() {
 
   cardEditWidthRef.current = cardEditWidth;
   questionsWidthRef.current = questionsWidth;
-  selectedCardRef.current = selectedCard;
+  selectedPreviewRef.current = selectedPreview;
+  selectedDetailRef.current = selectedDetail;
 
   const scheduleLiveCardEditWidth = useCallback((next: number) => {
     pendingCardEditWidthRef.current = next;
@@ -637,6 +662,7 @@ export default function StudioWorkspace() {
   const loadSelectedCard = useCallback(async (cardId: string, opts?: { quiet?: boolean }) => {
     if (!opts?.quiet) setCardLoading(true);
     setCardError(null);
+    setSelectedLoadState('loading');
     const id = cardId.trim();
     // Studio reads `selectedCard.childrenIds` (IDs only, free with parent fetch)
     // but never the hydrated `children` array. Skip child hydration entirely —
@@ -655,26 +681,36 @@ export default function StudioWorkspace() {
       };
     }
     throwIfJsonApiFailed(res, data, 'Failed to load card');
-    const card = data as StudioCardContext;
-    setSelectedCard(card);
+    const card = toStudioSelectedDetail(data as StudioCardContext);
+    setSelectedDetail(card);
+    setSelectedPreview((current) =>
+      current?.docId === card.docId
+        ? mergeStudioCatalogCard(current, card)
+        : toStudioSelectedPreview(card)
+    );
+    setSelectedLoadState('ready');
     if (!opts?.quiet) setCardLoading(false);
     return card;
   }, []);
 
   useEffect(() => {
     if (!selectedCardId) {
-      setSelectedCard(null);
+      setSelectedPreview(null);
+      setSelectedDetail(null);
       setCardError(null);
       setCardLoading(false);
+      setSelectedLoadState('idle');
       return;
     }
     let cancelled = false;
     const cachedSelectedCard = getCachedSelectedCard(selectedCardId);
-    if (cachedSelectedCard && selectedCardRef.current?.docId !== selectedCardId) {
-      setSelectedCard(cachedSelectedCard);
+    if (cachedSelectedCard && selectedPreviewRef.current?.docId !== selectedCardId) {
+      setSelectedPreview(cachedSelectedCard);
     }
     const hasUsablePreview =
-      selectedCardRef.current?.docId === selectedCardId || Boolean(cachedSelectedCard);
+      selectedPreviewRef.current?.docId === selectedCardId ||
+      selectedDetailRef.current?.docId === selectedCardId ||
+      Boolean(cachedSelectedCard);
     setCardError(null);
     setCardLoading(true);
     const run = async () => {
@@ -683,6 +719,7 @@ export default function StudioWorkspace() {
       } catch (e) {
         if (!cancelled) {
           setCardError(e instanceof Error ? e.message : 'Failed to load selected card context.');
+          setSelectedLoadState(hasUsablePreview ? 'degraded' : 'error');
         }
       } finally {
         if (!cancelled) setCardLoading(false);
@@ -699,11 +736,17 @@ export default function StudioWorkspace() {
       if (!selectedCardId) return;
       setActionBusy(true);
       setActionError(null);
-      const previousCard = selectedCard;
-      if (selectedCard?.docId === selectedCardId) {
-        const optimisticCard = applyOptimisticSelectedCardPatch(selectedCard, payload);
+      const previousDetail = selectedDetail;
+      const previousPreview = selectedPreview;
+      if (selectedDetail?.docId === selectedCardId) {
+        const optimisticCard = applyOptimisticSelectedCardPatch(selectedDetail, payload);
         cacheSelectedCard(optimisticCard);
-        setSelectedCard(optimisticCard);
+        setSelectedDetail(optimisticCard);
+        setSelectedPreview((current) =>
+          current?.docId === optimisticCard.docId
+            ? mergeStudioCatalogCard(current, optimisticCard)
+            : toStudioSelectedPreview(optimisticCard)
+        );
       }
       try {
         const res = await fetch(`/api/cards/${selectedCardId}`, {
@@ -713,31 +756,75 @@ export default function StudioWorkspace() {
         });
         const data = await res.json().catch(() => ({}));
         throwIfJsonApiFailed(res, data, 'Update failed.');
-        const nextCard = data as StudioCardContext;
+        const nextCard = toStudioSelectedDetail(data as StudioCardContext);
         cacheSelectedCard(nextCard);
-        setSelectedCard(nextCard);
+        setSelectedDetail(nextCard);
+        setSelectedPreview((current) =>
+          current?.docId === nextCard.docId
+            ? mergeStudioCatalogCard(current, nextCard)
+            : toStudioSelectedPreview(nextCard)
+        );
+        setSelectedLoadState('ready');
         collectionsRefreshRef.current?.();
         // Always refresh strip: omitting a message must clear stale text (e.g. old cover-drag copy).
         setActionInfo(successMessage ?? null);
       } catch (e) {
-        if (previousCard?.docId === selectedCardId) {
-          cacheSelectedCard(previousCard);
-          setSelectedCard(previousCard);
+        if (previousDetail?.docId === selectedCardId) {
+          cacheSelectedCard(previousDetail);
+          setSelectedDetail(previousDetail);
         }
+        if (previousPreview?.docId === selectedCardId) setSelectedPreview(previousPreview);
         setActionError(e instanceof Error ? e.message : 'Update failed.');
         setActionInfo(null);
       } finally {
         setActionBusy(false);
       }
     },
-    [cacheSelectedCard, selectedCard, selectedCardId]
+    [cacheSelectedCard, selectedDetail, selectedPreview, selectedCardId]
   );
+
+  const activeCardViewModel = useMemo<StudioActiveCardViewModel>(() => {
+    if (selectedLoadState === 'idle' && !selectedCardId && !selectedPreview && !selectedDetail) {
+      return {
+        status: 'empty',
+        card: null,
+        preview: null,
+        detail: null,
+        error: null,
+      };
+    }
+    if (selectedDetail) {
+      return {
+        status: selectedLoadState === 'degraded' ? 'degraded' : 'hydrated',
+        card: selectedDetail,
+        preview: selectedPreview,
+        detail: selectedDetail,
+        error: cardError,
+      };
+    }
+    if (selectedPreview) {
+      return {
+        status: selectedLoadState === 'degraded' ? 'degraded' : 'preview',
+        card: selectedPreview,
+        preview: selectedPreview,
+        detail: null,
+        error: cardError,
+      };
+    }
+    return {
+      status: selectedLoadState === 'error' ? 'error' : 'empty',
+      card: null,
+      preview: null,
+      detail: null,
+      error: cardError,
+    };
+  }, [cardError, selectedCardId, selectedDetail, selectedLoadState, selectedPreview]);
 
   const onStudioRelationshipDragEnd = useCallback(
     async (event: DragEndEvent) => {
       return handleStudioRelationshipDragEnd(event, {
         actionBusy,
-        selectedCard,
+        selectedCardDetail: selectedDetail,
         selectedCardId,
         patchSelectedCard,
         setActionInfo,
@@ -745,11 +832,15 @@ export default function StudioWorkspace() {
         bodyMediaInsertRef,
       });
     },
-    [actionBusy, selectedCard, selectedCardId, patchSelectedCard, resolveBankMediaById]
+    [actionBusy, selectedCardId, selectedDetail, patchSelectedCard, resolveBankMediaById]
   );
 
   const refreshCollectionsCardList = useCallback(() => {
     collectionsRefreshRef.current?.();
+  }, []);
+  const upsertCollectionsCardList = useCallback((card: Card | StudioCardContext | null) => {
+    if (!card?.docId) return;
+    collectionsUpsertCardRef.current?.(card as Card);
   }, []);
 
   const studioShellValue = useMemo<StudioShellContextValue>(
@@ -758,13 +849,18 @@ export default function StudioWorkspace() {
       setSelectedCardId,
       selectCard,
       getKnownCardPreview,
-      selectedCard,
-      setSelectedCard,
+      selectedPreview,
+      setSelectedPreview,
+      selectedDetail,
+      setSelectedDetail,
+      selectedLoadState,
+      activeCardViewModel,
       cardLoading,
       cardError,
       loadSelectedCard,
       patchSelectedCard,
       refreshCollectionsCardList,
+      upsertCollectionsCardList,
       selectedMediaIds,
       setSelectedMediaIds,
       toggleMediaSelection,
@@ -777,13 +873,18 @@ export default function StudioWorkspace() {
       setSelectedCardId,
       selectCard,
       getKnownCardPreview,
-      selectedCard,
-      setSelectedCard,
+      selectedPreview,
+      setSelectedPreview,
+      selectedDetail,
+      setSelectedDetail,
+      selectedLoadState,
+      activeCardViewModel,
       cardLoading,
       cardError,
       loadSelectedCard,
       patchSelectedCard,
       refreshCollectionsCardList,
+      upsertCollectionsCardList,
       selectedMediaIds,
       setSelectedMediaIds,
       toggleMediaSelection,
@@ -851,8 +952,9 @@ export default function StudioWorkspace() {
               embeddedCardsCollapsed={paneVisibility.cardsCollapsed}
               onStudioRelationshipDragEnd={onStudioRelationshipDragEnd}
               embeddedUnparentedReplacement={(ctx) => <StudioTreeCandidateCardBank {...ctx} />}
-              embeddedRightSlot={({ refreshCards }) => {
+              embeddedRightSlot={({ refreshCards, upsertCard }) => {
                 collectionsRefreshRef.current = refreshCards;
+                collectionsUpsertCardRef.current = upsertCard;
                 const showComposePane = !paneVisibility.composeCollapsed;
                 const showQuestionsPane = !paneVisibility.questionsCollapsed;
                 const showMediaPane = !paneVisibility.mediaCollapsed;

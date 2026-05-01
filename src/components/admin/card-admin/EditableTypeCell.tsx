@@ -28,7 +28,7 @@ export default function EditableTypeCell({ card, onUpdate }: EditableTypeCellPro
       className={styles.inlineEditSelect}
     >
       <option value="story">Story</option>
-      {card.type === 'qa' && <option value="qa">Q&A</option>}
+      {card.type === 'qa' && <option value="qa">Question</option>}
       <option value="quote">Quote</option>
       <option value="callout">Callout</option>
       <option value="gallery">Gallery</option>

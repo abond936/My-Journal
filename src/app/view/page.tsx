@@ -22,7 +22,16 @@ function useIntersectionObserver(callback: () => void, options?: IntersectionObs
 }
 
 export default function CardsPage() {
-  const { cards, feedSections, loadingMore, hasMore, loadMore, isLoading, error } =
+  const {
+    visibleCards,
+    visibleFeedSections,
+    loadingMore,
+    hasMore,
+    loadMore,
+    isInitialLoading,
+    isRefreshing,
+    error,
+  } =
     useCardContext();
   const searchParams = useSearchParams();
   const focusCardId = searchParams.get('focusCardId');
@@ -43,7 +52,7 @@ export default function CardsPage() {
 
   // Restore to edited card when returning from edit; otherwise restore prior scroll position.
   useEffect(() => {
-    if (isLoading || cards.length === 0) return;
+    if (isInitialLoading || visibleCards.length === 0) return;
 
     if (focusCardId && consumedFocusRef.current !== focusCardId) {
       const el = document.querySelector(`[data-card-id="${focusCardId}"]`) as HTMLElement | null;
@@ -63,7 +72,7 @@ export default function CardsPage() {
         sessionStorage.removeItem(SCROLL_POSITION_KEY);
       }, 100); // Delay to allow DOM to render
     }
-  }, [isLoading, cards.length, focusCardId]);
+  }, [isInitialLoading, visibleCards.length, focusCardId]);
 
   const onSaveScrollPosition = useCallback(() => {
     sessionStorage.setItem(SCROLL_POSITION_KEY, window.scrollY.toString());
@@ -81,9 +90,10 @@ export default function CardsPage() {
   return (
     <div className={styles.page}>
       <CardFeedV2
-        cards={cards}
-        sections={feedSections}
-        loading={isLoading}
+        cards={visibleCards}
+        sections={visibleFeedSections}
+        loading={isInitialLoading}
+        refreshing={isRefreshing}
         loadMoreRef={loadMoreRef}
         onSaveScrollPosition={onSaveScrollPosition}
       />

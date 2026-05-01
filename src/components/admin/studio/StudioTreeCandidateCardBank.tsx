@@ -24,6 +24,7 @@ import {
 import { applyModifierSelection } from '@/lib/utils/adminListSelection';
 import cardAdminStyles from '@/app/admin/card-admin/card-admin.module.css';
 import mediaAdminStyles from '@/app/admin/media-admin/media-admin.module.css';
+import { mergeStudioCatalogCard, toStudioCatalogCard } from '@/components/admin/studio/studioCardProjection';
 import styles from './StudioTreeCandidateCardBank.module.css';
 
 type CandidateSort = 'titleAsc' | 'titleDesc' | 'createdDesc' | 'createdAsc';
@@ -175,7 +176,7 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
         const items = Array.isArray(pageData.items) ? pageData.items : [];
         for (const item of items) {
           if (item.docId && !seen.has(item.docId)) {
-            accumulated.push(item);
+            accumulated.push(toStudioCatalogCard(item));
             seen.add(item.docId);
           }
         }
@@ -276,14 +277,14 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
     if (!card.docId) return;
     setFullCatalog((current) => {
       const index = current.findIndex((entry) => entry.docId === card.docId);
-      if (index === -1) return [card, ...current];
+      if (index === -1) return [toStudioCatalogCard(card), ...current];
       const next = [...current];
-      next[index] = card;
+      next[index] = mergeStudioCatalogCard(toStudioCatalogCard(next[index]), card);
       return next;
     });
     setCatalogOverrides((current) => ({
       ...current,
-      [card.docId!]: card,
+      [card.docId!]: toStudioCatalogCard(card),
     }));
   }, []);
 
@@ -336,8 +337,14 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
           return (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' });
       }
     });
-    return base;
-  }, [deferredMergedCatalog, matchesFilters, deferredStatusFilter, deferredSortMode]);
+    const selectedCard =
+      props.selectedCardId
+        ? deferredMergedCatalog.find((card) => card.docId === props.selectedCardId) ?? null
+        : null;
+    if (!selectedCard?.docId) return base;
+    if (base.some((card) => card.docId === selectedCard.docId)) return base;
+    return [selectedCard, ...base];
+  }, [deferredMergedCatalog, matchesFilters, deferredStatusFilter, deferredSortMode, props.selectedCardId]);
 
   const parentIdsByChild = useMemo(
     () => buildParentIdsByChild(deferredMergedCatalog),
@@ -385,7 +392,6 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
 
   const handleBulkSelectCard = useCallback(
     (cardId: string, index: number, e: React.MouseEvent | React.KeyboardEvent) => {
-      e.preventDefault();
       e.stopPropagation();
       applyModifierSelection({
         orderedIds: orderedCandidateIds,
@@ -569,6 +575,7 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
 
   return (
     <div className={styles.root}>
+      <div className={styles.controls}>
       <div className={styles.studioCardFilters} role="search">
         <label className={`${styles.studioCardField} ${styles.studioPaneSearchField}`}>
           <span className={styles.studioCardFieldLabel}>Search title</span>
@@ -591,7 +598,7 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
           >
             <option value="all">All types</option>
             <option value="story">Story</option>
-            <option value="qa">Q&amp;A</option>
+            <option value="qa">Question</option>
             <option value="quote">Quote</option>
             <option value="callout">Callout</option>
             <option value="gallery">Gallery</option>
@@ -687,7 +694,7 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
           footerContent={
             rulesExpanded ? (
               <div className={styles.studioRuleMatrix}>
-                {(DIMENSION_KEYS as DimensionKey[]).map((dimension) => {
+                {Array.from(DIMENSION_KEYS).map((dimension) => {
                   const state = dimensionFilters[dimension];
                   const options = (allTags || []).filter((t) => t.dimension === dimension && t.docId);
                   return (
@@ -767,7 +774,7 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
                 Update Type
               </option>
               <option value="story">Set to Story</option>
-              <option value="qa">Set to Q&amp;A</option>
+              <option value="qa">Set to Question</option>
               <option value="quote">Set to Quote</option>
               <option value="callout">Set to Callout</option>
               <option value="gallery">Set to Gallery</option>
@@ -805,24 +812,27 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
           </div>
         ) : null}
       </div>
+      </div>
 
-      <CardAdminGrid
-        cards={candidateCards}
-        selectedCardIds={bulkSelectedCardIds}
-        allTags={allTags || []}
-        getCardSecondaryMeta={(card) => collectionStateMetaById.get(card.docId) ?? null}
-        onSelectCard={handleBulkSelectCard}
-        onSelectAll={handleSelectAll}
-        onSaveScrollPosition={() => {}}
-        onUpdateCard={onUpdateCard}
-        onDeleteCard={onDeleteCard}
-        studioCuratedTreeDrag={studioDrag}
-        studioCuratedTreeUnparentedRowTarget={studioDrag}
-        studioEmbedCellClickSelects
-        onStudioFocusCard={(card) => onStudioSelectCard(card.docId, card)}
-        interactionDisabled={saving}
-        compactStudioGrid
-      />
+      <div className={styles.resultsScroll}>
+        <CardAdminGrid
+          cards={candidateCards}
+          selectedCardIds={bulkSelectedCardIds}
+          allTags={allTags || []}
+          getCardSecondaryMeta={(card) => collectionStateMetaById.get(card.docId) ?? null}
+          onSelectCard={handleBulkSelectCard}
+          onSelectAll={handleSelectAll}
+          onSaveScrollPosition={() => {}}
+          onUpdateCard={onUpdateCard}
+          onDeleteCard={onDeleteCard}
+          studioCuratedTreeDrag={studioDrag}
+          studioCuratedTreeUnparentedRowTarget={studioDrag}
+          studioEmbedCellClickSelects
+          onStudioFocusCard={(card) => onStudioSelectCard(card.docId, card)}
+          interactionDisabled={saving}
+          compactStudioGrid
+        />
+      </div>
 
       <EditModal
         isOpen={bulkTagModalOpen}

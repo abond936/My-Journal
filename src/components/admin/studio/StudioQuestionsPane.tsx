@@ -240,7 +240,7 @@ export default function StudioQuestionsPane() {
         credentials: 'same-origin',
       });
       const data = (await res.json().catch(() => ({}))) as QuestionResponse;
-      throwIfJsonApiFailed(res, data, 'Failed to create Q&A card');
+      throwIfJsonApiFailed(res, data, 'Failed to create Question card');
       if (data.question) {
         setQuestions(prev => prev.map(q => q.docId === question.docId ? data.question! : q));
       }
@@ -249,7 +249,7 @@ export default function StudioQuestionsPane() {
         refreshCollectionsCardList();
         selectCard(cardId, data.card ?? null);
         router.replace(`/admin/studio?card=${encodeURIComponent(cardId)}`);
-        setInfo('Created draft Q&A card.');
+        setInfo('Created draft Question card.');
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to open question');
@@ -261,7 +261,7 @@ export default function StudioQuestionsPane() {
   const unlinkQuestionCard = useCallback(async (question: Question) => {
     const cardId = question.usedByCardIds[0];
     if (!cardId) return;
-    const ok = window.confirm('Unlink this question? The linked Q&A card will be converted to a draft Story.');
+    const ok = window.confirm('Unlink this question? The linked Question card will be converted to a draft Story.');
     if (!ok) return;
     setBusyId(question.docId);
     setError(null);
