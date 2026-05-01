@@ -104,7 +104,7 @@ function QuestionTagTree({
 
 export default function StudioQuestionsPane() {
   const router = useRouter();
-  const { setSelectedCardId, refreshCollectionsCardList } = useStudioShell();
+  const { selectCard, refreshCollectionsCardList } = useStudioShell();
   const { tags: allTags, dimensionTree } = useTag();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
@@ -226,7 +226,7 @@ export default function StudioQuestionsPane() {
     try {
       const existingCardId = question.usedByCardIds[0];
       if (existingCardId) {
-        setSelectedCardId(existingCardId);
+        selectCard(existingCardId);
         router.replace(`/admin/studio?card=${encodeURIComponent(existingCardId)}`);
         return;
       }
@@ -246,7 +246,7 @@ export default function StudioQuestionsPane() {
       const cardId = data.card?.docId;
       if (cardId) {
         refreshCollectionsCardList();
-        setSelectedCardId(cardId);
+        selectCard(cardId, data.card ?? null);
         router.replace(`/admin/studio?card=${encodeURIComponent(cardId)}`);
         setInfo('Created draft Q&A card.');
       }
@@ -255,7 +255,7 @@ export default function StudioQuestionsPane() {
     } finally {
       setBusyId(null);
     }
-  }, [refreshCollectionsCardList, router, setSelectedCardId]);
+  }, [refreshCollectionsCardList, router, selectCard]);
 
   const unlinkQuestionCard = useCallback(async (question: Question) => {
     const cardId = question.usedByCardIds[0];

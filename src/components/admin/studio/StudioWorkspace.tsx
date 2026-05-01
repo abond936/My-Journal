@@ -36,6 +36,7 @@ const DEFAULT_QUESTIONS_WIDTH = 320;
 /** Upper cap so Compose does not grow past a comfortable editing line length even on ultra-wide rows. */
 const MAX_CARD_EDIT_WIDTH = 1200;
 const MAX_QUESTIONS_WIDTH = 620;
+const STUDIO_SELECTED_CARD_CACHE_LIMIT = 12;
 
 function paneHandleCount(opts: { compose: boolean; questions: boolean; media: boolean }): number {
   return Math.max(0, [opts.compose, opts.questions, opts.media].filter(Boolean).length - 1);
@@ -192,6 +193,9 @@ export default function StudioWorkspace() {
   const collectionsRefreshRef = useRef<(() => void) | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(() => requestedCardId);
   const [selectedCard, setSelectedCard] = useState<StudioCardContext | null>(null);
+  const selectedCardRef = useRef<StudioCardContext | null>(null);
+  const selectedCardCacheRef = useRef(new Map<string, StudioCardContext>());
+  const selectedCardCacheOrderRef = useRef<string[]>([]);
   const [cardLoading, setCardLoading] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -199,6 +203,7 @@ export default function StudioWorkspace() {
   const [actionBusy, setActionBusy] = useState(false);
   const {
     media: bankMediaPage,
+    resolveMediaById,
     selectedMediaIds,
     setSelectedMediaIds,
     toggleMediaSelection,
@@ -208,8 +213,45 @@ export default function StudioWorkspace() {
 
   const bodyMediaInsertRef = useRef<((m: Media) => void) | null>(null);
   const resolveBankMediaById = useCallback(
-    (id: string) => bankMediaPage.find((m) => m.docId === id),
-    [bankMediaPage]
+    (id: string) => bankMediaPage.find((m) => m.docId === id) ?? resolveMediaById(id),
+    [bankMediaPage, resolveMediaById]
+  );
+  const cacheSelectedCard = useCallback((card: StudioCardContext | null) => {
+    if (!card?.docId) return;
+    selectedCardCacheRef.current.set(card.docId, card);
+    selectedCardCacheOrderRef.current = selectedCardCacheOrderRef.current.filter((id) => id !== card.docId);
+    selectedCardCacheOrderRef.current.push(card.docId);
+    while (selectedCardCacheOrderRef.current.length > STUDIO_SELECTED_CARD_CACHE_LIMIT) {
+      const oldestId = selectedCardCacheOrderRef.current.shift();
+      if (oldestId) {
+        selectedCardCacheRef.current.delete(oldestId);
+      }
+    }
+  }, []);
+  const getCachedSelectedCard = useCallback((cardId: string | null) => {
+    if (!cardId) return null;
+    const cached = selectedCardCacheRef.current.get(cardId) ?? null;
+    if (!cached) return null;
+    selectedCardCacheOrderRef.current = selectedCardCacheOrderRef.current.filter((id) => id !== cardId);
+    selectedCardCacheOrderRef.current.push(cardId);
+    return cached;
+  }, []);
+  const selectCard = useCallback(
+    (cardId: string, previewCard?: Card | StudioCardContext | null) => {
+      const trimmedId = cardId.trim();
+      if (!trimmedId) return;
+      setSelectedCardId(trimmedId);
+      const cachedPreview = getCachedSelectedCard(trimmedId);
+      const nextPreview =
+        previewCard?.docId === trimmedId
+          ? (previewCard as StudioCardContext)
+          : cachedPreview;
+      if (nextPreview) {
+        cacheSelectedCard(nextPreview);
+        setSelectedCard(nextPreview);
+      }
+    },
+    [cacheSelectedCard, getCachedSelectedCard]
   );
 
   useEffect(() => {
@@ -220,6 +262,10 @@ export default function StudioWorkspace() {
     if (!requestedCardId) return;
     setSelectedCardId((current) => (current === requestedCardId ? current : requestedCardId));
   }, [requestedCardId]);
+
+  useEffect(() => {
+    cacheSelectedCard(selectedCard);
+  }, [cacheSelectedCard, selectedCard]);
 
   useEffect(() => {
     const mq = window.matchMedia(`(min-width: ${EMBEDDED_ADMIN_WIDE_MIN_WIDTH_PX}px)`);
@@ -244,6 +290,7 @@ export default function StudioWorkspace() {
 
   cardEditWidthRef.current = cardEditWidth;
   questionsWidthRef.current = questionsWidth;
+  selectedCardRef.current = selectedCard;
 
   useEffect(() => {
     const stored = readStoredCardEditWidth();
@@ -540,15 +587,19 @@ export default function StudioWorkspace() {
       return;
     }
     let cancelled = false;
-    setSelectedCard(null);
+    const cachedSelectedCard = getCachedSelectedCard(selectedCardId);
+    if (cachedSelectedCard && selectedCardRef.current?.docId !== selectedCardId) {
+      setSelectedCard(cachedSelectedCard);
+    }
+    const hasUsablePreview =
+      selectedCardRef.current?.docId === selectedCardId || Boolean(cachedSelectedCard);
     setCardError(null);
     setCardLoading(true);
     const run = async () => {
       try {
-        await loadSelectedCard(selectedCardId);
+        await loadSelectedCard(selectedCardId, { quiet: hasUsablePreview });
       } catch (e) {
         if (!cancelled) {
-          setSelectedCard(null);
           setCardError(e instanceof Error ? e.message : 'Failed to load selected card context.');
         }
       } finally {
@@ -559,7 +610,7 @@ export default function StudioWorkspace() {
     return () => {
       cancelled = true;
     };
-  }, [selectedCardId, loadSelectedCard]);
+  }, [getCachedSelectedCard, selectedCardId, loadSelectedCard]);
 
   const patchSelectedCard = useCallback(
     async (payload: Partial<Card>, successMessage?: string) => {
@@ -568,7 +619,9 @@ export default function StudioWorkspace() {
       setActionError(null);
       const previousCard = selectedCard;
       if (selectedCard?.docId === selectedCardId) {
-        setSelectedCard(applyOptimisticSelectedCardPatch(selectedCard, payload));
+        const optimisticCard = applyOptimisticSelectedCardPatch(selectedCard, payload);
+        cacheSelectedCard(optimisticCard);
+        setSelectedCard(optimisticCard);
       }
       try {
         const res = await fetch(`/api/cards/${selectedCardId}`, {
@@ -578,12 +631,15 @@ export default function StudioWorkspace() {
         });
         const data = await res.json().catch(() => ({}));
         throwIfJsonApiFailed(res, data, 'Update failed.');
-        setSelectedCard(data as StudioCardContext);
+        const nextCard = data as StudioCardContext;
+        cacheSelectedCard(nextCard);
+        setSelectedCard(nextCard);
         collectionsRefreshRef.current?.();
         // Always refresh strip: omitting a message must clear stale text (e.g. old cover-drag copy).
         setActionInfo(successMessage ?? null);
       } catch (e) {
         if (previousCard?.docId === selectedCardId) {
+          cacheSelectedCard(previousCard);
           setSelectedCard(previousCard);
         }
         setActionError(e instanceof Error ? e.message : 'Update failed.');
@@ -592,7 +648,7 @@ export default function StudioWorkspace() {
         setActionBusy(false);
       }
     },
-    [selectedCard, selectedCardId]
+    [cacheSelectedCard, selectedCard, selectedCardId]
   );
 
   const onStudioRelationshipDragEnd = useCallback(
@@ -618,6 +674,7 @@ export default function StudioWorkspace() {
     () => ({
       selectedCardId,
       setSelectedCardId,
+      selectCard,
       selectedCard,
       setSelectedCard,
       cardLoading,
@@ -635,6 +692,7 @@ export default function StudioWorkspace() {
     [
       selectedCardId,
       setSelectedCardId,
+      selectCard,
       selectedCard,
       setSelectedCard,
       cardLoading,
@@ -704,7 +762,7 @@ export default function StudioWorkspace() {
           <div className={styles.collectionsHost}>
             <CollectionsAdminClient
               embedded
-              onSelectCard={setSelectedCardId}
+              onSelectCard={selectCard}
               embeddedOrganizationCollapsed={paneVisibility.organizationCollapsed}
               embeddedCardsCollapsed={paneVisibility.cardsCollapsed}
               onStudioRelationshipDragEnd={onStudioRelationshipDragEnd}

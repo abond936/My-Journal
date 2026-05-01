@@ -73,6 +73,9 @@ export default function StudioCardEditPane({
     if (!selectedCard) return null;
     return studioContextToInitialCard(selectedCard);
   }, [selectedCard]);
+  const isTransitioningToDifferentCard = Boolean(
+    selectedCardId && selectedCard?.docId && selectedCard.docId !== selectedCardId
+  );
 
   const handleWheelCapture = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
     const el = scrollRef.current;
@@ -86,7 +89,8 @@ export default function StudioCardEditPane({
   }, []);
 
   /** Remount only when switching cards — not on `updatedAt` churn from relationship panel PATCHes (would wipe dirty form). */
-  const providerKey = selectedCardId ?? (newCardRequested ? 'new' : 'none');
+  const providerKey =
+    selectedCard?.docId ?? selectedCardId ?? (newCardRequested ? 'new' : 'none');
 
   if (!selectedCardId && !newCardRequested) {
     return (
@@ -108,7 +112,7 @@ export default function StudioCardEditPane({
     );
   }
 
-  if (cardError) {
+  if (cardError && !initialCard) {
     return (
       <aside className={styles.cardEditPlaceholder} aria-label="Compose">
         <h2 className={styles.studioComposeTitle}>Compose</h2>
@@ -129,6 +133,12 @@ export default function StudioCardEditPane({
   return (
     <aside className={styles.studioCardEditHost} aria-label="Compose">
       <h2 className={styles.studioComposeTitle}>Compose</h2>
+      {cardError && initialCard ? (
+        <p className={styles.cardEditPlaceholderError}>{cardError}</p>
+      ) : null}
+      {isTransitioningToDifferentCard ? (
+        <p className={styles.cardEditPlaceholderMeta}>Loading selected card...</p>
+      ) : null}
       <CardFormProvider
         key={providerKey}
         initialCard={newCardRequested ? null : initialCard}

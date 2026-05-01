@@ -49,7 +49,7 @@ interface CardAdminGridProps {
    * When set with `studioEmbedCellClickSelects`, checkbox still toggles `onSelectCard` (bulk);
    * cell/keyboard primary activation focuses this id (e.g. Studio compose) instead of bulk toggling.
    */
-  onStudioFocusCard?: (cardId: string) => void;
+  onStudioFocusCard?: (card: Card) => void;
   hideBulkSelectRow?: boolean;
   interactionDisabled?: boolean;
   /** Studio attach bank: denser grid (smaller min cell width). */
@@ -105,7 +105,7 @@ interface CardAdminGridPlainCellProps {
   onUpdateCard: (cardId: string, updateData: Partial<Card>) => Promise<void>;
   onBulkPointer: (e: React.MouseEvent | React.KeyboardEvent, cardId: string, cardIndex: number) => void;
   /** If set, cell primary uses this when `studioEmbedCellClickSelects` (else bulk for backward compatibility). */
-  onFocusStudio?: (cardId: string) => void;
+  onFocusStudio?: (card: Card) => void;
   onEdit: (cardId: string) => void;
   onDelete: (card: Card) => void;
   studioEmbedCellClickSelects: boolean;
@@ -150,7 +150,7 @@ function CardAdminGridPlainCell({
         handleBulkPointer(e);
         return;
       }
-      if (onFocusStudio) onFocusStudio(card.docId);
+      if (onFocusStudio) onFocusStudio(card);
       else handleBulkPointer(e);
     } else handleEdit();
   };
@@ -412,7 +412,7 @@ function CardAdminGridStudioCell({
         handleBulkPointer(e);
         return;
       }
-      if (onFocusStudio) onFocusStudio(card.docId);
+      if (onFocusStudio) onFocusStudio(card);
       else handleBulkPointer(e);
     } else handleEdit();
   };

@@ -12,6 +12,7 @@ import type { StudioCardContext } from '@/components/admin/studio/studioCardType
 export type StudioShellContextValue = {
   selectedCardId: string | null;
   setSelectedCardId: (id: string | null) => void;
+  selectCard: (cardId: string, previewCard?: Card | StudioCardContext | null) => void;
   selectedCard: StudioCardContext | null;
   setSelectedCard: (card: StudioCardContext | null) => void;
   cardLoading: boolean;

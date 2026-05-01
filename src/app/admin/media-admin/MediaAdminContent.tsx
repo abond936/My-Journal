@@ -69,13 +69,6 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const { tags: allTags } = useTag();
   const errorSeverity = getMediaErrorSeverity(error);
 
-  // Embedded Studio: load the media list when the pane mounts (Studio is not the media-admin route in MediaProvider).
-  useEffect(() => {
-    if (!embedded) return;
-    void fetchMedia(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount / embedded only
-  }, [embedded]);
-
   const handleBulkDelete = async () => {
     if (selectedMediaIds.length === 0) return;
     if (confirm(`Are you sure you want to delete ${selectedMediaIds.length} media item(s)?`)) {
@@ -92,6 +85,20 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const [duplicateTriageMode, setDuplicateTriageMode] = useState(false);
   const [dimensionFilters, setDimensionFilters] = useState<DimensionFilterState>(DEFAULT_DIMENSION_FILTERS);
   const [clientSort, setClientSort] = useState<'none' | 'filenameAsc' | 'filenameDesc'>('none');
+  const [searchDraft, setSearchDraft] = useState(filters.search);
+
+  useEffect(() => {
+    setSearchDraft(filters.search);
+  }, [filters.search]);
+
+  useEffect(() => {
+    if (searchDraft === filters.search) return;
+    const timeoutId = window.setTimeout(() => {
+      setFilter('search', searchDraft);
+      void fetchMedia(1, { search: searchDraft });
+    }, 200);
+    return () => window.clearTimeout(timeoutId);
+  }, [fetchMedia, filters.search, searchDraft, setFilter]);
 
   const handleOpenBulkTags = () => {
     setPendingBulkTags([]);
@@ -167,16 +174,12 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     }
   };
 
-  const handleSearch = (search: string) => {
-    setFilter('search', search);
-    fetchMedia(1, { search });
-  };
-
   const handleClearFilters = () => {
     clearFilters();
     setDuplicateTriageMode(false);
     setDimensionFilters(DEFAULT_DIMENSION_FILTERS);
     setClientSort('none');
+    setSearchDraft('');
   };
 
   const handleStudioDimensionalFilterChange = (newIds: string[]) => {
@@ -302,8 +305,8 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                 id="media-admin-search-studio"
                 type="search"
                 placeholder="Typesense when non-empty..."
-                value={filters.search}
-                onChange={(e) => handleSearch(e.target.value)}
+                value={searchDraft}
+                onChange={(e) => setSearchDraft(e.target.value)}
                 className={styles.studioMediaSearchInput}
                 autoComplete="off"
                 aria-label="Search media (filename, caption, path, tag names)"

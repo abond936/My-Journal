@@ -115,6 +115,16 @@ export interface MediaFilters {
   assignment: string;
 }
 
+type CachedMediaQueryResult = {
+  media: Media[];
+  pagination: MediaListResponse['pagination'];
+  currentPage: number;
+  nextCursor: string | null;
+  prevCursor: string | null;
+  cursorStack: (string | null)[];
+  cachedAt: number;
+};
+
 interface MediaContextType {
   // Data
   media: Media[];
@@ -151,6 +161,7 @@ interface MediaContextType {
   toggleMediaSelection: (id: string) => void;
   selectAll: () => void;
   selectNone: () => void;
+  resolveMediaById: (id: string) => Media | undefined;
 }
 
 const MediaContext = createContext<MediaContextType | undefined>(undefined);
@@ -162,6 +173,10 @@ const defaultFilters: MediaFilters = {
   search: '',
   assignment: 'all',
 };
+
+const MEDIA_QUERY_CACHE_TTL_MS = 15_000;
+const MEDIA_QUERY_CACHE_LIMIT = 24;
+const MEDIA_RECORD_CACHE_LIMIT = 400;
 
 export function MediaProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -190,6 +205,95 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const [dimensionalQueryOverlay, setDimensionalQueryOverlayState] = useState<DimensionalTagIdMap>({});
   const dimensionalQueryOverlayRef = useRef<DimensionalTagIdMap>({});
   const lastMediaEngineRef = useRef<'typesense' | 'firestore' | null>(null);
+  const mediaRequestSeqRef = useRef(0);
+  const activeMediaRequestControllerRef = useRef<AbortController | null>(null);
+  const mediaQueryCacheRef = useRef(new Map<string, CachedMediaQueryResult>());
+  const mediaQueryCacheOrderRef = useRef<string[]>([]);
+  const mediaByIdCacheRef = useRef(new Map<string, Media>());
+  const mediaByIdCacheOrderRef = useRef<string[]>([]);
+  const mediaPrefetchInFlightRef = useRef(new Set<string>());
+
+  const cacheMediaRecord = useCallback((item: Media | null | undefined) => {
+    if (!item?.docId) return;
+    mediaByIdCacheRef.current.set(item.docId, item);
+    mediaByIdCacheOrderRef.current = mediaByIdCacheOrderRef.current.filter((id) => id !== item.docId);
+    mediaByIdCacheOrderRef.current.push(item.docId);
+    while (mediaByIdCacheOrderRef.current.length > MEDIA_RECORD_CACHE_LIMIT) {
+      const oldestId = mediaByIdCacheOrderRef.current.shift();
+      if (oldestId) {
+        mediaByIdCacheRef.current.delete(oldestId);
+      }
+    }
+  }, []);
+
+  const cacheMediaRecords = useCallback((items: Media[]) => {
+    items.forEach((item) => cacheMediaRecord(item));
+  }, [cacheMediaRecord]);
+
+  const resolveMediaById = useCallback((id: string) => {
+    return mediaByIdCacheRef.current.get(id);
+  }, []);
+
+  const clearMediaQueryCache = useCallback(() => {
+    mediaQueryCacheRef.current.clear();
+    mediaQueryCacheOrderRef.current = [];
+  }, []);
+
+  const rememberMediaQueryCacheEntry = useCallback((key: string, entry: CachedMediaQueryResult) => {
+    mediaQueryCacheRef.current.set(key, entry);
+    mediaQueryCacheOrderRef.current = mediaQueryCacheOrderRef.current.filter((existingKey) => existingKey !== key);
+    mediaQueryCacheOrderRef.current.push(key);
+    while (mediaQueryCacheOrderRef.current.length > MEDIA_QUERY_CACHE_LIMIT) {
+      const oldestKey = mediaQueryCacheOrderRef.current.shift();
+      if (oldestKey) {
+        mediaQueryCacheRef.current.delete(oldestKey);
+      }
+    }
+  }, []);
+
+  const cacheMediaQueryEntryIfFresh = useCallback((key: string) => {
+    const cached = mediaQueryCacheRef.current.get(key);
+    if (!cached) return null;
+    if (Date.now() - cached.cachedAt > MEDIA_QUERY_CACHE_TTL_MS) {
+      mediaQueryCacheRef.current.delete(key);
+      mediaQueryCacheOrderRef.current = mediaQueryCacheOrderRef.current.filter((existingKey) => existingKey !== key);
+      return null;
+    }
+    return cached;
+  }, []);
+
+  const prefetchMediaQuery = useCallback(
+    async (queryString: string, entry: Omit<CachedMediaQueryResult, 'cachedAt'>) => {
+      if (cacheMediaQueryEntryIfFresh(queryString) || mediaPrefetchInFlightRef.current.has(queryString)) {
+        return;
+      }
+      mediaPrefetchInFlightRef.current.add(queryString);
+      try {
+        const response = await fetch(`/api/media?${queryString}`);
+        if (!response.ok) return;
+        const data: MediaListResponse = await response.json();
+        cacheMediaRecords(data.media);
+        rememberMediaQueryCacheEntry(queryString, {
+          media: data.media,
+          pagination: {
+            ...data.pagination,
+            page: entry.currentPage,
+            hasPrev: Boolean(data.pagination.hasPrev || entry.currentPage > 1),
+          },
+          currentPage: entry.currentPage,
+          nextCursor: data.pagination.nextCursor ?? null,
+          prevCursor: data.pagination.prevCursor ?? null,
+          cursorStack: entry.cursorStack,
+          cachedAt: Date.now(),
+        });
+      } catch {
+        // Ignore background prefetch failures; foreground fetch keeps correctness.
+      } finally {
+        mediaPrefetchInFlightRef.current.delete(queryString);
+      }
+    },
+    [cacheMediaQueryEntryIfFresh, cacheMediaRecords, rememberMediaQueryCacheEntry]
+  );
 
   const adjustPaginationAfterDelete = useCallback((deletedCount: number) => {
     if (deletedCount <= 0) return;
@@ -226,7 +330,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const buildQueryString = useCallback((
     mediaFilters: MediaFilters,
     dimMap: DimensionalTagIdMap,
-    opts?: { cursor?: string; prevCursor?: string; listPage?: number }
+    opts?: { cursor?: string; prevCursor?: string; listPage?: number; includeTotal?: boolean }
   ) => {
     const params = new URLSearchParams();
     params.append('limit', '50');
@@ -234,6 +338,9 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     if (opts?.prevCursor) params.append('prevCursor', opts.prevCursor);
     if (opts?.listPage !== undefined && opts.listPage > 1) {
       params.set('listPage', String(opts.listPage));
+    }
+    if (opts?.includeTotal === false) {
+      params.set('includeTotal', 'false');
     }
 
     if (mediaFilters.source !== 'all') params.append('source', mediaFilters.source);
@@ -247,6 +354,11 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const fetchMedia = useCallback(async (page = 1, newFilters?: Partial<MediaFilters>) => {
+    const requestSeq = mediaRequestSeqRef.current + 1;
+    mediaRequestSeqRef.current = requestSeq;
+    activeMediaRequestControllerRef.current?.abort();
+    const controller = new AbortController();
+    activeMediaRequestControllerRef.current = controller;
     setLoading(true);
     setError(null);
 
@@ -259,6 +371,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         cardDimensionalForFetch,
         dimensionalQueryOverlayRef.current
       );
+      const includeTotal = !isStudioPath;
       const assignmentSeek =
         updatedFilters.assignment === 'unassigned' || updatedFilters.assignment === 'assigned';
       const tagSeek = dimensionalTagMapHasFilters(mergedDimensional);
@@ -286,8 +399,29 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         opts = { cursor: cursorStack[page - 2]! };
       }
 
-      const queryString = buildQueryString(updatedFilters, mergedDimensional, opts);
-      const response = await fetch(`/api/media?${queryString}`);
+      const queryString = buildQueryString(updatedFilters, mergedDimensional, {
+        ...opts,
+        includeTotal,
+      });
+      const cacheKey = queryString;
+      const cached = cacheMediaQueryEntryIfFresh(cacheKey);
+      if (cached) {
+        setMedia(cached.media);
+        setPagination(cached.pagination);
+        setCurrentPage(cached.currentPage);
+        setNextCursor(cached.nextCursor);
+        setPrevCursor(cached.prevCursor);
+        setCursorStack(cached.cursorStack);
+        if (newFilters) {
+          setFilters(updatedFilters);
+        }
+        setLoading(false);
+        cacheMediaRecords(cached.media);
+        return;
+      }
+      const response = await fetch(`/api/media?${queryString}`, {
+        signal: controller.signal,
+      });
       if (!response.ok) {
         const errBody = (await response.json().catch(() => ({}))) as ApiErrorResponse;
         if (response.status === 503 && errBody.code === 'SEARCH_UNAVAILABLE') {
@@ -301,36 +435,84 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       }
 
       const data: MediaListResponse = await response.json();
+      if (requestSeq !== mediaRequestSeqRef.current) return;
       lastMediaEngineRef.current = data.pagination.engine ?? 'firestore';
-      setMedia(data.media);
-      setPagination({
+      cacheMediaRecords(data.media);
+      const nextPagination = {
         ...data.pagination,
         page,
         hasPrev: Boolean(data.pagination.hasPrev || page > 1),
-      });
+      };
+      let nextCursorStack: (string | null)[];
+      if (page === 1 || newFilters) {
+        nextCursorStack = data.pagination.nextCursor ? [data.pagination.nextCursor] : [];
+      } else if (page > currentPage && data.pagination.nextCursor) {
+        nextCursorStack = [...cursorStack, data.pagination.nextCursor];
+      } else if (page < currentPage) {
+        nextCursorStack = cursorStack.slice(0, -1);
+      } else {
+        nextCursorStack = cursorStack;
+      }
+      setMedia(data.media);
+      setPagination(nextPagination);
       setCurrentPage(page);
       setNextCursor(data.pagination.nextCursor);
       setPrevCursor(data.pagination.prevCursor);
-
-      if (page === 1 || newFilters) {
-        setCursorStack(data.pagination.nextCursor ? [data.pagination.nextCursor] : []);
-      } else if (page > currentPage && data.pagination.nextCursor) {
-        setCursorStack((prev) => [...prev, data.pagination.nextCursor!]);
-      } else if (page < currentPage) {
-        setCursorStack((prev) => prev.slice(0, -1));
-      }
+      setCursorStack(nextCursorStack);
+      rememberMediaQueryCacheEntry(cacheKey, {
+        media: data.media,
+        pagination: nextPagination,
+        currentPage: page,
+        nextCursor: data.pagination.nextCursor ?? null,
+        prevCursor: data.pagination.prevCursor ?? null,
+        cursorStack: nextCursorStack,
+        cachedAt: Date.now(),
+      });
 
       if (newFilters) {
         setFilters(updatedFilters);
       }
+
+      const prefetchedPage = page + 1;
+      const nextListPage =
+        typeof data.pagination.nextListPage === 'number'
+          ? data.pagination.nextListPage
+          : prefetchedPage;
+      const canPrefetchNext =
+        Boolean(data.pagination.hasNext) &&
+        (Boolean(data.pagination.nextCursor) || lastMediaEngineRef.current === 'typesense');
+      if (canPrefetchNext) {
+        const prefetchOpts =
+          lastMediaEngineRef.current === 'typesense'
+            ? { listPage: nextListPage, includeTotal }
+            : { cursor: data.pagination.nextCursor ?? undefined, includeTotal };
+        const prefetchCursorStack =
+          data.pagination.nextCursor ? [...nextCursorStack, data.pagination.nextCursor] : nextCursorStack;
+        const prefetchQueryString = buildQueryString(updatedFilters, mergedDimensional, prefetchOpts);
+        void prefetchMediaQuery(prefetchQueryString, {
+          media: [],
+          pagination: nextPagination,
+          currentPage: prefetchedPage,
+          nextCursor: null,
+          prevCursor: data.pagination.prevCursor ?? null,
+          cursorStack: prefetchCursorStack,
+        });
+      }
     } catch (err) {
+      if (controller.signal.aborted) {
+        return;
+      }
       const error = err instanceof Error ? err : new Error('An unknown error occurred');
       setError(error);
       console.error('Error fetching media:', error);
     } finally {
-      setLoading(false);
+      if (requestSeq === mediaRequestSeqRef.current) {
+        activeMediaRequestControllerRef.current = null;
+        setLoading(false);
+      }
     }
   }, [
+    cacheMediaRecords,
     filters,
     buildQueryString,
     currentPage,
@@ -339,6 +521,9 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     cursorStack,
     dimensionalTagMap,
     pathname,
+    prefetchMediaQuery,
+    cacheMediaQueryEntryIfFresh,
+    rememberMediaQueryCacheEntry,
   ]);
 
   const updateMedia = useCallback(async (id: string, updates: Partial<Media>): Promise<Media | undefined> => {
@@ -357,6 +542,8 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
 
       const updated = body.media;
       if (updated?.docId) {
+        cacheMediaRecord(updated);
+        clearMediaQueryCache();
         setMedia((prev) => prev.map((m) => (m.docId === id ? { ...updated, docId: updated.docId } : m)));
         return updated;
       }
@@ -369,7 +556,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       console.error('Error updating media:', error);
       return undefined;
     }
-  }, [fetchMedia, currentPage]);
+  }, [cacheMediaRecord, clearMediaQueryCache, fetchMedia, currentPage]);
 
   const deleteMedia = useCallback(async (id: string) => {
     try {
@@ -383,6 +570,9 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Remove from local state
+      mediaByIdCacheRef.current.delete(id);
+      mediaByIdCacheOrderRef.current = mediaByIdCacheOrderRef.current.filter((cachedId) => cachedId !== id);
+      clearMediaQueryCache();
       setMedia(prev => prev.filter(m => m.docId !== id));
       setSelectedMediaIds(prev => prev.filter(selectedId => selectedId !== id));
       adjustPaginationAfterDelete(1);
@@ -396,7 +586,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       setError(error);
       console.error('Error deleting media:', error);
     }
-  }, [adjustPaginationAfterDelete, fetchMedia, currentPage, pagination, media.length]);
+  }, [adjustPaginationAfterDelete, clearMediaQueryCache, fetchMedia, currentPage, pagination, media.length]);
 
   const deleteMultipleMedia = useCallback(async (ids: string[]) => {
     if (ids.length === 0) return;
@@ -425,6 +615,9 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (deletedIds.length > 0) {
+        deletedIds.forEach((deletedId) => mediaByIdCacheRef.current.delete(deletedId));
+        mediaByIdCacheOrderRef.current = mediaByIdCacheOrderRef.current.filter((cachedId) => !deletedIds.includes(cachedId));
+        clearMediaQueryCache();
         setMedia((prev) => prev.filter((m) => !deletedIds.includes(m.docId)));
         setSelectedMediaIds((prev) => prev.filter((id) => !deletedIds.includes(id)));
         adjustPaginationAfterDelete(deletedIds.length);
@@ -438,7 +631,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       setError(error);
       console.error('Error deleting multiple media:', error);
     }
-  }, [adjustPaginationAfterDelete, fetchMedia, currentPage, pagination, media.length]);
+  }, [adjustPaginationAfterDelete, clearMediaQueryCache, fetchMedia, currentPage, pagination, media.length]);
 
   const bulkApplyTags = useCallback(
     async (mediaIds: string[], tags: string[], mode: 'add' | 'replace' | 'remove' = 'add') => {
@@ -455,13 +648,18 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
           throw toUserFacingError('Bulk tag update failed', data, response.statusText);
         }
         const idSet = new Set(mediaIds);
+        clearMediaQueryCache();
         setMedia((prev) =>
           prev.map((item) =>
             item.docId && idSet.has(item.docId)
-              ? {
-                  ...item,
-                  tags: applyMediaTagMutation(item.tags, tags, mode),
-                }
+              ? (() => {
+                  const nextItem = {
+                    ...item,
+                    tags: applyMediaTagMutation(item.tags, tags, mode),
+                  };
+                  cacheMediaRecord(nextItem);
+                  return nextItem;
+                })()
               : item
           )
         );
@@ -471,7 +669,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
     },
-    []
+    [cacheMediaRecord, clearMediaQueryCache]
   );
 
   const setFilter = useCallback((key: keyof MediaFilters, value: string) => {
@@ -512,6 +710,13 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchMedia identity changes with cursors/stack; dimensionalTagKey is the intended trigger
   }, [dimensionalTagKey, isMediaListRoute]);
 
+  useEffect(() => {
+    return () => {
+      activeMediaRequestControllerRef.current?.abort();
+      activeMediaRequestControllerRef.current = null;
+    };
+  }, []);
+
   const value: MediaContextType = {
     media,
     loading,
@@ -533,6 +738,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     toggleMediaSelection,
     selectAll,
     selectNone,
+    resolveMediaById,
   };
 
   return (

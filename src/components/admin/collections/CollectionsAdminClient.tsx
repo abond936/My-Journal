@@ -285,7 +285,7 @@ export default function CollectionsAdminClient({
   onStudioRelationshipDragEnd,
 }: {
   embedded?: boolean;
-  onSelectCard?: (cardId: string) => void;
+  onSelectCard?: (cardId: string, previewCard?: Card | null) => void;
   embeddedRightSlot?: React.ReactNode | ((ctx: EmbeddedStudioSlotContext) => React.ReactNode);
   /** When set with `embedded`, replaces the title-only unparented list with this UI (e.g. card admin table/grid). */
   embeddedUnparentedReplacement?: (ctx: EmbeddedUnparentedBankContext) => React.ReactNode;
@@ -515,19 +515,17 @@ export default function CollectionsAdminClient({
     setError(null);
 
     const PAGE_SIZE = 250;
-    const MAX_PAGES = 20; // safety stop ~5,000 cards
     let firstChunkPainted = false;
 
     try {
-      const rootsPromise = fetch(
-        '/api/cards?collectionsOnly=true&status=all&hydration=cover-only&limit=200'
-      );
+      const rootsPromise = fetch('/api/cards?collectionsOnly=true&status=all&hydration=cover-only');
       const accumulated = new Map<string, Card>();
       const rootsById = new Map<string, Card>();
       let rootsApplied = false;
       let lastDocId: string | undefined;
+      let page = 0;
 
-      for (let page = 0; page < MAX_PAGES; page++) {
+      while (true) {
         const params = new URLSearchParams({
           limit: String(PAGE_SIZE),
           page: String(page),
@@ -611,6 +609,7 @@ export default function CollectionsAdminClient({
 
         if (!data.hasMore || (data.items || []).length === 0) break;
         lastDocId = data.lastDocId;
+        page += 1;
       }
     } catch (e) {
       if (isCurrent()) {
@@ -635,23 +634,19 @@ export default function CollectionsAdminClient({
   );
 
   useEffect(() => {
-    if (!cards.length) {
-      setSelectedCardId(null);
-      return;
-    }
-    const stillExists = selectedCardId && cardById.has(selectedCardId);
-    if (stillExists) return;
+    if (!cards.length || selectedCardId) return;
     const fallback = rootedCollections[0]?.docId ?? cards[0]?.docId ?? null;
     setSelectedCardId(fallback);
     if (fallback) onSelectCard?.(fallback);
-  }, [cards, cardById, selectedCardId, rootedCollections, onSelectCard]);
+  }, [cards, selectedCardId, rootedCollections, onSelectCard]);
 
   const handleSelectCard = useCallback(
     (cardId: string) => {
+      const previewCard = cardById.get(cardId) ?? null;
       setSelectedCardId(cardId);
-      onSelectCard?.(cardId);
+      onSelectCard?.(cardId, previewCard);
     },
-    [onSelectCard]
+    [cardById, onSelectCard]
   );
 
   const {

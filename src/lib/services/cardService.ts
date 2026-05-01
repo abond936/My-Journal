@@ -2085,8 +2085,6 @@ export async function getCardsByCollectionId(
 }
 
 /** Max cards to scan when listing collections (cards with children) */
-const COLLECTIONS_LIST_LIMIT = 500;
-
 /**
  * Fetches cards that are curated collections.
  * Uses denormalized `curatedNavEligible` (maintained in create/update/delete) so we query by flag
@@ -2128,7 +2126,9 @@ export async function getCollectionCards(
   if (status && status !== 'all') {
     query = query.where('status', '==', status);
   }
-  query = query.limit(options.limit ?? COLLECTIONS_LIST_LIMIT);
+  if (typeof options.limit === 'number') {
+    query = query.limit(options.limit);
+  }
 
   const snapshot = await query.get();
   const rootCards = snapshot.docs

@@ -167,6 +167,7 @@ The primary users are the author (admin) creating the content and his family con
 - **List stability** - After mutations, update the **smallest** sufficient UI state: patch a row, remove/add ids in the current page, or refetch **one** page or cursor scope—not entire unbounded lists by default. Reserve full catalog refetch for recovery, unknown membership change, or explicit user refresh.
 - **Authoritative confirmation** - Separate **optimistic** display from **confirmed** server state where it improves perceived speed; do not block the UI on secondary work (search index sync, full media hydration) when the user action can be acknowledged from Firestore alone.
 - **Preview then hydrate** - In authoring shells with an active object (for example, the selected card in **Studio**), selection should populate local context from the best available preview immediately, then enrich from background hydration. Hydration failure should degrade detail, not blank the active editing surface.
+- **Progressive first paint** - In dense admin shells, prefer a **truthful first batch** and then background catch-up over blocking the whole pane on totals or full hydration. Use cancellable requests, short-lived query caches, and chunked stable streams where they preserve the same authoritative query contract.
 - **Surface simplification** - Prefer fewer, stronger interaction models for authoring when capability is preserved. Simplification should remove parallel UI patterns, not remove the tagging and relationship power the product depends on.
 
 *Features*

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useTag } from '@/components/providers/TagProvider';
 import CardAdminGrid from '@/components/admin/card-admin/CardAdminGrid';
 import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
@@ -121,6 +121,13 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
   const [rulesExpanded, setRulesExpanded] = useState(false);
   const [dimensionFilters, setDimensionFilters] = useState<DimensionFilterState>(DEFAULT_DIMENSION_FILTERS);
   const [isStreamingMore, setIsStreamingMore] = useState(false);
+  const deferredSearch = useDeferredValue(search);
+  const deferredFilterTagIds = useDeferredValue(filterTagIds);
+  const deferredTypeFilter = useDeferredValue(typeFilter);
+  const deferredDisplayModeFilter = useDeferredValue(displayModeFilter);
+  const deferredDimensionFilters = useDeferredValue(dimensionFilters);
+  const deferredStatusFilter = useDeferredValue(statusFilter);
+  const deferredSortMode = useDeferredValue(sortMode);
 
   // Catalog load: first chunk paints fast (250 cards), remaining pages stream in
   // background under the server's stable `created desc` order. Filters operate
@@ -134,15 +141,15 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
     setIsStreamingMore(false);
 
     const PAGE_SIZE = 250;
-    const MAX_PAGES = 20; // safety stop ~5,000 cards
 
     (async () => {
       let lastDocId: string | undefined;
       let firstChunkPainted = false;
       const accumulated: Card[] = [];
       const seen = new Set<string>();
+      let page = 0;
 
-      for (let page = 0; page < MAX_PAGES; page++) {
+      while (true) {
         const params = new URLSearchParams({
           limit: String(PAGE_SIZE),
           page: String(page),
@@ -186,6 +193,7 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
 
         if (!pageData.hasMore || items.length === 0) break;
         lastDocId = pageData.lastDocId;
+        page += 1;
       }
 
       if (cancelled) return;
@@ -199,8 +207,8 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
   }, [catalogRefreshTick]);
 
   const onCardTagDimensionalMap = useMemo(
-    () => groupSelectedTagIdsByDimension(filterTagIds, allTags ?? []),
-    [filterTagIds, allTags]
+    () => groupSelectedTagIdsByDimension(deferredFilterTagIds, allTags ?? []),
+    [deferredFilterTagIds, allTags]
   );
 
   const selectedFilterTags = useMemo(
@@ -210,13 +218,13 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
 
   const matchesFilters = useCallback(
     (card: Card) => {
-      const q = search.trim().toLowerCase();
+      const q = deferredSearch.trim().toLowerCase();
       if (q && !(card.title || '').toLowerCase().includes(q)) return false;
-      if (typeFilter !== 'all' && card.type !== typeFilter) return false;
-      if (displayModeFilter !== 'all' && cardDisplayMode(card) !== displayModeFilter) return false;
+      if (deferredTypeFilter !== 'all' && card.type !== deferredTypeFilter) return false;
+      if (deferredDisplayModeFilter !== 'all' && cardDisplayMode(card) !== deferredDisplayModeFilter) return false;
       if (!cardMatchesOnCardDimensionalMap(card, onCardTagDimensionalMap)) return false;
       for (const dimension of DIMENSION_KEYS) {
-        const state = dimensionFilters[dimension];
+        const state = deferredDimensionFilters[dimension];
         const ids = Array.isArray(card[dimension]) ? (card[dimension] as string[]) : [];
         if (state.mode === 'any') continue;
         if (state.mode === 'hasAny' && ids.length === 0) return false;
@@ -225,7 +233,13 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
       }
       return true;
     },
-    [search, typeFilter, displayModeFilter, onCardTagDimensionalMap, dimensionFilters]
+    [
+      deferredSearch,
+      deferredTypeFilter,
+      deferredDisplayModeFilter,
+      onCardTagDimensionalMap,
+      deferredDimensionFilters,
+    ]
   );
 
   const handleClearAllFilters = useCallback(() => {
@@ -256,6 +270,7 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
     () => applyCatalogOverrides(mergeCardCatalogs(fullCatalog, collectionCards), catalogOverrides),
     [catalogOverrides, fullCatalog, collectionCards]
   );
+  const deferredMergedCatalog = useDeferredValue(mergedCatalog);
 
   const upsertCatalogCard = useCallback((card: Card) => {
     if (!card.docId) return;
@@ -285,7 +300,7 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
       if (cardIds.length === 0) return;
       const idSet = new Set(cardIds);
       const mergedById = new Map(
-        mergedCatalog.filter((card) => card.docId).map((card) => [card.docId!, card] as const)
+        deferredMergedCatalog.filter((card) => card.docId).map((card) => [card.docId!, card] as const)
       );
       setFullCatalog((current) =>
         current.map((card) => (card.docId && idSet.has(card.docId) ? patcher(card) : card))
@@ -300,17 +315,17 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
         return next;
       });
     },
-    [mergedCatalog]
+    [deferredMergedCatalog]
   );
 
   const candidateCards = useMemo(() => {
-    const raw = listCuratedTreeAttachCandidates(mergedCatalog, {
+    const raw = listCuratedTreeAttachCandidates(deferredMergedCatalog, {
       matchesFilters,
-      statusFilter,
+      statusFilter: deferredStatusFilter,
     });
     const base = [...raw];
     base.sort((a, b) => {
-      switch (sortMode) {
+      switch (deferredSortMode) {
         case 'titleDesc':
           return (b.title || '').localeCompare(a.title || '', undefined, { sensitivity: 'base' });
         case 'createdDesc':
@@ -322,24 +337,27 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
       }
     });
     return base;
-  }, [mergedCatalog, matchesFilters, statusFilter, sortMode]);
+  }, [deferredMergedCatalog, matchesFilters, deferredStatusFilter, deferredSortMode]);
 
-  const parentIdsByChild = useMemo(() => buildParentIdsByChild(mergedCatalog), [mergedCatalog]);
+  const parentIdsByChild = useMemo(
+    () => buildParentIdsByChild(deferredMergedCatalog),
+    [deferredMergedCatalog]
+  );
 
   const titleById = useMemo(
     () =>
       new Map(
-        mergedCatalog
+        deferredMergedCatalog
           .filter((card) => card.docId)
           .map((card) => [card.docId!, card.title?.trim() || 'Untitled'] as const)
       ),
-    [mergedCatalog]
+    [deferredMergedCatalog]
   );
 
   const collectionStateMetaById = useMemo(() => {
 
     return new Map(
-      mergedCatalog
+      deferredMergedCatalog
         .filter((card) => card.docId)
         .map((card) => {
           const parentIds = parentIdsByChild.get(card.docId!) ?? [];
@@ -358,7 +376,7 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
           return [card.docId!, labelParts.length > 0 ? { label: labelParts.join(' · '), title } : null] as const;
         })
     );
-  }, [mergedCatalog, parentIdsByChild, titleById]);
+  }, [deferredMergedCatalog, parentIdsByChild, titleById]);
 
   const orderedCandidateIds = useMemo(
     () => candidateCards.map((c) => c.docId).filter(Boolean) as string[],
@@ -801,7 +819,7 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
         studioCuratedTreeDrag={studioDrag}
         studioCuratedTreeUnparentedRowTarget={studioDrag}
         studioEmbedCellClickSelects
-        onStudioFocusCard={onStudioSelectCard}
+        onStudioFocusCard={(card) => onStudioSelectCard(card.docId, card)}
         interactionDisabled={saving}
         compactStudioGrid
       />

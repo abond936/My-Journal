@@ -194,6 +194,7 @@ export async function GET(request: NextRequest) {
     const hasCaption = searchParams.get('hasCaption');
     const search = searchParams.get('search');
     const assignment = searchParams.get('assignment') || 'all';
+    const includeTotal = searchParams.get('includeTotal') !== 'false';
     const tagDimension = searchParams.get('tagDimension');
     const tagMode = searchParams.get('tagMode');
     const tagValue = searchParams.get('tagValue');
@@ -333,12 +334,14 @@ export async function GET(request: NextRequest) {
     }
 
     // --- Default: index-aligned pagination ---
-    let total = 0;
-    try {
-      const countSnapshot = await baseQuery.count().get();
-      total = countSnapshot.data().count;
-    } catch (countErr) {
-      console.warn('[media API] Count aggregation failed, total unknown:', countErr);
+    let total: number | null = null;
+    if (includeTotal) {
+      try {
+        const countSnapshot = await baseQuery.count().get();
+        total = countSnapshot.data().count;
+      } catch (countErr) {
+        console.warn('[media API] Count aggregation failed, total unknown:', countErr);
+      }
     }
 
     let paginatedQuery: Query = baseQuery.orderBy('createdAt', 'desc').limit(limit + 1);
@@ -394,7 +397,7 @@ export async function GET(request: NextRequest) {
 
     const firstDocId = docs.length > 0 ? docs[0].id : null;
     const lastDocId = docs.length > 0 ? docs[docs.length - 1].id : null;
-    const totalPages = total > 0 ? Math.ceil(total / limit) : 1;
+    const totalPages = typeof total === 'number' ? Math.max(1, Math.ceil(total / limit)) : null;
 
     const mediaWithUrls = applyPublicStorageUrls(filteredMedia);
 
@@ -404,7 +407,7 @@ export async function GET(request: NextRequest) {
         limit,
         total,
         totalPages,
-        seekMode: false,
+        seekMode: !includeTotal,
         hasNext: hasMore,
         hasPrev: !!(prevCursor || cursor),
         nextCursor: hasMore ? lastDocId : null,
