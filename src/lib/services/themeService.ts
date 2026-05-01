@@ -20,6 +20,7 @@ import {
   ReaderThemeRecipes,
   ThemeRecipeTokenRef,
   type CanvasTextureToken,
+  type ScopedThemeSettings,
 } from '@/lib/types/theme';
 import { getDefaultScopedThemeDocument, READER_PRESET_ALIAS_GROUPS } from '@/lib/theme/themePresets';
 import { DEFAULT_READER_THEME_RECIPES, normalizeReaderThemeRecipes } from '@/lib/theme/readerThemeSystem';
@@ -132,6 +133,17 @@ function normalizeLegacyReaderRecipes(recipes?: ReaderThemeRecipes): ReaderTheme
         text: 'semantic/reader/contrast-on-fill-text',
       },
     },
+  };
+}
+
+function resolveScopedThemeSettings(
+  settings: ScopedThemeSettings,
+  fallbackPreset: ResolvedScopedThemeSettings['activePresetId']
+): ResolvedScopedThemeSettings {
+  return {
+    data: normalizeLegacyContrastTextToken(settings.data),
+    activePresetId: settings.activePresetId ?? fallbackPreset,
+    recipes: normalizeLegacyReaderRecipes(settings.recipes),
   };
 }
 
@@ -1409,7 +1421,12 @@ function themeSettingsFromFlat(
 }
 
 export function normalizeThemeDocument(data: unknown): ResolvedScopedThemeDocumentData {
-  const fallback = getDefaultScopedThemeDocument();
+  const defaultScoped = getDefaultScopedThemeDocument();
+  const fallback: ResolvedScopedThemeDocumentData = {
+    version: 2,
+    reader: resolveScopedThemeSettings(defaultScoped.reader, 'journal'),
+    admin: resolveScopedThemeSettings(defaultScoped.admin, 'admin'),
+  };
   if (isPersistedThemeDocument(data)) {
     return {
       version: 2,

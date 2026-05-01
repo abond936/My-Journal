@@ -11,6 +11,7 @@ import {
   buildThemeTokensCss,
   getPersistedThemeDocumentFromJson,
   getResolvedScopedThemeDocument,
+  normalizeThemeDocument,
   themeDataForCssGeneration,
 } from '@/lib/services/themeService';
 
@@ -38,7 +39,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
   if (!themeTokensCss) {
     try {
-      const fallbackDocument = await getPersistedThemeDocumentFromJson();
+      const fallbackDocument = normalizeThemeDocument(await getPersistedThemeDocumentFromJson());
       themeTokensCss = [
         buildThemeTokensCss(
           themeDataForCssGeneration({
