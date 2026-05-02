@@ -54,19 +54,45 @@
 }
 
 .backLink {
-  color: var(--reader-header-text-color);
+  color: var(--reader-support-control-text-color);
   text-decoration: none;
-  font-size: var(--font-size-base);
-  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--reader-card-border-radius);
-  min-height: 44px;
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
   white-space: nowrap;
+  position: fixed;
+  top: calc(var(--header-height) + var(--spacing-md));
+  background: var(--reader-support-control-background-color);
+  border: none;
+  box-shadow: var(--shadow-sm);
+  z-index: calc(var(--z-index-header) + 2);
+}
+
+.backLinkSidebarClosed {
+  left: max(
+    var(--spacing-md),
+    calc((100vw - min(800px, 100vw)) / 2 - 5.5rem - var(--spacing-sm))
+  );
+}
+
+.backLinkSidebarOpen {
+  left: max(
+    calc(var(--sidebar-width) + var(--spacing-md)),
+    calc(
+      var(--sidebar-width) +
+      ((100vw - var(--sidebar-width) - min(800px, calc(100vw - var(--sidebar-width)))) / 2) -
+      5.5rem -
+      var(--spacing-sm)
+    )
+  );
 }
 
 .backLink:hover {
-  background: var(--reader-chrome-control-hover-background-color);
+  background: var(--reader-support-control-hover-background-color);
+  color: var(--reader-support-control-hover-text-color);
 }
 
 .logo {
@@ -136,6 +162,23 @@
 .navLink.active {
   background-color: var(--reader-chrome-active-control-background-color);
   color: var(--reader-chrome-active-control-text-color);
+}
+
+.menuActionButton {
+  border: var(--border-width-thin) solid var(--reader-support-control-border-color);
+  background: var(--reader-support-control-background-color);
+  color: var(--reader-support-control-text-color);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--reader-card-border-radius);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+.menuActionButton:hover {
+  background: var(--reader-support-control-hover-background-color);
+  color: var(--reader-support-control-hover-text-color);
+  border-color: var(--reader-support-control-hover-border-color);
 }
 
 .menuButton {
@@ -240,8 +283,7 @@
   }
 
   .backLink {
-    padding: var(--spacing-xs) var(--spacing-sm);
-    font-size: var(--font-size-sm);
+    display: none;
   }
 
   .navLinks {

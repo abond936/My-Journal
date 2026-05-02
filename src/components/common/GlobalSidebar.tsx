@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useTag } from '@/components/providers/TagProvider';
 import {
@@ -37,17 +38,24 @@ interface GlobalSidebarProps {
 export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
   const [mounted, setMounted] = useState(false);
   const [browseMode, setBrowseMode] = useState<'freeform' | 'curated'>(() => {
-    if (typeof window === 'undefined') return 'freeform';
-    const saved = sessionStorage.getItem('myjournal-sidebar-browse-mode');
-    return saved === 'curated' ? 'curated' : 'freeform';
+    if (typeof window === 'undefined') return 'curated';
+    const saved =
+      window.localStorage.getItem('myjournal-sidebar-browse-mode') ??
+      window.sessionStorage.getItem('myjournal-sidebar-browse-mode');
+    return saved === 'freeform' ? 'freeform' : 'curated';
   });
   const [viewTagSidebarTab, setViewTagSidebarTab] = useState<'filter' | 'library'>(() => {
     if (typeof window === 'undefined') return 'filter';
-    return sessionStorage.getItem(VIEW_TAG_SIDEBAR_TAB_KEY) === 'library' ? 'library' : 'filter';
+    const saved =
+      window.localStorage.getItem(VIEW_TAG_SIDEBAR_TAB_KEY) ??
+      window.sessionStorage.getItem(VIEW_TAG_SIDEBAR_TAB_KEY);
+    return saved === 'library' ? 'library' : 'filter';
   });
   const [expandedCollectionIds, setExpandedCollectionIds] = useState<Set<string>>(() => {
     if (typeof window === 'undefined') return new Set();
-    const raw = sessionStorage.getItem(CURATED_TREE_EXPANDED_KEY);
+    const raw =
+      window.localStorage.getItem(CURATED_TREE_EXPANDED_KEY) ??
+      window.sessionStorage.getItem(CURATED_TREE_EXPANDED_KEY);
     if (!raw) return new Set();
     try {
       const parsed = JSON.parse(raw);
@@ -82,12 +90,16 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     setFeedSort,
     feedGroupBy,
     setFeedGroupBy,
+    includeChildrenInFeed,
+    setIncludeChildrenInFeed,
     clearFilters,
   } = useCardContext();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'admin';
   const pathname = usePathname();
+  const router = useRouter();
   const isViewRoute = pathname === '/view' || (pathname?.startsWith('/view/') ?? false);
+  const isViewDetailRoute = pathname?.startsWith('/view/') ?? false;
 
   const handleSetDefaultExpanded = useCallback(
     (tagId: string, expanded: boolean) => {
@@ -150,7 +162,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
 
   const persistViewTagSidebarTab = useCallback((tab: 'filter' | 'library') => {
     setViewTagSidebarTab(tab);
-    if (typeof window !== 'undefined') sessionStorage.setItem(VIEW_TAG_SIDEBAR_TAB_KEY, tab);
+    if (typeof window !== 'undefined') window.localStorage.setItem(VIEW_TAG_SIDEBAR_TAB_KEY, tab);
   }, []);
 
   const collectionCardById = useMemo(
@@ -173,7 +185,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    sessionStorage.setItem(CURATED_TREE_EXPANDED_KEY, JSON.stringify(Array.from(expandedCollectionIds)));
+    window.localStorage.setItem(CURATED_TREE_EXPANDED_KEY, JSON.stringify(Array.from(expandedCollectionIds)));
   }, [expandedCollectionIds]);
 
   const filteredTagTree = useMemo(() => {
@@ -190,14 +202,16 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
   };
 
   const handleClearFiltersClick = () => {
+    handleSetBrowseMode('curated');
+    persistViewTagSidebarTab('filter');
     clearFilters();
-    setActiveDimension('who');
+    setTagSearch('');
   };
 
   const handleSetBrowseMode = (nextMode: 'freeform' | 'curated') => {
     setBrowseMode(nextMode);
     if (typeof window !== 'undefined') {
-      sessionStorage.setItem('myjournal-sidebar-browse-mode', nextMode);
+      window.localStorage.setItem('myjournal-sidebar-browse-mode', nextMode);
     }
     if (nextMode === 'curated') {
       setActiveDimension('collections');
@@ -220,6 +234,16 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
       return next;
     });
   }, []);
+
+  const handleSelectCollection = useCallback(
+    (nextCollectionId: string) => {
+      setCollectionId(nextCollectionId);
+      if (isViewDetailRoute) {
+        router.push('/view');
+      }
+    },
+    [isViewDetailRoute, router, setCollectionId]
+  );
 
   const renderCollectionNode = (cardId: string, level: number, seen: Set<string>): React.ReactNode => {
     const card = collectionCardById.get(cardId);
@@ -255,7 +279,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
           <button
             type="button"
             className={`${styles.collectionItem} ${isSelected ? styles.collectionItemActive : ''}`}
-            onClick={() => setCollectionId(card.docId!)}
+            onClick={() => handleSelectCollection(card.docId!)}
           >
             <span className={styles.collectionItemLabel}>{card.title || card.subtitle || 'Untitled'}</span>
             {card.childrenIds?.length ? (
@@ -498,6 +522,22 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                     <option value="what">What</option>
                   </select>
                 </div>
+              </div>
+
+              <div className={styles.sidebarSection}>
+                <label className={styles.feedToggleRow}>
+                  <input
+                    type="checkbox"
+                    checked={includeChildrenInFeed}
+                    onChange={(e) => setIncludeChildrenInFeed(e.target.checked)}
+                  />
+                  <span>
+                    Include children
+                    <p className={styles.feedToggleHint}>
+                      Also show direct child cards when a matching parent card is included by your filters.
+                    </p>
+                  </span>
+                </label>
               </div>
 
               <nav className={styles.navigation}>

@@ -46,7 +46,7 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
 
   const pathname = usePathname();
   const router = useRouter();
-  const { theme, isThemeAdminOpen, openThemeAdmin } = useTheme();
+  const { theme, toggleTheme, isThemeAdminOpen, openThemeAdmin } = useTheme();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'admin';
   const { showBack, backHref } = useReaderBackTarget(pathname);
@@ -98,7 +98,10 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
       <div className={`${styles.navContainer} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.leftSlot}>
           {showBack ? (
-            <Link href={backHref} className={styles.backLink}>
+            <Link
+              href={backHref}
+              className={`${styles.backLink} ${sidebarOpen ? styles.backLinkSidebarOpen : styles.backLinkSidebarClosed}`}
+            >
               ← Back
             </Link>
           ) : (
@@ -136,44 +139,54 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
         </div>
 
         <div className={`${styles.navLinks} ${isMenuOpen ? styles.open : ''}`}>
-          <Link
-            href="/view"
-            className={`${styles.navLink} ${pathname === '/view' ? styles.active : ''}`}
-          >
-            Content
-          </Link>
-          {isAdmin && (
-            <span className={styles.adminLinksDesktopOnly}>
+          {isAdmin ? (
+            <>
               <Link
-                href="/admin/studio"
-                className={`${styles.navLink} ${isGeneralAdminRoute ? styles.active : ''}`}
+                href="/view"
+                className={`${styles.navLink} ${pathname === '/view' ? styles.active : ''}`}
               >
-                Admin
+                Content
               </Link>
-              <Link
-                href="/admin/theme-admin"
-                className={`${styles.navLink} ${isThemeAdminRoute ? styles.active : ''}`}
-                onClick={(event) => {
-                  event.preventDefault();
-                  openThemeAdmin();
-                  router.replace(pathname || '/view');
-                }}
+              <span className={styles.adminLinksDesktopOnly}>
+                <Link
+                  href="/admin/studio"
+                  className={`${styles.navLink} ${isGeneralAdminRoute ? styles.active : ''}`}
+                >
+                  Admin
+                </Link>
+                <Link
+                  href="/admin/theme-admin"
+                  className={`${styles.navLink} ${isThemeAdminRoute ? styles.active : ''}`}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    openThemeAdmin();
+                    router.replace(pathname || '/view');
+                  }}
+                >
+                  Theme Settings
+                </Link>
+              </span>
+              <div className={styles.themeRow}>
+                <span>Theme</span>
+                <ThemeToggle />
+              </div>
+              <button
+                type="button"
+                className={styles.signOutButton}
+                onClick={() => signOut({ callbackUrl: '/' })}
               >
-                Theme Settings
-              </Link>
-            </span>
+                Sign out
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className={styles.menuActionButton}
+              onClick={toggleTheme}
+            >
+              {theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
+            </button>
           )}
-          <div className={styles.themeRow}>
-            <span>Theme</span>
-            <ThemeToggle />
-          </div>
-          <button
-            type="button"
-            className={styles.signOutButton}
-            onClick={() => signOut({ callbackUrl: '/' })}
-          >
-            Sign out
-          </button>
         </div>
       </div>
     </nav>

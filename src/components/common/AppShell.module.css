@@ -34,17 +34,19 @@
     background-image: radial-gradient(circle at bottom right, var(--color3) 0%, transparent 70%);
   }
   
-  .header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: var(--header-height);
-    z-index: var(--z-index-header);
-    background: var(--reader-header-background-color);
-    border-bottom: var(--header-border-width) solid var(--reader-header-border-color);
-    box-sizing: border-box;
-  }
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--header-height);
+  z-index: var(--z-index-header);
+  background: var(--reader-header-background-color);
+  border-bottom: var(--header-border-width) solid var(--reader-header-border-color);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+}
   
   .contentWrapper {
     display: flex;
@@ -58,29 +60,34 @@
   }
   
 .sidebarToggle {
-  position: fixed;
+  position: absolute;
   left: var(--spacing-md);
-  top: calc(var(--header-height) + var(--spacing-xs));
-  z-index: var(--z-index-sidebar);
-  background: var(--reader-chrome-control-background-color);
-  color: var(--reader-chrome-text-color);
-  border: var(--border-width-thin) solid var(--reader-chrome-border-color);
+  top: calc((var(--header-height) - 44px) / 2);
+  z-index: 2;
+  background: var(--reader-support-control-background-color);
+  color: var(--reader-support-control-text-color);
+  border: none;
   border-radius: var(--border-radius-md);
-  width: var(--spacing-xl);
-  height: var(--spacing-xl);
+  width: 44px;
+  height: 44px;
+  padding: 0;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--reader-chrome-meta-font-family);
-  font-size: var(--reader-chrome-meta-font-size);
+  font-size: var(--font-size-lg);
   font-weight: var(--reader-chrome-meta-font-weight);
-  line-height: var(--reader-chrome-meta-line-height);
+  line-height: 1;
   transition: all var(--transition-short) ease;
+  box-shadow: var(--shadow-sm);
+  opacity: 1;
+  visibility: visible;
 }
   
   .sidebarToggle:hover {
-    background: var(--reader-chrome-control-hover-background-color);
+    background: var(--reader-support-control-hover-background-color);
+    color: var(--reader-support-control-hover-text-color);
     transform: scale(1.05);
   }
   
@@ -127,10 +134,6 @@
 
   :global(body.curated-feed-active) .mainContent {
     padding-top: 0;
-  }
-
-  :global(body.curated-feed-active) .sidebarToggle {
-    top: calc(var(--header-height) + var(--curated-context-bar-height, 0px));
   }
 }
 
@@ -185,21 +188,15 @@
 
     /* Drawer and toggle share --z-index-sidebar on mobile; raise toggle so it stays above drawer and backdrop. */
     .sidebarToggle {
-      z-index: calc(var(--z-index-sidebar) + 2);
+      z-index: 2;
       left: max(var(--spacing-sm), env(safe-area-inset-left, 0px));
-      top: calc(var(--header-height) + max(var(--spacing-xs), env(safe-area-inset-top, 0px)));
-      min-width: 44px;
-      min-height: 44px;
-      width: auto;
-      height: auto;
-      padding: var(--spacing-xs);
+      top: calc((var(--header-height) - 44px) / 2);
+      width: 44px;
+      height: 44px;
+      padding: 0;
       border: var(--border-width-thin) solid var(--reader-chrome-border-color);
       border-radius: var(--border-radius-md);
       box-shadow: var(--shadow-sm);
-    }
-
-    :global(body.curated-feed-active) .sidebarToggle {
-      top: calc(var(--header-height) + var(--curated-context-bar-height, 0px));
     }
 
     .appShell::before,

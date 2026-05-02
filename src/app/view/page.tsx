@@ -8,6 +8,7 @@ import AdminFAB from '@/components/admin/card-admin/AdminFAB';
 import CardFeedV2 from '@/components/view/CardFeedV2';
 
 const SCROLL_POSITION_KEY = 'contentViewScrollPos';
+const FOCUS_CARD_KEY = 'contentViewFocusCardId';
 
 function useIntersectionObserver(callback: () => void, options?: IntersectionObserverInit) {
   const observer = useRef<IntersectionObserver | null>(null);
@@ -50,32 +51,70 @@ function ViewPageContent() {
     rootMargin: '400px',
   });
 
-  // Restore to edited card when returning from edit; otherwise restore prior scroll position.
+  // Restore to the last opened or edited card once the feed has rendered it.
   useEffect(() => {
     if (isInitialLoading || visibleCards.length === 0) return;
 
-    if (focusCardId && consumedFocusRef.current !== focusCardId) {
-      const el = document.querySelector(`[data-card-id="${focusCardId}"]`) as HTMLElement | null;
-      if (el) {
-        consumedFocusRef.current = focusCardId;
-        setTimeout(() => {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 100);
-        return;
-      }
+    const pendingFocusCardId = focusCardId ?? sessionStorage.getItem(FOCUS_CARD_KEY);
+    const savedPosition = sessionStorage.getItem(SCROLL_POSITION_KEY);
+
+    if (pendingFocusCardId && consumedFocusRef.current !== pendingFocusCardId) {
+      let cancelled = false;
+      let attempts = 0;
+      const maxAttempts = 20;
+
+      const tryRestoreFocus = () => {
+        if (cancelled) return;
+
+        const el = document.querySelector(`[data-card-id="${pendingFocusCardId}"]`) as HTMLElement | null;
+        if (el) {
+          consumedFocusRef.current = pendingFocusCardId;
+          sessionStorage.removeItem(FOCUS_CARD_KEY);
+          sessionStorage.removeItem(SCROLL_POSITION_KEY);
+          window.requestAnimationFrame(() => {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          });
+          return;
+        }
+
+        attempts += 1;
+        if (attempts < maxAttempts) {
+          window.setTimeout(tryRestoreFocus, 120);
+          return;
+        }
+
+        if (savedPosition) {
+          window.scrollTo(0, parseInt(savedPosition, 10));
+          sessionStorage.removeItem(SCROLL_POSITION_KEY);
+        }
+        sessionStorage.removeItem(FOCUS_CARD_KEY);
+      };
+
+      tryRestoreFocus();
+
+      return () => {
+        cancelled = true;
+      };
     }
 
-    const savedPosition = sessionStorage.getItem(SCROLL_POSITION_KEY);
     if (savedPosition) {
-      setTimeout(() => {
-        window.scrollTo(0, parseInt(savedPosition, 10));
+      const y = parseInt(savedPosition, 10);
+      if (!Number.isNaN(y)) {
+        window.requestAnimationFrame(() => {
+          window.scrollTo(0, y);
+          sessionStorage.removeItem(SCROLL_POSITION_KEY);
+        });
+      } else {
         sessionStorage.removeItem(SCROLL_POSITION_KEY);
-      }, 100); // Delay to allow DOM to render
+      }
     }
   }, [isInitialLoading, visibleCards.length, focusCardId]);
 
-  const onSaveScrollPosition = useCallback(() => {
+  const onSaveScrollPosition = useCallback((cardId?: string) => {
     sessionStorage.setItem(SCROLL_POSITION_KEY, window.scrollY.toString());
+    if (cardId) {
+      sessionStorage.setItem(FOCUS_CARD_KEY, cardId);
+    }
   }, []);
   
   if (error) {

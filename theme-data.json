@@ -651,7 +651,7 @@
           "radius": "border/radius/md"
         },
         "chromeSidebar": {
-          "background": "semantic/reader/chrome-surface",
+          "background": "layout/background2Color",
           "border": "layout/border2Color",
           "radius": "border/radius/md"
         },
@@ -764,7 +764,7 @@
           "radius": "border/radius/lg"
         },
         "windowSurface": {
-          "background": "layout/background1Color",
+          "background": "layout/background2Color",
           "border": "layout/border1Color",
           "radius": "border/radius/md",
           "shadow": "shadow/lg"

@@ -29,14 +29,14 @@ export default function AppShell({ children }: AppShellProps) {
 
     const mediaQuery = window.matchMedia(MOBILE_BREAKPOINT_QUERY);
 
-    const syncSidebarForViewport = (isMobile: boolean) => {
+    const syncSidebarForViewport = (isMobile: boolean, forceDesktopDefault = false) => {
       if (pathname === '/' || pathname?.startsWith('/admin/studio')) {
         return;
       }
 
       setSidebarOpen((current) => {
         if (isMobile) return false;
-        if (!current) return true;
+        if (forceDesktopDefault) return true;
         return current;
       });
     };
@@ -44,7 +44,7 @@ export default function AppShell({ children }: AppShellProps) {
     syncSidebarForViewport(mediaQuery.matches);
 
     const handleChange = (event: MediaQueryListEvent) => {
-      syncSidebarForViewport(event.matches);
+      syncSidebarForViewport(event.matches, !event.matches);
     };
 
     mediaQuery.addEventListener('change', handleChange);
@@ -66,7 +66,7 @@ export default function AppShell({ children }: AppShellProps) {
   }, [pathname]);
 
   const toggleSidebar = () => {
-    setSidebarOpen(prev => !prev);
+    setSidebarOpen((prev) => !prev);
   };
 
   // Never return null here: a stuck or slow session would show a blank screen.
@@ -89,12 +89,6 @@ export default function AppShell({ children }: AppShellProps) {
   return (
     <div className={styles.appShell}>
       <div className={styles.header}>
-        <Navigation 
-            sidebarOpen={isSidebarOpen}
-        />
-      </div>
-      <div className={styles.contentWrapper}>
-        {/* Sidebar toggle button - only show when not on home page */}
         {pathname !== '/' && (
           <button
             className={styles.sidebarToggle}
@@ -102,9 +96,12 @@ export default function AppShell({ children }: AppShellProps) {
             aria-label="Toggle sidebar"
             aria-expanded={isSidebarOpen}
           >
-            {isSidebarOpen ? '←' : '→'}
+            <span aria-hidden="true">{isSidebarOpen ? '←' : '→'}</span>
           </button>
         )}
+        <Navigation sidebarOpen={isSidebarOpen} />
+      </div>
+      <div className={styles.contentWrapper}>
         {pathname !== '/' && (
           <>
             <div
@@ -115,15 +112,13 @@ export default function AppShell({ children }: AppShellProps) {
             <div
               className={`${styles.sidebarWrapper} ${isSidebarOpen ? styles.sidebarWrapperOpen : styles.sidebarWrapperClosed}`}
             >
-            <GlobalSidebar isOpen={isSidebarOpen} />
+              <GlobalSidebar isOpen={isSidebarOpen} />
             </div>
           </>
         )}
-        <main className={styles.mainContent}>
-          {children}
-        </main>
+        <main className={styles.mainContent}>{children}</main>
       </div>
       <ThemeAdminOverlay />
     </div>
   );
-} 
+}

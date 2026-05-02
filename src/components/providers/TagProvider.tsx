@@ -6,6 +6,20 @@ import { useSession } from 'next-auth/react';
 import { Tag } from '@/lib/types/tag';
 import { buildTagTree, normalizeTagDimensionKey } from '@/lib/utils/tagUtils';
 
+const READER_FILTER_TAGS_KEY = 'myjournal-reader-filter-tags';
+
+function readStoredFilterTagIds(): string[] {
+  if (typeof window === 'undefined') return [];
+  const raw = window.localStorage.getItem(READER_FILTER_TAGS_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
 // --- Helper Functions ---
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
@@ -52,7 +66,16 @@ export function TagProvider({ children }: { children: ReactNode }) {
   );
 
   // State for the global tag filter
-  const [selectedFilterTagIds, setFilterTags] = useState<string[]>([]);
+  const [selectedFilterTagIds, setFilterTags] = useState<string[]>(() => readStoredFilterTagIds());
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (selectedFilterTagIds.length === 0) {
+      window.localStorage.removeItem(READER_FILTER_TAGS_KEY);
+      return;
+    }
+    window.localStorage.setItem(READER_FILTER_TAGS_KEY, JSON.stringify(selectedFilterTagIds));
+  }, [selectedFilterTagIds]);
 
   const createTag = useCallback(async (tagData: Omit<Tag, 'docId'>): Promise<Tag | undefined> => {
     try {

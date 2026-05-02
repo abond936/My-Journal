@@ -19,7 +19,7 @@ interface CardFeedProps {
   loading: boolean;
   refreshing?: boolean;
   loadMoreRef: (node?: Element | null | undefined) => void;
-  onSaveScrollPosition: () => void;
+  onSaveScrollPosition: (cardId?: string) => void;
 }
 
 export default function CardFeedV2({
@@ -131,7 +131,7 @@ export default function CardFeedV2({
           key={card.docId}
           card={card}
           size="medium"
-          onClick={onSaveScrollPosition}
+          onClick={card.docId ? () => onSaveScrollPosition(card.docId) : undefined}
           onBeforeNavigateToAdminEdit={onSaveScrollPosition}
         />
       ))}

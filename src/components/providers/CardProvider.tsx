@@ -123,6 +123,7 @@ const COLLECTION_STORAGE_KEY = 'myjournal-collection-id';
 const FEED_SORT_KEY = 'myjournal-feed-sort';
 const FEED_GROUP_KEY = 'myjournal-feed-group';
 const FEED_INCLUDE_CHILDREN_KEY = 'myjournal-feed-include-children';
+const FEED_CARD_TYPES_KEY = 'myjournal-feed-card-types';
 
 const FEED_SORT_VALUES = new Set<string>([
   'random',
@@ -142,29 +143,49 @@ const FEED_SORT_VALUES = new Set<string>([
 const FEED_GROUP_VALUES = new Set<string>(['none', 'who', 'what', 'when', 'where']);
 
 function normalizeStoredActiveDimension(raw: string | null): ActiveDimension {
-  if (!raw || raw === 'all') return 'who';
+  if (!raw || raw === 'all') return 'collections';
   if (raw === 'reflection') return 'what';
   const allowed: ActiveDimension[] = ['who', 'what', 'when', 'where', 'collections'];
   return (allowed as string[]).includes(raw) ? (raw as ActiveDimension) : 'who';
 }
 
+function readStoredValue(key: string): string | null {
+  if (typeof window === 'undefined') return null;
+  return window.localStorage.getItem(key) ?? window.sessionStorage.getItem(key);
+}
+
 function readStoredFeedSort(): FeedSortOrder {
   if (typeof window === 'undefined') return 'random';
-  const raw = sessionStorage.getItem(FEED_SORT_KEY);
+  const raw = readStoredValue(FEED_SORT_KEY);
   if (!raw || !FEED_SORT_VALUES.has(raw)) return 'random';
   return raw as FeedSortOrder;
 }
 
 function readStoredFeedGroup(): FeedGroupBy {
   if (typeof window === 'undefined') return 'none';
-  const raw = sessionStorage.getItem(FEED_GROUP_KEY);
+  const raw = readStoredValue(FEED_GROUP_KEY);
   if (!raw || !FEED_GROUP_VALUES.has(raw)) return 'none';
   return raw as FeedGroupBy;
 }
 
 function readStoredIncludeChildrenInFeed(): boolean {
   if (typeof window === 'undefined') return false;
-  return sessionStorage.getItem(FEED_INCLUDE_CHILDREN_KEY) === 'true';
+  return readStoredValue(FEED_INCLUDE_CHILDREN_KEY) === 'true';
+}
+
+function readStoredFeedCardTypes(): Set<Card['type']> {
+  if (typeof window === 'undefined') return new Set(FEED_CARD_TYPES_ORDER);
+  const raw = readStoredValue(FEED_CARD_TYPES_KEY);
+  if (!raw) return new Set(FEED_CARD_TYPES_ORDER);
+  try {
+    const parsed = JSON.parse(raw);
+    const values = Array.isArray(parsed)
+      ? parsed.filter((type): type is Card['type'] => FEED_CARD_TYPES_ORDER.includes(type))
+      : [];
+    return values.length > 0 ? new Set(values) : new Set(FEED_CARD_TYPES_ORDER);
+  } catch {
+    return new Set(FEED_CARD_TYPES_ORDER);
+  }
 }
 
 function shuffleCards<T extends { docId?: string }>(items: T[]): T[] {
@@ -191,9 +212,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   const { selectedFilterTagIds, setFilterTags, tags: allTags } = useTag();
 
   // --- Local Filter State ---
-  const [feedCardTypes, setFeedCardTypes] = useState<Set<Card['type']>>(
-    () => new Set(FEED_CARD_TYPES_ORDER)
-  );
+  const [feedCardTypes, setFeedCardTypes] = useState<Set<Card['type']>>(() => readStoredFeedCardTypes());
 
   const cardType = useMemo((): CardFilterType => {
     if (feedCardTypes.size >= FEED_CARD_TYPES_ORDER.length) return 'all';
@@ -229,12 +248,12 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   const [status, setStatus] = useState<CardStatus>('published');
   const [pageLimit, setPageLimit] = useState(20);
   const [activeDimension, setActiveDimensionState] = useState<ActiveDimension>(() => {
-    if (typeof window === 'undefined') return 'who';
-    return normalizeStoredActiveDimension(sessionStorage.getItem(DIMENSION_STORAGE_KEY));
+    if (typeof window === 'undefined') return 'collections';
+    return normalizeStoredActiveDimension(readStoredValue(DIMENSION_STORAGE_KEY));
   });
   const [collectionId, setCollectionIdState] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
-    return sessionStorage.getItem(COLLECTION_STORAGE_KEY) || null;
+    return readStoredValue(COLLECTION_STORAGE_KEY) || null;
   });
   const [feedSort, setFeedSortState] = useState<FeedSortOrder>(() => readStoredFeedSort());
   const [feedGroupBy, setFeedGroupByState] = useState<FeedGroupBy>(() => readStoredFeedGroup());
@@ -260,19 +279,19 @@ export const CardProvider = ({ children }: CardProviderProps) => {
 
   const setFeedSort = useCallback((order: FeedSortOrder) => {
     setFeedSortState(order);
-    if (typeof window !== 'undefined') sessionStorage.setItem(FEED_SORT_KEY, order);
+    if (typeof window !== 'undefined') window.localStorage.setItem(FEED_SORT_KEY, order);
   }, []);
 
   const setFeedGroupBy = useCallback((g: FeedGroupBy) => {
     setFeedGroupByState(g);
-    if (typeof window !== 'undefined') sessionStorage.setItem(FEED_GROUP_KEY, g);
+    if (typeof window !== 'undefined') window.localStorage.setItem(FEED_GROUP_KEY, g);
   }, []);
 
   const setIncludeChildrenInFeed = useCallback((value: boolean) => {
     setIncludeChildrenInFeedState(value);
     if (typeof window !== 'undefined') {
-      if (value) sessionStorage.setItem(FEED_INCLUDE_CHILDREN_KEY, 'true');
-      else sessionStorage.removeItem(FEED_INCLUDE_CHILDREN_KEY);
+      if (value) window.localStorage.setItem(FEED_INCLUDE_CHILDREN_KEY, 'true');
+      else window.localStorage.removeItem(FEED_INCLUDE_CHILDREN_KEY);
     }
   }, []);
 
@@ -285,18 +304,28 @@ export const CardProvider = ({ children }: CardProviderProps) => {
 
   const setActiveDimension = useCallback((dim: ActiveDimension) => {
     setActiveDimensionState(dim);
-    if (typeof window !== 'undefined') sessionStorage.setItem(DIMENSION_STORAGE_KEY, dim);
+    if (typeof window !== 'undefined') window.localStorage.setItem(DIMENSION_STORAGE_KEY, dim);
     if (dim !== 'collections') setCollectionIdState(null);
-    if (dim !== 'collections' && typeof window !== 'undefined') sessionStorage.removeItem(COLLECTION_STORAGE_KEY);
+    if (dim !== 'collections' && typeof window !== 'undefined') window.localStorage.removeItem(COLLECTION_STORAGE_KEY);
   }, []);
 
   const setCollectionId = useCallback((id: string | null) => {
     setCollectionIdState(id);
     if (typeof window !== 'undefined') {
-      if (id) sessionStorage.setItem(COLLECTION_STORAGE_KEY, id);
-      else sessionStorage.removeItem(COLLECTION_STORAGE_KEY);
+      if (id) window.localStorage.setItem(COLLECTION_STORAGE_KEY, id);
+      else window.localStorage.removeItem(COLLECTION_STORAGE_KEY);
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const values = FEED_CARD_TYPES_ORDER.filter((type) => feedCardTypes.has(type));
+    if (values.length === FEED_CARD_TYPES_ORDER.length) {
+      window.localStorage.removeItem(FEED_CARD_TYPES_KEY);
+      return;
+    }
+    window.localStorage.setItem(FEED_CARD_TYPES_KEY, JSON.stringify(values));
+  }, [feedCardTypes]);
 
   const hasAppliedSessionStatusDefault = useRef(false);
   useEffect(() => {
@@ -668,11 +697,13 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     setFeedCardTypes(new Set(FEED_CARD_TYPES_ORDER));
     setSearchTerm('');
     setStatus(isAdmin ? 'all' : 'published');
+    setActiveDimension('collections');
     setCollectionId(null);
     setFeedSort('random');
     setFeedGroupBy('none');
+    setIncludeChildrenInFeed(false);
     setCardDimensionMissingState({ who: false, what: false, when: false, where: false });
-  }, [isAdmin, setFilterTags, setCollectionId, setFeedSort, setFeedGroupBy]);
+  }, [isAdmin, setActiveDimension, setFilterTags, setCollectionId, setFeedSort, setFeedGroupBy, setIncludeChildrenInFeed]);
 
   const value = useMemo(
     () => ({

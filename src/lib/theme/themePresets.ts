@@ -141,6 +141,8 @@ const JOURNAL_READER_RECIPES: ReaderThemeRecipes = (() => {
   recipes.controls.feedbackAction.hoverBackground = 'layout/background1Color';
   recipes.controls.supportChip.hoverBackground = 'layout/background2Color';
   recipes.controls.lightboxControl.background = 'layout/background2Color';
+  recipes.surfaces.chromeSidebar.background = 'layout/background2Color';
+  recipes.surfaces.windowSurface.background = 'layout/background2Color';
 
   recipes.treatments.quoteWatermarkOpacity = '0.16';
   recipes.treatments.questionWatermarkOpacity = '0.2';
@@ -220,6 +222,8 @@ const EDITORIAL_READER_RECIPES: ReaderThemeRecipes = (() => {
 
   recipes.typography.calloutBody.lineHeight = 'line-height/relaxed';
   recipes.typography.quote.lineHeight = 'line-height/relaxed';
+  recipes.surfaces.chromeSidebar.background = 'layout/background2Color';
+  recipes.surfaces.windowSurface.background = 'layout/background2Color';
 
   recipes.surfaces.storyCardClosed.background = 'shared/card/background';
   recipes.surfaces.storyCardClosed.border = 'shared/card/border';
