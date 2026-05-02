@@ -25,6 +25,22 @@ jest.mock('@/lib/auth/authOptions', () => ({
   authOptions: {},
 }));
 
+jest.mock('@/lib/config/firebase/admin', () => ({
+  getAdminApp: jest.fn(() => ({
+    firestore: jest.fn(() => ({
+      collection: jest.fn(() => ({
+        doc: jest.fn(() => ({
+          get: jest.fn().mockResolvedValue({
+            exists: true,
+            id: 'media-1',
+            data: () => ({ caption: 'Updated media' }),
+          }),
+        })),
+      })),
+    })),
+  })),
+}));
+
 jest.mock('@/lib/services/images/imageImportService', () => ({
   bulkApplyMediaTags: jest.fn(),
   patchMediaDocument: jest.fn(),
