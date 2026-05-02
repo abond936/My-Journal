@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useCallback, useEffect } from 'react';
+import React, { Suspense, useRef, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useCardContext } from '@/components/providers/CardProvider';
 import styles from './ViewPage.module.css';
@@ -21,7 +21,7 @@ function useIntersectionObserver(callback: () => void, options?: IntersectionObs
   return ref;
 }
 
-export default function CardsPage() {
+function ViewPageContent() {
   const {
     visibleCards,
     visibleFeedSections,
@@ -101,4 +101,27 @@ export default function CardsPage() {
       <AdminFAB />
     </div>
   );
-} 
+}
+
+function ViewPageFallback() {
+  return (
+    <div className={styles.page}>
+      <CardFeedV2
+        cards={[]}
+        sections={null}
+        loading
+        refreshing={false}
+        loadMoreRef={() => {}}
+        onSaveScrollPosition={() => {}}
+      />
+    </div>
+  );
+}
+
+export default function CardsPage() {
+  return (
+    <Suspense fallback={<ViewPageFallback />}>
+      <ViewPageContent />
+    </Suspense>
+  );
+}
