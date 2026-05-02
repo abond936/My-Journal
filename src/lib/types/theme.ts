@@ -316,7 +316,7 @@ export type AdminThemePresetId = 'admin';
 export type ThemeScopeId = 'reader' | 'admin';
 
 export type ThemeRecipeTokenRef =
-  | `font-family/${'sans' | 'serif' | 'handwriting'}`
+  | `font-family/${'sans' | 'sans1' | 'sans2' | 'sans3' | 'serif' | 'serif1' | 'serif2' | 'serif3' | 'handwriting' | 'handwriting1' | 'handwriting2'}`
   | `font-size/${'xxs' | 'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl'}`
   | `font-weight/${'normal' | 'medium' | 'semibold' | 'bold'}`
   | `line-height/${'base' | 'tight' | 'relaxed'}`

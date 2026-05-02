@@ -244,7 +244,9 @@ export default function MediaAdminRow({
             allTags={allTags ?? []}
             variant="compact"
             hideDimensionRowLabels
-            onUpdateTags={(next) => updateMedia(media.docId, { tags: next })}
+            onUpdateTags={async (next) => {
+              await updateMedia(media.docId, { tags: next });
+            }}
           />
         );
 

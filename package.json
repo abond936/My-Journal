@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "typecheck:prod": "tsc -p tsconfig.production.json --noEmit",
     "start": "next start",
     "lint": "next lint",
     "test": "jest",

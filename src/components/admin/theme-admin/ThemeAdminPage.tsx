@@ -1425,7 +1425,7 @@ export default function ThemeAdminPage() {
       ? FOUNDATION_COMPONENT_IDS
       : CONTENT_COMPONENT_IDS;
 
-    if (!activeSectionComponentIds.includes(selectedComponentId as (typeof activeSectionComponentIds)[number])) {
+    if (!(activeSectionComponentIds as readonly string[]).includes(selectedComponentId)) {
       const firstComponent = visibleNavigatorComponents[0];
       const firstVariant = firstComponent?.variants[0];
       if (firstComponent) {

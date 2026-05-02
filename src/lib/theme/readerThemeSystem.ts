@@ -926,14 +926,15 @@ export function normalizeReaderThemeRecipes(
   }
 
   const normalized = cloneReaderThemeRecipes(DEFAULT_READER_THEME_RECIPES);
+  const incomingRecipes = recipes as Partial<ReaderThemeRecipes>;
 
-  Object.assign(normalized.typography, recipes.typography);
-  Object.assign(normalized.surfaces, recipes.surfaces);
-  Object.assign(normalized.controls, recipes.controls);
-  Object.assign(normalized.tags, recipes.tags);
-  Object.assign(normalized.overlays, recipes.overlays);
-  Object.assign(normalized.iconography, recipes.iconography);
-  Object.assign(normalized.treatments, recipes.treatments);
+  Object.assign(normalized.typography, incomingRecipes.typography);
+  Object.assign(normalized.surfaces, incomingRecipes.surfaces);
+  Object.assign(normalized.controls, incomingRecipes.controls);
+  Object.assign(normalized.tags, incomingRecipes.tags);
+  Object.assign(normalized.overlays, incomingRecipes.overlays);
+  Object.assign(normalized.iconography, incomingRecipes.iconography);
+  Object.assign(normalized.treatments, incomingRecipes.treatments);
 
   const incomingTypography = recipes.typography as Record<string, unknown> | undefined;
   const incomingSurfaces = recipes.surfaces as Record<string, unknown> | undefined;
@@ -1019,31 +1020,40 @@ export function normalizeReaderThemeRecipes(
 
   const legacyControls = recipes.controls as LegacyReaderThemeRecipes['controls'] | undefined;
   if (legacyControls?.solid && !incomingControls?.chromeActiveTab) {
-    normalized.controls.chromeActiveTab = legacyControls.solid;
+    normalized.controls.chromeActiveTab =
+      legacyControls.solid as ReaderThemeRecipes['controls']['chromeActiveTab'];
   }
   if (legacyControls?.supportControl && !incomingControls?.supportControl) {
-    normalized.controls.supportControl = legacyControls.supportControl;
+    normalized.controls.supportControl =
+      legacyControls.supportControl as ReaderThemeRecipes['controls']['supportControl'];
     if (!incomingControls?.feedbackAction) {
-      normalized.controls.feedbackAction = legacyControls.supportControl;
+      normalized.controls.feedbackAction =
+        legacyControls.supportControl as ReaderThemeRecipes['controls']['feedbackAction'];
     }
   }
   if (legacyControls?.fieldControl && !incomingControls?.supportControl) {
-    normalized.controls.supportControl = legacyControls.fieldControl;
+    normalized.controls.supportControl =
+      legacyControls.fieldControl as ReaderThemeRecipes['controls']['supportControl'];
   }
   if (legacyControls?.supportControlStrong && !incomingControls?.supportControlStrong) {
-    normalized.controls.supportControlStrong = legacyControls.supportControlStrong;
+    normalized.controls.supportControlStrong =
+      legacyControls.supportControlStrong as ReaderThemeRecipes['controls']['supportControlStrong'];
   }
   if (legacyControls?.fieldControlStrong && !incomingControls?.supportControlStrong) {
-    normalized.controls.supportControlStrong = legacyControls.fieldControlStrong;
+    normalized.controls.supportControlStrong =
+      legacyControls.fieldControlStrong as ReaderThemeRecipes['controls']['supportControlStrong'];
   }
   if (legacyControls?.filterChip && !incomingControls?.supportChip) {
-    normalized.controls.supportChip = legacyControls.filterChip;
+    normalized.controls.supportChip =
+      legacyControls.filterChip as ReaderThemeRecipes['controls']['supportChip'];
   }
   if (legacyControls?.chromeFilterChip && !incomingControls?.supportChip) {
-    normalized.controls.supportChip = legacyControls.chromeFilterChip;
+    normalized.controls.supportChip =
+      legacyControls.chromeFilterChip as ReaderThemeRecipes['controls']['supportChip'];
   }
   if (legacyControls?.link && !incomingControls?.inlineLink) {
-    normalized.controls.inlineLink = legacyControls.link;
+    normalized.controls.inlineLink =
+      legacyControls.link as ReaderThemeRecipes['controls']['inlineLink'];
   }
 
   const legacyOverlays = recipes.overlays as LegacyReaderThemeRecipes['overlays'] | undefined;

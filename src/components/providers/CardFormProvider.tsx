@@ -524,12 +524,16 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
         }
 
         setFormState((prev) => {
-          const nextCardData = { ...prev.cardData };
-          const nextLastSaved = { ...prev.lastSavedState.cardData };
+          const nextCardData = { ...prev.cardData } as CardUpdate;
+          const nextLastSaved = { ...prev.lastSavedState.cardData } as CardUpdate;
+          const syncKeys = Array.from(keysToSync) as Array<keyof CardUpdate>;
+          const nextCardDataRecord = nextCardData as Record<string, unknown>;
+          const nextLastSavedRecord = nextLastSaved as Record<string, unknown>;
+          const savedBaselineRecord = savedBaseline as Record<string, unknown>;
 
-          keysToSync.forEach((key) => {
-            nextCardData[key] = savedBaseline[key];
-            nextLastSaved[key] = savedBaseline[key];
+          syncKeys.forEach((key) => {
+            nextCardDataRecord[key] = savedBaselineRecord[key];
+            nextLastSavedRecord[key] = savedBaselineRecord[key];
           });
 
           return {
