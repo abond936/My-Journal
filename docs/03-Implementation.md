@@ -32,6 +32,8 @@ Legend:
 
 - **Content** - Prepare content for import.
 
+- **Hosted reader launch** - Private Vercel reader deployment is live; current stabilization priority is reader/mobile tuning plus auth/privacy validation rather than expanding mobile authoring scope.
+
 
 
 ---

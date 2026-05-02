@@ -44,6 +44,7 @@ Legend:
 - **Layouts** - AppShell (navigation/structure), ViewLayout (content interface), AdminLayout (admin interface).
 - **Providers** - Root app providers: AuthProvider, ThemeProvider, TagProvider, CardProvider. Admin layout adds MediaProvider.
 - **Route Separation** - Reader and admin routes are distinct, preserving explicit editing context.
+- **Hosted reader baseline** - Private Vercel deployment is live for desktop/mobile reader validation; current production scope is read-only consumption rather than Studio/admin authoring on mobile.
 
 ⭕2 **Future**
 
@@ -54,6 +55,8 @@ Legend:
 
 📐 **Initial Architecture** - Initial architecture decision: separate content consumption from administration to preserve reader performance, reduce accidental edits, and keep role boundaries clear.
 📐 **Future Architecture** - Current direction: keep separation, but add admin-only on-the-fly editing affordances from content pages for faster author workflow.
+
+📐 **Mobile v1 scope** - Mobile first launch is reader-only. Studio/admin are not a mobile target in v1; future capture/caption contribution flows can be added later without broadening the current launch bar.
 
 ## **Navigation**
 
@@ -111,6 +114,11 @@ Legend:
 - **Logo** - Same title artwork as home; compact height in header (`Navigation.module.css`).
 - **Hamburger** - Dropdown menu with content links (all users), admin links (admin only), and theme toggle.
 
+⭕1 **Planned**
+
+- **Reader-only menu simplification** - In reader-only mode, reduce the hamburger menu to the minimum needed control surface. Current preferred direction: keep only Light/Dark mode switching unless another named reader theme becomes a real product option.
+- **Back button contrast (light mode)** - Strengthen the light-mode Back button treatment so it reads as a clear action instead of blending into the surrounding chrome.
+
 ---
 
 ### **Left Navigation**
@@ -151,6 +159,8 @@ Legend:
 - **Mobile-first filter redesign** - Sidebar freeform filters move to icon-led chip controls: rename **Card type** to **Cards** and replace single select with five toggle chips/buttons (`story`, `gallery`, `qa`, `quote`, `callout`) where “all” means all five active; Tags remove the `All` dimension tab and use only `Who/What/When/Where`; remove legacy copy/controls for **Show children after tag-filtered parents** from reader sidebar UX; simplify search control copy/presentation (`Search tags...` in-field prompt), reduce sidebar visual density, and keep tag tree collapsed by default (especially mobile) with per-dimension expansion on demand.
 ⭕2 **Future**
 
+- **Curated default in sidebar** - Make Curated the default sidebar mode for reader entry if validation continues to show it is the primary intended browse path.
+- **Curated tree mobile ergonomics** - Increase practical finger usability of the curated/tag tree rows and controls beyond the current desktop-acceptable baseline where needed in real mobile use.
 - **Tag Tree Counts** - Fix numbering and add media counts "(x/y)" on tag tree nodes.
 - **Collection Metadata** - Implement collection metadata (child counts).
 - **Chron Tree** - Provide tree in chronological order (Year / Month / What) for browsing.
@@ -159,6 +169,7 @@ Legend:
 
 - **Group by control** - Confirm whether reader sidebar should keep `Group by` as a primary control or move/remove it.
 - **Created sort visibility** - Confirm whether `Created` sort options remain visible in reader sidebar or move behind an advanced mode.
+- **Curated tree responsiveness** - Curated tree can feel slow to load in hosted reader use; confirm whether the issue is first-load latency, delayed selection feedback, or both before changing the reader interaction contract.
 
 ---
 
@@ -227,6 +238,11 @@ Legend:
 - **Rail Variant** - Add a curated horizontal rail variant for qualifying sequences (for example, school/college story runs) with explicit eligibility, ordering, and card-size behavior separate from the default feed grid.
 - **In-Feed Expansion** - Add optional `Read more` progressive disclosure for story excerpts in feed cards, with deterministic truncation and explicit collapse/expand behavior that does not break feed scroll continuity.
 - **Orientation-aware Framing** - Use cover media orientation metadata to choose from a bounded ratio set (landscape/portrait/square) per approved layout variant so best-fit rendering improves without degrading feed rhythm.
+- **Reader typography tuning** - Rework title/body/supporting-text scales and spacing for the hosted mobile reader so cards and detail pages feel more intentional and less oversized in use.
+- **Question-card visual cue** - Evaluate a question-card cover treatment (for example a question-mark overlay/cover treatment) so Question cards keep more visual interest in card views without pretending to be a different type.
+- **Gallery swipe affordance + caption overlay** - Make swipeability obvious on gallery cards in the main feed/card view, and render captions as bottom overlays on gallery imagery when captions exist.
+- **Reader return position** - Preserve feed position when leaving card view and returning to the reader so the user lands back on the card they opened instead of the top of the feed.
+- **Curated mode interaction correctness** - Harden curated-mode open/select behavior so opening the sidebar and selecting a new curated card replaces the active card cleanly instead of leaving the previous card open above the new one.
 - **Questions / Quotes** - Source material (Word, books, Notion).
 - **Quote Card** - Attribution modeling (e.g. Content vs subtitle/excerpt).
 
@@ -256,6 +272,7 @@ Legend:
 ❓ **Open**
 
 - **Narrow curated feed card sizing** - In smaller viewport desktop/mobile-like states, feed cards can still overgrow after initial render in curated mode. The sticky curated title placement is corrected, but the responsive card-sizing regression is not fully resolved yet.
+- **Curated open-response lag** - First interactions in curated mode have shown intermittent “selected card did not appear to respond” behavior; confirm whether this is true failure, delayed hydration, or a remaining curated-shell state bug.
 
 📘 `src/components/view/CardFeedV2.tsx` · `V2ContentCard.tsx` · `ContentCard.tsx` (legacy / CardGrid)
 
@@ -289,8 +306,14 @@ Legend:
 - **Related Count** - Similar / Explore presentation tuned so rails stay visually light: compact tile width (`cardRailCell` clamp in `DiscoverySection.module.css`), secondary group title scale, `V2ContentCard` `small` on rails.
 - **Detail discovery spacing** - **Explore More** / `DiscoverySection` on `/view/[id]` uses increased **margin above** the block, **padding below** the rails, and **larger article bottom padding** so the section is not tight to the story body or the scroll end (`DiscoverySection.module.css`, `CardDetail.module.css`). Further reader polish (typography, rails, kickers): `docs/DESIGN.md` → **Reader polish backlog (decisions, 2026)**.
 
-⭕2 **Future**
+⭕1 **Planned**
+- **Reader-only auth path** - Reader-only user login must work cleanly in production without requiring admin credentials or accidentally exposing admin affordances.
+- **Kicker strategy** - Define a consistent kicker/subhead strategy for reader cards and detail pages so card families and discovery sections gain lightweight narrative context without overcrowding titles.
+- **Embedded-image caption framing** - Embedded images in rich content without captions should not render with an empty caption background treatment.
+- **Related / Explore More refinement** - Improve section typography, compact-card sizing, and overall hierarchy for **Related**, **Explore More**, and similar detail-page discovery blocks.
+- **Curated discovery policy** - Decide whether Curated mode suppresses generic **Explore More** discovery or constrains discovery to structurally related children while the user is following an authored sequence.
 
+⭕2 **Future**
 - **Feed hydration tiers:** Optional **cover-only** first paint on `/view` (defer full gallery/content hydration until card open or below fold) to reduce payload and server work vs today's full hydration for feed cards.
 - **View Mosaic** - Implement view-page gallery mosaic (replace swiper-only if needed).
 - **Social Features** - Like, comment, sharelink — out of scope until revisited.
