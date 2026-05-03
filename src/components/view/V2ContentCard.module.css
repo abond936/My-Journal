@@ -256,6 +256,62 @@
   height: 100%;
 }
 
+.swiperContainer :global(.swiper) {
+  overflow: visible;
+}
+
+.swiperContainer :global(.swiper-slide) {
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.galleryAffordance {
+  position: absolute;
+  right: var(--spacing-sm);
+  bottom: var(--spacing-sm);
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 4px var(--spacing-sm);
+  border-radius: var(--border-radius-full);
+  background: color-mix(in srgb, var(--reader-overlay-scrim-color) 82%, transparent);
+  color: var(--reader-overlay-contrast-text-color);
+  border: var(--border-width-thin) solid var(--reader-overlay-border-color);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(6px);
+}
+
+.galleryAffordancePeek,
+.galleryAffordanceCount {
+  font-family: var(--reader-chrome-meta-font-family);
+  font-size: var(--reader-chrome-meta-font-size);
+  font-weight: var(--reader-chrome-meta-font-weight);
+  line-height: var(--reader-chrome-meta-line-height);
+}
+
+.galleryCaptionOverlay {
+  position: absolute;
+  left: var(--spacing-sm);
+  right: var(--spacing-sm);
+  bottom: calc(var(--spacing-sm) + 2rem);
+  z-index: 3;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-md);
+  background: color-mix(in srgb, var(--reader-gallery-overlay-background) 90%, transparent);
+  color: var(--reader-card-overlay-text-color);
+  box-shadow: var(--shadow-sm);
+  pointer-events: none;
+}
+
+.galleryCaptionOverlay p {
+  margin: 0;
+  font-family: var(--reader-caption-font-family);
+  font-size: var(--reader-caption-font-size);
+  font-weight: var(--reader-caption-font-weight);
+  line-height: var(--reader-caption-line-height);
+}
+
 .overlayContent {
   /* This class is now handled by the specific type styles like .story .content */
 }
@@ -558,6 +614,16 @@
   font-size: var(--reader-title-small-font-size);
   font-weight: var(--reader-title-small-font-weight);
   line-height: var(--reader-title-small-line-height);
+}
+
+.small.story .content,
+.small.gallery .content,
+.small.qa .content {
+  padding-left: var(--spacing-sm);
+}
+
+.small.qa:not(.qaWithCover)::before {
+  font-size: clamp(4.4rem, 22vw, 7.25rem);
 }
 
 /* --- Display Mode Styles --- */

@@ -155,9 +155,38 @@
   opacity: 1;
 }
 
+.treeControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin: 0 0 var(--spacing-sm) 0;
+}
+
+.treeControlButton {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--reader-support-control-border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--reader-support-control-background-color);
+  color: var(--reader-support-control-text-color);
+  font-family: var(--reader-support-control-font-family);
+  font-size: var(--reader-support-control-font-size);
+  font-weight: var(--reader-support-control-font-weight);
+  line-height: var(--reader-support-control-line-height);
+  cursor: pointer;
+}
+
+.treeControlButton:hover {
+  background: var(--reader-support-control-hover-background-color);
+  color: var(--reader-support-control-hover-text-color);
+}
+
 .tagHeader {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 2px;
 }
 
@@ -177,7 +206,7 @@
 }
 
 .checkbox {
-  margin: 3px 0 0 0;
+  margin: 1px 0 0 0;
   flex: 0 0 0.9rem;
   width: 0.9rem;
   height: 0.9rem;
@@ -187,14 +216,14 @@
 
 .tagName {
   cursor: pointer;
-  font-family: var(--reader-chrome-meta-font-family);
+  font-family: var(--reader-support-control-font-family);
   color: var(--reader-chrome-text-color);
-  font-size: var(--reader-chrome-meta-font-size);
+  font-size: var(--reader-support-control-font-size);
   font-weight: var(--font-weight-normal, 400);
   flex: 1;
   min-width: 0;
-  line-height: var(--reader-chrome-meta-line-height);
-  padding-top: 2px;
+  line-height: var(--reader-support-control-line-height);
+  padding-top: 0;
 }
 
 .children {
@@ -202,7 +231,7 @@
 }
 
 .tagItem {
-  margin: 2px 0;
+  margin: 1px 0;
 }
 
 /* Desktop adjustments — literal px per docs/04-Theme-Design-Contract.md §9.2 */
@@ -240,11 +269,11 @@
   }
 
   .checkbox {
-    margin-top: 3px;
+    margin-top: 1px;
   }
 
   .tagName {
-    padding-top: 2px;
+    padding-top: 0;
   }
 
   .expandButton {

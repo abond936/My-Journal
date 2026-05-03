@@ -21,6 +21,7 @@ import {
   Calendar,
   MapPin,
   BookOpen,
+  FunnelX,
   Image,
   CircleHelp,
   Quote,
@@ -171,6 +172,10 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
   );
 
   const collectionRoots = useMemo(() => listCollectionRootCards(collectionTreeCards), [collectionTreeCards]);
+  const publishedCollectionRootCount = useMemo(
+    () => collectionRoots.filter((card) => card.status === 'published').length,
+    [collectionRoots]
+  );
 
   useEffect(() => {
     if (collectionTreeCards.length === 0) return;
@@ -258,6 +263,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     const isSelected = collectionId === card.docId;
     const hasChildren = children.length > 0;
     const isExpanded = hasChildren && expandedCollectionIds.has(card.docId);
+    const showDraftTitle = isAdmin && card.status === 'draft';
 
     return (
       <li key={card.docId} className={styles.collectionTreeNode}>
@@ -281,10 +287,18 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
             className={`${styles.collectionItem} ${isSelected ? styles.collectionItemActive : ''}`}
             onClick={() => handleSelectCollection(card.docId!)}
           >
-            <span className={styles.collectionItemLabel}>{card.title || card.subtitle || 'Untitled'}</span>
-            {card.childrenIds?.length ? (
-              <span className={styles.collectionCount}>({card.childrenIds.length})</span>
-            ) : null}
+            <span className={styles.collectionItemContent}>
+              <span className={styles.collectionItemMainRow}>
+                <span
+                  className={`${styles.collectionItemLabel} ${showDraftTitle ? styles.collectionItemLabelDraft : ''}`}
+                >
+                  {card.title || card.subtitle || 'Untitled'}
+                </span>
+                {card.childrenIds?.length ? (
+                  <span className={styles.collectionCount}>({card.childrenIds.length})</span>
+                ) : null}
+              </span>
+            </span>
           </button>
         </div>
         {hasChildren && isExpanded ? (
@@ -328,8 +342,11 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                   type="button"
                   onClick={handleClearFiltersClick}
                   className={styles.clearButtonCompact}
+                  aria-label="Clear filters"
+                  title="Clear filters"
                 >
-                  Clear filters
+                  <FunnelX strokeWidth={2} />
+                  <span className={styles.srOnly}>Clear filters</span>
                 </button>
               </div>
               <div className={styles.sidebarSection}>
@@ -479,48 +496,45 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
               </div>
 
               <div className={styles.sidebarSection}>
-                <div className={styles.inlineFieldRow}>
-                  <label htmlFor="feed-sort-select" className={styles.inlineFieldLabel}>Sort by</label>
-                  <select
-                    id="feed-sort-select"
-                    value={feedSort}
-                    onChange={(e) => setFeedSort(e.target.value as FeedSortOrder)}
-                    className={`${styles.compactControl} ${styles.compactControlInline}`}
-                    aria-label="Sort card feed"
-                  >
-                    <option value="random">Random</option>
-                    <option value="whenDesc">When (Desc)</option>
-                    <option value="whenAsc">When (Asc)</option>
-                    <option value="createdDesc">Created (Desc)</option>
-                    <option value="createdAsc">Created (Asc)</option>
-                    <option value="titleAsc">Title (A-Z)</option>
-                    <option value="titleDesc">Title (Z-A)</option>
-                    <option value="whoAsc">Who (A-Z)</option>
-                    <option value="whoDesc">Who (Z-A)</option>
-                    <option value="whatAsc">What (A-Z)</option>
-                    <option value="whatDesc">What (Z-A)</option>
-                    <option value="whereAsc">Where (A-Z)</option>
-                    <option value="whereDesc">Where (Z-A)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className={styles.sidebarSection}>
-                <div className={styles.inlineFieldRow}>
-                  <label htmlFor="feed-group-select" className={styles.inlineFieldLabel}>Group by</label>
-                  <select
-                    id="feed-group-select"
-                    value={feedGroupBy}
-                    onChange={(e) => setFeedGroupBy(e.target.value as FeedGroupBy)}
-                    className={`${styles.compactControl} ${styles.compactControlInline}`}
-                    aria-label="Group card feed"
-                  >
-                    <option value="none">None</option>
-                    <option value="when">When</option>
-                    <option value="who">Who</option>
-                    <option value="where">Where</option>
-                    <option value="what">What</option>
-                  </select>
+                <div className={styles.dualFieldRow}>
+                  <div className={styles.inlineFieldRow}>
+                    <select
+                      id="feed-sort-select"
+                      value={feedSort}
+                      onChange={(e) => setFeedSort(e.target.value as FeedSortOrder)}
+                      className={`${styles.compactControl} ${styles.compactControlInline}`}
+                      aria-label="Sort card feed"
+                    >
+                      <option value="random">Sort by Random</option>
+                      <option value="whenDesc">Sort by When (Desc)</option>
+                      <option value="whenAsc">Sort by When (Asc)</option>
+                      <option value="createdDesc">Sort by Created (Desc)</option>
+                      <option value="createdAsc">Sort by Created (Asc)</option>
+                      <option value="titleAsc">Sort by Title (A-Z)</option>
+                      <option value="titleDesc">Sort by Title (Z-A)</option>
+                      <option value="whoAsc">Sort by Who (A-Z)</option>
+                      <option value="whoDesc">Sort by Who (Z-A)</option>
+                      <option value="whatAsc">Sort by What (A-Z)</option>
+                      <option value="whatDesc">Sort by What (Z-A)</option>
+                      <option value="whereAsc">Sort by Where (A-Z)</option>
+                      <option value="whereDesc">Sort by Where (Z-A)</option>
+                    </select>
+                  </div>
+                  <div className={styles.inlineFieldRow}>
+                    <select
+                      id="feed-group-select"
+                      value={feedGroupBy}
+                      onChange={(e) => setFeedGroupBy(e.target.value as FeedGroupBy)}
+                      className={`${styles.compactControl} ${styles.compactControlInline}`}
+                      aria-label="Group card feed"
+                    >
+                      <option value="none">Group by None</option>
+                      <option value="when">Group by When</option>
+                      <option value="who">Group by Who</option>
+                      <option value="where">Group by Where</option>
+                      <option value="what">Group by What</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -531,12 +545,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                     checked={includeChildrenInFeed}
                     onChange={(e) => setIncludeChildrenInFeed(e.target.checked)}
                   />
-                  <span>
-                    Include children
-                    <p className={styles.feedToggleHint}>
-                      Also show direct child cards when a matching parent card is included by your filters.
-                    </p>
-                  </span>
+                  <span>Include children</span>
                 </label>
               </div>
 
@@ -567,9 +576,17 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                 {collectionCards.length === 0 ? (
                   <div className={styles.collectionEmpty}>No collections yet.</div>
                 ) : (
-                  <ul className={styles.collectionTreeList}>
-                    {collectionRoots.map((root) => renderCollectionNode(root.docId!, 0, new Set()))}
-                  </ul>
+                  <>
+                    {isAdmin && collectionRoots.length > 0 && publishedCollectionRootCount === 0 ? (
+                      <div className={styles.collectionAdminNotice}>
+                        Curated roots are currently draft-only, so readers will not see them until at least one root is
+                        published.
+                      </div>
+                    ) : null}
+                    <ul className={styles.collectionTreeList}>
+                      {collectionRoots.map((root) => renderCollectionNode(root.docId!, 0, new Set()))}
+                    </ul>
+                  </>
                 )}
               </div>
             </nav>

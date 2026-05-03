@@ -142,6 +142,7 @@ Legend:
 - **Tag Dimension (Curated)** - **All | Who | What | When | Where** for collection grouping (text labels).
 - **Persistence** - Remembers selections across page refreshes (dimension, browse mode, tag library tab); **Cards** chip set resets to all five on full refresh unless extended later.
 - **Mode** - **Curated | Freeform** (Curated on the left in the mode control).
+- **Curated default** - Reader sidebar opens in **Curated** mode by default; browse-mode preference persists locally.
 - **Selected Tags** - Shows selected tags as chips.
 - **Search Tags** - In-field prompt `Search tags…` filters the visible tree while preserving selected chips.
 - **Sort by** - Random | When (Desc/Asc) | Created (Desc/Asc) | Title (A-Z/Z-A) | Who (A-Z/Z-A) | What (A-Z/Z-A) | Where (A-Z/Z-A).
@@ -151,15 +152,16 @@ Legend:
 - **Sidebar roles** - On `/view` in **Freeform** mode, **admins** see **Filter** vs **Tag library** in the left sidebar (`GlobalSidebar`): **Tag library** is `ViewTagLibrarySidebarPane` (`**useTagManagement` + `TagAdminList`**, same stack as `/admin/tag-admin`); **viewers** use filter-first `**TagTree`** only. Drawer/toggle contract per `docs/04-Theme-Design-Contract.md` §9. Canonical product detail: **Tag Management** → **Sidebar integration model** (✅).
 - **Freeform compact sidebar** - Freeform sidebar now uses compact horizontal card-type icon controls, tighter label/field spacing, denser tag-tree rows, and a smaller leading slot for expand/collapse affordances so filtering remains usable at narrower desktop widths as well as in the mobile drawer.
 - **Curated sidebar model** - Curated no longer shares the Freeform filter controls. It now presents the actual Collections tree as a read-only navigable outline with expand/collapse arrows, while Freeform keeps `Clear filters`, card icons, tag-dimension icons, `Sort by`, `Group by`, and the tag tree.
+- **Tag tree local controls** - Reader and admin tag trees now include local-only `Expand all` / `Collapse all` controls that use browser-persisted expansion state without writing shared tag defaults.
+- **Curated draft visibility (admin)** - Reader curated tree still hides draft collection roots from non-admin readers, while admins now see draft collection titles styled in the warning color inside the same tree.
 
 ⭕1 **Planned**
 
 - **Reader Order Model** - Split ordering by mode: **Freeform** keeps Random plus deterministic order options (`When`, `Created`, `Title`, `Who`, `What`, `Where`) with `Asc/Desc`; **Curated** ignores sort controls and always follows curated tree/TOC order.
 - **Sort Semantics** - Define deterministic ordering rules for all reader order modes: explicit tie-break chain, consistent undated policy for `When` (undated at end), and normalized dimension ordering behavior for `Who/What/Where`.
-- **Mobile-first filter redesign** - Sidebar freeform filters move to icon-led chip controls: rename **Card type** to **Cards** and replace single select with five toggle chips/buttons (`story`, `gallery`, `qa`, `quote`, `callout`) where “all” means all five active; Tags remove the `All` dimension tab and use only `Who/What/When/Where`; remove legacy copy/controls for **Show children after tag-filtered parents** from reader sidebar UX; simplify search control copy/presentation (`Search tags...` in-field prompt), reduce sidebar visual density, and keep tag tree collapsed by default (especially mobile) with per-dimension expansion on demand.
+- **Mobile-first filter redesign** - Remaining reader-sidebar polish: simplify the `Clear filters` affordance, keep Freeform controls visually compact and aligned, and revisit the default tag-tree expansion model for mobile while preserving saved per-user expansion choices and fast manual expand/collapse.
 ⭕2 **Future**
 
-- **Curated default in sidebar** - Make Curated the default sidebar mode for reader entry if validation continues to show it is the primary intended browse path.
 - **Curated tree mobile ergonomics** - Increase practical finger usability of the curated/tag tree rows and controls beyond the current desktop-acceptable baseline where needed in real mobile use.
 - **Tag Tree Counts** - Fix numbering and add media counts "(x/y)" on tag tree nodes.
 - **Collection Metadata** - Implement collection metadata (child counts).
@@ -227,6 +229,9 @@ Legend:
 - **Curated feed behavior** - Curated mode currently behaves like a TOC/outline flow: selecting a collection node shows the selected parent card first and then its direct children, while a sticky curated title bar keeps the current collection visible during scroll. Leaf nodes remain selectable and show themselves in the feed.
 - **Feed edit/live update** - Feed edits now patch the visible card data in place through the feed state owner, so title, cover, and focal-point saves update immediately without reordering the current feed.
 - **Cover focal alignment** - Feed-facing cover focal editing now previews against the same fixed closed-feed media frame used in the reader feed, so cover adjustments made in editing match feed-card framing more closely.
+- **Reader return position** - Feed position and focused card restoration are implemented when returning from a card-detail/edit flow to `/view`; still needs real-use validation.
+- **Gallery closed-card swipe cue** - Closed gallery cards now expose a visible swipe affordance plus slide count in the feed when multiple inline images are present.
+- **Gallery caption overlay** - Closed gallery cards now render the active inline image caption as a bottom overlay while swiping through feed-card images.
 
 📐 **Product vs code** - v1 intent: omit story excerpt on feed/detail; `StoryCardContent` still renders `excerpt` when the field is set—clear data or add a guard when enforcing.
 📐 **Horizontal open** - Prefer horizontal open for long-form on mobile where the reader implements it.
@@ -240,8 +245,6 @@ Legend:
 - **Orientation-aware Framing** - Use cover media orientation metadata to choose from a bounded ratio set (landscape/portrait/square) per approved layout variant so best-fit rendering improves without degrading feed rhythm.
 - **Reader typography tuning** - Rework title/body/supporting-text scales and spacing for the hosted mobile reader so cards and detail pages feel more intentional and less oversized in use.
 - **Question-card visual cue** - Evaluate a question-card cover treatment (for example a question-mark overlay/cover treatment) so Question cards keep more visual interest in card views without pretending to be a different type.
-- **Gallery swipe affordance + caption overlay** - Make swipeability obvious on gallery cards in the main feed/card view, and render captions as bottom overlays on gallery imagery when captions exist.
-- **Reader return position** - Preserve feed position when leaving card view and returning to the reader so the user lands back on the card they opened instead of the top of the feed.
 - **Curated mode interaction correctness** - Harden curated-mode open/select behavior so opening the sidebar and selecting a new curated card replaces the active card cleanly instead of leaving the previous card open above the new one.
 - **Questions / Quotes** - Source material (Word, books, Notion).
 - **Quote Card** - Attribution modeling (e.g. Content vs subtitle/excerpt).

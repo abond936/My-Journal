@@ -241,7 +241,7 @@ Legend:
 
 - **Sort Semantics** - Define deterministic ordering rules for all reader order modes: explicit tie-break chain, consistent undated policy for `When` (undated at end), and normalized dimension ordering behavior for `Who/What/Where`.
 
-- **Mobile-first filter redesign** - Sidebar freeform filters move to icon-led chip controls: rename **Card type** to **Cards** and replace single select with five toggle chips/buttons (`story`, `gallery`, `qa`, `quote`, `callout`) where “all” means all five active; Tags remove the `All` dimension tab and use only `Who/What/When/Where`; remove legacy copy/controls for **Show children after tag-filtered parents** from reader sidebar UX; simplify search control copy/presentation (`Search tags...` in-field prompt), reduce sidebar visual density, and keep tag tree collapsed by default (especially mobile) with per-dimension expansion on demand.
+- **Mobile-first filter redesign** - Remaining reader-sidebar polish: simplify the `Clear filters` affordance, keep Freeform controls visually compact and aligned, and revisit the default tag-tree expansion model for mobile while preserving saved per-user expansion choices and fast manual expand/collapse.
 
 
 

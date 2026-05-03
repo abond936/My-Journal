@@ -254,6 +254,7 @@ function CuratedTreeNodeComponent({
     .filter((c): c is Card => Boolean(c));
   const hasChildren = children.length > 0;
   const isExpanded = expandedIds.has(node.docId);
+  const showDraftRootBadge = !sourceParentId && node.isCollectionRoot === true && node.status === 'draft';
 
   const titleClassName = [
     styles.nodeTitleDropZone,
@@ -303,7 +304,10 @@ function CuratedTreeNodeComponent({
                   disabled={saving}
                   onClick={() => onSelectCard(node.docId)}
                 >
-                  <span className={styles.nodeTitle}>{cardLabel(node)}</span>
+                  <span className={styles.nodeTitleWrap}>
+                    <span className={styles.nodeTitle}>{cardLabel(node)}</span>
+                    {showDraftRootBadge ? <span className={styles.nodeDraftBadge}>Draft</span> : null}
+                  </span>
                 </StaticTreeRowCard>
               </div>
             </>
@@ -342,7 +346,10 @@ function CuratedTreeNodeComponent({
               }
             >
               <ParentDropZone parentId={node.docId!} className={titleClassName}>
-                <span className={styles.nodeTitle}>{cardLabel(node)}</span>
+                <span className={styles.nodeTitleWrap}>
+                  <span className={styles.nodeTitle}>{cardLabel(node)}</span>
+                  {showDraftRootBadge ? <span className={styles.nodeDraftBadge}>Draft</span> : null}
+                </span>
               </ParentDropZone>
             </DraggableCard>
           )}

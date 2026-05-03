@@ -513,6 +513,26 @@
   color: var(--text1-color);
 }
 
+.nodeTitleWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-width: 0;
+}
+
+.nodeDraftBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color13) 16%, transparent);
+  color: var(--color13);
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.2;
+  flex-shrink: 0;
+}
+
 .nodeMeta {
   color: var(--text2-color);
   font-size: var(--font-size-xs);

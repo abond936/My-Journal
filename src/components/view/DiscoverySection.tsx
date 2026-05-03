@@ -232,14 +232,14 @@ export default function DiscoverySection({
 
       {(extrasLoading || hasRandom) && (
         <div className={styles.discoveryGroup}>
-          <h3 className={`${styles.groupTitle} ${styles.exploreGroupTitle}`}>Random</h3>
+          <h3 className={`${styles.groupTitle} ${styles.exploreGroupTitle}`}>Unrelated</h3>
           {extrasLoading && !hasRandom ? (
             <div className={styles.extrasLoadingRow}>
               <LoadingSpinner />
-              <span>Loading random cards…</span>
+              <span>Loading unrelated cards…</span>
             </div>
           ) : hasRandom ? (
-            <div className={styles.cardRail} role="list" aria-label="Random cards">
+            <div className={styles.cardRail} role="list" aria-label="Unrelated cards">
               {random.map(card => (
                 <div key={card.docId} className={styles.cardRailCell} role="listitem">
                   <V2ContentCard

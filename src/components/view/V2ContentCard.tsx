@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { FileText, Images } from 'lucide-react';
@@ -10,7 +10,7 @@ import { getDisplayUrl } from '@/lib/utils/photoUtils'; // Corrected import path
 import {
   getObjectPositionForAspectRatio,
 } from '@/lib/utils/objectPositionUtils';
-import { getEffectiveGalleryObjectPosition } from '@/lib/utils/galleryObjectPosition';
+import { getEffectiveGalleryCaption, getEffectiveGalleryObjectPosition } from '@/lib/utils/galleryObjectPosition';
 import TipTapRenderer from '@/components/common/TipTapRenderer';
 import { extractMediaFromContent, formatQuoteAttribution } from '@/lib/utils/cardUtils';
 import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
@@ -99,6 +99,7 @@ const StoryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card,
 // Gallery feed: Swiper with cover as first slide when set; gallery items omit any row whose mediaId matches cover (dedupe).
 const GalleryCardContent: React.FC<{ card: Card }> = ({ card }) => {
   const coverId = useMemo(() => getCoverMediaId(card), [card]);
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
 
   const gallerySlides = useMemo(() => {
     const items = (card.galleryMedia ?? []).filter((item) => item.media);
@@ -121,6 +122,12 @@ const GalleryCardContent: React.FC<{ card: Card }> = ({ card }) => {
 
   const hasCoverSlide = Boolean(card.coverImage);
   const showSwiper = hasCoverSlide || gallerySlides.length > 0;
+  const totalSlides = (hasCoverSlide ? 1 : 0) + gallerySlides.length;
+  const activeGalleryItem =
+    hasCoverSlide && activeSlideIndex === 0 ? null : gallerySlides[(hasCoverSlide ? activeSlideIndex - 1 : activeSlideIndex) ?? 0] ?? null;
+  const activeCaption = activeGalleryItem?.media
+    ? getEffectiveGalleryCaption(activeGalleryItem, activeGalleryItem.media).trim()
+    : '';
 
   const supportingLine = getSupportingLine(card.subtitle, card.excerpt);
 
@@ -128,7 +135,12 @@ const GalleryCardContent: React.FC<{ card: Card }> = ({ card }) => {
     <>
       {showSwiper ? (
         <div className={styles.imageContainer}>
-          <Swiper spaceBetween={0} slidesPerView={1} className={styles.swiperContainer}>
+          <Swiper
+            spaceBetween={8}
+            slidesPerView={totalSlides > 1 ? 1.08 : 1}
+            className={styles.swiperContainer}
+            onSlideChange={(swiper) => setActiveSlideIndex(swiper.activeIndex)}
+          >
             {hasCoverSlide && card.coverImage ? (
               <SwiperSlide key={`cover-${card.docId}`}>
                 <JournalImage
@@ -158,6 +170,19 @@ const GalleryCardContent: React.FC<{ card: Card }> = ({ card }) => {
               </SwiperSlide>
             ))}
           </Swiper>
+          {totalSlides > 1 ? (
+            <div className={styles.galleryAffordance} aria-hidden="true">
+              <span className={styles.galleryAffordancePeek}>Swipe</span>
+              <span className={styles.galleryAffordanceCount}>
+                {Math.min(activeSlideIndex + 1, totalSlides)}/{totalSlides}
+              </span>
+            </div>
+          ) : null}
+          {activeCaption ? (
+            <div className={styles.galleryCaptionOverlay}>
+              <p>{activeCaption}</p>
+            </div>
+          ) : null}
         </div>
       ) : null}
       <div className={styles.content}>

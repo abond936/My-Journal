@@ -4,7 +4,7 @@
     background-color: var(--reader-sidebar-background-color);
     transition: margin-left var(--transition-short) ease-in-out;
     padding: var(--spacing-lg);
-    padding-top: calc(var(--header-height) - var(--spacing-2xl));
+    padding-top: calc(var(--header-height) - var(--spacing-xl));
     padding-bottom: var(--spacing-md);
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -16,7 +16,7 @@
   @media (max-width: 768px) {
     .sidebar {
       padding: var(--spacing-md);
-      padding-top: calc(var(--header-height) - var(--spacing-xl));
+      padding-top: calc(var(--header-height) - var(--spacing-lg));
     }
   }
   
@@ -30,7 +30,7 @@
   
 .title {
   margin-top: 0;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
   font-family: var(--reader-chrome-text-font-family);
   font-size: var(--reader-chrome-text-font-size);
   font-weight: var(--reader-chrome-text-font-weight);
@@ -243,6 +243,20 @@
     transition: background-color var(--transition-short);
   }
 
+  .collectionItemContent {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .collectionItemMainRow {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--spacing-xs);
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
   .collectionItemActive {
     background-color: var(--reader-chrome-active-control-background-color);
     color: var(--reader-chrome-active-control-text-color);
@@ -255,6 +269,10 @@
   .collectionItemLabel {
     display: inline-block;
     min-width: 0;
+  }
+
+  .collectionItemLabelDraft {
+    color: var(--state-warning-text-color);
   }
 
   .collectionCount {
@@ -273,6 +291,18 @@
     font-weight: var(--reader-support-hint-font-weight);
     line-height: var(--reader-support-hint-line-height);
     color: var(--reader-support-hint-color);
+  }
+
+  .collectionAdminNotice {
+    margin-bottom: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius-md);
+    background: var(--reader-support-control-background-color);
+    color: var(--reader-support-hint-color);
+    font-family: var(--reader-support-hint-font-family);
+    font-size: var(--reader-support-hint-font-size);
+    font-weight: var(--reader-support-hint-font-weight);
+    line-height: var(--reader-support-hint-line-height);
   }
 
   .activeFilters {
@@ -362,6 +392,8 @@
   .dimensionTab {
     flex: 1 1 0;
     padding: 2px;
+    min-width: 1.9rem;
+    min-height: 1.9rem;
     font-family: var(--reader-support-control-font-family);
     font-size: var(--reader-support-control-font-size);
     font-weight: var(--reader-support-control-font-weight);
@@ -390,9 +422,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 1.9rem;
-    min-height: 1.9rem;
-    padding: 2px;
+    width: 100%;
+    height: 100%;
   }
 
   .dimensionTabIcon svg {
@@ -523,7 +554,13 @@
   }
 
   .clearButtonCompact {
-    padding: 3px var(--spacing-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.9rem;
+    min-width: 1.9rem;
+    min-height: 1.9rem;
+    padding: 2px;
     border: var(--border-width-thin) solid var(--reader-chrome-active-control-border-color);
     border-radius: var(--border-radius-md);
     background-color: var(--reader-chrome-active-control-background-color);
@@ -533,7 +570,12 @@
     font-size: var(--reader-support-control-font-size);
     font-weight: var(--reader-support-control-font-weight);
     line-height: var(--reader-support-control-line-height);
-    min-height: 28px;
+  }
+
+  .clearButtonCompact svg {
+    width: 1.05rem;
+    height: 1.05rem;
+    flex-shrink: 0;
   }
 
   .clearButtonCompact:hover {
@@ -543,26 +585,26 @@
   }
 
   .inlineFieldRow {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
+    display: block;
     align-items: center;
-    gap: var(--spacing-sm);
   }
 
-  .inlineFieldLabel {
-    margin: 0;
-    white-space: nowrap;
-    font-family: var(--reader-chrome-text-font-family);
-    font-size: var(--reader-chrome-text-font-size);
-    font-weight: var(--reader-chrome-text-font-weight);
-    line-height: var(--reader-chrome-text-line-height);
-    color: var(--reader-chrome-text-color);
+  .dualFieldRow {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-sm);
   }
 
   .compactControlInline {
     min-width: 0;
     padding-top: var(--spacing-xs);
     padding-bottom: var(--spacing-xs);
+  }
+
+  @media (max-width: 520px) {
+    .dualFieldRow {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
 
 .feedToggleRow {

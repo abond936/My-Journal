@@ -32,6 +32,8 @@ export default function TagTree({
     expandedIds,
     toggleExpanded,
     initializeIfEmpty,
+    expandAll,
+    collapseAll,
   } = usePersistentTreeExpansion('myjournal:tag-tree:expanded');
 
   const forceExpandedIds = useMemo(() => getAllExpandableTagIds(tree), [tree]);
@@ -121,7 +123,25 @@ export default function TagTree({
 
   return (
     <>
+      {!forceExpandAll ? (
+        <div className={styles.treeControls} aria-label="Tree expansion controls">
+          <button
+            type="button"
+            className={styles.treeControlButton}
+            onClick={() => expandAll(Array.from(forceExpandedIds))}
+          >
+            Expand all
+          </button>
+          <button
+            type="button"
+            className={styles.treeControlButton}
+            onClick={() => collapseAll()}
+          >
+            Collapse all
+          </button>
+        </div>
+      ) : null}
       {tree.map(rootTagNode => renderTag(rootTagNode, 0))}
     </>
   );
-} 
+}
