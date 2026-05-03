@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useSession } from 'next-auth/react';
+import { useSearchParams } from 'next/navigation';
 import JournalImage from '@/components/common/JournalImage';
 import { Card, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
@@ -15,8 +16,12 @@ import TipTapRenderer from '@/components/common/TipTapRenderer';
 import InlineGallery from '@/components/view/InlineGallery';
 import ChildCardsRail from '@/components/view/ChildCardsRail';
 import DiscoverySection from '@/components/view/DiscoverySection';
+import ReaderCardContextMeta from '@/components/view/ReaderCardContextMeta';
 import { formatQuoteAttribution } from '@/lib/utils/cardUtils';
+import { buildReaderCardPresentation } from '@/lib/utils/readerCardContext';
 import ReaderCardEditModal from '@/components/view/ReaderCardEditModal';
+import { useCardContext } from '@/components/providers/CardProvider';
+import { useTag } from '@/components/providers/TagProvider';
 
 interface CardDetailPageProps {
   card: Card;
@@ -32,7 +37,14 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
   previewFullWidth = false,
 }) => {
   const { data: session } = useSession();
+  const searchParams = useSearchParams();
+  const { readerMode } = useCardContext();
+  const { tags: allTags } = useTag();
   const isAdmin = session?.user?.role === 'admin';
+  const explicitMode = searchParams.get('mode');
+  const effectiveReaderMode =
+    explicitMode === 'guided' || explicitMode === 'freeform' ? explicitMode : readerMode;
+  const shouldSuppressDiscovery = suppressDiscovery || effectiveReaderMode === 'guided';
   const detailReturnTo = card.docId ? `/view/${card.docId}` : null;
   const isQa = card.type === 'qa';
   const isQuote = card.type === 'quote';
@@ -54,6 +66,13 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
   const hydratedGalleryItems = (card.galleryMedia ?? []).filter(
     (item): item is HydratedGalleryMediaItem => Boolean(item.media)
   );
+  const readerCardPresentation = useMemo(
+    () => buildReaderCardPresentation(card, allTags),
+    [card, allTags]
+  );
+  const showReaderCardMeta =
+    card.type !== 'callout' &&
+    (Boolean(readerCardPresentation.badgeLabel) || readerCardPresentation.chips.length > 0);
 
   return (
     <article
@@ -96,6 +115,13 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
             />
           </div>
         )}
+        {showReaderCardMeta ? (
+          <ReaderCardContextMeta
+            badgeLabel={readerCardPresentation.badgeLabel}
+            chips={readerCardPresentation.chips}
+            variant="detail"
+          />
+        ) : null}
         <h1
           className={`${styles.title} ${card.subtitle && !isQuote ? styles.titleWithSubtitle : ''}`}
         >
@@ -135,7 +161,7 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
       )}
 
       {/* Discovery Section */}
-      {!suppressDiscovery ? (
+      {!shouldSuppressDiscovery ? (
         <DiscoverySection
           currentCard={card}
           childrenCards={childrenCards}

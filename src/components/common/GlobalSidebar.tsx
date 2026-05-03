@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { usePathname } from 'next/navigation';
-import { useRouter } from 'next/navigation';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useTag } from '@/components/providers/TagProvider';
 import {
@@ -14,6 +13,7 @@ import {
 import TagTree from '@/components/common/TagTree';
 import { filterTreesBySearch } from '@/lib/utils/tagUtils';
 import { listCollectionRootCards, normalizeCuratedChildIds } from '@/lib/utils/curatedCollectionTree';
+import { buildResolvedTagDimensionMap } from '@/lib/utils/tagDimensionResolve';
 import ViewTagLibrarySidebarPane from '@/components/view/ViewTagLibrarySidebarPane';
 import {
   User,
@@ -26,25 +26,26 @@ import {
   CircleHelp,
   Quote,
   Megaphone,
+  ChevronsDown,
+  ChevronsUp,
+  SlidersHorizontal,
 } from 'lucide-react';
 import styles from './GlobalSidebar.module.css';
 
 const VIEW_TAG_SIDEBAR_TAB_KEY = 'myjournal-view-sidebar-tag-tab';
 const CURATED_TREE_EXPANDED_KEY = 'myjournal-curated-tree-expanded';
+const FREEFORM_DIMENSION_KEY = 'myjournal-freeform-dimension';
 
 interface GlobalSidebarProps {
   isOpen: boolean;
 }
 
+type TagDimension = 'who' | 'what' | 'when' | 'where';
+
 export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
   const [mounted, setMounted] = useState(false);
-  const [browseMode, setBrowseMode] = useState<'freeform' | 'curated'>(() => {
-    if (typeof window === 'undefined') return 'curated';
-    const saved =
-      window.localStorage.getItem('myjournal-sidebar-browse-mode') ??
-      window.sessionStorage.getItem('myjournal-sidebar-browse-mode');
-    return saved === 'freeform' ? 'freeform' : 'curated';
-  });
+  const [showFeedOptions, setShowFeedOptions] = useState(false);
+  const treeControlsRef = useRef<{ expandAll: () => void; collapseAll: () => void } | null>(null);
   const [viewTagSidebarTab, setViewTagSidebarTab] = useState<'filter' | 'library'>(() => {
     if (typeof window === 'undefined') return 'filter';
     const saved =
@@ -65,6 +66,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
       return new Set();
     }
   });
+
   const {
     tags,
     loading: tagsLoading,
@@ -77,11 +79,11 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
   const [tagSearch, setTagSearch] = useState('');
 
   const {
-    setCardType,
     feedCardTypes,
     toggleFeedCardType,
-    isFeedCardTypesFilterActive,
     activeDimension,
+    readerMode,
+    setReaderMode,
     setActiveDimension,
     collectionId,
     setCollectionId,
@@ -95,6 +97,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     setIncludeChildrenInFeed,
     clearFilters,
   } = useCardContext();
+
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'admin';
   const pathname = usePathname();
@@ -124,12 +127,16 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     callout: Megaphone,
   };
 
-  const hasActiveFilters = isFeedCardTypesFilterActive || selectedFilterTagIds.length > 0;
+  const removeTagFilter = useCallback(
+    (tagId: string) => {
+      setFilterTags(selectedFilterTagIds.filter((id) => id !== tagId));
+    },
+    [selectedFilterTagIds, setFilterTags]
+  );
 
-  const clearCardTypeFilters = () => setCardType('all');
-  const removeTagFilter = (tagId: string) => {
-    setFilterTags(selectedFilterTagIds.filter((id) => id !== tagId));
-  };
+  const handleTreeControlsReady = useCallback((controls: { expandAll: () => void; collapseAll: () => void }) => {
+    treeControlsRef.current = controls;
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -157,7 +164,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
       ? activeDimension
       : 'who';
 
-  const isCollectionsMode = browseMode === 'curated';
+  const isCollectionsMode = readerMode === 'guided';
   const isTagMode = !isCollectionsMode;
   const showViewTagLibrary = Boolean(isAdmin && isTagMode && isViewRoute);
 
@@ -193,40 +200,55 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     window.localStorage.setItem(CURATED_TREE_EXPANDED_KEY, JSON.stringify(Array.from(expandedCollectionIds)));
   }, [expandedCollectionIds]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (activeDimension === 'who' || activeDimension === 'what' || activeDimension === 'when' || activeDimension === 'where') {
+      window.localStorage.setItem(FREEFORM_DIMENSION_KEY, activeDimension);
+    }
+  }, [activeDimension]);
+
+  const readStoredFreeformDimension = useCallback((): TagDimension => {
+    if (typeof window === 'undefined') return 'who';
+    const stored = window.localStorage.getItem(FREEFORM_DIMENSION_KEY);
+    return stored === 'who' || stored === 'what' || stored === 'when' || stored === 'where' ? stored : 'who';
+  }, []);
+
   const filteredTagTree = useMemo(() => {
     const treeForTab =
       activeDimension === 'collections' ? [] : (dimensionTree[browseDimension] ?? []);
     return filterTreesBySearch(treeForTab, tagSearch);
   }, [activeDimension, browseDimension, dimensionTree, tagSearch]);
 
-  const handleSelectionChange = (tagId: string, isSelected: boolean) => {
-    const newSelection = isSelected
-      ? (selectedFilterTagIds.includes(tagId) ? selectedFilterTagIds : [...selectedFilterTagIds, tagId])
-      : selectedFilterTagIds.filter((id) => id !== tagId);
-    setFilterTags(newSelection);
-  };
+  const handleSelectionChange = useCallback(
+    (tagId: string, isSelected: boolean) => {
+      const newSelection = isSelected
+        ? (selectedFilterTagIds.includes(tagId) ? selectedFilterTagIds : [...selectedFilterTagIds, tagId])
+        : selectedFilterTagIds.filter((id) => id !== tagId);
+      setFilterTags(newSelection);
+    },
+    [selectedFilterTagIds, setFilterTags]
+  );
 
-  const handleClearFiltersClick = () => {
-    handleSetBrowseMode('curated');
-    persistViewTagSidebarTab('filter');
+  const handleClearFiltersClick = useCallback(() => {
+    if (readerMode === 'guided') return;
     clearFilters();
     setTagSearch('');
-  };
+  }, [clearFilters, readerMode]);
 
-  const handleSetBrowseMode = (nextMode: 'freeform' | 'curated') => {
-    setBrowseMode(nextMode);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('myjournal-sidebar-browse-mode', nextMode);
-    }
-    if (nextMode === 'curated') {
-      setActiveDimension('collections');
-      return;
-    }
-    if (activeDimension === 'collections') {
-      setCollectionId(null);
-      setActiveDimension('who');
-    }
-  };
+  const handleSetBrowseMode = useCallback(
+    (nextMode: 'freeform' | 'guided') => {
+      setReaderMode(nextMode);
+      if (nextMode === 'guided') {
+        setActiveDimension('collections');
+        return;
+      }
+      if (activeDimension === 'collections') {
+        setCollectionId(null);
+        setActiveDimension(readStoredFreeformDimension());
+      }
+    },
+    [activeDimension, readStoredFreeformDimension, setActiveDimension, setCollectionId, setReaderMode]
+  );
 
   const toggleCollectionExpanded = useCallback((cardId: string) => {
     setExpandedCollectionIds((current) => {
@@ -249,6 +271,25 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     },
     [isViewDetailRoute, router, setCollectionId]
   );
+
+  const selectedTagsByDimension = useMemo(() => {
+    const resolvedDimensionById = buildResolvedTagDimensionMap(tags);
+    const groups: Record<TagDimension, Array<{ id: string; name: string }>> = {
+      who: [],
+      what: [],
+      when: [],
+      where: [],
+    };
+
+    selectedFilterTagIds.forEach((tagId) => {
+      const dimension = resolvedDimensionById.get(tagId);
+      if (!dimension) return;
+      const name = tags.find((tag) => tag.docId === tagId)?.name ?? tagId;
+      groups[dimension].push({ id: tagId, name });
+    });
+
+    return groups;
+  }, [selectedFilterTagIds, tags]);
 
   const renderCollectionNode = (cardId: string, level: number, seen: Set<string>): React.ReactNode => {
     const card = collectionCardById.get(cardId);
@@ -312,43 +353,45 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
 
   return (
     <div className={`${styles.sidebar} ${isOpen ? styles.open : styles.closed}`}>
-      <h2 className={styles.title}>Explore</h2>
-      {mounted && (
+      {mounted ? (
         <>
-          <div className={styles.modeTabs} role="tablist" aria-label="Browsing mode">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={browseMode === 'curated'}
-              className={`${styles.modeTab} ${browseMode === 'curated' ? styles.modeTabActive : ''}`}
-              onClick={() => handleSetBrowseMode('curated')}
-            >
-              Curated
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={browseMode === 'freeform'}
-              className={`${styles.modeTab} ${browseMode === 'freeform' ? styles.modeTabActive : ''}`}
-              onClick={() => handleSetBrowseMode('freeform')}
-            >
-              Freeform
-            </button>
+          <div className={styles.sidebarHeader}>
+            <h2 className={styles.title}>Explore</h2>
+            <div className={styles.modeTabs} role="tablist" aria-label="Browsing mode">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={readerMode === 'guided'}
+                className={`${styles.modeTab} ${readerMode === 'guided' ? styles.modeTabActive : ''}`}
+                onClick={() => handleSetBrowseMode('guided')}
+              >
+                Guided
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={readerMode === 'freeform'}
+                className={`${styles.modeTab} ${readerMode === 'freeform' ? styles.modeTabActive : ''}`}
+                onClick={() => handleSetBrowseMode('freeform')}
+              >
+                Freeform
+              </button>
+              <button
+                type="button"
+                onClick={handleClearFiltersClick}
+                className={styles.clearButtonCompact}
+                aria-label="Clear filters"
+                title={readerMode === 'guided' ? 'Clear filters disabled in Guided mode' : 'Clear filters'}
+                disabled={readerMode === 'guided'}
+              >
+                <FunnelX strokeWidth={2} />
+                <span className={styles.srOnly}>Clear filters</span>
+              </button>
+            </div>
           </div>
+
           {isTagMode ? (
             <>
-              <div className={styles.modeActions}>
-                <button
-                  type="button"
-                  onClick={handleClearFiltersClick}
-                  className={styles.clearButtonCompact}
-                  aria-label="Clear filters"
-                  title="Clear filters"
-                >
-                  <FunnelX strokeWidth={2} />
-                  <span className={styles.srOnly}>Clear filters</span>
-                </button>
-              </div>
               <div className={styles.sidebarSection}>
                 <h3 className={styles.sectionHeading}>Cards</h3>
                 <div className={styles.cardTypeChips} role="group" aria-label="Filter by card type">
@@ -406,11 +449,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                 {!showViewTagLibrary || viewTagSidebarTab === 'filter' ? (
                   <>
                     <div className={styles.dimensionsBlock}>
-                      <div
-                        className={styles.dimensionTabs}
-                        role="tablist"
-                        aria-label="Tag dimensions"
-                      >
+                      <div className={styles.dimensionTabs} role="tablist" aria-label="Tag dimensions">
                         {FREEFORM_DIMENSION_TABS.map(({ id, label, Icon }) => (
                           <button
                             key={id}
@@ -445,108 +484,126 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                       />
                     </div>
 
-                    {hasActiveFilters && (
+                    {selectedFilterTagIds.length > 0 ? (
                       <div className={styles.activeFilters}>
                         <span className={styles.activeFiltersLabel}>Active</span>
                         <div className={styles.activeFiltersChips}>
-                          {isFeedCardTypesFilterActive &&
-                            FEED_CARD_TYPES_ORDER.filter((t) => feedCardTypes.has(t)).map((t) => (
-                              <span key={t} className={styles.filterChip}>
-                                {cardTypeLabels[t] ?? t}
-                                <button
-                                  type="button"
-                                  onClick={() => toggleFeedCardType(t)}
-                                  className={styles.filterChipRemove}
-                                  aria-label={`Remove ${cardTypeLabels[t] ?? t} filter`}
-                                >
-                                  ×
-                                </button>
-                              </span>
+                          {(Object.entries(selectedTagsByDimension) as Array<[TagDimension, Array<{ id: string; name: string }>]>)
+                            .filter(([, tagRows]) => tagRows.length > 0)
+                            .map(([dimension, tagRows]) => (
+                              <div key={dimension} className={styles.activeFilterGroup}>
+                                <span className={styles.activeFilterGroupLabel}>{FREEFORM_DIM_LABEL[dimension]}</span>
+                                <div className={styles.activeFilterGroupChips}>
+                                  {tagRows.map(({ id, name }) => (
+                                    <span key={id} className={styles.filterChip} data-dimension={dimension}>
+                                      {name}
+                                      <button
+                                        type="button"
+                                        onClick={() => removeTagFilter(id)}
+                                        className={styles.filterChipRemove}
+                                        aria-label={`Remove ${name} filter`}
+                                      >
+                                        ×
+                                      </button>
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
                             ))}
-                          {isFeedCardTypesFilterActive ? (
-                            <button
-                              type="button"
-                              className={styles.activeFiltersResetTypes}
-                              onClick={clearCardTypeFilters}
-                            >
-                              All card types
-                            </button>
-                          ) : null}
-                          {selectedFilterTagIds.map((tagId) => {
-                            const tagName = tags?.find((t) => t.docId === tagId)?.name ?? tagId;
-                            return (
-                              <span key={tagId} className={styles.filterChip}>
-                                {tagName}
-                                <button
-                                  type="button"
-                                  onClick={() => removeTagFilter(tagId)}
-                                  className={styles.filterChipRemove}
-                                  aria-label={`Remove ${tagName} filter`}
-                                >
-                                  ×
-                                </button>
-                              </span>
-                            );
-                          })}
                         </div>
                       </div>
-                    )}
+                    ) : null}
                   </>
                 ) : null}
               </div>
 
               <div className={styles.sidebarSection}>
-                <div className={styles.dualFieldRow}>
-                  <div className={styles.inlineFieldRow}>
-                    <select
-                      id="feed-sort-select"
-                      value={feedSort}
-                      onChange={(e) => setFeedSort(e.target.value as FeedSortOrder)}
-                      className={`${styles.compactControl} ${styles.compactControlInline}`}
-                      aria-label="Sort card feed"
-                    >
-                      <option value="random">Sort by Random</option>
-                      <option value="whenDesc">Sort by When (Desc)</option>
-                      <option value="whenAsc">Sort by When (Asc)</option>
-                      <option value="createdDesc">Sort by Created (Desc)</option>
-                      <option value="createdAsc">Sort by Created (Asc)</option>
-                      <option value="titleAsc">Sort by Title (A-Z)</option>
-                      <option value="titleDesc">Sort by Title (Z-A)</option>
-                      <option value="whoAsc">Sort by Who (A-Z)</option>
-                      <option value="whoDesc">Sort by Who (Z-A)</option>
-                      <option value="whatAsc">Sort by What (A-Z)</option>
-                      <option value="whatDesc">Sort by What (Z-A)</option>
-                      <option value="whereAsc">Sort by Where (A-Z)</option>
-                      <option value="whereDesc">Sort by Where (Z-A)</option>
-                    </select>
+                <button
+                  type="button"
+                  className={styles.disclosureButton}
+                  onClick={() => setShowFeedOptions((current) => !current)}
+                  aria-expanded={showFeedOptions}
+                >
+                  <span>More controls</span>
+                  <span className={styles.disclosureIcon} aria-hidden>
+                    <SlidersHorizontal strokeWidth={2} />
+                  </span>
+                </button>
+                {showFeedOptions ? (
+                  <div className={styles.dualFieldRow}>
+                    <div className={styles.inlineFieldRow}>
+                      <select
+                        id="feed-sort-select"
+                        value={feedSort}
+                        onChange={(e) => setFeedSort(e.target.value as FeedSortOrder)}
+                        className={`${styles.compactControl} ${styles.compactControlInline}`}
+                        aria-label="Sort card feed"
+                      >
+                        <option value="random">Sort by Random</option>
+                        <option value="whenDesc">Sort by When (Desc)</option>
+                        <option value="whenAsc">Sort by When (Asc)</option>
+                        <option value="createdDesc">Sort by Created (Desc)</option>
+                        <option value="createdAsc">Sort by Created (Asc)</option>
+                        <option value="titleAsc">Sort by Title (A-Z)</option>
+                        <option value="titleDesc">Sort by Title (Z-A)</option>
+                        <option value="whoAsc">Sort by Who (A-Z)</option>
+                        <option value="whoDesc">Sort by Who (Z-A)</option>
+                        <option value="whatAsc">Sort by What (A-Z)</option>
+                        <option value="whatDesc">Sort by What (Z-A)</option>
+                        <option value="whereAsc">Sort by Where (A-Z)</option>
+                        <option value="whereDesc">Sort by Where (Z-A)</option>
+                      </select>
+                    </div>
+                    <div className={styles.inlineFieldRow}>
+                      <select
+                        id="feed-group-select"
+                        value={feedGroupBy}
+                        onChange={(e) => setFeedGroupBy(e.target.value as FeedGroupBy)}
+                        className={`${styles.compactControl} ${styles.compactControlInline}`}
+                        aria-label="Group card feed"
+                      >
+                        <option value="none">Group by None</option>
+                        <option value="when">Group by When</option>
+                        <option value="who">Group by Who</option>
+                        <option value="where">Group by Where</option>
+                        <option value="what">Group by What</option>
+                      </select>
+                    </div>
                   </div>
-                  <div className={styles.inlineFieldRow}>
-                    <select
-                      id="feed-group-select"
-                      value={feedGroupBy}
-                      onChange={(e) => setFeedGroupBy(e.target.value as FeedGroupBy)}
-                      className={`${styles.compactControl} ${styles.compactControlInline}`}
-                      aria-label="Group card feed"
-                    >
-                      <option value="none">Group by None</option>
-                      <option value="when">Group by When</option>
-                      <option value="who">Group by Who</option>
-                      <option value="where">Group by Where</option>
-                      <option value="what">Group by What</option>
-                    </select>
-                  </div>
-                </div>
+                ) : null}
               </div>
 
               <div className={styles.sidebarSection}>
-                <label className={styles.feedToggleRow}>
-                  <input
-                    type="checkbox"
-                    checked={includeChildrenInFeed}
-                    onChange={(e) => setIncludeChildrenInFeed(e.target.checked)}
-                  />
-                  <span>Include children</span>
-                </label>
+                <div className={styles.feedToggleRow}>
+                  <label className={styles.feedToggleLabel}>
+                    <input
+                      type="checkbox"
+                      checked={includeChildrenInFeed}
+                      onChange={(e) => setIncludeChildrenInFeed(e.target.checked)}
+                    />
+                    <span>Include children</span>
+                  </label>
+                  <div className={styles.treeActions}>
+                    <button
+                      type="button"
+                      className={styles.iconActionButton}
+                      onClick={() => treeControlsRef.current?.expandAll()}
+                      aria-label="Expand all tags"
+                      title="Expand all tags"
+                    >
+                      <ChevronsDown strokeWidth={2} />
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.iconActionButton}
+                      onClick={() => treeControlsRef.current?.collapseAll()}
+                      aria-label="Collapse all tags"
+                      title="Collapse all tags"
+                    >
+                      <ChevronsUp strokeWidth={2} />
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <nav className={styles.navigation}>
@@ -559,6 +616,8 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                     forceExpandAll={!!tagSearch.trim()}
                     onSetDefaultExpanded={handleSetDefaultExpanded}
                     showDefaultExpandControl={isAdmin}
+                    showTreeControls={false}
+                    onControlsReady={handleTreeControlsReady}
                     emptyMessage={
                       tagSearch.trim()
                         ? 'No tags match your search.'
@@ -592,7 +651,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
             </nav>
           )}
         </>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -1,0 +1,147 @@
+.root {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.badge,
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  border-radius: var(--border-radius-sm);
+  border: var(--border-width-thin) solid transparent;
+  line-height: 1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.badge {
+  padding: 1px 5px;
+  font-family: var(--reader-chrome-meta-font-family);
+  font-size: calc(var(--reader-chrome-meta-font-size) * 0.94);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip {
+  padding: 1px 5px;
+  max-width: 100%;
+  font-family: var(--reader-chrome-meta-font-family);
+  font-size: calc(var(--reader-chrome-meta-font-size) * 0.94);
+  font-weight: var(--reader-chrome-meta-font-weight);
+  line-height: 0.95;
+}
+
+.overlay {
+  position: absolute;
+  inset: var(--spacing-sm);
+  z-index: 3;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  pointer-events: none;
+}
+
+.overlay .chips {
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+.overlay .badge {
+  background: color-mix(in srgb, var(--reader-card-badge-background-color) 88%, transparent);
+  color: var(--reader-card-badge-text-color);
+  border-color: var(--reader-card-badge-border-color);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(8px);
+}
+
+.overlay .chip {
+  color: var(--reader-overlay-contrast-text-color);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(8px);
+}
+
+.inline {
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: var(--spacing-xs);
+}
+
+.inline .badge {
+  background: color-mix(in srgb, var(--reader-card-badge-background-color) 94%, white 6%);
+  color: var(--reader-card-badge-text-color);
+  border-color: var(--reader-card-badge-border-color);
+}
+
+.inline .chip {
+  color: var(--reader-body-color);
+}
+
+.detail {
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.detail .badge {
+  background: color-mix(in srgb, var(--reader-card-badge-background-color) 94%, white 6%);
+  color: var(--reader-card-badge-text-color);
+  border-color: var(--reader-card-badge-border-color);
+}
+
+.detail .chip {
+  color: var(--reader-body-color);
+}
+
+.detail .chips,
+.inline .chips {
+  align-items: center;
+}
+
+.badge {
+  flex-shrink: 0;
+}
+
+.chip[data-dimension='who'] {
+  background: color-mix(in srgb, var(--tag-who-bg-color) 35%, var(--admin-window-background-color, white) 65%);
+  border-color: color-mix(in srgb, var(--tag-who-bg-color) 45%, transparent);
+}
+
+.chip[data-dimension='what'] {
+  background: color-mix(in srgb, var(--tag-what-bg-color) 35%, var(--admin-window-background-color, white) 65%);
+  border-color: color-mix(in srgb, var(--tag-what-bg-color) 45%, transparent);
+}
+
+.chip[data-dimension='when'] {
+  background: color-mix(in srgb, var(--tag-when-bg-color) 35%, var(--admin-window-background-color, white) 65%);
+  border-color: color-mix(in srgb, var(--tag-when-bg-color) 45%, transparent);
+}
+
+.chip[data-dimension='where'] {
+  background: color-mix(in srgb, var(--tag-where-bg-color) 35%, var(--admin-window-background-color, white) 65%);
+  border-color: color-mix(in srgb, var(--tag-where-bg-color) 45%, transparent);
+}
+
+.overlay .chip[data-dimension='who'] {
+  background: color-mix(in srgb, var(--tag-who-bg-color) 42%, var(--reader-overlay-scrim-color) 58%);
+}
+
+.overlay .chip[data-dimension='what'] {
+  background: color-mix(in srgb, var(--tag-what-bg-color) 42%, var(--reader-overlay-scrim-color) 58%);
+}
+
+.overlay .chip[data-dimension='when'] {
+  background: color-mix(in srgb, var(--tag-when-bg-color) 42%, var(--reader-overlay-scrim-color) 58%);
+}
+
+.overlay .chip[data-dimension='where'] {
+  background: color-mix(in srgb, var(--tag-where-bg-color) 42%, var(--reader-overlay-scrim-color) 58%);
+}

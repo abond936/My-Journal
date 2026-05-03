@@ -268,13 +268,14 @@
 .galleryAffordance {
   position: absolute;
   right: var(--spacing-sm);
-  bottom: var(--spacing-sm);
+  top: var(--spacing-sm);
   z-index: 3;
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-xs);
-  padding: 4px var(--spacing-sm);
-  border-radius: var(--border-radius-full);
+  justify-content: center;
+  min-width: 2.5rem;
+  padding: 1px 5px;
+  border-radius: var(--border-radius-sm);
   background: color-mix(in srgb, var(--reader-overlay-scrim-color) 82%, transparent);
   color: var(--reader-overlay-contrast-text-color);
   border: var(--border-width-thin) solid var(--reader-overlay-border-color);
@@ -282,7 +283,6 @@
   backdrop-filter: blur(6px);
 }
 
-.galleryAffordancePeek,
 .galleryAffordanceCount {
   font-family: var(--reader-chrome-meta-font-family);
   font-size: var(--reader-chrome-meta-font-size);
@@ -731,8 +731,9 @@
 
 .adminEditLink {
   position: absolute;
-  top: var(--spacing-sm);
+  top: 50%;
   right: var(--spacing-sm);
+  transform: translateY(-50%);
   z-index: 20;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);

@@ -10,6 +10,7 @@ import {
   getAspectRatioValue,
   getObjectPositionForAspectRatio,
 } from '@/lib/utils/objectPositionUtils';
+import { useCardContext } from '@/components/providers/CardProvider';
 import styles from './ChildCardsRail.module.css';
 
 export interface ChildCardsRailProps {
@@ -18,12 +19,10 @@ export interface ChildCardsRailProps {
   title?: string;
 }
 
-export default function ChildCardsRail({ cards, title = 'In this story' }: ChildCardsRailProps) {
+export default function ChildCardsRail({ cards, title = 'More...' }: ChildCardsRailProps) {
+  const { readerMode } = useCardContext();
   const [showNavButtons, setShowNavButtons] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-  const items = cards.filter((c): c is Card & { docId: string } => Boolean(c.docId));
-  if (items.length === 0) return null;
 
   const scrollByPage = useCallback((direction: 'left' | 'right') => {
     if (!scrollContainerRef.current) return;
@@ -45,6 +44,9 @@ export default function ChildCardsRail({ cards, title = 'In this story' }: Child
     },
     [scrollByPage]
   );
+
+  const items = cards.filter((c): c is Card & { docId: string } => Boolean(c.docId));
+  if (items.length === 0) return null;
 
   return (
     <section className={styles.section} aria-label={title}>
@@ -120,7 +122,7 @@ export default function ChildCardsRail({ cards, title = 'In this story' }: Child
             return (
               <div key={child.docId} className={styles.slide}>
                 <Link
-                  href={`/view/${child.docId}`}
+                  href={`/view/${child.docId}?mode=${readerMode}`}
                   className={styles.slideLink}
                   data-card-id={child.docId}
                 >

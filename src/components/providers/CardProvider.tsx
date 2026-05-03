@@ -35,6 +35,7 @@ import { groupCardsForFeed, type FeedGroupBy } from '@/lib/utils/feedGrouping';
 export type CardFilterType = 'all' | 'story' | 'qa' | 'quote' | 'callout' | 'gallery';
 export type CardStatus = 'all' | 'draft' | 'published';
 export type ActiveDimension = 'all' | 'who' | 'what' | 'when' | 'where' | 'collections';
+export type ReaderMode = 'guided' | 'freeform';
 
 /** Card-level dimensional tags: filter to cards with no tags in that dimension (API: `whoMissing`, etc.). Mutually exclusive with sidebar tag picks for the same dimension (missing wins). */
 export type CardDimensionMissing = {
@@ -69,6 +70,7 @@ export interface ICardContext {
   cardType: CardFilterType;
   searchTerm: string;
   status: CardStatus;
+  readerMode: ReaderMode;
   activeDimension: ActiveDimension;
   collectionId: string | null;
   collectionCards: Card[]; // Flat list of collection parent cards
@@ -90,6 +92,7 @@ export interface ICardContext {
   isFeedCardTypesFilterActive: boolean;
   setSearchTerm: (term: string) => void;
   setStatus: (status: CardStatus) => void;
+  setReaderMode: (mode: ReaderMode) => void;
   setActiveDimension: (dim: ActiveDimension) => void;
   setCollectionId: (id: string | null) => void;
   setFeedSort: (order: FeedSortOrder) => void;
@@ -120,6 +123,7 @@ export interface ICardContext {
 
 const DIMENSION_STORAGE_KEY = 'myjournal-active-dimension';
 const COLLECTION_STORAGE_KEY = 'myjournal-collection-id';
+const READER_MODE_KEY = 'myjournal-reader-mode';
 const FEED_SORT_KEY = 'myjournal-feed-sort';
 const FEED_GROUP_KEY = 'myjournal-feed-group';
 const FEED_INCLUDE_CHILDREN_KEY = 'myjournal-feed-include-children';
@@ -159,6 +163,12 @@ function readStoredFeedSort(): FeedSortOrder {
   const raw = readStoredValue(FEED_SORT_KEY);
   if (!raw || !FEED_SORT_VALUES.has(raw)) return 'random';
   return raw as FeedSortOrder;
+}
+
+function readStoredReaderMode(): ReaderMode {
+  if (typeof window === 'undefined') return 'guided';
+  const raw = readStoredValue(READER_MODE_KEY);
+  return raw === 'freeform' ? 'freeform' : 'guided';
 }
 
 function readStoredFeedGroup(): FeedGroupBy {
@@ -246,6 +256,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   // Default published so pre-session and non-admin requests never send status=all (403 on API).
   const [status, setStatus] = useState<CardStatus>('published');
+  const [readerMode, setReaderModeState] = useState<ReaderMode>(() => readStoredReaderMode());
   const [pageLimit, setPageLimit] = useState(20);
   const [activeDimension, setActiveDimensionState] = useState<ActiveDimension>(() => {
     if (typeof window === 'undefined') return 'collections';
@@ -301,6 +312,11 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     },
     []
   );
+
+  const setReaderMode = useCallback((mode: ReaderMode) => {
+    setReaderModeState(mode);
+    if (typeof window !== 'undefined') window.localStorage.setItem(READER_MODE_KEY, mode);
+  }, []);
 
   const setActiveDimension = useCallback((dim: ActiveDimension) => {
     setActiveDimensionState(dim);
@@ -722,6 +738,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       isFeedCardTypesFilterActive,
       searchTerm,
       status,
+      readerMode,
       activeDimension,
       collectionId,
       collectionCards,
@@ -738,6 +755,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       setCardType,
       setSearchTerm,
       setStatus,
+      setReaderMode,
       setActiveDimension,
       setCollectionId,
       setFeedSort,
@@ -765,6 +783,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       isFeedCardTypesFilterActive,
       searchTerm,
       status,
+      readerMode,
       activeDimension,
       collectionId,
       collectionCards,
@@ -781,6 +800,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       setCardType,
       setSearchTerm,
       setStatus,
+      setReaderMode,
       setActiveDimension,
       setCollectionId,
       setFeedSort,

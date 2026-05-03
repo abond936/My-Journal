@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { FileText, Images } from 'lucide-react';
 import JournalImage from '@/components/common/JournalImage';
+import ReaderCardContextMeta from '@/components/view/ReaderCardContextMeta';
 import { Card } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils'; // Corrected import path
 import {
@@ -14,8 +15,11 @@ import { getEffectiveGalleryCaption, getEffectiveGalleryObjectPosition } from '@
 import TipTapRenderer from '@/components/common/TipTapRenderer';
 import { extractMediaFromContent, formatQuoteAttribution } from '@/lib/utils/cardUtils';
 import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
+import { buildReaderCardPresentation } from '@/lib/utils/readerCardContext';
 import styles from './V2ContentCard.module.css';
 import ReaderCardEditModal from '@/components/view/ReaderCardEditModal';
+import { useCardContext } from '@/components/providers/CardProvider';
+import { useTag } from '@/components/providers/TagProvider';
 
 // Simple horizontal slider
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -48,7 +52,12 @@ function getSupportingLine(...values: Array<string | null | undefined>): string 
 
 // --- Card Type Renderers ---
 
-const StoryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => {
+const StoryCardContent: React.FC<{
+  card: Card;
+  displayMode: string;
+  imageMeta?: React.ReactNode;
+  contentMeta?: React.ReactNode;
+}> = ({ card, displayMode, imageMeta, contentMeta }) => {
   const objectPosition =
     card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
       ? getObjectPositionForAspectRatio(
@@ -78,9 +87,11 @@ const StoryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card,
             style={{ objectPosition }}
             priority={false}
           />
+          {imageMeta}
         </div>
       )}
       <div className={styles.content}>
+        {contentMeta}
         <h3 className={styles.title}>{card.title}</h3>
         <p className={`${styles.description} ${supportingLine ? '' : styles.descriptionPlaceholder}`}>
           {supportingLine || '\u00A0'}
@@ -97,7 +108,11 @@ const StoryCardContent: React.FC<{ card: Card; displayMode: string }> = ({ card,
 };
 
 // Gallery feed: Swiper with cover as first slide when set; gallery items omit any row whose mediaId matches cover (dedupe).
-const GalleryCardContent: React.FC<{ card: Card }> = ({ card }) => {
+const GalleryCardContent: React.FC<{
+  card: Card;
+  imageMeta?: React.ReactNode;
+  contentMeta?: React.ReactNode;
+}> = ({ card, imageMeta, contentMeta }) => {
   const coverId = useMemo(() => getCoverMediaId(card), [card]);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
 
@@ -170,9 +185,9 @@ const GalleryCardContent: React.FC<{ card: Card }> = ({ card }) => {
               </SwiperSlide>
             ))}
           </Swiper>
+          {imageMeta}
           {totalSlides > 1 ? (
             <div className={styles.galleryAffordance} aria-hidden="true">
-              <span className={styles.galleryAffordancePeek}>Swipe</span>
               <span className={styles.galleryAffordanceCount}>
                 {Math.min(activeSlideIndex + 1, totalSlides)}/{totalSlides}
               </span>
@@ -186,6 +201,7 @@ const GalleryCardContent: React.FC<{ card: Card }> = ({ card }) => {
         </div>
       ) : null}
       <div className={styles.content}>
+        {contentMeta}
         <h3 className={styles.title}>{card.title}</h3>
         <p className={`${styles.description} ${supportingLine ? '' : styles.descriptionPlaceholder}`}>
           {supportingLine || '\u00A0'}
@@ -213,7 +229,12 @@ const QuoteCardContent: React.FC<{ card: Card }> = ({ card }) => {
   );
 };
 
-const QACardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, displayMode }) => {
+const QACardContent: React.FC<{
+  card: Card;
+  displayMode: string;
+  imageMeta?: React.ReactNode;
+  contentMeta?: React.ReactNode;
+}> = ({ card, displayMode, imageMeta, contentMeta }) => {
   const objectPosition =
     card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
       ? getObjectPositionForAspectRatio(
@@ -244,9 +265,11 @@ const QACardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, di
               style={{ objectPosition }}
               priority={false}
             />
+            {imageMeta}
           </div>
         )}
         <div className={styles.content}>
+          {contentMeta}
           <h3 className={styles.qaQuestion}>{card.title}</h3>
           <p className={`${styles.qaTeaser} ${supportingLine ? '' : styles.descriptionPlaceholder}`}>
             {supportingLine || '\u00A0'}
@@ -287,9 +310,11 @@ const QACardContent: React.FC<{ card: Card; displayMode: string }> = ({ card, di
             style={{ objectPosition }}
             priority={false}
           />
+          {imageMeta}
         </div>
       )}
       <div className={styles.content}>
+        {contentMeta}
         <h3 className={styles.qaQuestion}>{card.title}</h3>
         <p className={`${styles.qaTeaser} ${supportingLine ? '' : styles.descriptionPlaceholder}`}>
           {supportingLine || '\u00A0'}
@@ -340,8 +365,14 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
   adminEditReturnTo = '/view',
 }) => {
   const { data: session } = useSession();
+  const { readerMode } = useCardContext();
+  const { tags: allTags } = useTag();
   const isAdmin = session?.user?.role === 'admin';
   const displayMode = normalizeDisplayModeForType(card.type, card.displayMode);
+  const readerCardPresentation = useMemo(
+    () => buildReaderCardPresentation(card, allTags),
+    [card, allTags]
+  );
   
   // Determine if card should be interactive based on display mode
   const isInteractive =
@@ -368,6 +399,26 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
   const contentMediaCount = Math.max(contentMediaFromFieldCount, contentMediaFromHtmlCount);
   const showMediaBadge = cardSupportsMediaBadge && (galleryNonCoverCount > 0 || contentMediaCount > 0);
   const showTextBadge = cardSupportsTextBadge && !card.excerpt?.trim() && hasBodyText(card);
+  const shouldShowCardContextMeta = card.type !== 'callout' && card.type !== 'quote';
+  const hasReaderCardContextMeta =
+    shouldShowCardContextMeta &&
+    (Boolean(readerCardPresentation.badgeLabel) || readerCardPresentation.chips.length > 0);
+  const imageMeta =
+    hasReaderCardContextMeta && card.coverImage ? (
+      <ReaderCardContextMeta
+        badgeLabel={readerCardPresentation.badgeLabel}
+        chips={readerCardPresentation.chips}
+        variant="overlay"
+      />
+    ) : null;
+  const contentMeta =
+    hasReaderCardContextMeta && !card.coverImage ? (
+      <ReaderCardContextMeta
+        badgeLabel={readerCardPresentation.badgeLabel}
+        chips={readerCardPresentation.chips}
+        variant="inline"
+      />
+    ) : null;
 
   const addFocusCardToReturnTo = (returnTo: string, focusCardId: string): string => {
     const [pathAndQuery, hashFragment] = returnTo.split('#');
@@ -384,15 +435,22 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
       : adminEditReturnTo;
 
   const canEdit = Boolean(card.docId && isAdmin);
+  const detailHref = card.docId ? `/view/${card.docId}?mode=${readerMode}` : '#';
 
   const renderContent = () => {
     switch (card.type) {
       case 'gallery':
-        return <GalleryCardContent card={card} />;
+        return (
+          <GalleryCardContent
+            card={card}
+            imageMeta={imageMeta}
+            contentMeta={contentMeta}
+          />
+        );
       case 'quote':
         return <QuoteCardContent card={card} />;
       case 'qa':
-        return <QACardContent card={card} displayMode={displayMode} />;
+        return <QACardContent card={card} displayMode={displayMode} imageMeta={imageMeta} contentMeta={contentMeta} />;
       case 'callout':
         return (
           <>
@@ -411,14 +469,14 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
         );
       case 'story':
       default:
-        return <StoryCardContent card={card} displayMode={displayMode} />;
+        return <StoryCardContent card={card} displayMode={displayMode} imageMeta={imageMeta} contentMeta={contentMeta} />;
     }
   };
 
   const body =
     isInteractive && card.docId ? (
       <Link
-        href={`/view/${card.docId}`}
+        href={detailHref}
         className={className}
         onClick={onClick}
         data-card-id={card.docId}

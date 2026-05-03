@@ -147,7 +147,6 @@ export default function CardFeedV2({
       ) : null}
       {activeCollectionCard ? (
         <div ref={curatedContextRef} className={styles.curatedContextBar}>
-          <div className={styles.curatedContextLabel}>Collection</div>
           <h2 className={styles.curatedContextTitle}>
             {activeCollectionCard.title || activeCollectionCard.subtitle || 'Untitled'}
           </h2>
