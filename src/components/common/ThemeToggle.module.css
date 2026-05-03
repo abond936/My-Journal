@@ -13,7 +13,6 @@
   cursor: pointer;
   transition: all var(--transition-short) ease;
   padding: var(--spacing-sm);
-  font-size: var(--font-size-2xl);
 }
 
 .themeToggle:hover {
@@ -27,8 +26,8 @@
 }
 
 .themeToggle svg {
-  width: 100%;
-  height: 100%;
+  width: 1.15rem;
+  height: 1.15rem;
   transition: transform var(--transition-short) ease;
 }
 

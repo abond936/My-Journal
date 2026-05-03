@@ -188,6 +188,13 @@
   display: flex;
   align-items: center;
   gap: 2px;
+  border-radius: var(--border-radius-sm);
+  padding: 1px 2px 1px 0;
+  transition: background-color var(--transition-short), color var(--transition-short);
+}
+
+.tagHeaderSelected {
+  background: color-mix(in srgb, var(--reader-chrome-active-control-background-color) 16%, transparent);
 }
 
 .tagHeaderLeading {
@@ -224,6 +231,11 @@
   min-width: 0;
   line-height: var(--reader-support-control-line-height);
   padding-top: 0;
+}
+
+.tagHeaderSelected .tagName {
+  color: var(--reader-chrome-text-color);
+  font-weight: var(--font-weight-medium, 500);
 }
 
 .children {

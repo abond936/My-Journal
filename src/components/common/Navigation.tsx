@@ -46,7 +46,7 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
 
   const pathname = usePathname();
   const router = useRouter();
-  const { theme, toggleTheme, isThemeAdminOpen, openThemeAdmin } = useTheme();
+  const { theme, isThemeAdminOpen, openThemeAdmin } = useTheme();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'admin';
   const { showBack, backHref } = useReaderBackTarget(pathname);
@@ -179,13 +179,7 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
               </button>
             </>
           ) : (
-            <button
-              type="button"
-              className={styles.menuActionButton}
-              onClick={toggleTheme}
-            >
-              {theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
-            </button>
+            <ThemeToggle />
           )}
         </div>
       </div>

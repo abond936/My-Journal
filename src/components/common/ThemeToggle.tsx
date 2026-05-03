@@ -2,6 +2,7 @@
 
 import { useTheme } from '@/components/providers/ThemeProvider';
 import { useEffect, useState } from 'react';
+import { Moon, Sun } from 'lucide-react';
 import styles from './ThemeToggle.module.css';
 
 export function ThemeToggle() {
@@ -24,7 +25,7 @@ export function ThemeToggle() {
       aria-label="Toggle theme"
       title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
     >
-      {theme === 'dark' ? '☀️' : '🌙'}
+      {theme === 'dark' ? <Sun strokeWidth={2} /> : <Moon strokeWidth={2} />}
     </button>
   );
-} 
+}

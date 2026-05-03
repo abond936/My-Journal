@@ -13,9 +13,10 @@ interface TagTreeProps {
   loading?: boolean;
   emptyMessage?: string;
   forceExpandAll?: boolean;
-  /** When provided (and user is admin), shows control to set default expand state */
   onSetDefaultExpanded?: (tagId: string, expanded: boolean) => void;
   showDefaultExpandControl?: boolean;
+  showTreeControls?: boolean;
+  onControlsReady?: (controls: { expandAll: () => void; collapseAll: () => void }) => void;
 }
 
 export default function TagTree({
@@ -27,6 +28,8 @@ export default function TagTree({
   forceExpandAll = false,
   onSetDefaultExpanded,
   showDefaultExpandControl = false,
+  showTreeControls = true,
+  onControlsReady,
 }: TagTreeProps) {
   const {
     expandedIds,
@@ -39,12 +42,19 @@ export default function TagTree({
   const forceExpandedIds = useMemo(() => getAllExpandableTagIds(tree), [tree]);
   const effectiveExpanded = forceExpandAll ? forceExpandedIds : expandedIds;
 
-  // Set initial expanded state based on tag.defaultExpanded (collapsed when false).
   useEffect(() => {
     if (tree.length > 0) {
       initializeIfEmpty(Array.from(getDefaultExpandedTagIds(tree)));
     }
   }, [tree, initializeIfEmpty]);
+
+  useEffect(() => {
+    if (!onControlsReady) return;
+    onControlsReady({
+      expandAll: () => expandAll(Array.from(forceExpandedIds)),
+      collapseAll: () => collapseAll(),
+    });
+  }, [collapseAll, expandAll, forceExpandedIds, onControlsReady]);
 
   const renderTag = (tag: TagWithChildren, level: number = 0) => {
     const isExpanded = effectiveExpanded.has(tag.docId);
@@ -54,11 +64,8 @@ export default function TagTree({
     const showDefaultExpandButton = Boolean(showDefaultExpandControl && hasChildren && onSetDefaultExpanded);
 
     return (
-      <div
-        key={tag.docId}
-        className={styles.tagItem}
-      >
-        <div className={styles.tagHeader}>
+      <div key={tag.docId} className={styles.tagItem}>
+        <div className={`${styles.tagHeader} ${isSelected ? styles.tagHeaderSelected : ''}`}>
           <div
             className={`${styles.tagHeaderLeading} ${showDefaultExpandButton ? styles.tagHeaderLeadingWithDefault : styles.tagHeaderLeadingCompact}`}
             style={{ marginLeft: `${level * 0.35}rem` }}
@@ -69,13 +76,13 @@ export default function TagTree({
               aria-expanded={isExpanded}
               disabled={!hasChildren}
             >
-              {hasChildren && (
+              {hasChildren ? (
                 <span className={styles.expandIcon}>
-                  {isExpanded ? '▼' : '►'}
+                  {isExpanded ? '▼' : '▶'}
                 </span>
-              )}
+              ) : null}
             </button>
-            {showDefaultExpandButton && (
+            {showDefaultExpandButton ? (
               <button
                 type="button"
                 className={styles.defaultExpandButton}
@@ -88,13 +95,13 @@ export default function TagTree({
               >
                 {isDefaultExpanded ? '⊟' : '⊞'}
               </button>
-            )}
+            ) : null}
           </div>
           <input
             type="checkbox"
             id={`tag-${tag.docId}`}
             checked={isSelected}
-            onChange={e => onSelectionChange(tag.docId, e.target.checked)}
+            onChange={(e) => onSelectionChange(tag.docId, e.target.checked)}
             className={styles.checkbox}
           />
           <label htmlFor={`tag-${tag.docId}`} className={styles.tagName}>
@@ -105,11 +112,11 @@ export default function TagTree({
           </label>
         </div>
 
-        {isExpanded && tag.children.length > 0 && (
+        {isExpanded && tag.children.length > 0 ? (
           <div className={styles.children}>
-            {tag.children.map(child => renderTag(child, level + 1))}
+            {tag.children.map((child) => renderTag(child, level + 1))}
           </div>
-        )}
+        ) : null}
       </div>
     );
   };
@@ -123,7 +130,7 @@ export default function TagTree({
 
   return (
     <>
-      {!forceExpandAll ? (
+      {showTreeControls && !forceExpandAll ? (
         <div className={styles.treeControls} aria-label="Tree expansion controls">
           <button
             type="button"
@@ -141,7 +148,7 @@ export default function TagTree({
           </button>
         </div>
       ) : null}
-      {tree.map(rootTagNode => renderTag(rootTagNode, 0))}
+      {tree.map((rootTagNode) => renderTag(rootTagNode, 0))}
     </>
   );
 }
