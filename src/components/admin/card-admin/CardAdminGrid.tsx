@@ -42,6 +42,7 @@ interface CardAdminGridProps {
   onSaveScrollPosition: (cardId: string) => void;
   onUpdateCard: (cardId: string, updateData: Partial<Card>) => Promise<void>;
   onDeleteCard: (cardId: string) => Promise<void>;
+  onRequestDeleteCard?: (card: Card) => void;
   studioCuratedTreeDrag?: boolean;
   /** Per-cell `unparented-row:${docId}` droppables (Studio attach bank + curated DnD). */
   studioCuratedTreeUnparentedRowTarget?: boolean;
@@ -666,6 +667,7 @@ export default function CardAdminGrid({
   onSaveScrollPosition,
   onUpdateCard,
   onDeleteCard,
+  onRequestDeleteCard,
   allTags,
   getCardSecondaryMeta,
   studioCuratedTreeDrag = false,
@@ -687,6 +689,10 @@ export default function CardAdminGrid({
   }, [onSaveScrollPosition, router]);
 
   const handleDelete = useCallback(async (card: Card) => {
+    if (onRequestDeleteCard) {
+      onRequestDeleteCard(card);
+      return;
+    }
     const { parentTitles, verificationFailed } = await fetchCardDeleteParents(card.docId);
     const prompt = buildSingleCardDeletePrompt({
       title: card.title,
@@ -709,7 +715,7 @@ export default function CardAdminGrid({
         alert(err instanceof Error ? err.message : 'An unknown error occurred.');
       }
     }
-  }, [onDeleteCard]);
+  }, [onDeleteCard, onRequestDeleteCard]);
 
   const handleBulkPointer = useCallback(
     (e: React.MouseEvent | React.KeyboardEvent, cardId: string, cardIndex: number) => {

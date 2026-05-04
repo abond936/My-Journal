@@ -157,6 +157,63 @@
   line-height: var(--admin-support-hint-line-height);
 }
 
+.studioDeleteConfirmBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.studioDeleteConfirmLead,
+.studioDeleteConfirmText {
+  margin: 0;
+}
+
+.studioDeleteConfirmLead {
+  color: var(--admin-body-color);
+  font-family: var(--admin-body-font-family);
+  font-size: var(--admin-body-font-size);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--admin-body-line-height);
+}
+
+.studioDeleteConfirmText {
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
+}
+
+.studioDeleteConfirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-xs);
+}
+
+.studioDeleteConfirmPrimary,
+.studioDeleteConfirmSecondary {
+  border-radius: var(--border-radius-sm);
+  padding: 4px var(--spacing-sm);
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
+  cursor: pointer;
+}
+
+.studioDeleteConfirmPrimary {
+  border: var(--border-width-thin) solid color-mix(in srgb, #b42318 55%, transparent);
+  background: color-mix(in srgb, #b42318 16%, transparent);
+  color: #7a271a;
+}
+
+.studioDeleteConfirmSecondary {
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
+}
+
 /* Matches `media-admin` embedded Clear — resets all row filters + tag selection */
 .studioCardClearButton {
   align-self: flex-end;

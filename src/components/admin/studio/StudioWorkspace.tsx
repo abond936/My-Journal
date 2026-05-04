@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { mutate as globalMutate } from 'swr';
 import CollectionsAdminClient from '@/components/admin/collections/CollectionsAdminClient';
 import StudioTreeCandidateCardBank from '@/components/admin/studio/StudioTreeCandidateCardBank';
 import MediaAdminContent from '@/app/admin/media-admin/MediaAdminContent';
@@ -48,6 +49,24 @@ const DEFAULT_QUESTIONS_WIDTH = 380;
 const MAX_CARD_EDIT_WIDTH = 1200;
 const MAX_QUESTIONS_WIDTH = 840;
 const STUDIO_SELECTED_CARD_CACHE_LIMIT = 12;
+
+function removeCardFromCardsCache<T>(cached: T, cardId: string): T {
+  if (!cached || typeof cached !== 'object') return cached;
+
+  if (Array.isArray(cached)) {
+    return cached.map((entry) => removeCardFromCardsCache(entry, cardId)) as T;
+  }
+
+  const candidate = cached as { items?: Array<{ docId?: string }> };
+  if (Array.isArray(candidate.items)) {
+    return {
+      ...(candidate as Record<string, unknown>),
+      items: candidate.items.filter((item) => item?.docId !== cardId),
+    } as T;
+  }
+
+  return cached;
+}
 
 function paneHandleCount(opts: { compose: boolean; questions: boolean; media: boolean }): number {
   return Math.max(0, [opts.compose, opts.questions, opts.media].filter(Boolean).length - 1);
@@ -226,6 +245,7 @@ export default function StudioWorkspace() {
   const pendingCardEditWidthRef = useRef<number | null>(null);
   const pendingQuestionsWidthRef = useRef<number | null>(null);
   const collectionsRefreshRef = useRef<(() => void) | null>(null);
+  const cardsBankRemoveRef = useRef<((cardId: string) => void) | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(() => requestedCardId);
   const [selectedPreview, setSelectedPreview] = useState<StudioSelectedPreview | null>(null);
   const [selectedDetail, setSelectedDetail] = useState<StudioSelectedDetail | null>(null);
@@ -727,7 +747,20 @@ export default function StudioWorkspace() {
         await loadSelectedCard(selectedCardId, { quiet: hasUsablePreview });
       } catch (e) {
         if (!cancelled) {
-          setCardError(e instanceof Error ? e.message : 'Failed to load selected card context.');
+          const message = e instanceof Error ? e.message : 'Failed to load selected card context.';
+          const notFound = /not found/i.test(message);
+          if (notFound) {
+            setSelectedCardId(null);
+            setSelectedPreview(null);
+            setSelectedDetail(null);
+            setCardError(null);
+            setSelectedLoadState('idle');
+            if (typeof window !== 'undefined') {
+              window.history.replaceState(null, '', '/admin/studio');
+            }
+            return;
+          }
+          setCardError(message);
           setSelectedLoadState(hasUsablePreview ? 'degraded' : 'error');
         }
       } finally {
@@ -869,6 +902,7 @@ export default function StudioWorkspace() {
 
         selectedCardCacheRef.current.delete(id);
         selectedCardCacheOrderRef.current = selectedCardCacheOrderRef.current.filter((entryId) => entryId !== id);
+        cardsBankRemoveRef.current?.(id);
         setSelectedCardId((current) => (current === id ? null : current));
         setSelectedPreview((current) => (current?.docId === id ? null : current));
         setSelectedDetail((current) => (current?.docId === id ? null : current));
@@ -876,6 +910,11 @@ export default function StudioWorkspace() {
         setCardError(null);
         setCardLoading(false);
         selectNoneMedia();
+        void globalMutate(
+          (key) => typeof key === 'string' && key.startsWith('/api/cards?'),
+          (current) => removeCardFromCardsCache(current, id),
+          { revalidate: true }
+        );
         collectionsRefreshRef.current?.();
         router.replace('/admin/studio');
         setActionInfo('Card deleted.');
@@ -1000,7 +1039,14 @@ export default function StudioWorkspace() {
               embeddedOrganizationCollapsed={paneVisibility.organizationCollapsed}
               embeddedCardsCollapsed={paneVisibility.cardsCollapsed}
               onStudioRelationshipDragEnd={onStudioRelationshipDragEnd}
-              embeddedUnparentedReplacement={(ctx) => <StudioTreeCandidateCardBank {...ctx} />}
+              embeddedUnparentedReplacement={(ctx) => (
+                <StudioTreeCandidateCardBank
+                  {...ctx}
+                  registerCatalogRemove={(fn) => {
+                    cardsBankRemoveRef.current = fn;
+                  }}
+                />
+              )}
               embeddedRightSlot={({ refreshCards, upsertCard }) => {
                 collectionsRefreshRef.current = refreshCards;
                 collectionsUpsertCardRef.current = upsertCard;

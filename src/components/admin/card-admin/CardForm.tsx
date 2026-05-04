@@ -43,6 +43,19 @@ function textToBasicHtml(text: string): string {
     .join('');
 }
 
+function objectPositionToFocalPoint(
+  media: Media,
+  position: string | undefined
+): { x: number; y: number } {
+  const parts = (position ?? '50% 50%').trim().split(/\s+/);
+  const xPercent = parseFloat(parts[0] ?? '50') || 50;
+  const yPercent = parseFloat(parts[1] ?? '50') || 50;
+  return {
+    x: (xPercent / 100) * media.width,
+    y: (yPercent / 100) * media.height,
+  };
+}
+
 function normalizeGalleryOrders(items: HydratedGalleryMediaItem[]): HydratedGalleryMediaItem[] {
   return items.map((item, index) => ({
     ...item,
@@ -198,14 +211,7 @@ const CardForm: React.FC = () => {
       });
       return;
     }
-
-    const parts = (newPosition ?? '50% 50%').trim().split(/\s+/);
-    const xPercent = parseFloat(parts[0] ?? '50') || 50;
-    const yPercent = parseFloat(parts[1] ?? '50') || 50;
-    const focalPoint = {
-      x: (xPercent / 100) * newCoverImage.width,
-      y: (yPercent / 100) * newCoverImage.height,
-    };
+    const focalPoint = objectPositionToFocalPoint(newCoverImage, newPosition);
 
     await persistFieldPatch({
       coverImageId: newCoverImage.docId,
@@ -263,19 +269,48 @@ const CardForm: React.FC = () => {
   );
 
   const handleSetGalleryItemAsCover = useCallback(
-    (item: HydratedGalleryMediaItem) => {
+    async (item: HydratedGalleryMediaItem) => {
       if (!item.media) return;
+
       // Promote selected gallery item to cover and move it to first slot for predictable ordering.
       const current = [...((cardData.galleryMedia || []) as HydratedGalleryMediaItem[])];
       const idx = current.findIndex((g) => g.mediaId === item.mediaId);
+      const nextGallery =
+        idx > 0
+          ? arrayMove(current, idx, 0).map((g, order) => ({ ...g, order }))
+          : current;
+
       if (idx > 0) {
-        const reordered = arrayMove(current, idx, 0).map((g, order) => ({ ...g, order }));
-        setField('galleryMedia', reordered);
+        setField('galleryMedia', nextGallery);
       }
+
       const coverPos = item.objectPosition || item.media.objectPosition || '50% 50%';
       handleCoverImageChange(item.media, coverPos);
+
+      if (!cardData.docId) {
+        return;
+      }
+
+      if (idx > 0) {
+        const gallerySaved = await persistGalleryAfterSlotSave(nextGallery);
+        if (!gallerySaved) {
+          return;
+        }
+      }
+
+      await persistFieldPatch({
+        coverImageId: item.media.docId,
+        coverImageFocalPoint: objectPositionToFocalPoint(item.media, coverPos),
+      });
     },
-    [cardData.galleryMedia, handleCoverImageChange, setField]
+    [
+      cardData.docId,
+      cardData.galleryMedia,
+      handleCoverImageChange,
+      persistFieldPatch,
+      persistGalleryAfterSlotSave,
+      setField,
+    ]
   );
 
   const handleChildCardsChange = useCallback((newChildIds: string[]) => {

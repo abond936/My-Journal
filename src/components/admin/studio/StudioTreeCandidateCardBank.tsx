@@ -15,7 +15,11 @@ import {
 import { buildParentIdsByChild } from '@/lib/utils/curatedCollectionTree';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import { Card } from '@/lib/types/card';
-import { buildBulkCardDeletePrompt } from '@/lib/utils/cardDeleteWarnings';
+import {
+  buildBulkCardDeletePrompt,
+  buildSingleCardDeletePrompt,
+  fetchCardDeleteParents,
+} from '@/lib/utils/cardDeleteWarnings';
 import {
   DIMENSION_KEYS,
   type DimensionalTagIdMap,
@@ -91,7 +95,11 @@ function shouldRefreshCollectionsAfterCardUpdate(updateData: Partial<Card>): boo
   );
 }
 
-export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBankContext) {
+type StudioTreeCandidateCardBankProps = EmbeddedUnparentedBankContext & {
+  registerCatalogRemove?: ((fn: ((cardId: string) => void) | null) => void) | undefined;
+};
+
+export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCardBankProps) {
   const {
     refreshCards,
     collectionCards,
@@ -102,6 +110,7 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
     onSelectCard: onStudioSelectCard,
     saving,
     curatedTreeDnd,
+    registerCatalogRemove,
   } = props;
 
   const { selectedLoadState } = useStudioShell();
@@ -125,6 +134,9 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
   const [dimensionFilters, setDimensionFilters] = useState<DimensionFilterState>(DEFAULT_DIMENSION_FILTERS);
   const [isStreamingMore, setIsStreamingMore] = useState(false);
   const [pendingFocusCardId, setPendingFocusCardId] = useState<string | null>(null);
+  const [deleteConfirmCard, setDeleteConfirmCard] = useState<Card | null>(null);
+  const [deleteConfirmMessage, setDeleteConfirmMessage] = useState('');
+  const [deleteConfirmLoading, setDeleteConfirmLoading] = useState(false);
   const deferredSearch = useDeferredValue(search);
   const deferredFilterTagIds = useDeferredValue(filterTagIds);
   const deferredTypeFilter = useDeferredValue(typeFilter);
@@ -303,6 +315,11 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
       [cardId]: null,
     }));
   }, []);
+
+  useEffect(() => {
+    registerCatalogRemove?.(removeCatalogCard);
+    return () => registerCatalogRemove?.(null);
+  }, [registerCatalogRemove, removeCatalogCard]);
 
   const patchCatalogCards = useCallback(
     (cardIds: string[], patcher: (card: Card) => Card) => {
@@ -579,6 +596,24 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
     [refreshCards, removeCatalogCard]
   );
 
+  const requestDeleteCard = useCallback(async (card: Card) => {
+    setDeleteConfirmCard(card);
+    setDeleteConfirmLoading(true);
+    try {
+      const { parentTitles, verificationFailed } = await fetchCardDeleteParents(card.docId);
+      const prompt = buildSingleCardDeletePrompt({
+        title: card.title,
+        isCollectionRoot: card.isCollectionRoot,
+        childCount: card.childrenIds?.length ?? 0,
+        parentTitles,
+        verificationFailed,
+      });
+      setDeleteConfirmMessage(prompt.message);
+    } finally {
+      setDeleteConfirmLoading(false);
+    }
+  }, []);
+
   const studioDrag = Boolean(curatedTreeDnd);
   const handleStudioFocusCard = useCallback(
     (card: Card) => {
@@ -841,6 +876,7 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
           onSaveScrollPosition={() => {}}
           onUpdateCard={onUpdateCard}
           onDeleteCard={onDeleteCard}
+          onRequestDeleteCard={requestDeleteCard}
           studioCuratedTreeDrag={studioDrag}
           studioCuratedTreeUnparentedRowTarget={studioDrag}
           studioEmbedCellClickSelects
@@ -850,6 +886,62 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
           compactStudioGrid
         />
       </div>
+
+      <EditModal
+        isOpen={Boolean(deleteConfirmCard)}
+        onClose={() => {
+          if (deleteConfirmLoading) return;
+          setDeleteConfirmCard(null);
+          setDeleteConfirmMessage('');
+        }}
+        title="Delete card"
+      >
+        <div className={styles.studioDeleteConfirmBody}>
+          {deleteConfirmLoading ? (
+            <p className={styles.studioDeleteConfirmText}>Checking delete rules…</p>
+          ) : (
+            <>
+              {deleteConfirmMessage.split('\n').filter(Boolean).map((line, index) => (
+                <p
+                  key={`${line}-${index}`}
+                  className={index === 0 ? styles.studioDeleteConfirmLead : styles.studioDeleteConfirmText}
+                >
+                  {line}
+                </p>
+              ))}
+              <div className={styles.studioDeleteConfirmActions}>
+                <button
+                  type="button"
+                  className={styles.studioDeleteConfirmPrimary}
+                  onClick={async () => {
+                    const card = deleteConfirmCard;
+                    if (!card) return;
+                    setDeleteConfirmCard(null);
+                    setDeleteConfirmMessage('');
+                    try {
+                      await onDeleteCard(card.docId);
+                    } catch (err) {
+                      window.alert(err instanceof Error ? err.message : 'An unknown error occurred.');
+                    }
+                  }}
+                >
+                  Delete
+                </button>
+                <button
+                  type="button"
+                  className={styles.studioDeleteConfirmSecondary}
+                  onClick={() => {
+                    setDeleteConfirmCard(null);
+                    setDeleteConfirmMessage('');
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </EditModal>
 
       <EditModal
         isOpen={bulkTagModalOpen}
