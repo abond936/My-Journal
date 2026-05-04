@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { DragEndEvent } from '@dnd-kit/core';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import CollectionsAdminClient from '@/components/admin/collections/CollectionsAdminClient';
 import StudioTreeCandidateCardBank from '@/components/admin/studio/StudioTreeCandidateCardBank';
 import MediaAdminContent from '@/app/admin/media-admin/MediaAdminContent';
@@ -43,10 +43,10 @@ const MIN_QUESTIONS_PX = 240;
 const MIN_MEDIA_BANK_PX = 200;
 /** Default Compose column width (px) when no saved preference; double-click handle resets here. */
 const DEFAULT_CARD_EDIT_WIDTH = 480;
-const DEFAULT_QUESTIONS_WIDTH = 320;
+const DEFAULT_QUESTIONS_WIDTH = 380;
 /** Upper cap so Compose does not grow past a comfortable editing line length even on ultra-wide rows. */
 const MAX_CARD_EDIT_WIDTH = 1200;
-const MAX_QUESTIONS_WIDTH = 620;
+const MAX_QUESTIONS_WIDTH = 840;
 const STUDIO_SELECTED_CARD_CACHE_LIMIT = 12;
 
 function paneHandleCount(opts: { compose: boolean; questions: boolean; media: boolean }): number {
@@ -191,6 +191,7 @@ function applyOptimisticSelectedCardPatch(
 }
 
 export default function StudioWorkspace() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const requestedCardId = useMemo(() => {
     const raw = searchParams.get('card');
@@ -202,6 +203,10 @@ export default function StudioWorkspace() {
     if (!raw) return false;
     return raw === '1' || raw.toLowerCase() === 'true';
   }, [searchParams]);
+  const selectionRequestKey = useMemo(
+    () => (newCardRequested ? '__new__' : requestedCardId ?? '__none__'),
+    [newCardRequested, requestedCardId]
+  );
   const [wideLayout, setWideLayout] = useState(true);
   const [cardEditWidth, setCardEditWidth] = useState(DEFAULT_CARD_EDIT_WIDTH);
   const [questionsWidth, setQuestionsWidth] = useState(DEFAULT_QUESTIONS_WIDTH);
@@ -310,9 +315,13 @@ export default function StudioWorkspace() {
   }, [selectedCardId, selectNoneMedia]);
 
   useEffect(() => {
-    if (!requestedCardId) return;
-    setSelectedCardId((current) => (current === requestedCardId ? current : requestedCardId));
-  }, [requestedCardId]);
+    if (selectionRequestKey === '__new__') {
+      setSelectedCardId(null);
+      return;
+    }
+    if (selectionRequestKey === '__none__') return;
+    setSelectedCardId((current) => (current === selectionRequestKey ? current : selectionRequestKey));
+  }, [selectionRequestKey]);
 
   useEffect(() => {
     cacheSelectedCard(selectedPreview);
@@ -842,6 +851,44 @@ export default function StudioWorkspace() {
     if (!card?.docId) return;
     collectionsUpsertCardRef.current?.(card as Card);
   }, []);
+  const deleteSelectedCard = useCallback(
+    async (cardId: string) => {
+      const id = cardId.trim();
+      if (!id) return false;
+      setActionBusy(true);
+      setActionError(null);
+      setActionInfo(null);
+      try {
+        const res = await fetch(`/api/cards/${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+          cache: 'no-store',
+          credentials: 'same-origin',
+        });
+        const data = res.status === 204 ? {} : await res.json().catch(() => ({}));
+        throwIfJsonApiFailed(res, data, 'Failed to delete card');
+
+        selectedCardCacheRef.current.delete(id);
+        selectedCardCacheOrderRef.current = selectedCardCacheOrderRef.current.filter((entryId) => entryId !== id);
+        setSelectedCardId((current) => (current === id ? null : current));
+        setSelectedPreview((current) => (current?.docId === id ? null : current));
+        setSelectedDetail((current) => (current?.docId === id ? null : current));
+        setSelectedLoadState((current) => (selectedCardId === id ? 'idle' : current));
+        setCardError(null);
+        setCardLoading(false);
+        selectNoneMedia();
+        collectionsRefreshRef.current?.();
+        router.replace('/admin/studio');
+        setActionInfo('Card deleted.');
+        return true;
+      } catch (e) {
+        setActionError(e instanceof Error ? e.message : 'Failed to delete card.');
+        return false;
+      } finally {
+        setActionBusy(false);
+      }
+    },
+    [router, selectNoneMedia, selectedCardId]
+  );
 
   const studioShellValue = useMemo<StudioShellContextValue>(
     () => ({
@@ -859,6 +906,7 @@ export default function StudioWorkspace() {
       cardError,
       loadSelectedCard,
       patchSelectedCard,
+      deleteSelectedCard,
       refreshCollectionsCardList,
       upsertCollectionsCardList,
       selectedMediaIds,
@@ -883,6 +931,7 @@ export default function StudioWorkspace() {
       cardError,
       loadSelectedCard,
       patchSelectedCard,
+      deleteSelectedCard,
       refreshCollectionsCardList,
       upsertCollectionsCardList,
       selectedMediaIds,

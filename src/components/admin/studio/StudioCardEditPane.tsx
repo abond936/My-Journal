@@ -5,10 +5,12 @@ import { mutate as globalMutate } from 'swr';
 import { useRouter } from 'next/navigation';
 import CardForm from '@/components/admin/card-admin/CardForm';
 import { CardFormProvider } from '@/components/providers/CardFormProvider';
+import { useCardForm } from '@/components/providers/CardFormProvider';
 import StudioCardFormShellSync from '@/components/admin/studio/StudioCardFormShellSync';
 import StudioComposeFormActions from '@/components/admin/studio/StudioComposeFormActions';
 import { StudioCardFormStudioProvider } from '@/components/admin/studio/studioCardFormStudioContext';
 import { useStudioShell } from '@/components/admin/studio/StudioShellContext';
+import PanelActivityOverlay from '@/components/admin/studio/PanelActivityOverlay';
 import type { StudioCardContext } from '@/components/admin/studio/studioCardTypes';
 import { useTag } from '@/components/providers/TagProvider';
 import type { Card, CardUpdate } from '@/lib/types/card';
@@ -19,6 +21,31 @@ function studioContextToInitialCard(card: StudioCardContext): Card {
   const { children, ...rest } = card;
   void children;
   return rest as Card;
+}
+
+function StudioComposeActivityOverlay({
+  cardIsTransitioning,
+}: {
+  cardIsTransitioning: boolean;
+}) {
+  const {
+    formState: { isSaving },
+  } = useCardForm();
+
+  if (!isSaving && !cardIsTransitioning) return null;
+
+  return (
+    <PanelActivityOverlay
+      active
+      blocking={isSaving}
+      title={isSaving ? 'Saving Compose...' : 'Loading selected card...'}
+      message={
+        isSaving
+          ? 'Updating card details and synchronizing related views.'
+          : 'Bringing the selected card into Compose.'
+      }
+    />
+  );
 }
 
 export default function StudioCardEditPane({
@@ -148,6 +175,9 @@ export default function StudioCardEditPane({
         allTags={allTags}
         onSave={handleSave}
       >
+        <StudioComposeActivityOverlay
+          cardIsTransitioning={activeCardViewModel.status === 'preview' || isTransitioningToDifferentCard}
+        />
         <div className={styles.studioCardEditToolbar}>
           <StudioComposeFormActions />
         </div>

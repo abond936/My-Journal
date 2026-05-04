@@ -8,7 +8,6 @@ import { dehydrateCardForSave, extractMediaFromContent, generateExcerpt } from '
 import CoverPhotoContainer from '@/components/admin/card-admin/CoverPhotoContainer';
 import GalleryManager from '@/components/admin/card-admin/GalleryManager';
 import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
-import macroTagStyles from '@/components/admin/card-admin/MacroTagSelector.module.css';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
 import ChildCardManager from '@/components/admin/card-admin/ChildCardManager';
 import RichTextEditor, { RichTextEditorRef } from '@/components/common/RichTextEditor';
@@ -431,7 +430,7 @@ const CardForm: React.FC = () => {
   return (
     <>
       <LoadingOverlay
-        isVisible={isSaving}
+        isVisible={isSaving && !studioShellForm}
         title="Saving card..."
         message="Updating card details and synchronizing feed data."
       />
@@ -882,29 +881,25 @@ const CardForm: React.FC = () => {
               tagError={errors.tags}
               className={styles.tagCommandBar}
               trailingSlot={
-                studioShellForm ? null : (
-                  <button
-                    type="button"
-                    className={macroTagStyles.editButton}
-                    disabled={isSaving}
-                    onClick={() => setTagMacroExpanded(true)}
-                  >
-                    Edit tags
-                  </button>
-                )
+                <button
+                  type="button"
+                  className={styles.compactTagEditButton}
+                  disabled={isSaving}
+                  onClick={() => setTagMacroExpanded(true)}
+                >
+                  Edit
+                </button>
               }
             />
-            {!studioShellForm ? (
-              <MacroTagSelector
-                selectedTags={selectedTagObjects}
-                allTags={allTags}
-                onChange={handleTagsChange}
-                expanded={tagMacroExpanded}
-                onExpandedChange={setTagMacroExpanded}
-                collapsedSummary="none"
-                className={clsx(styles.tagSelector, errors.tags && styles.inputError)}
-              />
-            ) : null}
+            <MacroTagSelector
+              selectedTags={selectedTagObjects}
+              allTags={allTags}
+              onChange={handleTagsChange}
+              expanded={tagMacroExpanded}
+              onExpandedChange={setTagMacroExpanded}
+              collapsedSummary="none"
+              className={clsx(styles.tagSelector, errors.tags && styles.inputError)}
+            />
           </div>
 
           <div className={styles.editorSection}>

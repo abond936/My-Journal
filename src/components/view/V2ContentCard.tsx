@@ -249,6 +249,17 @@ const QACardContent: React.FC<{
       : 'center';
 
   const supportingLine = getSupportingLine(card.subtitle, card.excerpt);
+  const questionMeta = !card.coverImage && contentMeta ? (
+    <div className={styles.qaMetaAfter}>{contentMeta}</div>
+  ) : null;
+  const questionText = (
+    <div className={styles.qaTextBlock}>
+      <h3 className={styles.qaQuestion}>{card.title}</h3>
+      <p className={`${styles.qaTeaser} ${supportingLine ? '' : styles.descriptionPlaceholder}`}>
+        {supportingLine || '\u00A0'}
+      </p>
+    </div>
+  );
 
   if (displayMode === 'inline') {
     return (
@@ -269,16 +280,13 @@ const QACardContent: React.FC<{
           </div>
         )}
         <div className={styles.content}>
-          {contentMeta}
-          <h3 className={styles.qaQuestion}>{card.title}</h3>
-          <p className={`${styles.qaTeaser} ${supportingLine ? '' : styles.descriptionPlaceholder}`}>
-            {supportingLine || '\u00A0'}
-          </p>
+          {questionText}
           {card.content && (
             <div className={styles.inlineContent}>
               <TipTapRenderer content={card.content} surface="transparent" headingVariant="question" />
             </div>
           )}
+          {questionMeta}
         </div>
       </>
     );
@@ -287,10 +295,8 @@ const QACardContent: React.FC<{
   if (displayMode === 'static') {
     return (
       <div className={styles.content}>
-        <h3 className={styles.qaQuestion}>{card.title}</h3>
-        <p className={`${styles.qaTeaser} ${supportingLine ? '' : styles.descriptionPlaceholder}`}>
-          {supportingLine || '\u00A0'}
-        </p>
+        {questionText}
+        {questionMeta}
       </div>
     );
   }
@@ -314,11 +320,8 @@ const QACardContent: React.FC<{
         </div>
       )}
       <div className={styles.content}>
-        {contentMeta}
-        <h3 className={styles.qaQuestion}>{card.title}</h3>
-        <p className={`${styles.qaTeaser} ${supportingLine ? '' : styles.descriptionPlaceholder}`}>
-          {supportingLine || '\u00A0'}
-        </p>
+        {questionText}
+        {questionMeta}
       </div>
     </>
   );

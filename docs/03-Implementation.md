@@ -205,6 +205,8 @@ Legend:
 
 - **Orientation-aware Framing** - Use cover media orientation metadata to choose from a bounded ratio set (landscape/portrait/square) per approved layout variant so best-fit rendering improves without degrading feed rhythm.
 
+- **Trivia card flip treatment** - Evaluate a `Trivia` card family for short prompt/answer content with a tap/click flip interaction (front = prompt, back = answer) so lightweight Q&A can feel distinct from full Question cards without forcing a detail-page open.
+
 - **Questions / Quotes** - Source material (Word, books, Notion).
 
 - **Quote Card** - Attribution modeling (e.g. Content vs subtitle/excerpt).
@@ -237,11 +239,20 @@ Legend:
 
 
 
-- **Reader Order Model** - Split ordering by mode: **Freeform** keeps Random plus deterministic order options (`When`, `Created`, `Title`, `Who`, `What`, `Where`) with `Asc/Desc`; **Curated** ignores sort controls and always follows curated tree/TOC order.
+- **Reader Order Model** - Split ordering by mode: **Freeform** keeps Random plus deterministic order options (`When`, `Created`, `Title`, `Who`, `What`, `Where`) with `Asc/Desc`; **Guided** ignores sort controls and always follows curated tree/TOC order.
 
 - **Sort Semantics** - Define deterministic ordering rules for all reader order modes: explicit tie-break chain, consistent undated policy for `When` (undated at end), and normalized dimension ordering behavior for `Who/What/Where`.
 
-- **Mobile-first filter redesign** - Remaining reader-sidebar polish: simplify the `Clear filters` affordance, keep Freeform controls visually compact and aligned, and revisit the default tag-tree expansion model for mobile while preserving saved per-user expansion choices and fast manual expand/collapse.
+- **Mobile-first filter redesign** - Remaining reader-sidebar polish: resolve the mobile search keyboard/result-visibility issue, finish alignment of selected tag state in the tree, and keep Freeform controls visually compact while preserving saved per-user expansion choices and fast manual expand/collapse.
+
+*View Page (`02-Application.md`)*
+
+  **Priority bands**
+    - **P1 (private hosting / access correctness)** - **Reader-only auth path**; **Temporary reader audience scope**.
+
+- **Reader-only auth path** - Reader-only user login must work cleanly in production without requiring admin credentials or accidentally exposing admin affordances.
+
+- **Temporary reader audience scope** - Add a reversible reader-access scope (for example a family-only share window) that gates feed, direct card open, guided children, and discovery together so temporary hosted access cannot leak into unrelated published content through child rails, direct URLs, or `Explore More`.
 
 
 

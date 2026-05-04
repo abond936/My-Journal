@@ -366,6 +366,29 @@
   margin-bottom: var(--spacing-md);
 }
 
+.compactTagEditButton {
+  min-height: 28px;
+  padding: 0 0.45rem;
+  border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--admin-support-control-strong-background-color);
+  color: var(--admin-support-control-strong-text-color);
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.compactTagEditButton:hover:not(:disabled) {
+  background: var(--admin-support-control-strong-hover-background-color);
+}
+
+.compactTagEditButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .editorSection {
   width: calc(100% + 28px);
   max-width: none;

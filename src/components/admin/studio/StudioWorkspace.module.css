@@ -224,6 +224,7 @@
 }
 
 .studioCardEditHost {
+  position: relative;
   flex: 1;
   min-height: 0;
   display: flex;
@@ -289,6 +290,28 @@
   cursor: not-allowed;
 }
 
+.studioComposeDeleteButton {
+  min-height: 36px;
+  padding: var(--spacing-xs) var(--spacing-md);
+  background-color: transparent;
+  color: var(--admin-danger-text-color, #8a1f1f);
+  border: var(--border-width-thin) solid var(--admin-danger-border-color, #b84747);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.studioComposeDeleteButton:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--admin-danger-border-color, #b84747) 12%, transparent);
+}
+
+.studioComposeDeleteButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .studioComposeCancelButton {
   min-height: 36px;
   padding: var(--spacing-xs) var(--spacing-md);
@@ -309,6 +332,35 @@
 .studioComposeCancelButton:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.studioComposeDeleteDialogBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.studioComposeDeleteDialogLead,
+.studioComposeDeleteDialogText {
+  margin: 0;
+}
+
+.studioComposeDeleteDialogLead {
+  color: var(--admin-support-title-color);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.4;
+}
+
+.studioComposeDeleteDialogText {
+  color: var(--admin-support-label-color);
+  line-height: 1.45;
+}
+
+.studioComposeDeleteDialogActions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
 }
 
 .studioCardEditScroll {
@@ -405,14 +457,15 @@
 }
 
 .studioQuestionsColumn {
-  flex: 0 1 320px;
-  min-width: min(100%, 260px);
+  flex: 0 1 380px;
+  min-width: min(100%, 320px);
   min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
 .studioQuestionsPane {
+  position: relative;
   flex: 1;
   min-height: 0;
   display: flex;
@@ -440,9 +493,66 @@
   flex-shrink: 0;
 }
 
+.studioQuestionFilterRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.studioQuestionFilterRow .studioQuestionInput {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.studioQuestionFilterRow .studioQuestionSelect {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 9.5rem;
+}
+
+.studioQuestionFilterActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.studioQuestionTreeSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.studioQuestionSectionToggle {
+  width: 100%;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--admin-window-background-color);
+  color: var(--admin-support-label-color);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-align: left;
+  padding: 0 var(--spacing-xs);
+  cursor: pointer;
+}
+
+.studioQuestionTagFilterBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
+}
+
+.studioQuestionTagFilterBar {
+  min-width: 0;
+}
+
 .studioQuestionTreePanel {
   flex: 0 0 auto;
-  max-height: 180px;
+  max-height: min(260px, 34vh);
   overflow: auto;
   border: var(--border-width-thin) solid var(--admin-window-border-color);
   border-radius: var(--border-radius-sm);
@@ -519,6 +629,7 @@
 }
 
 .studioQuestionRow {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
@@ -526,6 +637,39 @@
   border: var(--border-width-thin) solid var(--admin-window-border-color);
   border-radius: var(--border-radius-sm);
   background: var(--admin-window-background-color);
+}
+
+.studioQuestionRowPending {
+  overflow: hidden;
+}
+
+.studioQuestionRowPendingOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  background: color-mix(in srgb, var(--admin-window-background-color) 72%, transparent);
+  backdrop-filter: blur(1px);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.studioQuestionRowPendingSpinner {
+  width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 999px;
+  border: 2px solid color-mix(in srgb, var(--admin-window-border-color) 70%, transparent);
+  border-top-color: var(--admin-support-control-strong-background-color);
+  animation: studioQuestionPendingSpin 0.75s linear infinite;
+}
+
+.studioQuestionRowPendingLabel {
+  color: var(--admin-support-title-color);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
 }
 
 .studioQuestionPrompt {
@@ -548,6 +692,12 @@
   flex-wrap: wrap;
   gap: var(--spacing-xs);
   align-items: center;
+}
+
+.studioQuestionTagEditor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
 }
 
 .studioQuestionTagChip,
@@ -619,8 +769,42 @@
   gap: var(--spacing-xs);
 }
 
+.studioQuestionConfirmBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.studioQuestionConfirmText,
+.studioQuestionConfirmPrompt {
+  margin: 0;
+}
+
+.studioQuestionConfirmText {
+  color: var(--admin-support-label-color);
+  line-height: 1.45;
+}
+
+.studioQuestionConfirmPrompt {
+  padding: var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border-radius: var(--border-radius-sm);
+  background: color-mix(in srgb, var(--admin-window-background-color) 92%, transparent);
+  color: var(--admin-support-meta-color);
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+}
+
+.studioQuestionConfirmActions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
 .studioQuestionPrimaryButton,
-.studioQuestionSmallButton {
+.studioQuestionSmallButton,
+.studioQuestionDeleteButton {
   min-height: 28px;
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-xs);
@@ -642,8 +826,16 @@
   padding: 0 0.55rem;
 }
 
+.studioQuestionDeleteButton {
+  border: var(--border-width-thin) solid var(--admin-danger-border-color, #b84747);
+  background: transparent;
+  color: var(--admin-danger-text-color, #8a1f1f);
+  padding: 0 0.55rem;
+}
+
 .studioQuestionPrimaryButton:disabled,
-.studioQuestionSmallButton:disabled {
+.studioQuestionSmallButton:disabled,
+.studioQuestionDeleteButton:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
@@ -700,11 +892,19 @@
 
 .metaError {
   margin: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  border: var(--border-width-thin) solid var(--state-error-border-color);
+  background: color-mix(in srgb, var(--state-error-background-color) 88%, var(--admin-window-background-color));
   color: var(--state-error-text-color);
 }
 
 .metaInfo {
   margin: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  border: var(--border-width-thin) solid var(--state-success-border-color);
+  background: color-mix(in srgb, var(--state-success-background-color) 88%, var(--admin-window-background-color));
   color: var(--state-success-text-color);
 }
 
@@ -733,6 +933,12 @@
   background: var(--admin-window-background-color);
   color: var(--admin-support-label-color);
   font-size: var(--font-size-xs);
+}
+
+@keyframes studioQuestionPendingSpin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .panelBlock {

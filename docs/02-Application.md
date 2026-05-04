@@ -113,6 +113,7 @@ Legend:
 - **Header** - Centered logo, contextual Back button, hamburger menu (content/admin/theme/signout).
 - **Logo** - Same title artwork as home; compact height in header (`Navigation.module.css`).
 - **Hamburger** - Dropdown menu with content links (all users), admin links (admin only), and theme toggle.
+- **Theme toggle iconography** - Light/dark switching now uses compact sun/moon icon treatment instead of reader-facing text labels.
 
 ⭕1 **Planned**
 
@@ -139,30 +140,30 @@ Legend:
 - **Mobile** - Left sidebar uses a **drawer** (overlay + backdrop) at `max-width: 768px`; **sidebar toggle (←/→) remains visible at all widths** so filters are always reachable; no bottom navigation bar. Narrow Explore panel uses slightly tighter padding and scroll containment. Details: `docs/04-Theme-Design-Contract.md` §9.
 - **Cards** - Five **toggle chips** (Story, Gallery, Question, Quote, Callout); all five active = no type filter. Subsets map to `types` on `GET /api/cards` (and discovery `/api/cards/random`). Admin card list applies the same inclusion set client-side.
 - **Tag Dimension (Freeform)** - **Who | What | When | Where** only (no **All** tab); dimension switcher uses **icons** (torso, square, calendar, pin). Default dimension **Who** (stored `all` migrates to **Who**).
-- **Tag Dimension (Curated)** - **All | Who | What | When | Where** for collection grouping (text labels).
-- **Persistence** - Remembers selections across page refreshes (dimension, browse mode, tag library tab); **Cards** chip set resets to all five on full refresh unless extended later.
-- **Mode** - **Curated | Freeform** (Curated on the left in the mode control).
-- **Curated default** - Reader sidebar opens in **Curated** mode by default; browse-mode preference persists locally.
-- **Selected Tags** - Shows selected tags as chips.
+- **Persistence** - Remembers selections across page refreshes (freeform dimension, browse mode, tag library tab); **Cards** chip set resets to all five on full refresh unless extended later.
+- **Mode** - **Guided | Freeform** (`Guided` on the left in the mode control).
+- **Guided default** - Reader sidebar opens in **Guided** mode by default; browse-mode preference persists locally.
+- **Selected Tags** - Shows selected **tag** filters as chips, grouped by dimension; card-type selections are not duplicated in the Active area.
 - **Search Tags** - In-field prompt `Search tags…` filters the visible tree while preserving selected chips.
 - **Sort by** - Random | When (Desc/Asc) | Created (Desc/Asc) | Title (A-Z/Z-A) | Who (A-Z/Z-A) | What (A-Z/Z-A) | Where (A-Z/Z-A).
 - **Group by** - None | When | Who | What | Where. Grouped sections render in the feed when enabled; collection-list mode does not group.
-- **Mode quick toggle** - Curated/Freeform mode buttons are implemented directly in the sidebar control surface.
+- **Mode quick toggle** - Guided/Freeform mode buttons are implemented directly in the sidebar control surface; `Clear filters` now lives beside them and is disabled in Guided mode.
 - **Tag tree target size** - Expand control and row layout use larger tap targets and aligned checkbox column (base + desktop refinements in `TagTree.module.css`).
 - **Sidebar roles** - On `/view` in **Freeform** mode, **admins** see **Filter** vs **Tag library** in the left sidebar (`GlobalSidebar`): **Tag library** is `ViewTagLibrarySidebarPane` (`**useTagManagement` + `TagAdminList`**, same stack as `/admin/tag-admin`); **viewers** use filter-first `**TagTree`** only. Drawer/toggle contract per `docs/04-Theme-Design-Contract.md` §9. Canonical product detail: **Tag Management** → **Sidebar integration model** (✅).
 - **Freeform compact sidebar** - Freeform sidebar now uses compact horizontal card-type icon controls, tighter label/field spacing, denser tag-tree rows, and a smaller leading slot for expand/collapse affordances so filtering remains usable at narrower desktop widths as well as in the mobile drawer.
-- **Curated sidebar model** - Curated no longer shares the Freeform filter controls. It now presents the actual Collections tree as a read-only navigable outline with expand/collapse arrows, while Freeform keeps `Clear filters`, card icons, tag-dimension icons, `Sort by`, `Group by`, and the tag tree.
-- **Tag tree local controls** - Reader and admin tag trees now include local-only `Expand all` / `Collapse all` controls that use browser-persisted expansion state without writing shared tag defaults.
-- **Curated draft visibility (admin)** - Reader curated tree still hides draft collection roots from non-admin readers, while admins now see draft collection titles styled in the warning color inside the same tree.
+- **Guided sidebar model** - Guided no longer shares the Freeform filter controls. It now presents the actual collections tree as a read-only navigable outline with expand/collapse arrows, while Freeform keeps card icons, tag-dimension icons, search, grouped active tags, and the tag tree.
+- **Tag tree local controls** - Reader and admin tag trees now include local-only `Expand all` / `Collapse all` controls that use browser-persisted expansion state without writing shared tag defaults. In Freeform reader use they surface as compact icon buttons on the same row as `Include children`.
+- **More controls disclosure** - Freeform `Sort by` and `Group by` now sit behind a compact disclosure rather than always occupying primary sidebar space.
+- **Guided draft visibility (admin)** - Reader guided tree still hides draft collection roots from non-admin readers, while admins now see draft collection titles styled in the warning color inside the same tree.
 
 ⭕1 **Planned**
 
-- **Reader Order Model** - Split ordering by mode: **Freeform** keeps Random plus deterministic order options (`When`, `Created`, `Title`, `Who`, `What`, `Where`) with `Asc/Desc`; **Curated** ignores sort controls and always follows curated tree/TOC order.
+- **Reader Order Model** - Split ordering by mode: **Freeform** keeps Random plus deterministic order options (`When`, `Created`, `Title`, `Who`, `What`, `Where`) with `Asc/Desc`; **Guided** ignores sort controls and always follows curated tree/TOC order.
 - **Sort Semantics** - Define deterministic ordering rules for all reader order modes: explicit tie-break chain, consistent undated policy for `When` (undated at end), and normalized dimension ordering behavior for `Who/What/Where`.
-- **Mobile-first filter redesign** - Remaining reader-sidebar polish: simplify the `Clear filters` affordance, keep Freeform controls visually compact and aligned, and revisit the default tag-tree expansion model for mobile while preserving saved per-user expansion choices and fast manual expand/collapse.
+- **Mobile-first filter redesign** - Remaining reader-sidebar polish: resolve the mobile search keyboard/result-visibility issue, finish alignment of selected tag state in the tree, and keep Freeform controls visually compact while preserving saved per-user expansion choices and fast manual expand/collapse.
 ⭕2 **Future**
 
-- **Curated tree mobile ergonomics** - Increase practical finger usability of the curated/tag tree rows and controls beyond the current desktop-acceptable baseline where needed in real mobile use.
+- **Guided tree mobile ergonomics** - Increase practical finger usability of the guided/tag tree rows and controls beyond the current desktop-acceptable baseline where needed in real mobile use.
 - **Tag Tree Counts** - Fix numbering and add media counts "(x/y)" on tag tree nodes.
 - **Collection Metadata** - Implement collection metadata (child counts).
 - **Chron Tree** - Provide tree in chronological order (Year / Month / What) for browsing.
@@ -171,7 +172,7 @@ Legend:
 
 - **Group by control** - Confirm whether reader sidebar should keep `Group by` as a primary control or move/remove it.
 - **Created sort visibility** - Confirm whether `Created` sort options remain visible in reader sidebar or move behind an advanced mode.
-- **Curated tree responsiveness** - Curated tree can feel slow to load in hosted reader use; confirm whether the issue is first-load latency, delayed selection feedback, or both before changing the reader interaction contract.
+- **Guided tree responsiveness** - Guided tree can feel slow to load in hosted reader use; confirm whether the issue is first-load latency, delayed selection feedback, or both before changing the reader interaction contract.
 
 ---
 
@@ -195,12 +196,12 @@ Legend:
 - **Contextual Filtering** - Active dimension tab controls which tag subset filters the feed.
 - **Main Feed** - Mixed content types with seamless transitions between related content.
 - **Mobile-First** - Touch scrolling, responsive design, news feed feel.
-- **Curated or FreeForm** - Author-ordered or user-explored.
+- **Guided or Freeform** - Author-ordered or user-explored.
 - **Display types (enforced)** - Story → navigate; gallery → navigate or inline; Question → navigate or inline; callout → static; quote → static. Coerced in `createCard` / `updateCard` (`cardDisplayMode.ts`); admin pickers in `CardForm` / `EditableDisplayModeCell`. Reader feed linking: `V2ContentCard` (`navigate` + story | gallery | qa only).
 
 ⭕2 **Future**
 
-- **Card Cues** - Show small type badge on compact cards (`Story`, `Question`, `Gallery`, `Callout`, `Quote`).
+- **Manual kicker / editorial context line** - If derived dimensional chips are not sufficient for compact-card orientation, add an optional author-controlled kicker/context line rather than overloading raw tags.
 
 ---
 
@@ -226,12 +227,17 @@ Legend:
 - **Suggestions (detail)** - Children from server; Similar / Explore via `/api/cards/random` (`count=3`, tag dimensions from current card). `DiscoverySection`: horizontal scroll rails, compact `V2ContentCard` (`small` + `fullWidth`).
 - **Card Content** - Title, subtitle, excerpt, and main body (TipTap) roles set per card type and display mode; feed vs detail behavior matches the conventions in **Content Page** and **View Page** (assessment complete for v1).
 - **Gallery UX (authoritative)** - **Inline** vs **navigate** behavior and **caption** options for gallery cards are specified in `docs/DESIGN.md` → **Gallery: `inline` vs `navigate` (authoritative)**; use that subsection plus the **V1 Matrix** below for implementation. External design tools are **guides**, not overrides.
-- **Curated feed behavior** - Curated mode currently behaves like a TOC/outline flow: selecting a collection node shows the selected parent card first and then its direct children, while a sticky curated title bar keeps the current collection visible during scroll. Leaf nodes remain selectable and show themselves in the feed.
+- **Guided feed behavior** - Guided mode currently behaves like a TOC/outline flow: selecting a collection node shows the selected parent card first and then its direct children, while a sticky guided title bar keeps the current collection visible during scroll. Leaf nodes remain selectable and show themselves in the feed.
 - **Feed edit/live update** - Feed edits now patch the visible card data in place through the feed state owner, so title, cover, and focal-point saves update immediately without reordering the current feed.
 - **Cover focal alignment** - Feed-facing cover focal editing now previews against the same fixed closed-feed media frame used in the reader feed, so cover adjustments made in editing match feed-card framing more closely.
 - **Reader return position** - Feed position and focused card restoration are implemented when returning from a card-detail/edit flow to `/view`; still needs real-use validation.
 - **Gallery closed-card swipe cue** - Closed gallery cards now expose a visible swipe affordance plus slide count in the feed when multiple inline images are present.
 - **Gallery caption overlay** - Closed gallery cards now render the active inline image caption as a bottom overlay while swiping through feed-card images.
+- **Closed-card context cues** - Closed reader `Story` and `Gallery` cards now show a type badge plus up to four derived context chips (`Who`, `What`, `When`, `Where`) based on direct card tags and their ancestry; `Question` cards participate in the same reader context system where appropriate.
+- **Reader detail context row** - Open reader cards now render the same badge/context-chip language above the title so the feed and detail views share one orienting metadata treatment.
+- **Guided discovery policy** - Generic `Explore More` is suppressed whenever the current reader mode is **Guided**; Freeform detail pages still render discovery. Structural child rails remain available where applicable.
+- **Child rail label** - The structural child rail now uses the reader-facing label `More...` rather than `In this story`.
+- **Guided context naming** - Reader-facing guided context chrome no longer surfaces the internal word `Collection`; the selected guided title stands on its own.
 
 📐 **Product vs code** - v1 intent: omit story excerpt on feed/detail; `StoryCardContent` still renders `excerpt` when the field is set—clear data or add a guard when enforcing.
 📐 **Horizontal open** - Prefer horizontal open for long-form on mobile where the reader implements it.
@@ -245,7 +251,8 @@ Legend:
 - **Orientation-aware Framing** - Use cover media orientation metadata to choose from a bounded ratio set (landscape/portrait/square) per approved layout variant so best-fit rendering improves without degrading feed rhythm.
 - **Reader typography tuning** - Rework title/body/supporting-text scales and spacing for the hosted mobile reader so cards and detail pages feel more intentional and less oversized in use.
 - **Question-card visual cue** - Evaluate a question-card cover treatment (for example a question-mark overlay/cover treatment) so Question cards keep more visual interest in card views without pretending to be a different type.
-- **Curated mode interaction correctness** - Harden curated-mode open/select behavior so opening the sidebar and selecting a new curated card replaces the active card cleanly instead of leaving the previous card open above the new one.
+- **Trivia card flip treatment** - Evaluate a `Trivia` card family for short prompt/answer content with a tap/click flip interaction (front = prompt, back = answer) so lightweight Q&A can feel distinct from full Question cards without forcing a detail-page open.
+- **Guided mode interaction correctness** - Harden guided-mode open/select behavior so opening the sidebar and selecting a new guided card replaces the active card cleanly instead of leaving the previous card open above the new one.
 - **Questions / Quotes** - Source material (Word, books, Notion).
 - **Quote Card** - Attribution modeling (e.g. Content vs subtitle/excerpt).
 
@@ -274,8 +281,8 @@ Legend:
 
 ❓ **Open**
 
-- **Narrow curated feed card sizing** - In smaller viewport desktop/mobile-like states, feed cards can still overgrow after initial render in curated mode. The sticky curated title placement is corrected, but the responsive card-sizing regression is not fully resolved yet.
-- **Curated open-response lag** - First interactions in curated mode have shown intermittent “selected card did not appear to respond” behavior; confirm whether this is true failure, delayed hydration, or a remaining curated-shell state bug.
+- **Narrow guided feed card sizing** - In smaller viewport desktop/mobile-like states, feed cards can still overgrow after initial render in guided mode. The sticky guided title placement is corrected, but the responsive card-sizing regression is not fully resolved yet.
+- **Guided open-response lag** - First interactions in guided mode have shown intermittent “selected card did not appear to respond” behavior; confirm whether this is true failure, delayed hydration, or a remaining guided-shell state bug.
 
 📘 `src/components/view/CardFeedV2.tsx` · `V2ContentCard.tsx` · `ContentCard.tsx` (legacy / CardGrid)
 
@@ -305,6 +312,8 @@ Legend:
 - **Children** - If present, render.
 - **Related** - Display 3 random from filter. Reduced font.
 - **Explore More** - Display 3 random outside filter. Reduced font.
+- **Mode-aware discovery** - Guided detail suppresses generic `Explore More`; Freeform retains it.
+- **Structural rail labeling** - The child-card rail now uses the reader-facing label `More...`.
 - **Progressive children (discover + child hydration)** - **Discover More:** structural **Related Content** renders from server props immediately; **Similar Topics** / **Explore More** load client-side after mount with per-group loaders (`DiscoverySection.tsx`). `**/view/[id]`:** child cards load via `getCardsByIds(..., { hydrationMode: 'cover-only' })` with first-gallery image when no cover—fewer Firestore reads than full hydration. The view page RSC still awaits parent + children in one round-trip; streaming parent-only first remains optional (🔵 / future).
 - **Related Count** - Similar / Explore presentation tuned so rails stay visually light: compact tile width (`cardRailCell` clamp in `DiscoverySection.module.css`), secondary group title scale, `V2ContentCard` `small` on rails.
 - **Detail discovery spacing** - **Explore More** / `DiscoverySection` on `/view/[id]` uses increased **margin above** the block, **padding below** the rails, and **larger article bottom padding** so the section is not tight to the story body or the scroll end (`DiscoverySection.module.css`, `CardDetail.module.css`). Further reader polish (typography, rails, kickers): `docs/DESIGN.md` → **Reader polish backlog (decisions, 2026)**.
@@ -312,9 +321,10 @@ Legend:
 ⭕1 **Planned**
 - **Reader-only auth path** - Reader-only user login must work cleanly in production without requiring admin credentials or accidentally exposing admin affordances.
 - **Kicker strategy** - Define a consistent kicker/subhead strategy for reader cards and detail pages so card families and discovery sections gain lightweight narrative context without overcrowding titles.
+- **Temporary reader audience scope** - Add a reversible reader-access scope (for example a family-only share window) that gates feed, direct card open, guided children, and discovery together so temporary hosted access cannot leak into unrelated published content through child rails, direct URLs, or `Explore More`.
 - **Embedded-image caption framing** - Embedded images in rich content without captions should not render with an empty caption background treatment.
 - **Related / Explore More refinement** - Improve section typography, compact-card sizing, and overall hierarchy for **Related**, **Explore More**, and similar detail-page discovery blocks.
-- **Curated discovery policy** - Decide whether Curated mode suppresses generic **Explore More** discovery or constrains discovery to structurally related children while the user is following an authored sequence.
+- **Guided discovery refinement** - Decide whether Guided mode should remain at “no generic Explore More” only or further constrain/detail-tune structural child presentation while the user is following an authored sequence.
 
 ⭕2 **Future**
 - **Feed hydration tiers:** Optional **cover-only** first paint on `/view` (defer full gallery/content hydration until card open or below fold) to reduce payload and server work vs today's full hydration for feed cards.

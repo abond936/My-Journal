@@ -50,13 +50,56 @@ function ReadOnlyInsertBeforeGap() {
   );
 }
 
+function TreeExpandControl({
+  expanded,
+  childCount,
+  onToggle,
+}: {
+  expanded: boolean;
+  childCount: number;
+  onToggle: () => void;
+}) {
+  return (
+    <>
+      <button
+        type="button"
+        className={styles.treeExpandButton}
+        onMouseDown={(e) => {
+          e.stopPropagation();
+        }}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggle();
+        }}
+        aria-expanded={expanded}
+        aria-label={expanded ? 'Collapse children' : 'Expand children'}
+        title={expanded ? 'Collapse children' : 'Expand children'}
+      >
+        <span className={styles.treeExpandIcon}>{expanded ? '▼' : '▶'}</span>
+      </button>
+      <span
+        className={styles.treePersistedMarker}
+        title={expanded ? 'Saved as expanded' : 'Saved as collapsed'}
+        aria-hidden="true"
+      >
+        {expanded ? '⊟' : '⊞'}
+      </span>
+      <span className={styles.treeChildCountBadge} title={`${childCount} child${childCount === 1 ? '' : 'ren'}`}>
+        {childCount}
+      </span>
+    </>
+  );
+}
+
 function DraggableCard({
   card,
   className,
   children,
   disabled,
   onClick,
-  betweenHandleAndTitle,
   sourceParentId,
   sourceIsRoot,
 }: {
@@ -65,8 +108,6 @@ function DraggableCard({
   children: React.ReactNode;
   disabled?: boolean;
   onClick?: () => void;
-  /** Expand/collapse etc. — rendered after the drag handle, before the title block. */
-  betweenHandleAndTitle?: React.ReactNode;
   sourceParentId?: string;
   sourceIsRoot?: boolean;
 }) {
@@ -97,7 +138,6 @@ function DraggableCard({
       >
         ⋮⋮
       </button>
-      {betweenHandleAndTitle}
       <div className={styles.nodeDragContent}>{children}</div>
     </div>
   );
@@ -114,13 +154,11 @@ function InsertBeforeDropZone({ beforeCardId }: { beforeCardId: string }) {
   const insertId = `insertBefore:${beforeCardId}`;
   const parentDropId = `parent:${beforeCardId}`;
   const overStr = over?.id != null ? String(over.id) : '';
-  /** Same card: nest-on-title vs insert-before-sibling — hide the insert bar when nesting on this row. */
   const nestOnThisRow = highlightId === parentDropId || overStr === parentDropId;
   const { setNodeRef } = useDroppable({
     id: insertId,
     disabled: !reparentFromCard,
   });
-  /** Match DnD `over` only (via context). Per-droppable `isOver` can stay true on the source row while `over` is `parent:*` elsewhere, which left the insertion line stuck on the row being dragged. */
   const showLine =
     !nestOnThisRow && beforeCardId !== draggedCardId && highlightId === insertId;
   return (
@@ -180,43 +218,7 @@ export interface CuratedTreeNodeProps {
   onClearRoot: (id: string) => void;
   onSelectCard: (id: string) => void;
   selectedCardId: string | null;
-  /** When true, tree rows are not draggable and insert/parent drop targets are not registered. */
   disableCuratedDrag?: boolean;
-}
-
-function curatedTreeNodeComparator(prev: CuratedTreeNodeProps, next: CuratedTreeNodeProps): boolean {
-  if (
-    prev.node !== next.node ||
-    prev.sourceParentId !== next.sourceParentId ||
-    prev.saving !== next.saving ||
-    prev.disableCuratedDrag !== next.disableCuratedDrag ||
-    prev.onDetachChild !== next.onDetachChild ||
-    prev.onClearRoot !== next.onClearRoot ||
-    prev.onSelectCard !== next.onSelectCard ||
-    prev.toggleExpanded !== next.toggleExpanded
-  ) {
-    return false;
-  }
-
-  const prevSelected = prev.selectedCardId === prev.node.docId;
-  const nextSelected = next.selectedCardId === next.node.docId;
-  if (prevSelected !== nextSelected) return false;
-
-  const prevExpanded = prev.expandedIds.has(prev.node.docId);
-  const nextExpanded = next.expandedIds.has(next.node.docId);
-  if (prevExpanded !== nextExpanded) return false;
-
-  const prevChildren = normalizeCuratedChildIds(prev.node.childrenIds);
-  const nextChildren = normalizeCuratedChildIds(next.node.childrenIds);
-  if (prevChildren.length !== nextChildren.length) return false;
-  for (let i = 0; i < prevChildren.length; i += 1) {
-    const prevChildId = prevChildren[i];
-    const nextChildId = nextChildren[i];
-    if (prevChildId !== nextChildId) return false;
-    if (prev.cardById.get(prevChildId) !== next.cardById.get(nextChildId)) return false;
-  }
-
-  return true;
 }
 
 function CuratedTreeNodeComponent({
@@ -249,18 +251,23 @@ function CuratedTreeNodeComponent({
   const nextSeen = new Set(seen);
   nextSeen.add(node.docId);
 
-  const children = normalizeCuratedChildIds(node.childrenIds)
-    .map((id) => cardById.get(id))
-    .filter((c): c is Card => Boolean(c));
-  const hasChildren = children.length > 0;
+  const childIds = normalizeCuratedChildIds(node.childrenIds);
+  const childEntries = childIds.map((id) => ({
+    id,
+    card: cardById.get(id) ?? null,
+  }));
+  const hasChildren = childIds.length > 0;
   const isExpanded = expandedIds.has(node.docId);
   const showDraftRootBadge = !sourceParentId && node.isCollectionRoot === true && node.status === 'draft';
 
-  const titleClassName = [
-    styles.nodeTitleDropZone,
-  ]
-    .join(' ')
-    .trim();
+  const titleClassName = [styles.nodeTitleDropZone].join(' ').trim();
+  const expandControl = hasChildren ? (
+    <TreeExpandControl
+      expanded={isExpanded}
+      childCount={childIds.length}
+      onToggle={() => toggleExpanded(node.docId)}
+    />
+  ) : null;
 
   return (
     <li className={styles.treeNode}>
@@ -275,29 +282,7 @@ function CuratedTreeNodeComponent({
         <div className={styles.nodeLead}>
           {disableCuratedDrag ? (
             <>
-              {hasChildren ? (
-                <>
-                  <button
-                    type="button"
-                    className={styles.treeExpandButton}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleExpanded(node.docId);
-                    }}
-                    aria-expanded={isExpanded}
-                    title={isExpanded ? 'Collapse' : 'Expand'}
-                  >
-                    <span className={styles.treeExpandIcon}>{isExpanded ? '▼' : '►'}</span>
-                  </button>
-                  <span
-                    className={styles.treePersistedMarker}
-                    title={isExpanded ? 'Saved as expanded' : 'Saved as collapsed'}
-                    aria-hidden="true"
-                  >
-                    {isExpanded ? '⊟' : '⊞'}
-                  </span>
-                </>
-              ) : null}
+              {expandControl}
               <div className={titleClassName}>
                 <StaticTreeRowCard
                   className={styles.nodeDragSurface}
@@ -312,46 +297,24 @@ function CuratedTreeNodeComponent({
               </div>
             </>
           ) : (
-            <DraggableCard
-              card={node}
-              className={styles.nodeDragSurface}
-              disabled={saving}
-              onClick={() => onSelectCard(node.docId)}
-              sourceParentId={sourceParentId}
-              sourceIsRoot={!sourceParentId && node.isCollectionRoot === true}
-              betweenHandleAndTitle={
-                hasChildren ? (
-                  <>
-                    <button
-                      type="button"
-                      className={styles.treeExpandButton}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleExpanded(node.docId);
-                      }}
-                      aria-expanded={isExpanded}
-                      title={isExpanded ? 'Collapse' : 'Expand'}
-                    >
-                      <span className={styles.treeExpandIcon}>{isExpanded ? '▼' : '►'}</span>
-                    </button>
-                    <span
-                      className={styles.treePersistedMarker}
-                      title={isExpanded ? 'Saved as expanded' : 'Saved as collapsed'}
-                      aria-hidden="true"
-                    >
-                      {isExpanded ? '⊟' : '⊞'}
-                    </span>
-                  </>
-                ) : null
-              }
-            >
-              <ParentDropZone parentId={node.docId!} className={titleClassName}>
-                <span className={styles.nodeTitleWrap}>
-                  <span className={styles.nodeTitle}>{cardLabel(node)}</span>
-                  {showDraftRootBadge ? <span className={styles.nodeDraftBadge}>Draft</span> : null}
-                </span>
-              </ParentDropZone>
-            </DraggableCard>
+            <>
+              {expandControl}
+              <DraggableCard
+                card={node}
+                className={styles.nodeDragSurface}
+                disabled={saving}
+                onClick={() => onSelectCard(node.docId)}
+                sourceParentId={sourceParentId}
+                sourceIsRoot={!sourceParentId && node.isCollectionRoot === true}
+              >
+                <ParentDropZone parentId={node.docId!} className={titleClassName}>
+                  <span className={styles.nodeTitleWrap}>
+                    <span className={styles.nodeTitle}>{cardLabel(node)}</span>
+                    {showDraftRootBadge ? <span className={styles.nodeDraftBadge}>Draft</span> : null}
+                  </span>
+                </ParentDropZone>
+              </DraggableCard>
+            </>
           )}
         </div>
         <div className={styles.nodeActions}>
@@ -373,28 +336,36 @@ function CuratedTreeNodeComponent({
       </div>
       {hasChildren && isExpanded ? (
         <ul className={styles.treeList}>
-          {children.map((child) => (
-            <CuratedTreeNode
-              key={child.docId}
-              node={child}
-              sourceParentId={node.docId}
-              seen={nextSeen}
-              cardById={cardById}
-              parentByChild={parentByChild}
-              expandedIds={expandedIds}
-              toggleExpanded={toggleExpanded}
-              saving={saving}
-              onDetachChild={onDetachChild}
-              onClearRoot={onClearRoot}
-              onSelectCard={onSelectCard}
-              selectedCardId={selectedCardId}
-              disableCuratedDrag={disableCuratedDrag}
-            />
-          ))}
+          {childEntries.map(({ id, card }) =>
+            card ? (
+              <CuratedTreeNode
+                key={card.docId}
+                node={card}
+                sourceParentId={node.docId}
+                seen={nextSeen}
+                cardById={cardById}
+                parentByChild={parentByChild}
+                expandedIds={expandedIds}
+                toggleExpanded={toggleExpanded}
+                saving={saving}
+                onDetachChild={onDetachChild}
+                onClearRoot={onClearRoot}
+                onSelectCard={onSelectCard}
+                selectedCardId={selectedCardId}
+                disableCuratedDrag={disableCuratedDrag}
+              />
+            ) : (
+              <li key={`${node.docId}-missing-${id}`} className={styles.treeNode}>
+                <div className={styles.treeMissingChildRow}>
+                  Missing child card
+                </div>
+              </li>
+            )
+          )}
         </ul>
       ) : null}
     </li>
   );
 }
 
-export const CuratedTreeNode = React.memo(CuratedTreeNodeComponent, curatedTreeNodeComparator);
+export const CuratedTreeNode = CuratedTreeNodeComponent;

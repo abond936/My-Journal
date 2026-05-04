@@ -50,7 +50,7 @@
 }
 
 .card.quote {
-  background-color: var(--reader-quote-card-background-color);
+  background-color: var(--reader-question-card-background-color);
   border-color: var(--reader-quote-card-border-color);
   border-radius: var(--reader-quote-card-border-radius);
   box-shadow: var(--reader-quote-card-shadow);
@@ -522,6 +522,23 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.qaTextBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.qa:not(.qaWithCover) .qaTextBlock {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.qaMetaAfter {
+  padding-top: var(--spacing-sm);
+  align-self: flex-start;
 }
 
 /* Inline + cover: TipTap below title/teaser inside overlay; keep readable */

@@ -21,6 +21,7 @@ import AdminGridCellChrome from '@/components/admin/common/AdminGridCellChrome';
 import chromeStyles from '@/components/admin/common/AdminGridCellChrome.module.css';
 import { adminChromeSelector, ADMIN_GRID_CHROME } from '@/components/admin/common/adminGridChromeAttr';
 import { eventTargetToElement } from '@/lib/utils/domEventTarget';
+import { DND_POINTER_IGNORE_ATTR } from '@/lib/hooks/useDefaultDndSensors';
 import {
   buildSingleCardDeletePrompt,
   fetchCardDeleteParents,
@@ -55,6 +56,7 @@ interface CardAdminGridProps {
   interactionDisabled?: boolean;
   /** Studio attach bank: denser grid (smaller min cell width). */
   compactStudioGrid?: boolean;
+  pendingFocusCardId?: string | null;
 }
 
 const CARD_TYPE_LABELS: Record<Card['type'], string> = {
@@ -125,6 +127,7 @@ interface CardAdminGridPlainCellProps {
   studioEmbedCellClickSelects: boolean;
   interactionDisabled: boolean;
   compactStudioGrid: boolean;
+  pendingFocus: boolean;
 }
 
 /** `/admin/card-admin` grid — no dnd-kit (no `DndContext` on that page). */
@@ -142,6 +145,7 @@ function CardAdminGridPlainCell({
   studioEmbedCellClickSelects,
   interactionDisabled,
   compactStudioGrid,
+  pendingFocus,
 }: CardAdminGridPlainCellProps) {
   const handleBulkPointer = useCallback(
     (e: React.MouseEvent | React.KeyboardEvent) => {
@@ -229,7 +233,8 @@ function CardAdminGridPlainCell({
       }
       overlayTopEnd={
         <div onClick={(e) => e.stopPropagation()}>
-          <button
+          <div {...{ [DND_POINTER_IGNORE_ATTR]: '' }}>
+            <button
             type="button"
             className={chromeStyles.deleteBtn}
             onClick={(e) => {
@@ -240,7 +245,8 @@ function CardAdminGridPlainCell({
             aria-label="Delete card"
           >
             🗑️
-          </button>
+            </button>
+          </div>
         </div>
       }
       overlayLeftRail={
@@ -290,6 +296,12 @@ function CardAdminGridPlainCell({
           ) : (
             <div className={styles.noCover}>No cover</div>
           )}
+          {pendingFocus ? (
+            <div className={styles.pendingThumbOverlay} aria-hidden="true">
+              <div className={styles.pendingThumbSpinner} />
+              <span className={styles.pendingThumbLabel}>Opening...</span>
+            </div>
+          ) : null}
         </div>
       }
       belowThumbnail={
@@ -297,20 +309,26 @@ function CardAdminGridPlainCell({
           <div className={styles.title} title={card.title}>
             {card.title || 'Untitled'}
           </div>
-          <DimensionalTagVerticalChips
-            className={styles.tagChipsInline}
-            tagIds={card.tags ?? []}
-            allTags={allTags}
-            disabled={interactionDisabled}
-            variant="inline"
-            onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
-          />
+          <div {...{ [DND_POINTER_IGNORE_ATTR]: '' }}>
+            <DimensionalTagVerticalChips
+              className={styles.tagChipsInline}
+              tagIds={card.tags ?? []}
+              allTags={allTags}
+              disabled={interactionDisabled}
+              variant="inline"
+              onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
+            />
+          </div>
           {!compactStudioGrid && captionLine ? (
             <div className={styles.caption} title={captionLine}>
               {captionLine}
             </div>
           ) : null}
-          <div className={styles.tagSearchFoot} data-admin-chrome={ADMIN_GRID_CHROME.tagSearchFoot}>
+          <div
+            className={styles.tagSearchFoot}
+            data-admin-chrome={ADMIN_GRID_CHROME.tagSearchFoot}
+            {...{ [DND_POINTER_IGNORE_ATTR]: '' }}
+          >
             <CardDimensionalTagCommandBar
               card={card}
               allTags={allTags}
@@ -339,7 +357,8 @@ const MemoizedCardAdminGridPlainCell = React.memo(CardAdminGridPlainCell, (prev,
     prev.onDelete === next.onDelete &&
     prev.studioEmbedCellClickSelects === next.studioEmbedCellClickSelects &&
     prev.interactionDisabled === next.interactionDisabled &&
-    prev.compactStudioGrid === next.compactStudioGrid
+    prev.compactStudioGrid === next.compactStudioGrid &&
+    prev.pendingFocus === next.pendingFocus
   );
 });
 
@@ -365,6 +384,7 @@ function CardAdminGridStudioCell({
   studioEmbedCellClickSelects,
   interactionDisabled,
   compactStudioGrid,
+  pendingFocus,
 }: CardAdminGridStudioCellProps) {
   const handleBulkPointer = useCallback(
     (e: React.MouseEvent | React.KeyboardEvent) => {
@@ -453,6 +473,7 @@ function CardAdminGridStudioCell({
         style: cellStyle,
         id: `card-${card.docId}`,
         title: thumbnailTooltip,
+        ...(studioCuratedTreeDrag && !interactionDisabled ? rowDnd.listeners : {}),
         onClick: (e) => {
           if (isCardGridChromeInteractiveTarget(e.target)) return;
           activatePrimary(e);
@@ -469,7 +490,7 @@ function CardAdminGridStudioCell({
         },
       }}
       overlayTopStart={
-        <div onClick={(e) => e.stopPropagation()}>
+        <div onClick={(e) => e.stopPropagation()} {...{ [DND_POINTER_IGNORE_ATTR]: '' }}>
           <input
             type="checkbox"
             readOnly
@@ -502,6 +523,7 @@ function CardAdminGridStudioCell({
               {...rowDnd.attributes}
               disabled={interactionDisabled}
               aria-label="Drag into curated tree"
+              title="Drag into Collections"
               onClick={(e) => e.stopPropagation()}
             >
               ⋮⋮
@@ -568,6 +590,12 @@ function CardAdminGridStudioCell({
           ) : (
             <div className={styles.noCover}>No cover</div>
           )}
+          {pendingFocus ? (
+            <div className={styles.pendingThumbOverlay} aria-hidden="true">
+              <div className={styles.pendingThumbSpinner} />
+              <span className={styles.pendingThumbLabel}>Opening...</span>
+            </div>
+          ) : null}
         </div>
       }
       belowThumbnail={
@@ -575,20 +603,26 @@ function CardAdminGridStudioCell({
           <div className={styles.title} title={card.title}>
             {card.title || 'Untitled'}
           </div>
-          <DimensionalTagVerticalChips
-            className={styles.tagChipsInline}
-            tagIds={card.tags ?? []}
-            allTags={allTags}
-            disabled={interactionDisabled}
-            variant="inline"
-            onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
-          />
+          <div {...{ [DND_POINTER_IGNORE_ATTR]: '' }}>
+            <DimensionalTagVerticalChips
+              className={styles.tagChipsInline}
+              tagIds={card.tags ?? []}
+              allTags={allTags}
+              disabled={interactionDisabled}
+              variant="inline"
+              onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
+            />
+          </div>
           {!compactStudioGrid && captionLine ? (
             <div className={styles.caption} title={captionLine}>
               {captionLine}
             </div>
           ) : null}
-          <div className={styles.tagSearchFoot} data-admin-chrome={ADMIN_GRID_CHROME.tagSearchFoot}>
+          <div
+            className={styles.tagSearchFoot}
+            data-admin-chrome={ADMIN_GRID_CHROME.tagSearchFoot}
+            {...{ [DND_POINTER_IGNORE_ATTR]: '' }}
+          >
             <CardDimensionalTagCommandBar
               card={card}
               allTags={allTags}
@@ -619,7 +653,8 @@ const MemoizedCardAdminGridStudioCell = React.memo(CardAdminGridStudioCell, (pre
     prev.studioCuratedTreeUnparentedRowTarget === next.studioCuratedTreeUnparentedRowTarget &&
     prev.studioEmbedCellClickSelects === next.studioEmbedCellClickSelects &&
     prev.interactionDisabled === next.interactionDisabled &&
-    prev.compactStudioGrid === next.compactStudioGrid
+    prev.compactStudioGrid === next.compactStudioGrid &&
+    prev.pendingFocus === next.pendingFocus
   );
 });
 
@@ -640,6 +675,7 @@ export default function CardAdminGrid({
   hideBulkSelectRow = false,
   interactionDisabled = false,
   compactStudioGrid = false,
+  pendingFocusCardId = null,
 }: CardAdminGridProps) {
   const router = useRouter();
   const isAllSelected = cards.length > 0 && selectedCardIds.size === cards.length;
@@ -722,6 +758,7 @@ export default function CardAdminGrid({
               studioEmbedCellClickSelects={studioEmbedCellClickSelects}
               interactionDisabled={interactionDisabled}
               compactStudioGrid={compactStudioGrid}
+              pendingFocus={pendingFocusCardId === card.docId}
             />
           ) : (
             <MemoizedCardAdminGridPlainCell
@@ -739,6 +776,7 @@ export default function CardAdminGrid({
               studioEmbedCellClickSelects={studioEmbedCellClickSelects}
               interactionDisabled={interactionDisabled}
               compactStudioGrid={compactStudioGrid}
+              pendingFocus={pendingFocusCardId === card.docId}
             />
           )
         )}

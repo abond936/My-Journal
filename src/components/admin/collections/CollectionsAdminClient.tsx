@@ -51,7 +51,6 @@ import JournalImage from '@/components/common/JournalImage';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import type { Media } from '@/lib/types/photo';
 import { useMedia } from '@/components/providers/MediaProvider';
-import { usePersistentTreeExpansion } from '@/lib/hooks/usePersistentTreeExpansion';
 import {
   buildStudioCollectionCardDragData,
   isStudioCollectionCardDragData,
@@ -90,6 +89,19 @@ function readCenterColumnWidths(): { tree: number; unparent: number } | null {
     /* ignore */
   }
   return null;
+}
+
+function readStoredTreeExpandedIds(storageKey: string): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(storageKey);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((id): id is string => typeof id === 'string' && id.length > 0);
+  } catch {
+    return [];
+  }
 }
 
 interface CardsResponse {
@@ -318,6 +330,8 @@ export default function CollectionsAdminClient({
   const [bulkSelectedIds, setBulkSelectedIds] = useState<Set<string>>(() => new Set());
   const [bulkSummary, setBulkSummary] = useState<string | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [treeExpandedIds, setTreeExpandedIds] = useState<Set<string>>(new Set());
+  const [treeExpansionHydrated, setTreeExpansionHydrated] = useState(false);
   const [studioLeftTab, setStudioLeftTab] = useState<'tags' | 'tree'>(() => {
     if (typeof window === 'undefined') return 'tags';
     return window.localStorage.getItem('studioLeftTab') === 'tree' ? 'tree' : 'tags';
@@ -373,6 +387,19 @@ export default function CollectionsAdminClient({
       /* ignore */
     }
   }, [studioLeftTab]);
+
+  useEffect(() => {
+    setTreeExpandedIds(new Set(readStoredTreeExpandedIds(COLLECTIONS_TREE_EXPANSION_KEY)));
+    setTreeExpansionHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!treeExpansionHydrated || typeof window === 'undefined') return;
+    window.localStorage.setItem(
+      COLLECTIONS_TREE_EXPANSION_KEY,
+      JSON.stringify(Array.from(treeExpandedIds))
+    );
+  }, [treeExpandedIds, treeExpansionHydrated]);
 
   const persistCenterWidths = useCallback((tree: number, unparent: number) => {
     try {
@@ -733,12 +760,14 @@ export default function CollectionsAdminClient({
     [cardById, onSelectCard]
   );
 
-  const {
-    expandedIds: treeExpandedIds,
-    hydrated: treeExpansionHydrated,
-    toggleExpanded: toggleTreeExpanded,
-    initializeIfEmpty: initializeTreeExpansionIfEmpty,
-  } = usePersistentTreeExpansion(COLLECTIONS_TREE_EXPANSION_KEY);
+  const toggleTreeExpanded = useCallback((id: string) => {
+    setTreeExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     const expandableIds = new Set<string>();
@@ -752,11 +781,14 @@ export default function CollectionsAdminClient({
 
     if (!hasInitializedTreeExpansionRef.current) {
       hasInitializedTreeExpansionRef.current = true;
-      initializeTreeExpansionIfEmpty(Array.from(expandableIds));
+      setTreeExpandedIds((prev) => {
+        if (prev.size > 0) return prev;
+        return new Set(expandableIds);
+      });
       return;
     }
 
-  }, [cards, initializeTreeExpansionIfEmpty, treeExpansionHydrated]);
+  }, [cards, treeExpansionHydrated]);
 
   const collectDescendantIds = useCallback(
     (rootId: string): Set<string> => {

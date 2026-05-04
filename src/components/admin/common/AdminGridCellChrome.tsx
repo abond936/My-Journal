@@ -37,9 +37,10 @@ export default function AdminGridCellChrome({
   belowThumbnail,
   overlayLeftRailClassName,
 }: AdminGridCellChromeProps) {
-  const { className: rootClassFromProps, ...restRoot } = rootProps ?? {};
+  const { className: rootClassFromProps, ref: rootRef, ...restRoot } = rootProps ?? {};
   return (
     <div
+      ref={rootRef}
       {...restRoot}
       className={clsx(styles.cell, selected && styles.selected, className, rootClassFromProps)}
     >

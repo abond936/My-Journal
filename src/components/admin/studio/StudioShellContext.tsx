@@ -29,6 +29,7 @@ export type StudioShellContextValue = {
   cardError: string | null;
   loadSelectedCard: (cardId: string, opts?: { quiet?: boolean }) => Promise<StudioSelectedDetail>;
   patchSelectedCard: (payload: Partial<Card>, successMessage?: string) => Promise<void>;
+  deleteSelectedCard: (cardId: string) => Promise<boolean>;
   /** Refresh embedded Collections card list/tree after card body save or equivalent (no-op if not wired). */
   refreshCollectionsCardList: () => void;
   /** Immediately replace/upsert a saved card into the shared Studio card universe before background refresh catches up. */

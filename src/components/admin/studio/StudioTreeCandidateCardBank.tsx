@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { useStudioShell } from '@/components/admin/studio/StudioShellContext';
 import { useTag } from '@/components/providers/TagProvider';
 import CardAdminGrid from '@/components/admin/card-admin/CardAdminGrid';
 import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
@@ -103,6 +104,7 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
     curatedTreeDnd,
   } = props;
 
+  const { selectedLoadState } = useStudioShell();
   const { tags: allTags } = useTag();
   const [fullCatalog, setFullCatalog] = useState<Card[]>([]);
   const [catalogOverrides, setCatalogOverrides] = useState<CatalogOverrideMap>({});
@@ -122,6 +124,7 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
   const [rulesExpanded, setRulesExpanded] = useState(false);
   const [dimensionFilters, setDimensionFilters] = useState<DimensionFilterState>(DEFAULT_DIMENSION_FILTERS);
   const [isStreamingMore, setIsStreamingMore] = useState(false);
+  const [pendingFocusCardId, setPendingFocusCardId] = useState<string | null>(null);
   const deferredSearch = useDeferredValue(search);
   const deferredFilterTagIds = useDeferredValue(filterTagIds);
   const deferredTypeFilter = useDeferredValue(typeFilter);
@@ -206,6 +209,11 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
       cancelled = true;
     };
   }, [catalogRefreshTick]);
+
+  useEffect(() => {
+    if (selectedLoadState === 'loading') return;
+    setPendingFocusCardId(null);
+  }, [selectedLoadState]);
 
   const onCardTagDimensionalMap = useMemo(
     () => groupSelectedTagIdsByDimension(deferredFilterTagIds, allTags ?? []),
@@ -572,6 +580,14 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
   );
 
   const studioDrag = Boolean(curatedTreeDnd);
+  const handleStudioFocusCard = useCallback(
+    (card: Card) => {
+      if (!card.docId) return;
+      setPendingFocusCardId(card.docId);
+      onStudioSelectCard(card.docId, card);
+    },
+    [onStudioSelectCard]
+  );
 
   return (
     <div className={styles.root}>
@@ -828,7 +844,8 @@ export default function StudioTreeCandidateCardBank(props: EmbeddedUnparentedBan
           studioCuratedTreeDrag={studioDrag}
           studioCuratedTreeUnparentedRowTarget={studioDrag}
           studioEmbedCellClickSelects
-          onStudioFocusCard={(card) => onStudioSelectCard(card.docId, card)}
+          onStudioFocusCard={handleStudioFocusCard}
+          pendingFocusCardId={pendingFocusCardId}
           interactionDisabled={saving}
           compactStudioGrid
         />
