@@ -356,73 +356,109 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
       {mounted ? (
         <>
           <div className={styles.sidebarHeader}>
-            <h2 className={styles.title}>Explore</h2>
-            <div className={styles.modeTabs} role="tablist" aria-label="Browsing mode">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={readerMode === 'guided'}
-                className={`${styles.modeTab} ${readerMode === 'guided' ? styles.modeTabActive : ''}`}
-                onClick={() => handleSetBrowseMode('guided')}
-              >
-                Guided
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={readerMode === 'freeform'}
-                className={`${styles.modeTab} ${readerMode === 'freeform' ? styles.modeTabActive : ''}`}
-                onClick={() => handleSetBrowseMode('freeform')}
-              >
-                Freeform
-              </button>
-              <button
-                type="button"
-                onClick={handleClearFiltersClick}
-                className={styles.clearButtonCompact}
-                aria-label="Clear filters"
-                title={readerMode === 'guided' ? 'Clear filters disabled in Guided mode' : 'Clear filters'}
-                disabled={readerMode === 'guided'}
-              >
-                <FunnelX strokeWidth={2} />
-                <span className={styles.srOnly}>Clear filters</span>
-              </button>
+            <div className={styles.headerTopRow}>
+              <h2 className={styles.title}>Explore</h2>
+              <div className={styles.modeTabs} role="tablist" aria-label="Browsing mode">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={readerMode === 'guided'}
+                  className={`${styles.modeTab} ${readerMode === 'guided' ? styles.modeTabActive : ''}`}
+                  onClick={() => handleSetBrowseMode('guided')}
+                >
+                  Guided
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={readerMode === 'freeform'}
+                  className={`${styles.modeTab} ${readerMode === 'freeform' ? styles.modeTabActive : ''}`}
+                  onClick={() => handleSetBrowseMode('freeform')}
+                >
+                  Freeform
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClearFiltersClick}
+                  className={styles.clearButtonCompact}
+                  aria-label="Clear filters"
+                  title={readerMode === 'guided' ? 'Clear filters disabled in Guided mode' : 'Clear filters'}
+                  disabled={readerMode === 'guided'}
+                >
+                  <FunnelX strokeWidth={2} />
+                  <span className={styles.srOnly}>Clear filters</span>
+                </button>
+              </div>
             </div>
           </div>
 
           {isTagMode ? (
             <>
               <div className={styles.sidebarSection}>
-                <h3 className={styles.sectionHeading}>Cards</h3>
-                <div className={styles.cardTypeChips} role="group" aria-label="Filter by card type">
-                  {FEED_CARD_TYPES_ORDER.map((t) => {
-                    const on = feedCardTypes.has(t);
-                    const Icon = cardTypeIcons[t];
-                    return (
-                      <button
-                        key={t}
-                        type="button"
-                        className={`${styles.cardTypeChip} ${on ? styles.cardTypeChipActive : ''}`}
-                        aria-pressed={on}
-                        aria-label={cardTypeLabels[t] ?? t}
-                        title={cardTypeLabels[t] ?? t}
-                        onClick={() => toggleFeedCardType(t)}
-                      >
-                        <span className={styles.srOnly}>{cardTypeLabels[t] ?? t}</span>
-                        {Icon ? (
-                          <span className={styles.cardTypeChipIcon} aria-hidden>
-                            <Icon strokeWidth={2} />
-                          </span>
-                        ) : null}
-                      </button>
-                    );
-                  })}
+                <div className={styles.sectionControlRow}>
+                  <h3 className={styles.sectionHeading}>Cards</h3>
+                  <div className={styles.cardTypeChips} role="group" aria-label="Filter by card type">
+                    {FEED_CARD_TYPES_ORDER.map((t) => {
+                      const on = feedCardTypes.has(t);
+                      const Icon = cardTypeIcons[t];
+                      return (
+                        <button
+                          key={t}
+                          type="button"
+                          className={`${styles.cardTypeChip} ${on ? styles.cardTypeChipActive : ''}`}
+                          aria-pressed={on}
+                          aria-label={cardTypeLabels[t] ?? t}
+                          title={cardTypeLabels[t] ?? t}
+                          onClick={() => toggleFeedCardType(t)}
+                        >
+                          <span className={styles.srOnly}>{cardTypeLabels[t] ?? t}</span>
+                          {Icon ? (
+                            <span className={styles.cardTypeChipIcon} aria-hidden>
+                              <Icon strokeWidth={2} />
+                            </span>
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
               <div className={styles.sidebarSection}>
                 {!showViewTagLibrary || viewTagSidebarTab === 'filter' ? (
-                  <h3 className={styles.sectionHeading}>Tags</h3>
+                  <div className={styles.sectionControlRow}>
+                    <h3 className={styles.sectionHeading}>Tags</h3>
+                    <div className={styles.sectionControlRowMain}>
+                      <div className={styles.dimensionTabs} role="tablist" aria-label="Tag dimensions">
+                        {FREEFORM_DIMENSION_TABS.map(({ id, label, Icon }) => (
+                          <button
+                            key={id}
+                            type="button"
+                            role="tab"
+                            aria-selected={browseDimension === id}
+                            title={label}
+                            className={`${styles.dimensionTab} ${browseDimension === id ? styles.dimensionTabActive : ''}`}
+                            onClick={() => setActiveDimension(id)}
+                          >
+                            <span className={styles.srOnly}>{label}</span>
+                            <span className={styles.dimensionTabIcon} aria-hidden>
+                              <Icon strokeWidth={2} />
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        className={styles.iconActionButton}
+                        onClick={() => setShowFeedOptions((current) => !current)}
+                        aria-expanded={showFeedOptions}
+                        aria-label="More controls"
+                        title="More controls"
+                      >
+                        <SlidersHorizontal strokeWidth={2} />
+                      </button>
+                    </div>
+                  </div>
                 ) : null}
                 {showViewTagLibrary ? (
                   <div className={styles.viewTagSidebarTabs} role="tablist" aria-label="Tag sidebar mode">
@@ -448,42 +484,6 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                 ) : null}
                 {!showViewTagLibrary || viewTagSidebarTab === 'filter' ? (
                   <>
-                    <div className={styles.dimensionsBlock}>
-                      <div className={styles.dimensionTabs} role="tablist" aria-label="Tag dimensions">
-                        {FREEFORM_DIMENSION_TABS.map(({ id, label, Icon }) => (
-                          <button
-                            key={id}
-                            type="button"
-                            role="tab"
-                            aria-selected={browseDimension === id}
-                            title={label}
-                            className={`${styles.dimensionTab} ${browseDimension === id ? styles.dimensionTabActive : ''}`}
-                            onClick={() => setActiveDimension(id)}
-                          >
-                            <span className={styles.srOnly}>{label}</span>
-                            <span className={styles.dimensionTabIcon} aria-hidden>
-                              <Icon strokeWidth={2} />
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className={styles.searchBlock}>
-                      <label htmlFor="tag-search-input" className={styles.srOnly}>
-                        Search tags
-                      </label>
-                      <input
-                        id="tag-search-input"
-                        type="search"
-                        placeholder="Search tags..."
-                        value={tagSearch}
-                        onChange={(e) => setTagSearch(e.target.value)}
-                        className={styles.compactControl}
-                        aria-label="Search tags in tree"
-                      />
-                    </div>
-
                     {selectedFilterTagIds.length > 0 ? (
                       <div className={styles.activeFilters}>
                         <span className={styles.activeFiltersLabel}>Active</span>
@@ -517,61 +517,68 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                 ) : null}
               </div>
 
-              <div className={styles.sidebarSection}>
-                <button
-                  type="button"
-                  className={styles.disclosureButton}
-                  onClick={() => setShowFeedOptions((current) => !current)}
-                  aria-expanded={showFeedOptions}
-                >
-                  <span>More controls</span>
-                  <span className={styles.disclosureIcon} aria-hidden>
-                    <SlidersHorizontal strokeWidth={2} />
-                  </span>
-                </button>
-                {showFeedOptions ? (
-                  <div className={styles.dualFieldRow}>
-                    <div className={styles.inlineFieldRow}>
-                      <select
-                        id="feed-sort-select"
-                        value={feedSort}
-                        onChange={(e) => setFeedSort(e.target.value as FeedSortOrder)}
-                        className={`${styles.compactControl} ${styles.compactControlInline}`}
-                        aria-label="Sort card feed"
-                      >
-                        <option value="random">Sort by Random</option>
-                        <option value="whenDesc">Sort by When (Desc)</option>
-                        <option value="whenAsc">Sort by When (Asc)</option>
-                        <option value="createdDesc">Sort by Created (Desc)</option>
-                        <option value="createdAsc">Sort by Created (Asc)</option>
-                        <option value="titleAsc">Sort by Title (A-Z)</option>
-                        <option value="titleDesc">Sort by Title (Z-A)</option>
-                        <option value="whoAsc">Sort by Who (A-Z)</option>
-                        <option value="whoDesc">Sort by Who (Z-A)</option>
-                        <option value="whatAsc">Sort by What (A-Z)</option>
-                        <option value="whatDesc">Sort by What (Z-A)</option>
-                        <option value="whereAsc">Sort by Where (A-Z)</option>
-                        <option value="whereDesc">Sort by Where (Z-A)</option>
-                      </select>
-                    </div>
-                    <div className={styles.inlineFieldRow}>
-                      <select
-                        id="feed-group-select"
-                        value={feedGroupBy}
-                        onChange={(e) => setFeedGroupBy(e.target.value as FeedGroupBy)}
-                        className={`${styles.compactControl} ${styles.compactControlInline}`}
-                        aria-label="Group card feed"
-                      >
-                        <option value="none">Group by None</option>
-                        <option value="when">Group by When</option>
-                        <option value="who">Group by Who</option>
-                        <option value="where">Group by Where</option>
-                        <option value="what">Group by What</option>
-                      </select>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
+              {showFeedOptions ? (
+                <div className={styles.sidebarSection}>
+                  {showFeedOptions ? (
+                    <>
+                      <div className={styles.searchBlock}>
+                        <label htmlFor="tag-search-input" className={styles.srOnly}>
+                          Search tags
+                        </label>
+                        <input
+                          id="tag-search-input"
+                          type="search"
+                          placeholder="Search tags..."
+                          value={tagSearch}
+                          onChange={(e) => setTagSearch(e.target.value)}
+                          className={styles.compactControl}
+                          aria-label="Search tags in tree"
+                        />
+                      </div>
+                      <div className={styles.dualFieldRow}>
+                        <div className={styles.inlineFieldRow}>
+                          <select
+                            id="feed-sort-select"
+                            value={feedSort}
+                            onChange={(e) => setFeedSort(e.target.value as FeedSortOrder)}
+                            className={`${styles.compactControl} ${styles.compactControlInline}`}
+                            aria-label="Sort card feed"
+                          >
+                            <option value="random">Sort by Random</option>
+                            <option value="whenDesc">Sort by When (Desc)</option>
+                            <option value="whenAsc">Sort by When (Asc)</option>
+                            <option value="createdDesc">Sort by Created (Desc)</option>
+                            <option value="createdAsc">Sort by Created (Asc)</option>
+                            <option value="titleAsc">Sort by Title (A-Z)</option>
+                            <option value="titleDesc">Sort by Title (Z-A)</option>
+                            <option value="whoAsc">Sort by Who (A-Z)</option>
+                            <option value="whoDesc">Sort by Who (Z-A)</option>
+                            <option value="whatAsc">Sort by What (A-Z)</option>
+                            <option value="whatDesc">Sort by What (Z-A)</option>
+                            <option value="whereAsc">Sort by Where (A-Z)</option>
+                            <option value="whereDesc">Sort by Where (Z-A)</option>
+                          </select>
+                        </div>
+                        <div className={styles.inlineFieldRow}>
+                          <select
+                            id="feed-group-select"
+                            value={feedGroupBy}
+                            onChange={(e) => setFeedGroupBy(e.target.value as FeedGroupBy)}
+                            className={`${styles.compactControl} ${styles.compactControlInline}`}
+                            aria-label="Group card feed"
+                          >
+                            <option value="none">Group by None</option>
+                            <option value="when">Group by When</option>
+                            <option value="who">Group by Who</option>
+                            <option value="where">Group by Where</option>
+                            <option value="what">Group by What</option>
+                          </select>
+                        </div>
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+              ) : null}
 
               <div className={styles.sidebarSection}>
                 <div className={styles.feedToggleRow}>
