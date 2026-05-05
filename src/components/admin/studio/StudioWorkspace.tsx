@@ -1118,7 +1118,7 @@ export default function StudioWorkspace() {
                           ref={questionsColumnRef}
                           className={styles.studioQuestionsColumn}
                           style={
-                            wideLayout && (showComposePane || showMediaPane)
+                            wideLayout && showMediaPane
                               ? {
                                   flex: `0 0 ${questionsWidth}px`,
                                   width: questionsWidth,

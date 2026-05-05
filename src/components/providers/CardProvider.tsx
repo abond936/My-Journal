@@ -100,12 +100,9 @@ export interface ICardContext {
   setCardDimensionMissing: (dimension: 'who' | 'what' | 'when' | 'where', value: boolean) => void;
   clearFilters: () => void;
   setPageLimit: (limit: number) => void;
-  /**
-   * When true and tag/dimension-style filters are active, each feed page also loads direct
-   * `childrenIds` after matching parents (`/api/cards?includeChildren` — ignored without those filters).
-   */
-  includeChildrenInFeed: boolean;
-  setIncludeChildrenInFeed: (value: boolean) => void;
+  /** When true, dimensional tag filters include descendant sub-tags via inherited tag data. */
+  includeSubTagsInFeed: boolean;
+  setIncludeSubTagsInFeed: (value: boolean) => void;
   
   // Data state
   cards: Card[];
@@ -126,7 +123,7 @@ const COLLECTION_STORAGE_KEY = 'myjournal-collection-id';
 const READER_MODE_KEY = 'myjournal-reader-mode';
 const FEED_SORT_KEY = 'myjournal-feed-sort';
 const FEED_GROUP_KEY = 'myjournal-feed-group';
-const FEED_INCLUDE_CHILDREN_KEY = 'myjournal-feed-include-children';
+const FEED_INCLUDE_SUBTAGS_KEY = 'myjournal-feed-include-subtags';
 const FEED_CARD_TYPES_KEY = 'myjournal-feed-card-types';
 
 const FEED_SORT_VALUES = new Set<string>([
@@ -178,9 +175,9 @@ function readStoredFeedGroup(): FeedGroupBy {
   return raw as FeedGroupBy;
 }
 
-function readStoredIncludeChildrenInFeed(): boolean {
+function readStoredIncludeSubTagsInFeed(): boolean {
   if (typeof window === 'undefined') return false;
-  return readStoredValue(FEED_INCLUDE_CHILDREN_KEY) === 'true';
+  return readStoredValue(FEED_INCLUDE_SUBTAGS_KEY) === 'true';
 }
 
 function readStoredFeedCardTypes(): Set<Card['type']> {
@@ -268,8 +265,8 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   });
   const [feedSort, setFeedSortState] = useState<FeedSortOrder>(() => readStoredFeedSort());
   const [feedGroupBy, setFeedGroupByState] = useState<FeedGroupBy>(() => readStoredFeedGroup());
-  const [includeChildrenInFeed, setIncludeChildrenInFeedState] = useState<boolean>(() =>
-    readStoredIncludeChildrenInFeed()
+  const [includeSubTagsInFeed, setIncludeSubTagsInFeedState] = useState<boolean>(() =>
+    readStoredIncludeSubTagsInFeed()
   );
   const [cardDimensionMissing, setCardDimensionMissingState] = useState<CardDimensionMissing>({
     who: false,
@@ -298,11 +295,11 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     if (typeof window !== 'undefined') window.localStorage.setItem(FEED_GROUP_KEY, g);
   }, []);
 
-  const setIncludeChildrenInFeed = useCallback((value: boolean) => {
-    setIncludeChildrenInFeedState(value);
+  const setIncludeSubTagsInFeed = useCallback((value: boolean) => {
+    setIncludeSubTagsInFeedState(value);
     if (typeof window !== 'undefined') {
-      if (value) window.localStorage.setItem(FEED_INCLUDE_CHILDREN_KEY, 'true');
-      else window.localStorage.removeItem(FEED_INCLUDE_CHILDREN_KEY);
+      if (value) window.localStorage.setItem(FEED_INCLUDE_SUBTAGS_KEY, 'true');
+      else window.localStorage.removeItem(FEED_INCLUDE_SUBTAGS_KEY);
     }
   }, []);
 
@@ -358,7 +355,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
 
   // Define which paths should trigger card fetching
   const activePaths = ['/view', '/search'];
-  const isFetchActive = activePaths.some(path => pathname.startsWith(path));
+  const isFetchActive = sessionStatus !== 'loading' && activePaths.some(path => pathname.startsWith(path));
 
   // Organize selected tags by dimension
   const dimensionalTags = useMemo(() => {
@@ -384,20 +381,6 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     
     return dimensionalMap;
   }, [selectedFilterTagIds, allTags]);
-
-  /** Mirrors GET /api/cards gate: only dimensional / missing / media-tag filters—not title or type alone. */
-  const canTagScopeChildExpansion = useMemo(
-    () =>
-      Boolean(dimensionalTags.who?.length) ||
-      Boolean(dimensionalTags.what?.length) ||
-      Boolean(dimensionalTags.when?.length) ||
-      Boolean(dimensionalTags.where?.length) ||
-      cardDimensionMissing.who ||
-      cardDimensionMissing.what ||
-      cardDimensionMissing.when ||
-      cardDimensionMissing.where,
-    [dimensionalTags, cardDimensionMissing]
-  );
 
   // Hydration: admin list needs only covers (saves reads); content feed needs full (galleries, content images)
   const needsFullHydration = pathname?.startsWith('/view') || pathname?.startsWith('/search');
@@ -484,7 +467,10 @@ export const CardProvider = ({ children }: CardProviderProps) => {
         if (dimension === 'what' && cardDimensionMissing.what) return;
         if (dimension === 'when' && cardDimensionMissing.when) return;
         if (dimension === 'where' && cardDimensionMissing.where) return;
-        params.set(dimension, tagIds.join(','));
+        params.set(
+          includeSubTagsInFeed ? dimension : `exact${dimension[0].toUpperCase()}${dimension.slice(1)}`,
+          tagIds.join(',')
+        );
       });
       if (cardDimensionMissing.who) params.set('whoMissing', 'true');
       if (cardDimensionMissing.what) params.set('whatMissing', 'true');
@@ -500,9 +486,6 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       }
       if (pageIndex > 0 && previousPageData?.lastDocId) params.set('lastDocId', previousPageData.lastDocId);
       if (isAdmin && !needsFullHydration) params.set('hydration', 'cover-only');
-      if (includeChildrenInFeed && canTagScopeChildExpansion) {
-        params.set('includeChildren', 'true');
-      }
       if (!searchTerm?.trim()) {
         if (feedSort === 'random') {
           params.set('sortBy', 'when');
@@ -713,13 +696,34 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     setFeedCardTypes(new Set(FEED_CARD_TYPES_ORDER));
     setSearchTerm('');
     setStatus(isAdmin ? 'all' : 'published');
-    setActiveDimension('collections');
+    if (readerMode === 'freeform') {
+      setActiveDimension(
+        activeDimension === 'who' ||
+          activeDimension === 'what' ||
+          activeDimension === 'when' ||
+          activeDimension === 'where'
+          ? activeDimension
+          : 'who'
+      );
+    } else {
+      setActiveDimension('collections');
+    }
     setCollectionId(null);
     setFeedSort('random');
     setFeedGroupBy('none');
-    setIncludeChildrenInFeed(false);
+    setIncludeSubTagsInFeed(false);
     setCardDimensionMissingState({ who: false, what: false, when: false, where: false });
-  }, [isAdmin, setActiveDimension, setFilterTags, setCollectionId, setFeedSort, setFeedGroupBy, setIncludeChildrenInFeed]);
+  }, [
+    activeDimension,
+    isAdmin,
+    readerMode,
+    setActiveDimension,
+    setFilterTags,
+    setCollectionId,
+    setFeedSort,
+    setFeedGroupBy,
+    setIncludeSubTagsInFeed,
+  ]);
 
   const value = useMemo(
     () => ({
@@ -764,8 +768,8 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       clearFilters,
       setPageLimit,
       isValidating,
-      includeChildrenInFeed,
-      setIncludeChildrenInFeed,
+      includeSubTagsInFeed,
+      setIncludeSubTagsInFeed,
     }),
     [
       cards,
@@ -809,8 +813,8 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       clearFilters,
       setPageLimit,
       isValidating,
-      includeChildrenInFeed,
-      setIncludeChildrenInFeed,
+      includeSubTagsInFeed,
+      setIncludeSubTagsInFeed,
     ]
   );
 

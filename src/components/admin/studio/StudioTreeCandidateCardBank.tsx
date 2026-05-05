@@ -367,6 +367,8 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
         ? deferredMergedCatalog.find((card) => card.docId === props.selectedCardId) ?? null
         : null;
     if (!selectedCard?.docId) return base;
+    if (deferredStatusFilter !== 'all' && (selectedCard.status ?? 'draft') !== deferredStatusFilter) return base;
+    if (!matchesFilters(selectedCard)) return base;
     if (base.some((card) => card.docId === selectedCard.docId)) return base;
     return [selectedCard, ...base];
   }, [deferredMergedCatalog, matchesFilters, deferredStatusFilter, deferredSortMode, props.selectedCardId]);

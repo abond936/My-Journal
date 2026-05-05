@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import {
   createCard,
-  expandFeedItemsWithChildren,
   getCards,
   getCardsByIds,
   getCardsByCollectionId,
@@ -113,16 +112,30 @@ export async function GET(request: Request) {
       when?: string[];
       where?: string[];
     } = {};
+    const exactDimensionalTags: {
+      who?: string[];
+      what?: string[];
+      when?: string[];
+      where?: string[];
+    } = {};
     
     const whoTags = searchParams.get('who')?.split(',').filter(tag => tag.trim());
     const whatTags = searchParams.get('what')?.split(',').filter(tag => tag.trim());
     const whenTags = searchParams.get('when')?.split(',').filter(tag => tag.trim());
     const whereTags = searchParams.get('where')?.split(',').filter(tag => tag.trim());
+    const exactWhoTags = searchParams.get('exactWho')?.split(',').filter(tag => tag.trim());
+    const exactWhatTags = searchParams.get('exactWhat')?.split(',').filter(tag => tag.trim());
+    const exactWhenTags = searchParams.get('exactWhen')?.split(',').filter(tag => tag.trim());
+    const exactWhereTags = searchParams.get('exactWhere')?.split(',').filter(tag => tag.trim());
     
     if (whoTags && whoTags.length > 0) dimensionalTags.who = whoTags;
     if (whatTags && whatTags.length > 0) dimensionalTags.what = whatTags;
     if (whenTags && whenTags.length > 0) dimensionalTags.when = whenTags;
     if (whereTags && whereTags.length > 0) dimensionalTags.where = whereTags;
+    if (exactWhoTags && exactWhoTags.length > 0) exactDimensionalTags.who = exactWhoTags;
+    if (exactWhatTags && exactWhatTags.length > 0) exactDimensionalTags.what = exactWhatTags;
+    if (exactWhenTags && exactWhenTags.length > 0) exactDimensionalTags.when = exactWhenTags;
+    if (exactWhereTags && exactWhereTags.length > 0) exactDimensionalTags.where = exactWhereTags;
 
     const dimensionMissing: {
       who?: boolean;
@@ -140,6 +153,17 @@ export async function GET(request: Request) {
     if (dimensionMissing.what) delete dimensionalTags.what;
     if (dimensionMissing.when) delete dimensionalTags.when;
     if (dimensionMissing.where) delete dimensionalTags.where;
+    if (dimensionMissing.who) delete exactDimensionalTags.who;
+    if (dimensionMissing.what) delete exactDimensionalTags.what;
+    if (dimensionMissing.when) delete exactDimensionalTags.when;
+    if (dimensionMissing.where) delete exactDimensionalTags.where;
+
+    const hasExactDimensionalFilters = Boolean(
+      exactDimensionalTags.who ||
+        exactDimensionalTags.what ||
+        exactDimensionalTags.when ||
+        exactDimensionalTags.where
+    );
 
     const hasDimensionMissingFilters = Boolean(
       dimensionMissing.who ||
@@ -211,19 +235,6 @@ export async function GET(request: Request) {
     const sortDirRaw = searchParams.get('sortDir');
     const sortDir: 'asc' | 'desc' | undefined =
       sortDirRaw === 'asc' ? 'asc' : sortDirRaw === 'desc' ? 'desc' : undefined;
-    const includeChildren = searchParams.get('includeChildren') === 'true';
-
-    /** Child expansion is only for tag/dimension-style discovery—not title-only or type-only. */
-    const hasNonEmptyTags = Boolean(tags?.filter((t) => t?.trim()).length);
-    const hasTagOrDimensionStyleFilter =
-      hasNonEmptyTags ||
-      Boolean(whoTags?.length) ||
-      Boolean(whatTags?.length) ||
-      Boolean(whenTags?.length) ||
-      Boolean(whereTags?.length) ||
-      hasDimensionMissingFilters;
-    const shouldExpandChildren = includeChildren && hasTagOrDimensionStyleFilter;
-
     try {
       // List cards that are collections (have children)
       if (collectionsOnly) {
@@ -239,6 +250,7 @@ export async function GET(request: Request) {
         const result = await getCardsByCollectionId(collectionId, {
           limit,
           lastDocId,
+          status,
           hydrationMode,
         });
         return NextResponse.json(result);
@@ -284,6 +296,10 @@ export async function GET(request: Request) {
           if (dimensionalTags.what && dimensionalTags.what.length > 0 && !matchesAny(card.what, dimensionalTags.what)) return false;
           if (dimensionalTags.when && dimensionalTags.when.length > 0 && !matchesAny(card.when, dimensionalTags.when)) return false;
           if (dimensionalTags.where && dimensionalTags.where.length > 0 && !matchesAny(card.where, dimensionalTags.where)) return false;
+          if (exactDimensionalTags.who && exactDimensionalTags.who.length > 0 && !matchesAny(card.tags, exactDimensionalTags.who)) return false;
+          if (exactDimensionalTags.what && exactDimensionalTags.what.length > 0 && !matchesAny(card.tags, exactDimensionalTags.what)) return false;
+          if (exactDimensionalTags.when && exactDimensionalTags.when.length > 0 && !matchesAny(card.tags, exactDimensionalTags.when)) return false;
+          if (exactDimensionalTags.where && exactDimensionalTags.where.length > 0 && !matchesAny(card.tags, exactDimensionalTags.where)) return false;
           if (dimensionMissing.who && !cardDimEmpty(card.who)) return false;
           if (dimensionMissing.what && !cardDimEmpty(card.what)) return false;
           if (dimensionMissing.when && !cardDimEmpty(card.when)) return false;
@@ -300,6 +316,7 @@ export async function GET(request: Request) {
       // Typesense list limits + 📐 Filtered population & stable ordering.
       const wantTypesense =
         isTypesenseConfigured() &&
+        !hasExactDimensionalFilters &&
         (Boolean(q?.trim()) ||
           Object.keys(dimensionalTags).length > 0 ||
           hasDimensionMissingFilters);
@@ -339,10 +356,7 @@ export async function GET(request: Request) {
 
           const rawItems = await getCardsByIds(searchResult.docIds, { hydrationMode });
           const filteredItems = applyPostFilters(rawItems);
-          let items = filteredItems.slice(0, limit);
-          if (shouldExpandChildren && items.length > 0) {
-            items = await expandFeedItemsWithChildren(items, { status, hydrationMode });
-          }
+          const items = filteredItems.slice(0, limit);
           const lastDocId =
             items.length > 0 ? items[items.length - 1].docId : undefined;
           const hasMore = (pageIdx + 1) * limit < searchResult.totalFound;
@@ -364,6 +378,8 @@ export async function GET(request: Request) {
         types: typesForService,
         tags,
         dimensionalTags: Object.keys(dimensionalTags).length > 0 ? dimensionalTags : undefined,
+        exactDimensionalTags:
+          Object.keys(exactDimensionalTags).length > 0 ? exactDimensionalTags : undefined,
         dimensionMissing: hasDimensionMissingFilters ? dimensionMissing : undefined,
         childrenIds_contains,
         limit,
@@ -372,10 +388,6 @@ export async function GET(request: Request) {
         ...(sortBy ? { sortBy } : {}),
         ...(sortDir ? { sortDir } : {}),
       });
-
-      if (shouldExpandChildren && result.items.length > 0) {
-        result.items = await expandFeedItemsWithChildren(result.items, { status, hydrationMode });
-      }
 
       return NextResponse.json(result);
     } catch (error) {

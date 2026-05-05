@@ -22,7 +22,18 @@ function readStoredFilterTagIds(): string[] {
 
 // --- Helper Functions ---
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+const fetcher = async (url: string): Promise<Tag[]> => {
+  const res = await fetch(url);
+  const data: unknown = await res.json().catch(() => []);
+  if (!res.ok) {
+    throw new Error(
+      typeof data === 'object' && data && 'message' in data && typeof data.message === 'string'
+        ? data.message
+        : 'Failed to load tags.'
+    );
+  }
+  return Array.isArray(data) ? data : [];
+};
 
 export interface TagWithChildren extends Tag {
   children: TagWithChildren[];

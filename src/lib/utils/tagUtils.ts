@@ -11,9 +11,9 @@ export const buildTagTree = (tags: Tag[]): TagWithChildren[] => {
   const tagMap = new Map<string, TagWithChildren>();
   const rootTags: TagWithChildren[] = [];
 
-  if (!tags) return [];
-  
-  const tagsCopy = JSON.parse(JSON.stringify(tags));
+  if (!Array.isArray(tags) || tags.length === 0) return [];
+
+  const tagsCopy = JSON.parse(JSON.stringify(tags)) as Tag[];
 
   tagsCopy.forEach((tag: Tag) => {
     tagMap.set(tag.docId!, { ...tag, children: [] });

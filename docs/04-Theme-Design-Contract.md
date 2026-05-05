@@ -1057,6 +1057,13 @@ This section defines the UX and token contract for system/status messaging so fe
 - **Messaging behavior is still mixed** - Themed state colors and some themed feedback panels are live, but broader behavior such as consistent notice components, confirmation dialogs, placement rules, and dismissal behavior is still only partially unified.
 - **Theme implication** - The feedback/state color system is now trustworthy enough to style real message surfaces, but the product still needs a fuller message-component rollout before every status path uses one consistent app-level messaging contract.
 
+### 10.6 Addendum (2026-05-05)
+
+- **Panel-anchored Studio feedback is now a real pattern** - Compose save/loading and some cross-pane Studio actions now present status over the owning pane instead of only through distant inline text or browser chrome.
+- **Confirmation rollout has started in Studio** - Migrated destructive paths in Studio Questions, the Studio card-bank feed, and Compose now use app dialogs rather than browser `confirm()`, but this is still a partial rollout, not a universal contract closeout.
+- **Backgrounded message surfaces are now more legible** - Shared Studio status/error treatments now use clearer panel-like backgrounds so feedback does not disappear into the surrounding app surface.
+- **Inline success is still intentionally limited** - The app is moving away from layout-shifting inline success notices as the default acknowledgment pattern; field-local validation remains a separate justified use of inline messaging.
+
 ### 10.7 Current authoring-system status (2026-04-28)
 
 - **Workbench alignment is now largely structural** - Theme Management, Studio, shared admin dialogs, import flows, and admin drag states now mostly consume the same `Window`, `chrome`, `support`, and `feedback` role families that the editor exposes, instead of styling themselves through raw layout and button primitives.

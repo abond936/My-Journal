@@ -2057,6 +2057,7 @@ export async function getCardsByCollectionId(
   options: {
     limit?: number;
     lastDocId?: string;
+    status?: Card['status'] | 'all';
     hydrationMode?: 'full' | 'cover-only';
   } = {}
 ): Promise<{ items: Card[]; lastDocId?: string; hasMore: boolean }> {
@@ -2065,41 +2066,30 @@ export async function getCardsByCollectionId(
     return { items: [], hasMore: false };
   }
 
-  const { limit = 10, lastDocId, hydrationMode = 'full' } = options;
+  const { limit = 10, lastDocId, status = 'published', hydrationMode = 'full' } = options;
   const childIds = normalizeChildrenIds(collectionCard.childrenIds, collectionId);
-
-  let result:
-    | { items: Card[]; lastDocId?: string; hasMore: boolean }
-    | { items: Card[]; hasMore: false; lastDocId?: undefined };
-
-  if (!lastDocId) {
-    if (childIds.length === 0) {
-      result = { items: [collectionCard], hasMore: false };
-    } else {
-      const childLimit = Math.max(limit - 1, 0);
-      const childResult =
-        childLimit > 0
-          ? await getPaginatedCardsByIds(childIds, { limit: childLimit })
-          : { items: [], hasMore: childIds.length > 0, lastDocId: undefined };
-      result = {
-        items: [collectionCard, ...childResult.items],
-        hasMore: childResult.hasMore,
-        lastDocId: childResult.lastDocId,
-      };
-    }
-  } else if (childIds.length === 0) {
-    result = { items: [], hasMore: false };
-  } else {
-    result = await getPaginatedCardsByIds(childIds, { limit, lastDocId });
+  if (childIds.length === 0) {
+    return { items: [], hasMore: false };
   }
 
-  if (hydrationMode === 'cover-only') {
-    result.items = await _hydrateCoverImagesOnly(result.items);
-  } else {
-    result.items = await _hydrateCards(result.items);
+  const allChildren = await getCardsByIds(childIds, { hydrationMode });
+  const visibleChildren =
+    status === 'all' ? allChildren : allChildren.filter((card) => card.status === status);
+
+  const startIndex = lastDocId ? visibleChildren.findIndex((card) => card.docId === lastDocId) + 1 : 0;
+  if (startIndex < 0 || startIndex >= visibleChildren.length) {
+    return { items: [], hasMore: false };
   }
 
-  return result;
+  const items = visibleChildren.slice(startIndex, startIndex + limit);
+  const newLastDocId = items.length > 0 ? items[items.length - 1].docId : undefined;
+  const hasMore = startIndex + limit < visibleChildren.length;
+
+  return {
+    items,
+    lastDocId: newLastDocId,
+    hasMore,
+  };
 }
 
 /** Max cards to scan when listing collections (cards with children) */
@@ -2686,6 +2676,13 @@ export async function getCards(options: {
     when?: string[];
     where?: string[];
   };
+  /** Exact direct-tag dimensional matching (selected tags only, no descendants). */
+  exactDimensionalTags?: {
+    who?: string[];
+    what?: string[];
+    when?: string[];
+    where?: string[];
+  };
   /** When true for a dimension, keep only cards with no card-level tags in that dimension (empty or absent array). Applied in-memory with query oversampling. */
   dimensionMissing?: {
     who?: boolean;
@@ -2708,6 +2705,7 @@ export async function getCards(options: {
     types: typesIn,
     tags,
     dimensionalTags,
+    exactDimensionalTags,
     dimensionMissing,
     childrenIds_contains,
     limit = 10,
@@ -2738,7 +2736,14 @@ export async function getCards(options: {
         dimensionMissing.when ||
         dimensionMissing.where)
   );
-  const needsPostFilterOversample = hasDimensionMissingFilters;
+  const hasExactDimensionalFilters = Boolean(
+    exactDimensionalTags &&
+      (exactDimensionalTags.who ||
+        exactDimensionalTags.what ||
+        exactDimensionalTags.when ||
+        exactDimensionalTags.where)
+  );
+  const needsPostFilterOversample = hasDimensionMissingFilters || hasExactDimensionalFilters;
 
   // Combined text search and tag filtering
   if (hasSearch) {
@@ -2791,6 +2796,19 @@ export async function getCards(options: {
     }
   }
 
+  if (exactDimensionalTags) {
+    const directExactTagUnion = [
+      ...(exactDimensionalTags.who ?? []),
+      ...(exactDimensionalTags.what ?? []),
+      ...(exactDimensionalTags.when ?? []),
+      ...(exactDimensionalTags.where ?? []),
+    ];
+    const directExactTags = [...new Set(directExactTagUnion)].slice(0, 30);
+    if (directExactTags.length > 0) {
+      query = query.where('tags', 'array-contains-any', directExactTags);
+    }
+  }
+
   // Filter by childrenIds_contains
   if (childrenIds_contains) {
     query = query.where('childrenIds', 'array-contains', childrenIds_contains);
@@ -2831,23 +2849,36 @@ export async function getCards(options: {
     }
   }
 
-  const querySnapshot = await query.limit(
-    needsPostFilterOversample ? Math.max(limit * 5, 100) : limit
-  ).get();
+  const oversampleLimit = hasExactDimensionalFilters
+    ? Math.max(limit * 10, 200)
+    : hasDimensionMissingFilters
+      ? Math.max(limit * 5, 100)
+      : limit;
+
+  const querySnapshot = await query.limit(oversampleLimit).get();
 
   let cards: Card[] = querySnapshot.docs.map(doc => ({
     docId: doc.id,
     ...doc.data(),
   } as Card));
   
-  // --- HYDRATION STEP - Use selective hydration based on mode ---
-  if (hydrationMode === 'cover-only') {
-    cards = await _hydrateCoverImagesOnly(cards);
-  } else {
-    cards = await _hydrateCards(cards);
-  }
-
   const cardDimEmpty = (arr: string[] | undefined) => !arr || arr.length === 0;
+  const cardDirectMatchesAny = (card: Card, required: string[] | undefined) => {
+    if (!required || required.length === 0) return true;
+    const directTags = Array.isArray(card.tags) ? new Set(card.tags) : null;
+    if (!directTags || directTags.size === 0) return false;
+    return required.some((tagId) => directTags.has(tagId));
+  };
+
+  if (hasExactDimensionalFilters && exactDimensionalTags) {
+    cards = cards.filter((card) => {
+      if (!cardDirectMatchesAny(card, exactDimensionalTags.who)) return false;
+      if (!cardDirectMatchesAny(card, exactDimensionalTags.what)) return false;
+      if (!cardDirectMatchesAny(card, exactDimensionalTags.when)) return false;
+      if (!cardDirectMatchesAny(card, exactDimensionalTags.where)) return false;
+      return true;
+    });
+  }
 
   if (hasDimensionMissingFilters && dimensionMissing) {
     cards = cards.filter((card) => {
@@ -2858,6 +2889,14 @@ export async function getCards(options: {
       return true;
     });
   }
+
+  // --- HYDRATION STEP - Use selective hydration based on mode ---
+  if (hydrationMode === 'cover-only') {
+    cards = await _hydrateCoverImagesOnly(cards);
+  } else {
+    cards = await _hydrateCards(cards);
+  }
+
   if (cards.length > limit) {
     cards = cards.slice(0, limit);
   }
@@ -2865,7 +2904,7 @@ export async function getCards(options: {
   const lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
   let lastDocIdResult = lastVisible ? lastVisible.id : undefined;
   let hasMore = needsPostFilterOversample
-    ? querySnapshot.size >= Math.max(limit * 5, 100)
+    ? querySnapshot.size >= oversampleLimit
     : querySnapshot.size === limit;
 
   // Temporary safety net: if title_lowercase is missing on legacy docs, strict prefix search can miss obvious results.
@@ -2889,6 +2928,18 @@ export async function getCards(options: {
       if (what && what.length > 0) fallbackQuery = fallbackQuery.where('what', 'array-contains-any', what);
       if (when && when.length > 0) fallbackQuery = fallbackQuery.where('when', 'array-contains-any', when);
       if (where && where.length > 0) fallbackQuery = fallbackQuery.where('where', 'array-contains-any', where);
+    }
+    if (exactDimensionalTags) {
+      const directExactTagUnion = [
+        ...(exactDimensionalTags.who ?? []),
+        ...(exactDimensionalTags.what ?? []),
+        ...(exactDimensionalTags.when ?? []),
+        ...(exactDimensionalTags.where ?? []),
+      ];
+      const directExactTags = [...new Set(directExactTagUnion)].slice(0, 30);
+      if (directExactTags.length > 0) {
+        fallbackQuery = fallbackQuery.where('tags', 'array-contains-any', directExactTags);
+      }
     }
     if (childrenIds_contains) {
       fallbackQuery = fallbackQuery.where('childrenIds', 'array-contains', childrenIds_contains);
@@ -2923,6 +2974,15 @@ export async function getCards(options: {
       .map((doc) => ({ docId: doc.id, ...(doc.data() as Card) } as Card))
       .filter((c) => (c.title || '').toLowerCase().includes(lower))
       .slice(0, 200);
+    if (hasExactDimensionalFilters && exactDimensionalTags) {
+      fallbackItems = fallbackItems.filter((card) => {
+        if (!cardDirectMatchesAny(card, exactDimensionalTags.who)) return false;
+        if (!cardDirectMatchesAny(card, exactDimensionalTags.what)) return false;
+        if (!cardDirectMatchesAny(card, exactDimensionalTags.when)) return false;
+        if (!cardDirectMatchesAny(card, exactDimensionalTags.where)) return false;
+        return true;
+      });
+    }
     if (hasDimensionMissingFilters && dimensionMissing) {
       fallbackItems = fallbackItems.filter((card) => {
         if (dimensionMissing.who && !cardDimEmpty(card.who)) return false;

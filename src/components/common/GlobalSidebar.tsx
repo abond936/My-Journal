@@ -93,8 +93,8 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     setFeedSort,
     feedGroupBy,
     setFeedGroupBy,
-    includeChildrenInFeed,
-    setIncludeChildrenInFeed,
+    includeSubTagsInFeed,
+    setIncludeSubTagsInFeed,
     clearFilters,
   } = useCardContext();
 
@@ -578,10 +578,10 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                   <label className={styles.feedToggleLabel}>
                     <input
                       type="checkbox"
-                      checked={includeChildrenInFeed}
-                      onChange={(e) => setIncludeChildrenInFeed(e.target.checked)}
+                      checked={includeSubTagsInFeed}
+                      onChange={(e) => setIncludeSubTagsInFeed(e.target.checked)}
                     />
-                    <span>Include children</span>
+                    <span>Include sub-tags</span>
                   </label>
                   <div className={styles.treeActions}>
                     <button
