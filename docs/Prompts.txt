@@ -33,14 +33,37 @@ Keep entries concise and structured (title + one-line description), not long pro
 
 
 
-Updates
-Media 
 
-- tailor AI Assist to be AI Story Assist. 
+AI
+    - tailor AI Assist to be AI Story Assist. 
         - create choices
         - create a 'voice' from existing stories
     -children in the tree and out of the tree?
 
-- add drop cap to tiptap
+Content
+    - add drop cap to tiptap
+
+Media
+- Update an image
+
+Admin
+    - Need a title for Admin?
+
+User Management 
+    - remove the text.
+    - remove the shading 
+    - change terminology to user.
+
+Content editing
+    - allow
+
+Content Viewing
+    - Hero images getting cropped.
+
+Hamburger
+    - Tighen vertical spacing
+
+Compose
+    - Delete gives the system warnings, not the app warnings. Doesn't remove card from feed.
 
 
