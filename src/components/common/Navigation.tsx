@@ -226,6 +226,13 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
                 <span>Theme</span>
                 <ThemeToggle />
               </div>
+              <button
+                type="button"
+                className={styles.signOutButton}
+                onClick={() => signOut({ callbackUrl: '/' })}
+              >
+                Sign out
+              </button>
             </>
           )}
         </div>
