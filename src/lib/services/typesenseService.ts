@@ -203,6 +203,13 @@ export interface SearchCardsFilteredOptions {
     when?: string[];
     where?: string[];
   };
+  /** Direct-tag dimensional match: OR within a dimension, AND across dimensions. */
+  exactDimensionalTags?: {
+    who?: string[];
+    what?: string[];
+    when?: string[];
+    where?: string[];
+  };
   /** Card’s `childrenIds` must contain this id. */
   childrenIds_contains?: string;
   dimensionMissing?: {
@@ -303,6 +310,18 @@ export async function searchCardsFiltered(
     const y = orGroup('when_ids', dim.when);
     if (y) filterParts.push(y);
     const z = orGroup('where_ids', dim.where);
+    if (z) filterParts.push(z);
+  }
+
+  const exactDim = options.exactDimensionalTags;
+  if (exactDim) {
+    const w = orGroup('filter_tag_ids', exactDim.who);
+    if (w) filterParts.push(w);
+    const x = orGroup('filter_tag_ids', exactDim.what);
+    if (x) filterParts.push(x);
+    const y = orGroup('filter_tag_ids', exactDim.when);
+    if (y) filterParts.push(y);
+    const z = orGroup('filter_tag_ids', exactDim.where);
     if (z) filterParts.push(z);
   }
 

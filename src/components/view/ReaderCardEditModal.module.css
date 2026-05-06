@@ -41,6 +41,11 @@
   padding-top: var(--spacing-sm);
 }
 
+.loadingState {
+  padding: var(--spacing-md);
+  color: var(--reader-muted-text-color, var(--color-text-secondary));
+}
+
 .modalShell {
   display: flex;
   flex: 1;

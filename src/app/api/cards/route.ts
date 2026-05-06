@@ -316,9 +316,9 @@ export async function GET(request: Request) {
       // Typesense list limits + 📐 Filtered population & stable ordering.
       const wantTypesense =
         isTypesenseConfigured() &&
-        !hasExactDimensionalFilters &&
         (Boolean(q?.trim()) ||
           Object.keys(dimensionalTags).length > 0 ||
+          hasExactDimensionalFilters ||
           hasDimensionMissingFilters);
 
       if (wantTypesense) {
@@ -337,6 +337,8 @@ export async function GET(request: Request) {
             tags: tags?.filter((t): t is string => Boolean(t?.trim())),
             dimensionalTags:
               Object.keys(dimensionalTags).length > 0 ? dimensionalTags : undefined,
+            exactDimensionalTags:
+              Object.keys(exactDimensionalTags).length > 0 ? exactDimensionalTags : undefined,
             childrenIds_contains,
             dimensionMissing: hasDimensionMissingFilters ? dimensionMissing : undefined,
             page: pageIdx,
@@ -393,6 +395,20 @@ export async function GET(request: Request) {
     } catch (error) {
       console.error('Error in GET /api/cards:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      const lowerMessage = errorMessage.toLowerCase();
+      if (lowerMessage.includes('index') && lowerMessage.includes('query')) {
+        return errorResponse(
+          {
+            ok: false,
+            code: 'CARD_LIST_FILTER_UNAVAILABLE',
+            message: 'This filter combination is not ready yet on the hosted app.',
+            severity: 'warning',
+            retryable: false,
+            error: errorMessage,
+          },
+          503
+        );
+      }
       return errorResponse(
         {
           ok: false,

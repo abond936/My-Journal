@@ -391,7 +391,16 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     }
     const response = await fetch(urlObj.toString());
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      let message = `Request failed (${response.status}).`;
+      try {
+        const data = await response.json();
+        if (typeof data?.message === 'string' && data.message.trim()) {
+          message = data.message.trim();
+        }
+      } catch {
+        // Keep the generic message when the response body is not JSON.
+      }
+      throw new Error(message);
     }
     return response.json();
   }, [isAdmin, needsFullHydration]);
@@ -488,7 +497,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       if (isAdmin && !needsFullHydration) params.set('hydration', 'cover-only');
       if (!searchTerm?.trim()) {
         if (feedSort === 'random') {
-          params.set('sortBy', 'when');
+          params.set('sortBy', 'created');
           params.set('sortDir', 'desc');
         } else if (feedSort === 'whenAsc') {
           params.set('sortBy', 'when');

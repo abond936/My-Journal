@@ -432,7 +432,7 @@ export default function ReaderCardEditModal({
 
   const modalBody = useMemo(() => {
     if (!modalReady || !card || !tags) {
-      return <p>Loading compose…</p>;
+      return <div className={styles.loadingState}>Loading compose…</div>;
     }
     return (
       <CardFormProvider key={activeCardId} initialCard={card} allTags={tags} onSave={handleSave}>

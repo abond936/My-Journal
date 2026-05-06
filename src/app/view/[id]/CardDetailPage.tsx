@@ -80,11 +80,11 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
       data-card-type={card.type}
     >
       {isAdmin && detailReturnTo && card.docId ? (
-        <p className={styles.adminEditBar}>
+        <div className={styles.adminEditBar}>
           <ReaderCardEditModal cardId={card.docId} returnTo={detailReturnTo} className={styles.adminEditTrigger}>
             Edit card
           </ReaderCardEditModal>
-        </p>
+        </div>
       ) : null}
       <header
         className={`${styles.header} ${!card.subtitle || isQuote ? styles.noSubtitle : ''}`}

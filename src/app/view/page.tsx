@@ -116,12 +116,20 @@ function ViewPageContent() {
       sessionStorage.setItem(FOCUS_CARD_KEY, cardId);
     }
   }, []);
+
+  const feedErrorMessage =
+    error instanceof Error && error.message.trim()
+      ? error.message.trim()
+      : 'The journal view could not refresh right now.';
   
   if (error) {
     return (
       <div className={`${styles.page} ${styles.errorState}`} role="alert">
-        <p className={styles.errorTitle}>Could not load the feed.</p>
-        <pre className={styles.errorDetail}>{error instanceof Error ? error.message : String(error)}</pre>
+        <p className={styles.errorTitle}>This view could not update right now.</p>
+        <p className={styles.errorDetail}>{feedErrorMessage}</p>
+        <p className={styles.errorDetail}>
+          Try clearing filters or reloading the page in a moment.
+        </p>
       </div>
     );
   }

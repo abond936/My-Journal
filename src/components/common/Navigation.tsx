@@ -147,6 +147,12 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
               >
                 Content
               </Link>
+              <Link
+                href="/my-stories"
+                className={`${styles.navLink} ${pathname === '/my-stories' ? styles.active : ''}`}
+              >
+                Landing Page
+              </Link>
               <span className={styles.adminLinksDesktopOnly}>
                 <Link
                   href="/admin/studio"
@@ -179,7 +185,24 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
               </button>
             </>
           ) : (
-            <ThemeToggle />
+            <>
+              <Link
+                href="/view"
+                className={`${styles.navLink} ${pathname === '/view' ? styles.active : ''}`}
+              >
+                Content
+              </Link>
+              <Link
+                href="/my-stories"
+                className={`${styles.navLink} ${pathname === '/my-stories' ? styles.active : ''}`}
+              >
+                Landing Page
+              </Link>
+              <div className={styles.themeRow}>
+                <span>Theme</span>
+                <ThemeToggle />
+              </div>
+            </>
           )}
         </div>
       </div>
