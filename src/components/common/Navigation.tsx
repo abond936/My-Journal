@@ -148,10 +148,22 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
                 Content
               </Link>
               <Link
-                href="/my-stories"
-                className={`${styles.navLink} ${pathname === '/my-stories' ? styles.active : ''}`}
+                href="/my-stories/1"
+                className={`${styles.navLink} ${pathname === '/my-stories/1' ? styles.active : ''}`}
               >
-                Landing Page
+                Landing Page 1
+              </Link>
+              <Link
+                href="/my-stories/2"
+                className={`${styles.navLink} ${pathname === '/my-stories/2' ? styles.active : ''}`}
+              >
+                Landing Page 2
+              </Link>
+              <Link
+                href="/my-stories/3"
+                className={`${styles.navLink} ${pathname === '/my-stories/3' ? styles.active : ''}`}
+              >
+                Landing Page 3
               </Link>
               <span className={styles.adminLinksDesktopOnly}>
                 <Link
@@ -193,10 +205,22 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
                 Content
               </Link>
               <Link
-                href="/my-stories"
-                className={`${styles.navLink} ${pathname === '/my-stories' ? styles.active : ''}`}
+                href="/my-stories/1"
+                className={`${styles.navLink} ${pathname === '/my-stories/1' ? styles.active : ''}`}
               >
-                Landing Page
+                Landing Page 1
+              </Link>
+              <Link
+                href="/my-stories/2"
+                className={`${styles.navLink} ${pathname === '/my-stories/2' ? styles.active : ''}`}
+              >
+                Landing Page 2
+              </Link>
+              <Link
+                href="/my-stories/3"
+                className={`${styles.navLink} ${pathname === '/my-stories/3' ? styles.active : ''}`}
+              >
+                Landing Page 3
               </Link>
               <div className={styles.themeRow}>
                 <span>Theme</span>

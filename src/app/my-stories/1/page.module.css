@@ -1,0 +1,242 @@
+.page {
+  min-height: 100dvh;
+  padding: clamp(1rem, 3vw, 2rem);
+  background: var(--reader-page-background-color);
+  background-image: var(--reader-page-texture);
+  color: var(--reader-page-text-color);
+}
+
+.hero,
+.essaySection,
+.featureSection,
+.pullQuoteSection,
+.ctaSection {
+  width: min(100%, 1160px);
+  margin: 0 auto;
+  position: relative;
+}
+
+.hero {
+  display: grid;
+  gap: var(--spacing-lg);
+  padding: clamp(1rem, 4vw, 2rem) 0 clamp(2rem, 7vw, 4rem);
+}
+
+.heroImage,
+.inlinePhoto {
+  border-radius: var(--reader-card-border-radius);
+  border: var(--reader-card-border-width) solid var(--reader-card-border-color);
+  box-shadow: var(--reader-card-shadow);
+  background-position: center;
+  background-size: cover;
+}
+
+.heroImage {
+  min-height: clamp(18rem, 48vw, 38rem);
+  background-image:
+    linear-gradient(180deg, rgba(20, 16, 12, 0.1), rgba(20, 16, 12, 0.42)),
+    url('https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=1400&q=80');
+}
+
+.heroCopy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: clamp(1rem, 3vw, 2rem) 0 0;
+}
+
+.kicker,
+.sectionLabel {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-family: var(--reader-chrome-meta-font-family);
+  font-size: var(--reader-chrome-meta-font-size);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--reader-chrome-meta-line-height);
+  color: var(--reader-chrome-muted-color);
+}
+
+.title,
+.sectionTitle,
+.pullQuote {
+  margin: 0;
+  font-family: var(--font-family-handwriting, 'Ink Free', cursive);
+  color: var(--reader-detail-title-color);
+}
+
+.title {
+  max-width: 11ch;
+  font-size: clamp(2.5rem, 6vw, 5.4rem);
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.sectionTitle {
+  font-size: clamp(1.9rem, 4vw, 3rem);
+  line-height: 1.04;
+  max-width: 14ch;
+}
+
+.lead,
+.body,
+.featureCard p {
+  margin: 0;
+  font-family: var(--font-family-handwriting, 'Ink Free', cursive);
+  font-size: clamp(1rem, 1.7vw, 1.16rem);
+  font-weight: var(--reader-body-font-weight);
+  line-height: 1.72;
+  color: var(--reader-body-color);
+}
+
+.lead {
+  max-width: 38rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.primaryAction,
+.secondaryAction {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.85rem 1.2rem;
+  border-radius: var(--reader-card-border-radius);
+  text-decoration: none;
+  transition: transform var(--transition-short) ease, background-color var(--transition-short) ease;
+}
+
+.primaryAction {
+  background: var(--reader-support-control-strong-background-color);
+  color: var(--reader-support-control-strong-text-color);
+  border: var(--border-width-thin) solid var(--reader-support-control-strong-border-color);
+}
+
+.secondaryAction {
+  background: var(--reader-support-control-background-color);
+  color: var(--reader-support-control-text-color);
+  border: var(--border-width-thin) solid var(--reader-support-control-border-color);
+}
+
+.primaryAction:hover,
+.secondaryAction:hover {
+  transform: translateY(-1px);
+}
+
+.essaySection,
+.featureSection,
+.pullQuoteSection,
+.ctaSection {
+  padding: clamp(1.5rem, 5vw, 3rem) 0;
+}
+
+.essayPanel {
+  display: grid;
+  gap: var(--spacing-lg);
+  align-items: center;
+  padding: clamp(1rem, 2vw, 1.5rem) 0;
+}
+
+.essayPanelReverse {
+  direction: rtl;
+}
+
+.essayPanelReverse .textBlock,
+.essayPanelReverse .inlinePhoto {
+  direction: ltr;
+}
+
+.inlinePhoto {
+  min-height: clamp(16rem, 36vw, 27rem);
+}
+
+.photoKitchen {
+  background-image:
+    linear-gradient(180deg, rgba(30, 20, 10, 0.08), rgba(30, 20, 10, 0.28)),
+    url('https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=1200&q=80');
+}
+
+.photoPorch {
+  background-image:
+    linear-gradient(180deg, rgba(24, 18, 12, 0.08), rgba(24, 18, 12, 0.28)),
+    url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80');
+}
+
+.photoAlbum {
+  background-image:
+    linear-gradient(180deg, rgba(22, 18, 14, 0.08), rgba(22, 18, 14, 0.3)),
+    url('https://images.unsplash.com/photo-1516542076529-1ea3854896f2?auto=format&fit=crop&w=1200&q=80');
+}
+
+.textBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.featureIntro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+}
+
+.featureGrid {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.featureCard {
+  padding: clamp(1rem, 2vw, 1.4rem);
+  border-radius: var(--reader-card-border-radius);
+  border: var(--reader-card-border-width) solid var(--reader-card-border-color);
+  background: color-mix(in srgb, var(--reader-card-background-color) 90%, var(--reader-page-background-color) 10%);
+}
+
+.featureCard h3 {
+  margin: 0 0 var(--spacing-xs);
+  font-family: var(--font-family-handwriting, 'Ink Free', cursive);
+  font-size: clamp(1.15rem, 2vw, 1.45rem);
+  font-weight: var(--reader-title-font-weight);
+  line-height: var(--reader-title-line-height);
+  color: var(--reader-title-color);
+}
+
+.pullQuoteSection {
+  border-top: var(--border-width-thin) solid var(--reader-page-border-color);
+  border-bottom: var(--border-width-thin) solid var(--reader-page-border-color);
+}
+
+.pullQuote {
+  font-size: clamp(2rem, 4.6vw, 3.7rem);
+  line-height: 1.08;
+  text-align: center;
+  max-width: 17ch;
+  margin: 0 auto;
+}
+
+.ctaSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+@media (min-width: 840px) {
+  .hero {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    align-items: end;
+  }
+
+  .essayPanel {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr);
+  }
+
+  .featureGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
