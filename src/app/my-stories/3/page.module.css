@@ -49,7 +49,7 @@
 .title,
 .sectionTitle {
   margin: 0;
-  font-family: var(--font-family-handwriting, 'Ink Free', cursive);
+  font-family: var(--reader-detail-title-font-family);
   color: var(--reader-detail-title-color);
 }
 
@@ -218,7 +218,7 @@
 
 .valueCard h3 {
   margin: 0 0 var(--spacing-xs);
-  font-family: var(--font-family-handwriting, 'Ink Free', cursive);
+  font-family: var(--reader-title-font-family);
   font-size: clamp(1.15rem, 2vw, 1.4rem);
   font-weight: var(--reader-title-font-weight);
   line-height: var(--reader-title-line-height);
