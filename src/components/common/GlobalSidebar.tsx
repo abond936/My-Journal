@@ -104,6 +104,11 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
   const router = useRouter();
   const isViewRoute = pathname === '/view' || (pathname?.startsWith('/view/') ?? false);
   const isViewDetailRoute = pathname?.startsWith('/view/') ?? false;
+  const returnToFeedIfViewingDetail = useCallback(() => {
+    if (isViewDetailRoute) {
+      router.push('/view');
+    }
+  }, [isViewDetailRoute, router]);
 
   const handleSetDefaultExpanded = useCallback(
     (tagId: string, expanded: boolean) => {
@@ -130,8 +135,9 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
   const removeTagFilter = useCallback(
     (tagId: string) => {
       setFilterTags(selectedFilterTagIds.filter((id) => id !== tagId));
+      returnToFeedIfViewingDetail();
     },
-    [selectedFilterTagIds, setFilterTags]
+    [returnToFeedIfViewingDetail, selectedFilterTagIds, setFilterTags]
   );
 
   const handleTreeControlsReady = useCallback((controls: { expandAll: () => void; collapseAll: () => void }) => {
@@ -225,29 +231,40 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
         ? (selectedFilterTagIds.includes(tagId) ? selectedFilterTagIds : [...selectedFilterTagIds, tagId])
         : selectedFilterTagIds.filter((id) => id !== tagId);
       setFilterTags(newSelection);
+      returnToFeedIfViewingDetail();
     },
-    [selectedFilterTagIds, setFilterTags]
+    [returnToFeedIfViewingDetail, selectedFilterTagIds, setFilterTags]
   );
 
   const handleClearFiltersClick = useCallback(() => {
     if (readerMode === 'guided') return;
     clearFilters();
     setTagSearch('');
-  }, [clearFilters, readerMode]);
+    returnToFeedIfViewingDetail();
+  }, [clearFilters, readerMode, returnToFeedIfViewingDetail]);
 
   const handleSetBrowseMode = useCallback(
     (nextMode: 'freeform' | 'guided') => {
       setReaderMode(nextMode);
       if (nextMode === 'guided') {
         setActiveDimension('collections');
+        returnToFeedIfViewingDetail();
         return;
       }
       if (activeDimension === 'collections') {
         setCollectionId(null);
         setActiveDimension(readStoredFreeformDimension());
       }
+      returnToFeedIfViewingDetail();
     },
-    [activeDimension, readStoredFreeformDimension, setActiveDimension, setCollectionId, setReaderMode]
+    [
+      activeDimension,
+      readStoredFreeformDimension,
+      returnToFeedIfViewingDetail,
+      setActiveDimension,
+      setCollectionId,
+      setReaderMode,
+    ]
   );
 
   const toggleCollectionExpanded = useCallback((cardId: string) => {
@@ -265,11 +282,9 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
   const handleSelectCollection = useCallback(
     (nextCollectionId: string) => {
       setCollectionId(nextCollectionId);
-      if (isViewDetailRoute) {
-        router.push('/view');
-      }
+      returnToFeedIfViewingDetail();
     },
-    [isViewDetailRoute, router, setCollectionId]
+    [returnToFeedIfViewingDetail, setCollectionId]
   );
 
   const selectedTagsByDimension = useMemo(() => {
@@ -409,7 +424,10 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                           aria-pressed={on}
                           aria-label={cardTypeLabels[t] ?? t}
                           title={cardTypeLabels[t] ?? t}
-                          onClick={() => toggleFeedCardType(t)}
+                          onClick={() => {
+                            toggleFeedCardType(t);
+                            returnToFeedIfViewingDetail();
+                          }}
                         >
                           <span className={styles.srOnly}>{cardTypeLabels[t] ?? t}</span>
                           {Icon ? (
@@ -539,8 +557,11 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                         <div className={styles.inlineFieldRow}>
                           <select
                             id="feed-sort-select"
-                            value={feedSort}
-                            onChange={(e) => setFeedSort(e.target.value as FeedSortOrder)}
+                          value={feedSort}
+                          onChange={(e) => {
+                            setFeedSort(e.target.value as FeedSortOrder);
+                            returnToFeedIfViewingDetail();
+                          }}
                             className={`${styles.compactControl} ${styles.compactControlInline}`}
                             aria-label="Sort card feed"
                           >
@@ -562,8 +583,11 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                         <div className={styles.inlineFieldRow}>
                           <select
                             id="feed-group-select"
-                            value={feedGroupBy}
-                            onChange={(e) => setFeedGroupBy(e.target.value as FeedGroupBy)}
+                          value={feedGroupBy}
+                          onChange={(e) => {
+                            setFeedGroupBy(e.target.value as FeedGroupBy);
+                            returnToFeedIfViewingDetail();
+                          }}
                             className={`${styles.compactControl} ${styles.compactControlInline}`}
                             aria-label="Group card feed"
                           >
@@ -586,7 +610,10 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                     <input
                       type="checkbox"
                       checked={includeSubTagsInFeed}
-                      onChange={(e) => setIncludeSubTagsInFeed(e.target.checked)}
+                      onChange={(e) => {
+                        setIncludeSubTagsInFeed(e.target.checked);
+                        returnToFeedIfViewingDetail();
+                      }}
                     />
                     <span>Include sub-tags</span>
                   </label>

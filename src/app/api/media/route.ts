@@ -32,21 +32,12 @@ function errorResponse(payload: ApiErrorPayload, status: number) {
 
 function buildBaseQuery(
   mediaRef: CollectionReference,
-  source: string | null,
-  hasCaption: string | null
+  source: string | null
 ): Query {
   let baseQuery: Query = mediaRef;
 
   if (source && source !== 'all') {
     baseQuery = baseQuery.where('source', '==', source);
-  }
-
-  if (hasCaption && hasCaption !== 'all') {
-    if (hasCaption === 'with') {
-      baseQuery = baseQuery.where('caption', '!=', '');
-    } else if (hasCaption === 'without') {
-      baseQuery = baseQuery.where('caption', '==', '');
-    }
   }
 
   return baseQuery;
@@ -87,6 +78,14 @@ function mediaMatchesTagFilter(
     }
     return ids.includes(tagValue);
   }
+  return true;
+}
+
+function mediaMatchesCaptionFilter(item: Media, hasCaption: string | null): boolean {
+  if (!hasCaption || hasCaption === 'all') return true;
+  const hasValue = Boolean(item.caption && item.caption.trim());
+  if (hasCaption === 'with') return hasValue;
+  if (hasCaption === 'without') return !hasValue;
   return true;
 }
 
@@ -204,9 +203,10 @@ export async function GET(request: NextRequest) {
     const app = getAdminApp();
     const firestore = app.firestore();
     const mediaRef = firestore.collection('media');
-    const baseQuery = buildBaseQuery(mediaRef, source, hasCaption);
+    const baseQuery = buildBaseQuery(mediaRef, source);
 
     const shouldUseLegacyTagSeek = !!tagMode && tagMode !== 'all';
+    const hasCaptionSeek = !!hasCaption && hasCaption !== 'all';
 
     const searchTrimmed = search?.trim() ?? '';
     if (searchTrimmed.length > 0 && !isTypesenseConfigured()) {
@@ -227,6 +227,7 @@ export async function GET(request: NextRequest) {
       isTypesenseConfigured() &&
       !shouldUseLegacyTagSeek &&
       (searchTrimmed.length > 0 ||
+        hasCaptionSeek ||
         hasDimensionalTagSeek ||
         assignment === 'unassigned' ||
         assignment === 'assigned');
@@ -267,10 +268,11 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    if (hasDimensionalTagSeek || shouldUseLegacyTagSeek) {
+    if (hasDimensionalTagSeek || shouldUseLegacyTagSeek || hasCaptionSeek) {
       const predicate = (row: Media) => {
         if (assignment === 'assigned' && !isMediaAssigned(row)) return false;
         if (assignment === 'unassigned' && isMediaAssigned(row)) return false;
+        if (!mediaMatchesCaptionFilter(row, hasCaption)) return false;
         if (!mediaMatchesDimensions(row, dimensions)) return false;
         if (!mediaMatchesSearch(row, search)) return false;
         if (hasDimensionalTagSeek) {
@@ -349,7 +351,7 @@ export async function GET(request: NextRequest) {
     if (prevCursor) {
       const prevDoc = await firestore.collection('media').doc(prevCursor).get();
       if (prevDoc.exists) {
-        paginatedQuery = baseQuery.orderBy('createdAt', 'desc').endBefore(prevDoc).limit(limit + 1);
+        paginatedQuery = baseQuery.orderBy('createdAt', 'desc').endBefore(prevDoc).limitToLast(limit + 1);
       }
     } else if (cursor) {
       const cursorDoc = await firestore.collection('media').doc(cursor).get();
@@ -384,6 +386,10 @@ export async function GET(request: NextRequest) {
             return true;
         }
       });
+    }
+
+    if (hasCaption && hasCaption !== 'all') {
+      filteredMedia = filteredMedia.filter((item) => mediaMatchesCaptionFilter(item, hasCaption));
     }
 
     if (search) {

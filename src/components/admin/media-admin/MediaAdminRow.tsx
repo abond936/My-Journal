@@ -59,6 +59,7 @@ export default function MediaAdminRow({
   const [isEditingCaption, setIsEditingCaption] = useState(false);
   const [captionValue, setCaptionValue] = useState(media.caption || '');
   const [focalModalOpen, setFocalModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [focalH, setFocalH] = useState(50);
   const [focalV, setFocalV] = useState(50);
   const [replacing, setReplacing] = useState(false);
@@ -74,12 +75,6 @@ export default function MediaAdminRow({
     setFocalH(horizontal);
     setFocalV(vertical);
   }, [focalModalOpen, media.docId, media.objectPosition]);
-
-  const handleDelete = async () => {
-    if (confirm(`Are you sure you want to delete "${media.filename}"?`)) {
-      await deleteMedia(media.docId);
-    }
-  };
 
   const handleCaptionSave = async () => {
     if (captionValue !== media.caption) {
@@ -289,7 +284,7 @@ export default function MediaAdminRow({
             </button>
             <button
               type="button"
-              onClick={handleDelete}
+              onClick={() => setDeleteModalOpen(true)}
               className={`${styles.actionButton} ${styles.deleteButton}`}
               title="Delete"
               disabled={replacing}
@@ -370,66 +365,99 @@ export default function MediaAdminRow({
 
       {typeof document !== 'undefined' &&
         createPortal(
-          <EditModal
-            isOpen={focalModalOpen}
-            onClose={() => setFocalModalOpen(false)}
-            title={`Default focal: ${media.filename}`}
-          >
-            <form onSubmit={handleFocalSave} className={styles.focalForm}>
-              <p className={styles.focalFormIntro}>
-                This is the default crop focal for this asset. Gallery slots inherit it unless you override them on the card.
-              </p>
-              <div className={styles.focalPreview}>
-                <JournalImage
-                  src={media.storageUrl}
-                  alt=""
-                  width={480}
-                  height={360}
-                  className={styles.focalPreviewImage}
-                  sizes="(max-width: 520px) 100vw, 480px"
-                  style={{
-                    objectFit: 'cover',
-                    objectPosition: focalPreviewPosition,
-                  }}
-                />
+          <>
+            <EditModal
+              isOpen={focalModalOpen}
+              onClose={() => setFocalModalOpen(false)}
+              title={`Default focal: ${media.filename}`}
+            >
+              <form onSubmit={handleFocalSave} className={styles.focalForm}>
+                <p className={styles.focalFormIntro}>
+                  This is the default crop focal for this asset. Gallery slots inherit it unless you override them on the card.
+                </p>
+                <div className={styles.focalPreview}>
+                  <JournalImage
+                    src={media.storageUrl}
+                    alt=""
+                    width={480}
+                    height={360}
+                    className={styles.focalPreviewImage}
+                    sizes="(max-width: 520px) 100vw, 480px"
+                    style={{
+                      objectFit: 'cover',
+                      objectPosition: focalPreviewPosition,
+                    }}
+                  />
+                </div>
+                <div className={styles.focalSliderRow}>
+                  <label htmlFor={`focal-h-${media.docId}`}>Horizontal</label>
+                  <input
+                    id={`focal-h-${media.docId}`}
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={focalH}
+                    onChange={e => setFocalH(Number(e.target.value))}
+                    className={styles.focalSlider}
+                  />
+                </div>
+                <div className={styles.focalSliderRow}>
+                  <label htmlFor={`focal-v-${media.docId}`}>Vertical</label>
+                  <input
+                    id={`focal-v-${media.docId}`}
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={focalV}
+                    onChange={e => setFocalV(Number(e.target.value))}
+                    className={styles.focalSlider}
+                  />
+                </div>
+                <p className={styles.focalFormHint}>
+                  Saved as <code>{focalPreviewPosition}</code>
+                </p>
+                <div className={styles.focalFormActions}>
+                  <button type="button" className={styles.focalCancelButton} onClick={() => setFocalModalOpen(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" className={styles.focalSaveButton}>
+                    Save
+                  </button>
+                </div>
+              </form>
+            </EditModal>
+            <EditModal
+              isOpen={deleteModalOpen}
+              onClose={() => setDeleteModalOpen(false)}
+              title="Delete media"
+            >
+              <div className={styles.deleteDialogBody}>
+                <p className={styles.deleteDialogLead}>Delete “{media.filename}”?</p>
+                <p className={styles.deleteDialogText}>
+                  This will remove the media record and its file from the library.
+                </p>
+                <div className={styles.deleteDialogActions}>
+                  <button
+                    type="button"
+                    className={`${styles.actionButton} ${styles.deleteButton}`}
+                    onClick={async () => {
+                      await deleteMedia(media.docId);
+                      setDeleteModalOpen(false);
+                    }}
+                  >
+                    Delete
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.actionButton}
+                    onClick={() => setDeleteModalOpen(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
-              <div className={styles.focalSliderRow}>
-                <label htmlFor={`focal-h-${media.docId}`}>Horizontal</label>
-                <input
-                  id={`focal-h-${media.docId}`}
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={focalH}
-                  onChange={e => setFocalH(Number(e.target.value))}
-                  className={styles.focalSlider}
-                />
-              </div>
-              <div className={styles.focalSliderRow}>
-                <label htmlFor={`focal-v-${media.docId}`}>Vertical</label>
-                <input
-                  id={`focal-v-${media.docId}`}
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={focalV}
-                  onChange={e => setFocalV(Number(e.target.value))}
-                  className={styles.focalSlider}
-                />
-              </div>
-              <p className={styles.focalFormHint}>
-                Saved as <code>{focalPreviewPosition}</code>
-              </p>
-              <div className={styles.focalFormActions}>
-                <button type="button" className={styles.focalCancelButton} onClick={() => setFocalModalOpen(false)}>
-                  Cancel
-                </button>
-                <button type="submit" className={styles.focalSaveButton}>
-                  Save
-                </button>
-              </div>
-            </form>
-          </EditModal>,
+            </EditModal>
+          </>,
           document.body
         )}
     </>

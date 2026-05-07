@@ -68,12 +68,12 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
 
   const { tags: allTags } = useTag();
   const errorSeverity = getMediaErrorSeverity(error);
+  const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
 
   const handleBulkDelete = async () => {
     if (selectedMediaIds.length === 0) return;
-    if (confirm(`Are you sure you want to delete ${selectedMediaIds.length} media item(s)?`)) {
-      await deleteMultipleMedia(selectedMediaIds);
-    }
+    await deleteMultipleMedia(selectedMediaIds);
+    setBulkDeleteModalOpen(false);
   };
 
   const [bulkTagModalOpen, setBulkTagModalOpen] = useState(false);
@@ -493,7 +493,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                 </button>
                 <button
                   type="button"
-                  onClick={handleBulkDelete}
+                  onClick={() => setBulkDeleteModalOpen(true)}
                   className={`${cardAdminStyles.actionButton} ${cardAdminStyles.deleteButton}`}
                 >
                   Delete Selected
@@ -504,6 +504,36 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
         )}
       </div>
 
+      <EditModal
+        isOpen={bulkDeleteModalOpen}
+        onClose={() => setBulkDeleteModalOpen(false)}
+        title="Delete selected media"
+      >
+        <div className={styles.deleteDialogBody}>
+          <p className={styles.deleteDialogLead}>
+            Delete {selectedMediaIds.length} selected media item{selectedMediaIds.length === 1 ? '' : 's'}?
+          </p>
+          <p className={styles.deleteDialogText}>
+            This will remove the selected media records and their files from the library.
+          </p>
+          <div className={styles.deleteDialogActions}>
+            <button
+              type="button"
+              onClick={() => void handleBulkDelete()}
+              className={`${cardAdminStyles.actionButton} ${cardAdminStyles.deleteButton}`}
+            >
+              Delete
+            </button>
+            <button
+              type="button"
+              onClick={() => setBulkDeleteModalOpen(false)}
+              className={cardAdminStyles.actionButton}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </EditModal>
       <EditModal
         isOpen={bulkTagModalOpen}
         onClose={() => setBulkTagModalOpen(false)}

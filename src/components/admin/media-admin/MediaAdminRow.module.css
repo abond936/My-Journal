@@ -386,6 +386,33 @@ tr.rowCompact > td.cell {
   max-width: 100%;
 }
 
+.deleteDialogBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.deleteDialogLead,
+.deleteDialogText {
+  margin: 0;
+}
+
+.deleteDialogLead {
+  font-weight: var(--font-weight-semibold);
+  color: var(--text1-color);
+}
+
+.deleteDialogText {
+  color: var(--text2-color);
+}
+
+.deleteDialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  padding-top: var(--spacing-xs);
+}
+
 /* Actions (stacked: Focal, Replace, Delete) — column hugs buttons, no full-width stretch. */
 .actionsCell {
   padding-left: 4px !important;

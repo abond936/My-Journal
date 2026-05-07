@@ -176,6 +176,8 @@ export default function CardDimensionalTagCommandBar({
         tagError && styles.wrapError,
         className
       )}
+      onMouseDown={(ev) => ev.stopPropagation()}
+      onPointerDown={(ev) => ev.stopPropagation()}
       onClick={(ev) => ev.stopPropagation()}
     >
       {variant !== 'searchOnly' ? (
@@ -221,6 +223,8 @@ export default function CardDimensionalTagCommandBar({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onSearchKeyDown}
+          onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
           disabled={disabled || saving}
           aria-autocomplete="list"
         />

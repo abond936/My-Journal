@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { applyModifierSelection } from '@/lib/utils/adminListSelection';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS as DndCss } from '@dnd-kit/utilities';
@@ -13,6 +13,8 @@ import { useMedia } from '@/components/providers/MediaProvider';
 import { useTag } from '@/components/providers/TagProvider';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import { formatCoreTagsTooltipLines, getCoreTagsByDimension } from '@/lib/utils/tagDisplay';
+import { parseObjectPositionToPercents } from '@/lib/utils/parseObjectPositionPercent';
+import EditModal from '@/components/admin/card-admin/EditModal';
 import styles from './MediaAdminGrid.module.css';
 import AdminGridCellChrome from '@/components/admin/common/AdminGridCellChrome';
 import chromeStyles from '@/components/admin/common/AdminGridCellChrome.module.css';
@@ -25,11 +27,15 @@ export interface MediaAdminGridCellProps {
   tagNameMap: Map<string, string>;
   allTags: ReturnType<typeof useTag>['tags'];
   onSaveTags: (mediaId: string, nextTags: string[]) => Promise<void>;
+  onSaveMediaFields: (
+    mediaId: string,
+    updates: Partial<Pick<Media, 'caption' | 'objectPosition'>>
+  ) => Promise<void>;
   isSelected: boolean;
   onSelectionCheckboxClick: (e: React.MouseEvent | React.KeyboardEvent, mediaId: string, mediaIndex: number) => void;
-  /** When set (Admin Studio grid + `DndContext`), cell is `source:{mediaId}` for cover/gallery drops. */
   studioDragBind?: MediaAdminRowStudioDragBind;
 }
+
 type DimensionKey = 'who' | 'what' | 'when' | 'where';
 type DimensionFilterMode = 'any' | 'hasAny' | 'isEmpty' | 'matches';
 type DimensionFilters = Record<
@@ -58,18 +64,32 @@ function MediaAdminGridCell({
   tagNameMap,
   allTags,
   onSaveTags,
+  onSaveMediaFields,
   isSelected,
   onSelectionCheckboxClick,
   studioDragBind,
 }: MediaAdminGridCellProps) {
   const core = useMemo(() => getCoreTagsByDimension(media), [media]);
-  const [saveNotice, setSaveNotice] = React.useState<string | null>(null);
+  const [saveNotice, setSaveNotice] = useState<string | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [captionDraft, setCaptionDraft] = useState(media.caption || '');
+  const [focalH, setFocalH] = useState(50);
+  const [focalV, setFocalV] = useState(50);
+  const [savingFields, setSavingFields] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!saveNotice) return;
     const id = window.setTimeout(() => setSaveNotice(null), 2500);
     return () => window.clearTimeout(id);
   }, [saveNotice]);
+
+  useEffect(() => {
+    if (!editModalOpen) return;
+    setCaptionDraft(media.caption || '');
+    const { horizontal, vertical } = parseObjectPositionToPercents(media.objectPosition);
+    setFocalH(horizontal);
+    setFocalV(vertical);
+  }, [editModalOpen, media.caption, media.objectPosition]);
 
   const handleTagUpdate = useCallback(
     async (nextTagIds: string[]) => {
@@ -92,6 +112,7 @@ function MediaAdminGridCell({
     if (t?.closest('button')) return;
     handleSelectionClick(e);
   };
+
   const onCellKeyDown = (e: React.KeyboardEvent) => {
     const t = eventTargetToElement(e.target);
     if (t?.closest('input, textarea, button, [role="listbox"]')) return;
@@ -101,16 +122,28 @@ function MediaAdminGridCell({
     }
   };
 
-  const aspectStyle: React.CSSProperties =
-    { aspectRatio: '4 / 3' };
-
+  const aspectStyle: React.CSSProperties = { aspectRatio: '4 / 3' };
   const displayTitle = media.caption?.trim() || '';
-
-  const identityTooltip = `File: ${media.filename}\nID: ${media.docId}\nSource: ${media.sourcePath || '—'}`;
+  const identityTooltip = `File: ${media.filename}\nID: ${media.docId}\nSource: ${media.sourcePath || '-'}`;
   const thumbnailTooltip = useMemo(() => {
     const tagLines = formatCoreTagsTooltipLines(core, (id) => tagNameMap.get(id) ?? id);
     return `${identityTooltip}\n\n${tagLines}`;
   }, [identityTooltip, core, tagNameMap]);
+
+  const focalPreviewPosition = `${focalH}% ${focalV}%`;
+  const handleSaveFields = useCallback(async () => {
+    setSavingFields(true);
+    try {
+      await onSaveMediaFields(media.docId!, {
+        caption: captionDraft,
+        objectPosition: focalPreviewPosition,
+      });
+      setSaveNotice('Media saved');
+      setEditModalOpen(false);
+    } finally {
+      setSavingFields(false);
+    }
+  }, [captionDraft, focalPreviewPosition, media.docId, onSaveMediaFields]);
 
   const assigned = (media.referencedByCardIds?.length ?? 0) > 0;
   const studioRootExtras = studioDragBind
@@ -152,8 +185,15 @@ function MediaAdminGridCell({
         </div>
       }
       overlayTopEnd={
-        studioDragBind ? (
-          <div onClick={(e) => e.stopPropagation()}>
+        <div className={styles.overlayTopEndCluster} onClick={(e) => e.stopPropagation()}>
+          <button
+            type="button"
+            className={styles.overlayEditButton}
+            onClick={() => setEditModalOpen(true)}
+          >
+            Edit
+          </button>
+          {studioDragBind ? (
             <button
               type="button"
               ref={studioDragBind.setActivatorNodeRef}
@@ -165,10 +205,10 @@ function MediaAdminGridCell({
               {...studioDragBind.attributes}
               {...studioDragBind.listeners}
             >
-              ⋮⋮
+              ::
             </button>
-          </div>
-        ) : null
+          ) : null}
+        </div>
       }
       overlayLeftRail={undefined}
       overlayBottom={
@@ -190,6 +230,7 @@ function MediaAdminGridCell({
             fill
             className={styles.thumbnailNatural}
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 200px"
+            style={{ objectPosition: media.objectPosition || '50% 50%' }}
           />
         </div>
       }
@@ -222,7 +263,79 @@ function MediaAdminGridCell({
     />
   );
 
-  return gridCell;
+  return (
+    <>
+      {gridCell}
+      <EditModal
+        isOpen={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        title={`Edit media: ${media.filename}`}
+      >
+        <div className={styles.editDialogBody}>
+          <div className={styles.editPreviewFrame}>
+            <JournalImage
+              src={getDisplayUrl(media)}
+              alt={media.caption || media.filename}
+              fill
+              className={styles.editPreviewImage}
+              sizes="(max-width: 520px) 100vw, 480px"
+              style={{ objectFit: 'cover', objectPosition: focalPreviewPosition }}
+            />
+          </div>
+          <div className={styles.editFieldGroup}>
+            <label htmlFor={`media-grid-focal-h-${media.docId}`}>Horizontal</label>
+            <input
+              id={`media-grid-focal-h-${media.docId}`}
+              type="range"
+              min={0}
+              max={100}
+              value={focalH}
+              onChange={(e) => setFocalH(Number(e.target.value))}
+            />
+          </div>
+          <div className={styles.editFieldGroup}>
+            <label htmlFor={`media-grid-focal-v-${media.docId}`}>Vertical</label>
+            <input
+              id={`media-grid-focal-v-${media.docId}`}
+              type="range"
+              min={0}
+              max={100}
+              value={focalV}
+              onChange={(e) => setFocalV(Number(e.target.value))}
+            />
+          </div>
+          <div className={styles.editFieldGroup}>
+            <label htmlFor={`media-grid-caption-${media.docId}`}>Caption</label>
+            <textarea
+              id={`media-grid-caption-${media.docId}`}
+              rows={3}
+              className={styles.editTextarea}
+              value={captionDraft}
+              onChange={(e) => setCaptionDraft(e.target.value)}
+            />
+          </div>
+          <div className={styles.editDialogActions}>
+            <button
+              type="button"
+              className={styles.inlineActionButton}
+              onClick={() => setEditModalOpen(false)}
+              disabled={savingFields}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className={styles.inlineActionButton}
+              onClick={() => void handleSaveFields()}
+              disabled={savingFields}
+            >
+              {savingFields ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </div>
+      </EditModal>
+    </>
+  );
 }
 
 const MemoizedMediaAdminGridCell = React.memo(MediaAdminGridCell, (prev, next) => {
@@ -232,6 +345,7 @@ const MemoizedMediaAdminGridCell = React.memo(MediaAdminGridCell, (prev, next) =
     prev.tagNameMap === next.tagNameMap &&
     prev.allTags === next.allTags &&
     prev.onSaveTags === next.onSaveTags &&
+    prev.onSaveMediaFields === next.onSaveMediaFields &&
     prev.isSelected === next.isSelected &&
     prev.onSelectionCheckboxClick === next.onSelectionCheckboxClick &&
     prev.studioDragBind === next.studioDragBind
@@ -273,6 +387,7 @@ const MemoizedMediaAdminGridCellStudioSource = React.memo(
     prev.tagNameMap === next.tagNameMap &&
     prev.allTags === next.allTags &&
     prev.onSaveTags === next.onSaveTags &&
+    prev.onSaveMediaFields === next.onSaveMediaFields &&
     prev.isSelected === next.isSelected &&
     prev.onSelectionCheckboxClick === next.onSelectionCheckboxClick
 );
@@ -285,7 +400,6 @@ export default function MediaAdminGrid({
 }: {
   sourcePathFirst?: boolean;
   dimensionFilters: DimensionFilters;
-  /** Admin Studio: grid tiles register as `source:*` for cover/gallery (requires parent `DndContext`). */
   studioSourceDraggable?: boolean;
   clientSort?: 'none' | 'filenameAsc' | 'filenameDesc';
 }) {
@@ -296,6 +410,7 @@ export default function MediaAdminGrid({
     () => new Map(tags.filter((t) => t.docId).map((tag) => [tag.docId as string, tag.name])),
     [tags]
   );
+
   const sortedMedia = useMemo(() => {
     const normalize = (value: string | undefined) => (value ?? '').trim().toLowerCase();
     const modeFiltered = media.filter((item) => {
@@ -309,6 +424,7 @@ export default function MediaAdminGrid({
         return true;
       });
     });
+
     const applyClientSort = (rows: typeof media) => {
       if (clientSort === 'filenameAsc') {
         return [...rows].sort((a, b) => normalize(a.filename).localeCompare(normalize(b.filename)));
@@ -360,6 +476,16 @@ export default function MediaAdminGrid({
     [updateMedia]
   );
 
+  const handleSaveMediaFields = useCallback(
+    async (mediaId: string, updates: Partial<Pick<Media, 'caption' | 'objectPosition'>>) => {
+      const updated = await updateMedia(mediaId, updates);
+      if (!updated) {
+        throw new Error('Media update failed. Please retry.');
+      }
+    },
+    [updateMedia]
+  );
+
   const handleSelectAllOnPage = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.checked) {
@@ -380,8 +506,7 @@ export default function MediaAdminGrid({
     [sortedIds, setSelectedMediaIds]
   );
 
-  const allOnPageSelected =
-    sortedIds.length > 0 && sortedIds.every((id) => selectedMediaIds.includes(id));
+  const allOnPageSelected = sortedIds.length > 0 && sortedIds.every((id) => selectedMediaIds.includes(id));
 
   return (
     <div className={styles.container}>
@@ -406,6 +531,7 @@ export default function MediaAdminGrid({
               tagNameMap={tagNameMap}
               allTags={tags}
               onSaveTags={handleSaveTags}
+              onSaveMediaFields={handleSaveMediaFields}
               isSelected={selectedMediaIds.includes(item.docId)}
               onSelectionCheckboxClick={handleGridSelection}
             />
@@ -417,6 +543,7 @@ export default function MediaAdminGrid({
               tagNameMap={tagNameMap}
               allTags={tags}
               onSaveTags={handleSaveTags}
+              onSaveMediaFields={handleSaveMediaFields}
               isSelected={selectedMediaIds.includes(item.docId)}
               onSelectionCheckboxClick={handleGridSelection}
             />

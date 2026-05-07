@@ -315,13 +315,13 @@ export async function searchCardsFiltered(
 
   const exactDim = options.exactDimensionalTags;
   if (exactDim) {
-    const w = orGroup('filter_tag_ids', exactDim.who);
+    const w = orGroup('tag_ids', exactDim.who);
     if (w) filterParts.push(w);
-    const x = orGroup('filter_tag_ids', exactDim.what);
+    const x = orGroup('tag_ids', exactDim.what);
     if (x) filterParts.push(x);
-    const y = orGroup('filter_tag_ids', exactDim.when);
+    const y = orGroup('tag_ids', exactDim.when);
     if (y) filterParts.push(y);
-    const z = orGroup('filter_tag_ids', exactDim.where);
+    const z = orGroup('tag_ids', exactDim.where);
     if (z) filterParts.push(z);
   }
 

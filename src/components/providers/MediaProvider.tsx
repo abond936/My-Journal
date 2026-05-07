@@ -376,7 +376,9 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         updatedFilters.assignment === 'unassigned' || updatedFilters.assignment === 'assigned';
       const tagSeek = dimensionalTagMapHasFilters(mergedDimensional);
       const useSeekPagination = assignmentSeek || tagSeek;
-      const typesensePaging = lastMediaEngineRef.current === 'typesense';
+      const searchSeek = updatedFilters.search.trim().length > 0;
+      const typesensePaging =
+        lastMediaEngineRef.current === 'typesense' && (searchSeek || assignmentSeek || tagSeek);
       let opts: { cursor?: string; prevCursor?: string; listPage?: number } | undefined;
 
       if (page === 1 || newFilters) {

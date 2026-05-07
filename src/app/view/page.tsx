@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useRef, useCallback, useEffect } from 'react';
+import React, { Suspense, useRef, useCallback, useLayoutEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useCardContext } from '@/components/providers/CardProvider';
 import styles from './ViewPage.module.css';
@@ -37,6 +37,7 @@ function ViewPageContent() {
   const searchParams = useSearchParams();
   const focusCardId = searchParams.get('focusCardId');
   const consumedFocusRef = useRef<string | null>(null);
+  const prepositionedFocusRef = useRef<string | null>(null);
 
   const loadingLock = useRef(false);
   const handleLoadMore = useCallback(() => {
@@ -52,16 +53,22 @@ function ViewPageContent() {
   });
 
   // Restore to the last opened or edited card once the feed has rendered it.
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isInitialLoading || visibleCards.length === 0) return;
 
     const pendingFocusCardId = focusCardId ?? sessionStorage.getItem(FOCUS_CARD_KEY);
     const savedPosition = sessionStorage.getItem(SCROLL_POSITION_KEY);
+    const parsedSavedPosition = savedPosition ? parseInt(savedPosition, 10) : Number.NaN;
 
     if (pendingFocusCardId && consumedFocusRef.current !== pendingFocusCardId) {
       let cancelled = false;
       let attempts = 0;
       const maxAttempts = 20;
+
+      if (!Number.isNaN(parsedSavedPosition) && prepositionedFocusRef.current !== pendingFocusCardId) {
+        window.scrollTo(0, parsedSavedPosition);
+        prepositionedFocusRef.current = pendingFocusCardId;
+      }
 
       const tryRestoreFocus = () => {
         if (cancelled) return;
@@ -69,11 +76,10 @@ function ViewPageContent() {
         const el = document.querySelector(`[data-card-id="${pendingFocusCardId}"]`) as HTMLElement | null;
         if (el) {
           consumedFocusRef.current = pendingFocusCardId;
+          prepositionedFocusRef.current = null;
           sessionStorage.removeItem(FOCUS_CARD_KEY);
           sessionStorage.removeItem(SCROLL_POSITION_KEY);
-          window.requestAnimationFrame(() => {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          });
+          el.scrollIntoView({ block: 'center' });
           return;
         }
 
@@ -83,10 +89,11 @@ function ViewPageContent() {
           return;
         }
 
-        if (savedPosition) {
-          window.scrollTo(0, parseInt(savedPosition, 10));
+        if (!Number.isNaN(parsedSavedPosition)) {
+          window.scrollTo(0, parsedSavedPosition);
           sessionStorage.removeItem(SCROLL_POSITION_KEY);
         }
+        prepositionedFocusRef.current = null;
         sessionStorage.removeItem(FOCUS_CARD_KEY);
       };
 
@@ -97,16 +104,12 @@ function ViewPageContent() {
       };
     }
 
-    if (savedPosition) {
-      const y = parseInt(savedPosition, 10);
-      if (!Number.isNaN(y)) {
-        window.requestAnimationFrame(() => {
-          window.scrollTo(0, y);
-          sessionStorage.removeItem(SCROLL_POSITION_KEY);
-        });
-      } else {
-        sessionStorage.removeItem(SCROLL_POSITION_KEY);
-      }
+    if (!Number.isNaN(parsedSavedPosition)) {
+      window.scrollTo(0, parsedSavedPosition);
+      sessionStorage.removeItem(SCROLL_POSITION_KEY);
+      prepositionedFocusRef.current = null;
+    } else if (savedPosition) {
+      sessionStorage.removeItem(SCROLL_POSITION_KEY);
     }
   }, [isInitialLoading, visibleCards.length, focusCardId]);
 
