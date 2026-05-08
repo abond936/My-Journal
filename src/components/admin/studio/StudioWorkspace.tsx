@@ -39,12 +39,12 @@ const STUDIO_CARD_EDIT_WIDTH_KEY = 'studioCardEditPaneWidth';
 const STUDIO_QUESTIONS_WIDTH_KEY = 'studioQuestionsPaneWidth';
 const STUDIO_PANE_VISIBILITY_KEY = 'studioPaneVisibility';
 const CARD_EDIT_RESIZE_HANDLE = 8;
-const MIN_CARD_EDIT_PX = 260;
-const MIN_QUESTIONS_PX = 240;
-const MIN_MEDIA_BANK_PX = 200;
+const MIN_CARD_EDIT_PX = 220;
+const MIN_QUESTIONS_PX = 200;
+const MIN_MEDIA_BANK_PX = 180;
 /** Default Compose column width (px) when no saved preference; double-click handle resets here. */
-const DEFAULT_CARD_EDIT_WIDTH = 480;
-const DEFAULT_QUESTIONS_WIDTH = 380;
+const DEFAULT_CARD_EDIT_WIDTH = 420;
+const DEFAULT_QUESTIONS_WIDTH = 320;
 /** Upper cap so Compose does not grow past a comfortable editing line length even on ultra-wide rows. */
 const MAX_CARD_EDIT_WIDTH = 1200;
 const MAX_QUESTIONS_WIDTH = 840;
@@ -101,6 +101,7 @@ function questionsWidthBounds(
   const minQuestions = Math.min(MIN_QUESTIONS_PX, maxQuestions);
   return { minQuestions, maxQuestions };
 }
+
 function readStoredCardEditWidth(): number | null {
   if (typeof window === 'undefined') return null;
   try {
@@ -227,12 +228,14 @@ export default function StudioWorkspace() {
     [newCardRequested, requestedCardId]
   );
   const [wideLayout, setWideLayout] = useState(true);
+  const [workspaceWideLayout, setWorkspaceWideLayout] = useState(true);
   const [cardEditWidth, setCardEditWidth] = useState(DEFAULT_CARD_EDIT_WIDTH);
   const [questionsWidth, setQuestionsWidth] = useState(DEFAULT_QUESTIONS_WIDTH);
   const [paneVisibility, setPaneVisibility] = useState<StudioPaneVisibility>(DEFAULT_STUDIO_PANE_VISIBILITY);
   const cardEditWidthRef = useRef(cardEditWidth);
   const questionsWidthRef = useRef(questionsWidth);
   const studioMediaCardRowRef = useRef<HTMLDivElement | null>(null);
+  const studioRightColumnRef = useRef<HTMLDivElement | null>(null);
   const cardEditColumnRef = useRef<HTMLDivElement | null>(null);
   const questionsColumnRef = useRef<HTMLDivElement | null>(null);
   /** True while dragging card-edit width (skip ResizeObserver clamp). */
@@ -432,17 +435,64 @@ export default function StudioWorkspace() {
     }));
   }, []);
 
+  const resolveWorkspaceWideLayout = useCallback(() => {
+    const host = studioRightColumnRef.current;
+    if (!wideLayout || !host) {
+      setWorkspaceWideLayout(false);
+      return;
+    }
+
+    const showComposePane = !paneVisibility.composeCollapsed;
+    const showQuestionsPane = !paneVisibility.questionsCollapsed;
+    const showMediaPane = !paneVisibility.mediaCollapsed;
+    const visiblePaneCount = [showComposePane, showQuestionsPane, showMediaPane].filter(Boolean).length;
+
+    if (visiblePaneCount <= 1) {
+      setWorkspaceWideLayout(false);
+      return;
+    }
+    void host;
+    setWorkspaceWideLayout(true);
+  }, [paneVisibility.composeCollapsed, paneVisibility.mediaCollapsed, paneVisibility.questionsCollapsed, wideLayout]);
+
+  useEffect(() => {
+    resolveWorkspaceWideLayout();
+  }, [resolveWorkspaceWideLayout]);
+
+  useLayoutEffect(() => {
+    const host = studioRightColumnRef.current;
+    if (!host) return;
+    const ro = new ResizeObserver(() => {
+      resolveWorkspaceWideLayout();
+    });
+    ro.observe(host);
+    return () => ro.disconnect();
+  }, [resolveWorkspaceWideLayout]);
+
+  const resizableWorkspaceLayout = wideLayout && workspaceWideLayout;
+  const embeddedRightSlotMinWidth = useMemo(() => {
+    const visiblePaneMins = [
+      !paneVisibility.composeCollapsed ? MIN_CARD_EDIT_PX : 0,
+      !paneVisibility.questionsCollapsed ? MIN_QUESTIONS_PX : 0,
+      !paneVisibility.mediaCollapsed ? MIN_MEDIA_BANK_PX : 0,
+    ].filter((width) => width > 0);
+    const handleCount = Math.max(0, visiblePaneMins.length - 1);
+    const requiredWidth = visiblePaneMins.reduce((sum, width) => sum + width, 0) + handleCount * CARD_EDIT_RESIZE_HANDLE;
+    return Math.max(MIN_MEDIA_BANK_PX, requiredWidth);
+  }, [paneVisibility.composeCollapsed, paneVisibility.mediaCollapsed, paneVisibility.questionsCollapsed]);
+
   const clampCardEditToRow = useCallback(() => {
     if (
       cardEditResizeActiveRef.current ||
       questionsResizeActiveRef.current ||
       paneVisibility.composeCollapsed ||
-      (paneVisibility.questionsCollapsed && paneVisibility.mediaCollapsed)
+      (paneVisibility.questionsCollapsed && paneVisibility.mediaCollapsed) ||
+      !resizableWorkspaceLayout
     ) {
       return;
     }
     const row = studioMediaCardRowRef.current;
-    if (!row || !wideLayout) return;
+    if (!row) return;
     const rowW = rowWidthForCardEditResize(row);
     const showQuestions = !paneVisibility.questionsCollapsed;
     const showMedia = !paneVisibility.mediaCollapsed;
@@ -463,7 +513,12 @@ export default function StudioWorkspace() {
         setQuestionsWidth((w) => clamp(w, questionBounds.minQuestions, questionBounds.maxQuestions));
       }
     }
-  }, [paneVisibility.composeCollapsed, paneVisibility.mediaCollapsed, paneVisibility.questionsCollapsed, wideLayout]);
+  }, [
+    paneVisibility.composeCollapsed,
+    paneVisibility.mediaCollapsed,
+    paneVisibility.questionsCollapsed,
+    resizableWorkspaceLayout,
+  ]);
 
   const rowResizeObserverRef = useRef<ResizeObserver | null>(null);
 
@@ -472,7 +527,7 @@ export default function StudioWorkspace() {
       studioMediaCardRowRef.current = el;
       rowResizeObserverRef.current?.disconnect();
       rowResizeObserverRef.current = null;
-      if (!el || !wideLayout) return;
+      if (!el || !resizableWorkspaceLayout) return;
       const ro = new ResizeObserver(() => {
         clampCardEditToRow();
       });
@@ -482,7 +537,7 @@ export default function StudioWorkspace() {
         clampCardEditToRow();
       });
     },
-    [wideLayout, clampCardEditToRow]
+    [clampCardEditToRow, resizableWorkspaceLayout]
   );
 
   useEffect(() => {
@@ -507,7 +562,7 @@ export default function StudioWorkspace() {
 
   const onCardEditResizePointerDown = useCallback(
     (e: React.PointerEvent) => {
-      if (!wideLayout || e.button !== 0) return;
+      if (!resizableWorkspaceLayout || e.button !== 0) return;
       e.preventDefault();
       e.stopPropagation();
       const target = e.currentTarget as HTMLElement;
@@ -568,12 +623,17 @@ export default function StudioWorkspace() {
       window.addEventListener('pointerup', end);
       window.addEventListener('pointercancel', end);
     },
-    [paneVisibility.mediaCollapsed, paneVisibility.questionsCollapsed, scheduleLiveCardEditWidth, wideLayout]
+    [
+      paneVisibility.mediaCollapsed,
+      paneVisibility.questionsCollapsed,
+      resizableWorkspaceLayout,
+      scheduleLiveCardEditWidth,
+    ]
   );
 
   const onCardEditResizeDoubleClick = useCallback(
     (e: React.MouseEvent) => {
-      if (!wideLayout || e.button !== 0) return;
+      if (!resizableWorkspaceLayout || e.button !== 0) return;
       e.preventDefault();
       e.stopPropagation();
       const row = studioMediaCardRowRef.current;
@@ -593,12 +653,12 @@ export default function StudioWorkspace() {
         /* ignore */
       }
     },
-    [paneVisibility.mediaCollapsed, paneVisibility.questionsCollapsed, wideLayout]
+    [paneVisibility.mediaCollapsed, paneVisibility.questionsCollapsed, resizableWorkspaceLayout]
   );
 
   const onQuestionsResizePointerDown = useCallback(
     (e: React.PointerEvent) => {
-      if (!wideLayout || e.button !== 0) return;
+      if (!resizableWorkspaceLayout || e.button !== 0) return;
       e.preventDefault();
       e.stopPropagation();
       const target = e.currentTarget as HTMLElement;
@@ -659,12 +719,17 @@ export default function StudioWorkspace() {
       window.addEventListener('pointerup', end);
       window.addEventListener('pointercancel', end);
     },
-    [paneVisibility.composeCollapsed, paneVisibility.mediaCollapsed, scheduleLiveQuestionsWidth, wideLayout]
+    [
+      paneVisibility.composeCollapsed,
+      paneVisibility.mediaCollapsed,
+      resizableWorkspaceLayout,
+      scheduleLiveQuestionsWidth,
+    ]
   );
 
   const onQuestionsResizeDoubleClick = useCallback(
     (e: React.MouseEvent) => {
-      if (!wideLayout || e.button !== 0) return;
+      if (!resizableWorkspaceLayout || e.button !== 0) return;
       e.preventDefault();
       e.stopPropagation();
       const row = studioMediaCardRowRef.current;
@@ -685,7 +750,7 @@ export default function StudioWorkspace() {
         /* ignore */
       }
     },
-    [paneVisibility.composeCollapsed, paneVisibility.mediaCollapsed, wideLayout]
+    [paneVisibility.composeCollapsed, paneVisibility.mediaCollapsed, resizableWorkspaceLayout]
   );
 
   const loadSelectedCard = useCallback(async (cardId: string, opts?: { quiet?: boolean }) => {
@@ -1038,6 +1103,7 @@ export default function StudioWorkspace() {
               onSelectCard={selectCard}
               embeddedOrganizationCollapsed={paneVisibility.organizationCollapsed}
               embeddedCardsCollapsed={paneVisibility.cardsCollapsed}
+              embeddedRightSlotMinWidth={embeddedRightSlotMinWidth}
               onStudioRelationshipDragEnd={onStudioRelationshipDragEnd}
               embeddedUnparentedReplacement={(ctx) => (
                 <StudioTreeCandidateCardBank
@@ -1054,7 +1120,7 @@ export default function StudioWorkspace() {
                 const showQuestionsPane = !paneVisibility.questionsCollapsed;
                 const showMediaPane = !paneVisibility.mediaCollapsed;
                 return (
-                  <div className={styles.studioRightColumn}>
+                  <div ref={studioRightColumnRef} className={styles.studioRightColumn}>
                     {actionInfo || actionError ? (
                       <div className={styles.studioActionStrip}>
                         {actionInfo ? (
@@ -1072,7 +1138,7 @@ export default function StudioWorkspace() {
                     <div
                       ref={bindStudioMediaCardRowRef}
                       className={
-                        wideLayout
+                        resizableWorkspaceLayout
                           ? `${styles.studioMediaCardRow} ${styles.studioMediaCardRowResizable}`
                           : styles.studioMediaCardRow
                       }
@@ -1082,7 +1148,7 @@ export default function StudioWorkspace() {
                           ref={cardEditColumnRef}
                           className={styles.studioCardEditInBankColumn}
                           style={
-                            wideLayout && (showQuestionsPane || showMediaPane)
+                            resizableWorkspaceLayout && (showQuestionsPane || showMediaPane)
                               ? {
                                   flex: `0 0 ${cardEditWidth}px`,
                                   width: cardEditWidth,
@@ -1101,7 +1167,7 @@ export default function StudioWorkspace() {
                           />
                         </div>
                       ) : null}
-                      {wideLayout && showComposePane && (showQuestionsPane || showMediaPane) ? (
+                      {resizableWorkspaceLayout && showComposePane && (showQuestionsPane || showMediaPane) ? (
                         <div
                           className={`${styles.resizeHandle} ${styles.cardEditColumnResizeHandle}`}
                           role="separator"
@@ -1118,7 +1184,7 @@ export default function StudioWorkspace() {
                           ref={questionsColumnRef}
                           className={styles.studioQuestionsColumn}
                           style={
-                            wideLayout && showMediaPane
+                            resizableWorkspaceLayout && showMediaPane
                               ? {
                                   flex: `0 0 ${questionsWidth}px`,
                                   width: questionsWidth,
@@ -1134,7 +1200,7 @@ export default function StudioWorkspace() {
                           <StudioQuestionsPane />
                         </div>
                       ) : null}
-                      {wideLayout && showQuestionsPane && showMediaPane ? (
+                      {resizableWorkspaceLayout && showQuestionsPane && showMediaPane ? (
                         <div
                           className={`${styles.resizeHandle} ${styles.questionsColumnResizeHandle}`}
                           role="separator"

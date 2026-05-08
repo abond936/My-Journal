@@ -1,10 +1,14 @@
 .appShell {
     display: flex;
     flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     height: 100vh;
     overflow: hidden;
     overflow-x: hidden;
     position: relative;
+    box-sizing: border-box;
   }
 
   .appShell::before,
@@ -39,6 +43,8 @@
   top: 0;
   left: 0;
   right: 0;
+  width: 100%;
+  max-width: 100%;
   height: var(--header-height);
   z-index: var(--z-index-header);
   background: var(--reader-header-background-color);
@@ -51,6 +57,9 @@
   .contentWrapper {
     display: flex;
     flex: 1;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     min-height: 0; /* allow nested flex child to shrink so main can scroll */
     padding-top: var(--header-height);
     overflow: hidden;
@@ -63,7 +72,7 @@
   position: absolute;
   left: var(--spacing-md);
   top: calc((var(--header-height) - 44px) / 2);
-  z-index: 2;
+  z-index: 4;
   background: var(--reader-support-control-background-color);
   color: var(--reader-support-control-text-color);
   border: none;
@@ -93,7 +102,10 @@
   
   .sidebarWrapper {
     height: 100%; /* Make sidebar wrapper take full viewport height */
+    flex: 0 0 auto;
     width: 0;
+    max-width: 100%;
+    min-width: 0;
     overflow: hidden;
     transition: width var(--transition-short) ease;
     position: relative;
@@ -113,8 +125,11 @@
   }
   
 .mainContent {
-  flex: 1;
+  flex: 1 1 0%;
+  width: 0;
+  max-width: 100%;
   min-height: 0; /* critical: without this, overflow-y may never show content in flex layouts */
+  box-sizing: border-box;
   overflow-y: auto;
   overflow-x: hidden;
   padding: var(--spacing-lg);

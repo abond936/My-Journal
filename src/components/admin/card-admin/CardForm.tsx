@@ -730,7 +730,11 @@ const CardForm: React.FC = () => {
           </form>
         </DndContext>
       ) : (
-      <form id="card-form" onSubmit={handleSubmit} className={styles.form}>
+      <form
+        id="card-form"
+        onSubmit={handleSubmit}
+        className={clsx(styles.form, studioShellForm && styles.compactShellForm)}
+      >
         <div className={styles.mainContent}>
           {saveNotice ? (
             <div

@@ -243,6 +243,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
           sourcePathFirst={duplicateTriageMode}
           dimensionFilters={dimensionFilters}
           studioSourceDraggable={embedded && studioSourceDraggable}
+          inlineCaptionEditing={embedded}
           clientSort={embedded ? clientSort : 'none'}
         />
       )}

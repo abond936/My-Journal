@@ -6,6 +6,7 @@ import { useCardContext } from '@/components/providers/CardProvider';
 import styles from './ViewPage.module.css';
 import AdminFAB from '@/components/admin/card-admin/AdminFAB';
 import CardFeedV2 from '@/components/view/CardFeedV2';
+import ViewMediaFeed from '@/components/view/ViewMediaFeed';
 
 const SCROLL_POSITION_KEY = 'contentViewScrollPos';
 const FOCUS_CARD_KEY = 'contentViewFocusCardId';
@@ -32,6 +33,8 @@ function ViewPageContent() {
     isInitialLoading,
     isRefreshing,
     error,
+    browseTarget,
+    readerMode,
   } =
     useCardContext();
   const searchParams = useSearchParams();
@@ -125,6 +128,15 @@ function ViewPageContent() {
       ? error.message.trim()
       : 'The journal view could not refresh right now.';
   
+  if (browseTarget === 'media' && readerMode === 'freeform') {
+    return (
+      <div className={styles.page}>
+        <ViewMediaFeed />
+        <AdminFAB />
+      </div>
+    );
+  }
+
   if (error) {
     return (
       <div className={`${styles.page} ${styles.errorState}`} role="alert">

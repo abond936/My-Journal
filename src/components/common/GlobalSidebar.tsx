@@ -84,6 +84,8 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     activeDimension,
     readerMode,
     setReaderMode,
+    browseTarget,
+    setBrowseTarget,
     setActiveDimension,
     collectionId,
     setCollectionId,
@@ -172,6 +174,8 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
 
   const isCollectionsMode = readerMode === 'guided';
   const isTagMode = !isCollectionsMode;
+  const effectiveBrowseTarget = isCollectionsMode ? 'cards' : browseTarget;
+  const isMediaBrowse = effectiveBrowseTarget === 'media';
   const showViewTagLibrary = Boolean(isAdmin && isTagMode && isViewRoute);
 
   const persistViewTagSidebarTab = useCallback((tab: 'filter' | 'library') => {
@@ -373,42 +377,65 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
           <div className={styles.sidebarHeader}>
             <div className={styles.headerTopRow}>
               <h2 className={styles.title}>Explore</h2>
-              <div className={styles.modeTabs} role="tablist" aria-label="Browsing mode">
+            </div>
+            {isTagMode ? (
+              <div className={styles.browseTargetTabs} role="tablist" aria-label="Browse target">
                 <button
                   type="button"
                   role="tab"
-                  aria-selected={readerMode === 'guided'}
-                  className={`${styles.modeTab} ${readerMode === 'guided' ? styles.modeTabActive : ''}`}
-                  onClick={() => handleSetBrowseMode('guided')}
+                  aria-selected={effectiveBrowseTarget === 'cards'}
+                  className={`${styles.browseTargetTab} ${effectiveBrowseTarget === 'cards' ? styles.browseTargetTabActive : ''}`}
+                  onClick={() => setBrowseTarget('cards')}
                 >
-                  Guided
+                  Cards
                 </button>
                 <button
                   type="button"
                   role="tab"
-                  aria-selected={readerMode === 'freeform'}
-                  className={`${styles.modeTab} ${readerMode === 'freeform' ? styles.modeTabActive : ''}`}
-                  onClick={() => handleSetBrowseMode('freeform')}
+                  aria-selected={effectiveBrowseTarget === 'media'}
+                  className={`${styles.browseTargetTab} ${effectiveBrowseTarget === 'media' ? styles.browseTargetTabActive : ''}`}
+                  onClick={() => setBrowseTarget('media')}
                 >
-                  Freeform
-                </button>
-                <button
-                  type="button"
-                  onClick={handleClearFiltersClick}
-                  className={styles.clearButtonCompact}
-                  aria-label="Clear filters"
-                  title={readerMode === 'guided' ? 'Clear filters disabled in Guided mode' : 'Clear filters'}
-                  disabled={readerMode === 'guided'}
-                >
-                  <FunnelX strokeWidth={2} />
-                  <span className={styles.srOnly}>Clear filters</span>
+                  Media
                 </button>
               </div>
+            ) : null}
+            <div className={styles.modeTabs} role="tablist" aria-label="Browsing mode">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={readerMode === 'guided'}
+                className={`${styles.modeTab} ${readerMode === 'guided' ? styles.modeTabActive : ''}`}
+                onClick={() => handleSetBrowseMode('guided')}
+              >
+                Guided
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={readerMode === 'freeform'}
+                className={`${styles.modeTab} ${readerMode === 'freeform' ? styles.modeTabActive : ''}`}
+                onClick={() => handleSetBrowseMode('freeform')}
+              >
+                Freeform
+              </button>
+              <button
+                type="button"
+                onClick={handleClearFiltersClick}
+                className={styles.clearButtonCompact}
+                aria-label="Clear filters"
+                title={readerMode === 'guided' ? 'Clear filters disabled in Guided mode' : 'Clear filters'}
+                disabled={readerMode === 'guided'}
+              >
+                <FunnelX strokeWidth={2} />
+                <span className={styles.srOnly}>Clear filters</span>
+              </button>
             </div>
           </div>
 
           {isTagMode ? (
             <>
+              {!isMediaBrowse ? (
               <div className={styles.sidebarSection}>
                 <div className={styles.sectionControlRow}>
                   <h3 className={styles.sectionHeading}>Cards</h3>
@@ -441,6 +468,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                   </div>
                 </div>
               </div>
+              ) : null}
 
               <div className={styles.sidebarSection}>
                 {!showViewTagLibrary || viewTagSidebarTab === 'filter' ? (
@@ -557,11 +585,11 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                         <div className={styles.inlineFieldRow}>
                           <select
                             id="feed-sort-select"
-                          value={feedSort}
-                          onChange={(e) => {
-                            setFeedSort(e.target.value as FeedSortOrder);
-                            returnToFeedIfViewingDetail();
-                          }}
+                            value={feedSort}
+                            onChange={(e) => {
+                              setFeedSort(e.target.value as FeedSortOrder);
+                              returnToFeedIfViewingDetail();
+                            }}
                             className={`${styles.compactControl} ${styles.compactControlInline}`}
                             aria-label="Sort card feed"
                           >
@@ -580,24 +608,26 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                             <option value="whereDesc">Sort by Where (Z-A)</option>
                           </select>
                         </div>
-                        <div className={styles.inlineFieldRow}>
-                          <select
-                            id="feed-group-select"
-                          value={feedGroupBy}
-                          onChange={(e) => {
-                            setFeedGroupBy(e.target.value as FeedGroupBy);
-                            returnToFeedIfViewingDetail();
-                          }}
-                            className={`${styles.compactControl} ${styles.compactControlInline}`}
-                            aria-label="Group card feed"
-                          >
-                            <option value="none">Group by None</option>
-                            <option value="when">Group by When</option>
-                            <option value="who">Group by Who</option>
-                            <option value="where">Group by Where</option>
-                            <option value="what">Group by What</option>
-                          </select>
-                        </div>
+                        {!isMediaBrowse ? (
+                          <div className={styles.inlineFieldRow}>
+                            <select
+                              id="feed-group-select"
+                              value={feedGroupBy}
+                              onChange={(e) => {
+                                setFeedGroupBy(e.target.value as FeedGroupBy);
+                                returnToFeedIfViewingDetail();
+                              }}
+                              className={`${styles.compactControl} ${styles.compactControlInline}`}
+                              aria-label="Group card feed"
+                            >
+                              <option value="none">Group by None</option>
+                              <option value="when">Group by When</option>
+                              <option value="who">Group by Who</option>
+                              <option value="where">Group by Where</option>
+                              <option value="what">Group by What</option>
+                            </select>
+                          </div>
+                        ) : null}
                       </div>
                     </>
                   ) : null}

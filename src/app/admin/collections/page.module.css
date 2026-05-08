@@ -2,6 +2,10 @@
   padding: var(--spacing-md);
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   /* Fill viewport under admin tabs so the three-column layout can grow. */
   min-height: calc(100dvh - var(--admin-tabs-height, 56px) - 1.5rem);
 }
@@ -9,7 +13,10 @@
 /* Fills space below chrome; DndContext has no DOM node so this wrapper carries flex height. */
 .mainShell {
   flex: 1;
+  width: 100%;
+  max-width: 100%;
   min-height: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
 }
@@ -47,10 +54,14 @@
   /* grid-template-columns set inline when wide (tree | handle | unparent | handle | media). */
   gap: var(--spacing-md);
   align-items: stretch;
+  width: 100%;
+  max-width: 100%;
   min-height: 0;
+  min-width: 0;
   flex: 1;
   /* Keep wide tables / grid cards from painting over sibling columns (grid overflow is visible by default). */
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .layout > *:not(.colResizeHandle) {
@@ -62,9 +73,13 @@
   flex-direction: column;
   gap: var(--spacing-md);
   align-items: stretch;
+  width: 100%;
+  max-width: 100%;
   min-height: 0;
+  min-width: 0;
   flex: 1;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .colResizeHandle {
@@ -779,11 +794,16 @@
 /* Embedded in Admin Studio (narrower chrome, tighter panels) */
 .studioEmbeddedRoot {
   padding: 0;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 0;
   flex: 1;
   height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .studioEmbeddedChrome {

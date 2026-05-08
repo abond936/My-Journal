@@ -2,10 +2,13 @@
   display: flex;
   flex-direction: column;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 100dvh;
   height: 100dvh;
   font-family: var(--body-font-family);
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .simplifiedLayout input,
@@ -21,29 +24,40 @@
 }
 
 .topNavContainer {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   padding: 0 var(--spacing-lg);
   border-bottom: var(--border-width-thin) solid var(--admin-window-border-color);
   background-color: var(--admin-window-background-color);
   position: sticky;
   top: 0;
   z-index: 60;
+  box-sizing: border-box;
 }
 
 .pageContent {
   flex: 1;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .pageShell {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .layout {

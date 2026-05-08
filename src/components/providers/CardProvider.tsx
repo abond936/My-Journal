@@ -36,6 +36,7 @@ export type CardFilterType = 'all' | 'story' | 'qa' | 'quote' | 'callout' | 'gal
 export type CardStatus = 'all' | 'draft' | 'published';
 export type ActiveDimension = 'all' | 'who' | 'what' | 'when' | 'where' | 'collections';
 export type ReaderMode = 'guided' | 'freeform';
+export type BrowseTarget = 'cards' | 'media';
 
 /** Card-level dimensional tags: filter to cards with no tags in that dimension (API: `whoMissing`, etc.). Mutually exclusive with sidebar tag picks for the same dimension (missing wins). */
 export type CardDimensionMissing = {
@@ -71,6 +72,7 @@ export interface ICardContext {
   searchTerm: string;
   status: CardStatus;
   readerMode: ReaderMode;
+  browseTarget: BrowseTarget;
   activeDimension: ActiveDimension;
   collectionId: string | null;
   collectionCards: Card[]; // Flat list of collection parent cards
@@ -93,6 +95,7 @@ export interface ICardContext {
   setSearchTerm: (term: string) => void;
   setStatus: (status: CardStatus) => void;
   setReaderMode: (mode: ReaderMode) => void;
+  setBrowseTarget: (target: BrowseTarget) => void;
   setActiveDimension: (dim: ActiveDimension) => void;
   setCollectionId: (id: string | null) => void;
   setFeedSort: (order: FeedSortOrder) => void;
@@ -125,6 +128,7 @@ const FEED_SORT_KEY = 'myjournal-feed-sort';
 const FEED_GROUP_KEY = 'myjournal-feed-group';
 const FEED_INCLUDE_SUBTAGS_KEY = 'myjournal-feed-include-subtags';
 const FEED_CARD_TYPES_KEY = 'myjournal-feed-card-types';
+const BROWSE_TARGET_KEY = 'myjournal-browse-target';
 
 const FEED_SORT_VALUES = new Set<string>([
   'random',
@@ -166,6 +170,12 @@ function readStoredReaderMode(): ReaderMode {
   if (typeof window === 'undefined') return 'guided';
   const raw = readStoredValue(READER_MODE_KEY);
   return raw === 'freeform' ? 'freeform' : 'guided';
+}
+
+function readStoredBrowseTarget(): BrowseTarget {
+  if (typeof window === 'undefined') return 'cards';
+  const raw = readStoredValue(BROWSE_TARGET_KEY);
+  return raw === 'media' ? 'media' : 'cards';
 }
 
 function readStoredFeedGroup(): FeedGroupBy {
@@ -254,6 +264,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   // Default published so pre-session and non-admin requests never send status=all (403 on API).
   const [status, setStatus] = useState<CardStatus>('published');
   const [readerMode, setReaderModeState] = useState<ReaderMode>(() => readStoredReaderMode());
+  const [browseTarget, setBrowseTargetState] = useState<BrowseTarget>(() => readStoredBrowseTarget());
   const [pageLimit, setPageLimit] = useState(20);
   const [activeDimension, setActiveDimensionState] = useState<ActiveDimension>(() => {
     if (typeof window === 'undefined') return 'collections';
@@ -313,7 +324,17 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   const setReaderMode = useCallback((mode: ReaderMode) => {
     setReaderModeState(mode);
     if (typeof window !== 'undefined') window.localStorage.setItem(READER_MODE_KEY, mode);
+    if (mode === 'guided') {
+      setBrowseTargetState('cards');
+      if (typeof window !== 'undefined') window.localStorage.setItem(BROWSE_TARGET_KEY, 'cards');
+    }
   }, []);
+
+  const setBrowseTarget = useCallback((target: BrowseTarget) => {
+    const next = readerMode === 'guided' ? 'cards' : target;
+    setBrowseTargetState(next);
+    if (typeof window !== 'undefined') window.localStorage.setItem(BROWSE_TARGET_KEY, next);
+  }, [readerMode]);
 
   const setActiveDimension = useCallback((dim: ActiveDimension) => {
     setActiveDimensionState(dim);
@@ -752,6 +773,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       searchTerm,
       status,
       readerMode,
+      browseTarget,
       activeDimension,
       collectionId,
       collectionCards,
@@ -769,6 +791,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       setSearchTerm,
       setStatus,
       setReaderMode,
+      setBrowseTarget,
       setActiveDimension,
       setCollectionId,
       setFeedSort,
@@ -797,6 +820,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       searchTerm,
       status,
       readerMode,
+      browseTarget,
       activeDimension,
       collectionId,
       collectionCards,
@@ -814,6 +838,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       setSearchTerm,
       setStatus,
       setReaderMode,
+      setBrowseTarget,
       setActiveDimension,
       setCollectionId,
       setFeedSort,

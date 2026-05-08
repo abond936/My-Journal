@@ -747,3 +747,28 @@
   align-items: center;
   justify-content: center;
 }
+  .browseTargetTabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-xs);
+    margin-top: var(--spacing-xs);
+  }
+
+  .browseTargetTab {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-family: var(--reader-support-control-font-family);
+    font-size: var(--reader-support-control-font-size);
+    font-weight: var(--reader-support-control-font-weight);
+    line-height: var(--reader-support-control-line-height);
+    background: var(--reader-support-control-background-color);
+    border: var(--border-width-thin) solid var(--reader-support-control-border-color);
+    border-radius: var(--border-radius-md);
+    color: var(--reader-support-control-text-color);
+    cursor: pointer;
+  }
+
+  .browseTargetTabActive {
+    background-color: var(--reader-chrome-active-control-background-color);
+    color: var(--reader-chrome-active-control-text-color);
+    border-color: var(--reader-chrome-active-control-border-color);
+  }

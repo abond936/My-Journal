@@ -34,6 +34,7 @@ export interface MediaAdminGridCellProps {
   isSelected: boolean;
   onSelectionCheckboxClick: (e: React.MouseEvent | React.KeyboardEvent, mediaId: string, mediaIndex: number) => void;
   studioDragBind?: MediaAdminRowStudioDragBind;
+  inlineCaptionEditing?: boolean;
 }
 
 type DimensionKey = 'who' | 'what' | 'when' | 'where';
@@ -68,11 +69,13 @@ function MediaAdminGridCell({
   isSelected,
   onSelectionCheckboxClick,
   studioDragBind,
+  inlineCaptionEditing = false,
 }: MediaAdminGridCellProps) {
   const core = useMemo(() => getCoreTagsByDimension(media), [media]);
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [captionDraft, setCaptionDraft] = useState(media.caption || '');
+  const [captionSaving, setCaptionSaving] = useState(false);
   const [focalH, setFocalH] = useState(50);
   const [focalV, setFocalV] = useState(50);
   const [savingFields, setSavingFields] = useState(false);
@@ -90,6 +93,11 @@ function MediaAdminGridCell({
     setFocalH(horizontal);
     setFocalV(vertical);
   }, [editModalOpen, media.caption, media.objectPosition]);
+
+  useEffect(() => {
+    if (editModalOpen || captionSaving) return;
+    setCaptionDraft(media.caption || '');
+  }, [captionSaving, editModalOpen, media.caption, media.docId]);
 
   const handleTagUpdate = useCallback(
     async (nextTagIds: string[]) => {
@@ -144,6 +152,18 @@ function MediaAdminGridCell({
       setSavingFields(false);
     }
   }, [captionDraft, focalPreviewPosition, media.docId, onSaveMediaFields]);
+
+  const handleInlineCaptionSave = useCallback(async () => {
+    if (!inlineCaptionEditing || !media.docId) return;
+    if (captionDraft === (media.caption || '')) return;
+    setCaptionSaving(true);
+    try {
+      await onSaveMediaFields(media.docId, { caption: captionDraft });
+      setSaveNotice('Caption saved');
+    } finally {
+      setCaptionSaving(false);
+    }
+  }, [captionDraft, inlineCaptionEditing, media.caption, media.docId, onSaveMediaFields]);
 
   const assigned = (media.referencedByCardIds?.length ?? 0) > 0;
   const studioRootExtras = studioDragBind
@@ -236,7 +256,29 @@ function MediaAdminGridCell({
       }
       belowThumbnail={
         <>
-          {displayTitle ? (
+          {inlineCaptionEditing ? (
+            <div className={styles.mediaTitle}>
+              <textarea
+                id={`media-inline-caption-${media.docId}`}
+                rows={2}
+                className={styles.inlineCaptionInput}
+                value={captionDraft}
+                placeholder=" "
+                onChange={(e) => setCaptionDraft(e.target.value)}
+                onBlur={() => void handleInlineCaptionSave()}
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    void handleInlineCaptionSave();
+                    e.currentTarget.blur();
+                  }
+                }}
+                aria-label={`Caption for ${media.filename}`}
+              />
+            </div>
+          ) : displayTitle ? (
             <div className={styles.mediaTitle} title={displayTitle}>
               {displayTitle}
             </div>
@@ -348,7 +390,8 @@ const MemoizedMediaAdminGridCell = React.memo(MediaAdminGridCell, (prev, next) =
     prev.onSaveMediaFields === next.onSaveMediaFields &&
     prev.isSelected === next.isSelected &&
     prev.onSelectionCheckboxClick === next.onSelectionCheckboxClick &&
-    prev.studioDragBind === next.studioDragBind
+    prev.studioDragBind === next.studioDragBind &&
+    prev.inlineCaptionEditing === next.inlineCaptionEditing
   );
 });
 
@@ -396,11 +439,13 @@ export default function MediaAdminGrid({
   sourcePathFirst = false,
   dimensionFilters,
   studioSourceDraggable = false,
+  inlineCaptionEditing = false,
   clientSort = 'none',
 }: {
   sourcePathFirst?: boolean;
   dimensionFilters: DimensionFilters;
   studioSourceDraggable?: boolean;
+  inlineCaptionEditing?: boolean;
   clientSort?: 'none' | 'filenameAsc' | 'filenameDesc';
 }) {
   const { media, selectedMediaIds, setSelectedMediaIds, updateMedia } = useMedia();
@@ -534,6 +579,7 @@ export default function MediaAdminGrid({
               onSaveMediaFields={handleSaveMediaFields}
               isSelected={selectedMediaIds.includes(item.docId)}
               onSelectionCheckboxClick={handleGridSelection}
+              inlineCaptionEditing={inlineCaptionEditing}
             />
           ) : (
             <MemoizedMediaAdminGridCell
@@ -546,6 +592,7 @@ export default function MediaAdminGrid({
               onSaveMediaFields={handleSaveMediaFields}
               isSelected={selectedMediaIds.includes(item.docId)}
               onSelectionCheckboxClick={handleGridSelection}
+              inlineCaptionEditing={inlineCaptionEditing}
             />
           )
         )}

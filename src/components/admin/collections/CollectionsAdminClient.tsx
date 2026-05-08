@@ -61,10 +61,25 @@ import { mergeStudioCatalogCard, toStudioCatalogCard } from '@/components/admin/
 const COLLECTIONS_CENTER_COLUMNS_KEY = 'collectionsCenterPaneWidths';
 const COLLECTIONS_TREE_EXPANSION_KEY = 'collectionsTreeExpandedIds';
 const COL_HANDLE = 8;
-const MIN_TREE_COL = 200;
-const MIN_UNPARENT_COL = 200;
+const MIN_TREE_COL = 180;
+const MIN_UNPARENT_COL = 180;
 /** Minimum width for the Media / Studio right column (grid area); user-resizable. Kept below old 280px to reduce default horizontal sprawl. */
-const MIN_MEDIA_COL = 220;
+const MIN_MEDIA_COL = 200;
+
+function centerWideLayoutMinWidth(opts: {
+  organization: boolean;
+  cards: boolean;
+  rightSlotMinWidth: number;
+}): number {
+  const visibleColumns = [opts.organization, opts.cards, true].filter(Boolean).length;
+  const handleCount = Math.max(0, visibleColumns - 1);
+  return (
+    (opts.organization ? MIN_TREE_COL : 0) +
+    (opts.cards ? MIN_UNPARENT_COL : 0) +
+    opts.rightSlotMinWidth +
+    handleCount * COL_HANDLE
+  );
+}
 
 function clamp(n: number, lo: number, hi: number) {
   return Math.min(hi, Math.max(lo, n));
@@ -293,6 +308,7 @@ export default function CollectionsAdminClient({
   embedded = false,
   onSelectCard,
   embeddedRightSlot,
+  embeddedRightSlotMinWidth,
   embeddedUnparentedReplacement,
   embeddedOrganizationCollapsed = false,
   embeddedCardsCollapsed = false,
@@ -301,6 +317,7 @@ export default function CollectionsAdminClient({
   embedded?: boolean;
   onSelectCard?: (cardId: string, previewCard?: Card | null) => void;
   embeddedRightSlot?: React.ReactNode | ((ctx: EmbeddedStudioSlotContext) => React.ReactNode);
+  embeddedRightSlotMinWidth?: number;
   /** When set with `embedded`, replaces the title-only unparented list with this UI (e.g. card admin table/grid). */
   embeddedUnparentedReplacement?: (ctx: EmbeddedUnparentedBankContext) => React.ReactNode;
   embeddedOrganizationCollapsed?: boolean;
@@ -343,6 +360,7 @@ export default function CollectionsAdminClient({
   const studioAttachBank = embedded && Boolean(embeddedUnparentedReplacement);
   const showOrganizationPane = !(studioAttachBank && embeddedOrganizationCollapsed);
   const showCardsPane = !(studioAttachBank && embeddedCardsCollapsed);
+  const rightSlotMinWidth = Math.max(MIN_MEDIA_COL, embeddedRightSlotMinWidth ?? MIN_MEDIA_COL);
   const treeDropZonesReadOnly = !curatedTreeDnd;
   /** Studio embed registers its own droppables; keep DndContext when embedded even if tree drag is off. */
   const needsDndContext = curatedTreeDnd || Boolean(embeddedRightSlot);
@@ -373,12 +391,43 @@ export default function CollectionsAdminClient({
   }, []);
 
   useEffect(() => {
+    if (embedded) {
+      setWideCenterLayout(true);
+      return;
+    }
     const mq = window.matchMedia(`(min-width: ${EMBEDDED_ADMIN_WIDE_MIN_WIDTH_PX}px)`);
-    const apply = () => setWideCenterLayout(mq.matches);
+    const apply = () => {
+      const layoutWidth = layoutRef.current?.getBoundingClientRect().width ?? 0;
+      const minRequiredWidth = centerWideLayoutMinWidth({
+        organization: showOrganizationPane,
+        cards: showCardsPane,
+        rightSlotMinWidth,
+      });
+      setWideCenterLayout(mq.matches && layoutWidth >= minRequiredWidth);
+    };
     apply();
     mq.addEventListener('change', apply);
     return () => mq.removeEventListener('change', apply);
-  }, []);
+  }, [embedded, rightSlotMinWidth, showCardsPane, showOrganizationPane]);
+
+  useLayoutEffect(() => {
+    if (embedded) {
+      setWideCenterLayout(true);
+      return;
+    }
+    const el = layoutRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      const minRequiredWidth = centerWideLayoutMinWidth({
+        organization: showOrganizationPane,
+        cards: showCardsPane,
+        rightSlotMinWidth,
+      });
+      setWideCenterLayout(el.getBoundingClientRect().width >= minRequiredWidth);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [embedded, rightSlotMinWidth, showCardsPane, showOrganizationPane]);
 
   useEffect(() => {
     try {
@@ -414,20 +463,20 @@ export default function CollectionsAdminClient({
       const el = layoutRef.current;
       if (!el || !wideCenterLayout) return;
       if (!showOrganizationPane && !showCardsPane) {
-        el.style.gridTemplateColumns = `minmax(${MIN_MEDIA_COL}px, 1fr)`;
+        el.style.gridTemplateColumns = `minmax(${rightSlotMinWidth}px, 1fr)`;
         return;
       }
       if (!showOrganizationPane) {
-        el.style.gridTemplateColumns = `${unparent}px ${COL_HANDLE}px minmax(${MIN_MEDIA_COL}px, 1fr)`;
+        el.style.gridTemplateColumns = `${unparent}px ${COL_HANDLE}px minmax(${rightSlotMinWidth}px, 1fr)`;
         return;
       }
       if (!showCardsPane) {
-        el.style.gridTemplateColumns = `${tree}px ${COL_HANDLE}px minmax(${MIN_MEDIA_COL}px, 1fr)`;
+        el.style.gridTemplateColumns = `${tree}px ${COL_HANDLE}px minmax(${rightSlotMinWidth}px, 1fr)`;
         return;
       }
-      el.style.gridTemplateColumns = `${tree}px ${COL_HANDLE}px ${unparent}px ${COL_HANDLE}px minmax(${MIN_MEDIA_COL}px, 1fr)`;
+      el.style.gridTemplateColumns = `${tree}px ${COL_HANDLE}px ${unparent}px ${COL_HANDLE}px minmax(${rightSlotMinWidth}px, 1fr)`;
     },
-    [showCardsPane, showOrganizationPane, wideCenterLayout]
+    [rightSlotMinWidth, showCardsPane, showOrganizationPane, wideCenterLayout]
   );
 
   const normalizeWidthsToContainer = useCallback(() => {
@@ -435,14 +484,14 @@ export default function CollectionsAdminClient({
     if (!el || !wideCenterLayout || colDragSessionRef.current) return;
     const gapPx = parseGapPx(el);
     const usable = el.clientWidth - 2 * COL_HANDLE - 4 * gapPx;
-    if (usable < MIN_TREE_COL + MIN_UNPARENT_COL + MIN_MEDIA_COL) return;
+    if (usable < MIN_TREE_COL + MIN_UNPARENT_COL + rightSlotMinWidth) return;
 
     const t = wTreeRef.current;
     const u = wUnparentRef.current;
-    let nt = clamp(t, MIN_TREE_COL, usable - MIN_UNPARENT_COL - MIN_MEDIA_COL);
-    let nu = clamp(u, MIN_UNPARENT_COL, usable - MIN_TREE_COL - MIN_MEDIA_COL);
-    if (nt + nu + MIN_MEDIA_COL > usable) {
-      const pairBudget = usable - MIN_MEDIA_COL;
+    let nt = clamp(t, MIN_TREE_COL, usable - MIN_UNPARENT_COL - rightSlotMinWidth);
+    let nu = clamp(u, MIN_UNPARENT_COL, usable - MIN_TREE_COL - rightSlotMinWidth);
+    if (nt + nu + rightSlotMinWidth > usable) {
+      const pairBudget = usable - rightSlotMinWidth;
       nt = clamp(t, MIN_TREE_COL, pairBudget - MIN_UNPARENT_COL);
       nu = pairBudget - nt;
       if (nu < MIN_UNPARENT_COL) {
@@ -456,7 +505,7 @@ export default function CollectionsAdminClient({
     }
     if (nt !== t) setWTree(nt);
     if (nu !== u) setWUnparent(nu);
-  }, [wideCenterLayout]);
+  }, [rightSlotMinWidth, wideCenterLayout]);
 
   useLayoutEffect(() => {
     const measure = () => {
@@ -523,7 +572,7 @@ export default function CollectionsAdminClient({
           nextTree = clamp(session.startTree + dx, MIN_TREE_COL, s - MIN_UNPARENT_COL);
           nextUnparent = s - nextTree;
         } else {
-          const maxWidth = usable - session.fixedLeading - MIN_MEDIA_COL;
+          const maxWidth = usable - session.fixedLeading - rightSlotMinWidth;
           const minWidth = session.target === 'tree' ? MIN_TREE_COL : MIN_UNPARENT_COL;
           const raw = session.startWidth + dx;
           const nextWidth = maxWidth < minWidth ? minWidth : clamp(raw, minWidth, maxWidth);
@@ -571,15 +620,15 @@ export default function CollectionsAdminClient({
       window.addEventListener('pointerup', onUp);
       window.addEventListener('pointercancel', onUp);
     },
-    [applyCenterGridTemplate, persistCenterWidths, showCardsPane, showOrganizationPane, wideCenterLayout]
+    [applyCenterGridTemplate, persistCenterWidths, rightSlotMinWidth, showCardsPane, showOrganizationPane, wideCenterLayout]
   );
 
   const centerGridStyle = useMemo((): React.CSSProperties | undefined => {
     if (!wideCenterLayout) return undefined;
     return {
-      gridTemplateColumns: `${wTree}px ${COL_HANDLE}px ${wUnparent}px ${COL_HANDLE}px minmax(${MIN_MEDIA_COL}px, 1fr)`,
+      gridTemplateColumns: `${wTree}px ${COL_HANDLE}px ${wUnparent}px ${COL_HANDLE}px minmax(${rightSlotMinWidth}px, 1fr)`,
     };
-  }, [wideCenterLayout, wTree, wUnparent]);
+  }, [rightSlotMinWidth, wideCenterLayout, wTree, wUnparent]);
 
   const upsertEmbeddedCard = useCallback((card: Card) => {
     if (!card?.docId) return;
@@ -1248,16 +1297,16 @@ export default function CollectionsAdminClient({
   const collectionsCenterGridStyle = useMemo((): React.CSSProperties | undefined => {
     if (!wideCenterLayout) return undefined;
     if (!showOrganizationPane && !showCardsPane) {
-      return { gridTemplateColumns: `minmax(${MIN_MEDIA_COL}px, 1fr)` };
+      return { gridTemplateColumns: `minmax(${rightSlotMinWidth}px, 1fr)` };
     }
     if (!showOrganizationPane) {
-      return { gridTemplateColumns: `${wUnparent}px ${COL_HANDLE}px minmax(${MIN_MEDIA_COL}px, 1fr)` };
+      return { gridTemplateColumns: `${wUnparent}px ${COL_HANDLE}px minmax(${rightSlotMinWidth}px, 1fr)` };
     }
     if (!showCardsPane) {
-      return { gridTemplateColumns: `${wTree}px ${COL_HANDLE}px minmax(${MIN_MEDIA_COL}px, 1fr)` };
+      return { gridTemplateColumns: `${wTree}px ${COL_HANDLE}px minmax(${rightSlotMinWidth}px, 1fr)` };
     }
     return centerGridStyle;
-  }, [centerGridStyle, showCardsPane, showOrganizationPane, wTree, wUnparent, wideCenterLayout]);
+  }, [centerGridStyle, rightSlotMinWidth, showCardsPane, showOrganizationPane, wTree, wUnparent, wideCenterLayout]);
 
   const collectionsCenterGrid = (
           <div

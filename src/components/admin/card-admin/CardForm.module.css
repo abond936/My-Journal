@@ -1,17 +1,25 @@
 .form {
   display: flex;
   flex-direction: column;
+  --card-form-shell-width: calc(100% + 28px);
   gap: var(--spacing-lg);
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   padding: var(--spacing-lg);
   max-width: var(--layout-container-max-width);
   margin: 0 auto;
   font-family: var(--body-font-family);
+  box-sizing: border-box;
 }
 
 .compactShellForm {
+  --card-form-shell-width: 100%;
   max-width: none;
   margin: 0;
   width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
   box-sizing: border-box;
 }
 
@@ -28,10 +36,12 @@
   flex-direction: column;
   gap: var(--spacing-lg);
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .saveNotice {
-  width: calc(100% + 28px);
+  width: var(--card-form-shell-width);
   max-width: none;
   box-sizing: border-box;
   border-radius: var(--border-radius-md);
@@ -53,7 +63,7 @@
 }
 
 .header {
-  width: calc(100% + 28px);
+  width: var(--card-form-shell-width);
   max-width: none;
   box-sizing: border-box;
 }
@@ -180,7 +190,7 @@
   border-radius: var(--input-border-radius);
   padding: var(--spacing-sm);
   background: var(--admin-support-control-background-color);
-  width: calc(100% + 28px);
+  width: var(--card-form-shell-width);
   max-width: none;
   box-sizing: border-box;
 }
@@ -319,7 +329,7 @@
 }
 
 .coverPhotoSection {
-  width: calc(100% + 28px);
+  width: var(--card-form-shell-width);
   max-width: none;
 }
 
@@ -358,7 +368,7 @@
 }
 
 .tagsSection {
-  width: calc(100% + 28px);
+  width: var(--card-form-shell-width);
   max-width: none;
 }
 
@@ -390,7 +400,7 @@
 }
 
 .editorSection {
-  width: calc(100% + 28px);
+  width: var(--card-form-shell-width);
   max-width: none;
 }
 
@@ -421,7 +431,7 @@
 }
 
 .childrenSection {
-  width: calc(100% + 28px);
+  width: var(--card-form-shell-width);
   max-width: none;
 }
 
@@ -475,14 +485,19 @@
   line-height: var(--admin-support-label-line-height);
 }
 
+.compactShellForm .mainContent,
 .compactShellForm .saveNotice,
 .compactShellForm .header,
 .compactShellForm .aiAssistSection,
 .compactShellForm .coverPhotoSection,
 .compactShellForm .tagsSection,
 .compactShellForm .editorSection,
+.compactShellForm .gallerySection,
 .compactShellForm .childrenSection {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .compactShellForm .statusSection {
