@@ -1,18 +1,21 @@
 'use client';
 
 import React, { useCallback, useMemo, useState } from 'react';
+import { ImageIcon, Save, Trash2, X } from 'lucide-react';
 import EditModal from '@/components/admin/card-admin/EditModal';
 import { useCardForm } from '@/components/providers/CardFormProvider';
+import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import { useStudioShellOptional } from '@/components/admin/studio/StudioShellContext';
 import { buildSingleCardDeletePrompt, fetchCardDeleteParents } from '@/lib/utils/cardDeleteWarnings';
 import styles from './StudioWorkspace.module.css';
 
 /**
- * Save / Cancel for Studio Compose — must render inside CardFormProvider.
- * Save uses `form="card-form"` so submit matches full-page CardForm (editor content + save notice).
+ * Save / Cancel for Studio Compose - must render inside CardFormProvider.
+ * Save uses `form="card-form"` so submit matches full-page CardForm.
  */
 export default function StudioComposeFormActions() {
   const { isDirty, resetForm, formState } = useCardForm();
+  const feedback = useAppFeedback();
   const { isSaving } = formState;
   const studioShell = useStudioShellOptional();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -21,11 +24,18 @@ export default function StudioComposeFormActions() {
   const [deleteDialogMessage, setDeleteDialogMessage] = useState('');
   const cardId = formState.cardData.docId || null;
 
-  const handleCancel = useCallback(() => {
+  const handleCancel = useCallback(async () => {
     if (!isDirty) return;
-    if (!window.confirm('Discard unsaved changes?')) return;
+    const shouldDiscard = await feedback.confirm({
+      title: 'Discard unsaved changes?',
+      message: 'Discard your unsaved changes and reset the form?',
+      confirmLabel: 'Discard',
+      cancelLabel: 'Keep editing',
+      tone: 'danger',
+    });
+    if (!shouldDiscard) return;
     resetForm();
-  }, [isDirty, resetForm]);
+  }, [feedback, isDirty, resetForm]);
 
   const openDeleteDialog = useCallback(async () => {
     if (!cardId) return;
@@ -61,25 +71,43 @@ export default function StudioComposeFormActions() {
             className={styles.studioComposeDeleteButton}
             disabled={isSaving || deleteDialogLoading}
             onClick={() => void openDeleteDialog()}
+            aria-label="Delete card"
+            title="Delete card"
           >
-            Delete
+            <Trash2 size={16} aria-hidden="true" />
+          </button>
+        ) : null}
+        {cardId && studioShell ? (
+          <button
+            type="button"
+            className={styles.studioComposeCancelButton}
+            disabled={!studioShell.hasSelectedCardMedia || isSaving}
+            onClick={() => studioShell.openSelectedCardMediaEditor()}
+            aria-label="Edit assigned media"
+            title="Edit assigned media"
+          >
+            <ImageIcon size={16} aria-hidden="true" />
           </button>
         ) : null}
         <button
           type="button"
           className={styles.studioComposeCancelButton}
           disabled={!isDirty || isSaving}
-          onClick={handleCancel}
+          onClick={() => void handleCancel()}
+          aria-label="Discard changes"
+          title="Discard changes"
         >
-          Cancel
+          <X size={16} aria-hidden="true" />
         </button>
         <button
           type="submit"
           form="card-form"
           className={styles.studioComposeSaveButton}
           disabled={!isDirty || isSaving}
+          aria-label={isSaving ? 'Saving card' : 'Save card'}
+          title={isSaving ? 'Saving card' : 'Save card'}
         >
-          {isSaving ? 'Saving…' : 'Save'}
+          <Save size={16} aria-hidden="true" />
         </button>
       </div>
       <EditModal
@@ -92,7 +120,7 @@ export default function StudioComposeFormActions() {
       >
         <div className={styles.studioComposeDeleteDialogBody}>
           {deleteDialogLoading ? (
-            <p className={styles.studioComposeDeleteDialogText}>Checking delete rules…</p>
+            <p className={styles.studioComposeDeleteDialogText}>Checking delete rules...</p>
           ) : (
             <>
               {deleteMessageLines.map((line, index) => (

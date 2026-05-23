@@ -47,7 +47,7 @@ export default function TagAdminStudioPane({ embeddedColumn = false }: { embedde
         className={`${embeddedColumn ? '' : tagAdminStyles.stickyTop} ${studioStyles.tagPaneHeader}`}
         ref={stickyTopRef}
       >
-        <h2 className={studioStyles.tagPaneTitle}>Tags</h2>
+        {embeddedColumn ? null : <h2 className={studioStyles.tagPaneTitle}>Tags</h2>}
       </div>
       {loading && <p className={studioStyles.tagPaneBody}>Loading tags…</p>}
       {error && <p className={tagAdminStyles.error}>{error.toString()}</p>}

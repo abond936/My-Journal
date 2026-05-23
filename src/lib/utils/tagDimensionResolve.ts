@@ -40,11 +40,25 @@ export function buildResolvedTagDimensionMap(allTags: Tag[]): Map<string, TagDim
   return map;
 }
 
-/** Path display: "Parent / … / Leaf" using tag names from `path` + self. */
+export function getTagPathIds(tag: Tag): string[] {
+  if (!tag.docId) return [];
+  const rawIds = tag.path?.length ? [...tag.path] : [];
+  if (rawIds[rawIds.length - 1] !== tag.docId) rawIds.push(tag.docId);
+
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  for (const id of rawIds) {
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    ids.push(id);
+  }
+  return ids;
+}
+
+/** Path display: "Parent / ... / Leaf" using tag names from `path` + self. */
 export function getTagPathDisplay(tag: Tag, tagById: Map<string, Tag>): string {
   if (!tag.docId) return tag.name;
-  const ids = [...(tag.path || []), tag.docId];
-  const names = ids
+  const names = getTagPathIds(tag)
     .map((id) => tagById.get(id)?.name)
     .filter((name): name is string => Boolean(name));
   return names.length ? names.join(' / ') : tag.name;

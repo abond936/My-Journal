@@ -16,6 +16,12 @@
   overflow: visible;
 }
 
+.editorContainerDraggingFigure {
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--admin-chrome-active-control-background-color) 18%, transparent),
+    0 16px 34px color-mix(in srgb, var(--admin-chrome-active-control-background-color) 12%, transparent);
+}
+
 .editorContainer.error {
   border-color: var(--state-error-border-color);
 }
@@ -87,6 +93,22 @@
   font-family: inherit;
   min-height: 200px;
   overflow: visible;
+  position: relative;
+  caret-color: var(--reader-support-control-text-color);
+}
+
+.editorContent :global(.ProseMirror.ProseMirror-focused) {
+  outline: none;
+}
+
+.editorContent :global(.ProseMirror-dropcursor) {
+  border-left: 4px solid var(--admin-chrome-active-control-background-color) !important;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--admin-chrome-active-control-background-color) 18%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--admin-window-background-color) 82%, transparent),
+    0 0 0 7px color-mix(in srgb, var(--admin-chrome-active-control-background-color) 22%, transparent),
+    0 6px 18px color-mix(in srgb, var(--admin-chrome-active-control-background-color) 16%, transparent);
 }
 
 .editorContent :global(.card-inline-link) {

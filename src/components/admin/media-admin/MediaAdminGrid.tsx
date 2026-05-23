@@ -13,8 +13,7 @@ import { useMedia } from '@/components/providers/MediaProvider';
 import { useTag } from '@/components/providers/TagProvider';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import { formatCoreTagsTooltipLines, getCoreTagsByDimension } from '@/lib/utils/tagDisplay';
-import { parseObjectPositionToPercents } from '@/lib/utils/parseObjectPositionPercent';
-import EditModal from '@/components/admin/card-admin/EditModal';
+import MediaEditModal from '@/components/admin/media-admin/MediaEditModal';
 import styles from './MediaAdminGrid.module.css';
 import AdminGridCellChrome from '@/components/admin/common/AdminGridCellChrome';
 import chromeStyles from '@/components/admin/common/AdminGridCellChrome.module.css';
@@ -72,13 +71,11 @@ function MediaAdminGridCell({
   inlineCaptionEditing = false,
 }: MediaAdminGridCellProps) {
   const core = useMemo(() => getCoreTagsByDimension(media), [media]);
+  const { deleteMedia } = useMedia();
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [captionDraft, setCaptionDraft] = useState(media.caption || '');
   const [captionSaving, setCaptionSaving] = useState(false);
-  const [focalH, setFocalH] = useState(50);
-  const [focalV, setFocalV] = useState(50);
-  const [savingFields, setSavingFields] = useState(false);
 
   useEffect(() => {
     if (!saveNotice) return;
@@ -89,10 +86,7 @@ function MediaAdminGridCell({
   useEffect(() => {
     if (!editModalOpen) return;
     setCaptionDraft(media.caption || '');
-    const { horizontal, vertical } = parseObjectPositionToPercents(media.objectPosition);
-    setFocalH(horizontal);
-    setFocalV(vertical);
-  }, [editModalOpen, media.caption, media.objectPosition]);
+  }, [editModalOpen, media.caption]);
 
   useEffect(() => {
     if (editModalOpen || captionSaving) return;
@@ -137,21 +131,6 @@ function MediaAdminGridCell({
     const tagLines = formatCoreTagsTooltipLines(core, (id) => tagNameMap.get(id) ?? id);
     return `${identityTooltip}\n\n${tagLines}`;
   }, [identityTooltip, core, tagNameMap]);
-
-  const focalPreviewPosition = `${focalH}% ${focalV}%`;
-  const handleSaveFields = useCallback(async () => {
-    setSavingFields(true);
-    try {
-      await onSaveMediaFields(media.docId!, {
-        caption: captionDraft,
-        objectPosition: focalPreviewPosition,
-      });
-      setSaveNotice('Media saved');
-      setEditModalOpen(false);
-    } finally {
-      setSavingFields(false);
-    }
-  }, [captionDraft, focalPreviewPosition, media.docId, onSaveMediaFields]);
 
   const handleInlineCaptionSave = useCallback(async () => {
     if (!inlineCaptionEditing || !media.docId) return;
@@ -213,21 +192,6 @@ function MediaAdminGridCell({
           >
             Edit
           </button>
-          {studioDragBind ? (
-            <button
-              type="button"
-              ref={studioDragBind.setActivatorNodeRef}
-              className={chromeStyles.studioSourceDragHandle}
-              aria-label={`Drag ${media.filename} to selected card cover or gallery`}
-              title="Drag to Cover or Gallery (Studio Card edit)"
-              data-studio-dnd-return-focus={media.docId ? `source:${media.docId}` : undefined}
-              onClick={(e) => e.stopPropagation()}
-              {...studioDragBind.attributes}
-              {...studioDragBind.listeners}
-            >
-              ::
-            </button>
-          ) : null}
         </div>
       }
       overlayLeftRail={undefined}
@@ -243,7 +207,13 @@ function MediaAdminGridCell({
       }
       belowMeta={undefined}
       thumbnail={
-        <div className={styles.thumbnailWrap} style={aspectStyle} title={thumbnailTooltip}>
+        <div
+          className={`${styles.thumbnailWrap} ${studioDragBind ? styles.thumbnailWrapStudioDraggable : ''}`}
+          style={aspectStyle}
+          title={studioDragBind ? `${thumbnailTooltip}\n\nDrag image to selected card cover, gallery, or content.` : thumbnailTooltip}
+          {...(studioDragBind ? studioDragBind.attributes : {})}
+          {...(studioDragBind ? studioDragBind.listeners : {})}
+        >
           <JournalImage
             src={getDisplayUrl(media)}
             alt={media.caption || media.filename}
@@ -308,74 +278,15 @@ function MediaAdminGridCell({
   return (
     <>
       {gridCell}
-      <EditModal
+      <MediaEditModal
         isOpen={editModalOpen}
+        mediaItems={[media]}
+        selectedMediaId={media.docId}
+        onSelectMedia={() => undefined}
         onClose={() => setEditModalOpen(false)}
-        title={`Edit media: ${media.filename}`}
-      >
-        <div className={styles.editDialogBody}>
-          <div className={styles.editPreviewFrame}>
-            <JournalImage
-              src={getDisplayUrl(media)}
-              alt={media.caption || media.filename}
-              fill
-              className={styles.editPreviewImage}
-              sizes="(max-width: 520px) 100vw, 480px"
-              style={{ objectFit: 'cover', objectPosition: focalPreviewPosition }}
-            />
-          </div>
-          <div className={styles.editFieldGroup}>
-            <label htmlFor={`media-grid-focal-h-${media.docId}`}>Horizontal</label>
-            <input
-              id={`media-grid-focal-h-${media.docId}`}
-              type="range"
-              min={0}
-              max={100}
-              value={focalH}
-              onChange={(e) => setFocalH(Number(e.target.value))}
-            />
-          </div>
-          <div className={styles.editFieldGroup}>
-            <label htmlFor={`media-grid-focal-v-${media.docId}`}>Vertical</label>
-            <input
-              id={`media-grid-focal-v-${media.docId}`}
-              type="range"
-              min={0}
-              max={100}
-              value={focalV}
-              onChange={(e) => setFocalV(Number(e.target.value))}
-            />
-          </div>
-          <div className={styles.editFieldGroup}>
-            <label htmlFor={`media-grid-caption-${media.docId}`}>Caption</label>
-            <textarea
-              id={`media-grid-caption-${media.docId}`}
-              rows={3}
-              className={styles.editTextarea}
-              value={captionDraft}
-              onChange={(e) => setCaptionDraft(e.target.value)}
-            />
-          </div>
-          <div className={styles.editDialogActions}>
-            <button
-              type="button"
-              className={styles.inlineActionButton}
-              onClick={() => setEditModalOpen(false)}
-              disabled={savingFields}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className={styles.inlineActionButton}
-              onClick={() => void handleSaveFields()}
-              disabled={savingFields}
-            >
-              {savingFields ? 'Saving...' : 'Save'}
-            </button>
-          </div>
-        </div>
-      </EditModal>
+        onSaveMediaFields={onSaveMediaFields}
+        onDeleteMedia={deleteMedia}
+      />
     </>
   );
 }
@@ -397,7 +308,7 @@ const MemoizedMediaAdminGridCell = React.memo(MediaAdminGridCell, (prev, next) =
 
 function MediaAdminGridCellStudioSource(props: Omit<MediaAdminGridCellProps, 'studioDragBind'>) {
   const mid = props.media.docId;
-  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: mid ? `source:${mid}` : 'source:invalid',
     disabled: !mid,
     data: { mediaId: mid, studioBankMedia: props.media },
@@ -406,7 +317,6 @@ function MediaAdminGridCellStudioSource(props: Omit<MediaAdminGridCellProps, 'st
     attributes,
     listeners,
     setNodeRef,
-    setActivatorNodeRef,
     style: {
       opacity: isDragging ? 0.92 : 1,
       transform: DndCss.Translate.toString(transform),
@@ -551,7 +461,7 @@ export default function MediaAdminGrid({
     [sortedIds, setSelectedMediaIds]
   );
 
-  const allOnPageSelected = sortedIds.length > 0 && sortedIds.every((id) => selectedMediaIds.includes(id));
+  const allVisibleSelected = sortedIds.length > 0 && sortedIds.every((id) => selectedMediaIds.includes(id));
 
   return (
     <div className={styles.container}>
@@ -559,11 +469,11 @@ export default function MediaAdminGrid({
         <div className={styles.selectAllRow}>
           <input
             type="checkbox"
-            checked={allOnPageSelected}
+            checked={allVisibleSelected}
             onChange={handleSelectAllOnPage}
-            aria-label="Select all on page"
+            aria-label="Select visible media"
           />
-          <span className={styles.selectAllLabel}>Select all on page</span>
+          <span className={styles.selectAllLabel}>Select visible</span>
         </div>
       )}
       <div className={styles.grid}>

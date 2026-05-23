@@ -30,7 +30,7 @@
 .grid {
   display: grid;
   width: 100%;
-  grid-template-columns: repeat(auto-fill, minmax(min(160px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
   gap: var(--spacing-md);
   min-width: 0;
   overflow-x: hidden;
@@ -51,6 +51,24 @@
   aspect-ratio: 4 / 3;
   overflow: hidden;
   background: var(--admin-window-background-color);
+}
+
+.thumbnailWrapStudioDraggable {
+  cursor: grab;
+  transition:
+    transform var(--transition-short) ease,
+    box-shadow var(--transition-short) ease,
+    outline-color var(--transition-short) ease;
+}
+
+.thumbnailWrapStudioDraggable:hover {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--admin-chrome-active-control-background-color) 30%, transparent),
+    0 10px 22px color-mix(in srgb, var(--admin-chrome-active-control-background-color) 12%, transparent);
+}
+
+.thumbnailWrapStudioDraggable:active {
+  cursor: grabbing;
 }
 
 .thumbnailNatural {
@@ -80,7 +98,7 @@
   background: var(--admin-support-control-background-color);
   color: var(--admin-support-control-text-color);
   font-family: var(--admin-support-meta-font-family);
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   font-weight: var(--font-weight-medium);
   line-height: 1.35;
   resize: vertical;

@@ -22,16 +22,17 @@
 
 .studioCardFilters {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--spacing-xs);
   align-items: flex-end;
   margin-bottom: var(--spacing-xs);
+  overflow-x: auto;
 }
 
 /* Matched in media-admin `studioPaneSearchField` — keeps Tags + Grid/Table rows aligned across Studio columns. */
 .studioPaneSearchField {
-  flex: 0 0 14rem;
-  min-width: 12rem;
+  flex: 0 0 12rem;
+  min-width: 10rem;
   max-width: 18rem;
 }
 
@@ -51,33 +52,40 @@
   white-space: nowrap;
 }
 
+.studioCardPanelTitle {
+  color: var(--admin-support-title-color);
+  font-family: var(--admin-support-title-font-family);
+  font-size: var(--admin-support-title-font-size);
+  font-weight: var(--admin-support-title-font-weight);
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .studioCardSearchInput {
   width: 100%;
   box-sizing: border-box;
   min-width: 0;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: var(--font-size-sm);
+  padding: 3px var(--spacing-xs);
+  font-size: var(--font-size-xs);
   line-height: 1.25;
   border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-radius: var(--border-radius-sm);
   background: var(--admin-support-control-background-color);
   color: var(--admin-support-control-text-color);
   font-family: var(--admin-support-control-font-family);
-  font-size: var(--admin-support-control-font-size);
   font-weight: var(--admin-support-control-font-weight);
-  line-height: var(--admin-support-control-line-height);
 }
 
 .studioCardSelect {
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: 3px var(--spacing-xs);
   border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-radius: var(--border-radius-sm);
   background: var(--admin-support-control-background-color);
   color: var(--admin-support-control-text-color);
   font-family: var(--admin-support-control-font-family);
-  font-size: var(--admin-support-control-font-size);
+  font-size: var(--font-size-xs);
   font-weight: var(--admin-support-control-font-weight);
-  line-height: var(--admin-support-control-line-height);
+  line-height: 1.25;
 }
 
 .studioCardMacroBlock {
@@ -91,20 +99,19 @@
 }
 
 .studioTagsEditButton {
-  border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-window-border-color) 50%, transparent);
+  border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
   border-radius: var(--border-radius-sm);
-  background: color-mix(in srgb, var(--admin-window-background-color) 50%, transparent);
-  color: var(--admin-chrome-meta-color);
+  background: var(--admin-support-control-strong-background-color);
+  color: var(--admin-support-control-strong-text-color);
+  padding: 2px 5px;
+  cursor: pointer;
   font: var(--admin-grid-overlay-font);
   line-height: 1;
   letter-spacing: 0.02em;
-  padding: 2px 5px;
-  cursor: pointer;
-  backdrop-filter: blur(4px);
 }
 
 .studioTagsEditButton:hover {
-  background: color-mix(in srgb, var(--admin-window-background-color) 68%, transparent);
+  background: var(--admin-support-control-strong-hover-background-color);
 }
 
 .studioTagsActions {
@@ -194,7 +201,7 @@
 .studioDeleteConfirmPrimary,
 .studioDeleteConfirmSecondary {
   border-radius: var(--border-radius-sm);
-  padding: 4px var(--spacing-sm);
+  padding: 3px var(--spacing-xs);
   font-family: var(--admin-support-control-font-family);
   font-size: var(--admin-support-control-font-size);
   font-weight: var(--admin-support-control-font-weight);
@@ -217,20 +224,18 @@
 /* Matches `media-admin` embedded Clear — resets all row filters + tag selection */
 .studioCardClearButton {
   align-self: flex-end;
-  padding: 4px var(--spacing-sm);
-  font-size: var(--font-size-xs);
+  padding: 3px var(--spacing-xs);
   border-radius: var(--border-radius-sm);
-  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
-  background: var(--admin-support-control-background-color);
-  color: var(--admin-support-control-text-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
+  background: var(--admin-support-control-strong-background-color);
+  color: var(--admin-support-control-strong-text-color);
   cursor: pointer;
   font-family: var(--admin-support-control-font-family);
-  font-size: var(--admin-support-control-font-size);
+  font-size: var(--font-size-xs);
   font-weight: var(--admin-support-control-font-weight);
-  line-height: var(--admin-support-control-line-height);
+  line-height: 1.25;
 }
 
 .studioCardClearButton:hover {
-  background: var(--admin-support-control-hover-background-color);
-  border-color: var(--admin-support-control-strong-border-color);
+  background: var(--admin-support-control-strong-hover-background-color);
 }

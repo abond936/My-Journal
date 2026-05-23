@@ -7,6 +7,7 @@ import CardForm from '@/components/admin/card-admin/CardForm';
 import { CardFormProvider, useCardForm } from '@/components/providers/CardFormProvider';
 import { useOptionalCardContext } from '@/components/providers/CardProvider';
 import { StudioCardFormStudioProvider } from '@/components/admin/studio/studioCardFormStudioContext';
+import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import type { Card, CardUpdate } from '@/lib/types/card';
 import type { Tag } from '@/lib/types/tag';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
@@ -40,27 +41,35 @@ function ModalActions({
   isDeleting: boolean;
   isDuplicating: boolean;
 }) {
-  const { confirmLeaveIfDirty, isDirty, resetForm, formState } = useCardForm();
+  const { confirmLeaveIfDirtyAsync, isDirty, resetForm, formState } = useCardForm();
+  const feedback = useAppFeedback();
   const { isSaving } = formState;
 
-  const handleClose = () => {
-    if (!confirmLeaveIfDirty()) return;
+  const handleClose = async () => {
+    if (!(await confirmLeaveIfDirtyAsync())) return;
     onClose();
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     if (!isDirty || isSaving) return;
-    if (!window.confirm('Discard unsaved changes?')) return;
+    const shouldDiscard = await feedback.confirm({
+      title: 'Discard unsaved changes?',
+      message: 'Discard your unsaved changes and reset the form?',
+      confirmLabel: 'Discard',
+      cancelLabel: 'Keep editing',
+      tone: 'danger',
+    });
+    if (!shouldDiscard) return;
     resetForm();
   };
 
   const handleDelete = async () => {
-    if (!confirmLeaveIfDirty()) return;
+    if (!(await confirmLeaveIfDirtyAsync())) return;
     await onDelete();
   };
 
   const handleDuplicate = async () => {
-    if (!confirmLeaveIfDirty()) return;
+    if (!(await confirmLeaveIfDirtyAsync())) return;
     await onDuplicate();
   };
 
@@ -68,7 +77,7 @@ function ModalActions({
     <div className={studioStyles.studioComposeFormActions}>
       <button
         type="button"
-        onClick={handleDelete}
+        onClick={() => void handleDelete()}
         className={studioStyles.studioComposeCancelButton}
         disabled={isDeleting}
       >
@@ -76,7 +85,7 @@ function ModalActions({
       </button>
       <button
         type="button"
-        onClick={handleDuplicate}
+        onClick={() => void handleDuplicate()}
         className={studioStyles.studioComposeCancelButton}
         disabled={isDuplicating}
       >
@@ -84,7 +93,7 @@ function ModalActions({
       </button>
       <button
         type="button"
-        onClick={handleClose}
+        onClick={() => void handleClose()}
         className={studioStyles.studioComposeCancelButton}
         disabled={isSaving}
       >
@@ -92,7 +101,7 @@ function ModalActions({
       </button>
       <button
         type="button"
-        onClick={handleCancel}
+        onClick={() => void handleCancel()}
         className={studioStyles.studioComposeCancelButton}
         disabled={!isDirty || isSaving}
       >
@@ -119,13 +128,15 @@ function ModalTitleBar({
   onDragStart: (event: React.PointerEvent<HTMLDivElement>) => void;
   onClose: () => void;
 }) {
-  const { confirmLeaveIfDirty, formState } = useCardForm();
+  const { confirmLeaveIfDirtyAsync, formState } = useCardForm();
   const { isSaving } = formState;
 
   const handleClose = useCallback(() => {
-    if (!confirmLeaveIfDirty()) return;
-    onClose();
-  }, [confirmLeaveIfDirty, onClose]);
+    void (async () => {
+      if (!(await confirmLeaveIfDirtyAsync())) return;
+      onClose();
+    })();
+  }, [confirmLeaveIfDirtyAsync, onClose]);
 
   return (
     <div className={styles.titleBar} onPointerDown={onDragStart}>
@@ -175,6 +186,7 @@ export default function ReaderCardEditModal({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const feedback = useAppFeedback();
   const cardContext = useOptionalCardContext();
   const [isOpen, setIsOpen] = useState(false);
   const [activeCardId, setActiveCardId] = useState(cardId);
@@ -383,10 +395,20 @@ export default function ReaderCardEditModal({
     });
 
     if (prompt.blocked) {
-      window.alert(prompt.message);
+      await feedback.alert({
+        title: 'Cannot delete card',
+        message: prompt.message,
+      });
       return;
     }
-    if (!window.confirm(prompt.message)) return;
+    const shouldDelete = await feedback.confirm({
+      title: 'Delete card?',
+      message: prompt.message,
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      tone: 'danger',
+    });
+    if (!shouldDelete) return;
 
     setIsDeleting(true);
     try {
@@ -403,11 +425,11 @@ export default function ReaderCardEditModal({
       router.push(returnTo);
       router.refresh();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete card.');
+      feedback.showError(err instanceof Error ? err.message : 'Failed to delete card.', 'Could not delete card');
     } finally {
       setIsDeleting(false);
     }
-  }, [activeCardId, card, closeModal, returnTo, router]);
+  }, [activeCardId, card, closeModal, feedback, returnTo, router]);
 
   const handleDuplicate = useCallback(async () => {
     setIsDuplicating(true);

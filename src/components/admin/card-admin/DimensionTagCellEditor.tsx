@@ -3,6 +3,7 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import type { Card } from '@/lib/types/card';
 import type { Tag } from '@/lib/types/tag';
+import { getTagPathDisplay } from '@/lib/utils/tagDimensionResolve';
 import styles from '@/app/admin/card-admin/card-admin.module.css';
 
 type Dimension = 'who' | 'what' | 'when' | 'where';
@@ -33,6 +34,10 @@ export default function DimensionTagCellEditor({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const tagById = useMemo(
+    () => new Map(dimensionOptions.filter((tag) => tag.docId).map((tag) => [tag.docId as string, tag])),
+    [dimensionOptions]
+  );
 
   useEffect(() => {
     if (!isOpen) return;
@@ -56,16 +61,11 @@ export default function DimensionTagCellEditor({
       .filter((tag) => {
         if (!q) return true;
         const label = normalize(tag.name);
-        const path = normalize(
-          [...(tag.path || []), tag.docId as string]
-            .map((id) => tagNameMap.get(id))
-            .filter((name): name is string => Boolean(name))
-            .join(' / ')
-        );
+        const path = normalize(getTagPathDisplay(tag, tagById));
         return label.includes(q) || path.includes(q);
       })
       .slice(0, 8);
-  }, [dimensionOptions, query, selectedSet, tagNameMap]);
+  }, [dimensionOptions, query, selectedSet, tagById]);
 
   const saveTags = async (nextTags: string[]) => {
     setIsSaving(true);

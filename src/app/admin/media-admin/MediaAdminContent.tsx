@@ -14,6 +14,7 @@ import {
   flattenDimensionalTagMapToTagIds,
   groupSelectedTagIdsByDimension,
 } from '@/lib/utils/tagUtils';
+import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 
 export type MediaAdminContentProps = {
   /** When true (e.g. Admin Studio column), use compact scroll layout. */
@@ -48,15 +49,19 @@ const DEFAULT_DIMENSION_FILTERS: DimensionFilterState = {
 export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const { embedded = false, studioSourceDraggable = false } = props;
   const router = useRouter();
+  const feedback = useAppFeedback();
   const {
+    media,
     loading,
+    loadingMore,
     error,
     pagination,
     filters,
     setFilter,
     clearFilters,
     fetchMedia,
-    currentPage,
+    loadMore,
+    hasMore,
     selectedMediaIds,
     selectNone,
     deleteMultipleMedia,
@@ -81,7 +86,6 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const [bulkTagApplying, setBulkTagApplying] = useState(false);
   const [bulkTagMode, setBulkTagMode] = useState<'add' | 'replace' | 'remove'>('add');
   const [tagFilterModalOpen, setTagFilterModalOpen] = useState(false);
-  const [rulesExpanded, setRulesExpanded] = useState(false);
   const [duplicateTriageMode, setDuplicateTriageMode] = useState(false);
   const [dimensionFilters, setDimensionFilters] = useState<DimensionFilterState>(DEFAULT_DIMENSION_FILTERS);
   const [clientSort, setClientSort] = useState<'none' | 'filenameAsc' | 'filenameDesc'>('none');
@@ -114,7 +118,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
       setBulkTagModalOpen(false);
     } catch (err) {
       console.error(err);
-      alert(err instanceof Error ? err.message : 'Failed to apply tags.');
+      feedback.showError(err instanceof Error ? err.message : 'Failed to apply tags.', 'Could not apply tags');
     } finally {
       setBulkTagApplying(false);
     }
@@ -133,7 +137,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
         .filter((item) => item.mediaId);
 
       if (galleryMedia.length === 0) {
-        alert('No valid media selected.');
+        feedback.showError('No valid media selected.', 'Could not create card');
         return;
       }
 
@@ -160,7 +164,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
       router.push(`/admin/studio?card=${encodeURIComponent(newCard.docId)}`);
     } catch (err) {
       console.error('Create card from selection failed:', err);
-      alert(err instanceof Error ? err.message : 'Failed to create card.');
+      feedback.showError(err instanceof Error ? err.message : 'Failed to create card.', 'Could not create card');
     } finally {
       setIsCreatingCard(false);
     }
@@ -207,6 +211,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   };
 
   const stickyTopRef = useRef<HTMLDivElement | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   useLayoutEffect(() => {
     const stickyEl = stickyTopRef.current;
@@ -231,14 +236,31 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     };
   }, []);
 
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node || !hasMore) return;
+    if (typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) return;
+        if (loading || loadingMore) return;
+        void loadMore();
+      },
+      { rootMargin: '280px 0px' }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMore, loadMore, loading, loadingMore]);
+
   const mainBody = (
     <>
-      {loading && <p>Loading media...</p>}
+      {loading && media.length === 0 && <p>Loading media...</p>}
       {error && (
         <p className={errorSeverity === 'warning' ? styles.warning : styles.error}>{error.message}</p>
       )}
 
-      {!loading && !error && (
+      {!error && (
         <MediaAdminGrid
           sourcePathFirst={duplicateTriageMode}
           dimensionFilters={dimensionFilters}
@@ -248,64 +270,57 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
         />
       )}
 
-      {pagination &&
-        (pagination.seekMode
-          ? pagination.hasNext || currentPage > 1
-          : (pagination.totalPages ?? 1) > 1) && (
+      {(pagination || hasMore || loadingMore) && (
           <div className={styles.pagination}>
-            <button
-              type="button"
-              onClick={() => fetchMedia(currentPage - 1)}
-              disabled={!pagination.hasPrev}
-              className={styles.pageButton}
-            >
-              Previous
-            </button>
+            {hasMore ? (
+              <button
+                type="button"
+                onClick={() => void loadMore()}
+                disabled={loading || loadingMore}
+                className={styles.pageButton}
+              >
+                {loadingMore ? 'Loading more...' : 'Load more'}
+              </button>
+            ) : null}
             <span className={styles.pageInfo}>
-              {pagination.seekMode ? (
+              {pagination?.seekMode ? (
                 <>
-                  Page {currentPage}
-                  {pagination.hasNext ? ' · more available (Next)' : ''}
+                  Scrolling newest first
                   <span className={styles.paginationHint}>
                     {' '}
-                    - scans newest first; Clear filters returns to page 1
+                    - filtered results continue as you scroll
                   </span>
                 </>
               ) : (
                 <>
-                  Page {pagination.page ?? currentPage} of {pagination.totalPages ?? 1}
-                  {pagination.total != null && ` (${pagination.total} total items)`}
+                  {pagination.total != null ? `${pagination.total} total items` : 'Scrolling newest first'}
                 </>
               )}
             </span>
-            <button
-              type="button"
-              onClick={() => fetchMedia(currentPage + 1)}
-              disabled={!pagination.hasNext}
-              className={styles.pageButton}
-            >
-              Next
-            </button>
+            {!hasMore ? (
+              <span className={styles.paginationHint}>End of loaded results</span>
+            ) : null}
           </div>
         )}
+      <div ref={loadMoreRef} aria-hidden="true" />
     </>
   );
 
   return (
     <div className={embedded ? `${styles.container} ${styles.containerEmbedded}` : styles.container}>
       <div className={styles.stickyTop} ref={stickyTopRef}>
-        <h2 className={styles.embeddedTitle}>Media</h2>
         <div className={styles.studioMediaEmbeddedStack}>
+          <h2 className={styles.embeddedTitle}>Media</h2>
           <div className={styles.studioMediaRowOne}>
             <label
               className={`${styles.studioInlineLabel} ${styles.studioPaneSearchField}`}
               htmlFor="media-admin-search-studio"
+              aria-label="Search media"
             >
-              Search
               <input
                 id="media-admin-search-studio"
                 type="search"
-                placeholder="Typesense when non-empty..."
+                placeholder="Search"
                 value={searchDraft}
                 onChange={(e) => setSearchDraft(e.target.value)}
                 className={styles.studioMediaSearchInput}
@@ -313,79 +328,79 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                 aria-label="Search media (filename, caption, path, tag names)"
               />
             </label>
-            <label className={styles.studioInlineLabel}>
-              Source
+            <label className={styles.studioInlineLabel} aria-label="Filter by source">
               <select
                 className={styles.studioFilterSelect}
                 value={filters.source}
                 onChange={(e) => handleFilterChange('source', e.target.value)}
+                aria-label="Filter by source"
               >
-                <option value="all">All</option>
+                <option value="all">All Sources</option>
                 <option value="local">Local</option>
                 <option value="paste">Paste</option>
               </select>
             </label>
-            <label className={styles.studioInlineLabel}>
-              Caption
+            <label className={styles.studioInlineLabel} aria-label="Filter by caption">
               <select
                 className={styles.studioFilterSelect}
                 value={filters.hasCaption}
                 onChange={(e) => handleFilterChange('hasCaption', e.target.value)}
+                aria-label="Filter by caption"
               >
-                <option value="all">All</option>
+                <option value="all">All Captions</option>
                 <option value="with">With</option>
                 <option value="without">Without</option>
               </select>
             </label>
-            <label className={styles.studioInlineLabel}>
-              Shape
+            <label className={styles.studioInlineLabel} aria-label="Filter by shape">
               <select
                 className={styles.studioFilterSelect}
                 value={filters.dimensions}
                 onChange={(e) => handleFilterChange('dimensions', e.target.value)}
+                aria-label="Filter by shape"
               >
-                <option value="all">All</option>
+                <option value="all">All Shapes</option>
                 <option value="portrait">Portrait</option>
                 <option value="landscape">Landscape</option>
                 <option value="square">Square</option>
               </select>
             </label>
-            <label className={styles.studioInlineLabel}>
-              Assigned
+            <label className={styles.studioInlineLabel} aria-label="Filter by assignment">
               <select
                 className={styles.studioFilterSelect}
                 value={filters.assignment}
                 onChange={(e) => handleFilterChange('assignment', e.target.value)}
                 title="Cover, gallery, or content references"
+                aria-label="Filter by assignment"
               >
-                <option value="all">All</option>
+                <option value="all">All Assignments</option>
                 <option value="unassigned">Unassigned</option>
                 <option value="assigned">Assigned</option>
               </select>
             </label>
             {filters.assignment === 'unassigned' ? (
-              <label className={styles.studioInlineLabel}>
-                Dupes
+              <label className={styles.studioInlineLabel} aria-label="Duplicate triage mode">
                 <select
                   className={styles.studioFilterSelect}
                   value={duplicateTriageMode ? 'sourcePath' : 'none'}
                   onChange={(e) => setDuplicateTriageMode(e.target.value === 'sourcePath')}
+                  aria-label="Duplicate triage mode"
                 >
-                  <option value="none">Normal</option>
-                  <option value="sourcePath">Source path</option>
+                  <option value="none">No Dupe Check</option>
+                  <option value="sourcePath">Source Path</option>
                 </select>
               </label>
             ) : null}
-            <label className={styles.studioInlineLabel}>
-              Sort
+            <label className={styles.studioInlineLabel} aria-label="Sort media">
               <select
                 className={styles.studioFilterSelect}
                 value={clientSort}
                 onChange={(e) =>
                   setClientSort(e.target.value as 'none' | 'filenameAsc' | 'filenameDesc')
                 }
+                aria-label="Sort media"
               >
-                <option value="none">Default</option>
+                <option value="none">Default Sort</option>
                 <option value="filenameAsc">File A-Z</option>
                 <option value="filenameDesc">File Z-A</option>
               </select>
@@ -411,60 +426,47 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                   >
                     Edit
                   </button>
-                  <button
-                    type="button"
-                    className={styles.studioTagsEditButton}
-                    aria-expanded={rulesExpanded}
-                    onClick={() => setRulesExpanded((open) => !open)}
-                  >
-                    Rules
-                  </button>
                 </div>
               }
               footerContent={
-                rulesExpanded ? (
-                  <div className={styles.studioMediaRuleMatrix}>
-                    {(['who', 'what', 'when', 'where'] as DimensionKey[]).map((dimension) => {
-                      const state = dimensionFilters[dimension];
-                      const options = allTags.filter((t) => t.dimension === dimension && t.docId);
-                      return (
-                        <div key={dimension} className={styles.studioMediaRuleColumn}>
-                          <div className={styles.studioMediaRuleTitle}>
-                            {dimension[0]!.toUpperCase() + dimension.slice(1)}
-                          </div>
+                <div className={styles.studioMediaRuleMatrix}>
+                  {(['who', 'what', 'when', 'where'] as DimensionKey[]).map((dimension) => {
+                    const state = dimensionFilters[dimension];
+                    const options = allTags.filter((t) => t.dimension === dimension && t.docId);
+                    return (
+                      <div key={dimension} className={styles.studioMediaRuleColumn}>
+                        <select
+                          className={styles.studioFilterSelectFull}
+                          value={state.mode}
+                          onChange={(e) =>
+                            updateDimensionFilter(dimension, {
+                              mode: e.target.value as DimensionFilterMode,
+                            })
+                          }
+                        >
+                          <option value="any">Any</option>
+                          <option value="hasAny">Has any</option>
+                          <option value="isEmpty">Is empty</option>
+                          <option value="matches">Matches tag</option>
+                        </select>
+                        {state.mode === 'matches' ? (
                           <select
                             className={styles.studioFilterSelectFull}
-                            value={state.mode}
-                            onChange={(e) =>
-                              updateDimensionFilter(dimension, {
-                                mode: e.target.value as DimensionFilterMode,
-                              })
-                            }
+                            value={state.tagId}
+                            onChange={(e) => updateDimensionFilter(dimension, { tagId: e.target.value })}
                           >
-                            <option value="any">Any</option>
-                            <option value="hasAny">Has any</option>
-                            <option value="isEmpty">Is empty</option>
-                            <option value="matches">Matches tag</option>
+                            <option value="">Select tag...</option>
+                            {options.map((tag) => (
+                              <option key={tag.docId} value={tag.docId}>
+                                {tag.name}
+                              </option>
+                            ))}
                           </select>
-                          {state.mode === 'matches' ? (
-                            <select
-                              className={styles.studioFilterSelectFull}
-                              value={state.tagId}
-                              onChange={(e) => updateDimensionFilter(dimension, { tagId: e.target.value })}
-                            >
-                              <option value="">Select tag...</option>
-                              {options.map((tag) => (
-                                <option key={tag.docId} value={tag.docId}>
-                                  {tag.name}
-                                </option>
-                              ))}
-                            </select>
-                          ) : null}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : null
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
               }
             />
           </div>
@@ -484,7 +486,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                   disabled={isCreatingCard}
                   className={cardAdminStyles.actionButton}
                 >
-                  {isCreatingCard ? 'Creating...' : 'Create card from selection'}
+                  {isCreatingCard ? 'Creating...' : 'Create card'}
                 </button>
                 <button type="button" onClick={handleOpenBulkTags} className={cardAdminStyles.actionButton}>
                   Edit tags...
@@ -497,7 +499,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                   onClick={() => setBulkDeleteModalOpen(true)}
                   className={`${cardAdminStyles.actionButton} ${cardAdminStyles.deleteButton}`}
                 >
-                  Delete Selected
+                  Delete
                 </button>
               </div>
             ) : null}

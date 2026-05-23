@@ -2,12 +2,15 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { CirclePlus, FolderOpen, Link2Off, Pencil, Save, Trash2, X } from 'lucide-react';
 import EditModal from '@/components/admin/card-admin/EditModal';
 import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
 import DimensionalTagVerticalChips from '@/components/admin/common/DimensionalTagVerticalChips';
 import PanelActivityOverlay from '@/components/admin/studio/PanelActivityOverlay';
 import { useStudioShell } from '@/components/admin/studio/StudioShellContext';
+import type { StudioSelectedDetail, StudioSelectedPreview } from '@/components/admin/studio/studioCardTypes';
+import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import { useTag, type TagWithChildren } from '@/components/providers/TagProvider';
 import type { Question } from '@/lib/types/question';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
@@ -62,6 +65,16 @@ function findTagNode(nodes: TagWithChildren[], tagId: string | null): TagWithChi
   return undefined;
 }
 
+function toUnlinkedStoryCard<T extends StudioSelectedPreview | StudioSelectedDetail>(card: T): T {
+  return {
+    ...card,
+    type: 'story',
+    status: 'draft',
+    questionId: undefined,
+    updatedAt: Date.now(),
+  } as T;
+}
+
 function QuestionTagTree({
   nodes,
   questions,
@@ -109,9 +122,16 @@ function QuestionTagTree({
 
 export default function StudioQuestionsPane() {
   const router = useRouter();
+  const feedback = useAppFeedback();
   const {
     selectCard,
     getKnownCardPreview,
+    selectedCardId,
+    selectedPreview,
+    selectedDetail,
+    setSelectedPreview,
+    setSelectedDetail,
+    upsertCollectionsCardList,
     refreshCollectionsCardList,
     selectedLoadState,
   } = useStudioShell();
@@ -120,8 +140,6 @@ export default function StudioQuestionsPane() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [busyLabel, setBusyLabel] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
   const [pendingQuestionId, setPendingQuestionId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [includedFilter, setIncludedFilter] = useState<IncludedFilter>('all');
@@ -166,7 +184,6 @@ export default function StudioQuestionsPane() {
   );
 
   const loadQuestions = useCallback(async () => {
-    setError(null);
     setLoading(true);
     try {
       const res = await fetch('/api/admin/questions', { cache: 'no-store', credentials: 'same-origin' });
@@ -174,23 +191,15 @@ export default function StudioQuestionsPane() {
       throwIfJsonApiFailed(res, data, 'Failed to load questions');
       setQuestions(data.questions || []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load questions');
+      feedback.showError(e instanceof Error ? e.message : 'Failed to load questions', 'Could not load questions');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [feedback]);
 
   useEffect(() => {
     void loadQuestions();
   }, [loadQuestions]);
-
-  useEffect(() => {
-    if (!info) return;
-    const timeoutId = window.setTimeout(() => {
-      setInfo(null);
-    }, 3000);
-    return () => window.clearTimeout(timeoutId);
-  }, [info]);
 
   useEffect(() => {
     if (selectedLoadState === 'loading') return;
@@ -220,8 +229,6 @@ export default function StudioQuestionsPane() {
   const saveQuestion = useCallback(async (questionId: string, body: { prompt?: string; tagIds?: string[] }) => {
     setBusyId(questionId);
     setBusyLabel('Saving question...');
-    setError(null);
-    setInfo(null);
     try {
       const res = await fetch(`/api/admin/questions/${encodeURIComponent(questionId)}`, {
         method: 'PATCH',
@@ -238,19 +245,17 @@ export default function StudioQuestionsPane() {
       setEditingId(null);
       setAdvancedTagEditorId(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to update question');
+      feedback.showError(e instanceof Error ? e.message : 'Failed to update question', 'Could not save question');
     } finally {
       setBusyId(null);
       setBusyLabel(null);
     }
-  }, []);
+  }, [feedback]);
 
   const openQuestionCard = useCallback(async (question: Question) => {
     setBusyId(question.docId);
     setBusyLabel(question.usedByCardIds[0] ? 'Opening Compose...' : 'Creating Question card...');
     setPendingQuestionId(question.docId);
-    setError(null);
-    setInfo(null);
     try {
       const existingCardId = question.usedByCardIds[0];
       if (existingCardId) {
@@ -277,24 +282,22 @@ export default function StudioQuestionsPane() {
         refreshCollectionsCardList();
         selectCard(cardId, data.card ?? null);
         router.replace(`/admin/studio?card=${encodeURIComponent(cardId)}`);
-        setInfo('Created draft Question card.');
+        feedback.showSuccess('Created draft Question card.', 'Question ready');
       }
     } catch (e) {
       setPendingQuestionId(null);
-      setError(e instanceof Error ? e.message : 'Failed to open question');
+      feedback.showError(e instanceof Error ? e.message : 'Failed to open question', 'Could not open question');
     } finally {
       setBusyId(null);
       setBusyLabel(null);
     }
-  }, [getKnownCardPreview, refreshCollectionsCardList, router, selectCard]);
+  }, [feedback, getKnownCardPreview, refreshCollectionsCardList, router, selectCard]);
 
   const unlinkQuestionCard = useCallback(async (question: Question) => {
     const cardId = question.usedByCardIds[0];
     if (!cardId) return;
     setBusyId(question.docId);
     setBusyLabel('Unlinking question...');
-    setError(null);
-    setInfo(null);
     try {
       const res = await fetch(`/api/admin/questions/${encodeURIComponent(question.docId)}`, {
         method: 'PUT',
@@ -308,15 +311,44 @@ export default function StudioQuestionsPane() {
       if (data.question) {
         setQuestions(prev => prev.map(q => q.docId === question.docId ? data.question! : q));
       }
+      if (selectedCardId === cardId) {
+        if (selectedDetail?.docId === cardId) {
+          const nextDetail = toUnlinkedStoryCard(selectedDetail);
+          setSelectedDetail(nextDetail);
+          upsertCollectionsCardList(nextDetail);
+        }
+        if (selectedPreview?.docId === cardId) {
+          const nextPreview = toUnlinkedStoryCard(selectedPreview);
+          setSelectedPreview(nextPreview);
+          upsertCollectionsCardList(nextPreview);
+          selectCard(cardId, nextPreview);
+        }
+      } else {
+        const knownPreview = getKnownCardPreview(cardId);
+        if (knownPreview) {
+          upsertCollectionsCardList(toUnlinkedStoryCard(knownPreview));
+        }
+      }
       refreshCollectionsCardList();
-      setInfo('Unlinked question and converted card to draft Story.');
+      feedback.showSuccess('Unlinked question and converted card to draft Story.', 'Question updated');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to unlink question');
+      feedback.showError(e instanceof Error ? e.message : 'Failed to unlink question', 'Could not unlink question');
     } finally {
       setBusyId(null);
       setBusyLabel(null);
     }
-  }, [refreshCollectionsCardList]);
+  }, [
+    feedback,
+    getKnownCardPreview,
+    refreshCollectionsCardList,
+    selectCard,
+    selectedCardId,
+    selectedDetail,
+    selectedPreview,
+    setSelectedDetail,
+    setSelectedPreview,
+    upsertCollectionsCardList,
+  ]);
 
   const createQuestion = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -324,8 +356,6 @@ export default function StudioQuestionsPane() {
     if (!prompt) return;
     setBusyId('new');
     setBusyLabel('Adding question...');
-    setError(null);
-    setInfo(null);
     try {
       const res = await fetch('/api/admin/questions', {
         method: 'POST',
@@ -343,20 +373,18 @@ export default function StudioQuestionsPane() {
       setNewTagIds([]);
       setCreateOpen(false);
       setCreateAdvancedTagEditorOpen(false);
-      setInfo('Question added.');
+      feedback.showSuccess('Question added.', 'Saved');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to create question');
+      feedback.showError(e instanceof Error ? e.message : 'Failed to create question', 'Could not add question');
     } finally {
       setBusyId(null);
       setBusyLabel(null);
     }
-  }, [newPrompt, newTagIds]);
+  }, [feedback, newPrompt, newTagIds]);
 
   const deleteQuestion = useCallback(async (question: Question) => {
     setBusyId(question.docId);
     setBusyLabel('Deleting question...');
-    setError(null);
-    setInfo(null);
     try {
       const res = await fetch(`/api/admin/questions/${encodeURIComponent(question.docId)}`, {
         method: 'DELETE',
@@ -370,14 +398,14 @@ export default function StudioQuestionsPane() {
         setEditingId(null);
         setAdvancedTagEditorId(null);
       }
-      setInfo('Question deleted.');
+      feedback.showSuccess('Question deleted.', 'Deleted');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to delete question');
+      feedback.showError(e instanceof Error ? e.message : 'Failed to delete question', 'Could not delete question');
     } finally {
       setBusyId(null);
       setBusyLabel(null);
     }
-  }, [editingId]);
+  }, [editingId, feedback]);
 
   const cancelCreate = useCallback(() => {
     setCreateOpen(false);
@@ -408,13 +436,12 @@ export default function StudioQuestionsPane() {
           type="button"
           className={styles.studioQuestionSmallButton}
           onClick={() => setCreateOpen(open => !open)}
+          aria-label={createOpen ? 'Close question form' : 'Add question'}
+          title={createOpen ? 'Close question form' : 'Add question'}
         >
-          Add
+          {createOpen ? <X size={14} aria-hidden="true" /> : <CirclePlus size={14} aria-hidden="true" />}
         </button>
       </div>
-
-      {error ? <p className={styles.metaError} role="alert">{error}</p> : null}
-      {info ? <p className={styles.metaInfo} role="status">{info}</p> : null}
 
       {createOpen ? (
         <form className={styles.studioQuestionCreate} onSubmit={createQuestion}>
@@ -434,10 +461,12 @@ export default function StudioQuestionsPane() {
             trailingSlot={
               <button
                 type="button"
-                className={styles.studioQuestionSmallButton}
+                className={styles.studioQuestionTagActionButton}
                 onClick={() => setCreateAdvancedTagEditorOpen(open => !open)}
+                aria-label={createAdvancedTagEditorOpen ? 'Close tag editor' : 'Edit tags'}
+                title={createAdvancedTagEditorOpen ? 'Close tag editor' : 'Edit tags'}
               >
-                Edit
+                {createAdvancedTagEditorOpen ? <X size={14} aria-hidden="true" /> : <Pencil size={14} aria-hidden="true" />}
               </button>
             }
           />
@@ -456,16 +485,20 @@ export default function StudioQuestionsPane() {
               type="submit"
               className={styles.studioQuestionPrimaryButton}
               disabled={busyId === 'new' || !newPrompt.trim()}
+              aria-label="Save question"
+              title="Save question"
             >
-              Save
+              <Save size={14} aria-hidden="true" />
             </button>
             <button
               type="button"
               className={styles.studioQuestionSmallButton}
               disabled={busyId === 'new'}
               onClick={cancelCreate}
+              aria-label="Cancel question"
+              title="Cancel question"
             >
-              Cancel
+              <X size={14} aria-hidden="true" />
             </button>
           </div>
         </form>
@@ -477,7 +510,7 @@ export default function StudioQuestionsPane() {
             className={styles.studioQuestionInput}
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search questions"
+            placeholder="Search"
           />
           <select
             className={styles.studioQuestionSelect}
@@ -488,9 +521,7 @@ export default function StudioQuestionsPane() {
             <option value="included">Included</option>
             <option value="notIncluded">Not included</option>
           </select>
-        </div>
-        <div className={styles.studioQuestionFilterActions}>
-          <button type="button" className={styles.studioQuestionSmallButton} onClick={clearFilters}>
+          <button type="button" className={styles.studioQuestionClearButton} onClick={clearFilters}>
             Clear
           </button>
         </div>
@@ -507,7 +538,7 @@ export default function StudioQuestionsPane() {
           trailingSlot={
             <button
               type="button"
-              className={styles.studioQuestionSmallButton}
+              className={styles.studioQuestionTagActionButton}
               onClick={() => setTagFilterModalOpen(true)}
             >
               Edit
@@ -629,11 +660,13 @@ export default function StudioQuestionsPane() {
                 {editing ? (
                   <button
                     type="button"
-                    className={styles.studioQuestionSmallButton}
+                    className={styles.studioQuestionTagActionButton}
                     disabled={busy}
                     onClick={() => setAdvancedTagEditorId(current => current === question.docId ? null : question.docId)}
+                    aria-label={advancedTagEditorId === question.docId ? 'Close tag editor' : 'Edit tags'}
+                    title={advancedTagEditorId === question.docId ? 'Close tag editor' : 'Edit tags'}
                   >
-                    {advancedTagEditorId === question.docId ? 'Close tag editor' : 'Edit'}
+                    {advancedTagEditorId === question.docId ? <X size={14} aria-hidden="true" /> : <Pencil size={14} aria-hidden="true" />}
                   </button>
                 ) : null}
                 {editing && advancedTagEditorId === question.docId ? (
@@ -655,8 +688,10 @@ export default function StudioQuestionsPane() {
                       className={styles.studioQuestionPrimaryButton}
                       disabled={busy || !editPrompt.trim()}
                       onClick={() => void saveQuestion(question.docId, { prompt: editPrompt, tagIds: editTagIds })}
+                      aria-label="Save question"
+                      title="Save question"
                     >
-                      Save
+                      <Save size={14} aria-hidden="true" />
                     </button>
                     <button
                       type="button"
@@ -666,16 +701,20 @@ export default function StudioQuestionsPane() {
                         setEditingId(null);
                         setAdvancedTagEditorId(null);
                       }}
+                      aria-label="Cancel editing"
+                      title="Cancel editing"
                     >
-                      Cancel
+                      <X size={14} aria-hidden="true" />
                     </button>
                     <button
                       type="button"
                       className={styles.studioQuestionDeleteButton}
                       disabled={busy}
                       onClick={() => setDeleteConfirmQuestion(question)}
+                      aria-label="Delete question"
+                      title="Delete question"
                     >
-                      Delete
+                      <Trash2 size={14} aria-hidden="true" />
                     </button>
                   </>
                 ) : (
@@ -685,8 +724,10 @@ export default function StudioQuestionsPane() {
                       className={styles.studioQuestionPrimaryButton}
                       disabled={busy}
                       onClick={() => void openQuestionCard(question)}
+                      aria-label={included ? 'Open question card in Compose' : 'Create answer card in Compose'}
+                      title={included ? 'Open question card in Compose' : 'Create answer card in Compose'}
                     >
-                      {included ? 'Open' : 'Answer'}
+                      <FolderOpen size={14} aria-hidden="true" />
                     </button>
                     <button
                       type="button"
@@ -698,16 +739,20 @@ export default function StudioQuestionsPane() {
                         setEditPrompt(question.prompt);
                         setEditTagIds(question.tagIds);
                       }}
+                      aria-label="Edit question"
+                      title="Edit question"
                     >
-                      Edit
+                      <Pencil size={14} aria-hidden="true" />
                     </button>
                     <button
                       type="button"
                       className={styles.studioQuestionDeleteButton}
                       disabled={busy}
                       onClick={() => setDeleteConfirmQuestion(question)}
+                      aria-label="Delete question"
+                      title="Delete question"
                     >
-                      Delete
+                      <Trash2 size={14} aria-hidden="true" />
                     </button>
                     {included ? (
                       <button
@@ -715,8 +760,10 @@ export default function StudioQuestionsPane() {
                         className={styles.studioQuestionSmallButton}
                         disabled={busy}
                         onClick={() => setUnlinkConfirmQuestion(question)}
+                        aria-label="Unlink question from card"
+                        title="Unlink question from card"
                       >
-                        Unlink
+                        <Link2Off size={14} aria-hidden="true" />
                       </button>
                     ) : null}
                   </>

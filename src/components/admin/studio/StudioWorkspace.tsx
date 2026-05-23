@@ -9,6 +9,7 @@ import StudioTreeCandidateCardBank from '@/components/admin/studio/StudioTreeCan
 import MediaAdminContent from '@/app/admin/media-admin/MediaAdminContent';
 import StudioCardEditPane from '@/components/admin/studio/StudioCardEditPane';
 import StudioQuestionsPane from '@/components/admin/studio/StudioQuestionsPane';
+import MediaEditModal from '@/components/admin/media-admin/MediaEditModal';
 import { handleStudioRelationshipDragEnd } from '@/components/admin/studio/studioRelationshipDndPrimitives';
 import type {
   StudioActiveCardViewModel,
@@ -32,6 +33,7 @@ import type { Card } from '@/lib/types/card';
 import { EMBEDDED_ADMIN_WIDE_MIN_WIDTH_PX } from '@/lib/admin/embeddedWideMinWidthPx';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import { DND_POINTER_IGNORE_ATTR } from '@/lib/hooks/useDefaultDndSensors';
+import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import cardAdminPageStyles from '@/app/admin/card-admin/card-admin.module.css';
 import styles from './StudioWorkspace.module.css';
 
@@ -210,7 +212,30 @@ function applyOptimisticSelectedCardPatch(
   return next;
 }
 
+function collectAssignedMediaIds(card: Pick<Card, 'coverImageId' | 'galleryMedia' | 'contentMedia'> | null): string[] {
+  if (!card) return [];
+  const ids = new Set<string>();
+  if (card.coverImageId) ids.add(card.coverImageId);
+  (card.galleryMedia ?? []).forEach((item) => {
+    if (item.mediaId) ids.add(item.mediaId);
+  });
+  (card.contentMedia ?? []).forEach((mediaId) => {
+    if (mediaId) ids.add(mediaId);
+  });
+  return Array.from(ids);
+}
+
+function mediaRolesOnCard(card: Pick<Card, 'coverImageId' | 'galleryMedia' | 'contentMedia'> | null, mediaId: string): string[] {
+  if (!card || !mediaId) return [];
+  const roles: string[] = [];
+  if (card.coverImageId === mediaId) roles.push('Cover');
+  if ((card.galleryMedia ?? []).some((item) => item.mediaId === mediaId)) roles.push('Gallery');
+  if ((card.contentMedia ?? []).includes(mediaId)) roles.push('Content');
+  return roles;
+}
+
 export default function StudioWorkspace() {
+  const feedback = useAppFeedback();
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedCardId = useMemo(() => {
@@ -228,7 +253,6 @@ export default function StudioWorkspace() {
     [newCardRequested, requestedCardId]
   );
   const [wideLayout, setWideLayout] = useState(true);
-  const [workspaceWideLayout, setWorkspaceWideLayout] = useState(true);
   const [cardEditWidth, setCardEditWidth] = useState(DEFAULT_CARD_EDIT_WIDTH);
   const [questionsWidth, setQuestionsWidth] = useState(DEFAULT_QUESTIONS_WIDTH);
   const [paneVisibility, setPaneVisibility] = useState<StudioPaneVisibility>(DEFAULT_STUDIO_PANE_VISIBILITY);
@@ -265,19 +289,53 @@ export default function StudioWorkspace() {
   const {
     media: bankMediaPage,
     resolveMediaById,
+    updateMedia,
+    deleteMedia,
     selectedMediaIds,
     setSelectedMediaIds,
     toggleMediaSelection,
     selectAll: selectAllMediaOnPage,
     selectNone: selectNoneMedia,
   } = useMedia();
+  const [cardMediaEditorOpen, setCardMediaEditorOpen] = useState(false);
+  const [cardMediaItems, setCardMediaItems] = useState<Media[]>([]);
+  const [selectedCardMediaId, setSelectedCardMediaId] = useState<string | null>(null);
 
-  const bodyMediaInsertRef = useRef<((m: Media) => void) | null>(null);
+  const bodyMediaInsertRef = useRef<((m: Media, dropPoint?: { left: number; top: number } | null) => void) | null>(null);
   const collectionsUpsertCardRef = useRef<((card: Card) => void) | null>(null);
   const resolveBankMediaById = useCallback(
     (id: string) => bankMediaPage.find((m) => m.docId === id) ?? resolveMediaById(id),
     [bankMediaPage, resolveMediaById]
   );
+  const loadMediaById = useCallback(
+    async (mediaId: string): Promise<Media | null> => {
+      const cached = resolveBankMediaById(mediaId);
+      if (cached) return cached;
+      try {
+        const response = await fetch(`/api/images/${encodeURIComponent(mediaId)}`, {
+          cache: 'no-store',
+          credentials: 'same-origin',
+        });
+        if (!response.ok) return null;
+        const payload = (await response.json().catch(() => ({}))) as { media?: Media };
+        return payload.media ?? null;
+      } catch {
+        return null;
+      }
+    },
+    [resolveBankMediaById]
+  );
+  const openSelectedCardMediaEditor = useCallback(async () => {
+    const card = selectedDetailRef.current ?? selectedPreviewRef.current;
+    const assignedIds = collectAssignedMediaIds(card);
+    if (!card?.docId || assignedIds.length === 0) return;
+    const loaded = await Promise.all(assignedIds.map((mediaId) => loadMediaById(mediaId)));
+    const items = loaded.filter((item): item is Media => Boolean(item?.docId));
+    if (items.length === 0) return;
+    setCardMediaItems(items);
+    setSelectedCardMediaId((current) => (current && items.some((item) => item.docId === current) ? current : items[0]!.docId));
+    setCardMediaEditorOpen(true);
+  }, [loadMediaById]);
   const cacheSelectedCard = useCallback((card: StudioSelectedPreview | StudioSelectedDetail | null) => {
     if (!card?.docId) return;
     selectedCardCacheRef.current.set(card.docId, toStudioSelectedPreview(card));
@@ -338,6 +396,12 @@ export default function StudioWorkspace() {
   }, [selectedCardId, selectNoneMedia]);
 
   useEffect(() => {
+    setCardMediaEditorOpen(false);
+    setCardMediaItems([]);
+    setSelectedCardMediaId(null);
+  }, [selectedCardId]);
+
+  useEffect(() => {
     if (selectionRequestKey === '__new__') {
       setSelectedCardId(null);
       return;
@@ -382,23 +446,11 @@ export default function StudioWorkspace() {
 
   const scheduleLiveCardEditWidth = useCallback((next: number) => {
     pendingCardEditWidthRef.current = next;
-    if (cardEditDragRafRef.current != null) return;
-    cardEditDragRafRef.current = window.requestAnimationFrame(() => {
-      cardEditDragRafRef.current = null;
-      const pending = pendingCardEditWidthRef.current;
-      if (pending == null) return;
-      applyColumnWidth(cardEditColumnRef.current, pending, MIN_CARD_EDIT_PX);
-    });
+    applyColumnWidth(cardEditColumnRef.current, next, MIN_CARD_EDIT_PX);
   }, []);
   const scheduleLiveQuestionsWidth = useCallback((next: number) => {
     pendingQuestionsWidthRef.current = next;
-    if (questionsDragRafRef.current != null) return;
-    questionsDragRafRef.current = window.requestAnimationFrame(() => {
-      questionsDragRafRef.current = null;
-      const pending = pendingQuestionsWidthRef.current;
-      if (pending == null) return;
-      applyColumnWidth(questionsColumnRef.current, pending, MIN_QUESTIONS_PX);
-    });
+    applyColumnWidth(questionsColumnRef.current, next, MIN_QUESTIONS_PX);
   }, []);
 
   useEffect(() => {
@@ -435,41 +487,11 @@ export default function StudioWorkspace() {
     }));
   }, []);
 
-  const resolveWorkspaceWideLayout = useCallback(() => {
-    const host = studioRightColumnRef.current;
-    if (!wideLayout || !host) {
-      setWorkspaceWideLayout(false);
-      return;
-    }
-
-    const showComposePane = !paneVisibility.composeCollapsed;
-    const showQuestionsPane = !paneVisibility.questionsCollapsed;
-    const showMediaPane = !paneVisibility.mediaCollapsed;
-    const visiblePaneCount = [showComposePane, showQuestionsPane, showMediaPane].filter(Boolean).length;
-
-    if (visiblePaneCount <= 1) {
-      setWorkspaceWideLayout(false);
-      return;
-    }
-    void host;
-    setWorkspaceWideLayout(true);
-  }, [paneVisibility.composeCollapsed, paneVisibility.mediaCollapsed, paneVisibility.questionsCollapsed, wideLayout]);
-
-  useEffect(() => {
-    resolveWorkspaceWideLayout();
-  }, [resolveWorkspaceWideLayout]);
-
-  useLayoutEffect(() => {
-    const host = studioRightColumnRef.current;
-    if (!host) return;
-    const ro = new ResizeObserver(() => {
-      resolveWorkspaceWideLayout();
-    });
-    ro.observe(host);
-    return () => ro.disconnect();
-  }, [resolveWorkspaceWideLayout]);
-
-  const resizableWorkspaceLayout = wideLayout && workspaceWideLayout;
+  const resizableWorkspaceLayout =
+    Number(!paneVisibility.composeCollapsed) +
+      Number(!paneVisibility.questionsCollapsed) +
+      Number(!paneVisibility.mediaCollapsed) >
+    1;
   const embeddedRightSlotMinWidth = useMemo(() => {
     const visiblePaneMins = [
       !paneVisibility.composeCollapsed ? MIN_CARD_EDIT_PX : 0,
@@ -934,12 +956,14 @@ export default function StudioWorkspace() {
         selectedCardDetail: selectedDetail,
         selectedCardId,
         patchSelectedCard,
-        setActionInfo,
         resolveBankMediaById,
         bodyMediaInsertRef,
+        showToast: feedback.showToast,
+        showSuccess: feedback.showSuccess,
+        showError: feedback.showError,
       });
     },
-    [actionBusy, selectedCardId, selectedDetail, patchSelectedCard, resolveBankMediaById]
+    [actionBusy, feedback, selectedCardId, selectedDetail, patchSelectedCard, resolveBankMediaById]
   );
 
   const refreshCollectionsCardList = useCallback(() => {
@@ -993,6 +1017,10 @@ export default function StudioWorkspace() {
     },
     [router, selectNoneMedia, selectedCardId]
   );
+  const hasSelectedCardMedia = useMemo(
+    () => collectAssignedMediaIds(selectedDetail ?? selectedPreview).length > 0,
+    [selectedDetail, selectedPreview]
+  );
 
   const studioShellValue = useMemo<StudioShellContextValue>(
     () => ({
@@ -1018,6 +1046,8 @@ export default function StudioWorkspace() {
       toggleMediaSelection,
       selectAllMediaOnPage,
       selectNoneMedia,
+      hasSelectedCardMedia,
+      openSelectedCardMediaEditor,
       bodyMediaInsertRef,
     }),
     [
@@ -1043,6 +1073,8 @@ export default function StudioWorkspace() {
       toggleMediaSelection,
       selectAllMediaOnPage,
       selectNoneMedia,
+      hasSelectedCardMedia,
+      openSelectedCardMediaEditor,
     ]
   );
 
@@ -1227,6 +1259,57 @@ export default function StudioWorkspace() {
           </div>
         </div>
       </div>
+      <MediaEditModal
+        isOpen={cardMediaEditorOpen}
+        mediaItems={cardMediaItems}
+        selectedMediaId={selectedCardMediaId}
+        onSelectMedia={setSelectedCardMediaId}
+        onClose={() => setCardMediaEditorOpen(false)}
+        currentCardContext={
+          selectedCardMediaId && (selectedDetail ?? selectedPreview)?.docId
+            ? {
+                cardId: (selectedDetail ?? selectedPreview)!.docId!,
+                cardTitle:
+                  (selectedDetail ?? selectedPreview)!.title?.trim() ||
+                  (selectedDetail ?? selectedPreview)!.subtitle?.trim() ||
+                  'Current card',
+                roles: mediaRolesOnCard(selectedDetail ?? selectedPreview, selectedCardMediaId),
+              }
+            : null
+        }
+        onSaveMediaFields={async (mediaId, updates) => {
+          const updated = await updateMedia(mediaId, updates);
+          if (!updated) {
+            throw new Error('Media update failed. Please retry.');
+          }
+          if (updated) {
+            setCardMediaItems((current) => current.map((item) => (item.docId === updated.docId ? updated : item)));
+          }
+          if (selectedCardId) {
+            void loadSelectedCard(selectedCardId, { quiet: true });
+          }
+        }}
+        onMediaUpdated={(media) => {
+          setCardMediaItems((current) =>
+            current.map((item) => (item.docId === media.docId ? media : item))
+          );
+          if (selectedCardId) {
+            void loadSelectedCard(selectedCardId, { quiet: true });
+          }
+        }}
+        onDeleteMedia={async (mediaId) => {
+          await deleteMedia(mediaId);
+          const remaining = cardMediaItems.filter((item) => item.docId !== mediaId);
+          setCardMediaItems(remaining);
+          setSelectedCardMediaId(remaining[0]?.docId ?? null);
+          if (remaining.length === 0) {
+            setCardMediaEditorOpen(false);
+          }
+          if (selectedCardId) {
+            void loadSelectedCard(selectedCardId, { quiet: true });
+          }
+        }}
+      />
     </StudioShellProvider>
   );
 }

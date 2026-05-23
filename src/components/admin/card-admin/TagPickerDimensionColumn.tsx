@@ -96,14 +96,13 @@ export default function TagPickerDimensionColumn({
       <h4>{dimension.name}</h4>
 
       <div className={styles.addTagBlock}>
-        <span className={styles.addTagLabel}>New tag (top level)</span>
         <div className={styles.addTagRow}>
           <input
             type="text"
             className={styles.addTagInput}
             value={rootDraft}
             onChange={e => setRootDraft(e.target.value)}
-            placeholder="Name"
+            placeholder="New tag"
             disabled={creating}
             onKeyDown={e => {
               if (e.key === 'Enter') {
@@ -131,13 +130,13 @@ export default function TagPickerDimensionColumn({
           <div className={styles.addTagRow}>
             <input
               type="text"
-              className={styles.addTagInput}
-              value={childDraft}
-              onChange={e => setChildDraft(e.target.value)}
-              placeholder="Name"
-              disabled={creating}
-              onKeyDown={e => {
-                if (e.key === 'Enter') {
+            className={styles.addTagInput}
+            value={childDraft}
+            onChange={e => setChildDraft(e.target.value)}
+            placeholder="New tag"
+            disabled={creating}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
                   e.preventDefault();
                   void handleCreate(childDraft, pendingChild.id);
                 }

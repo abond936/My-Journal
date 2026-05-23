@@ -2,6 +2,7 @@
 
 import React from 'react';
 import clsx from 'clsx';
+import { X } from 'lucide-react';
 import styles from './EditModal.module.css';
 
 interface EditModalProps {
@@ -30,8 +31,8 @@ export default function EditModal({
       >
         <div className={styles.header}>
           <h3>{title}</h3>
-          <button onClick={onClose} className={styles.closeButton}>
-            &times;
+          <button onClick={onClose} className={styles.closeButton} aria-label="Close dialog">
+            <X size={16} aria-hidden="true" />
           </button>
         </div>
         <div className={styles.body}>

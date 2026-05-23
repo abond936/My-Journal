@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useSWRInfinite from 'swr/infinite';
 import JournalImage from '@/components/common/JournalImage';
 import { Media } from '@/lib/types/photo';
@@ -46,6 +46,8 @@ export default function ViewMediaFeed() {
   } = useCardContext();
   const { tags: allTags } = useTag();
   const [lightboxMedia, setLightboxMedia] = useState<Media | null>(null);
+  const [lightboxCaptionDraft, setLightboxCaptionDraft] = useState('');
+  const [lightboxCaptionSaving, setLightboxCaptionSaving] = useState(false);
 
   const dimensionalTags = useMemo(() => {
     const grouped: Partial<Record<'who' | 'what' | 'when' | 'where', string[]>> = {};
@@ -80,6 +82,7 @@ export default function ViewMediaFeed() {
     error,
     isLoading,
     isValidating,
+    mutate,
     size,
     setSize,
   } = useSWRInfinite<PaginatedResult<Media>>(
@@ -126,6 +129,42 @@ export default function ViewMediaFeed() {
   const loadMoreRef = useIntersectionObserver(handleLoadMore, { rootMargin: '500px' });
 
   const hasFilters = selectedTags.length > 0 || Boolean(searchTerm.trim());
+
+  useEffect(() => {
+    setLightboxCaptionDraft(lightboxMedia?.caption ?? '');
+  }, [lightboxMedia?.caption, lightboxMedia?.docId]);
+
+  const handleLightboxCaptionSave = useCallback(async () => {
+    if (!lightboxMedia?.docId) return;
+    if (lightboxCaptionDraft === (lightboxMedia.caption ?? '')) return;
+
+    setLightboxCaptionSaving(true);
+    try {
+      const response = await fetch(`/api/images/${lightboxMedia.docId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ caption: lightboxCaptionDraft }),
+      });
+
+      const body = (await response.json().catch(() => ({}))) as { media?: Media; message?: string };
+      if (!response.ok) {
+        throw new Error(body.message?.trim() || `Could not save caption (${response.status}).`);
+      }
+
+      const updatedMedia = body.media ?? { ...lightboxMedia, caption: lightboxCaptionDraft };
+      setLightboxMedia(updatedMedia);
+      await mutate(
+        (pages) =>
+          (pages ?? []).map((page) => ({
+            ...page,
+            items: page.items.map((item) => (item.docId === updatedMedia.docId ? updatedMedia : item)),
+          })),
+        { revalidate: false }
+      );
+    } finally {
+      setLightboxCaptionSaving(false);
+    }
+  }, [lightboxCaptionDraft, lightboxMedia, mutate]);
 
   if (error) {
     return (
@@ -224,10 +263,23 @@ export default function ViewMediaFeed() {
               />
             </div>
             <div className={styles.lightboxMeta}>
-              <p className={styles.lightboxFilename}>{lightboxMedia.filename}</p>
-              {lightboxMedia.caption?.trim() ? (
-                <p className={styles.lightboxCaption}>{lightboxMedia.caption.trim()}</p>
-              ) : null}
+              <textarea
+                className={styles.lightboxCaptionInput}
+                rows={2}
+                value={lightboxCaptionDraft}
+                placeholder="Add caption"
+                onChange={(e) => setLightboxCaptionDraft(e.target.value)}
+                onBlur={() => void handleLightboxCaptionSave()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    void handleLightboxCaptionSave();
+                    e.currentTarget.blur();
+                  }
+                }}
+                disabled={lightboxCaptionSaving}
+                aria-label="Media caption"
+              />
             </div>
           </div>
         </div>

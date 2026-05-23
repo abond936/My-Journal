@@ -37,7 +37,9 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 2px;
 }
 
 .studioPaneToggle {
@@ -77,7 +79,7 @@
 .gridStacked {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
   flex: 1;
   min-height: 0;
 }
@@ -237,8 +239,8 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
-  padding: calc(var(--spacing-md) + 2px) var(--spacing-md) 0;
+  gap: 6px;
+  padding: calc(var(--spacing-sm) + 2px) var(--spacing-sm) 0;
   border: var(--border-width-thin) solid var(--admin-window-border-color);
   border-radius: var(--border-radius-md);
   background: var(--admin-window-background-color);
@@ -264,21 +266,23 @@
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-xs) 0 0;
+  flex-wrap: nowrap;
+  gap: var(--spacing-xs);
+  padding: 2px 0 0;
+  overflow-x: auto;
 }
 
 .studioComposeFormActions {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  flex-wrap: nowrap;
 }
 
 .studioComposeSaveButton {
-  min-height: 36px;
-  padding: var(--spacing-xs) var(--spacing-md);
+  min-height: 30px;
+  min-width: 30px;
+  padding: 0.28rem;
   background-color: var(--admin-support-control-strong-background-color);
   color: var(--admin-support-control-strong-text-color);
   border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
@@ -299,8 +303,9 @@
 }
 
 .studioComposeDeleteButton {
-  min-height: 36px;
-  padding: var(--spacing-xs) var(--spacing-md);
+  min-height: 30px;
+  min-width: 30px;
+  padding: 0.28rem;
   background-color: transparent;
   color: var(--admin-danger-text-color, #8a1f1f);
   border: var(--border-width-thin) solid var(--admin-danger-border-color, #b84747);
@@ -321,8 +326,9 @@
 }
 
 .studioComposeCancelButton {
-  min-height: 36px;
-  padding: var(--spacing-xs) var(--spacing-md);
+  min-height: 30px;
+  min-width: 30px;
+  padding: 0.28rem;
   background-color: transparent;
   color: var(--admin-support-control-text-color);
   border: var(--border-width-thin) solid var(--admin-support-control-border-color);
@@ -416,8 +422,8 @@
 .studioMediaCardRow {
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
-  gap: var(--spacing-md);
+  flex-wrap: nowrap;
+  gap: var(--spacing-xs);
   flex: 1;
   min-height: 0;
   min-width: 0;
@@ -470,7 +476,7 @@
 
 .studioMediaBankColumn {
   flex: 1 1 180px;
-  min-width: min(100%, 160px);
+  min-width: min(100%, 140px);
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -481,7 +487,7 @@
 
 .studioQuestionsColumn {
   flex: 0 1 380px;
-  min-width: min(100%, 320px);
+  min-width: min(100%, 240px);
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -495,8 +501,8 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
-  padding: calc(var(--spacing-md) + 2px) var(--spacing-md) var(--spacing-md);
+  gap: var(--spacing-xs);
+  padding: calc(var(--spacing-sm) + 2px) var(--spacing-sm) var(--spacing-sm);
   border: var(--border-width-thin) solid var(--admin-window-border-color);
   border-radius: var(--border-radius-md);
   background: var(--admin-window-background-color);
@@ -514,7 +520,7 @@
 .studioQuestionCreate {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: 6px;
   flex-shrink: 0;
 }
 
@@ -522,6 +528,7 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
+  flex-wrap: nowrap;
 }
 
 .studioQuestionFilterRow .studioQuestionInput {
@@ -538,6 +545,10 @@
 .studioQuestionFilterActions {
   display: flex;
   justify-content: flex-end;
+}
+
+.studioQuestionFilterRow {
+  align-items: center;
 }
 
 .studioQuestionTreeSection {
@@ -577,7 +588,7 @@
 
 .studioQuestionTreePanel {
   flex: 0 0 auto;
-  max-height: min(260px, 34vh);
+  max-height: min(220px, 30vh);
   overflow: auto;
   border: var(--border-width-thin) solid var(--admin-window-border-color);
   border-radius: var(--border-radius-sm);
@@ -634,8 +645,17 @@
   background: var(--admin-support-control-background-color);
   color: var(--admin-support-control-text-color);
   font: inherit;
+  padding: 3px var(--spacing-xs);
+}
+
+.studioQuestionInput,
+.studioQuestionSelect {
+  font-size: var(--font-size-xs);
+  line-height: 1.25;
+}
+
+.studioQuestionTextarea {
   font-size: var(--font-size-sm);
-  padding: var(--spacing-xs) var(--spacing-sm);
 }
 
 .studioQuestionTextarea {
@@ -657,8 +677,8 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-sm);
+  gap: 6px;
+  padding: 0.45rem 0.5rem;
   border: var(--border-width-thin) solid var(--admin-window-border-color);
   border-radius: var(--border-radius-sm);
   background: var(--admin-window-background-color);
@@ -790,8 +810,9 @@
 
 .studioQuestionActions {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-xs);
+  flex-wrap: nowrap;
+  gap: 6px;
+  overflow-x: auto;
 }
 
 .studioQuestionConfirmBody {
@@ -830,7 +851,11 @@
 .studioQuestionPrimaryButton,
 .studioQuestionSmallButton,
 .studioQuestionDeleteButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 28px;
+  min-width: 28px;
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
@@ -841,26 +866,61 @@
   border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
   background: var(--admin-support-control-strong-background-color);
   color: var(--admin-support-control-strong-text-color);
-  padding: 0 0.55rem;
+  padding: 0 0.45rem;
 }
 
 .studioQuestionSmallButton {
   border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   background: var(--admin-support-control-background-color);
   color: var(--admin-support-control-text-color);
-  padding: 0 0.55rem;
+  padding: 0 0.45rem;
+}
+
+.studioQuestionTagActionButton {
+  border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--admin-support-control-strong-background-color);
+  color: var(--admin-support-control-strong-text-color);
+  padding: 2px 5px;
+  cursor: pointer;
+  font: var(--admin-grid-overlay-font);
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.studioQuestionTagActionButton:hover {
+  background: var(--admin-support-control-strong-hover-background-color);
+}
+
+.studioQuestionClearButton {
+  border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--admin-support-control-strong-background-color);
+  color: var(--admin-support-control-strong-text-color);
+  padding: 3px var(--spacing-xs);
+  cursor: pointer;
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--font-size-xs);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: 1.25;
+}
+
+.studioQuestionClearButton:hover {
+  background: var(--admin-support-control-strong-hover-background-color);
 }
 
 .studioQuestionDeleteButton {
   border: var(--border-width-thin) solid var(--admin-danger-border-color, #b84747);
   background: transparent;
   color: var(--admin-danger-text-color, #8a1f1f);
-  padding: 0 0.55rem;
+  padding: 0 0.45rem;
 }
 
 .studioQuestionPrimaryButton:disabled,
 .studioQuestionSmallButton:disabled,
-.studioQuestionDeleteButton:disabled {
+.studioQuestionDeleteButton:disabled,
+.studioQuestionTagActionButton:disabled,
+.studioQuestionClearButton:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
@@ -917,7 +977,7 @@
 
 .metaError {
   margin: 0;
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: 0.32rem 0.45rem;
   border-radius: var(--border-radius-sm);
   border: var(--border-width-thin) solid var(--state-error-border-color);
   background: color-mix(in srgb, var(--state-error-background-color) 88%, var(--admin-window-background-color));

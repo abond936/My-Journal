@@ -21,6 +21,7 @@ import {
   buildSingleCardDeletePrompt,
   fetchCardDeleteParents,
 } from '@/lib/utils/cardDeleteWarnings';
+import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import {
   buildStudioCollectionCardDragData,
   isStudioCollectionCardDragData,
@@ -478,6 +479,7 @@ export default function CardAdminList({
   hideDimensionMediaSuggestions = false,
 }: CardAdminListProps) {
   const router = useRouter();
+  const feedback = useAppFeedback();
   const isAllSelected = cards.length > 0 && selectedCardIds.size === cards.length;
 
   const tagMap = React.useMemo(
@@ -550,20 +552,30 @@ export default function CardAdminList({
       });
 
       if (prompt.blocked) {
-        window.alert(prompt.message);
+        await feedback.alert({
+          title: 'Cannot delete card',
+          message: prompt.message,
+        });
         return;
       }
 
-      if (!window.confirm(prompt.message)) return;
+      const shouldDelete = await feedback.confirm({
+        title: 'Delete card?',
+        message: prompt.message,
+        confirmLabel: 'Delete',
+        cancelLabel: 'Cancel',
+        tone: 'danger',
+      });
+      if (!shouldDelete) return;
 
       try {
         await onDeleteCard(card.docId);
       } catch (err) {
         console.error('Deletion error:', err);
-        alert(err instanceof Error ? err.message : 'An unknown error occurred.');
+        feedback.showError(err instanceof Error ? err.message : 'An unknown error occurred.', 'Could not delete card');
       }
     },
-    [onDeleteCard, onSaveScrollPosition]
+    [feedback, onDeleteCard, onSaveScrollPosition]
   );
 
   const needsCuratedDndKit = studioCuratedTreeDrag || studioCuratedTreeUnparentedRowTarget;

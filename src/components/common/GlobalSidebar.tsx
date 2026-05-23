@@ -285,10 +285,16 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
 
   const handleSelectCollection = useCallback(
     (nextCollectionId: string) => {
+      const nextCard = collectionCardById.get(nextCollectionId);
+      const hasChildren = Boolean(nextCard && normalizeCuratedChildIds(nextCard.childrenIds).length > 0);
+      if (!hasChildren) {
+        router.push(`/view/${encodeURIComponent(nextCollectionId)}?mode=guided`);
+        return;
+      }
       setCollectionId(nextCollectionId);
       returnToFeedIfViewingDetail();
     },
-    [returnToFeedIfViewingDetail, setCollectionId]
+    [collectionCardById, returnToFeedIfViewingDetail, router, setCollectionId]
   );
 
   const selectedTagsByDimension = useMemo(() => {

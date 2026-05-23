@@ -16,6 +16,10 @@ import TagPickerDimensionColumn from '@/components/admin/card-admin/TagPickerDim
 
 export type MacroTagCollapsedSummary = 'sparseTrees' | 'none';
 
+function isAuthorFacingTag(tag: Tag): boolean {
+  return !tag.name.trim().toLowerCase().startsWith('z-');
+}
+
 interface MacroTagSelectorProps {
   selectedTags: Tag[];
   allTags: Tag[];
@@ -56,7 +60,10 @@ export default function MacroTagSelector({
 
   const [saving, setSaving] = useState(false);
   const { tags: providerTags } = useTag();
-  const effectiveAllTags = providerTags.length > 0 ? providerTags : allTags;
+  const effectiveAllTags = useMemo(() => {
+    const source = providerTags.length > 0 ? providerTags : allTags;
+    return source.filter(isAuthorFacingTag);
+  }, [providerTags, allTags]);
 
   const handleSave = async (newSelection: string[]) => {
     onChange(newSelection);
@@ -73,9 +80,9 @@ export default function MacroTagSelector({
   };
 
   const handleCancel = () => {
-    if (startExpanded && onRequestClose) {
-      onRequestClose();
-      if (isControlled) onExpandedChange?.(false);
+    onRequestClose?.();
+    if (isControlled) {
+      onExpandedChange?.(false);
       return;
     }
     setExpanded(false);
@@ -108,7 +115,7 @@ export default function MacroTagSelector({
     return (
       <ExpandedView
         initialSelection={selectedTagIds}
-        allTags={allTags}
+        allTags={effectiveAllTags}
         onSave={handleSave}
         onCancel={handleCancel}
         saving={saving}
@@ -196,7 +203,7 @@ function ExpandedView({
 }: ExpandedViewProps) {
   const { tags } = useTag();
   const tagSource = useMemo(() => {
-    const a = tags ?? [];
+    const a = (tags ?? []).filter(isAuthorFacingTag);
     const b = allTags ?? [];
     if (!a.length) return b;
     if (!b.length) return a;
@@ -230,27 +237,6 @@ function ExpandedView({
       children: filterTreesBySearch(dim.children, search),
     }));
   }, [dimensionalTree, searchTerm]);
-
-  // Build sparse tree showing selected tags and their ancestors
-  const selectedTagTree = useMemo(() => {
-    if (!tagSource.length || currentSelection.size === 0) return [];
-    return buildSparseTagTree(tagSource, Array.from(currentSelection));
-  }, [tagSource, currentSelection]);
-
-  // Organize the sparse tree by dimension (same logic as main component)
-  const dimensionalSelectedTree = useMemo(() => {
-    const dimensions: Record<string, TagWithChildren[]> = {
-      who: [],
-      what: [],
-      when: [],
-      where: [],
-    };
-    selectedTagTree.forEach((rootNode) => {
-      const dim = normalizeTagDimensionKey(rootNode.dimension as string | undefined);
-      if (dim) dimensions[dim].push(rootNode);
-    });
-    return dimensions;
-  }, [selectedTagTree]);
 
   const expandedNodeIds = useMemo(() => {
     const expanded = new Set<string>();
@@ -320,27 +306,6 @@ function ExpandedView({
             </button>
           )}
         </div>
-        
-        {selectedTagTree.length > 0 && (
-          <div className={styles.treeDisplaySection}>
-            <h3>Selected Tags</h3>
-            <div className={styles.dimensionColumns}>
-              {DIMENSION_ORDER.map((dimension) => {
-                const roots = dimensionalSelectedTree[dimension] ?? [];
-                return (
-                  <div key={dimension} className={styles.dimensionColumn}>
-                    {roots.length > 0 ? (
-                      roots.map((root) => <TagNode key={root.docId} node={root} />)
-                    ) : (
-                      <span className={styles.dimensionLabel}>{dimension.toUpperCase()}</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-        
         <div className={styles.interactiveColumns}>
           {filteredDimensionalTree.map(dimension => (
             <TagPickerDimensionColumn

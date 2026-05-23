@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession, signIn } from 'next-auth/react';
 import { useTheme } from '@/components/providers/ThemeProvider';
+import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import styles from '@/components/view/Home.module.css';
 
 function safeCallbackPath(raw: string | null): string {
@@ -25,13 +26,12 @@ const Home: React.FC = () => {
   );
   const { status } = useSession();
   const { theme } = useTheme();
+  const feedback = useAppFeedback();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
 
     const result = await signIn('credentials', {
       redirect: false,
@@ -40,7 +40,7 @@ const Home: React.FC = () => {
     });
 
     if (result?.error) {
-      setError('Invalid credentials. Please try again.');
+      feedback.showError('Invalid credentials. Please try again.', 'Sign in failed');
     } else if (result?.ok) {
       router.push(afterLogin);
     }
@@ -54,7 +54,6 @@ const Home: React.FC = () => {
 
   const renderLoginForm = () => (
     <form onSubmit={handleSignIn} className={styles.loginForm}>
-      {error && <p className={styles.errorMessage}>{error}</p>}
       <input
         type="text"
         placeholder="Username"
@@ -88,8 +87,8 @@ const Home: React.FC = () => {
         {/* Title section */}
         <div className={styles.titleSection}>
           <Image 
-            src={`/images/uploads/Title-${theme === 'dark' ? 'dark' : 'light'}.png`}
-            alt="My Stories - Michael Alan Bond" 
+            src={`/images/uploads/Title-${theme === 'dark' ? 'dark2' : 'light2'}.png`}
+            alt="My Stories"
             className={styles.titleImage}
             width={600}
             height={300}
@@ -104,10 +103,6 @@ const Home: React.FC = () => {
           {status === 'authenticated' && renderLoading()}
           {status === 'unauthenticated' && (
             <>
-              <p className={styles.welcomeText}>
-                Welcome to my digital memoir.<br />
-                Stories about the people, places, and events of my life.
-              </p>
               {renderLoginForm()}
             </>
           )}

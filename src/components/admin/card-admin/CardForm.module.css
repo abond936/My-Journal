@@ -185,10 +185,10 @@
 }
 
 .aiAssistSection {
-  margin-top: var(--spacing-sm);
+  margin-top: var(--spacing-xs);
   border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-radius: var(--input-border-radius);
-  padding: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-sm);
   background: var(--admin-support-control-background-color);
   width: var(--card-form-shell-width);
   max-width: none;
@@ -196,7 +196,7 @@
 }
 
 .sectionTitle {
-  margin: 0 0 var(--spacing-sm) 0;
+  margin: 0 0 var(--spacing-xs) 0;
   color: var(--admin-support-title-color);
   font-family: var(--admin-support-title-font-family);
   font-size: var(--admin-support-title-font-size);
@@ -207,14 +207,67 @@
 .aiAssistTopRow {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
   align-items: center;
   justify-content: space-between;
+}
+
+.aiAssistHeaderBlock {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-xs);
+}
+
+.aiAssistGuideGroup {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+.aiAssistGuideButton {
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  border-radius: var(--input-border-radius);
+  background: var(--admin-window-background-color);
+  color: var(--admin-support-control-text-color);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  cursor: pointer;
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
+}
+
+.aiAssistGuideButtonActive {
+  border-color: var(--admin-support-control-strong-border-color);
+  background: var(--admin-support-control-strong-background-color);
+  color: var(--admin-support-control-strong-text-color);
+}
+
+.aiAssistGuideHint {
+  margin: 0;
+  pointer-events: none;
+  flex: 1 1 220px;
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
 }
 
 .aiAssistActionGroup {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--spacing-xs);
 }
 
@@ -269,6 +322,39 @@
   margin: var(--spacing-sm) 0 0;
   color: var(--state-error-border-color);
   font-size: var(--font-size-sm);
+}
+
+.aiAssistSummary {
+  margin: var(--spacing-sm) 0 0;
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
+}
+
+.aiCoachList {
+  display: grid;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+}
+
+.aiCoachCard {
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border-radius: var(--input-border-radius);
+  padding: var(--spacing-sm);
+  background: var(--admin-window-background-color);
+}
+
+.aiCoachSuggestion,
+.aiCoachPrompt,
+.aiCoachExample {
+  margin: var(--spacing-xs) 0 0;
+  color: var(--admin-support-label-color);
+  font-family: var(--admin-support-label-font-family);
+  font-size: var(--admin-support-label-font-size);
+  font-weight: var(--admin-support-label-font-weight);
+  line-height: var(--admin-support-label-line-height);
 }
 
 .aiDraftOptions {
@@ -424,6 +510,37 @@
   box-shadow:
     0 16px 30px color-mix(in srgb, var(--admin-support-control-strong-background-color) 14%, transparent),
     0 0 0 1px color-mix(in srgb, var(--admin-support-control-strong-border-color) 20%, transparent);
+}
+
+.studioBodyDropZone[data-drop-zone-active='true'] :global(.ProseMirror) {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--admin-support-control-strong-background-color) 14%, transparent) 0%,
+      color-mix(in srgb, var(--admin-support-control-strong-background-color) 7%, transparent) 100%
+    );
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, var(--admin-support-control-strong-border-color) 58%, transparent),
+    inset 0 0 0 8px color-mix(in srgb, var(--admin-support-control-strong-background-color) 8%, transparent);
+  border-radius: var(--border-radius-md);
+}
+
+.studioBodyDropZone {
+  position: relative;
+}
+
+.studioBodyDropIndicator {
+  position: absolute;
+  left: var(--spacing-sm);
+  right: var(--spacing-sm);
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--admin-chrome-active-control-background-color) 88%, white 12%);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--admin-window-background-color) 72%, transparent),
+    0 0 0 6px color-mix(in srgb, var(--admin-chrome-active-control-background-color) 14%, transparent);
+  pointer-events: none;
+  z-index: 2;
 }
 
 .gallerySection {

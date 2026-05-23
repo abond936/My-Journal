@@ -275,6 +275,7 @@ export default function MediaAdminList({
                 >
                   {column.key === 'actions' ? (
                     <div className={styles.tableHeaderStack}>
+                      <span>Edit</span>
                       {focalInActionsColumn ? <span>Focal</span> : null}
                       <span>Replace</span>
                       <span>Delete</span>

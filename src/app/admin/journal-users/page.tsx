@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import type { JournalUserPublic } from '@/lib/auth/journalUsersFirestore';
 import styles from './journal-users.module.css';
 
@@ -16,6 +17,7 @@ async function fetchUsers(): Promise<JournalUserPublic[]> {
 }
 
 export default function JournalUsersAdminPage() {
+  const feedback = useAppFeedback();
   const [users, setUsers] = useState<JournalUserPublic[]>([]);
   const [loading, setLoading] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
@@ -24,11 +26,8 @@ export default function JournalUsersAdminPage() {
   const [newPassword, setNewPassword] = useState('');
   const [newDisplayName, setNewDisplayName] = useState('');
   const [createBusy, setCreateBusy] = useState(false);
-  const [createMessage, setCreateMessage] = useState<string | null>(null);
-
   const [passwordById, setPasswordById] = useState<Record<string, string>>({});
   const [rowBusy, setRowBusy] = useState<string | null>(null);
-  const [rowError, setRowError] = useState<string | null>(null);
 
   const stickyTopRef = useRef<HTMLDivElement | null>(null);
 
@@ -67,7 +66,6 @@ export default function JournalUsersAdminPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setCreateMessage(null);
     setCreateBusy(true);
     try {
       const res = await fetch('/api/admin/journal-users', {
@@ -83,22 +81,19 @@ export default function JournalUsersAdminPage() {
       if (!res.ok) {
         throw new Error(data.message || data.error || 'Create failed');
       }
-      setCreateMessage(
-        'Viewer created. Send them your site link with this username and password (store passwords securely).'
-      );
+      feedback.showSuccess('User created. Share the site link, username, and temporary password.', 'Added');
       setNewUsername('');
       setNewPassword('');
       setNewDisplayName('');
       await load();
     } catch (err) {
-      setCreateMessage(err instanceof Error ? err.message : 'Create failed');
+      feedback.showError(err instanceof Error ? err.message : 'Create failed', 'Could not add user');
     } finally {
       setCreateBusy(false);
     }
   };
 
   const patchUser = async (id: string, body: Record<string, unknown>) => {
-    setRowError(null);
     setRowBusy(id);
     try {
       const res = await fetch(`/api/admin/journal-users/${id}`, {
@@ -112,7 +107,7 @@ export default function JournalUsersAdminPage() {
       }
       await load();
     } catch (err) {
-      setRowError(err instanceof Error ? err.message : 'Update failed');
+      feedback.showError(err instanceof Error ? err.message : 'Update failed', 'Could not update user');
     } finally {
       setRowBusy(null);
     }
@@ -121,7 +116,7 @@ export default function JournalUsersAdminPage() {
   const handleSetPassword = async (id: string) => {
     const pwd = passwordById[id]?.trim();
     if (!pwd || pwd.length < 8) {
-      setRowError('New password must be at least 8 characters');
+      feedback.showError('New password must be at least 8 characters', 'Could not set password');
       return;
     }
     await patchUser(id, { password: pwd });
@@ -136,17 +131,12 @@ export default function JournalUsersAdminPage() {
     <div className={styles.container}>
       <div className={styles.stickyTop} ref={stickyTopRef}>
         <h1 className={styles.pageHeading}>User Management</h1>
-        <p className={styles.intro}>
-          You are the only admin. Create viewer accounts here, then share your site URL plus username and password.
-          Run <code>npm run seed:journal-users</code> once (with an empty <code>journal_users</code> collection) to
-          move the admin account from env vars into Firestore.
-        </p>
       </div>
 
       {listError && <div className={styles.error}>{listError}</div>}
 
       <section className={styles.section}>
-        <h2>Add viewer</h2>
+        <h2>Add User</h2>
         <form onSubmit={handleCreate}>
           <div className={styles.formRow}>
             <div className={styles.inputGroup}>
@@ -183,11 +173,10 @@ export default function JournalUsersAdminPage() {
               />
             </div>
             <button type="submit" className={styles.button} disabled={createBusy}>
-              {createBusy ? 'Creating…' : 'Create viewer'}
+              {createBusy ? 'Adding...' : 'Add'}
             </button>
           </div>
         </form>
-        {createMessage && <div className={styles.success}>{createMessage}</div>}
       </section>
 
       <section className={`${styles.section} ${styles.tableSection}`}>
@@ -196,7 +185,6 @@ export default function JournalUsersAdminPage() {
           <p>Loading…</p>
         ) : (
           <>
-            {rowError && <div className={styles.error}>{rowError}</div>}
             <div className={styles.tableContainer}>
               <table className={styles.entriesTable}>
                 <thead>

@@ -40,11 +40,13 @@ export type StudioShellContextValue = {
   toggleMediaSelection: (mediaId: string) => void;
   selectAllMediaOnPage: () => void;
   selectNoneMedia: () => void;
+  hasSelectedCardMedia: boolean;
+  openSelectedCardMediaEditor: () => void;
   /**
    * Compose-only: `CardForm` registers `insertImage` here so `handleStudioRelationshipDragEnd` can insert
    * bank media into TipTap when the user drops onto `drop:body`.
    */
-  bodyMediaInsertRef: MutableRefObject<((media: Media) => void) | null>;
+  bodyMediaInsertRef: MutableRefObject<((media: Media, dropPoint?: { left: number; top: number } | null) => void) | null>;
 };
 
 const StudioShellContext = createContext<StudioShellContextValue | null>(null);

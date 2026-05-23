@@ -26,6 +26,7 @@ import {
   buildSingleCardDeletePrompt,
   fetchCardDeleteParents,
 } from '@/lib/utils/cardDeleteWarnings';
+import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import {
   buildStudioCollectionCardDragData,
   isStudioCollectionCardDragData,
@@ -680,6 +681,7 @@ export default function CardAdminGrid({
   pendingFocusCardId = null,
 }: CardAdminGridProps) {
   const router = useRouter();
+  const feedback = useAppFeedback();
   const isAllSelected = cards.length > 0 && selectedCardIds.size === cards.length;
   const needsCuratedDndKit = studioCuratedTreeDrag || studioCuratedTreeUnparentedRowTarget;
 
@@ -703,19 +705,28 @@ export default function CardAdminGrid({
     });
 
     if (prompt.blocked) {
-      window.alert(prompt.message);
+      await feedback.alert({
+        title: 'Cannot delete card',
+        message: prompt.message,
+      });
       return;
     }
 
-    if (window.confirm(prompt.message)) {
-      try {
-        await onDeleteCard(card.docId);
-      } catch (err) {
-        console.error('Deletion error:', err);
-        alert(err instanceof Error ? err.message : 'An unknown error occurred.');
-      }
+    const shouldDelete = await feedback.confirm({
+      title: 'Delete card?',
+      message: prompt.message,
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      tone: 'danger',
+    });
+    if (!shouldDelete) return;
+    try {
+      await onDeleteCard(card.docId);
+    } catch (err) {
+      console.error('Deletion error:', err);
+      feedback.showError(err instanceof Error ? err.message : 'An unknown error occurred.', 'Could not delete card');
     }
-  }, [onDeleteCard, onRequestDeleteCard]);
+  }, [feedback, onDeleteCard, onRequestDeleteCard]);
 
   const handleBulkPointer = useCallback(
     (e: React.MouseEvent | React.KeyboardEvent, cardId: string, cardIndex: number) => {

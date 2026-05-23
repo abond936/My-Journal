@@ -19,6 +19,69 @@ function errorResponse(payload: ApiErrorPayload, status: number) {
   return NextResponse.json(payload, { status });
 }
 
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== 'admin') {
+    return errorResponse(
+      {
+        ok: false,
+        code: 'AUTH_FORBIDDEN',
+        message: 'Forbidden.',
+        severity: 'error',
+        retryable: false,
+      },
+      403
+    );
+  }
+
+  const { id: mediaId } = await params;
+  if (!mediaId) {
+    return errorResponse(
+      {
+        ok: false,
+        code: 'MEDIA_ID_REQUIRED',
+        message: 'Media ID is required.',
+        severity: 'error',
+        retryable: false,
+      },
+      400
+    );
+  }
+
+  try {
+    const snap = await getAdminApp().firestore().collection('media').doc(mediaId).get();
+    if (!snap.exists) {
+      return errorResponse(
+        {
+          ok: false,
+          code: 'MEDIA_NOT_FOUND',
+          message: 'Media asset not found.',
+          severity: 'error',
+          retryable: false,
+        },
+        404
+      );
+    }
+
+    const media: Media = { ...(snap.data() as Media), docId: snap.id };
+    return NextResponse.json({ ok: true, media });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    console.error(`Error loading media ${mediaId}:`, errorMessage);
+    return errorResponse(
+      {
+        ok: false,
+        code: 'MEDIA_GET_FAILED',
+        message: 'Error loading media asset.',
+        severity: 'error',
+        retryable: true,
+        error: errorMessage,
+      },
+      500
+    );
+  }
+}
+
 /**
  * @swagger
  * /api/images/{id}:

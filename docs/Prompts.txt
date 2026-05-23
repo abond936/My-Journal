@@ -1,69 +1,119 @@
 Prompts
 
-1) Session Start (grounding only)
+Product Development Prompts
+
+1) Session Start
 Read `AGENTS.md`, `.cursor/rules/# AI_InteractionRules.mdc`, and `docs/01-Vision-Architecture.md` (TECHNICAL backend/frontend principles). Then read the relevant feature area in `docs/02-Application.md` and sequencing context in `docs/03-Implementation.md` if needed. Confirm completion only; no summary.
 
-2) Assess Request
-ASSESS this request:
-- Outcome:
-- Constraints:
-- Affected area(s):
-- Risks (architecture, UI, integrity, error handling):
+2) Product Vision
+Clarify the product in plain terms:
+- Who is it for?
+- What core problem does it solve?
+- Why is it better than current alternatives?
+- What kind of product is it becoming?
+Return the answer grounded in the existing docs first, then identify any missing product truth.
+
+3) Product Truth Check
+Compare the current docs and codebase for product truth:
+- What is clear and well-defined?
+- What is unclear, contradictory, or drifting?
+- What important product truths are missing?
+- What in chat should be reconciled back into docs?
+Return findings grounded in `docs/01-Vision-Architecture.md`, `docs/02-Application.md`, `docs/03-Implementation.md`, and current code behavior.
+
+4) Workflow Definition
+Define the important user workflows in product terms:
+- creation / administration workflows
+- consumption workflows
+- import / organization workflows
+- trust / recovery workflows
+State which workflows must feel excellent and which are merely acceptable for the current milestone.
+
+5) Commercial Viability Check
+Assess the product as a real commercial product:
+- What is already strong enough?
+- What is too brittle, too manual, too confusing, or too incomplete?
+- What would block shipping this credibly to real users?
+- What architecture or workflow weaknesses will create rework later?
+
+6) Priority Decision
+Based on the docs, current code, and product goals:
+- What should be worked on next?
+- Why is that the highest-value next step?
+- What should wait?
+- What work is overbuilt or misprioritized?
+
+7) Milestone Definition
+Define the current milestone in plain language:
+- demo
+- alpha
+- beta
+- launch
+State:
+- the goal
+- the workflows that must work well
+- the bar for calling the milestone successful
+
+8) Clarify Product Decision
+If a real product decision is missing, ask only the narrow question needed to proceed.
+- Explain why the answer matters
+- Give the decision in product terms, not implementation terms
+- Do not ask the user to choose files, architecture, or code structure
+
+Execution Prompts
+
+9) Product Impact Assessment
+ASSESS this request against the documented product:
+- What workflow is affected?
+- Is this architecture, workflow, polish, integrity, or bug work?
+- What existing good behavior could be harmed?
+- Does the request align with `docs/02-Application.md` and `docs/03-Implementation.md`?
 Return findings grounded in docs + current code behavior.
 
-3) Plan Request
+10) Root-Cause Before Fix
+DIAGNOSE before editing:
+- What is the root cause?
+- What layer owns the fix?
+- Why is that the correct layer?
+- What would be a shortcut or symptom patch here?
+If the request conflicts with documented product intent, say so before planning edits.
+
+11) Plan Request
 RECOMMEND a plan with max 3 substantive items:
 - Option(s) + recommendation
 - Exact edit scope (files/surfaces)
 - Verification plan
 Then ask: "Do you approve this exact edit set? May I proceed?"
 
-4) Execute Request
+12) Commercial Standard Check
+Before implementation, assess whether the proposed fix is good enough for a commercially viable product:
+- Is it robust?
+- Is it maintainable?
+- Does it preserve integrity?
+- Is any part still too brittle, too manual, or too ad hoc?
+
+13) Execute Request
 EXECUTE only approved items. Keep scope closed. Preserve product invariants. After edits, report:
 - What changed
 - What was verified
 - Residual risks / follow-ups
 
-5) Doc Update Request
+14) Demo / Launch Readiness Check
+When relevant, classify the work:
+- demo-critical
+- launch-critical
+- useful but deferrable
+State what user-visible risk remains after the change.
+
+15) Doc Reconciliation Request
 Update docs as part of done state where behavior or architecture changed:
 - `docs/02-Application.md` for feature/status truth
 - `docs/03-Implementation.md` for active `⭕1` sequencing
 - `docs/01-Vision-Architecture.md` for architectural facts/decisions
 Keep entries concise and structured (title + one-line description), not long prose.
 
-
-
-
-AI
-    - tailor AI Assist to be AI Story Assist. 
-        - create choices
-        - create a 'voice' from existing stories
-    -children in the tree and out of the tree?
-
-Content
-    - add drop cap to tiptap
-
-Media
-- Update an image
-
-Admin
-    - Need a title for Admin?
-
-User Management 
-    - remove the text.
-    - remove the shading 
-    - change terminology to user.
-
-Content editing
-    - allow
-
-Content Viewing
-    - Hero images getting cropped.
-
-Hamburger
-    - Tighen vertical spacing
-
-Compose
-    - Delete gives the system warnings, not the app warnings. Doesn't remove card from feed.
-
-
+16) Review Request
+REVIEW this change set as a product-engineering review:
+- Focus on bugs, regressions, integrity risks, workflow damage, and missing verification
+- Give findings first with file references
+- Keep summary brief

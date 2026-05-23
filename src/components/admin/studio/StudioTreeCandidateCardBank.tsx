@@ -12,6 +12,7 @@ import {
   listCuratedTreeAttachCandidates,
   mergeCardCatalogs,
 } from '@/lib/utils/curatedTreeAttachCandidates';
+import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import { buildParentIdsByChild } from '@/lib/utils/curatedCollectionTree';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import { Card } from '@/lib/types/card';
@@ -114,6 +115,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   } = props;
 
   const { selectedLoadState } = useStudioShell();
+  const feedback = useAppFeedback();
   const { tags: allTags } = useTag();
   const [fullCatalog, setFullCatalog] = useState<Card[]>([]);
   const [catalogOverrides, setCatalogOverrides] = useState<CatalogOverrideMap>({});
@@ -130,7 +132,6 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   const [typeFilter, setTypeFilter] = useState<CardTypeFilter>('all');
   const [displayModeFilter, setDisplayModeFilter] = useState<DisplayModeFilter>('all');
   const [tagFilterModalOpen, setTagFilterModalOpen] = useState(false);
-  const [rulesExpanded, setRulesExpanded] = useState(false);
   const [dimensionFilters, setDimensionFilters] = useState<DimensionFilterState>(DEFAULT_DIMENSION_FILTERS);
   const [isStreamingMore, setIsStreamingMore] = useState(false);
   const [pendingFocusCardId, setPendingFocusCardId] = useState<string | null>(null);
@@ -450,7 +451,13 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     async (field: keyof Card, value: string) => {
       if (!value) return;
       if (bulkSelectedCardIds.size === 0) return;
-      if (!confirm(`Are you sure you want to update ${field} for ${bulkSelectedCardIds.size} selected cards?`)) return;
+      const shouldUpdate = await feedback.confirm({
+        title: 'Update selected cards',
+        message: `Update ${field} for ${bulkSelectedCardIds.size} selected cards?`,
+        confirmLabel: 'Update',
+        cancelLabel: 'Cancel',
+      });
+      if (!shouldUpdate) return;
       const ids = Array.from(bulkSelectedCardIds);
       try {
         await Promise.all(
@@ -466,12 +473,12 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
         setBulkSelectedCardIds(new Set());
       } catch (err) {
         console.error(`Error updating ${String(field)}:`, err);
-        alert(`An error occurred while updating ${String(field)}.`);
+        feedback.showError(`An error occurred while updating ${String(field)}.`, 'Could not update cards');
         setCatalogRefreshTick((t) => t + 1);
         await refreshCards();
       }
     },
-    [bulkSelectedCardIds, patchCatalogCards, refreshCards]
+    [bulkSelectedCardIds, feedback, patchCatalogCards, refreshCards]
   );
 
   const handleBulkDelete = useCallback(async () => {
@@ -485,10 +492,20 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       titleById,
     });
     if (prompt.blocked) {
-      alert(prompt.message);
+      await feedback.alert({
+        title: 'Cannot delete cards',
+        message: prompt.message,
+      });
       return;
     }
-    if (!confirm(prompt.message)) return;
+    const shouldDelete = await feedback.confirm({
+      title: 'Delete selected cards',
+      message: prompt.message,
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      tone: 'danger',
+    });
+    if (!shouldDelete) return;
     const idsToDelete = Array.from(bulkSelectedCardIds);
     setBulkSelectedCardIds(new Set());
     try {
@@ -503,11 +520,14 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       await refreshCards();
     } catch (err) {
       console.error('Error deleting cards:', err);
-      alert(err instanceof Error ? err.message : 'An error occurred while deleting cards.');
+      feedback.showError(
+        err instanceof Error ? err.message : 'An error occurred while deleting cards.',
+        'Could not delete cards'
+      );
       setCatalogRefreshTick((t) => t + 1);
       await refreshCards();
     }
-  }, [bulkSelectedCardIds, mergedCatalog, parentIdsByChild, refreshCards, titleById]);
+  }, [bulkSelectedCardIds, feedback, mergedCatalog, parentIdsByChild, refreshCards, titleById]);
 
   const handleOpenBulkTags = useCallback(() => {
     setPendingBulkTags([]);
@@ -561,12 +581,12 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
         setBulkSelectedCardIds(new Set());
       } catch (err) {
         console.error(err);
-        alert(err instanceof Error ? err.message : 'Failed to apply tags.');
+        feedback.showError(err instanceof Error ? err.message : 'Failed to apply tags.', 'Could not apply tags');
       } finally {
         setBulkTagApplying(false);
       }
     },
-    [bulkSelectedCardIds, bulkTagMode, patchCatalogCards]
+    [bulkSelectedCardIds, bulkTagMode, feedback, patchCatalogCards]
   );
 
   const onUpdateCard = useCallback(
@@ -631,18 +651,17 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       <div className={styles.controls}>
       <div className={styles.studioCardFilters} role="search">
         <label className={`${styles.studioCardField} ${styles.studioPaneSearchField}`}>
-          <span className={styles.studioCardFieldLabel}>Search title</span>
+          <span className={styles.studioCardPanelTitle}>Cards</span>
           <input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className={styles.studioCardSearchInput}
-            placeholder="Type to filter…"
-            aria-label="Search cards by title"
+            placeholder="Search"
+            aria-label="Search cards"
           />
         </label>
         <label className={styles.studioCardField}>
-          <span className={styles.studioCardFieldLabel}>Type</span>
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value as CardTypeFilter)}
@@ -658,34 +677,31 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
           </select>
         </label>
         <label className={styles.studioCardField}>
-          <span className={styles.studioCardFieldLabel}>Display</span>
           <select
             value={displayModeFilter}
             onChange={(e) => setDisplayModeFilter(e.target.value as DisplayModeFilter)}
             className={styles.studioCardSelect}
             aria-label="Filter by display mode"
           >
-            <option value="all">All modes</option>
+            <option value="all">All Modes</option>
             <option value="inline">Inline</option>
             <option value="navigate">Navigate</option>
             <option value="static">Static</option>
           </select>
         </label>
         <label className={styles.studioCardField}>
-          <span className={styles.studioCardFieldLabel}>Status</span>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as 'all' | 'draft' | 'published')}
             className={styles.studioCardSelect}
             aria-label="Filter by status"
           >
-            <option value="all">All</option>
+            <option value="all">All Statuses</option>
             <option value="draft">Draft</option>
             <option value="published">Published</option>
           </select>
         </label>
         <label className={styles.studioCardField}>
-          <span className={styles.studioCardFieldLabel}>Sort</span>
           <select
             value={sortMode}
             onChange={(e) => setSortMode(e.target.value as CandidateSort)}
@@ -734,60 +750,47 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
               >
                 Edit
               </button>
-              <button
-                type="button"
-                className={styles.studioTagsEditButton}
-                aria-expanded={rulesExpanded}
-                onClick={() => setRulesExpanded((open) => !open)}
-              >
-                Rules
-              </button>
             </div>
           }
           footerContent={
-            rulesExpanded ? (
-              <div className={styles.studioRuleMatrix}>
-                {Array.from(DIMENSION_KEYS).map((dimension) => {
-                  const state = dimensionFilters[dimension];
-                  const options = (allTags || []).filter((t) => t.dimension === dimension && t.docId);
-                  return (
-                    <div key={dimension} className={styles.studioRuleColumn}>
-                      <div className={styles.studioRuleColumnTitle}>
-                        {dimension[0]!.toUpperCase() + dimension.slice(1)}
-                      </div>
+            <div className={styles.studioRuleMatrix}>
+              {Array.from(DIMENSION_KEYS).map((dimension) => {
+                const state = dimensionFilters[dimension];
+                const options = (allTags || []).filter((t) => t.dimension === dimension && t.docId);
+                return (
+                  <div key={dimension} className={styles.studioRuleColumn}>
+                    <select
+                      className={styles.studioCardSelect}
+                      value={state.mode}
+                      onChange={(e) =>
+                        updateDimensionFilter(dimension, {
+                          mode: e.target.value as DimensionFilterMode,
+                        })
+                      }
+                    >
+                      <option value="any">Any</option>
+                      <option value="hasAny">Has any</option>
+                      <option value="isEmpty">Is empty</option>
+                      <option value="matches">Matches tag</option>
+                    </select>
+                    {state.mode === 'matches' ? (
                       <select
                         className={styles.studioCardSelect}
-                        value={state.mode}
-                        onChange={(e) =>
-                          updateDimensionFilter(dimension, {
-                            mode: e.target.value as DimensionFilterMode,
-                          })
-                        }
+                        value={state.tagId}
+                        onChange={(e) => updateDimensionFilter(dimension, { tagId: e.target.value })}
                       >
-                        <option value="any">Any</option>
-                        <option value="hasAny">Has any</option>
-                        <option value="isEmpty">Is empty</option>
-                        <option value="matches">Matches tag</option>
+                        <option value="">Select tag...</option>
+                        {options.map((tag) => (
+                          <option key={tag.docId} value={tag.docId}>
+                            {tag.name}
+                          </option>
+                        ))}
                       </select>
-                      {state.mode === 'matches' ? (
-                        <select
-                          className={styles.studioCardSelect}
-                          value={state.tagId}
-                          onChange={(e) => updateDimensionFilter(dimension, { tagId: e.target.value })}
-                        >
-                          <option value="">Select tag...</option>
-                          {options.map((tag) => (
-                            <option key={tag.docId} value={tag.docId}>
-                              {tag.name}
-                            </option>
-                          ))}
-                        </select>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : null
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
           }
         />
       </div>
@@ -853,14 +856,14 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
               onClick={() => setBulkSelectedCardIds(new Set())}
               className={cardAdminStyles.actionButton}
             >
-              Clear Selection
+              Clear
             </button>
             <button
               type="button"
               onClick={() => void handleBulkDelete()}
               className={`${cardAdminStyles.actionButton} ${cardAdminStyles.deleteButton}`}
             >
-              Delete Selected
+              Delete
             </button>
           </div>
         ) : null}
@@ -923,7 +926,10 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
                     try {
                       await onDeleteCard(card.docId);
                     } catch (err) {
-                      window.alert(err instanceof Error ? err.message : 'An unknown error occurred.');
+                      feedback.showError(
+                        err instanceof Error ? err.message : 'An unknown error occurred.',
+                        'Could not delete card'
+                      );
                     }
                   }}
                 >

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { type MutableRefObject } from 'react';
+import React, { useEffect, type MutableRefObject } from 'react';
 import { arrayMove, useSortable } from '@dnd-kit/sortable';
 import { useDndContext, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
@@ -62,6 +62,7 @@ export function StudioDropZone({
   alwaysRegister = false,
   /** Shown only while a matching drag is active (`accepts` includes the drag kind). */
   eligibleHint,
+  onEligibleDragPointerUpdate,
   children,
 }: {
   id: string;
@@ -71,6 +72,7 @@ export function StudioDropZone({
   className?: string;
   alwaysRegister?: boolean;
   eligibleHint?: string;
+  onEligibleDragPointerUpdate?: (point: { left: number; top: number } | null) => void;
   children: React.ReactNode;
 }) {
   const { active } = useDndContext();
@@ -82,6 +84,26 @@ export function StudioDropZone({
       : null;
   const isEligible = activeDragKind !== null && accepts.includes(activeDragKind);
   const { setNodeRef, isOver } = useDroppable({ id, disabled: alwaysRegister ? false : !isEligible });
+  useEffect(() => {
+    if (!onEligibleDragPointerUpdate) return;
+    if (!isEligible || !isOver) {
+      onEligibleDragPointerUpdate(null);
+      return;
+    }
+
+    const handlePointerMove = (event: PointerEvent) => {
+      onEligibleDragPointerUpdate({
+        left: event.clientX,
+        top: event.clientY,
+      });
+    };
+
+    document.addEventListener('pointermove', handlePointerMove, true);
+    return () => {
+      document.removeEventListener('pointermove', handlePointerMove, true);
+      onEligibleDragPointerUpdate(null);
+    };
+  }, [isEligible, isOver, onEligibleDragPointerUpdate]);
   return (
     <div
       ref={setNodeRef}
@@ -187,9 +209,11 @@ export async function handleStudioRelationshipDragEnd(
     selectedCardDetail: StudioSelectedDetail | null;
     selectedCardId: string | null;
     patchSelectedCard: (payload: Partial<Card>, msg?: string) => Promise<void>;
-    setActionInfo: (s: string | null) => void;
     resolveBankMediaById: (id: string) => Media | undefined;
-    bodyMediaInsertRef: MutableRefObject<((media: Media) => void) | null>;
+    bodyMediaInsertRef: MutableRefObject<((media: Media, dropPoint?: { left: number; top: number } | null) => void) | null>;
+    showToast: (input: { title?: string; message: string; tone?: 'success' | 'error' | 'warning' | 'info'; durationMs?: number; persistent?: boolean }) => void;
+    showSuccess: (message: string, title?: string) => void;
+    showError: (message: string, title?: string, persistent?: boolean) => void;
   }
 ): Promise<boolean> {
   const { active, over } = event;
@@ -249,6 +273,7 @@ export async function handleStudioRelationshipDragEnd(
 
     if (overId === 'drop:cover') {
       await ctx.patchSelectedCard({ coverImageId: mediaId });
+      ctx.showSuccess('Cover image updated.', 'Cover updated');
       return true;
     }
 
@@ -256,32 +281,39 @@ export async function handleStudioRelationshipDragEnd(
       const gallery = ctx.selectedCardDetail.galleryMedia || [];
       const exists = gallery.some((g) => g.mediaId === mediaId);
       if (exists) {
-        ctx.setActionInfo('Media is already in gallery.');
+        ctx.showToast({
+          title: 'No change',
+          message: 'Media is already in gallery.',
+          tone: 'info',
+          durationMs: 2500,
+        });
         return true;
       }
       const nextOrder = gallery.length;
       await ctx.patchSelectedCard(
-        { galleryMedia: [...gallery, { mediaId, order: nextOrder }] },
-        'Media added to gallery by drag/drop.'
+        { galleryMedia: [...gallery, { mediaId, order: nextOrder }] }
       );
+      ctx.showSuccess('Media added to gallery.', 'Gallery updated');
       return true;
     }
 
     if (overId === 'drop:body') {
       const media = ctx.resolveBankMediaById(mediaId);
       if (!media?.docId) {
-        ctx.setActionInfo(
-          'That media is not on the current bank page. Adjust filters or use Next/Previous, then try again.'
+        ctx.showError(
+          'That media is not on the current bank page. Adjust filters or use Next/Previous, then try again.',
+          'Could not insert image',
+          false
         );
         return true;
       }
       const insert = ctx.bodyMediaInsertRef.current;
       if (!insert) {
-        ctx.setActionInfo('Body editor is not ready. Select a card in Compose and try again.');
+        ctx.showError('Body editor is not ready. Select a card in Compose and try again.', 'Could not insert image', false);
         return true;
       }
       insert(media);
-      ctx.setActionInfo('Image inserted in body.');
+      ctx.showSuccess('Image inserted in body.', 'Inserted');
       return true;
     }
   }

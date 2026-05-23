@@ -150,12 +150,14 @@ export default function PhotoPicker({
   const [libraryRefreshKey, setLibraryRefreshKey] = useState(0);
   const [selectedLibraryMedia, setSelectedLibraryMedia] = useState<Media[]>([]);
   const librarySearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const libraryLoadMoreRef = useRef<HTMLDivElement | null>(null);
+  const libraryScrollRef = useRef<HTMLDivElement | null>(null);
 
   const [libSource, setLibSource] = useState('all');
   const [libDimensions, setLibDimensions] = useState('all');
   const [libHasCaption, setLibHasCaption] = useState('all');
   const [libAssignment, setLibAssignment] = useState('all');
-  const [matchCardTags, setMatchCardTags] = useState(true);
+  const [matchCardTags, setMatchCardTags] = useState(false);
   const [libraryPickerTagIds, setLibraryPickerTagIds] = useState<string[]>([]);
   /** When true, server runs ExifTool for captions/keywords (opt-in). */
   const [readEmbeddedMetadata, setReadEmbeddedMetadata] = useState(false);
@@ -532,10 +534,10 @@ export default function PhotoPicker({
     setLibDimensions('all');
     setLibHasCaption('all');
     setLibAssignment('all');
-    setMatchCardTags(Boolean(filterTagIds?.length));
+    setMatchCardTags(false);
     setLibraryPickerTagIds([]);
     setLibraryNextListPage(null);
-  }, [filterTagIds]);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -556,7 +558,7 @@ export default function PhotoPicker({
     setLibDimensions('all');
     setLibHasCaption('all');
     setLibAssignment('all');
-    setMatchCardTags(Boolean(filterTagIds?.length));
+    setMatchCardTags(false);
     setLibraryPickerTagIds([]);
     setLibraryRefreshKey(0);
     setLibraryError(null);
@@ -643,6 +645,29 @@ export default function PhotoPicker({
     libraryRefreshKey,
     buildLibraryParams,
   ]);
+
+  useEffect(() => {
+    if (!isOpen || sourceTab !== 'library' || !libraryHasNext) return;
+    const sentinel = libraryLoadMoreRef.current;
+    const scrollRoot = libraryScrollRef.current;
+    if (!sentinel || !scrollRoot) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting || libraryLoading || libraryLoadingMore) return;
+        void loadMoreLibrary();
+      },
+      {
+        root: scrollRoot,
+        rootMargin: '240px 0px',
+        threshold: 0,
+      }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [isOpen, sourceTab, libraryHasNext, libraryLoading, libraryLoadingMore, loadMoreLibrary]);
 
   if (!isOpen) return null;
 
@@ -798,6 +823,8 @@ export default function PhotoPicker({
                 selectedTags={libraryPickerTags}
                 allTags={allTags}
                 onChange={setLibraryPickerTagIds}
+                expanded
+                collapsedSummary="none"
               />
               {filterTagIds && filterTagIds.length > 0 && (
                 <label
@@ -808,7 +835,7 @@ export default function PhotoPicker({
                     checked={matchCardTags}
                     onChange={e => setMatchCardTags(e.target.checked)}
                   />
-                  Match card tags
+                  Also match card tags
                 </label>
               )}
             </div>
@@ -905,7 +932,7 @@ export default function PhotoPicker({
               <div className={styles.noContent}>No media matches the current filters.</div>
             ) : (
               <div className={styles.libraryResults}>
-                <div className={styles.libraryScroll}>
+                <div ref={libraryScrollRef} className={styles.libraryScroll}>
                   <div className={styles.libraryGrid}>
                   {libraryItems.map(media => {
                     const isSelected = selectedLibraryMedia.some(m => m.docId === media.docId);
@@ -944,6 +971,7 @@ export default function PhotoPicker({
                     );
                   })}
                   </div>
+                  {libraryHasNext ? <div ref={libraryLoadMoreRef} className={styles.libraryAutoLoadSentinel} aria-hidden="true" /> : null}
                 </div>
                 {libraryHasNext && (
                   <div className={styles.libraryLoadMoreWrap}>

@@ -629,6 +629,11 @@
   flex-shrink: 0;
 }
 
+.libraryAutoLoadSentinel {
+  width: 100%;
+  height: 1px;
+}
+
 .libraryLoadMore {
   padding: 0.5rem 1.25rem;
   border: var(--border-width-thin) solid var(--admin-support-control-border-color);

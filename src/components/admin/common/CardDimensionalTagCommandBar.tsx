@@ -19,6 +19,24 @@ function norm(s: string): string {
   return s.trim().toLowerCase();
 }
 
+function scoreTagSuggestion(query: string, tagName: string, pathLabel: string): number | null {
+  if (!query) return null;
+
+  const normalizedTagName = norm(tagName);
+  const normalizedPath = norm(pathLabel);
+  const pathSegments = normalizedPath.split('/').map((segment) => segment.trim()).filter(Boolean);
+  const leafName = pathSegments[pathSegments.length - 1] ?? normalizedTagName;
+
+  if (normalizedTagName === query || leafName === query) return 0;
+  if (normalizedTagName.startsWith(query) || leafName.startsWith(query)) return 1;
+  if (normalizedTagName.includes(query) || leafName.includes(query)) return 2;
+  if (normalizedPath.endsWith(`/${query}`)) return 3;
+  if (normalizedPath.includes(`/${query}/`) || normalizedPath.includes(`/${query}`)) return 4;
+  if (normalizedPath.includes(query)) return 5;
+
+  return null;
+}
+
 export interface CardDimensionalTagCommandBarProps {
   /** Tag assignment only; full `Card` is accepted at call sites. */
   card: Pick<Card, 'tags'>;
@@ -84,17 +102,21 @@ export default function CardDimensionalTagCommandBar({
   const suggestions = useMemo(() => {
     const q = norm(query);
     if (!q) return [];
-    const out: { tag: Tag; pathLabel: string; dimension: TagDimension }[] = [];
+    const out: { tag: Tag; pathLabel: string; dimension: TagDimension; rank: number; depth: number }[] = [];
     for (const tag of allTags) {
       if (!tag.docId || selectedSet.has(tag.docId)) continue;
       const dimension = resolvedDimension.get(tag.docId);
       if (!dimension) continue;
       const pathLabel = getTagPathDisplay(tag, tagById);
-      if (norm(tag.name).includes(q) || norm(pathLabel).includes(q)) {
-        out.push({ tag, pathLabel, dimension });
-      }
+      const rank = scoreTagSuggestion(q, tag.name, pathLabel);
+      if (rank === null) continue;
+      out.push({ tag, pathLabel, dimension, rank, depth: tag.path?.length ?? 0 });
     }
-    out.sort((a, b) => a.pathLabel.localeCompare(b.pathLabel));
+    out.sort((a, b) => {
+      if (a.rank !== b.rank) return a.rank - b.rank;
+      if (a.depth !== b.depth) return a.depth - b.depth;
+      return a.pathLabel.localeCompare(b.pathLabel);
+    });
     return out.slice(0, MAX_SUGGESTIONS);
   }, [allTags, query, resolvedDimension, selectedSet, tagById]);
 

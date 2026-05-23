@@ -12,11 +12,20 @@ import {
 } from '@/lib/utils/cardUtils';
 import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 import { useOptionalCardContext } from '@/components/providers/CardProvider';
+import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 
 /** Fields refreshed from Studio shell after relationship DnD / PATCH (same card `docId`). */
 export type ShellRelationshipSnapshot = Pick<
   CardUpdate,
-  'coverImageId' | 'coverImage' | 'coverImageFocalPoint' | 'galleryMedia' | 'childrenIds' | 'contentMedia'
+  | 'coverImageId'
+  | 'coverImage'
+  | 'coverImageFocalPoint'
+  | 'galleryMedia'
+  | 'childrenIds'
+  | 'contentMedia'
+  | 'type'
+  | 'status'
+  | 'questionId'
 >;
 
 /**
@@ -71,6 +80,8 @@ interface FormContextValue {
   isDirty: boolean;
   /** If dirty, prompts; returns true when navigation should proceed. */
   confirmLeaveIfDirty: () => boolean;
+  /** Modal-backed variant for shells that avoid browser prompts. */
+  confirmLeaveIfDirtyAsync: () => Promise<boolean>;
   /** RichTextEditor registers latest HTML getter so leave/dirty matches TipTap buffer. */
   registerEditorContentGetter: (getter: () => string) => () => void;
 
@@ -158,6 +169,7 @@ function mergeInitialCard(card: Card | null): CardUpdate {
  * CardFormProvider Component
  */
 export function CardFormProvider({ children, initialCard, allTags, onSave }: FormProviderProps) {
+  const feedback = useAppFeedback();
   const cardContext = useOptionalCardContext();
   const [formState, setFormState] = useState<FormState>(() => {
     const card = mergeInitialCard(initialCard);
@@ -239,6 +251,20 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     return window.confirm('You have unsaved changes. Leave without saving?');
   }, [formState.lastSavedState.cardData, mergeEditorContentInto]);
 
+  const confirmLeaveIfDirtyAsync = useCallback(async () => {
+    const current = mergeEditorContentInto(cardDataRef.current);
+    if (persistableSnapshotsEqual(current, formState.lastSavedState.cardData)) {
+      return true;
+    }
+    return feedback.confirm({
+      title: 'Discard unsaved changes?',
+      message: 'You have unsaved changes. Discard them and continue?',
+      confirmLabel: 'Discard',
+      cancelLabel: 'Keep editing',
+      tone: 'danger',
+    });
+  }, [feedback, formState.lastSavedState.cardData, mergeEditorContentInto]);
+
   const syncPersistableBaseline = useCallback(() => {
     setFormState((prev) => ({
       ...prev,
@@ -276,6 +302,9 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       'galleryMedia',
       'childrenIds',
       'contentMedia',
+      'type',
+      'status',
+      'questionId',
     ] as const satisfies readonly (keyof ShellRelationshipSnapshot)[];
     setFormState((prev) => {
       let nextCard = prev.cardData;
@@ -283,6 +312,12 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
         if (!Object.prototype.hasOwnProperty.call(snap, k)) continue;
         const v = snap[k];
         nextCard = { ...nextCard, [k]: v } as CardUpdate;
+      }
+      if (Object.prototype.hasOwnProperty.call(snap, 'type')) {
+        nextCard = {
+          ...nextCard,
+          displayMode: normalizeDisplayModeForType(nextCard.type ?? 'story', nextCard.displayMode),
+        };
       }
       const mergedCard = mergeEditorContentInto(nextCard);
       const wasPristine = persistableSnapshotsEqual(prev.cardData, prev.lastSavedState.cardData);
@@ -582,6 +617,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       validateForm,
       isDirty,
       confirmLeaveIfDirty,
+      confirmLeaveIfDirtyAsync,
       registerEditorContentGetter,
       syncPersistableBaseline,
       commitGalleryMediaPersisted,
@@ -601,6 +637,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       validateForm,
       isDirty,
       confirmLeaveIfDirty,
+      confirmLeaveIfDirtyAsync,
       registerEditorContentGetter,
       syncPersistableBaseline,
       commitGalleryMediaPersisted,

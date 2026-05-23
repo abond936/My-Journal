@@ -23,17 +23,14 @@
   font-family: inherit;
 }
 
-.topNavContainer {
+.topNavSpacer {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  padding: 0 var(--spacing-lg);
-  border-bottom: var(--border-width-thin) solid var(--admin-window-border-color);
-  background-color: var(--admin-window-background-color);
+  height: 0;
   position: sticky;
   top: 0;
   z-index: 60;
-  box-sizing: border-box;
 }
 
 .pageContent {

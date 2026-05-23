@@ -1115,7 +1115,14 @@ export default function CollectionsAdminClient({
     try {
       if (onStudioRelationshipDragEnd) {
         try {
-          const handled = await onStudioRelationshipDragEnd(event);
+          const relationshipEvent =
+            overStr == null
+              ? event
+              : {
+                  ...event,
+                  over: { id: overStr },
+                };
+          const handled = await onStudioRelationshipDragEnd(relationshipEvent);
           if (handled) {
             setCuratedDragKind(null);
             setDraggingCardId(null);
@@ -1458,9 +1465,9 @@ export default function CollectionsAdminClient({
 
             {showCardsPane ? (
             <section className={styles.panel}>
-              <h2 className={studioAttachBank ? styles.panelStudioColumnTitle : undefined}>
-                {studioAttachBank ? 'Cards' : 'Orphaned Cards'}
-              </h2>
+              {!studioAttachBank ? (
+                <h2 className={styles.panelStudioColumnTitle}>Orphaned Cards</h2>
+              ) : null}
               {!studioAttachBank ? (
                 <p className={styles.hint}>
                   {curatedTreeDnd

@@ -1,33 +1,34 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 import styles from './page.module.css';
 
 export const metadata: Metadata = {
   title: 'My Stories - Landing Page 3',
   description:
-    'A documentary timeline style landing page for My Stories with photo-led sections and generational storytelling copy.',
+    'A documentary timeline style landing page for My Stories with memoir-oriented copy shaped for a single author.',
 };
 
 const chapters = [
   {
     year: 'Beginnings',
-    title: 'A family record does not start as an archive.',
+    title: 'A life story rarely begins with the intention to preserve it.',
     body:
-      'It starts as birthdays, departures, kitchen tables, school pictures, holiday mornings, and the quiet habits no one thinks to explain until later.',
+      'It begins with birthdays, departures, kitchen tables, school pictures, holiday mornings, and the quiet habits that feel ordinary until time gives them weight.',
     imageClass: 'chapterHome',
   },
   {
     year: 'Across Time',
-    title: 'The meaning usually lives between the images.',
+    title: 'The meaning lives between the photographs.',
     body:
-      'One photograph shows the trip. Another shows the house. The story reveals the strain, the joy, the move, the recovery, or the reason that year still comes up in conversation.',
+      'One image shows the trip. Another shows the house. The narrative is what gives the images meaning.',
     imageClass: 'chapterTravel',
   },
   {
-    year: 'Inheritance',
-    title: 'What survives should still be understandable.',
+    year: 'Legacy',
+    title: 'What remains should be the understanding.',
     body:
-      'My Stories preserves the narrative thread so a grandchild can inherit more than evidence. They inherit orientation, names, relationships, and memory with shape.',
+      'My Stories helps preserve the narrative thread so the people who come after inherit more than fragments. They inherit orientation, names, relationships, and memory with shape.',
     imageClass: 'chapterPortrait',
   },
 ];
@@ -37,11 +38,22 @@ export default function LandingPageThree() {
     <main className={styles.page}>
       <section className={styles.hero}>
         <div className={styles.heroOverlay}>
-          <p className={styles.kicker}>Landing Page 3 · Documentary Timeline</p>
-          <h1 className={styles.title}>Every family has a timeline. The story is what makes it legible.</h1>
+          <div className={styles.logoWrap}>
+            <Image
+              src="/images/uploads/Title-light2.png"
+              alt="My Stories"
+              className={styles.logo}
+              width={600}
+              height={300}
+              sizes="(max-width: 768px) 80vw, 420px"
+              priority
+            />
+          </div>
+          <p className={styles.kicker}>Landing Page 3 - Documentary Timeline</p>
+          <h1 className={styles.title}>Everyone has a story.</h1>
           <p className={styles.lead}>
-            My Stories is a private storytelling journal that helps families preserve photographs,
-            narrative, and context as one connected record across generations.
+            My Stories is a private storytelling journal to shape photographs, narrative, and
+            context with clarity and meaning.
           </p>
           <div className={styles.actions}>
             <Link href="/" className={styles.primaryAction}>
@@ -77,7 +89,7 @@ export default function LandingPageThree() {
       <section className={styles.valueSection}>
         <div className={styles.valueIntro}>
           <p className={styles.kicker}>What My Stories adds</p>
-          <h2 className={styles.sectionTitle}>A photograph, a narrative, a path back in.</h2>
+          <h2 className={styles.sectionTitle}>A photograph, a narrative, a path.</h2>
         </div>
         <div className={styles.valueGrid}>
           <article className={styles.valueCard}>
@@ -86,11 +98,11 @@ export default function LandingPageThree() {
           </article>
           <article className={styles.valueCard}>
             <h3>Structure</h3>
-            <p>Organize stories into guided sequences or freeform paths so the archive can be both curated and discoverable.</p>
+            <p>Organize stories into guided sequences or freeform paths so one life record can feel both shaped and discoverable.</p>
           </article>
           <article className={styles.valueCard}>
             <h3>Continuity</h3>
-            <p>Create something a family can revisit later and still understand, even when the original storyteller is no longer in the room.</p>
+            <p>Create something others can return to later and still understand, even when the original storyteller is no longer there to explain it.</p>
           </article>
         </div>
       </section>
@@ -101,17 +113,17 @@ export default function LandingPageThree() {
           <p className={styles.kicker}>For memory keepers</p>
           <h2 className={styles.sectionTitle}>Preserve the thread, not only the fragments.</h2>
           <p className={styles.body}>
-            My Stories is for families, journalers, and memory keepers who want their archive to
-            remain readable, intimate, and connected.
+            My Stories is for memoir keepers, journalers, and thoughtful archivists who want one
+            person&apos;s record to remain readable, intimate, and connected.
           </p>
         </div>
       </section>
 
       <section className={styles.ctaSection}>
         <p className={styles.kicker}>Continue</p>
-        <h2 className={styles.sectionTitle}>Give the next generation more than a folder of unexplained pictures.</h2>
+        <h2 className={styles.sectionTitle}>Leave behind more than a folder of unexplained pictures.</h2>
         <p className={styles.body}>
-          Build an archive that keeps its people, its places, and the stories that made them matter.
+          Build a record that keeps its people, its places, and the stories that made them matter.
         </p>
         <div className={styles.actions}>
           <Link href="/" className={styles.primaryAction}>

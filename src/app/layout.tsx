@@ -3,6 +3,7 @@ import './fonts.css';
 import './theme.css';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import AuthProvider from '@/components/providers/AuthProvider';
+import { AppFeedbackProvider } from '@/components/providers/AppFeedbackProvider';
 import { TagProvider } from '@/components/providers/TagProvider';
 import { CardProvider } from '@/components/providers/CardProvider';
 import AppShell from '@/components/common/AppShell';
@@ -78,13 +79,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body suppressHydrationWarning>
         <AuthProvider>
           <ThemeProvider>
-            <TagProvider>
-              <CardProvider>
-                <AppShell>
-                  {children}
-                </AppShell>
-              </CardProvider>
-            </TagProvider>
+            <AppFeedbackProvider>
+              <TagProvider>
+                <CardProvider>
+                  <AppShell>
+                    {children}
+                  </AppShell>
+                </CardProvider>
+              </TagProvider>
+            </AppFeedbackProvider>
           </ThemeProvider>
         </AuthProvider>
       </body>

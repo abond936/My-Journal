@@ -12,13 +12,15 @@ import { parseObjectPositionToPercents } from '@/lib/utils/parseObjectPositionPe
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import { isMediaAssigned } from '@/lib/utils/mediaAssignmentSeek';
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
+import MediaEditModal from '@/components/admin/media-admin/MediaEditModal';
 import styles from './MediaAdminRow.module.css';
+import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 
 export type MediaAdminRowStudioDragBind = {
   attributes: DraggableAttributes;
   listeners: DraggableSyntheticListeners;
   setNodeRef: (el: HTMLElement | null) => void;
-  setActivatorNodeRef: (el: HTMLElement | null) => void;
+  setActivatorNodeRef?: (el: HTMLElement | null) => void;
   style: React.CSSProperties;
 };
 
@@ -54,9 +56,11 @@ export default function MediaAdminRow({
   studioDragBind,
 }: MediaAdminRowProps) {
   const focalInActions = !columns.some((c) => c.key === 'objectPosition');
-  const { deleteMedia, updateMedia, fetchMedia, currentPage } = useMedia();
+  const { deleteMedia, updateMedia, refreshMedia } = useMedia();
   const { tags: allTags } = useTag();
+  const feedback = useAppFeedback();
   const [isEditingCaption, setIsEditingCaption] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const [captionValue, setCaptionValue] = useState(media.caption || '');
   const [focalModalOpen, setFocalModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -107,10 +111,10 @@ export default function MediaAdminRow({
         const data = await response.json().catch(() => ({}));
         throw new Error(typeof data.message === 'string' ? data.message : 'Failed to replace image');
       }
-      await fetchMedia(currentPage);
+      await refreshMedia();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to replace image';
-      alert(message);
+      feedback.showError(message, 'Could not replace image');
     } finally {
       setReplacing(false);
       event.target.value = '';
@@ -130,7 +134,12 @@ export default function MediaAdminRow({
 
       case 'thumbnail':
         return (
-          <div className={styles.thumbnailCellInner}>
+          <div
+            className={`${styles.thumbnailCellInner} ${studioDragBind ? styles.thumbnailCellInnerStudioDraggable : ''}`}
+            title={studioDragBind ? 'Drag image to selected card cover, gallery, or content' : undefined}
+            {...(studioDragBind ? studioDragBind.attributes : {})}
+            {...(studioDragBind ? studioDragBind.listeners : {})}
+          >
             <JournalImage
               src={getDisplayUrl(media)}
               alt={media.filename}
@@ -255,6 +264,15 @@ export default function MediaAdminRow({
       case 'actions':
         return (
           <div className={styles.actions}>
+            <button
+              type="button"
+              onClick={() => setEditModalOpen(true)}
+              className={styles.actionButton}
+              title="Edit image details"
+              disabled={replacing}
+            >
+              Edit
+            </button>
             {focalInActions ? (
               <button
                 type="button"
@@ -316,14 +334,14 @@ export default function MediaAdminRow({
           listVariant === 'compact' ? styles.rowCompact : ''
         }`}
       >
-        <td className={`${styles.checkboxCell} ${studioDragBind ? styles.checkboxCellWithStudioHandle : ''}`}>
+        <td className={styles.checkboxCell}>
           {studioDragBind ? (
             <button
               type="button"
               ref={studioDragBind.setActivatorNodeRef}
               className={styles.studioSourceDragHandle}
-              aria-label="Drag to selected card cover or gallery. Space to pick up, arrows to move, Space to drop."
-              title="Drag to Cover or Gallery (Studio Card edit)"
+              aria-label="Drag to selected card cover, gallery, or content. Space to pick up, arrows to move, Space to drop."
+              title="Drag to Cover, Gallery, or Content (Studio Card edit)"
               data-studio-dnd-return-focus={media.docId ? `source:${media.docId}` : undefined}
               {...studioDragBind.attributes}
               {...studioDragBind.listeners}
@@ -426,6 +444,23 @@ export default function MediaAdminRow({
                 </div>
               </form>
             </EditModal>
+            <MediaEditModal
+              isOpen={editModalOpen}
+              mediaItems={[media]}
+              selectedMediaId={media.docId}
+              onSelectMedia={() => undefined}
+              onClose={() => setEditModalOpen(false)}
+              onSaveMediaFields={async (mediaId, updates) => {
+                const updated = await updateMedia(mediaId, updates);
+                if (!updated) {
+                  throw new Error('Media update failed. Please retry.');
+                }
+              }}
+              onDeleteMedia={async (mediaId) => {
+                await deleteMedia(mediaId);
+                setEditModalOpen(false);
+              }}
+            />
             <EditModal
               isOpen={deleteModalOpen}
               onClose={() => setDeleteModalOpen(false)}

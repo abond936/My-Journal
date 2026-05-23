@@ -100,6 +100,17 @@ function applyMediaTagMutation(
   return Array.from(tagSet);
 }
 
+function dedupeMediaByDocId(items: Media[]): Media[] {
+  const seen = new Set<string>();
+  const out: Media[] = [];
+  for (const item of items) {
+    if (!item?.docId || seen.has(item.docId)) continue;
+    seen.add(item.docId);
+    out.push(item);
+  }
+  return out;
+}
+
 export function getMediaErrorSeverity(error: Error | null): MediaErrorSeverity {
   if (!error) return 'error';
   const maybeMediaError = error as MediaUiError;
@@ -129,17 +140,21 @@ interface MediaContextType {
   // Data
   media: Media[];
   loading: boolean;
+  loadingMore: boolean;
   error: Error | null;
   
   // Pagination
   pagination: MediaListResponse['pagination'] | null;
   currentPage: number;
+  hasMore: boolean;
   
   // Filters
   filters: MediaFilters;
   
   // Actions
   fetchMedia: (page?: number, newFilters?: Partial<MediaFilters>) => Promise<void>;
+  loadMore: () => Promise<void>;
+  refreshMedia: () => Promise<void>;
   updateMedia: (id: string, updates: Partial<Media>) => Promise<Media | undefined>;
   deleteMedia: (id: string) => Promise<void>;
   deleteMultipleMedia: (ids: string[]) => Promise<void>;
@@ -194,6 +209,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
 
   const [media, setMedia] = useState<Media[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [pagination, setPagination] = useState<MediaListResponse['pagination'] | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -207,6 +223,12 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const lastMediaEngineRef = useRef<'typesense' | 'firestore' | null>(null);
   const mediaRequestSeqRef = useRef(0);
   const activeMediaRequestControllerRef = useRef<AbortController | null>(null);
+  const currentPageRef = useRef(1);
+  const nextCursorRef = useRef<string | null>(null);
+  const prevCursorRef = useRef<string | null>(null);
+  const cursorStackRef = useRef<(string | null)[]>([]);
+  const filtersRef = useRef<MediaFilters>(defaultFilters);
+  const mediaRef = useRef<Media[]>([]);
   const mediaQueryCacheRef = useRef(new Map<string, CachedMediaQueryResult>());
   const mediaQueryCacheOrderRef = useRef<string[]>([]);
   const mediaByIdCacheRef = useRef(new Map<string, Media>());
@@ -327,6 +349,30 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  useEffect(() => {
+    currentPageRef.current = currentPage;
+  }, [currentPage]);
+
+  useEffect(() => {
+    nextCursorRef.current = nextCursor;
+  }, [nextCursor]);
+
+  useEffect(() => {
+    prevCursorRef.current = prevCursor;
+  }, [prevCursor]);
+
+  useEffect(() => {
+    cursorStackRef.current = cursorStack;
+  }, [cursorStack]);
+
+  useEffect(() => {
+    filtersRef.current = filters;
+  }, [filters]);
+
+  useEffect(() => {
+    mediaRef.current = media;
+  }, [media]);
+
   const buildQueryString = useCallback((
     mediaFilters: MediaFilters,
     dimMap: DimensionalTagIdMap,
@@ -359,11 +405,17 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     activeMediaRequestControllerRef.current?.abort();
     const controller = new AbortController();
     activeMediaRequestControllerRef.current = controller;
-    setLoading(true);
+    const currentPageValue = currentPageRef.current;
+    const nextCursorValue = nextCursorRef.current;
+    const prevCursorValue = prevCursorRef.current;
+    const cursorStackValue = cursorStackRef.current;
+    const appendMode = !newFilters && page > currentPageValue;
+    setLoading(!appendMode);
+    setLoadingMore(appendMode && mediaRef.current.length > 0);
     setError(null);
 
     try {
-      const updatedFilters = { ...filters, ...newFilters };
+      const updatedFilters = { ...filtersRef.current, ...newFilters };
       const isStudioPath = pathname?.startsWith('/admin/studio');
       /** Embedded Studio: media list uses only the overlay; full-page and PhotoPicker merge card context + overlay. */
       const cardDimensionalForFetch = isStudioPath ? ({} as DimensionalTagIdMap) : dimensionalTagMap;
@@ -386,19 +438,19 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       } else if (typesensePaging && page > 1) {
         opts = { listPage: page };
       } else if (useSeekPagination) {
-        if (page > currentPage && nextCursor) {
-          opts = { cursor: nextCursor };
-        } else if (page < currentPage && page >= 2 && cursorStack[page - 2]) {
-          opts = { cursor: cursorStack[page - 2]! };
+        if (page > currentPageValue && nextCursorValue) {
+          opts = { cursor: nextCursorValue };
+        } else if (page < currentPageValue && page >= 2 && cursorStackValue[page - 2]) {
+          opts = { cursor: cursorStackValue[page - 2]! };
         } else {
           opts = undefined;
         }
-      } else if (page > currentPage && nextCursor) {
-        opts = { cursor: nextCursor };
-      } else if (page < currentPage && prevCursor) {
-        opts = { prevCursor };
-      } else if (page === currentPage && page >= 2 && cursorStack[page - 2]) {
-        opts = { cursor: cursorStack[page - 2]! };
+      } else if (page > currentPageValue && nextCursorValue) {
+        opts = { cursor: nextCursorValue };
+      } else if (page < currentPageValue && prevCursorValue) {
+        opts = { prevCursor: prevCursorValue };
+      } else if (page === currentPageValue && page >= 2 && cursorStackValue[page - 2]) {
+        opts = { cursor: cursorStackValue[page - 2]! };
       }
 
       const queryString = buildQueryString(updatedFilters, mergedDimensional, {
@@ -408,16 +460,21 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       const cacheKey = queryString;
       const cached = cacheMediaQueryEntryIfFresh(cacheKey);
       if (cached) {
-        setMedia(cached.media);
+        setMedia((prev) => (appendMode ? dedupeMediaByDocId([...prev, ...cached.media]) : cached.media));
+        mediaRef.current = appendMode ? dedupeMediaByDocId([...mediaRef.current, ...cached.media]) : cached.media;
         setPagination(cached.pagination);
         setCurrentPage(cached.currentPage);
+        currentPageRef.current = cached.currentPage;
         setNextCursor(cached.nextCursor);
+        nextCursorRef.current = cached.nextCursor;
         setPrevCursor(cached.prevCursor);
+        prevCursorRef.current = cached.prevCursor;
         setCursorStack(cached.cursorStack);
+        cursorStackRef.current = cached.cursorStack;
         if (newFilters) {
           setFilters(updatedFilters);
+          filtersRef.current = updatedFilters;
         }
-        setLoading(false);
         cacheMediaRecords(cached.media);
         return;
       }
@@ -448,19 +505,25 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       let nextCursorStack: (string | null)[];
       if (page === 1 || newFilters) {
         nextCursorStack = data.pagination.nextCursor ? [data.pagination.nextCursor] : [];
-      } else if (page > currentPage && data.pagination.nextCursor) {
-        nextCursorStack = [...cursorStack, data.pagination.nextCursor];
-      } else if (page < currentPage) {
-        nextCursorStack = cursorStack.slice(0, -1);
+      } else if (page > currentPageValue && data.pagination.nextCursor) {
+        nextCursorStack = [...cursorStackValue, data.pagination.nextCursor];
+      } else if (page < currentPageValue) {
+        nextCursorStack = cursorStackValue.slice(0, -1);
       } else {
-        nextCursorStack = cursorStack;
+        nextCursorStack = cursorStackValue;
       }
-      setMedia(data.media);
+      const nextMedia = appendMode ? dedupeMediaByDocId([...mediaRef.current, ...data.media]) : data.media;
+      setMedia(nextMedia);
+      mediaRef.current = nextMedia;
       setPagination(nextPagination);
       setCurrentPage(page);
+      currentPageRef.current = page;
       setNextCursor(data.pagination.nextCursor);
+      nextCursorRef.current = data.pagination.nextCursor ?? null;
       setPrevCursor(data.pagination.prevCursor);
+      prevCursorRef.current = data.pagination.prevCursor ?? null;
       setCursorStack(nextCursorStack);
+      cursorStackRef.current = nextCursorStack;
       rememberMediaQueryCacheEntry(cacheKey, {
         media: data.media,
         pagination: nextPagination,
@@ -473,6 +536,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
 
       if (newFilters) {
         setFilters(updatedFilters);
+        filtersRef.current = updatedFilters;
       }
 
       const prefetchedPage = page + 1;
@@ -511,22 +575,32 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       if (requestSeq === mediaRequestSeqRef.current) {
         activeMediaRequestControllerRef.current = null;
         setLoading(false);
+        setLoadingMore(false);
       }
     }
   }, [
     cacheMediaRecords,
-    filters,
     buildQueryString,
-    currentPage,
-    nextCursor,
-    prevCursor,
-    cursorStack,
     dimensionalTagMap,
     pathname,
     prefetchMediaQuery,
     cacheMediaQueryEntryIfFresh,
     rememberMediaQueryCacheEntry,
   ]);
+
+  const loadMore = useCallback(async () => {
+    if (loading || loadingMore) return;
+    if (!pagination?.hasNext) return;
+    await fetchMedia(currentPageRef.current + 1);
+  }, [fetchMedia, loading, loadingMore, pagination?.hasNext]);
+
+  const refreshMedia = useCallback(async () => {
+    const targetPage = Math.max(1, currentPageRef.current);
+    await fetchMedia(1, filtersRef.current);
+    for (let page = 2; page <= targetPage; page += 1) {
+      await fetchMedia(page);
+    }
+  }, [fetchMedia]);
 
   const updateMedia = useCallback(async (id: string, updates: Partial<Media>): Promise<Media | undefined> => {
     try {
@@ -550,7 +624,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         return updated;
       }
 
-      await fetchMedia(currentPage);
+      await refreshMedia();
       return undefined;
     } catch (err) {
       const error = err instanceof Error ? err : new Error('An unknown error occurred');
@@ -558,7 +632,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       console.error('Error updating media:', error);
       return undefined;
     }
-  }, [cacheMediaRecord, clearMediaQueryCache, fetchMedia, currentPage]);
+  }, [cacheMediaRecord, clearMediaQueryCache, refreshMedia]);
 
   const deleteMedia = useCallback(async (id: string) => {
     try {
@@ -579,16 +653,12 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       setSelectedMediaIds(prev => prev.filter(selectedId => selectedId !== id));
       adjustPaginationAfterDelete(1);
       
-      // Refresh pagination if needed
-      if (pagination && media.length === 1 && currentPage > 1) {
-        await fetchMedia(currentPage - 1);
-      }
     } catch (err) {
       const error = err instanceof Error ? err : new Error('An unknown error occurred');
       setError(error);
       console.error('Error deleting media:', error);
     }
-  }, [adjustPaginationAfterDelete, clearMediaQueryCache, fetchMedia, currentPage, pagination, media.length]);
+  }, [adjustPaginationAfterDelete, clearMediaQueryCache]);
 
   const deleteMultipleMedia = useCallback(async (ids: string[]) => {
     if (ids.length === 0) return;
@@ -624,16 +694,13 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         setSelectedMediaIds((prev) => prev.filter((id) => !deletedIds.includes(id)));
         adjustPaginationAfterDelete(deletedIds.length);
 
-        if (pagination && media.length <= deletedIds.length && currentPage > 1) {
-          await fetchMedia(currentPage - 1);
-        }
       }
     } catch (err) {
       const error = err instanceof Error ? err : new Error('An unknown error occurred');
       setError(error);
       console.error('Error deleting multiple media:', error);
     }
-  }, [adjustPaginationAfterDelete, clearMediaQueryCache, fetchMedia, currentPage, pagination, media.length]);
+  }, [adjustPaginationAfterDelete, clearMediaQueryCache]);
 
   const bulkApplyTags = useCallback(
     async (mediaIds: string[], tags: string[], mode: 'add' | 'replace' | 'remove' = 'add') => {
@@ -675,7 +742,11 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   );
 
   const setFilter = useCallback((key: keyof MediaFilters, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters((prev) => {
+      const next = { ...prev, [key]: value };
+      filtersRef.current = next;
+      return next;
+    });
   }, []);
 
   const clearFilters = useCallback(() => {
@@ -683,9 +754,13 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     dimensionalQueryOverlayRef.current = {};
     setDimensionalQueryOverlayState({});
     setFilters(defaultFilters);
+    filtersRef.current = defaultFilters;
     setCursorStack([]);
+    cursorStackRef.current = [];
     setNextCursor(null);
+    nextCursorRef.current = null;
     setPrevCursor(null);
+    prevCursorRef.current = null;
     void fetchMedia(1, defaultFilters);
   }, [fetchMedia]);
 
@@ -698,8 +773,8 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const selectAll = useCallback(() => {
-    setSelectedMediaIds(media.map(m => m.docId));
-  }, [media]);
+    setSelectedMediaIds(mediaRef.current.map((m) => m.docId));
+  }, []);
 
   const selectNone = useCallback(() => {
     setSelectedMediaIds([]);
@@ -722,11 +797,15 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const value: MediaContextType = {
     media,
     loading,
+    loadingMore,
     error,
     pagination,
     currentPage,
+    hasMore: Boolean(pagination?.hasNext),
     filters,
     fetchMedia,
+    loadMore,
+    refreshMedia,
     updateMedia,
     deleteMedia,
     deleteMultipleMedia,

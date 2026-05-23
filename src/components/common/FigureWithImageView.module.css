@@ -9,6 +9,12 @@
   padding: var(--spacing-xs);
   background-color: var(--reader-media-frame-background-color);
   box-sizing: border-box; /* Ensures padding and border are included in the width */
+  transition:
+    box-shadow var(--transition-short) ease,
+    border-color var(--transition-short) ease,
+    background-color var(--transition-short) ease,
+    opacity var(--transition-short) ease,
+    transform var(--transition-short) ease;
 }
 
 /* --- Sizing --- */
@@ -99,30 +105,31 @@
 }
 
 /* --- UI Elements --- */
-.dragHandle {
-  position: absolute;
-  top: var(--spacing-sm);
-  right: var(--spacing-sm);
-  width: var(--spacing-xl);
-  height: var(--spacing-xl);
-  background-color: var(--reader-media-control-background-color);
-  color: var(--reader-media-control-text-color);
-  border: var(--border-width-thin) solid var(--reader-media-control-border-color);
-  border-radius: var(--border-radius-md);
-  cursor: grab;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity var(--transition-short);
-  z-index: var(--z-index-content);
-}
-
-.figureWrapper:hover .dragHandle,
-.ProseMirror-selectednode .dragHandle {
-  opacity: 1;
-}
-
 .imageContainer {
-  cursor: pointer;
+  cursor: grab;
+  user-select: none;
+}
+
+.imageContainer:active {
+  cursor: grabbing;
+}
+
+.figureDragging {
+  opacity: 0.62;
+  border-color: color-mix(in srgb, var(--reader-focus-ring-color) 58%, var(--reader-media-frame-border-color));
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--reader-focus-ring-color) 22%, transparent),
+    0 14px 28px color-mix(in srgb, var(--reader-focus-ring-color) 18%, transparent);
+}
+
+.figureWrapper :global(img) {
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.figureWrapper:global(.ProseMirror-selectednode) {
+  border-color: color-mix(in srgb, var(--reader-focus-ring-color) 60%, var(--reader-media-frame-border-color));
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--reader-focus-ring-color) 28%, transparent),
+    0 10px 24px color-mix(in srgb, var(--reader-focus-ring-color) 12%, transparent);
 }

@@ -7,7 +7,9 @@
 
 **Reader surface addendum (2026-05-03):** Reader chrome and card surfaces now rely more visibly on the shared support/chrome/tag roles: top-navigation light/dark switching uses compact sun/moon iconography; the Freeform sidebar uses a denser sticky Explore header with adjacent mode/clear controls; selected tag state is more explicit in the tree; and closed/open reader cards now expose reader-facing type badges plus dimensional context chips as part of the live themed surface inventory. These additions do not change the token model, but they do expand the set of reader surfaces that should be judged during live theme validation.
 
-**Runtime reconciliation status (2026-04-29):** The generator path is now materially reconciled with the editor for foundations, chrome, controls, cards, overlays, discovery, media/lightbox surfaces, and most reader typography. Earlier runtime bypasses and bridge-only CSS outputs have been reduced significantly, broken fallback alias paths have been repaired, and scoped reader/admin draft generation now follows the same compile path guarded by canaries. The remaining explicit reader gap is **feedback success / warning / info panels**: those values are generated and editable, but the current reader UI does not yet render matching success/warning/info panel surfaces.
+**Runtime reconciliation status (2026-05-21):** The generator path is now materially reconciled with the editor for foundations, chrome, controls, cards, overlays, discovery, media/lightbox surfaces, and most reader typography. Earlier runtime bypasses and bridge-only CSS outputs have been reduced significantly, broken fallback alias paths have been repaired, and scoped reader/admin draft generation now follows the same compile path guarded by canaries. A shared app-feedback shell now renders real **success** and **error** message surfaces plus themed confirm/alert dialogs on migrated reader/admin paths. The remaining gap is rollout breadth and parity: warning/info surfaces and deeper unmigrated admin flows still need the same component adoption rather than bespoke notices.
+
+**Admin compact-controls addendum (2026-05-22):** The current Studio/admin control language is now intentionally denser and more unified. Compact pane filters should prefer hint-first fields over stacked labels, pane-local `Edit` / `Clear` actions should use the same blue-on-white action treatment, and Cards / Media / Questions should share one compact control typography baseline rather than pane-specific font sizes. Full tag editing should favor one selected-state presentation plus a four-column tree sized for the active Who / What / When / Where taxonomy, not duplicate summaries or leftover width from retired dimensions.
 
 The current editor structure is now:
 - the **left side** is the component editor: section navigation, component selection, variant selection, attribute selection, direct editing of the selected attribute, and inline light/dark/shared-use information beside the active choice
@@ -1054,8 +1056,8 @@ This section defines the UX and token contract for system/status messaging so fe
 
 - **State styling is live** - The app already uses the shared `--state-*` families broadly for success / warning / error / info styling, so colored status treatments are not ad hoc.
 - **Reader feedback contract is partly consumed** - Reader **general feedback** and **error feedback** now have live consumers, but reader **success / warning / info** feedback panel variants are still future-facing until the reader UI exposes those surfaces.
-- **Messaging behavior is still mixed** - Themed state colors and some themed feedback panels are live, but broader behavior such as consistent notice components, confirmation dialogs, placement rules, and dismissal behavior is still only partially unified.
-- **Theme implication** - The feedback/state color system is now trustworthy enough to style real message surfaces, but the product still needs a fuller message-component rollout before every status path uses one consistent app-level messaging contract.
+- **Messaging behavior is partially unified** - A shared app feedback layer now provides one contract for migrated shell/admin paths: transient success toast, persistent error toast/alert, themed confirm dialog, themed alert dialog, and local loading overlays. Some deeper admin surfaces still use older path-specific notices and need migration.
+- **Theme implication** - The feedback/state color system is now trustworthy enough to style real message surfaces in the shared shell. Remaining work is rollout completeness and parity on warning/info variants, not whether the contract should exist.
 
 ### 10.6 Addendum (2026-05-05)
 
@@ -1063,6 +1065,18 @@ This section defines the UX and token contract for system/status messaging so fe
 - **Confirmation rollout has started in Studio** - Migrated destructive paths in Studio Questions, the Studio card-bank feed, and Compose now use app dialogs rather than browser `confirm()`, but this is still a partial rollout, not a universal contract closeout.
 - **Backgrounded message surfaces are now more legible** - Shared Studio status/error treatments now use clearer panel-like backgrounds so feedback does not disappear into the surrounding app surface.
 - **Inline success is still intentionally limited** - The app is moving away from layout-shifting inline success notices as the default acknowledgment pattern; field-local validation remains a separate justified use of inline messaging.
+
+### 10.6 Addendum (2026-05-21)
+
+- **Compact authoring chrome is now an intentional contract** - Studio and adjacent admin surfaces now deliberately favor denser control rows, tighter action spacing, and fewer duplicated headings so the working surface stays visible rather than being pushed downward by chrome.
+- **Pane-local feedback should avoid reflow** - Questions and Users now reinforce the intended feedback direction: success/error acknowledgment should prefer the shared app feedback layer unless field-local validation genuinely requires inline placement.
+- **Embedded titles can share the control row** - When an embedded admin surface is already clearly identified by its top controls, the preferred pattern is one compact title-and-controls row rather than reserving an extra decorative heading block above it.
+
+### 10.6 Addendum (2026-05-22)
+
+- **Focused relationship editing can use a modal without becoming “browser chrome” again** - The new media-editor flow is still part of the app-level authoring system: it is a deliberate focused editor surface for asset work, not a fallback to ad hoc inline edits or browser-native prompts.
+- **Caption hierarchy should be visually and verbally clear** - Authoring UI should treat the media caption as the base/default text and make any card-specific override read as a conscious exception rather than an equal competing source.
+- **Named AI guides should read as framing, not separate products** - `AI Story Assist` may present named guides such as `Bob` and `Sandra`, but the interface should keep the feature identity clear and the guide choice should feel like tone selection within one assist system, not like switching to a different tool. Descriptive mode labels such as `Draft from notes` or `Make this story stronger` should make the action clear before the named guide flavor is considered.
 
 ### 10.7 Current authoring-system status (2026-04-28)
 
@@ -1109,3 +1123,4 @@ This section defines the UX and token contract for system/status messaging so fe
 | 2026-04-29 | Simplified Theme Management back to one workspace with Foundation and Content sections, removed the Reader / Workbench split from the editor surface, removed the old Relevant Values layer, and moved selected-value information to the left beside the active field. |
 | 2026-04-30 | Fixed the selected-button text contract so sidebar active tabs and selected support controls share the same contrast-on-fill text role, and documented `theme-color/2/dark` as the current concrete source for that filled-control contrast text path. |
 | 2026-04-30 | Finished the first admin/theme wiring pass: Theme Management now renders inside the true admin theme scope, shared admin chips/buttons/grid chrome use the theme-driven variables in the primary paths, and the Values pane can collapse to keep more of the live app visible while styling. |
+| 2026-05-21 | Updated feedback and shell-status language to reflect the shared app-feedback layer on migrated paths, revised branded header/logo surfaces, and the move away from browser-native confirmations in the shared shell contract. |

@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import type { Card } from '@/lib/types/card';
 import type { Tag } from '@/lib/types/tag';
+import { getTagPathDisplay } from '@/lib/utils/tagDimensionResolve';
 import styles from './InlineTagEditor.module.css';
 
 interface InlineTagEditorProps {
@@ -21,7 +22,7 @@ export default function InlineTagEditor({ card, allTags, onUpdateCard }: InlineT
   const [error, setError] = useState<string | null>(null);
   const [pendingTags, setPendingTags] = useState<string[] | null>(null);
 
-  const activeTags = pendingTags ?? (card.tags || []);
+  const activeTags = useMemo(() => pendingTags ?? (card.tags || []), [card.tags, pendingTags]);
   const selectedSet = useMemo(() => new Set(activeTags), [activeTags]);
 
   const byId = useMemo(
@@ -29,14 +30,7 @@ export default function InlineTagEditor({ card, allTags, onUpdateCard }: InlineT
     [allTags]
   );
 
-  const getPathLabel = (tag: Tag): string => {
-    if (!tag.docId) return tag.name;
-    const ids = [...(tag.path || []), tag.docId];
-    const names = ids
-      .map((id) => byId.get(id)?.name)
-      .filter((name): name is string => Boolean(name));
-    return names.length ? names.join(' / ') : tag.name;
-  };
+  const getPathLabel = useCallback((tag: Tag): string => getTagPathDisplay(tag, byId), [byId]);
 
   const suggestions = useMemo(() => {
     const q = normalize(query);
@@ -51,7 +45,7 @@ export default function InlineTagEditor({ card, allTags, onUpdateCard }: InlineT
         return normalize(tag.name).includes(q) || normalize(pathLabel).includes(q);
       })
       .slice(0, 8);
-  }, [allTags, query, selectedSet]);
+  }, [allTags, getPathLabel, query, selectedSet]);
 
   const save = async (nextTags: string[]) => {
     setIsSaving(true);

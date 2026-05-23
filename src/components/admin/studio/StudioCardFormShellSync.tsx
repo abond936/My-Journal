@@ -13,6 +13,9 @@ function pickRelationshipSnapshot(card: StudioCardContext): Partial<ShellRelatio
     galleryMedia: Array.isArray(card.galleryMedia) ? card.galleryMedia : [],
     childrenIds: Array.isArray(card.childrenIds) ? card.childrenIds : [],
     contentMedia: Array.isArray(card.contentMedia) ? card.contentMedia : [],
+    type: card.type ?? 'story',
+    status: card.status ?? 'draft',
+    questionId: card.questionId,
   };
 }
 
@@ -20,13 +23,13 @@ function relationshipSignature(card: StudioCardContext): string {
   const gm = card.galleryMedia || [];
   const cover = card.coverImage;
   const coverSignature = cover
-      ? [
-          cover.docId ?? '',
-          cover.storageUrl ?? '',
-          cover.filename ?? '',
-          cover.objectPosition ?? '',
-        ].join('~')
-      : 'no-cover';
+    ? [
+        cover.docId ?? '',
+        cover.storageUrl ?? '',
+        cover.filename ?? '',
+        cover.objectPosition ?? '',
+      ].join('~')
+    : 'no-cover';
   const galleryPart = gm
     .map((g) => {
       const media = g.media;
@@ -50,12 +53,15 @@ function relationshipSignature(card: StudioCardContext): string {
     (card.childrenIds || []).join(','),
     galleryPart,
     (card.contentMedia || []).join(','),
-  ].join('§');
+    card.type ?? '',
+    card.status ?? '',
+    card.questionId ?? '',
+  ].join('|');
 }
 
 /**
  * Keeps CardForm relationship fields aligned with `StudioShellContext.selectedCard` after
- * shell PATCH + refetch (DnD, etc.) without remounting the provider on every `updatedAt`.
+ * shell PATCH + refetch (DnD, unlink, etc.) without remounting the provider on every `updatedAt`.
  * Only updates `cardData` so Compose Save / dirty state reflect pending full-form baseline.
  */
 export default function StudioCardFormShellSync() {

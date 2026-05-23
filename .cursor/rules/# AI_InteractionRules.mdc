@@ -30,17 +30,36 @@ Every recommendation must tie to: product capability, architecture correctness, 
 Do not propose cosmetic, editorial, or formatting changes unless explicitly requested.
 Do not rewrite, compress, or reorganize existing content unless explicitly requested.
 Do not remove reference content (directory maps, contracts, decision records) without explicit approval.
+Do not delete and recreate an existing file as an editing strategy. Use in-place edits by default.
+For canonical docs and core project files, do not replace, remove, or recreate the file wholesale unless the author explicitly approves that exact action.
 
-# Process: ASSESS → RECOMMEND → WAIT → EXECUTE
+# Process: DIAGNOSE → DESIGN → APPROVAL → IMPLEMENT → VERIFY
 
 **Author** provides what (outcome, constraints, scope). **AI** provides how (options, approach, implications).
 
-1. **ASSESS** — Read the split docs above (as applicable) + relevant code. Present findings grounded in product intent and actual implementation.
-2. **RECOMMEND** — State options, recommendation, rationale, and impact on other systems. Label each item SUBSTANTIVE or EDITORIAL. Maximum 3 items per pass unless author sets a different limit.
-3. **WAIT** — Ask: "Do you approve this exact edit set? May I proceed?" Do not edit until explicit approval naming specific items.
-4. **EXECUTE** — Edit only approved items, only in approved scope. **Where the diff lives:** apply changes with normal **in-workspace / in-editor** edits so the author reviews them in the **IDE diff UI** (gutters, side-by-side, accept/reject)—that is the primary review surface. **Do not** paste `git diff` output, full-file before/after dumps, or other **large chat-side diffs** unless the author **explicitly** asks for a diff in chat. After applying, give a **concise prose summary** of what changed (which files, what behavior)—not a line-by-line recreation of the editor diff. If a new issue appears outside scope, stop and return to Step 1.
+1. **DIAGNOSE** — Read the split docs above (as applicable) + relevant code. Identify the **root cause**, the **owning layer** (UI, shared client state, API, service, schema/data, or architecture), the **existing contracts/invariants at risk**, and the **regression risk**. Do not move forward on a symptom-only explanation.
+2. **DESIGN** — State the intended fix at the owning layer, why that layer is correct, what adjacent systems are intentionally untouched, and the **verification plan**. If more than one viable design exists, recommend one and briefly say why.
+3. **APPROVAL** — Ask: "Do you approve this exact edit set? May I proceed?" Do not edit until explicit approval naming specific items.
+4. **IMPLEMENT** — Edit only approved items, only in approved scope. **Where the diff lives:** apply changes with normal **in-workspace / in-editor** edits so the author reviews them in the **IDE diff UI** (gutters, side-by-side, accept/reject)—that is the primary review surface. **Do not** paste `git diff` output, full-file before/after dumps, or other **large chat-side diffs** unless the author **explicitly** asks for a diff in chat. After applying, give a **concise prose summary** of what changed (which files, what behavior)—not a line-by-line recreation of the editor diff. If a new issue appears outside scope, stop and return to Step 1.
+5. **VERIFY** — Run the relevant checks for the approved scope: behavior verification, integrity verification, and lint/types/tests where applicable. If a relevant check was not run, say so plainly and do not present the work as fully complete.
+   - **Code changes require verification** — For code changes, verification is expected by default, not optional commentary after the fact.
+   - **Add tests when warranted** — If the change affects behavior, integrity, regression risk, or a previously fragile path, add or update automated tests unless there is a clear reason not to. If no test was added, explain why.
+   - **Integrity-sensitive work** — Changes affecting data relationships, denormalized fields, auth, import pipelines, or shared contracts should include integrity-focused verification or tests, not only happy-path manual checks.
    - **Documentation (part of “done”)** — When the change alters **shipped behavior**, **feature completeness vs planned**, or **architectural fact**, include updates to `docs/02-Application.md`, `docs/03-Implementation.md`, and `docs/01-Vision-Architecture.md` (per **Document Governance** in `01`) in the **same approved edit set**, unless the author explicitly **excluded documentation** for this pass.
    - **Post-execute prompt** — After stating what changed, ask the author: **“Do you want documentation updated (`02` / `03` / `01` as applicable) to reflect this?”** If they want doc work that was **not** already approved, return through **RECOMMEND → WAIT** with a **doc-only** edit set before editing.
+
+# Commercial standard gate
+
+The target is a **commercially viable, professionally engineered product**. The agent must act accordingly.
+
+- **No diagnosis, no edit** — Do not edit until the root cause is identified with enough confidence to explain why the proposed fix addresses the real problem.
+- **No owner, no edit** — Do not edit until the owning layer is identified. Do not patch the visible symptom in a lower layer when the real fix belongs in shared state, API/service logic, schema/data, or architecture.
+- **No verification, not done** — If the relevant verification was not run, the work is not complete.
+- **No silent test omission** — When a reasonable automated test could have been added for the approved code change, do not silently skip it. Add the test or explain why not.
+- **Protect working systems** — Existing working behavior should be treated as intentional until shown otherwise. Do not damage a correctly designed surface to fix another problem.
+- **Commercial viability over shortcuts** — Do not choose a shortcut, workaround, duplicate logic path, local patch-over, or bypass that weakens architecture, integrity, maintainability, or future scale.
+- **Warn on risky user framing** — If the user request is underspecified, naive, or pushes toward a risky shortcut, warn briefly, explain the risk plainly, and ask only for the minimum missing input needed to preserve standards.
+- **Robust enough to build on** — Do not present work as done unless it is solid enough that future work can build on it without likely rework.
 
 # Change scope boundary (approved surface only)
 
@@ -49,6 +68,56 @@ The approved edit set is a **closed list**: paths, behaviors, or artifacts the a
 - **Do not expand** into adjacent UI, shared providers, other routes, types, tests, copy, or “cleanup” because it feels related. Example: removing a filter from an API must not, by itself, justify removing admin toolbar controls that use different semantics—unless the author approved that removal.
 - **Unspecified touch points** — If the right fix could reasonably be done in more than one place, or touching a second system would be cleaner but was **not** asked for, **ask** before including it. Prefer a minimal change that matches the ask; offer broader changes as a **separate** optional item in RECOMMEND, not bundled silently.
 - **Ambiguous scope** — If “fix filtering” could mean API-only, client-only, or both, state the ambiguity in RECOMMEND and get confirmation before EXECUTE.
+
+# Shared-surface changes (mandatory design control)
+
+For any change that touches a **shared surface** or **cross-cutting system**—for example **Studio shell**, **shared feedback / notifications**, **drag-and-drop**, **editor behavior**, **selection state**, **pane coordination**, or a **provider** used by more than one route—agents must **not** patch directly from the visible symptom.
+
+Required handling before implementation:
+1. **Write a working note in the response before edits** — concise, but explicit:
+   - **Problem** — exact user-visible failure being addressed.
+   - **Expected behavior** — 3–7 bullets describing the intended contract.
+   - **Owning modules** — which file/component/provider owns each part of the behavior.
+   - **Out of scope** — adjacent systems the agent will **not** change without approval.
+   - **Preserved contracts** — existing documented rules that must remain true.
+   - **Tests** — specific user-visible behaviors to verify.
+2. **Name the owner before changing the system** — If the agent cannot state which layer owns **feedback**, **selection**, **drag state**, **editor insertion**, or equivalent state for the requested behavior, stop in **ASSESS / RECOMMEND**. Do **not** implement until ownership is clear.
+3. **Remove superseded paths** — If a new shared mechanism replaces a local one (for example shared toasts replacing inline notices), the same approved edit set must identify and remove, disable, or explicitly preserve the old path. Do **not** leave parallel systems active by accident.
+4. **Shared-surface threshold** — When a requested fix crosses more than one owning layer, the agent must treat it as a **design task first** and an **implementation task second**. Trace the full event/state path before editing.
+
+# No contradiction checklist
+
+Before implementation—and again before reporting completion—the agent must check for contradictions against existing contracts and shared systems.
+
+Required questions:
+- **Feedback** — Does this introduce a second notification pattern (for example inline status on a migrated shared-feedback surface)?
+- **Interaction model** — Does this introduce a second way to perform the same interaction on the same surface without an explicit product decision?
+- **State ownership** — Does this create local state for behavior already owned by the shell, provider, or shared context?
+- **Bypass** — Does this bypass an existing shared provider, service, or documented UI contract?
+- **Docs conflict** — Does this conflict with a documented Studio/admin/theme/navigation/feedback contract?
+- **Temporary path** — Am I adding a stopgap path that will coexist with the canonical path after this change ships?
+
+If any answer is **yes** or **unclear**, stop and return to **ASSESS / RECOMMEND**. Do **not** ship the contradiction and explain it afterward.
+
+# Contract test requirement
+
+For **shared-surface** work, tests and verification must prove **user-visible contract behavior**, not only helper behavior.
+
+Required standard:
+1. **Prefer scenario-level verification** — Test or verify the observable workflow (for example: drag source highlights the correct target; drop inserts at the visible target; migrated Studio actions use shared feedback only).
+2. **Do not stop at helper tests** — A unit test for a helper or drag callback is useful but **not sufficient by itself** when the user-facing issue depends on multiple layers.
+3. **Name the contract being verified** — In the completion note, explicitly state which user-visible behaviors were tested or manually verified.
+4. **If contract-level verification is not run** — say so clearly, and do **not** overstate confidence.
+
+# Post-execute consistency review
+
+After implementation and before presenting the work as done, the agent must explicitly check:
+- **What older mechanism did this change replace?**
+- **Is any superseded path still active?**
+- **Did I introduce any duplicate feedback, state, or interaction model?**
+- **Did the final behavior remain consistent with the documented contract?**
+
+If the answer reveals a contradiction, the agent must say so plainly and return to **ASSESS / RECOMMEND** instead of chaining another knee-jerk patch.
 
 # Lint and type hygiene on touched code
 
@@ -77,4 +146,4 @@ Required handling:
 - **Do not ship workaround-only behavior** that masks the mismatch without fixing source logic or data.
 - **Report findings and proposed correction path** before implementation when scope/impact extends beyond the requested change.
 
-ASSESS → RECOMMEND → WAIT → EXECUTE
+DIAGNOSE → DESIGN → APPROVAL → IMPLEMENT → VERIFY

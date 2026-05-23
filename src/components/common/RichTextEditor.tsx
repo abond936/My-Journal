@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useCallback, useEffect, useImperativeHandle, forwardRef } from 'react';
+import { Extension } from '@tiptap/core';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { NodeSelection, TextSelection } from 'prosemirror-state';
 import StarterKit from '@tiptap/starter-kit';
 import { FigureWithImage, type FigureImageSize } from '@/lib/tiptap/extensions/FigureWithImage';
 import { CardMention } from '@/lib/tiptap/extensions/CardMention';
 import Link from '@tiptap/extension-link';
+import { dropCursor } from '@tiptap/pm/dropcursor';
 import { Media } from '@/lib/types/photo';
 import ImageToolbar from './ImageToolbar';
 import styles from './RichTextEditor.module.css';
@@ -36,8 +38,21 @@ interface RichTextEditorProps {
 export interface RichTextEditorRef {
   getContent: () => string;
   setContent: (content: string) => void;
-  insertImage: (media: Media) => void;
+  insertImage: (media: Media, dropPoint?: { left: number; top: number } | null) => void;
+  previewDropPoint: (dropPoint: { left: number; top: number } | null) => { top: number; height: number } | null;
 }
+
+const RichTextDropCursor = Extension.create({
+  name: 'richTextDropCursor',
+  addProseMirrorPlugins() {
+    return [
+      dropCursor({
+        width: 3,
+        class: 'ProseMirror-dropcursor',
+      }),
+    ];
+  },
+});
 
 const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
   initialContent = '',
@@ -55,13 +70,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
   const [content, setContent] = useState(initialContent);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [activeImageMediaId, setActiveImageMediaId] = useState<string | null>(null);
-
-  const logPreview = (tag: string, html: string, length: number) => {
-    // Only log significant content changes (more than 10 characters difference)
-    if (Math.abs(length - (content?.length || 0)) > 10) {
-      console.log(`[${tag}] content length: ${length}`);
-    }
-  };
+  const [draggingFigureMediaId, setDraggingFigureMediaId] = useState<string | null>(null);
 
   const extractMediaIds = useCallback((htmlContent: string) => {
     const mediaIds = new Set<string>();
@@ -146,7 +155,10 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
     return attrs;
   };
 
-  const handleToolbarAction = (action: 'setSize' | 'setAlignment' | 'setWrap' | 'delete', value?: any) => {
+  const handleToolbarAction = (
+    action: 'setSize' | 'setAlignment' | 'setWrap' | 'delete',
+    value?: FigureImageSize | 'left' | 'center' | 'right' | 'on' | 'off'
+  ) => {
     if (!editor || !activeImageMediaId) return;
     
     if (action === 'delete') {
@@ -200,7 +212,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
   }, [content, onChange, updateContentMedia, onContentMediaChange, extractMediaIds]);
 
   const editor = useEditor({
-    extensions: [StarterKit, FigureWithImage, Link, CardMention],
+    extensions: [StarterKit, FigureWithImage, Link, CardMention, RichTextDropCursor],
     content: content,
     editable: !isDisabled,
     immediatelyRender: false,
@@ -214,7 +226,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
         setActiveImageMediaId(null);
       }
     },
-    onTransaction: ({ editor, transaction }) => {
+    onTransaction: () => {
       // Transaction handling without logging
     },
     onUpdate: ({ editor, transaction }) => {
@@ -224,25 +236,57 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
     },
     editorProps: {
       attributes: { class: clsx(styles.editor, className, { [styles.isDisabled]: isDisabled }) },
+      handleDOMEvents: {
+        dragstart: (view, event) => {
+          const target = event.target instanceof HTMLElement ? event.target : null;
+          const figure = target?.closest<HTMLElement>('figure[data-media-id]');
+          if (!figure) return false;
+
+          const mediaId = figure.getAttribute('data-media-id');
+          const nodePos = view.posAtDOM(figure, 0);
+          const node = view.state.doc.nodeAt(nodePos);
+          if (!node || node.type.name !== 'figureWithImage') return false;
+
+          const selection = NodeSelection.create(view.state.doc, nodePos);
+          if (!view.state.selection.eq(selection)) {
+            view.dispatch(view.state.tr.setSelection(selection));
+          }
+
+          setDraggingFigureMediaId(mediaId);
+          return false;
+        },
+        dragend: () => {
+          setDraggingFigureMediaId(null);
+          return false;
+        },
+        drop: (view) => {
+          if (!draggingFigureMediaId) return false;
+          window.requestAnimationFrame(() => {
+            handleContentUpdate(editor?.getHTML() ?? view.dom.innerHTML);
+            setDraggingFigureMediaId(null);
+          });
+          return false;
+        },
+      },
       handleDrop: (view, event, slice, moved) => {
         if (moved) return false;
-        if (dataTransferHasMeaningfulText(event.dataTransfer)) return false;
         const file = getImageFileFromDataTransfer(event.dataTransfer);
         if (file) {
           event.preventDefault();
           handleImageUpload(file);
           return true;
         }
+        if (dataTransferHasMeaningfulText(event.dataTransfer)) return false;
         return false;
       },
       handlePaste: (view, event) => {
-        if (dataTransferHasMeaningfulText(event.clipboardData)) return false;
         const file = getImageFileFromDataTransfer(event.clipboardData);
         if (file) {
           event.preventDefault();
           handleImageUpload(file);
           return true;
         }
+        if (dataTransferHasMeaningfulText(event.clipboardData)) return false;
         return false;
       },
       handleClickOn: (view, pos, node) => {
@@ -291,17 +335,24 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
     }
   };
 
-  const insertImage = useCallback((media: Media) => {
+  const insertImage = useCallback((media: Media, dropPoint?: { left: number; top: number } | null) => {
     if (!editor) return;
 
-    editor.chain().focus().setFigureWithImage({
-      src: getDisplayUrl(media),
-      width: media.width,
-      height: media.height,
-      alt: media.filename,
-      docId: media.docId,
-      'data-media-id': media.docId,
-    }).run();
+    const pointInsideEditor = dropPoint ? editor.view.posAtCoords(dropPoint) : null;
+    const chain = editor.chain().focus();
+    if (typeof pointInsideEditor?.pos === 'number') {
+      chain.setTextSelection(pointInsideEditor.pos);
+    }
+    chain
+      .setFigureWithImage({
+        src: getDisplayUrl(media),
+        width: media.width,
+        height: media.height,
+        alt: media.filename,
+        docId: media.docId,
+        'data-media-id': media.docId,
+      })
+      .run();
 
     // Replacing an empty paragraph often leaves the doc ending with only the figure.
     // With no block after it, there is nowhere reliable to place a text cursor (Chrome).
@@ -336,10 +387,35 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
     handleContentUpdate(newContent);
   }, [editor, handleContentUpdate]);
 
+  const previewDropPoint = useCallback((dropPoint: { left: number; top: number } | null) => {
+    if (!editor || !dropPoint) return null;
+
+    const target = editor.view.posAtCoords(dropPoint);
+    if (typeof target?.pos !== 'number') return null;
+
+    const resolvedPos = Math.min(target.pos, editor.state.doc.content.size);
+    const coords = editor.view.coordsAtPos(resolvedPos);
+    const dropRoot =
+      (editor.view.dom as HTMLElement).closest<HTMLElement>('[data-rich-text-drop-root="true"]') ??
+      (editor.view.dom as HTMLElement);
+    const hostRect = dropRoot.getBoundingClientRect();
+    const selection = TextSelection.near(editor.state.doc.resolve(resolvedPos));
+
+    if (!editor.state.selection.eq(selection)) {
+      editor.view.dispatch(editor.state.tr.setSelection(selection));
+    }
+
+    return {
+      top: Math.max(0, coords.top - hostRect.top),
+      height: Math.max(18, coords.bottom - coords.top),
+    };
+  }, [editor]);
+
   useImperativeHandle(ref, () => ({
     getContent: () => editor?.getHTML() || '',
     setContent: (newContent: string) => editor?.commands.setContent(newContent, true),
     insertImage,
+    previewDropPoint,
   }));
   
   if (!editor) return null;
@@ -355,8 +431,10 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
       className={clsx(
         styles.editorContainer,
         chainWheelToScrollParent && styles.editorContainerChainWheel,
+        draggingFigureMediaId && styles.editorContainerDraggingFigure,
         error && styles.error,
       )}
+      data-rich-text-drop-root="true"
     >
       {isProcessingImage && <div className={styles.processingOverlay}><span>Processing...</span></div>}
       <div className={styles.toolbar}>

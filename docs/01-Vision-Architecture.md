@@ -18,9 +18,7 @@ Legend:
   - `02-Application.md` — Each app area: *Features* grouped under `✅ Complete`, `⭕1 Planned`, `⭕2 Future`, `❓ Open` (plus standalone 📐 / 📘). Changes when features ship or are planned.
   - `03-Implementation.md` — Execution plan and phased sequencing (`⭕1` only). Changes when priorities shift. Each listed item must repeat the **same bold title and trailing text** as its source line in `02-Application.md` or (for Backend items) in this file—verbatim, including punctuation and counts. Only **phase assignment and ordering** may differ.
 - **Supplementary specs** - Focused references (e.g. `04-Theme-Design-Contract.md` for semantic tokens, presets, reader responsive/nav contract §9, and design-led reconciliation) extend the core trio; they do not replace `02`/`03` for feature inventory or phased backlog.
-- **AI Behavior** - AI process, approval, and execution rules live in `.cursor/rules/# AI_InteractionRules.mdc`.
-- **Author** - Provides direction, constraints, and priorities--not implementation details.
-- **AI/Engineering** - Proposes how to build, designs flows, and recommends technical approaches.
+- **AI Behavior** - AI process, approval, and execution rules live in `.cursor/rules/# AI_InteractionRules.mdc`, while the collaboration contract for author and AI roles lives in `00-Project-Framework.md`.
 - **Decision hierarchy** - `01` is the canonical source for platform invariants, data authority, mutation rules, and integrity boundaries. Product or workflow simplification is encouraged, but it must preserve tagging truth, relationship truth, and reader truth.
 
 ### Document Structure
@@ -43,32 +41,34 @@ Legend:
 ## **Product Vision**
 
 *Intent*
-- **Storytelling** - A private storytelling journal for family archives.
-- **Comprehensive** - Media and authored narrative in one coherent experience.
+- **Marker** - Visible diff marker added 2026-05-23 for Cursor refresh confirmation.
+- **Storytelling** - A private hosted storytelling journal built from personal and family archives.
+- **Comprehensive** - Media, authored narrative, and structured discovery in one coherent product.
 
 *Principles*
-- **Curated & Freeform** - Support both curated and freeform discovery.
-- **Relational** - Organic discovery via dimensional, hierarchical tags.
-- **Multi-Media** - Interactive text and media experience.
-- **Unified Schema** - Flexible card model; one schema, multiple presentation behaviors.
-- **Mobile-first** - Mobile and desktop operation, UX with predictable interactions across device sizes.
-- **Scalable** - Scale toward large personal archives with operational practicality.
-- **Narrative Control** - Curated collections of cards provide directed storytelling.
-- **Organic Discovery** - Tag-based filtering, random presentation and suggestions enables exploration.
-- **Content Flexibility** - Multiple forms of underlyingly structured content.
-- **User Experience Consistency** - Cross-device navigation patterns
-- **Scalability** - Performance optimization for large content libraries
-- **Practical** - Deliver a coherent content consumption experience plus practical admin tooling.
+- **Creation + Consumption** - The product succeeds only if both administration and consumption workflows are strong enough to support each other.
+- **Curated & Freeform** - Support both guided narrative exploration and freeform discovery as first-class modes.
+- **Import-Critical** - Importing and structuring large photo libraries is a core product capability, not a side utility.
+- **Relational** - Organic discovery should emerge from dimensional, hierarchical tags plus card relationships.
+- **Multi-Media** - Stories should combine text and media in one interactive reading experience.
+- **Unified Schema** - Use one flexible card model with multiple presentation behaviors rather than separate content silos.
+- **Trustworthy** - Private, author-owned, exportable, backed-up, and restorable content handling is part of the product promise.
+- **Mobile-first** - Reader experience must work naturally on mobile first, with coherent desktop behavior for administration and reading.
+- **Operationally Practical** - The product should support large personal archives without requiring expert-level maintenance.
+- **Narrative Control** - Curated collections and ordering provide directed storytelling when the author wants it.
+- **Organic Discovery** - Tag-based filtering, suggestions, and exploration should make large archives feel discoverable rather than chaotic.
+- **Commercial Path** - Build v1 as a credible private hosted journal for one author and family audience without blocking near-term multi-tenant evolution.
 
-The product concept is to combine one's photos and stories into an interactive 'journal'-- a storytelling platform that allows author-curated or freeform discovery--combining hardcopy journals and images in a combination journal-album. 
+The product combines photos and stories into an interactive journal-album that supports both author-shaped storytelling and freeform discovery. It is not a generic journal app and not just a photo manager with captions layered on top.
 
-Photo apps like Apple and Google are very efficient interfaces, and they have album creation and freeform tagging capability, but they are limited in integrating text and organizing the images and albums, and can quickly devolve into a disorganization.
+The first proving ground is the author's own archive and workflow. The broader market is people with large personal or family photo libraries who want a better way to turn those archives into structured stories worth reading and revisiting.
 
-This app seeks to leverage multiple photo repositories and provide a story-telling overlay, either curated or freeform, via a card and heirarchical tag system.
+Phone-native and scanned-photo imports are both first-class inputs. The product should reduce image overload by helping the author organize, aggregate, tag, and shape media into meaningful cards and collections for family consumption.
 
-The market for this beyond the author's use would be journalers, memory keepers, families. Some import friction may be acceptable for curated storytelling.
-
-The primary users are the author (admin) creating the content and his family consuming it, primarily on mobile, but also on tablet and desktop.
+📐 **Primary customer** - v1 is for one author first, then for others with similar archive/storytelling needs.
+📐 **Commercial shape** - The initial commercial shape is a **private hosted journal** for one author and family audience.
+📐 **Trust promise** - Photos and stories are private, owned by the author, exportable, and expected to be backed up/restorable.
+📐 **Tenant path** - v1 is intentionally **single-tenant**; near-term commercial follow-up should support **multi-tenant** isolation without weakening current integrity guarantees.
 
 ## **TECHNICAL**
 
@@ -152,6 +152,8 @@ The primary users are the author (admin) creating the content and his family con
 📐 **Auth at Rollout** - At go-live prep, run `npm run seed:journal-users` once to create the single admin in Firestore (`journal_users`) when that collection is empty.
 📐 **Post Seed** - After seed, manage access in Admin > Users (`/admin/journal-users`): create viewer accounts, set/reset passwords, enable/disable access.
 📐 **One Admin** - One admin (author), all other accounts are viewers.
+
+📐 **Tenant path** - v1 is intentionally **single-tenant** and optimized for one author plus viewers. Near-term commercial follow-up should plan for **multi-tenant** isolation without weakening current integrity guarantees.
 
 ### **Frontend**
 

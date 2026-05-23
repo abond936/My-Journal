@@ -1,0 +1,217 @@
+.toastViewport {
+  position: fixed;
+  top: calc(var(--app-shell-header-height, var(--header-height)) + var(--spacing-md));
+  right: var(--spacing-md);
+  z-index: calc(var(--z-index-header) + 20);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  width: min(24rem, calc(100vw - (2 * var(--spacing-md))));
+  pointer-events: none;
+}
+
+.toastCard {
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  border: var(--border-width-thin) solid var(--admin-feedback-panel-border-color, var(--admin-window-border-color));
+  background: var(--admin-feedback-panel-background-color, var(--admin-window-background-color));
+  box-shadow: var(--admin-window-shadow);
+}
+
+.toastSuccess {
+  background: var(--admin-feedback-success-panel-background-color, var(--state-success-background-color));
+  border-color: var(--admin-feedback-success-panel-border-color, var(--state-success-border-color));
+}
+
+.toastError {
+  background: var(--admin-feedback-error-panel-background-color, var(--state-error-background-color));
+  border-color: var(--admin-feedback-error-panel-border-color, var(--state-error-border-color));
+}
+
+.toastWarning {
+  background: var(--admin-feedback-warning-panel-background-color, var(--state-warning-background-color));
+  border-color: var(--admin-feedback-warning-panel-border-color, var(--state-warning-border-color));
+}
+
+.toastInfo {
+  background: var(--admin-feedback-info-panel-background-color, var(--state-info-background-color));
+  border-color: var(--admin-feedback-info-panel-border-color, var(--state-info-border-color));
+}
+
+.toastIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 1px;
+}
+
+.toastSuccess .toastIcon {
+  color: var(--state-success-text-color);
+}
+
+.toastError .toastIcon {
+  color: var(--state-error-text-color);
+}
+
+.toastWarning .toastIcon {
+  color: var(--state-warning-text-color);
+}
+
+.toastInfo .toastIcon {
+  color: var(--state-info-text-color);
+}
+
+.toastBody {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toastTitle,
+.toastMessage {
+  margin: 0;
+}
+
+.toastTitle {
+  color: var(--admin-feedback-title-color);
+  font-family: var(--admin-feedback-title-font-family);
+  font-size: var(--admin-feedback-title-font-size);
+  font-weight: var(--admin-feedback-title-font-weight);
+  line-height: var(--admin-feedback-title-line-height);
+}
+
+.toastMessage {
+  color: var(--admin-feedback-meta-color);
+  font-family: var(--admin-feedback-meta-font-family);
+  font-size: var(--admin-feedback-meta-font-size);
+  font-weight: var(--admin-feedback-meta-font-weight);
+  line-height: var(--admin-feedback-meta-line-height);
+}
+
+.iconButton {
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius-full);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  background: color-mix(in srgb, var(--admin-window-background-color) 90%, transparent);
+  color: var(--admin-chrome-text-color);
+  cursor: pointer;
+}
+
+.iconButton:hover:not(:disabled) {
+  background: var(--admin-chrome-control-hover-background-color);
+}
+
+.iconButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.dialogBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-index-header) + 25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--reader-overlay-strong-scrim-color, black) 75%, transparent);
+  padding: var(--spacing-lg);
+}
+
+.dialogCard {
+  width: min(28rem, calc(100vw - (2 * var(--spacing-lg))));
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  border-radius: var(--admin-window-border-radius);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  background: var(--admin-window-background-color);
+  box-shadow: var(--admin-window-shadow);
+}
+
+.dialogHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
+.dialogTitle,
+.dialogMessage {
+  margin: 0;
+}
+
+.dialogTitle {
+  color: var(--admin-feedback-title-color);
+  font-family: var(--admin-feedback-title-font-family);
+  font-size: var(--admin-feedback-title-font-size);
+  font-weight: var(--admin-feedback-title-font-weight);
+  line-height: var(--admin-feedback-title-line-height);
+}
+
+.dialogMessage {
+  white-space: pre-line;
+  color: var(--admin-feedback-meta-color);
+  font-family: var(--admin-feedback-meta-font-family);
+  font-size: var(--admin-feedback-meta-font-size);
+  font-weight: var(--admin-feedback-meta-font-weight);
+  line-height: var(--admin-feedback-meta-line-height);
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+}
+
+.dialogButton {
+  min-width: 2.25rem;
+  height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius-md);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
+  cursor: pointer;
+}
+
+.dialogButton:hover:not(:disabled) {
+  background: var(--admin-support-control-hover-background-color);
+  color: var(--admin-support-control-text-color);
+}
+
+.dialogPrimary {
+  background: var(--admin-support-control-strong-background-color);
+  color: var(--admin-support-control-strong-text-color);
+  border-color: var(--admin-support-control-strong-border-color);
+}
+
+.dialogPrimary:hover:not(:disabled) {
+  background: var(--admin-support-control-strong-hover-background-color);
+}
+
+.dialogDanger {
+  background: var(--state-error-background-color);
+  color: var(--state-error-text-color);
+  border-color: var(--state-error-border-color);
+}
+
+.dialogDanger:hover:not(:disabled) {
+  background: var(--state-error-background-color-hover);
+}

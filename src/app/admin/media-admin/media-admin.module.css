@@ -14,7 +14,7 @@
   max-width: 100%;
   margin: 0;
   /* Top padding matches Collections `.panel` so column titles align with Organization / Cards. */
-  padding: calc(var(--spacing-md) + 2px) var(--spacing-xs) var(--spacing-xs) var(--spacing-xs);
+  padding: calc(var(--spacing-sm) + 2px) var(--spacing-xs) var(--spacing-xs) var(--spacing-xs);
   overflow: hidden;
 }
 
@@ -31,7 +31,7 @@
 .studioMediaEmbeddedStack {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: 6px;
   margin-bottom: var(--spacing-xs);
   min-width: 0;
   max-width: 100%;
@@ -40,8 +40,8 @@
 
 /* Same flex basis as `StudioTreeCandidateCardBank` `.studioPaneSearchField` */
 .studioPaneSearchField {
-  flex: 0 0 14rem;
-  min-width: 12rem;
+  flex: 0 0 12rem;
+  min-width: 10rem;
   max-width: 18rem;
 }
 
@@ -49,7 +49,7 @@
 .studioMediaSearchInput {
   width: 100%;
   box-sizing: border-box;
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: 0.32rem 0.45rem;
   font-size: var(--font-size-sm);
   line-height: 1.25;
   border: var(--border-width-thin) solid var(--border1-color);
@@ -83,11 +83,26 @@
 
 .studioMediaRowOne {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
+  flex-wrap: nowrap;
+  gap: var(--spacing-xs);
   align-items: flex-end;
   width: 100%;
   min-width: 0;
+  overflow-x: auto;
+}
+
+.embeddedTitle {
+  flex: 0 0 auto;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 4px 0 0;
+  font-family: var(--admin-support-title-font-family);
+  font-size: var(--admin-support-title-font-size);
+  font-weight: var(--admin-support-title-font-weight);
+  line-height: var(--admin-support-title-line-height);
+  color: var(--admin-support-title-color);
+  overflow: visible;
 }
 
 .studioMediaMacroBlock {
@@ -100,20 +115,19 @@
 }
 
 .studioTagsEditButton {
-  border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-window-border-color) 50%, transparent);
+  border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
   border-radius: var(--border-radius-sm);
-  background: color-mix(in srgb, var(--admin-window-background-color) 50%, transparent);
-  color: var(--admin-chrome-meta-color);
+  background: var(--admin-support-control-strong-background-color);
+  color: var(--admin-support-control-strong-text-color);
+  padding: 2px 5px;
+  cursor: pointer;
   font: var(--admin-grid-overlay-font);
   line-height: 1;
   letter-spacing: 0.02em;
-  padding: 2px 5px;
-  cursor: pointer;
-  backdrop-filter: blur(4px);
 }
 
 .studioTagsEditButton:hover {
-  background: color-mix(in srgb, var(--admin-window-background-color) 68%, transparent);
+  background: var(--admin-support-control-strong-hover-background-color);
 }
 
 .studioTagsActions {
@@ -125,7 +139,7 @@
 .studioInlineLabel {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   font-size: var(--font-size-xs);
   color: var(--text2-color);
   min-width: 0;
@@ -134,7 +148,7 @@
 .studioFilterSelect {
   min-width: 4.25rem;
   max-width: 11rem;
-  padding: 4px var(--spacing-xs);
+  padding: 3px var(--spacing-xs);
   font-size: var(--font-size-xs);
   border-radius: var(--border-radius-sm);
   border: var(--border-width-thin) solid var(--border1-color);
@@ -156,13 +170,20 @@
 
 .studioClearButton {
   align-self: flex-end;
-  padding: 4px var(--spacing-sm);
-  font-size: var(--font-size-xs);
+  padding: 3px var(--spacing-xs);
   border-radius: var(--border-radius-sm);
-  border: var(--border-width-thin) solid var(--border1-color);
-  background: var(--layout-background2-color);
-  color: var(--text1-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
+  background: var(--admin-support-control-strong-background-color);
+  color: var(--admin-support-control-strong-text-color);
   cursor: pointer;
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--font-size-xs);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: 1.25;
+}
+
+.studioClearButton:hover {
+  background: var(--admin-support-control-strong-hover-background-color);
 }
 
 .deleteDialogBody {
@@ -226,19 +247,6 @@
   gap: var(--spacing-sm);
   padding: 0 var(--spacing-xs) var(--spacing-xs) 0;
   box-sizing: border-box;
-}
-
-.stickyTop .embeddedTitle {
-  flex-shrink: 0;
-  margin: 0 0 var(--spacing-xs);
-  display: block;
-  padding-top: 2px;
-  font-family: var(--admin-support-title-font-family);
-  font-size: var(--admin-support-title-font-size);
-  font-weight: var(--admin-support-title-font-weight);
-  line-height: var(--admin-support-title-line-height);
-  color: var(--admin-support-title-color);
-  overflow: visible;
 }
 
 /* Whole controls strip sticks below admin tabs while table scrolls under it. */
@@ -408,8 +416,8 @@
   align-items: center;
   justify-content: space-between;
   flex-wrap: nowrap;
-  min-height: 44px;
-  padding: var(--spacing-sm) var(--spacing-md);
+  min-height: 34px;
+  padding: 0.4rem 0.55rem;
   background: var(--layout-background2-color);
   border-radius: var(--border-radius-md);
   margin-bottom: var(--spacing-md);
@@ -427,7 +435,7 @@
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
-  gap: var(--spacing-md);
+  gap: var(--spacing-xs);
   min-width: 0;
   max-width: 100%;
   overflow-x: auto;

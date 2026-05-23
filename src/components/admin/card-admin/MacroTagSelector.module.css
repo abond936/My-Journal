@@ -40,14 +40,18 @@
 }
 
 .editButton, .saveButton, .cancelButton {
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: var(--border-width-thin) solid transparent;
-  border-radius: var(--border-radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 20px;
+  padding: 2px 5px;
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-window-border-color) 50%, transparent);
+  border-radius: var(--border-radius-sm);
   cursor: pointer;
-  font-family: var(--admin-support-control-font-family);
-  font-size: var(--admin-support-control-font-size);
-  font-weight: var(--admin-support-control-font-weight);
-  line-height: var(--admin-support-control-line-height);
+  font: var(--admin-grid-overlay-font);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  backdrop-filter: blur(4px);
   transition: all var(--transition-short) ease-in-out;
 }
 
@@ -181,8 +185,8 @@
 }
 
 .addTagBlock {
-  margin-bottom: var(--spacing-sm);
-  padding-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-xs);
+  padding-bottom: var(--spacing-xs);
   border-bottom: var(--border-width-thin) dashed var(--admin-window-border-color);
 }
 
@@ -198,7 +202,6 @@
 
 .addTagRow {
   display: flex;
-  flex-wrap: wrap;
   gap: var(--spacing-xs);
   align-items: center;
 }
@@ -251,7 +254,7 @@
 
 .addTagChildPanel {
   margin-bottom: var(--spacing-sm);
-  padding: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
   background: var(--admin-window-background-color);
   border: var(--border-width-thin) solid var(--admin-window-border-color);
   border-radius: var(--border-radius-sm);
@@ -296,14 +299,14 @@
 
 .modalContainer {
   width: 96%;
-  max-width: 1700px;
+  max-width: 1360px;
   max-height: 80vh;
   overflow-y: auto;
   background-color: var(--admin-window-background-color);
   border: var(--border-width-thin) solid var(--admin-window-border-color);
   box-shadow: var(--admin-window-shadow);
   border-radius: var(--border-radius-md);
-  padding: var(--spacing-2xl);
+  padding: var(--spacing-xl);
   display: flex;
   flex-direction: column;
 }
@@ -404,12 +407,12 @@
 
 .interactiveColumns {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: var(--spacing-xl);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--spacing-lg);
   width: 100%;
   flex-grow: 1;
   overflow-y: auto;
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm);
   background-color: var(--admin-window-background-color);
   border: var(--border-width-thin) solid var(--admin-window-border-color);
   border-radius: var(--border-radius-md);
@@ -476,14 +479,14 @@
 
 .dimensionColumns {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: var(--spacing-xl);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--spacing-lg);
   width: 100%;
 }
 
 .dimensionColumn h4 {
   margin-top: 0;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
   color: var(--admin-support-title-color);
   font-family: var(--admin-support-title-font-family);
   font-size: var(--admin-support-title-font-size);

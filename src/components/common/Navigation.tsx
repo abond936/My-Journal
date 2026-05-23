@@ -1,15 +1,12 @@
 'use client';
 
-// Navigation.tsx - Main navigation component
-// It includes a responsive design that collapses into a hamburger menu on mobile
-
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
-import { useTheme } from '@/components/providers/ThemeProvider';
+import { signOut, useSession } from 'next-auth/react';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
+import { useTheme } from '@/components/providers/ThemeProvider';
 import styles from './Navigation.module.css';
 
 interface NavigationProps {
@@ -19,20 +16,10 @@ interface NavigationProps {
 
 function useReaderBackTarget(pathname: string | null): { showBack: boolean; backHref: string } {
   return useMemo(() => {
-    if (!pathname || pathname === '/') {
+    if (!pathname || pathname === '/' || pathname === '/view' || pathname.startsWith('/admin')) {
       return { showBack: false, backHref: '/view' };
     }
-    if (pathname.startsWith('/admin')) {
-      return { showBack: false, backHref: '/view' };
-    }
-    const onMainReaderFeed = pathname === '/view';
-    if (onMainReaderFeed) {
-      return { showBack: false, backHref: '/view' };
-    }
-    if (pathname.startsWith('/view/')) {
-      return { showBack: true, backHref: '/view' };
-    }
-    if (pathname === '/search') {
+    if (pathname.startsWith('/view/') || pathname === '/search') {
       return { showBack: true, backHref: '/view' };
     }
     return { showBack: true, backHref: '/view' };
@@ -43,15 +30,15 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const navRef = useRef<HTMLElement>(null);
-
   const pathname = usePathname();
   const router = useRouter();
-  const { theme, isThemeAdminOpen, openThemeAdmin } = useTheme();
   const { data: session } = useSession();
+  const { theme, isThemeAdminOpen, openThemeAdmin } = useTheme();
   const isAdmin = session?.user?.role === 'admin';
   const { showBack, backHref } = useReaderBackTarget(pathname);
   const isThemeAdminRoute = (pathname?.startsWith('/admin/theme-admin') ?? false) || isThemeAdminOpen;
-  const isGeneralAdminRoute = Boolean(pathname?.startsWith('/admin') && !isThemeAdminRoute);
+  const isStudioRoute = Boolean(pathname?.startsWith('/admin/studio'));
+  const isUsersRoute = Boolean(pathname?.startsWith('/admin/journal-users'));
 
   useEffect(() => {
     setMounted(true);
@@ -64,15 +51,15 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
   useEffect(() => {
     if (!isMenuOpen) return;
 
-    const onPointerDown = (e: PointerEvent) => {
-      const el = navRef.current;
-      if (el && !el.contains(e.target as Node)) {
+    const onPointerDown = (event: PointerEvent) => {
+      const element = navRef.current;
+      if (element && !element.contains(event.target as Node)) {
         setIsMenuOpen(false);
       }
     };
 
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
         setIsMenuOpen(false);
       }
     };
@@ -84,10 +71,6 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
       document.removeEventListener('keydown', onKeyDown);
     };
   }, [isMenuOpen]);
-
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
 
   if (!mounted) {
     return null;
@@ -102,7 +85,7 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
               href={backHref}
               className={`${styles.backLink} ${sidebarOpen ? styles.backLinkSidebarOpen : styles.backLinkSidebarClosed}`}
             >
-              ← Back
+              Back
             </Link>
           ) : (
             <span className={styles.edgeSpacer} aria-hidden />
@@ -112,17 +95,14 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
         <div className={styles.centerSlot}>
           <Link href="/view" className={styles.logo}>
             <Image
-              src={`/images/uploads/Title-${theme === 'dark' ? 'dark' : 'light'}.png`}
-              alt="My Stories - Michael Alan Bond"
+              src={`/images/uploads/Title-${theme === 'dark' ? 'dark2' : 'light2'}.png`}
+              alt="My Stories"
               className={styles.logoImage}
               width={225}
               height={113}
               sizes="(max-width: 768px) 160px, 225px"
-              priority={true}
+              priority
             />
-            <span className={styles.logoIcon} aria-hidden="true">
-              📖
-            </span>
           </Link>
         </div>
 
@@ -130,7 +110,7 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
           <button
             type="button"
             className={styles.menuButton}
-            onClick={toggleMenu}
+            onClick={() => setIsMenuOpen((current) => !current)}
             aria-label="Toggle menu"
             aria-expanded={isMenuOpen}
           >
@@ -139,102 +119,65 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
         </div>
 
         <div className={`${styles.navLinks} ${isMenuOpen ? styles.open : ''}`}>
+          <Link href="/view" className={`${styles.navLink} ${pathname === '/view' ? styles.active : ''}`}>
+            Content
+          </Link>
+          <Link
+            href="/my-stories/1"
+            className={`${styles.navLink} ${pathname === '/my-stories/1' ? styles.active : ''}`}
+          >
+            Landing Page 1
+          </Link>
+          <Link
+            href="/my-stories/2"
+            className={`${styles.navLink} ${pathname === '/my-stories/2' ? styles.active : ''}`}
+          >
+            Landing Page 2
+          </Link>
+          <Link
+            href="/my-stories/3"
+            className={`${styles.navLink} ${pathname === '/my-stories/3' ? styles.active : ''}`}
+          >
+            Landing Page 3
+          </Link>
           {isAdmin ? (
             <>
               <Link
-                href="/view"
-                className={`${styles.navLink} ${pathname === '/view' ? styles.active : ''}`}
+                href="/admin/studio"
+                className={`${styles.navLink} ${isStudioRoute ? styles.active : ''}`}
               >
-                Content
+                Studio
               </Link>
               <Link
-                href="/my-stories/1"
-                className={`${styles.navLink} ${pathname === '/my-stories/1' ? styles.active : ''}`}
+                href="/admin/journal-users"
+                className={`${styles.navLink} ${isUsersRoute ? styles.active : ''}`}
               >
-                Landing Page 1
+                Users
               </Link>
               <Link
-                href="/my-stories/2"
-                className={`${styles.navLink} ${pathname === '/my-stories/2' ? styles.active : ''}`}
+                href="/admin/theme-admin"
+                className={`${styles.navLink} ${isThemeAdminRoute ? styles.active : ''}`}
+                onClick={(event) => {
+                  event.preventDefault();
+                  openThemeAdmin();
+                  router.replace(pathname || '/view');
+                }}
               >
-                Landing Page 2
+                Theme
               </Link>
-              <Link
-                href="/my-stories/3"
-                className={`${styles.navLink} ${pathname === '/my-stories/3' ? styles.active : ''}`}
-              >
-                Landing Page 3
-              </Link>
-              <span className={styles.adminLinksDesktopOnly}>
-                <Link
-                  href="/admin/studio"
-                  className={`${styles.navLink} ${isGeneralAdminRoute ? styles.active : ''}`}
-                >
-                  Admin
-                </Link>
-                <Link
-                  href="/admin/theme-admin"
-                  className={`${styles.navLink} ${isThemeAdminRoute ? styles.active : ''}`}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    openThemeAdmin();
-                    router.replace(pathname || '/view');
-                  }}
-                >
-                  Theme Settings
-                </Link>
-              </span>
-              <div className={styles.themeRow}>
-                <span>Theme</span>
-                <ThemeToggle />
-              </div>
-              <button
-                type="button"
-                className={styles.signOutButton}
-                onClick={() => signOut({ callbackUrl: '/' })}
-              >
-                Sign out
-              </button>
             </>
-          ) : (
-            <>
-              <Link
-                href="/view"
-                className={`${styles.navLink} ${pathname === '/view' ? styles.active : ''}`}
-              >
-                Content
-              </Link>
-              <Link
-                href="/my-stories/1"
-                className={`${styles.navLink} ${pathname === '/my-stories/1' ? styles.active : ''}`}
-              >
-                Landing Page 1
-              </Link>
-              <Link
-                href="/my-stories/2"
-                className={`${styles.navLink} ${pathname === '/my-stories/2' ? styles.active : ''}`}
-              >
-                Landing Page 2
-              </Link>
-              <Link
-                href="/my-stories/3"
-                className={`${styles.navLink} ${pathname === '/my-stories/3' ? styles.active : ''}`}
-              >
-                Landing Page 3
-              </Link>
-              <div className={styles.themeRow}>
-                <span>Theme</span>
-                <ThemeToggle />
-              </div>
-              <button
-                type="button"
-                className={styles.signOutButton}
-                onClick={() => signOut({ callbackUrl: '/' })}
-              >
-                Sign out
-              </button>
-            </>
-          )}
+          ) : null}
+          <div className={styles.themeRow}>
+            <span>Theme</span>
+            <ThemeToggle />
+          </div>
+          <button
+            type="button"
+            className={styles.signOutButton}
+            onClick={() => signOut({ callbackUrl: '/' })}
+          >
+            Sign out
+          </button>
         </div>
       </div>
     </nav>

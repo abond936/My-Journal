@@ -2,7 +2,6 @@
 
 import React from 'react';
 import styles from './AdminLayout.module.css';
-import AdminNavTabs from '@/components/admin/AdminNavTabs';
 import AdminDesktopOnlyGate from './AdminDesktopOnlyGate';
 
 interface AdminLayoutProps {
@@ -13,9 +12,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <AdminDesktopOnlyGate>
       <div className={styles.simplifiedLayout}>
-        <div className={styles.topNavContainer} id="admin-tabs-bar">
-          <AdminNavTabs />
-        </div>
+        <div className={styles.topNavSpacer} id="admin-tabs-bar" aria-hidden="true" />
         <div className={styles.pageContent}>{children}</div>
       </div>
     </AdminDesktopOnlyGate>

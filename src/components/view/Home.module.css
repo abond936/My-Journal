@@ -50,7 +50,7 @@
   max-width: 800px;
   margin: calc(-1 * var(--spacing-4xl)) auto 0;
   text-align: center;
-  padding: var(--spacing-sm) 0;
+  padding: var(--spacing-2xl) 0 var(--spacing-sm);
 }
 
 .welcomeText {

@@ -23,6 +23,7 @@ import { useStudioShellOptional } from '@/components/admin/studio/StudioShellCon
 import { StudioDropZone } from '@/components/admin/studio/studioRelationshipDndPrimitives';
 import StudioCardFormGallery from '@/components/admin/studio/StudioCardFormGallery';
 import StudioCardFormChildren from '@/components/admin/studio/StudioCardFormChildren';
+import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 
 type CardDraftOption = {
   title: string;
@@ -31,6 +32,54 @@ type CardDraftOption = {
   content: string;
   rationale?: string;
 };
+
+type StoryAssistGuide = 'bob' | 'sandra';
+type StoryAssistMode =
+  | 'draftFromNotes'
+  | 'tightenWording'
+  | 'expandMemory'
+  | 'retitleStory'
+  | 'makeStoryStronger';
+type StoryCoachSuggestion = {
+  category: string;
+  suggestion: string;
+  prompt?: string;
+  example?: string;
+};
+
+const STORY_ASSIST_GUIDE_STORAGE_KEY = 'myjournal-ai-story-guide';
+const STORY_ASSIST_GUIDE_LABEL: Record<StoryAssistGuide, string> = {
+  bob: 'Bob',
+  sandra: 'Sandra',
+};
+const STORY_ASSIST_GUIDE_HINT: Record<StoryAssistGuide, string> = {
+  bob: 'Direct, grounded, and plainspoken.',
+  sandra: 'Warm, reflective, and conversational.',
+};
+const STORY_ASSIST_WRITE_MODES: StoryAssistMode[] = [
+  'draftFromNotes',
+  'tightenWording',
+  'expandMemory',
+  'retitleStory',
+];
+const STORY_ASSIST_MODE_LABEL: Record<StoryAssistMode, string> = {
+  draftFromNotes: 'Draft from notes',
+  tightenWording: 'Tighten wording',
+  expandMemory: 'Expand this memory',
+  retitleStory: 'Retitle this story',
+  makeStoryStronger: 'Make this story stronger',
+};
+const STORY_ASSIST_MODE_HINT: Record<StoryAssistMode, string> = {
+  draftFromNotes: 'Turn rough notes into a readable story draft.',
+  tightenWording: 'Clean up flow, repetition, and clarity.',
+  expandMemory: 'Draw out meaning and scene without inventing facts.',
+  retitleStory: 'Improve the title and subtitle while keeping the story aligned.',
+  makeStoryStronger: 'Return coaching suggestions that deepen the story.',
+};
+
+function isCoachMode(mode: StoryAssistMode | null): mode is 'makeStoryStronger' {
+  return mode === 'makeStoryStronger';
+}
 
 function textToBasicHtml(text: string): string {
   const safe = text
@@ -91,17 +140,40 @@ const CardForm: React.FC = () => {
   const studioShellForm = Boolean(studioFormCtx?.studioShellCardForm);
   const studioShellDnd = Boolean(studioFormCtx?.enableStudioShellDnd);
   const studioShell = useStudioShellOptional();
+  const feedback = useAppFeedback();
 
   const editorRef = useRef<RichTextEditorRef>(null);
+  const bodyDropPointRef = useRef<{ left: number; top: number } | null>(null);
+  const [bodyDropIndicator, setBodyDropIndicator] = useState<{ top: number; height: number } | null>(null);
+
+  const handleStudioBodyDropPointerUpdate = useCallback((point: { left: number; top: number } | null) => {
+    bodyDropPointRef.current = point;
+    setBodyDropIndicator(editorRef.current?.previewDropPoint(point) ?? null);
+  }, []);
 
   useEffect(() => {
     if (!studioShellDnd || !studioShell?.bodyMediaInsertRef) return;
     const r = studioShell.bodyMediaInsertRef;
     r.current = (media: Media) => {
-      editorRef.current?.insertImage(media);
+      const tryInsert = (remainingFrames: number) => {
+        const editor = editorRef.current;
+        if (editor) {
+          editor.insertImage(media, bodyDropPointRef.current);
+          bodyDropPointRef.current = null;
+          setBodyDropIndicator(null);
+          return;
+        }
+        if (remainingFrames <= 0) return;
+        window.requestAnimationFrame(() => {
+          tryInsert(remainingFrames - 1);
+        });
+      };
+      tryInsert(8);
     };
     return () => {
       r.current = null;
+      bodyDropPointRef.current = null;
+      setBodyDropIndicator(null);
     };
   }, [studioShellDnd, studioShell]);
 
@@ -113,14 +185,32 @@ const CardForm: React.FC = () => {
   const [isPhotoPickerOpen, setIsPhotoPickerOpen] = useState(false);
   const [isSuggestingDrafts, setIsSuggestingDrafts] = useState(false);
   const [includeHistoricalContext, setIncludeHistoricalContext] = useState(false);
+  const [storyAssistGuide, setStoryAssistGuide] = useState<StoryAssistGuide>('bob');
+  const [activeStoryAssistMode, setActiveStoryAssistMode] = useState<StoryAssistMode | null>(null);
+  const [storyAssistSummary, setStoryAssistSummary] = useState('');
   const [draftOptions, setDraftOptions] = useState<CardDraftOption[]>([]);
+  const [storyCoachSuggestions, setStoryCoachSuggestions] = useState<StoryCoachSuggestion[]>([]);
   const [draftSuggestionError, setDraftSuggestionError] = useState<string | null>(null);
-  const [saveNotice, setSaveNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [tagMacroExpanded, setTagMacroExpanded] = useState(false);
 
   useEffect(() => {
     setTagMacroExpanded(false);
   }, [cardData.docId]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = window.localStorage.getItem(STORY_ASSIST_GUIDE_STORAGE_KEY);
+    if (stored === 'bob' || stored === 'sandra') {
+      setStoryAssistGuide(stored);
+    }
+  }, []);
+
+  const handleStoryAssistGuideChange = useCallback((nextGuide: StoryAssistGuide) => {
+    setStoryAssistGuide(nextGuide);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(STORY_ASSIST_GUIDE_STORAGE_KEY, nextGuide);
+    }
+  }, []);
 
   const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setField('title', e.target.value), [setField]);
   const handleSubtitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setField('subtitle', e.target.value), [setField]);
@@ -231,7 +321,10 @@ const CardForm: React.FC = () => {
     async (nextGallery: HydratedGalleryMediaItem[]): Promise<boolean> => {
       const docId = cardData.docId?.trim();
       if (!docId) {
-        window.alert('Save the card once before editing gallery metadata.');
+        await feedback.alert({
+          title: 'Save card first',
+          message: 'Save the card once before editing gallery metadata.',
+        });
         return false;
       }
 
@@ -254,18 +347,24 @@ const CardForm: React.FC = () => {
         });
         const payload = (await res.json().catch(() => ({}))) as Record<string, unknown>;
         if (!res.ok) {
-          window.alert(formatCardApiError(payload));
+          await feedback.alert({
+            title: 'Could not save gallery',
+            message: formatCardApiError(payload),
+          });
           return false;
         }
         commitGalleryMediaPersisted(normalized);
         return true;
       } catch (e) {
         console.error('[persistGalleryAfterSlotSave]', e);
-        window.alert(e instanceof Error ? e.message : 'Network error saving gallery.');
+        await feedback.alert({
+          title: 'Could not save gallery',
+          message: e instanceof Error ? e.message : 'Network error saving gallery.',
+        });
         return false;
       }
     },
-    [cardData, commitGalleryMediaPersisted]
+    [cardData, commitGalleryMediaPersisted, feedback]
   );
 
   const handleSetGalleryItemAsCover = useCallback(
@@ -354,24 +453,19 @@ const CardForm: React.FC = () => {
     () => getAllowedDisplayModes(cardData.type ?? 'story'),
     [cardData.type]
   );
+  const canUseQuestionType = Boolean(cardData.questionId) || cardData.type === 'qa';
 
   const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const editorContent = editorRef.current?.getContent();
     const overrides = editorContent !== undefined ? { content: editorContent } : undefined;
     const saved = await handleSave(overrides);
-    setSaveNotice(
-      saved
-        ? { type: 'success', message: 'Card saved.' }
-        : { type: 'error', message: 'Could not save card. Please review any errors and try again.' }
-    );
-  }, [handleSave]);
-
-  useEffect(() => {
-    if (!saveNotice || saveNotice.type !== 'success') return;
-    const timer = window.setTimeout(() => setSaveNotice(null), 3000);
-    return () => window.clearTimeout(timer);
-  }, [saveNotice]);
+    if (saved) {
+      feedback.showSuccess('Card saved.', 'Saved');
+      return;
+    }
+    feedback.showError('Could not save card. Please review any errors and try again.', 'Could not save');
+  }, [feedback, handleSave]);
 
   const handleAddImageToContent = useCallback(() => {
     setIsPhotoPickerOpen(true);
@@ -384,10 +478,13 @@ const CardForm: React.FC = () => {
     setIsPhotoPickerOpen(false);
   }, []);
 
-  const requestDraftSuggestions = useCallback(async (preserveExisting = false) => {
+  const requestDraftSuggestions = useCallback(async (mode: StoryAssistMode) => {
     setIsSuggestingDrafts(true);
+    setActiveStoryAssistMode(mode);
     setDraftSuggestionError(null);
-    if (!preserveExisting) setDraftOptions([]);
+    setStoryAssistSummary('');
+    setDraftOptions([]);
+    setStoryCoachSuggestions([]);
     try {
       const currentContent = editorRef.current?.getContent() ?? (cardData.content || '');
       const res = await fetch('/api/ai/suggest-card-drafts', {
@@ -400,15 +497,28 @@ const CardForm: React.FC = () => {
           excerpt: cardData.excerpt || '',
           content: currentContent || '',
           includeHistoricalContext,
+          guide: storyAssistGuide,
+          mode,
         }),
       });
       const payload = await res.json().catch(() => ({})) as {
         message?: string;
         error?: string;
+        mode?: StoryAssistMode;
+        summary?: string;
         options?: CardDraftOption[];
+        coaching?: StoryCoachSuggestion[];
       };
       if (!res.ok) {
         throw new Error(payload.error || payload.message || `Request failed (${res.status})`);
+      }
+      setStoryAssistSummary(typeof payload.summary === 'string' ? payload.summary : '');
+      if (mode === 'makeStoryStronger') {
+        if (!Array.isArray(payload.coaching) || payload.coaching.length === 0) {
+          throw new Error('No coaching suggestions returned.');
+        }
+        setStoryCoachSuggestions(payload.coaching);
+        return;
       }
       if (!Array.isArray(payload.options) || payload.options.length === 0) {
         throw new Error('No draft options returned.');
@@ -419,10 +529,13 @@ const CardForm: React.FC = () => {
     } finally {
       setIsSuggestingDrafts(false);
     }
-  }, [cardData.title, cardData.subtitle, cardData.excerpt, cardData.content, includeHistoricalContext]);
+  }, [cardData.title, cardData.subtitle, cardData.excerpt, cardData.content, includeHistoricalContext, storyAssistGuide]);
 
   const clearDraftSuggestions = useCallback(() => {
+    setActiveStoryAssistMode(null);
+    setStoryAssistSummary('');
     setDraftOptions([]);
+    setStoryCoachSuggestions([]);
     setDraftSuggestionError(null);
   }, []);
 
@@ -443,9 +556,9 @@ const CardForm: React.FC = () => {
         setField('content', html);
         updateContentMedia(extractMediaFromContent(html));
       }
-      setDraftOptions([]);
+      clearDraftSuggestions();
     },
-    [setField, updateContentMedia]
+    [clearDraftSuggestions, setField, updateContentMedia]
   );
 
   const bodyRichTextEditor = (
@@ -461,6 +574,7 @@ const CardForm: React.FC = () => {
       chainWheelToScrollParent={studioShellForm}
     />
   );
+
 
   return (
     <>
@@ -482,18 +596,6 @@ const CardForm: React.FC = () => {
         <DndContext onDragEnd={() => undefined}>
           <form id="card-form" onSubmit={handleSubmit} className={clsx(styles.form, styles.compactShellForm)}>
             <div className={styles.mainContent}>
-              {saveNotice ? (
-                <div
-                  className={clsx(
-                    styles.saveNotice,
-                    saveNotice.type === 'success' ? styles.saveNoticeSuccess : styles.saveNoticeError
-                  )}
-                  role={saveNotice.type === 'error' ? 'alert' : 'status'}
-                  aria-live="polite"
-                >
-                  {saveNotice.message}
-                </div>
-              ) : null}
               <div className={styles.header}>
                 <input
                   type="text"
@@ -590,7 +692,7 @@ const CardForm: React.FC = () => {
                       className={clsx(styles.statusSelect, errors.type && styles.inputError)}
                     >
                       <option value="story">Story</option>
-                      {cardData.type === 'qa' && <option value="qa">Question</option>}
+                      {canUseQuestionType && <option value="qa">Question</option>}
                       <option value="quote">Quote</option>
                       <option value="callout">Callout</option>
                       <option value="gallery">Gallery</option>
@@ -650,30 +752,67 @@ const CardForm: React.FC = () => {
               </div>
 
               <div className={styles.aiAssistSection}>
-                <h4 className={styles.sectionTitle}>AI Assist</h4>
+                <h4 className={styles.sectionTitle}>Story Assist</h4>
+                <div className={styles.aiAssistHeaderBlock}>
+                  <div className={styles.aiAssistGuideGroup} role="radiogroup" aria-label="Story guide">
+                    {(['bob', 'sandra'] as StoryAssistGuide[]).map((guide) => (
+                      <button
+                        key={guide}
+                        type="button"
+                        className={`${styles.aiAssistGuideButton} ${
+                          storyAssistGuide === guide ? styles.aiAssistGuideButtonActive : ''
+                        }`}
+                        aria-pressed={storyAssistGuide === guide}
+                        onClick={() => handleStoryAssistGuideChange(guide)}
+                        disabled={isSuggestingDrafts}
+                      >
+                        {STORY_ASSIST_GUIDE_LABEL[guide]}
+                      </button>
+                    ))}
+                  </div>
+                  <p className={styles.aiAssistGuideHint}>
+                    {STORY_ASSIST_GUIDE_HINT[storyAssistGuide]}
+                  </p>
+                </div>
                 <div className={styles.aiAssistTopRow}>
                   <div className={styles.aiAssistActionGroup}>
+                    {STORY_ASSIST_WRITE_MODES.map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        className={styles.aiAssistButton}
+                        onClick={() => void requestDraftSuggestions(mode)}
+                        disabled={isSuggestingDrafts || isSaving}
+                        title={STORY_ASSIST_MODE_HINT[mode]}
+                      >
+                        {isSuggestingDrafts && activeStoryAssistMode === mode
+                          ? 'Working...'
+                          : STORY_ASSIST_MODE_LABEL[mode]}
+                      </button>
+                    ))}
                     <button
                       type="button"
                       className={styles.aiAssistButton}
-                      onClick={() => void requestDraftSuggestions(false)}
+                      onClick={() => void requestDraftSuggestions('makeStoryStronger')}
                       disabled={isSuggestingDrafts || isSaving}
+                      title={STORY_ASSIST_MODE_HINT.makeStoryStronger}
                     >
-                      {isSuggestingDrafts ? 'Generating…' : 'Draft'}
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.aiAssistButton}
-                      onClick={() => void requestDraftSuggestions(true)}
-                      disabled={isSuggestingDrafts || draftOptions.length === 0}
-                    >
-                      Revision
+                      {isSuggestingDrafts && activeStoryAssistMode === 'makeStoryStronger'
+                        ? 'Working...'
+                        : STORY_ASSIST_MODE_LABEL.makeStoryStronger}
                     </button>
                     <button
                       type="button"
                       className={styles.aiAssistClearButton}
                       onClick={clearDraftSuggestions}
-                      disabled={isSuggestingDrafts || (draftOptions.length === 0 && !draftSuggestionError)}
+                      disabled={
+                        isSuggestingDrafts
+                          ? true
+                          : draftOptions.length === 0 &&
+                            storyCoachSuggestions.length === 0 &&
+                            !draftSuggestionError &&
+                            !storyAssistSummary
+                      }
                     >
                       Clear
                     </button>
@@ -691,11 +830,41 @@ const CardForm: React.FC = () => {
                 {draftSuggestionError && (
                   <p className={styles.aiAssistError}>{draftSuggestionError}</p>
                 )}
+                {storyAssistSummary && !draftSuggestionError && (
+                  <p className={styles.aiAssistSummary}>{storyAssistSummary}</p>
+                )}
+                {storyCoachSuggestions.length > 0 && isCoachMode(activeStoryAssistMode) && (
+                  <div className={styles.aiCoachList}>
+                    {storyCoachSuggestions.map((item, idx) => (
+                      <div key={`coach-${idx}`} className={styles.aiCoachCard}>
+                        <div className={styles.aiDraftHeading}>
+                          <strong>{item.category}</strong>
+                        </div>
+                        <p className={styles.aiCoachSuggestion}>{item.suggestion}</p>
+                        {item.prompt ? (
+                          <p className={styles.aiCoachPrompt}>
+                            <strong>Follow-up:</strong> {item.prompt}
+                          </p>
+                        ) : null}
+                        {item.example ? (
+                          <p className={styles.aiCoachExample}>
+                            <strong>Example line:</strong> {item.example}
+                          </p>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {draftOptions.length > 0 && (
                   <div className={styles.aiDraftOptions}>
                     {draftOptions.map((opt, idx) => (
                       <div key={`draft-${idx}`} className={styles.aiDraftCard}>
                         <div className={styles.aiDraftHeading}>
+                          <strong>
+                            {activeStoryAssistMode
+                              ? STORY_ASSIST_MODE_LABEL[activeStoryAssistMode]
+                              : 'Story suggestion'}
+                          </strong>
                           {opt.rationale ? <span>{opt.rationale}</span> : null}
                         </div>
                         <div className={styles.aiDraftPreview}>
@@ -736,18 +905,6 @@ const CardForm: React.FC = () => {
         className={clsx(styles.form, studioShellForm && styles.compactShellForm)}
       >
         <div className={styles.mainContent}>
-          {saveNotice ? (
-            <div
-              className={clsx(
-                styles.saveNotice,
-                saveNotice.type === 'success' ? styles.saveNoticeSuccess : styles.saveNoticeError
-              )}
-              role={saveNotice.type === 'error' ? 'alert' : 'status'}
-              aria-live="polite"
-            >
-              {saveNotice.message}
-            </div>
-          ) : null}
           <div className={styles.header}>
             <input
               type="text"
@@ -844,7 +1001,7 @@ const CardForm: React.FC = () => {
                   className={clsx(styles.statusSelect, errors.type && styles.inputError)}
                 >
                   <option value="story">Story</option>
-                  {cardData.type === 'qa' && <option value="qa">Question</option>}
+                  {canUseQuestionType && <option value="qa">Question</option>}
                   <option value="quote">Quote</option>
                   <option value="callout">Callout</option>
                   <option value="gallery">Gallery</option>
@@ -951,7 +1108,15 @@ const CardForm: React.FC = () => {
                 className={styles.studioBodyDropZone}
                 alwaysRegister
                 eligibleHint="Release here to insert into the story"
+                onEligibleDragPointerUpdate={handleStudioBodyDropPointerUpdate}
               >
+                {bodyDropIndicator ? (
+                  <div
+                    className={styles.studioBodyDropIndicator}
+                    aria-hidden="true"
+                    style={{ top: bodyDropIndicator.top, height: bodyDropIndicator.height }}
+                  />
+                ) : null}
                 {bodyRichTextEditor}
               </StudioDropZone>
             ) : (
@@ -960,30 +1125,67 @@ const CardForm: React.FC = () => {
           </div>
 
           <div className={styles.aiAssistSection}>
-            <h4 className={styles.sectionTitle}>AI Assist</h4>
+            <h4 className={styles.sectionTitle}>Story Assist</h4>
+            <div className={styles.aiAssistHeaderBlock}>
+              <div className={styles.aiAssistGuideGroup} role="radiogroup" aria-label="Story guide">
+                {(['bob', 'sandra'] as StoryAssistGuide[]).map((guide) => (
+                  <button
+                    key={guide}
+                    type="button"
+                    className={`${styles.aiAssistGuideButton} ${
+                      storyAssistGuide === guide ? styles.aiAssistGuideButtonActive : ''
+                    }`}
+                    aria-pressed={storyAssistGuide === guide}
+                    onClick={() => handleStoryAssistGuideChange(guide)}
+                    disabled={isSuggestingDrafts}
+                  >
+                    {STORY_ASSIST_GUIDE_LABEL[guide]}
+                  </button>
+                ))}
+              </div>
+              <p className={styles.aiAssistGuideHint}>
+                {STORY_ASSIST_GUIDE_HINT[storyAssistGuide]}
+              </p>
+            </div>
             <div className={styles.aiAssistTopRow}>
               <div className={styles.aiAssistActionGroup}>
+                {STORY_ASSIST_WRITE_MODES.map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    className={styles.aiAssistButton}
+                    onClick={() => void requestDraftSuggestions(mode)}
+                    disabled={isSuggestingDrafts || isSaving}
+                    title={STORY_ASSIST_MODE_HINT[mode]}
+                  >
+                    {isSuggestingDrafts && activeStoryAssistMode === mode
+                      ? 'Working...'
+                      : STORY_ASSIST_MODE_LABEL[mode]}
+                  </button>
+                ))}
                 <button
                   type="button"
                   className={styles.aiAssistButton}
-                  onClick={() => void requestDraftSuggestions(false)}
+                  onClick={() => void requestDraftSuggestions('makeStoryStronger')}
                   disabled={isSuggestingDrafts || isSaving}
+                  title={STORY_ASSIST_MODE_HINT.makeStoryStronger}
                 >
-                  {isSuggestingDrafts ? 'Generating…' : 'Draft'}
-                </button>
-                <button
-                  type="button"
-                  className={styles.aiAssistButton}
-                  onClick={() => void requestDraftSuggestions(true)}
-                  disabled={isSuggestingDrafts || draftOptions.length === 0}
-                >
-                  Revision
+                  {isSuggestingDrafts && activeStoryAssistMode === 'makeStoryStronger'
+                    ? 'Working...'
+                    : STORY_ASSIST_MODE_LABEL.makeStoryStronger}
                 </button>
                 <button
                   type="button"
                   className={styles.aiAssistClearButton}
                   onClick={clearDraftSuggestions}
-                  disabled={isSuggestingDrafts || (draftOptions.length === 0 && !draftSuggestionError)}
+                  disabled={
+                    isSuggestingDrafts
+                      ? true
+                      : draftOptions.length === 0 &&
+                        storyCoachSuggestions.length === 0 &&
+                        !draftSuggestionError &&
+                        !storyAssistSummary
+                  }
                 >
                   Clear
                 </button>
@@ -1001,11 +1203,41 @@ const CardForm: React.FC = () => {
             {draftSuggestionError && (
               <p className={styles.aiAssistError}>{draftSuggestionError}</p>
             )}
+            {storyAssistSummary && !draftSuggestionError && (
+              <p className={styles.aiAssistSummary}>{storyAssistSummary}</p>
+            )}
+            {storyCoachSuggestions.length > 0 && isCoachMode(activeStoryAssistMode) && (
+              <div className={styles.aiCoachList}>
+                {storyCoachSuggestions.map((item, idx) => (
+                  <div key={`coach-${idx}`} className={styles.aiCoachCard}>
+                    <div className={styles.aiDraftHeading}>
+                      <strong>{item.category}</strong>
+                    </div>
+                    <p className={styles.aiCoachSuggestion}>{item.suggestion}</p>
+                    {item.prompt ? (
+                      <p className={styles.aiCoachPrompt}>
+                        <strong>Follow-up:</strong> {item.prompt}
+                      </p>
+                    ) : null}
+                    {item.example ? (
+                      <p className={styles.aiCoachExample}>
+                        <strong>Example line:</strong> {item.example}
+                      </p>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            )}
             {draftOptions.length > 0 && (
               <div className={styles.aiDraftOptions}>
                 {draftOptions.map((opt, idx) => (
                   <div key={`draft-${idx}`} className={styles.aiDraftCard}>
                     <div className={styles.aiDraftHeading}>
+                      <strong>
+                        {activeStoryAssistMode
+                          ? STORY_ASSIST_MODE_LABEL[activeStoryAssistMode]
+                          : 'Story suggestion'}
+                      </strong>
                       {opt.rationale ? <span>{opt.rationale}</span> : null}
                     </div>
                     <div className={styles.aiDraftPreview}>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { NodeViewWrapper, NodeViewContent } from '@tiptap/react';
 import { NodeSelection } from 'prosemirror-state';
 import JournalImage from '@/components/common/JournalImage';
@@ -7,7 +7,7 @@ import type { FigureImageSize } from '@/lib/tiptap/extensions/FigureWithImage';
 
 const FIGURE_SIZE_CLASSES: FigureImageSize[] = ['xsmall', 'small', 'medium', 'large'];
 
-export const FigureWithImageView = ({ node, updateAttributes, editor, selected, getPos }) => {
+export const FigureWithImageView = ({ node, editor, getPos }) => {
   const {
     src,
     alt,
@@ -19,18 +19,32 @@ export const FigureWithImageView = ({ node, updateAttributes, editor, selected, 
     'data-media-id': mediaId,
   } = node.attrs;
 
-  const selectNodeManually = () => {
+  const [isDragging, setIsDragging] = useState(false);
+
+  const selectNodeManually = useCallback(() => {
     if (editor && getPos) {
       const { tr } = editor.view.state;
       const selection = NodeSelection.create(editor.view.state.doc, getPos());
       editor.view.dispatch(tr.setSelection(selection));
     }
+  }, [editor, getPos]);
+
+  const handleImagePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    selectNodeManually();
   };
 
-  // This is the fix for the drag handle bug.
-  // It stops the mousedown event from bubbling up and interfering with other listeners.
-  const handleDragHandleMouseDown = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleImageDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    selectNodeManually();
+    setIsDragging(true);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('application/x-myjournal-figure', mediaId || 'figure');
+    e.dataTransfer.setData('text/plain', mediaId || alt || 'image');
+    e.dataTransfer.setDragImage(e.currentTarget, e.currentTarget.clientWidth / 2, 24);
+  };
+
+  const handleImageDragEnd = () => {
+    setIsDragging(false);
   };
   
   if (!src || !width || !height) {
@@ -44,18 +58,21 @@ export const FigureWithImageView = ({ node, updateAttributes, editor, selected, 
   return (
     <NodeViewWrapper
       as="figure"
-      className={`${styles.figureWrapper} ${styles[alignment]} ${styles[size]}`}
+      className={`${styles.figureWrapper} ${styles[alignment]} ${styles[size]} ${isDragging ? styles.figureDragging : ''}`}
       data-wrap={wrap || 'off'}
       data-media-id={mediaId}
-      data-drag-handle
+      data-dragging={isDragging ? 'true' : 'false'}
     >
-      <div className={styles.dragHandle}>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-          <path d="M10 4h4v4h-4zM4 10h4v4H4zM16 10h4v4h-4zM10 16h4v4h-4zM4 16h4v4H4zM16 16h4v4h-4zM4 4h4v4H4zM10 10h4v4h-4zM16 4h4v4h-4z" />
-        </svg>
-      </div>
-      
-      <div onClick={selectNodeManually} className={styles.imageContainer}>
+      <div
+        onClick={selectNodeManually}
+        onPointerDown={handleImagePointerDown}
+        onDragStart={handleImageDragStart}
+        onDragEnd={handleImageDragEnd}
+        className={styles.imageContainer}
+        data-drag-handle
+        draggable
+        contentEditable={false}
+      >
         <JournalImage
           src={src}
           alt={alt}
