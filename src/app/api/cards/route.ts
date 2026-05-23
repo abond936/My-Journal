@@ -98,6 +98,18 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
+  if (!session) {
+    return errorResponse(
+      {
+        ok: false,
+        code: 'AUTH_UNAUTHORIZED',
+        message: 'Authentication required.',
+        severity: 'error',
+        retryable: false,
+      },
+      401
+    );
+  }
   const isAdmin = session?.user?.role === 'admin';
 
   try {

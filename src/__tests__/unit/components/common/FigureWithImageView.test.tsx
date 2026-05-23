@@ -45,6 +45,7 @@ describe('FigureWithImageView', () => {
     render(
       <FigureWithImageView
         node={{
+          textContent: '',
           attrs: {
             src: 'https://example.com/image.jpg',
             alt: 'Example image',
@@ -75,5 +76,59 @@ describe('FigureWithImageView', () => {
     expect(setSelection).toHaveBeenCalledWith({ doc: editor.view.state.doc, pos: 12, kind: 'node-selection' });
     expect(dispatch).toHaveBeenCalledWith({ type: 'setSelection', selection: { doc: editor.view.state.doc, pos: 12, kind: 'node-selection' } });
     expect(dragImage).toHaveBeenCalled();
+  });
+
+  it('marks empty captions as hidden in read-only rendering', () => {
+    render(
+      <FigureWithImageView
+        node={{
+          textContent: '',
+          attrs: {
+            src: 'https://example.com/image.jpg',
+            alt: 'Example image',
+            width: 400,
+            height: 300,
+            'data-size': 'medium',
+            'data-alignment': 'left',
+            'data-wrap': 'off',
+            'data-media-id': 'media-1',
+          },
+        }}
+        editor={{ isEditable: false }}
+        getPos={() => 12}
+      />
+    );
+
+    expect(screen.getByTestId('node-view-content').parentElement).toHaveAttribute(
+      'data-empty-caption-hidden',
+      'true'
+    );
+  });
+
+  it('keeps real captions visible in read-only rendering', () => {
+    render(
+      <FigureWithImageView
+        node={{
+          textContent: 'A real caption',
+          attrs: {
+            src: 'https://example.com/image.jpg',
+            alt: 'Example image',
+            width: 400,
+            height: 300,
+            'data-size': 'medium',
+            'data-alignment': 'left',
+            'data-wrap': 'off',
+            'data-media-id': 'media-1',
+          },
+        }}
+        editor={{ isEditable: false }}
+        getPos={() => 12}
+      />
+    );
+
+    expect(screen.getByTestId('node-view-content').parentElement).toHaveAttribute(
+      'data-empty-caption-hidden',
+      'false'
+    );
   });
 });

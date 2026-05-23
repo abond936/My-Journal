@@ -2,7 +2,11 @@ import { Card } from '@/lib/types/card';
 import CardDetailPage from './CardDetailPage';
 import { getCardById, getCardsByIds } from '@/lib/services/cardService';
 import { serializeCardForClient } from '@/lib/utils/dateUtils';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { getServerSession } from 'next-auth/next';
+import type { Session } from 'next-auth';
+import { authOptions } from '@/lib/auth/authOptions';
+import { canReadCard, filterReadableCards } from '@/lib/auth/readerAccess';
 
 interface CardPageProps {
   params: Promise<{
@@ -18,18 +22,19 @@ interface CardPageData {
 // Re-export for Next.js to recognize the dynamic nature of the page
 export const dynamic = 'force-dynamic';
 
-async function getCardData(id: string): Promise<CardPageData | null> {
+async function getCardData(id: string, session: Session | null): Promise<CardPageData | null> {
   try {
     // 1. Fetch the parent card
     const card = await getCardById(id);
-    if (!card) {
+    if (!card || !canReadCard(session, card)) {
       return null;
     }
 
     // 2. Fetch the children if they exist
     let children: Card[] = [];
     if (card.childrenIds && card.childrenIds.length > 0) {
-      children = await getCardsByIds(card.childrenIds, { hydrationMode: 'cover-only' });
+      const hydratedChildren = await getCardsByIds(card.childrenIds, { hydrationMode: 'cover-only' });
+      children = filterReadableCards(session, hydratedChildren);
     }
     
     return { card, children };
@@ -41,15 +46,16 @@ async function getCardData(id: string): Promise<CardPageData | null> {
 
 export default async function CardPage({ params }: CardPageProps) {
   const { id } = await params;
-  const pageData = await getCardData(id);
+  const session = (await getServerSession(authOptions)) as Session | null;
+
+  if (!session) {
+    redirect(`/?callbackUrl=/view/${encodeURIComponent(id)}`);
+  }
+
+  const pageData = await getCardData(id, session);
 
   if (!pageData) {
-    return (
-      <div style={{ padding: '20px' }}>
-        <h2>Error</h2>
-        <p>Could not load card data for ID: {id}</p>
-      </div>
-    );
+    notFound();
   }
 
   // Serialize both card and children data for client components

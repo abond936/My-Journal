@@ -20,6 +20,8 @@ export const FigureWithImageView = ({ node, editor, getPos }) => {
   } = node.attrs;
 
   const [isDragging, setIsDragging] = useState(false);
+  const hasCaption = typeof node.textContent === 'string' && node.textContent.trim().length > 0;
+  const hideEmptyCaption = !editor?.isEditable && !hasCaption;
 
   const selectNodeManually = useCallback(() => {
     if (editor && getPos) {
@@ -62,6 +64,7 @@ export const FigureWithImageView = ({ node, editor, getPos }) => {
       data-wrap={wrap || 'off'}
       data-media-id={mediaId}
       data-dragging={isDragging ? 'true' : 'false'}
+      data-empty-caption-hidden={hideEmptyCaption ? 'true' : 'false'}
     >
       <div
         onClick={selectNodeManually}

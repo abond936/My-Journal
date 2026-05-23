@@ -15,6 +15,8 @@ import {
   dimensionalTagMapHasFilters,
   parseDimensionalTagParamsFromSearchParams,
 } from '@/lib/utils/tagUtils';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth/authOptions';
 
 type ExactDimensionalTagIdMap = Partial<Record<'who' | 'what' | 'when' | 'where', string[]>>;
 
@@ -149,6 +151,11 @@ async function fetchMediaByIdsInOrder(firestore: Firestore, ids: string[]): Prom
 }
 
 export async function GET(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return errorResponse('Authentication required.', 401);
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const limit = Math.min(parseInt(searchParams.get('limit') || '40', 10), 100);

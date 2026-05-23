@@ -59,13 +59,18 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
-  // Search should be available to all users, not just admins
-  // if (!session) {
-  //   return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
-  //     status: 403,
-  //     headers: { 'Content-Type': 'application/json' },
-  //   });
-  // }
+  if (!session) {
+    return errorResponse(
+      {
+        ok: false,
+        code: 'AUTH_UNAUTHORIZED',
+        message: 'Authentication required.',
+        severity: 'error',
+        retryable: false,
+      },
+      401
+    );
+  }
 
   try {
     const { searchParams } = new URL(request.url);

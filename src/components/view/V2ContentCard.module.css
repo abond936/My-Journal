@@ -2,6 +2,9 @@
 .card {
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   background-color: var(--reader-card-background-color);
   border-radius: var(--reader-card-border-radius);
   overflow: hidden;
@@ -132,6 +135,9 @@
   display: flex;
   flex-direction: column;
   flex-grow: 1;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   position: relative;
   z-index: 2;
   gap: var(--spacing-xs);
@@ -140,6 +146,9 @@
 .imageContainer {
   position: relative;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   aspect-ratio: 6 / 5;
   height: auto;
   z-index: 0;
@@ -253,11 +262,18 @@
 
 .swiperContainer {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   height: 100%;
 }
 
 .swiperContainer :global(.swiper) {
   overflow: visible;
+}
+
+.swiperContainer :global(.swiper-wrapper),
+.swiperContainer :global(.swiper-slide) {
+  min-width: 0;
 }
 
 .swiperContainer :global(.swiper-slide) {
@@ -743,6 +759,8 @@
 .cardShell {
   position: relative;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   height: 100%;
 }
 

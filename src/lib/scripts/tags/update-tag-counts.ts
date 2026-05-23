@@ -24,6 +24,7 @@ import { Card } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 
 import { updateAllTagCardCounts, updateAllTagMediaCounts } from '@/lib/firebase/tagService';
+import { buildTagChildrenByParent, getTagPostOrder } from './tag-count-utils';
 
 const adminApp = getAdminApp();
 const firestore = adminApp.firestore();
@@ -42,12 +43,10 @@ async function dryRunTagCounts() {
     allTags.push(tag);
     tagMap.set(doc.id, tag);
   });
-  // Build children arrays
-  allTags.forEach(tag => {
-    if (tag.parentId && tagMap.has(tag.parentId)) {
-      tagMap.get(tag.parentId)!.children.push(tag.docId!);
-    }
-  });
+  const childrenByParent = buildTagChildrenByParent(allTags);
+  for (const tag of allTags) {
+    tag.children = childrenByParent.get(tag.docId!) ?? [];
+  }
 
   // 2. Fetch all published cards and build tag-to-card map
   const publishedCardsSnapshot = await cardsCollection.where('status', '==', 'published').get();
@@ -92,8 +91,10 @@ async function dryRunTagCounts() {
     return allUniqueCardIds;
   }
   
-  // Start from root tags
-  allTags.filter(t => !t.parentId).forEach(t => computeUniqueCards(t.docId!));
+  // Traverse every tag, including both legacy `null` roots and missing-parent roots.
+  for (const tagId of getTagPostOrder(allTags)) {
+    computeUniqueCards(tagId);
+  }
 
   // 4. Compare and summarize
   let incorrectCount = 0;

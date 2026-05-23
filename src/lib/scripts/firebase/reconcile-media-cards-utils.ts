@@ -23,3 +23,41 @@ export function extractMediaFromContent(html: string | null | undefined): string
   while ((match = regex.exec(html)) !== null) ids.add(match[1]);
   return Array.from(ids);
 }
+
+export type CardMediaReferenceField =
+  | 'coverImageId'
+  | 'galleryMedia'
+  | 'contentMedia'
+  | 'contentHtml';
+
+export type CardMediaReference = {
+  mediaId: string;
+  field: CardMediaReferenceField;
+};
+
+export function collectCardMediaReferences(card: {
+  coverImageId?: string | null;
+  galleryMedia?: Array<{ mediaId?: string | null }>;
+  contentMedia?: string[];
+  content?: string | null;
+}): CardMediaReference[] {
+  const refs: CardMediaReference[] = [];
+  const add = (mediaId: string | null | undefined, field: CardMediaReferenceField) => {
+    if (typeof mediaId === 'string' && mediaId.trim()) {
+      refs.push({ mediaId, field });
+    }
+  };
+
+  add(card.coverImageId, 'coverImageId');
+  for (const item of card.galleryMedia ?? []) {
+    add(item?.mediaId, 'galleryMedia');
+  }
+  for (const mediaId of card.contentMedia ?? []) {
+    add(mediaId, 'contentMedia');
+  }
+  for (const mediaId of extractMediaFromContent(card.content)) {
+    add(mediaId, 'contentHtml');
+  }
+
+  return refs;
+}

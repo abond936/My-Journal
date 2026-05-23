@@ -35,6 +35,7 @@ function ViewPageContent() {
     error,
     browseTarget,
     readerMode,
+    isGuidedCollectionTransition,
   } =
     useCardContext();
   const searchParams = useSearchParams();
@@ -57,6 +58,11 @@ function ViewPageContent() {
 
   // Restore to the last opened or edited card once the feed has rendered it.
   useLayoutEffect(() => {
+    if (isGuidedCollectionTransition) {
+      sessionStorage.removeItem(FOCUS_CARD_KEY);
+      sessionStorage.removeItem(SCROLL_POSITION_KEY);
+      return;
+    }
     if (isInitialLoading || visibleCards.length === 0) return;
 
     const pendingFocusCardId = focusCardId ?? sessionStorage.getItem(FOCUS_CARD_KEY);
@@ -114,7 +120,7 @@ function ViewPageContent() {
     } else if (savedPosition) {
       sessionStorage.removeItem(SCROLL_POSITION_KEY);
     }
-  }, [isInitialLoading, visibleCards.length, focusCardId]);
+  }, [isGuidedCollectionTransition, isInitialLoading, visibleCards.length, focusCardId]);
 
   const onSaveScrollPosition = useCallback((cardId?: string) => {
     sessionStorage.setItem(SCROLL_POSITION_KEY, window.scrollY.toString());

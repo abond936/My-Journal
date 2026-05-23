@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
     const dryRun = body.dryRun === true;
     const cardTitleFilter = typeof body.cardTitleFilter === 'string' ? body.cardTitleFilter : undefined;
     const checkStorage = body.checkStorage === true;
+    const includeUnassignedMedia = body.includeUnassignedMedia === true;
 
     if (!action || !['diagnose', 'fix'].includes(action)) {
       return errorResponse(
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const report = await runDiagnostics({ cardTitleFilter, checkStorage });
+    const report = await runDiagnostics({ cardTitleFilter, checkStorage, includeUnassignedMedia });
 
     if (action === 'diagnose') {
       return NextResponse.json({ report });

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getCardsByIds } from '@/lib/services/cardService';
 import { Card } from '@/lib/types/card';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth/authOptions';
 
 const CARD_TYPES = ['story', 'qa', 'quote', 'callout', 'gallery'] as const;
 type CardTypeFilter = typeof CARD_TYPES[number] | 'all';
@@ -204,6 +206,20 @@ function getRandomCardIds(
  * @param request - The incoming NextRequest.
  */
 export async function GET(request: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return errorResponse(
+      {
+        ok: false,
+        code: 'AUTH_UNAUTHORIZED',
+        message: 'Authentication required.',
+        severity: 'error',
+        retryable: false,
+      },
+      401
+    );
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     

@@ -3,6 +3,7 @@ import { Tag, OrganizedTags } from '@/lib/types/tag';
 import type { Media } from '@/lib/types/photo';
 import { FieldValue, type DocumentData, type Transaction } from 'firebase-admin/firestore';
 import { buildTagMap, computeJournalWhenSortKeys } from '@/lib/utils/journalWhenSort';
+import { assertCompleteTagTraversal, getTagPostOrder } from '@/lib/scripts/tags/tag-count-utils';
 
 const adminApp = getAdminApp();
 const firestore = adminApp.firestore();
@@ -941,42 +942,18 @@ export async function updateAllTagCardCounts(): Promise<number> {
       parentId: doc.data().parentId,
     }));
 
-    // Group tags by their level in the tree
-    const tagsByParent = new Map<string | undefined, string[]>();
-    allTags.forEach(tag => {
-      const parentId = tag.parentId;
-      if (!tagsByParent.has(parentId)) {
-        tagsByParent.set(parentId, []);
-      }
-      tagsByParent.get(parentId)!.push(tag.docId);
-    });
-
     let processedCount = 0;
+    const tagOrder = getTagPostOrder(allTags);
+    assertCompleteTagTraversal(allTags, tagOrder);
 
-    // Process one level at a time, starting with leaf nodes
-    const processLevel = async (parentId: string | undefined) => {
-      const tagIds = tagsByParent.get(parentId) || [];
-      
-      // First, process all children of tags at this level
-      for (const tagId of tagIds) {
-        if (tagsByParent.has(tagId)) {
-          await processLevel(tagId);
-        }
+    for (const tagId of tagOrder) {
+      try {
+        await updateTagCardCount(tagId);
+        processedCount++;
+      } catch (error) {
+        console.error(`Failed to update count for tag ${tagId}:`, error);
       }
-
-      // Then process the tags at this level
-      await Promise.all(tagIds.map(async (tagId) => {
-        try {
-          await updateTagCardCount(tagId);
-          processedCount++;
-        } catch (error) {
-          console.error(`Failed to update count for tag ${tagId}:`, error);
-        }
-      }));
-    };
-
-    // Start from root level (null parentId)
-    await processLevel(null);
+    }
     return processedCount;
   } catch (error) {
     console.error('Error updating all tag card counts:', error);
@@ -1030,39 +1007,18 @@ export async function updateAllTagMediaCounts(): Promise<number> {
       parentId: doc.data().parentId,
     }));
 
-    const tagsByParent = new Map<string | undefined, string[]>();
-    allTags.forEach((tag) => {
-      const parentId = tag.parentId;
-      if (!tagsByParent.has(parentId)) {
-        tagsByParent.set(parentId, []);
-      }
-      tagsByParent.get(parentId)!.push(tag.docId);
-    });
-
     let processedCount = 0;
+    const tagOrder = getTagPostOrder(allTags);
+    assertCompleteTagTraversal(allTags, tagOrder);
 
-    const processLevel = async (parentId: string | undefined) => {
-      const tagIds = tagsByParent.get(parentId) || [];
-
-      for (const tagId of tagIds) {
-        if (tagsByParent.has(tagId)) {
-          await processLevel(tagId);
-        }
+    for (const tagId of tagOrder) {
+      try {
+        await updateTagMediaCount(tagId);
+        processedCount++;
+      } catch (error) {
+        console.error(`Failed to update media count for tag ${tagId}:`, error);
       }
-
-      await Promise.all(
-        tagIds.map(async (tagId) => {
-          try {
-            await updateTagMediaCount(tagId);
-            processedCount++;
-          } catch (error) {
-            console.error(`Failed to update media count for tag ${tagId}:`, error);
-          }
-        })
-      );
-    };
-
-    await processLevel(null);
+    }
     return processedCount;
   } catch (error) {
     console.error('Error updating all tag media counts:', error);

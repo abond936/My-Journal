@@ -35,6 +35,8 @@ import styles from './GlobalSidebar.module.css';
 const VIEW_TAG_SIDEBAR_TAB_KEY = 'myjournal-view-sidebar-tag-tab';
 const CURATED_TREE_EXPANDED_KEY = 'myjournal-curated-tree-expanded';
 const FREEFORM_DIMENSION_KEY = 'myjournal-freeform-dimension';
+const CONTENT_VIEW_SCROLL_POSITION_KEY = 'contentViewScrollPos';
+const CONTENT_VIEW_FOCUS_CARD_KEY = 'contentViewFocusCardId';
 
 interface GlobalSidebarProps {
   isOpen: boolean;
@@ -111,6 +113,11 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
       router.push('/view');
     }
   }, [isViewDetailRoute, router]);
+  const clearReaderReturnPosition = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    window.sessionStorage.removeItem(CONTENT_VIEW_SCROLL_POSITION_KEY);
+    window.sessionStorage.removeItem(CONTENT_VIEW_FOCUS_CARD_KEY);
+  }, []);
 
   const handleSetDefaultExpanded = useCallback(
     (tagId: string, expanded: boolean) => {
@@ -251,6 +258,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     (nextMode: 'freeform' | 'guided') => {
       setReaderMode(nextMode);
       if (nextMode === 'guided') {
+        clearReaderReturnPosition();
         setActiveDimension('collections');
         returnToFeedIfViewingDetail();
         return;
@@ -263,6 +271,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     },
     [
       activeDimension,
+      clearReaderReturnPosition,
       readStoredFreeformDimension,
       returnToFeedIfViewingDetail,
       setActiveDimension,
@@ -285,16 +294,18 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
 
   const handleSelectCollection = useCallback(
     (nextCollectionId: string) => {
+      clearReaderReturnPosition();
       const nextCard = collectionCardById.get(nextCollectionId);
       const hasChildren = Boolean(nextCard && normalizeCuratedChildIds(nextCard.childrenIds).length > 0);
       if (!hasChildren) {
         router.push(`/view/${encodeURIComponent(nextCollectionId)}?mode=guided`);
         return;
       }
+      setActiveDimension('collections');
       setCollectionId(nextCollectionId);
       returnToFeedIfViewingDetail();
     },
-    [collectionCardById, returnToFeedIfViewingDetail, router, setCollectionId]
+    [clearReaderReturnPosition, collectionCardById, returnToFeedIfViewingDetail, router, setActiveDimension, setCollectionId]
   );
 
   const selectedTagsByDimension = useMemo(() => {

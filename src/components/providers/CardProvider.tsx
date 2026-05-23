@@ -84,6 +84,8 @@ export interface ICardContext {
   feedSections: FeedSections;
   visibleCards: Card[];
   visibleFeedSections: FeedSections;
+  isGuidedCollectionTransition: boolean;
+  guidedTransitionTitle: string | null;
 
   // Filter actions
   toggleTag: (tagId: string) => void;
@@ -274,6 +276,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     if (typeof window === 'undefined') return null;
     return readStoredValue(COLLECTION_STORAGE_KEY) || null;
   });
+  const [guidedTransitionCollectionId, setGuidedTransitionCollectionId] = useState<string | null>(null);
   const [feedSort, setFeedSortState] = useState<FeedSortOrder>(() => readStoredFeedSort());
   const [feedGroupBy, setFeedGroupByState] = useState<FeedGroupBy>(() => readStoredFeedGroup());
   const [includeSubTagsInFeed, setIncludeSubTagsInFeedState] = useState<boolean>(() =>
@@ -339,17 +342,26 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   const setActiveDimension = useCallback((dim: ActiveDimension) => {
     setActiveDimensionState(dim);
     if (typeof window !== 'undefined') window.localStorage.setItem(DIMENSION_STORAGE_KEY, dim);
-    if (dim !== 'collections') setCollectionIdState(null);
+    if (dim !== 'collections') {
+      setCollectionIdState(null);
+      setGuidedTransitionCollectionId(null);
+    }
     if (dim !== 'collections' && typeof window !== 'undefined') window.localStorage.removeItem(COLLECTION_STORAGE_KEY);
   }, []);
 
   const setCollectionId = useCallback((id: string | null) => {
+    if (id && id !== collectionId && (readerMode === 'guided' || activeDimension === 'collections')) {
+      setGuidedTransitionCollectionId(id);
+    }
+    if (!id) {
+      setGuidedTransitionCollectionId(null);
+    }
     setCollectionIdState(id);
     if (typeof window !== 'undefined') {
       if (id) window.localStorage.setItem(COLLECTION_STORAGE_KEY, id);
       else window.localStorage.removeItem(COLLECTION_STORAGE_KEY);
     }
-  }, []);
+  }, [activeDimension, collectionId, readerMode]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -673,27 +685,54 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   const hasRenderableSections = Boolean(feedSections?.some((section) => section.cards.length > 0));
   const hasRenderableCards = cards.length > 0 || hasRenderableSections;
   const readerBackgroundLoading = isCollectionsListMode ? collectionsLoading : isValidating;
+  const isGuidedCollectionTransition = Boolean(
+    guidedTransitionCollectionId &&
+      guidedTransitionCollectionId === collectionId &&
+      activeDimension === 'collections' &&
+      readerMode === 'guided' &&
+      readerBackgroundLoading
+  );
+  const guidedTransitionTitle = guidedTransitionCollectionId
+    ? collectionTreeCards.find((card) => card.docId === guidedTransitionCollectionId)?.title ?? null
+    : null;
 
   useEffect(() => {
     if (!isReaderRoute || !hasRenderableCards) return;
+    if (isGuidedCollectionTransition) return;
     lastVisibleReaderSnapshotRef.current = {
       cards,
       feedSections,
     };
-  }, [isReaderRoute, hasRenderableCards, cards, feedSections]);
+  }, [isReaderRoute, hasRenderableCards, cards, feedSections, isGuidedCollectionTransition]);
+
+  useEffect(() => {
+    if (!guidedTransitionCollectionId || guidedTransitionCollectionId !== collectionId) return;
+    if (readerBackgroundLoading) return;
+    setGuidedTransitionCollectionId(null);
+  }, [collectionId, guidedTransitionCollectionId, readerBackgroundLoading]);
 
   const hasVisibleReaderSnapshot = Boolean(
     lastVisibleReaderSnapshotRef.current.cards.length > 0 ||
       lastVisibleReaderSnapshotRef.current.feedSections?.some((section) => section.cards.length > 0)
   );
   const shouldUseVisibleReaderSnapshot =
-    isReaderRoute && !hasRenderableCards && readerBackgroundLoading && hasVisibleReaderSnapshot;
-  const visibleCards = shouldUseVisibleReaderSnapshot
-    ? lastVisibleReaderSnapshotRef.current.cards
-    : cards;
-  const visibleFeedSections = shouldUseVisibleReaderSnapshot
-    ? lastVisibleReaderSnapshotRef.current.feedSections
-    : feedSections;
+    isReaderRoute &&
+    !isGuidedCollectionTransition &&
+    !hasRenderableCards &&
+    readerBackgroundLoading &&
+    hasVisibleReaderSnapshot;
+  const { visibleCards, visibleFeedSections } = useMemo(() => {
+    if (isGuidedCollectionTransition) {
+      return { visibleCards: [], visibleFeedSections: null };
+    }
+    if (shouldUseVisibleReaderSnapshot) {
+      return {
+        visibleCards: lastVisibleReaderSnapshotRef.current.cards,
+        visibleFeedSections: lastVisibleReaderSnapshotRef.current.feedSections,
+      };
+    }
+    return { visibleCards: cards, visibleFeedSections: feedSections };
+  }, [cards, feedSections, isGuidedCollectionTransition, shouldUseVisibleReaderSnapshot]);
   const isLoading = isCollectionsListMode ? collectionsLoading : (swrLoading && !data);
   const isInitialLoading = isLoading && !shouldUseVisibleReaderSnapshot;
   const loadingMore = swrLoading && size > 1;
@@ -783,6 +822,8 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       cardDimensionMissing,
       feedSections,
       visibleFeedSections,
+      isGuidedCollectionTransition,
+      guidedTransitionTitle,
       loadMore,
       patchVisibleCard,
       mutate,
@@ -830,6 +871,8 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       cardDimensionMissing,
       feedSections,
       visibleFeedSections,
+      isGuidedCollectionTransition,
+      guidedTransitionTitle,
       loadMore,
       patchVisibleCard,
       mutate,

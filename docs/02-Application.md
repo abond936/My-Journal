@@ -255,10 +255,12 @@ Legend:
 - **Gallery caption overlay** - Closed gallery cards now render the active inline image caption as a bottom overlay while swiping through feed-card images.
 - **Closed-card context cues** - Closed reader `Story` and `Gallery` cards now show a type badge plus up to four derived context chips (`Who`, `What`, `When`, `Where`) based on direct card tags and their ancestry; `Question` cards participate in the same reader context system where appropriate.
 - **Reader detail context row** - Open reader cards now render the same badge/context-chip language above the title so the feed and detail views share one orienting metadata treatment.
-- **Guided discovery policy** - Generic `Explore More` is suppressed whenever the current reader mode is **Guided**; Freeform detail pages still render discovery. Structural child rails remain available where applicable.
+- **Guided discovery policy** - Guided detail pages show authored structural children only: generic `Explore More`, random `Related`, and `Unrelated` discovery suggestions are suppressed whenever the effective reader mode is **Guided**. Freeform detail pages still render generic discovery. Structural child rails remain available where applicable.
 - **Child rail label** - The structural child rail now uses the reader-facing label `More...` rather than `In this story`.
 - **Guided context naming** - Reader-facing guided context chrome no longer surfaces the internal word `Collection`; the selected guided title stands on its own.
 - **Reader feed auth/status correctness** - Reader feed loading now waits for auth resolution before first fetch, and guided collection loading now applies status visibility consistently for readers vs admins.
+- **Guided selection response** - Guided parent selection now clears stale return-position state, suppresses the prior collection snapshot while the next section loads, and shows an explicit guided transition state so collection changes do not appear to leave the previous cards open. Browser validation confirmed parent selection, leaf-card open behavior, and returning/selecting another parent work as expected.
+- **Narrow guided feed sizing** - Guided feed grids use capped, container-aware card columns and explicit shrink constraints on card/media containers so cards do not overgrow in sidebar-constrained or mobile-like widths.
 
 📐 **Product vs code** - v1 intent: omit story excerpt on feed/detail; `StoryCardContent` still renders `excerpt` when the field is set—clear data or add a guard when enforcing.
 📐 **Horizontal open** - Prefer horizontal open for long-form on mobile where the reader implements it.
@@ -272,10 +274,8 @@ Legend:
 - **Rail Variant** - Add a curated horizontal rail variant for qualifying sequences (for example, school/college story runs) with explicit eligibility, ordering, and card-size behavior separate from the default feed grid.
 - **In-Feed Expansion** - Add optional `Read more` progressive disclosure for story excerpts in feed cards, with deterministic truncation and explicit collapse/expand behavior that does not break feed scroll continuity.
 - **Orientation-aware Framing** - Use cover media orientation metadata to choose from a bounded ratio set (landscape/portrait/square) per approved layout variant so best-fit rendering improves without degrading feed rhythm.
-- **Reader typography tuning** - Rework title/body/supporting-text scales and spacing for the hosted mobile reader so cards and detail pages feel more intentional and less oversized in use.
 - **Question-card visual cue** - Evaluate a question-card cover treatment (for example a question-mark overlay/cover treatment) so Question cards keep more visual interest in card views without pretending to be a different type.
 - **Trivia card flip treatment** - Evaluate a `Trivia` card family for short prompt/answer content with a tap/click flip interaction (front = prompt, back = answer) so lightweight Q&A can feel distinct from full Question cards without forcing a detail-page open.
-- **Guided mode interaction correctness** - Harden guided-mode open/select behavior so opening the sidebar and selecting a new guided card replaces the active card cleanly instead of leaving the previous card open above the new one.
 - **Questions / Quotes** - Source material (Word, books, Notion).
 - **Quote Card** - Attribution modeling (e.g. Content vs subtitle/excerpt).
 
@@ -301,12 +301,6 @@ Legend:
 - **Bundle / `next/image`** - Code-split heavy routes; tuning feed image priority.
 - **Gallery slider polish** — Dots, desktop arrows, child rails (see **Feed Types**).
 - **Feed Types** / **Display Strategy** - Alternate layouts post-v1.
-
-❓ **Open**
-
-- **Narrow guided feed card sizing** - In smaller viewport desktop/mobile-like states, feed cards can still overgrow after initial render in guided mode. The sticky guided title placement is corrected, but the responsive card-sizing regression is not fully resolved yet.
-- **Guided open-response lag** - First interactions in guided mode have shown intermittent “selected card did not appear to respond” behavior; confirm whether this is true failure, delayed hydration, or a remaining guided-shell state bug.
-- **Guided child-vs-related policy** - Clarify when Guided mode should show only authored tree children versus also surfacing non-tree related/discovery content so the reader does not get both “in the tree” and “outside the tree” signals without an intentional rule.
 
 📘 `src/components/view/CardFeedV2.tsx` · `V2ContentCard.tsx` · `ContentCard.tsx` (legacy / CardGrid)
 
@@ -341,17 +335,16 @@ Legend:
 - **Progressive children (discover + child hydration)** - **Discover More:** structural **Related Content** renders from server props immediately; **Similar Topics** / **Explore More** load client-side after mount with per-group loaders (`DiscoverySection.tsx`). `**/view/[id]`:** child cards load via `getCardsByIds(..., { hydrationMode: 'cover-only' })` with first-gallery image when no cover—fewer Firestore reads than full hydration. The view page RSC still awaits parent + children in one round-trip; streaming parent-only first remains optional (🔵 / future).
 - **Related Count** - Similar / Explore presentation tuned so rails stay visually light: compact tile width (`cardRailCell` clamp in `DiscoverySection.module.css`), secondary group title scale, `V2ContentCard` `small` on rails.
 - **Detail discovery spacing** - **Explore More** / `DiscoverySection` on `/view/[id]` uses increased **margin above** the block, **padding below** the rails, and **larger article bottom padding** so the section is not tight to the story body or the scroll end (`DiscoverySection.module.css`, `CardDetail.module.css`). Further reader polish is tracked in this document's Content Page planned items and the theme support contract where applicable.
+- **Reader-only auth path** - Reader routes (`/view`, `/view/*`, `/search`) require an authenticated session; reader APIs require a session; viewers can read only published cards and published child cards, while admins retain draft visibility.
+- **Embedded-image caption framing** - Read-only embedded figures collapse empty caption chrome while preserving real captions and editable caption affordances.
 
 ⭕1 **Planned**
-- **Reader-only auth path** - Reader-only user login must work cleanly in production without requiring admin credentials or accidentally exposing admin affordances.
 - **Kicker strategy** - Define a consistent kicker/subhead strategy for reader cards and detail pages so card families and discovery sections gain lightweight narrative context without overcrowding titles.
-- **Temporary reader audience scope** - Add a reversible reader-access scope (for example a family-only share window) that gates feed, direct card open, guided children, and discovery together so temporary hosted access cannot leak into unrelated published content through child rails, direct URLs, or `Explore More`.
-- **Embedded-image caption framing** - Embedded images in rich content without captions should not render with an empty caption background treatment.
 - **Related / Explore More refinement** - Improve section typography, compact-card sizing, and overall hierarchy for **Related**, **Explore More**, and similar detail-page discovery blocks.
-- **Guided discovery refinement** - Decide whether Guided mode should remain at “no generic Explore More” only or further constrain/detail-tune structural child presentation while the user is following an authored sequence.
 - **Drop cap treatment** - Evaluate a reader/TipTap drop-cap treatment for long-form story openings where it strengthens the editorial/journal feel without becoming decorative noise.
 
 ⭕2 **Future**
+- **Audience-based reader access** - Potential future feature for adult/child or collection-specific sharing. Likely requires viewer audience/group membership, audience rules on collection roots or cards, direct URL/search/discovery enforcement, and an explicit media visibility rule.
 - **Feed hydration tiers:** Optional **cover-only** first paint on `/view` (defer full gallery/content hydration until card open or below fold) to reduce payload and server work vs today's full hydration for feed cards.
 - **View Mosaic** - Implement view-page gallery mosaic (replace swiper-only if needed).
 - **Social Features** - Like, comment, sharelink — out of scope until revisited.
@@ -561,6 +554,7 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 - **Relationship readiness** - Media management should make it easy to move from random banked assets to structured card relationships (cover, inline, gallery, children) without unnecessary mode switching.
 - **Import trust** - Import must preserve source meaning and metadata carefully enough that the author can trust the resulting bank rather than fear hidden corruption, silent duplication, or broken references.
 - **Recoverable workflows** - Replace, delete, and assignment operations should be safe enough for a hosted product handling irreplaceable family media.
+- **Reader media discovery** - Assignment is not a visibility boundary: unassigned media can be intentionally discoverable by readers through the media browse surface.
 
 📐 **List filtering & pagination** - Same contract as **Card Management** → 📐 **List filtering & pagination (cards + media)**; media additionally uses **cursor / Typesense `listPage` / seek** paths on `GET /api/media`—chunking must stay consistent with the active mode; see `docs/01-Vision-Architecture.md` → 📐 **Filtered population & stable ordering**.
 
@@ -592,7 +586,7 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 - **Studio embedded media admin** - `MediaAdminContent` in Studio uses the same `MediaProvider` + filters/table/grid/bulk/import/delete as full `/admin/media-admin`; **table** and **grid** cells expose a drag handle registering `source:{mediaId}` when `studioSourceDraggable` is on (requires `CollectionsAdminClient` `DndContext`).
 - **Studio embedded media responsiveness** - Embedded Studio media favors operator-first responsiveness over blocking totals: search/filter changes are debounced and stale requests are cancelled, recent query results and media records are cached briefly in-provider, nearby pages may prefetch opportunistically, and cross-pane media actions may resolve recent records from cache even after the visible bank page changes.
 - **Studio media assignment** - Drag `source:*` from the embedded media bank onto **Cover**, **Gallery**, **child** slots, or **TipTap body** (`drop:body`) on **in-shell Card Edit**—relationship targets use `**handleStudioRelationshipDragEnd`** / `**patchSelectedCard**`; body uses `**insertImage**` on the compose editor (`**TipTap body media from bank (Studio)**` ✅). **PhotoPicker** and TipTap **clipboard paste** remain until `**PhotoPicker convergence in Media admin`** per `📐 **Studio media & body (2026-04-22)**`.
-- **Bank-only** - No temporary or active status; imported media is in the bank. Assignment and unassigned filtering use `referencedByCardIds` and `GET /api/media?assignment=unassigned|assigned` (`mediaAssignmentSeek.ts`).
+- **Bank-only visibility model** - Imported media is in the bank whether assigned or unassigned. Assignment and unassigned filtering use `referencedByCardIds` and `GET /api/media?assignment=unassigned|assigned` (`mediaAssignmentSeek.ts`). No separate media publication status or reader-discovery visibility flag is planned for v1 unless real use shows a need.
 - **Studio media route status** - `**/admin/media-admin`** now redirects to **Studio**. Embedded Studio media is the real working surface for media administration; the legacy route remains only as a redirect.
 - **Import Metadata** - Import reads embedded metadata (caption + keyword paths from XMP/IPTC/EXIF via ExifTool) and resolves keywords to app tag IDs in the import path.
 - **Import metadata policy** - For scoped import paths, embedded captions/keywords are the app contract; JSON sidecars are out of scope (decision closeout 2026-04-20; regression via `readMetadataCaption` in integrity tests).

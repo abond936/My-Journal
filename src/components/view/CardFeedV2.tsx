@@ -41,6 +41,8 @@ export default function CardFeedV2({
     collectionId,
     collectionTreeCards,
     feedGroupBy,
+    isGuidedCollectionTransition,
+    guidedTransitionTitle,
   } = useCardContext();
 
   const activeCollectionCard =
@@ -83,6 +85,19 @@ export default function CardFeedV2({
     );
   }
 
+  if (isGuidedCollectionTransition) {
+    return (
+      <main className={styles.feedMain} aria-busy="true" aria-live="polite">
+        <div className={styles.guidedTransition}>
+          <p className={styles.guidedTransitionTitle}>
+            {guidedTransitionTitle ? `Loading ${guidedTransitionTitle}...` : 'Loading this guided section...'}
+          </p>
+          <p className={styles.guidedTransitionHint}>The next part of the guided journal is opening.</p>
+        </div>
+      </main>
+    );
+  }
+
   const isEmpty =
     sections && sections.length > 0
       ? sections.every((s) => s.cards.length === 0)
@@ -101,7 +116,9 @@ export default function CardFeedV2({
           <p className={styles.emptyFeedTitle}>No cards match the current view.</p>
           {likelyFiltered ? (
             <p className={styles.emptyFeedHint}>
-              Tag, type, search, collection, or &ldquo;group by&rdquo; may be limiting results.
+              {activeDimension === 'collections'
+                ? 'This guided section does not have visible cards yet.'
+                : 'Tag, type, search, collection, or "group by" may be limiting results.'}
             </p>
           ) : !isAdmin ? (
             <p className={styles.emptyFeedHint}>
@@ -125,7 +142,7 @@ export default function CardFeedV2({
   }
 
   const renderGrid = (items: Card[]) => (
-    <div className={styles.grid}>
+    <div className={`${styles.grid} ${activeDimension === 'collections' ? styles.guidedGrid : ''}`}>
       {items.map((card) => (
         <V2ContentCard
           key={card.docId}

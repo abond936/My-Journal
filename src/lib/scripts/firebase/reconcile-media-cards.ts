@@ -4,7 +4,7 @@
  * Identifies and repairs inconsistencies between cards and media:
  * - Cards with importedFromFolder but empty/missing galleryMedia (e.g. American Adventures)
  * - Media with sourcePath matching a card's importedFromFolder but not linked
- * - Orphaned media (not referenced by any card)
+ * - Unassigned media (optional inventory; not an integrity failure)
  * - Orphaned references (card references media that doesn't exist)
  * - Storage files missing for media docs
  *
@@ -20,7 +20,7 @@ import { resolve } from 'path';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { Card, GalleryMediaItem } from '@/lib/types/card';
 import { Media } from '@/lib/types/photo';
-import { extractMediaFromContent, mediaBelongsToCard } from './reconcile-media-cards-utils';
+import { collectCardMediaReferences, mediaBelongsToCard } from './reconcile-media-cards-utils';
 
 dotenv.config({ path: resolve(process.cwd(), '.env.local') });
 dotenv.config({ path: resolve(process.cwd(), '.env') });
@@ -40,11 +40,13 @@ export interface ReconcileReport {
     matchingMediaCount: number;
     matchingMediaIds: string[];
   }>;
+  /** Optional inventory of media currently not referenced by any card. Unassigned media is allowed. */
   orphanedMedia: Array<{ mediaId: string; filename: string; sourcePath: string }>;
   orphanedReferences: {
     coverImageId: Array<{ cardId: string; mediaId: string }>;
     galleryMedia: Array<{ cardId: string; mediaId: string }>;
     contentMedia: Array<{ cardId: string; mediaId: string }>;
+    contentHtml: Array<{ cardId: string; mediaId: string }>;
   };
   mediaWithMissingStorage: Array<{ mediaId: string; storagePath: string }>;
   // Fix results (when --fix)
@@ -56,8 +58,9 @@ export interface ReconcileReport {
 export async function runDiagnostics(options?: {
   cardTitleFilter?: string;
   checkStorage?: boolean;
+  includeUnassignedMedia?: boolean;
 }): Promise<ReconcileReport> {
-  const { cardTitleFilter, checkStorage = false } = options ?? {};
+  const { cardTitleFilter, checkStorage = false, includeUnassignedMedia = false } = options ?? {};
   const adminApp = getAdminApp();
   const firestore = adminApp.firestore();
   const bucket = checkStorage ? adminApp.storage().bucket() : null;
@@ -69,6 +72,7 @@ export async function runDiagnostics(options?: {
       coverImageId: [],
       galleryMedia: [],
       contentMedia: [],
+      contentHtml: [],
     },
     mediaWithMissingStorage: [],
     reLinkedCards: [],
@@ -89,9 +93,7 @@ export async function runDiagnostics(options?: {
 
   const referencedMediaIds = new Set<string>();
   for (const card of allCards) {
-    if (card.coverImageId) referencedMediaIds.add(card.coverImageId);
-    card.galleryMedia?.forEach((g) => referencedMediaIds.add(g.mediaId));
-    extractMediaFromContent(card.content).forEach((id) => referencedMediaIds.add(id));
+    collectCardMediaReferences(card).forEach((ref) => referencedMediaIds.add(ref.mediaId));
   }
 
   // Filter cards if requested
@@ -121,31 +123,24 @@ export async function runDiagnostics(options?: {
     });
   }
 
-  // 2. Orphaned media (not referenced by any card)
-  for (const m of allMedia) {
-    if (!referencedMediaIds.has(m.id)) {
-      report.orphanedMedia.push({
-        mediaId: m.id,
-        filename: m.filename || '(unknown)',
-        sourcePath: m.sourcePath || '(unknown)',
-      });
+  // 2. Optional inventory: unassigned media is valid in the current media-bank model.
+  if (includeUnassignedMedia) {
+    for (const m of allMedia) {
+      if (!referencedMediaIds.has(m.id)) {
+        report.orphanedMedia.push({
+          mediaId: m.id,
+          filename: m.filename || '(unknown)',
+          sourcePath: m.sourcePath || '(unknown)',
+        });
+      }
     }
   }
 
   // 3. Orphaned references (card points to media that doesn't exist)
   for (const card of allCards) {
-    if (card.coverImageId && !mediaById.has(card.coverImageId)) {
-      report.orphanedReferences.coverImageId.push({ cardId: card.id, mediaId: card.coverImageId });
-    }
-    card.galleryMedia?.forEach((g) => {
-      if (g.mediaId && !mediaById.has(g.mediaId)) {
-        report.orphanedReferences.galleryMedia.push({ cardId: card.id, mediaId: g.mediaId });
-      }
-    });
-    const contentIds = extractMediaFromContent(card.content);
-    contentIds.forEach((mediaId) => {
+    collectCardMediaReferences(card).forEach(({ mediaId, field }) => {
       if (!mediaById.has(mediaId)) {
-        report.orphanedReferences.contentMedia.push({ cardId: card.id, mediaId });
+        report.orphanedReferences[field].push({ cardId: card.id, mediaId });
       }
     });
   }
@@ -258,7 +253,7 @@ function printReport(report: ReconcileReport) {
   }
 
   if (report.orphanedMedia.length > 0) {
-    console.log('📋 Orphaned media (not referenced by any card):');
+    console.log('📋 Unassigned media (not referenced by any card; allowed):');
     report.orphanedMedia.slice(0, 20).forEach((m) => {
       console.log(`   - ${m.mediaId} | ${m.filename} | ${m.sourcePath}`);
     });
@@ -271,17 +266,25 @@ function printReport(report: ReconcileReport) {
   const totalOrphanedRefs =
     report.orphanedReferences.coverImageId.length +
     report.orphanedReferences.galleryMedia.length +
-    report.orphanedReferences.contentMedia.length;
+    report.orphanedReferences.contentMedia.length +
+    report.orphanedReferences.contentHtml.length;
   if (totalOrphanedRefs > 0) {
     console.log('📋 Orphaned references (card points to non-existent media):');
     console.log(`   coverImageId: ${report.orphanedReferences.coverImageId.length}`);
     console.log(`   galleryMedia: ${report.orphanedReferences.galleryMedia.length}`);
     console.log(`   contentMedia: ${report.orphanedReferences.contentMedia.length}`);
+    console.log(`   contentHtml: ${report.orphanedReferences.contentHtml.length}`);
     report.orphanedReferences.coverImageId.forEach((r) =>
       console.log(`   - card ${r.cardId} -> cover ${r.mediaId}`)
     );
     report.orphanedReferences.galleryMedia.slice(0, 5).forEach((r) =>
       console.log(`   - card ${r.cardId} -> gallery ${r.mediaId}`)
+    );
+    report.orphanedReferences.contentMedia.slice(0, 5).forEach((r) =>
+      console.log(`   - card ${r.cardId} -> contentMedia ${r.mediaId}`)
+    );
+    report.orphanedReferences.contentHtml.slice(0, 5).forEach((r) =>
+      console.log(`   - card ${r.cardId} -> contentHtml ${r.mediaId}`)
     );
     if (report.orphanedReferences.galleryMedia.length > 5) {
       console.log(`   ... and ${report.orphanedReferences.galleryMedia.length - 5} more`);
@@ -316,7 +319,8 @@ async function main() {
   const fix = args.includes('--fix');
   const diagnose = args.includes('--diagnose') || (!fix && args.length === 0);
   const dryRun = args.includes('--dry-run');
-  const checkStorage = args.includes('--check-storage');
+  const checkStorage = args.includes('--check-storage') || args.includes('--checkStorage');
+  const includeUnassignedMedia = args.includes('--include-unassigned-media');
   const cardArg = args.find((a) => a.startsWith('--card='));
   const cardFilter = cardArg?.replace('--card=', '').trim();
 
@@ -326,6 +330,7 @@ async function main() {
     console.log('  npm run reconcile:media-cards -- --diagnose       # diagnose');
     console.log('  npm run reconcile:media-cards -- --diagnose --card="American Adventures"');
     console.log('  npm run reconcile:media-cards -- --diagnose --check-storage');
+    console.log('  npm run reconcile:media-cards -- --diagnose --include-unassigned-media');
     console.log('  npm run reconcile:media-cards -- --fix --dry-run  # fix (preview)');
     console.log('  npm run reconcile:media-cards -- --fix            # fix');
     process.exit(1);
@@ -335,7 +340,8 @@ async function main() {
 
   const report = await runDiagnostics({
     cardTitleFilter: cardFilter,
-    checkStorage: checkStorage || diagnose,
+    checkStorage,
+    includeUnassignedMedia,
   });
 
   printReport(report);

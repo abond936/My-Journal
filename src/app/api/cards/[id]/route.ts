@@ -29,6 +29,7 @@ import { PaginatedResult } from '@/lib/types/services';
 import { withErrorHandler } from '@/lib/middleware/errorHandler';
 import { AppError, ErrorCode } from '@/lib/types/error';
 import { z } from 'zod';
+import { canReadCard, filterReadableCards } from '@/lib/auth/readerAccess';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,6 +81,12 @@ export async function GET(
         `Card with ID ${id} not found`
       );
     }
+    if (!canReadCard(session, card)) {
+      throw new AppError(
+        ErrorCode.NOT_FOUND,
+        `Card with ID ${id} not found`
+      );
+    }
 
     // Parse query parameters with validation
     const { searchParams } = new URL(request.url);
@@ -104,9 +111,14 @@ export async function GET(
 
     const lastDocId = searchParams.get('lastDocId');
 
-    const childrenResult: PaginatedResult<Card> = skipChildren
+    const rawChildrenResult: PaginatedResult<Card> = skipChildren
       ? { items: [], hasMore: false, lastDocId: undefined }
       : await getPaginatedCardsByIds(card.childrenIds || [], { limit, lastDocId });
+    const readableChildren = filterReadableCards(session, rawChildrenResult.items);
+    const childrenResult: PaginatedResult<Card> = {
+      ...rawChildrenResult,
+      items: readableChildren,
+    };
 
     const responseData = {
       ...card,

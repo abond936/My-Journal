@@ -261,11 +261,7 @@ Legend:
 *View Page (`02-Application.md`)*
 
   **Priority bands**
-    - **P1 (private hosting / access correctness)** - **Reader-only auth path**; **Temporary reader audience scope**.
-
-- **Reader-only auth path** - Reader-only user login must work cleanly in production without requiring admin credentials or accidentally exposing admin affordances.
-
-- **Temporary reader audience scope** - Add a reversible reader-access scope (for example a family-only share window) that gates feed, direct card open, guided children, and discovery together so temporary hosted access cannot leak into unrelated published content through child rails, direct URLs, or `Explore More`.
+    - **P1 (reader polish)** - **Kicker strategy**; **Related / Explore More refinement**; **Drop cap treatment**.
 
 
 
@@ -288,7 +284,7 @@ Legend:
 - **Quality** - QA app.
 - **Security Hardening** - Threat-model review, authorization review, secret-handling review, and hosted deployment hardening for commercial readiness.
 - **Testing** - Expand automated coverage on workflow-critical, integrity-critical, and commercially sensitive paths.
-- **Access & privacy gate** - Verify reader/admin role boundaries, direct URL behavior, temporary audience scope, hosted auth configuration, and absence of admin affordance leakage.
+- **Access & privacy gate** - Verify reader/admin role boundaries, direct URL behavior, hosted auth configuration, and absence of admin affordance leakage. Audience-based reader access is a potential future feature, not current v1 scope.
 - **Integrity gate expansion** - Expand integrity verification for card-media references, tag counts, derived card fields, delete/replace graph behavior, and import drift detection.
 - **Import trust gate** - Verify source identity, duplicate signals, metadata preservation, partial-failure handling, and operator recovery paths for import workflows.
 - **Operational recovery gate** - Verify database backup, local secrets backup, restore drill, rollback/incident response, and admin account recovery before commercial release.

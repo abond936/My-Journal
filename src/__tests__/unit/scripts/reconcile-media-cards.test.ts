@@ -2,6 +2,7 @@
  * Unit tests for card-media reconciliation logic
  */
 import {
+  collectCardMediaReferences,
   normalizePath,
   mediaBelongsToCard,
 } from '@/lib/scripts/firebase/reconcile-media-cards-utils';
@@ -80,11 +81,12 @@ describe('ReconcileReport structure', () => {
   it('has expected structure for diagnostics', () => {
     const report = {
       cardsWithEmptyGalleryButImportedFolder: [] as Array<{ cardId: string }>,
-      orphanedMedia: [] as Array<{ mediaId: string }>,
+      orphanedMedia: [] as Array<{ mediaId: string }>, // unassigned media inventory; allowed when present
       orphanedReferences: {
         coverImageId: [] as Array<{ cardId: string; mediaId: string }>,
         galleryMedia: [] as Array<{ cardId: string; mediaId: string }>,
         contentMedia: [] as Array<{ cardId: string; mediaId: string }>,
+        contentHtml: [] as Array<{ cardId: string; mediaId: string }>,
       },
       mediaWithMissingStorage: [] as Array<{ mediaId: string }>,
       reLinkedCards: [] as string[],
@@ -95,5 +97,34 @@ describe('ReconcileReport structure', () => {
     expect(report.orphanedReferences.coverImageId).toEqual([]);
     expect(report.orphanedReferences.galleryMedia).toEqual([]);
     expect(report.orphanedReferences.contentMedia).toEqual([]);
+    expect(report.orphanedReferences.contentHtml).toEqual([]);
+  });
+});
+
+describe('collectCardMediaReferences', () => {
+  it('collects cover, gallery, stored contentMedia, and body HTML references distinctly', () => {
+    expect(
+      collectCardMediaReferences({
+        coverImageId: 'cover-1',
+        galleryMedia: [{ mediaId: 'gallery-1' }, { mediaId: 'gallery-2' }],
+        contentMedia: ['content-field-1'],
+        content: '<figure data-media-id="content-html-1"></figure>',
+      })
+    ).toEqual([
+      { mediaId: 'cover-1', field: 'coverImageId' },
+      { mediaId: 'gallery-1', field: 'galleryMedia' },
+      { mediaId: 'gallery-2', field: 'galleryMedia' },
+      { mediaId: 'content-field-1', field: 'contentMedia' },
+      { mediaId: 'content-html-1', field: 'contentHtml' },
+    ]);
+  });
+
+  it('includes stored contentMedia when no HTML embeds exist', () => {
+    expect(
+      collectCardMediaReferences({
+        contentMedia: ['content-field-1'],
+        content: '<p>No figure embed here</p>',
+      })
+    ).toEqual([{ mediaId: 'content-field-1', field: 'contentMedia' }]);
   });
 });

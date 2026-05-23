@@ -81,6 +81,35 @@
   max-width: 36rem;
 }
 
+.guidedTransition {
+  margin: 0;
+  padding: var(--spacing-xl);
+  max-width: 36rem;
+  border: var(--border-width-thin) solid var(--reader-page-border-color);
+  border-radius: var(--reader-card-border-radius);
+  background: var(--reader-window-background-color);
+  color: var(--reader-page-text-color);
+  box-shadow: var(--reader-window-shadow);
+}
+
+.guidedTransitionTitle {
+  margin: 0 0 var(--spacing-xs);
+  color: var(--reader-page-text-color);
+  font-family: var(--reader-discovery-title-font-family);
+  font-size: var(--reader-discovery-title-font-size);
+  font-weight: var(--reader-discovery-title-font-weight);
+  line-height: var(--reader-discovery-title-line-height);
+}
+
+.guidedTransitionHint {
+  margin: 0;
+  color: var(--reader-page-muted-color);
+  font-family: var(--reader-chrome-meta-font-family);
+  font-size: var(--reader-chrome-meta-font-size);
+  font-weight: var(--reader-chrome-meta-font-weight);
+  line-height: var(--reader-chrome-meta-line-height);
+}
+
 .emptyFeedTitle {
   margin: 0 0 var(--spacing-sm);
   color: var(--reader-feedback-title-color);
@@ -139,6 +168,13 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
   gap: var(--spacing-sm);
+  min-width: 0;
+}
+
+.guidedGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), min(20rem, 100%)));
+  align-items: start;
+  justify-content: start;
 }
 
 /* Reader shell contract: `docs/04-Theme-Design-Contract.md` §9.4 — literal px for layout breakpoints */
@@ -160,6 +196,10 @@
   .grid {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--spacing-sm);
+  }
+
+  .guidedGrid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
