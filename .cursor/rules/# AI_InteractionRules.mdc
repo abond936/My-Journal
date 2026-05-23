@@ -33,20 +33,43 @@ Do not remove reference content (directory maps, contracts, decision records) wi
 Do not delete and recreate an existing file as an editing strategy. Use in-place edits by default.
 For canonical docs and core project files, do not replace, remove, or recreate the file wholesale unless the author explicitly approves that exact action.
 
+# Canonical document topology
+
+`AGENTS.md` is an index only. Durable intent and operating rules must live in the owning docs/rules below so Cursor agents receive them through the always-applied environment.
+
+- **No new docs without approval** — Do not add new top-level `docs/*.md` files unless the author explicitly approves a new document.
+- **Process and collaboration** — `docs/00-Project-Framework.md`.
+- **Stable principles and architecture** — `docs/01-Vision-Architecture.md`.
+- **App/product behavior and status truth** — `docs/02-Application.md`.
+- **Active sequencing and milestone gates** — `docs/03-Implementation.md`.
+- **Theme and responsive layout support** — `docs/04-Theme-Design-Contract.md`, mirrored into `02` / `03` when product behavior or priority changes.
+- **Guided archive seed** — `docs/05-Guided-Archive-Assistance.md`, not active unless mirrored into `02` / `03`.
+- **Support references** — `docs/DESIGN.md`, `docs/NPM-SCRIPTS.md`, and `docs/IMPORT-REFERENCE.md` do not own product behavior, architecture, or active sequencing. Mirror durable truths into `01` / `02` / `03`.
+- **Chat is not canon** — Chat is intake, clarification, and approval. Durable product truth, shipped behavior, and sequencing belong in the docs.
+
 # Process: DIAGNOSE → DESIGN → APPROVAL → IMPLEMENT → VERIFY
 
 **Author** provides what (outcome, constraints, scope). **AI** provides how (options, approach, implications).
 
 1. **DIAGNOSE** — Read the split docs above (as applicable) + relevant code. Identify the **root cause**, the **owning layer** (UI, shared client state, API, service, schema/data, or architecture), the **existing contracts/invariants at risk**, and the **regression risk**. Do not move forward on a symptom-only explanation.
 2. **DESIGN** — State the intended fix at the owning layer, why that layer is correct, what adjacent systems are intentionally untouched, and the **verification plan**. If more than one viable design exists, recommend one and briefly say why.
-3. **APPROVAL** — Ask: "Do you approve this exact edit set? May I proceed?" Do not edit until explicit approval naming specific items.
+3. **APPROVAL** — Ask: "Do you approve this exact edit set? May I proceed?" Do not edit until explicit approval naming specific items. The proposed edit set should give the **essence** of the work: affected files/surfaces, intended behavior/doc truth, and verification plan. Do **not** require the author to review detailed pre-diffs in chat unless they ask.
 4. **IMPLEMENT** — Edit only approved items, only in approved scope. **Where the diff lives:** apply changes with normal **in-workspace / in-editor** edits so the author reviews them in the **IDE diff UI** (gutters, side-by-side, accept/reject)—that is the primary review surface. **Do not** paste `git diff` output, full-file before/after dumps, or other **large chat-side diffs** unless the author **explicitly** asks for a diff in chat. After applying, give a **concise prose summary** of what changed (which files, what behavior)—not a line-by-line recreation of the editor diff. If a new issue appears outside scope, stop and return to Step 1.
 5. **VERIFY** — Run the relevant checks for the approved scope: behavior verification, integrity verification, and lint/types/tests where applicable. If a relevant check was not run, say so plainly and do not present the work as fully complete.
    - **Code changes require verification** — For code changes, verification is expected by default, not optional commentary after the fact.
    - **Add tests when warranted** — If the change affects behavior, integrity, regression risk, or a previously fragile path, add or update automated tests unless there is a clear reason not to. If no test was added, explain why.
    - **Integrity-sensitive work** — Changes affecting data relationships, denormalized fields, auth, import pipelines, or shared contracts should include integrity-focused verification or tests, not only happy-path manual checks.
-   - **Documentation (part of “done”)** — When the change alters **shipped behavior**, **feature completeness vs planned**, or **architectural fact**, include updates to `docs/02-Application.md`, `docs/03-Implementation.md`, and `docs/01-Vision-Architecture.md` (per **Document Governance** in `01`) in the **same approved edit set**, unless the author explicitly **excluded documentation** for this pass.
-   - **Post-execute prompt** — After stating what changed, ask the author: **“Do you want documentation updated (`02` / `03` / `01` as applicable) to reflect this?”** If they want doc work that was **not** already approved, return through **RECOMMEND → WAIT** with a **doc-only** edit set before editing.
+   - **Documentation (part of “done”)** — When the change alters **shipped behavior**, **feature completeness vs planned**, or **architectural fact**, include updates to `docs/02-Application.md`, `docs/03-Implementation.md`, and `docs/01-Vision-Architecture.md` (per **Document Governance** in `01`) in the **same proposed edit set**, unless the author explicitly **excluded documentation** for this pass. The author should not have to remember to ask for required doc reconciliation.
+   - **Doc scope approval** — If required doc updates were not included in the already approved work, return through **RECOMMEND → WAIT** with the essence of the doc-only edit set before editing.
+
+# Reviewable slice standard
+
+The AI owns sequencing and process, but implementation must move in **reviewable slices** under author approval.
+
+- **One slice at a time** — Recommend the next highest-value slice that can be implemented, verified, and reviewed before dependent work proceeds.
+- **No chained speculative execution** — Do not perform multiple sequential changes merely because they seem related. Finish the approved slice, verify it, summarize residual risk, then recommend the next slice.
+- **Author review surface** — The author reviews actual edits in the IDE diff. In chat, provide the purpose, affected surfaces, and verification plan—not detailed diffs unless requested.
+- **Next-work ownership** — After completing or assessing a slice, the AI should recommend the next slice based on product value, milestone gates, risk reduction, and code/doc reality.
 
 # Commercial standard gate
 

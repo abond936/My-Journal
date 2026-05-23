@@ -3,6 +3,8 @@
 **See also:** `01-Vision-Architecture.md` · `02-Application.md` · `03-Implementation.md` · `04-Theme-Design-Contract.md`
 
 **Status:** Supplementary **seed** specification. This document begins a parallel **Vision → Architecture → Application → Implementation** thread for a **guided memory-ingestion and storytelling** product or service layer. It does not yet replace or duplicate the core trio; when priorities harden, items here may migrate into `02`/`03` or stand alone as a sibling product brief.
+**Document role:** Support spec. Owns guided-archive concepts, AI-assisted clustering approach, and ingestion-assistance rationale that are not yet core active canon.
+**Does not own:** Current product truth (`02`) or current implementation priority (`03`). Import or review behavior becomes canonical only when mirrored into `02`; guided-archive work becomes active only when mirrored into `03`.
 
 Legend:
 ✅`Shipped / in production`

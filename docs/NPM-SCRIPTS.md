@@ -1,6 +1,8 @@
 # npm scripts (reference)
 
 Run from the repo root. Most maintenance scripts need Firebase Admin env vars (see `01-Vision-Architecture.md` → **TECHNICAL** → **Scripts**; `.env` loading notes there).
+**Document role:** Support reference. Owns operator-facing command usage and script-specific caveats.
+**Does not own:** Product behavior (`02`), platform principles (`01`), or implementation priority (`03`). When a script reflects a required product/operational guarantee, the guarantee belongs in canon and this file only documents how to operate it.
 
 ## Backup model (operator)
 

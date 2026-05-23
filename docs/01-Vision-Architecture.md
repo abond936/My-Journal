@@ -35,13 +35,13 @@ Legend:
 - **Placement Discipline** - Record each subject in its owning section. Everything about Story cards belongs under Story card features, not mentioned in Tags or Navigation. Everything about tags belongs under Tag Management, not mentioned in Navigation. Centralizes subjects for clarity and prevents drift.
 - **One Fact, One Home** - Each fact lives in exactly one document. `02-Application.md` describes *what exists today* and *what's planned per area*. `03-Implementation.md` describes *when to do it* (sequencing). When a planned item ships, update its status in `02-Application.md` and remove it from `03-Implementation.md`.
 - **Implementation wording** - Do not paraphrase `⭕1` bullets when copying them into `03-Implementation.md`. Paste the **bold label** and the description after ` - ` exactly as in the source doc (`02-Application.md` or, for Backend planned work, `01-Vision-Architecture.md`). If the product text changes, change it in the source doc first, then mirror the update in `03-Implementation.md`.
+- **Execution scope** - `03-Implementation.md` is the active milestone plan, not a historical log. It should carry only the current milestone, the next milestones, their gating criteria, and the active `⭕1` items required to advance them. Dated closeout notes and shipped status narration belong in `02` only if they define current product behavior; otherwise they should be removed from canon.
 
 ---
 
 ## **Product Vision**
 
 *Intent*
-- **Marker** - Visible diff marker added 2026-05-23 for Cursor refresh confirmation.
 - **Storytelling** - A private hosted storytelling journal built from personal and family archives.
 - **Comprehensive** - Media, authored narrative, and structured discovery in one coherent product.
 
@@ -70,6 +70,8 @@ Phone-native and scanned-photo imports are both first-class inputs. The product 
 📐 **Trust promise** - Photos and stories are private, owned by the author, exportable, and expected to be backed up/restorable.
 📐 **Tenant path** - v1 is intentionally **single-tenant**; near-term commercial follow-up should support **multi-tenant** isolation without weakening current integrity guarantees.
 
+📐 **Primary roles** - v1 has one author/admin creating and maintaining the archive experience, with family members as the primary readers.
+
 ## **TECHNICAL**
 
 ### **Backend**
@@ -82,8 +84,10 @@ Phone-native and scanned-photo imports are both first-class inputs. The product 
 *Principles*
 - **Client/Server** - Clear separation of concerns; client/server boundaries and service-layer.
 - **Validation & Authorization** - Server-side validation and authorization for data integrity.
+- **Private-by-default** - Content, admin actions, and operational data should default to least-privilege access. Public exposure is never assumed.
 - **Schema** - Type-safe contracts and explicit server-side schema validation.
 - **Services** - Use managed services pragmatically (Firebase/Auth.js/Next.js).
+- **Secrets & Configuration** - Secrets must stay out of source control and operational flows must preserve safe secret handling across local, hosted, and recovery scenarios.
 - **Data planes** - **Firestore** (and Storage for binaries) is the **authoritative** store for cards, media, and tags. **Derived fields** on cards (`filterTags`, dimensional tag arrays, sort keys, denormalized flags) are computed from authoritative inputs by explicit service rules—not re-derived ad hoc in UI or duplicated with conflicting logic. **Typesense** (and any other search index) is a **projection** for search and list efficiency; treat it as **eventually consistent** with Firestore. It must not force **synchronous** full-document pipelines (full hydration, unrelated media index churn, repeated full-tag-catalog reads) on **narrow** mutations unless the product explicitly requires immediate search parity for that path.
 - **Mutation scope** - Classify every write as **narrow** (e.g. tag-only, status-only, single-field metadata) or **wide** (body HTML, gallery structure, cover changes, structural `childrenIds` / collection edits). **Narrow** paths must use **bounded** Firestore reads/writes: avoid N× full `updateCard`-style pipelines for N rows, avoid reloading entire admin catalogs as the default success path, and skip redundant Typesense/media sync when indexed fields did not change. **Wide** paths may use heavier recomputation and index sync; keep that work explicit and documented at the call site. **Never** skip or weaken **denormalized count and derived-field maintenance** (tag `cardCount` / `mediaCount`, card `filterTags` and dimensional arrays, etc.) solely to look “narrow”—those are **product invariants** for filters, admin truth, and reader consistency; narrow work must still apply the **same accounting rules**, batched or once-per-request, not omitted.
 - **Denormalized counts** - Card, media, and tag documents carry **denormalized counts and derived tag projections** so queries and UI stay fast and honest. Any mutation that changes assignments must keep those fields **correct** in Firestore (and indices when the product requires search parity). Refactors that replace “full `updateCard`” for speed must **re-home** the same `updateTagCountsFor*` / `mergeDerivedTags*` (or equivalent) logic into the new path—not drop it. Historical use of the wide pipeline is often **because counts and derived fields were already wired there**; slimmer paths are desirable, but **accuracy is non-negotiable**.
@@ -93,6 +97,9 @@ Phone-native and scanned-photo imports are both first-class inputs. The product 
 - **Card–media integrity** - **`coverImageId`**, **`galleryMedia[].mediaId`**, **`contentMedia`**, and media embedded in **`content`** are **foreign keys** to `media/{id}`. The system must not enter a state where a card names a missing media doc, or where a media doc names a **missing Storage object**, without a **classified** incident (logic bug vs drift) and a **repair path** at the service or remediation layer—not a UI-only workaround. Writes that update peer `media` documents (e.g. `referencedByCardIds`, focal metadata, tag counts) **must not assume** the peer still exists; treat absent peers as **integrity violations** to resolve (detach + log, or block with a **domain-level** error), not raw `NOT_FOUND` surfaced to the client.
 - **Delete graph** - Deleting or replacing media is a **graph** problem: enumerate every card edge, update **both** card and media sides (and denormalized fields / indices per rules above) in a **documented order**, or **refuse** with an explicit blocker list. If two cards can reference the same media id, that sharing must be **first-class** (reference counting or forbidden duplicates)—never “delete the blob because this card’s delete path listed it” while another card can still hold the id.
 - **Durability boundary** - Do not report client success for a new or replaced asset until **Storage** and the **`media`** row (and any card pointer update in the same operation) match: either all durable or none; partial success must be **detectable, retryable, or compensatable**—never a silent orphan pointer.
+- **Recoverability** - Backup, export, and restore capability are part of commercial readiness, not optional maintenance extras.
+- **Verification** - Code changes require verification by default. Changes affecting behavior, integrity, auth, import, or shared contracts should add or update tests when warranted rather than relying on explanation alone.
+- **Commercial readiness** - Commercial readiness requires explicit gates for access/privacy, data integrity, import trust, operational recovery, workflow quality, engineering quality, and security hardening. Treat these as release criteria, not polish.
 
 *Features*
 ✅ **Complete**
@@ -127,11 +134,17 @@ Phone-native and scanned-photo imports are both first-class inputs. The product 
   - **Directory** - Cleanup directory.
   - **ESLint** - Address ESLint violations. **During feature work**, follow `.cursor/rules/# AI_InteractionRules.mdc` → **Lint and type hygiene on touched code**; bulk backlog cleanup stays phased per `docs/03-Implementation.md` Phase 4.
   - **Quality** - QA app.
+  - **Security Hardening** - Threat-model review, authorization review, secret-handling review, and hosted deployment hardening for commercial readiness.
+  - **Testing** - Expand automated coverage on workflow-critical, integrity-critical, and commercially sensitive paths.
+  - **Access & privacy gate** - Verify reader/admin role boundaries, direct URL behavior, temporary audience scope, hosted auth configuration, and absence of admin affordance leakage.
+  - **Integrity gate expansion** - Expand integrity verification for card-media references, tag counts, derived card fields, delete/replace graph behavior, and import drift detection.
+  - **Import trust gate** - Verify source identity, duplicate signals, metadata preservation, partial-failure handling, and operator recovery paths for import workflows.
+  - **Operational recovery gate** - Verify database backup, local secrets backup, restore drill, rollback/incident response, and admin account recovery before commercial release.
+  - **Workflow quality gate** - Validate family-demo reader flow, hosted-alpha repeated-use flow, admin prep friction, and mobile reader usability against milestone pass criteria.
 ⭕2 **Future**
   - **Performance** - Possibilities captured from engineering review.
   - **Tenant ID** - Not implemented for v1. If multi-tenancy is needed for commercial SaaS (Model C), add `tenantId` to cards, media, tags, questions, and journal_users; apply tenant filters to all queries/rules.
   - **Storage Abstraction** - Wrap storage operations in `storageService.ts` (upload/delete/getUrl) to reduce migration scope and enable cache-busting on replaced images.
-  - **Testing**
   - **Error Monitoring / Observability**
   - **Caching Strategy**
   - **Sharing**
@@ -214,11 +227,17 @@ Phone-native and scanned-photo imports are both first-class inputs. The product 
 *Principles*
 - **Automated** - Backups run without manual intervention.
 - **Verified** - Backup integrity is confirmed after each run.
+- **Recoverable** - Backup is only meaningful if restore steps are known, tested, and realistic for hosted operation.
 
 *Features*
 ✅ **Complete**
   - **Database** - `npm run backup:database` writes under `ONEDRIVE_PATH/Firebase Backups/run-<timestamp>/` (all Firestore root collections, index/rules copies, optional Typesense JSONL). Storage file bytes are not included. Optional Windows task: `src/lib/scripts/setup-database-backup-task.ps1` (uses `tsx -r dotenv/config` and `firebase/backup-firestore.ts`; requires `.env` visible to the task user).
   - **Source tree (Git)** - **Off-device source of truth** is the **remote** (`origin`): commit to **`main`** and push. Do not use feature branches or PR merge flow unless explicitly requested for a specific task. No second full-tree copy is maintained locally or in CI.
   - **Local secrets (not in Git)** - `npm run backup-codebase` (see `docs/NPM-SCRIPTS.md`) zips only **repo-root** files that stay out of version control: `.env*`, `service-account.json`, and `*-firebase-adminsdk-*.json`. Default output directory: `C:\Users\alanb\CodeBase Backups\` (override with `CODEBASE_SECRETS_BACKUP_DIR`); keeps 5 rolling zips plus `backup-*-metadata.json` and `backup-*-output.txt`. If no matching files exist, only a log is written. Optional Windows task registration: `src/lib/scripts/utils/setup-backup-task.ps1` (daily; run **PowerShell as Administrator**; task resolves repo root via `git`). **Paradigm:** Git = code; this zip = env/credentials; `backup:database` = app data.
-⭕2 **Future**
+⭕1 **Planned**
   - **Operational** - Ensure both backups are operational and verified end-to-end.
+  - **Restore Drill** - Document and execute a realistic restore procedure for database backup, local secrets backup, and deployment configuration before commercial release.
+  - **Release Readiness** - Define and document the minimum production-release checklist for deployment, auth configuration, backup verification, and rollback/recovery.
+  - **Account Recovery** - Define the v1 operational path for password reset, viewer access repair, and admin lockout recovery.
+  - **Incident Response** - Define the v1 operator playbook for broken deploy, failed import, missing media, access leak suspicion, and backup/restore failure.
+⭕2 **Future**

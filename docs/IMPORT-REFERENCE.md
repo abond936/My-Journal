@@ -1,6 +1,8 @@
 # Import & normalization (technical reference)
 
 Product rules and import workflow context live in **`docs/02-Application.md`** (e.g. **Media Management**, **Administration**) and **`docs/01-Vision-Architecture.md`** (**TECHNICAL**). This page summarizes **implementation-facing** details that are easy to miss elsewhere.
+**Document role:** Support reference. Owns operational and implementation-facing import details.
+**Does not own:** Canonical product import behavior (`02`), architecture/integrity rules (`01`), or sequencing (`03`). If this file implies a user-facing behavior change, mirror that truth into the owning canonical doc.
 
 ## Folder import in the app (`ImportFolderModal` / `importFolderAsCard`)
 

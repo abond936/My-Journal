@@ -10,10 +10,10 @@ This file is an **index only**. Canonical instructions are not duplicated here.
 | Vision, principles, tech stack, stable decisions | `docs/01-Vision-Architecture.md` |
 | App/product truth by area | `docs/02-Application.md` |
 | Current planned execution sequence (`⭕1`) | `docs/03-Implementation.md` |
-| Theme contract and reader/admin layout rules | `docs/04-Theme-Design-Contract.md` |
-| Guided archive / AI clustering seed spec | `docs/05-Guided-Archive-Assistance.md` |
-| Scripts and operational commands | `docs/NPM-SCRIPTS.md` |
-| Import-specific operational reference | `docs/IMPORT-REFERENCE.md` |
+| Theme contract and reader/admin layout rules (support doc; details under canon) | `docs/04-Theme-Design-Contract.md` |
+| Guided archive / AI clustering seed spec (support doc; not active unless mirrored into `03`) | `docs/05-Guided-Archive-Assistance.md` |
+| Scripts and operational commands (support reference) | `docs/NPM-SCRIPTS.md` |
+| Import-specific operational reference (support reference) | `docs/IMPORT-REFERENCE.md` |
 | Working prompts | `docs/Prompts.txt` |
 
 **Document count** — Do **not** add new top-level `docs/*.md` files unless the author explicitly approves a new document. Integrate guidance into the existing split:

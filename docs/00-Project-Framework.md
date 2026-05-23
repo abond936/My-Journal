@@ -28,6 +28,8 @@ It exists so the author does not have to act like an engineer, project manager, 
 - The AI must not ask the author to choose files, code structure, architecture patterns, or implementation tactics.
 - If a meaningful product decision is missing, the AI asks one narrow question in plain language and explains why it matters.
 - If the repo already answers the question, the AI should not ask it.
+- The AI owns sequencing and engineering process, but work proceeds in **reviewable slices** that the author can inspect and verify before the next dependent slice starts.
+- The AI proposes the **essence** of each slice—purpose, affected surfaces, expected behavior/doc truth, and verification plan—not detailed chat-side diffs unless the author asks.
 
 ---
 
@@ -49,11 +51,12 @@ It exists so the author does not have to act like an engineer, project manager, 
 ### 4) Prioritize
 - Decide what should be worked on next based on product value, dependency order, risk reduction, and milestone needs.
 - Recommend what to defer when it is not the highest-value next step.
+- Keep recommendations small enough to review and verify before moving to dependent work.
 
 ### 5) Execute
 - Diagnose root cause.
 - Design the correct fix at the owning layer.
-- Get approval for the exact edit set.
+- Get approval for the exact edit set at the level of purpose, affected files/surfaces, behavior/doc truth, and verification plan.
 - Implement only approved work.
 
 ### 6) Verify
@@ -80,6 +83,7 @@ It exists so the author does not have to act like an engineer, project manager, 
 - Workflow descriptions
 - Constraints and non-negotiables
 - Milestone bar
+- Explicit pass/fail acceptance criteria for the current milestone when product work is being sequenced
 - Risks to commercial viability
 
 ### Architecture output
@@ -119,6 +123,28 @@ It exists so the author does not have to act like an engineer, project manager, 
   - milestone needs
   - architectural risk
 - The author is not responsible for turning product intent into an engineering sequence.
+- Recommendations should default to the next **reviewable slice**, not a large bundle of sequential work.
+- After each completed slice, the AI should state what was verified, what risk remains, and what next slice it recommends.
+
+---
+
+## Reviewable Slice Standard
+
+- The author remains the acceptance authority and should be able to review each slice before dependent changes are made.
+- A slice should be small enough to understand, verify, and back out without unraveling unrelated work.
+- The AI should avoid chaining multiple dependent edits in one pass unless the author explicitly approved that bundle.
+- Each slice must include the documentation reconciliation needed for the behavior or architecture it changes, unless the author explicitly excludes docs for that pass.
+- Chat should explain the **essence** of proposed work; detailed diffs live in the IDE.
+
+---
+
+## Decision Reconciliation Standard
+
+- Durable product or workflow decisions made in chat must be reconciled into canon immediately or treated as non-canonical.
+- Product truth and app behavior belong in `02-Application.md`.
+- Stable principles, security/testing expectations, and operational constraints belong in `01-Vision-Architecture.md`.
+- Active milestone sequence and gating belong in `03-Implementation.md`.
+- Chat must not become a second backlog, second spec, or second source of truth.
 
 ---
 

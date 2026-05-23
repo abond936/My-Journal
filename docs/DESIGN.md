@@ -98,6 +98,8 @@ components:
 **Single source of truth (product):** `docs/04-Theme-Design-Contract.md` — semantic roles, non-negotiable tensions, reader shell rules, status messaging, and reconciliation order live there unchanged.
 
 **This file:** A [DESIGN.md](https://github.com/google-labs-code/design.md)-shaped projection so Stitch, Gemini, and other agents get **machine-readable tokens** (YAML above) plus **structured rationale** (sections below) aligned with `04`.
+**Document role:** Support projection. Owns machine-readable design tokens and structured design rationale for design-aware agents and tools.
+**Does not own:** Canonical product behavior (`02`), active sequencing (`03`), or stable architecture principles (`01`). If a design treatment defines real user-facing behavior, mirror that truth into `02`; if it changes active work, mirror it into `03`.
 
 **Theme implementation:** CSS variables are generated from structured theme data (`themeService`, Firestore `app_settings/theme`, git fallback `theme-data.json`) and injected at runtime. Values in the YAML front matter reflect **`theme-data.json`** in the repo; production may differ if Theme Management has saved other data.
 

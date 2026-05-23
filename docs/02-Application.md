@@ -19,6 +19,8 @@ Legend:
 - Standalone `📐` and `📘` lines stay outside the status buckets (after the buckets).
 - `**📐` vs `⭕`:** `📐` records **design stance, data shapes, and operational truth** (including known gaps between intent and enforcement). It is **not** the execution backlog. When a gap should be fixed in code, add an explicit `**⭕1` / `⭕2`** bullet—do not rely on `📐` alone to imply scheduled work.
 - `**✅` wording:** Describe **what is implemented and wired today**. Avoid implying stronger guarantees than the code provides (e.g. treating a denormalized field as a proven invariant).
+- This document is the **canonical application/product behavior spec by surface**. It should state what the user can do, how the surface is expected to behave, and what quality/trust bar applies.
+- Keep migration notes, dated stabilization history, and execution sequencing out of `02` unless they materially define current product behavior. Put sequencing in `03`.
 
 ---
 
@@ -36,6 +38,8 @@ Legend:
 - **Bulk Authoring** - Support high-volume/bulk authoring operations in administration workflows.
 - **On-the-Fly Authoring** - Support specific, low-friction edits while browsing content.
 - **Few Primitives** - The product centers on a small set of primitives—cards, media, tags, and relationships—and should prefer tighter presentation of those primitives over multiplying surface types.
+- **Trust by Default** - The application should preserve privacy, data ownership, recoverability, and author control as product behavior, not just backend concerns.
+- **Commercial quality bar** - Reader and administration surfaces should feel deliberate, dependable, and non-glitchy enough to support a credible hosted product, not merely a functional internal tool.
 
 *Features*
 ✅ **Complete**
@@ -58,13 +62,11 @@ Legend:
 
 📐 **Mobile v1 scope** - Mobile first launch is reader-only. Studio/admin are not a mobile target in v1; future capture/caption contribution flows can be added later without broadening the current launch bar.
 
-ðŸ“ **Product shape** - v1 should be judged as a **private hosted journal** whose distinctive value is helping one author turn large personal photo libraries into smoother structured story consumption for family readers.
-ðŸ“ **Creation/consumption parity** - The product is only successful when both sides work together: **creation** (import, assign, tag, order, compose) and **consumption** (Guided and Freeform exploration) must both feel coherent and low-friction.
-
+📐 **Product shape** - v1 should be judged as a **private hosted journal** whose distinctive value is helping one author turn large personal photo libraries into smoother structured story consumption for family readers.
 📐 **Terminology correction** - At the application level, keep the canonical pair as **Content Consumption** and **Content Administration**. Chat shorthand such as “creation” belongs inside administration workflows rather than replacing that top-level intent.
 📐 **Phone-origin authoring model** - Phone-origin imports may arrive largely pre-seeded for `When` / `Where` and sometimes `Who`; v1 should support the simple administration path: select a group of images, assign them to a card, then flesh out the story and `What` tagging.
-
 📐 **Creation/consumption parity (canonical)** - The product is only successful when both sides work together: **administration** (import, assign, tag, order, compose) and **consumption** (Guided and Freeform exploration) must both feel coherent and low-friction.
+📐 **Reader/admin quality bar** - The commercial bar is not just feature presence. Consumption and administration must both feel smooth, legible, and trustworthy in real use, especially on the core import, authoring, and reading paths.
 
 ## **Navigation**
 
@@ -232,6 +234,7 @@ Legend:
 *Principles*
 
 - **Dual-Path** - FreeForm or Curated
+- **Reader-first trust** - Reader behavior should feel stable and intentional: no accidental admin leakage, no confusing dead ends, and no interaction model that appears broken or random to family readers.
 
 *Features*
 ✅ **Complete**
@@ -243,7 +246,7 @@ Legend:
 - **Feed chrome** - Header, search row, type chips; `@` card mentions via `CardMention` / `TipTapRenderer`.
 - **Suggestions (detail)** - Children from server; Similar / Explore via `/api/cards/random` (`count=3`, tag dimensions from current card). `DiscoverySection`: horizontal scroll rails, compact `V2ContentCard` (`small` + `fullWidth`).
 - **Card Content** - Title, subtitle, excerpt, and main body (TipTap) roles set per card type and display mode; feed vs detail behavior matches the conventions in **Content Page** and **View Page** (assessment complete for v1).
-- **Gallery UX (authoritative)** - **Inline** vs **navigate** behavior and **caption** options for gallery cards are specified in `docs/DESIGN.md` → **Gallery: `inline` vs `navigate` (authoritative)**; use that subsection plus the **V1 Matrix** below for implementation. External design tools are **guides**, not overrides.
+- **Gallery UX** - **Inline** vs **navigate** behavior and **caption** options for gallery cards are governed by the **V1 Matrix** below and the implemented reader/card components. External design tools and `docs/DESIGN.md` are support references only, not product authority.
 - **Guided feed behavior** - Guided mode currently behaves like a TOC/outline flow: selecting a collection node shows that node's direct children (not the parent card itself), while a sticky guided title bar keeps the current collection visible during scroll. Leaf nodes remain selectable and show themselves in the feed.
 - **Feed edit/live update** - Feed edits now patch the visible card data in place through the feed state owner, so title, cover, and focal-point saves update immediately without reordering the current feed.
 - **Cover focal alignment** - Feed-facing cover focal editing now previews against the same fixed closed-feed media frame used in the reader feed, so cover adjustments made in editing match feed-card framing more closely.
@@ -263,10 +266,6 @@ Legend:
 ⭕1 **Planned**
 
 - **Layout `@media` hardening** - Replace `var(--breakpoint-*)` inside `@media` where it affects layout (`V2ContentCard`, `Navigation`, `ViewLayout`, `ContentCard`, `ThemeAdmin`, `TagTree`, etc.) so breakpoints match `docs/04-Theme-Design-Contract.md` §9.2 (literal `px`).
-ðŸ“ **Reader priority** - For demo and early product validation, Guided and Freeform should be treated as **equal-priority** consumption modes; neither is a secondary fallback.
-
-📐 **Reader priority** - For demo and early product validation, Guided and Freeform should be treated as **equal-priority** consumption modes; neither is a secondary fallback.
-
 📐 **Reader priority (canonical)** - For demo and early product validation, Guided and Freeform should be treated as **equal-priority** consumption modes; neither is a secondary fallback.
 
 - **Feed Presentation Matrix** - Define and enforce a single presentation contract across feed/detail/rail contexts for each `type` + `displayMode` pair, including interaction model (open vs expand), title/excerpt behavior, and media framing rules.
@@ -341,7 +340,7 @@ Legend:
 - **Structural rail labeling** - The child-card rail now uses the reader-facing label `More...`.
 - **Progressive children (discover + child hydration)** - **Discover More:** structural **Related Content** renders from server props immediately; **Similar Topics** / **Explore More** load client-side after mount with per-group loaders (`DiscoverySection.tsx`). `**/view/[id]`:** child cards load via `getCardsByIds(..., { hydrationMode: 'cover-only' })` with first-gallery image when no cover—fewer Firestore reads than full hydration. The view page RSC still awaits parent + children in one round-trip; streaming parent-only first remains optional (🔵 / future).
 - **Related Count** - Similar / Explore presentation tuned so rails stay visually light: compact tile width (`cardRailCell` clamp in `DiscoverySection.module.css`), secondary group title scale, `V2ContentCard` `small` on rails.
-- **Detail discovery spacing** - **Explore More** / `DiscoverySection` on `/view/[id]` uses increased **margin above** the block, **padding below** the rails, and **larger article bottom padding** so the section is not tight to the story body or the scroll end (`DiscoverySection.module.css`, `CardDetail.module.css`). Further reader polish (typography, rails, kickers): `docs/DESIGN.md` → **Reader polish backlog (decisions, 2026)**.
+- **Detail discovery spacing** - **Explore More** / `DiscoverySection` on `/view/[id]` uses increased **margin above** the block, **padding below** the rails, and **larger article bottom padding** so the section is not tight to the story body or the scroll end (`DiscoverySection.module.css`, `CardDetail.module.css`). Further reader polish is tracked in this document's Content Page planned items and the theme support contract where applicable.
 
 ⭕1 **Planned**
 - **Reader-only auth path** - Reader-only user login must work cleanly in production without requiring admin credentials or accidentally exposing admin affordances.
@@ -371,6 +370,8 @@ Legend:
 - **Efficiency** - Keep admin workflows efficient under large import/edit workloads.
 - **Server-side** - CRUD and data-integrity logic belongs server-side.
 - **Interaction economy** - Prefer one strong interaction model per job (tag, relate, edit) over parallel table/grid/modal variants when capability can be preserved.
+- **Single-author first** - v1 administration is optimized for one primary author/operator rather than collaborative authoring.
+- **No operator traps** - Routine admin actions should preserve data integrity and make destructive or irreversible actions explicit.
 
 *Features*
 ✅ **Complete**
@@ -510,7 +511,7 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 
 ### **Collections Management**
 
-ðŸ“ **Admin DnD architecture contract (2026-05-22)** - Treat admin drag-and-drop as **one platform with six bounded classes**: **Structural** (collections/tree/root/parent-child), **Assignment** (media/card relationship placement such as cover/gallery/body), **Local reorder** (same-pane ordering such as gallery/children), **Taxonomy** (tag reorder/reparent), **Upload drop** (file ingestion only), and **Editor-integrated** (rich-text body insertion/movement). **Ownership:** the **shell** owns cross-pane routing, sensors, overlays, and collision policy; each **pane** owns visible targets and hover/empty states; the **service/action layer** owns mutations and rollback/reconcile; the **editor subsystem** owns body insertion precision and in-body moves. **Rules:** use `@dnd-kit` for authored DnD, keep `react-dropzone` only for upload drop, do not run duplicate local + shared DnD paths for the same surface, do not put editor placement logic in shell helpers, and use one shared feedback system on migrated admin surfaces. **Execution stance:** converge **Assignment** first, then **Editor-integrated**, then **Local reorder**, then remaining **Taxonomy/Structural** polish; do not expand admin DnD breadth on a hybrid interaction model.
+📐**Admin DnD architecture contract (2026-05-22)** - Treat admin drag-and-drop as **one platform with six bounded classes**: **Structural** (collections/tree/root/parent-child), **Assignment** (media/card relationship placement such as cover/gallery/body), **Local reorder** (same-pane ordering such as gallery/children), **Taxonomy** (tag reorder/reparent), **Upload drop** (file ingestion only), and **Editor-integrated** (rich-text body insertion/movement). **Ownership:** the **shell** owns cross-pane routing, sensors, overlays, and collision policy; each **pane** owns visible targets and hover/empty states; the **service/action layer** owns mutations and rollback/reconcile; the **editor subsystem** owns body insertion precision and in-body moves. **Rules:** use `@dnd-kit` for authored DnD, keep `react-dropzone` only for upload drop, do not run duplicate local + shared DnD paths for the same surface, do not put editor placement logic in shell helpers, and use one shared feedback system on migrated admin surfaces. **Execution stance:** converge **Assignment** first, then **Editor-integrated**, then **Local reorder**, then remaining **Taxonomy/Structural** polish; do not expand admin DnD breadth on a hybrid interaction model.
 
 *Intent*
 
@@ -539,7 +540,7 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 
 - **Multi-parent** - Deferred product decision.
 
-â­•1 **Planned**
+⭕1 **Planned**
 
 - **Collection row count placement** - Move collection child/card counts to the end of the title line with no badge/background treatment so the tree reads more like content than status chrome.
 
@@ -558,6 +559,8 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 - **Referenced** - Referenced in cards by id, hydrated on demand
 - **Replacement** - Facilitate simple edit and replacement of media.
 - **Relationship readiness** - Media management should make it easy to move from random banked assets to structured card relationships (cover, inline, gallery, children) without unnecessary mode switching.
+- **Import trust** - Import must preserve source meaning and metadata carefully enough that the author can trust the resulting bank rather than fear hidden corruption, silent duplication, or broken references.
+- **Recoverable workflows** - Replace, delete, and assignment operations should be safe enough for a hosted product handling irreplaceable family media.
 
 📐 **List filtering & pagination** - Same contract as **Card Management** → 📐 **List filtering & pagination (cards + media)**; media additionally uses **cursor / Typesense `listPage` / seek** paths on `GET /api/media`—chunking must stay consistent with the active mode; see `docs/01-Vision-Architecture.md` → 📐 **Filtered population & stable ordering**.
 
@@ -631,6 +634,7 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 📐 **Entry Paths** - Two import paths: (1) **Import → Card** — import from source as card + images concurrently, assign tags from folder/metadata, edit after. (2) **Import → Bank → Card** — bulk import images with tags into the bank unassigned, then create cards and assign from the bank.
 📐 **Source Adapter Architecture** - The existing service layer (import, process, return mediaId) is the right shape for multiple source adapters. Current: local filesystem (hard drives / OneDrive mirror). Future adapters add alongside, not replacing, the local drive path.
 📐 **Authoring Pipeline (digiKam → mass import)** - Organize folders/tags in digiKam; one leaf folder → one card; tags follow dimensional branches (WHO, WHAT, etc.); phased import with verification; post-import refinement via GIMP/Topaz + replace-in-place. See `IMPORT_FOLDER_MAX_IMAGES` for folder size cap.
+📐 **Commercial import bar** - Import is a core product capability, not a side utility. A commercially credible import flow must support trustworthy ingestion, understandable review/correction, and smooth progression from imported media to structured card-based storytelling.
 
 📐 **Assignment Model** - References only; hydrated from media at read time. No embeds.
 
@@ -710,7 +714,7 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
   - **Who** — People as stable tag identities (display names). Groups optional (`who/group/…`). Subject vs also-present encoding TBD. Kinship graph is **Relationship Tagging** (future).
   - **Where** — Administrative nesting (country → state → county → city), skip levels when irrelevant. Venues, domestic labels, natural settings as children. GPS/EXIF may seed on import; author refines in Tag admin.
 
-â“ **Open**
+❓ **Open**
 
 - **Subject tag model** - Decide whether `Subject` should become an explicit tagging concept or continue to be expressed through existing `Who` and relationship patterns.
 
@@ -750,7 +754,7 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 - **Answer Workflow** - Workflow beyond cards, analytics, templates, validation, viewer feedback, auto-grouping.
 - **Auto-Clustering** - Auto-clustering/grouping of short questions.
 
-â­•1 **Planned**
+⭕1 **Planned**
 
 - **Question Add button prominence** - Use a larger white-on-blue `Add` button treatment consistent with other primary actions.
 - **Questions tree default collapse** - Hide the question tag tree by default until the author chooses to expand it.
@@ -771,6 +775,8 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 
 - **Credential-based** - Password entry via NextAuth Credentials provider.
 - **Manual onboarding** - Send link with username and password to new users.
+- **Private by default** - Reader access is intentionally scoped and no user should see admin affordances or unrelated private content by accident.
+- **Simple roles, strict boundaries** - v1 keeps role complexity low, but the boundary between author/admin and family reader must stay clear.
 
 *Features*
 ✅ **Complete**
