@@ -203,17 +203,8 @@
       pointer-events: auto;
     }
 
-    /* Drawer and toggle share --z-index-sidebar on mobile; raise toggle so it stays above drawer and backdrop. */
     .sidebarToggle {
-      z-index: 2;
-      left: max(var(--spacing-sm), env(safe-area-inset-left, 0px));
-      top: calc((var(--app-shell-header-height) - 40px) / 2);
-      width: 40px;
-      height: 40px;
-      padding: 0;
-      border: var(--border-width-thin) solid var(--reader-chrome-border-color);
-      border-radius: var(--border-radius-md);
-      box-shadow: var(--shadow-sm);
+      display: none;
     }
 
     .appShell::before,

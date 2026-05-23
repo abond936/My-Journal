@@ -36,6 +36,7 @@ const cardsSchema: BaseCollectionCreateSchema & { fields: CollectionFieldSchema[
     { name: 'media_where_ids', type: 'string[]', optional: true, facet: true },
     { name: 'child_ids', type: 'string[]', optional: true, facet: true },
     /** `sort: true` required for `sort_by` on string fields (Typesense default is sort off for strings). */
+    { name: 'doc_id', type: 'string', optional: true, facet: false, sort: true },
     { name: 'title_lowercase', type: 'string', optional: true, facet: false, sort: true },
     { name: 'who_sort_key', type: 'string', optional: true, facet: false, sort: true },
     { name: 'what_sort_key', type: 'string', optional: true, facet: false, sort: true },
@@ -56,6 +57,7 @@ const cardsSchema: BaseCollectionCreateSchema & { fields: CollectionFieldSchema[
 
 export interface TypesenseCardDocument {
   id: string;
+  doc_id: string;
   title: string;
   subtitle?: string;
   excerpt?: string;
@@ -95,7 +97,7 @@ export interface TypesenseCardDocument {
 type CollectionFieldPatch = CollectionFieldSchema | { name: string; drop: true };
 
 /**
- * Existing Typesense collections may have been created before `sort: true` on string sort keys.
+ * Existing Typesense collections may have been created before sortable string tie-break fields.
  * Patch in place (drop + re-add field) then rely on `sync:typesense` to re-upsert documents.
  */
 async function patchCardsCollectionSortableStringFields(
@@ -104,11 +106,19 @@ async function patchCardsCollectionSortableStringFields(
 ): Promise<void> {
   const fields = existing.fields ?? [];
   const patchFields: CollectionFieldPatch[] = [];
-  const sortableNames = ['title_lowercase', 'who_sort_key', 'what_sort_key', 'where_sort_key'] as const;
+  const sortableNames = ['doc_id', 'title_lowercase', 'who_sort_key', 'what_sort_key', 'where_sort_key'] as const;
 
   for (const name of sortableNames) {
     const f = fields.find((x) => x.name === name);
-    if (f && f.type === 'string' && f.sort !== true) {
+    if (!f) {
+      patchFields.push({
+        name,
+        type: 'string',
+        optional: true,
+        facet: false,
+        sort: true,
+      });
+    } else if (f.type === 'string' && f.sort !== true) {
       patchFields.push({ name, drop: true });
       patchFields.push({
         name,
@@ -236,41 +246,39 @@ function orGroup(field: string, ids: string[] | undefined): string | null {
   return `(${ids.map((id) => `${field}:=${escapeFilterValue(id)}`).join(' || ')})`;
 }
 
-function buildListSort(
+export function buildListSort(
   sortBy: TypesenseCardSortField,
   sortDir: 'asc' | 'desc',
   hasTextQuery: boolean
 ): string {
   if (hasTextQuery) {
-    return '_text_match:desc,updated_at:desc';
+    return '_text_match:desc,updated_at:desc,doc_id:asc';
   }
-  /** Tie-breaker only — `id` is not declared in our Typesense schema (sorting by it 404s the whole query). */
-  const tie = 'updated_at:desc,title_lowercase:asc';
   if (sortBy === 'created') {
-    return sortDir === 'asc' ? `created_at:asc,${tie}` : `created_at:desc,${tie}`;
+    return sortDir === 'asc' ? 'created_at:asc,doc_id:asc' : 'created_at:desc,doc_id:desc';
   }
   if (sortBy === 'title') {
-    return sortDir === 'asc' ? `title_lowercase:asc,${tie}` : `title_lowercase:desc,${tie}`;
+    return sortDir === 'asc' ? 'title_lowercase:asc,doc_id:asc' : 'title_lowercase:desc,doc_id:desc';
   }
   if (sortBy === 'who') {
     return sortDir === 'asc'
-      ? `who_sort_key:asc,title_lowercase:asc,${tie}`
-      : `who_sort_key:desc,title_lowercase:asc,${tie}`;
+      ? 'who_sort_key:asc,title_lowercase:asc,doc_id:asc'
+      : 'who_sort_key:desc,title_lowercase:asc,doc_id:asc';
   }
   if (sortBy === 'what') {
     return sortDir === 'asc'
-      ? `what_sort_key:asc,title_lowercase:asc,${tie}`
-      : `what_sort_key:desc,title_lowercase:asc,${tie}`;
+      ? 'what_sort_key:asc,title_lowercase:asc,doc_id:asc'
+      : 'what_sort_key:desc,title_lowercase:asc,doc_id:asc';
   }
   if (sortBy === 'where') {
     return sortDir === 'asc'
-      ? `where_sort_key:asc,title_lowercase:asc,${tie}`
-      : `where_sort_key:desc,title_lowercase:asc,${tie}`;
+      ? 'where_sort_key:asc,title_lowercase:asc,doc_id:asc'
+      : 'where_sort_key:desc,title_lowercase:asc,doc_id:asc';
   }
   // when
   return sortDir === 'asc'
-    ? `journal_when_sort_asc:asc,${tie}`
-    : `journal_when_sort:desc,${tie}`;
+    ? 'journal_when_sort_asc:asc,doc_id:asc'
+    : 'journal_when_sort:desc,doc_id:desc';
 }
 
 /**
@@ -457,6 +465,7 @@ export function buildTypesenseCardDocumentFromData(
 
   return {
     id: docId,
+    doc_id: docId,
     title,
     subtitle: (data.subtitle as string | undefined) || undefined,
     excerpt: (data.excerpt as string | undefined) || undefined,

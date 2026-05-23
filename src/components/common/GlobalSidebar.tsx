@@ -29,6 +29,7 @@ import {
   ChevronsDown,
   ChevronsUp,
   SlidersHorizontal,
+  RefreshCw,
 } from 'lucide-react';
 import styles from './GlobalSidebar.module.css';
 
@@ -95,6 +96,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     collectionTreeCards,
     feedSort,
     setFeedSort,
+    refreshRandomOrder,
     feedGroupBy,
     setFeedGroupBy,
     includeSubTagsInFeed,
@@ -489,7 +491,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
 
               <div className={styles.sidebarSection}>
                 {!showViewTagLibrary || viewTagSidebarTab === 'filter' ? (
-                  <div className={styles.sectionControlRow}>
+                  <div className={`${styles.sectionControlRow} ${styles.mobileStickyDimensionControls}`}>
                     <h3 className={styles.sectionHeading}>Tags</h3>
                     <div className={styles.sectionControlRowMain}>
                       <div className={styles.dimensionTabs} role="tablist" aria-label="Tag dimensions">
@@ -599,7 +601,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                         />
                       </div>
                       <div className={styles.dualFieldRow}>
-                        <div className={styles.inlineFieldRow}>
+                        <div className={`${styles.inlineFieldRow} ${styles.randomSortRow}`}>
                           <select
                             id="feed-sort-select"
                             value={feedSort}
@@ -624,6 +626,17 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                             <option value="whereAsc">Sort by Where (A-Z)</option>
                             <option value="whereDesc">Sort by Where (Z-A)</option>
                           </select>
+                          {feedSort === 'random' ? (
+                            <button
+                              type="button"
+                              className={styles.iconActionButton}
+                              onClick={refreshRandomOrder}
+                              aria-label="Refresh random order"
+                              title="Refresh random order"
+                            >
+                              <RefreshCw strokeWidth={2} />
+                            </button>
+                          ) : null}
                         </div>
                         {!isMediaBrowse ? (
                           <div className={styles.inlineFieldRow}>

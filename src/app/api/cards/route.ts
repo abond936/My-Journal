@@ -6,6 +6,7 @@ import {
   getCardsByCollectionId,
   getCollectionCards,
   getParentCardsByChildId,
+  getSeededRandomCards,
 } from '@/lib/services/cardService';
 import { Card } from '@/lib/types/card';
 import { getServerSession } from 'next-auth/next';
@@ -230,7 +231,7 @@ export async function GET(request: Request) {
     const hydrationMode: 'full' | 'cover-only' =
       hydrationParam === 'cover-only' ? 'cover-only' : 'full';
     const sortByRaw = searchParams.get('sortBy');
-    const sortBy: 'when' | 'created' | 'title' | 'who' | 'what' | 'where' | undefined =
+    const sortBy: 'when' | 'created' | 'title' | 'who' | 'what' | 'where' | 'random' | undefined =
       sortByRaw === 'created'
         ? 'created'
         : sortByRaw === 'title'
@@ -243,10 +244,13 @@ export async function GET(request: Request) {
                 ? 'where'
                 : sortByRaw === 'when'
                   ? 'when'
-                  : undefined;
+                  : sortByRaw === 'random'
+                    ? 'random'
+                    : undefined;
     const sortDirRaw = searchParams.get('sortDir');
     const sortDir: 'asc' | 'desc' | undefined =
       sortDirRaw === 'asc' ? 'asc' : sortDirRaw === 'desc' ? 'desc' : undefined;
+    const listSortBy = sortBy === 'random' ? undefined : sortBy;
     try {
       // List cards that are collections (have children)
       if (collectionsOnly) {
@@ -268,6 +272,24 @@ export async function GET(request: Request) {
         return NextResponse.json(result);
       }
 
+      if (sortBy === 'random' && !q?.trim()) {
+        const result = await getSeededRandomCards({
+          seed: searchParams.get('randomSeed') || 'default',
+          status,
+          type,
+          types: typesForService,
+          tags,
+          dimensionalTags: Object.keys(dimensionalTags).length > 0 ? dimensionalTags : undefined,
+          exactDimensionalTags:
+            Object.keys(exactDimensionalTags).length > 0 ? exactDimensionalTags : undefined,
+          dimensionMissing: hasDimensionMissingFilters ? dimensionMissing : undefined,
+          limit,
+          lastDocId,
+          hydrationMode,
+        });
+        return NextResponse.json(result);
+      }
+
       // Dedicated narrow parent lookup path (used by admin delete warning flow).
       if (
         childrenIds_contains &&
@@ -275,7 +297,7 @@ export async function GET(request: Request) {
         !tags?.length &&
         Object.keys(dimensionalTags).length === 0 &&
         !hasDimensionMissingFilters &&
-        !sortBy
+        !listSortBy
       ) {
         const items = await getParentCardsByChildId(childrenIds_contains, {
           status,
@@ -337,7 +359,7 @@ export async function GET(request: Request) {
         try {
           const pageIdx = Math.max(0, parseInt(searchParams.get('page') ?? '0', 10) || 0);
           const sortByResolved: TypesenseCardSortField =
-            sortBy ?? (q?.trim() ? 'title' : 'when');
+            listSortBy ?? (q?.trim() ? 'title' : 'when');
           const sortDirResolved = sortDir ?? (q?.trim() ? 'asc' : 'desc');
 
           const searchResult = await searchCardsFiltered({
@@ -399,7 +421,7 @@ export async function GET(request: Request) {
         limit,
         lastDocId,
         hydrationMode,
-        ...(sortBy ? { sortBy } : {}),
+        ...(listSortBy ? { sortBy: listSortBy } : {}),
         ...(sortDir ? { sortDir } : {}),
       });
 

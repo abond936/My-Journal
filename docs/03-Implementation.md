@@ -202,13 +202,11 @@ Legend:
 
   **Priority bands**
 
-  - **P1 (reader UX contract)** - **Feed Presentation Matrix**; **Layout `@media` hardening**.
+  - **P1 (reader UX contract)** - **Feed Presentation Matrix**.
 
   - **P2 (experience enhancement)** - **In-Feed Expansion**; **Orientation-aware Framing**; **Rail Variant**.
 
 
-
-- **Layout `@media` hardening** - Replace `var(--breakpoint-*)` inside `@media` where it affects layout (`V2ContentCard`, `Navigation`, `ViewLayout`, `ContentCard`, `ThemeAdmin`, `TagTree`, etc.) so breakpoints match `docs/04-Theme-Design-Contract.md` §9.2 (literal `px`).
 
 - **Feed Presentation Matrix** - Define and enforce a single presentation contract across feed/detail/rail contexts for each `type` + `displayMode` pair, including interaction model (open vs expand), title/excerpt behavior, and media framing rules.
 
@@ -245,18 +243,9 @@ Legend:
 
 
 
-  **Priority bands**
-    - **P1 (mobile reader usability)** - **Mobile-first filter redesign**.
-
-  - **P2 (behavioral consistency)** - **Reader Order Model**; **Sort Semantics**.
 
 
 
-- **Reader Order Model** - Split ordering by mode: **Freeform** keeps Random plus deterministic order options (`When`, `Created`, `Title`, `Who`, `What`, `Where`) with `Asc/Desc`; **Guided** ignores sort controls and always follows curated tree/TOC order.
-
-- **Sort Semantics** - Define deterministic ordering rules for all reader order modes: explicit tie-break chain, consistent undated policy for `When` (undated at end), and normalized dimension ordering behavior for `Who/What/Where`.
-
-- **Mobile-first filter redesign** - Remaining reader-sidebar polish: resolve the mobile search keyboard/result-visibility issue, finish alignment of selected tag state in the tree, and keep Freeform controls visually compact while preserving saved per-user expansion choices and fast manual expand/collapse.
 
 *View Page (`02-Application.md`)*
 

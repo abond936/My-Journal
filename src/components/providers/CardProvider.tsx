@@ -46,7 +46,7 @@ export type CardDimensionMissing = {
   where: boolean;
 };
 
-/** Main feed ordering. `random` uses newest-ordered pages then shuffles; order is stable across SWR refresh, and load-more only shuffles new cards while keeping earlier positions. */
+/** Main feed ordering. `random` is an archive-wide server-ranked stream keyed by a stable seed. */
 export type FeedSortOrder =
   | 'random'
   | 'whenDesc'
@@ -101,6 +101,7 @@ export interface ICardContext {
   setActiveDimension: (dim: ActiveDimension) => void;
   setCollectionId: (id: string | null) => void;
   setFeedSort: (order: FeedSortOrder) => void;
+  refreshRandomOrder: () => void;
   setFeedGroupBy: (g: FeedGroupBy) => void;
   setCardDimensionMissing: (dimension: 'who' | 'what' | 'when' | 'where', value: boolean) => void;
   clearFilters: () => void;
@@ -131,6 +132,7 @@ const FEED_GROUP_KEY = 'myjournal-feed-group';
 const FEED_INCLUDE_SUBTAGS_KEY = 'myjournal-feed-include-subtags';
 const FEED_CARD_TYPES_KEY = 'myjournal-feed-card-types';
 const BROWSE_TARGET_KEY = 'myjournal-browse-target';
+const RANDOM_FEED_SEEDS_KEY = 'myjournal-feed-random-seeds';
 
 const FEED_SORT_VALUES = new Set<string>([
   'random',
@@ -207,13 +209,32 @@ function readStoredFeedCardTypes(): Set<Card['type']> {
   }
 }
 
-function shuffleCards<T extends { docId?: string }>(items: T[]): T[] {
-  const copy = [...items];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
+function createRandomSeed(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
   }
-  return copy;
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
+
+function readRandomSeedMap(): Record<string, string> {
+  if (typeof window === 'undefined') return {};
+  const raw = window.localStorage.getItem(RANDOM_FEED_SEEDS_KEY);
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? parsed as Record<string, string>
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeRandomSeed(signature: string, seed: string): void {
+  if (typeof window === 'undefined') return;
+  const map = readRandomSeedMap();
+  map[signature] = seed;
+  window.localStorage.setItem(RANDOM_FEED_SEEDS_KEY, JSON.stringify(map));
 }
 
 const CardContext = createContext<ICardContext | undefined>(undefined);
@@ -289,11 +310,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     where: false,
   });
 
-  /**
-   * Random feed: stable order across SWR revalidation (same doc-id set). On infinite scroll, keep
-   * the existing permutation and only shuffle newly loaded cards (append), so earlier rows do not jump.
-   */
-  const randomFeedOrderCacheRef = useRef<{ orderedDocIds: string[]; idSet: Set<string> } | null>(null);
+  const [randomSeed, setRandomSeed] = useState<string>(() => createRandomSeed());
   const lastVisibleReaderSnapshotRef = useRef<{
     cards: Card[];
     feedSections: FeedSections;
@@ -415,6 +432,44 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     return dimensionalMap;
   }, [selectedFilterTagIds, allTags]);
 
+  const randomFeedSignature = useMemo(() => {
+    const sortValues = (values: string[] | undefined) => [...(values ?? [])].sort();
+    const typesList = FEED_CARD_TYPES_ORDER.filter((type) => feedCardTypes.has(type));
+    return JSON.stringify({
+      status,
+      types: typesList,
+      selectedTags: sortValues(selectedFilterTagIds),
+      dimensionalTags: {
+        who: sortValues(dimensionalTags.who),
+        what: sortValues(dimensionalTags.what),
+        when: sortValues(dimensionalTags.when),
+        where: sortValues(dimensionalTags.where),
+      },
+      cardDimensionMissing,
+      includeSubTagsInFeed,
+    });
+  }, [
+    cardDimensionMissing,
+    dimensionalTags,
+    feedCardTypes,
+    includeSubTagsInFeed,
+    selectedFilterTagIds,
+    status,
+  ]);
+
+  useEffect(() => {
+    if (feedSort !== 'random') return;
+    const map = readRandomSeedMap();
+    const existing = map[randomFeedSignature];
+    if (existing) {
+      setRandomSeed(existing);
+      return;
+    }
+    const nextSeed = createRandomSeed();
+    writeRandomSeed(randomFeedSignature, nextSeed);
+    setRandomSeed(nextSeed);
+  }, [feedSort, randomFeedSignature]);
+
   // Hydration: admin list needs only covers (saves reads); content feed needs full (galleries, content images)
   const needsFullHydration = pathname?.startsWith('/view') || pathname?.startsWith('/search');
   const adminFetcher = useCallback(async (url: string) => {
@@ -530,8 +585,8 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       if (isAdmin && !needsFullHydration) params.set('hydration', 'cover-only');
       if (!searchTerm?.trim()) {
         if (feedSort === 'random') {
-          params.set('sortBy', 'created');
-          params.set('sortDir', 'desc');
+          params.set('sortBy', 'random');
+          params.set('randomSeed', randomSeed);
         } else if (feedSort === 'whenAsc') {
           params.set('sortBy', 'when');
           params.set('sortDir', 'asc');
@@ -595,62 +650,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       (Array.isArray(data) ? data : []).filter(Boolean).flatMap((page) => page.items) || [];
     return dedupeCardsByDocId(flat);
   }, [data]);
-  const orderedPaginatedCards = useMemo(() => {
-    if (feedSort !== 'random') {
-      randomFeedOrderCacheRef.current = null;
-      return paginatedCards;
-    }
-    // Admin list editing should stay stable across revalidation.
-    if (pathname?.startsWith('/admin/studio')) {
-      return paginatedCards;
-    }
-    if (collectionId) {
-      return paginatedCards;
-    }
-
-    const docIds = paginatedCards.map((c) => c.docId).filter((id): id is string => Boolean(id));
-    const currentSet = new Set(docIds);
-    const prev = randomFeedOrderCacheRef.current;
-    const byId = new Map(paginatedCards.map((c) => [c.docId!, c]));
-
-    if (prev && prev.idSet.size > 0) {
-      // Keep previously seen cards in their prior relative order.
-      // Any cards not seen before (including replacements after edits) are appended shuffled.
-      const orderedExisting = prev.orderedDocIds.filter((id) => currentSet.has(id));
-      const existingSet = new Set(orderedExisting);
-      const newCards = paginatedCards.filter((c) => c.docId && !existingSet.has(c.docId));
-
-      if (
-        newCards.length === 0 &&
-        orderedExisting.length === paginatedCards.length &&
-        paginatedCards.length === docIds.length
-      ) {
-        return orderedExisting
-          .map((id) => byId.get(id))
-          .filter((c): c is Card => c !== undefined);
-      }
-
-      const shuffledNew = shuffleCards(newCards);
-      const combinedIds = [
-        ...orderedExisting,
-        ...shuffledNew.map((c) => c.docId!),
-      ];
-      randomFeedOrderCacheRef.current = {
-        orderedDocIds: combinedIds,
-        idSet: currentSet,
-      };
-      return combinedIds
-        .map((id) => byId.get(id))
-        .filter((c): c is Card => c !== undefined);
-    }
-
-    const shuffled = shuffleCards(paginatedCards);
-    randomFeedOrderCacheRef.current = {
-      orderedDocIds: shuffled.map((c) => c.docId!),
-      idSet: currentSet,
-    };
-    return shuffled;
-  }, [paginatedCards, feedSort, collectionId, pathname]);
+  const orderedPaginatedCards = paginatedCards;
   const cards = useMemo(() => {
     if (activeDimension === 'collections' && !collectionId) return collectionCards;
     return orderedPaginatedCards;
@@ -748,6 +748,13 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       setSize(size + 1);
     }
   }, [swrLoading, setSize, size, hasMore]);
+
+  const refreshRandomOrder = useCallback(() => {
+    const nextSeed = createRandomSeed();
+    writeRandomSeed(randomFeedSignature, nextSeed);
+    setRandomSeed(nextSeed);
+    setSize(1);
+  }, [randomFeedSignature, setSize]);
   
     // --- Filter Actions ---
   const toggleTag = useCallback((tagId:string) => {
@@ -836,6 +843,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       setActiveDimension,
       setCollectionId,
       setFeedSort,
+      refreshRandomOrder,
       setFeedGroupBy,
       setCardDimensionMissing,
       clearFilters,
@@ -885,6 +893,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       setActiveDimension,
       setCollectionId,
       setFeedSort,
+      refreshRandomOrder,
       setFeedGroupBy,
       setCardDimensionMissing,
       clearFilters,

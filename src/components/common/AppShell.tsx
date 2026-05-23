@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import Navigation from '@/components/common/Navigation';
@@ -13,6 +13,8 @@ interface AppShellProps {
 }
 
 const MOBILE_BREAKPOINT_QUERY = '(max-width: 768px)';
+const MOBILE_SWIPE_EDGE_PX = 28;
+const MOBILE_SWIPE_MIN_DISTANCE_PX = 54;
 
 export default function AppShell({ children }: AppShellProps) {
   const { status } = useSession();
@@ -20,6 +22,8 @@ export default function AppShell({ children }: AppShellProps) {
   const [isSidebarOpen, setSidebarOpen] = useState(
     pathname !== '/' && !pathname?.startsWith('/admin/studio')
   );
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const swipeStartRef = useRef<{ x: number; y: number; tracking: boolean } | null>(null);
 
   const isAuthenticated = status === 'authenticated';
 
@@ -34,6 +38,7 @@ export default function AppShell({ children }: AppShellProps) {
         return;
       }
 
+      setIsMobileViewport(isMobile);
       setSidebarOpen((current) => {
         if (isMobile) return false;
         if (forceDesktopDefault) return true;
@@ -69,6 +74,46 @@ export default function AppShell({ children }: AppShellProps) {
     setSidebarOpen((prev) => !prev);
   };
 
+  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (!isMobileViewport || pathname === '/' || pathname?.startsWith('/admin/studio')) return;
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    const shouldTrack = isSidebarOpen || touch.clientX <= MOBILE_SWIPE_EDGE_PX;
+    swipeStartRef.current = shouldTrack
+      ? { x: touch.clientX, y: touch.clientY, tracking: true }
+      : null;
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    const start = swipeStartRef.current;
+    swipeStartRef.current = null;
+    if (!start?.tracking) return;
+    const touch = event.changedTouches[0];
+    if (!touch) return;
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    if (
+      Math.abs(deltaX) < MOBILE_SWIPE_MIN_DISTANCE_PX ||
+      Math.abs(deltaX) < Math.abs(deltaY) * 1.35
+    ) {
+      return;
+    }
+
+    if (!isSidebarOpen && deltaX > 0) {
+      setSidebarOpen(true);
+      return;
+    }
+    if (isSidebarOpen && deltaX < 0) {
+      setSidebarOpen(false);
+    }
+  };
+
+  const handleTouchCancel = () => {
+    swipeStartRef.current = null;
+  };
+
   // Never return null here: a stuck or slow session would show a blank screen.
   // Shell chrome may briefly mismatch until status resolves; children still render.
   if (status === 'loading') {
@@ -101,7 +146,12 @@ export default function AppShell({ children }: AppShellProps) {
         )}
         <Navigation sidebarOpen={isSidebarOpen} />
       </div>
-      <div className={styles.contentWrapper}>
+      <div
+        className={styles.contentWrapper}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchCancel}
+      >
         {pathname !== '/' && (
           <>
             <div

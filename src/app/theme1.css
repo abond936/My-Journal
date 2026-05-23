@@ -180,8 +180,7 @@ Elements
   --color2-800: hsl(var(--h2), var(--s2), 20%);
   --color2-900: hsl(var(--h2), var(--s2), 10%);
 
-  /* Breakpoints (Mobile-First) */
-  /* Used for major layout changes, e.g., @media (min-width: var(--breakpoint-md)) */
+  /* Breakpoint reference values; use literal px values in @media queries. */
   --breakpoint-sm: 640px;
   --breakpoint-md: 768px;
   --breakpoint-lg: 1024px;

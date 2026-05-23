@@ -31,6 +31,7 @@ import {
   compareCollectionRootCards,
   nextCollectionRootOrderForAppend,
 } from '@/lib/utils/curatedCollectionTree';
+import { orderIdsBySeed } from '@/lib/utils/seededRandomOrder';
 
 /**
  * Retry utility with exponential backoff for critical operations.
@@ -2089,6 +2090,139 @@ export async function getCardsByCollectionId(
     items,
     lastDocId: newLastDocId,
     hasMore,
+  };
+}
+
+type RandomFeedProjection = Pick<
+  Card,
+  'docId' | 'status' | 'type' | 'filterTags' | 'who' | 'what' | 'when' | 'where' | 'tags'
+>;
+
+function matchesAny(candidate: string[] | undefined, required: string[] | undefined): boolean {
+  if (!required || required.length === 0) return true;
+  if (!candidate || candidate.length === 0) return false;
+  const set = new Set(candidate);
+  return required.some((id) => set.has(id));
+}
+
+function matchesDirectTags(candidate: string[] | undefined, required: string[] | undefined): boolean {
+  return matchesAny(candidate, required);
+}
+
+function cardDimEmpty(arr: string[] | undefined): boolean {
+  return !arr || arr.length === 0;
+}
+
+/**
+ * Archive-wide seeded random feed.
+ *
+ * This intentionally ranks the full filtered ID universe before hydration, so
+ * Random is not biased toward the first deterministic Firestore page.
+ */
+export async function getSeededRandomCards(options: {
+  seed: string;
+  status?: Card['status'] | 'all';
+  type?: Card['type'] | 'all';
+  types?: Card['type'][];
+  tags?: string[];
+  dimensionalTags?: {
+    who?: string[];
+    what?: string[];
+    when?: string[];
+    where?: string[];
+  };
+  exactDimensionalTags?: {
+    who?: string[];
+    what?: string[];
+    when?: string[];
+    where?: string[];
+  };
+  dimensionMissing?: {
+    who?: boolean;
+    what?: boolean;
+    when?: boolean;
+    where?: boolean;
+  };
+  limit?: number;
+  lastDocId?: string;
+  hydrationMode?: 'full' | 'cover-only';
+}): Promise<{ items: Card[]; lastDocId?: string; hasMore: boolean }> {
+  const {
+    seed,
+    status = 'published',
+    type = 'all',
+    types,
+    tags,
+    dimensionalTags,
+    exactDimensionalTags,
+    dimensionMissing,
+    limit = 10,
+    lastDocId,
+    hydrationMode = 'full',
+  } = options;
+
+  const multiTypes = types && types.length > 1 ? [...new Set(types)].slice(0, 10) : undefined;
+  const singleType =
+    multiTypes !== undefined
+      ? undefined
+      : types && types.length === 1
+        ? types[0]
+        : type && type !== 'all'
+          ? type
+          : undefined;
+
+  let query: FirebaseFirestore.Query = firestore.collection(CARDS_COLLECTION);
+  if (status !== 'all') {
+    query = query.where('status', '==', status);
+  }
+  if (multiTypes && multiTypes.length > 1) {
+    query = query.where('type', 'in', multiTypes);
+  } else if (singleType) {
+    query = query.where('type', '==', singleType);
+  }
+
+  const snapshot = await query
+    .select('status', 'type', 'filterTags', 'who', 'what', 'when', 'where', 'tags')
+    .get();
+
+  const filteredIds = snapshot.docs
+    .map((doc) => ({ docId: doc.id, ...(doc.data() as Partial<Card>) } as RandomFeedProjection))
+    .filter((card) => {
+      if (tags && tags.length > 0) {
+        const filterTags = card.filterTags || {};
+        for (const tag of tags) {
+          if (tag && !filterTags[tag]) return false;
+        }
+      }
+      if (dimensionalTags?.who && !matchesAny(card.who, dimensionalTags.who)) return false;
+      if (dimensionalTags?.what && !matchesAny(card.what, dimensionalTags.what)) return false;
+      if (dimensionalTags?.when && !matchesAny(card.when, dimensionalTags.when)) return false;
+      if (dimensionalTags?.where && !matchesAny(card.where, dimensionalTags.where)) return false;
+      if (exactDimensionalTags?.who && !matchesDirectTags(card.tags, exactDimensionalTags.who)) return false;
+      if (exactDimensionalTags?.what && !matchesDirectTags(card.tags, exactDimensionalTags.what)) return false;
+      if (exactDimensionalTags?.when && !matchesDirectTags(card.tags, exactDimensionalTags.when)) return false;
+      if (exactDimensionalTags?.where && !matchesDirectTags(card.tags, exactDimensionalTags.where)) return false;
+      if (dimensionMissing?.who && !cardDimEmpty(card.who)) return false;
+      if (dimensionMissing?.what && !cardDimEmpty(card.what)) return false;
+      if (dimensionMissing?.when && !cardDimEmpty(card.when)) return false;
+      if (dimensionMissing?.where && !cardDimEmpty(card.where)) return false;
+      return true;
+    })
+    .map((card) => card.docId)
+    .filter((id): id is string => Boolean(id));
+
+  const orderedIds = orderIdsBySeed(filteredIds, seed);
+  const startIndex = lastDocId ? orderedIds.indexOf(lastDocId) + 1 : 0;
+  if (startIndex < 0 || startIndex >= orderedIds.length) {
+    return { items: [], hasMore: false };
+  }
+
+  const pageIds = orderedIds.slice(startIndex, startIndex + limit);
+  const items = await getCardsByIds(pageIds, { hydrationMode });
+  return {
+    items,
+    lastDocId: pageIds.length > 0 ? pageIds[pageIds.length - 1] : undefined,
+    hasMore: startIndex + limit < orderedIds.length,
   };
 }
 

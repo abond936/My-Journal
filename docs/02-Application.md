@@ -173,13 +173,9 @@ Legend:
 - **More controls disclosure** - Freeform `Sort by` and `Group by` now sit behind a compact disclosure rather than always occupying primary sidebar space.
 - **Guided draft visibility (admin)** - Reader guided tree still hides draft collection roots from non-admin readers, while admins now see draft collection titles styled in the warning color inside the same tree.
 - **Freeform clear behavior** - Clearing filters in Freeform now stays on the Freeform feed path instead of silently switching the reader back to collection-style results.
+- **Mobile reader drawer ergonomics** - On mobile, the reader sidebar opens with a right swipe from the left edge and closes with a left swipe or backdrop tap; the desktop arrow toggle is hidden. Freeform tag dimension controls stay sticky while the tag tree scrolls so `Who` / `What` / `When` / `Where` remain reachable.
+- **Reader Order Model** - Freeform supports archive-wide seeded `Random` plus deterministic order options (`When`, `Created`, `Title`, `Who`, `What`, `Where`) with `Asc/Desc`; Guided ignores sort controls and follows curated tree/TOC order. Random order is stable for the active filter seed until refreshed, and newly matching cards insert into their deterministic seeded position. Deterministic list sorts use explicit tie-breaks: `When` keeps undated cards after dated cards in both directions, `Created` / `Title` tie by card id, `Who` / `What` / `Where` use normalized dimension sort keys then title then card id, and Typesense browse ordering mirrors Firestore through a sortable `doc_id` projection. Text search remains relevance-first rather than normal user sort.
 
-⭕1 **Planned**
-
-- **Reader Order Model** - Split ordering by mode: **Freeform** keeps Random plus deterministic order options (`When`, `Created`, `Title`, `Who`, `What`, `Where`) with `Asc/Desc`; **Guided** ignores sort controls and always follows curated tree/TOC order.
-- **Sort Semantics** - Define deterministic ordering rules for all reader order modes: explicit tie-break chain, consistent undated policy for `When` (undated at end), and normalized dimension ordering behavior for `Who/What/Where`.
-- **Mobile-first filter redesign** - Remaining reader-sidebar polish: resolve the mobile search keyboard/result-visibility issue, finish alignment of selected tag state in the tree, and keep Freeform controls visually compact while preserving saved per-user expansion choices and fast manual expand/collapse.
-- **Sticky dimension shortcuts** - Keep the `Who` / `What` / `When` / `Where` dimension buttons visible in the fixed reader control bar so the active dimension stays reachable while scrolling long tag trees.
 ⭕2 **Future**
 
 - **Guided tree mobile ergonomics** - Increase practical finger usability of the guided/tag tree rows and controls beyond the current desktop-acceptable baseline where needed in real mobile use.
@@ -261,13 +257,13 @@ Legend:
 - **Reader feed auth/status correctness** - Reader feed loading now waits for auth resolution before first fetch, and guided collection loading now applies status visibility consistently for readers vs admins.
 - **Guided selection response** - Guided parent selection now clears stale return-position state, suppresses the prior collection snapshot while the next section loads, and shows an explicit guided transition state so collection changes do not appear to leave the previous cards open. Browser validation confirmed parent selection, leaf-card open behavior, and returning/selecting another parent work as expected.
 - **Narrow guided feed sizing** - Guided feed grids use capped, container-aware card columns and explicit shrink constraints on card/media containers so cards do not overgrow in sidebar-constrained or mobile-like widths.
+- **Layout `@media` hardening** - Layout-affecting CSS media queries now use literal pixel breakpoints instead of `var(--breakpoint-*)`, matching the responsive contract in `docs/04-Theme-Design-Contract.md` §9.2.
 
 📐 **Product vs code** - v1 intent: omit story excerpt on feed/detail; `StoryCardContent` still renders `excerpt` when the field is set—clear data or add a guard when enforcing.
 📐 **Horizontal open** - Prefer horizontal open for long-form on mobile where the reader implements it.
 
 ⭕1 **Planned**
 
-- **Layout `@media` hardening** - Replace `var(--breakpoint-*)` inside `@media` where it affects layout (`V2ContentCard`, `Navigation`, `ViewLayout`, `ContentCard`, `ThemeAdmin`, `TagTree`, etc.) so breakpoints match `docs/04-Theme-Design-Contract.md` §9.2 (literal `px`).
 📐 **Reader priority (canonical)** - For demo and early product validation, Guided and Freeform should be treated as **equal-priority** consumption modes; neither is a secondary fallback.
 
 - **Feed Presentation Matrix** - Define and enforce a single presentation contract across feed/detail/rail contexts for each `type` + `displayMode` pair, including interaction model (open vs expand), title/excerpt behavior, and media framing rules.
