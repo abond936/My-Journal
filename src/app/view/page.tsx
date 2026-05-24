@@ -1,195 +1,42 @@
-'use client';
+import { getServerSession } from 'next-auth/next';
+import { redirect } from 'next/navigation';
+import type { Session } from 'next-auth';
+import { authOptions } from '@/lib/auth/authOptions';
+import ViewRootClientPage from './ViewRootClientPage';
 
-import React, { Suspense, useRef, useCallback, useLayoutEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { useCardContext } from '@/components/providers/CardProvider';
-import styles from './ViewPage.module.css';
-import AdminFAB from '@/components/admin/card-admin/AdminFAB';
-import CardFeedV2 from '@/components/view/CardFeedV2';
-import ViewMediaFeed from '@/components/view/ViewMediaFeed';
-
-const SCROLL_POSITION_KEY = 'contentViewScrollPos';
-const FOCUS_CARD_KEY = 'contentViewFocusCardId';
-
-function useIntersectionObserver(callback: () => void, options?: IntersectionObserverInit) {
-  const observer = useRef<IntersectionObserver | null>(null);
-  const ref = useCallback(node => {
-    if (observer.current) observer.current.disconnect();
-    observer.current = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) callback();
-    }, options);
-    if (node) observer.current.observe(node);
-  }, [callback, options]);
-  return ref;
+interface ViewPageProps {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
 
-function ViewPageContent() {
-  const {
-    visibleCards,
-    visibleFeedSections,
-    loadingMore,
-    hasMore,
-    loadMore,
-    isInitialLoading,
-    isRefreshing,
-    error,
-    browseTarget,
-    readerMode,
-    isGuidedCollectionTransition,
-  } =
-    useCardContext();
-  const searchParams = useSearchParams();
-  const focusCardId = searchParams.get('focusCardId');
-  const consumedFocusRef = useRef<string | null>(null);
-  const prepositionedFocusRef = useRef<string | null>(null);
+function buildCallbackUrl(
+  pathname: string,
+  params: Record<string, string | string[] | undefined> | undefined
+): string {
+  const search = new URLSearchParams();
 
-  const loadingLock = useRef(false);
-  const handleLoadMore = useCallback(() => {
-    if (hasMore && !loadingMore && !loadingLock.current) {
-      loadingLock.current = true;
-      loadMore();
-      setTimeout(() => { loadingLock.current = false; }, 500);
-    }
-  }, [hasMore, loadingMore, loadMore]);
-
-  const loadMoreRef = useIntersectionObserver(handleLoadMore, {
-    rootMargin: '400px',
-  });
-
-  // Restore to the last opened or edited card once the feed has rendered it.
-  useLayoutEffect(() => {
-    if (isGuidedCollectionTransition) {
-      sessionStorage.removeItem(FOCUS_CARD_KEY);
-      sessionStorage.removeItem(SCROLL_POSITION_KEY);
-      return;
-    }
-    if (isInitialLoading || visibleCards.length === 0) return;
-
-    const pendingFocusCardId = focusCardId ?? sessionStorage.getItem(FOCUS_CARD_KEY);
-    const savedPosition = sessionStorage.getItem(SCROLL_POSITION_KEY);
-    const parsedSavedPosition = savedPosition ? parseInt(savedPosition, 10) : Number.NaN;
-
-    if (pendingFocusCardId && consumedFocusRef.current !== pendingFocusCardId) {
-      let cancelled = false;
-      let attempts = 0;
-      const maxAttempts = 20;
-
-      if (!Number.isNaN(parsedSavedPosition) && prepositionedFocusRef.current !== pendingFocusCardId) {
-        window.scrollTo(0, parsedSavedPosition);
-        prepositionedFocusRef.current = pendingFocusCardId;
+  for (const [key, value] of Object.entries(params ?? {})) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (typeof item === 'string') search.append(key, item);
       }
-
-      const tryRestoreFocus = () => {
-        if (cancelled) return;
-
-        const el = document.querySelector(`[data-card-id="${pendingFocusCardId}"]`) as HTMLElement | null;
-        if (el) {
-          consumedFocusRef.current = pendingFocusCardId;
-          prepositionedFocusRef.current = null;
-          sessionStorage.removeItem(FOCUS_CARD_KEY);
-          sessionStorage.removeItem(SCROLL_POSITION_KEY);
-          el.scrollIntoView({ block: 'center' });
-          return;
-        }
-
-        attempts += 1;
-        if (attempts < maxAttempts) {
-          window.setTimeout(tryRestoreFocus, 120);
-          return;
-        }
-
-        if (!Number.isNaN(parsedSavedPosition)) {
-          window.scrollTo(0, parsedSavedPosition);
-          sessionStorage.removeItem(SCROLL_POSITION_KEY);
-        }
-        prepositionedFocusRef.current = null;
-        sessionStorage.removeItem(FOCUS_CARD_KEY);
-      };
-
-      tryRestoreFocus();
-
-      return () => {
-        cancelled = true;
-      };
+      continue;
     }
-
-    if (!Number.isNaN(parsedSavedPosition)) {
-      window.scrollTo(0, parsedSavedPosition);
-      sessionStorage.removeItem(SCROLL_POSITION_KEY);
-      prepositionedFocusRef.current = null;
-    } else if (savedPosition) {
-      sessionStorage.removeItem(SCROLL_POSITION_KEY);
+    if (typeof value === 'string') {
+      search.set(key, value);
     }
-  }, [isGuidedCollectionTransition, isInitialLoading, visibleCards.length, focusCardId]);
-
-  const onSaveScrollPosition = useCallback((cardId?: string) => {
-    sessionStorage.setItem(SCROLL_POSITION_KEY, window.scrollY.toString());
-    if (cardId) {
-      sessionStorage.setItem(FOCUS_CARD_KEY, cardId);
-    }
-  }, []);
-
-  const feedErrorMessage =
-    error instanceof Error && error.message.trim()
-      ? error.message.trim()
-      : 'The journal view could not refresh right now.';
-  
-  if (browseTarget === 'media' && readerMode === 'freeform') {
-    return (
-      <div className={styles.page}>
-        <ViewMediaFeed />
-        <AdminFAB />
-      </div>
-    );
   }
 
-  if (error) {
-    return (
-      <div className={`${styles.page} ${styles.errorState}`} role="alert">
-        <p className={styles.errorTitle}>This view could not update right now.</p>
-        <p className={styles.errorDetail}>{feedErrorMessage}</p>
-        <p className={styles.errorDetail}>
-          Try clearing filters or reloading the page in a moment.
-        </p>
-      </div>
-    );
+  const query = search.toString();
+  return query ? `${pathname}?${query}` : pathname;
+}
+
+export default async function CardsPage({ searchParams }: ViewPageProps) {
+  const session = (await getServerSession(authOptions)) as Session | null;
+
+  if (!session) {
+    const callbackUrl = buildCallbackUrl('/view', await searchParams);
+    redirect(`/?callbackUrl=${encodeURIComponent(callbackUrl)}`);
   }
 
-  return (
-    <div className={styles.page}>
-      <CardFeedV2
-        cards={visibleCards}
-        sections={visibleFeedSections}
-        loading={isInitialLoading}
-        refreshing={isRefreshing}
-        loadMoreRef={loadMoreRef}
-        onSaveScrollPosition={onSaveScrollPosition}
-      />
-      {loadingMore && <div className={styles.loadingMore}>Loading more...</div>}
-      <AdminFAB />
-    </div>
-  );
-}
-
-function ViewPageFallback() {
-  return (
-    <div className={styles.page}>
-      <CardFeedV2
-        cards={[]}
-        sections={null}
-        loading
-        refreshing={false}
-        loadMoreRef={() => {}}
-        onSaveScrollPosition={() => {}}
-      />
-    </div>
-  );
-}
-
-export default function CardsPage() {
-  return (
-    <Suspense fallback={<ViewPageFallback />}>
-      <ViewPageContent />
-    </Suspense>
-  );
+  return <ViewRootClientPage />;
 }

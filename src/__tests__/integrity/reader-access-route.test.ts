@@ -1,11 +1,14 @@
 import { getServerSession } from 'next-auth/next';
 import { getToken } from 'next-auth/jwt';
+import { redirect } from 'next/navigation';
 import { getCardById, getPaginatedCardsByIds } from '@/lib/services/cardService';
 import { GET as listCards } from '@/app/api/cards/route';
 import { GET as getCard } from '@/app/api/cards/[id]/route';
 import { GET as searchCards } from '@/app/api/cards/search/route';
 import { GET as randomCards } from '@/app/api/cards/random/route';
 import { GET as viewMedia } from '@/app/api/view/media/route';
+import ViewPage from '@/app/view/page';
+import SearchPage from '@/app/search/page';
 import { config, middleware } from '../../../middleware';
 
 jest.mock('next/server', () => ({
@@ -20,6 +23,14 @@ jest.mock('next/server', () => ({
     next: jest.fn(() => ({ type: 'next' })),
     redirect: jest.fn((url: URL) => ({ type: 'redirect', url: url.toString() })),
   },
+}));
+
+jest.mock('next/navigation', () => ({
+  redirect: jest.fn((url: string | URL) => ({
+    type: 'redirect',
+    url: url.toString(),
+  })),
+  notFound: jest.fn(() => ({ type: 'notFound' })),
 }));
 
 jest.mock('next-auth/next', () => ({
@@ -82,8 +93,19 @@ jest.mock('@/lib/services/typesenseMediaService', () => ({
   searchMediaTypesense: jest.fn(),
 }));
 
+jest.mock('@/app/view/ViewRootClientPage', () => ({
+  __esModule: true,
+  default: () => null,
+}));
+
+jest.mock('@/app/search/SearchRootClientPage', () => ({
+  __esModule: true,
+  default: () => null,
+}));
+
 const mockedGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>;
 const mockedGetToken = getToken as jest.MockedFunction<typeof getToken>;
+const mockedRedirect = redirect as jest.MockedFunction<typeof redirect>;
 const mockedGetCardById = getCardById as jest.MockedFunction<typeof getCardById>;
 const mockedGetPaginatedCardsByIds = getPaginatedCardsByIds as jest.MockedFunction<typeof getPaginatedCardsByIds>;
 
@@ -144,6 +166,28 @@ describe('reader access boundary', () => {
     expect(searchRes.status).toBe(401);
     expect(randomRes.status).toBe(401);
     expect(mediaRes.status).toBe(401);
+  });
+
+  it('redirects anonymous root reader pages server-side with callbackUrl intact', async () => {
+    mockedGetServerSession.mockResolvedValue(null);
+
+    await Promise.all([
+      ViewPage({
+        searchParams: Promise.resolve({ focusCardId: 'card-1' }),
+      }),
+      SearchPage({
+        searchParams: Promise.resolve({ q: 'family story' }),
+      }),
+    ]);
+
+    expect(mockedRedirect).toHaveBeenNthCalledWith(
+      1,
+      '/?callbackUrl=%2Fview%3FfocusCardId%3Dcard-1'
+    );
+    expect(mockedRedirect).toHaveBeenNthCalledWith(
+      2,
+      '/?callbackUrl=%2Fsearch%3Fq%3Dfamily%2Bstory'
+    );
   });
 
   it('hides draft card detail from viewers', async () => {
