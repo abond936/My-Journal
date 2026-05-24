@@ -1767,7 +1767,7 @@ export default function CollectionsAdminClient({
               <div className={styles.bulkFooter}>
                 <button
                   type="button"
-                  className={styles.smallButton}
+                  className={`${styles.smallButton} ${styles.primarySmallButton}`}
                   onClick={() => void handleApplyBulkAdd()}
                   disabled={saving || bulkSelectedCount === 0}
                 >

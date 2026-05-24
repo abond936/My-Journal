@@ -172,6 +172,12 @@
   min-width: 0;
 }
 
+.saveNotice {
+  margin: 0 6px 6px;
+  font-size: var(--font-size-xs);
+  color: var(--state-success-border-color);
+}
+
 .emptyState {
   text-align: center;
   padding: var(--spacing-2xl);

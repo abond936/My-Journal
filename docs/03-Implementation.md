@@ -95,8 +95,6 @@ Legend:
 
 
 
-- **Shared action button contract** - Continue standardizing primary/secondary/destructive button language across the remaining active admin surfaces after the current Studio passes so color, size, icon/text treatment, and placement communicate the same meaning everywhere, especially on modal action rows, any remaining table/grid controls that still use legacy text-button treatments, and other non-Studio admin surfaces that are still expected to survive long-term.
-
 - **DnD hardening pass** - Harden active admin drag/drop flows so reparent, unparent, assign, and reorder behavior is clearer, more reliable, and visually professional before expanding DnD breadth further.
 
 
@@ -105,13 +103,11 @@ Legend:
 
 
 
-*Priority bands after Studio sequence:* **P2** — **Context Assist** (grid + list/table admin layout shipped—see **Card Management** / **Media Management** ✅ in `02-Application.md`).
+*Priority bands after Studio sequence:* **P2** — **Context Assist** (Studio/grid-first admin layout is the intended long-term workflow—see **Card Management** / **Media Management** ✅ in `02-Application.md`).
 
 
 
 - **Context Assist** - Keep historical/background context as a distinct output contract from writing rewrites (even when requested together), so context remains separately reviewable/accept-dismiss and does not couple to rewrite acceptance.
-
-- **Tag picker ergonomics** - Keep macro-tag editing compact and predictable in card edit: controlled expansion below the command bar, root-first dimensional presentation, and searchable keyboard-friendly result selection with path clarity.
 
 
 
@@ -131,18 +127,12 @@ Legend:
 
 
 
-*Priority bands:* **P2 (operator productivity)** — **Media identity & duplicate signals**; **Unassigned duplicate triage**; **Grid tagging UX** (per-tile inline add/search—pane-level dimensional filters shipped).
+*Priority bands:* **P2 (operator productivity)** — Media import/duplicate handling remains a larger deferred media-management gap rather than the next isolated polish slice.
 
 
 
 - **PhotoPicker convergence in Media admin** - Add operator flows in **`/admin/media-admin`** (and Studio-embedded **Media admin**) to **import local images into the bank** and to pick library media with **PhotoPicker-grade** filtering (dimensions, search), so **PhotoPicker** in card edit becomes **optional** then **eliminable** for Studio and long-term for full-page card edit (`📐 **Studio media & body (2026-04-22)**`).
 
-
-- **Media identity & duplicate signals** - In admin lists, treat `media.docId` as canonical identity; `filename` is display metadata and may collide (`image.webp`, etc.). Add optional canonical columns/signals (for example `docId`, normalized `sourcePath`, checksum/hash/size where available) so duplicate triage and operator actions do not depend on filename uniqueness.
-
-- **Unassigned duplicate triage** - Add explicit triage flow for `assignment=unassigned` items that appear duplicated by source-derived/content-derived signals, with sortable/groupable views (starting with `sourcePath`) to quickly confirm, keep, merge intent, or remove.
-
-- **Grid tagging UX + empty-dimension filter** - **Remaining:** optional **per-tile** inline add/search (without modal) for parity with card-grid search foot; table view alignment with the new grid rail pattern if desired. **Done:** pane-level per-dimension modes and vertical rail on grid tiles (`02-Application.md`).
 
 **§ Guided archive assistance (`02-Application.md` → **Media Management**)** *(after **PhotoPicker convergence** / identity triage pressure; order: prove value, then ship clustering UX—see 📐 **Guided archive program (2026-04-24)**)*
 

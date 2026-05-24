@@ -162,7 +162,7 @@ export function TagAdminRow({
               e.stopPropagation();
               onDeleteTag(tag.docId!);
             }}
-            className={styles.actionButton}
+            className={`${styles.actionButton} ${styles.destructiveActionButton}`}
             aria-label="Delete tag"
           >
             ×

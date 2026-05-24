@@ -266,7 +266,6 @@ export default function CardDimensionalTagCommandBar({
               onClick={() => void addTag(row.tag.docId as string)}
               disabled={disabled || saving}
             >
-              <span className={styles.dimBadge}>{DIMENSION_LABEL[row.dimension]}</span>
               <span className={styles.pathLine}>{row.pathLabel}</span>
             </button>
           ))}

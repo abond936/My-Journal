@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDraggable, useDroppable, useDndContext } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import JournalImage from '@/components/common/JournalImage';
@@ -149,6 +149,14 @@ function CardAdminGridPlainCell({
   compactStudioGrid,
   pendingFocus,
 }: CardAdminGridPlainCellProps) {
+  const [saveNotice, setSaveNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!saveNotice) return;
+    const id = window.setTimeout(() => setSaveNotice(null), 2500);
+    return () => window.clearTimeout(id);
+  }, [saveNotice]);
+
   const handleBulkPointer = useCallback(
     (e: React.MouseEvent | React.KeyboardEvent) => {
       onBulkPointer(e, card.docId, cardIndex);
@@ -163,6 +171,14 @@ function CardAdminGridPlainCell({
   const handleDelete = useCallback(() => {
     onDelete(card);
   }, [card, onDelete]);
+
+  const handleTagUpdate = useCallback(
+    async (nextTagIds: string[]) => {
+      await onUpdateCard(card.docId, { tags: nextTagIds });
+      setSaveNotice('Tags saved');
+    },
+    [card.docId, onUpdateCard]
+  );
 
   const activatePrimary = (e: React.MouseEvent | React.KeyboardEvent) => {
     if (studioEmbedCellClickSelects) {
@@ -318,7 +334,7 @@ function CardAdminGridPlainCell({
               allTags={allTags}
               disabled={interactionDisabled}
               variant="inline"
-              onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
+              onUpdateTags={handleTagUpdate}
             />
           </div>
           {!compactStudioGrid && captionLine ? (
@@ -335,10 +351,12 @@ function CardAdminGridPlainCell({
               card={card}
               allTags={allTags}
               variant="searchOnly"
+              suggestionsDensity="dense"
               disabled={interactionDisabled}
-              onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
+              onUpdateTags={handleTagUpdate}
             />
           </div>
+          {saveNotice ? <div className={styles.saveNotice}>{saveNotice}</div> : null}
         </>
       }
     />
@@ -388,6 +406,14 @@ function CardAdminGridStudioCell({
   compactStudioGrid,
   pendingFocus,
 }: CardAdminGridStudioCellProps) {
+  const [saveNotice, setSaveNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!saveNotice) return;
+    const id = window.setTimeout(() => setSaveNotice(null), 2500);
+    return () => window.clearTimeout(id);
+  }, [saveNotice]);
+
   const handleBulkPointer = useCallback(
     (e: React.MouseEvent | React.KeyboardEvent) => {
       onBulkPointer(e, card.docId, cardIndex);
@@ -402,6 +428,14 @@ function CardAdminGridStudioCell({
   const handleDelete = useCallback(() => {
     onDelete(card);
   }, [card, onDelete]);
+
+  const handleTagUpdate = useCallback(
+    async (nextTagIds: string[]) => {
+      await onUpdateCard(card.docId, { tags: nextTagIds });
+      setSaveNotice('Tags saved');
+    },
+    [card.docId, onUpdateCard]
+  );
 
   const { active } = useDndContext();
   const reparentFromCard = isStudioCollectionCardDragData(active?.data.current);
@@ -612,7 +646,7 @@ function CardAdminGridStudioCell({
               allTags={allTags}
               disabled={interactionDisabled}
               variant="inline"
-              onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
+              onUpdateTags={handleTagUpdate}
             />
           </div>
           {!compactStudioGrid && captionLine ? (
@@ -629,10 +663,12 @@ function CardAdminGridStudioCell({
               card={card}
               allTags={allTags}
               variant="searchOnly"
+              suggestionsDensity="dense"
               disabled={interactionDisabled}
-              onUpdateTags={(next) => onUpdateCard(card.docId, { tags: next })}
+              onUpdateTags={handleTagUpdate}
             />
           </div>
+          {saveNotice ? <div className={styles.saveNotice}>{saveNotice}</div> : null}
         </>
       }
     />

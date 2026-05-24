@@ -93,7 +93,7 @@ export default function CollectionsMediaPanel({ studioSourceDraggable = false }:
             <button type="button" className={styles.smallButton} onClick={selectNone}>
               Clear selection
             </button>
-            <button type="button" className={`${styles.smallButton} ${styles.mediaDeleteButton}`} onClick={() => void onBulkDelete()}>
+            <button type="button" className={`${styles.smallButton} ${styles.destructiveSmallButton}`} onClick={() => void onBulkDelete()}>
               Delete selected
             </button>
           </div>

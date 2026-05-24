@@ -169,12 +169,27 @@
 }
 
 .relationshipButton {
-  border: 1px solid var(--admin-window-border-color);
+  min-height: 2rem;
+  border: 1px solid var(--admin-support-control-border-color);
   border-radius: var(--border-radius-sm);
-  background: var(--admin-window-background-color);
-  color: var(--admin-chrome-text-color);
-  padding: 6px 10px;
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
+  padding: 0 10px;
   cursor: pointer;
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
+  transition:
+    border-color var(--transition-short) ease,
+    background-color var(--transition-short) ease,
+    color var(--transition-short) ease,
+    box-shadow var(--transition-short) ease;
+}
+
+.relationshipButton:hover {
+  border-color: var(--admin-support-control-strong-border-color);
+  background: var(--admin-support-control-hover-background-color);
 }
 
 .relationshipCurrent {
@@ -210,27 +225,54 @@
 .dangerButton,
 .primaryButton {
   border-radius: var(--border-radius-sm);
-  padding: 8px 12px;
-  font: inherit;
+  min-height: 2rem;
+  padding: 0 12px;
   cursor: pointer;
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
+  transition:
+    border-color var(--transition-short) ease,
+    background-color var(--transition-short) ease,
+    color var(--transition-short) ease,
+    box-shadow var(--transition-short) ease;
 }
 
 .secondaryButton {
-  border: 1px solid var(--admin-window-border-color);
-  background: var(--admin-window-background-color);
-  color: var(--admin-chrome-text-color);
+  border: 1px solid var(--admin-support-control-border-color);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
 }
 
 .dangerButton {
-  border: 1px solid color-mix(in srgb, var(--state-error-text-color) 45%, var(--admin-window-border-color));
-  background: color-mix(in srgb, var(--admin-window-background-color) 90%, var(--state-error-text-color) 10%);
+  border: 1px solid var(--admin-support-control-border-color);
+  background: var(--admin-support-control-background-color);
   color: var(--state-error-text-color);
 }
 
 .primaryButton {
-  border: 1px solid color-mix(in srgb, var(--admin-chrome-active-control-background-color) 55%, var(--admin-window-border-color));
-  background: var(--admin-chrome-active-control-background-color);
-  color: var(--admin-chrome-active-control-text-color);
+  border: 1px solid var(--admin-support-control-strong-border-color);
+  background: var(--admin-support-control-strong-background-color);
+  color: var(--admin-support-control-strong-text-color);
+}
+
+.secondaryButton:hover,
+.dangerButton:hover {
+  border-color: var(--admin-support-control-strong-border-color);
+  background: var(--admin-support-control-hover-background-color);
+}
+
+.primaryButton:hover {
+  background: var(--admin-support-control-strong-hover-background-color);
+}
+
+.relationshipButton:focus-visible,
+.secondaryButton:focus-visible,
+.dangerButton:focus-visible,
+.primaryButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--admin-support-control-strong-background-color) 18%, transparent);
 }
 
 .emptyState {

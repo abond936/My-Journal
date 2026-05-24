@@ -52,11 +52,9 @@ function ReadOnlyInsertBeforeGap() {
 
 function TreeExpandControl({
   expanded,
-  childCount,
   onToggle,
 }: {
   expanded: boolean;
-  childCount: number;
   onToggle: () => void;
 }) {
   return (
@@ -86,9 +84,6 @@ function TreeExpandControl({
         aria-hidden="true"
       >
         {expanded ? '⊟' : '⊞'}
-      </span>
-      <span className={styles.treeChildCountBadge} title={`${childCount} child${childCount === 1 ? '' : 'ren'}`}>
-        {childCount}
       </span>
     </>
   );
@@ -264,7 +259,6 @@ function CuratedTreeNodeComponent({
   const expandControl = hasChildren ? (
     <TreeExpandControl
       expanded={isExpanded}
-      childCount={childIds.length}
       onToggle={() => toggleExpanded(node.docId)}
     />
   ) : null;
@@ -291,6 +285,14 @@ function CuratedTreeNodeComponent({
                 >
                   <span className={styles.nodeTitleWrap}>
                     <span className={styles.nodeTitle}>{cardLabel(node)}</span>
+                    {hasChildren ? (
+                      <span
+                        className={styles.nodeCountInline}
+                        title={`${childIds.length} child${childIds.length === 1 ? '' : 'ren'}`}
+                      >
+                        ({childIds.length})
+                      </span>
+                    ) : null}
                     {showDraftRootBadge ? <span className={styles.nodeDraftBadge}>Draft</span> : null}
                   </span>
                 </StaticTreeRowCard>
@@ -310,6 +312,14 @@ function CuratedTreeNodeComponent({
                 <ParentDropZone parentId={node.docId!} className={titleClassName}>
                   <span className={styles.nodeTitleWrap}>
                     <span className={styles.nodeTitle}>{cardLabel(node)}</span>
+                    {hasChildren ? (
+                      <span
+                        className={styles.nodeCountInline}
+                        title={`${childIds.length} child${childIds.length === 1 ? '' : 'ren'}`}
+                      >
+                        ({childIds.length})
+                      </span>
+                    ) : null}
                     {showDraftRootBadge ? <span className={styles.nodeDraftBadge}>Draft</span> : null}
                   </span>
                 </ParentDropZone>

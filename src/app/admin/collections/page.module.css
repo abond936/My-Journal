@@ -200,16 +200,6 @@
   color: var(--text2-color);
 }
 
-.mediaDeleteButton {
-  background: var(--state-error-background-color);
-  color: var(--state-error-text-color);
-  border-color: var(--state-error-border-color);
-}
-
-.mediaDeleteButton:hover:not(:disabled) {
-  background: var(--state-error-background-color-hover);
-}
-
 .input {
   width: 100%;
   margin-bottom: var(--spacing-md);
@@ -553,6 +543,15 @@
   min-width: 0;
 }
 
+.nodeCountInline {
+  color: var(--text2-color);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  line-height: 1.1;
+  flex-shrink: 0;
+  margin-left: 2px;
+}
+
 .nodeDraftBadge {
   display: inline-flex;
   align-items: center;
@@ -580,17 +579,52 @@
 }
 
 .smallButton {
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border: var(--border-width-thin) solid var(--border1-color);
+  min-height: 2rem;
+  min-width: 2rem;
+  padding: 0 var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-radius: var(--border-radius-sm);
-  background: var(--layout-background2-color);
-  color: var(--text1-color);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
   cursor: pointer;
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
+  transition:
+    background-color var(--transition-short) ease,
+    border-color var(--transition-short) ease,
+    color var(--transition-short) ease,
+    box-shadow var(--transition-short) ease;
+}
+
+.smallButton:hover:not(:disabled) {
+  border-color: var(--admin-support-control-strong-border-color);
+  background: var(--admin-support-control-hover-background-color);
+}
+
+.smallButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--admin-support-control-strong-background-color) 18%, transparent);
 }
 
 .smallButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.primarySmallButton {
+  border-color: var(--admin-support-control-strong-border-color);
+  background: var(--admin-support-control-strong-background-color);
+  color: var(--admin-support-control-strong-text-color);
+}
+
+.primarySmallButton:hover:not(:disabled) {
+  background: var(--admin-support-control-strong-hover-background-color);
+}
+
+.destructiveSmallButton {
+  color: var(--state-error-text-color);
 }
 
 .listRowWrap {
