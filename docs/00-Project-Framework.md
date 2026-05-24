@@ -68,6 +68,7 @@ It exists so the author does not have to act like an engineer, project manager, 
 ### 7) Reconcile Canon
 - Move durable product truth, shipped behavior, and sequencing back into the docs.
 - Do not leave important decisions or backlog truth trapped in chat.
+- A meaningful chat outcome is not durable project truth until it is reconciled into the owning canon document, or explicitly declared non-canonical.
 
 ---
 
@@ -100,6 +101,7 @@ It exists so the author does not have to act like an engineer, project manager, 
 - Test additions or explicit reason no test was added
 - Residual risks
 - Required doc reconciliation
+- Canon disposition: whether the result is now reconciled into canon or still non-canonical pending doc reconciliation
 
 ---
 
@@ -135,6 +137,7 @@ It exists so the author does not have to act like an engineer, project manager, 
 - The AI should avoid chaining multiple dependent edits in one pass unless the author explicitly approved that bundle.
 - Each slice must include the documentation reconciliation needed for the behavior or architecture it changes, unless the author explicitly excludes docs for that pass.
 - Chat should explain the **essence** of proposed work; detailed diffs live in the IDE.
+- A slice that changed durable behavior, status truth, or priority is not canonically closed until the required doc reconciliation has happened, unless the AI clearly says the slice remains non-canonical pending that reconciliation.
 
 ---
 
@@ -145,6 +148,39 @@ It exists so the author does not have to act like an engineer, project manager, 
 - Stable principles, security/testing expectations, and operational constraints belong in `01-Vision-Architecture.md`.
 - Active milestone sequence and gating belong in `03-Implementation.md`.
 - Chat must not become a second backlog, second spec, or second source of truth.
+- If chat changes project understanding but docs have not yet been updated, the AI must say that plainly before continuing and must not act as though the chat outcome is already canonical.
+
+---
+
+## Meaningful Capture Standard
+
+The process is intended to capture **everything meaningful** that happens in chat into the docs, rather than relying on conversation memory.
+
+Meaningful outcomes include:
+- product decisions
+- workflow/process decisions
+- milestone or priority changes
+- newly discovered defects or root-cause findings
+- shipped behavior confirmed, changed, or contradicted
+- verification outcomes that materially change confidence or project status
+- backlog-worthy improvement ideas or deferrals that should affect `02` or `03`
+
+For each meaningful outcome, the AI must do one of two things before moving on to dependent work:
+- reconcile it into the owning canon document
+- or state explicitly that it is not yet canon and will not be treated as durable truth until reconciled
+
+This rule exists so opening a new chat still yields the right project understanding after the startup doc read.
+
+---
+
+## Startup Grounding Standard
+
+- Every new project chat should begin with a canon-grounding read, following `.cursor/rules/session-context.mdc`.
+- The AI must not claim readiness, continuity, or project-status awareness until that startup read is complete.
+- The first substantive project reply in a new chat should identify the canon anchors it read.
+- Startup grounding is a **preparatory step**, not a default reporting request.
+- If the author asks only to **get up to speed**, **load context**, or equivalent, the post-read reply should stop at the `Doc anchors:` acknowledgment unless the author explicitly asks for a summary, findings, recommendations, or status brief.
+- Repo canon can carry durable project context across chats; prior chat memory by itself cannot.
 
 ---
 

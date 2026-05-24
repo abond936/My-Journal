@@ -47,6 +47,35 @@ For canonical docs and core project files, do not replace, remove, or recreate t
 - **Support references** — `docs/DESIGN.md`, `docs/NPM-SCRIPTS.md`, and `docs/IMPORT-REFERENCE.md` do not own product behavior, architecture, or active sequencing. Mirror durable truths into `01` / `02` / `03`.
 - **Chat is not canon** — Chat is intake, clarification, and approval. Durable product truth, shipped behavior, and sequencing belong in the docs.
 
+# Meaningful chat outcomes must be captured or rejected explicitly
+
+The process is designed so meaningful project outcomes do **not** remain trapped in chat.
+
+**Meaningful** includes, at minimum:
+- product decisions
+- workflow or process decisions
+- milestone or priority changes
+- newly discovered defects or root-cause findings
+- shipped behavior confirmed, changed, or contradicted
+- verification outcomes that materially change project confidence or status
+- backlog-worthy improvement ideas or deferred work that should affect `02` or `03`
+
+For any meaningful outcome, the agent must do one of these **before moving on to dependent work**:
+1. **Reconcile it into canon** (`00` / `01` / `02` / `03`, whichever owns it), or
+2. State plainly that it is **not yet canon** and will **not** be treated as durable project truth.
+
+Required wording in chat after meaningful outcomes:
+- `This is now reconciled into canon.`
+- or `This is not yet canon and will not be treated as durable truth until reconciled.`
+
+Do not leave the status implicit.
+
+# No silent drift from canon
+
+If chat materially changes the project understanding but the owning docs have **not** been updated yet, stop and say so before continuing. Do **not** proceed as though chat has already become canon.
+
+A completed implementation slice is **not canonically closed** until required doc reconciliation has happened, unless the author explicitly deferred docs for that pass and the agent says the slice remains non-canonically closed.
+
 # Process: DIAGNOSE → DESIGN → APPROVAL → IMPLEMENT → VERIFY
 
 **Author** provides what (outcome, constraints, scope). **AI** provides how (options, approach, implications).
@@ -61,6 +90,7 @@ For canonical docs and core project files, do not replace, remove, or recreate t
    - **Integrity-sensitive work** — Changes affecting data relationships, denormalized fields, auth, import pipelines, or shared contracts should include integrity-focused verification or tests, not only happy-path manual checks.
    - **Documentation (part of “done”)** — When the change alters **shipped behavior**, **feature completeness vs planned**, or **architectural fact**, include updates to `docs/02-Application.md`, `docs/03-Implementation.md`, and `docs/01-Vision-Architecture.md` (per **Document Governance** in `01`) in the **same proposed edit set**, unless the author explicitly **excluded documentation** for this pass. The author should not have to remember to ask for required doc reconciliation.
    - **Doc scope approval** — If required doc updates were not included in the already approved work, return through **RECOMMEND → WAIT** with the essence of the doc-only edit set before editing.
+   - **Canon disposition** — After verification, explicitly state whether the outcome is now reconciled into canon or remains non-canonical pending a doc-only slice. Do not imply closure without saying which.
 
 # Reviewable slice standard
 
