@@ -2,7 +2,7 @@
 
 import React, { useRef, useCallback, useState, useMemo, useEffect } from 'react';
 import { DndContext } from '@dnd-kit/core';
-import { Pencil } from 'lucide-react';
+import { ChevronDown, ChevronRight, Pencil } from 'lucide-react';
 import { Card, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { Media } from '@/lib/types/photo';
 import { dehydrateCardForSave, extractMediaFromContent, generateExcerpt } from '@/lib/utils/cardUtils';
@@ -192,6 +192,7 @@ const CardForm: React.FC = () => {
   const [draftOptions, setDraftOptions] = useState<CardDraftOption[]>([]);
   const [storyCoachSuggestions, setStoryCoachSuggestions] = useState<StoryCoachSuggestion[]>([]);
   const [draftSuggestionError, setDraftSuggestionError] = useState<string | null>(null);
+  const [storyAssistOpen, setStoryAssistOpen] = useState(false);
   const [tagMacroExpanded, setTagMacroExpanded] = useState(false);
 
   useEffect(() => {
@@ -212,6 +213,18 @@ const CardForm: React.FC = () => {
       window.localStorage.setItem(STORY_ASSIST_GUIDE_STORAGE_KEY, nextGuide);
     }
   }, []);
+
+  useEffect(() => {
+    if (
+      isSuggestingDrafts ||
+      draftOptions.length > 0 ||
+      storyCoachSuggestions.length > 0 ||
+      Boolean(draftSuggestionError) ||
+      Boolean(storyAssistSummary)
+    ) {
+      setStoryAssistOpen(true);
+    }
+  }, [draftOptions.length, draftSuggestionError, isSuggestingDrafts, storyAssistSummary, storyCoachSuggestions.length]);
 
   const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setField('title', e.target.value), [setField]);
   const handleSubtitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setField('subtitle', e.target.value), [setField]);
@@ -586,6 +599,133 @@ const CardForm: React.FC = () => {
     />
   );
 
+  const storyAssistSection = (
+    <div className={styles.aiAssistSection}>
+      <div className={styles.aiAssistSectionHeader}>
+        <h4 className={styles.sectionTitle}>Story Assist</h4>
+        <button
+          type="button"
+          className={styles.aiAssistCollapseButton}
+          onClick={() => setStoryAssistOpen((open) => !open)}
+          aria-expanded={storyAssistOpen}
+          aria-controls="story-assist-panel"
+        >
+          {storyAssistOpen ? <ChevronDown size={16} aria-hidden="true" /> : <ChevronRight size={16} aria-hidden="true" />}
+        </button>
+      </div>
+      {storyAssistOpen ? (
+        <div id="story-assist-panel">
+          <div className={styles.aiAssistHeaderBlock}>
+            <div className={styles.aiAssistGuideGroup} role="radiogroup" aria-label="Story guide">
+              {(['bob', 'sandra'] as StoryAssistGuide[]).map((guide) => (
+                <button
+                  key={guide}
+                  type="button"
+                  className={`${styles.aiAssistGuideButton} ${
+                    storyAssistGuide === guide ? styles.aiAssistGuideButtonActive : ''
+                  }`}
+                  aria-pressed={storyAssistGuide === guide}
+                  onClick={() => handleStoryAssistGuideChange(guide)}
+                  disabled={isSuggestingDrafts}
+                >
+                  {STORY_ASSIST_GUIDE_LABEL[guide]}
+                </button>
+              ))}
+            </div>
+            <p className={styles.aiAssistGuideHint}>
+              {STORY_ASSIST_GUIDE_HINT[storyAssistGuide]}
+            </p>
+          </div>
+          <div className={styles.aiAssistTopRow}>
+            <div className={styles.aiAssistActionGroup}>
+              {STORY_ASSIST_WRITE_MODES.map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  className={styles.aiAssistButton}
+                  onClick={() => void requestDraftSuggestions(mode)}
+                  disabled={isSuggestingDrafts || isSaving}
+                  title={STORY_ASSIST_MODE_HINT[mode]}
+                >
+                  {isSuggestingDrafts && activeStoryAssistMode === mode
+                    ? 'Working...'
+                    : STORY_ASSIST_MODE_LABEL[mode]}
+                </button>
+              ))}
+              <button
+                type="button"
+                className={styles.aiAssistButton}
+                onClick={() => void requestDraftSuggestions('makeStoryStronger')}
+                disabled={isSuggestingDrafts || isSaving}
+                title={STORY_ASSIST_MODE_HINT.makeStoryStronger}
+              >
+                {isSuggestingDrafts && activeStoryAssistMode === 'makeStoryStronger'
+                  ? 'Working...'
+                  : STORY_ASSIST_MODE_LABEL.makeStoryStronger}
+              </button>
+              <button
+                type="button"
+                className={styles.aiAssistClearButton}
+                onClick={clearDraftSuggestions}
+                disabled={
+                  isSuggestingDrafts
+                    ? true
+                    : draftOptions.length === 0 &&
+                      storyCoachSuggestions.length === 0 &&
+                      !draftSuggestionError &&
+                      !storyAssistSummary
+                }
+              >
+                Clear
+              </button>
+            </div>
+            <label className={styles.aiAssistToggle}>
+              <input
+                type="checkbox"
+                checked={includeHistoricalContext}
+                onChange={(e) => setIncludeHistoricalContext(e.target.checked)}
+                disabled={isSuggestingDrafts}
+              />
+              Include historical context
+            </label>
+          </div>
+
+          {draftSuggestionError ? <p className={styles.aiAssistError}>{draftSuggestionError}</p> : null}
+          {storyAssistSummary && !draftSuggestionError && (
+            <p className={styles.aiAssistSummary}>{storyAssistSummary}</p>
+          )}
+          {storyCoachSuggestions.length > 0 && isCoachMode(activeStoryAssistMode) && (
+            <div className={styles.aiAssistCoachList}>
+              {storyCoachSuggestions.map((item, idx) => (
+                <article key={`${item.category}-${idx}`} className={styles.aiAssistCoachCard}>
+                  <p className={styles.aiAssistCoachCategory}>{item.category}</p>
+                  <p className={styles.aiAssistCoachSuggestion}>{item.suggestion}</p>
+                  {item.prompt ? <p className={styles.aiAssistCoachPrompt}>Prompt: {item.prompt}</p> : null}
+                  {item.example ? <p className={styles.aiAssistCoachExample}>Example: {item.example}</p> : null}
+                </article>
+              ))}
+            </div>
+          )}
+          {draftOptions.length > 0 && (
+            <div className={styles.aiAssistSuggestions}>
+              {draftOptions.map((opt, idx) => (
+                <button
+                  key={`${opt.title || 'draft'}-${idx}`}
+                  type="button"
+                  className={styles.aiAssistSuggestionButton}
+                  onClick={() => applyDraftOption(opt)}
+                >
+                  <span className={styles.aiAssistSuggestionTitle}>{opt.title || `Suggestion ${idx + 1}`}</span>
+                  {opt.rationale ? <span className={styles.aiAssistSuggestionHint}>{opt.rationale}</span> : null}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+
 
   return (
     <>
@@ -766,138 +906,7 @@ const CardForm: React.FC = () => {
                 {bodyRichTextEditor}
               </div>
 
-              <div className={styles.aiAssistSection}>
-                <h4 className={styles.sectionTitle}>Story Assist</h4>
-                <div className={styles.aiAssistHeaderBlock}>
-                  <div className={styles.aiAssistGuideGroup} role="radiogroup" aria-label="Story guide">
-                    {(['bob', 'sandra'] as StoryAssistGuide[]).map((guide) => (
-                      <button
-                        key={guide}
-                        type="button"
-                        className={`${styles.aiAssistGuideButton} ${
-                          storyAssistGuide === guide ? styles.aiAssistGuideButtonActive : ''
-                        }`}
-                        aria-pressed={storyAssistGuide === guide}
-                        onClick={() => handleStoryAssistGuideChange(guide)}
-                        disabled={isSuggestingDrafts}
-                      >
-                        {STORY_ASSIST_GUIDE_LABEL[guide]}
-                      </button>
-                    ))}
-                  </div>
-                  <p className={styles.aiAssistGuideHint}>
-                    {STORY_ASSIST_GUIDE_HINT[storyAssistGuide]}
-                  </p>
-                </div>
-                <div className={styles.aiAssistTopRow}>
-                  <div className={styles.aiAssistActionGroup}>
-                    {STORY_ASSIST_WRITE_MODES.map((mode) => (
-                      <button
-                        key={mode}
-                        type="button"
-                        className={styles.aiAssistButton}
-                        onClick={() => void requestDraftSuggestions(mode)}
-                        disabled={isSuggestingDrafts || isSaving}
-                        title={STORY_ASSIST_MODE_HINT[mode]}
-                      >
-                        {isSuggestingDrafts && activeStoryAssistMode === mode
-                          ? 'Working...'
-                          : STORY_ASSIST_MODE_LABEL[mode]}
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      className={styles.aiAssistButton}
-                      onClick={() => void requestDraftSuggestions('makeStoryStronger')}
-                      disabled={isSuggestingDrafts || isSaving}
-                      title={STORY_ASSIST_MODE_HINT.makeStoryStronger}
-                    >
-                      {isSuggestingDrafts && activeStoryAssistMode === 'makeStoryStronger'
-                        ? 'Working...'
-                        : STORY_ASSIST_MODE_LABEL.makeStoryStronger}
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.aiAssistClearButton}
-                      onClick={clearDraftSuggestions}
-                      disabled={
-                        isSuggestingDrafts
-                          ? true
-                          : draftOptions.length === 0 &&
-                            storyCoachSuggestions.length === 0 &&
-                            !draftSuggestionError &&
-                            !storyAssistSummary
-                      }
-                    >
-                      Clear
-                    </button>
-                  </div>
-                  <label className={styles.aiAssistToggle}>
-                    <input
-                      type="checkbox"
-                      checked={includeHistoricalContext}
-                      onChange={(e) => setIncludeHistoricalContext(e.target.checked)}
-                      disabled={isSuggestingDrafts}
-                    />
-                    Include historical context
-                  </label>
-                </div>
-                {draftSuggestionError && (
-                  <p className={styles.aiAssistError}>{draftSuggestionError}</p>
-                )}
-                {storyAssistSummary && !draftSuggestionError && (
-                  <p className={styles.aiAssistSummary}>{storyAssistSummary}</p>
-                )}
-                {storyCoachSuggestions.length > 0 && isCoachMode(activeStoryAssistMode) && (
-                  <div className={styles.aiCoachList}>
-                    {storyCoachSuggestions.map((item, idx) => (
-                      <div key={`coach-${idx}`} className={styles.aiCoachCard}>
-                        <div className={styles.aiDraftHeading}>
-                          <strong>{item.category}</strong>
-                        </div>
-                        <p className={styles.aiCoachSuggestion}>{item.suggestion}</p>
-                        {item.prompt ? (
-                          <p className={styles.aiCoachPrompt}>
-                            <strong>Follow-up:</strong> {item.prompt}
-                          </p>
-                        ) : null}
-                        {item.example ? (
-                          <p className={styles.aiCoachExample}>
-                            <strong>Example line:</strong> {item.example}
-                          </p>
-                        ) : null}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {draftOptions.length > 0 && (
-                  <div className={styles.aiDraftOptions}>
-                    {draftOptions.map((opt, idx) => (
-                      <div key={`draft-${idx}`} className={styles.aiDraftCard}>
-                        <div className={styles.aiDraftHeading}>
-                          <strong>
-                            {activeStoryAssistMode
-                              ? STORY_ASSIST_MODE_LABEL[activeStoryAssistMode]
-                              : 'Story suggestion'}
-                          </strong>
-                          {opt.rationale ? <span>{opt.rationale}</span> : null}
-                        </div>
-                        <div className={styles.aiDraftPreview}>
-                          <p><strong>Title:</strong> {opt.title || '(empty)'}</p>
-                          <p><strong>Subtitle:</strong> {opt.subtitle || '(empty)'}</p>
-                          <p><strong>Content:</strong> {opt.content || '(empty)'}</p>
-                        </div>
-                        <div className={styles.aiDraftActions}>
-                          <button type="button" onClick={() => applyDraftOption(opt, 'all')}>Apply Full</button>
-                          <button type="button" onClick={() => applyDraftOption(opt, 'title')}>Apply Title</button>
-                          <button type="button" onClick={() => applyDraftOption(opt, 'subtitle')}>Apply Subtitle</button>
-                          <button type="button" onClick={() => applyDraftOption(opt, 'content')}>Apply Content</button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {storyAssistSection}
 
               <div className={styles.gallerySection}>
                 <StudioCardFormGallery
@@ -1149,138 +1158,7 @@ const CardForm: React.FC = () => {
             )}
           </div>
 
-          <div className={styles.aiAssistSection}>
-            <h4 className={styles.sectionTitle}>Story Assist</h4>
-            <div className={styles.aiAssistHeaderBlock}>
-              <div className={styles.aiAssistGuideGroup} role="radiogroup" aria-label="Story guide">
-                {(['bob', 'sandra'] as StoryAssistGuide[]).map((guide) => (
-                  <button
-                    key={guide}
-                    type="button"
-                    className={`${styles.aiAssistGuideButton} ${
-                      storyAssistGuide === guide ? styles.aiAssistGuideButtonActive : ''
-                    }`}
-                    aria-pressed={storyAssistGuide === guide}
-                    onClick={() => handleStoryAssistGuideChange(guide)}
-                    disabled={isSuggestingDrafts}
-                  >
-                    {STORY_ASSIST_GUIDE_LABEL[guide]}
-                  </button>
-                ))}
-              </div>
-              <p className={styles.aiAssistGuideHint}>
-                {STORY_ASSIST_GUIDE_HINT[storyAssistGuide]}
-              </p>
-            </div>
-            <div className={styles.aiAssistTopRow}>
-              <div className={styles.aiAssistActionGroup}>
-                {STORY_ASSIST_WRITE_MODES.map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    className={styles.aiAssistButton}
-                    onClick={() => void requestDraftSuggestions(mode)}
-                    disabled={isSuggestingDrafts || isSaving}
-                    title={STORY_ASSIST_MODE_HINT[mode]}
-                  >
-                    {isSuggestingDrafts && activeStoryAssistMode === mode
-                      ? 'Working...'
-                      : STORY_ASSIST_MODE_LABEL[mode]}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  className={styles.aiAssistButton}
-                  onClick={() => void requestDraftSuggestions('makeStoryStronger')}
-                  disabled={isSuggestingDrafts || isSaving}
-                  title={STORY_ASSIST_MODE_HINT.makeStoryStronger}
-                >
-                  {isSuggestingDrafts && activeStoryAssistMode === 'makeStoryStronger'
-                    ? 'Working...'
-                    : STORY_ASSIST_MODE_LABEL.makeStoryStronger}
-                </button>
-                <button
-                  type="button"
-                  className={styles.aiAssistClearButton}
-                  onClick={clearDraftSuggestions}
-                  disabled={
-                    isSuggestingDrafts
-                      ? true
-                      : draftOptions.length === 0 &&
-                        storyCoachSuggestions.length === 0 &&
-                        !draftSuggestionError &&
-                        !storyAssistSummary
-                  }
-                >
-                  Clear
-                </button>
-              </div>
-              <label className={styles.aiAssistToggle}>
-                <input
-                  type="checkbox"
-                  checked={includeHistoricalContext}
-                  onChange={(e) => setIncludeHistoricalContext(e.target.checked)}
-                  disabled={isSuggestingDrafts}
-                />
-                Include historical context
-              </label>
-            </div>
-            {draftSuggestionError && (
-              <p className={styles.aiAssistError}>{draftSuggestionError}</p>
-            )}
-            {storyAssistSummary && !draftSuggestionError && (
-              <p className={styles.aiAssistSummary}>{storyAssistSummary}</p>
-            )}
-            {storyCoachSuggestions.length > 0 && isCoachMode(activeStoryAssistMode) && (
-              <div className={styles.aiCoachList}>
-                {storyCoachSuggestions.map((item, idx) => (
-                  <div key={`coach-${idx}`} className={styles.aiCoachCard}>
-                    <div className={styles.aiDraftHeading}>
-                      <strong>{item.category}</strong>
-                    </div>
-                    <p className={styles.aiCoachSuggestion}>{item.suggestion}</p>
-                    {item.prompt ? (
-                      <p className={styles.aiCoachPrompt}>
-                        <strong>Follow-up:</strong> {item.prompt}
-                      </p>
-                    ) : null}
-                    {item.example ? (
-                      <p className={styles.aiCoachExample}>
-                        <strong>Example line:</strong> {item.example}
-                      </p>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-            )}
-            {draftOptions.length > 0 && (
-              <div className={styles.aiDraftOptions}>
-                {draftOptions.map((opt, idx) => (
-                  <div key={`draft-${idx}`} className={styles.aiDraftCard}>
-                    <div className={styles.aiDraftHeading}>
-                      <strong>
-                        {activeStoryAssistMode
-                          ? STORY_ASSIST_MODE_LABEL[activeStoryAssistMode]
-                          : 'Story suggestion'}
-                      </strong>
-                      {opt.rationale ? <span>{opt.rationale}</span> : null}
-                    </div>
-                    <div className={styles.aiDraftPreview}>
-                      <p><strong>Title:</strong> {opt.title || '(empty)'}</p>
-                      <p><strong>Subtitle:</strong> {opt.subtitle || '(empty)'}</p>
-                      <p><strong>Content:</strong> {opt.content || '(empty)'}</p>
-                    </div>
-                    <div className={styles.aiDraftActions}>
-                      <button type="button" onClick={() => applyDraftOption(opt, 'all')}>Apply Full</button>
-                      <button type="button" onClick={() => applyDraftOption(opt, 'title')}>Apply Title</button>
-                      <button type="button" onClick={() => applyDraftOption(opt, 'subtitle')}>Apply Subtitle</button>
-                      <button type="button" onClick={() => applyDraftOption(opt, 'content')}>Apply Content</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          {storyAssistSection}
 
           <div className={styles.gallerySection}>
             {studioShellForm ? (

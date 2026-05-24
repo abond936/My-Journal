@@ -195,6 +195,14 @@
   box-sizing: border-box;
 }
 
+.aiAssistSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-xs);
+}
+
 .sectionTitle {
   margin: 0 0 var(--spacing-xs) 0;
   color: var(--admin-support-title-color);
@@ -202,6 +210,32 @@
   font-size: var(--admin-support-title-font-size);
   font-weight: var(--admin-support-title-font-weight);
   line-height: var(--admin-support-title-line-height);
+}
+
+.aiAssistSectionHeader .sectionTitle {
+  margin-bottom: 0;
+}
+
+.aiAssistCollapseButton {
+  min-height: 28px;
+  min-width: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--admin-window-background-color);
+  color: var(--admin-support-control-text-color);
+  padding: 0 0.4rem;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-short) ease,
+    border-color var(--transition-short) ease,
+    color var(--transition-short) ease;
+}
+
+.aiAssistCollapseButton:hover {
+  background: var(--admin-support-control-hover-background-color);
 }
 
 .aiAssistTopRow {
@@ -239,12 +273,13 @@
   border-radius: var(--input-border-radius);
   background: var(--admin-window-background-color);
   color: var(--admin-support-control-text-color);
-  padding: var(--spacing-xs) var(--spacing-sm);
+  min-height: 24px;
+  padding: 0 0.55rem;
   cursor: pointer;
   font-family: var(--admin-support-control-font-family);
-  font-size: var(--admin-support-control-font-size);
+  font-size: var(--font-size-xs);
   font-weight: var(--admin-support-control-font-weight);
-  line-height: var(--admin-support-control-line-height);
+  line-height: 1;
 }
 
 .aiAssistGuideButtonActive {
