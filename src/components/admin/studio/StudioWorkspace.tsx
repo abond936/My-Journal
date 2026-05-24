@@ -273,6 +273,7 @@ export default function StudioWorkspace() {
   const pendingQuestionsWidthRef = useRef<number | null>(null);
   const collectionsRefreshRef = useRef<(() => void) | null>(null);
   const cardsBankRemoveRef = useRef<((cardId: string) => void) | null>(null);
+  const cardsBankDeleteFallbackResolverRef = useRef<((deletedCardId: string) => StudioSelectedPreview | null) | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(() => requestedCardId);
   const [selectedPreview, setSelectedPreview] = useState<StudioSelectedPreview | null>(null);
   const [selectedDetail, setSelectedDetail] = useState<StudioSelectedDetail | null>(null);
@@ -981,6 +982,8 @@ export default function StudioWorkspace() {
       setActionError(null);
       setActionInfo(null);
       try {
+        const fallbackCard =
+          selectedCardId === id ? cardsBankDeleteFallbackResolverRef.current?.(id) ?? null : null;
         const res = await fetch(`/api/cards/${encodeURIComponent(id)}`, {
           method: 'DELETE',
           cache: 'no-store',
@@ -992,10 +995,20 @@ export default function StudioWorkspace() {
         selectedCardCacheRef.current.delete(id);
         selectedCardCacheOrderRef.current = selectedCardCacheOrderRef.current.filter((entryId) => entryId !== id);
         cardsBankRemoveRef.current?.(id);
-        setSelectedCardId((current) => (current === id ? null : current));
-        setSelectedPreview((current) => (current?.docId === id ? null : current));
-        setSelectedDetail((current) => (current?.docId === id ? null : current));
-        setSelectedLoadState((current) => (selectedCardId === id ? 'idle' : current));
+        if (selectedCardId === id) {
+          if (fallbackCard?.docId && fallbackCard.docId !== id) {
+            selectCard(fallbackCard.docId, fallbackCard);
+          } else {
+            setSelectedCardId(null);
+            setSelectedPreview(null);
+            setSelectedDetail(null);
+            setSelectedLoadState('idle');
+          }
+        } else {
+          setSelectedCardId((current) => (current === id ? null : current));
+          setSelectedPreview((current) => (current?.docId === id ? null : current));
+          setSelectedDetail((current) => (current?.docId === id ? null : current));
+        }
         setCardError(null);
         setCardLoading(false);
         selectNoneMedia();
@@ -1015,7 +1028,7 @@ export default function StudioWorkspace() {
         setActionBusy(false);
       }
     },
-    [router, selectNoneMedia, selectedCardId]
+    [router, selectCard, selectNoneMedia, selectedCardId]
   );
   const hasSelectedCardMedia = useMemo(
     () => collectAssignedMediaIds(selectedDetail ?? selectedPreview).length > 0,
@@ -1138,13 +1151,16 @@ export default function StudioWorkspace() {
               embeddedRightSlotMinWidth={embeddedRightSlotMinWidth}
               onStudioRelationshipDragEnd={onStudioRelationshipDragEnd}
               embeddedUnparentedReplacement={(ctx) => (
-                <StudioTreeCandidateCardBank
-                  {...ctx}
-                  registerCatalogRemove={(fn) => {
-                    cardsBankRemoveRef.current = fn;
-                  }}
-                />
-              )}
+                  <StudioTreeCandidateCardBank
+                    {...ctx}
+                    registerCatalogRemove={(fn) => {
+                      cardsBankRemoveRef.current = fn;
+                    }}
+                    registerDeleteFallbackResolver={(fn) => {
+                      cardsBankDeleteFallbackResolverRef.current = fn;
+                    }}
+                  />
+                )}
               embeddedRightSlot={({ refreshCards, upsertCard }) => {
                 collectionsRefreshRef.current = refreshCards;
                 collectionsUpsertCardRef.current = upsertCard;

@@ -162,7 +162,6 @@ export default function StudioCardEditPane({
 
   return (
     <aside className={styles.studioCardEditHost} aria-label="Compose">
-      <h2 className={styles.studioComposeTitle}>Compose</h2>
       {activeCardViewModel.status === 'degraded' && activeCardViewModel.error && initialCard ? (
         <p className={styles.cardEditPlaceholderError}>{activeCardViewModel.error}</p>
       ) : null}
@@ -178,7 +177,8 @@ export default function StudioCardEditPane({
         <StudioComposeActivityOverlay
           cardIsTransitioning={activeCardViewModel.status === 'preview' || isTransitioningToDifferentCard}
         />
-        <div className={styles.studioCardEditToolbar}>
+        <div className={styles.studioComposeHeader}>
+          <h2 className={styles.studioComposeTitle}>Compose</h2>
           <StudioComposeFormActions />
         </div>
         <div

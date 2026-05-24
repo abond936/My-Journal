@@ -119,7 +119,6 @@ Legend:
 
 - **Tag picker ergonomics** - Keep macro-tag editing compact and predictable in card edit: controlled expansion below the command bar, root-first dimensional presentation, and searchable keyboard-friendly result selection with path clarity.
 
-- **Cards search focus-ring fix** - Fix the Cards search-field focus treatment so the full outline remains visible and does not clip at the field edge.
 
 
 

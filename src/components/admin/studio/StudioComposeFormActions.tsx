@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useCallback, useMemo, useState } from 'react';
-import { ImageIcon, Save, Trash2, X } from 'lucide-react';
+import { ImageIcon, Plus, Save, Trash2, X } from 'lucide-react';
 import EditModal from '@/components/admin/card-admin/EditModal';
+import { useRouter } from 'next/navigation';
 import { useCardForm } from '@/components/providers/CardFormProvider';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import { useStudioShellOptional } from '@/components/admin/studio/StudioShellContext';
@@ -14,6 +15,7 @@ import styles from './StudioWorkspace.module.css';
  * Save uses `form="card-form"` so submit matches full-page CardForm.
  */
 export default function StudioComposeFormActions() {
+  const router = useRouter();
   const { isDirty, resetForm, formState } = useCardForm();
   const feedback = useAppFeedback();
   const { isSaving } = formState;
@@ -65,6 +67,18 @@ export default function StudioComposeFormActions() {
   return (
     <>
       <div className={styles.studioComposeFormActions}>
+        {studioShell ? (
+          <button
+            type="button"
+            className={styles.studioComposeNewButton}
+            disabled={isSaving}
+            onClick={() => router.replace('/admin/studio?new=1')}
+            aria-label="Create new card"
+            title="Create new card"
+          >
+            <Plus size={16} aria-hidden="true" />
+          </button>
+        ) : null}
         {cardId ? (
           <button
             type="button"

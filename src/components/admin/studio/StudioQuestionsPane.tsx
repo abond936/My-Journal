@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CirclePlus, FilterX, FolderOpen, Link2Off, Pencil, Save, Trash2, X } from 'lucide-react';
+import { FilterX, FolderOpen, Link2Off, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
 import EditModal from '@/components/admin/card-admin/EditModal';
 import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
@@ -452,7 +452,7 @@ export default function StudioQuestionsPane() {
           aria-label={createOpen ? 'Close question form' : 'Add question'}
           title={createOpen ? 'Close question form' : 'Add question'}
         >
-          {createOpen ? <X size={16} aria-hidden="true" /> : <CirclePlus size={16} aria-hidden="true" />}
+          {createOpen ? <X size={16} aria-hidden="true" /> : <Plus size={16} aria-hidden="true" />}
         </button>
       </div>
 

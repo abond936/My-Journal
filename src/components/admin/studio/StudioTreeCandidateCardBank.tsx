@@ -32,6 +32,7 @@ import { applyModifierSelection } from '@/lib/utils/adminListSelection';
 import cardAdminStyles from '@/app/admin/card-admin/card-admin.module.css';
 import mediaAdminStyles from '@/app/admin/media-admin/media-admin.module.css';
 import { mergeStudioCatalogCard, toStudioCatalogCard } from '@/components/admin/studio/studioCardProjection';
+import type { StudioSelectedPreview } from '@/components/admin/studio/studioCardTypes';
 import styles from './StudioTreeCandidateCardBank.module.css';
 
 type CandidateSort = 'titleAsc' | 'titleDesc' | 'createdDesc' | 'createdAsc';
@@ -99,6 +100,9 @@ function shouldRefreshCollectionsAfterCardUpdate(updateData: Partial<Card>): boo
 
 type StudioTreeCandidateCardBankProps = EmbeddedUnparentedBankContext & {
   registerCatalogRemove?: ((fn: ((cardId: string) => void) | null) => void) | undefined;
+  registerDeleteFallbackResolver?:
+    | ((fn: ((deletedCardId: string) => StudioSelectedPreview | null) | null) => void)
+    | undefined;
 };
 
 export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCardBankProps) {
@@ -113,6 +117,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     saving,
     curatedTreeDnd,
     registerCatalogRemove,
+    registerDeleteFallbackResolver,
   } = props;
 
   const { selectedLoadState } = useStudioShell();
@@ -375,6 +380,35 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     return [selectedCard, ...base];
   }, [deferredMergedCatalog, matchesFilters, deferredStatusFilter, deferredSortMode, props.selectedCardId]);
 
+  const resolveDeleteFallback = useCallback(
+    (deletedCardId: string): StudioSelectedPreview | null => {
+      const deletedIndex = candidateCards.findIndex((card) => card.docId === deletedCardId);
+      if (deletedIndex === -1) {
+        const firstRemaining = candidateCards.find((card) => card.docId && card.docId !== deletedCardId);
+        return firstRemaining ? toStudioCatalogCard(firstRemaining) : null;
+      }
+      for (let index = deletedIndex + 1; index < candidateCards.length; index += 1) {
+        const nextCard = candidateCards[index];
+        if (nextCard?.docId && nextCard.docId !== deletedCardId) {
+          return toStudioCatalogCard(nextCard);
+        }
+      }
+      for (let index = deletedIndex - 1; index >= 0; index -= 1) {
+        const previousCard = candidateCards[index];
+        if (previousCard?.docId && previousCard.docId !== deletedCardId) {
+          return toStudioCatalogCard(previousCard);
+        }
+      }
+      return null;
+    },
+    [candidateCards]
+  );
+
+  useEffect(() => {
+    registerDeleteFallbackResolver?.(resolveDeleteFallback);
+    return () => registerDeleteFallbackResolver?.(null);
+  }, [registerDeleteFallbackResolver, resolveDeleteFallback]);
+
   const parentIdsByChild = useMemo(
     () => buildParentIdsByChild(deferredMergedCatalog),
     [deferredMergedCatalog]
@@ -397,18 +431,23 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
         .filter((card) => card.docId)
         .map((card) => {
           const parentIds = parentIdsByChild.get(card.docId!) ?? [];
+          const childCount = card.childrenIds?.length ?? 0;
           const labelParts: string[] = [];
           if (card.isCollectionRoot === true) labelParts.push('Root');
-          if (parentIds.length > 0) labelParts.push(parentIds.length === 1 ? '1 parent' : `${parentIds.length} parents`);
+          if (parentIds.length > 0 || childCount > 0) labelParts.push(`${parentIds.length}/${childCount}`);
           const parentNames = parentIds
             .map((id) => titleById.get(id))
             .filter((value): value is string => Boolean(value));
-          const title =
-            parentNames.length > 0
-              ? `Attached to ${parentNames.join(', ')}`
-              : card.isCollectionRoot === true
-                ? 'Shown at the top level of Collections'
-                : undefined;
+          const titleParts: string[] = [];
+          if (parentNames.length > 0) {
+            titleParts.push(`Attached to ${parentNames.join(', ')}`);
+          } else if (card.isCollectionRoot === true) {
+            titleParts.push('Shown at the top level of Collections');
+          }
+          if (parentIds.length > 0 || childCount > 0) {
+            titleParts.push(`${parentIds.length} parent${parentIds.length === 1 ? '' : 's'}, ${childCount} child${childCount === 1 ? '' : 'ren'}`);
+          }
+          const title = titleParts.length > 0 ? titleParts.join(' · ') : undefined;
           return [card.docId!, labelParts.length > 0 ? { label: labelParts.join(' · '), title } : null] as const;
         })
     );

@@ -50,12 +50,23 @@
   width: 100%;
   box-sizing: border-box;
   padding: 0.32rem 0.45rem;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   line-height: 1.25;
   border: var(--border-width-thin) solid var(--border1-color);
   border-radius: var(--border-radius-sm);
   background: var(--input-background-color);
   color: var(--text1-color);
+  transition:
+    border-color var(--transition-short) ease,
+    box-shadow var(--transition-short) ease;
+}
+
+.studioMediaSearchInput:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--admin-support-control-strong-border-color) 84%, white 8%);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--admin-support-control-strong-border-color) 28%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--admin-support-control-strong-border-color) 14%, transparent);
 }
 
 .studioViewToggleRow {
