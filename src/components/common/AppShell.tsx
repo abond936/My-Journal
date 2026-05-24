@@ -19,13 +19,20 @@ const MOBILE_SWIPE_MIN_DISTANCE_PX = 54;
 export default function AppShell({ children }: AppShellProps) {
   const { status } = useSession();
   const pathname = usePathname();
+  const isHomeRoute = pathname === '/';
+  const isReaderProtectedRoute =
+    pathname === '/view' ||
+    pathname === '/search' ||
+    Boolean(pathname?.startsWith('/view/')) ||
+    Boolean(pathname?.startsWith('/search/'));
+  const isAdminRoute = Boolean(pathname?.startsWith('/admin'));
+  const shouldRenderShell =
+    !isHomeRoute && (status === 'authenticated' || status === 'loading' || isReaderProtectedRoute || isAdminRoute);
   const [isSidebarOpen, setSidebarOpen] = useState(
     pathname !== '/' && !pathname?.startsWith('/admin/studio')
   );
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const swipeStartRef = useRef<{ x: number; y: number; tracking: boolean } | null>(null);
-
-  const isAuthenticated = status === 'authenticated';
 
   // Keep shell sidebar state aligned with the mobile breakpoint.
   useEffect(() => {
@@ -114,23 +121,13 @@ export default function AppShell({ children }: AppShellProps) {
     swipeStartRef.current = null;
   };
 
-  // Never return null here: a stuck or slow session would show a blank screen.
-  // Shell chrome may briefly mismatch until status resolves; children still render.
-  if (status === 'loading') {
+  // Home splash (including post-login redirect): no header/sidebar until main app routes.
+  if (!shouldRenderShell) {
     return <>{children}</>;
   }
 
-  // If unauthenticated, render children directly (e.g., the login page)
-  if (!isAuthenticated) {
-    return <>{children}</>;
-  }
-
-  // Home splash (including post-login redirect): no header/sidebar until main app routes
-  if (pathname === '/') {
-    return <>{children}</>;
-  }
-
-  // If authenticated, render the full application shell
+  // Render the application shell for protected reader/admin surfaces even while the
+  // client session is hydrating, so route-level auth truth and reader chrome stay aligned.
   return (
     <div className={styles.appShell}>
       <div className={styles.header}>

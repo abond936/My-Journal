@@ -130,4 +130,23 @@ describe('AppShell mobile sidebar drawer', () => {
 
     expect(screen.getByRole('button', { name: 'Toggle sidebar' })).toBeInTheDocument();
   });
+
+  it('keeps reader shell chrome visible while session is loading on protected routes', () => {
+    mockMatchMedia(true);
+    mockedUseSession.mockReturnValue({
+      status: 'loading',
+      data: null,
+      update: jest.fn(),
+    } as never);
+    mockedUsePathname.mockReturnValue('/view');
+
+    render(
+      <AppShell>
+        <div>Reader content</div>
+      </AppShell>
+    );
+
+    expect(screen.getByTestId('navigation')).toBeInTheDocument();
+    expect(screen.getByTestId('global-sidebar')).toBeInTheDocument();
+  });
 });

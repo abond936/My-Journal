@@ -50,6 +50,7 @@ Legend:
 - **Route Separation** - Reader and admin routes are distinct, preserving explicit editing context.
 - **Hosted reader baseline** - Private Vercel deployment is live for desktop/mobile reader validation; current production scope is read-only consumption rather than Studio/admin authoring on mobile.
 - **Admin boundary enforcement** - Admin pages require an admin session server-side; reader-only navigation hides admin affordances for viewers; local OneDrive import helpers under `/api/images/local/*` are restricted to admin-only operational use rather than reader access.
+- **Reader shell hydration stability** - On protected reader routes, the header, hamburger/menu chrome, and sidebar/drawer system remain route-owned shell UI during client session hydration instead of dropping to bare page content while `useSession()` resolves.
 
 ⭕2 **Future**
 
@@ -332,7 +333,7 @@ Legend:
 - **Progressive children (discover + child hydration)** - **Discover More:** structural **Related Content** renders from server props immediately; **Similar Topics** / **Explore More** load client-side after mount with per-group loaders (`DiscoverySection.tsx`). `**/view/[id]`:** child cards load via `getCardsByIds(..., { hydrationMode: 'cover-only' })` with first-gallery image when no cover—fewer Firestore reads than full hydration. The view page RSC still awaits parent + children in one round-trip; streaming parent-only first remains optional (🔵 / future).
 - **Related Count** - Similar / Explore presentation tuned so rails stay visually light: compact tile width (`cardRailCell` clamp in `DiscoverySection.module.css`), secondary group title scale, `V2ContentCard` `small` on rails.
 - **Detail discovery spacing** - **Explore More** / `DiscoverySection` on `/view/[id]` uses increased **margin above** the block, **padding below** the rails, and **larger article bottom padding** so the section is not tight to the story body or the scroll end (`DiscoverySection.module.css`, `CardDetail.module.css`). Further reader polish is tracked in this document's Content Page planned items and the theme support contract where applicable.
-- **Reader-only auth path** - Reader routes (`/view`, `/view/*`, `/search`) require an authenticated session; reader APIs require a session; viewers can read only published cards and published child cards, while admins retain draft visibility. Admin-only local import helpers and other admin operational APIs stay outside the reader surface.
+- **Reader-only auth path** - Reader routes (`/view`, `/view/*`, `/search`) require an authenticated session; reader APIs require a session; viewers can read only published cards and published child cards, while admins retain draft visibility. Protected reader routes keep their shell chrome during client session hydration so server/edge auth truth and visible reader navigation do not drift apart. Admin-only local import helpers and other admin operational APIs stay outside the reader surface.
 - **Embedded-image caption framing** - Read-only embedded figures collapse empty caption chrome while preserving real captions and editable caption affordances.
 
 ⭕1 **Planned**
