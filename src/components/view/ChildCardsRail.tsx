@@ -103,8 +103,10 @@ export default function ChildCardsRail({ cards, title = 'More...' }: ChildCardsR
                 : bucket === 'square'
                   ? styles.thumbSquare
                   : styles.thumbPortrait;
+            const coverObjectFit = child.coverImageMode === 'fit' ? 'contain' : 'cover';
             const objectPosition =
               cover &&
+              coverObjectFit === 'cover' &&
               child.coverImageFocalPoint &&
               cover.width &&
               cover.height
@@ -135,7 +137,7 @@ export default function ChildCardsRail({ cards, title = 'More...' }: ChildCardsR
                         width={320}
                         height={400}
                         sizes="(max-width: 768px) 72vw, 280px"
-                        style={{ objectFit: 'cover', objectPosition }}
+                        style={{ objectFit: coverObjectFit, objectPosition }}
                       />
                     ) : (
                       <div className={styles.noCover}>No cover</div>

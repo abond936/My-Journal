@@ -103,8 +103,6 @@ Legend:
 
 - **Grid density reduction** - Reduce Card Management grid card footprint by ~25% (thumbnail/card block dimensions and spacing) while preserving legibility, click targets, and selection affordances—incremental follow-up now that aspect-accurate thumbnails ship.
 
-- **Card edit layout polish** - Align card-edit page chrome and section hierarchy for a cleaner authoring flow: header/back/action alignment, consistent section heading scale, tighter spacing between Body/Tags/Gallery/Child Cards, and clearer section ordering.
-
 - **Tag picker ergonomics** - Keep macro-tag editing compact and predictable in card edit: controlled expansion below the command bar, root-first dimensional presentation, and searchable keyboard-friendly result selection with path clarity.
 
 
@@ -212,6 +210,10 @@ Legend:
 
 - **Feed Presentation Matrix** - Define and enforce a single presentation contract across feed/detail/rail contexts for each `type` + `displayMode` pair, including interaction model (open vs expand), title/excerpt behavior, and media framing rules.
 
+- **Cover framing contract** - Define one authoritative cover-framing target for authoring and reconcile Compose, reader feed, reader detail, and admin/Studio preview surfaces so focal adjustments do not look correct in one surface and wrong in another. Current diagnosed mismatch: Compose uses a fixed `6:5` crop preview, reader detail/rails use orientation-aware frames, and admin preview tiles use additional thumbnail ratios.
+
+- **Cover fit / fill control** - Support unusually wide, unusually tall, and text-centric cover images with more than focal positioning alone. The cover model needs a controllable framing behavior (for example crop/fill vs fit/contain, potentially with a zoom-like adjustment) so long horizontal banners, poster-like verticals, and wordmark/title-card images can preserve more of the intended image without forcing one universal backfilled presentation.
+
 - **Rail Variant** - Add a curated horizontal rail variant for qualifying sequences (for example, school/college story runs) with explicit eligibility, ordering, and card-size behavior separate from the default feed grid.
 
 - **In-Feed Expansion** - Add optional `Read more` progressive disclosure for story excerpts in feed cards, with deterministic truncation and explicit collapse/expand behavior that does not break feed scroll continuity.
@@ -242,6 +244,8 @@ Legend:
 
 
 *Left Navigation (`02-Application.md`)*
+
+- **Mobile drawer swipe restoration** - Restore the mobile reader sidebar open gesture so a left-edge swipe opens the in-app drawer instead of falling through to browser back/forward page navigation.
 
 
 
@@ -279,7 +283,7 @@ Legend:
 - **Integrity gate expansion** - Expand integrity verification for card-media references, tag counts, derived card fields, delete/replace graph behavior, and import drift detection.
 - **Import trust gate** - Verify source identity, duplicate signals, metadata preservation, partial-failure handling, and operator recovery paths for import workflows.
 - **Operational recovery gate** - Verify database backup, local secrets backup, restore drill, rollback/incident response, and admin account recovery before commercial release.
-- **Workflow quality gate** - Validate family-demo reader flow, hosted-alpha repeated-use flow, admin prep friction, and mobile reader usability against milestone pass criteria. Current hosted finding after access/privacy re-verification: authenticated card search is failing in production because `/api/cards/search` requires a missing Firestore composite index, so search reliability must be restored before treating hosted repeated-use reader flow as dependable.
+- **Workflow quality gate** - Validate family-demo reader flow, hosted-alpha repeated-use flow, admin prep friction, and mobile reader usability against milestone pass criteria. Current closeout: hosted authenticated card search is working again for both `viewer` and `admin`, so the earlier missing-index production failure on `/api/cards/search` is no longer blocking repeated-use reader verification.
 
 
 

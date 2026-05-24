@@ -42,7 +42,10 @@ const cardUpdateSchema = cardUpdateValidationSchema;
 function isCoverOnlyPatch(payload: Record<string, unknown>): boolean {
   const keys = Object.keys(payload).filter((key) => key !== 'coverImage');
   if (keys.length === 0) return false;
-  return keys.every((key) => key === 'coverImageId' || key === 'coverImageFocalPoint');
+  return keys.every(
+    (key) =>
+      key === 'coverImageId' || key === 'coverImageFocalPoint' || key === 'coverImageMode'
+  );
 }
 
 /**
@@ -212,6 +215,9 @@ export async function PATCH(
       ? await updateCardCover(id, {
           ...(Object.prototype.hasOwnProperty.call(validatedData, 'coverImageId')
             ? { coverImageId: validatedData.coverImageId ?? null }
+            : {}),
+          ...(Object.prototype.hasOwnProperty.call(validatedData, 'coverImageMode')
+            ? { coverImageMode: validatedData.coverImageMode }
             : {}),
           coverImageFocalPoint: validatedData.coverImageFocalPoint,
         })

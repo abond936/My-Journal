@@ -45,6 +45,7 @@ export const cardSchema = z.object({
   
   // Cover image reference with position information
   coverImageId: z.string().nullable().optional(),
+  coverImageMode: z.enum(['fill', 'fit']).default('fill').optional(),
   coverImageFocalPoint: z.object({
     x: z.number(),
     y: z.number(),

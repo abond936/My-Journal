@@ -19,6 +19,10 @@
   border: var(--border-width-thin) solid var(--admin-window-border-color);
 }
 
+.containerStudioCompact {
+  border-radius: var(--border-radius-md);
+}
+
 .sectionTitle {
   margin: 0;
   padding: var(--spacing-md) var(--spacing-md) 0;
@@ -65,23 +69,15 @@
   width: 600px;
   min-width: 200px;
   max-width: 100%;
-  aspect-ratio: 6 / 5;
+  aspect-ratio: 4 / 5;
   flex-shrink: 0;
   align-self: center;
   background-color: var(--admin-window-background-color);
   overflow: hidden;
 }
 
-.imageContainer.imagePortrait {
-  aspect-ratio: 6 / 5;
-}
-
-.imageContainer.imageLandscape {
-  aspect-ratio: 6 / 5;
-}
-
-.imageContainer.imageSquare {
-  aspect-ratio: 6 / 5;
+.imageContainerStudioCompact {
+  width: min(100%, 460px);
 }
 
 .coverImage {
@@ -236,6 +232,63 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
+}
+
+.repositionControlsStudioCompact {
+  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+  gap: var(--spacing-xs);
+}
+
+.coverModeControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.coverModeControlsStudioCompact {
+  padding: var(--spacing-xs) 0;
+  border-bottom: var(--border-width-thin) solid
+    color-mix(in srgb, var(--admin-window-border-color) 72%, transparent);
+  margin-bottom: var(--spacing-xs);
+}
+
+.coverModeLabel,
+.coverModeHint {
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
+}
+
+.coverModeHint {
+  margin: 0;
+}
+
+.coverModeButtonRow {
+  display: inline-flex;
+  gap: var(--spacing-xs);
+}
+
+.coverModeButton {
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  background: var(--admin-window-background-color);
+  color: var(--admin-support-label-color);
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
+  cursor: pointer;
+}
+
+.coverModeButtonActive {
+  background: var(--admin-support-control-strong-background-color);
+  color: var(--admin-support-control-strong-text-color);
+  border-color: var(--admin-support-control-strong-border-color);
 }
 
 .sliderContainer {

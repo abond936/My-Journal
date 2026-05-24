@@ -53,6 +53,13 @@ jest.mock('@/components/view/ReaderCardEditModal', () => ({
   default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
+jest.mock('@/components/common/JournalImage', () => ({
+  __esModule: true,
+  default: ({ alt, style, className }: { alt: string; style?: React.CSSProperties; className?: string }) => (
+    <img alt={alt} style={style} className={className} />
+  ),
+}));
+
 const mockedUseCardContext = useCardContext as jest.MockedFunction<typeof useCardContext>;
 const mockedUseSearchParams = useSearchParams as jest.MockedFunction<typeof useSearchParams>;
 
@@ -98,5 +105,29 @@ describe('CardDetailPage guided discovery contract', () => {
 
     expect(screen.getByTestId('child-cards-rail')).toBeInTheDocument();
     expect(screen.getByTestId('discovery-section')).toBeInTheDocument();
+  });
+
+  it('uses contain rendering on detail covers when the card cover mode is fit', () => {
+    mockedUseSearchParams.mockReturnValue(new URLSearchParams('mode=freeform') as ReturnType<typeof useSearchParams>);
+
+    render(
+      <CardDetailPage
+        card={{
+          ...parentCard,
+          title: 'Welcome wordmark',
+          coverImageMode: 'fit',
+          coverImage: {
+            docId: 'media-1',
+            storageUrl: 'https://example.com/welcome.jpg',
+            width: 1800,
+            height: 500,
+          },
+        } as Card}
+        childrenCards={childCards}
+      />
+    );
+
+    const image = screen.getByAltText('Welcome wordmark');
+    expect(image).toHaveStyle({ objectFit: 'contain', objectPosition: 'center' });
   });
 });

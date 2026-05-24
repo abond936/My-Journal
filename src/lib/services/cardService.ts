@@ -1147,7 +1147,7 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
  */
 export async function updateCardCover(
   cardId: string,
-  updates: Partial<Pick<Card, 'coverImageId' | 'coverImageFocalPoint'>>
+  updates: Partial<Pick<Card, 'coverImageId' | 'coverImageFocalPoint' | 'coverImageMode'>>
 ): Promise<Card> {
   const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
   const preSnap = await docRef.get();
@@ -1157,6 +1157,7 @@ export async function updateCardCover(
 
   const existingData = preSnap.data() as Card;
   const existingCoverId = existingData.coverImageId ?? null;
+  const existingCoverMode = existingData.coverImageMode ?? 'fill';
   const hasCoverIdUpdate = Object.prototype.hasOwnProperty.call(updates, 'coverImageId');
   const nextCoverIdRaw = updates.coverImageId;
   const nextCoverId = hasCoverIdUpdate
@@ -1164,15 +1165,18 @@ export async function updateCardCover(
       ? nextCoverIdRaw
       : null
     : existingCoverId;
+  const hasCoverModeUpdate = Object.prototype.hasOwnProperty.call(updates, 'coverImageMode');
+  const nextCoverMode = hasCoverModeUpdate ? updates.coverImageMode ?? 'fill' : existingCoverMode;
   const focalProvided = Object.prototype.hasOwnProperty.call(updates, 'coverImageFocalPoint');
   const focalPoint = updates.coverImageFocalPoint;
-
+  
   const isCoverUnchanged = !hasCoverIdUpdate || existingCoverId === nextCoverId;
+  const isCoverModeUnchanged = !hasCoverModeUpdate || existingCoverMode === nextCoverMode;
   const isFocalUnchanged =
     !focalProvided ||
-    (existingData.coverImageFocalPoint?.x === focalPoint?.x &&
-      existingData.coverImageFocalPoint?.y === focalPoint?.y);
-  if (isCoverUnchanged && isFocalUnchanged) {
+      (existingData.coverImageFocalPoint?.x === focalPoint?.x &&
+        existingData.coverImageFocalPoint?.y === focalPoint?.y);
+  if (isCoverUnchanged && isCoverModeUnchanged && isFocalUnchanged) {
     const card = await getCardById(cardId);
     if (!card) {
       throw new Error(`Failed to fetch card with ID ${cardId}`);
@@ -1217,13 +1221,17 @@ export async function updateCardCover(
         coverImage: FieldValue.delete(),
       };
 
-      if (hasCoverIdUpdate) {
-        if (clearingCover) {
-          cardUpdate.coverImageId = FieldValue.delete();
-        } else {
-          cardUpdate.coverImageId = nextCoverId;
+        if (hasCoverIdUpdate) {
+          if (clearingCover) {
+            cardUpdate.coverImageId = FieldValue.delete();
+          } else {
+            cardUpdate.coverImageId = nextCoverId;
+          }
         }
-      }
+
+        if (hasCoverModeUpdate) {
+          cardUpdate.coverImageMode = nextCoverMode;
+        }
 
       if (focalProvided && focalPoint && nextCoverId) {
         cardUpdate.coverImageFocalPoint = focalPoint;

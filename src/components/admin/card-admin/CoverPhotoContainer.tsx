@@ -7,15 +7,19 @@ import styles from './CoverPhotoContainer.module.css';
 import { Media } from '@/lib/types/photo';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import { getImageFileFromDataTransfer } from '@/lib/utils/clipboardImage';
-import { getAspectRatioBucket } from '@/lib/utils/objectPositionUtils';
+import { getAspectRatioBucket, getAspectRatioValue } from '@/lib/utils/objectPositionUtils';
 import PhotoPicker from '@/components/admin/card-admin/PhotoPicker';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface CoverPhotoContainerProps {
   coverImage: Media | null;
+  coverImageMode?: 'fill' | 'fit';
+  layoutMode?: 'default' | 'studioCompact';
   objectPosition?: string;
   onChange: (newCoverImage: Media | null, newPosition?: string) => void;
   onCommit?: (newCoverImage: Media | null, newPosition?: string) => void;
+  onCoverModeChange?: (mode: 'fill' | 'fit') => void;
+  onCoverModeCommit?: (mode: 'fill' | 'fit') => void;
   error?: string;
   className?: string;
   isSaving: boolean;
@@ -27,9 +31,13 @@ interface CoverPhotoContainerProps {
 
 export default function CoverPhotoContainer({ 
   coverImage, 
+  coverImageMode = 'fill',
+  layoutMode = 'default',
   objectPosition,
   onChange,
   onCommit,
+  onCoverModeChange,
+  onCoverModeCommit,
   error,
   className,
   isSaving,
@@ -151,15 +159,19 @@ export default function CoverPhotoContainer({
   const commitPositionChange = useCallback((horizontal: number, vertical: number) => {
     onCommit?.(coverImage, `${horizontal}% ${vertical}%`);
   }, [coverImage, onCommit]);
+
+  const handleCoverModeSelect = useCallback(
+    (mode: 'fill' | 'fit') => {
+      if (mode === coverImageMode) return;
+      onCoverModeChange?.(mode);
+      onCoverModeCommit?.(mode);
+    },
+    [coverImageMode, onCoverModeChange, onCoverModeCommit]
+  );
   
   const displayError = error || portraitError || uploadError;
   const coverBucket = getAspectRatioBucket(coverImage);
-  const coverFrameClass =
-    coverBucket === 'landscape'
-      ? styles.imageLandscape
-      : coverBucket === 'square'
-        ? styles.imageSquare
-        : styles.imagePortrait;
+  const coverFrameRatio = getAspectRatioValue(coverBucket);
 
   return (
     <div
@@ -171,7 +183,7 @@ export default function CoverPhotoContainer({
     >
       <div
         {...getRootProps({
-          className: `${styles.container} ${displayError ? styles.error : ''} ${isDragActive ? styles.containerDragActive : ''}`,
+          className: `${styles.container} ${layoutMode === 'studioCompact' ? styles.containerStudioCompact : ''} ${displayError ? styles.error : ''} ${isDragActive ? styles.containerDragActive : ''}`,
         })}
         data-testid="cover-dropzone"
       >
@@ -179,7 +191,10 @@ export default function CoverPhotoContainer({
       <h4 className={styles.sectionTitle}>Cover</h4>
       {coverImage ? (
         <>
-          <div className={`${styles.imageContainer} ${coverFrameClass}`} style={{ position: 'relative' }}>
+          <div
+            className={`${styles.imageContainer} ${layoutMode === 'studioCompact' ? styles.imageContainerStudioCompact : ''}`}
+            style={{ position: 'relative', aspectRatio: coverFrameRatio }}
+          >
             {isDragActive && (
               <div className={styles.dropOverlay}>
                 Drop to replace cover
@@ -199,7 +214,7 @@ export default function CoverPhotoContainer({
               sizes="(max-width: 768px) 100vw, 600px"
               style={{
                 objectPosition: objectPosition || '50% 50%',
-                objectFit: 'cover',
+                objectFit: coverImageMode === 'fit' ? 'contain' : 'cover',
               }}
               priority={false}
             />
@@ -224,7 +239,40 @@ export default function CoverPhotoContainer({
               </button>
             </div>
           </div>
-          <div className={styles.repositionControls}>
+          <div
+            className={`${styles.repositionControls} ${layoutMode === 'studioCompact' ? styles.repositionControlsStudioCompact : ''}`}
+          >
+            <div
+              className={`${styles.coverModeControls} ${layoutMode === 'studioCompact' ? styles.coverModeControlsStudioCompact : ''}`}
+            >
+              <span className={styles.coverModeLabel}>Framing:</span>
+              <div className={styles.coverModeButtonRow}>
+                <button
+                  type="button"
+                  className={`${styles.coverModeButton} ${coverImageMode === 'fill' ? styles.coverModeButtonActive : ''}`}
+                  onMouseDown={swallowButtonEvent}
+                  onClick={(e) => {
+                    swallowButtonEvent(e);
+                    handleCoverModeSelect('fill');
+                  }}
+                  disabled={isSaving || isUploading}
+                >
+                  Fill
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.coverModeButton} ${coverImageMode === 'fit' ? styles.coverModeButtonActive : ''}`}
+                  onMouseDown={swallowButtonEvent}
+                  onClick={(e) => {
+                    swallowButtonEvent(e);
+                    handleCoverModeSelect('fit');
+                  }}
+                  disabled={isSaving || isUploading}
+                >
+                  Fit
+                </button>
+              </div>
+            </div>
             <div className={styles.sliderContainer}>
               <label htmlFor="horizontal-position">Horizontal:</label>
               <input
@@ -246,7 +294,7 @@ export default function CoverPhotoContainer({
                   commitPositionChange(latestHorizontalRef.current, latestVerticalRef.current)
                 }
                 className={styles.slider}
-                disabled={isSaving || isUploading}
+                disabled={isSaving || isUploading || coverImageMode === 'fit'}
               />
             </div>
             <div className={styles.sliderContainer}>
@@ -270,9 +318,14 @@ export default function CoverPhotoContainer({
                   commitPositionChange(latestHorizontalRef.current, latestVerticalRef.current)
                 }
                 className={styles.slider}
-                disabled={isSaving || isUploading}
+                disabled={isSaving || isUploading || coverImageMode === 'fit'}
               />
             </div>
+            {coverImageMode === 'fit' ? (
+              <p className={styles.coverModeHint}>
+                Fit preserves the full image inside the frame. Position sliders apply only to Fill mode.
+              </p>
+            ) : null}
           </div>
         </>
       ) : (

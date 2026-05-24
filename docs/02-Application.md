@@ -52,7 +52,8 @@ Legend:
 - **Admin boundary enforcement** - Admin pages require an admin session server-side; reader-only navigation hides admin affordances for viewers; local OneDrive import helpers under `/api/images/local/*` are restricted to admin-only operational use rather than reader access.
 - **Reader shell hydration stability** - On protected reader routes, the header, hamburger/menu chrome, and sidebar/drawer system remain route-owned shell UI during client session hydration instead of dropping to bare page content while `useSession()` resolves.
 - **Hosted reader boundary verification** - On the current hosted deployment, anonymous requests to `/view`, `/search`, and `/admin` redirect to login, while the corresponding reader APIs reject anonymous access with `401`. The earlier root `/view` and `/search` page-route mismatch was resolved by moving those root reader pages onto explicit server-side session enforcement instead of depending on middleware alone.
-- **Hosted search failure (observed)** - Hosted authenticated card search is currently failing for both `viewer` and `admin` sessions: `/api/cards/search?q=test` returns HTTP `500` with a Firestore `FAILED_PRECONDITION` for a missing composite index. Treat this as a separate production functionality defect, not as an access/privacy failure.
+- **Hosted role verification** - Hosted session checks now confirm the primary route boundary contract across signed-out, `viewer`, and `admin` use: `viewer` sessions can access reader routes but are redirected away from representative admin routes, while `admin` sessions can access both reader and admin surfaces. No concrete hosted access/privacy leak was found in this pass. Remaining caveat: client-rendered reader affordance differences (for example the exact admin-only reader controls in nav/sidebar) were only partially confirmable from this environment and may still merit a brief manual browser spot-check if full visual closure is required.
+- **Hosted search verification** - Hosted authenticated card search now succeeds for both `viewer` and `admin` sessions. The earlier production `500` on `/api/cards/search` was resolved by moving the route off the legacy dynamic Firestore `filterTags.<term>` search path and back onto the supported search architecture: Typesense when configured, with a safe Firestore title-search fallback when it is not.
 
 ⭕2 **Future**
 
@@ -177,12 +178,13 @@ Legend:
 - **More controls disclosure** - Freeform `Sort by` and `Group by` now sit behind a compact disclosure rather than always occupying primary sidebar space.
 - **Guided draft visibility (admin)** - Reader guided tree still hides draft collection roots from non-admin readers, while admins now see draft collection titles styled in the warning color inside the same tree.
 - **Freeform clear behavior** - Clearing filters in Freeform now stays on the Freeform feed path instead of silently switching the reader back to collection-style results.
-- **Mobile reader drawer ergonomics** - On mobile, the reader sidebar opens with a right swipe from the left edge and closes with a left swipe or backdrop tap; the desktop arrow toggle is hidden. Freeform tag dimension controls stay sticky while the tag tree scrolls so `Who` / `What` / `When` / `Where` remain reachable.
+- **Mobile reader drawer ergonomics** - The intended mobile reader contract is a left-edge right swipe to open the sidebar drawer and a left swipe or backdrop tap to close it; the desktop arrow toggle is hidden. Freeform tag dimension controls stay sticky while the tag tree scrolls so `Who` / `What` / `When` / `Where` remain reachable.
 - **Reader Order Model** - Freeform supports archive-wide seeded `Random` plus deterministic order options (`When`, `Created`, `Title`, `Who`, `What`, `Where`) with `Asc/Desc`; Guided ignores sort controls and follows curated tree/TOC order. Random order is stable for the active filter seed until refreshed, and newly matching cards insert into their deterministic seeded position. Deterministic list sorts use explicit tie-breaks: `When` keeps undated cards after dated cards in both directions, `Created` / `Title` tie by card id, `Who` / `What` / `Where` use normalized dimension sort keys then title then card id, and Typesense browse ordering mirrors Firestore through a sortable `doc_id` projection. Text search remains relevance-first rather than normal user sort.
 
 ⭕2 **Future**
 
 - **Guided tree mobile ergonomics** - Increase practical finger usability of the guided/tag tree rows and controls beyond the current desktop-acceptable baseline where needed in real mobile use.
+- **Mobile drawer swipe restoration** - Restore the mobile reader sidebar open gesture so a left-edge swipe opens the in-app drawer instead of falling through to browser back/forward page navigation.
 - **Tag Tree Counts** - Fix numbering and add media counts "(x/y)" on tag tree nodes.
 - **Collection Metadata** - Implement collection metadata (child counts).
 - **Chron Tree** - Provide tree in chronological order (Year / Month / What) for browsing.
@@ -249,7 +251,7 @@ Legend:
 - **Gallery UX** - **Inline** vs **navigate** behavior and **caption** options for gallery cards are governed by the **V1 Matrix** below and the implemented reader/card components. External design tools and `docs/DESIGN.md` are support references only, not product authority.
 - **Guided feed behavior** - Guided mode currently behaves like a TOC/outline flow: selecting a collection node shows that node's direct children (not the parent card itself), while a sticky guided title bar keeps the current collection visible during scroll. Leaf nodes remain selectable and show themselves in the feed.
 - **Feed edit/live update** - Feed edits now patch the visible card data in place through the feed state owner, so title, cover, and focal-point saves update immediately without reordering the current feed.
-- **Cover focal alignment** - Feed-facing cover focal editing now previews against the same fixed closed-feed media frame used in the reader feed, so cover adjustments made in editing match feed-card framing more closely.
+- **Cover focal editor target (current)** - Compose cover focal editing currently previews against the fixed closed-feed `6:5` media frame used by closed reader feed cards; other reader/admin surfaces still use different image-frame contracts.
 - **Reader return position** - Feed position and focused card restoration are implemented when returning from a card-detail/edit flow to `/view`; still needs real-use validation.
 - **Gallery closed-card swipe cue** - Closed gallery cards now expose a visible swipe affordance plus slide count in the feed when multiple inline images are present.
 - **Gallery caption overlay** - Closed gallery cards now render the active inline image caption as a bottom overlay while swiping through feed-card images.
@@ -473,7 +475,6 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 - **Grid-first admin convergence** - Reduce dependence on table views where the grid can support identity, tagging, selection, and relationship work without loss of operator clarity.
 - **Context Assist** - Keep historical/background context as a distinct output contract from writing rewrites (even when requested together), so context remains separately reviewable/accept-dismiss and does not couple to rewrite acceptance.
 - **Grid density reduction** - Reduce Card Management grid card footprint by ~25% (thumbnail/card block dimensions and spacing) while preserving legibility, click targets, and selection affordances—incremental follow-up now that aspect-accurate thumbnails ship.
-- **Card edit layout polish** - Align card-edit page chrome and section hierarchy for a cleaner authoring flow: header/back/action alignment, consistent section heading scale, tighter spacing between Body/Tags/Gallery/Child Cards, and clearer section ordering.
 - **Tag picker ergonomics** - Keep macro-tag editing compact and predictable in card edit: controlled expansion below the command bar, root-first dimensional presentation, and searchable keyboard-friendly result selection with path clarity.
 - **Cards filter spacing** - Add clearer separation between the last Cards filter control and the `Clear` action.
 - **Cards helper-copy cleanup** - Remove the lingering drag helper message from the Cards workspace once the interaction is already obvious from the surface.
@@ -485,7 +486,8 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 - **Real-time excerpt assist** - Let excerpt guidance/update react as the story body changes instead of requiring a separate stale pass.
 - **TipTap drop cap** - Add optional drop-cap styling support to the rich-text editor.
 - **Read/edit convergence** - Support an author flow that can read narrative content and edit it without an awkward mode break where practical.
-- **Hero image framing** - Reduce unwanted cropping on hero images in Compose and reader-authoring surfaces.
+- **Cover framing contract** - Define one authoritative cover-framing target for authoring and reconcile Compose, reader feed, reader detail, and admin/Studio preview surfaces so focal adjustments do not look correct in one surface and wrong in another. Current diagnosed mismatch: Compose uses a fixed `6:5` crop preview, reader detail/rails use orientation-aware frames, and admin preview tiles use additional thumbnail ratios.
+- **Cover fit / fill control** - Support unusually wide, unusually tall, and text-centric cover images with more than focal positioning alone. The cover model needs a controllable framing behavior (for example crop/fill vs fit/contain, potentially with a zoom-like adjustment) so long horizontal banners, poster-like verticals, and wordmark/title-card images can preserve more of the intended image without forcing one universal backfilled presentation.
 - **Assigned media visibility** - Keep the selected card's assigned media clearly visible while editing so relationship state is obvious during Compose work.
 - **Narrative development backlog** - Continue author-facing story buildout inside the current card system: consolidate multi-page story runs where needed, complete year-based story coverage, finish question-backed story coverage, and expand planned callout / quote content.
 

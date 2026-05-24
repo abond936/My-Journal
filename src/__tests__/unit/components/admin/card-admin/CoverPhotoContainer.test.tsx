@@ -1,13 +1,23 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CoverPhotoContainer from '@/components/admin/card-admin/CoverPhotoContainer';
 import { Media } from '@/lib/types/photo';
 
 // Mock next/image
 jest.mock('next/image', () => {
-  return function MockImage({ src, alt }: { src: string; alt: string }) {
-    return <img src={src} alt={alt} />;
+  return function MockImage({
+    src,
+    alt,
+    style,
+    className,
+  }: {
+    src: string;
+    alt: string;
+    style?: React.CSSProperties;
+    className?: string;
+  }) {
+    return <img src={src} alt={alt} style={style} className={className} />;
   };
 });
 
@@ -54,6 +64,47 @@ describe('CoverPhotoContainer', () => {
 
     expect(screen.getByAltText('test.jpg')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /remove/i })).toBeInTheDocument();
+  });
+
+  it('uses the bounded orientation-aware frame for the compose cover preview', () => {
+    renderWithProps({
+      coverImage: {
+        ...mockMedia,
+        width: 1600,
+        height: 900,
+        filename: 'landscape.jpg',
+      },
+      objectPosition: '50% 50%',
+    });
+
+    const image = screen.getByAltText('landscape.jpg');
+    expect(image.parentElement).toHaveStyle({ aspectRatio: '3/2' });
+  });
+
+  it('supports fit mode for text-centric or unusually wide covers', async () => {
+    const onCoverModeChange = jest.fn();
+    const onCoverModeCommit = jest.fn();
+
+    renderWithProps({
+      coverImage: {
+        ...mockMedia,
+        width: 1600,
+        height: 900,
+        filename: 'welcome.jpg',
+      },
+      coverImageMode: 'fit',
+      objectPosition: '50% 50%',
+      onCoverModeChange,
+      onCoverModeCommit,
+    });
+
+    const image = screen.getByAltText('welcome.jpg');
+    expect(image).toHaveStyle({ objectFit: 'contain' });
+    expect(screen.getByLabelText('Horizontal:')).toBeDisabled();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Fill' }));
+    expect(onCoverModeChange).toHaveBeenCalledWith('fill');
+    expect(onCoverModeCommit).toHaveBeenCalledWith('fill');
   });
 
   it('handles image removal', async () => {
@@ -121,9 +172,12 @@ describe('CoverPhotoContainer', () => {
 
     expect(screen.getByText(/uploading/i)).toBeInTheDocument();
 
-    resolveUpload!({
-      ok: true,
-      json: () => Promise.resolve({ mediaId: mockMedia.docId, media: mockMedia }),
+    await act(async () => {
+      resolveUpload!({
+        ok: true,
+        json: () => Promise.resolve({ mediaId: mockMedia.docId, media: mockMedia }),
+      });
+      await uploadPromise;
     });
   });
 
@@ -158,4 +212,4 @@ describe('CoverPhotoContainer', () => {
       expect(screen.getByText(/drag and drop/i)).toBeInTheDocument();
     });
   });
-}); 
+});

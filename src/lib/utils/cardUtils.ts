@@ -134,6 +134,7 @@ export function transformToCardUpdate(hydratedCard: Card): CardUpdate {
     tags: hydratedCard.tags,
     childrenIds: hydratedCard.childrenIds,
     coverImageId: hydratedCard.coverImageId,
+    coverImageMode: hydratedCard.coverImageMode,
     coverImageFocalPoint: hydratedCard.coverImageFocalPoint,
     galleryMedia: skinnyGalleryMedia,
     contentMedia,

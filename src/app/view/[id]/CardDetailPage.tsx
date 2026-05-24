@@ -57,6 +57,7 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
   const quoteAttribution = isQuote ? formatQuoteAttribution(card.subtitle, card.excerpt) : '';
   const coverBucket = getAspectRatioBucket(card.coverImage);
   const coverRatio = getAspectRatioValue(coverBucket);
+  const coverObjectFit = card.coverImageMode === 'fit' ? 'contain' : 'cover';
   const coverFrameClass =
     coverBucket === 'landscape'
       ? styles.coverLandscape
@@ -99,7 +100,8 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
               height={600}
               sizes="(max-width: 768px) 100vw, 800px"
               style={{ 
-                objectPosition: card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
+                objectFit: coverObjectFit,
+                objectPosition: coverObjectFit === 'cover' && card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
                   ? getObjectPositionForAspectRatio(
                       {
                         x: card.coverImageFocalPoint.x ?? 0,

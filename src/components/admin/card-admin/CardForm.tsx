@@ -309,6 +309,15 @@ const CardForm: React.FC = () => {
     });
   }, [persistFieldPatch]);
 
+  const handleCoverImageModeChange = useCallback((mode: 'fill' | 'fit') => {
+    setField('coverImageMode', mode);
+  }, [setField]);
+
+  const handleCoverImageModeCommit = useCallback(async (mode: 'fill' | 'fit') => {
+    if (lastSavedState.cardData.coverImageMode === mode) return;
+    await persistFieldPatch({ coverImageMode: mode });
+  }, [lastSavedState.cardData.coverImageMode, persistFieldPatch]);
+
   const handleGalleryUpdate = useCallback((newGallery: HydratedGalleryMediaItem[]) => {
     setField('galleryMedia', newGallery);
   }, [setField]);
@@ -453,6 +462,7 @@ const CardForm: React.FC = () => {
     () => getAllowedDisplayModes(cardData.type ?? 'story'),
     [cardData.type]
   );
+  const coverImageMode = cardData.coverImageMode ?? 'fill';
   const canUseQuestionType = Boolean(cardData.questionId) || cardData.type === 'qa';
 
   const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
@@ -719,6 +729,8 @@ const CardForm: React.FC = () => {
               <div className={styles.coverPhotoSection}>
                 <CoverPhotoContainer
                   coverImage={cardData.coverImage}
+                  coverImageMode={coverImageMode}
+                  layoutMode="studioCompact"
                   objectPosition={
                     cardData.coverImageFocalPoint
                       ? `${(cardData.coverImageFocalPoint.x / (cardData.coverImage?.width || 1)) * 100}% ${(cardData.coverImageFocalPoint.y / (cardData.coverImage?.height || 1)) * 100}%`
@@ -726,6 +738,8 @@ const CardForm: React.FC = () => {
                   }
                   onChange={handleCoverImageChange}
                   onCommit={handleCoverImageCommit}
+                  onCoverModeChange={handleCoverImageModeChange}
+                  onCoverModeCommit={handleCoverImageModeCommit}
                   isSaving={isSaving}
                   showSavingOverlay={false}
                   error={errors.coverImage}
@@ -1036,6 +1050,8 @@ const CardForm: React.FC = () => {
               >
                 <CoverPhotoContainer
                   coverImage={cardData.coverImage}
+                  coverImageMode={coverImageMode}
+                  layoutMode={studioShellForm ? 'studioCompact' : 'default'}
                   objectPosition={
                     cardData.coverImageFocalPoint
                       ? `${(cardData.coverImageFocalPoint.x / (cardData.coverImage?.width || 1)) * 100}% ${(cardData.coverImageFocalPoint.y / (cardData.coverImage?.height || 1)) * 100}%`
@@ -1043,6 +1059,8 @@ const CardForm: React.FC = () => {
                   }
                   onChange={handleCoverImageChange}
                   onCommit={handleCoverImageCommit}
+                  onCoverModeChange={handleCoverImageModeChange}
+                  onCoverModeCommit={handleCoverImageModeCommit}
                   isSaving={isSaving}
                   showSavingOverlay={false}
                   error={errors.coverImage}
@@ -1052,6 +1070,8 @@ const CardForm: React.FC = () => {
             ) : (
               <CoverPhotoContainer
                 coverImage={cardData.coverImage}
+                coverImageMode={coverImageMode}
+                layoutMode={studioShellForm ? 'studioCompact' : 'default'}
                 objectPosition={
                   cardData.coverImageFocalPoint
                     ? `${(cardData.coverImageFocalPoint.x / (cardData.coverImage?.width || 1)) * 100}% ${(cardData.coverImageFocalPoint.y / (cardData.coverImage?.height || 1)) * 100}%`
@@ -1059,6 +1079,8 @@ const CardForm: React.FC = () => {
                 }
                 onChange={handleCoverImageChange}
                 onCommit={handleCoverImageCommit}
+                onCoverModeChange={handleCoverImageModeChange}
+                onCoverModeCommit={handleCoverImageModeCommit}
                 isSaving={isSaving}
                 showSavingOverlay={false}
                 error={errors.coverImage}

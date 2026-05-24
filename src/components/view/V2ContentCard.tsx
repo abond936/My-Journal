@@ -9,6 +9,8 @@ import ReaderCardContextMeta from '@/components/view/ReaderCardContextMeta';
 import { Card } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils'; // Corrected import path
 import {
+  getAspectRatioBucket,
+  getAspectRatioValue,
   getObjectPositionForAspectRatio,
 } from '@/lib/utils/objectPositionUtils';
 import { getEffectiveGalleryCaption, getEffectiveGalleryObjectPosition } from '@/lib/utils/galleryObjectPosition';
@@ -26,6 +28,15 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 
 const CLOSED_FEED_MEDIA_ASPECT_RATIO = '6/5';
+
+function getFeedCoverFrame(media?: Card['coverImage'] | null) {
+  const bucket = getAspectRatioBucket(media);
+  return getAspectRatioValue(bucket);
+}
+
+function getCoverObjectFitMode(card: Pick<Card, 'coverImageMode'>): 'cover' | 'contain' {
+  return card.coverImageMode === 'fit' ? 'contain' : 'cover';
+}
 
 /** Canonical media id for the card cover (for deduping gallery slides). */
 function getCoverMediaId(card: Card): string | undefined {
@@ -58,15 +69,17 @@ const StoryCardContent: React.FC<{
   imageMeta?: React.ReactNode;
   contentMeta?: React.ReactNode;
 }> = ({ card, displayMode, imageMeta, contentMeta }) => {
+  const coverRatio = getFeedCoverFrame(card.coverImage);
+  const coverObjectFit = getCoverObjectFitMode(card);
   const objectPosition =
-    card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
+    coverObjectFit === 'cover' && card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
       ? getObjectPositionForAspectRatio(
           {
             x: card.coverImageFocalPoint.x ?? 0,
             y: card.coverImageFocalPoint.y ?? 0,
           },
           { width: card.coverImage.width, height: card.coverImage.height },
-          CLOSED_FEED_MEDIA_ASPECT_RATIO,
+          coverRatio,
           400
         )
       : 'center';
@@ -76,7 +89,7 @@ const StoryCardContent: React.FC<{
   return (
     <>
       {card.coverImage && (
-        <div className={styles.imageContainer}>
+        <div className={styles.imageContainer} style={{ aspectRatio: coverRatio }}>
           <JournalImage 
             src={getDisplayUrl(card.coverImage)} 
             alt={card.title} 
@@ -84,7 +97,7 @@ const StoryCardContent: React.FC<{
             width={400}
             height={300}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            style={{ objectPosition }}
+            style={{ objectFit: coverObjectFit, objectPosition }}
             priority={false}
           />
           {imageMeta}
@@ -115,6 +128,7 @@ const GalleryCardContent: React.FC<{
 }> = ({ card, imageMeta, contentMeta }) => {
   const coverId = useMemo(() => getCoverMediaId(card), [card]);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+  const coverObjectFit = getCoverObjectFitMode(card);
 
   const gallerySlides = useMemo(() => {
     const items = (card.galleryMedia ?? []).filter((item) => item.media);
@@ -123,17 +137,22 @@ const GalleryCardContent: React.FC<{
   }, [card.galleryMedia, coverId]);
 
   const coverObjectPosition =
-    card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
+    coverObjectFit === 'cover' && card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
       ? getObjectPositionForAspectRatio(
           {
             x: card.coverImageFocalPoint.x ?? 0,
             y: card.coverImageFocalPoint.y ?? 0,
           },
           { width: card.coverImage.width, height: card.coverImage.height },
-          CLOSED_FEED_MEDIA_ASPECT_RATIO,
+          getFeedCoverFrame(card.coverImage),
           400
         )
       : 'center';
+  const galleryFrameRatio = card.coverImage
+    ? getFeedCoverFrame(card.coverImage)
+    : gallerySlides[0]?.media
+      ? getFeedCoverFrame(gallerySlides[0].media)
+      : CLOSED_FEED_MEDIA_ASPECT_RATIO;
 
   const hasCoverSlide = Boolean(card.coverImage);
   const showSwiper = hasCoverSlide || gallerySlides.length > 0;
@@ -149,7 +168,7 @@ const GalleryCardContent: React.FC<{
   return (
     <>
       {showSwiper ? (
-        <div className={styles.imageContainer}>
+        <div className={styles.imageContainer} style={{ aspectRatio: galleryFrameRatio }}>
           <Swiper
             spaceBetween={8}
             slidesPerView={totalSlides > 1 ? 1.08 : 1}
@@ -165,7 +184,7 @@ const GalleryCardContent: React.FC<{
                   width={400}
                   height={300}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  style={{ objectPosition: coverObjectPosition }}
+                  style={{ objectFit: coverObjectFit, objectPosition: coverObjectPosition }}
                   priority={false}
                 />
               </SwiperSlide>
@@ -235,15 +254,17 @@ const QACardContent: React.FC<{
   imageMeta?: React.ReactNode;
   contentMeta?: React.ReactNode;
 }> = ({ card, displayMode, imageMeta, contentMeta }) => {
+  const coverRatio = getFeedCoverFrame(card.coverImage);
+  const coverObjectFit = getCoverObjectFitMode(card);
   const objectPosition =
-    card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
+    coverObjectFit === 'cover' && card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
       ? getObjectPositionForAspectRatio(
           {
             x: card.coverImageFocalPoint.x ?? 0,
             y: card.coverImageFocalPoint.y ?? 0,
           },
           { width: card.coverImage.width, height: card.coverImage.height },
-          CLOSED_FEED_MEDIA_ASPECT_RATIO,
+          coverRatio,
           400
         )
       : 'center';
@@ -265,7 +286,7 @@ const QACardContent: React.FC<{
     return (
       <>
         {card.coverImage && (
-          <div className={styles.imageContainer}>
+          <div className={styles.imageContainer} style={{ aspectRatio: coverRatio }}>
             <JournalImage
               src={getDisplayUrl(card.coverImage)}
               alt={card.title}
@@ -273,7 +294,7 @@ const QACardContent: React.FC<{
               width={400}
               height={300}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              style={{ objectPosition }}
+              style={{ objectFit: coverObjectFit, objectPosition }}
               priority={false}
             />
             {imageMeta}
@@ -305,7 +326,7 @@ const QACardContent: React.FC<{
   return (
     <>
       {card.coverImage && (
-        <div className={styles.imageContainer}>
+        <div className={styles.imageContainer} style={{ aspectRatio: coverRatio }}>
           <JournalImage
             src={getDisplayUrl(card.coverImage)}
             alt={card.title}
@@ -313,7 +334,7 @@ const QACardContent: React.FC<{
             width={400}
             height={300}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            style={{ objectPosition }}
+            style={{ objectFit: coverObjectFit, objectPosition }}
             priority={false}
           />
           {imageMeta}
