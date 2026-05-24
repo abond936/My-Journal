@@ -244,7 +244,7 @@ Legend:
 
 *Left Navigation (`02-Application.md`)*
 
-- **Mobile drawer swipe restoration** - Restore the mobile reader sidebar open gesture so a left-edge swipe opens the in-app drawer instead of falling through to browser back/forward page navigation.
+- **Mobile drawer swipe closeout (2026-05-23)** - The reader drawer open gesture now uses a dedicated mobile left-edge capture zone in `AppShell` instead of relying only on broad content-wrapper touches. This keeps the intended in-app drawer-open swipe more competitive with browser-history gestures while preserving left-swipe close and desktop behavior. Remaining mobile reader work should treat this as closed unless real-device verification reveals a narrower follow-up issue.
 
 
 

@@ -184,7 +184,7 @@ Legend:
 ⭕2 **Future**
 
 - **Guided tree mobile ergonomics** - Increase practical finger usability of the guided/tag tree rows and controls beyond the current desktop-acceptable baseline where needed in real mobile use.
-- **Mobile drawer swipe restoration** - Restore the mobile reader sidebar open gesture so a left-edge swipe opens the in-app drawer instead of falling through to browser back/forward page navigation.
+- **Mobile drawer swipe behavior** - The mobile reader drawer now uses a dedicated left-edge swipe-open capture zone so a right swipe opens the in-app sidebar more reliably instead of falling through to browser back/forward navigation. Left swipe on the open drawer and backdrop tap still close it, while desktop keeps the existing non-drawer behavior.
 - **Tag Tree Counts** - Fix numbering and add media counts "(x/y)" on tag tree nodes.
 - **Collection Metadata** - Implement collection metadata (child counts).
 - **Chron Tree** - Provide tree in chronological order (Year / Month / What) for browsing.
