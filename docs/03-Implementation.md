@@ -212,8 +212,6 @@ Legend:
 
 - **Cover framing contract** - Define one authoritative cover-framing target for authoring and reconcile Compose, reader feed, reader detail, and admin/Studio preview surfaces so focal adjustments do not look correct in one surface and wrong in another. Current diagnosed mismatch: Compose uses a fixed `6:5` crop preview, reader detail/rails use orientation-aware frames, and admin preview tiles use additional thumbnail ratios.
 
-- **Cover fit / fill control** - Support unusually wide, unusually tall, and text-centric cover images with more than focal positioning alone. The cover model needs a controllable framing behavior (for example crop/fill vs fit/contain, potentially with a zoom-like adjustment) so long horizontal banners, poster-like verticals, and wordmark/title-card images can preserve more of the intended image without forcing one universal backfilled presentation.
-
 - **Rail Variant** - Add a curated horizontal rail variant for qualifying sequences (for example, school/college story runs) with explicit eligibility, ordering, and card-size behavior separate from the default feed grid.
 
 - **In-Feed Expansion** - Add optional `Read more` progressive disclosure for story excerpts in feed cards, with deterministic truncation and explicit collapse/expand behavior that does not break feed scroll continuity.
@@ -226,6 +224,7 @@ Legend:
 
 - **Quote Card** - Attribution modeling (e.g. Content vs subtitle/excerpt).
 - **Current feed/card presentation status (2026-04-29)** - The reader feed is no longer using the earlier portrait-overlay default for closed image cards. The current baseline is a **single stable, landscape-leaning closed-card shell** with **stacked media on top and text below** for closed `Story`, `Gallery`, and `Question` cards, plus tighter one-line supporting text. Guided mode now behaves more like a TOC: the sidebar shows the real collections tree, the feed shows the selected node's direct children (not the parent card itself), and a sticky guided title bar keeps the current collection visible during scroll. This is still an intentional interim presentation baseline, not the final matrix closeout: the broader `Feed Presentation Matrix` still needs explicit completion and visual validation across all card types, rail contexts, and viewport sizes, and a narrow-viewport card-sizing regression remains open in guided mode.
+- **Cover fit / fill closeout (2026-05-23)** - The first flexible cover-mode slice is now shipped in the main authoring/reader path. Cards can persist `Fill` vs `Fit`; Compose exposes that framing control in the cover editor; and the main reader surfaces honor it in closed cards, detail view, and child-card rails. Remaining cover work should focus on any later zoom-style control or further preview harmonization, not on reintroducing fit/fill as an open baseline item.
 
 
 

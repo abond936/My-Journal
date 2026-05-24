@@ -81,18 +81,45 @@ export default function AppShell({ children }: AppShellProps) {
     setSidebarOpen((prev) => !prev);
   };
 
-  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (!isMobileViewport || pathname === '/' || pathname?.startsWith('/admin/studio')) return;
+  const canUseMobileSwipe =
+    isMobileViewport && pathname !== '/' && !pathname?.startsWith('/admin/studio');
+
+  const beginSwipeTracking = (event: React.TouchEvent<HTMLElement>, forceTrack = false) => {
+    if (!canUseMobileSwipe) return;
     const touch = event.touches[0];
     if (!touch) return;
 
-    const shouldTrack = isSidebarOpen || touch.clientX <= MOBILE_SWIPE_EDGE_PX;
+    const shouldTrack = forceTrack || isSidebarOpen || touch.clientX <= MOBILE_SWIPE_EDGE_PX;
     swipeStartRef.current = shouldTrack
       ? { x: touch.clientX, y: touch.clientY, tracking: true }
       : null;
   };
 
-  const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    beginSwipeTracking(event);
+  };
+
+  const handleEdgeSwipeStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    beginSwipeTracking(event, true);
+  };
+
+  const handleTouchMove = (event: React.TouchEvent<HTMLElement>) => {
+    const start = swipeStartRef.current;
+    if (!start?.tracking) return;
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    const isHorizontalSwipe =
+      Math.abs(deltaX) >= 10 && Math.abs(deltaX) > Math.abs(deltaY) * 1.15;
+
+    if (isHorizontalSwipe) {
+      event.preventDefault();
+    }
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent<HTMLElement>) => {
     const start = swipeStartRef.current;
     swipeStartRef.current = null;
     if (!start?.tracking) return;
@@ -146,9 +173,21 @@ export default function AppShell({ children }: AppShellProps) {
       <div
         className={styles.contentWrapper}
         onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchCancel}
       >
+        {canUseMobileSwipe && !isSidebarOpen ? (
+          <div
+            className={styles.mobileSwipeEdgeZone}
+            data-testid="mobile-swipe-edge-zone"
+            onTouchStart={handleEdgeSwipeStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchCancel}
+            aria-hidden="true"
+          />
+        ) : null}
         {pathname !== '/' && (
           <>
             <div

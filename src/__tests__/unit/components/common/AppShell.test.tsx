@@ -76,10 +76,15 @@ describe('AppShell mobile sidebar drawer', () => {
       expect(screen.getByTestId('global-sidebar')).toHaveAttribute('data-open', 'false');
     });
 
-    fireEvent.touchStart(screen.getByText('Reader content'), {
+    const edgeZone = screen.getByTestId('mobile-swipe-edge-zone');
+
+    fireEvent.touchStart(edgeZone, {
       touches: [{ clientX: 8, clientY: 120 }],
     });
-    fireEvent.touchEnd(screen.getByText('Reader content'), {
+    fireEvent.touchMove(edgeZone, {
+      touches: [{ clientX: 58, clientY: 124 }],
+    });
+    fireEvent.touchEnd(edgeZone, {
       changedTouches: [{ clientX: 82, clientY: 126 }],
     });
 

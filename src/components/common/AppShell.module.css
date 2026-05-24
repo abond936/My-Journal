@@ -125,6 +125,10 @@
   .sidebarBackdrop {
     display: none;
   }
+
+  .mobileSwipeEdgeZone {
+    display: none;
+  }
   
 .mainContent {
   flex: 1 1 0%;
@@ -201,6 +205,18 @@
     .sidebarBackdropOpen {
       opacity: 1;
       pointer-events: auto;
+    }
+
+    .mobileSwipeEdgeZone {
+      position: fixed;
+      top: var(--app-shell-header-height);
+      left: 0;
+      bottom: 0;
+      width: calc(var(--spacing-md) + 20px);
+      display: block;
+      z-index: calc(var(--z-index-sidebar) + 1);
+      touch-action: pan-y;
+      background: transparent;
     }
 
     .sidebarToggle {
