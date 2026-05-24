@@ -273,7 +273,8 @@
 }
 
 .coverModeButton {
-  padding: var(--spacing-xs) var(--spacing-md);
+  min-height: 26px;
+  padding: 0 var(--spacing-sm);
   border-radius: var(--border-radius-md);
   border: var(--border-width-thin) solid var(--admin-window-border-color);
   background: var(--admin-window-background-color);
@@ -281,7 +282,7 @@
   font-family: var(--admin-support-control-font-family);
   font-size: var(--admin-support-control-font-size);
   font-weight: var(--admin-support-control-font-weight);
-  line-height: var(--admin-support-control-line-height);
+  line-height: 1;
   cursor: pointer;
 }
 

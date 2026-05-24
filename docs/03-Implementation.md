@@ -91,6 +91,20 @@ Legend:
 
 
 
+**§ Administration (`02-Application.md`)**
+
+
+
+- **Shared action button contract** - Continue standardizing primary/secondary/destructive button language across the remaining active admin surfaces after the current Studio passes so color, size, icon/text treatment, and placement communicate the same meaning everywhere, especially on modal action rows, any remaining table/grid controls that still use legacy text-button treatments, and other non-Studio admin surfaces that are still expected to survive long-term.
+
+- **Studio pane sizing presets** - Continue standardizing Studio pane-width targets for common window sizes after the first default-width pass: keep **Organize** on its intended width, refine whether **Compose** and **Questions** need any further default-width tuning beyond **357px** / **272px**, and preserve **Cards** and **Media** as the panes that routinely resize with the workspace.
+
+- **Independent Studio pane resizing** - Right-side Studio panes should resize independently; dragging one pane edge must not unintentionally shift unrelated pane widths, and normal sleep/restore should preserve the prior pane widths instead of reopening in a different layout.
+
+- **DnD hardening pass** - Harden active admin drag/drop flows so reparent, unparent, assign, and reorder behavior is clearer, more reliable, and visually professional before expanding DnD breadth further.
+
+
+
 **§ Card Management (`02-Application.md`)**
 
 
@@ -104,6 +118,8 @@ Legend:
 - **Grid density reduction** - Reduce Card Management grid card footprint by ~25% (thumbnail/card block dimensions and spacing) while preserving legibility, click targets, and selection affordances—incremental follow-up now that aspect-accurate thumbnails ship.
 
 - **Tag picker ergonomics** - Keep macro-tag editing compact and predictable in card edit: controlled expansion below the command bar, root-first dimensional presentation, and searchable keyboard-friendly result selection with path clarity.
+
+- **Cards search focus-ring fix** - Fix the Cards search-field focus treatment so the full outline remains visible and does not clip at the field edge.
 
 
 
@@ -209,6 +225,8 @@ Legend:
 
 
 - **Feed Presentation Matrix** - Define and enforce a single presentation contract across feed/detail/rail contexts for each `type` + `displayMode` pair, including interaction model (open vs expand), title/excerpt behavior, and media framing rules.
+
+- **Compact rail simplification** - On smaller rail tiles, omit excerpts, tags, and content/gallery type icons so compact discovery cards stay clean and readable.
 
 - **Cover framing contract** - Define one authoritative cover-framing target for authoring and reconcile Compose, reader feed, reader detail, and admin/Studio preview surfaces so focal adjustments do not look correct in one surface and wrong in another. Current diagnosed mismatch: Compose uses a fixed `6:5` crop preview, reader detail/rails use orientation-aware frames, and admin preview tiles use additional thumbnail ratios.
 

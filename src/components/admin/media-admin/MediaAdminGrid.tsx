@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Pencil } from 'lucide-react';
 import { applyModifierSelection } from '@/lib/utils/adminListSelection';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS as DndCss } from '@dnd-kit/utilities';
@@ -189,8 +190,10 @@ function MediaAdminGridCell({
             type="button"
             className={styles.overlayEditButton}
             onClick={() => setEditModalOpen(true)}
+            aria-label="Edit media"
+            title="Edit media"
           >
-            Edit
+            <Pencil size={16} aria-hidden="true" />
           </button>
         </div>
       }

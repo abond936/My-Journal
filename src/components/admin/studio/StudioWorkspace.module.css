@@ -281,16 +281,21 @@
 
 .studioComposeSaveButton {
   min-height: 30px;
-  min-width: 30px;
-  padding: 0.28rem;
+  min-width: 34px;
+  padding: 0 0.55rem;
   background-color: var(--admin-support-control-strong-background-color);
   color: var(--admin-support-control-strong-text-color);
   border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
+  line-height: 1;
   cursor: pointer;
-  transition: opacity 0.2s ease, background-color 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    background-color 0.2s ease,
+    border-color var(--transition-short) ease,
+    color var(--transition-short) ease;
 }
 
 .studioComposeSaveButton:hover:not(:disabled) {
@@ -304,16 +309,21 @@
 
 .studioComposeDeleteButton {
   min-height: 30px;
-  min-width: 30px;
-  padding: 0.28rem;
+  min-width: 34px;
+  padding: 0 0.55rem;
   background-color: transparent;
   color: var(--admin-danger-text-color, #8a1f1f);
   border: var(--border-width-thin) solid var(--admin-danger-border-color, #b84747);
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
+  line-height: 1;
   cursor: pointer;
-  transition: opacity 0.2s ease, background-color 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    background-color 0.2s ease,
+    border-color var(--transition-short) ease,
+    color var(--transition-short) ease;
 }
 
 .studioComposeDeleteButton:hover:not(:disabled) {
@@ -327,16 +337,21 @@
 
 .studioComposeCancelButton {
   min-height: 30px;
-  min-width: 30px;
-  padding: 0.28rem;
+  min-width: 34px;
+  padding: 0 0.55rem;
   background-color: transparent;
   color: var(--admin-support-control-text-color);
   border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
+  line-height: 1;
   cursor: pointer;
-  transition: opacity 0.2s ease, background-color 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    background-color 0.2s ease,
+    border-color var(--transition-short) ease,
+    color var(--transition-short) ease;
 }
 
 .studioComposeCancelButton:hover:not(:disabled) {
@@ -555,6 +570,22 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
+}
+
+.studioQuestionToggleLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--admin-support-label-color);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  user-select: none;
+}
+
+.studioQuestionToggleInput {
+  margin: 0;
+  accent-color: var(--admin-support-control-strong-background-color);
 }
 
 .studioQuestionSectionToggle {
@@ -815,6 +846,25 @@
   overflow-x: auto;
 }
 
+.studioQuestionAddButton {
+  min-width: 42px;
+  min-height: 34px;
+}
+
+.studioQuestionPromptButton {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: text;
+}
+
+.studioQuestionPromptButton:focus-visible {
+  outline: none;
+}
+
 .studioQuestionConfirmBody {
   display: flex;
   flex-direction: column;
@@ -850,76 +900,104 @@
 
 .studioQuestionPrimaryButton,
 .studioQuestionSmallButton,
-.studioQuestionDeleteButton {
+.studioQuestionDeleteButton,
+.studioQuestionTagActionButton,
+.studioQuestionClearButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 28px;
-  min-width: 28px;
-  border-radius: var(--border-radius-sm);
+  min-height: 30px;
+  min-width: 34px;
+  border-radius: var(--border-radius-md);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
+  line-height: 1;
   cursor: pointer;
+  transition:
+    background-color var(--transition-short) ease,
+    border-color var(--transition-short) ease,
+    color var(--transition-short) ease,
+    opacity var(--transition-short) ease;
 }
 
 .studioQuestionPrimaryButton {
   border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
   background: var(--admin-support-control-strong-background-color);
   color: var(--admin-support-control-strong-text-color);
-  padding: 0 0.45rem;
+  padding: 0 0.55rem;
 }
 
 .studioQuestionSmallButton {
   border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   background: var(--admin-support-control-background-color);
   color: var(--admin-support-control-text-color);
-  padding: 0 0.45rem;
+  padding: 0 0.55rem;
+}
+
+.studioQuestionPrimaryButton:hover:not(:disabled),
+.studioQuestionTagActionButton:hover:not(:disabled),
+.studioQuestionClearButton:hover:not(:disabled) {
+  background: var(--admin-support-control-strong-hover-background-color);
+}
+
+.studioQuestionSmallButton:hover:not(:disabled) {
+  background: var(--admin-support-control-hover-background-color);
+}
+
+.studioQuestionTagActionButton,
+.studioQuestionClearButton {
+  border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
+  background: var(--admin-support-control-strong-background-color);
+  color: var(--admin-support-control-strong-text-color);
+  padding: 0 0.55rem;
 }
 
 .studioQuestionTagActionButton {
-  border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
-  border-radius: var(--border-radius-sm);
-  background: var(--admin-support-control-strong-background-color);
-  color: var(--admin-support-control-strong-text-color);
-  padding: 2px 5px;
-  cursor: pointer;
   font: var(--admin-grid-overlay-font);
-  line-height: 1;
   letter-spacing: 0.02em;
 }
 
-.studioQuestionTagActionButton:hover {
-  background: var(--admin-support-control-strong-hover-background-color);
-}
-
-.studioQuestionClearButton {
-  border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
-  border-radius: var(--border-radius-sm);
-  background: var(--admin-support-control-strong-background-color);
-  color: var(--admin-support-control-strong-text-color);
-  padding: 3px var(--spacing-xs);
+.studioQuestionTagGhostButton {
+  min-height: 30px;
+  min-width: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--border-width-thin) solid transparent;
+  border-radius: var(--border-radius-md);
+  background: transparent;
+  color: var(--admin-support-control-text-color);
+  padding: 0 0.45rem;
+  line-height: 1;
   cursor: pointer;
-  font-family: var(--admin-support-control-font-family);
-  font-size: var(--font-size-xs);
-  font-weight: var(--admin-support-control-font-weight);
-  line-height: 1.25;
+  transition:
+    background-color var(--transition-short) ease,
+    border-color var(--transition-short) ease,
+    color var(--transition-short) ease,
+    opacity var(--transition-short) ease;
 }
 
-.studioQuestionClearButton:hover {
-  background: var(--admin-support-control-strong-hover-background-color);
+.studioQuestionTagGhostButton:hover:not(:disabled) {
+  background: var(--admin-support-control-hover-background-color);
+  border-color: color-mix(in srgb, var(--admin-support-control-border-color) 60%, transparent);
 }
 
 .studioQuestionDeleteButton {
   border: var(--border-width-thin) solid var(--admin-danger-border-color, #b84747);
   background: transparent;
   color: var(--admin-danger-text-color, #8a1f1f);
-  padding: 0 0.45rem;
+  padding: 0 0.55rem;
+}
+
+.studioQuestionDeleteButton:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--admin-danger-border-color, #b84747) 12%, transparent);
 }
 
 .studioQuestionPrimaryButton:disabled,
 .studioQuestionSmallButton:disabled,
 .studioQuestionDeleteButton:disabled,
 .studioQuestionTagActionButton:disabled,
+.studioQuestionTagGhostButton:disabled,
 .studioQuestionClearButton:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -1101,18 +1179,29 @@
 }
 
 .inlineActionButton {
+  min-height: 30px;
+  min-width: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: var(--border-width-thin) solid var(--admin-support-control-border-color);
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--border-radius-md);
   background: var(--admin-support-control-background-color);
   color: var(--admin-support-control-text-color);
   font-size: var(--font-size-xs);
-  padding: 1px 6px;
+  padding: 0 0.55rem;
+  line-height: 1;
   cursor: pointer;
+  transition:
+    background-color var(--transition-short) ease,
+    border-color var(--transition-short) ease,
+    color var(--transition-short) ease,
+    opacity var(--transition-short) ease;
 }
 
 .inlineActionIconButton {
-  min-width: 1.5rem;
-  padding: 1px 5px;
+  min-width: 34px;
+  padding: 0 0.55rem;
   text-align: center;
 }
 

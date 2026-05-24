@@ -2,6 +2,7 @@
 
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { FilterX, Pencil } from 'lucide-react';
 import { getMediaErrorSeverity, useMedia, type MediaFilters } from '@/components/providers/MediaProvider';
 import { useTag } from '@/components/providers/TagProvider';
 import MediaAdminGrid from '@/components/admin/media-admin/MediaAdminGrid';
@@ -405,8 +406,14 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                 <option value="filenameDesc">File Z-A</option>
               </select>
             </label>
-            <button type="button" onClick={handleClearFilters} className={styles.studioClearButton}>
-              Clear
+            <button
+              type="button"
+              onClick={handleClearFilters}
+              className={styles.studioClearButton}
+              aria-label="Clear media filters"
+              title="Clear media filters"
+            >
+              <FilterX size={16} aria-hidden="true" />
             </button>
           </div>
           <div className={styles.studioMediaMacroBlock}>
@@ -423,8 +430,10 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                     type="button"
                     className={styles.studioTagsEditButton}
                     onClick={() => setTagFilterModalOpen(true)}
+                    aria-label="Edit media tag filters"
+                    title="Edit media tag filters"
                   >
-                    Edit
+                    <Pencil size={16} aria-hidden="true" />
                   </button>
                 </div>
               }

@@ -163,16 +163,26 @@
 }
 
 .overlayEditButton {
+  min-height: 30px;
+  min-width: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-window-border-color) 88%, transparent);
   background: color-mix(in srgb, var(--admin-window-background-color) 92%, transparent);
   color: var(--admin-support-control-text-color);
-  border-radius: var(--border-radius-sm);
-  padding: 2px 8px;
+  border-radius: var(--border-radius-md);
+  padding: 0 0.55rem;
   font-family: var(--admin-support-control-font-family);
   font-size: 11px;
   font-weight: var(--font-weight-semibold);
-  line-height: 1.2;
+  line-height: 1;
   cursor: pointer;
+  transition:
+    background-color var(--transition-short) ease,
+    border-color var(--transition-short) ease,
+    color var(--transition-short) ease,
+    opacity var(--transition-short) ease;
 }
 
 .overlayEditButton:hover {

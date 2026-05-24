@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CirclePlus, FolderOpen, Link2Off, Pencil, Save, Trash2, X } from 'lucide-react';
+import { CirclePlus, FilterX, FolderOpen, Link2Off, Pencil, Save, Trash2, X } from 'lucide-react';
 import EditModal from '@/components/admin/card-admin/EditModal';
 import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
@@ -26,13 +26,22 @@ function isIncluded(question: Question): boolean {
   return question.usedByCardIds.length > 0;
 }
 
-function tagMatchesSelection(question: Question, tagId: string | null, descendantIds: Set<string>): boolean {
+function tagMatchesSelection(
+  question: Question,
+  tagId: string | null,
+  descendantIds: Set<string>,
+  includeChildren: boolean
+): boolean {
   if (!tagId) return true;
   if (tagId === UNTAGGED_FILTER_ID) return question.tagIds.length === 0;
-  return question.tagIds.some(id => id === tagId || descendantIds.has(id));
+  return question.tagIds.some(id => id === tagId || (includeChildren && descendantIds.has(id)));
 }
 
-function countQuestionsForTag(tag: TagWithChildren, questions: Question[]): number {
+function countQuestionsForTag(tag: TagWithChildren, questions: Question[], includeChildren: boolean): number {
+  if (!tag.docId) return 0;
+  if (!includeChildren) {
+    return questions.filter(q => q.tagIds.includes(tag.docId!)).length;
+  }
   const ids = new Set<string>();
   const collect = (node: TagWithChildren) => {
     if (node.docId) ids.add(node.docId);
@@ -79,12 +88,14 @@ function QuestionTagTree({
   nodes,
   questions,
   selectedTagId,
+  includeChildren,
   onSelect,
   depth = 0,
 }: {
   nodes: TagWithChildren[];
   questions: Question[];
   selectedTagId: string | null;
+  includeChildren: boolean;
   onSelect: (tagId: string) => void;
   depth?: number;
 }) {
@@ -92,7 +103,7 @@ function QuestionTagTree({
     <ul className={depth === 0 ? styles.studioQuestionTreeRoot : styles.studioQuestionTreeNested}>
       {nodes.map(node => {
         if (!node.docId) return null;
-        const count = countQuestionsForTag(node, questions);
+        const count = countQuestionsForTag(node, questions, includeChildren);
         if (count === 0 && depth > 0) return null;
         return (
           <li key={node.docId}>
@@ -109,6 +120,7 @@ function QuestionTagTree({
                 nodes={node.children}
                 questions={questions}
                 selectedTagId={selectedTagId}
+                includeChildren={includeChildren}
                 onSelect={onSelect}
                 depth={depth + 1}
               />
@@ -144,7 +156,8 @@ export default function StudioQuestionsPane() {
   const [search, setSearch] = useState('');
   const [includedFilter, setIncludedFilter] = useState<IncludedFilter>('all');
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
-  const [treeOpen, setTreeOpen] = useState(true);
+  const [includeChildren, setIncludeChildren] = useState(true);
+  const [treeOpen, setTreeOpen] = useState(false);
   const [filterTagIds, setFilterTagIds] = useState<string[]>([]);
   const [tagFilterModalOpen, setTagFilterModalOpen] = useState(false);
   const [newPrompt, setNewPrompt] = useState('');
@@ -218,13 +231,13 @@ export default function StudioQuestionsPane() {
       if (includedFilter === 'included' && !included) return false;
       if (includedFilter === 'notIncluded' && included) return false;
       if (q && !question.prompt_lowercase.includes(q)) return false;
-      if (!tagMatchesSelection(question, selectedTagId, selectedDescendantIds)) return false;
+      if (!tagMatchesSelection(question, selectedTagId, selectedDescendantIds, includeChildren)) return false;
       for (const ids of Object.values(groupedTagFilters)) {
         if (ids?.length && !ids.some((id) => question.tagIds.includes(id))) return false;
       }
       return true;
     });
-  }, [groupedTagFilters, includedFilter, questions, search, selectedDescendantIds, selectedTagId]);
+  }, [groupedTagFilters, includeChildren, includedFilter, questions, search, selectedDescendantIds, selectedTagId]);
 
   const saveQuestion = useCallback(async (questionId: string, body: { prompt?: string; tagIds?: string[] }) => {
     setBusyId(questionId);
@@ -434,12 +447,12 @@ export default function StudioQuestionsPane() {
         <h2 className={styles.studioComposeTitle}>Questions</h2>
         <button
           type="button"
-          className={styles.studioQuestionSmallButton}
+          className={`${styles.studioQuestionPrimaryButton} ${styles.studioQuestionAddButton}`}
           onClick={() => setCreateOpen(open => !open)}
           aria-label={createOpen ? 'Close question form' : 'Add question'}
           title={createOpen ? 'Close question form' : 'Add question'}
         >
-          {createOpen ? <X size={14} aria-hidden="true" /> : <CirclePlus size={14} aria-hidden="true" />}
+          {createOpen ? <X size={16} aria-hidden="true" /> : <CirclePlus size={16} aria-hidden="true" />}
         </button>
       </div>
 
@@ -466,7 +479,7 @@ export default function StudioQuestionsPane() {
                 aria-label={createAdvancedTagEditorOpen ? 'Close tag editor' : 'Edit tags'}
                 title={createAdvancedTagEditorOpen ? 'Close tag editor' : 'Edit tags'}
               >
-                {createAdvancedTagEditorOpen ? <X size={14} aria-hidden="true" /> : <Pencil size={14} aria-hidden="true" />}
+                {createAdvancedTagEditorOpen ? <X size={16} aria-hidden="true" /> : <Pencil size={16} aria-hidden="true" />}
               </button>
             }
           />
@@ -488,7 +501,7 @@ export default function StudioQuestionsPane() {
               aria-label="Save question"
               title="Save question"
             >
-              <Save size={14} aria-hidden="true" />
+              <Save size={16} aria-hidden="true" />
             </button>
             <button
               type="button"
@@ -498,7 +511,7 @@ export default function StudioQuestionsPane() {
               aria-label="Cancel question"
               title="Cancel question"
             >
-              <X size={14} aria-hidden="true" />
+              <X size={16} aria-hidden="true" />
             </button>
           </div>
         </form>
@@ -518,11 +531,17 @@ export default function StudioQuestionsPane() {
             onChange={e => setIncludedFilter(e.target.value as IncludedFilter)}
           >
             <option value="all">All questions</option>
-            <option value="included">Included</option>
-            <option value="notIncluded">Not included</option>
+            <option value="included">Assigned</option>
+            <option value="notIncluded">Unassigned</option>
           </select>
-          <button type="button" className={styles.studioQuestionClearButton} onClick={clearFilters}>
-            Clear
+          <button
+            type="button"
+            className={styles.studioQuestionClearButton}
+            onClick={clearFilters}
+            aria-label="Clear question filters"
+            title="Clear question filters"
+          >
+            <FilterX size={16} aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -541,7 +560,7 @@ export default function StudioQuestionsPane() {
               className={styles.studioQuestionTagActionButton}
               onClick={() => setTagFilterModalOpen(true)}
             >
-              Edit
+              <Pencil size={16} aria-hidden="true" />
             </button>
           }
         />
@@ -567,6 +586,15 @@ export default function StudioQuestionsPane() {
           <span>All questions</span>
           <span>{treeOpen ? 'Hide' : 'Show'}</span>
         </button>
+        <label className={styles.studioQuestionToggleLabel}>
+          <input
+            type="checkbox"
+            className={styles.studioQuestionToggleInput}
+            checked={includeChildren}
+            onChange={event => setIncludeChildren(event.target.checked)}
+          />
+          <span>Include children</span>
+        </label>
         {treeOpen ? (
           <div className={styles.studioQuestionTreePanel}>
             <button
@@ -589,6 +617,7 @@ export default function StudioQuestionsPane() {
               nodes={allDimensionNodes}
               questions={questions}
               selectedTagId={selectedTagId}
+              includeChildren={includeChildren}
               onSelect={setSelectedTagId}
             />
           </div>
@@ -629,7 +658,11 @@ export default function StudioQuestionsPane() {
               ) : (
                 <div className={styles.studioQuestionPrompt}>{question.prompt}</div>
               )}
-              <div className={styles.studioQuestionTagEditor}>
+              <div
+                className={styles.studioQuestionTagEditor}
+                onClick={(event) => event.stopPropagation()}
+                onKeyDown={(event) => event.stopPropagation()}
+              >
                 <DimensionalTagVerticalChips
                   tagIds={activeTagIds}
                   allTags={allTags}
@@ -656,19 +689,28 @@ export default function StudioQuestionsPane() {
                   disabled={busy}
                   variant="searchOnly"
                   searchPlaceholder="Edit tags..."
+                  trailingSlot={
+                    <button
+                      type="button"
+                      className={styles.studioQuestionTagGhostButton}
+                      disabled={busy}
+                      onClick={() => {
+                        if (editing) {
+                          setAdvancedTagEditorId(current => current === question.docId ? null : question.docId);
+                          return;
+                        }
+                        setEditingId(question.docId);
+                        setEditPrompt(question.prompt);
+                        setEditTagIds(question.tagIds);
+                        setAdvancedTagEditorId(question.docId);
+                      }}
+                      aria-label={editing && advancedTagEditorId === question.docId ? 'Close tag editor' : 'Edit tags'}
+                      title={editing && advancedTagEditorId === question.docId ? 'Close tag editor' : 'Edit tags'}
+                    >
+                      {editing && advancedTagEditorId === question.docId ? <X size={16} aria-hidden="true" /> : <Pencil size={16} aria-hidden="true" />}
+                    </button>
+                  }
                 />
-                {editing ? (
-                  <button
-                    type="button"
-                    className={styles.studioQuestionTagActionButton}
-                    disabled={busy}
-                    onClick={() => setAdvancedTagEditorId(current => current === question.docId ? null : question.docId)}
-                    aria-label={advancedTagEditorId === question.docId ? 'Close tag editor' : 'Edit tags'}
-                    title={advancedTagEditorId === question.docId ? 'Close tag editor' : 'Edit tags'}
-                  >
-                    {advancedTagEditorId === question.docId ? <X size={14} aria-hidden="true" /> : <Pencil size={14} aria-hidden="true" />}
-                  </button>
-                ) : null}
                 {editing && advancedTagEditorId === question.docId ? (
                   <MacroTagSelector
                     selectedTags={selectedEditTags}
@@ -680,7 +722,11 @@ export default function StudioQuestionsPane() {
                   />
                 ) : null}
               </div>
-              <div className={styles.studioQuestionActions}>
+              <div
+                className={styles.studioQuestionActions}
+                onClick={(event) => event.stopPropagation()}
+                onKeyDown={(event) => event.stopPropagation()}
+              >
                 {editing ? (
                   <>
                     <button
@@ -691,7 +737,7 @@ export default function StudioQuestionsPane() {
                       aria-label="Save question"
                       title="Save question"
                     >
-                      <Save size={14} aria-hidden="true" />
+                      <Save size={16} aria-hidden="true" />
                     </button>
                     <button
                       type="button"
@@ -704,7 +750,7 @@ export default function StudioQuestionsPane() {
                       aria-label="Cancel editing"
                       title="Cancel editing"
                     >
-                      <X size={14} aria-hidden="true" />
+                      <X size={16} aria-hidden="true" />
                     </button>
                     <button
                       type="button"
@@ -714,24 +760,24 @@ export default function StudioQuestionsPane() {
                       aria-label="Delete question"
                       title="Delete question"
                     >
-                      <Trash2 size={14} aria-hidden="true" />
+                      <Trash2 size={16} aria-hidden="true" />
                     </button>
                   </>
                 ) : (
                   <>
                     <button
                       type="button"
-                      className={styles.studioQuestionPrimaryButton}
+                      className={styles.studioQuestionSmallButton}
                       disabled={busy}
                       onClick={() => void openQuestionCard(question)}
                       aria-label={included ? 'Open question card in Compose' : 'Create answer card in Compose'}
                       title={included ? 'Open question card in Compose' : 'Create answer card in Compose'}
                     >
-                      <FolderOpen size={14} aria-hidden="true" />
+                      <FolderOpen size={16} aria-hidden="true" />
                     </button>
                     <button
                       type="button"
-                      className={styles.studioQuestionSmallButton}
+                      className={styles.studioQuestionPrimaryButton}
                       disabled={busy}
                       onClick={() => {
                         setEditingId(question.docId);
@@ -742,28 +788,34 @@ export default function StudioQuestionsPane() {
                       aria-label="Edit question"
                       title="Edit question"
                     >
-                      <Pencil size={14} aria-hidden="true" />
+                      <Pencil size={16} aria-hidden="true" />
                     </button>
                     <button
                       type="button"
                       className={styles.studioQuestionDeleteButton}
                       disabled={busy}
-                      onClick={() => setDeleteConfirmQuestion(question)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setDeleteConfirmQuestion(question);
+                      }}
                       aria-label="Delete question"
                       title="Delete question"
                     >
-                      <Trash2 size={14} aria-hidden="true" />
+                      <Trash2 size={16} aria-hidden="true" />
                     </button>
                     {included ? (
                       <button
                         type="button"
                         className={styles.studioQuestionSmallButton}
                         disabled={busy}
-                        onClick={() => setUnlinkConfirmQuestion(question)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setUnlinkConfirmQuestion(question);
+                        }}
                         aria-label="Unlink question from card"
                         title="Unlink question from card"
                       >
-                        <Link2Off size={14} aria-hidden="true" />
+                        <Link2Off size={16} aria-hidden="true" />
                       </button>
                     ) : null}
                   </>

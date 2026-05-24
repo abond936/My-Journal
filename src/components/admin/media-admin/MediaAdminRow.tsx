@@ -2,6 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { Crosshair, Pencil, RefreshCw, Trash2 } from 'lucide-react';
 import JournalImage from '@/components/common/JournalImage';
 import EditModal from '@/components/admin/card-admin/EditModal';
 import { Media } from '@/lib/types/photo';
@@ -227,8 +228,10 @@ export default function MediaAdminRow({
               type="button"
               className={styles.focalEditButton}
               onClick={() => setFocalModalOpen(true)}
+              aria-label="Edit focal point"
+              title="Edit focal point"
             >
-              Edit focal
+              <Crosshair size={16} aria-hidden="true" />
             </button>
           </div>
         );
@@ -270,8 +273,9 @@ export default function MediaAdminRow({
               className={styles.actionButton}
               title="Edit image details"
               disabled={replacing}
+              aria-label="Edit image details"
             >
-              Edit
+              <Pencil size={16} aria-hidden="true" />
             </button>
             {focalInActions ? (
               <button
@@ -280,8 +284,9 @@ export default function MediaAdminRow({
                 className={styles.actionButton}
                 title="Set default focal point (crop)"
                 disabled={replacing}
+                aria-label="Set default focal point"
               >
-                Focal
+                <Crosshair size={16} aria-hidden="true" />
               </button>
             ) : null}
             <input
@@ -297,8 +302,13 @@ export default function MediaAdminRow({
               className={styles.actionButton}
               title="Replace image file"
               disabled={replacing}
+              aria-label={replacing ? 'Replacing image file' : 'Replace image file'}
             >
-              {replacing ? '…' : 'Replace'}
+              <RefreshCw
+                size={16}
+                aria-hidden="true"
+                className={replacing ? styles.actionIconSpinning : undefined}
+              />
             </button>
             <button
               type="button"
@@ -306,8 +316,9 @@ export default function MediaAdminRow({
               className={`${styles.actionButton} ${styles.deleteButton}`}
               title="Delete"
               disabled={replacing}
+              aria-label="Delete media"
             >
-              Delete
+              <Trash2 size={16} aria-hidden="true" />
             </button>
           </div>
         );

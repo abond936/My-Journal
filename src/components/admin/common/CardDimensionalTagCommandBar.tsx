@@ -250,6 +250,7 @@ export default function CardDimensionalTagCommandBar({
           disabled={disabled || saving}
           aria-autocomplete="list"
         />
+        {variant === 'searchOnly' && trailingSlot ? <div className={styles.searchTrailing}>{trailingSlot}</div> : null}
       </div>
 
       {query.trim() && suggestions.length > 0 ? (

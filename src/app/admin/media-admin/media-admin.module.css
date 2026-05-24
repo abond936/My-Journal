@@ -115,15 +115,25 @@
 }
 
 .studioTagsEditButton {
+  min-height: 30px;
+  min-width: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--border-radius-md);
   background: var(--admin-support-control-strong-background-color);
   color: var(--admin-support-control-strong-text-color);
-  padding: 2px 5px;
+  padding: 0 0.55rem;
   cursor: pointer;
   font: var(--admin-grid-overlay-font);
   line-height: 1;
   letter-spacing: 0.02em;
+  transition:
+    background-color var(--transition-short) ease,
+    border-color var(--transition-short) ease,
+    color var(--transition-short) ease,
+    opacity var(--transition-short) ease;
 }
 
 .studioTagsEditButton:hover {
@@ -169,9 +179,14 @@
 }
 
 .studioClearButton {
+  min-height: 30px;
+  min-width: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   align-self: flex-end;
-  padding: 3px var(--spacing-xs);
-  border-radius: var(--border-radius-sm);
+  padding: 0 0.55rem;
+  border-radius: var(--border-radius-md);
   border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
   background: var(--admin-support-control-strong-background-color);
   color: var(--admin-support-control-strong-text-color);
@@ -179,7 +194,12 @@
   font-family: var(--admin-support-control-font-family);
   font-size: var(--font-size-xs);
   font-weight: var(--admin-support-control-font-weight);
-  line-height: 1.25;
+  line-height: 1;
+  transition:
+    background-color var(--transition-short) ease,
+    border-color var(--transition-short) ease,
+    color var(--transition-short) ease,
+    opacity var(--transition-short) ease;
 }
 
 .studioClearButton:hover {

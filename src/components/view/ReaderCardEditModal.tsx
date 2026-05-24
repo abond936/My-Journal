@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import useSWR, { mutate as globalMutate } from 'swr';
+import { Copy, Save, Trash2, Undo2, X } from 'lucide-react';
 import CardForm from '@/components/admin/card-admin/CardForm';
 import { CardFormProvider, useCardForm } from '@/components/providers/CardFormProvider';
 import { useOptionalCardContext } from '@/components/providers/CardProvider';
@@ -78,42 +79,52 @@ function ModalActions({
       <button
         type="button"
         onClick={() => void handleDelete()}
-        className={studioStyles.studioComposeCancelButton}
+        className={studioStyles.studioComposeDeleteButton}
         disabled={isDeleting}
+        aria-label={isDeleting ? 'Deleting card' : 'Delete card'}
+        title={isDeleting ? 'Deleting card' : 'Delete card'}
       >
-        {isDeleting ? 'Deleting…' : 'Delete'}
+        <Trash2 size={16} aria-hidden="true" />
       </button>
       <button
         type="button"
         onClick={() => void handleDuplicate()}
         className={studioStyles.studioComposeCancelButton}
         disabled={isDuplicating}
+        aria-label={isDuplicating ? 'Duplicating card' : 'Duplicate card'}
+        title={isDuplicating ? 'Duplicating card' : 'Duplicate card'}
       >
-        {isDuplicating ? 'Duplicating…' : 'Duplicate'}
+        <Copy size={16} aria-hidden="true" />
       </button>
       <button
         type="button"
         onClick={() => void handleClose()}
         className={studioStyles.studioComposeCancelButton}
         disabled={isSaving}
+        aria-label="Close compose window"
+        title="Close compose window"
       >
-        Close
+        <X size={16} aria-hidden="true" />
       </button>
       <button
         type="button"
         onClick={() => void handleCancel()}
         className={studioStyles.studioComposeCancelButton}
         disabled={!isDirty || isSaving}
+        aria-label="Discard changes"
+        title="Discard changes"
       >
-        Cancel
+        <Undo2 size={16} aria-hidden="true" />
       </button>
       <button
         type="submit"
         form="card-form"
         className={studioStyles.studioComposeSaveButton}
         disabled={!isDirty || isSaving}
+        aria-label={isSaving ? 'Saving card' : 'Save card'}
+        title={isSaving ? 'Saving card' : 'Save card'}
       >
-        {isSaving ? 'Saving…' : 'Save'}
+        <Save size={16} aria-hidden="true" />
       </button>
     </div>
   );

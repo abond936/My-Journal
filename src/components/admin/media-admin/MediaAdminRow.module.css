@@ -234,13 +234,24 @@ tr.rowCompact > td.cell {
 }
 
 .focalEditButton {
-  padding: var(--spacing-xs) var(--spacing-sm);
+  min-height: 30px;
+  min-width: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.55rem;
   font-size: var(--font-size-xs);
   border: var(--border-width-thin) solid var(--admin-support-control-border-color);
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--border-radius-md);
   background: var(--admin-support-control-background-color);
   color: var(--admin-support-control-text-color);
+  line-height: 1;
   cursor: pointer;
+  transition:
+    background-color var(--transition-short) ease,
+    border-color var(--transition-short) ease,
+    color var(--transition-short) ease,
+    opacity var(--transition-short) ease;
 }
 
 .focalEditButton:hover {
@@ -429,18 +440,19 @@ tr.rowCompact > td.cell {
 }
 
 .actionButton {
-  padding: 2px var(--spacing-xs);
+  padding: 0 0.55rem;
   border: var(--border-width-thin) solid var(--admin-support-control-border-color);
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--border-radius-md);
   background: var(--admin-support-control-background-color);
   color: var(--admin-support-control-text-color);
   cursor: pointer;
   font-size: var(--font-size-xs);
-  line-height: 1.2;
+  line-height: 1;
   transition: background-color var(--transition-short);
   min-width: 0;
   width: auto;
-  min-height: 1.5rem;
+  min-height: 30px;
+  min-width: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -469,6 +481,10 @@ tr.rowCompact > td.cell {
   border-color: var(--state-error-border-color);
   color: var(--state-error-text-color);
   background: transparent;
+}
+
+.actionIconSpinning {
+  animation: mediaActionSpin 1s linear infinite;
 }
 
 @media (max-width: 768px) {
@@ -500,4 +516,10 @@ tr.rowCompact > td.cell {
   .objectPosition {
     font-size: var(--font-size-xs);
   }
-} 
+}
+
+@keyframes mediaActionSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}

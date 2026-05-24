@@ -463,10 +463,14 @@
 }
 
 .compactTagEditButton {
-  min-height: 28px;
-  padding: 0 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  min-width: 34px;
+  padding: 0 0.55rem;
   border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--border-radius-md);
   background: var(--admin-support-control-strong-background-color);
   color: var(--admin-support-control-strong-text-color);
   font-family: var(--admin-support-control-font-family);
@@ -474,6 +478,11 @@
   font-weight: var(--font-weight-medium);
   line-height: 1;
   cursor: pointer;
+  transition:
+    background-color var(--transition-short) ease,
+    border-color var(--transition-short) ease,
+    color var(--transition-short) ease,
+    opacity var(--transition-short) ease;
 }
 
 .compactTagEditButton:hover:not(:disabled) {

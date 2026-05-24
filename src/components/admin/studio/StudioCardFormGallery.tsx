@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ImageUp, Pencil, Save, Trash2 } from 'lucide-react';
 import JournalImage from '@/components/common/JournalImage';
 import EditModal from '@/components/admin/card-admin/EditModal';
 import { useCardForm } from '@/components/providers/CardFormProvider';
@@ -131,27 +132,33 @@ export default function StudioCardFormGallery({
                   <div className={styles.studioGalleryActions}>
                     <button
                       type="button"
-                      className={styles.inlineActionButton}
+                      className={`${styles.inlineActionButton} ${styles.inlineActionIconButton}`}
                       disabled={disabled || item.mediaId === currentCoverMediaId}
                       onClick={() => onSetAsCover(item)}
+                      aria-label={item.mediaId === currentCoverMediaId ? 'Current cover image' : 'Set as cover image'}
+                      title={item.mediaId === currentCoverMediaId ? 'Current cover image' : 'Set as cover image'}
                     >
-                      {item.mediaId === currentCoverMediaId ? 'Cover' : 'Set cover'}
+                      <ImageUp size={16} aria-hidden="true" />
                     </button>
                     <button
                       type="button"
-                      className={styles.inlineActionButton}
+                      className={`${styles.inlineActionButton} ${styles.inlineActionIconButton}`}
                       disabled={disabled}
                       onClick={() => setEditingItemId(item.mediaId)}
+                      aria-label="Edit gallery item"
+                      title="Edit gallery item"
                     >
-                      Edit
+                      <Pencil size={16} aria-hidden="true" />
                     </button>
                     <button
                       type="button"
-                      className={styles.inlineActionButton}
+                      className={`${styles.inlineActionButton} ${styles.inlineActionIconButton}`}
                       disabled={disabled}
                       onClick={() => removeFromGallery(item)}
+                      aria-label="Remove from gallery"
+                      title="Remove from gallery"
                     >
-                      Remove
+                      <Trash2 size={16} aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -308,8 +315,10 @@ function StudioGalleryItemEditor({
               ...(hasFocalOverride ? { objectPosition } : {}),
             });
           }}
+          aria-label="Save gallery item changes"
+          title="Save gallery item changes"
         >
-          Save
+          <Save size={16} aria-hidden="true" />
         </button>
       </div>
     </div>

@@ -267,6 +267,12 @@
   justify-content: flex-start;
 }
 
+.searchTrailing {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+}
+
 .searchInputFoot {
   flex: 0 1 auto;
   width: 100%;

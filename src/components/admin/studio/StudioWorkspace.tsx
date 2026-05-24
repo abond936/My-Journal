@@ -45,8 +45,8 @@ const MIN_CARD_EDIT_PX = 220;
 const MIN_QUESTIONS_PX = 200;
 const MIN_MEDIA_BANK_PX = 180;
 /** Default Compose column width (px) when no saved preference; double-click handle resets here. */
-const DEFAULT_CARD_EDIT_WIDTH = 420;
-const DEFAULT_QUESTIONS_WIDTH = 320;
+const DEFAULT_CARD_EDIT_WIDTH = 357;
+const DEFAULT_QUESTIONS_WIDTH = 272;
 /** Upper cap so Compose does not grow past a comfortable editing line length even on ultra-wide rows. */
 const MAX_CARD_EDIT_WIDTH = 1200;
 const MAX_QUESTIONS_WIDTH = 840;

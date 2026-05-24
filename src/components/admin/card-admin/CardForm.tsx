@@ -2,6 +2,7 @@
 
 import React, { useRef, useCallback, useState, useMemo, useEffect } from 'react';
 import { DndContext } from '@dnd-kit/core';
+import { Pencil } from 'lucide-react';
 import { Card, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { Media } from '@/lib/types/photo';
 import { dehydrateCardForSave, extractMediaFromContent, generateExcerpt } from '@/lib/utils/cardUtils';
@@ -1104,8 +1105,10 @@ const CardForm: React.FC = () => {
                   className={styles.compactTagEditButton}
                   disabled={isSaving}
                   onClick={() => setTagMacroExpanded(true)}
+                  aria-label="Edit tags"
+                  title="Edit tags"
                 >
-                  Edit
+                  <Pencil size={16} aria-hidden="true" />
                 </button>
               }
             />

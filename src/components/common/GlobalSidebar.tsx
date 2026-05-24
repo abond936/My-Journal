@@ -450,7 +450,43 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                 <span className={styles.srOnly}>Clear filters</span>
               </button>
             </div>
+            {!showViewTagLibrary || viewTagSidebarTab === 'filter' ? (
+              <div className={`${styles.sectionControlRow} ${styles.headerDimensionControls}`}>
+                <h3 className={styles.sectionHeading}>Tags</h3>
+                <div className={styles.sectionControlRowMain}>
+                  <div className={styles.dimensionTabs} role="tablist" aria-label="Tag dimensions">
+                    {FREEFORM_DIMENSION_TABS.map(({ id, label, Icon }) => (
+                      <button
+                        key={id}
+                        type="button"
+                        role="tab"
+                        aria-selected={browseDimension === id}
+                        title={label}
+                        className={`${styles.dimensionTab} ${browseDimension === id ? styles.dimensionTabActive : ''}`}
+                        onClick={() => setActiveDimension(id)}
+                      >
+                        <span className={styles.srOnly}>{label}</span>
+                        <span className={styles.dimensionTabIcon} aria-hidden>
+                          <Icon strokeWidth={2} />
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.iconActionButton}
+                    onClick={() => setShowFeedOptions((current) => !current)}
+                    aria-expanded={showFeedOptions}
+                    aria-label="More controls"
+                    title="More controls"
+                  >
+                    <SlidersHorizontal strokeWidth={2} />
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </div>
+          <div className={styles.sidebarBody}>
 
           {isTagMode ? (
             <>
@@ -490,41 +526,6 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
               ) : null}
 
               <div className={styles.sidebarSection}>
-                {!showViewTagLibrary || viewTagSidebarTab === 'filter' ? (
-                  <div className={`${styles.sectionControlRow} ${styles.mobileStickyDimensionControls}`}>
-                    <h3 className={styles.sectionHeading}>Tags</h3>
-                    <div className={styles.sectionControlRowMain}>
-                      <div className={styles.dimensionTabs} role="tablist" aria-label="Tag dimensions">
-                        {FREEFORM_DIMENSION_TABS.map(({ id, label, Icon }) => (
-                          <button
-                            key={id}
-                            type="button"
-                            role="tab"
-                            aria-selected={browseDimension === id}
-                            title={label}
-                            className={`${styles.dimensionTab} ${browseDimension === id ? styles.dimensionTabActive : ''}`}
-                            onClick={() => setActiveDimension(id)}
-                          >
-                            <span className={styles.srOnly}>{label}</span>
-                            <span className={styles.dimensionTabIcon} aria-hidden>
-                              <Icon strokeWidth={2} />
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                      <button
-                        type="button"
-                        className={styles.iconActionButton}
-                        onClick={() => setShowFeedOptions((current) => !current)}
-                        aria-expanded={showFeedOptions}
-                        aria-label="More controls"
-                        title="More controls"
-                      >
-                        <SlidersHorizontal strokeWidth={2} />
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
                 {showViewTagLibrary ? (
                   <div className={styles.viewTagSidebarTabs} role="tablist" aria-label="Tag sidebar mode">
                     <button
@@ -744,6 +745,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
               </div>
             </nav>
           )}
+          </div>
         </>
       ) : null}
     </div>

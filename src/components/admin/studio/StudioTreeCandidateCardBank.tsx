@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { FilterX, Pencil } from 'lucide-react';
 import { useStudioShell } from '@/components/admin/studio/StudioShellContext';
 import { useTag } from '@/components/providers/TagProvider';
 import CardAdminGrid from '@/components/admin/card-admin/CardAdminGrid';
@@ -714,8 +715,14 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
             <option value="createdAsc">Oldest</option>
           </select>
         </label>
-        <button type="button" className={styles.studioCardClearButton} onClick={handleClearAllFilters}>
-          Clear
+        <button
+          type="button"
+          className={styles.studioCardClearButton}
+          onClick={handleClearAllFilters}
+          aria-label="Clear card filters"
+          title="Clear card filters"
+        >
+          <FilterX size={16} aria-hidden="true" />
         </button>
         {isStreamingMore ? (
           <span
@@ -747,8 +754,10 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
                 type="button"
                 className={styles.studioTagsEditButton}
                 onClick={() => setTagFilterModalOpen(true)}
+                aria-label="Edit card tag filters"
+                title="Edit card tag filters"
               >
-                Edit
+                <Pencil size={16} aria-hidden="true" />
               </button>
             </div>
           }
