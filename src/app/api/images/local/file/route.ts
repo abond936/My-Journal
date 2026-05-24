@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
 import fs from 'fs/promises';
 import path from 'path';
 import { lookup } from 'mime-types';
+import { authOptions } from '@/lib/auth/authOptions';
 
 const ONEDRIVE_ROOT_FOLDER = process.env.ONEDRIVE_ROOT_FOLDER;
 
 export async function GET(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== 'admin') {
+    return new NextResponse('Forbidden', { status: 403 });
+  }
+
   if (!ONEDRIVE_ROOT_FOLDER) {
     return new NextResponse('Server configuration error: Root folder not specified.', { status: 500 });
   }

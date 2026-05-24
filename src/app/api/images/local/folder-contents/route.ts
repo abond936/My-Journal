@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
 import fs from 'fs/promises';
 import path from 'path';
 import sizeOf from 'image-size';
 import { PickerMedia } from '@/lib/types/photo';
+import { authOptions } from '@/lib/auth/authOptions';
 
 const ONEDRIVE_ROOT_FOLDER = process.env.ONEDRIVE_ROOT_FOLDER;
 const SUPPORTED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
@@ -12,6 +14,11 @@ const toSystemPath = (p: string) => p.split('/').join(path.sep);
 const toDatabasePath = (p: string) => p.split(path.sep).join('/');
 
 export async function POST(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== 'admin') {
+    return NextResponse.json({ message: 'Forbidden.' }, { status: 403 });
+  }
+
   if (!ONEDRIVE_ROOT_FOLDER) {
     return NextResponse.json({ message: 'Server configuration error.' }, { status: 500 });
   }

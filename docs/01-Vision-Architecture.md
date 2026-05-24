@@ -136,7 +136,7 @@ Phone-native and scanned-photo imports are both first-class inputs. The product 
   - **Quality** - QA app.
   - **Security Hardening** - Threat-model review, authorization review, secret-handling review, and hosted deployment hardening for commercial readiness.
   - **Testing** - Expand automated coverage on workflow-critical, integrity-critical, and commercially sensitive paths.
-  - **Access & privacy gate** - Verify reader/admin role boundaries, direct URL behavior, temporary audience scope, hosted auth configuration, and absence of admin affordance leakage.
+  - **Access & privacy gate** - Re-verify hosted reader/admin boundaries in deployed use: direct URL behavior, hosted auth/session configuration, and absence of admin affordance leakage. Local import helpers are expected to remain admin-only operational routes; audience-based reader sharing is future scope, not part of current v1 verification.
   - **Integrity gate expansion** - Expand integrity verification for card-media references, tag counts, derived card fields, delete/replace graph behavior, and import drift detection.
   - **Import trust gate** - Verify source identity, duplicate signals, metadata preservation, partial-failure handling, and operator recovery paths for import workflows.
   - **Operational recovery gate** - Verify database backup, local secrets backup, restore drill, rollback/incident response, and admin account recovery before commercial release.
@@ -165,6 +165,7 @@ Phone-native and scanned-photo imports are both first-class inputs. The product 
 📐 **Auth at Rollout** - At go-live prep, run `npm run seed:journal-users` once to create the single admin in Firestore (`journal_users`) when that collection is empty.
 📐 **Post Seed** - After seed, manage access in Admin > Users (`/admin/journal-users`): create viewer accounts, set/reset passwords, enable/disable access.
 📐 **One Admin** - One admin (author), all other accounts are viewers.
+📐 **Local source helpers** - OneDrive-backed helper routes under `/api/images/local/*` are admin-only operational/import surfaces tied to `ONEDRIVE_ROOT_FOLDER`; they are not part of the reader trust boundary and must not be exposed to anonymous or viewer sessions.
 
 📐 **Tenant path** - v1 is intentionally **single-tenant** and optimized for one author plus viewers. Near-term commercial follow-up should plan for **multi-tenant** isolation without weakening current integrity guarantees.
 

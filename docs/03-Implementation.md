@@ -273,7 +273,7 @@ Legend:
 - **Quality** - QA app.
 - **Security Hardening** - Threat-model review, authorization review, secret-handling review, and hosted deployment hardening for commercial readiness.
 - **Testing** - Expand automated coverage on workflow-critical, integrity-critical, and commercially sensitive paths.
-- **Access & privacy gate** - Verify reader/admin role boundaries, direct URL behavior, hosted auth configuration, and absence of admin affordance leakage. Audience-based reader access is a potential future feature, not current v1 scope.
+- **Access & privacy gate** - Re-verify hosted reader/admin boundaries in deployed use: direct URL behavior, hosted auth/session configuration, and absence of admin affordance leakage. Local import helpers are expected to remain admin-only operational routes; audience-based reader sharing is future scope, not part of current v1 verification.
 - **Integrity gate expansion** - Expand integrity verification for card-media references, tag counts, derived card fields, delete/replace graph behavior, and import drift detection.
 - **Import trust gate** - Verify source identity, duplicate signals, metadata preservation, partial-failure handling, and operator recovery paths for import workflows.
 - **Operational recovery gate** - Verify database backup, local secrets backup, restore drill, rollback/incident response, and admin account recovery before commercial release.

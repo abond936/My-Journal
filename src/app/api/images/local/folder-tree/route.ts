@@ -1,9 +1,11 @@
 // src/app/api/photos/folder-tree/route.ts
 
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
 import fs from 'fs';
 import path from 'path';
 import { TreeNode } from '@/lib/types/photo';
+import { authOptions } from '@/lib/auth/authOptions';
 
 // Define the path to the root directory from environment variables.
 const baseDir = process.env.ONEDRIVE_ROOT_FOLDER;
@@ -41,6 +43,11 @@ const getDirectoryTree = (dirPath: string): TreeNode[] => {
 };
 
 export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== 'admin') {
+    return NextResponse.json({ message: 'Forbidden.' }, { status: 403 });
+  }
+
   // Ensure the environment variable is set.
   if (!baseDir) {
     console.error('ONEDRIVE_ROOT_FOLDER environment variable not set.');
