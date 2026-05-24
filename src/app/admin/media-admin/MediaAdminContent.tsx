@@ -16,6 +16,7 @@ import {
   groupSelectedTagIdsByDimension,
 } from '@/lib/utils/tagUtils';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
+import { useStudioShellOptional } from '@/components/admin/studio/StudioShellContext';
 
 export type MediaAdminContentProps = {
   /** When true (e.g. Admin Studio column), use compact scroll layout. */
@@ -47,10 +48,33 @@ const DEFAULT_DIMENSION_FILTERS: DimensionFilterState = {
   where: { mode: 'any', tagId: '' },
 };
 
+function collectAssignedMediaIdsForCard(
+  card:
+    | {
+        coverImageId?: string | null;
+        galleryMedia?: Array<{ mediaId?: string | null }>;
+        contentMedia?: string[];
+      }
+    | null
+    | undefined
+): string[] {
+  if (!card) return [];
+  const ids = new Set<string>();
+  if (card.coverImageId) ids.add(card.coverImageId);
+  (card.galleryMedia ?? []).forEach((item) => {
+    if (item?.mediaId) ids.add(item.mediaId);
+  });
+  (card.contentMedia ?? []).forEach((mediaId) => {
+    if (mediaId) ids.add(mediaId);
+  });
+  return Array.from(ids);
+}
+
 export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const { embedded = false, studioSourceDraggable = false } = props;
   const router = useRouter();
   const feedback = useAppFeedback();
+  const studioShell = useStudioShellOptional();
   const {
     media,
     loading,
@@ -70,6 +94,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     bulkApplyTags,
     dimensionalQueryOverlay,
     setDimensionalQueryOverlay,
+    resolveMediaById,
   } = useMedia();
 
   const { tags: allTags } = useTag();
@@ -91,6 +116,11 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const [dimensionFilters, setDimensionFilters] = useState<DimensionFilterState>(DEFAULT_DIMENSION_FILTERS);
   const [clientSort, setClientSort] = useState<'none' | 'filenameAsc' | 'filenameDesc'>('none');
   const [searchDraft, setSearchDraft] = useState(filters.search);
+  const [highlightAssigned, setHighlightAssigned] = useState(true);
+  const [showOnlyAssigned, setShowOnlyAssigned] = useState(false);
+  const [visibleAssignedCount, setVisibleAssignedCount] = useState(0);
+  const [assignedOnlyMedia, setAssignedOnlyMedia] = useState<typeof media>([]);
+  const [assignedOnlyLoading, setAssignedOnlyLoading] = useState(false);
 
   useEffect(() => {
     setSearchDraft(filters.search);
@@ -198,6 +228,60 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     return allTags.filter((t) => t.docId && ids.has(t.docId!));
   }, [allTags, dimensionalQueryOverlay]);
 
+  const activeStudioCard = studioShell?.selectedDetail ?? studioShell?.selectedPreview ?? null;
+  const activeStudioCardAssignedMediaIds = useMemo(
+    () => collectAssignedMediaIdsForCard(activeStudioCard),
+    [activeStudioCard]
+  );
+  const hiddenAssignedCount = Math.max(
+    0,
+    activeStudioCardAssignedMediaIds.length - visibleAssignedCount
+  );
+  const showAssignedHighlightControls =
+    embedded && Boolean(activeStudioCard?.docId) && activeStudioCardAssignedMediaIds.length > 0;
+  const assignedOnlyCount = activeStudioCardAssignedMediaIds.length;
+
+  useEffect(() => {
+    if (!showAssignedHighlightControls && showOnlyAssigned) {
+      setShowOnlyAssigned(false);
+    }
+  }, [showAssignedHighlightControls, showOnlyAssigned]);
+
+  useEffect(() => {
+    if (!showOnlyAssigned) return;
+    let cancelled = false;
+    const loadAssignedOnlyMedia = async () => {
+      setAssignedOnlyLoading(true);
+      try {
+        const loaded = await Promise.all(
+          activeStudioCardAssignedMediaIds.map(async (mediaId) => {
+            const cached = media.find((item) => item.docId === mediaId) ?? resolveMediaById(mediaId);
+            if (cached) return cached;
+            try {
+              const response = await fetch(`/api/images/${encodeURIComponent(mediaId)}`, {
+                cache: 'no-store',
+                credentials: 'same-origin',
+              });
+              if (!response.ok) return null;
+              const payload = (await response.json().catch(() => ({}))) as { media?: (typeof media)[number] };
+              return payload.media ?? null;
+            } catch {
+              return null;
+            }
+          })
+        );
+        if (cancelled) return;
+        setAssignedOnlyMedia(loaded.filter((item): item is (typeof media)[number] => Boolean(item?.docId)));
+      } finally {
+        if (!cancelled) setAssignedOnlyLoading(false);
+      }
+    };
+    void loadAssignedOnlyMedia();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeStudioCardAssignedMediaIds, media, resolveMediaById, showOnlyAssigned]);
+
   const updateDimensionFilter = (
     dimension: DimensionKey,
     patch: Partial<{ mode: DimensionFilterMode; tagId: string }>
@@ -257,21 +341,37 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const mainBody = (
     <>
       {loading && media.length === 0 && <p>Loading media...</p>}
+      {showOnlyAssigned && assignedOnlyLoading ? <p>Loading assigned media...</p> : null}
       {error && (
         <p className={errorSeverity === 'warning' ? styles.warning : styles.error}>{error.message}</p>
       )}
 
-      {!error && (
+      {!error && !showOnlyAssigned && (
         <MediaAdminGrid
           sourcePathFirst={duplicateTriageMode}
           dimensionFilters={dimensionFilters}
           studioSourceDraggable={embedded && studioSourceDraggable}
           inlineCaptionEditing={embedded}
           clientSort={embedded ? clientSort : 'none'}
+          highlightedMediaIds={highlightAssigned ? activeStudioCardAssignedMediaIds : []}
+          onVisibleHighlightedCountChange={setVisibleAssignedCount}
         />
       )}
+      {!error && showOnlyAssigned && !assignedOnlyLoading ? (
+        <MediaAdminGrid
+          mediaOverride={assignedOnlyMedia}
+          emptyMessage="No media are assigned to the current card."
+          sourcePathFirst={false}
+          dimensionFilters={DEFAULT_DIMENSION_FILTERS}
+          studioSourceDraggable={embedded && studioSourceDraggable}
+          inlineCaptionEditing={embedded}
+          clientSort={clientSort}
+          highlightedMediaIds={activeStudioCardAssignedMediaIds}
+          onVisibleHighlightedCountChange={setVisibleAssignedCount}
+        />
+      ) : null}
 
-      {(pagination || hasMore || loadingMore) && (
+      {!showOnlyAssigned && (pagination || hasMore || loadingMore) && (
           <div className={styles.pagination}>
             {hasMore ? (
               <button
@@ -479,6 +579,35 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
               }
             />
           </div>
+          {showAssignedHighlightControls ? (
+            <div className={styles.studioAssignedBridgeRow}>
+              <label className={styles.studioAssignedToggle}>
+                <input
+                  type="checkbox"
+                  checked={highlightAssigned}
+                  onChange={(e) => setHighlightAssigned(e.target.checked)}
+                />
+                <span>Highlight assigned</span>
+              </label>
+              <label className={styles.studioAssignedToggle}>
+                <input
+                  type="checkbox"
+                  checked={showOnlyAssigned}
+                  onChange={(e) => setShowOnlyAssigned(e.target.checked)}
+                />
+                <span>Show only assigned</span>
+              </label>
+              {highlightAssigned || showOnlyAssigned ? (
+                <span className={styles.studioAssignedNotice}>
+                  {showOnlyAssigned
+                    ? `Showing ${assignedOnlyCount} assigned image${assignedOnlyCount === 1 ? '' : 's'}`
+                    : hiddenAssignedCount > 0
+                    ? `${hiddenAssignedCount} assigned image${hiddenAssignedCount === 1 ? '' : 's'} hidden by current filters`
+                    : 'All assigned images in current results'}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
         </div>
         {!loading && !error && (
           <div className={cardAdminStyles.bulkActions}>

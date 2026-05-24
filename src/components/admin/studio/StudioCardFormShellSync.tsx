@@ -27,6 +27,7 @@ function relationshipSignature(card: StudioCardContext): string {
         cover.docId ?? '',
         cover.storageUrl ?? '',
         cover.filename ?? '',
+        cover.caption ?? '',
         cover.objectPosition ?? '',
       ].join('~')
     : 'no-cover';
@@ -38,6 +39,7 @@ function relationshipSignature(card: StudioCardContext): string {
             media.docId ?? '',
             media.storageUrl ?? '',
             media.filename ?? '',
+            media.caption ?? '',
             media.objectPosition ?? '',
           ].join('~')
         : 'no-media';

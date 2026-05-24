@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { ImageIcon } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import JournalImage from '@/components/common/JournalImage';
 import styles from './CoverPhotoContainer.module.css';
@@ -27,6 +28,7 @@ interface CoverPhotoContainerProps {
   showSavingOverlay?: boolean;
   /** Narrow Library tab in photo picker to media matching these card tags. */
   filterTagIds?: string[];
+  onOpenMediaEditor?: (mediaId: string) => void;
 }
 
 export default function CoverPhotoContainer({ 
@@ -43,6 +45,7 @@ export default function CoverPhotoContainer({
   isSaving,
   showSavingOverlay = true,
   filterTagIds,
+  onOpenMediaEditor,
 }: CoverPhotoContainerProps) {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [horizontalPosition, setHorizontalPosition] = useState(50);
@@ -152,6 +155,12 @@ export default function CoverPhotoContainer({
     setIsPickerOpen(true);
   }, [swallowButtonEvent]);
 
+  const handleOpenMediaEditor = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    swallowButtonEvent(e);
+    if (!coverImage?.docId) return;
+    onOpenMediaEditor?.(coverImage.docId);
+  }, [coverImage?.docId, onOpenMediaEditor, swallowButtonEvent]);
+
   const handlePositionChange = useCallback((horizontal: number, vertical: number) => {
     onChange(coverImage, `${horizontal}% ${vertical}%`);
   }, [onChange, coverImage]);
@@ -219,6 +228,19 @@ export default function CoverPhotoContainer({
               priority={false}
             />
             <div className={styles.buttonContainer}>
+              {coverImage?.docId && onOpenMediaEditor ? (
+                <button
+                  onMouseDown={swallowButtonEvent}
+                  onClick={handleOpenMediaEditor}
+                  className={styles.jumpButton}
+                  type="button"
+                  disabled={isSaving || isUploading}
+                  aria-label="Open cover image in media editor"
+                  title="Open cover image in media editor"
+                >
+                  <ImageIcon size={16} aria-hidden="true" />
+                </button>
+              ) : null}
               <button
                 onMouseDown={swallowButtonEvent}
                 onClick={handleOpenPicker}

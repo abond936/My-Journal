@@ -28,14 +28,14 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(248px, 100%), 1fr));
-  gap: var(--spacing-md);
+  grid-template-columns: repeat(auto-fill, minmax(min(228px, 100%), 1fr));
+  gap: var(--spacing-sm);
   min-width: 0;
 }
 
 .gridStudioCompact {
-  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
-  gap: var(--spacing-md);
+  grid-template-columns: repeat(auto-fill, minmax(min(228px, 100%), 1fr));
+  gap: var(--spacing-sm);
 }
 
 .gridStudioCompact .title {
@@ -97,7 +97,7 @@
 }
 
 .title {
-  padding: var(--spacing-sm) var(--spacing-sm) 0;
+  padding: 6px 6px 0;
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
   color: var(--admin-support-label-color);
@@ -110,12 +110,12 @@
 }
 
 .tagChipsInline {
-  padding: 6px var(--spacing-sm) 0;
+  padding: 4px 6px 0;
   min-width: 0;
 }
 
 .caption {
-  padding: 4px var(--spacing-sm) 0;
+  padding: 3px 6px 0;
   color: var(--admin-support-meta-color);
   font-family: var(--admin-support-meta-font-family);
   font-size: var(--admin-support-meta-font-size);
@@ -142,7 +142,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
 }
 
@@ -152,7 +152,7 @@
 
 .overlayParentBadge {
   max-width: 100%;
-  padding: 2px 5px;
+  padding: 2px 4px;
   border-radius: 2px;
   font: var(--admin-grid-overlay-font);
   text-transform: uppercase;
@@ -168,7 +168,7 @@
 
 .tagSearchFoot {
   margin-top: auto;
-  padding: 8px var(--spacing-sm) var(--spacing-sm);
+  padding: 6px 6px 6px;
   min-width: 0;
 }
 
@@ -191,7 +191,7 @@
 
 @media (max-width: 768px) {
   .grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
   }
 
   .grid.gridStudioCompact {

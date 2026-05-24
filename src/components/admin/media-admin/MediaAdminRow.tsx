@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Crosshair, Pencil, RefreshCw, Trash2 } from 'lucide-react';
+import { Crosshair, Link2, Pencil, RefreshCw, Trash2 } from 'lucide-react';
 import JournalImage from '@/components/common/JournalImage';
 import EditModal from '@/components/admin/card-admin/EditModal';
 import { Media } from '@/lib/types/photo';
@@ -16,6 +16,7 @@ import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/
 import MediaEditModal from '@/components/admin/media-admin/MediaEditModal';
 import styles from './MediaAdminRow.module.css';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
+import { useRouter } from 'next/navigation';
 
 export type MediaAdminRowStudioDragBind = {
   attributes: DraggableAttributes;
@@ -56,6 +57,7 @@ export default function MediaAdminRow({
   onSelectionCheckboxClick,
   studioDragBind,
 }: MediaAdminRowProps) {
+  const router = useRouter();
   const focalInActions = !columns.some((c) => c.key === 'objectPosition');
   const { deleteMedia, updateMedia, refreshMedia } = useMedia();
   const { tags: allTags } = useTag();
@@ -69,6 +71,7 @@ export default function MediaAdminRow({
   const [focalV, setFocalV] = useState(50);
   const [replacing, setReplacing] = useState(false);
   const replaceInputRef = useRef<HTMLInputElement | null>(null);
+  const linkedCardCount = media.referencedByCardIds?.length ?? 0;
 
   useEffect(() => {
     setCaptionValue(media.caption || '');
@@ -120,6 +123,16 @@ export default function MediaAdminRow({
       setReplacing(false);
       event.target.value = '';
     }
+  };
+
+  const handleOpenLinkedCards = () => {
+    const linkedCardIds = media.referencedByCardIds ?? [];
+    if (linkedCardIds.length === 0) return;
+    if (linkedCardIds.length === 1) {
+      router.push(`/admin/studio?card=${encodeURIComponent(linkedCardIds[0]!)}`);
+      return;
+    }
+    setEditModalOpen(true);
   };
 
   const renderCell = (column: ColumnConfig) => {
@@ -277,6 +290,26 @@ export default function MediaAdminRow({
             >
               <Pencil size={16} aria-hidden="true" />
             </button>
+            {linkedCardCount > 0 ? (
+              <button
+                type="button"
+                onClick={handleOpenLinkedCards}
+                className={styles.actionButton}
+                title={
+                  linkedCardCount === 1
+                    ? 'Open linked card'
+                    : `Open ${linkedCardCount} linked cards`
+                }
+                disabled={replacing}
+                aria-label={
+                  linkedCardCount === 1
+                    ? 'Open linked card'
+                    : `Open ${linkedCardCount} linked cards`
+                }
+              >
+                <Link2 size={16} aria-hidden="true" />
+              </button>
+            ) : null}
             {focalInActions ? (
               <button
                 type="button"

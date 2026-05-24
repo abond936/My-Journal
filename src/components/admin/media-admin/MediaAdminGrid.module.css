@@ -30,8 +30,8 @@
 .grid {
   display: grid;
   width: 100%;
-  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
-  gap: var(--spacing-md);
+  grid-template-columns: repeat(auto-fill, minmax(min(228px, 100%), 1fr));
+  gap: var(--spacing-sm);
   min-width: 0;
   overflow-x: hidden;
   align-items: start;
@@ -42,6 +42,16 @@
 .grid > * {
   min-width: 0;
   max-width: 100%;
+}
+
+.cellClickSurface {
+  border-radius: var(--border-radius-md);
+}
+
+.cellAssignedToActiveCard {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--admin-chrome-active-control-background-color) 26%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--admin-chrome-active-control-background-color) 10%, transparent);
 }
 
 .thumbnailWrap {
@@ -76,7 +86,7 @@
 }
 
 .mediaTitle {
-  padding: var(--spacing-sm) var(--spacing-sm) 0;
+  padding: 6px 6px 0;
   font-size: 0.6875rem;
   font-weight: var(--font-weight-semibold);
   color: var(--admin-support-label-color);
@@ -115,12 +125,12 @@
 }
 
 .tagChipsInline {
-  padding: 6px var(--spacing-sm) 0;
+  padding: 4px 6px 0;
   min-width: 0;
 }
 
 .mediaMeta {
-  padding: 4px var(--spacing-sm) 0;
+  padding: 3px 6px 0;
   color: var(--admin-support-meta-color);
   font-family: var(--admin-support-meta-font-family);
   font-size: var(--admin-support-meta-font-size);
@@ -135,7 +145,7 @@
 
 .tagSearchFoot {
   margin-top: auto;
-  padding: 8px var(--spacing-sm) var(--spacing-sm);
+  padding: 6px 6px 6px;
   min-width: 0;
 }
 
@@ -152,14 +162,34 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
+}
+
+.overlayBottomEnd {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.assignedToCardBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 0 6px;
+  border-radius: var(--border-radius-full);
+  background: color-mix(in srgb, var(--admin-chrome-active-control-background-color) 88%, white 10%);
+  color: var(--admin-chrome-active-control-text-color);
+  font-size: 0.625rem;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
 }
 
 .overlayTopEndCluster {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .overlayEditButton {
@@ -185,7 +215,65 @@
     opacity var(--transition-short) ease;
 }
 
+.overlayLinkedCardsButton {
+  min-height: 30px;
+  min-width: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-window-border-color) 88%, transparent);
+  background: color-mix(in srgb, var(--admin-window-background-color) 92%, transparent);
+  color: var(--admin-support-control-text-color);
+  border-radius: var(--border-radius-md);
+  padding: 0 0.5rem;
+  font-family: var(--admin-support-control-font-family);
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-short) ease,
+    border-color var(--transition-short) ease,
+    color var(--transition-short) ease,
+    opacity var(--transition-short) ease;
+}
+
+.overlayLinkedCardsButton:hover {
+  background: color-mix(in srgb, var(--admin-window-background-color) 82%, var(--admin-chrome-active-control-background-color) 18%);
+}
+
+.overlayLinkedCardsCount {
+  line-height: 1;
+}
+
 .overlayEditButton:hover {
+  background: color-mix(in srgb, var(--admin-window-background-color) 82%, var(--admin-chrome-active-control-background-color) 18%);
+}
+
+.overlayBottomLinkButton {
+  min-height: 24px;
+  min-width: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-window-border-color) 50%, transparent);
+  background: color-mix(in srgb, var(--admin-window-background-color) 56%, transparent);
+  color: var(--admin-chrome-text-color);
+  border-radius: var(--border-radius-sm);
+  padding: 0 0.4rem;
+  font: var(--admin-grid-overlay-font);
+  line-height: 1;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition:
+    background-color var(--transition-short) ease,
+    border-color var(--transition-short) ease,
+    color var(--transition-short) ease;
+}
+
+.overlayBottomLinkButton:hover {
   background: color-mix(in srgb, var(--admin-window-background-color) 82%, var(--admin-chrome-active-control-background-color) 18%);
 }
 
@@ -321,5 +409,6 @@
 @media (max-width: 768px) {
   .grid {
     grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+    gap: var(--spacing-sm);
   }
 }

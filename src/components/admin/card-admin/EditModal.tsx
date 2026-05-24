@@ -11,7 +11,9 @@ interface EditModalProps {
   children: React.ReactNode;
   title: string;
   /** Wider shell when content needs horizontal room (e.g. gallery tag picker). */
-  size?: 'default' | 'wide';
+  size?: 'default' | 'wide' | 'wideTall';
+  modalClassName?: string;
+  bodyClassName?: string;
 }
 
 export default function EditModal({
@@ -20,13 +22,20 @@ export default function EditModal({
   children,
   title,
   size = 'default',
+  modalClassName,
+  bodyClassName,
 }: EditModalProps) {
   if (!isOpen) return null;
 
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div
-        className={clsx(styles.modal, size === 'wide' && styles.modalWide)}
+        className={clsx(
+          styles.modal,
+          size === 'wide' && styles.modalWide,
+          size === 'wideTall' && styles.modalWideTall,
+          modalClassName
+        )}
         onClick={(e) => e.stopPropagation()}
       >
         <div className={styles.header}>
@@ -35,7 +44,7 @@ export default function EditModal({
             <X size={16} aria-hidden="true" />
           </button>
         </div>
-        <div className={styles.body}>
+        <div className={clsx(styles.body, bodyClassName)}>
           {children}
         </div>
       </div>

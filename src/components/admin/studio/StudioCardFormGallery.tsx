@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ImageUp, Pencil, Save, Trash2 } from 'lucide-react';
+import { ImageIcon, ImageUp, Pencil, Save, Trash2 } from 'lucide-react';
 import JournalImage from '@/components/common/JournalImage';
 import EditModal from '@/components/admin/card-admin/EditModal';
 import { useCardForm } from '@/components/providers/CardFormProvider';
@@ -30,14 +30,20 @@ function cardCaptionFieldValue(item: HydratedGalleryMediaItem): string {
   return gallerySlotHasCaptionOverride(item) ? (item.caption ?? '') : '';
 }
 
+function shouldShowInlineCardCaptionInput(item: HydratedGalleryMediaItem): boolean {
+  return gallerySlotHasCaptionOverride(item) || !(item.media?.caption?.trim());
+}
+
 export default function StudioCardFormGallery({
   disabled,
   onSetAsCover,
   currentCoverMediaId,
+  onOpenMediaEditor,
 }: {
   disabled: boolean;
   onSetAsCover: (item: HydratedGalleryMediaItem) => void;
   currentCoverMediaId: string | null;
+  onOpenMediaEditor?: (mediaId: string) => void;
 }) {
   const { formState, setField } = useCardForm();
   const gallery = useMemo(
@@ -106,10 +112,10 @@ export default function StudioCardFormGallery({
                       <JournalImage
                         src={getDisplayUrl(item.media)}
                         alt={item.caption || item.media.filename || 'Gallery image'}
-                        width={220}
-                        height={168}
+                        width={180}
+                        height={132}
                         className={styles.studioGalleryThumb}
-                        sizes="220px"
+                        sizes="180px"
                         style={{ objectPosition: item.objectPosition || item.media.objectPosition || '50% 50%' }}
                       />
                     ) : (
@@ -120,16 +126,34 @@ export default function StudioCardFormGallery({
                     {item.media?.caption?.trim() ? (
                       <p className={styles.studioGalleryMediaCaption}>{item.media.caption}</p>
                     ) : null}
-                    <textarea
-                      className={styles.studioGalleryCaptionInput}
-                      rows={2}
-                      value={cardCaptionFieldValue(item)}
-                      onChange={(e) => updateGalleryItem(item.mediaId, (current) => applySlotCaptionEdit(current, e.target.value))}
-                      placeholder="Card caption…"
-                      disabled={disabled}
-                    />
+                    {shouldShowInlineCardCaptionInput(item) ? (
+                      <textarea
+                        className={styles.studioGalleryCaptionInput}
+                        rows={2}
+                        value={cardCaptionFieldValue(item)}
+                        onChange={(e) =>
+                          updateGalleryItem(item.mediaId, (current) =>
+                            applySlotCaptionEdit(current, e.target.value)
+                          )
+                        }
+                        placeholder="Card caption..."
+                        disabled={disabled}
+                      />
+                    ) : null}
                   </div>
                   <div className={styles.studioGalleryActions}>
+                    {onOpenMediaEditor ? (
+                      <button
+                        type="button"
+                        className={`${styles.inlineActionButton} ${styles.inlineActionIconButton}`}
+                        disabled={disabled}
+                        onClick={() => onOpenMediaEditor(item.mediaId)}
+                        aria-label="Open gallery image in media editor"
+                        title="Open gallery image in media editor"
+                      >
+                        <ImageIcon size={16} aria-hidden="true" />
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       className={`${styles.inlineActionButton} ${styles.inlineActionIconButton}`}

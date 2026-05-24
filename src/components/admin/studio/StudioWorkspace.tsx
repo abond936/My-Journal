@@ -326,7 +326,7 @@ export default function StudioWorkspace() {
     },
     [resolveBankMediaById]
   );
-  const openSelectedCardMediaEditor = useCallback(async () => {
+  const openSelectedCardMediaEditor = useCallback(async (mediaId?: string | null) => {
     const card = selectedDetailRef.current ?? selectedPreviewRef.current;
     const assignedIds = collectAssignedMediaIds(card);
     if (!card?.docId || assignedIds.length === 0) return;
@@ -334,7 +334,11 @@ export default function StudioWorkspace() {
     const items = loaded.filter((item): item is Media => Boolean(item?.docId));
     if (items.length === 0) return;
     setCardMediaItems(items);
-    setSelectedCardMediaId((current) => (current && items.some((item) => item.docId === current) ? current : items[0]!.docId));
+    setSelectedCardMediaId(() => {
+      const preferredId = mediaId?.trim() || null;
+      if (preferredId && items.some((item) => item.docId === preferredId)) return preferredId;
+      return items[0]!.docId;
+    });
     setCardMediaEditorOpen(true);
   }, [loadMediaById]);
   const cacheSelectedCard = useCallback((card: StudioSelectedPreview | StudioSelectedDetail | null) => {

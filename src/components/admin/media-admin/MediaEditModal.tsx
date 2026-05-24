@@ -199,7 +199,8 @@ export default function MediaEditModal({
       isOpen={isOpen}
       onClose={onClose}
       title={selectedMedia ? `Edit media: ${selectedMedia.filename}` : 'Edit media'}
-      size="wide"
+      size="wideTall"
+      bodyClassName={styles.modalBody}
     >
       {selectedMedia ? (
         <div className={styles.shell}>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pencil } from 'lucide-react';
+import { Link2, Pencil, Trash2 } from 'lucide-react';
 import { applyModifierSelection } from '@/lib/utils/adminListSelection';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS as DndCss } from '@dnd-kit/utilities';
@@ -20,6 +20,8 @@ import AdminGridCellChrome from '@/components/admin/common/AdminGridCellChrome';
 import chromeStyles from '@/components/admin/common/AdminGridCellChrome.module.css';
 import { adminChromeSelector, ADMIN_GRID_CHROME } from '@/components/admin/common/adminGridChromeAttr';
 import { eventTargetToElement } from '@/lib/utils/domEventTarget';
+import { useRouter } from 'next/navigation';
+import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 
 export interface MediaAdminGridCellProps {
   media: Media;
@@ -35,6 +37,7 @@ export interface MediaAdminGridCellProps {
   onSelectionCheckboxClick: (e: React.MouseEvent | React.KeyboardEvent, mediaId: string, mediaIndex: number) => void;
   studioDragBind?: MediaAdminRowStudioDragBind;
   inlineCaptionEditing?: boolean;
+  isAssignedToActiveCard?: boolean;
 }
 
 type DimensionKey = 'who' | 'what' | 'when' | 'where';
@@ -70,7 +73,10 @@ function MediaAdminGridCell({
   onSelectionCheckboxClick,
   studioDragBind,
   inlineCaptionEditing = false,
+  isAssignedToActiveCard = false,
 }: MediaAdminGridCellProps) {
+  const router = useRouter();
+  const feedback = useAppFeedback();
   const core = useMemo(() => getCoreTagsByDimension(media), [media]);
   const { deleteMedia } = useMedia();
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
@@ -146,13 +152,36 @@ function MediaAdminGridCell({
   }, [captionDraft, inlineCaptionEditing, media.caption, media.docId, onSaveMediaFields]);
 
   const assigned = (media.referencedByCardIds?.length ?? 0) > 0;
+  const linkedCardCount = media.referencedByCardIds?.length ?? 0;
+  const handleOpenLinkedCards = useCallback(() => {
+    const linkedCardIds = media.referencedByCardIds ?? [];
+    if (linkedCardIds.length === 0) return;
+    if (linkedCardIds.length === 1) {
+      router.push(`/admin/studio?card=${encodeURIComponent(linkedCardIds[0]!)}`);
+      return;
+    }
+    setEditModalOpen(true);
+  }, [media.referencedByCardIds, router]);
+  const handleDeleteMedia = useCallback(async () => {
+    const shouldDelete = await feedback.confirm({
+      title: 'Delete media?',
+      message: `Delete "${media.filename}" from the library?`,
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      tone: 'danger',
+    });
+    if (!shouldDelete) return;
+    await deleteMedia(media.docId);
+  }, [deleteMedia, feedback, media.docId, media.filename]);
   const studioRootExtras = studioDragBind
     ? {
         ref: studioDragBind.setNodeRef,
         style: studioDragBind.style,
-        className: `${styles.cellStudioSource} ${styles.cellClickSurface}`,
+        className: `${styles.cellStudioSource} ${styles.cellClickSurface} ${isAssignedToActiveCard ? styles.cellAssignedToActiveCard : ''}`,
       }
-    : {};
+    : {
+        className: `${styles.cellClickSurface} ${isAssignedToActiveCard ? styles.cellAssignedToActiveCard : ''}`,
+      };
 
   const gridCell = (
     <AdminGridCellChrome
@@ -195,6 +224,15 @@ function MediaAdminGridCell({
           >
             <Pencil size={16} aria-hidden="true" />
           </button>
+          <button
+            type="button"
+            className={chromeStyles.deleteBtn}
+            onClick={() => void handleDeleteMedia()}
+            aria-label="Delete media"
+            title="Delete media"
+          >
+            <Trash2 size={16} aria-hidden="true" />
+          </button>
         </div>
       }
       overlayLeftRail={undefined}
@@ -205,7 +243,32 @@ function MediaAdminGridCell({
             <span className={assigned ? chromeStyles.metaBadgeAssigned : chromeStyles.metaBadgeUnassigned}>
               {assigned ? 'Assigned' : 'Unassigned'}
             </span>
+            {isAssignedToActiveCard ? (
+              <span className={styles.assignedToCardBadge}>On card</span>
+            ) : null}
           </div>
+          {linkedCardCount > 0 ? (
+            <div className={styles.overlayBottomEnd}>
+              <button
+                type="button"
+                className={styles.overlayBottomLinkButton}
+                onClick={handleOpenLinkedCards}
+                aria-label={
+                  linkedCardCount === 1
+                    ? 'Open linked card'
+                    : `Open ${linkedCardCount} linked cards`
+                }
+                title={
+                  linkedCardCount === 1
+                    ? 'Open linked card'
+                    : `Open ${linkedCardCount} linked cards`
+                }
+              >
+                <Link2 size={13} aria-hidden="true" />
+                <span className={styles.overlayLinkedCardsCount}>{linkedCardCount}</span>
+              </button>
+            </div>
+          ) : null}
         </div>
       }
       belowMeta={undefined}
@@ -305,7 +368,8 @@ const MemoizedMediaAdminGridCell = React.memo(MediaAdminGridCell, (prev, next) =
     prev.isSelected === next.isSelected &&
     prev.onSelectionCheckboxClick === next.onSelectionCheckboxClick &&
     prev.studioDragBind === next.studioDragBind &&
-    prev.inlineCaptionEditing === next.inlineCaptionEditing
+    prev.inlineCaptionEditing === next.inlineCaptionEditing &&
+    prev.isAssignedToActiveCard === next.isAssignedToActiveCard
   );
 });
 
@@ -345,7 +409,9 @@ const MemoizedMediaAdminGridCellStudioSource = React.memo(
     prev.onSaveTags === next.onSaveTags &&
     prev.onSaveMediaFields === next.onSaveMediaFields &&
     prev.isSelected === next.isSelected &&
-    prev.onSelectionCheckboxClick === next.onSelectionCheckboxClick
+    prev.onSelectionCheckboxClick === next.onSelectionCheckboxClick &&
+    prev.inlineCaptionEditing === next.inlineCaptionEditing &&
+    prev.isAssignedToActiveCard === next.isAssignedToActiveCard
 );
 
 export default function MediaAdminGrid({
@@ -354,12 +420,20 @@ export default function MediaAdminGrid({
   studioSourceDraggable = false,
   inlineCaptionEditing = false,
   clientSort = 'none',
+  highlightedMediaIds = [],
+  onVisibleHighlightedCountChange,
+  mediaOverride,
+  emptyMessage = 'No media found matching the current filters.',
 }: {
   sourcePathFirst?: boolean;
   dimensionFilters: DimensionFilters;
   studioSourceDraggable?: boolean;
   inlineCaptionEditing?: boolean;
   clientSort?: 'none' | 'filenameAsc' | 'filenameDesc';
+  highlightedMediaIds?: string[];
+  onVisibleHighlightedCountChange?: (count: number) => void;
+  mediaOverride?: Media[] | null;
+  emptyMessage?: string;
 }) {
   const { media, selectedMediaIds, setSelectedMediaIds, updateMedia } = useMedia();
   const selectionAnchorIndexRef = useRef<number | null>(null);
@@ -369,9 +443,11 @@ export default function MediaAdminGrid({
     [tags]
   );
 
+  const sourceMedia = mediaOverride ?? media;
+
   const sortedMedia = useMemo(() => {
     const normalize = (value: string | undefined) => (value ?? '').trim().toLowerCase();
-    const modeFiltered = media.filter((item) => {
+    const modeFiltered = sourceMedia.filter((item) => {
       return (['who', 'what', 'when', 'where'] as DimensionKey[]).every((dimension) => {
         const state = dimensionFilters[dimension];
         const ids = Array.isArray(item[dimension]) ? (item[dimension] as string[]) : [];
@@ -403,9 +479,19 @@ export default function MediaAdminGrid({
       if (fileCompare !== 0) return fileCompare;
       return normalize(a.docId).localeCompare(normalize(b.docId));
     });
-  }, [media, sourcePathFirst, dimensionFilters, clientSort]);
+  }, [sourceMedia, sourcePathFirst, dimensionFilters, clientSort]);
 
   const sortedIds = useMemo(() => sortedMedia.map((m) => m.docId), [sortedMedia]);
+  const highlightedIdSet = useMemo(() => new Set(highlightedMediaIds), [highlightedMediaIds]);
+
+  useEffect(() => {
+    if (!onVisibleHighlightedCountChange) return;
+    let count = 0;
+    for (const id of sortedIds) {
+      if (highlightedIdSet.has(id)) count += 1;
+    }
+    onVisibleHighlightedCountChange(count);
+  }, [highlightedIdSet, onVisibleHighlightedCountChange, sortedIds]);
 
   const handleGridSelection = useCallback(
     (e: React.MouseEvent | React.KeyboardEvent, id: string, index: number) => {
@@ -480,10 +566,12 @@ export default function MediaAdminGrid({
         </div>
       )}
       <div className={styles.grid}>
-        {sortedMedia.map((item, index) =>
-          studioSourceDraggable ? (
+        {sortedMedia.map((item, index) => {
+          const isAssignedToActiveCard = highlightedIdSet.has(item.docId);
+          const itemKey = `${item.docId}:${isAssignedToActiveCard ? 'on-card' : 'default'}`;
+          return studioSourceDraggable ? (
             <MemoizedMediaAdminGridCellStudioSource
-              key={item.docId}
+              key={itemKey}
               media={item}
               mediaIndex={index}
               tagNameMap={tagNameMap}
@@ -493,10 +581,11 @@ export default function MediaAdminGrid({
               isSelected={selectedMediaIds.includes(item.docId)}
               onSelectionCheckboxClick={handleGridSelection}
               inlineCaptionEditing={inlineCaptionEditing}
+              isAssignedToActiveCard={isAssignedToActiveCard}
             />
           ) : (
             <MemoizedMediaAdminGridCell
-              key={item.docId}
+              key={itemKey}
               media={item}
               mediaIndex={index}
               tagNameMap={tagNameMap}
@@ -506,13 +595,14 @@ export default function MediaAdminGrid({
               isSelected={selectedMediaIds.includes(item.docId)}
               onSelectionCheckboxClick={handleGridSelection}
               inlineCaptionEditing={inlineCaptionEditing}
+              isAssignedToActiveCard={isAssignedToActiveCard}
             />
-          )
-        )}
+          );
+        })}
       </div>
       {sortedMedia.length === 0 && (
         <div className={styles.emptyState}>
-          <p>No media found matching the current filters.</p>
+          <p>{emptyMessage}</p>
         </div>
       )}
     </div>

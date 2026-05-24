@@ -50,8 +50,8 @@
   flex-direction: row;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--spacing-xs);
-  padding: 6px;
+  gap: 3px;
+  padding: 4px;
   pointer-events: none;
 }
 
@@ -67,7 +67,7 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   flex-shrink: 0;
 }
 
@@ -96,8 +96,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
-  padding: 6px 8px;
+  gap: 2px;
+  padding: 4px 6px;
   pointer-events: none;
 }
 
@@ -117,8 +117,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
-  padding: 6px 8px 0;
+  gap: 2px;
+  padding: 4px 6px 0;
 }
 
 .checkbox {
@@ -154,7 +154,7 @@
 
 /* Type/status/source/assigned — tokenized with dimensional tags on same cells */
 .metaBadge {
-  padding: 2px 5px;
+  padding: 2px 4px;
   border-radius: var(--border-radius-sm);
   font: var(--admin-grid-overlay-font);
   text-transform: uppercase;
@@ -166,7 +166,7 @@
 }
 
 .metaBadgeMuted {
-  padding: 2px 5px;
+  padding: 2px 4px;
   border-radius: var(--border-radius-sm);
   font: var(--admin-grid-overlay-font);
   color: var(--admin-chrome-meta-color);
@@ -178,7 +178,7 @@
 }
 
 .metaBadgeDraft {
-  padding: 2px 5px;
+  padding: 2px 4px;
   border-radius: var(--border-radius-sm);
   font: var(--admin-grid-overlay-font);
   text-transform: uppercase;
@@ -190,7 +190,7 @@
 }
 
 .metaBadgePublished {
-  padding: 2px 5px;
+  padding: 2px 4px;
   border-radius: var(--border-radius-sm);
   font: var(--admin-grid-overlay-font);
   text-transform: uppercase;
@@ -202,7 +202,7 @@
 }
 
 .metaBadgeAssigned {
-  padding: 2px 5px;
+  padding: 2px 4px;
   border-radius: var(--border-radius-sm);
   font: var(--admin-grid-overlay-font);
   text-transform: uppercase;
@@ -214,7 +214,7 @@
 }
 
 .metaBadgeUnassigned {
-  padding: 2px 5px;
+  padding: 2px 4px;
   border-radius: var(--border-radius-sm);
   font: var(--admin-grid-overlay-font);
   text-transform: uppercase;

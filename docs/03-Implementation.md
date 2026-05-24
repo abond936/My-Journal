@@ -97,10 +97,6 @@ Legend:
 
 - **Shared action button contract** - Continue standardizing primary/secondary/destructive button language across the remaining active admin surfaces after the current Studio passes so color, size, icon/text treatment, and placement communicate the same meaning everywhere, especially on modal action rows, any remaining table/grid controls that still use legacy text-button treatments, and other non-Studio admin surfaces that are still expected to survive long-term.
 
-- **Studio pane sizing presets** - Continue standardizing Studio pane-width targets for common window sizes after the first default-width pass: keep **Organize** on its intended width, refine whether **Compose** and **Questions** need any further default-width tuning beyond **357px** / **272px**, and preserve **Cards** and **Media** as the panes that routinely resize with the workspace.
-
-- **Independent Studio pane resizing** - Right-side Studio panes should resize independently; dragging one pane edge must not unintentionally shift unrelated pane widths, and normal sleep/restore should preserve the prior pane widths instead of reopening in a different layout.
-
 - **DnD hardening pass** - Harden active admin drag/drop flows so reparent, unparent, assign, and reorder behavior is clearer, more reliable, and visually professional before expanding DnD breadth further.
 
 
@@ -109,15 +105,14 @@ Legend:
 
 
 
-*Priority bands after Studio sequence:* **P2** — **Grid density reduction**; **Context Assist** (grid + list/table admin layout shipped—see **Card Management** / **Media Management** ✅ in `02-Application.md`).
+*Priority bands after Studio sequence:* **P2** — **Context Assist** (grid + list/table admin layout shipped—see **Card Management** / **Media Management** ✅ in `02-Application.md`).
 
 
 
 - **Context Assist** - Keep historical/background context as a distinct output contract from writing rewrites (even when requested together), so context remains separately reviewable/accept-dismiss and does not couple to rewrite acceptance.
 
-- **Grid density reduction** - Reduce Card Management grid card footprint by ~25% (thumbnail/card block dimensions and spacing) while preserving legibility, click targets, and selection affordances—incremental follow-up now that aspect-accurate thumbnails ship.
-
 - **Tag picker ergonomics** - Keep macro-tag editing compact and predictable in card edit: controlled expansion below the command bar, root-first dimensional presentation, and searchable keyboard-friendly result selection with path clarity.
+
 
 
 
@@ -136,7 +131,7 @@ Legend:
 
 
 
-*Priority bands:* **P2 (operator productivity)** — **Media identity & duplicate signals**; **Unassigned duplicate triage**; **Grid admin ergonomics** (checkbox sizing); **Grid tagging UX** (per-tile inline add/search—pane-level dimensional filters shipped).
+*Priority bands:* **P2 (operator productivity)** — **Media identity & duplicate signals**; **Unassigned duplicate triage**; **Grid tagging UX** (per-tile inline add/search—pane-level dimensional filters shipped).
 
 
 
@@ -146,8 +141,6 @@ Legend:
 - **Media identity & duplicate signals** - In admin lists, treat `media.docId` as canonical identity; `filename` is display metadata and may collide (`image.webp`, etc.). Add optional canonical columns/signals (for example `docId`, normalized `sourcePath`, checksum/hash/size where available) so duplicate triage and operator actions do not depend on filename uniqueness.
 
 - **Unassigned duplicate triage** - Add explicit triage flow for `assignment=unassigned` items that appear duplicated by source-derived/content-derived signals, with sortable/groupable views (starting with `sourcePath`) to quickly confirm, keep, merge intent, or remove.
-
-- **Grid admin ergonomics** - **Remaining:** larger bulk-select checkbox target sizes (row and select-all) and any further focus/checked-state polish. **Done:** filename removed from grid tile body; identity strings on image hover (`02-Application.md` **Media Management**).
 
 - **Grid tagging UX + empty-dimension filter** - **Remaining:** optional **per-tile** inline add/search (without modal) for parity with card-grid search foot; table view alignment with the new grid rail pattern if desired. **Done:** pane-level per-dimension modes and vertical rail on grid tiles (`02-Application.md`).
 

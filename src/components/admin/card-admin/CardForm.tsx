@@ -885,6 +885,7 @@ const CardForm: React.FC = () => {
                   showSavingOverlay={false}
                   error={errors.coverImage}
                   filterTagIds={cardData.tags ?? []}
+                  onOpenMediaEditor={studioShell?.openSelectedCardMediaEditor}
                 />
               </div>
 
@@ -913,6 +914,7 @@ const CardForm: React.FC = () => {
                   disabled={isSaving}
                   onSetAsCover={handleSetGalleryItemAsCover}
                   currentCoverMediaId={cardData.coverImageId || null}
+                  onOpenMediaEditor={studioShell?.openSelectedCardMediaEditor}
                 />
               </div>
 
@@ -1075,6 +1077,7 @@ const CardForm: React.FC = () => {
                   showSavingOverlay={false}
                   error={errors.coverImage}
                   filterTagIds={cardData.tags ?? []}
+                  onOpenMediaEditor={studioShell?.openSelectedCardMediaEditor}
                 />
               </StudioDropZone>
             ) : (
@@ -1095,6 +1098,7 @@ const CardForm: React.FC = () => {
                 showSavingOverlay={false}
                 error={errors.coverImage}
                 filterTagIds={cardData.tags ?? []}
+                onOpenMediaEditor={studioShell?.openSelectedCardMediaEditor}
               />
             )}
           </div>
@@ -1166,6 +1170,7 @@ const CardForm: React.FC = () => {
                 disabled={isSaving}
                 onSetAsCover={handleSetGalleryItemAsCover}
                 currentCoverMediaId={cardData.coverImageId || null}
+                onOpenMediaEditor={studioShell?.openSelectedCardMediaEditor}
               />
             ) : (
               <GalleryManager
