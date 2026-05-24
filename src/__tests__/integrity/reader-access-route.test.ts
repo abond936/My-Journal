@@ -6,7 +6,7 @@ import { GET as getCard } from '@/app/api/cards/[id]/route';
 import { GET as searchCards } from '@/app/api/cards/search/route';
 import { GET as randomCards } from '@/app/api/cards/random/route';
 import { GET as viewMedia } from '@/app/api/view/media/route';
-import { middleware } from '../../../middleware';
+import { config, middleware } from '../../../middleware';
 
 jest.mock('next/server', () => ({
   NextResponse: {
@@ -122,6 +122,12 @@ describe('reader access boundary', () => {
       type: 'redirect',
       url: 'https://example.test/?callbackUrl=%2Fview%2Fcard-1%3Fx%3D1',
     });
+  });
+
+  it('registers explicit middleware matchers for root and nested reader routes', () => {
+    expect(config.matcher).toEqual(
+      expect.arrayContaining(['/view', '/view/:path*', '/search', '/search/:path*'])
+    );
   });
 
   it('returns 401 for anonymous reader APIs', async () => {
