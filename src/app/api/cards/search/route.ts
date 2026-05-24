@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
-import { searchCards } from '@/lib/services/cardService';
+import { getCards, getCardsByIds } from '@/lib/services/cardService';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
 import { Card } from '@/lib/types/card';
 import { PaginatedResult } from '@/lib/types/services';
+import { isTypesenseConfigured } from '@/lib/config/typesense';
+import { searchCardsFiltered } from '@/lib/services/typesenseService';
 
 type ApiErrorPayload = {
   ok: false;
@@ -93,12 +95,41 @@ export async function GET(request: Request) {
     const lastDocId = searchParams.get('lastDocId') || undefined;
     const status = session?.user?.role === 'admin' ? 'all' : 'published';
 
-    const result: PaginatedResult<Card> = await searchCards({
-      q,
-      status,
-      limit,
-      lastDocId,
-    });
+    let result: PaginatedResult<Card>;
+
+    if (isTypesenseConfigured()) {
+      const page = searchParams.has('page') ? parseInt(searchParams.get('page')!, 10) : 0;
+      const searchResult = await searchCardsFiltered({
+        textQuery: q.trim(),
+        status,
+        page: Number.isFinite(page) && page >= 0 ? page : 0,
+        perPage: limit,
+        sortBy: 'title',
+        sortDir: 'asc',
+      });
+
+      if (searchResult.docIds.length === 0) {
+        result = { items: [], hasMore: false, lastDocId: undefined };
+      } else {
+        const items = await getCardsByIds(searchResult.docIds);
+        result = {
+          items,
+          lastDocId: items.length > 0 ? items[items.length - 1].docId : undefined,
+          hasMore: ((Number.isFinite(page) && page >= 0 ? page : 0) + 1) * limit < searchResult.totalFound,
+        };
+      }
+    } else {
+      // Degrade to Firestore title search rather than dynamic `filterTags.<term>` queries,
+      // which would require arbitrary per-term composite indexes in hosted deployments.
+      result = await getCards({
+        q,
+        status,
+        limit,
+        lastDocId,
+        sortBy: 'title',
+        sortDir: 'asc',
+      });
+    }
 
     return NextResponse.json(result);
   } catch (error) {
