@@ -73,6 +73,8 @@ Legend:
 
 📐 **Active Studio/admin baseline** - Shipped Studio status and durable contracts live in `docs/02-Application.md` under **Administration**, **Card Management**, **Collections Management**, **Media Management**, **Tag Management**, and **Question Management**. Use those sections as product truth; keep this file focused on remaining planned work and milestone gates.
 
+📐 **Build/deploy contract (2026-05-23)** - Production builds must not depend on optional platform-package resolution quirks or fabricated shared-event types. Current closeout: import metadata resolution no longer assumes direct `exiftool-vendored.pl` module resolution in app code, and Studio relationship DnD now passes the real drag event plus an explicit resolved `overId` instead of constructing a fake `DragEndEvent`. Verification standard for deploy-blocker work: `npm run build` must complete locally before treating Vercel failures as environment-only.
+
 ### Phase 1 — Pre-Import
 
 *Complete — baseline recorded in `docs/02-Application.md` → **Administration** ✅ **Integrity gate (CI)**.*

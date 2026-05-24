@@ -322,7 +322,7 @@ export default function CollectionsAdminClient({
   embeddedUnparentedReplacement?: (ctx: EmbeddedUnparentedBankContext) => React.ReactNode;
   embeddedOrganizationCollapsed?: boolean;
   embeddedCardsCollapsed?: boolean;
-  onStudioRelationshipDragEnd?: (event: DragEndEvent) => Promise<boolean>;
+  onStudioRelationshipDragEnd?: (event: DragEndEvent, resolvedOverId?: string | null) => Promise<boolean>;
 }) {
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1113,19 +1113,12 @@ export default function CollectionsAdminClient({
         : lastValidOverIdRef.current;
 
     try {
-      if (onStudioRelationshipDragEnd) {
-        try {
-          const relationshipEvent =
-            overStr == null
-              ? event
-              : {
-                  ...event,
-                  over: { id: overStr },
-                };
-          const handled = await onStudioRelationshipDragEnd(relationshipEvent);
-          if (handled) {
-            setCuratedDragKind(null);
-            setDraggingCardId(null);
+        if (onStudioRelationshipDragEnd) {
+          try {
+            const handled = await onStudioRelationshipDragEnd(event, overStr);
+            if (handled) {
+              setCuratedDragKind(null);
+              setDraggingCardId(null);
             setDragOverlayCard(null);
             restoreStudioRelationshipFocus(activeStr);
             return;

@@ -33,13 +33,6 @@ function resolveBundledExiftoolPath(): string | null {
   for (const p of candidates) {
     if (fs.existsSync(p)) return p;
   }
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const mod = require('exiftool-vendored.pl') as string | undefined;
-    if (typeof mod === 'string' && fs.existsSync(mod)) return mod;
-  } catch {
-    /* optional platform package */
-  }
   return null;
 }
 

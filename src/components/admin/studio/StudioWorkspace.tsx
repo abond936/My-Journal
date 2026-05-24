@@ -950,8 +950,8 @@ export default function StudioWorkspace() {
   }, [cardError, selectedCardId, selectedDetail, selectedLoadState, selectedPreview]);
 
   const onStudioRelationshipDragEnd = useCallback(
-    async (event: DragEndEvent) => {
-      return handleStudioRelationshipDragEnd(event, {
+    async (event: DragEndEvent, resolvedOverId?: string | null) => {
+      return handleStudioRelationshipDragEnd(event, resolvedOverId, {
         actionBusy,
         selectedCardDetail: selectedDetail,
         selectedCardId,

@@ -30,6 +30,7 @@ describe('handleStudioRelationshipDragEnd', () => {
         active: { id: `source:${media.docId}` },
         over: { id: 'drop:body' },
       },
+      null,
       {
         actionBusy: false,
         selectedCardDetail: {
@@ -65,6 +66,7 @@ describe('handleStudioRelationshipDragEnd', () => {
         active: { id: 'source:missing-media' },
         over: { id: 'drop:body' },
       },
+      null,
       {
         actionBusy: false,
         selectedCardDetail: {

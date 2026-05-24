@@ -17,6 +17,15 @@ import { dataTransferHasMeaningfulText, getImageFileFromDataTransfer } from '@/l
 import clsx from 'clsx';
 import { useCardForm } from '@/components/providers/CardFormProvider';
 
+type FigureImageAlignment = 'left' | 'center' | 'right';
+type FigureImageWrap = 'on' | 'off';
+
+type ImageToolbarAction =
+  | { action: 'setSize'; value: FigureImageSize }
+  | { action: 'setAlignment'; value: FigureImageAlignment }
+  | { action: 'setWrap'; value: FigureImageWrap }
+  | { action: 'delete' };
+
 interface RichTextEditorProps {
   initialContent?: string;
   onChange?: (content: string) => void;
@@ -110,9 +119,9 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
   };
 
   const updateFigureAttrsByMediaId = (
-    mediaId: string,
-    attrsPatch: Partial<{ 'data-size': FigureImageSize; 'data-alignment': 'left' | 'center' | 'right'; 'data-wrap': 'on' | 'off' }>
-  ): boolean => {
+      mediaId: string,
+      attrsPatch: Partial<{ 'data-size': FigureImageSize; 'data-alignment': FigureImageAlignment; 'data-wrap': FigureImageWrap }>
+    ): boolean => {
     if (!editor) return false;
     const { state, view } = editor;
     const { doc } = state;
@@ -155,16 +164,13 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
     return attrs;
   };
 
-  const handleToolbarAction = (
-    action: 'setSize' | 'setAlignment' | 'setWrap' | 'delete',
-    value?: FigureImageSize | 'left' | 'center' | 'right' | 'on' | 'off'
-  ) => {
-    if (!editor || !activeImageMediaId) return;
-    
-    if (action === 'delete') {
-      const removed = removeFigureByMediaId(activeImageMediaId);
-      if (!removed) {
-        console.warn('[RichTextEditor] Failed to remove selected inline image by media id');
+  const handleToolbarAction = (input: ImageToolbarAction) => {
+      if (!editor || !activeImageMediaId) return;
+      
+      if (input.action === 'delete') {
+        const removed = removeFigureByMediaId(activeImageMediaId);
+        if (!removed) {
+          console.warn('[RichTextEditor] Failed to remove selected inline image by media id');
         return;
       }
 
@@ -174,20 +180,20 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
       onImageDelete?.(activeImageMediaId);
       setActiveImageMediaId(null);
       return;
-    }
-
-    switch (action) {
-      case 'setSize':
-        updateFigureAttrsByMediaId(activeImageMediaId, { 'data-size': value });
-        break;
-      case 'setAlignment':
-        updateFigureAttrsByMediaId(activeImageMediaId, { 'data-alignment': value });
-        break;
-      case 'setWrap':
-        updateFigureAttrsByMediaId(activeImageMediaId, { 'data-wrap': value });
-        break;
-    }
-  };
+      }
+  
+      switch (input.action) {
+        case 'setSize':
+        updateFigureAttrsByMediaId(activeImageMediaId, { 'data-size': input.value });
+          break;
+        case 'setAlignment':
+        updateFigureAttrsByMediaId(activeImageMediaId, { 'data-alignment': input.value });
+          break;
+        case 'setWrap':
+        updateFigureAttrsByMediaId(activeImageMediaId, { 'data-wrap': input.value });
+          break;
+      }
+    };
 
   const handleContentUpdate = useCallback((newContent: string) => {
     const mediaIds = extractMediaIds(newContent);
@@ -449,12 +455,33 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
             @ card
           </span>
         </div>
-        {activeImageMediaId && activeImageAttrs && (
-          <ImageToolbar
-            editor={editor}
-            onAction={handleToolbarAction}
-            targetLabel={(activeImageAttrs.alt as string | null) || activeImageMediaId}
-            canRemove={Boolean(activeImageMediaId)}
+          {activeImageMediaId && activeImageAttrs && (
+            <ImageToolbar
+              editor={editor}
+              onAction={(action, value) => {
+                switch (action) {
+                  case 'setSize':
+                    if (value === 'xsmall' || value === 'small' || value === 'medium' || value === 'large') {
+                      handleToolbarAction({ action, value });
+                    }
+                    return;
+                  case 'setAlignment':
+                    if (value === 'left' || value === 'center' || value === 'right') {
+                      handleToolbarAction({ action, value });
+                    }
+                    return;
+                  case 'setWrap':
+                    if (value === 'on' || value === 'off') {
+                      handleToolbarAction({ action, value });
+                    }
+                    return;
+                  case 'delete':
+                    handleToolbarAction({ action });
+                    return;
+                }
+              }}
+              targetLabel={(activeImageAttrs.alt as string | null) || activeImageMediaId}
+              canRemove={Boolean(activeImageMediaId)}
             currentSize={(activeImageAttrs['data-size'] as FigureImageSize | undefined) ?? 'medium'}
             currentAlignment={
               (activeImageAttrs['data-alignment'] as 'left' | 'center' | 'right' | undefined) ?? 'left'

@@ -2,7 +2,7 @@
 
 import React, { useEffect, type MutableRefObject } from 'react';
 import { arrayMove, useSortable } from '@dnd-kit/sortable';
-import { useDndContext, useDroppable } from '@dnd-kit/core';
+import { useDndContext, useDroppable, type DragEndEvent } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { useCuratedTreeDropHighlight } from '@/components/admin/card-admin/curatedTreeDropHighlightContext';
 import type { Card } from '@/lib/types/card';
@@ -203,7 +203,8 @@ export function StudioChildrenEndDropZone({ parentId }: { parentId: string }) {
 }
 
 export async function handleStudioRelationshipDragEnd(
-  event: { active: { id: unknown }; over: { id: unknown } | null },
+  event: DragEndEvent,
+  resolvedOverId: string | null | undefined,
   ctx: {
     actionBusy: boolean;
     selectedCardDetail: StudioSelectedDetail | null;
@@ -218,10 +219,13 @@ export async function handleStudioRelationshipDragEnd(
 ): Promise<boolean> {
   const { active, over } = event;
   if (ctx.actionBusy || !ctx.selectedCardDetail || !ctx.selectedCardId) return false;
-  if (!over || active.id === over.id) return false;
+  const fallbackOverId =
+    resolvedOverId != null && resolvedOverId !== '' ? resolvedOverId : over?.id != null ? String(over.id) : null;
+  if (!fallbackOverId) return false;
+  if (String(active.id) === fallbackOverId) return false;
 
   const activeId = String(active.id);
-  const overId = String(over.id);
+  const overId = fallbackOverId;
 
   const afterId = ctx.selectedCardId ? `studioChildAfter:${ctx.selectedCardId}` : null;
   if (activeId.startsWith('studioChild:') && afterId && overId === afterId) {
