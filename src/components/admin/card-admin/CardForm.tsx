@@ -713,7 +713,7 @@ const CardForm: React.FC = () => {
                   key={`${opt.title || 'draft'}-${idx}`}
                   type="button"
                   className={styles.aiAssistSuggestionButton}
-                  onClick={() => applyDraftOption(opt)}
+                  onClick={() => applyDraftOption(opt, 'all')}
                 >
                   <span className={styles.aiAssistSuggestionTitle}>{opt.title || `Suggestion ${idx + 1}`}</span>
                   {opt.rationale ? <span className={styles.aiAssistSuggestionHint}>{opt.rationale}</span> : null}
