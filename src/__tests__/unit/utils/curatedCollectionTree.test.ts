@@ -1,12 +1,15 @@
 import type { Card } from '@/lib/types/card';
 import {
+  buildCuratedInsertBeforeDropId,
   buildChildrenIdsWithInsertBefore,
   buildParentIdsByChild,
   buildRootDocIdListWithInsertBefore,
+  CURATED_ROOT_DROP_PARENT_KEY,
   getParentIdsForCard,
   listCollectionRootCards,
   normalizeCuratedChildIds,
   nextCollectionRootOrderForAppend,
+  resolveCuratedDropIntent,
   wouldAttachChildCreateCuratedCycle,
 } from '@/lib/utils/curatedCollectionTree';
 
@@ -60,6 +63,41 @@ describe('nextCollectionRootOrderForAppend', () => {
     ];
     expect(nextCollectionRootOrderForAppend(roots)).toBe(60);
     expect(nextCollectionRootOrderForAppend(roots, 'b')).toBe(20);
+  });
+});
+
+describe('resolveCuratedDropIntent', () => {
+  it('preserves branch parent context for insert-before targets', () => {
+    const dropId = buildCuratedInsertBeforeDropId('child-2', 'parent-1');
+    expect(resolveCuratedDropIntent(dropId)).toEqual({
+      kind: 'insert-before',
+      beforeId: 'child-2',
+      parentId: 'parent-1',
+    });
+  });
+
+  it('treats encoded root insert-before targets as top-level reorder', () => {
+    const dropId = buildCuratedInsertBeforeDropId('root-2', null);
+    expect(dropId).toBe(`insertBefore:${CURATED_ROOT_DROP_PARENT_KEY}:root-2`);
+    expect(resolveCuratedDropIntent(dropId)).toEqual({
+      kind: 'insert-before',
+      beforeId: 'root-2',
+      parentId: null,
+    });
+  });
+
+  it('prefers structured droppable data when available', () => {
+    expect(
+      resolveCuratedDropIntent('insertBefore:wrong-parent:wrong-child', {
+        dropKind: 'insert-before',
+        parentId: 'actual-parent',
+        beforeCardId: 'actual-child',
+      })
+    ).toEqual({
+      kind: 'insert-before',
+      beforeId: 'actual-child',
+      parentId: 'actual-parent',
+    });
   });
 });
 

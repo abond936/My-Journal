@@ -14,7 +14,11 @@ import {
 } from '@dnd-kit/core';
 import { Card } from '@/lib/types/card';
 import { CuratedTreeNode } from '@/components/admin/card-admin/CuratedTreeNode';
-import { CuratedTreeDragProvider, type CuratedTreeDragKind } from '@/components/admin/card-admin/curatedTreeDragContext';
+import {
+  CuratedTreeDragProvider,
+  useCuratedTreeDragKind,
+  type CuratedTreeDragKind,
+} from '@/components/admin/card-admin/curatedTreeDragContext';
 import {
   CuratedTreeDropHighlightSync,
   useCuratedTreeDropHighlight,
@@ -30,14 +34,6 @@ import {
   wouldAttachChildCreateCuratedCycle,
 } from '@/lib/utils/curatedCollectionTree';
 import { listOrphanedCards } from '@/lib/utils/curatedTreeAttachCandidates';
-import {
-  optimisticAttachChildAsLast,
-  optimisticDetachChild,
-  optimisticDetachChildFromParent,
-  optimisticInsertChildBeforeSibling,
-  optimisticReorderCollectionRoots,
-  optimisticSetCollectionRoot,
-} from '@/lib/utils/optimisticCuratedCollections';
 import { EMBEDDED_ADMIN_WIDE_MIN_WIDTH_PX } from '@/lib/admin/embeddedWideMinWidthPx';
 import { fetchAdminCardSnapshot } from '@/lib/utils/fetchAdminCardSnapshot';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
@@ -174,7 +170,7 @@ function DraggableCard({ card, className, children, disabled, onClick }: Draggab
     <div
       ref={setNodeRef}
       style={style}
-      className={className}
+      className={`${className} ${isDragging ? styles.dragSourceActive : ''}`}
       onClick={onClick}
       {...attributes}
       {...listeners}
@@ -205,15 +201,23 @@ function UnparentDropZoneInteractive({
   suppressActiveHighlight = false,
 }: Omit<UnparentDropZoneProps, 'readOnly'>) {
   const { active } = useDndContext();
+  const dragKind = useCuratedTreeDragKind();
   const reparentFromCard = isStudioCollectionCardDragData(active?.data.current);
   const highlightId = useCuratedTreeDropHighlight();
-  const { setNodeRef } = useDroppable({ id: 'unparented', disabled: !reparentFromCard });
+  const { setNodeRef } = useDroppable({
+    id: 'unparented',
+    data: { domain: 'collections', dropKind: 'orphaned' },
+    disabled: !reparentFromCard,
+  });
   const activeDrop = highlightId === 'unparented' || (highlightId?.startsWith('unparented-row:') ?? false);
   return (
     <div
       ref={setNodeRef}
       className={`${className} ${activeDrop && !suppressActiveHighlight ? styles.dropTargetActive : ''}`}
     >
+      {activeDrop && !suppressActiveHighlight && dragKind === 'reparent' ? (
+        <div className={styles.dropZoneActionBanner}>Remove from parent</div>
+      ) : null}
       {children}
     </div>
   );
@@ -229,9 +233,14 @@ function UnparentRowDropZone({
   children: React.ReactNode;
 }) {
   const { active } = useDndContext();
+  const dragKind = useCuratedTreeDragKind();
   const reparentFromCard = isStudioCollectionCardDragData(active?.data.current);
   const highlightId = useCuratedTreeDropHighlight();
-  const { setNodeRef } = useDroppable({ id: `unparented-row:${rowId}`, disabled: !reparentFromCard });
+  const { setNodeRef } = useDroppable({
+    id: `unparented-row:${rowId}`,
+    data: { domain: 'collections', dropKind: 'orphaned', rowId },
+    disabled: !reparentFromCard,
+  });
   const activeDrop = highlightId === `unparented-row:${rowId}`;
   return (
     <div
@@ -239,6 +248,9 @@ function UnparentRowDropZone({
       className={`${className} ${activeDrop ? styles.unparentRowDropZoneActive : ''}`}
     >
       {children}
+      {activeDrop && dragKind === 'reparent' ? (
+        <span className={styles.unparentRowActionChip}>Remove</span>
+      ) : null}
     </div>
   );
 }
@@ -281,12 +293,20 @@ function TreeRootDropZoneReadOnly({ className, children }: Omit<TreeRootDropZone
 
 function TreeRootDropZoneInteractive({ className, children }: Omit<TreeRootDropZoneProps, 'readOnly'>) {
   const { active } = useDndContext();
+  const dragKind = useCuratedTreeDragKind();
   const reparentFromCard = isStudioCollectionCardDragData(active?.data.current);
   const highlightId = useCuratedTreeDropHighlight();
-  const { setNodeRef } = useDroppable({ id: 'tree-root', disabled: !reparentFromCard });
+  const { setNodeRef } = useDroppable({
+    id: 'tree-root',
+    data: { domain: 'collections', dropKind: 'tree-root' },
+    disabled: !reparentFromCard,
+  });
   const activeDrop = highlightId === 'tree-root';
   return (
     <div ref={setNodeRef} className={`${className} ${activeDrop ? styles.dropTargetActive : ''}`}>
+      {activeDrop && dragKind === 'reparent' ? (
+        <div className={styles.dropZoneActionBanner}>Add as top-level</div>
+      ) : null}
       {children}
     </div>
   );
@@ -336,6 +356,7 @@ export default function CollectionsAdminClient({
   /** Studio bank → body/cover/gallery: show a ghost under the pointer while dragging `source:*`. */
   const [dragOverlaySourceMedia, setDragOverlaySourceMedia] = useState<Media | null>(null);
   const lastValidOverIdRef = useRef<string | null>(null);
+  const lastValidOverDataRef = useRef<unknown>(null);
   const hasInitializedTreeExpansionRef = useRef(false);
   /** Stale-stream guard: each `load()` call increments this; chunks for older calls bail. */
   const loadRequestIdRef = useRef(0);
@@ -887,141 +908,174 @@ export default function CollectionsAdminClient({
     throwIfJsonApiFailed(res, data, 'Failed to update collection membership');
   };
 
-  const handleInsertChildBeforeSibling = async (childId: string, beforeSiblingId: string) => {
-    if (!childId || !beforeSiblingId || childId === beforeSiblingId) return;
-    const parentIds = parentIdsByChild.get(beforeSiblingId) ?? [];
-    if (parentIds.includes(childId)) return;
+  type CollectionsMoveSource = {
+    sourceParentId?: string;
+    sourceIsRoot?: boolean;
+  };
 
-    const parentId = parentIds[0];
-    if (!parentId) {
-      await handleInsertRootBefore(childId, beforeSiblingId);
-      return;
-    }
-    if (!cardById.get(parentId)?.docId) return;
-    const snapshot = cards;
-    const optimistic = optimisticInsertChildBeforeSibling(cards, childId, beforeSiblingId, parentId);
-    if (optimistic) setCards(optimistic);
-    setSaving(true);
-    setError(null);
-    try {
+  const runCollectionsMutation = useCallback(
+    async (work: () => Promise<void>, fallbackMessage: string) => {
+      setSaving(true);
+      setError(null);
+      try {
+        await work();
+        await load({ soft: true });
+      } catch (e) {
+        setError(e instanceof Error ? e.message : fallbackMessage);
+      } finally {
+        setSaving(false);
+      }
+    },
+    []
+  );
+
+  const detachFromParentPersist = useCallback(async (parentId: string, childId: string) => {
+    const parentFresh = await fetchAdminCardSnapshot(parentId);
+    const nextChildren = normalizeCuratedChildIds(parentFresh.childrenIds).filter((id) => id !== childId);
+    await patchCard(parentId, { childrenIds: nextChildren });
+  }, []);
+
+  const appendToParentPersist = useCallback(async (parentId: string, childId: string) => {
+    const parentFresh = await fetchAdminCardSnapshot(parentId);
+    const nextChildren = Array.from(new Set([...normalizeCuratedChildIds(parentFresh.childrenIds), childId]));
+    await patchCard(parentId, { childrenIds: nextChildren });
+  }, []);
+
+  const insertBeforePersist = useCallback(
+    async (parentId: string, childId: string, beforeSiblingId: string) => {
       const parentFresh = await fetchAdminCardSnapshot(parentId);
       const nextChildren = buildChildrenIdsWithInsertBefore(parentFresh.childrenIds, childId, beforeSiblingId);
       await patchCard(parentId, { childrenIds: nextChildren });
-      await load({ soft: true });
-    } catch (e) {
-      setCards(snapshot);
-      setError(e instanceof Error ? e.message : 'Failed to insert card');
-    } finally {
-      setSaving(false);
-    }
-  };
+    },
+    []
+  );
 
-  const handleInsertRootBefore = async (childId: string, beforeRootId: string) => {
-    if (!beforeRootId || childId === beforeRootId) return;
-    const snapshot = cards;
-    const currentRootIds = rootedCollections.map((card) => card.docId!).filter(Boolean);
-    const currentIndex = currentRootIds.indexOf(childId);
-    const beforeIndex = currentRootIds.indexOf(beforeRootId);
-    const movingWithinRoots = currentIndex >= 0 && beforeIndex >= 0;
-    let nextOrder = 10;
-    if (movingWithinRoots) {
+  const clearRootPersist = useCallback(async (cardId: string) => {
+    await patchCard(cardId, { isCollectionRoot: false });
+  }, []);
+
+  const setRootPersist = useCallback(async (cardId: string, order: number) => {
+    await patchCard(cardId, {
+      isCollectionRoot: true,
+      collectionRootOrder: order,
+    });
+  }, []);
+
+  const handleInsertRootBefore = useCallback(
+    async (childId: string, beforeRootId: string, moveSource?: CollectionsMoveSource) => {
+      if (!beforeRootId || childId === beforeRootId) return;
+      const currentRootIds = rootedCollections.map((card) => card.docId!).filter(Boolean);
       const reordered = currentRootIds.filter((id) => id !== childId);
-      reordered.splice(beforeIndex, 0, childId);
-      nextOrder = reordered.indexOf(childId) * 10;
-      const optimistic = optimisticReorderCollectionRoots(snapshot, reordered);
-      if (optimistic) setCards(optimistic);
-    } else {
-      const reordered = currentRootIds.slice();
       const idx = reordered.indexOf(beforeRootId);
       reordered.splice(idx < 0 ? reordered.length : idx, 0, childId);
-      nextOrder = reordered.indexOf(childId) * 10;
-      const optimistic = optimisticReorderCollectionRoots(snapshot, reordered);
-      if (optimistic) setCards(optimistic);
-    }
-    setSaving(true);
-    setError(null);
-    try {
-      await patchCard(childId, {
-        isCollectionRoot: true,
-        collectionRootOrder: nextOrder,
-      });
-      await load({ soft: true });
-    } catch (e) {
-      setCards(snapshot);
-      setError(e instanceof Error ? e.message : 'Failed to insert top-level card');
-    } finally {
-      setSaving(false);
-    }
-  };
+      const nextOrder = reordered.indexOf(childId) * 10;
 
-  const handleAttachChild = async (childId: string, parentId: string) => {
-    if (!parentId) return;
-    if (childId === parentId) return;
-    if ((parentIdsByChild.get(childId) ?? []).includes(parentId)) return;
-    if (!cardById.get(parentId)) return;
-    if (wouldAttachChildCreateCuratedCycle(cards, childId, parentId)) {
-      setError('Cannot move a card under one of its own descendants.');
-      return;
-    }
-    const snapshot = cards;
-    const optimistic = optimisticAttachChildAsLast(cards, childId, parentId);
-    if (optimistic) setCards(optimistic);
-    setSaving(true);
-    setError(null);
-    try {
-      const parentFresh = await fetchAdminCardSnapshot(parentId);
-      const nextChildren = Array.from(
-        new Set([...normalizeCuratedChildIds(parentFresh.childrenIds), childId])
-      );
-      await patchCard(parentId, { childrenIds: nextChildren });
-      await load({ soft: true });
-    } catch (e) {
-      setCards(snapshot);
-      setError(e instanceof Error ? e.message : 'Failed to attach child');
-    } finally {
-      setSaving(false);
-    }
-  };
+      await runCollectionsMutation(async () => {
+        if (moveSource?.sourceParentId) {
+          await detachFromParentPersist(moveSource.sourceParentId, childId);
+        }
+        await setRootPersist(childId, nextOrder);
+      }, 'Failed to insert top-level card');
+    },
+    [detachFromParentPersist, rootedCollections, runCollectionsMutation, setRootPersist]
+  );
 
-  const handleDetachChild = useCallback(async (childId: string, parentId: string) => {
-    if (!parentId) return;
-    const snapshot = cards;
-    const optimistic = optimisticDetachChildFromParent(cards, childId, parentId) ?? optimisticDetachChild(cards, childId, parentId);
-    if (optimistic) setCards(optimistic);
-    setSaving(true);
-    setError(null);
-    try {
-      const parentFresh = await fetchAdminCardSnapshot(parentId);
-      const nextChildren = normalizeCuratedChildIds(parentFresh.childrenIds).filter((id) => id !== childId);
-      await patchCard(parentId, { childrenIds: nextChildren });
-      await load({ soft: true });
-    } catch (e) {
-      setCards(snapshot);
-      setError(e instanceof Error ? e.message : 'Failed to detach child');
-    } finally {
-      setSaving(false);
-    }
-  }, [cards]);
+  const handleAppendRoot = useCallback(
+    async (childId: string, moveSource?: CollectionsMoveSource) => {
+      const nextOrder = nextCollectionRootOrderForAppend(rootedCollections, childId);
+      await runCollectionsMutation(async () => {
+        if (moveSource?.sourceParentId) {
+          await detachFromParentPersist(moveSource.sourceParentId, childId);
+        }
+        await setRootPersist(childId, nextOrder);
+      }, 'Failed to append top-level card');
+    },
+    [detachFromParentPersist, rootedCollections, runCollectionsMutation, setRootPersist]
+  );
 
-  const handleClearRoot = useCallback(async (cardId: string) => {
-    const snapshot = cards;
-    const optimistic = optimisticSetCollectionRoot(cards, cardId, {
-      isCollectionRoot: false,
-      collectionRootOrder: undefined,
-    });
-    if (optimistic) setCards(optimistic);
-    setSaving(true);
-    setError(null);
-    try {
-      await patchCard(cardId, { isCollectionRoot: false });
-      await load({ soft: true });
-    } catch (e) {
-      setCards(snapshot);
-      setError(e instanceof Error ? e.message : 'Failed to remove root');
-    } finally {
-      setSaving(false);
-    }
-  }, [cards]);
+  const handleInsertChildBeforeSibling = useCallback(
+    async (
+      childId: string,
+      beforeSiblingId: string,
+      targetParentId: string | null,
+      moveSource?: CollectionsMoveSource
+    ) => {
+      if (!childId || !beforeSiblingId || childId === beforeSiblingId) return;
+      if (targetParentId === childId) return;
+
+      if (!targetParentId) {
+        await handleInsertRootBefore(childId, beforeSiblingId, moveSource);
+        return;
+      }
+
+      if (!cardById.get(targetParentId)?.docId) return;
+      if (wouldAttachChildCreateCuratedCycle(cards, childId, targetParentId)) {
+        setError('Cannot move a card under one of its own descendants.');
+        return;
+      }
+
+      await runCollectionsMutation(async () => {
+        if (moveSource?.sourceParentId && moveSource.sourceParentId !== targetParentId) {
+          await detachFromParentPersist(moveSource.sourceParentId, childId);
+        }
+        if (moveSource?.sourceIsRoot) {
+          await clearRootPersist(childId);
+        }
+        await insertBeforePersist(targetParentId, childId, beforeSiblingId);
+      }, 'Failed to insert card');
+    },
+    [
+      cardById,
+      cards,
+      clearRootPersist,
+      detachFromParentPersist,
+      handleInsertRootBefore,
+      insertBeforePersist,
+      runCollectionsMutation,
+    ]
+  );
+
+  const handleAttachChild = useCallback(
+    async (childId: string, parentId: string, moveSource?: CollectionsMoveSource) => {
+      if (!parentId) return;
+      if (childId === parentId) return;
+      if (!cardById.get(parentId)) return;
+      if (wouldAttachChildCreateCuratedCycle(cards, childId, parentId)) {
+        setError('Cannot move a card under one of its own descendants.');
+        return;
+      }
+
+      await runCollectionsMutation(async () => {
+        if (moveSource?.sourceParentId && moveSource.sourceParentId !== parentId) {
+          await detachFromParentPersist(moveSource.sourceParentId, childId);
+        }
+        if (moveSource?.sourceIsRoot) {
+          await clearRootPersist(childId);
+        }
+        await appendToParentPersist(parentId, childId);
+      }, 'Failed to attach child');
+    },
+    [appendToParentPersist, cardById, cards, clearRootPersist, detachFromParentPersist, runCollectionsMutation]
+  );
+
+  const handleDetachChild = useCallback(
+    async (childId: string, parentId: string) => {
+      if (!parentId) return;
+      await runCollectionsMutation(async () => {
+        await detachFromParentPersist(parentId, childId);
+      }, 'Failed to detach child');
+    },
+    [detachFromParentPersist, runCollectionsMutation]
+  );
+
+  const handleClearRoot = useCallback(
+    async (cardId: string) => {
+      await runCollectionsMutation(async () => {
+        await clearRootPersist(cardId);
+      }, 'Failed to remove root');
+    },
+    [clearRootPersist, runCollectionsMutation]
+  );
 
   const handleDetachChildAction = useCallback(
     (childId: string, parentId: string) => {
@@ -1061,15 +1115,20 @@ export default function CollectionsAdminClient({
     setDragOverlayCard(null);
     setDragOverlaySourceMedia(null);
     lastValidOverIdRef.current = null;
+    lastValidOverDataRef.current = null;
   }, []);
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
     const id = event.over?.id != null ? String(event.over.id) : null;
-    if (id) lastValidOverIdRef.current = id;
+    if (id) {
+      lastValidOverIdRef.current = id;
+      lastValidOverDataRef.current = event.over?.data.current ?? null;
+    }
   }, []);
 
   const handleDragStart = (event: DragStartEvent) => {
     lastValidOverIdRef.current = null;
+    lastValidOverDataRef.current = null;
     const raw = event.active.id;
     const id = typeof raw === 'string' ? raw : String(raw);
     if (id.startsWith('studioChild:') || id.startsWith('gallery:') || id.startsWith('source:')) {
@@ -1111,6 +1170,7 @@ export default function CollectionsAdminClient({
       rawOver != null
         ? (typeof rawOver === 'string' ? rawOver : String(rawOver))
         : lastValidOverIdRef.current;
+    const overData = event.over?.data.current ?? lastValidOverDataRef.current;
 
     try {
         if (onStudioRelationshipDragEnd) {
@@ -1146,7 +1206,7 @@ export default function CollectionsAdminClient({
         ? event.active.data.current
         : null;
 
-      const intent = resolveCuratedDropIntent(overId);
+      const intent = resolveCuratedDropIntent(overId, overData);
       if (intent.kind === 'orphaned') {
         if (activeData?.sourceParentId) {
           await handleDetachChild(childId, activeData.sourceParentId);
@@ -1166,40 +1226,21 @@ export default function CollectionsAdminClient({
       }
 
       if (intent.kind === 'tree-root') {
-        const snapshot = cards;
-        setSaving(true);
-        setError(null);
-        try {
-          const nextOrder = nextCollectionRootOrderForAppend(rootedCollections, childId);
-          const optimistic = optimisticSetCollectionRoot(snapshot, childId, {
-            isCollectionRoot: true,
-            collectionRootOrder: nextOrder,
-          });
-          if (optimistic) setCards(optimistic);
-          await patchCard(childId, {
-            isCollectionRoot: true,
-            collectionRootOrder: nextOrder,
-          });
-          await load({ soft: true });
-        } catch (e) {
-          setCards(snapshot);
-          setError(e instanceof Error ? e.message : 'Failed to append top-level card');
-        } finally {
-          setSaving(false);
-        }
+        await handleAppendRoot(childId, activeData ?? undefined);
         return;
       }
 
       if (intent.kind === 'insert-before') {
-        await handleInsertChildBeforeSibling(childId, intent.beforeId);
+        await handleInsertChildBeforeSibling(childId, intent.beforeId, intent.parentId, activeData ?? undefined);
         return;
       }
 
       if (intent.kind === 'parent') {
-        await handleAttachChild(childId, intent.parentId);
+        await handleAttachChild(childId, intent.parentId, activeData ?? undefined);
       }
     } finally {
       lastValidOverIdRef.current = null;
+      lastValidOverDataRef.current = null;
     }
   };
 

@@ -134,11 +134,42 @@ export type CuratedDropIntent =
   | { kind: 'none' }
   | { kind: 'orphaned' }
   | { kind: 'tree-root' }
-  | { kind: 'insert-before'; beforeId: string }
+  | { kind: 'insert-before'; beforeId: string; parentId: string | null }
   | { kind: 'parent'; parentId: string };
 
+export const CURATED_ROOT_DROP_PARENT_KEY = '__root__';
+
+export function buildCuratedInsertBeforeDropId(beforeId: string, parentId: string | null): string {
+  const parentKey = parentId && parentId.length > 0 ? parentId : CURATED_ROOT_DROP_PARENT_KEY;
+  return `insertBefore:${parentKey}:${beforeId}`;
+}
+
 /** Normalize DnD `over.id` to one collection-tree action. */
-export function resolveCuratedDropIntent(overId: string | null): CuratedDropIntent {
+export function resolveCuratedDropIntent(
+  overId: string | null,
+  overData?: unknown
+): CuratedDropIntent {
+  if (overData && typeof overData === 'object') {
+    const data = overData as {
+      dropKind?: string;
+      parentId?: string | null;
+      beforeCardId?: string;
+      parentCardId?: string;
+    };
+    if (data.dropKind === 'orphaned') return { kind: 'orphaned' };
+    if (data.dropKind === 'tree-root') return { kind: 'tree-root' };
+    if (data.dropKind === 'parent' && typeof data.parentCardId === 'string' && data.parentCardId) {
+      return { kind: 'parent', parentId: data.parentCardId };
+    }
+    if (data.dropKind === 'insert-before' && typeof data.beforeCardId === 'string' && data.beforeCardId) {
+      return {
+        kind: 'insert-before',
+        beforeId: data.beforeCardId,
+        parentId: typeof data.parentId === 'string' && data.parentId ? data.parentId : null,
+      };
+    }
+  }
+
   if (!overId) return { kind: 'none' };
   if (overId === 'orphaned') return { kind: 'orphaned' };
   if (overId.startsWith('orphaned-row:')) return { kind: 'orphaned' };
@@ -146,8 +177,19 @@ export function resolveCuratedDropIntent(overId: string | null): CuratedDropInte
   if (overId.startsWith('unparented-row:')) return { kind: 'orphaned' };
   if (overId === 'tree-root') return { kind: 'tree-root' };
   if (overId.startsWith('insertBefore:')) {
-    const beforeId = overId.slice('insertBefore:'.length);
-    return beforeId ? { kind: 'insert-before', beforeId } : { kind: 'none' };
+    const raw = overId.slice('insertBefore:'.length);
+    const splitAt = raw.indexOf(':');
+    if (splitAt > 0) {
+      const parentKey = raw.slice(0, splitAt);
+      const beforeId = raw.slice(splitAt + 1);
+      if (!beforeId) return { kind: 'none' };
+      return {
+        kind: 'insert-before',
+        beforeId,
+        parentId: parentKey === CURATED_ROOT_DROP_PARENT_KEY ? null : parentKey,
+      };
+    }
+    return raw ? { kind: 'insert-before', beforeId: raw, parentId: null } : { kind: 'none' };
   }
   if (overId.startsWith('parent:')) {
     const parentId = overId.slice('parent:'.length);

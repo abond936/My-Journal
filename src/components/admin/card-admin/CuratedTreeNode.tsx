@@ -3,8 +3,12 @@
 import React from 'react';
 import { useDraggable, useDndContext, useDroppable } from '@dnd-kit/core';
 import type { Card } from '@/lib/types/card';
-import { normalizeCuratedChildIds } from '@/lib/utils/curatedCollectionTree';
+import {
+  buildCuratedInsertBeforeDropId,
+  normalizeCuratedChildIds,
+} from '@/lib/utils/curatedCollectionTree';
 import { useCuratedTreeDropHighlight } from '@/components/admin/card-admin/curatedTreeDropHighlightContext';
+import { useCuratedTreeDragKind } from '@/components/admin/card-admin/curatedTreeDragContext';
 import styles from '@/app/admin/collections/page.module.css';
 import {
   buildStudioCollectionCardDragData,
@@ -119,7 +123,12 @@ function DraggableCard({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className={className} onClick={onClick}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`${className} ${isDragging ? styles.dragSourceActive : ''}`}
+      onClick={onClick}
+    >
       <button
         type="button"
         className={styles.treeDragHandle}
@@ -138,24 +147,36 @@ function DraggableCard({
   );
 }
 
-function InsertBeforeDropZone({ beforeCardId }: { beforeCardId: string }) {
+function InsertBeforeDropZone({
+  beforeCardId,
+  parentId,
+}: {
+  beforeCardId: string;
+  parentId: string | null;
+}) {
   const { active, over } = useDndContext();
+  const dragKind = useCuratedTreeDragKind();
   const activeStr = active?.id != null ? String(active.id) : '';
   const reparentFromCard = isStudioCollectionCardDragData(active?.data.current);
   const draggedCardId = isStudioCollectionCardDragData(active?.data.current)
     ? active.data.current.cardId
     : parseCollectionCardDragId(activeStr);
   const highlightId = useCuratedTreeDropHighlight();
-  const insertId = `insertBefore:${beforeCardId}`;
+  const insertId = buildCuratedInsertBeforeDropId(beforeCardId, parentId);
   const parentDropId = `parent:${beforeCardId}`;
   const overStr = over?.id != null ? String(over.id) : '';
   const nestOnThisRow = highlightId === parentDropId || overStr === parentDropId;
   const { setNodeRef } = useDroppable({
     id: insertId,
+    data: {
+      domain: 'collections',
+      dropKind: 'insert-before',
+      parentId,
+      beforeCardId,
+    },
     disabled: !reparentFromCard,
   });
-  const showLine =
-    !nestOnThisRow && beforeCardId !== draggedCardId && highlightId === insertId;
+  const showLine = !nestOnThisRow && beforeCardId !== draggedCardId && highlightId === insertId;
   return (
     <div className={styles.treeInsertBeforeWrap}>
       <div
@@ -164,6 +185,9 @@ function InsertBeforeDropZone({ beforeCardId }: { beforeCardId: string }) {
         title="Drop here to insert before this row (sibling order). Easiest: aim for the gap above this card. Title = nest as last child."
         aria-label="Insert before this row"
       />
+      {showLine && dragKind === 'reparent' ? (
+        <span className={styles.treeDropActionLabel}>Insert before</span>
+      ) : null}
     </div>
   );
 }
@@ -178,11 +202,17 @@ function ParentDropZone({
   children: React.ReactNode;
 }) {
   const { active } = useDndContext();
+  const dragKind = useCuratedTreeDragKind();
   const reparentFromCard = isStudioCollectionCardDragData(active?.data.current);
   const highlightId = useCuratedTreeDropHighlight();
   const parentDropId = `parent:${parentId}`;
   const { setNodeRef } = useDroppable({
     id: parentDropId,
+    data: {
+      domain: 'collections',
+      dropKind: 'parent',
+      parentCardId: parentId,
+    },
     disabled: !reparentFromCard,
   });
   const nestActive = highlightId === parentDropId;
@@ -192,6 +222,9 @@ function ParentDropZone({
       className={`${className} ${nestActive ? `${styles.dropTargetActive} ${styles.nodeTitleDropZoneNestActive}` : ''}`}
     >
       {children}
+      {nestActive && dragKind === 'reparent' ? (
+        <span className={styles.nodeDropActionBadge}>Nest inside</span>
+      ) : null}
     </div>
   );
 }
@@ -269,7 +302,7 @@ function CuratedTreeNodeComponent({
         disableCuratedDrag ? (
           <ReadOnlyInsertBeforeGap />
         ) : (
-          <InsertBeforeDropZone beforeCardId={node.docId} />
+          <InsertBeforeDropZone beforeCardId={node.docId} parentId={sourceParentId ?? null} />
         )
       ) : null}
       <div className={`${styles.nodeRow} ${selectedCardId === node.docId ? styles.nodeRowSelected : ''}`}>

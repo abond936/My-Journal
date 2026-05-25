@@ -416,11 +416,12 @@
   padding-top: 0;
   margin-bottom: 0;
   box-sizing: border-box;
+  position: relative;
 }
 
 .treeInsertBeforeZone {
   width: 100%;
-  min-height: 10px;
+  min-height: 14px;
   border-radius: var(--border-radius-sm);
   cursor: copy;
   background: transparent;
@@ -449,10 +450,35 @@
   z-index: 1;
 }
 
+.treeDropActionLabel {
+  position: absolute;
+  top: 50%;
+  right: var(--spacing-xs);
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.1rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--layout-background1-color) 94%, var(--color3) 6%);
+  border: 1px solid color-mix(in srgb, var(--color3) 28%, transparent);
+  color: var(--text2-color);
+  font-size: 0.67rem;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  pointer-events: none;
+  z-index: 2;
+}
+
 .nodeTitleDropZone {
+  display: flex;
+  align-items: center;
   flex: 1;
   min-width: 0;
+  min-height: 1.5rem;
   border-radius: var(--border-radius-sm);
+  position: relative;
 }
 
 /*
@@ -565,6 +591,27 @@
   flex-shrink: 0;
 }
 
+.nodeDropActionBadge {
+  position: absolute;
+  top: 50%;
+  right: var(--spacing-xs);
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.1rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--layout-background1-color) 92%, var(--color3) 8%);
+  border: 1px solid color-mix(in srgb, var(--color3) 34%, transparent);
+  color: var(--text1-color);
+  font-size: 0.67rem;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  pointer-events: none;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color3) 14%, transparent);
+}
+
 .treeMissingChildRow {
   margin-left: calc(var(--spacing-xl) + var(--spacing-sm));
   padding: 0 var(--spacing-xs);
@@ -657,6 +704,10 @@
   border-left: 4px solid var(--state-warning-border-color);
 }
 
+.dragSourceActive {
+  filter: saturate(1.02);
+}
+
 /* DragOverlay child: root node is sized in TSX (max-content). Chip stays transparent so the list shows through. */
 .dragOverlayCard {
   max-width: min(22rem, 90vw);
@@ -671,11 +722,45 @@
     0 0 0 1px color-mix(in srgb, var(--color3) 26%, transparent);
   cursor: grabbing;
   pointer-events: none;
+  transform: scale(0.98);
 }
 
 .dragOverlayTitle {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
+}
+
+.dropZoneActionBanner {
+  margin: 0 0 var(--spacing-xs);
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.25rem;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color3) 30%, transparent);
+  background: color-mix(in srgb, var(--layout-background1-color) 94%, var(--color3) 6%);
+  color: var(--text1-color);
+  font-size: 0.69rem;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.01em;
+}
+
+.unparentRowActionChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.1rem;
+  padding: 0 0.4rem;
+  margin-top: 2px;
+  margin-left: var(--spacing-xs);
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color3) 28%, transparent);
+  background: color-mix(in srgb, var(--layout-background1-color) 94%, var(--color3) 6%);
+  color: var(--text2-color);
+  font-size: 0.67rem;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  pointer-events: none;
 }
 
 .dragOverlaySource {

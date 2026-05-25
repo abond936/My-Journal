@@ -534,6 +534,7 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 - **Curated Tree** - drag-and-drop—attach/detach parent→child edges and promote cards to explicit top-level roots. Multi-parent model; cycles blocked in `cardService`. Admin tree loads up to **1000** cards for the page.
   - **Tree expandability truth** - Collection-tree expand/collapse now keys off the structural `childrenIds` relationship rather than only currently resolved child objects, so parents with real children still expand correctly while the broader catalog is streaming.
   - **Collection row count placement (2026-05-24)** - In the Organize tree, collection child/card counts now sit at the end of the title line as plain inline text with no badge/background treatment, so the tree reads more like content than status chrome.
+- **Collections drag-state signaling (2026-05-24)** - Active structural drags in the Organize tree now use explicit per-target cues instead of generic pane glow: row-body nest targets label **Nest inside**, between-row reorder targets label **Insert before**, and root/unparent zones surface their exact pending action while dragging. The drag ghost remains intentionally simple.
 
 ⭕2 **Future**
 
