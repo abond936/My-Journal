@@ -27,11 +27,10 @@ import { curatedTreeCollisionDetection } from '@/components/admin/card-admin/cur
 import {
   buildParentIdsByChild,
   buildChildrenIdsWithInsertBefore,
+  deriveCuratedMutationPlan,
   listCollectionRootCards,
   normalizeCuratedChildIds,
-  nextCollectionRootOrderForAppend,
   resolveCuratedDropIntent,
-  wouldAttachChildCreateCuratedCycle,
 } from '@/lib/utils/curatedCollectionTree';
 import { listOrphanedCards } from '@/lib/utils/curatedTreeAttachCandidates';
 import { EMBEDDED_ADMIN_WIDE_MIN_WIDTH_PX } from '@/lib/admin/embeddedWideMinWidthPx';
@@ -908,11 +907,6 @@ export default function CollectionsAdminClient({
     throwIfJsonApiFailed(res, data, 'Failed to update collection membership');
   };
 
-  type CollectionsMoveSource = {
-    sourceParentId?: string;
-    sourceIsRoot?: boolean;
-  };
-
   const runCollectionsMutation = useCallback(
     async (work: () => Promise<void>, fallbackMessage: string) => {
       setSaving(true);
@@ -961,103 +955,6 @@ export default function CollectionsAdminClient({
     });
   }, []);
 
-  const handleInsertRootBefore = useCallback(
-    async (childId: string, beforeRootId: string, moveSource?: CollectionsMoveSource) => {
-      if (!beforeRootId || childId === beforeRootId) return;
-      const currentRootIds = rootedCollections.map((card) => card.docId!).filter(Boolean);
-      const reordered = currentRootIds.filter((id) => id !== childId);
-      const idx = reordered.indexOf(beforeRootId);
-      reordered.splice(idx < 0 ? reordered.length : idx, 0, childId);
-      const nextOrder = reordered.indexOf(childId) * 10;
-
-      await runCollectionsMutation(async () => {
-        if (moveSource?.sourceParentId) {
-          await detachFromParentPersist(moveSource.sourceParentId, childId);
-        }
-        await setRootPersist(childId, nextOrder);
-      }, 'Failed to insert top-level card');
-    },
-    [detachFromParentPersist, rootedCollections, runCollectionsMutation, setRootPersist]
-  );
-
-  const handleAppendRoot = useCallback(
-    async (childId: string, moveSource?: CollectionsMoveSource) => {
-      const nextOrder = nextCollectionRootOrderForAppend(rootedCollections, childId);
-      await runCollectionsMutation(async () => {
-        if (moveSource?.sourceParentId) {
-          await detachFromParentPersist(moveSource.sourceParentId, childId);
-        }
-        await setRootPersist(childId, nextOrder);
-      }, 'Failed to append top-level card');
-    },
-    [detachFromParentPersist, rootedCollections, runCollectionsMutation, setRootPersist]
-  );
-
-  const handleInsertChildBeforeSibling = useCallback(
-    async (
-      childId: string,
-      beforeSiblingId: string,
-      targetParentId: string | null,
-      moveSource?: CollectionsMoveSource
-    ) => {
-      if (!childId || !beforeSiblingId || childId === beforeSiblingId) return;
-      if (targetParentId === childId) return;
-
-      if (!targetParentId) {
-        await handleInsertRootBefore(childId, beforeSiblingId, moveSource);
-        return;
-      }
-
-      if (!cardById.get(targetParentId)?.docId) return;
-      if (wouldAttachChildCreateCuratedCycle(cards, childId, targetParentId)) {
-        setError('Cannot move a card under one of its own descendants.');
-        return;
-      }
-
-      await runCollectionsMutation(async () => {
-        if (moveSource?.sourceParentId && moveSource.sourceParentId !== targetParentId) {
-          await detachFromParentPersist(moveSource.sourceParentId, childId);
-        }
-        if (moveSource?.sourceIsRoot) {
-          await clearRootPersist(childId);
-        }
-        await insertBeforePersist(targetParentId, childId, beforeSiblingId);
-      }, 'Failed to insert card');
-    },
-    [
-      cardById,
-      cards,
-      clearRootPersist,
-      detachFromParentPersist,
-      handleInsertRootBefore,
-      insertBeforePersist,
-      runCollectionsMutation,
-    ]
-  );
-
-  const handleAttachChild = useCallback(
-    async (childId: string, parentId: string, moveSource?: CollectionsMoveSource) => {
-      if (!parentId) return;
-      if (childId === parentId) return;
-      if (!cardById.get(parentId)) return;
-      if (wouldAttachChildCreateCuratedCycle(cards, childId, parentId)) {
-        setError('Cannot move a card under one of its own descendants.');
-        return;
-      }
-
-      await runCollectionsMutation(async () => {
-        if (moveSource?.sourceParentId && moveSource.sourceParentId !== parentId) {
-          await detachFromParentPersist(moveSource.sourceParentId, childId);
-        }
-        if (moveSource?.sourceIsRoot) {
-          await clearRootPersist(childId);
-        }
-        await appendToParentPersist(parentId, childId);
-      }, 'Failed to attach child');
-    },
-    [appendToParentPersist, cardById, cards, clearRootPersist, detachFromParentPersist, runCollectionsMutation]
-  );
-
   const handleDetachChild = useCallback(
     async (childId: string, parentId: string) => {
       if (!parentId) return;
@@ -1075,6 +972,41 @@ export default function CollectionsAdminClient({
       }, 'Failed to remove root');
     },
     [clearRootPersist, runCollectionsMutation]
+  );
+
+  const executeCuratedMutationPlan = useCallback(
+    async (steps: ReturnType<typeof deriveCuratedMutationPlan>, fallbackMessage: string) => {
+      if (steps.length === 0) return;
+      await runCollectionsMutation(async () => {
+        for (const step of steps) {
+          switch (step.kind) {
+            case 'detach-parent':
+              await detachFromParentPersist(step.parentId, step.childId);
+              break;
+            case 'append-parent':
+              await appendToParentPersist(step.parentId, step.childId);
+              break;
+            case 'insert-before':
+              await insertBeforePersist(step.parentId, step.childId, step.beforeSiblingId);
+              break;
+            case 'clear-root':
+              await clearRootPersist(step.cardId);
+              break;
+            case 'set-root':
+              await setRootPersist(step.cardId, step.rootOrder);
+              break;
+          }
+        }
+      }, fallbackMessage);
+    },
+    [
+      appendToParentPersist,
+      clearRootPersist,
+      detachFromParentPersist,
+      insertBeforePersist,
+      runCollectionsMutation,
+      setRootPersist,
+    ]
   );
 
   const handleDetachChildAction = useCallback(
@@ -1205,38 +1137,37 @@ export default function CollectionsAdminClient({
       const activeData = isStudioCollectionCardDragData(event.active.data.current)
         ? event.active.data.current
         : null;
+      const fallbackParentId = activeData?.sourceParentId ?? (parentIdsByChild.get(childId) ?? [])[0];
+      const fallbackSource = {
+        sourceParentId: fallbackParentId,
+        sourceIsRoot: activeData?.sourceIsRoot ?? (!fallbackParentId && cardById.get(childId)?.isCollectionRoot === true),
+      };
 
       const intent = resolveCuratedDropIntent(overId, overData);
+      const mutationPlan = deriveCuratedMutationPlan({
+        childId,
+        intent,
+        source: fallbackSource,
+        rootedCollectionIds: rootedCollections.map((card) => card.docId!).filter(Boolean),
+      });
+
       if (intent.kind === 'orphaned') {
-        if (activeData?.sourceParentId) {
-          await handleDetachChild(childId, activeData.sourceParentId);
-          return;
-        }
-        if (activeData?.sourceIsRoot) {
-          await handleClearRoot(childId);
-          return;
-        }
-        const parentIds = parentIdsByChild.get(childId) ?? [];
-        if (parentIds.length === 0) {
-          await handleClearRoot(childId);
-          return;
-        }
-        await handleDetachChild(childId, parentIds[0]);
+        await executeCuratedMutationPlan(mutationPlan, 'Failed to detach child');
         return;
       }
 
       if (intent.kind === 'tree-root') {
-        await handleAppendRoot(childId, activeData ?? undefined);
+        await executeCuratedMutationPlan(mutationPlan, 'Failed to append top-level card');
         return;
       }
 
       if (intent.kind === 'insert-before') {
-        await handleInsertChildBeforeSibling(childId, intent.beforeId, intent.parentId, activeData ?? undefined);
+        await executeCuratedMutationPlan(mutationPlan, intent.parentId ? 'Failed to insert card' : 'Failed to insert top-level card');
         return;
       }
 
       if (intent.kind === 'parent') {
-        await handleAttachChild(childId, intent.parentId, activeData ?? undefined);
+        await executeCuratedMutationPlan(mutationPlan, 'Failed to attach child');
       }
     } finally {
       lastValidOverIdRef.current = null;

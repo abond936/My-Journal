@@ -137,6 +137,18 @@ export type CuratedDropIntent =
   | { kind: 'insert-before'; beforeId: string; parentId: string | null }
   | { kind: 'parent'; parentId: string };
 
+export type CuratedMoveSource = {
+  sourceParentId?: string;
+  sourceIsRoot?: boolean;
+};
+
+export type CuratedMutationStep =
+  | { kind: 'detach-parent'; parentId: string; childId: string }
+  | { kind: 'append-parent'; parentId: string; childId: string }
+  | { kind: 'insert-before'; parentId: string; childId: string; beforeSiblingId: string }
+  | { kind: 'clear-root'; cardId: string }
+  | { kind: 'set-root'; cardId: string; rootOrder: number };
+
 export const CURATED_ROOT_DROP_PARENT_KEY = '__root__';
 
 export function buildCuratedInsertBeforeDropId(beforeId: string, parentId: string | null): string {
@@ -200,6 +212,74 @@ export function resolveCuratedDropIntent(
     return parentId ? { kind: 'parent', parentId } : { kind: 'none' };
   }
   return { kind: 'none' };
+}
+
+export function deriveCuratedMutationPlan(args: {
+  childId: string;
+  intent: CuratedDropIntent;
+  source?: CuratedMoveSource;
+  rootedCollectionIds: readonly string[];
+}): CuratedMutationStep[] {
+  const { childId, intent, source, rootedCollectionIds } = args;
+  if (!childId) return [];
+
+  const sourceParentId = source?.sourceParentId;
+  const sourceIsRoot = source?.sourceIsRoot === true;
+  const steps: CuratedMutationStep[] = [];
+
+  switch (intent.kind) {
+    case 'none':
+      return [];
+    case 'orphaned':
+      if (sourceParentId) {
+        return [{ kind: 'detach-parent', parentId: sourceParentId, childId }];
+      }
+      if (sourceIsRoot) {
+        return [{ kind: 'clear-root', cardId: childId }];
+      }
+      return [];
+    case 'tree-root': {
+      const reorderedRootIds = rootedCollectionIds.filter((id) => id !== childId);
+      reorderedRootIds.push(childId);
+      if (sourceParentId) {
+        steps.push({ kind: 'detach-parent', parentId: sourceParentId, childId });
+      }
+      steps.push({ kind: 'set-root', cardId: childId, rootOrder: reorderedRootIds.indexOf(childId) * 10 });
+      return steps;
+    }
+    case 'insert-before':
+      if (!intent.parentId) {
+        const reorderedRootIds = buildRootDocIdListWithInsertBefore(rootedCollectionIds, childId, intent.beforeId);
+        if (sourceParentId) {
+          steps.push({ kind: 'detach-parent', parentId: sourceParentId, childId });
+        }
+        steps.push({ kind: 'set-root', cardId: childId, rootOrder: reorderedRootIds.indexOf(childId) * 10 });
+        return steps;
+      }
+      if (sourceParentId && sourceParentId !== intent.parentId) {
+        steps.push({ kind: 'detach-parent', parentId: sourceParentId, childId });
+      }
+      if (sourceIsRoot) {
+        steps.push({ kind: 'clear-root', cardId: childId });
+      }
+      steps.push({
+        kind: 'insert-before',
+        parentId: intent.parentId,
+        childId,
+        beforeSiblingId: intent.beforeId,
+      });
+      return steps;
+    case 'parent':
+      if (sourceParentId && sourceParentId !== intent.parentId) {
+        steps.push({ kind: 'detach-parent', parentId: sourceParentId, childId });
+      }
+      if (sourceIsRoot) {
+        steps.push({ kind: 'clear-root', cardId: childId });
+      }
+      if (sourceParentId === intent.parentId) return steps;
+      steps.push({ kind: 'append-parent', parentId: intent.parentId, childId });
+      return steps;
+  }
 }
 
 /**

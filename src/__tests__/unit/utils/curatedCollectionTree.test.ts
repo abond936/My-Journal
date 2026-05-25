@@ -5,6 +5,7 @@ import {
   buildParentIdsByChild,
   buildRootDocIdListWithInsertBefore,
   CURATED_ROOT_DROP_PARENT_KEY,
+  deriveCuratedMutationPlan,
   getParentIdsForCard,
   listCollectionRootCards,
   normalizeCuratedChildIds,
@@ -98,6 +99,88 @@ describe('resolveCuratedDropIntent', () => {
       beforeId: 'actual-child',
       parentId: 'actual-parent',
     });
+  });
+});
+
+describe('deriveCuratedMutationPlan', () => {
+  const rootedCollectionIds = ['root-1', 'root-2'];
+
+  it('moves a child from one parent to another parent branch', () => {
+    expect(
+      deriveCuratedMutationPlan({
+        childId: 'child-1',
+        intent: { kind: 'parent', parentId: 'parent-new' },
+        source: { sourceParentId: 'parent-old' },
+        rootedCollectionIds,
+      })
+    ).toEqual([
+      { kind: 'detach-parent', parentId: 'parent-old', childId: 'child-1' },
+      { kind: 'append-parent', parentId: 'parent-new', childId: 'child-1' },
+    ]);
+  });
+
+  it('promotes a nested child to top-level root and removes the old branch edge', () => {
+    expect(
+      deriveCuratedMutationPlan({
+        childId: 'child-1',
+        intent: { kind: 'tree-root' },
+        source: { sourceParentId: 'parent-old' },
+        rootedCollectionIds,
+      })
+    ).toEqual([
+      { kind: 'detach-parent', parentId: 'parent-old', childId: 'child-1' },
+      { kind: 'set-root', cardId: 'child-1', rootOrder: 20 },
+    ]);
+  });
+
+  it('drops before a sibling in a specific target branch', () => {
+    expect(
+      deriveCuratedMutationPlan({
+        childId: 'child-1',
+        intent: { kind: 'insert-before', beforeId: 'child-2', parentId: 'parent-new' },
+        source: { sourceParentId: 'parent-old' },
+        rootedCollectionIds,
+      })
+    ).toEqual([
+      { kind: 'detach-parent', parentId: 'parent-old', childId: 'child-1' },
+      { kind: 'insert-before', parentId: 'parent-new', childId: 'child-1', beforeSiblingId: 'child-2' },
+    ]);
+  });
+
+  it('moves a root card into a parent branch and clears root status', () => {
+    expect(
+      deriveCuratedMutationPlan({
+        childId: 'root-2',
+        intent: { kind: 'parent', parentId: 'parent-new' },
+        source: { sourceIsRoot: true },
+        rootedCollectionIds,
+      })
+    ).toEqual([
+      { kind: 'clear-root', cardId: 'root-2' },
+      { kind: 'append-parent', parentId: 'parent-new', childId: 'root-2' },
+    ]);
+  });
+
+  it('reorders roots before another root without clearing root status', () => {
+    expect(
+      deriveCuratedMutationPlan({
+        childId: 'root-2',
+        intent: { kind: 'insert-before', beforeId: 'root-1', parentId: null },
+        source: { sourceIsRoot: true },
+        rootedCollectionIds,
+      })
+    ).toEqual([{ kind: 'set-root', cardId: 'root-2', rootOrder: 0 }]);
+  });
+
+  it('detaches only the current parent on orphan drop', () => {
+    expect(
+      deriveCuratedMutationPlan({
+        childId: 'child-1',
+        intent: { kind: 'orphaned' },
+        source: { sourceParentId: 'parent-old' },
+        rootedCollectionIds,
+      })
+    ).toEqual([{ kind: 'detach-parent', parentId: 'parent-old', childId: 'child-1' }]);
   });
 });
 
