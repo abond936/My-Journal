@@ -33,6 +33,12 @@ import {
   resolveCuratedDropIntent,
 } from '@/lib/utils/curatedCollectionTree';
 import { listOrphanedCards } from '@/lib/utils/curatedTreeAttachCandidates';
+import {
+  optimisticAttachChildAsLast,
+  optimisticDetachChildFromParent,
+  optimisticInsertChildBeforeSibling,
+  optimisticSetCollectionRoot,
+} from '@/lib/utils/optimisticCuratedCollections';
 import { EMBEDDED_ADMIN_WIDE_MIN_WIDTH_PX } from '@/lib/admin/embeddedWideMinWidthPx';
 import { fetchAdminCardSnapshot } from '@/lib/utils/fetchAdminCardSnapshot';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
@@ -111,6 +117,23 @@ function readStoredTreeExpandedIds(storageKey: string): string[] {
     return parsed.filter((id): id is string => typeof id === 'string' && id.length > 0);
   } catch {
     return [];
+  }
+}
+
+function writeStudioDndDebug(payload: Record<string, unknown>) {
+  if (typeof document === 'undefined') return;
+  try {
+    const root = document.documentElement;
+    root.setAttribute('data-studio-dnd-phase', String(payload.phase ?? 'unknown'));
+    root.setAttribute(
+      'data-studio-dnd-debug',
+      JSON.stringify({
+        ...payload,
+        at: Date.now(),
+      }).slice(0, 4000)
+    );
+  } catch {
+    // Debug capture must never interfere with drag behavior.
   }
 }
 
@@ -199,14 +222,11 @@ function UnparentDropZoneInteractive({
   children,
   suppressActiveHighlight = false,
 }: Omit<UnparentDropZoneProps, 'readOnly'>) {
-  const { active } = useDndContext();
   const dragKind = useCuratedTreeDragKind();
-  const reparentFromCard = isStudioCollectionCardDragData(active?.data.current);
   const highlightId = useCuratedTreeDropHighlight();
   const { setNodeRef } = useDroppable({
     id: 'unparented',
     data: { domain: 'collections', dropKind: 'orphaned' },
-    disabled: !reparentFromCard,
   });
   const activeDrop = highlightId === 'unparented' || (highlightId?.startsWith('unparented-row:') ?? false);
   return (
@@ -231,14 +251,11 @@ function UnparentRowDropZone({
   className: string;
   children: React.ReactNode;
 }) {
-  const { active } = useDndContext();
   const dragKind = useCuratedTreeDragKind();
-  const reparentFromCard = isStudioCollectionCardDragData(active?.data.current);
   const highlightId = useCuratedTreeDropHighlight();
   const { setNodeRef } = useDroppable({
     id: `unparented-row:${rowId}`,
     data: { domain: 'collections', dropKind: 'orphaned', rowId },
-    disabled: !reparentFromCard,
   });
   const activeDrop = highlightId === `unparented-row:${rowId}`;
   return (
@@ -291,14 +308,11 @@ function TreeRootDropZoneReadOnly({ className, children }: Omit<TreeRootDropZone
 }
 
 function TreeRootDropZoneInteractive({ className, children }: Omit<TreeRootDropZoneProps, 'readOnly'>) {
-  const { active } = useDndContext();
   const dragKind = useCuratedTreeDragKind();
-  const reparentFromCard = isStudioCollectionCardDragData(active?.data.current);
   const highlightId = useCuratedTreeDropHighlight();
   const { setNodeRef } = useDroppable({
     id: 'tree-root',
     data: { domain: 'collections', dropKind: 'tree-root' },
-    disabled: !reparentFromCard,
   });
   const activeDrop = highlightId === 'tree-root';
   return (
@@ -908,12 +922,18 @@ export default function CollectionsAdminClient({
   };
 
   const runCollectionsMutation = useCallback(
-    async (work: () => Promise<void>, fallbackMessage: string) => {
+    async (
+      work: () => Promise<void>,
+      fallbackMessage: string,
+      options?: { reloadAfter?: boolean }
+    ) => {
       setSaving(true);
       setError(null);
       try {
         await work();
-        await load({ soft: true });
+        if (options?.reloadAfter !== false) {
+          await load({ soft: true });
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : fallbackMessage);
       } finally {
@@ -997,13 +1017,41 @@ export default function CollectionsAdminClient({
               break;
           }
         }
-      }, fallbackMessage);
+
+        setCards((prev) => {
+          let next = prev;
+          for (const step of steps) {
+            const patched =
+              step.kind === 'detach-parent'
+                ? optimisticDetachChildFromParent(next, step.childId, step.parentId)
+                : step.kind === 'append-parent'
+                  ? optimisticAttachChildAsLast(next, step.childId, step.parentId)
+                  : step.kind === 'insert-before'
+                    ? optimisticInsertChildBeforeSibling(next, step.childId, step.beforeSiblingId, step.parentId)
+                    : step.kind === 'clear-root'
+                      ? optimisticSetCollectionRoot(next, step.cardId, { isCollectionRoot: false })
+                      : optimisticSetCollectionRoot(next, step.cardId, {
+                          isCollectionRoot: true,
+                          collectionRootOrder: step.rootOrder,
+                        });
+            if (patched) {
+              next = patched;
+            }
+          }
+          return next;
+        });
+      }, fallbackMessage, { reloadAfter: false });
+
+      window.setTimeout(() => {
+        void load({ soft: true });
+      }, 750);
     },
     [
       appendToParentPersist,
       clearRootPersist,
       detachFromParentPersist,
       insertBeforePersist,
+      load,
       runCollectionsMutation,
       setRootPersist,
     ]
@@ -1042,6 +1090,11 @@ export default function CollectionsAdminClient({
   }, []);
 
   const handleDragCancel = useCallback(() => {
+    writeStudioDndDebug({
+      phase: 'cancel',
+      lastValidOverId: lastValidOverIdRef.current,
+      lastValidOverData: lastValidOverDataRef.current ?? null,
+    });
     setCuratedDragKind(null);
     setDraggingCardId(null);
     setDragOverlayCard(null);
@@ -1056,6 +1109,14 @@ export default function CollectionsAdminClient({
       lastValidOverIdRef.current = id;
       lastValidOverDataRef.current = event.over?.data.current ?? null;
     }
+    writeStudioDndDebug({
+      phase: 'over',
+      activeId: event.active?.id != null ? String(event.active.id) : null,
+      overId: id,
+      overData: event.over?.data.current ?? null,
+      lastValidOverId: lastValidOverIdRef.current,
+      lastValidOverData: lastValidOverDataRef.current ?? null,
+    });
   }, []);
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -1064,6 +1125,11 @@ export default function CollectionsAdminClient({
     const raw = event.active.id;
     const id = typeof raw === 'string' ? raw : String(raw);
     if (id.startsWith('studioChild:') || id.startsWith('gallery:') || id.startsWith('source:')) {
+      writeStudioDndDebug({
+        phase: 'start',
+        activeId: id,
+        kind: 'relationship-or-source',
+      });
       setCuratedDragKind(null);
       setDraggingCardId(null);
       setDragOverlayCard(null);
@@ -1079,12 +1145,24 @@ export default function CollectionsAdminClient({
       return;
     }
     if (isStudioCollectionCardDragData(event.active.data.current)) {
+      writeStudioDndDebug({
+        phase: 'start',
+        activeId: id,
+        kind: 'collections-card',
+        activeData: event.active.data.current,
+      });
       setCuratedDragKind('reparent');
       const cid = event.active.data.current.cardId;
       setDraggingCardId(cid);
       setDragOverlayCard(cardById.get(cid) ?? null);
       setDragOverlaySourceMedia(null);
     } else {
+      writeStudioDndDebug({
+        phase: 'start',
+        activeId: id,
+        kind: 'unknown',
+        activeData: event.active.data.current ?? null,
+      });
       setCuratedDragKind(null);
       setDraggingCardId(null);
       setDragOverlayCard(null);
@@ -1103,6 +1181,15 @@ export default function CollectionsAdminClient({
         ? (typeof rawOver === 'string' ? rawOver : String(rawOver))
         : lastValidOverIdRef.current;
     const overData = event.over?.data.current ?? lastValidOverDataRef.current;
+    writeStudioDndDebug({
+      phase: 'end-begin',
+      activeId: activeStr,
+      rawOverId: rawOver != null ? (typeof rawOver === 'string' ? rawOver : String(rawOver)) : null,
+      resolvedOverId: overStr,
+      overData,
+      lastValidOverId: lastValidOverIdRef.current,
+      lastValidOverData: lastValidOverDataRef.current ?? null,
+    });
 
     try {
         if (onStudioRelationshipDragEnd) {
@@ -1150,24 +1237,38 @@ export default function CollectionsAdminClient({
         source: fallbackSource,
         rootedCollectionIds: rootedCollections.map((card) => card.docId!).filter(Boolean),
       });
+      writeStudioDndDebug({
+        phase: 'end-plan',
+        activeId: activeStr,
+        childId,
+        overId,
+        overData,
+        fallbackSource,
+        intent,
+        mutationPlan,
+      });
 
       if (intent.kind === 'orphaned') {
         await executeCuratedMutationPlan(mutationPlan, 'Failed to detach child');
+        writeStudioDndDebug({ phase: 'end-complete', outcome: 'orphaned', childId, overId });
         return;
       }
 
       if (intent.kind === 'tree-root') {
         await executeCuratedMutationPlan(mutationPlan, 'Failed to append top-level card');
+        writeStudioDndDebug({ phase: 'end-complete', outcome: 'tree-root', childId, overId });
         return;
       }
 
       if (intent.kind === 'insert-before') {
         await executeCuratedMutationPlan(mutationPlan, intent.parentId ? 'Failed to insert card' : 'Failed to insert top-level card');
+        writeStudioDndDebug({ phase: 'end-complete', outcome: 'insert-before', childId, overId });
         return;
       }
 
       if (intent.kind === 'parent') {
         await executeCuratedMutationPlan(mutationPlan, 'Failed to attach child');
+        writeStudioDndDebug({ phase: 'end-complete', outcome: 'parent', childId, overId });
       }
     } finally {
       lastValidOverIdRef.current = null;
@@ -1354,7 +1455,7 @@ export default function CollectionsAdminClient({
                               className={`${styles.treeRootDropZone} ${styles.treeRootAppendStrip}`}
                             >
                               <p className={styles.treeRootAppendHint}>
-                                Drop here to add at the end of top-level curated items.
+                                Drop here to start a new Collection.
                               </p>
                             </TreeRootDropZone>
                           ) : null}
@@ -1403,7 +1504,7 @@ export default function CollectionsAdminClient({
                           className={`${styles.treeRootDropZone} ${styles.treeRootAppendStrip}`}
                         >
                           <p className={styles.treeRootAppendHint}>
-                            Drop here to add at the end of top-level curated items.
+                            Drop here to start a new Collection.
                           </p>
                         </TreeRootDropZone>
                       ) : null}
@@ -1461,7 +1562,7 @@ export default function CollectionsAdminClient({
                 </div>
               ) : null}
               <UnparentDropZone
-                readOnly={treeDropZonesReadOnly}
+                readOnly={treeDropZonesReadOnly || studioAttachBank}
                 className={`${styles.unparentDropZone} ${studioAttachBank ? styles.panelViewport : styles.panelScroll}`}
                 suppressActiveHighlight={studioAttachBank}
               >

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { useDndContext } from '@dnd-kit/core';
 import { FilterX, Pencil } from 'lucide-react';
 import { useStudioShell } from '@/components/admin/studio/StudioShellContext';
 import { useTag } from '@/components/providers/TagProvider';
@@ -121,6 +122,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   } = props;
 
   const { selectedLoadState } = useStudioShell();
+  const { active } = useDndContext();
   const feedback = useAppFeedback();
   const { tags: allTags } = useTag();
   const [fullCatalog, setFullCatalog] = useState<Card[]>([]);
@@ -151,6 +153,11 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   const deferredDimensionFilters = useDeferredValue(dimensionFilters);
   const deferredStatusFilter = useDeferredValue(statusFilter);
   const deferredSortMode = useDeferredValue(sortMode);
+  const dragActiveRef = useRef(false);
+
+  useEffect(() => {
+    dragActiveRef.current = Boolean(active);
+  }, [active]);
 
   // Catalog load: first chunk paints fast (250 cards), remaining pages stream in
   // background under the server's stable `created desc` order. Filters operate
@@ -166,6 +173,12 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     const PAGE_SIZE = 250;
 
     (async () => {
+      const waitForStableDragSurface = async () => {
+        while (!cancelled && dragActiveRef.current) {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+      };
+
       let lastDocId: string | undefined;
       let firstChunkPainted = false;
       const accumulated: Card[] = [];
@@ -201,6 +214,11 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
             accumulated.push(toStudioCatalogCard(item));
             seen.add(item.docId);
           }
+        }
+
+        if (firstChunkPainted) {
+          await waitForStableDragSurface();
+          if (cancelled) return;
         }
 
         setFullCatalog([...accumulated]);
@@ -931,7 +949,6 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
           onDeleteCard={onDeleteCard}
           onRequestDeleteCard={requestDeleteCard}
           studioCuratedTreeDrag={studioDrag}
-          studioCuratedTreeUnparentedRowTarget={studioDrag}
           studioEmbedCellClickSelects
           onStudioFocusCard={handleStudioFocusCard}
           pendingFocusCardId={pendingFocusCardId}

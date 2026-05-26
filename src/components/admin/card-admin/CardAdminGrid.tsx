@@ -509,7 +509,6 @@ function CardAdminGridStudioCell({
         style: cellStyle,
         id: `card-${card.docId}`,
         title: thumbnailTooltip,
-        ...(studioCuratedTreeDrag && !interactionDisabled ? rowDnd.listeners : {}),
         onClick: (e) => {
           if (isCardGridChromeInteractiveTarget(e.target)) return;
           activatePrimary(e);

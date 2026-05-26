@@ -1,0 +1,49 @@
+{
+  "cookies": [
+    {
+      "name": "next-auth.csrf-token",
+      "value": "cf9208ca5176db6ef28d4b19f715af35a48d3a6d587c1df274807246dff6cd27%7C5088cda452f4afdb46c07887548b2676e0b1919699c0db5b9541d3d6f5f94a73",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "next-auth.callback-url",
+      "value": "http%3A%2F%2Flocalhost%3A3000%2F%3FcallbackUrl%3D%2Fadmin",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "next-auth.session-token",
+      "value": "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..5kOMOYgRm--xxUKj.XbYLCchqTTFjb4F4CouoOqEo_sXaEqYry2x9RBCIPWoYjwBWlRstz8wpFwbgps7uo9C598_sjjXTnxLg1Omf6vI8-9swxs4Uikbi0-qVHiqyP_j4yqmYxafxDnp1TdPB0Rgex_bBaL7UFG07KnZhEi_K7D-KnodkZZ3LAKZTqm5MZ1FEIjqddVaZFgE88T3XkpOlsOQpVmwd8ACsUaZuuDbyUhkV.uDV7pPi0HV8f1_VMlGarfw",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1782345569.217339,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "nextauth.message",
+          "value": "{\"event\":\"session\",\"data\":{\"trigger\":\"getSession\"},\"timestamp\":1779753567}"
+        },
+        {
+          "name": "myjournal-feed-random-seeds",
+          "value": "{\"{\\\"status\\\":\\\"published\\\",\\\"types\\\":[\\\"story\\\",\\\"gallery\\\",\\\"qa\\\",\\\"quote\\\",\\\"callout\\\"],\\\"selectedTags\\\":[],\\\"dimensionalTags\\\":{\\\"who\\\":[],\\\"what\\\":[],\\\"when\\\":[],\\\"where\\\":[]},\\\"cardDimensionMissing\\\":{\\\"who\\\":false,\\\"what\\\":false,\\\"when\\\":false,\\\"where\\\":false},\\\"includeSubTagsInFeed\\\":false}\":\"29763705-47a9-426c-b9de-10f0c9165985\",\"{\\\"status\\\":\\\"all\\\",\\\"types\\\":[\\\"story\\\",\\\"gallery\\\",\\\"qa\\\",\\\"quote\\\",\\\"callout\\\"],\\\"selectedTags\\\":[],\\\"dimensionalTags\\\":{\\\"who\\\":[],\\\"what\\\":[],\\\"when\\\":[],\\\"where\\\":[]},\\\"cardDimensionMissing\\\":{\\\"who\\\":false,\\\"what\\\":false,\\\"when\\\":false,\\\"where\\\":false},\\\"includeSubTagsInFeed\\\":false}\":\"da4bb9ff-d88f-4198-9c64-ef33eb5f5161\"}"
+        }
+      ]
+    }
+  ]
+}

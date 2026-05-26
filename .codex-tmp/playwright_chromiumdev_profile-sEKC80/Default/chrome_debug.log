@@ -1,0 +1,52 @@
+[0525/132128.454:INFO:CONSOLE:25631] "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold", source: webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js (25631)
+[0525/132128.646:INFO:CONSOLE:57] "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<SegmentViewNode>} forbidden={undefined} ...>
+      <RedirectBoundary>
+        <RedirectErrorBoundary router={{...}}>
+          <InnerLayoutRouter url="/?callback..." tree={[...]} cacheNode={{lazyData:null, ...}} segmentPath={[...]}>
+            <SegmentViewNode type="page" pagePath="page.tsx">
+              <SegmentTrieNode>
+              <Page>
+                <Suspense fallback={<div>}>
+                  <Home>
+                    <div className="Home_pageW...">
+                      <div className="Home_conte...">
+                        <div className="Home_title...">
+                          <img
+                            alt="My Stories"
+                            fetchPriority={undefined}
+                            loading={undefined}
+                            width={600}
+                            height={300}
+                            decoding="async"
+                            data-nimg="1"
+                            className="Home_titleImage__izKqW"
+                            style={{color:"transparent"}}
+                            sizes="(max-width: 768px) 100vw, 600px"
++                           srcSet={"/_next/image?url=%2Fimages%2Fuploads%2FTitle-light2.png&w=640&q=75 640w, /_next/..."}
+-                           srcSet={"/_next/image?url=%2Fimages%2Fuploads%2FTitle-dark2.png&w=640&q=75 640w, /_next/i..."}
++                           src={"/_next/image?url=%2Fimages%2Fuploads%2FTitle-light2.png&w=3840&q=75"}
+-                           src={"/_next/image?url=%2Fimages%2Fuploads%2FTitle-dark2.png&w=3840&q=75"}
+                            ref={function}
+                            onLoad={function onLoad}
+                            onError={function onError}
+                          >
+                          ...
+                        ...
+                      ...
+            ...
+          ...
+", source: webpack-internal:///(app-pages-browser)/./node_modules/next/dist/next-devtools/userspace/app/errors/intercept-console-error.js (57)
+[0525/132153.201:INFO:CONSOLE:0] "The resource http://127.0.0.1:3000/_next/image?url=%2Fimages%2Fuploads%2FTitle-light2.png&w=256&q=75 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.", source: http://127.0.0.1:3000/admin/studio (0)

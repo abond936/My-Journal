@@ -12,7 +12,6 @@ import { useCuratedTreeDragKind } from '@/components/admin/card-admin/curatedTre
 import styles from '@/app/admin/collections/page.module.css';
 import {
   buildStudioCollectionCardDragData,
-  isStudioCollectionCardDragData,
   parseCollectionCardDragId,
 } from '@/lib/dnd/studioDragContract';
 
@@ -157,10 +156,7 @@ function InsertBeforeDropZone({
   const { active, over } = useDndContext();
   const dragKind = useCuratedTreeDragKind();
   const activeStr = active?.id != null ? String(active.id) : '';
-  const reparentFromCard = isStudioCollectionCardDragData(active?.data.current);
-  const draggedCardId = isStudioCollectionCardDragData(active?.data.current)
-    ? active.data.current.cardId
-    : parseCollectionCardDragId(activeStr);
+  const draggedCardId = parseCollectionCardDragId(activeStr);
   const highlightId = useCuratedTreeDropHighlight();
   const insertId = buildCuratedInsertBeforeDropId(beforeCardId, parentId);
   const parentDropId = `parent:${beforeCardId}`;
@@ -174,7 +170,6 @@ function InsertBeforeDropZone({
       parentId,
       beforeCardId,
     },
-    disabled: !reparentFromCard,
   });
   const showLine = !nestOnThisRow && beforeCardId !== draggedCardId && highlightId === insertId;
   return (
@@ -201,9 +196,7 @@ function ParentDropZone({
   className: string;
   children: React.ReactNode;
 }) {
-  const { active } = useDndContext();
   const dragKind = useCuratedTreeDragKind();
-  const reparentFromCard = isStudioCollectionCardDragData(active?.data.current);
   const highlightId = useCuratedTreeDropHighlight();
   const parentDropId = `parent:${parentId}`;
   const { setNodeRef } = useDroppable({
@@ -213,7 +206,6 @@ function ParentDropZone({
       dropKind: 'parent',
       parentCardId: parentId,
     },
-    disabled: !reparentFromCard,
   });
   const nestActive = highlightId === parentDropId;
   return (
