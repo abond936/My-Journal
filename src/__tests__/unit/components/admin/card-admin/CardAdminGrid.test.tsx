@@ -119,7 +119,7 @@ describe('CardAdminGrid', () => {
     dragListeners.onPointerDown.mockClear();
   });
 
-  it('keeps Studio curated-tree drag on the explicit handle instead of the full grid tile', () => {
+  it('registers Studio curated-tree drag on the full grid tile instead of requiring a handle', () => {
     render(
       <CardAdminGrid
         cards={[baseCard]}
@@ -135,13 +135,13 @@ describe('CardAdminGrid', () => {
       />
     );
 
-    expect(screen.getByRole('button', { name: 'Drag into curated tree' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Drag into curated tree' })).not.toBeInTheDocument();
 
     const chromeProps = mockChrome.mock.calls.at(-1)?.[0] as {
       rootProps?: Record<string, unknown>;
     };
 
     expect(chromeProps.rootProps).toBeDefined();
-    expect(chromeProps.rootProps).not.toHaveProperty('onPointerDown');
+    expect(chromeProps.rootProps).toHaveProperty('onPointerDown');
   });
 });

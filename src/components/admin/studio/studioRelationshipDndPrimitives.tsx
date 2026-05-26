@@ -6,6 +6,8 @@ import { useDndContext, useDroppable, type DragEndEvent } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { useCuratedTreeDropHighlight } from '@/components/admin/card-admin/curatedTreeDropHighlightContext';
 import type { Card } from '@/lib/types/card';
+import type { CollectionsCardDragData } from '@/lib/dnd/collectionsDragContract';
+import { isCollectionsCardDragData, parseCollectionsCardDragId } from '@/lib/dnd/collectionsDragContract';
 import type { Media } from '@/lib/types/photo';
 import type { StudioSelectedDetail } from '@/components/admin/studio/studioCardTypes';
 import styles from './StudioWorkspace.module.css';
@@ -58,10 +60,6 @@ export function StudioDropZone({
   accepts,
   ariaLabel,
   className,
-  /** When true, the droppable stays enabled even with no active drag—avoids scroll/hit quirks on long-lived targets like TipTap body. */
-  alwaysRegister = false,
-  /** Shown only while a matching drag is active (`accepts` includes the drag kind). */
-  eligibleHint,
   onEligibleDragPointerUpdate,
   children,
 }: {
@@ -70,7 +68,9 @@ export function StudioDropZone({
   ariaLabel: string;
   /** Merged with base drop-zone classes (e.g. min-height for body target). */
   className?: string;
+  /** Legacy no-op: targets now stay registered all the time for stability. */
   alwaysRegister?: boolean;
+  /** Legacy no-op: visual hint text was removed in favor of quieter line/outline cues. */
   eligibleHint?: string;
   onEligibleDragPointerUpdate?: (point: { left: number; top: number } | null) => void;
   children: React.ReactNode;
@@ -83,7 +83,7 @@ export function StudioDropZone({
       ? 'gallery'
       : null;
   const isEligible = activeDragKind !== null && accepts.includes(activeDragKind);
-  const { setNodeRef, isOver } = useDroppable({ id, disabled: alwaysRegister ? false : !isEligible });
+  const { setNodeRef, isOver } = useDroppable({ id });
   useEffect(() => {
     if (!onEligibleDragPointerUpdate) return;
     if (!isEligible || !isOver) {
@@ -111,6 +111,7 @@ export function StudioDropZone({
       aria-label={ariaLabel}
       data-drop-zone-id={id}
       data-drop-zone-active={isEligible && isOver ? 'true' : 'false'}
+      data-drop-zone-eligible={isEligible ? 'true' : 'false'}
       className={[
         styles.dropZone,
         isEligible ? styles.dropZoneEligible : '',
@@ -121,7 +122,6 @@ export function StudioDropZone({
         .join(' ')
         .trim()}
     >
-      {isEligible && eligibleHint ? <p className={styles.dropZoneEligibleHint}>{eligibleHint}</p> : null}
       {children}
     </div>
   );
@@ -161,14 +161,10 @@ export function StudioChildSortableRow({ id, children }: { id: string; children:
 
 /** Studio-only parent attach zone for tree card drags. */
 export function StudioParentAttachZone({ parentId, children }: { parentId: string; children: React.ReactNode }) {
-  const { active } = useDndContext();
-  const activeStr = active?.id != null ? String(active.id) : '';
-  const reparentFromCard = activeStr.startsWith('card:');
   const highlightId = useCuratedTreeDropHighlight();
   const parentDropId = `studio-parent:${parentId}`;
   const { setNodeRef } = useDroppable({
     id: parentDropId,
-    disabled: !reparentFromCard,
   });
   const nestActive = highlightId === parentDropId;
   return (
@@ -190,7 +186,6 @@ export function StudioChildrenEndDropZone({ parentId }: { parentId: string }) {
   const endId = `studioChildAfter:${parentId}`;
   const { setNodeRef, isOver } = useDroppable({
     id: endId,
-    disabled: !enabled,
   });
   const showLine = highlightId === endId || isOver;
   return (
@@ -210,6 +205,11 @@ export async function handleStudioRelationshipDragEnd(
     selectedCardDetail: StudioSelectedDetail | null;
     selectedCardId: string | null;
     patchSelectedCard: (payload: Partial<Card>, msg?: string) => Promise<void>;
+    bridgeCollectionsCardToSelectedParent: (input: {
+      childId: string;
+      parentId: string;
+      dragData: CollectionsCardDragData | null;
+    }) => Promise<boolean>;
     resolveBankMediaById: (id: string) => Media | undefined;
     bodyMediaInsertRef: MutableRefObject<((media: Media, dropPoint?: { left: number; top: number } | null) => void) | null>;
     showToast: (input: { title?: string; message: string; tone?: 'success' | 'error' | 'warning' | 'info'; durationMs?: number; persistent?: boolean }) => void;
@@ -226,6 +226,18 @@ export async function handleStudioRelationshipDragEnd(
 
   const activeId = String(active.id);
   const overId = fallbackOverId;
+  const activeData = active.data?.current;
+
+  if (activeId.startsWith('card:') && overId.startsWith('studio-parent:')) {
+    const childId = parseCollectionsCardDragId(activeId);
+    const parentId = overId.slice('studio-parent:'.length);
+    if (!childId || !parentId) return false;
+    return ctx.bridgeCollectionsCardToSelectedParent({
+      childId,
+      parentId,
+      dragData: isCollectionsCardDragData(activeData) ? activeData : null,
+    });
+  }
 
   const afterId = ctx.selectedCardId ? `studioChildAfter:${ctx.selectedCardId}` : null;
   if (activeId.startsWith('studioChild:') && afterId && overId === afterId) {

@@ -87,7 +87,7 @@ Legend:
 
 
 
-*Integrated execution order:* **§ Studio sequence** inline-tag work is ✅ (2026-04-23 closeout in `docs/02-Application.md` → **Administration**). Then **§ Card Management**, **§ Tag Management** (remaining), **§ Media Management** (remaining), **§ Backend**. Each **⭕1** bullet matches `docs/02-Application.md` verbatim (bold title + text after ` - `) where still planned.
+*Integrated execution order:* **§ Studio sequence** inline-tag work is ✅ (2026-04-23 closeout in `docs/02-Application.md` → **Administration**). Then **§ Card Management**, **§ Tag Management** (remaining), **§ Media Management** (remaining), **§ User Management** (policy/trust closeout), **§ Backend**. Each **⭕1** bullet matches `docs/02-Application.md` verbatim (bold title + text after ` - `) where still planned.
 
 
 
@@ -95,7 +95,13 @@ Legend:
 
 
 
-- **DnD hardening pass** - Harden active admin drag/drop flows so reparent, unparent, assign, and reorder behavior is clearer, more reliable, and visually professional before expanding DnD breadth further.
+- **Studio naming cleanup** - Rename the remaining `Content Management` surface/chrome language to `Content Studio` so the product vocabulary matches the shipped `Studio` IA.
+
+- **Bulk bar idle collapse + selection semantics** - Hide the bulk-actions bar entirely when nothing is selected, and reconcile selection copy/behavior with the current growing-list model so surfaces do not imply a paged `Select all on page` contract where the UI now behaves as `Select visible`.
+
+- **Operator message pruning** - Remove low-value shell messages such as `working in...` where they add noise without helping the author make a decision.
+
+- **DnD hardening pass** - Complete (2026-05-25 closeout captured in `docs/02-Application.md` under **Collections Management** → **Collections DnD hardening** and **Media Management** → **Studio relationship DnD completion**). Remove from active planned work unless new DnD breadth or a new regression reopens it.
 
 
 
@@ -121,6 +127,8 @@ Legend:
 
 - **Node Strategy** - Raw tag overlay to created aggregations.
 
+- **Tag-edit iconography** - Replace the generic pencil affordance in tag-edit entry points with tag-specific iconography so the action reads as taxonomy editing rather than generic row edit.
+
 
 
 **§ Media Management (`02-Application.md`)** *(remaining **⭕1** after **Studio sequence**)*
@@ -132,6 +140,19 @@ Legend:
 
 
 - **PhotoPicker convergence in Media admin** - Add operator flows in **`/admin/media-admin`** (and Studio-embedded **Media admin**) to **import local images into the bank** and to pick library media with **PhotoPicker-grade** filtering (dimensions, search), so **PhotoPicker** in card edit becomes **optional** then **eliminable** for Studio and long-term for full-page card edit (`📐 **Studio media & body (2026-04-22)**`).
+
+- **Media editor control stacking** - In the Studio media editor, stack the horizontal/vertical adjustment controls vertically so the edit surface stays readable and predictable at the current modal width.
+
+
+**§ User Management (`02-Application.md`)**
+
+
+
+*Priority bands:* **P2 (trust/policy closeout)** — credential behavior should be explicit before hosted family use broadens.
+
+
+
+- **Credential-sharing policy audit** - Confirm and document whether multiple simultaneous sign-ins with the same username/password are acceptable in v1, and whether user creation/update should enforce stricter uniqueness or session expectations.
 
 
 **§ Guided archive assistance (`02-Application.md` → **Media Management**)** *(after **PhotoPicker convergence** / identity triage pressure; order: prove value, then ship clustering UX—see 📐 **Guided archive program (2026-04-24)**)*
@@ -183,6 +204,8 @@ Legend:
 - **Theme contract inventory** - Complete an inventory-driven semantic theme contract before treating Journal / Editorial as finished themes: enumerate reader/admin surfaces, visible elements, current token use, required semantic token families, and migration status.
 - **Theme schema** - Define the structured Firestore theme document shape that stores atomic tokens, semantic token-class assignments, and reader/admin recipe assignments for live draft application and saved runtime themes, with Theme Management as the editing interface; do not expose raw Firestore editing as the product workflow.
 - **Preset completion** - Expand Journal / Editorial from partial preset bundles into coherent light/dark design packages only after the semantic surface inventory and schema are defined.
+- **Theme workspace chrome simplification** - Remove unnecessary background shading from the floating Theme workspace so the editor feels lighter and keeps more attention on the actual reader/workbench surface beneath it.
+- **Theme workspace fit and height** - Fit the active editor controls within common desktop windows more cleanly and increase the effective workspace height by roughly 20% so the floating editor shows more useful content before inner scrolling.
 - **Theme editor model refactor** - Before deeper Theme Management UI rewrites, freeze the author-facing editing model as **Component -> Attribute -> Value**: canonical component inventory first, allowed attributes per component second, typed value groups third, then remap the current token/recipe workbench into that model with compatibility for existing saved themes. Do not blur `Padding`, `Spacing`, `Sizing`, `Radius`, `Border Width`, and similar metric families into one generic layout/length pool in the editor contract, even if storage stays shared temporarily.
   First implementation target: `Canvas`, `Header`, `Sidebar`, `Field`, `Feedback Panel`, `Story Card`, `Gallery Card`, `Question Card`, `Quote Card`, `Callout Card`, and `Lightbox`.
   Variant rule: all card types are editable in **closed** state; only `Story Card`, `Gallery Card`, and `Question Card` include **open** state because those are the only reader card types that open.
@@ -208,6 +231,8 @@ Legend:
 
 - **Feed Presentation Matrix** - Define and enforce a single presentation contract across feed/detail/rail contexts for each `type` + `displayMode` pair, including interaction model (open vs expand), title/excerpt behavior, and media framing rules.
 
+- **Desktop feed card sizing consistency** - Reconcile closed-card sizing on wider desktop feeds so cover-mode changes do not leave mixed tile heights and awkward rhythm across adjacent cards; preserve the better mobile behavior while making desktop grids look intentionally aligned.
+
 - **Compact rail simplification** - On smaller rail tiles, omit excerpts, tags, and content/gallery type icons so compact discovery cards stay clean and readable.
 
 - **Cover framing contract** - Define one authoritative cover-framing target for authoring and reconcile Compose, reader feed, reader detail, and admin/Studio preview surfaces so focal adjustments do not look correct in one surface and wrong in another. Current diagnosed mismatch: Compose uses a fixed `6:5` crop preview, reader detail/rails use orientation-aware frames, and admin preview tiles use additional thumbnail ratios.
@@ -217,6 +242,8 @@ Legend:
 - **In-Feed Expansion** - Add optional `Read more` progressive disclosure for story excerpts in feed cards, with deterministic truncation and explicit collapse/expand behavior that does not break feed scroll continuity.
 
 - **Orientation-aware Framing** - Use cover media orientation metadata to choose from a bounded ratio set (landscape/portrait/square) per approved layout variant so best-fit rendering improves without degrading feed rhythm.
+
+- **Closed-card overlay legibility** - Strengthen overlay icon/button readability on card media without drifting into heavy-handed chrome; cues should remain quiet but clear against varied imagery.
 
 - **Trivia card flip treatment** - Evaluate a `Trivia` card family for short prompt/answer content with a tap/click flip interaction (front = prompt, back = answer) so lightweight Q&A can feel distinct from full Question cards without forcing a detail-page open.
 
@@ -245,6 +272,10 @@ Legend:
 *Left Navigation (`02-Application.md`)*
 
 - **Mobile drawer swipe closeout (2026-05-23)** - The reader drawer open gesture now uses a dedicated mobile left-edge capture zone in `AppShell` instead of relying only on broad content-wrapper touches. This keeps the intended in-app drawer-open swipe more competitive with browser-history gestures while preserving left-swipe close and desktop behavior. Remaining mobile reader work should treat this as closed unless real-device verification reveals a narrower follow-up issue.
+
+- **Sidebar control-row reorder** - Revisit the Freeform sidebar header order so `Guided | Freeform`, `Cards | Media`, and `Clear` sit in the most intuitive top-row arrangement for real browsing rather than preserving the current stack by inertia.
+
+- **Cards-before-tags ordering** - In the Freeform sidebar, move the `Cards` browse-target control above the tag-tree section so card/media scope is set before taxonomy browsing begins.
 
 
 

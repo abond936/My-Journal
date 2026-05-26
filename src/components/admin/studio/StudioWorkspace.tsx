@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import type { DragEndEvent } from '@dnd-kit/core';
+import { type DragEndEvent } from '@dnd-kit/core';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { mutate as globalMutate } from 'swr';
 import CollectionsAdminClient from '@/components/admin/collections/CollectionsAdminClient';
@@ -27,10 +27,13 @@ import {
   toStudioSelectedDetail,
   toStudioSelectedPreview,
 } from '@/components/admin/studio/studioCardProjection';
+import type { CollectionsCardDragData } from '@/lib/dnd/collectionsDragContract';
 import type { Media } from '@/lib/types/photo';
 import { useMedia } from '@/components/providers/MediaProvider';
 import type { Card } from '@/lib/types/card';
 import { EMBEDDED_ADMIN_WIDE_MIN_WIDTH_PX } from '@/lib/admin/embeddedWideMinWidthPx';
+import { fetchAdminCardSnapshot } from '@/lib/utils/fetchAdminCardSnapshot';
+import { deriveCuratedMutationPlan, normalizeCuratedChildIds } from '@/lib/utils/curatedCollectionTree';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import { DND_POINTER_IGNORE_ATTR } from '@/lib/hooks/useDefaultDndSensors';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
@@ -954,6 +957,91 @@ export default function StudioWorkspace() {
     };
   }, [cardError, selectedCardId, selectedDetail, selectedLoadState, selectedPreview]);
 
+  const bridgeCollectionsCardToSelectedParent = useCallback(
+    async ({
+      childId,
+      parentId,
+      dragData,
+    }: {
+      childId: string;
+      parentId: string;
+      dragData: CollectionsCardDragData | null;
+    }): Promise<boolean> => {
+      if (!childId || !parentId || parentId !== selectedCardId || actionBusy) return false;
+
+      const steps = deriveCuratedMutationPlan({
+        childId,
+        intent: { kind: 'parent', parentId },
+        source: dragData ?? undefined,
+        rootedCollectionIds: [],
+      });
+      if (steps.length === 0) {
+        setActionError(null);
+        setActionInfo('No change.');
+        return true;
+      }
+
+      setActionBusy(true);
+      setActionError(null);
+      setActionInfo(null);
+      try {
+        for (const step of steps) {
+          switch (step.kind) {
+            case 'detach-parent': {
+              const parentFresh = await fetchAdminCardSnapshot(step.parentId);
+              const nextChildren = normalizeCuratedChildIds(parentFresh.childrenIds).filter((id) => id !== step.childId);
+              const res = await fetch(`/api/cards/${step.parentId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ childrenIds: nextChildren }),
+              });
+              const data = await res.json().catch(() => ({}));
+              throwIfJsonApiFailed(res, data, 'Failed to update collection membership');
+              break;
+            }
+            case 'append-parent': {
+              const parentFresh = await fetchAdminCardSnapshot(step.parentId);
+              const nextChildren = Array.from(new Set([...normalizeCuratedChildIds(parentFresh.childrenIds), step.childId]));
+              const res = await fetch(`/api/cards/${step.parentId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ childrenIds: nextChildren }),
+              });
+              const data = await res.json().catch(() => ({}));
+              throwIfJsonApiFailed(res, data, 'Failed to update collection membership');
+              break;
+            }
+            case 'clear-root': {
+              const res = await fetch(`/api/cards/${step.cardId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isCollectionRoot: false }),
+              });
+              const data = await res.json().catch(() => ({}));
+              throwIfJsonApiFailed(res, data, 'Failed to update collection membership');
+              break;
+            }
+            case 'insert-before':
+            case 'set-root':
+              break;
+          }
+        }
+
+        await loadSelectedCard(parentId, { quiet: true });
+        collectionsRefreshRef.current?.();
+        setActionInfo('Child attached.');
+        return true;
+      } catch (e) {
+        setActionError(e instanceof Error ? e.message : 'Failed to update collection membership');
+        setActionInfo(null);
+        return true;
+      } finally {
+        setActionBusy(false);
+      }
+    },
+    [actionBusy, loadSelectedCard, selectedCardId]
+  );
+
   const onStudioRelationshipDragEnd = useCallback(
     async (event: DragEndEvent, resolvedOverId?: string | null) => {
       return handleStudioRelationshipDragEnd(event, resolvedOverId, {
@@ -961,6 +1049,7 @@ export default function StudioWorkspace() {
         selectedCardDetail: selectedDetail,
         selectedCardId,
         patchSelectedCard,
+        bridgeCollectionsCardToSelectedParent,
         resolveBankMediaById,
         bodyMediaInsertRef,
         showToast: feedback.showToast,
@@ -968,7 +1057,7 @@ export default function StudioWorkspace() {
         showError: feedback.showError,
       });
     },
-    [actionBusy, feedback, selectedCardId, selectedDetail, patchSelectedCard, resolveBankMediaById]
+    [actionBusy, bridgeCollectionsCardToSelectedParent, feedback, selectedCardId, selectedDetail, patchSelectedCard, resolveBankMediaById]
   );
 
   const refreshCollectionsCardList = useCallback(() => {
@@ -1150,10 +1239,17 @@ export default function StudioWorkspace() {
             <CollectionsAdminClient
               embedded
               onSelectCard={selectCard}
+              embeddedExternalDragEnd={onStudioRelationshipDragEnd}
+              embeddedOnStudioParentAttachComplete={(parentId) => {
+                if (selectedCardId === parentId) {
+                  void loadSelectedCard(parentId, { quiet: true });
+                  return;
+                }
+                selectCard(parentId);
+              }}
               embeddedOrganizationCollapsed={paneVisibility.organizationCollapsed}
               embeddedCardsCollapsed={paneVisibility.cardsCollapsed}
               embeddedRightSlotMinWidth={embeddedRightSlotMinWidth}
-              onStudioRelationshipDragEnd={onStudioRelationshipDragEnd}
               embeddedUnparentedReplacement={(ctx) => (
                   <StudioTreeCandidateCardBank
                     {...ctx}
@@ -1195,82 +1291,82 @@ export default function StudioWorkspace() {
                           : styles.studioMediaCardRow
                       }
                     >
-                      {showComposePane ? (
-                        <div
-                          ref={cardEditColumnRef}
-                          className={styles.studioCardEditInBankColumn}
-                          style={
-                            resizableWorkspaceLayout && (showQuestionsPane || showMediaPane)
-                              ? {
-                                  flex: `0 0 ${cardEditWidth}px`,
-                                  width: cardEditWidth,
-                                  minWidth: MIN_CARD_EDIT_PX,
-                                }
-                              : {
-                                  flex: '1 1 auto',
-                                  width: 'auto',
-                                  minWidth: 0,
-                                }
-                          }
-                        >
-                          <StudioCardEditPane
-                            newCardRequested={newCardRequested && !selectedCardId}
-                            onCardCreated={setSelectedCardId}
-                          />
-                        </div>
-                      ) : null}
-                      {resizableWorkspaceLayout && showComposePane && (showQuestionsPane || showMediaPane) ? (
-                        <div
-                          className={`${styles.resizeHandle} ${styles.cardEditColumnResizeHandle}`}
-                          role="separator"
-                          aria-orientation="vertical"
-                          aria-label="Resize Compose and workspace columns"
-                          title="Drag to resize Compose and workspace. Double-click to reset width."
-                          {...{ [DND_POINTER_IGNORE_ATTR]: '' }}
-                          onPointerDown={onCardEditResizePointerDown}
-                          onDoubleClick={onCardEditResizeDoubleClick}
-                        />
-                      ) : null}
-                      {showQuestionsPane ? (
-                        <div
-                          ref={questionsColumnRef}
-                          className={styles.studioQuestionsColumn}
-                          style={
-                            resizableWorkspaceLayout && showMediaPane
-                              ? {
-                                  flex: `0 0 ${questionsWidth}px`,
-                                  width: questionsWidth,
-                                  minWidth: MIN_QUESTIONS_PX,
-                                }
-                              : {
-                                  flex: '1 1 auto',
-                                  width: 'auto',
-                                  minWidth: 0,
-                                }
-                          }
-                        >
-                          <StudioQuestionsPane />
-                        </div>
-                      ) : null}
-                      {resizableWorkspaceLayout && showQuestionsPane && showMediaPane ? (
-                        <div
-                          className={`${styles.resizeHandle} ${styles.questionsColumnResizeHandle}`}
-                          role="separator"
-                          aria-orientation="vertical"
-                          aria-label="Resize Questions and Media columns"
-                          title="Drag to resize Questions and Media. Double-click to reset width."
-                          {...{ [DND_POINTER_IGNORE_ATTR]: '' }}
-                          onPointerDown={onQuestionsResizePointerDown}
-                          onDoubleClick={onQuestionsResizeDoubleClick}
-                        />
-                      ) : null}
-                      {showMediaPane ? (
-                        <div className={styles.studioMediaBankColumn}>
-                          <div className={styles.studioMediaBankFill}>
-                            <MediaAdminContent embedded studioSourceDraggable />
+                        {showComposePane ? (
+                          <div
+                            ref={cardEditColumnRef}
+                            className={styles.studioCardEditInBankColumn}
+                            style={
+                              resizableWorkspaceLayout && (showQuestionsPane || showMediaPane)
+                                ? {
+                                    flex: `0 0 ${cardEditWidth}px`,
+                                    width: cardEditWidth,
+                                    minWidth: MIN_CARD_EDIT_PX,
+                                  }
+                                : {
+                                    flex: '1 1 auto',
+                                    width: 'auto',
+                                    minWidth: 0,
+                                  }
+                            }
+                          >
+                            <StudioCardEditPane
+                              newCardRequested={newCardRequested && !selectedCardId}
+                              onCardCreated={setSelectedCardId}
+                            />
                           </div>
-                        </div>
-                      ) : null}
+                        ) : null}
+                        {resizableWorkspaceLayout && showComposePane && (showQuestionsPane || showMediaPane) ? (
+                          <div
+                            className={`${styles.resizeHandle} ${styles.cardEditColumnResizeHandle}`}
+                            role="separator"
+                            aria-orientation="vertical"
+                            aria-label="Resize Compose and workspace columns"
+                            title="Drag to resize Compose and workspace. Double-click to reset width."
+                            {...{ [DND_POINTER_IGNORE_ATTR]: '' }}
+                            onPointerDown={onCardEditResizePointerDown}
+                            onDoubleClick={onCardEditResizeDoubleClick}
+                          />
+                        ) : null}
+                        {showQuestionsPane ? (
+                          <div
+                            ref={questionsColumnRef}
+                            className={styles.studioQuestionsColumn}
+                            style={
+                              resizableWorkspaceLayout && showMediaPane
+                                ? {
+                                    flex: `0 0 ${questionsWidth}px`,
+                                    width: questionsWidth,
+                                    minWidth: MIN_QUESTIONS_PX,
+                                  }
+                                : {
+                                    flex: '1 1 auto',
+                                    width: 'auto',
+                                    minWidth: 0,
+                                  }
+                            }
+                          >
+                            <StudioQuestionsPane />
+                          </div>
+                        ) : null}
+                        {resizableWorkspaceLayout && showQuestionsPane && showMediaPane ? (
+                          <div
+                            className={`${styles.resizeHandle} ${styles.questionsColumnResizeHandle}`}
+                            role="separator"
+                            aria-orientation="vertical"
+                            aria-label="Resize Questions and Media columns"
+                            title="Drag to resize Questions and Media. Double-click to reset width."
+                            {...{ [DND_POINTER_IGNORE_ATTR]: '' }}
+                            onPointerDown={onQuestionsResizePointerDown}
+                            onDoubleClick={onQuestionsResizeDoubleClick}
+                          />
+                        ) : null}
+                        {showMediaPane ? (
+                          <div className={styles.studioMediaBankColumn}>
+                            <div className={styles.studioMediaBankFill}>
+                              <MediaAdminContent embedded studioSourceDraggable />
+                            </div>
+                          </div>
+                        ) : null}
                     </div>
                   </div>
                 );

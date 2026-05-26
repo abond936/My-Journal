@@ -318,13 +318,13 @@
 }
 
 .dropTargetActive {
-  outline: 2px solid color-mix(in srgb, var(--button-solid-border-color) 80%, var(--layout-background1-color) 8%);
+  outline: 1px solid color-mix(in srgb, var(--button-solid-border-color) 76%, var(--layout-background1-color) 10%);
   outline-offset: 0;
-  border-color: color-mix(in srgb, var(--button-solid-border-color) 65%, var(--border1-color));
-  background: color-mix(in srgb, var(--button-solid-background-color) 16%, transparent);
+  border-color: color-mix(in srgb, var(--button-solid-border-color) 54%, var(--border1-color));
+  background: color-mix(in srgb, var(--button-solid-background-color) 10%, transparent);
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--button-solid-border-color) 22%, transparent),
-    0 10px 22px color-mix(in srgb, var(--button-solid-background-color) 12%, transparent);
+    0 0 0 1px color-mix(in srgb, var(--button-solid-border-color) 14%, transparent),
+    0 6px 16px color-mix(in srgb, var(--button-solid-background-color) 8%, transparent);
 }
 
 .unparentRowDropZoneActive {
@@ -348,7 +348,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  height: 2px;
+  height: 1px;
   background: var(--color3);
   border-radius: 999px 999px 0 0;
   pointer-events: none;
@@ -440,12 +440,12 @@
   right: 0;
   top: 50%;
   transform: translateY(-50%);
-  height: 3px;
+  height: 1px;
   background: var(--color3);
   border-radius: 999px;
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--layout-background1-color) 85%, var(--color3)),
-    0 2px 6px color-mix(in srgb, var(--color3) 30%, transparent);
+    0 0 0 1px color-mix(in srgb, var(--layout-background1-color) 92%, var(--color3)),
+    0 1px 3px color-mix(in srgb, var(--color3) 18%, transparent);
   pointer-events: none;
   z-index: 1;
 }
@@ -472,6 +472,16 @@
 }
 
 .nodeTitleDropZone {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  min-height: 1.5rem;
+  border-radius: var(--border-radius-sm);
+  position: relative;
+}
+
+.nodeParentDropZone {
   display: flex;
   align-items: center;
   flex: 1;
@@ -711,18 +721,20 @@
 /* DragOverlay child: root node is sized in TSX (max-content). Chip stays transparent so the list shows through. */
 .dragOverlayCard {
   max-width: min(22rem, 90vw);
-  padding: calc(var(--spacing-xs) + 1px) var(--spacing-md);
+  padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-md);
-  border: var(--border-width-thin) solid color-mix(in srgb, var(--color3) 42%, var(--border1-color));
-  background: color-mix(in srgb, var(--layout-background1-color) 92%, var(--color3) 8%);
+  border: 1px solid color-mix(in srgb, var(--color3) 24%, var(--border1-color));
+  background: color-mix(in srgb, var(--layout-background1-color) 72%, transparent);
   color: var(--text1-color);
   text-shadow: none;
   box-shadow:
-    0 14px 32px color-mix(in srgb, var(--text1-color) 16%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--color3) 26%, transparent);
+    0 8px 18px color-mix(in srgb, var(--text1-color) 10%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color3) 12%, transparent);
   cursor: grabbing;
   pointer-events: none;
   transform: scale(0.98);
+  opacity: 0.7;
+  backdrop-filter: blur(1px);
 }
 
 .dragOverlayTitle {
@@ -770,13 +782,15 @@
   gap: var(--spacing-xs);
   padding: var(--spacing-xs);
   border-radius: var(--border-radius-md);
-  border: var(--border-width-thin) solid var(--border1-color);
-  background: var(--layout-background1-color);
+  border: 1px solid color-mix(in srgb, var(--color3) 18%, var(--border1-color));
+  background: color-mix(in srgb, var(--layout-background1-color) 74%, transparent);
   box-shadow:
-    0 4px 14px color-mix(in srgb, var(--text1-color) 18%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--color3) 35%, transparent);
+    0 4px 12px color-mix(in srgb, var(--text1-color) 10%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color3) 14%, transparent);
   cursor: grabbing;
   max-width: min(16rem, 88vw);
+  opacity: 0.72;
+  backdrop-filter: blur(1px);
 }
 
 .dragOverlaySourceThumb {

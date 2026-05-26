@@ -23,9 +23,9 @@ import {
 } from '@/lib/utils/cardDeleteWarnings';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import {
-  buildStudioCollectionCardDragData,
-  isStudioCollectionCardDragData,
-} from '@/lib/dnd/studioDragContract';
+  buildCollectionsCardDragData,
+  isCollectionsCardDragData,
+} from '@/lib/dnd/collectionsDragContract';
 import type { StudioCatalogCard } from '@/components/admin/studio/studioCardTypes';
 
 const COLUMN_WIDTHS_KEY = 'cardAdminColumnWidths';
@@ -361,12 +361,12 @@ function CardAdminListStudioRow({
   hideDimensionMediaSuggestions,
 }: CardAdminListStudioRowProps) {
   const { active } = useDndContext();
-  const reparentFromCard = isStudioCollectionCardDragData(active?.data.current);
+  const reparentFromCard = isCollectionsCardDragData(active?.data.current);
 
   const rowDnd = useDraggable({
     id: `card:${card.docId}`,
     disabled: interactionDisabled || !studioCuratedTreeDrag,
-    data: buildStudioCollectionCardDragData(card.docId),
+    data: buildCollectionsCardDragData(card.docId),
   });
 
   const rowShellDrop = useDroppable({
@@ -404,8 +404,10 @@ function CardAdminListStudioRow({
       style={rowStyle}
       id={`card-${card.docId}`}
       className={selectedCardIds.has(card.docId) ? styles.selectedRow : ''}
+      {...(studioCuratedTreeDrag ? rowDnd.listeners : {})}
+      {...(studioCuratedTreeDrag ? rowDnd.attributes : {})}
     >
-      {studioCuratedTreeDrag ? (
+      {false ? (
         <td style={{ width: STUDIO_CURATED_DRAG_COL, padding: '4px', verticalAlign: 'middle' }}>
           <button
             type="button"
@@ -583,7 +585,7 @@ export default function CardAdminList({
   const tableColGroup = useMemo(
     () => (
       <colgroup>
-        {studioCuratedTreeDrag ? <col style={{ width: STUDIO_CURATED_DRAG_COL }} /> : null}
+        {false ? <col style={{ width: STUDIO_CURATED_DRAG_COL }} /> : null}
         <col style={{ width: columnWidths.checkbox }} />
         <col
           style={{ width: columnWidths.cover, minWidth: Math.max(columnWidths.cover, COVER_COLUMN_MIN) }}
@@ -614,7 +616,7 @@ export default function CardAdminList({
         {tableColGroup}
         <thead>
           <tr>
-            {studioCuratedTreeDrag ? (
+            {false ? (
               <th
                 style={{
                   width: STUDIO_CURATED_DRAG_COL,

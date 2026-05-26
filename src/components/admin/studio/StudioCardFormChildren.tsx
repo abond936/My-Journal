@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useCardForm } from '@/components/providers/CardFormProvider';
+import { useStudioShellOptional } from '@/components/admin/studio/StudioShellContext';
 import { useChildCards } from '@/lib/hooks/useChildCards';
 import {
   StudioChildSortableRow,
@@ -17,6 +18,7 @@ function cardLabel(title: string | undefined, subtitle: string | null | undefine
 
 export default function StudioCardFormChildren({ disabled }: { disabled: boolean }) {
   const { formState, setField } = useCardForm();
+  const studioShell = useStudioShellOptional();
   const docId = formState.cardData.docId;
   const orderedChildIds = useMemo(() => formState.cardData.childrenIds || [], [formState.cardData.childrenIds]);
   const {
@@ -36,6 +38,17 @@ export default function StudioCardFormChildren({ disabled }: { disabled: boolean
   const studioChildSortableIds = useMemo(
     () => orderedChildIds.map((id) => `studioChild:${id}`),
     [orderedChildIds]
+  );
+
+  const handleRemoveChild = useCallback(
+    async (childId: string) => {
+      const nextChildrenIds = orderedChildIds.filter((id) => id !== childId);
+      setField('childrenIds', nextChildrenIds);
+      if (studioShell?.selectedCardId === docId) {
+        await studioShell.patchSelectedCard({ childrenIds: nextChildrenIds }, 'Child removed.');
+      }
+    },
+    [docId, orderedChildIds, setField, studioShell]
   );
 
   return (
@@ -69,12 +82,9 @@ export default function StudioCardFormChildren({ disabled }: { disabled: boolean
                               type="button"
                               className={`${styles.inlineActionButton} ${styles.inlineActionIconButton}`}
                               disabled={disabled}
-                              onClick={() =>
-                                setField(
-                                  'childrenIds',
-                                  orderedChildIds.filter((id) => id !== childId)
-                                )
-                              }
+                              onClick={() => {
+                                void handleRemoveChild(childId);
+                              }}
                               aria-label={`Remove child: ${childTitle}`}
                               title={`Remove child: ${childTitle}`}
                             >

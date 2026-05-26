@@ -28,9 +28,9 @@ import {
 } from '@/lib/utils/cardDeleteWarnings';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import {
-  buildStudioCollectionCardDragData,
-  isStudioCollectionCardDragData,
-} from '@/lib/dnd/studioDragContract';
+  buildCollectionsCardDragData,
+  isCollectionsCardDragData,
+} from '@/lib/dnd/collectionsDragContract';
 import type { StudioCatalogCard } from '@/components/admin/studio/studioCardTypes';
 
 interface CardAdminGridProps {
@@ -438,12 +438,12 @@ function CardAdminGridStudioCell({
   );
 
   const { active } = useDndContext();
-  const reparentFromCard = isStudioCollectionCardDragData(active?.data.current);
+  const reparentFromCard = isCollectionsCardDragData(active?.data.current);
 
   const rowDnd = useDraggable({
     id: `card:${card.docId}`,
     disabled: interactionDisabled || !studioCuratedTreeDrag,
-    data: buildStudioCollectionCardDragData(card.docId),
+    data: buildCollectionsCardDragData(card.docId),
   });
 
   const rowShellDrop = useDroppable({
@@ -509,6 +509,8 @@ function CardAdminGridStudioCell({
         style: cellStyle,
         id: `card-${card.docId}`,
         title: thumbnailTooltip,
+        ...(studioCuratedTreeDrag ? rowDnd.listeners : {}),
+        ...(studioCuratedTreeDrag ? rowDnd.attributes : {}),
         onClick: (e) => {
           if (isCardGridChromeInteractiveTarget(e.target)) return;
           activatePrimary(e);
@@ -549,7 +551,7 @@ function CardAdminGridStudioCell({
       }
       overlayTopEnd={
         <div onClick={(e) => e.stopPropagation()}>
-          {studioCuratedTreeDrag ? (
+          {false ? (
             <button
               type="button"
               ref={rowDnd.setActivatorNodeRef}

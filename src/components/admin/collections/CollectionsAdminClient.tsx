@@ -9,22 +9,21 @@ import {
   DragOverlay,
   MeasuringStrategy,
   useDraggable,
-  useDndContext,
   useDroppable,
 } from '@dnd-kit/core';
 import { Card } from '@/lib/types/card';
 import { CuratedTreeNode } from '@/components/admin/card-admin/CuratedTreeNode';
 import {
   CuratedTreeDragProvider,
-  useCuratedTreeDragKind,
   type CuratedTreeDragKind,
 } from '@/components/admin/card-admin/curatedTreeDragContext';
 import {
   CuratedTreeDropHighlightSync,
   useCuratedTreeDropHighlight,
 } from '@/components/admin/card-admin/curatedTreeDropHighlightContext';
-import { curatedTreeCollisionDetection } from '@/components/admin/card-admin/curatedTreeCollisionDetection';
+import { collectionsCollisionDetection } from '@/components/admin/card-admin/collectionsCollisionDetection';
 import {
+  buildRootDocIdListWithInsertBefore,
   buildParentIdsByChild,
   buildChildrenIdsWithInsertBefore,
   deriveCuratedMutationPlan,
@@ -37,6 +36,7 @@ import {
   optimisticAttachChildAsLast,
   optimisticDetachChildFromParent,
   optimisticInsertChildBeforeSibling,
+  optimisticReorderCollectionRoots,
   optimisticSetCollectionRoot,
 } from '@/lib/utils/optimisticCuratedCollections';
 import { EMBEDDED_ADMIN_WIDE_MIN_WIDTH_PX } from '@/lib/admin/embeddedWideMinWidthPx';
@@ -48,15 +48,11 @@ import type { EmbeddedUnparentedBankContext } from '@/components/admin/collectio
 import { isCuratedTreeDndEnabled } from '@/lib/config/curatedTreeDnd';
 import { DND_POINTER_IGNORE_ATTR, useDefaultDndSensors } from '@/lib/hooks/useDefaultDndSensors';
 import TagAdminStudioPane from '@/components/admin/studio/TagAdminStudioPane';
-import JournalImage from '@/components/common/JournalImage';
-import { getDisplayUrl } from '@/lib/utils/photoUtils';
-import type { Media } from '@/lib/types/photo';
-import { useMedia } from '@/components/providers/MediaProvider';
 import {
-  buildStudioCollectionCardDragData,
-  isStudioCollectionCardDragData,
-  parseCollectionCardDragId,
-} from '@/lib/dnd/studioDragContract';
+  buildCollectionsCardDragData,
+  isCollectionsCardDragData,
+  parseCollectionsCardDragId,
+} from '@/lib/dnd/collectionsDragContract';
 import { mergeStudioCatalogCard, toStudioCatalogCard } from '@/components/admin/studio/studioCardProjection';
 
 const COLLECTIONS_CENTER_COLUMNS_KEY = 'collectionsCenterPaneWidths';
@@ -137,6 +133,17 @@ function writeStudioDndDebug(payload: Record<string, unknown>) {
   }
 }
 
+function scrollCollectionsTreeCardIntoView(cardId: string) {
+  if (typeof document === 'undefined' || !cardId) return;
+  const run = () => {
+    const el = document.querySelector(`[data-curated-tree-card-id="${CSS.escape(cardId)}"]`);
+    if (el instanceof HTMLElement) {
+      el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+  };
+  requestAnimationFrame(() => requestAnimationFrame(run));
+}
+
 interface CardsResponse {
   items: Card[];
 }
@@ -179,7 +186,7 @@ function DraggableCard({ card, className, children, disabled, onClick }: Draggab
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `card:${card.docId}`,
     disabled,
-    data: buildStudioCollectionCardDragData(card.docId),
+    data: buildCollectionsCardDragData(card.docId),
   });
 
   const style = {
@@ -222,7 +229,6 @@ function UnparentDropZoneInteractive({
   children,
   suppressActiveHighlight = false,
 }: Omit<UnparentDropZoneProps, 'readOnly'>) {
-  const dragKind = useCuratedTreeDragKind();
   const highlightId = useCuratedTreeDropHighlight();
   const { setNodeRef } = useDroppable({
     id: 'unparented',
@@ -234,9 +240,6 @@ function UnparentDropZoneInteractive({
       ref={setNodeRef}
       className={`${className} ${activeDrop && !suppressActiveHighlight ? styles.dropTargetActive : ''}`}
     >
-      {activeDrop && !suppressActiveHighlight && dragKind === 'reparent' ? (
-        <div className={styles.dropZoneActionBanner}>Remove from parent</div>
-      ) : null}
       {children}
     </div>
   );
@@ -251,7 +254,6 @@ function UnparentRowDropZone({
   className: string;
   children: React.ReactNode;
 }) {
-  const dragKind = useCuratedTreeDragKind();
   const highlightId = useCuratedTreeDropHighlight();
   const { setNodeRef } = useDroppable({
     id: `unparented-row:${rowId}`,
@@ -264,9 +266,6 @@ function UnparentRowDropZone({
       className={`${className} ${activeDrop ? styles.unparentRowDropZoneActive : ''}`}
     >
       {children}
-      {activeDrop && dragKind === 'reparent' ? (
-        <span className={styles.unparentRowActionChip}>Remove</span>
-      ) : null}
     </div>
   );
 }
@@ -308,7 +307,6 @@ function TreeRootDropZoneReadOnly({ className, children }: Omit<TreeRootDropZone
 }
 
 function TreeRootDropZoneInteractive({ className, children }: Omit<TreeRootDropZoneProps, 'readOnly'>) {
-  const dragKind = useCuratedTreeDragKind();
   const highlightId = useCuratedTreeDropHighlight();
   const { setNodeRef } = useDroppable({
     id: 'tree-root',
@@ -317,9 +315,6 @@ function TreeRootDropZoneInteractive({ className, children }: Omit<TreeRootDropZ
   const activeDrop = highlightId === 'tree-root';
   return (
     <div ref={setNodeRef} className={`${className} ${activeDrop ? styles.dropTargetActive : ''}`}>
-      {activeDrop && dragKind === 'reparent' ? (
-        <div className={styles.dropZoneActionBanner}>Add as top-level</div>
-      ) : null}
       {children}
     </div>
   );
@@ -340,22 +335,24 @@ export type EmbeddedStudioSlotContext = {
 export default function CollectionsAdminClient({
   embedded = false,
   onSelectCard,
+  embeddedExternalDragEnd,
+  embeddedOnStudioParentAttachComplete,
   embeddedRightSlot,
   embeddedRightSlotMinWidth,
   embeddedUnparentedReplacement,
   embeddedOrganizationCollapsed = false,
   embeddedCardsCollapsed = false,
-  onStudioRelationshipDragEnd,
 }: {
   embedded?: boolean;
   onSelectCard?: (cardId: string, previewCard?: Card | null) => void;
+  embeddedExternalDragEnd?: (event: DragEndEvent) => Promise<boolean> | boolean;
+  embeddedOnStudioParentAttachComplete?: (parentId: string) => void;
   embeddedRightSlot?: React.ReactNode | ((ctx: EmbeddedStudioSlotContext) => React.ReactNode);
   embeddedRightSlotMinWidth?: number;
   /** When set with `embedded`, replaces the title-only unparented list with this UI (e.g. card admin table/grid). */
   embeddedUnparentedReplacement?: (ctx: EmbeddedUnparentedBankContext) => React.ReactNode;
   embeddedOrganizationCollapsed?: boolean;
   embeddedCardsCollapsed?: boolean;
-  onStudioRelationshipDragEnd?: (event: DragEndEvent, resolvedOverId?: string | null) => Promise<boolean>;
 }) {
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
@@ -367,7 +364,6 @@ export default function CollectionsAdminClient({
   const [curatedDragKind, setCuratedDragKind] = useState<CuratedTreeDragKind>(null);
   const [dragOverlayCard, setDragOverlayCard] = useState<Card | null>(null);
   /** Studio bank → body/cover/gallery: show a ghost under the pointer while dragging `source:*`. */
-  const [dragOverlaySourceMedia, setDragOverlaySourceMedia] = useState<Media | null>(null);
   const lastValidOverIdRef = useRef<string | null>(null);
   const lastValidOverDataRef = useRef<unknown>(null);
   const hasInitializedTreeExpansionRef = useRef(false);
@@ -388,7 +384,6 @@ export default function CollectionsAdminClient({
     return window.localStorage.getItem('studioLeftTab') === 'tree' ? 'tree' : 'tags';
   });
   const sensors = useDefaultDndSensors({ pointerActivationDistance: 4 });
-  const { media: mediaBankList } = useMedia();
   const curatedTreeDnd = isCuratedTreeDndEnabled();
   /** Admin Studio: middle column uses `embeddedUnparentedReplacement` (card bank) instead of the title-only list. */
   const studioAttachBank = embedded && Boolean(embeddedUnparentedReplacement);
@@ -396,8 +391,8 @@ export default function CollectionsAdminClient({
   const showCardsPane = !(studioAttachBank && embeddedCardsCollapsed);
   const rightSlotMinWidth = Math.max(MIN_MEDIA_COL, embeddedRightSlotMinWidth ?? MIN_MEDIA_COL);
   const treeDropZonesReadOnly = !curatedTreeDnd;
-  /** Studio embed registers its own droppables; keep DndContext when embedded even if tree drag is off. */
-  const needsDndContext = curatedTreeDnd || Boolean(embeddedRightSlot);
+  /** Embedded Studio shares one drag runtime so cross-pane card and media drags can cross columns. */
+  const needsDndContext = curatedTreeDnd;
   const stickyTopRef = useRef<HTMLDivElement | null>(null);
   const layoutRef = useRef<HTMLDivElement | null>(null);
   const [wideCenterLayout, setWideCenterLayout] = useState(true);
@@ -926,7 +921,7 @@ export default function CollectionsAdminClient({
       work: () => Promise<void>,
       fallbackMessage: string,
       options?: { reloadAfter?: boolean }
-    ) => {
+    ): Promise<boolean> => {
       setSaving(true);
       setError(null);
       try {
@@ -934,8 +929,10 @@ export default function CollectionsAdminClient({
         if (options?.reloadAfter !== false) {
           await load({ soft: true });
         }
+        return true;
       } catch (e) {
         setError(e instanceof Error ? e.message : fallbackMessage);
+        return false;
       } finally {
         setSaving(false);
       }
@@ -975,6 +972,20 @@ export default function CollectionsAdminClient({
     });
   }, []);
 
+  const persistRootOrderList = useCallback(
+    async (orderedRootIds: string[]) => {
+      await Promise.all(
+        orderedRootIds.map((rootId, index) =>
+          patchCard(rootId, {
+            isCollectionRoot: true,
+            collectionRootOrder: index * 10,
+          })
+        )
+      );
+    },
+    []
+  );
+
   const handleDetachChild = useCallback(
     async (childId: string, parentId: string) => {
       if (!parentId) return;
@@ -987,17 +998,61 @@ export default function CollectionsAdminClient({
 
   const handleClearRoot = useCallback(
     async (cardId: string) => {
+      const remainingRootIds = rootedCollections.map((card) => card.docId!).filter((id) => id && id !== cardId);
       await runCollectionsMutation(async () => {
         await clearRootPersist(cardId);
+        if (remainingRootIds.length > 0) {
+          await persistRootOrderList(remainingRootIds);
+        }
+        setCards((prev) => {
+          const cleared = optimisticSetCollectionRoot(prev, cardId, { isCollectionRoot: false });
+          const next = cleared ?? prev;
+          const reordered = optimisticReorderCollectionRoots(next, remainingRootIds);
+          return reordered ?? next;
+        });
       }, 'Failed to remove root');
     },
-    [clearRootPersist, runCollectionsMutation]
+    [clearRootPersist, persistRootOrderList, rootedCollections, runCollectionsMutation]
   );
 
   const executeCuratedMutationPlan = useCallback(
-    async (steps: ReturnType<typeof deriveCuratedMutationPlan>, fallbackMessage: string) => {
+    async (
+      steps: ReturnType<typeof deriveCuratedMutationPlan>,
+      fallbackMessage: string,
+      options?: { rootOrderIds?: string[] }
+    ) => {
       if (steps.length === 0) return;
-      await runCollectionsMutation(async () => {
+      const previousCards = cards;
+      setCards((prev) => {
+        let next = prev;
+        for (const step of steps) {
+          const patched =
+            step.kind === 'detach-parent'
+              ? optimisticDetachChildFromParent(next, step.childId, step.parentId)
+              : step.kind === 'append-parent'
+                ? optimisticAttachChildAsLast(next, step.childId, step.parentId)
+                : step.kind === 'insert-before'
+                  ? optimisticInsertChildBeforeSibling(next, step.childId, step.beforeSiblingId, step.parentId)
+                  : step.kind === 'clear-root'
+                    ? optimisticSetCollectionRoot(next, step.cardId, { isCollectionRoot: false })
+                    : optimisticSetCollectionRoot(next, step.cardId, {
+                        isCollectionRoot: true,
+                        collectionRootOrder: step.rootOrder,
+                      });
+          if (patched) {
+            next = patched;
+          }
+        }
+        if (options?.rootOrderIds?.length) {
+          const reordered = optimisticReorderCollectionRoots(next, options.rootOrderIds);
+          if (reordered) {
+            next = reordered;
+          }
+        }
+        return next;
+      });
+
+      const success = await runCollectionsMutation(async () => {
         for (const step of steps) {
           switch (step.kind) {
             case 'detach-parent':
@@ -1013,34 +1068,21 @@ export default function CollectionsAdminClient({
               await clearRootPersist(step.cardId);
               break;
             case 'set-root':
-              await setRootPersist(step.cardId, step.rootOrder);
+              if (!options?.rootOrderIds) {
+                await setRootPersist(step.cardId, step.rootOrder);
+              }
               break;
           }
         }
-
-        setCards((prev) => {
-          let next = prev;
-          for (const step of steps) {
-            const patched =
-              step.kind === 'detach-parent'
-                ? optimisticDetachChildFromParent(next, step.childId, step.parentId)
-                : step.kind === 'append-parent'
-                  ? optimisticAttachChildAsLast(next, step.childId, step.parentId)
-                  : step.kind === 'insert-before'
-                    ? optimisticInsertChildBeforeSibling(next, step.childId, step.beforeSiblingId, step.parentId)
-                    : step.kind === 'clear-root'
-                      ? optimisticSetCollectionRoot(next, step.cardId, { isCollectionRoot: false })
-                      : optimisticSetCollectionRoot(next, step.cardId, {
-                          isCollectionRoot: true,
-                          collectionRootOrder: step.rootOrder,
-                        });
-            if (patched) {
-              next = patched;
-            }
-          }
-          return next;
-        });
+        if (options?.rootOrderIds?.length) {
+          await persistRootOrderList(options.rootOrderIds);
+        }
       }, fallbackMessage, { reloadAfter: false });
+
+      if (!success) {
+        setCards(previousCards);
+        return;
+      }
 
       window.setTimeout(() => {
         void load({ soft: true });
@@ -1052,6 +1094,8 @@ export default function CollectionsAdminClient({
       detachFromParentPersist,
       insertBeforePersist,
       load,
+      cards,
+      persistRootOrderList,
       runCollectionsMutation,
       setRootPersist,
     ]
@@ -1071,24 +1115,6 @@ export default function CollectionsAdminClient({
     [handleClearRoot]
   );
 
-  /** After Studio relationship drags, return focus to the row handle (keyboard + screen-reader UX). */
-  const restoreStudioRelationshipFocus = useCallback((activeId: string) => {
-    if (typeof document === 'undefined') return;
-    const run = () => {
-      let el: Element | null = null;
-      if (activeId.startsWith('gallery:')) {
-        const mediaId = activeId.split(':')[1];
-        if (mediaId) {
-          el = document.querySelector(`[data-studio-gallery-focus="${CSS.escape(mediaId)}"]`);
-        }
-      } else {
-        el = document.querySelector(`[data-studio-dnd-return-focus="${CSS.escape(activeId)}"]`);
-      }
-      if (el instanceof HTMLElement) el.focus({ preventScroll: false });
-    };
-    requestAnimationFrame(() => requestAnimationFrame(run));
-  }, []);
-
   const handleDragCancel = useCallback(() => {
     writeStudioDndDebug({
       phase: 'cancel',
@@ -1098,7 +1124,6 @@ export default function CollectionsAdminClient({
     setCuratedDragKind(null);
     setDraggingCardId(null);
     setDragOverlayCard(null);
-    setDragOverlaySourceMedia(null);
     lastValidOverIdRef.current = null;
     lastValidOverDataRef.current = null;
   }, []);
@@ -1124,27 +1149,7 @@ export default function CollectionsAdminClient({
     lastValidOverDataRef.current = null;
     const raw = event.active.id;
     const id = typeof raw === 'string' ? raw : String(raw);
-    if (id.startsWith('studioChild:') || id.startsWith('gallery:') || id.startsWith('source:')) {
-      writeStudioDndDebug({
-        phase: 'start',
-        activeId: id,
-        kind: 'relationship-or-source',
-      });
-      setCuratedDragKind(null);
-      setDraggingCardId(null);
-      setDragOverlayCard(null);
-      if (id.startsWith('source:')) {
-        const mid = id.slice('source:'.length);
-        const fromData = event.active.data.current as { studioBankMedia?: Media } | undefined;
-        setDragOverlaySourceMedia(
-          fromData?.studioBankMedia ?? mediaBankList.find((m) => m.docId === mid) ?? null
-        );
-      } else {
-        setDragOverlaySourceMedia(null);
-      }
-      return;
-    }
-    if (isStudioCollectionCardDragData(event.active.data.current)) {
+    if (isCollectionsCardDragData(event.active.data.current)) {
       writeStudioDndDebug({
         phase: 'start',
         activeId: id,
@@ -1155,7 +1160,6 @@ export default function CollectionsAdminClient({
       const cid = event.active.data.current.cardId;
       setDraggingCardId(cid);
       setDragOverlayCard(cardById.get(cid) ?? null);
-      setDragOverlaySourceMedia(null);
     } else {
       writeStudioDndDebug({
         phase: 'start',
@@ -1166,13 +1170,11 @@ export default function CollectionsAdminClient({
       setCuratedDragKind(null);
       setDraggingCardId(null);
       setDragOverlayCard(null);
-      setDragOverlaySourceMedia(null);
     }
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     setDragOverlayCard(null);
-    setDragOverlaySourceMedia(null);
     const rawActive = event.active.id;
     const rawOver = event.over?.id ?? null;
     const activeStr = typeof rawActive === 'string' ? rawActive : String(rawActive);
@@ -1192,36 +1194,20 @@ export default function CollectionsAdminClient({
     });
 
     try {
-        if (onStudioRelationshipDragEnd) {
-          try {
-            const handled = await onStudioRelationshipDragEnd(event, overStr);
-            if (handled) {
-              setCuratedDragKind(null);
-              setDraggingCardId(null);
-            setDragOverlayCard(null);
-            restoreStudioRelationshipFocus(activeStr);
-            return;
-          }
-        } catch (e) {
-          setError(e instanceof Error ? e.message : 'Studio relationship update failed');
-          setCuratedDragKind(null);
-          setDraggingCardId(null);
-          setDragOverlayCard(null);
-          restoreStudioRelationshipFocus(activeStr);
-          return;
-        }
-      }
-
       setCuratedDragKind(null);
       setDraggingCardId(null);
 
       const childId =
-        isStudioCollectionCardDragData(event.active.data.current)
+        isCollectionsCardDragData(event.active.data.current)
           ? event.active.data.current.cardId
-          : parseCollectionCardDragId(activeStr);
+          : parseCollectionsCardDragId(activeStr);
+      if (!childId) {
+        await embeddedExternalDragEnd?.(event);
+        return;
+      }
       const overId = overStr;
-      if (!childId || !overId || saving) return;
-      const activeData = isStudioCollectionCardDragData(event.active.data.current)
+      if (!overId || saving) return;
+      const activeData = isCollectionsCardDragData(event.active.data.current)
         ? event.active.data.current
         : null;
       const fallbackParentId = activeData?.sourceParentId ?? (parentIdsByChild.get(childId) ?? [])[0];
@@ -1237,6 +1223,17 @@ export default function CollectionsAdminClient({
         source: fallbackSource,
         rootedCollectionIds: rootedCollections.map((card) => card.docId!).filter(Boolean),
       });
+      const currentRootIds = rootedCollections.map((card) => card.docId!).filter(Boolean);
+      const rootOrderIds =
+        intent.kind === 'tree-root'
+          ? [...currentRootIds.filter((id) => id !== childId), childId]
+          : intent.kind === 'insert-before' && !intent.parentId
+            ? buildRootDocIdListWithInsertBefore(currentRootIds, childId, intent.beforeId)
+            : intent.kind === 'parent' && fallbackSource.sourceIsRoot
+              ? currentRootIds.filter((id) => id !== childId)
+              : intent.kind === 'orphaned' && fallbackSource.sourceIsRoot
+                ? currentRootIds.filter((id) => id !== childId)
+                : undefined;
       writeStudioDndDebug({
         phase: 'end-plan',
         activeId: activeStr,
@@ -1246,28 +1243,54 @@ export default function CollectionsAdminClient({
         fallbackSource,
         intent,
         mutationPlan,
+        rootOrderIds,
       });
 
       if (intent.kind === 'orphaned') {
-        await executeCuratedMutationPlan(mutationPlan, 'Failed to detach child');
+        await executeCuratedMutationPlan(mutationPlan, 'Failed to detach child', { rootOrderIds });
+        setSelectedCardId(childId);
+        onSelectCard?.(childId, cardById.get(childId) ?? null);
         writeStudioDndDebug({ phase: 'end-complete', outcome: 'orphaned', childId, overId });
         return;
       }
 
       if (intent.kind === 'tree-root') {
-        await executeCuratedMutationPlan(mutationPlan, 'Failed to append top-level card');
+        await executeCuratedMutationPlan(mutationPlan, 'Failed to append top-level card', { rootOrderIds });
+        setSelectedCardId(childId);
+        onSelectCard?.(childId, cardById.get(childId) ?? null);
+        scrollCollectionsTreeCardIntoView(childId);
         writeStudioDndDebug({ phase: 'end-complete', outcome: 'tree-root', childId, overId });
         return;
       }
 
       if (intent.kind === 'insert-before') {
-        await executeCuratedMutationPlan(mutationPlan, intent.parentId ? 'Failed to insert card' : 'Failed to insert top-level card');
+        await executeCuratedMutationPlan(
+          mutationPlan,
+          intent.parentId ? 'Failed to insert card' : 'Failed to insert top-level card',
+          { rootOrderIds }
+        );
+        setSelectedCardId(childId);
+        onSelectCard?.(childId, cardById.get(childId) ?? null);
+        scrollCollectionsTreeCardIntoView(childId);
         writeStudioDndDebug({ phase: 'end-complete', outcome: 'insert-before', childId, overId });
         return;
       }
 
       if (intent.kind === 'parent') {
-        await executeCuratedMutationPlan(mutationPlan, 'Failed to attach child');
+        await executeCuratedMutationPlan(mutationPlan, 'Failed to attach child', { rootOrderIds });
+        if (overId.startsWith('studio-parent:')) {
+          const parentId = overId.slice('studio-parent:'.length);
+          if (parentId) {
+            setSelectedCardId(parentId);
+            onSelectCard?.(parentId, cardById.get(parentId) ?? null);
+            embeddedOnStudioParentAttachComplete?.(parentId);
+            scrollCollectionsTreeCardIntoView(parentId);
+          }
+        } else {
+          setSelectedCardId(childId);
+          onSelectCard?.(childId, cardById.get(childId) ?? null);
+          scrollCollectionsTreeCardIntoView(childId);
+        }
         writeStudioDndDebug({ phase: 'end-complete', outcome: 'parent', childId, overId });
       }
     } finally {
@@ -1675,7 +1698,7 @@ export default function CollectionsAdminClient({
         {needsDndContext ? (
         <DndContext
           sensors={sensors}
-          collisionDetection={curatedTreeCollisionDetection}
+          collisionDetection={collectionsCollisionDetection}
           measuring={{
             droppable: {
               strategy: MeasuringStrategy.Always,
@@ -1711,21 +1734,6 @@ export default function CollectionsAdminClient({
             {dragOverlayCard ? (
               <div className={styles.dragOverlayCard}>
                 <span className={styles.dragOverlayTitle}>{cardLabel(dragOverlayCard)}</span>
-              </div>
-            ) : dragOverlaySourceMedia ? (
-              <div className={styles.dragOverlaySource}>
-                <div className={styles.dragOverlaySourceThumb}>
-                  <JournalImage
-                    src={getDisplayUrl(dragOverlaySourceMedia)}
-                    alt=""
-                    fill
-                    className={styles.dragOverlaySourceImg}
-                    sizes="120px"
-                  />
-                </div>
-                <span className={styles.dragOverlaySourceCaption}>
-                  {dragOverlaySourceMedia.filename || dragOverlaySourceMedia.docId || 'Media'}
-                </span>
               </div>
             ) : null}
           </DragOverlay>

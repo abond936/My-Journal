@@ -8,12 +8,11 @@ import {
   normalizeCuratedChildIds,
 } from '@/lib/utils/curatedCollectionTree';
 import { useCuratedTreeDropHighlight } from '@/components/admin/card-admin/curatedTreeDropHighlightContext';
-import { useCuratedTreeDragKind } from '@/components/admin/card-admin/curatedTreeDragContext';
 import styles from '@/app/admin/collections/page.module.css';
 import {
-  buildStudioCollectionCardDragData,
-  parseCollectionCardDragId,
-} from '@/lib/dnd/studioDragContract';
+  buildCollectionsCardDragData,
+  parseCollectionsCardDragId,
+} from '@/lib/dnd/collectionsDragContract';
 
 function StaticTreeRowCard({
   className,
@@ -112,7 +111,7 @@ function DraggableCard({
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `card:${card.docId}`,
     disabled,
-    data: buildStudioCollectionCardDragData(card.docId, { sourceParentId, sourceIsRoot }),
+    data: buildCollectionsCardDragData(card.docId, { sourceParentId, sourceIsRoot }),
   });
 
   const style = {
@@ -154,9 +153,8 @@ function InsertBeforeDropZone({
   parentId: string | null;
 }) {
   const { active, over } = useDndContext();
-  const dragKind = useCuratedTreeDragKind();
   const activeStr = active?.id != null ? String(active.id) : '';
-  const draggedCardId = parseCollectionCardDragId(activeStr);
+  const draggedCardId = parseCollectionsCardDragId(activeStr);
   const highlightId = useCuratedTreeDropHighlight();
   const insertId = buildCuratedInsertBeforeDropId(beforeCardId, parentId);
   const parentDropId = `parent:${beforeCardId}`;
@@ -180,9 +178,6 @@ function InsertBeforeDropZone({
         title="Drop here to insert before this row (sibling order). Easiest: aim for the gap above this card. Title = nest as last child."
         aria-label="Insert before this row"
       />
-      {showLine && dragKind === 'reparent' ? (
-        <span className={styles.treeDropActionLabel}>Insert before</span>
-      ) : null}
     </div>
   );
 }
@@ -196,7 +191,6 @@ function ParentDropZone({
   className: string;
   children: React.ReactNode;
 }) {
-  const dragKind = useCuratedTreeDragKind();
   const highlightId = useCuratedTreeDropHighlight();
   const parentDropId = `parent:${parentId}`;
   const { setNodeRef } = useDroppable({
@@ -214,9 +208,6 @@ function ParentDropZone({
       className={`${className} ${nestActive ? `${styles.dropTargetActive} ${styles.nodeTitleDropZoneNestActive}` : ''}`}
     >
       {children}
-      {nestActive && dragKind === 'reparent' ? (
-        <span className={styles.nodeDropActionBadge}>Nest inside</span>
-      ) : null}
     </div>
   );
 }
@@ -280,7 +271,6 @@ function CuratedTreeNodeComponent({
   const isExpanded = expandedIds.has(node.docId);
   const showDraftRootBadge = !sourceParentId && node.isCollectionRoot === true && node.status === 'draft';
 
-  const titleClassName = [styles.nodeTitleDropZone].join(' ').trim();
   const expandControl = hasChildren ? (
     <TreeExpandControl
       expanded={isExpanded}
@@ -297,61 +287,60 @@ function CuratedTreeNodeComponent({
           <InsertBeforeDropZone beforeCardId={node.docId} parentId={sourceParentId ?? null} />
         )
       ) : null}
-      <div className={`${styles.nodeRow} ${selectedCardId === node.docId ? styles.nodeRowSelected : ''}`}>
-        <div className={styles.nodeLead}>
-          {disableCuratedDrag ? (
-            <>
+      <div
+        className={`${styles.nodeRow} ${selectedCardId === node.docId ? styles.nodeRowSelected : ''}`}
+        data-curated-tree-card-id={node.docId}
+      >
+        {disableCuratedDrag ? (
+          <div className={styles.nodeLead}>
+            <div className={styles.nodeParentDropZone}>
               {expandControl}
-              <div className={titleClassName}>
-                <StaticTreeRowCard
-                  className={styles.nodeDragSurface}
-                  disabled={saving}
-                  onClick={() => onSelectCard(node.docId)}
-                >
-                  <span className={styles.nodeTitleWrap}>
-                    <span className={styles.nodeTitle}>{cardLabel(node)}</span>
-                    {hasChildren ? (
-                      <span
-                        className={styles.nodeCountInline}
-                        title={`${childIds.length} child${childIds.length === 1 ? '' : 'ren'}`}
-                      >
-                        ({childIds.length})
-                      </span>
-                    ) : null}
-                    {showDraftRootBadge ? <span className={styles.nodeDraftBadge}>Draft</span> : null}
-                  </span>
-                </StaticTreeRowCard>
-              </div>
-            </>
-          ) : (
-            <>
-              {expandControl}
-              <DraggableCard
-                card={node}
+              <StaticTreeRowCard
                 className={styles.nodeDragSurface}
                 disabled={saving}
                 onClick={() => onSelectCard(node.docId)}
-                sourceParentId={sourceParentId}
-                sourceIsRoot={!sourceParentId && node.isCollectionRoot === true}
               >
-                <ParentDropZone parentId={node.docId!} className={titleClassName}>
-                  <span className={styles.nodeTitleWrap}>
-                    <span className={styles.nodeTitle}>{cardLabel(node)}</span>
-                    {hasChildren ? (
-                      <span
-                        className={styles.nodeCountInline}
-                        title={`${childIds.length} child${childIds.length === 1 ? '' : 'ren'}`}
-                      >
-                        ({childIds.length})
-                      </span>
-                    ) : null}
-                    {showDraftRootBadge ? <span className={styles.nodeDraftBadge}>Draft</span> : null}
+                <span className={styles.nodeTitleWrap}>
+                  <span className={styles.nodeTitle}>{cardLabel(node)}</span>
+                  {hasChildren ? (
+                    <span
+                      className={styles.nodeCountInline}
+                      title={`${childIds.length} child${childIds.length === 1 ? '' : 'ren'}`}
+                    >
+                      ({childIds.length})
+                    </span>
+                  ) : null}
+                  {showDraftRootBadge ? <span className={styles.nodeDraftBadge}>Draft</span> : null}
+                </span>
+              </StaticTreeRowCard>
+            </div>
+          </div>
+        ) : (
+          <ParentDropZone parentId={node.docId!} className={styles.nodeLead}>
+            {expandControl}
+            <DraggableCard
+              card={node}
+              className={styles.nodeDragSurface}
+              disabled={saving}
+              onClick={() => onSelectCard(node.docId)}
+              sourceParentId={sourceParentId}
+              sourceIsRoot={!sourceParentId && node.isCollectionRoot === true}
+            >
+              <span className={styles.nodeTitleWrap}>
+                <span className={styles.nodeTitle}>{cardLabel(node)}</span>
+                {hasChildren ? (
+                  <span
+                    className={styles.nodeCountInline}
+                    title={`${childIds.length} child${childIds.length === 1 ? '' : 'ren'}`}
+                  >
+                    ({childIds.length})
                   </span>
-                </ParentDropZone>
-              </DraggableCard>
-            </>
-          )}
-        </div>
+                ) : null}
+                {showDraftRootBadge ? <span className={styles.nodeDraftBadge}>Draft</span> : null}
+              </span>
+            </DraggableCard>
+          </ParentDropZone>
+        )}
         <div className={styles.nodeActions}>
           {sourceParentId || node.isCollectionRoot === true ? (
             <button
