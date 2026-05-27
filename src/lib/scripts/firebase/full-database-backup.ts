@@ -28,6 +28,18 @@ function safeTimestamp(): string {
   return new Date().toISOString().replace(/[:.]/g, '-');
 }
 
+export function serializeBackupDoc(
+  docId: string,
+  data: Record<string, unknown>
+): { id: string; [k: string]: unknown } {
+  // Reserve `id` for the Firestore document id in backup payloads so restore
+  // does not depend on any legacy row-level `id` field stored inside the doc.
+  return {
+    ...data,
+    id: docId,
+  };
+}
+
 async function exportTypesenseCollection(
   collectionName: string,
   outPath: string
@@ -97,10 +109,9 @@ export async function runFullBackup(): Promise<void> {
     const name = colRef.id;
     log(`  Fetching "${name}"...`);
     const snapshot = await colRef.get();
-    firestoreData[name] = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    firestoreData[name] = snapshot.docs.map((doc) =>
+      serializeBackupDoc(doc.id, doc.data() as Record<string, unknown>)
+    );
     log(`    -> ${snapshot.size} document(s)`);
   }
 
