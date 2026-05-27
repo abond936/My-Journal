@@ -66,7 +66,6 @@ export default function GalleryManager({
   onUpdate,
   onSetAsCover,
   currentCoverMediaId,
-  error,
   className,
   filterTagIds,
   onPersistGalleryAfterSlotSave,
@@ -302,7 +301,7 @@ function GalleryItemForm({ item, onSave }: GalleryItemFormProps) {
       setHorizontalPosition(inherited.horizontal);
       setVerticalPosition(inherited.vertical);
     }
-  }, [item.mediaId, item.caption, item.objectPosition, item.media?.objectPosition, item.media?.caption]);
+  }, [item]);
 
   useEffect(() => {
     setMediaTagIds(item.media?.tags ?? []);
@@ -333,11 +332,6 @@ function GalleryItemForm({ item, onSave }: GalleryItemFormProps) {
     setCaption(value);
   };
 
-  const handleResetCaptionToMediaDefault = () => {
-    setHasCaptionOverride(false);
-    setCaption(item.media?.caption ?? '');
-  };
-
   /**
    * Must not use a nested <form> here: GalleryManager lives inside CardForm's <form id="card-form">.
    * A nested form is invalid HTML; the browser can treat the modal "Save" as submitting the outer
@@ -364,7 +358,9 @@ function GalleryItemForm({ item, onSave }: GalleryItemFormProps) {
     }
     setSaving(false);
 
-    const { objectPosition: _op, caption: _cap, ...rest } = item;
+    const rest = { ...item };
+    delete rest.objectPosition;
+    delete rest.caption;
     await onSave({
       ...rest,
       ...(item.media

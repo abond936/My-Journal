@@ -128,11 +128,11 @@ Phone-native and scanned-photo imports are both first-class inputs. The product 
   - **Typesense list limits** - Typesense Cloud allows at most **250 hits per page** (`per_page`). API routes and services that list cards (or other indexed entities) through Typesense **must not** pass client `limit` values greater than 250 directly as `per_page`; use **paging** (multiple search requests) or cap and document. Exceeding the limit yields **422**, logged failures, and **Firestore fallback**, which harms latency and masks index health. This cap is a **per-request transport** limit on Typesense—not a statement that the **filtered population** is only 250 rows; serving a larger matching set requires **multiple ordered chunks** (or a different list path), not widening `per_page`.
   - **Card detail child hydration** - `GET /api/cards/[id]` returns the parent card with its native `childrenIds` (the ID list, free with the parent fetch — no extra reads). Hydrated child documents come back on the `children` sidecar **only when requested** (`?limit=N` paginated, max 250, with `lastChildId` cursor and `hasMoreChildren` flag). Callers that need only parent fields—including the child **count**—pass `?children=skip` to bypass child hydration entirely; the standard Studio card-click, admin pre-PATCH snapshot, and reader edit-modal paths all use `skip`. This implements the **narrow read path** principle for the single-card endpoint.
   - **Auth.js** - Firebase adapter, role-based access control, session persistence, app wrapper `AuthProvider`.
+  - **ESLint CLI** - `npm run lint` now runs the direct ESLint CLI (`eslint .`) instead of deprecated `next lint`, and the repo-wide lint pass is clean as of 2026-05-27. Treat that clean pass as a maintained engineering baseline, not a one-time migration.
 ⭕1 **Planned**
   - **Narrow mutation paths** - Continue the rollout of dedicated service functions for **narrow** admin mutations. Current shipped slices include card tag-only/status-only/content-only/metadata-only PATCH routing plus dedicated bulk tag mutation paths for cards and media; remaining work is to extend the same bounded-write discipline wherever admin flows still fall back to wider `updateCard`-style work than the change requires. Keep wide `updateCard` (or equivalent) for structural and rich-content changes.
   - **Code** - Comment code.
   - **Directory** - Cleanup directory.
-  - **ESLint** - Address ESLint violations. **During feature work**, follow `.cursor/rules/# AI_InteractionRules.mdc` → **Lint and type hygiene on touched code**; bulk backlog cleanup stays phased per `docs/03-Implementation.md` Phase 4. Commercial readiness does **not** treat the current repo-wide lint backlog as a non-issue: clearing the standing error set and migrating off deprecated `next lint` are part of engineering hardening, not optional polish.
   - **Quality** - QA app.
   - **Security Hardening** - Threat-model review, authorization review, secret-handling review, and hosted deployment hardening for commercial readiness.
   - **Testing** - Expand automated coverage on workflow-critical, integrity-critical, and commercially sensitive paths.
@@ -217,7 +217,7 @@ Phone-native and scanned-photo imports are both first-class inputs. The product 
   - **.env** - Scripts load `.env` **before** any static import of `admin.ts` (`-r dotenv/config` on the Node/tsx invocation, optionally `DOTENV_CONFIG_PATH=.env`). In-file `dotenv.config()` alone is **not** enough if the same file statically imports Firebase Admin—imports run first. See `docs/NPM-SCRIPTS.md` → **Firebase Admin CLI (dotenv)**.
   - **Maintenance Scripts** - Active scripts: `reconcile:media-cards`, `regenerate:storage-urls`, `cleanup:media`, `backup:database`, `backfill:media-metadata`, `seed:journal-users`.
 ⭕2 **Future**
-  - **Script Cleanup** - 86 script files under `src/lib/scripts/`; many are obsolete migration/debug/test scripts not wired into `package.json`. Review and prune.
+  - **Script Cleanup** - Legacy migration/debug/demo utilities have been pruned aggressively; `src/lib/scripts/` is down to 66 files as of 2026-05-27. Continue reviewing anything not wired into `package.json`, canon, or live admin-maintenance flows so ad hoc helpers do not quietly become permanent product surface.
 📘 **Script Index** - `docs/NPM-SCRIPTS.md`.
 📘 **Import Reference** - `docs/IMPORT-REFERENCE.md`.
 
@@ -243,3 +243,4 @@ Phone-native and scanned-photo imports are both first-class inputs. The product 
   - **Account Recovery** - Define the v1 operational path for password reset, viewer access repair, and admin lockout recovery.
   - **Incident Response** - Define the v1 operator playbook for broken deploy, failed import, missing media, access leak suspicion, and backup/restore failure.
 ⭕2 **Future**
+

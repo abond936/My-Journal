@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import JournalImage from '@/components/common/JournalImage';
 import { HydratedGalleryMediaItem } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
@@ -25,10 +25,7 @@ export default function InlineGallery({ media, title = "Gallery" }: InlineGaller
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  
-  const validMedia = media.filter(item => item.media);
-  
-  if (validMedia.length === 0) return null;
+  const validMedia = useMemo(() => media.filter((item) => item.media), [media]);
 
   const scrollToImage = useCallback((direction: 'left' | 'right') => {
     if (!scrollContainerRef.current) return;
@@ -85,6 +82,8 @@ export default function InlineGallery({ media, title = "Gallery" }: InlineGaller
       closeLightbox();
     }
   }, [closeLightbox]);
+
+  if (validMedia.length === 0) return null;
 
   return (
     <section className={styles.gallerySection}>

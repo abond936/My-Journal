@@ -11,7 +11,6 @@ import { authOptions } from '@/lib/auth/authOptions';
 const baseDir = process.env.ONEDRIVE_ROOT_FOLDER;
 
 // Utility functions for consistent path handling
-const toSystemPath = (p: string) => p.split('/').join(path.sep);
 const toDatabasePath = (p: string) => p.split(path.sep).join('/');
 
 // This function recursively builds a tree structure of the directories.

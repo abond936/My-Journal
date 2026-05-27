@@ -12,7 +12,7 @@ interface ApiOptions<T> {
   onSuccess?: (data: T) => void;
   onError?: (error: AppError) => void;
   onSettled?: () => void;
-  transform?: (data: any) => T;
+  transform?: (data: unknown) => T;
   // Retry options
   retry?: number | boolean;
   retryDelay?: number;
@@ -26,7 +26,7 @@ interface ApiCache<T> {
   lastUpdated: number;
 }
 
-const defaultOptions: Partial<ApiOptions<any>> = {
+const defaultOptions: Partial<ApiOptions<unknown>> = {
   retry: 1,
   retryDelay: 1000,
   cacheTime: 5 * 60 * 1000, // 5 minutes
@@ -34,7 +34,7 @@ const defaultOptions: Partial<ApiOptions<any>> = {
 };
 
 // Global cache for API responses
-const apiCache = new Map<string, ApiCache<any>>();
+const apiCache = new Map<string, ApiCache<unknown>>();
 
 /**
  * Custom hook for making API calls with standardized error handling.
@@ -82,19 +82,20 @@ export function useApi<T>(key?: string, initialData: T | null = null) {
       if (cacheKey && mergedOptions.cacheTime) {
         const cached = apiCache.get(cacheKey);
         if (cached && Date.now() - cached.lastUpdated < mergedOptions.staleTime!) {
+          const cachedData = cached.data as R;
           setState(prev => ({ 
             ...prev, 
-            data: cached.data as unknown as T,
+            data: cachedData as unknown as T,
             isLoading: false,
             isValidating: false
           }));
-          mergedOptions.onSuccess?.(cached.data);
-          return cached.data;
+          mergedOptions.onSuccess?.(cachedData);
+          return cachedData;
         }
       }
 
       const response = await promise;
-      const data = mergedOptions.transform ? mergedOptions.transform(response) : response;
+      const data = (mergedOptions.transform ? mergedOptions.transform(response) : response) as R;
 
       // Update cache
       if (cacheKey && mergedOptions.cacheTime) {
@@ -184,7 +185,7 @@ export function useApi<T>(key?: string, initialData: T | null = null) {
  * Helper function to create a type-safe API request function.
  * Can be used to gradually migrate existing API calls.
  */
-export function createApiRequest<T, P extends any[]>(
+export function createApiRequest<T, P extends unknown[]>(
   requestFn: (...args: P) => Promise<T>,
   options: Omit<ApiOptions<T>, 'onSettled'> = {}
 ) {

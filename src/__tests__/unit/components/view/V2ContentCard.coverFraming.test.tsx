@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import V2ContentCard from '@/components/view/V2ContentCard';
@@ -14,11 +15,22 @@ jest.mock('swiper/react', () => ({
 jest.mock('swiper/css', () => ({}), { virtual: true });
 
 jest.mock('next/link', () => {
-  return ({ children, href, className, onClick, ...rest }: React.ComponentProps<'a'>) => (
-    <a href={href} className={className} onClick={onClick} {...rest}>
-      {children}
-    </a>
-  );
+  function MockNextLink({
+    children,
+    href,
+    className,
+    onClick,
+    ...rest
+  }: React.ComponentProps<'a'>) {
+    return (
+      <a href={href} className={className} onClick={onClick} {...rest}>
+        {children}
+      </a>
+    );
+  }
+
+  MockNextLink.displayName = 'MockNextLink';
+  return MockNextLink;
 });
 
 jest.mock('@/components/providers/CardProvider', () => ({
@@ -31,9 +43,17 @@ jest.mock('@/components/providers/TagProvider', () => ({
 
 jest.mock('@/components/common/JournalImage', () => ({
   __esModule: true,
-  default: ({ alt, style, className }: { alt: string; style?: React.CSSProperties; className?: string }) => (
-    <img alt={alt} style={style} className={className} />
-  ),
+  default: function MockJournalImage({
+    alt,
+    style,
+    className,
+  }: {
+    alt: string;
+    style?: React.CSSProperties;
+    className?: string;
+  }) {
+    return <img alt={alt} style={style} className={className} />;
+  },
 }));
 
 jest.mock('@/components/common/TipTapRenderer', () => ({

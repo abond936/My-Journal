@@ -26,10 +26,7 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
   const [searchTerm, setSearchTerm] = useState('');
 
   /** Stable key so we do not refetch / reset when the parent passes a new `cardIds` array each render. */
-  const cardIdsKey = useMemo(
-    () => [...new Set(cardIds)].sort().join('\u001e'),
-    [cardIds.join('\u001e')]
-  );
+  const cardIdsKey = useMemo(() => [...new Set(cardIds)].sort().join('\u001e'), [cardIds]);
 
   // Fetch full card data when the modal opens or the selected id set changes
   useEffect(() => {
@@ -88,14 +85,17 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
     return counts;
   }, [cards]);
 
-  const getSelectionState = (tagId: string): 'checked' | 'unchecked' | 'mixed' => {
-    const explicit = tagDecisions.get(tagId);
-    if (explicit !== undefined) return explicit ? 'checked' : 'unchecked';
-    const count = tagPresenceCounts.get(tagId) || 0;
-    if (count === 0) return 'unchecked';
-    if (count === cards.length) return 'checked';
-    return 'mixed';
-  };
+  const getSelectionState = React.useCallback(
+    (tagId: string): 'checked' | 'unchecked' | 'mixed' => {
+      const explicit = tagDecisions.get(tagId);
+      if (explicit !== undefined) return explicit ? 'checked' : 'unchecked';
+      const count = tagPresenceCounts.get(tagId) || 0;
+      if (count === 0) return 'unchecked';
+      if (count === cards.length) return 'checked';
+      return 'mixed';
+    },
+    [cards.length, tagDecisions, tagPresenceCounts]
+  );
 
   const checkedSelection = useMemo(() => {
     const selected = new Set<string>();
@@ -103,7 +103,7 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
       if (getSelectionState(tag.docId) === 'checked') selected.add(tag.docId);
     }
     return selected;
-  }, [allTags, tagDecisions, tagPresenceCounts, cards.length]);
+  }, [allTags, getSelectionState]);
 
   const expandedNodeIds = useMemo(() => {
     const expanded = new Set<string>();
@@ -123,7 +123,7 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
       }
     }
     return expanded;
-  }, [dimensionalTree, allTags, tagDecisions, tagPresenceCounts, cards.length]);
+  }, [dimensionalTree, getSelectionState]);
 
   const handleSaveChanges = async () => {
     setIsLoading(true);

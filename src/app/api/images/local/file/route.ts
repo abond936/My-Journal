@@ -7,6 +7,10 @@ import { authOptions } from '@/lib/auth/authOptions';
 
 const ONEDRIVE_ROOT_FOLDER = process.env.ONEDRIVE_ROOT_FOLDER;
 
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error;
+}
+
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') {
@@ -42,8 +46,8 @@ export async function GET(request: NextRequest) {
         'Content-Length': fileBuffer.length.toString(),
       },
     });
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
+  } catch (error: unknown) {
+    if (isNodeError(error) && error.code === 'ENOENT') {
       return new NextResponse('File not found.', { status: 404 });
     }
     console.error('Error serving local file:', error);

@@ -2,6 +2,27 @@
  * Utility functions for handling dates and Firestore Timestamps.
  */
 
+type TimestampLike = {
+    toDate: () => Date;
+    _seconds?: number;
+    _nanoseconds?: number;
+};
+
+type SerializableCard = Record<string, unknown> & {
+    createdAt?: unknown;
+    updatedAt?: unknown;
+    coverImage?: unknown;
+    galleryMedia?: unknown;
+};
+
+function isTimestampLike(value: unknown): value is TimestampLike {
+    return typeof value === 'object' && value !== null && 'toDate' in value && typeof value.toDate === 'function';
+}
+
+function isSerializableCard(value: unknown): value is SerializableCard {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 /**
  * Safely converts a value to a Date object.
  * This function can handle Firestore Timestamps, date strings, or numbers,
@@ -10,12 +31,12 @@
  * @param field The value to convert (e.g., from a Firestore document).
  * @returns A Date object, or undefined if the conversion fails.
  */
-export const safeToDate = (field: any): Date | undefined => {
+export const safeToDate = (field: unknown): Date | undefined => {
     if (!field) {
         return undefined;
     }
     // If it has a toDate method, it's likely a Firestore Timestamp
-    if (typeof field.toDate === 'function') {
+    if (isTimestampLike(field)) {
         return field.toDate();
     }
     // If it's a string or number, try to parse it
@@ -36,20 +57,20 @@ export const safeToDate = (field: any): Date | undefined => {
  * @param card The card object from Firestore that may contain Timestamps
  * @returns A serialized card object safe for client components
  */
-export const serializeCardForClient = (card: any): any => {
+export const serializeCardForClient = <T extends SerializableCard>(card: T | null | undefined): T | null | undefined => {
     if (!card) return card;
     
-    const serialized = { ...card };
+    const serialized = { ...card } as T;
     
     // Convert Firestore Timestamps to plain objects
-    if (serialized.createdAt && typeof serialized.createdAt.toDate === 'function') {
+    if (isTimestampLike(serialized.createdAt)) {
         serialized.createdAt = {
             _seconds: serialized.createdAt._seconds,
             _nanoseconds: serialized.createdAt._nanoseconds
         };
     }
     
-    if (serialized.updatedAt && typeof serialized.updatedAt.toDate === 'function') {
+    if (isTimestampLike(serialized.updatedAt)) {
         serialized.updatedAt = {
             _seconds: serialized.updatedAt._seconds,
             _nanoseconds: serialized.updatedAt._nanoseconds
@@ -57,13 +78,13 @@ export const serializeCardForClient = (card: any): any => {
     }
     
     // Handle nested objects that might contain timestamps
-    if (serialized.coverImage) {
+    if (isSerializableCard(serialized.coverImage)) {
         serialized.coverImage = serializeCardForClient(serialized.coverImage);
     }
     
-    if (serialized.galleryMedia && Array.isArray(serialized.galleryMedia)) {
-        serialized.galleryMedia = serialized.galleryMedia.map((item: any) => {
-            if (item.media) {
+    if (Array.isArray(serialized.galleryMedia)) {
+        serialized.galleryMedia = serialized.galleryMedia.map((item) => {
+            if (isSerializableCard(item) && isSerializableCard(item.media)) {
                 return { ...item, media: serializeCardForClient(item.media) };
             }
             return item;

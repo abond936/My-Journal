@@ -39,7 +39,7 @@ export async function GET(request: Request) {
 
   try {
     const { searchParams } = new URL(request.url);
-    let ids: string[] = searchParams.getAll('id');
+    const ids = searchParams.getAll('id');
 
     // Enforce the repeated ?id=A&id=B pattern
     if (ids.length === 0) {

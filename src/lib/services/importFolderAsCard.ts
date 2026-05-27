@@ -454,8 +454,6 @@ export async function discoverNormalizedSubdirs(
   }
 
   const trimmedPath = rootPath.trim().replace(/^\/+/, '');
-  const normalizedPath = toSystemPath(trimmedPath);
-
   const result: DiscoveredSubdir[] = [];
 
   async function walk(currentRelative: string): Promise<void> {

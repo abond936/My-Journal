@@ -26,9 +26,8 @@ Run from the repo root. Most maintenance scripts need Firebase Admin env vars (s
 | Script | Purpose |
 |--------|---------|
 | `npm run dev` / `build` / `start` | Next.js app |
-| `npm run lint` | ESLint |
+| `npm run lint` | ESLint CLI (`eslint .`) |
 | `npm test` | Jest |
-| `npm run generate-migration-plan` | Migration plan helper |
 | `npm run backup-codebase` | **Local secrets only** — zips **repo root** files Git does not track: `.env*`, `service-account.json`, `*-firebase-adminsdk-*.json`. Output dir: `CODEBASE_SECRETS_BACKUP_DIR` or `C:\Users\alanb\CodeBase Backups\`; keeps 5 zips. **Not** a second copy of the source tree (use Git remote). If none of those files exist, writes a log only. |
 | `npm run backup:database` | Full Firestore (all root collections) + copy `firestore.indexes.json` / `firestore.rules` + optional Typesense `cards`/`media` JSONL → OneDrive `Firebase Backups/run-<timestamp>/` (needs `ONEDRIVE_PATH` + service account; `tsx -r dotenv/config`). Does not download Storage bytes. |
 | `npm run deploy:firestore:indexes` | Deploy **only** Firestore composite indexes from `src/lib/config/firebase/firestore.indexes.json` (paths set in root `firebase.json`). Runs `npx firebase-tools@13 deploy --only firestore:indexes` from the repo root (no global CLI required). Project: `.firebaserc` default (`my-journal-936`). Requires Firebase CLI auth (`npx firebase-tools@13 login` once, or use a CI token). Not the same as Admin service-account scripts. New indexes can take several minutes to finish building in the Firebase console. |

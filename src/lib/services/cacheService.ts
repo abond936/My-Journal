@@ -9,7 +9,7 @@ interface CacheItem<T> {
 }
 
 class CacheService {
-  private cache: Map<string, CacheItem<any>>;
+  private cache: Map<string, CacheItem<unknown>>;
   private config: CacheConfig;
 
   constructor(config: CacheConfig) {
@@ -51,7 +51,7 @@ class CacheService {
   }
 
   // Helper method to generate cache keys
-  static generateKey(prefix: string, params: Record<string, any>): string {
+  static generateKey(prefix: string, params: Record<string, unknown>): string {
     return `${prefix}:${JSON.stringify(params)}`;
   }
 }

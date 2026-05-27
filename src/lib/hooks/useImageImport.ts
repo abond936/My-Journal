@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
 import { Media } from '@/lib/types/photo';
-import { deleteMediaAsset } from '@/lib/services/images/imageImportService';
 
 /**
  * Represents the state of a single file being uploaded.

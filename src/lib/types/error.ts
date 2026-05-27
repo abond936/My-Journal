@@ -26,7 +26,7 @@ export enum ErrorCode {
 export interface ApiError {
   code: ErrorCode;
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   stack?: string; // Only included in development
   
   // Legacy fields for backward compatibility
@@ -39,7 +39,7 @@ export class AppError extends Error {
   constructor(
     public code: ErrorCode,
     message: string,
-    public details?: Record<string, any>
+    public details?: Record<string, unknown>
   ) {
     super(message);
     this.name = 'AppError';

@@ -4,6 +4,19 @@
 
 import { Tag } from '@/lib/types/tag';
 
+type TagApiRecord = Omit<Tag, 'createdAt' | 'updatedAt'> & {
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+};
+
+function hydrateTagDates(tag: TagApiRecord): Tag {
+  return {
+    ...tag,
+    createdAt: tag.createdAt ? new Date(tag.createdAt) : undefined,
+    updatedAt: tag.updatedAt ? new Date(tag.updatedAt) : undefined,
+  };
+}
+
 /**
  * Fetches all tags from the API.
  * @returns {Promise<Tag[]>} A promise that resolves to an array of tags.
@@ -13,13 +26,8 @@ export async function getTags(): Promise<Tag[]> {
   if (!response.ok) {
     throw new Error('Failed to fetch tags');
   }
-  const tags = await response.json();
-  // Convert date strings back to Date objects
-  return tags.map((tag: any) => ({
-    ...tag,
-    createdAt: tag.createdAt ? new Date(tag.createdAt) : undefined,
-    updatedAt: tag.updatedAt ? new Date(tag.updatedAt) : undefined,
-  }));
+  const tags = (await response.json()) as TagApiRecord[];
+  return tags.map(hydrateTagDates);
 }
 
 /**
@@ -34,12 +42,8 @@ export async function getTagById(id: string): Promise<Tag | null> {
     if (response.status === 404) return null;
     throw new Error(`Failed to fetch tag ${id}`);
   }
-  const tag = await response.json();
-  return {
-    ...tag,
-    createdAt: tag.createdAt ? new Date(tag.createdAt) : undefined,
-    updatedAt: tag.updatedAt ? new Date(tag.updatedAt) : undefined,
-  };
+  const tag = (await response.json()) as TagApiRecord;
+  return hydrateTagDates(tag);
 }
 
 /**

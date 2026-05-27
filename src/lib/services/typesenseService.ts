@@ -132,13 +132,11 @@ async function patchCardsCollectionSortableStringFields(
 
   if (patchFields.length === 0) return;
 
-  // eslint-disable-next-line no-console
   console.warn(
     '[Typesense] Updating cards schema: enabling sort on',
     sortableNames.filter((n) => patchFields.some((p) => 'drop' in p && p.name === n)).join(', ')
   );
   await client.collections(CARDS_COLLECTION).update({ fields: patchFields });
-  // eslint-disable-next-line no-console
   console.warn('[Typesense] Re-upsert cards (e.g. npm run sync:typesense) so sort fields are repopulated.');
 }
 

@@ -19,7 +19,6 @@ import {
   resolveKeywordStringsToTagIds,
 } from '@/lib/services/images/embeddedMetadataForImport';
 import { getCachedTagNameMaps } from '@/lib/services/images/importTagMapsCache';
-import * as admin from 'firebase-admin';
 import fs from 'fs/promises';
 import path from 'path';
 import sharp from 'sharp';
@@ -29,9 +28,6 @@ const ONEDRIVE_ROOT_FOLDER = process.env.ONEDRIVE_ROOT_FOLDER;
 
 // Utility functions for consistent path handling
 const toSystemPath = (p: string) => p.split('/').join(path.sep);
-const toDatabasePath = (p: string) => p.split(path.sep).join('/');
-
-const SUPPORTED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.tif'];
 
 /**
  * Finds an existing media document by sourcePath (for duplicate detection).

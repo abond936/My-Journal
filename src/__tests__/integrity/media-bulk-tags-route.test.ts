@@ -60,6 +60,7 @@ const mockedRecomputeCardsMediaSignalsForMediaIds =
   recomputeCardsMediaSignalsForMediaIds as jest.MockedFunction<typeof recomputeCardsMediaSignalsForMediaIds>;
 const mockedDeleteMediaWithCardCleanup =
   deleteMediaWithCardCleanup as jest.MockedFunction<typeof deleteMediaWithCardCleanup>;
+const adminSession = { user: { role: 'admin' } } as Awaited<ReturnType<typeof getServerSession>>;
 
 describe('POST /api/admin/media/tags', () => {
   beforeEach(() => {
@@ -68,7 +69,7 @@ describe('POST /api/admin/media/tags', () => {
   });
 
   it('returns 403 when user is not admin', async () => {
-    mockedGetServerSession.mockResolvedValueOnce(null as any);
+    mockedGetServerSession.mockResolvedValueOnce(null);
     const req = {
       json: async () => ({ mediaIds: ['m1'], tags: ['t1'], mode: 'add' }),
     } as NextRequest;
@@ -81,7 +82,7 @@ describe('POST /api/admin/media/tags', () => {
   });
 
   it('uses bulk service path and recomputes affected cards once', async () => {
-    mockedGetServerSession.mockResolvedValueOnce({ user: { role: 'admin' } } as any);
+    mockedGetServerSession.mockResolvedValueOnce(adminSession);
     mockedBulkApplyMediaTags.mockResolvedValueOnce({ updatedIds: ['m1', 'm2'] });
     const req = {
       json: async () => ({ mediaIds: ['m1', 'm2'], tags: ['t1'], mode: 'add' }),
@@ -103,7 +104,7 @@ describe('DELETE /api/images/[id]', () => {
   });
 
   it('returns 403 when user is not admin', async () => {
-    mockedGetServerSession.mockResolvedValueOnce(null as any);
+    mockedGetServerSession.mockResolvedValueOnce(null);
 
     const req = {} as NextRequest;
     const res = await DELETE(req, { params: Promise.resolve({ id: 'media-1' }) });
@@ -115,7 +116,7 @@ describe('DELETE /api/images/[id]', () => {
   });
 
   it('returns 409 with stable code when delete is blocked by unresolved references', async () => {
-    mockedGetServerSession.mockResolvedValueOnce({ user: { role: 'admin' } } as any);
+    mockedGetServerSession.mockResolvedValueOnce(adminSession);
     mockedDeleteMediaWithCardCleanup.mockRejectedValueOnce(
       new Error('Cannot delete media media-1; unresolved card references remain: card-a')
     );

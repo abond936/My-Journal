@@ -89,8 +89,6 @@ export async function runDiagnostics(options?: {
   const allMedia = mediaSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Media & { id: string }));
 
   const mediaById = new Map(allMedia.map((m) => [m.id, m]));
-  const mediaBySourcePath = new Map(allMedia.map((m) => [m.sourcePath, m]));
-
   const referencedMediaIds = new Set<string>();
   for (const card of allCards) {
     collectCardMediaReferences(card).forEach((ref) => referencedMediaIds.add(ref.mediaId));

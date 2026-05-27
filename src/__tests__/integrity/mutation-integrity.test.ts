@@ -1,18 +1,18 @@
 const incrementMock = jest.fn((value: number) => ({ __op: 'increment', value }));
 
+type TagDocRef = { id: string; path: string };
+type TagSnap = { id: string; exists: true; data: () => Record<string, never> };
+
 jest.mock('firebase-admin/firestore', () => ({
   FieldValue: {
     increment: (value: number) => incrementMock(value),
   },
 }));
 
-var docMock: jest.Mock;
-var collectionMock: jest.Mock;
-
 jest.mock('@/lib/config/firebase/admin', () => ({
   getAdminApp: () => {
-    docMock = jest.fn((id: string) => ({ id, path: `tags/${id}` }));
-    collectionMock = jest.fn(() => ({
+    const docMock = jest.fn((id: string) => ({ id, path: `tags/${id}` }));
+    const collectionMock = jest.fn(() => ({
       doc: docMock,
     }));
     return {
@@ -27,8 +27,8 @@ import { updateTagCountsForCard } from '@/lib/firebase/tagService';
 import type { Tag } from '@/lib/types/tag';
 
 type MockTxn = {
-  getAll: jest.Mock<Promise<any[]>, any[]>;
-  update: jest.Mock<void, any[]>;
+  getAll: jest.Mock<Promise<TagSnap[]>, TagDocRef[]>;
+  update: jest.Mock<void, [TagDocRef, { cardCount: { __op: string; value: number } }]>;
 };
 
 function makeTxn(): MockTxn {
@@ -75,7 +75,7 @@ describe('Mutation integrity: updateTagCountsForCard', () => {
     await updateTagCountsForCard(
       null,
       { status: 'published', tags: ['tag-a'] },
-      txn as any,
+      txn as unknown as FirebaseFirestore.Transaction,
       lookup
     );
 
@@ -101,7 +101,7 @@ describe('Mutation integrity: updateTagCountsForCard', () => {
     await updateTagCountsForCard(
       { status: 'published', tags: ['tag-a'] },
       { status: 'published', tags: ['tag-b'] },
-      txn as any,
+      txn as unknown as FirebaseFirestore.Transaction,
       lookup
     );
 
@@ -133,7 +133,7 @@ describe('Mutation integrity: updateTagCountsForCard', () => {
     await updateTagCountsForCard(
       { status: 'published', tags: ['tag-a'] },
       { status: 'draft', tags: ['tag-a'] },
-      txn as any,
+      txn as unknown as FirebaseFirestore.Transaction,
       lookup
     );
 
@@ -154,7 +154,7 @@ describe('Mutation integrity: updateTagCountsForCard', () => {
     await updateTagCountsForCard(
       { status: 'draft', tags: ['tag-a'] },
       { status: 'draft', tags: ['tag-a'] },
-      txn as any,
+      txn as unknown as FirebaseFirestore.Transaction,
       lookup
     );
 

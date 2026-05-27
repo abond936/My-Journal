@@ -33,7 +33,7 @@ function formatDate(date: Date | Timestamp | undefined): string {
   try {
     const dateObj = date instanceof Date ? date : date.toDate();
     return dateObj.toISOString();
-  } catch (error) {
+  } catch {
     console.warn('Invalid date found:', date);
     return '';
   }

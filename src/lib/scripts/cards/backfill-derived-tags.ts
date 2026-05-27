@@ -11,7 +11,7 @@ import { resolve } from 'path';
 dotenv.config({ path: resolve(process.cwd(), '.env') });
 
 import { getAdminApp } from '@/lib/config/firebase/admin';
-import { getFirestore, FieldValue, BulkWriter } from 'firebase-admin/firestore';
+import { getFirestore, BulkWriter } from 'firebase-admin/firestore';
 import { calculateDerivedTagData } from '@/lib/firebase/tagService';
 import { Card } from '@/lib/types/card';
 

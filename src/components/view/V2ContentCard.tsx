@@ -480,13 +480,13 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
           <>
             <CalloutCardContent card={card} />
             <div className={styles.calloutPinOverlay} aria-hidden>
-              <img
+              <JournalImage
                 src="/images/pushpin.svg"
                 alt=""
                 width={458}
                 height={443}
                 className={styles.calloutPinWatermark}
-                decoding="async"
+                priority={false}
               />
             </div>
           </>

@@ -1,8 +1,8 @@
 import { CardUpdate } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 
-export interface ValidationRule<T = any> {
-  validate: (value: T, allValues?: any) => boolean;
+export interface ValidationRule<T = unknown, TAllValues = unknown> {
+  validate: (value: T, allValues?: TAllValues) => boolean;
   message: string;
 }
 
@@ -17,7 +17,7 @@ export interface ValidationErrors {
 // Validation rules for common patterns
 export const rules = {
   required: (message = 'This field is required'): ValidationRule => ({
-    validate: (value: any) => {
+    validate: (value: unknown) => {
       if (typeof value === 'string') return value.trim().length > 0;
       if (Array.isArray(value)) return value.length > 0;
       return value !== null && value !== undefined;
@@ -40,12 +40,15 @@ export const rules = {
     message
   }),
 
-  enum: (allowedValues: any[], message = `Must be one of: ${allowedValues.join(', ')}`): ValidationRule => ({
-    validate: (value: any) => allowedValues.includes(value),
+  enum: <T>(allowedValues: readonly T[], message = `Must be one of: ${allowedValues.join(', ')}`): ValidationRule<T> => ({
+    validate: (value: T) => allowedValues.includes(value),
     message
   }),
 
-  custom: (validateFn: (value: any, allValues?: any) => boolean, message: string): ValidationRule => ({
+  custom: <T, TAllValues = unknown>(
+    validateFn: (value: T, allValues?: TAllValues) => boolean,
+    message: string
+  ): ValidationRule<T, TAllValues> => ({
     validate: validateFn,
     message
   })
@@ -74,7 +77,7 @@ export const cardValidation: FieldValidation = {
 // Validate a single field
 export function validateField(
   field: keyof CardUpdate,
-  value: any,
+  value: unknown,
   allValues?: CardUpdate
 ): string {
   const fieldRules = cardValidation[field];

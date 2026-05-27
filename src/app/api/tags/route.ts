@@ -40,7 +40,7 @@ function errorResponse(payload: ApiErrorPayload, status: number) {
  *       500:
  *         description: Internal server error.
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
     const session = await getServerSession(authOptions);
     if (!session) {
         return errorResponse(

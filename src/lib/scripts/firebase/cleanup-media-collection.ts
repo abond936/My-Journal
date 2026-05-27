@@ -43,6 +43,20 @@ interface CleanupReport {
   errors: string[];
 }
 
+interface FirestoreLookup {
+  collection: (name: string) => {
+    doc: (id: string) => {
+      get: () => Promise<{ exists: boolean; data: () => unknown }>;
+    };
+  };
+}
+
+interface StorageBucketLookup {
+  file: (storagePath: string) => {
+    exists: () => Promise<[boolean]>;
+  };
+}
+
 export async function cleanupMediaCollection(dryRun: boolean = false): Promise<CleanupReport> {
   const adminApp = getAdminApp();
   const firestore = adminApp.firestore();
@@ -196,7 +210,12 @@ export async function cleanupMediaCollection(dryRun: boolean = false): Promise<C
   }
 }
 
-async function validateMediaReference(mediaId: string, firestore: any, bucket: any, report: CleanupReport): Promise<boolean> {
+async function validateMediaReference(
+  mediaId: string,
+  firestore: FirestoreLookup,
+  bucket: StorageBucketLookup,
+  report: CleanupReport
+): Promise<boolean> {
   try {
     // Check if media doc exists
     const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);

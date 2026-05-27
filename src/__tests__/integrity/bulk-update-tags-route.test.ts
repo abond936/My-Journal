@@ -28,6 +28,7 @@ import { POST } from '@/app/api/cards/bulk-update-tags/route';
 const mockedGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>;
 const mockedBulkApplyTagDelta = bulkApplyTagDelta as jest.MockedFunction<typeof bulkApplyTagDelta>;
 const mockedBulkUpdateTags = bulkUpdateTags as jest.MockedFunction<typeof bulkUpdateTags>;
+const adminSession = { user: { role: 'admin' } } as Awaited<ReturnType<typeof getServerSession>>;
 
 describe('POST /api/cards/bulk-update-tags', () => {
   beforeEach(() => {
@@ -35,7 +36,7 @@ describe('POST /api/cards/bulk-update-tags', () => {
   });
 
   it('returns 403 when session is not admin', async () => {
-    mockedGetServerSession.mockResolvedValueOnce(null as any);
+    mockedGetServerSession.mockResolvedValueOnce(null);
 
     const req = {
       json: async () => ({ cardIds: ['c1'], addTagIds: ['t1'], removeTagIds: [] }),
@@ -48,7 +49,7 @@ describe('POST /api/cards/bulk-update-tags', () => {
   });
 
   it('uses replacement mode when tags[] is provided', async () => {
-    mockedGetServerSession.mockResolvedValueOnce({ user: { role: 'admin' } } as any);
+    mockedGetServerSession.mockResolvedValueOnce(adminSession);
 
     const req = {
       json: async () => ({ cardIds: ['c1', 'c2'], tags: ['tA', 'tB'] }),
@@ -64,7 +65,7 @@ describe('POST /api/cards/bulk-update-tags', () => {
   });
 
   it('uses narrow add/remove bulk delta path when addTagIds/removeTagIds are provided', async () => {
-    mockedGetServerSession.mockResolvedValueOnce({ user: { role: 'admin' } } as any);
+    mockedGetServerSession.mockResolvedValueOnce(adminSession);
 
     const req = {
       json: async () => ({

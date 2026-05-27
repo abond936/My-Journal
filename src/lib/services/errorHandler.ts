@@ -110,7 +110,7 @@ export async function withErrorHandling<T>(
  * Creates a wrapped version of a service function with error handling.
  * Useful for gradually migrating existing service functions.
  */
-export function withServiceErrorHandling<T extends (...args: any[]) => Promise<any>>(
+export function withServiceErrorHandling<T extends (...args: unknown[]) => Promise<unknown>>(
   fn: T,
   context: string,
   options: Omit<ErrorHandlerOptions, 'context'> = {}

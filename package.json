@@ -7,14 +7,13 @@
     "build": "next build",
     "typecheck:prod": "tsc -p tsconfig.production.json --noEmit",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "test": "jest",
     "test:integrity": "jest src/__tests__/integrity",
     "test:integrity:emulator:run": "jest --config jest.emulator.config.js src/__tests__/integrity/emulator.integrity.test.ts src/__tests__/integrity/emulator.curated-tree-updateCard.test.ts --runInBand",
     "test:integrity:emulator": "npx --yes firebase-tools@13 emulators:exec --project demo-my-journal-integrity --only firestore \"npm run test:integrity:emulator:run\"",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "generate-migration-plan": "ts-node src/lib/scripts/migration-plan-generator.ts",
     "backup-codebase": "ts-node src/lib/scripts/utils/backup-codebase.ts",
     "export:csv": "tsx src/lib/scripts/migration/export-to-csv.ts",
     "backfill:tags": "tsx src/lib/scripts/tags/backfill-tag-paths.ts",
@@ -128,7 +127,6 @@
     "typescript": "^5.8.3"
   },
   "description": "This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).",
-  "main": "generate-secret-js.js",
   "directories": {
     "doc": "docs"
   },

@@ -35,7 +35,7 @@ See **`normalize-images-README.md`** for full CLI behavior.
 
 ## Cardseed (XMP keywords)
 
-- **Not** the same as `src/lib/scripts/seedCards.ts` (that script wipes and seeds demo cards—avoid on production data).
+- **Scope note** - This import workflow is for real archive ingestion and card/media creation, not for demo-data seeding or destructive reset utilities.
 - **Optional author workflow:** exiftool keywords such as `cardseed|…` / `cardseed/…` (see **`tools/_exif_args_tmp.txt`**) are **stripped before tag mapping** on import and are **not** required if you rely on the folder name for the card title.
 
 ## Related npm scripts

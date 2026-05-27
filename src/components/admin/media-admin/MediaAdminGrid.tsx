@@ -162,7 +162,10 @@ function MediaAdminGridCell({
     }
   }, [captionDraft, inlineCaptionEditing, media.caption, media.docId, onSaveMediaFields]);
 
-  const relatedCardIds = authoritativeRelatedCardIds ?? media.referencedByCardIds ?? [];
+  const relatedCardIds = useMemo(
+    () => authoritativeRelatedCardIds ?? media.referencedByCardIds ?? [],
+    [authoritativeRelatedCardIds, media.referencedByCardIds]
+  );
   const assigned = relatedCardIds.length > 0;
   const linkedCardCount = relatedCardIds.length;
   const handleOpenLinkedCards = useCallback(() => {

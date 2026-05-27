@@ -11,8 +11,8 @@ import {
 
 jest.mock('@/lib/config/firebase/admin', () => ({
   getAdminApp: () => {
-    const { getApps, initializeApp } = require('firebase-admin/app');
-    const { getFirestore } = require('firebase-admin/firestore');
+    const { getApps, initializeApp } = jest.requireActual<typeof import('firebase-admin/app')>('firebase-admin/app');
+    const { getFirestore } = jest.requireActual<typeof import('firebase-admin/firestore')>('firebase-admin/firestore');
     const app =
       getApps()[0] ??
       initializeApp({

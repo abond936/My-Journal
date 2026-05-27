@@ -3,7 +3,7 @@ import { ReactNodeViewRenderer } from '@tiptap/react';
 import { FigureWithImageView } from '@/components/common/FigureWithImageView';
 
 export interface FigureWithImageOptions {
-  HTMLAttributes: Record<string, any>;
+  HTMLAttributes: Record<string, string | number | boolean | null | undefined>;
 }
 
 /** Inline image figure width preset (stored as `data-size` on the figure). */

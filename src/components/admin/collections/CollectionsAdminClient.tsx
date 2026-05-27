@@ -677,7 +677,7 @@ export default function CollectionsAdminClient({
   // with page 0. The Studio bank's "Loading more cards…" indicator covers the streaming
   // window — no separate indicator here. See docs/01-Vision-Architecture.md → Frontend
   // Principles (chunked list delivery + stable ordering).
-  const load = async (opts?: { soft?: boolean }) => {
+  const load = useCallback(async (opts?: { soft?: boolean }) => {
     const soft = opts?.soft === true;
     const requestId = ++loadRequestIdRef.current;
     const isCurrent = () => loadRequestIdRef.current === requestId;
@@ -809,11 +809,11 @@ export default function CollectionsAdminClient({
         setLoading(false);
       }
     }
-  };
+  }, []);
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
   const cardById = useMemo(() => new Map(cards.map(c => [c.docId, c])), [cards]);
   const parentIdsByChild = useMemo(() => buildParentIdsByChild(cards), [cards]);
@@ -937,7 +937,7 @@ export default function CollectionsAdminClient({
         setSaving(false);
       }
     },
-    []
+    [load]
   );
 
   const detachFromParentPersist = useCallback(async (parentId: string, childId: string) => {
@@ -1388,7 +1388,7 @@ export default function CollectionsAdminClient({
     } finally {
       setSaving(false);
     }
-  }, [bulkParentCard, bulkSelectedIds, bulkSelectableIds]);
+  }, [bulkParentCard, bulkSelectedIds, bulkSelectableIds, load]);
 
   const collectionsCenterGridStyle = useMemo((): React.CSSProperties | undefined => {
     if (!wideCenterLayout) return undefined;

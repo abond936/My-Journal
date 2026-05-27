@@ -16,9 +16,9 @@ interface ImageMetadata {
   depth?: string;
   density?: number;
   orientation?: number;
-  exif?: any;
-  iptc?: any;
-  xmp?: any;
+  exif?: ParsedExifData;
+  iptc?: ParsedIptcData;
+  xmp?: ParsedXmpData;
   dateTime?: string;
   gpsLatitude?: number;
   gpsLongitude?: number;
@@ -29,6 +29,36 @@ interface ImageMetadata {
   subject?: string;
   tags?: string[];
   comments?: string;
+}
+
+interface ParsedExifData {
+  ISO?: number;
+  ExposureTime?: number;
+  FNumber?: number;
+  dateTime?: string;
+  gpsLatitude?: number;
+  gpsLongitude?: number;
+  gpsAltitude?: number;
+  userComment?: string;
+  comments?: string;
+}
+
+interface ParsedIptcData {
+  dateTime?: string;
+  description?: string;
+  userComment?: string;
+  title?: string;
+  subject?: string;
+  keywords?: string[];
+  comments?: string;
+}
+
+interface ParsedXmpData {
+  dateTime?: string;
+  description?: string;
+  title?: string;
+  subject?: string;
+  tags?: string[];
 }
 
 interface ImageCharacteristics {
@@ -217,11 +247,11 @@ async function extractMetadata(imagePath: string): Promise<ImageMetadata> {
 }
 
 // Parse EXIF data
-function parseExif(exifBuffer: Buffer): any {
+function parseExif(): ParsedExifData {
   try {
     // This is a simplified EXIF parser
     // In a production environment, you might want to use a library like 'exif-reader'
-    const exif: any = {};
+    const exif: ParsedExifData = {};
     
     // Extract common EXIF fields
     // Note: This is a basic implementation. For full EXIF parsing, consider using 'exif-reader'
@@ -234,10 +264,10 @@ function parseExif(exifBuffer: Buffer): any {
 }
 
 // Parse IPTC data
-function parseIptc(iptcBuffer: Buffer): any {
+function parseIptc(): ParsedIptcData {
   try {
     // Simplified IPTC parser
-    const iptc: any = {};
+    const iptc: ParsedIptcData = {};
     
     // Extract common IPTC fields
     // Note: This is a basic implementation. For full IPTC parsing, consider using a dedicated library
@@ -250,10 +280,10 @@ function parseIptc(iptcBuffer: Buffer): any {
 }
 
 // Parse XMP data
-function parseXmp(xmpBuffer: Buffer): any {
+function parseXmp(): ParsedXmpData {
   try {
     // Simplified XMP parser
-    const xmp: any = {};
+    const xmp: ParsedXmpData = {};
     
     // Extract common XMP fields
     // Note: This is a basic implementation. For full XMP parsing, consider using a dedicated library
@@ -357,7 +387,7 @@ async function processImage(inputPath: string, outputPath: string): Promise<bool
     console.log(`  Dimensions: ${metadata.width || 'unknown'}x${metadata.height || 'unknown'}`);
     
     // Extract and log metadata
-    const extractedMetadata: any = {};
+    const extractedMetadata: Record<string, string | number | string[]> = {};
     CONFIG.metadataFields.forEach(field => {
       if (metadata[field as keyof ImageMetadata]) {
         extractedMetadata[field] = metadata[field as keyof ImageMetadata];

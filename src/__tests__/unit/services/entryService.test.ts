@@ -38,8 +38,7 @@ import {
   deleteEntry 
 } from '@/lib/services/entryService';
 import { Entry } from '@/lib/types/entry';
-import { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/config/firebase';
+import { getDoc, getDocs, addDoc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 
 // Mock the Firebase client initialization
 jest.mock('@/lib/config/firebase', () => ({
@@ -63,11 +62,6 @@ describe('Entry Service', () => {
 
     media: [],
     visibility: 'private',
-  };
-
-  const mockEntryWithId: Entry = {
-    id: 'test-id',
-    ...mockEntry,
   };
 
   beforeEach(() => {

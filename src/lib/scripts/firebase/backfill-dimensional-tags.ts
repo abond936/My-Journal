@@ -5,7 +5,7 @@ import { resolve } from 'path';
 dotenv.config({ path: resolve(process.cwd(), '.env') });
 
 import { getAdminApp } from '@/lib/config/firebase/admin';
-import { organizeTagsByDimension, calculateDerivedTagData } from '@/lib/firebase/tagService';
+import { calculateDerivedTagData } from '@/lib/firebase/tagService';
 import { Card } from '@/lib/types/card';
 import { Media } from '@/lib/types/photo';
 
@@ -65,12 +65,10 @@ export async function backfillDimensionalTags(options: BackfillOptions = {}): Pr
 
   try {
     // Get all cards
-    let query: any = firestore.collection(CARDS_COLLECTION);
-    if (limit) {
-      query = query.limit(limit);
-    }
-
-    const snapshot = await query.get();
+    const cardsQuery = limit
+      ? firestore.collection(CARDS_COLLECTION).limit(limit)
+      : firestore.collection(CARDS_COLLECTION);
+    const snapshot = await cardsQuery.get();
     const allCards = snapshot.docs.map(doc => ({
       docId: doc.id,
       ...doc.data()

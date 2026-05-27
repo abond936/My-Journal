@@ -1,4 +1,5 @@
 import { Card, CardUpdate } from '@/lib/types/card';
+import { Media } from '@/lib/types/photo';
 
 const DIMENSIONS = ['who', 'what', 'when', 'where'] as const;
 
@@ -79,9 +80,6 @@ export function groupCollectionsByDimension(cards: Card[]): Record<string, Card[
 
   return groups;
 }
-import { Media } from '@/lib/types/photo';
-import { Node } from 'prosemirror-model';
-import { Editor } from '@tiptap/react';
 
 /**
  * Extracts media IDs from the HTML string saved in a card's `content` field.
@@ -145,42 +143,53 @@ export function transformToCardUpdate(hydratedCard: Card): CardUpdate {
  * Removes transient fields (coverImage, galleryMedia[].media, contentMedia objects) so the
  * resulting payload matches the Firestore card schema.
  */
-export function dehydrateCardForSave(raw: any): CardUpdate {
-  const { 
-    coverImage: _ci, 
-    galleryMedia, 
-    contentMedia, 
-    // Server-generated fields to exclude
-    docId,
-    title_lowercase,
-    createdAt,
-    updatedAt,
-    filterTags,
-    who,
-    what,
-    when,
-    where,
-    // Legacy fields to exclude
-    inheritedTags,
-    tagPathsMap,
-    ...rest 
-  } = raw;
+type DehydrateGalleryItem = Record<string, unknown> & {
+  media?: unknown;
+  objectPosition?: unknown;
+  caption?: unknown;
+};
+
+type DehydrateCardInput = Record<string, unknown> & {
+  content?: string | null;
+  coverImageId?: string | null;
+  tags?: string[];
+  childrenIds?: string[];
+  galleryMedia?: DehydrateGalleryItem[];
+  contentMedia?: string[];
+};
+
+export function dehydrateCardForSave(raw: DehydrateCardInput): CardUpdate {
+  const { galleryMedia, contentMedia } = raw;
+  const rest = { ...raw };
+  delete rest.coverImage;
+  delete rest.galleryMedia;
+  delete rest.contentMedia;
+  delete rest.docId;
+  delete rest.title_lowercase;
+  delete rest.createdAt;
+  delete rest.updatedAt;
+  delete rest.filterTags;
+  delete rest.who;
+  delete rest.what;
+  delete rest.when;
+  delete rest.where;
+  delete rest.inheritedTags;
+  delete rest.tagPathsMap;
 
   // Coerce to array so "missing gallery" and "empty gallery" match for dirty/compare and PATCH slices.
   const gallerySource = Array.isArray(galleryMedia) ? galleryMedia : [];
-  const dehydratedGallery = gallerySource.map((item: any) => {
-    const { media: _m, ...g } = item || {};
+  const dehydratedGallery = gallerySource.map((item) => {
+    const g = { ...(item || {}) };
+    delete g.media;
     let out = { ...g };
     const trimmed = typeof out.objectPosition === 'string' ? out.objectPosition.trim() : '';
     if (!trimmed) {
-      const { objectPosition: _op, ...rest } = out;
-      out = rest;
+      delete out.objectPosition;
     } else {
       out = { ...out, objectPosition: trimmed };
     }
     if (!Object.prototype.hasOwnProperty.call(out, 'caption') || out.caption === undefined) {
-      const { caption: _c, ...rest } = out;
-      out = rest;
+      delete out.caption;
     }
     return out;
   });
@@ -294,7 +303,7 @@ export function normalizeContentImageSrc(html: string, mediaMap: Map<string, Med
       'gi'
     );
 
-    updated = updated.replace(tagRegex, (tag, tagName, attrs) => {
+    updated = updated.replace(tagRegex, (tag, tagName) => {
       if (/src=/.test(tag)) {
         return tag.replace(/src=["'][^"']*["']/, `src="${media.storageUrl}"`);
       }
