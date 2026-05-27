@@ -23,6 +23,7 @@ import { adminChromeSelector, ADMIN_GRID_CHROME } from '@/components/admin/commo
 import { eventTargetToElement } from '@/lib/utils/domEventTarget';
 import { useRouter } from 'next/navigation';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
+import { useStudioShellOptional } from '@/components/admin/studio/StudioShellContext';
 
 export interface MediaAdminGridCellProps {
   media: Media;
@@ -397,10 +398,14 @@ const MemoizedMediaAdminGridCell = React.memo(MediaAdminGridCell, (prev, next) =
 
 function MediaAdminGridCellStudioSource(props: Omit<MediaAdminGridCellProps, 'studioDragBind'>) {
   const mid = props.media.docId;
+  const studioShell = useStudioShellOptional();
+  const selectedMediaIds = studioShell?.selectedMediaIds ?? [];
+  const dragSelectionMediaIds =
+    mid && selectedMediaIds.includes(mid) ? Array.from(new Set(selectedMediaIds)) : mid ? [mid] : [];
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: mid ? `source:${mid}` : 'source:invalid',
     disabled: !mid,
-    data: { mediaId: mid, studioBankMedia: props.media },
+    data: { mediaId: mid, studioBankMedia: props.media, selectedMediaIds: dragSelectionMediaIds },
   });
   const studioDragBind: MediaAdminGridStudioDragBind = {
     attributes,

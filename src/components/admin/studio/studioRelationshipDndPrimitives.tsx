@@ -12,6 +12,22 @@ import type { Media } from '@/lib/types/photo';
 import type { StudioSelectedDetail } from '@/components/admin/studio/studioCardTypes';
 import styles from './StudioWorkspace.module.css';
 
+function activeSourceMediaIds(activeId: string, activeData: unknown): string[] {
+  const draggedMediaId = activeId.startsWith('source:') ? activeId.slice('source:'.length) : '';
+  if (!draggedMediaId) return [];
+
+  const maybeSelected =
+    activeData && typeof activeData === 'object' && Array.isArray((activeData as { selectedMediaIds?: unknown[] }).selectedMediaIds)
+      ? (activeData as { selectedMediaIds: unknown[] }).selectedMediaIds
+      : null;
+
+  if (!maybeSelected) return [draggedMediaId];
+
+  const normalized = maybeSelected.filter((id): id is string => typeof id === 'string' && id.trim().length > 0);
+  if (!normalized.includes(draggedMediaId)) return [draggedMediaId];
+  return Array.from(new Set(normalized));
+}
+
 export type { StudioSelectedDetail } from '@/components/admin/studio/studioCardTypes';
 
 export function StudioGallerySortableRow({
@@ -285,6 +301,7 @@ export async function handleStudioRelationshipDragEnd(
 
   if (activeId.startsWith('source:')) {
     const mediaId = activeId.slice('source:'.length);
+    const draggedMediaIds = activeSourceMediaIds(activeId, activeData);
     if (!mediaId) return true;
 
     if (overId === 'drop:cover') {
@@ -295,21 +312,29 @@ export async function handleStudioRelationshipDragEnd(
 
     if (overId === 'drop:gallery') {
       const gallery = ctx.selectedCardDetail.galleryMedia || [];
-      const exists = gallery.some((g) => g.mediaId === mediaId);
-      if (exists) {
+      const existingIds = new Set(gallery.map((item) => item.mediaId));
+      const mediaIdsToAppend = draggedMediaIds.filter((id) => !existingIds.has(id));
+      if (mediaIdsToAppend.length === 0) {
         ctx.showToast({
           title: 'No change',
-          message: 'Media is already in gallery.',
+          message:
+            draggedMediaIds.length > 1
+              ? 'Selected media is already in gallery.'
+              : 'Media is already in gallery.',
           tone: 'info',
           durationMs: 2500,
         });
         return true;
       }
-      const nextOrder = gallery.length;
-      await ctx.patchSelectedCard(
-        { galleryMedia: [...gallery, { mediaId, order: nextOrder }] }
+      const appendedItems = mediaIdsToAppend.map((id, index) => ({
+        mediaId: id,
+        order: gallery.length + index,
+      }));
+      await ctx.patchSelectedCard({ galleryMedia: [...gallery, ...appendedItems] });
+      ctx.showSuccess(
+        mediaIdsToAppend.length > 1 ? `${mediaIdsToAppend.length} media added to gallery.` : 'Media added to gallery.',
+        'Gallery updated'
       );
-      ctx.showSuccess('Media added to gallery.', 'Gallery updated');
       return true;
     }
 

@@ -148,6 +148,48 @@ describe('handleStudioRelationshipDragEnd', () => {
     expect(showSuccess).toHaveBeenCalledWith('Media added to gallery.', 'Gallery updated');
   });
 
+  it('appends the full selected media set to gallery when dragging a selected bank item', async () => {
+    const patchSelectedCard = jest.fn().mockResolvedValue(undefined);
+    const showSuccess = jest.fn();
+
+    const handled = await handleStudioRelationshipDragEnd(
+      {
+        active: {
+          id: 'source:media-2',
+          data: {
+            current: {
+              mediaId: 'media-2',
+              selectedMediaIds: ['media-2', 'media-3', 'existing'],
+            },
+          },
+        },
+        over: { id: 'drop:gallery' },
+      },
+      null,
+      buildCtx({
+        patchSelectedCard,
+        selectedCardDetail: {
+          docId: 'card-1',
+          title: 'Card',
+          childrenIds: [],
+          galleryMedia: [{ mediaId: 'existing', order: 0 }],
+          contentMedia: [],
+        } as never,
+        showSuccess,
+      })
+    );
+
+    expect(handled).toBe(true);
+    expect(patchSelectedCard).toHaveBeenCalledWith({
+      galleryMedia: [
+        { mediaId: 'existing', order: 0 },
+        { mediaId: 'media-2', order: 1 },
+        { mediaId: 'media-3', order: 2 },
+      ],
+    });
+    expect(showSuccess).toHaveBeenCalledWith('2 media added to gallery.', 'Gallery updated');
+  });
+
   it('reorders child cards when dropped onto another child row', async () => {
     const patchSelectedCard = jest.fn().mockResolvedValue(undefined);
 
