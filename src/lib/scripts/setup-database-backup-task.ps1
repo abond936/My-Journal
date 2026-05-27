@@ -13,8 +13,17 @@ $scriptToRun = "src\\lib\\scripts\\firebase\\backup-firestore.ts"
 $triggerTime = "2:00AM"
 # --- End Configuration ---
 
-# Get the project root directory relative to this script's location
-$projectRoot = (Get-Item -Path "." -Verbose).FullName
+# Repo root (this script lives in src/lib/scripts)
+$scriptDir = $PSScriptRoot
+$projectRoot = $null
+$gitOut = & git -C $scriptDir rev-parse --show-toplevel 2>$null
+if ($LASTEXITCODE -eq 0 -and $gitOut) {
+    $projectRoot = $gitOut.Trim()
+}
+if (-not $projectRoot) {
+    $p = Get-Item $scriptDir
+    $projectRoot = $p.Parent.Parent.Parent.FullName
+}
 
 $fullScriptPath = Join-Path -Path $projectRoot -ChildPath $scriptToRun
 

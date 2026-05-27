@@ -9,6 +9,28 @@ import {
   findDerivedFieldViolations,
 } from '@/lib/integrity/invariantChecks';
 
+const mockStorageFileSave = jest.fn(async () => undefined);
+
+jest.mock('sharp', () => {
+  return () => ({
+    metadata: async () => ({
+      format: 'webp',
+      width: 640,
+      height: 480,
+    }),
+  });
+});
+
+jest.mock('image-size', () => ({
+  __esModule: true,
+  default: () => ({ width: 640, height: 480 }),
+}));
+
+jest.mock('@/lib/services/typesenseMediaService', () => ({
+  syncMediaToTypesense: jest.fn(),
+  syncMediaToTypesenseById: jest.fn(),
+}));
+
 jest.mock('@/lib/config/firebase/admin', () => ({
   getAdminApp: () => {
     const { getApps, initializeApp } = jest.requireActual<typeof import('firebase-admin/app')>('firebase-admin/app');
@@ -24,6 +46,8 @@ jest.mock('@/lib/config/firebase/admin', () => ({
       storage: () => ({
         bucket: () => ({
           file: () => ({
+            save: mockStorageFileSave,
+            exists: async () => [true] as [boolean],
             delete: async () => undefined,
             setMetadata: async () => undefined,
           }),
@@ -38,12 +62,21 @@ const describeIfEmulator = hasEmulator ? describe : describe.skip;
 
 type CardServiceModule = typeof import('@/lib/services/cardService');
 let cardServiceModulePromise: Promise<CardServiceModule> | null = null;
+type ImageImportServiceModule = typeof import('@/lib/services/images/imageImportService');
+let imageImportServiceModulePromise: Promise<ImageImportServiceModule> | null = null;
 
 function getCardService(): Promise<CardServiceModule> {
   if (!cardServiceModulePromise) {
     cardServiceModulePromise = import('@/lib/services/cardService');
   }
   return cardServiceModulePromise;
+}
+
+function getImageImportService(): Promise<ImageImportServiceModule> {
+  if (!imageImportServiceModulePromise) {
+    imageImportServiceModulePromise = import('@/lib/services/images/imageImportService');
+  }
+  return imageImportServiceModulePromise;
 }
 
 describeIfEmulator('Integrity gate (Firestore emulator)', () => {
@@ -65,6 +98,7 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
 
   afterEach(async () => {
     if (!hasEmulator) return;
+    jest.clearAllMocks();
     const db = getFirestore(app);
     await clearCollection(db, 'cards');
     await clearCollection(db, 'media');
@@ -208,6 +242,73 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
     expect(mediaAfter.exists).toBe(false);
   });
 
+  it('cleans up shared media references across multiple cards before deleting the media doc', async () => {
+    const db = getFirestore(app);
+    const { deleteMediaWithCardCleanup, getCardsReferencingMedia } = await getCardService();
+
+    await db.collection('media').doc('media-shared').set({
+      filename: 'shared.jpg',
+      storagePath: 'images/shared.jpg',
+      referencedByCardIds: ['stale-card-id'],
+      updatedAt: Date.now(),
+    });
+
+    await db.collection('cards').doc('card-cover-only').set({
+      docId: 'card-cover-only',
+      status: 'published',
+      coverImageId: 'media-shared',
+      galleryMedia: [],
+      contentMedia: [],
+      content: '<p>cover only</p>',
+      tags: [],
+      filterTags: {},
+      who: [],
+      what: [],
+      when: [],
+      where: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    await db.collection('cards').doc('card-gallery-and-content').set({
+      docId: 'card-gallery-and-content',
+      status: 'published',
+      coverImageId: null,
+      galleryMedia: [{ mediaId: 'media-shared', order: 0 }],
+      contentMedia: ['media-shared'],
+      content: '<p>shared</p><figure data-media-id="media-shared"><img src="x" /></figure>',
+      tags: [],
+      filterTags: {},
+      who: [],
+      what: [],
+      when: [],
+      where: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    const refsBeforeDelete = await getCardsReferencingMedia('media-shared');
+    expect(refsBeforeDelete.sort()).toEqual(['card-cover-only', 'card-gallery-and-content']);
+
+    await deleteMediaWithCardCleanup('media-shared');
+
+    const coverCardAfter = (await db.collection('cards').doc('card-cover-only').get()).data() as IntegrityCard;
+    expect(coverCardAfter.coverImageId ?? null).toBeNull();
+
+    const mixedCardAfter = (
+      await db.collection('cards').doc('card-gallery-and-content').get()
+    ).data() as IntegrityCard;
+    expect(mixedCardAfter.galleryMedia ?? []).toEqual([]);
+    expect(mixedCardAfter.contentMedia ?? []).toEqual([]);
+    expect((mixedCardAfter as { content?: string }).content ?? '').not.toContain('media-shared');
+
+    const refsAfterDelete = await getCardsReferencingMedia('media-shared');
+    expect(refsAfterDelete).toEqual([]);
+
+    const mediaAfter = await db.collection('media').doc('media-shared').get();
+    expect(mediaAfter.exists).toBe(false);
+  });
+
   it('does not mutate cards when delete is requested for missing media docs', async () => {
     const db = getFirestore(app);
     const { deleteMediaWithCardCleanup } = await getCardService();
@@ -234,6 +335,92 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
     const cardAfter = await db.collection('cards').doc('card-orphan-ref').get();
     expect(cardAfter.exists).toBe(true);
     expect(cardAfter.data()?.coverImageId).toBe('media-missing');
+  });
+
+  it('replaces shared media content in place without disturbing card references or media identity', async () => {
+    const db = getFirestore(app);
+    const { replaceMediaAssetContent } = await getImageImportService();
+
+    await db.collection('media').doc('media-shared').set({
+      docId: 'media-shared',
+      filename: 'original.jpg',
+      storagePath: 'images/media-shared-original.jpg',
+      storageUrl: 'https://example.com/original.jpg',
+      contentType: 'image/jpeg',
+      width: 300,
+      height: 200,
+      size: 1234,
+      source: 'local',
+      sourcePath: 'folder/original.jpg',
+      referencedByCardIds: ['card-a', 'card-b'],
+      createdAt: 1,
+      updatedAt: 1,
+    });
+
+    await db.collection('cards').doc('card-a').set({
+      docId: 'card-a',
+      status: 'published',
+      coverImageId: 'media-shared',
+      galleryMedia: [],
+      contentMedia: [],
+      tags: [],
+      filterTags: {},
+      who: [],
+      what: [],
+      when: [],
+      where: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    await db.collection('cards').doc('card-b').set({
+      docId: 'card-b',
+      status: 'published',
+      coverImageId: null,
+      galleryMedia: [{ mediaId: 'media-shared', order: 0 }],
+      contentMedia: ['media-shared'],
+      content: '<figure data-media-id="media-shared"><img src="x" /></figure>',
+      tags: [],
+      filterTags: {},
+      who: [],
+      what: [],
+      when: [],
+      where: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    await replaceMediaAssetContent('media-shared', Buffer.from('replacement-bytes'), 'replacement.webp');
+
+    expect(mockStorageFileSave).toHaveBeenCalledTimes(1);
+
+    const mediaAfter = (await db.collection('media').doc('media-shared').get()).data() as IntegrityMedia & {
+      filename: string;
+      storagePath: string;
+      contentType: string;
+      width: number;
+      height: number;
+      size: number;
+      storageUrl: string;
+      referencedByCardIds: string[];
+    };
+
+    expect(mediaAfter.filename).toBe('replacement.webp');
+    expect(mediaAfter.storagePath).toBe('images/media-shared-original.jpg');
+    expect(mediaAfter.contentType).toBe('image/webp');
+    expect(mediaAfter.width).toBe(640);
+    expect(mediaAfter.height).toBe(480);
+    expect(mediaAfter.size).toBe(Buffer.from('replacement-bytes').length);
+    expect(mediaAfter.referencedByCardIds?.sort()).toEqual(['card-a', 'card-b']);
+
+    const cards = await readCards(db);
+    const cardA = cards.find((card) => card.docId === 'card-a')!;
+    const cardB = cards.find((card) => card.docId === 'card-b')!;
+    expect(cardA.coverImageId).toBe('media-shared');
+    expect(cardB.galleryMedia?.map((item) => item.mediaId)).toEqual(['media-shared']);
+    expect(cardB.contentMedia).toEqual(['media-shared']);
+    expect(findDanglingCardMediaReferences(cards, [mediaAfter])).toEqual([]);
+    expect(findBrokenMediaBackReferences(cards, [mediaAfter])).toEqual([]);
   });
 });
 

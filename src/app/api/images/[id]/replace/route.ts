@@ -16,6 +16,42 @@ function errorResponse(payload: ApiErrorPayload, status: number) {
   return NextResponse.json(payload, { status });
 }
 
+function classifyReplaceError(errorMessage: string): { status: number; code: string; message: string; retryable: boolean } {
+  if (errorMessage.includes('not found')) {
+    return {
+      status: 404,
+      code: 'MEDIA_NOT_FOUND',
+      message: 'Media asset not found.',
+      retryable: false,
+    };
+  }
+
+  if (errorMessage.includes('has no storagePath')) {
+    return {
+      status: 409,
+      code: 'MEDIA_REPLACE_INVALID_TARGET',
+      message: 'Media asset is missing required storage metadata.',
+      retryable: false,
+    };
+  }
+
+  if (errorMessage.includes('Could not determine replacement image dimensions')) {
+    return {
+      status: 422,
+      code: 'MEDIA_REPLACE_DIMENSIONS_INVALID',
+      message: 'Replacement image dimensions could not be determined.',
+      retryable: false,
+    };
+  }
+
+  return {
+    status: 500,
+    code: 'MEDIA_REPLACE_FAILED',
+    message: 'Error replacing media asset.',
+    retryable: true,
+  };
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -83,16 +119,17 @@ export async function POST(
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error(`Error replacing media asset ${mediaId}:`, errorMessage);
+    const classified = classifyReplaceError(errorMessage);
     return errorResponse(
       {
         ok: false,
-        code: 'MEDIA_REPLACE_FAILED',
-        message: 'Error replacing media asset.',
+        code: classified.code,
+        message: classified.message,
         severity: 'error',
-        retryable: true,
+        retryable: classified.retryable,
         error: errorMessage,
       },
-      500
+      classified.status
     );
   }
 }

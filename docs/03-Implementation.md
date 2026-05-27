@@ -1,8 +1,8 @@
-# IMPLEMENTATION
+Ôªø# IMPLEMENTATION
 
 
 
-**See also:** `01-Vision-Architecture.md` ∑ `02-Application.md`
+**See also:** `01-Vision-Architecture.md` ¬∑ `02-Application.md`
 
 
 
@@ -75,23 +75,23 @@ Legend:
 
 ?? **Build/deploy contract (2026-05-23)** - Production builds must not depend on optional platform-package resolution quirks or fabricated shared-event types. Current closeout: import metadata resolution no longer assumes direct `exiftool-vendored.pl` module resolution in app code, and Studio relationship DnD now passes the real drag event plus an explicit resolved `overId` instead of constructing a fake `DragEndEvent`. Verification standard for deploy-blocker work: `npm run build` must complete locally before treating Vercel failures as environment-only.
 
-### Phase 1 ó Pre-Import
+### Phase 1 ‚Äî Pre-Import
 
-*Complete ó baseline recorded in `docs/02-Application.md` ? **Administration** ? **Integrity gate (CI)**.*
+*Complete ‚Äî baseline recorded in `docs/02-Application.md` ? **Administration** ? **Integrity gate (CI)**.*
 
 
 
-### Phase 2 ó Admin Productivity
+### Phase 2 ‚Äî Admin Productivity
 
 ?1 **Planned**
 
 
 
-*Integrated execution order:* **ß Studio sequence** inline-tag work is ? (2026-04-23 closeout in `docs/02-Application.md` ? **Administration**). Then **ß Card Management**, **ß Tag Management** (remaining), **ß Media Management** (remaining), **ß User Management** (policy/trust closeout), **ß Backend**. Each **?1** bullet matches `docs/02-Application.md` verbatim (bold title + text after ` - `) where still planned.
+*Integrated execution order:* **¬ß Studio sequence** inline-tag work is ? (2026-04-23 closeout in `docs/02-Application.md` ? **Administration**). Then **¬ß Card Management**, **¬ß Tag Management** (remaining), **¬ß Media Management** (remaining), **¬ß User Management** (policy/trust closeout), **¬ß Backend**. Each **?1** bullet matches `docs/02-Application.md` verbatim (bold title + text after ` - `) where still planned.
 
 
 
-**ß Administration (`02-Application.md`)**
+**¬ß Administration (`02-Application.md`)**
 
 
 
@@ -105,7 +105,7 @@ Legend:
 
 
 
-**ß Card Management (`02-Application.md`)**
+**¬ß Card Management (`02-Application.md`)**
 
 
 
@@ -115,7 +115,7 @@ Legend:
 
 
 
-**ß Tag Management (`02-Application.md`)** *(remaining **?1** after **Studio sequence**)*
+**¬ß Tag Management (`02-Application.md`)** *(remaining **?1** after **Studio sequence**)*
 
 
 
@@ -127,11 +127,11 @@ Legend:
 
 
 
-**ß Media Management (`02-Application.md`)** *(remaining **?1** after **Studio sequence**)*
+**¬ß Media Management (`02-Application.md`)** *(remaining **?1** after **Studio sequence**)*
 
 
 
-*Priority bands:* **P2 (operator productivity)** ó Media import/duplicate handling remains a larger deferred media-management gap rather than the next isolated polish slice.
+*Priority bands:* **P2 (operator productivity)** ‚Äî Media import/duplicate handling remains a larger deferred media-management gap rather than the next isolated polish slice.
 
 
 
@@ -140,34 +140,34 @@ Legend:
 - **Media editor control stacking** - In the Studio media editor, stack the horizontal/vertical adjustment controls vertically so the edit surface stays readable and predictable at the current modal width.
 
 
-**ß User Management (`02-Application.md`)**
+**¬ß User Management (`02-Application.md`)**
 
 
 
-*Priority bands:* **P2 (trust/policy closeout)** ó credential behavior should be explicit before hosted family use broadens.
+*Priority bands:* **P2 (trust/policy closeout)** ‚Äî credential behavior should be explicit before hosted family use broadens.
 
 
 
 - **Credential-sharing policy audit** - Confirm and document whether multiple simultaneous sign-ins with the same username/password are acceptable in v1, and whether user creation/update should enforce stricter uniqueness or session expectations.
 
 
-**ß Guided archive assistance (`02-Application.md` ? **Media Management**)** *(after **PhotoPicker convergence** / identity triage pressure; order: prove value, then ship clustering UXósee ?? **Guided archive program (2026-04-24)**)*
+**¬ß Guided archive assistance (`02-Application.md` ? **Media Management**)** *(after **PhotoPicker convergence** / identity triage pressure; order: prove value, then ship clustering UX‚Äîsee ?? **Guided archive program (2026-04-24)**)*
 
 - **Spike** - End-to-end on a fixed folder: ingest ? embeddings ? candidate clusters ? simple review UI ? export JSON of confirmed groups and proposed tags (no production auth required) (`docs/05-Guided-Archive-Assistance.md`).
 
 - **Evaluation set** - Curated subset with human-labeled "true events" to score precision/recall of clustering variants (`docs/05-Guided-Archive-Assistance.md`).
 
-- **Heuristic pre-clustering** - Cheap, explainable first pass: time windows, folder boundaries, burst detection, optional GPS bucketsóoutputs **candidate segments** for ML refinement (`docs/05-Guided-Archive-Assistance.md`).
+- **Heuristic pre-clustering** - Cheap, explainable first pass: time windows, folder boundaries, burst detection, optional GPS buckets‚Äîoutputs **candidate segments** for ML refinement (`docs/05-Guided-Archive-Assistance.md`).
 
 - **Review UI** - Grid of **candidate stacks** with merge/split, keyboard-friendly for large sets (`docs/05-Guided-Archive-Assistance.md`).
 
 
 
-**ß Backend (`01-Vision-Architecture.md`)**
+**¬ß Backend (`01-Vision-Architecture.md`)**
 
 
 
-*Priority bands:* **P1 (architectural correctness)** ó finish the remaining **Narrow mutation paths** rollout beyond the already-shipped card tag/status/content/metadata PATCH routing and card/media bulk tag mutation paths.
+*Priority bands:* **P1 (architectural correctness)** ‚Äî finish the remaining **Narrow mutation paths** rollout beyond the already-shipped card tag/status/content/metadata PATCH routing and card/media bulk tag mutation paths.
 
 
 
@@ -175,7 +175,7 @@ Legend:
 
 
 
-### Phase 3 ó Reader experience
+### Phase 3 ‚Äî Reader experience
 
 ?1 **Planned**
 
@@ -196,7 +196,7 @@ Legend:
 
 
 
-- **CSS Tokenization** - Move **design-affecting** valuesócolors, typography scale, spacing rhythm, radii, shadows, and key surfacesóinto `theme.css` variables (and Theme Management where appropriate) so literals in modules do not block **plug-and-play designs**. Not every numeric value in the app is a ìthemeî concern (e.g. one-off layout math); scope is what should change when switching designs. Grow coverage incrementally toward named presets.
+- **CSS Tokenization** - Move **design-affecting** values‚Äîcolors, typography scale, spacing rhythm, radii, shadows, and key surfaces‚Äîinto `theme.css` variables (and Theme Management where appropriate) so literals in modules do not block **plug-and-play designs**. Not every numeric value in the app is a ‚Äútheme‚Äù concern (e.g. one-off layout math); scope is what should change when switching designs. Grow coverage incrementally toward named presets.
 - **Theme contract inventory** - Complete an inventory-driven semantic theme contract before treating Journal / Editorial as finished themes: enumerate reader/admin surfaces, visible elements, current token use, required semantic token families, and migration status.
 - **Theme schema** - Define the structured Firestore theme document shape that stores atomic tokens, semantic token-class assignments, and reader/admin recipe assignments for live draft application and saved runtime themes, with Theme Management as the editing interface; do not expose raw Firestore editing as the product workflow.
 - **Preset completion** - Expand Journal / Editorial from partial preset bundles into coherent light/dark design packages only after the semantic surface inventory and schema are defined.
@@ -286,7 +286,7 @@ Legend:
 
 
 
-### Phase 4 ó Scale & polish
+### Phase 4 ‚Äî Scale & polish
 
 ?1 **Planned**
 
@@ -306,7 +306,7 @@ Legend:
 - **Access & privacy gate** - Re-verify hosted reader/admin boundaries in deployed use: direct URL behavior, hosted auth/session configuration, and absence of admin affordance leakage. Current closeout: hosted anonymous requests to `/view`, `/search`, and `/admin` now redirect to login, while `/api/cards`, `/api/cards/search`, and `/api/view/media` reject anonymous access with `401`, so the root reader page-route mismatch is resolved. Remaining work in this gate should focus on broader deployed-use re-verification and any future admin-affordance leakage findings, not this specific `/view` and `/search` route-protection defect. Local import helpers are expected to remain admin-only operational routes; audience-based reader sharing is future scope, not part of current v1 verification.
 - **Integrity gate expansion** - Expand integrity verification for card-media references, tag counts, derived card fields, delete/replace graph behavior, and import drift detection.
 - **Import trust gate** - Verify source identity, duplicate signals, metadata preservation, partial-failure handling, and operator recovery paths for import workflows.
-- **Operational recovery gate** - Verify database backup, local secrets backup, restore drill, rollback/incident response, and admin account recovery before commercial release.
+- **Operational recovery gate** - Verify database backup, local secrets backup, restore drill, rollback/incident response, and admin account recovery before commercial release. Current closeout: the v1 operator restore/recovery playbook now exists in `docs/NPM-SCRIPTS.md`, the database-backup task setup no longer depends on the caller's current directory, and a guarded `restore:database` helper now supports dry-run and apply against disposable recovery targets while refusing the production project id. Remaining work is to execute the documented drill and recovery checks against a realistic target.
 - **Workflow quality gate** - Validate family-demo reader flow, hosted-alpha repeated-use flow, admin prep friction, and mobile reader usability against milestone pass criteria. Current closeout: hosted authenticated card search is working again for both `viewer` and `admin`, so the earlier missing-index production failure on `/api/cards/search` is no longer blocking repeated-use reader verification.
 
 
@@ -314,5 +314,6 @@ Legend:
 ? **Open**
 
 - *(None currently.)*
+
 
 
