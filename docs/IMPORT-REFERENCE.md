@@ -6,12 +6,13 @@ Product rules and import workflow context live in **`docs/02-Application.md`** (
 
 ## Folder import in the app (`ImportFolderModal` / `importFolderAsCard`)
 
+- **Media bank local browse** (Media admin / shared local picker) previews all supported image files directly in the selected folder so the author can choose what to ingest; it does **not** depend on legacy `yEdited` / `xNormalized` subfolders.
 - **`ONEDRIVE_ROOT_FOLDER`** (`.env`) must point at the server-visible root of your image tree.
 - Only files whose **basename** ends with **`__X`** immediately before the extension are imported, e.g. `IMG_0001__X.jpg`. Use **two underscores** and an **uppercase X** (`__X`), not `__x`.
 - Images are **WebP-optimized in memory** and uploaded to **Firebase Storage**; the app **does not** write an `xNormalized` folder on disk during import.
 - **`sourcePath`** on each `media` document still refers to the **original** file path (the `__X` file) for duplicate detection.
 - **`IMPORT_FOLDER_MAX_IMAGES`** (default `60`) applies to the **count of `__X` files** per folder.
-- Read paths (legacy still supported): images directly in a leaf folder, or under a child **`yEdited`** or **`xNormalized`** folder—**only `__X`-marked** files are read from that directory.
+- Folder-as-card import is now authored around import-ready files living directly in the selected folder; the old `yEdited` / `xNormalized` directory schema is no longer part of the active author workflow even if older code paths still tolerate legacy layouts.
 
 ## Local CLI: `normalize-images` (`npm run normalize:images`)
 

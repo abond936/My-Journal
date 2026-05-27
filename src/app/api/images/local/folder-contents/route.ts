@@ -7,7 +7,8 @@ import { PickerMedia } from '@/lib/types/photo';
 import { authOptions } from '@/lib/auth/authOptions';
 
 const ONEDRIVE_ROOT_FOLDER = process.env.ONEDRIVE_ROOT_FOLDER;
-const SUPPORTED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+// Keep previewable local-folder formats aligned with the import pipeline.
+const SUPPORTED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.tif'];
 
 // Utility functions for consistent path handling
 const toSystemPath = (p: string) => p.split('/').join(path.sep);
@@ -45,7 +46,6 @@ export async function POST(request: NextRequest) {
         try {
           const relativePath = toDatabasePath(path.relative(ONEDRIVE_ROOT_FOLDER, fullPath));
           const fileBuffer = await fs.readFile(fullPath);
-          const stats = await fs.stat(fullPath);
           const dimensions = sizeOf(fileBuffer);
 
           const photo: PickerMedia = {

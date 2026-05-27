@@ -13,10 +13,12 @@ import {
   updateCardMetadata,
   updateCardTags,
   updateCardStatus,
+  updateCardContent,
   isCardMetadataOnlyPayload,
   isChildrenOnlyPayload,
   isChildrenReorderOnlyPayload,
   isCollectionRootOnlyPayload,
+  isContentOnlyPayload,
   isTagsOnlyPayload,
   isStatusOnlyPayload,
 } from '@/lib/services/cardService';
@@ -55,10 +57,12 @@ jest.mock('@/lib/services/cardService', () => ({
   updateCardMetadata: jest.fn(),
   updateCardTags: jest.fn(),
   updateCardStatus: jest.fn(),
+  updateCardContent: jest.fn(),
   isCardMetadataOnlyPayload: jest.fn(),
   isChildrenOnlyPayload: jest.fn(),
   isChildrenReorderOnlyPayload: jest.fn(),
   isCollectionRootOnlyPayload: jest.fn(),
+  isContentOnlyPayload: jest.fn(),
   isTagsOnlyPayload: jest.fn(),
   isStatusOnlyPayload: jest.fn(),
   deleteCard: jest.fn(),
@@ -81,10 +85,12 @@ const mockedUpdateCardCollectionRoot = updateCardCollectionRoot as jest.MockedFu
 const mockedUpdateCardMetadata = updateCardMetadata as jest.MockedFunction<typeof updateCardMetadata>;
 const mockedUpdateCardTags = updateCardTags as jest.MockedFunction<typeof updateCardTags>;
 const mockedUpdateCardStatus = updateCardStatus as jest.MockedFunction<typeof updateCardStatus>;
+const mockedUpdateCardContent = updateCardContent as jest.MockedFunction<typeof updateCardContent>;
 const mockedIsCardMetadataOnlyPayload = isCardMetadataOnlyPayload as jest.MockedFunction<typeof isCardMetadataOnlyPayload>;
 const mockedIsChildrenOnlyPayload = isChildrenOnlyPayload as jest.MockedFunction<typeof isChildrenOnlyPayload>;
 const mockedIsChildrenReorderOnlyPayload = isChildrenReorderOnlyPayload as jest.MockedFunction<typeof isChildrenReorderOnlyPayload>;
 const mockedIsCollectionRootOnlyPayload = isCollectionRootOnlyPayload as jest.MockedFunction<typeof isCollectionRootOnlyPayload>;
+const mockedIsContentOnlyPayload = isContentOnlyPayload as jest.MockedFunction<typeof isContentOnlyPayload>;
 const mockedIsTagsOnlyPayload = isTagsOnlyPayload as jest.MockedFunction<typeof isTagsOnlyPayload>;
 const mockedIsStatusOnlyPayload = isStatusOnlyPayload as jest.MockedFunction<typeof isStatusOnlyPayload>;
 
@@ -116,6 +122,7 @@ describe('PATCH /api/cards/[id] cover fast path', () => {
     mockedIsChildrenOnlyPayload.mockReturnValue(false);
     mockedIsChildrenReorderOnlyPayload.mockReturnValue(false);
     mockedIsCollectionRootOnlyPayload.mockReturnValue(false);
+    mockedIsContentOnlyPayload.mockReturnValue(false);
     mockedIsTagsOnlyPayload.mockReturnValue(false);
     mockedIsStatusOnlyPayload.mockReturnValue(false);
   });
@@ -207,6 +214,26 @@ describe('PATCH /api/cards/[id] cover fast path', () => {
     expect(mockedUpdateCardCover).not.toHaveBeenCalled();
     expect(mockedUpdateCardGalleryOrder).not.toHaveBeenCalled();
     expect(payload.galleryMedia).toEqual(galleryMedia);
+  });
+
+  it('uses narrow content-only path for editor body updates', async () => {
+    mockedIsContentOnlyPayload.mockReturnValue(true);
+    mockedUpdateCardContent.mockResolvedValue({
+      docId: 'card-1',
+      content: '<p>Updated body</p>',
+      contentMedia: ['media-1'],
+    } as never);
+
+    const res = await PATCH(makeRequest({ content: '<p>Updated body</p>' }), {
+      params: Promise.resolve({ id: 'card-1' }),
+    });
+    const payload = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(mockedUpdateCardContent).toHaveBeenCalledWith('card-1', '<p>Updated body</p>');
+    expect(mockedUpdateCard).not.toHaveBeenCalled();
+    expect(mockedUpdateCardMetadata).not.toHaveBeenCalled();
+    expect(payload.content).toBe('<p>Updated body</p>');
   });
 
   it('uses narrow children reorder path for reorder-only children payloads', async () => {

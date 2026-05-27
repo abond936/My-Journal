@@ -20,6 +20,7 @@ import styles from './PhotoPicker.module.css';
 type SourceTab = 'local' | 'library';
 
 const LIBRARY_PAGE_LIMIT = 40;
+const PHOTO_PICKER_EXPANDED_FOLDERS_STORAGE_KEY = 'myjournal-photo-picker-expanded-folders';
 
 interface PhotoPickerProps {
   isOpen: boolean;
@@ -86,10 +87,27 @@ const FolderItem = ({
         role="button"
         tabIndex={0}
         style={{
-          backgroundColor: isSelected ? '#f0f0f0' : 'transparent',
           cursor: 'pointer',
         }}
       >
+        {hasChildren ? (
+          <button
+            type="button"
+            aria-label={isExpanded ? `Collapse ${node.name}` : `Expand ${node.name}`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onToggle(node.id);
+            }}
+            className={styles.treeToggle}
+          >
+            {isExpanded ? '-' : '+'}
+          </button>
+        ) : (
+          <span className={styles.treeToggleSpacer} aria-hidden="true">
+            &nbsp;
+          </span>
+        )}
         <span className={styles.folderIcon}>📁</span>
         <div className={styles.treeNodeName}>{node.name}</div>
       </div>
@@ -190,6 +208,21 @@ export default function PhotoPicker({
   const shouldAutoCollapse = (folderName: string) =>
     folderName === 'xNormalized' || folderName === 'yEdited' || folderName === 'zOriginals';
 
+  const readStoredExpandedFolders = useCallback((): Set<string> | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = window.localStorage.getItem(PHOTO_PICKER_EXPANDED_FOLDERS_STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as unknown;
+      if (!Array.isArray(parsed)) return null;
+      return new Set(
+        parsed.filter((value): value is string => typeof value === 'string' && value.length > 0)
+      );
+    } catch {
+      return null;
+    }
+  }, []);
+
   const collectExpandableIds = useCallback((nodes: TreeNode[]): Set<string> => {
     const ids = new Set<string>();
     const walk = (list: TreeNode[]) => {
@@ -205,6 +238,17 @@ export default function PhotoPicker({
     walk(nodes);
     return ids;
   }, []);
+
+  const filterExpandedFoldersToTree = useCallback((candidateIds: Set<string>, nodes: TreeNode[]): Set<string> => {
+    const validIds = collectExpandableIds(nodes);
+    const filtered = new Set<string>();
+    candidateIds.forEach((id) => {
+      if (validIds.has(id)) {
+        filtered.add(id);
+      }
+    });
+    return filtered;
+  }, [collectExpandableIds]);
 
   const expandAllFolders = useCallback(() => {
     setExpandedFolders(collectExpandableIds(folderTree));
@@ -222,10 +266,12 @@ export default function PhotoPicker({
       setFolderTree(tree);
 
       // Default: only top-level folders expanded — shorter tree; use "Expand all" for full depth.
-      const initialExpanded = new Set<string>(
-        tree.filter(node => !shouldAutoCollapse(node.name)).map(node => node.id)
+      const storedExpandedFolders = readStoredExpandedFolders();
+      setExpandedFolders(
+        storedExpandedFolders
+          ? filterExpandedFoldersToTree(storedExpandedFolders, tree)
+          : collectExpandableIds(tree)
       );
-      setExpandedFolders(initialExpanded);
 
       if (tree.length > 0) {
         setSelectedFolder(tree[0].id);
@@ -236,7 +282,15 @@ export default function PhotoPicker({
     } finally {
       setIsLoadingFolders(false);
     }
-  }, []);
+  }, [collectExpandableIds, filterExpandedFoldersToTree, readStoredExpandedFolders]);
+
+  useEffect(() => {
+    if (!isOpen || typeof window === 'undefined' || folderTree.length === 0) return;
+    window.localStorage.setItem(
+      PHOTO_PICKER_EXPANDED_FOLDERS_STORAGE_KEY,
+      JSON.stringify([...expandedFolders])
+    );
+  }, [expandedFolders, folderTree.length, isOpen]);
 
   const loadPhotos = useCallback(async (folderId: string) => {
     try {
@@ -794,6 +848,9 @@ export default function PhotoPicker({
                           sizes="150px"
                           priority={false}
                         />
+                        <div className={styles.photoFilename} title={photo.filename}>
+                          {photo.filename}
+                        </div>
                         {isSelected && (
                           <div className={styles.checkmark} aria-hidden="true">
                             ✓

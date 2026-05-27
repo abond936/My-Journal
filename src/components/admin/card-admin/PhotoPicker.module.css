@@ -155,11 +155,19 @@
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  padding: 0.125rem 0.25rem;
+  border-radius: 6px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.treeNodeHeader:hover {
+  background-color: var(--admin-chrome-control-hover-background-color);
 }
 
 .treeToggle {
-  background: none;
-  border: none;
+  background: transparent;
+  border: var(--border-width-thin) solid transparent;
+  border-radius: 4px;
   padding: 0.125rem;
   cursor: pointer;
   color: var(--admin-support-meta-color);
@@ -171,8 +179,19 @@
   min-width: 16px;
 }
 
+.treeToggle:hover {
+  background: var(--admin-support-control-hover-background-color);
+  color: var(--admin-support-control-text-color);
+}
+
+.treeToggleSpacer {
+  display: inline-flex;
+  width: 16px;
+  min-width: 16px;
+}
+
 .treeNodeName {
-  padding: 0.25rem 0.375rem;
+  padding: 0.25rem 0;
   cursor: pointer;
   border-radius: 4px;
   flex: 1;
@@ -185,11 +204,18 @@
 }
 
 .treeNodeName:hover {
-  background-color: var(--admin-chrome-control-hover-background-color);
+  background-color: transparent;
 }
 
 .treeNodeSelected {
   background-color: var(--admin-chrome-active-control-background-color);
+  color: var(--admin-chrome-active-control-text-color);
+  border: var(--border-width-thin) solid var(--admin-chrome-active-control-border-color);
+}
+
+.treeNodeSelected .treeNodeName,
+.treeNodeSelected .folderIcon,
+.treeNodeSelected .treeToggle {
   color: var(--admin-chrome-active-control-text-color);
 }
 
@@ -252,6 +278,26 @@
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+.photoFilename {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0.35rem 0.45rem;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--admin-window-background-color) 18%, black 82%),
+    color-mix(in srgb, var(--admin-window-background-color) 60%, transparent)
+  );
+  color: var(--admin-chrome-active-control-text-color);
+  font-size: 0.72rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
 }
 
 .loading {

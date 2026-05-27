@@ -1,6 +1,8 @@
+import path from "path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  outputFileTracingRoot: path.resolve(__dirname),
   // Large legacy lint surface; run `npm run lint` locally. Re-enable after cleanup.
   eslint: {
     ignoreDuringBuilds: true,

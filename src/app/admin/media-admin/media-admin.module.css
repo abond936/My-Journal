@@ -38,6 +38,22 @@
   overflow: hidden;
 }
 
+.studioHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  min-width: 0;
+}
+
+.studioHeaderActions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-xs);
+  flex: 0 0 auto;
+}
+
 /* Same flex basis as `StudioTreeCandidateCardBank` `.studioPaneSearchField` */
 .studioPaneSearchField {
   flex: 0 0 12rem;
@@ -103,7 +119,8 @@
 }
 
 .embeddedTitle {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-width: 0;
   margin: 0;
   display: flex;
   align-items: center;
@@ -239,6 +256,33 @@
     border-color var(--transition-short) ease,
     color var(--transition-short) ease,
     opacity var(--transition-short) ease;
+}
+
+.studioImportButton {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-end;
+  padding: 0 0.7rem;
+  border-radius: var(--border-radius-md);
+  border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
+  background: var(--admin-support-control-strong-background-color);
+  color: var(--admin-support-control-strong-text-color);
+  cursor: pointer;
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--font-size-xs);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: 1;
+  transition:
+    background-color var(--transition-short) ease,
+    border-color var(--transition-short) ease,
+    color var(--transition-short) ease,
+    opacity var(--transition-short) ease;
+}
+
+.studioImportButton:hover {
+  background: var(--admin-support-control-strong-hover-background-color);
 }
 
 .studioClearButton:hover {

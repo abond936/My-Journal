@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import Link from 'next/link';
+import MediaAdminGrid from '@/components/admin/media-admin/MediaAdminGrid';
 import { getMediaErrorSeverity, useMedia } from '@/components/providers/MediaProvider';
-import MediaAdminList from '@/components/admin/media-admin/MediaAdminList';
 import styles from '@/app/admin/collections/page.module.css';
 
 const DEFAULT_DIMENSION_FILTERS = {
@@ -14,7 +14,7 @@ const DEFAULT_DIMENSION_FILTERS = {
 };
 
 /**
- * Compact media table for Collections / Studio: loads media on mount, assignment filter + pagination.
+ * Compact media panel for Collections fallback: loads media on mount and stays on the grid path.
  */
 type CollectionsMediaPanelProps = {
   /** When true (Admin Studio embedded column), rows register as `source:*` for cover/gallery drops. */
@@ -58,7 +58,7 @@ export default function CollectionsMediaPanel({ studioSourceDraggable = false }:
     if (selectedMediaIds.length === 0) return;
     if (!confirm(`Delete ${selectedMediaIds.length} media item(s)?`)) return;
     await deleteMultipleMedia(selectedMediaIds);
-  }, [selectedMediaIds, deleteMultipleMedia]);
+  }, [deleteMultipleMedia, selectedMediaIds]);
 
   const pag = pagination;
   const showPaginationControls =
@@ -70,8 +70,7 @@ export default function CollectionsMediaPanel({ studioSourceDraggable = false }:
     <section className={`${styles.panel} ${styles.mediaPanel}`}>
       <h2>Media</h2>
       <p className={styles.hint}>
-        Compact columns for this layout.{' '}
-        <Link href="/admin/studio">Open Studio</Link> for search, grid view, and bulk tags.
+        Compact grid fallback for this layout. <Link href="/admin/studio">Open Studio</Link> for the full media workspace.
       </p>
       <div className={styles.mediaPanelToolbar}>
         <label className={styles.mediaToolbarLabel}>
@@ -93,7 +92,11 @@ export default function CollectionsMediaPanel({ studioSourceDraggable = false }:
             <button type="button" className={styles.smallButton} onClick={selectNone}>
               Clear selection
             </button>
-            <button type="button" className={`${styles.smallButton} ${styles.destructiveSmallButton}`} onClick={() => void onBulkDelete()}>
+            <button
+              type="button"
+              className={`${styles.smallButton} ${styles.destructiveSmallButton}`}
+              onClick={() => void onBulkDelete()}
+            >
               Delete selected
             </button>
           </div>
@@ -102,12 +105,12 @@ export default function CollectionsMediaPanel({ studioSourceDraggable = false }:
       {error ? (
         <p className={errorSeverity === 'warning' ? styles.warning : styles.error}>{error.message}</p>
       ) : null}
-      {loading ? <p className={styles.mediaLoading}>Loading media…</p> : null}
+      {loading ? <p className={styles.mediaLoading}>Loading media...</p> : null}
       <div className={`${styles.panelScroll} ${styles.mediaPanelScroll}`}>
-        <MediaAdminList
-          variant="compact"
+        <MediaAdminGrid
           dimensionFilters={DEFAULT_DIMENSION_FILTERS}
           studioSourceDraggable={studioSourceDraggable}
+          inlineCaptionEditing
         />
       </div>
       {showPaginationControls && pag ? (
@@ -117,7 +120,7 @@ export default function CollectionsMediaPanel({ studioSourceDraggable = false }:
           </button>
           <span className={styles.mediaPageInfo}>
             Page {pag.seekMode ? currentPage : (pag.page ?? currentPage)}
-            {pag.total != null ? ` · ${pag.total} items` : null}
+            {pag.total != null ? ` - ${pag.total} items` : null}
           </span>
           <button type="button" onClick={onNext} disabled={!pag.hasNext} className={styles.smallButton}>
             Next

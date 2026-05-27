@@ -6,6 +6,7 @@ import { FilterX, Pencil } from 'lucide-react';
 import { getMediaErrorSeverity, useMedia, type MediaFilters } from '@/components/providers/MediaProvider';
 import { useTag } from '@/components/providers/TagProvider';
 import MediaAdminGrid from '@/components/admin/media-admin/MediaAdminGrid';
+import MediaLocalImportDialog from '@/components/admin/media-admin/MediaLocalImportDialog';
 import EditModal from '@/components/admin/card-admin/EditModal';
 import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
@@ -15,6 +16,7 @@ import {
   flattenDimensionalTagMapToTagIds,
   groupSelectedTagIdsByDimension,
 } from '@/lib/utils/tagUtils';
+import type { Media } from '@/lib/types/photo';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import { useStudioShellOptional } from '@/components/admin/studio/StudioShellContext';
 
@@ -121,6 +123,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const [visibleAssignedCount, setVisibleAssignedCount] = useState(0);
   const [assignedOnlyMedia, setAssignedOnlyMedia] = useState<typeof media>([]);
   const [assignedOnlyLoading, setAssignedOnlyLoading] = useState(false);
+  const [importPickerOpen, setImportPickerOpen] = useState(false);
 
   useEffect(() => {
     setSearchDraft(filters.search);
@@ -215,6 +218,23 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     setDimensionFilters(DEFAULT_DIMENSION_FILTERS);
     setClientSort('none');
     setSearchDraft('');
+  };
+
+  const handleImportedMedia = async (importedMedia: Media[]) => {
+    if (importedMedia.length === 0) return;
+    const importedIds = importedMedia.map((item) => item.docId).filter(Boolean);
+    const nextSourceFilter = filters.source === 'paste' ? 'all' : filters.source;
+    if (nextSourceFilter !== filters.source) {
+      setFilter('source', nextSourceFilter);
+    }
+    await fetchMedia(1, nextSourceFilter !== filters.source ? { source: nextSourceFilter } : undefined);
+    setSelectedMediaIds(importedIds);
+    feedback.showSuccess(
+      importedIds.length === 1
+        ? 'Imported 1 image into the media bank.'
+        : `Imported ${importedIds.length} images into the media bank.`,
+      'Import complete'
+    );
   };
 
   const handleStudioDimensionalFilterChange = (newIds: string[]) => {
@@ -323,7 +343,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
 
   useEffect(() => {
     const node = loadMoreRef.current;
-    if (!node || !hasMore) return;
+    if (!node || !hasMore || importPickerOpen) return;
     if (typeof IntersectionObserver === 'undefined') return;
     const observer = new IntersectionObserver(
       (entries) => {
@@ -336,7 +356,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }, [hasMore, loadMore, loading, loadingMore]);
+  }, [hasMore, importPickerOpen, loadMore, loading, loadingMore]);
 
   const mainBody = (
     <>
@@ -409,9 +429,30 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
 
   return (
     <div className={embedded ? `${styles.container} ${styles.containerEmbedded}` : styles.container}>
+      {importPickerOpen ? (
+        <MediaLocalImportDialog
+          isOpen={importPickerOpen}
+          onClose={() => setImportPickerOpen(false)}
+          onImportComplete={(importedMedia) => {
+            void handleImportedMedia(importedMedia);
+          }}
+          title="Import Media"
+        />
+      ) : null}
       <div className={styles.stickyTop} ref={stickyTopRef}>
         <div className={styles.studioMediaEmbeddedStack}>
-          <h2 className={styles.embeddedTitle}>Media</h2>
+          <div className={styles.studioHeaderRow}>
+            <h2 className={styles.embeddedTitle}>Media</h2>
+            <div className={styles.studioHeaderActions}>
+              <button
+                type="button"
+                onClick={() => setImportPickerOpen(true)}
+                className={styles.studioImportButton}
+              >
+                Import
+              </button>
+            </div>
+          </div>
           <div className={styles.studioMediaRowOne}>
             <label
               className={`${styles.studioInlineLabel} ${styles.studioPaneSearchField}`}

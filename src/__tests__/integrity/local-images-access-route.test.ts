@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth/next';
+import path from 'path';
 
 jest.mock('next/server', () => {
   const NextResponse = function NextResponse(body?: unknown, init?: { status?: number; headers?: Record<string, string> }) {
@@ -27,6 +27,7 @@ jest.mock('next/server', () => {
 });
 
 jest.mock('next-auth/next', () => ({
+  __esModule: true,
   getServerSession: jest.fn(),
 }));
 
@@ -34,32 +35,46 @@ jest.mock('@/lib/auth/authOptions', () => ({
   authOptions: {},
 }));
 
-jest.mock('fs/promises', () => ({
-  readFile: jest.fn(),
-  readdir: jest.fn(),
-  stat: jest.fn(),
+jest.mock('image-size', () => ({
+  __esModule: true,
+  default: jest.fn(() => ({ width: 100, height: 50 })),
 }));
 
-jest.mock('fs', () => ({
-  readdirSync: jest.fn(),
-}));
+const TEST_ONEDRIVE_ROOT = path.join(process.cwd(), '.tmp-local-images');
 
-jest.mock('image-size', () => jest.fn(() => ({ width: 100, height: 50 })));
+process.env.ONEDRIVE_ROOT_FOLDER = TEST_ONEDRIVE_ROOT;
 
-import { GET as getLocalFile } from '@/app/api/images/local/file/route';
-import { POST as getFolderContents } from '@/app/api/images/local/folder-contents/route';
-import { GET as getFolderTree } from '@/app/api/images/local/folder-tree/route';
+function getMockedGetServerSession(): jest.Mock {
+  return require('next-auth/next').getServerSession as jest.Mock;
+}
 
-const mockedGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>;
+function loadLocalFileRoute() {
+  return require('@/app/api/images/local/file/route') as {
+    GET: (request: NextRequest) => Promise<{ status: number; json: () => Promise<unknown>; text: () => Promise<string> }>;
+  };
+}
+
+function loadFolderContentsRoute() {
+  return require('@/app/api/images/local/folder-contents/route') as {
+    POST: (request: NextRequest) => Promise<{ status: number; json: () => Promise<unknown>; text: () => Promise<string> }>;
+  };
+}
+
+function loadFolderTreeRoute() {
+  return require('@/app/api/images/local/folder-tree/route') as {
+    GET: () => Promise<{ status: number; json: () => Promise<unknown>; text: () => Promise<string> }>;
+  };
+}
 
 describe('local image helper access boundary', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.ONEDRIVE_ROOT_FOLDER = 'C:\\OneDriveRoot';
+    process.env.ONEDRIVE_ROOT_FOLDER = TEST_ONEDRIVE_ROOT;
   });
 
   it('rejects anonymous access to local file bytes', async () => {
-    mockedGetServerSession.mockResolvedValueOnce(null as never);
+    getMockedGetServerSession().mockResolvedValueOnce(null as never);
+    const { GET: getLocalFile } = loadLocalFileRoute();
 
     const req = {
       nextUrl: {
@@ -74,7 +89,8 @@ describe('local image helper access boundary', () => {
   });
 
   it('rejects viewer access to local folder contents', async () => {
-    mockedGetServerSession.mockResolvedValueOnce({ user: { role: 'viewer' } } as never);
+    getMockedGetServerSession().mockResolvedValueOnce({ user: { role: 'viewer' } } as never);
+    const { POST: getFolderContents } = loadFolderContentsRoute();
 
     const req = {
       json: async () => ({ folderPath: 'folder' }),
@@ -88,12 +104,43 @@ describe('local image helper access boundary', () => {
   });
 
   it('rejects viewer access to local folder tree', async () => {
-    mockedGetServerSession.mockResolvedValueOnce({ user: { role: 'viewer' } } as never);
+    getMockedGetServerSession().mockResolvedValueOnce({ user: { role: 'viewer' } } as never);
+    const { GET: getFolderTree } = loadFolderTreeRoute();
 
     const res = await getFolderTree();
     const payload = await res.json();
 
     expect(res.status).toBe(403);
     expect(payload).toMatchObject({ message: 'Forbidden.' });
+  });
+
+  it('returns all supported image files from the selected local folder for admins', async () => {
+    const fs = jest.requireActual('fs/promises') as typeof import('fs/promises');
+    const targetFolder = path.join(TEST_ONEDRIVE_ROOT, 'folder');
+
+    getMockedGetServerSession().mockResolvedValueOnce({ user: { role: 'admin' } } as never);
+    const { POST: getFolderContents } = loadFolderContentsRoute();
+    await fs.rm(TEST_ONEDRIVE_ROOT, { recursive: true, force: true });
+    await fs.mkdir(targetFolder, { recursive: true });
+    await fs.writeFile(path.join(targetFolder, 'cover__X.jpg'), 'jpg');
+    await fs.writeFile(path.join(targetFolder, 'scan-01.tif'), 'tif');
+    await fs.writeFile(path.join(targetFolder, 'retouched.bmp'), 'bmp');
+    await fs.writeFile(path.join(targetFolder, 'notes.txt'), 'txt');
+    await fs.mkdir(path.join(targetFolder, 'nested'), { recursive: true });
+
+    const req = {
+      json: async () => ({ folderPath: 'folder' }),
+    } as NextRequest;
+
+    const res = await getFolderContents(req);
+    const payload = (await res.json()) as Array<{ filename: string; sourcePath: string }>;
+
+    expect(res.status).toBe(200);
+    expect(payload.map((item) => item.filename)).toEqual(['cover__X.jpg', 'retouched.bmp', 'scan-01.tif']);
+    expect(payload.map((item) => item.sourcePath)).toEqual([
+      'folder/cover__X.jpg',
+      'folder/retouched.bmp',
+      'folder/scan-01.tif',
+    ]);
   });
 });

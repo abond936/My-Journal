@@ -31,6 +31,7 @@ export default function MediaEditModal({
   onMediaUpdated,
   onDeleteMedia,
   currentCardContext,
+  relatedCardIdsOverride,
 }: {
   isOpen: boolean;
   mediaItems: Media[];
@@ -41,6 +42,7 @@ export default function MediaEditModal({
   onMediaUpdated?: (media: Media) => void;
   onDeleteMedia?: (mediaId: string) => Promise<void>;
   currentCardContext?: CurrentCardContext | null;
+  relatedCardIdsOverride?: string[] | null;
 }) {
   const router = useRouter();
   const feedback = useAppFeedback();
@@ -73,14 +75,33 @@ export default function MediaEditModal({
   useEffect(() => {
     if (!isOpen || !selectedMedia) return;
     let cancelled = false;
-    const cardIds = Array.isArray(selectedMedia.referencedByCardIds) ? selectedMedia.referencedByCardIds : [];
-    if (cardIds.length === 0) {
-      setRelatedCards([]);
-      return;
-    }
     setLoadingRelatedCards(true);
     void (async () => {
       try {
+        let cardIds = Array.isArray(relatedCardIdsOverride)
+          ? relatedCardIdsOverride
+          : null;
+        if (!cardIds) {
+          const response = await fetch(
+            `/api/media/reference-summary?id=${encodeURIComponent(selectedMedia.docId)}`,
+            {
+              cache: 'no-store',
+              credentials: 'same-origin',
+            }
+          );
+          if (response.ok) {
+            const payload = (await response.json().catch(() => ({}))) as {
+              summaries?: Record<string, string[]>;
+            };
+            cardIds = payload.summaries?.[selectedMedia.docId] ?? [];
+          }
+        }
+        if (!cardIds || cardIds.length === 0) {
+          if (!cancelled) {
+            setRelatedCards([]);
+          }
+          return;
+        }
         const loaded = await Promise.all(
           cardIds.map(async (cardId) => {
             try {
@@ -111,7 +132,7 @@ export default function MediaEditModal({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, selectedMedia]);
+  }, [isOpen, relatedCardIdsOverride, selectedMedia]);
 
   const focalPreviewPosition = `${focalH}% ${focalV}%`;
 
@@ -246,31 +267,41 @@ export default function MediaEditModal({
               </div>
 
               <div className={styles.fieldGrid}>
-                <div className={styles.fieldGroup}>
-                  <label className={styles.fieldLabel} htmlFor={`media-editor-focal-h-${selectedMedia.docId}`}>
-                    Horizontal
-                  </label>
-                  <input
-                    id={`media-editor-focal-h-${selectedMedia.docId}`}
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={focalH}
-                    onChange={(event) => setFocalH(Number(event.target.value))}
-                  />
-                </div>
-                <div className={styles.fieldGroup}>
-                  <label className={styles.fieldLabel} htmlFor={`media-editor-focal-v-${selectedMedia.docId}`}>
-                    Vertical
-                  </label>
-                  <input
-                    id={`media-editor-focal-v-${selectedMedia.docId}`}
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={focalV}
-                    onChange={(event) => setFocalV(Number(event.target.value))}
-                  />
+                <div className={`${styles.fieldGroup} ${styles.fieldGroupWide}`}>
+                  <div className={styles.focalControlsCard}>
+                    <div className={styles.focalControl}>
+                      <div className={styles.focalControlHeader}>
+                        <label className={styles.fieldLabel} htmlFor={`media-editor-focal-h-${selectedMedia.docId}`}>
+                          Horizontal
+                        </label>
+                        <span className={styles.focalValue}>{Math.round(focalH)}%</span>
+                      </div>
+                      <input
+                        id={`media-editor-focal-h-${selectedMedia.docId}`}
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={focalH}
+                        onChange={(event) => setFocalH(Number(event.target.value))}
+                      />
+                    </div>
+                    <div className={styles.focalControl}>
+                      <div className={styles.focalControlHeader}>
+                        <label className={styles.fieldLabel} htmlFor={`media-editor-focal-v-${selectedMedia.docId}`}>
+                          Vertical
+                        </label>
+                        <span className={styles.focalValue}>{Math.round(focalV)}%</span>
+                      </div>
+                      <input
+                        id={`media-editor-focal-v-${selectedMedia.docId}`}
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={focalV}
+                        onChange={(event) => setFocalV(Number(event.target.value))}
+                      />
+                    </div>
+                  </div>
                 </div>
                 <div className={`${styles.fieldGroup} ${styles.fieldGroupWide}`}>
                   <label className={styles.fieldLabel} htmlFor={`media-editor-caption-${selectedMedia.docId}`}>

@@ -33,6 +33,12 @@ Do not remove reference content (directory maps, contracts, decision records) wi
 Do not delete and recreate an existing file as an editing strategy. Use in-place edits by default.
 For canonical docs and core project files, do not replace, remove, or recreate the file wholesale unless the author explicitly approves that exact action.
 
+# Encoding hygiene for canon docs/rules
+
+When editing canonical docs or always-applied rules, preserve clean UTF-8 text and do not insert mojibake.
+If terminal output makes a symbol look suspicious or ambiguous, verify the underlying characters before saving.
+If symbol fidelity is uncertain during an edit, prefer ASCII-safe fallbacks such as `->`, `-`, `...`, `[Decision]`, and `[Resource]` over risking corrupted text.
+
 # Canonical document topology
 
 `AGENTS.md` is an index only. Durable intent and operating rules must live in the owning docs/rules below so Cursor agents receive them through the always-applied environment.

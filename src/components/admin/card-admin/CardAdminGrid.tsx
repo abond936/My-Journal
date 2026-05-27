@@ -787,9 +787,9 @@ export default function CardAdminGrid({
             type="checkbox"
             checked={isAllSelected}
             onChange={onSelectAll}
-            aria-label="Select all on page"
+            aria-label="Select visible cards"
           />
-          <span className={styles.selectAllLabel}>Select all on page</span>
+          <span className={styles.selectAllLabel}>Select visible</span>
         </div>
       ) : null}
       <div className={compactStudioGrid ? `${styles.grid} ${styles.gridStudioCompact}` : styles.grid}>

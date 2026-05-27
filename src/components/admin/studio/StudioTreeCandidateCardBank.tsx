@@ -866,13 +866,11 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
         </div>
       ) : null}
 
-      <div className={cardAdminStyles.bulkActions}>
-        <span>
-          {bulkSelectedCardIds.size === 0
-            ? 'No cards selected'
-            : `${bulkSelectedCardIds.size} card(s) selected`}
-        </span>
-        {bulkSelectedCardIds.size > 0 ? (
+      {bulkSelectedCardIds.size > 0 ? (
+        <div className={cardAdminStyles.bulkActions}>
+          <span>
+            {bulkSelectedCardIds.size} card{bulkSelectedCardIds.size === 1 ? '' : 's'} selected
+          </span>
           <div className={cardAdminStyles.actions}>
             <select
               onChange={(e) => void handleBulkUpdate('status', e.target.value)}
@@ -932,8 +930,8 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
               Delete
             </button>
           </div>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
       </div>
 
       <div className={styles.resultsScroll}>

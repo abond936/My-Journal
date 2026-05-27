@@ -109,11 +109,7 @@ Legend:
 
 
 
-*Priority bands after Studio sequence:* **P2** — **Context Assist** (Studio/grid-first admin layout is the intended long-term workflow—see **Card Management** / **Media Management** ✅ in `02-Application.md`).
-
-
-
-- **Context Assist** - Keep historical/background context as a distinct output contract from writing rewrites (even when requested together), so context remains separately reviewable/accept-dismiss and does not couple to rewrite acceptance.
+*Current status:* the earlier **Context Assist** item is now shipped truth in `docs/02-Application.md` under **Card Management**. Remaining Card Management planned work is lower-priority polish relative to Tag Management, Media Management, and Backend narrow-mutation rollout.
 
 
 
@@ -171,11 +167,11 @@ Legend:
 
 
 
-*Priority bands:* **P1 (architectural correctness)** — **Narrow mutation paths**.
+*Priority bands:* **P1 (architectural correctness)** — finish the remaining **Narrow mutation paths** rollout beyond the already-shipped card tag/status/content/metadata PATCH routing and card/media bulk tag mutation paths.
 
 
 
-- **Narrow mutation paths** - Route tag-only and similar **narrow** admin mutations through dedicated service functions that batch Firestore field updates and derived-field recompute **once per request** where possible; avoid N sequential full `updateCard` pipelines for bulk work. Keep wide `updateCard` (or equivalent) for structural and rich-content changes.
+- **Narrow mutation paths** - Continue the dedicated-service rollout for **narrow** admin writes beyond the already-shipped card tag/status/content/metadata PATCH routing and card/media bulk tag mutation paths. Remaining work is to identify and convert other admin paths that still pay wider `updateCard`-style costs than the mutation requires while preserving tag counts, derived fields, and index sync guarantees.
 
 
 
@@ -304,7 +300,7 @@ Legend:
 
 - **Directory** - Cleanup directory.
 
-- **ESLint** - Address ESLint violations. **During feature work**, fix ESLint/TypeScript issues introduced in **approved scope** on touched files per `.cursor/rules/# AI_InteractionRules.mdc` → **Lint and type hygiene on touched code**; repo-wide cleanup and re-enabling lint in production builds remain this phase.
+- **ESLint** - Address ESLint violations. **During feature work**, fix ESLint/TypeScript issues introduced in **approved scope** on touched files per `.cursor/rules/# AI_InteractionRules.mdc` → **Lint and type hygiene on touched code**; repo-wide cleanup and re-enabling lint in production builds remain this phase. Current measured status (2026-05-27): `cmd /c npm run lint` still reports a large repo-wide backlog across app code, shared utilities, scripts, and tests, and the current script still uses deprecated `next lint`. Commercial readiness should not treat that backlog as outside scope.
 
 - **Quality** - QA app.
 - **Security Hardening** - Threat-model review, authorization review, secret-handling review, and hosted deployment hardening for commercial readiness.

@@ -441,7 +441,6 @@ export default function StudioQuestionsPane() {
         active={Boolean(busyId)}
         blocking
         title={busyLabel ?? 'Updating questions...'}
-        message="Working in the Questions panel."
       />
       <div className={styles.studioQuestionsHeader}>
         <h2 className={styles.studioComposeTitle}>Questions</h2>

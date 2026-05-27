@@ -1343,6 +1343,15 @@ export function isStatusOnlyPayload(
   return updates.status === 'draft' || updates.status === 'published';
 }
 
+type CardContentUpdates = Partial<Pick<Card, 'content'>>;
+
+export function isContentOnlyPayload(
+  updates: CardContentUpdates
+): boolean {
+  const keys = Object.keys(updates as Record<string, unknown>);
+  return keys.length === 1 && keys[0] === 'content' && typeof updates.content === 'string';
+}
+
 export function isChildrenReorderOnlyPayload(
   existingCard: Pick<Card, 'childrenIds'>,
   updates: Partial<Pick<Card, 'childrenIds'>>
@@ -1751,6 +1760,103 @@ export async function updateCardMetadata(
 
   void syncCardToTypesense(updatedCard);
   return updatedCard;
+}
+
+/**
+ * Narrow content-only mutation path.
+ * Handles body HTML updates, embedded-media membership, card media signals,
+ * referencedByCardIds maintenance, and auto-excerpt refresh without paying
+ * the cost of the broad `updateCard()` pipeline.
+ */
+export async function updateCardContent(
+  cardId: string,
+  content: string
+): Promise<Card> {
+  const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
+  const preSnap = await docRef.get();
+  if (!preSnap.exists) {
+    throw new Error(`Card with ID ${cardId} not found.`);
+  }
+
+  const preCard = preSnap.data() as Card;
+  const preMediaIds = getMediaIdsFromCard(preCard);
+  const sanitizedContent = stripContentImageSrc(content);
+  const contentMediaIds = sanitizedContent ? extractMediaFromContent(sanitizedContent) : [];
+  const allTags = await getAllTags();
+
+  return withRetry(async () => {
+    await firestore.runTransaction(async (transaction) => {
+      const docSnap = await transaction.get(docRef);
+      if (!docSnap.exists) {
+        throw new Error(`Card with ID ${cardId} not found.`);
+      }
+      const existingData = docSnap.data() as Card;
+
+      const nextMediaIds = new Set<string>();
+      if (existingData.coverImageId) {
+        nextMediaIds.add(existingData.coverImageId);
+      }
+      existingData.galleryMedia?.forEach((item) => {
+        if (item.mediaId) nextMediaIds.add(item.mediaId);
+      });
+      contentMediaIds.forEach((mediaId) => {
+        if (mediaId) nextMediaIds.add(mediaId);
+      });
+
+      const oldMediaIds = getMediaIdsFromCard(existingData);
+      const mediaRemoved = [...oldMediaIds].filter((id) => !nextMediaIds.has(id));
+      const mediaAdded = [...nextMediaIds].filter((id) => !oldMediaIds.has(id));
+      const existingReferencedMediaIds = await getExistingMediaDocIdsInTransaction(
+        transaction,
+        [...mediaRemoved, ...mediaAdded]
+      );
+      const mediaSignals = await computeCardMediaSignalsFromMediaIds(nextMediaIds, allTags);
+
+      for (const mediaId of mediaRemoved) {
+        if (!existingReferencedMediaIds.has(mediaId)) continue;
+        const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
+        transaction.update(mediaRef, {
+          referencedByCardIds: FieldValue.arrayRemove(cardId),
+          updatedAt: Date.now(),
+        });
+      }
+
+      for (const mediaId of mediaAdded) {
+        if (!existingReferencedMediaIds.has(mediaId)) {
+          throw new Error(`Referenced media with ID ${mediaId} not found.`);
+        }
+        const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
+        transaction.update(mediaRef, {
+          referencedByCardIds: FieldValue.arrayUnion(cardId),
+          updatedAt: Date.now(),
+        });
+      }
+
+      transaction.update(docRef, {
+        content: sanitizedContent,
+        contentMedia: contentMediaIds,
+        mediaWho: mediaSignals.mediaWho,
+        mediaWhat: mediaSignals.mediaWhat,
+        mediaWhen: mediaSignals.mediaWhen,
+        mediaWhere: mediaSignals.mediaWhere,
+        ...(existingData.excerptAuto === true
+          ? { excerpt: generateExcerpt(sanitizedContent) || null }
+          : {}),
+        updatedAt: Date.now(),
+      });
+    });
+
+    const updatedCard = await getCardById(cardId);
+    if (!updatedCard) {
+      throw new Error(`Failed to fetch updated card with ID ${cardId}`);
+    }
+
+    void syncCardToTypesense(updatedCard);
+    const postMediaIds = getMediaIdsFromCard(updatedCard);
+    const syncMediaIds = new Set([...preMediaIds, ...postMediaIds]);
+    syncMediaIds.forEach((mediaId) => void syncMediaToTypesenseById(mediaId));
+    return updatedCard;
+  });
 }
 
 /**

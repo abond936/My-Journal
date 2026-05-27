@@ -112,7 +112,7 @@
 
 .fieldGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
 }
 
@@ -124,6 +124,35 @@
 
 .fieldGroupWide {
   grid-column: 1 / -1;
+}
+
+.focalControlsCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid var(--admin-window-border-color);
+  border-radius: var(--border-radius-md);
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--admin-window-background-color) 96%, var(--admin-support-meta-color) 4%);
+}
+
+.focalControl {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.focalControlHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.focalValue {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--admin-support-meta-color);
 }
 
 .fieldLabel {

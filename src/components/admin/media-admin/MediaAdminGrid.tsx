@@ -9,12 +9,13 @@ import JournalImage from '@/components/common/JournalImage';
 import { Media } from '@/lib/types/photo';
 import DimensionalTagVerticalChips from '@/components/admin/common/DimensionalTagVerticalChips';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
-import type { MediaAdminRowStudioDragBind } from '@/components/admin/media-admin/MediaAdminRow';
 import { useMedia } from '@/components/providers/MediaProvider';
 import { useTag } from '@/components/providers/TagProvider';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import { formatCoreTagsTooltipLines, getCoreTagsByDimension } from '@/lib/utils/tagDisplay';
 import MediaEditModal from '@/components/admin/media-admin/MediaEditModal';
+import MediaLinkedCardsModal from '@/components/admin/media-admin/MediaLinkedCardsModal';
+import useMediaReferenceSummaries from '@/components/admin/media-admin/useMediaReferenceSummaries';
 import styles from './MediaAdminGrid.module.css';
 import AdminGridCellChrome from '@/components/admin/common/AdminGridCellChrome';
 import chromeStyles from '@/components/admin/common/AdminGridCellChrome.module.css';
@@ -35,10 +36,18 @@ export interface MediaAdminGridCellProps {
   ) => Promise<void>;
   isSelected: boolean;
   onSelectionCheckboxClick: (e: React.MouseEvent | React.KeyboardEvent, mediaId: string, mediaIndex: number) => void;
-  studioDragBind?: MediaAdminRowStudioDragBind;
+  studioDragBind?: MediaAdminGridStudioDragBind;
   inlineCaptionEditing?: boolean;
   isAssignedToActiveCard?: boolean;
+  authoritativeRelatedCardIds?: string[] | null;
 }
+
+export type MediaAdminGridStudioDragBind = {
+  attributes: ReturnType<typeof useDraggable>['attributes'];
+  listeners: ReturnType<typeof useDraggable>['listeners'];
+  setNodeRef: ReturnType<typeof useDraggable>['setNodeRef'];
+  style: React.CSSProperties;
+};
 
 type DimensionKey = 'who' | 'what' | 'when' | 'where';
 type DimensionFilterMode = 'any' | 'hasAny' | 'isEmpty' | 'matches';
@@ -74,6 +83,7 @@ function MediaAdminGridCell({
   studioDragBind,
   inlineCaptionEditing = false,
   isAssignedToActiveCard = false,
+  authoritativeRelatedCardIds = null,
 }: MediaAdminGridCellProps) {
   const router = useRouter();
   const feedback = useAppFeedback();
@@ -81,6 +91,7 @@ function MediaAdminGridCell({
   const { deleteMedia } = useMedia();
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [linkedCardsModalOpen, setLinkedCardsModalOpen] = useState(false);
   const [captionDraft, setCaptionDraft] = useState(media.caption || '');
   const [captionSaving, setCaptionSaving] = useState(false);
 
@@ -151,17 +162,17 @@ function MediaAdminGridCell({
     }
   }, [captionDraft, inlineCaptionEditing, media.caption, media.docId, onSaveMediaFields]);
 
-  const assigned = (media.referencedByCardIds?.length ?? 0) > 0;
-  const linkedCardCount = media.referencedByCardIds?.length ?? 0;
+  const relatedCardIds = authoritativeRelatedCardIds ?? media.referencedByCardIds ?? [];
+  const assigned = relatedCardIds.length > 0;
+  const linkedCardCount = relatedCardIds.length;
   const handleOpenLinkedCards = useCallback(() => {
-    const linkedCardIds = media.referencedByCardIds ?? [];
-    if (linkedCardIds.length === 0) return;
-    if (linkedCardIds.length === 1) {
-      router.push(`/admin/studio?card=${encodeURIComponent(linkedCardIds[0]!)}`);
+    if (relatedCardIds.length === 0) return;
+    if (relatedCardIds.length === 1) {
+      router.push(`/admin/studio?card=${encodeURIComponent(relatedCardIds[0]!)}`);
       return;
     }
-    setEditModalOpen(true);
-  }, [media.referencedByCardIds, router]);
+    setLinkedCardsModalOpen(true);
+  }, [relatedCardIds, router]);
   const handleDeleteMedia = useCallback(async () => {
     const shouldDelete = await feedback.confirm({
       title: 'Delete media?',
@@ -352,6 +363,13 @@ function MediaAdminGridCell({
         onClose={() => setEditModalOpen(false)}
         onSaveMediaFields={onSaveMediaFields}
         onDeleteMedia={deleteMedia}
+        relatedCardIdsOverride={relatedCardIds}
+      />
+      <MediaLinkedCardsModal
+        isOpen={linkedCardsModalOpen}
+        mediaTitle={media.caption?.trim() || media.filename}
+        cardIds={relatedCardIds}
+        onClose={() => setLinkedCardsModalOpen(false)}
       />
     </>
   );
@@ -369,7 +387,8 @@ const MemoizedMediaAdminGridCell = React.memo(MediaAdminGridCell, (prev, next) =
     prev.onSelectionCheckboxClick === next.onSelectionCheckboxClick &&
     prev.studioDragBind === next.studioDragBind &&
     prev.inlineCaptionEditing === next.inlineCaptionEditing &&
-    prev.isAssignedToActiveCard === next.isAssignedToActiveCard
+    prev.isAssignedToActiveCard === next.isAssignedToActiveCard &&
+    prev.authoritativeRelatedCardIds === next.authoritativeRelatedCardIds
   );
 });
 
@@ -380,7 +399,7 @@ function MediaAdminGridCellStudioSource(props: Omit<MediaAdminGridCellProps, 'st
     disabled: !mid,
     data: { mediaId: mid, studioBankMedia: props.media },
   });
-  const studioDragBind: MediaAdminRowStudioDragBind = {
+  const studioDragBind: MediaAdminGridStudioDragBind = {
     attributes,
     listeners,
     setNodeRef,
@@ -483,6 +502,7 @@ export default function MediaAdminGrid({
 
   const sortedIds = useMemo(() => sortedMedia.map((m) => m.docId), [sortedMedia]);
   const highlightedIdSet = useMemo(() => new Set(highlightedMediaIds), [highlightedMediaIds]);
+  const referenceSummaries = useMediaReferenceSummaries(sortedMedia);
 
   useEffect(() => {
     if (!onVisibleHighlightedCountChange) return;
@@ -582,6 +602,7 @@ export default function MediaAdminGrid({
               onSelectionCheckboxClick={handleGridSelection}
               inlineCaptionEditing={inlineCaptionEditing}
               isAssignedToActiveCard={isAssignedToActiveCard}
+              authoritativeRelatedCardIds={referenceSummaries[item.docId] ?? null}
             />
           ) : (
             <MemoizedMediaAdminGridCell
@@ -596,6 +617,7 @@ export default function MediaAdminGrid({
               onSelectionCheckboxClick={handleGridSelection}
               inlineCaptionEditing={inlineCaptionEditing}
               isAssignedToActiveCard={isAssignedToActiveCard}
+              authoritativeRelatedCardIds={referenceSummaries[item.docId] ?? null}
             />
           );
         })}
