@@ -4,6 +4,9 @@ import {
   classifyStudioRightColumnDragId,
   filterStudioRightColumnHits,
   prioritizeStudioRightColumnHits,
+  shouldUseRectIntersectionFallback,
+  shouldReuseLastOverOnDrop,
+  shouldUseClosestCenterFallback,
 } from '@/lib/dnd/studioRightColumnDragContract';
 
 describe('studioRightColumnDragContract', () => {
@@ -121,6 +124,27 @@ describe('studioRightColumnDragContract', () => {
       );
 
       expect(ordered.map((hit) => String(hit.id))).toEqual(['studio-parent:card-1']);
+    });
+  });
+
+  describe('assignment safety', () => {
+    it('disables rect-intersection guessing for cross-pane assignment drags', () => {
+      expect(shouldUseRectIntersectionFallback('source')).toBe(false);
+      expect(shouldUseRectIntersectionFallback('gallery')).toBe(false);
+      expect(shouldUseRectIntersectionFallback('collectionCard')).toBe(false);
+      expect(shouldUseRectIntersectionFallback('studioChild')).toBe(true);
+    });
+
+    it('does not reuse stale hover targets for source or gallery drags', () => {
+      expect(shouldReuseLastOverOnDrop('source')).toBe(false);
+      expect(shouldReuseLastOverOnDrop('gallery')).toBe(false);
+      expect(shouldReuseLastOverOnDrop('studioChild')).toBe(true);
+    });
+
+    it('disables closest-center guessing for source and gallery assignment drags', () => {
+      expect(shouldUseClosestCenterFallback('source')).toBe(false);
+      expect(shouldUseClosestCenterFallback('gallery')).toBe(false);
+      expect(shouldUseClosestCenterFallback('studioChild')).toBe(true);
     });
   });
 });

@@ -90,6 +90,7 @@
 /* ProseMirror / TipTap editor content */
 .editorContent :global(.ProseMirror),
 .editorContent :global(.tiptap) {
+  display: flow-root;
   font-family: inherit;
   min-height: 200px;
   overflow: visible;

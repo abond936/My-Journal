@@ -573,20 +573,6 @@
   position: relative;
 }
 
-.studioBodyDropIndicator {
-  position: absolute;
-  left: var(--spacing-sm);
-  right: var(--spacing-sm);
-  height: 4px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--admin-chrome-active-control-background-color) 88%, white 12%);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--admin-window-background-color) 72%, transparent),
-    0 0 0 6px color-mix(in srgb, var(--admin-chrome-active-control-background-color) 14%, transparent);
-  pointer-events: none;
-  z-index: 2;
-}
-
 .gallerySection {
   width: 100%;
 }

@@ -139,8 +139,6 @@ export const cardUpdateValidationSchema = cardSchema.partial().omit({
   mediaWhat: true,
   mediaWhen: true,
   mediaWhere: true,
-  isCollectionRoot: true,
-  collectionRootOrder: true,
   curatedRoot: true,
   curatedRootOrder: true,
   title_lowercase: true, // Server-generated

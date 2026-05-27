@@ -211,7 +211,7 @@ export async function handleStudioRelationshipDragEnd(
       dragData: CollectionsCardDragData | null;
     }) => Promise<boolean>;
     resolveBankMediaById: (id: string) => Media | undefined;
-    bodyMediaInsertRef: MutableRefObject<((media: Media, dropPoint?: { left: number; top: number } | null) => void) | null>;
+    bodyMediaInsertRef: MutableRefObject<((media: Media) => void) | null>;
     showToast: (input: { title?: string; message: string; tone?: 'success' | 'error' | 'warning' | 'info'; durationMs?: number; persistent?: boolean }) => void;
     showSuccess: (message: string, title?: string) => void;
     showError: (message: string, title?: string, persistent?: boolean) => void;

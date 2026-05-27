@@ -101,7 +101,8 @@ Legend:
 
 - **Operator message pruning** - Remove low-value shell messages such as `working in...` where they add noise without helping the author make a decision.
 
-- **DnD hardening pass** - Complete (2026-05-25 closeout captured in `docs/02-Application.md` under **Collections Management** ? **Collections DnD hardening** and **Media Management** ? **Studio relationship DnD completion**). Remove from active planned work unless new DnD breadth or a new regression reopens it.
+- **DnD hardening pass** - Reopened. The required contract remains narrower and explicit: keep structural tree drag with **on-row** nest/attach and **between-row** insert/reorder semantics; keep `Media -> Cover` and `Media -> Gallery` as direct assignment drops; simplify `Cards -> Children` and `Media -> Content` to append-only cross-pane actions, with later local reorder/editor refinement owned by the destination surface. Current repair focus: keep the shell/runtime ownership split honest in code, ensure the root-card PATCH contract actually accepts `isCollectionRoot` / `collectionRootOrder`, and do not mark this closed again until browser verification proves the repaired path.
+- **DnD reviewer map** - Keep the reviewer-facing contract in `docs/02-Application.md` current as implementation changes land: drag class, source pane, valid targets, fallback rules, mutation owner, and required browser-proof path must stay explicit enough for another engineer to audit without reconstructing the model from code.
 
 
 
@@ -110,6 +111,8 @@ Legend:
 
 
 *Current status:* the earlier **Context Assist** item is now shipped truth in `docs/02-Application.md` under **Card Management**. Remaining Card Management planned work is lower-priority polish relative to Tag Management, Media Management, and Backend narrow-mutation rollout.
+
+- **Studio relationship contract closeout** - Rework right-side Studio drag/drop around the simplified approved contract now recorded in `docs/02-Application.md`: `Media -> Content` appends to the end of body, `Cards -> Children` appends to the end of children, and precise reordering remains local to TipTap/gallery/children surfaces. Close this only after real browser verification proves target activation, drop result, and post-drop caret recovery in Compose.
 
 
 

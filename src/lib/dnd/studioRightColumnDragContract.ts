@@ -70,3 +70,29 @@ export function prioritizeStudioRightColumnHits(
 
   return hits;
 }
+
+/**
+ * For cross-pane assignment/append drags, releasing outside a live target must not reuse
+ * an earlier hover target. Child reorder keeps the small tolerance because it remains
+ * a local reorder interaction inside one destination surface.
+ */
+export function shouldReuseLastOverOnDrop(domain: StudioRightColumnDragDomain): boolean {
+  return domain === 'studioChild';
+}
+
+/**
+ * Cross-pane assignment targets are explicit and visually separate, so only local child reorder
+ * keeps geometric fallback once the pointer has left a live target.
+ */
+export function shouldUseRectIntersectionFallback(domain: StudioRightColumnDragDomain): boolean {
+  return domain === 'studioChild';
+}
+
+/**
+ * `closestCenter` is too permissive for cross-pane assignment drags because it can keep
+ * selecting a relationship target even after the pointer has returned to a non-target pane.
+ * Keep it only for local child reorder, where a small amount of tolerance is useful.
+ */
+export function shouldUseClosestCenterFallback(domain: StudioRightColumnDragDomain): boolean {
+  return domain === 'studioChild';
+}

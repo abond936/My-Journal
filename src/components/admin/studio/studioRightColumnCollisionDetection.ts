@@ -4,6 +4,8 @@ import {
   classifyStudioRightColumnDragId,
   filterStudioRightColumnHits,
   prioritizeStudioRightColumnHits,
+  shouldUseClosestCenterFallback,
+  shouldUseRectIntersectionFallback,
 } from '@/lib/dnd/studioRightColumnDragContract';
 
 export const studioRightColumnCollisionDetection: CollisionDetection = (args) => {
@@ -16,9 +18,17 @@ export const studioRightColumnCollisionDetection: CollisionDetection = (args) =>
     return prioritizeStudioRightColumnHits(pointerHits, domain);
   }
 
+  if (!shouldUseRectIntersectionFallback(domain)) {
+    return [];
+  }
+
   const rectHits = filterStudioRightColumnHits(rectIntersection(args), domain);
   if (rectHits.length > 0) {
     return prioritizeStudioRightColumnHits(rectHits, domain);
+  }
+
+  if (!shouldUseClosestCenterFallback(domain)) {
+    return [];
   }
 
   return prioritizeStudioRightColumnHits(filterStudioRightColumnHits(closestCenter(args), domain), domain);

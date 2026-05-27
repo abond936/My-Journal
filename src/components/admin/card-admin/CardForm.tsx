@@ -144,13 +144,6 @@ const CardForm: React.FC = () => {
   const feedback = useAppFeedback();
 
   const editorRef = useRef<RichTextEditorRef>(null);
-  const bodyDropPointRef = useRef<{ left: number; top: number } | null>(null);
-  const [bodyDropIndicator, setBodyDropIndicator] = useState<{ top: number; height: number } | null>(null);
-
-  const handleStudioBodyDropPointerUpdate = useCallback((point: { left: number; top: number } | null) => {
-    bodyDropPointRef.current = point;
-    setBodyDropIndicator(editorRef.current?.previewDropPoint(point) ?? null);
-  }, []);
 
   useEffect(() => {
     if (!studioShellDnd || !studioShell?.bodyMediaInsertRef) return;
@@ -159,9 +152,7 @@ const CardForm: React.FC = () => {
       const tryInsert = (remainingFrames: number) => {
         const editor = editorRef.current;
         if (editor) {
-          editor.insertImage(media, bodyDropPointRef.current);
-          bodyDropPointRef.current = null;
-          setBodyDropIndicator(null);
+          editor.insertImage(media);
           return;
         }
         if (remainingFrames <= 0) return;
@@ -173,8 +164,6 @@ const CardForm: React.FC = () => {
     };
     return () => {
       r.current = null;
-      bodyDropPointRef.current = null;
-      setBodyDropIndicator(null);
     };
   }, [studioShellDnd, studioShell]);
 
@@ -1146,15 +1135,11 @@ const CardForm: React.FC = () => {
                 className={styles.studioBodyDropZone}
                 alwaysRegister
                 eligibleHint="Release here to insert into the story"
-                onEligibleDragPointerUpdate={handleStudioBodyDropPointerUpdate}
               >
-                {bodyDropIndicator ? (
-                  <div
-                    className={styles.studioBodyDropIndicator}
-                    aria-hidden="true"
-                    style={{ top: bodyDropIndicator.top, height: bodyDropIndicator.height }}
-                  />
-                ) : null}
+                <div className={styles.studioBodyDropHeader}>
+                  <span className={styles.studioBodyDropTitle}>Append media to Content</span>
+                  <span className={styles.studioBodyDropHint}>Drop anywhere in this panel to add the image at the end.</span>
+                </div>
                 {bodyRichTextEditor}
               </StudioDropZone>
             ) : (

@@ -258,6 +258,29 @@ describe('PATCH /api/cards/[id] cover fast path', () => {
     expect(payload.childrenIds).toEqual(childrenIds);
   });
 
+  it('accepts collection-root payloads and routes them to the narrow root update path', async () => {
+    mockedIsCollectionRootOnlyPayload.mockReturnValue(true);
+    mockedUpdateCardCollectionRoot.mockResolvedValue({
+      docId: 'card-1',
+      isCollectionRoot: true,
+      collectionRootOrder: 20,
+    } as never);
+
+    const res = await PATCH(makeRequest({ isCollectionRoot: true, collectionRootOrder: 20 }), {
+      params: Promise.resolve({ id: 'card-1' }),
+    });
+    const payload = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(mockedUpdateCardCollectionRoot).toHaveBeenCalledWith('card-1', {
+      isCollectionRoot: true,
+      collectionRootOrder: 20,
+    });
+    expect(mockedUpdateCard).not.toHaveBeenCalled();
+    expect(payload.isCollectionRoot).toBe(true);
+    expect(payload.collectionRootOrder).toBe(20);
+  });
+
   it('uses narrow children-only path for child membership changes', async () => {
     mockedIsChildrenOnlyPayload.mockReturnValue(true);
     mockedUpdateCardChildren.mockResolvedValue({

@@ -47,8 +47,7 @@ interface RichTextEditorProps {
 export interface RichTextEditorRef {
   getContent: () => string;
   setContent: (content: string) => void;
-  insertImage: (media: Media, dropPoint?: { left: number; top: number } | null) => void;
-  previewDropPoint: (dropPoint: { left: number; top: number } | null) => { top: number; height: number } | null;
+  insertImage: (media: Media) => void;
 }
 
 const RichTextDropCursor = Extension.create({
@@ -341,14 +340,11 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
     }
   };
 
-  const insertImage = useCallback((media: Media, dropPoint?: { left: number; top: number } | null) => {
+  const insertImage = useCallback((media: Media) => {
     if (!editor) return;
 
-    const pointInsideEditor = dropPoint ? editor.view.posAtCoords(dropPoint) : null;
-    const chain = editor.chain().focus();
-    if (typeof pointInsideEditor?.pos === 'number') {
-      chain.setTextSelection(pointInsideEditor.pos);
-    }
+    const docEnd = editor.state.doc.content.size;
+    const chain = editor.chain().focus().setTextSelection(docEnd);
     chain
       .setFigureWithImage({
         src: getDisplayUrl(media),
@@ -393,35 +389,10 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
     handleContentUpdate(newContent);
   }, [editor, handleContentUpdate]);
 
-  const previewDropPoint = useCallback((dropPoint: { left: number; top: number } | null) => {
-    if (!editor || !dropPoint) return null;
-
-    const target = editor.view.posAtCoords(dropPoint);
-    if (typeof target?.pos !== 'number') return null;
-
-    const resolvedPos = Math.min(target.pos, editor.state.doc.content.size);
-    const coords = editor.view.coordsAtPos(resolvedPos);
-    const dropRoot =
-      (editor.view.dom as HTMLElement).closest<HTMLElement>('[data-rich-text-drop-root="true"]') ??
-      (editor.view.dom as HTMLElement);
-    const hostRect = dropRoot.getBoundingClientRect();
-    const selection = TextSelection.near(editor.state.doc.resolve(resolvedPos));
-
-    if (!editor.state.selection.eq(selection)) {
-      editor.view.dispatch(editor.state.tr.setSelection(selection));
-    }
-
-    return {
-      top: Math.max(0, coords.top - hostRect.top),
-      height: Math.max(18, coords.bottom - coords.top),
-    };
-  }, [editor]);
-
   useImperativeHandle(ref, () => ({
     getContent: () => editor?.getHTML() || '',
     setContent: (newContent: string) => editor?.commands.setContent(newContent, true),
     insertImage,
-    previewDropPoint,
   }));
   
   if (!editor) return null;

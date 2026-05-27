@@ -54,6 +54,7 @@ import {
   parseCollectionsCardDragId,
 } from '@/lib/dnd/collectionsDragContract';
 import { mergeStudioCatalogCard, toStudioCatalogCard } from '@/components/admin/studio/studioCardProjection';
+import { resolveStudioShellExternalDropId } from '@/lib/dnd/studioShellDragRouter';
 
 const COLLECTIONS_CENTER_COLUMNS_KEY = 'collectionsCenterPaneWidths';
 const COLLECTIONS_TREE_EXPANSION_KEY = 'collectionsTreeExpandedIds';
@@ -345,7 +346,7 @@ export default function CollectionsAdminClient({
 }: {
   embedded?: boolean;
   onSelectCard?: (cardId: string, previewCard?: Card | null) => void;
-  embeddedExternalDragEnd?: (event: DragEndEvent) => Promise<boolean> | boolean;
+  embeddedExternalDragEnd?: (event: DragEndEvent, resolvedOverId?: string | null) => Promise<boolean> | boolean;
   embeddedOnStudioParentAttachComplete?: (parentId: string) => void;
   embeddedRightSlot?: React.ReactNode | ((ctx: EmbeddedStudioSlotContext) => React.ReactNode);
   embeddedRightSlotMinWidth?: number;
@@ -1202,7 +1203,12 @@ export default function CollectionsAdminClient({
           ? event.active.data.current.cardId
           : parseCollectionsCardDragId(activeStr);
       if (!childId) {
-        await embeddedExternalDragEnd?.(event);
+        const resolvedExternalOverId = resolveStudioShellExternalDropId({
+          activeId: activeStr,
+          rawOverId: rawOver != null ? (typeof rawOver === 'string' ? rawOver : String(rawOver)) : null,
+          lastValidOverId: lastValidOverIdRef.current,
+        });
+        await embeddedExternalDragEnd?.(event, resolvedExternalOverId);
         return;
       }
       const overId = overStr;

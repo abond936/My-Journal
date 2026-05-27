@@ -54,6 +54,7 @@ const DEFAULT_QUESTIONS_WIDTH = 272;
 const MAX_CARD_EDIT_WIDTH = 1200;
 const MAX_QUESTIONS_WIDTH = 840;
 const STUDIO_SELECTED_CARD_CACHE_LIMIT = 12;
+const STUDIO_ACTION_INFO_TIMEOUT_MS = 3000;
 
 function removeCardFromCardsCache<T>(cached: T, cardId: string): T {
   if (!cached || typeof cached !== 'object') return cached;
@@ -305,7 +306,7 @@ export default function StudioWorkspace() {
   const [cardMediaItems, setCardMediaItems] = useState<Media[]>([]);
   const [selectedCardMediaId, setSelectedCardMediaId] = useState<string | null>(null);
 
-  const bodyMediaInsertRef = useRef<((m: Media, dropPoint?: { left: number; top: number } | null) => void) | null>(null);
+  const bodyMediaInsertRef = useRef<((m: Media) => void) | null>(null);
   const collectionsUpsertCardRef = useRef<((card: Card) => void) | null>(null);
   const resolveBankMediaById = useCallback(
     (id: string) => bankMediaPage.find((m) => m.docId === id) ?? resolveMediaById(id),
@@ -408,6 +409,14 @@ export default function StudioWorkspace() {
     setCardMediaItems([]);
     setSelectedCardMediaId(null);
   }, [selectedCardId]);
+
+  useEffect(() => {
+    if (!actionInfo || actionBusy) return;
+    const timeoutId = window.setTimeout(() => {
+      setActionInfo((current) => (current === actionInfo ? null : current));
+    }, STUDIO_ACTION_INFO_TIMEOUT_MS);
+    return () => window.clearTimeout(timeoutId);
+  }, [actionBusy, actionInfo]);
 
   useEffect(() => {
     if (selectionRequestKey === '__new__') {

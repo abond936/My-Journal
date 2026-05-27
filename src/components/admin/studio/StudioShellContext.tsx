@@ -46,7 +46,7 @@ export type StudioShellContextValue = {
    * Compose-only: `CardForm` registers `insertImage` here so `handleStudioRelationshipDragEnd` can insert
    * bank media into TipTap when the user drops onto `drop:body`.
    */
-  bodyMediaInsertRef: MutableRefObject<((media: Media, dropPoint?: { left: number; top: number } | null) => void) | null>;
+  bodyMediaInsertRef: MutableRefObject<((media: Media) => void) | null>;
 };
 
 const StudioShellContext = createContext<StudioShellContextValue | null>(null);
