@@ -394,14 +394,25 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
     setContent: (newContent: string) => editor?.commands.setContent(newContent, true),
     insertImage,
   }));
-  
-  if (!editor) return null;
-  const activeImageAttrs = getActiveImageAttrs();
 
   const handleToolbarButtonPress = (e: React.MouseEvent<HTMLButtonElement>, command: () => void) => {
     e.preventDefault();
     command();
   };
+
+  const focusEditorSurface = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      if (!editor) return;
+      const target = event.target instanceof HTMLElement ? event.target : null;
+      if (!target) return;
+      if (target.closest('button, a, input, textarea, select, [contenteditable="true"]')) return;
+      editor.chain().focus().run();
+    },
+    [editor]
+  );
+
+  if (!editor) return null;
+  const activeImageAttrs = getActiveImageAttrs();
   
   return (
     <div
@@ -412,6 +423,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
         error && styles.error,
       )}
       data-rich-text-drop-root="true"
+      onMouseDown={focusEditorSurface}
     >
       {isProcessingImage && <div className={styles.processingOverlay}><span>Processing...</span></div>}
       <div className={styles.toolbar}>

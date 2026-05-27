@@ -95,7 +95,17 @@
   min-height: 200px;
   overflow: visible;
   position: relative;
+  cursor: text;
   caret-color: var(--reader-support-control-text-color);
+}
+
+.editorContent :global(.ProseMirror > p) {
+  min-height: 1.3em;
+}
+
+.editorContent :global(.ProseMirror > figure:last-child + p),
+.editorContent :global(.ProseMirror > p:last-child) {
+  min-height: 1.6em;
 }
 
 .editorContent :global(.ProseMirror.ProseMirror-focused) {
