@@ -1307,7 +1307,7 @@ function normalizeGalleryMembership(
 export function isGalleryReorderOnlyPayload(
   existingCard: Pick<Card, 'galleryMedia'>,
   updates: Partial<Pick<Card, 'galleryMedia'>>
-): boolean {
+): updates is Pick<Card, 'galleryMedia'> {
   const keys = Object.keys(updates as Record<string, unknown>);
   if (keys.length !== 1 || keys[0] !== 'galleryMedia') return false;
   if (!Array.isArray(updates.galleryMedia)) return false;
@@ -1323,21 +1323,21 @@ export function isGalleryReorderOnlyPayload(
 
 export function isGalleryOnlyPayload(
   updates: Partial<Pick<Card, 'galleryMedia'>>
-): boolean {
+): updates is Pick<Card, 'galleryMedia'> {
   const keys = Object.keys(updates as Record<string, unknown>);
   return keys.length === 1 && keys[0] === 'galleryMedia' && Array.isArray(updates.galleryMedia);
 }
 
 export function isTagsOnlyPayload(
   updates: Partial<Pick<Card, 'tags'>>
-): boolean {
+): updates is Pick<Card, 'tags'> {
   const keys = Object.keys(updates as Record<string, unknown>);
   return keys.length === 1 && keys[0] === 'tags' && Array.isArray(updates.tags);
 }
 
 export function isStatusOnlyPayload(
   updates: Partial<Pick<Card, 'status'>>
-): boolean {
+): updates is Pick<Card, 'status'> {
   const keys = Object.keys(updates as Record<string, unknown>);
   if (keys.length !== 1 || keys[0] !== 'status') return false;
   return updates.status === 'draft' || updates.status === 'published';
@@ -1347,7 +1347,7 @@ type CardContentUpdates = Partial<Pick<Card, 'content'>>;
 
 export function isContentOnlyPayload(
   updates: CardContentUpdates
-): boolean {
+): updates is Pick<Card, 'content'> {
   const keys = Object.keys(updates as Record<string, unknown>);
   return keys.length === 1 && keys[0] === 'content' && typeof updates.content === 'string';
 }
@@ -1355,7 +1355,7 @@ export function isContentOnlyPayload(
 export function isChildrenReorderOnlyPayload(
   existingCard: Pick<Card, 'childrenIds'>,
   updates: Partial<Pick<Card, 'childrenIds'>>
-): boolean {
+): updates is Pick<Card, 'childrenIds'> {
   const keys = Object.keys(updates as Record<string, unknown>);
   if (keys.length !== 1 || keys[0] !== 'childrenIds') return false;
   if (!Array.isArray(updates.childrenIds)) return false;
@@ -1372,7 +1372,7 @@ export function isChildrenReorderOnlyPayload(
 
 export function isChildrenOnlyPayload(
   updates: Partial<Pick<Card, 'childrenIds'>>
-): boolean {
+): updates is Pick<Card, 'childrenIds'> {
   const keys = Object.keys(updates as Record<string, unknown>);
   return keys.length === 1 && keys[0] === 'childrenIds' && Array.isArray(updates.childrenIds);
 }

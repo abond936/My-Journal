@@ -213,35 +213,45 @@ export async function PATCH(
       );
     }
 
-    const updatedCard = isCoverOnlyPatch(validatedData)
-      ? await updateCardCover(id, {
-          ...(Object.prototype.hasOwnProperty.call(validatedData, 'coverImageId')
-            ? { coverImageId: validatedData.coverImageId ?? null }
-            : {}),
-          ...(Object.prototype.hasOwnProperty.call(validatedData, 'coverImageMode')
-            ? { coverImageMode: validatedData.coverImageMode }
-            : {}),
-          coverImageFocalPoint: validatedData.coverImageFocalPoint,
-        })
-      : isGalleryReorderOnlyPayload(existingCard, validatedData)
-        ? await updateCardGalleryOrder(id, validatedData.galleryMedia!)
-        : isGalleryOnlyPayload(validatedData)
-          ? await updateCardGallery(id, validatedData.galleryMedia!)
-        : isChildrenReorderOnlyPayload(existingCard, validatedData)
-          ? await updateCardChildrenOrder(id, validatedData.childrenIds!)
-        : isChildrenOnlyPayload(validatedData)
-          ? await updateCardChildren(id, validatedData.childrenIds!)
-        : isCollectionRootOnlyPayload(validatedData)
-          ? await updateCardCollectionRoot(id, validatedData)
-        : isTagsOnlyPayload(validatedData)
-          ? await updateCardTags(id, validatedData.tags!)
-        : isStatusOnlyPayload(validatedData)
-          ? await updateCardStatus(id, validatedData.status!)
-        : isContentOnlyPayload(validatedData)
-          ? await updateCardContent(id, validatedData.content!)
-        : isCardMetadataOnlyPayload(validatedData)
-          ? await updateCardMetadata(id, validatedData)
-        : await updateCard(id, validatedData);
+    let updatedCard: Card;
+    if (isCoverOnlyPatch(validatedData)) {
+      updatedCard = await updateCardCover(id, {
+        ...(Object.prototype.hasOwnProperty.call(validatedData, 'coverImageId')
+          ? { coverImageId: validatedData.coverImageId ?? null }
+          : {}),
+        ...(Object.prototype.hasOwnProperty.call(validatedData, 'coverImageMode')
+          ? { coverImageMode: validatedData.coverImageMode }
+          : {}),
+        coverImageFocalPoint: validatedData.coverImageFocalPoint,
+      });
+    } else if (isGalleryReorderOnlyPayload(existingCard, validatedData)) {
+      const { galleryMedia } = validatedData as Pick<Card, 'galleryMedia'>;
+      updatedCard = await updateCardGalleryOrder(id, galleryMedia);
+    } else if (isGalleryOnlyPayload(validatedData)) {
+      const { galleryMedia } = validatedData as Pick<Card, 'galleryMedia'>;
+      updatedCard = await updateCardGallery(id, galleryMedia);
+    } else if (isChildrenReorderOnlyPayload(existingCard, validatedData)) {
+      const { childrenIds } = validatedData as Pick<Card, 'childrenIds'>;
+      updatedCard = await updateCardChildrenOrder(id, childrenIds);
+    } else if (isChildrenOnlyPayload(validatedData)) {
+      const { childrenIds } = validatedData as Pick<Card, 'childrenIds'>;
+      updatedCard = await updateCardChildren(id, childrenIds);
+    } else if (isCollectionRootOnlyPayload(validatedData)) {
+      updatedCard = await updateCardCollectionRoot(id, validatedData);
+    } else if (isTagsOnlyPayload(validatedData)) {
+      const { tags } = validatedData as Pick<Card, 'tags'>;
+      updatedCard = await updateCardTags(id, tags);
+    } else if (isStatusOnlyPayload(validatedData)) {
+      const { status } = validatedData as Pick<Card, 'status'>;
+      updatedCard = await updateCardStatus(id, status);
+    } else if (isContentOnlyPayload(validatedData)) {
+      const { content } = validatedData as Pick<Card, 'content'>;
+      updatedCard = await updateCardContent(id, content);
+    } else if (isCardMetadataOnlyPayload(validatedData)) {
+      updatedCard = await updateCardMetadata(id, validatedData);
+    } else {
+      updatedCard = await updateCard(id, validatedData);
+    }
     
     return NextResponse.json(updatedCard);
   });
