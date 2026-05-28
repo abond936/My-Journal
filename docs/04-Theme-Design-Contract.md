@@ -63,7 +63,7 @@ Resolve conflicts with **type roles** and **presets**, not by mixing display fon
 
 ### 3.1 Admin grid thumbnail overlays (card + media)
 
-Dense metadata on **card** and **media** admin **grid** thumbnails (type, status, source, assignment, dimensional tag rail) uses **dedicated tokens** — **not** `--font-size-xs` / global admin UI scale. **Runtime:** `buildThemeTokensCss()` in `themeService.ts` emits these on `:root` with the rest of the theme (Firestore / `theme-data.json`). `**theme1.css`** mirrors the same names for authoring reference; `**theme.css**` includes fallbacks if injection is empty.
+Dense metadata on **card** and **media** admin **grid** thumbnails (type, status, source, assignment, dimensional tag rail) uses **dedicated tokens** — **not** `--font-size-xs` / global admin UI scale. **Runtime:** `buildThemeTokensCss()` in `themeService.ts` emits these on `:root` with the rest of the theme (Firestore / `theme-data.json`). `**theme1.css`** mirrors the same names for authoring reference; `theme.css` includes fallbacks if injection is empty.
 
 
 | Token                            | Role                                                                                          |

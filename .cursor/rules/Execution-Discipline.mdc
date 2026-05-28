@@ -1,0 +1,234 @@
+---
+description: Mandatory AI operating rules - process, approval, grounding, scope
+globs: 
+alwaysApply: true
+---
+
+# No Changes Without Approval
+
+MAKE NO CHANGES OR ADDITIONS TO THE CODEBASE, DOCUMENTS, OR DIRECTORY/FILE STRUCTURE WITHOUT EXPLICIT APPROVAL-EVER.
+If approval text is absent or ambiguous, do not edit. Ask.
+
+# Ground Every Task in Product and Code Reality
+
+Before any recommendation:
+1. Read `docs/02-Application.md` for the affected feature area; `docs/01-Vision-Architecture.md` for vision, technical stack, and platform rules; `docs/03-Implementation.md` when sequencing or `1 planned` scope matters. For **API writes**, **bulk admin actions**, **list refresh**, or **Typesense/Firestore list paths**, also read **`docs/01-Vision-Architecture.md` -> TECHNICAL -> Backend / Frontend *Principles*** (data planes, mutation scope, catalog reads, transactions) and the **Backend** [Decision] lines on list refresh, bulk writes, and Typesense behavior-do not ship Nx full-card pipelines or full-catalog refetch as the default without treating it as an explicit deviation from those rules.
+2. Read the relevant source code - trace actual behavior, do not assume.
+3. Search for existing patterns/configs before proposing new ones.
+
+Every recommendation must tie to: product capability, architecture correctness, runtime behavior, or delivery risk. If a proposed change does not advance one of these, do not propose it.
+
+# Product invariants vs efficiency (no "contract excuse")
+
+**Architecture docs** (`docs/01-Vision-Architecture.md`, etc.) define **how** to build efficiently and where boundaries lie. They do **not** override **product invariants**: accurate **tag / media / card denormalized counts**, correct **derived tag fields** on cards (`filterTags`, dimensional arrays, sort keys), **auth**, or **reader-facing truth** for published content.
+
+- **Accurate counts** - Refactors that avoid full `updateCard` (or similar wide paths) often exist **because** those paths already performed `updateTagCountsFor*` and derived-field updates. A faster path must **preserve the same accounting** (batched, once-per-request, or shared transactions)-not omit it. Skipping count maintenance to satisfy a "narrow pipeline" rule is a **failure**, not compliance.
+- **When rules conflict** - If the most efficient approach would skip work that exists for integrity (counts, derived filters, index fields the app relies on), **stop** in ASSESS/RECOMMEND: state the **conflict**, list **options** (e.g. batch the same helpers, async index with explicit lag disclosure), and get **author** direction. Do **not** ship the shortcut and later explain regressions as "because the contract"-call out the tradeoff **before** implementation.
+
+# Substantive Work Only
+
+Do not propose cosmetic, editorial, or formatting changes unless explicitly requested.
+Do not rewrite, compress, or reorganize existing content unless explicitly requested.
+Do not remove reference content (directory maps, contracts, decision records) without explicit approval.
+Do not delete and recreate an existing file as an editing strategy. Use in-place edits by default.
+For canonical docs and core project files, do not replace, remove, or recreate the file wholesale unless the author explicitly approves that exact action.
+
+# Encoding hygiene for canon docs/rules
+
+When editing canonical docs or always-applied rules, preserve clean UTF-8 text and do not insert mojibake.
+If terminal output makes a symbol look suspicious or ambiguous, verify the underlying characters before saving.
+Do not treat terminal mojibake by itself as file corruption. First distinguish display/rendering issues from actual on-disk text by checking the underlying file bytes or another raw file read path.
+If symbol fidelity is uncertain during an edit, prefer ASCII-safe fallbacks such as `->`, `-`, `...`, `[Decision]`, and `[Resource]` over risking corrupted text.
+If a canon or rule file already shows encoding drift, normalize only the affected text and then continue with small in-place edits; do not push through ambiguous patching against corrupted characters.
+Do not rewrite an entire existing canon or rule file to work around patching difficulty unless the author explicitly approves a full-file rewrite.
+When editing canon or rule files, prefer small anchored patches or tightly scoped section replacements over broad search/replace or multi-file script rewrites.
+
+# Canon doc editing protocol
+
+When editing canon docs or always-applied rules, follow this escalation ladder and stop policy. The goal is to avoid repeated trial-and-error churn on brittle text.
+
+- **Default method** - Use `apply_patch` with a small anchored block.
+- **Second attempt** - If the first patch fails, retry once with a smaller anchor or smaller scoped change.
+- **Two-failure stop rule** - If two patch attempts fail on the same canon section, stop. Report that the section is brittle and choose only one of these next moves: a smaller scoped patch or an explicitly approved section replacement. Do not keep probing with more ad hoc edit attempts.
+- **No shell rewrites by default** - Do not use shell-driven search/replace, scripted whole-block rewrites, or nested shell editing tricks on canon docs/rules unless the author explicitly approves that recovery move.
+- **Chunk-size limit** - Edit one small canon section at a time. For dense sections, change the opening contract first, then one feature/status cluster, then decisions/resources; do not try to rewrite the full section in one pass.
+- **Fallback order** - Small patch -> smaller patch -> exact anchored section replacement with approval -> stop and reassess. Do not invent broader fallback paths mid-edit.
+- **Completion honesty** - If a canon section is only partially cleaned up, say so immediately. Do not keep escalating edit risk just to avoid reporting partial progress.
+
+# Windows / shell operating discipline
+
+This repo runs in a Windows + PowerShell environment with known quoting, execution-policy, and Unicode display edge cases. Agents must use the most trustworthy verification path first, not discover it by repeated trial and error.
+
+- **File truth over terminal rendering** - For encoding or symbol questions, trust raw file content and repository diff over terminal glyph appearance.
+- **Known-good command paths** - Reuse repo-known reliable commands when they already exist. Example: use `cmd /c npm run test:integrity -- --runInBand` when PowerShell blocks direct `npm`, and prefer `npm run build` over noisier type-only checks when this repo has already established build as the trustworthy gate.
+- **Literal-path discipline** - On Windows, treat bracketed route paths and special characters carefully; use literal-path reads where needed rather than assuming shell glob behavior.
+- **Small verification before broad edits** - When a tool path or encoding assumption is uncertain, run a narrow proof first and then proceed; do not combine discovery, remediation, and broad document rewrites in one move.
+- **Name the failure class early** - Explicitly distinguish shell/display issue, sandbox/tooling issue, and actual file/code issue before proposing a fix.
+
+# Canonical document topology
+
+`AGENTS.md` is an index only. Durable intent and operating rules must live in the owning docs/rules below so Cursor agents receive them through the always-applied environment.
+
+- **No new docs without approval** - Do not add new top-level `docs/*.md` files unless the author explicitly approves a new document.
+- **Process and collaboration** - `docs/00-Project-Framework.md`.
+- **Stable principles and architecture** - `docs/01-Vision-Architecture.md`.
+- **App/product behavior and status truth** - `docs/02-Application.md`.
+- **Active sequencing and milestone gates** - `docs/03-Implementation.md`.
+- **Theme and responsive layout support** - `docs/04-Theme-Design-Contract.md`, mirrored into `02` / `03` when product behavior or priority changes.
+- **Guided archive seed** - `docs/05-Guided-Archive-Assistance.md`, not active unless mirrored into `02` / `03`.
+- **Support references** - `docs/DESIGN.md`, `docs/NPM-SCRIPTS.md`, and `docs/IMPORT-REFERENCE.md` do not own product behavior, architecture, or active sequencing. Mirror durable truths into `01` / `02` / `03`.
+- **Chat is not canon** - Chat is intake, clarification, and approval. Durable product truth, shipped behavior, and sequencing belong in the docs.
+
+# Meaningful chat outcomes must be captured or rejected explicitly
+
+The process is designed so meaningful project outcomes do **not** remain trapped in chat.
+
+**Meaningful** includes, at minimum:
+- product decisions
+- workflow or process decisions
+- milestone or priority changes
+- newly discovered defects or root-cause findings
+- shipped behavior confirmed, changed, or contradicted
+- verification outcomes that materially change project confidence or status
+- backlog-worthy improvement ideas or deferred work that should affect `02` or `03`
+
+For any meaningful outcome, the agent must do one of these **before moving on to dependent work**:
+1. **Reconcile it into canon** (`00` / `01` / `02` / `03`, whichever owns it), or
+2. State plainly that it is **not yet canon** and will **not** be treated as durable project truth.
+
+Required wording in chat after meaningful outcomes:
+- `This is now reconciled into canon.`
+- or `This is not yet canon and will not be treated as durable truth until reconciled.`
+
+Do not leave the status implicit.
+
+# No silent drift from canon
+
+If chat materially changes the project understanding but the owning docs have **not** been updated yet, stop and say so before continuing. Do **not** proceed as though chat has already become canon.
+
+A completed implementation slice is **not canonically closed** until required doc reconciliation has happened, unless the author explicitly deferred docs for that pass and the agent says the slice remains non-canonically closed.
+
+# Process: DIAGNOSE -> DESIGN -> APPROVAL -> IMPLEMENT -> VERIFY
+
+**Author** provides what (outcome, constraints, scope). **AI** provides how (options, approach, implications).
+
+1. **DIAGNOSE** - Read the split docs above (as applicable) + relevant code. Identify the **root cause**, the **owning layer** (UI, shared client state, API, service, schema/data, or architecture), the **existing contracts/invariants at risk**, and the **regression risk**. Do not move forward on a symptom-only explanation.
+2. **DESIGN** - State the intended fix at the owning layer, why that layer is correct, what adjacent systems are intentionally untouched, and the **verification plan**. If more than one viable design exists, recommend one and briefly say why.
+3. **APPROVAL** - Ask: "Do you approve this exact edit set? May I proceed?" Do not edit until explicit approval naming specific items. The proposed edit set should give the **essence** of the work: affected files/surfaces, intended behavior/doc truth, and verification plan. Do **not** require the author to review detailed pre-diffs in chat unless they ask.
+4. **IMPLEMENT** - Edit only approved items, only in approved scope. **Where the diff lives:** apply changes with normal **in-workspace / in-editor** edits so the author reviews them in the **IDE diff UI** (gutters, side-by-side, accept/reject)-that is the primary review surface. **Do not** paste `git diff` output, full-file before/after dumps, or other **large chat-side diffs** unless the author **explicitly** asks for a diff in chat. After applying, give a **concise prose summary** of what changed (which files, what behavior)-not a line-by-line recreation of the editor diff. If a new issue appears outside scope, stop and return to Step 1.
+5. **VERIFY** - Run the relevant checks for the approved scope: behavior verification, integrity verification, and lint/types/tests where applicable. If a relevant check was not run, say so plainly and do not present the work as fully complete.
+   - **Code changes require verification** - For code changes, verification is expected by default, not optional commentary after the fact.
+   - **Add tests when warranted** - If the change affects behavior, integrity, regression risk, or a previously fragile path, add or update automated tests unless there is a clear reason not to. If no test was added, explain why.
+   - **Integrity-sensitive work** - Changes affecting data relationships, denormalized fields, auth, import pipelines, or shared contracts should include integrity-focused verification or tests, not only happy-path manual checks.
+   - **Documentation (part of "done")** - When the change alters **shipped behavior**, **feature completeness vs planned**, or **architectural fact**, include updates to `docs/02-Application.md`, `docs/03-Implementation.md`, and `docs/01-Vision-Architecture.md` (per **Document Governance** in `01`) in the **same proposed edit set**, unless the author explicitly **excluded documentation** for this pass. The author should not have to remember to ask for required doc reconciliation.
+   - **Doc scope approval** - If required doc updates were not included in the already approved work, return through **RECOMMEND -> WAIT** with the essence of the doc-only edit set before editing.
+   - **Canon disposition** - After verification, explicitly state whether the outcome is now reconciled into canon or remains non-canonical pending a doc-only slice. Do not imply closure without saying which.
+
+# Reviewable slice standard
+
+The AI owns sequencing and process, but implementation must move in **reviewable slices** under author approval.
+
+- **One slice at a time** - Recommend the next highest-value slice that can be implemented, verified, and reviewed before dependent work proceeds.
+- **No chained speculative execution** - Do not perform multiple sequential changes merely because they seem related. Finish the approved slice, verify it, summarize residual risk, then recommend the next slice.
+- **Author review surface** - The author reviews actual edits in the IDE diff. In chat, provide the purpose, affected surfaces, and verification plan-not detailed diffs unless requested.
+- **Next-work ownership** - After completing or assessing a slice, the AI should recommend the next slice based on product value, milestone gates, risk reduction, and code/doc reality.
+
+# Commercial standard gate
+
+The target is a **commercially viable, professionally engineered product**. The agent must act accordingly.
+
+- **No diagnosis, no edit** - Do not edit until the root cause is identified with enough confidence to explain why the proposed fix addresses the real problem.
+- **No owner, no edit** - Do not edit until the owning layer is identified. Do not patch the visible symptom in a lower layer when the real fix belongs in shared state, API/service logic, schema/data, or architecture.
+- **No verification, not done** - If the relevant verification was not run, the work is not complete.
+- **No silent test omission** - When a reasonable automated test could have been added for the approved code change, do not silently skip it. Add the test or explain why not.
+- **Protect working systems** - Existing working behavior should be treated as intentional until shown otherwise. Do not damage a correctly designed surface to fix another problem.
+- **Commercial viability over shortcuts** - Do not choose a shortcut, workaround, duplicate logic path, local patch-over, or bypass that weakens architecture, integrity, maintainability, or future scale.
+- **Warn on risky user framing** - If the user request is underspecified, naive, or pushes toward a risky shortcut, warn briefly, explain the risk plainly, and ask only for the minimum missing input needed to preserve standards.
+- **Robust enough to build on** - Do not present work as done unless it is solid enough that future work can build on it without likely rework.
+
+# Change scope boundary (approved surface only)
+
+The approved edit set is a **closed list**: paths, behaviors, or artifacts the author named (or clearly implied, e.g. "fix the typo in X"). Everything else is **out of scope** until they say otherwise.
+
+- **Do not expand** into adjacent UI, shared providers, other routes, types, tests, copy, or "cleanup" because it feels related. Example: removing a filter from an API must not, by itself, justify removing admin toolbar controls that use different semantics-unless the author approved that removal.
+- **Unspecified touch points** - If the right fix could reasonably be done in more than one place, or touching a second system would be cleaner but was **not** asked for, **ask** before including it. Prefer a minimal change that matches the ask; offer broader changes as a **separate** optional item in RECOMMEND, not bundled silently.
+- **Ambiguous scope** - If "fix filtering" could mean API-only, client-only, or both, state the ambiguity in RECOMMEND and get confirmation before EXECUTE.
+
+# Shared-surface changes (mandatory design control)
+
+For any change that touches a **shared surface** or **cross-cutting system**-for example **Studio shell**, **shared feedback / notifications**, **drag-and-drop**, **editor behavior**, **selection state**, **pane coordination**, or a **provider** used by more than one route-agents must **not** patch directly from the visible symptom.
+
+Required handling before implementation:
+1. **Write a working note in the response before edits** - concise, but explicit:
+   - **Problem** - exact user-visible failure being addressed.
+   - **Expected behavior** - 3-7 bullets describing the intended contract.
+   - **Owning modules** - which file/component/provider owns each part of the behavior.
+   - **Out of scope** - adjacent systems the agent will **not** change without approval.
+   - **Preserved contracts** - existing documented rules that must remain true.
+   - **Tests** - specific user-visible behaviors to verify.
+2. **Name the owner before changing the system** - If the agent cannot state which layer owns **feedback**, **selection**, **drag state**, **editor insertion**, or equivalent state for the requested behavior, stop in **ASSESS / RECOMMEND**. Do **not** implement until ownership is clear.
+3. **Remove superseded paths** - If a new shared mechanism replaces a local one (for example shared toasts replacing inline notices), the same approved edit set must identify and remove, disable, or explicitly preserve the old path. Do **not** leave parallel systems active by accident.
+4. **Shared-surface threshold** - When a requested fix crosses more than one owning layer, the agent must treat it as a **design task first** and an **implementation task second**. Trace the full event/state path before editing.
+
+# No contradiction checklist
+
+Before implementation-and again before reporting completion-the agent must check for contradictions against existing contracts and shared systems.
+
+Required questions:
+- **Feedback** - Does this introduce a second notification pattern (for example inline status on a migrated shared-feedback surface)?
+- **Interaction model** - Does this introduce a second way to perform the same interaction on the same surface without an explicit product decision?
+- **State ownership** - Does this create local state for behavior already owned by the shell, provider, or shared context?
+- **Bypass** - Does this bypass an existing shared provider, service, or documented UI contract?
+- **Docs conflict** - Does this conflict with a documented Studio/admin/theme/navigation/feedback contract?
+- **Temporary path** - Am I adding a stopgap path that will coexist with the canonical path after this change ships?
+
+If any answer is **yes** or **unclear**, stop and return to **ASSESS / RECOMMEND**. Do **not** ship the contradiction and explain it afterward.
+
+# Contract test requirement
+
+For **shared-surface** work, tests and verification must prove **user-visible contract behavior**, not only helper behavior.
+
+Required standard:
+1. **Prefer scenario-level verification** - Test or verify the observable workflow (for example: drag source highlights the correct target; drop inserts at the visible target; migrated Studio actions use shared feedback only).
+2. **Do not stop at helper tests** - A unit test for a helper or drag callback is useful but **not sufficient by itself** when the user-facing issue depends on multiple layers.
+3. **Name the contract being verified** - In the completion note, explicitly state which user-visible behaviors were tested or manually verified.
+4. **If contract-level verification is not run** - say so clearly, and do **not** overstate confidence.
+
+# Post-execute consistency review
+
+After implementation and before presenting the work as done, the agent must explicitly check:
+- **What older mechanism did this change replace?**
+- **Is any superseded path still active?**
+- **Did I introduce any duplicate feedback, state, or interaction model?**
+- **Did the final behavior remain consistent with the documented contract?**
+
+If the answer reveals a contradiction, the agent must say so plainly and return to **ASSESS / RECOMMEND** instead of chaining another knee-jerk patch.
+
+# Lint and type hygiene on touched code
+
+The repo carries a **historical ESLint backlog** (see `docs/03-Implementation.md` -> Phase 4 **ESLint**). Agents must **not** assume "lint clean file" is required on every edit, and must **not** treat "only check my new lines" as permission to leave **new** violations in place.
+
+1. **Fix your delta** - For every file you **edit in the approved scope**, clear **ESLint and TypeScript issues that your change introduces or directly affects** (same function/component, same hook, imports you add or remove, types your edit makes relevant). Run or honor **`npm run lint`** / IDE diagnostics on **touched paths** before considering the work done.
+2. **Pre-existing noise** - You **do not** have to fix **all** violations already present in a file when the author did not ask for a lint pass. Do **not** expand scope into wholesale reformatting or unrelated-rule fixes across the file "because it was open."
+3. **Opportunistic, bounded** - If a **trivial** fix in the **immediate edit surface** is one or two lines (e.g. remove an import your edit made unused, obvious hook-deps fix **for code you touched**), include it. If fixing a pre-existing issue requires **refactoring unrelated logic**, **stop**: note it for the author or a dedicated lint task-do not bundle without approval.
+4. **Whole-file / tree-wide lint** - Reserved for **explicitly approved** cleanup work (e.g. Phase 4 backlog, or "lint file X"). Never required merely because a file was touched.
+
+# Failure Recovery
+
+If AI edits outside approved scope or makes unapproved changes:
+- Stop immediately.
+- Offer to restore/revert the unapproved changes before any new work.
+
+# No Patch-Over Policy (Logic/Data Mismatches)
+
+If behavior and stored fields do not logically align (example: embedded media exists in `content` but `contentMedia` is empty/missing), do **not** patch around the mismatch in UI/API code.
+
+Required handling:
+- **Stop and investigate first**: determine exactly how the mismatch was produced.
+- **Classify root cause**:
+  - **Logic flaw** (write path/update path bug) -> fix the logic at the source so future writes are correct.
+  - **Legacy/data drift** (historical records) -> run targeted data remediation/backfill to restore consistency.
+- **Do not ship workaround-only behavior** that masks the mismatch without fixing source logic or data.
+- **Report findings and proposed correction path** before implementation when scope/impact extends beyond the requested change.
+
+DIAGNOSE -> DESIGN -> APPROVAL -> IMPLEMENT -> VERIFY

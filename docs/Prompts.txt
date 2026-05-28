@@ -3,7 +3,7 @@ Prompts
 Product Development Prompts
 
 1) Session Start
-Read `AGENTS.md`, `.cursor/rules/# AI_InteractionRules.mdc`, and `docs/01-Vision-Architecture.md` (TECHNICAL backend/frontend principles). Then read the relevant feature area in `docs/02-Application.md` and sequencing context in `docs/03-Implementation.md` if needed. Confirm completion only; no summary.
+Read `AGENTS.md`, `.cursor/rules/Execution-Discipline.mdc`, and `docs/01-Vision-Architecture.md` (TECHNICAL backend/frontend principles). Then read the relevant feature area in `docs/02-Application.md` and sequencing context in `docs/03-Implementation.md` if needed. Confirm completion only; no summary.
 
 2) Product Vision
 Clarify the product in plain terms:
@@ -108,7 +108,7 @@ State what user-visible risk remains after the change.
 15) Doc Reconciliation Request
 Update docs as part of done state where behavior or architecture changed:
 - `docs/02-Application.md` for feature/status truth
-- `docs/03-Implementation.md` for active `⭕1` sequencing
+- `docs/03-Implementation.md` for active `1 planned` sequencing
 - `docs/01-Vision-Architecture.md` for architectural facts/decisions
 Keep entries concise and structured (title + one-line description), not long prose.
 

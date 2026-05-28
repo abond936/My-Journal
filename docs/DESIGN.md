@@ -336,7 +336,7 @@ Contract for system/status feedback (not browser chrome):
 
 ## Display modes per card type (product truth)
 
-From `src/lib/utils/cardDisplayMode.ts`: **`story`** → `navigate` only; **`gallery`** → `navigate` | `inline`; **`qa`** → `navigate` | `inline`; **`quote`** / **`callout`** → `static` only. Design triple-tags must respect this matrix.
+From `src/lib/utils/cardDisplayMode.ts`: **`story`** → `navigate` only; **`gallery`** → `navigate` | `inline`; **`qa`** → `navigate` | `inline`; **`quote` / `callout`** → `static` only. Design triple-tags must respect this matrix.
 
 ## Gallery: `inline` vs `navigate` (authoritative)
 
@@ -358,9 +358,9 @@ From `src/lib/utils/cardDisplayMode.ts`: **`story`** → `navigate` only; **`gal
 ### `navigate` — opened card / detail (masonry or structured grid)
 
 - **Purpose:** Opening the card shows a **media-first** experience: **masonry**, **bento**, or other structured **grid** of **all** gallery items (plus optional hero treatment for cover).  
-- **Header:** Section title **Gallery**; secondary line **View all** + **`N items`** or **`1 / N`** (product picks one canonical string).  
+- **Header:** Section title **Gallery**; secondary line **View all** + **`N items` or `1 / N` (product picks one canonical string).  
 - **Captions:** Prefer **below tile** with truncation + expand; or **lightbox** on tap (full image, caption under/side); long captions should not force the main story column to duplicate gallery prose.  
-- **Detail page** may also render **`InlineGallery`** for `galleryMedia` when present (`CardDetailPage.tsx`).
+- **Detail page** may also render `InlineGallery`** for `galleryMedia` when present (`CardDetailPage.tsx`).
 
 ### Accessibility & motion
 
@@ -368,28 +368,28 @@ From `src/lib/utils/cardDisplayMode.ts`: **`story`** → `navigate` only; **`gal
 
 ## Q&A (`qa`) — feed vs detail (implementation summary)
 
-**Fields:** **`title`** = question; **`content`** = answer (TipTap HTML); **`excerpt`** = optional teaser; optional **`coverImage`**; optional **`galleryMedia`** and **`childrenIds`** like other types.
+**Fields:** **`title` = question; `content` = answer (TipTap HTML); `excerpt` = optional teaser; optional `coverImage`; optional `galleryMedia` and `childrenIds` like other types.
 
-**`inline` (feed):** `V2ContentCard` renders optional **cover**, **question** (`title`), **excerpt**, and **full answer** (`TipTapRenderer` on `content`) **in the feed** — high information density; design mocks should respect that answers can appear inline.
+`inline` (feed):** `V2ContentCard` renders optional **cover**, **question** (`title`), **excerpt**, and **full answer** (`TipTapRenderer` on `content`) **in the feed** — high information density; design mocks should respect that answers can appear inline.
 
 **`navigate` (feed tile):** Optional **cover**, **question** (`title`), **excerpt** only — tile **links** to `/view/[id]` for the full answer.
 
 **Detail (`/view/[id]`):** `CardDetailPage` — cover, title, optional **subtitle**, then **`content`** in a section labeled **Answer** for accessibility (`aria-label` when `type === 'qa'`). Optional **InlineGallery** and **DiscoverySection** (**Explore More**) same as story.
 
-**Design prompts:** Use triple-tags **`(qa, inline|navigate, editorial|journal)`** and the **lock list v2**; do not use **`static`** for Q&A comps.
+**Design prompts:** Use triple-tags **`(qa, inline|navigate, editorial|journal)` and the **lock list v2**; do not use `static` for Q&A comps.
 
 ## Reader polish backlog (decisions, 2026)
 
-Synthesized from Stitch experiments and author review. **Lock list v2** + **`04`** remain normative for strings and type roles; this section captures **direction** for implementation and future design.
+Synthesized from Stitch experiments and author review. **Lock list v2** + `04` remain normative for strings and type roles; this section captures **direction** for implementation and future design.
 
 ### Process
 
 - **External mocks (e.g. Stitch)** are **visual guides**, not acceptance specs — easy to drift on branding, chrome, and copy.  
-- **Engineering** implements from **this doc**, **`docs/04`**, and **code**; refresh mocks only when intentionally re-briefing.
+- **Engineering** implements from **this doc**, `docs/04`, and **code**; refresh mocks only when intentionally re-briefing.
 
 ### Typography
 
-- Move toward a **clear scale** (display / title / body / UI) with **meaningful difference** between **`editorial`** (sans-forward body) and **`journal`** (serif body allowed), both using **sans for dense UI** — see **Lock list v2 → Typography**.
+- Move toward a **clear scale** (display / title / body / UI) with **meaningful difference** between `editorial` (sans-forward body) and `journal`** (serif body allowed), both using **sans for dense UI** — see **Lock list v2 → Typography**.
 
 ### Metadata & tags
 

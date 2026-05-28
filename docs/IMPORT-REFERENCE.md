@@ -1,6 +1,6 @@
 # Import & normalization (technical reference)
 
-Product rules and import workflow context live in **`docs/02-Application.md`** (e.g. **Media Management**, **Administration**) and **`docs/01-Vision-Architecture.md`** (**TECHNICAL**). This page summarizes **implementation-facing** details that are easy to miss elsewhere.
+Product rules and import workflow context live in **`docs/02-Application.md` (e.g. **Media Management**, **Administration**) and `docs/01-Vision-Architecture.md`** (**TECHNICAL**). This page summarizes **implementation-facing** details that are easy to miss elsewhere.
 **Document role:** Support reference. Owns operational and implementation-facing import details.
 **Does not own:** Canonical product import behavior (`02`), architecture/integrity rules (`01`), or sequencing (`03`). If this file implies a user-facing behavior change, mirror that truth into the owning canonical doc.
 
@@ -17,17 +17,17 @@ Product rules and import workflow context live in **`docs/02-Application.md`** (
 ## Local CLI: `normalize-images` (`npm run normalize:images`)
 
 - Writes **WebP + JSON** sidecars next to outputs in the **destination** folder (optional local pipeline; not required for app import if you rely on in-memory normalize only).
-- Optional flag: **`--card-export-only`** — process only filenames that match the **`__X`** marker (same rule as the app).
+- Optional flag: **`--card-export-only` — process only filenames that match the `__X`** marker (same rule as the app).
 
 ```bash
 npm run normalize:images "C:\path\to\source" "C:\path\to\out" -- --card-export-only
 ```
 
-See **`normalize-images-README.md`** for full CLI behavior.
+See **`normalize-images-README.md` for full CLI behavior.
 
 ## Captions and metadata on import
 
-- **Local / folder import** reads **embedded metadata only** via **`exiftool-vendored`** (no `.json` sidecars). Captions are taken from common IPTC/XMP/EXIF fields (e.g. `CaptionAbstract`, `Description`, `ImageDescription`, `UserComment`, `Headline`).
+- **Local / folder import** reads **embedded metadata only** via `exiftool-vendored`** (no `.json` sidecars). Captions are taken from common IPTC/XMP/EXIF fields (e.g. `CaptionAbstract`, `Description`, `ImageDescription`, `UserComment`, `Headline`).
 - **Keywords** from the same read (`Keywords`, `Subject`, `HierarchicalSubject`, etc.) are mapped to **Firestore tag IDs** by **exact tag name**, then **case-insensitive** fallback.
 - Labels under **`cardseed|…` / `cardseed/…`** and top-level section roots (`WHO`, `WHAT`, …) are **ignored** for media tagging.
 - **Card title** on folder import remains the **imported folder name** (path basename), not cardseed keywords.
@@ -36,10 +36,10 @@ See **`normalize-images-README.md`** for full CLI behavior.
 ## Cardseed (XMP keywords)
 
 - **Scope note** - This import workflow is for real archive ingestion and card/media creation, not for demo-data seeding or destructive reset utilities.
-- **Optional author workflow:** exiftool keywords such as `cardseed|…` / `cardseed/…` (see **`tools/_exif_args_tmp.txt`**) are **stripped before tag mapping** on import and are **not** required if you rely on the folder name for the card title.
+- **Optional author workflow:** exiftool keywords such as `cardseed|…` / `cardseed/…` (see **`tools/_exif_args_tmp.txt`) are **stripped before tag mapping** on import and are **not** required if you rely on the folder name for the card title.
 
 ## Related npm scripts
 
-See **`docs/NPM-SCRIPTS.md`**. For media/card integrity after bulk work: `npm run reconcile:media-cards -- --diagnose`.
+See `docs/NPM-SCRIPTS.md`**. For media/card integrity after bulk work: `npm run reconcile:media-cards -- --diagnose`.
 
 - **`npm run import:folder -- "<path>"`** — CLI smoke test for a single folder import (same behavior as admin folder import). Requires `.env` with `ONEDRIVE_ROOT_FOLDER` and Firebase Admin vars.
