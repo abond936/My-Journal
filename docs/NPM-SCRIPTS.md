@@ -14,7 +14,7 @@ Run from the repo root. Most maintenance scripts need Firebase Admin env vars (s
 
 ## Restore drill (v1 operator)
 
-This is the current **commercial-readiness restore contract**. It is documented and should be exercised before release; until then, treat it as the authoritative procedure, not yet a proven drill.
+This is the current **commercial-readiness restore contract**. The Firestore restore path has now been exercised successfully on a disposable recovery target; treat this as the authoritative documented procedure, while keeping the remaining non-Firestore recovery breadth (hosted runtime parity, search parity, broader incident drills) on the release-readiness backlog until those pieces are separately proven.
 
 **Scope and limits**
 

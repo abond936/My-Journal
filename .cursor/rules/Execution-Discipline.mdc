@@ -45,21 +45,27 @@ When editing canon or rule files, prefer small anchored patches or tightly scope
 
 # Canon doc editing protocol
 
-When editing canon docs or always-applied rules, follow this escalation ladder and stop policy. The goal is to avoid repeated trial-and-error churn on brittle text.
+When editing canon docs or always-applied rules, follow this stop-first protocol. The goal is to avoid repeated trial-and-error churn on brittle text.
 
 - **Default method** - Use `apply_patch` with a small anchored block.
-- **Second attempt** - If the first patch fails, retry once with a smaller anchor or smaller scoped change.
-- **Two-failure stop rule** - If two patch attempts fail on the same canon section, stop. Report that the section is brittle and choose only one of these next moves: a smaller scoped patch or an explicitly approved section replacement. Do not keep probing with more ad hoc edit attempts.
+- **Pre-edit grounding statement** - Before editing canon, state which section is being changed and that the patch source is authoritative UTF-8 file content.
+- **First-failure stop rule** - If the first `apply_patch` attempt fails on a canon section, stop immediately. Do not try a second patch shape, smaller anchor, section replacement, or alternate edit path until the mismatch is explained from authoritative file content.
+- **Failure report requirement** - After a failed canon patch attempt, report what failed, whether any partial change landed, and the safe next options. Do not continue editing in the same flow as though the failure were routine.
 - **No shell rewrites by default** - Do not use shell-driven search/replace, scripted whole-block rewrites, or nested shell editing tricks on canon docs/rules unless the author explicitly approves that recovery move.
+- **No blanket umbrella patches** - Do not patch an entire umbrella section, long ledger block, or multi-cluster canon area in one replacement pass. Large owner sections must be edited one bounded cluster at a time.
 - **Chunk-size limit** - Edit one small canon section at a time. For dense sections, change the opening contract first, then one feature/status cluster, then decisions/resources; do not try to rewrite the full section in one pass.
-- **Fallback order** - Small patch -> smaller patch -> exact anchored section replacement with approval -> stop and reassess. Do not invent broader fallback paths mid-edit.
+- **Umbrella-section sequencing** - For umbrella sections with many subordinate truths, edit in this order unless the author asks otherwise: headings/labels, one grouped feature cluster, one planned/future cluster, then cross-references/contracts. Do not combine all of them into one patch.
+- **Fallback order** - Small patch -> stop and diagnose on first failure -> resume only from authoritative file content with author approval if needed. Do not invent broader fallback paths mid-edit.
 - **Completion honesty** - If a canon section is only partially cleaned up, say so immediately. Do not keep escalating edit risk just to avoid reporting partial progress.
+- **Post-edit verification statement** - After editing canon, verify with a UTF-8-safe read and state exactly what changed before calling the section reconciled.
 
 # Windows / shell operating discipline
 
 This repo runs in a Windows + PowerShell environment with known quoting, execution-policy, and Unicode display edge cases. Agents must use the most trustworthy verification path first, not discover it by repeated trial and error.
 
 - **File truth over terminal rendering** - For encoding or symbol questions, trust raw file content and repository diff over terminal glyph appearance.
+- **UTF-8 verification rule** - Terminal mojibake (for example `Â·`, `â€”`, `â†’`) is not evidence of file corruption by itself. Before reporting encoding damage in canon docs/rules, verify with a UTF-8-safe read path or raw bytes. If the underlying bytes/text are correct UTF-8, describe the issue as a shell/display decoding artifact, not document corruption.
+- **Canon write path** - For canon docs and always-applied rules, use `apply_patch` for manual edits. Do not use PowerShell write commands, shell redirection, scripted search/replace, or other shell-driven rewrite paths unless the author explicitly approves that recovery move.
 - **Known-good command paths** - Reuse repo-known reliable commands when they already exist. Example: use `cmd /c npm run test:integrity -- --runInBand` when PowerShell blocks direct `npm`, and prefer `npm run build` over noisier type-only checks when this repo has already established build as the trustworthy gate.
 - **Literal-path discipline** - On Windows, treat bracketed route paths and special characters carefully; use literal-path reads where needed rather than assuming shell glob behavior.
 - **Small verification before broad edits** - When a tool path or encoding assumption is uncertain, run a narrow proof first and then proceed; do not combine discovery, remediation, and broad document rewrites in one move.

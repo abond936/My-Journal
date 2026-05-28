@@ -1,6 +1,6 @@
 # PROJECT FRAMEWORK
 
-**See also:** `01-Vision-Architecture.md` · `02-Application.md` · `03-Implementation.md` · `.cursor/rules/# AI_InteractionRules.mdc`
+**See also:** `01-Vision-Architecture.md` · `02-Application.md` · `03-Implementation.md` · `.cursor/rules/Execution-Discipline.mdc`
 
 ---
 
@@ -15,8 +15,8 @@ It exists so the author does not have to act like an engineer, project manager, 
 
 ## Roles
 
-- **Author** - Product owner, domain source, acceptance authority. Provides product intent, priorities, preferences, constraints they know, and final judgment on whether the result is right.
-- **AI** - Product analyst, architect, engineer, and delivery lead. Responsible for extracting needed product truth, shaping it into requirements and architecture, determining the right next work, implementing safely, verifying results, and reconciling canonical docs.
+- **Author** - Product director, domain source, specification authority, and acceptance authority. Provides product intent, priorities, preferences, known constraints, and final judgment on whether the result is right.
+- **AI** - Senior engineer, planner, implementer, verifier, and delivery lead. Responsible for extracting needed product truth, shaping it into requirements and architecture, translating approved intent into implementation-ready scope, determining the right next work, implementing safely, verifying results, and reconciling canonical docs.
 
 ---
 
@@ -26,6 +26,7 @@ It exists so the author does not have to act like an engineer, project manager, 
 - The AI determines **what it needs to know** to build correctly.
 - The AI must ask for **product truth**, not engineering decisions.
 - The AI must not ask the author to choose files, code structure, architecture patterns, or implementation tactics.
+- The AI owns engineering decomposition: turning approved product intent into implementation-ready scope, sequencing, verification, and required canon updates.
 - If a meaningful product decision is missing, the AI asks one narrow question in plain language and explains why it matters.
 - If the repo already answers the question, the AI should not ask it.
 - The AI owns sequencing and engineering process, but work proceeds in **reviewable slices** that the author can inspect and verify before the next dependent slice starts.
@@ -102,6 +103,7 @@ It exists so the author does not have to act like an engineer, project manager, 
 - Residual risks
 - Required doc reconciliation
 - Canon disposition: whether the result is now reconciled into canon or still non-canonical pending doc reconciliation
+- Recommended next reviewable slice
 
 ---
 
@@ -175,12 +177,14 @@ This rule exists so opening a new chat still yields the right project understand
 
 ## Startup Grounding Standard
 
-- Every new project chat should begin with a canon-grounding read, following `.cursor/rules/session-context.mdc`.
+- Every new project chat should begin with a canon-grounding read, following `.cursor/rules/Startup-Grounding.mdc`.
 - The AI must not claim readiness, continuity, or project-status awareness until that startup read is complete.
 - The first substantive project reply in a new chat should identify the canon anchors it read.
+- Before editing canon, the AI should identify the section being changed and use authoritative UTF-8 file content as the source of truth for the patch.
 - Startup grounding is a **preparatory step**, not a default reporting request.
 - If the author asks only to **get up to speed**, **load context**, or equivalent, the post-read reply should stop at the `Doc anchors:` acknowledgment unless the author explicitly asks for a summary, findings, recommendations, or status brief.
 - Repo canon can carry durable project context across chats; prior chat memory by itself cannot.
+- Canon must be read from authoritative UTF-8 file content, not terminal glyph appearance alone. The AI must distinguish display/decoding artifacts from actual document corruption before raising an encoding concern.
 
 ---
 
@@ -192,6 +196,9 @@ This rule exists so opening a new chat still yields the right project understand
 - **No workaround-only fixes for logic/data mismatches.** Fix root cause and/or run data remediation.
 - **Commercial viability over shortcuts.** Do not choose brittle, duplicate, local, or patch-over solutions that weaken the product.
 - **In-place edits for canon.** Do not delete and recreate existing files as a rewrite strategy. For canonical docs and core project files, use in-place edits unless the author explicitly approves replacement or removal.
+- **No blanket canon rewrites.** Do not replace an entire umbrella section, long feature ledger, or multi-cluster canon block in one patch. Edit large owner sections one bounded cluster at a time unless the author explicitly approves a broader rewrite.
+- **Stop on canon patch failure.** If an `apply_patch` edit fails on canon, stop immediately, explain the failure from authoritative file content, disclose any partial change, and do not keep trying alternate edit shapes until the mismatch is understood.
+- **Verify canon edits explicitly.** After editing canon, verify with a UTF-8-safe read and state exactly what changed before declaring the result reconciled.
 - **Editor-first review.** Diffs should be reviewed in IDE.
 
 ---
@@ -203,8 +210,8 @@ This rule exists so opening a new chat still yields the right project understand
 - `01-Vision-Architecture.md` - Stable product and technical principles.
 - `02-Application.md` - Canonical app/product truth by area.
 - `03-Implementation.md` - Current planned execution sequence.
-- `.cursor/rules/session-context.mdc` - First-turn reading discipline.
-- `.cursor/rules/# AI_InteractionRules.mdc` - Execution discipline and engineering gates.
+- `.cursor/rules/Startup-Grounding.mdc` - First-turn reading discipline.
+- `.cursor/rules/Execution-Discipline.mdc` - Execution discipline and engineering gates.
 
 ---
 

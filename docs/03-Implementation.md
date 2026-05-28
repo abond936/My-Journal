@@ -8,15 +8,15 @@
 
 Legend:
 
-?`Implemented`
+✅`Implemented`
 
-?`Planned (1)`
+⭕`Planned (1)`
 
-?`Open`
+❓`Open`
 
-??`Decision`
+📐`Decision`
 
-??`Resource`
+📘`Resource`
 
 
 
@@ -42,7 +42,7 @@ Legend:
 - **Hosted alpha** - Repeated real family use over time: core import, authoring, and reader workflows are dependable; duplicate/identity issues are manageable; and access boundaries are trustworthy.
 - **Commercial v1** - Commercially credible private hosted product: security hardening reviewed, workflow-critical and integrity-critical testing materially expanded, backup/restore/release procedures documented and realistic, and no known brittle shortcut remains in a core reader/admin/import path.
 
-?? **Demo-first execution stance** - Until the family demo is credible, prioritize work in this order: **reader stability/polish**, **hosted access/privacy correctness**, **author prep workflow friction**, **import coherence**, then broader platform or aesthetic expansion. Do not let Theme Management breadth or speculative product extensions outrank the demo path unless they directly block it.
+📐 **Demo-first execution stance** - Until the family demo is credible, prioritize work in this order: **reader stability/polish**, **hosted access/privacy correctness**, **author prep workflow friction**, **import coherence**, then broader platform or aesthetic expansion. Do not let Theme Management breadth or speculative product extensions outrank the demo path unless they directly block it.
 
 
 
@@ -54,7 +54,7 @@ Legend:
 
 
 
-*Sequenced by dependency: what gates what on the path from personal use ? family demo ? hosted alpha ? commercial v1. This document lists active `?1 Planned` work only. Wording of mirrored items should match the source in `02-Application.md` or `01-Vision-Architecture.md` where the item is copied from canon.*
+*Sequenced by dependency: what gates what on the path from personal use → family demo → hosted alpha → commercial v1. This document lists active `⭕1 Planned` work only. Wording of mirrored items should match the source in `02-Application.md` or `01-Vision-Architecture.md` where the item is copied from canon.*
 
 
 
@@ -67,27 +67,27 @@ Legend:
 - **Release-readiness gate** - Before commercial release work is treated as complete, the product must have documented and realistic procedures for deployment, backup verification, restore, admin access recovery, and rollback/incident response.
 - **Reviewable-slice gate** - The AI owns next-work recommendations, but implementation proceeds one approved, reviewable slice at a time. Do not chain dependent slices before the author can inspect and verify the current one.
 
-?? **Current optimization stance** - Near-term implementation should favor faster tagging and relationship workflows, narrower mutations, and fewer parallel admin interaction patterns over adding breadth. In Studio specifically, prefer local post-mutation reconciliation over broad reloads: reuse returned card payloads after save, patch card/media catalogs locally when integrity allows, and reserve broad refetch for structural truth changes. Architectural convergence target: formalize **Studio** as a multi-domain shell with explicit separation between **global structure/taxonomy**, **pane-local card/media workspaces**, and the **shell-owned active card**.
+📐 **Current optimization stance** - Near-term implementation should favor faster tagging and relationship workflows, narrower mutations, and fewer parallel admin interaction patterns over adding breadth. In Studio specifically, prefer local post-mutation reconciliation over broad reloads: reuse returned card payloads after save, patch card/media catalogs locally when integrity allows, and reserve broad refetch for structural truth changes. Architectural convergence target: formalize **Studio** as a multi-domain shell with explicit separation between **global structure/taxonomy**, **pane-local card/media workspaces**, and the **shell-owned active card**.
 
-?? **Canonical task intake** - Do not let chat become a shadow backlog. Use chat for intake, audits, clarifications, and approvals; keep canonical product/status truth in `docs/02-Application.md` and canonical active sequencing truth in `docs/03-Implementation.md`. When ad hoc notes reveal real remaining work, normalize them into the owning `02` section and, if they are true next-step work, mirror them here as `?1` items rather than leaving them in prompts or chat history.
+📐 **Canonical task intake** - Do not let chat become a shadow backlog. Use chat for intake, audits, clarifications, and approvals; keep canonical product/status truth in `docs/02-Application.md` and canonical active sequencing truth in `docs/03-Implementation.md`. When ad hoc notes reveal real remaining work, normalize them into the owning `02` section and, if they are true next-step work, mirror them here as `⭕1` items rather than leaving them in prompts or chat history.
 
-?? **Active Studio/admin baseline** - Shipped Studio status and durable contracts live in `docs/02-Application.md` under **Administration**, **Card Management**, **Collections Management**, **Media Management**, **Tag Management**, and **Question Management**. Use those sections as product truth; keep this file focused on remaining planned work and milestone gates.
+📐 **Active Studio/admin baseline** - Shipped Studio status and durable contracts live in `docs/02-Application.md` under **Administration**, **Card Management**, **Collections Management**, **Media Management**, **Tag Management**, and **Question Management**. Use those sections as product truth; keep this file focused on remaining planned work and milestone gates.
 
-?? **Build/deploy contract (2026-05-23)** - Production builds must not depend on optional platform-package resolution quirks or fabricated shared-event types. Current closeout: import metadata resolution no longer assumes direct `exiftool-vendored.pl` module resolution in app code, and Studio relationship DnD now passes the real drag event plus an explicit resolved `overId` instead of constructing a fake `DragEndEvent`. Verification standard for deploy-blocker work: `npm run build` must complete locally before treating Vercel failures as environment-only.
+📐 **Build/deploy contract (2026-05-23)** - Production builds must not depend on optional platform-package resolution quirks or fabricated shared-event types. Current closeout: import metadata resolution no longer assumes direct `exiftool-vendored.pl` module resolution in app code, and Studio relationship DnD now passes the real drag event plus an explicit resolved `overId` instead of constructing a fake `DragEndEvent`. Verification standard for deploy-blocker work: `npm run build` must complete locally before treating Vercel failures as environment-only.
 
 ### Phase 1 — Pre-Import
 
-*Complete — baseline recorded in `docs/02-Application.md` ? **Administration** ? **Integrity gate (CI)**.*
+*Complete — baseline recorded in `docs/02-Application.md` → **Administration** → **Integrity gate (CI)**.*
 
 
 
 ### Phase 2 — Admin Productivity
 
-?1 **Planned**
+⭕1 **Planned**
 
 
 
-*Integrated execution order:* **§ Studio sequence** inline-tag work is ? (2026-04-23 closeout in `docs/02-Application.md` ? **Administration**). Then **§ Card Management**, **§ Tag Management** (remaining), **§ Media Management** (remaining), **§ User Management** (policy/trust closeout), **§ Backend**. Each **?1** bullet matches `docs/02-Application.md` verbatim (bold title + text after ` - `) where still planned.
+*Integrated execution order:* **§ Studio sequence** inline-tag work is closed (2026-04-23 closeout in `docs/02-Application.md` → **Administration**). Questions and Collections are already Studio-owned product surfaces; remaining work is hardening and simplification inside that shell rather than preserving parallel admin routes. Then **§ Card Management**, **§ Tag Management** (remaining), **§ Media Management** (remaining), **§ User Management** (policy/trust closeout), **§ Backend**. Each **⭕1** bullet matches `docs/02-Application.md` verbatim (bold title + text after ` - `) where still planned.
 
 
 
@@ -118,7 +118,7 @@ Legend:
 
 
 
-**§ Tag Management (`02-Application.md`)** *(remaining **?1** after **Studio sequence**)*
+**§ Tag Management (`02-Application.md`)** *(remaining **⭕1** after **Studio sequence**)*
 
 
 
@@ -130,7 +130,7 @@ Legend:
 
 
 
-**§ Media Management (`02-Application.md`)** *(remaining **?1** after **Studio sequence**)*
+**§ Media Management (`02-Application.md`)** *(remaining **⭕1** after **Studio sequence**)*
 
 
 
@@ -138,7 +138,7 @@ Legend:
 
 
 
-- **PhotoPicker convergence in Media admin** - Add operator flows in **`/admin/media-admin`** (and Studio-embedded **Media admin**) to **import local images into the bank** and to pick library media with **PhotoPicker-grade** filtering (dimensions, search), so **PhotoPicker** in card edit becomes **optional** then **eliminable** for Studio and long-term for full-page card edit (`?? **Studio media & body (2026-04-22)**`).
+- **PhotoPicker convergence in Media admin** - Add operator flows in **`/admin/media-admin`** (and Studio-embedded **Media admin**) to **import local images into the bank** and to pick library media with **PhotoPicker-grade** filtering (dimensions, search), so **PhotoPicker** in card edit becomes **optional** then **eliminable** for Studio and long-term for full-page card edit (see 📐 **Studio media & body (2026-04-22)**).
 
 - **Source-library inventory + restore triage** - Add a Media-admin/operator tool that can browse local source libraries with thumbnails, show which source files are already imported into the app, surface files missing from the media bank, and support a restore shortlist workflow before import. This should help prevent accidental re-import sprawl, make recovery from source more deliberate, and tighten governance around what local images enter the library. Current closeout at the script layer: the local-source missing-media restore helper now resolves canonical import-source paths before `create` vs `merge`, defaults to preflight/plan-only output, requires complete folder success before card mutation, preserves existing gallery membership on merge, and writes per-folder JSONL checkpoints. The approved 2026-05-28 apply run restored `158/159` planned folders; the lone corrupt-file blocker (`zMomDadPics/BobSandra/Portraits/3/03793_p_12af5lw97p2003_b__X.jpg`) was intentionally removed from the source restore set after confirming the other four images were already attached to the existing card, so the remaining work is the operator-facing inventory/restore UI, not another unsafe blind rerun loop.
 
@@ -156,9 +156,9 @@ Legend:
 - **Credential-sharing policy audit** - Confirm and document whether multiple simultaneous sign-ins with the same username/password are acceptable in v1, and whether user creation/update should enforce stricter uniqueness or session expectations.
 
 
-**§ Guided archive assistance (`02-Application.md` ? **Media Management**)** *(after **PhotoPicker convergence** / identity triage pressure; order: prove value, then ship clustering UX—see ?? **Guided archive program (2026-04-24)**)*
+**§ Guided archive assistance (`02-Application.md` → **Media Management**)** *(after **PhotoPicker convergence** / identity triage pressure; order: prove value, then ship clustering UX; see the `Guided archive program (2026-04-24)` decision in `docs/02-Application.md`)*
 
-- **Spike** - End-to-end on a fixed folder: ingest ? embeddings ? candidate clusters ? simple review UI ? export JSON of confirmed groups and proposed tags (no production auth required) (`docs/05-Guided-Archive-Assistance.md`).
+- **Spike** - End-to-end on a fixed folder: ingest → embeddings → candidate clusters → simple review UI → export JSON of confirmed groups and proposed tags (no production auth required) (`docs/05-Guided-Archive-Assistance.md`).
 
 - **Evaluation set** - Curated subset with human-labeled "true events" to score precision/recall of clustering variants (`docs/05-Guided-Archive-Assistance.md`).
 
@@ -176,13 +176,13 @@ Legend:
 
 
 
-- **Narrow mutation paths** - Continue the dedicated-service rollout for **narrow** admin writes beyond the already-shipped card tag/status/content/metadata PATCH routing and card/media bulk tag mutation paths. Remaining work is to identify and convert other admin paths that still pay wider `updateCard`-style costs than the mutation requires while preserving tag counts, derived fields, and index sync guarantees.
+- **Narrow mutation paths** - Continue the rollout of dedicated service functions for **narrow** admin mutations. Current shipped slices include card tag-only/status-only/content-only/metadata-only PATCH routing plus dedicated bulk tag mutation paths for cards and media; remaining work is to extend the same bounded-write discipline wherever admin flows still fall back to wider `updateCard`-style work than the change requires. Keep wide `updateCard` (or equivalent) for structural and rich-content changes.
 
 
 
 ### Phase 3 — Reader experience
 
-?1 **Planned**
+⭕1 **Planned**
 
 
 
@@ -195,13 +195,13 @@ Legend:
   - **P2 (reader polish enabler)** - **CSS Tokenization**.
 
 
-?? **Theme implementation status (2026-04-27)** - The core theme pipeline is now much further along than the original Phase 3 framing implied. Theme Management is already a **floating live-draft workspace** with **Light / Dark** and **Journal / Editorial** controls in the workspace toolbar, a **component/attribute editor on the left**, and **Colors / Type / Structure** values on the right. The runtime generator path has now been substantially reconciled with the editor for **foundations, chrome, controls, cards, overlays, discovery, and media/lightbox surfaces**, and most of the earlier bypasses / bridge-only outputs have been removed or narrowed. Reader **general feedback** and **error feedback** are now wired to live reader surfaces. The main explicit reader-theme exception that remains is **success / warning / info** feedback panels: those values exist in the theme contract, but the current reader UI does not yet render matching surfaces for them. Closed-card background selection is also now truthful: `General` remains the shared baseline and card-family closed backgrounds can explicitly choose `Use General` or a curated override. **Admin/theme wiring status:** Theme Management now runs inside the actual admin theme scope rather than a reader-to-admin bridge layer, shared admin chips/buttons/grids have been moved onto theme-driven variables in the first-risk areas, and the selected filled-control text path is now unified across reader sidebar tabs and admin-selected controls.
+📐 **Theme implementation status (2026-04-27)** - The core theme pipeline is now much further along than the original Phase 3 framing implied. Theme Management is already a **floating live-draft workspace** with **Light / Dark** and **Journal / Editorial** controls in the workspace toolbar, a **component/attribute editor on the left**, and **Colors / Type / Structure** values on the right. The runtime generator path has now been substantially reconciled with the editor for **foundations, chrome, controls, cards, overlays, discovery, and media/lightbox surfaces**, and most of the earlier bypasses / bridge-only outputs have been removed or narrowed. Reader **general feedback** and **error feedback** are now wired to live reader surfaces. The main explicit reader-theme exception that remains is **success / warning / info** feedback panels: those values exist in the theme contract, but the current reader UI does not yet render matching surfaces for them. Closed-card background selection is also now truthful: `General` remains the shared baseline and card-family closed backgrounds can explicitly choose `Use General` or a curated override. **Admin/theme wiring status:** Theme Management now runs inside the actual admin theme scope rather than a reader-to-admin bridge layer, shared admin chips/buttons/grids have been moved onto theme-driven variables in the first-risk areas, and the selected filled-control text path is now unified across reader sidebar tabs and admin-selected controls.
 
-?? **What remains in Phase 3 after reconciliation** - The bullets below are now mostly about **finishing and hardening** the system rather than inventing it from scratch: continue tokenization where raw literals still block design portability, finish the remaining theme-contract inventory for any holdout surfaces, keep tightening the structured persisted schema and recipe model, and complete Journal / Editorial as coherent design packages now that the editor/runtime loop is much closer to truthful.
+📐 **What remains in Phase 3 after reconciliation** - The bullets below are now mostly about **finishing and hardening** the system rather than inventing it from scratch: continue tokenization where raw literals still block design portability, finish the remaining theme-contract inventory for any holdout surfaces, keep tightening the structured persisted schema and recipe model, and complete Journal / Editorial as coherent design packages now that the editor/runtime loop is much closer to truthful.
 
 
 
-- **CSS Tokenization** - Move **design-affecting** values—colors, typography scale, spacing rhythm, radii, shadows, and key surfaces—into `theme.css` variables (and Theme Management where appropriate) so literals in modules do not block **plug-and-play designs**. Not every numeric value in the app is a “theme” concern (e.g. one-off layout math); scope is what should change when switching designs. Grow coverage incrementally toward named presets.
+- **CSS Tokenization** - Move **design-affecting** values-colors, typography scale, spacing rhythm, radii, shadows, and key surfaces-into `theme.css` variables (and Theme Management where appropriate) so literals in modules do not block **plug-and-play designs**. Not every numeric value in the app is a "theme" concern (e.g. one-off layout math); scope is what should change when switching designs. Grow coverage incrementally toward named presets.
 - **Theme contract inventory** - Complete an inventory-driven semantic theme contract before treating Journal / Editorial as finished themes: enumerate reader/admin surfaces, visible elements, current token use, required semantic token families, and migration status.
 - **Theme schema** - Define the structured Firestore theme document shape that stores atomic tokens, semantic token-class assignments, and reader/admin recipe assignments for live draft application and saved runtime themes, with Theme Management as the editing interface; do not expose raw Firestore editing as the product workflow.
 - **Preset completion** - Expand Journal / Editorial from partial preset bundles into coherent light/dark design packages only after the semantic surface inventory and schema are defined.
@@ -214,7 +214,7 @@ Legend:
   Current UI direction after the first refactor pass: the **left side** is component-first and now owns component selection, variant selection, attribute selection, and direct attribute editing; the **right side** is the values panel and now includes **relevant-value guidance**, highlighted matching value groups, direct binding visibility, and explicit **Reader / Workbench** scope routing. Keep pushing that split toward truthfulness rather than drifting back into a mixed token-lab/editor hybrid.
   Status addendum (2026-04-29): the structural overhaul described above is now effectively complete. Theme Management has explicit **Reader / Workbench** scope switching, saved reader/admin scoped persistence, direct Workbench targets for **Header, Sidebar, Shell, Tabs, Controls, and Feedback**, and a values panel that now surfaces **relevant value groups** and the current binding more truthfully. The main remaining work is no longer architecture rescue; it is **preset completion, live validation, and finishing the remaining consumer gaps** such as reader success / warning / info panel surfaces.
 
-?? **Theme execution stance** - Theme work now targets one compile path for both authoring and runtime: **atomic tokens -> semantic token classes -> recipes -> emitted CSS vars**. The dedicated preview is no longer the source of truth; Theme Management applies an unsaved **live draft** to the real app in-session, with **Save** persisting the draft and **discard/reset** restoring the last saved theme. Reader and admin may share atomic tokens, but they should diverge cleanly at the semantic-class and recipe layers where their UI jobs differ.
+📐 **Theme execution stance** - Theme work now targets one compile path for both authoring and runtime: **atomic tokens -> semantic token classes -> recipes -> emitted CSS vars**. The dedicated preview is no longer the source of truth; Theme Management applies an unsaved **live draft** to the real app in-session, with **Save** persisting the draft and **discard/reset** restoring the last saved theme. Reader and admin may share atomic tokens, but they should diverge cleanly at the semantic-class and recipe layers where their UI jobs differ.
 
 
 
@@ -256,7 +256,7 @@ Legend:
 
 
 
-?? **Matrix rollout checklist** - Sequence implementation of the matrix contract in this order:
+📐 **Matrix rollout checklist** - Sequence implementation of the matrix contract in this order:
 
 - **Baseline contract** - Implement `Feed Presentation Matrix` logic in code paths used by `V2ContentCard` and `CardDetailPage`, and verify all existing `type` + `displayMode` combinations map to one explicit behavior.
 
@@ -274,9 +274,9 @@ Legend:
 
 - **Mobile drawer swipe closeout (2026-05-23)** - The reader drawer open gesture now uses a dedicated mobile left-edge capture zone in `AppShell` instead of relying only on broad content-wrapper touches. This keeps the intended in-app drawer-open swipe more competitive with browser-history gestures while preserving left-swipe close and desktop behavior. Remaining mobile reader work should treat this as closed unless real-device verification reveals a narrower follow-up issue.
 
-- **Sidebar control-row reorder** - Revisit the Freeform sidebar header order so `Guided | Freeform`, `Cards | Media`, and `Clear` sit in the most intuitive top-row arrangement for real browsing rather than preserving the current stack by inertia.
+- **Sidebar control-row reorder** - Revisit the Freeform sidebar header order so `Guided | Freeform`, `Cards | Media`, and `Clear` sit in the most intuitive arrangement for real browsing rather than preserving the current stack by inertia.
 
-- **Cards-before-tags ordering** - In the Freeform sidebar, move the `Cards` browse-target control above the tag-tree section so card/media scope is set before taxonomy browsing begins.
+- **Cards-before-tags ordering** - Keep card/media scope visibly above taxonomy browsing so browse target is set before tag-tree exploration begins.
 
 
 
@@ -293,7 +293,7 @@ Legend:
 
 ### Phase 4 — Scale & polish
 
-?1 **Planned**
+⭕1 **Planned**
 
 
 
@@ -308,17 +308,14 @@ Legend:
 - **Quality** - QA app.
 - **Security Hardening** - Threat-model review, authorization review, secret-handling review, and hosted deployment hardening for commercial readiness.
 - **Testing** - Expand automated coverage on workflow-critical, integrity-critical, and commercially sensitive paths.
-- **Access & privacy gate** - Re-verify hosted reader/admin boundaries in deployed use: direct URL behavior, hosted auth/session configuration, and absence of admin affordance leakage. Current closeout: hosted anonymous requests to `/view`, `/search`, and `/admin` now redirect to login; `/api/cards`, `/api/cards/search`, and `/api/view/media` reject anonymous access with `401`; `viewer` sessions can use reader routes/APIs but are redirected away from representative admin routes, do not see admin navigation affordances on reader surfaces, and receive `403` from `/api/admin/journal-users`; `admin` sessions can access both reader/admin routes and the admin users API. The root reader page-route mismatch is resolved, and this pass found no concrete hosted access/privacy leak. Remaining work in this gate should focus on broader deployed-use re-verification and any future admin-affordance leakage findings, not this specific `/view` and `/search` route-protection defect. Local import helpers are expected to remain admin-only operational routes; audience-based reader sharing is future scope, not part of current v1 verification.
+- **Access & privacy gate** - Re-verify hosted reader/admin boundaries in deployed use: direct URL behavior, hosted auth/session configuration, and absence of admin affordance leakage. Current closeout: hosted anonymous requests to `/view`, `/search`, and `/admin` now redirect to login while the corresponding reader APIs reject anonymous access with `401`; `viewer` sessions can use reader routes/APIs but are redirected away from representative admin routes, do not see admin navigation affordances on reader surfaces, and receive `403` from `/api/admin/journal-users`; `admin` sessions can access both reader/admin routes and the admin users API. The root reader page-route mismatch observed on 2026-05-23 is resolved, and this verification pass found no concrete hosted access/privacy leak. Local import helpers are expected to remain admin-only operational routes; audience-based reader sharing is future scope, not part of current v1 verification.
 - **Integrity gate expansion** - Expand integrity verification for card-media references, tag counts, derived card fields, delete/replace graph behavior, and import drift detection.
-- **Import trust gate** - Verify source identity, duplicate signals, metadata preservation, partial-failure handling, and operator recovery paths for import workflows. Current closeout: the local-source missing-media restore helper now enforces preflight-first planning plus complete-folder apply semantics instead of mutating cards after partial folder imports, and the 2026-05-28 approved apply run completed `158/159` planned folder restores with the sole corrupt source file intentionally removed from the restore set after safe review.
-- **Operational recovery gate** - Verify database backup, local secrets backup, restore drill, rollback/incident response, and admin account recovery before commercial release. Current closeout: the v1 operator restore/recovery playbook now exists in `docs/NPM-SCRIPTS.md`, the database-backup task setup no longer depends on the caller's current directory, the backup serializer preserves the real Firestore document id even when a stored row also has an `id` field, and the documented Firestore recovery drill has now been executed successfully against disposable target `my-journal-restore-drill`: fresh backup run, restore dry-run, restore apply, Firestore indexes deploy, Firestore rules deploy, and the viewer recovery path (password reset plus disable/reenable validation) all succeeded. Remaining work in this gate should focus on recovery breadth beyond core Firestore restore mechanics, especially admin-account recovery validation, runtime/search parity, and rollback/incident response drills.
-- **Workflow quality gate** - Validate family-demo reader flow, hosted-alpha repeated-use flow, admin prep friction, and mobile reader usability against milestone pass criteria. Current closeout: hosted authenticated reader data paths are now working for `viewer` sessions across feed, detail, search, media, and at least one dimensional filter, and hosted admin prep verification succeeded on a draft gallery card for metadata save plus gallery reorder/revert. Remaining gap: this pass did not achieve full visual mobile/desktop usability proof because the live browser runtime was unavailable in-thread, so final closure still needs real browser-based interaction verification rather than API-only confirmation.
+- **Import trust gate** - Verify source identity, duplicate signals, metadata preservation, partial-failure handling, and operator recovery paths for import workflows. Current closeout: the local-source missing-media restore helper now runs as a preflight-first plan/apply workflow, resolves the canonical import-source path before `create` vs `merge`, refuses to mutate cards after partial folder imports, and completed the approved 2026-05-28 restore apply at `158/159` planned folders with the sole corrupt source file intentionally removed from the restore set after review.
+- **Operational recovery gate** - Verify database backup, local secrets backup, restore drill, rollback/incident response, and admin account recovery before commercial release. Current closeout: the backup serializer now reserves `id` for the Firestore document id in new backup output; a fresh `backup:database` run completed successfully on 2026-05-27; `restore:database` dry-run and apply both succeeded against the disposable Firebase project `my-journal-restore-drill`; the matching Firestore indexes plus rules were deployed successfully to that drill target; and the documented viewer recovery path was exercised successfully there (password reset, disable/reenable access, and restoration of the original password). The Firestore restore path plus viewer-account recovery are now credibly proven. Remaining work in this broader gate is no longer core Firestore restore mechanics; it is the surrounding runtime/recovery breadth such as search/Typesense parity, deployment/runtime behavior on the recovered target, rollback/incident drills, and admin-account recovery validation.
+- **Workflow quality gate** - Validate family-demo reader flow, hosted-alpha repeated-use flow, admin prep friction, and mobile reader usability against milestone pass criteria. Current closeout: hosted authenticated reader data paths now work for `viewer` sessions across feed, detail, search, media, and at least one dimensional filter; hosted admin save/revert verification also succeeded against a draft gallery card for metadata save plus gallery reorder/revert. Remaining gap: full visual mobile/desktop usability proof still needs a working live browser session rather than API-only confirmation.
 
 
 
-? **Open**
+❓ **Open**
 
 - *(None currently.)*
-
-
-

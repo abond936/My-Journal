@@ -18,7 +18,7 @@ Legend:
   - `02-Application.md` — Each app area: *Features* grouped under `✅ Complete`, `⭕1 Planned`, `⭕2 Future`, `❓ Open` (plus standalone 📐 / 📘). Changes when features ship or are planned.
   - `03-Implementation.md` — Execution plan and phased sequencing (`⭕1` only). Changes when priorities shift. Each listed item must repeat the **same bold title and trailing text** as its source line in `02-Application.md` or (for Backend items) in this file—verbatim, including punctuation and counts. Only **phase assignment and ordering** may differ.
 - **Supplementary specs** - Focused references (e.g. `04-Theme-Design-Contract.md` for semantic tokens, presets, reader responsive/nav contract §9, and design-led reconciliation) extend the core trio; they do not replace `02`/`03` for feature inventory or phased backlog.
-- **AI Behavior** - AI process, approval, and execution rules live in `.cursor/rules/# AI_InteractionRules.mdc`, while the collaboration contract for author and AI roles lives in `00-Project-Framework.md`.
+- **AI Behavior** - AI process, approval, and execution rules live in `.cursor/rules/Execution-Discipline.mdc`, while the collaboration contract for author and AI roles lives in `00-Project-Framework.md`.
 - **Decision hierarchy** - `01` is the canonical source for platform invariants, data authority, mutation rules, and integrity boundaries. Product or workflow simplification is encouraged, but it must preserve tagging truth, relationship truth, and reader truth.
 
 ### Document Structure
@@ -28,7 +28,7 @@ Legend:
     - Headings are **bold**. Subheadings are *italic*.
     - Intent/Principles bullets start with a **bold** 1–2 word subject, then short descriptive text.
     - Under each *Features* block, organize status items into these buckets in order as plain status headings (no list bullet): `✅ Complete`, `⭕1 Planned`, `⭕2 Future`, `❓ Open`.
-    - Items under each status heading are plain bullets (`-`) beginning with a **bold** 1–2 word title + " - " + short descriptive text.
+    - Items under each status heading are plain bullets (`-`) beginning with a **bold** 1–2 word title + " - " + short descriptive text, using the same flush-left layout as `02-Application.md`.
     - Keep `📐` and `📘` as standalone feature bullets outside status buckets.
 
 ### Content Placement
@@ -103,59 +103,46 @@ Phone-native and scanned-photo imports are both first-class inputs. The product 
 
 *Features*
 ✅ **Complete**
-  - **Next.js 15** - App Router, all API routes secured at the edge.
-  - **React 19**
-  - **TypeScript**
-  - **`firebase-admin`** - SDK for server-side operations.
-  - **Zod** - Schema validation.
-  - **Directory Structure**
-    - `src/app/` Next.js App Router
-      - `api/` API route handlers
-      - `admin/` content management interface
-      - `view/` content consumption interface
-      - `layout.tsx` root layout with global providers
-    - `src/components/` reusable React components
-      - `common/` generic shared components
-      - `view/` content-view components
-      - `admin/` admin components
-    - `src/lib/` core logic, types, and utilities
-      - `services/` business logic
-      - `types/` Zod schemas and TypeScript definitions
-      - `hooks/` reusable client hooks
-      - `utils/` general utilities (date formatting, tag manipulation)
-  - **Data Models** - `src/lib/types/` (read directly; fully commented).
-  - **Typesense** - Full-text search for cards/media with CRUD sync and Firestore fallback.
-  - **Typesense list limits** - Typesense Cloud allows at most **250 hits per page** (`per_page`). API routes and services that list cards (or other indexed entities) through Typesense **must not** pass client `limit` values greater than 250 directly as `per_page`; use **paging** (multiple search requests) or cap and document. Exceeding the limit yields **422**, logged failures, and **Firestore fallback**, which harms latency and masks index health. This cap is a **per-request transport** limit on Typesense—not a statement that the **filtered population** is only 250 rows; serving a larger matching set requires **multiple ordered chunks** (or a different list path), not widening `per_page`.
-  - **Card detail child hydration** - `GET /api/cards/[id]` returns the parent card with its native `childrenIds` (the ID list, free with the parent fetch — no extra reads). Hydrated child documents come back on the `children` sidecar **only when requested** (`?limit=N` paginated, max 250, with `lastChildId` cursor and `hasMoreChildren` flag). Callers that need only parent fields—including the child **count**—pass `?children=skip` to bypass child hydration entirely; the standard Studio card-click, admin pre-PATCH snapshot, and reader edit-modal paths all use `skip`. This implements the **narrow read path** principle for the single-card endpoint.
-  - **Auth.js** - Firebase adapter, role-based access control, session persistence, app wrapper `AuthProvider`.
-  - **ESLint CLI** - `npm run lint` now runs the direct ESLint CLI (`eslint .`) instead of deprecated `next lint`, and the repo-wide lint pass is clean as of 2026-05-27. Treat that clean pass as a maintained engineering baseline, not a one-time migration.
+
+- **Next.js 15** - App Router, all API routes secured at the edge.
+- **React 19**
+- **TypeScript**
+- **`firebase-admin`** - SDK for server-side operations.
+- **Zod** - Schema validation.
+- **Layered structure** - App Router routes live under `src/app`, reusable UI under `src/components`, and core logic/contracts under `src/lib` with service, type, hook, and utility layers.
+- **Data Models** - `src/lib/types/` (read directly; fully commented).
+- **Typesense** - Full-text search for cards/media with CRUD sync and Firestore fallback.
+- **Typesense list limits** - Typesense Cloud allows at most **250 hits per page** (`per_page`). API routes and services that list cards (or other indexed entities) through Typesense **must not** pass client `limit` values greater than 250 directly as `per_page`; use **paging** (multiple search requests) or cap and document. Exceeding the limit yields **422**, logged failures, and **Firestore fallback**, which harms latency and masks index health. This cap is a **per-request transport** limit on Typesense—not a statement that the **filtered population** is only 250 rows; serving a larger matching set requires **multiple ordered chunks** (or a different list path), not widening `per_page`.
+- **Card detail child hydration** - `GET /api/cards/[id]` returns the parent card with its native `childrenIds` (the ID list, free with the parent fetch — no extra reads). Hydrated child documents come back on the `children` sidecar **only when requested** (`?limit=N` paginated, max 250, with `lastChildId` cursor and `hasMoreChildren` flag). Callers that need only parent fields—including the child **count**—pass `?children=skip` to bypass child hydration entirely; the standard Studio card-click, admin pre-PATCH snapshot, and reader edit-modal paths all use `skip`. This implements the **narrow read path** principle for the single-card endpoint.
+- **Auth.js** - Firebase adapter, role-based access control, session persistence, app wrapper `AuthProvider`.
+- **ESLint CLI** - `npm run lint` now runs the direct ESLint CLI (`eslint .`) instead of deprecated `next lint`. Treat lint status as a maintained engineering baseline and keep canon aligned with the latest verified result rather than preserving an old clean-pass claim after regressions reappear.
+
 ⭕1 **Planned**
-  - **Narrow mutation paths** - Continue the rollout of dedicated service functions for **narrow** admin mutations. Current shipped slices include card tag-only/status-only/content-only/metadata-only PATCH routing plus dedicated bulk tag mutation paths for cards and media; remaining work is to extend the same bounded-write discipline wherever admin flows still fall back to wider `updateCard`-style work than the change requires. Keep wide `updateCard` (or equivalent) for structural and rich-content changes.
-  - **Code** - Comment code.
-  - **Directory** - Cleanup directory.
-  - **Quality** - QA app.
-  - **Security Hardening** - Threat-model review, authorization review, secret-handling review, and hosted deployment hardening for commercial readiness.
-  - **Testing** - Expand automated coverage on workflow-critical, integrity-critical, and commercially sensitive paths.
-  - **Access & privacy gate** - Re-verify hosted reader/admin boundaries in deployed use: direct URL behavior, hosted auth/session configuration, and absence of admin affordance leakage. Current closeout: hosted anonymous requests to `/view`, `/search`, and `/admin` now redirect to login while the corresponding reader APIs reject anonymous access with `401`; `viewer` sessions can use reader routes/APIs but are redirected away from representative admin routes, do not see admin navigation affordances on reader surfaces, and receive `403` from `/api/admin/journal-users`; `admin` sessions can access both reader/admin routes and the admin users API. The root reader page-route mismatch observed on 2026-05-23 is resolved, and this verification pass found no concrete hosted access/privacy leak. Local import helpers are expected to remain admin-only operational routes; audience-based reader sharing is future scope, not part of current v1 verification.
-  - **Integrity gate expansion** - Expand integrity verification for card-media references, tag counts, derived card fields, delete/replace graph behavior, and import drift detection.
-  - **Import trust gate** - Verify source identity, duplicate signals, metadata preservation, partial-failure handling, and operator recovery paths for import workflows. Current closeout: the local-source missing-media restore helper now runs as a preflight-first plan/apply workflow, resolves the canonical import-source path before `create` vs `merge`, refuses to mutate cards after partial folder imports, and completed the approved 2026-05-28 restore apply at `158/159` planned folders with the sole corrupt source file intentionally removed from the restore set after review.
-  - **Operational recovery gate** - Verify database backup, local secrets backup, restore drill, rollback/incident response, and admin account recovery before commercial release. Current closeout: the backup serializer now reserves `id` for the Firestore document id in new backup output; a fresh `backup:database` run completed successfully on 2026-05-27; `restore:database` dry-run and apply both succeeded against the disposable Firebase project `my-journal-restore-drill`; the matching Firestore indexes plus rules were deployed successfully to that drill target; and the documented viewer recovery path was exercised successfully there (password reset, disable/reenable access, and restoration of the original password). The Firestore restore path plus viewer-account recovery are now credibly proven. Remaining work in this broader gate is no longer core Firestore restore mechanics; it is the surrounding runtime/recovery breadth such as search/Typesense parity, deployment/runtime behavior on the recovered target, rollback/incident drills, and admin-account recovery validation.
-  - **Workflow quality gate** - Validate family-demo reader flow, hosted-alpha repeated-use flow, admin prep friction, and mobile reader usability against milestone pass criteria. Current closeout: hosted authenticated reader data paths now work for `viewer` sessions across feed, detail, search, media, and at least one dimensional filter; hosted admin save/revert verification also succeeded against a draft gallery card for metadata save plus gallery reorder/revert. Remaining gap: full visual mobile/desktop usability proof still needs a working live browser session rather than API-only confirmation.
-  - **Hosted search reliability** - Production reader/admin search must not depend on undeclared Firestore composite indexes. If Firestore fallback or non-Typesense paths are part of the supported runtime behavior, the required indexes must be provisioned and documented, or the code path must degrade predictably instead of failing with `FAILED_PRECONDITION`. Current closeout: `/api/cards/search` no longer depends on the legacy dynamic `filterTags.<term>` Firestore query path for hosted authenticated search.
+
+- **Narrow mutation paths** - Continue the rollout of dedicated service functions for **narrow** admin mutations. Current shipped slices include card tag-only/status-only/content-only/metadata-only PATCH routing plus dedicated bulk tag mutation paths for cards and media; remaining work is to extend the same bounded-write discipline wherever admin flows still fall back to wider `updateCard`-style work than the change requires. Keep wide `updateCard` (or equivalent) for structural and rich-content changes.
+- **Code** - Comment code.
+- **Directory** - Cleanup directory.
+- **Quality** - QA app.
+- **Security Hardening** - Threat-model review, authorization review, secret-handling review, and hosted deployment hardening for commercial readiness.
+- **Testing** - Expand automated coverage on workflow-critical, integrity-critical, and commercially sensitive paths.
+- **Access & privacy gate** - Re-verify hosted reader/admin boundaries in deployed use: direct URL behavior, hosted auth/session configuration, and absence of admin affordance leakage. Current boundary: hosted reader routes and APIs are authenticated, viewer sessions stay reader-only, admin sessions can access both reader/admin surfaces, and local import helpers remain admin-only operational routes.
+- **Integrity gate expansion** - Expand integrity verification for card-media references, tag counts, derived card fields, delete/replace graph behavior, and import drift detection.
+- **Import trust gate** - Verify source identity, duplicate signals, metadata preservation, partial-failure handling, and operator recovery paths for import workflows. Current boundary: local-source restore/import now follows a preflight-first, canonical-path, folder-complete workflow rather than mutating cards during partial or ambiguous recovery.
+- **Operational recovery gate** - Verify database backup, local secrets backup, restore drill, rollback/incident response, and admin account recovery before commercial release. Current boundary: the core Firestore restore path and viewer recovery flow have been exercised successfully on a disposable target; remaining work is broader recovered-environment and incident-response proof.
+- **Workflow quality gate** - Validate family-demo reader flow, hosted-alpha repeated-use flow, admin prep friction, and mobile reader usability against milestone pass criteria. Current boundary: authenticated hosted reader and representative admin save/revert flows are functioning; remaining work is broader live browser usability proof across devices.
+- **Hosted search reliability** - Production reader/admin search must not depend on undeclared Firestore composite indexes. If Firestore fallback or non-Typesense paths are part of the supported runtime behavior, the required indexes must be provisioned and documented, or the code path must degrade predictably instead of failing with `FAILED_PRECONDITION`. Current boundary: hosted authenticated search no longer depends on the legacy dynamic `filterTags.<term>` Firestore query path.
+
 ⭕2 **Future**
-  - **Performance** - Possibilities captured from engineering review.
-  - **Tenant ID** - Not implemented for v1. If multi-tenancy is needed for commercial SaaS (Model C), add `tenantId` to cards, media, tags, questions, and journal_users; apply tenant filters to all queries/rules.
-  - **Storage Abstraction** - Wrap storage operations in `storageService.ts` (upload/delete/getUrl) to reduce migration scope and enable cache-busting on replaced images.
-  - **Error Monitoring / Observability**
-  - **Caching Strategy**
-  - **Sharing**
-  - **Content Versioning / History**
-  - **Hosting**
-  - **Commercial Model** - Self-hosted, single tenant, multi-tenant:
-    - **Tenant ID**
-    - **Auth Upgrade**
-    - **Source Adapters**
-    - **Web vs. Mobile** - PWA, React Native, Capacitor; camera capture is important.
+
+- **Performance** - Possibilities captured from engineering review.
+- **Tenant ID** - Not implemented for v1. If multi-tenancy is needed for commercial SaaS (Model C), add `tenantId` to cards, media, tags, questions, and journal_users; apply tenant filters to all queries/rules.
+- **Storage Abstraction** - Wrap storage operations in `storageService.ts` (upload/delete/getUrl) to reduce migration scope and enable cache-busting on replaced images.
+- **Error Monitoring / Observability**
+- **Caching Strategy**
+- **Sharing**
+- **Content Versioning / History**
+- **Hosting**
+- **Commercial evolution** - If the product broadens beyond the current private hosted journal shape, treat tenancy, auth expansion, source adapters, and web-vs-mobile packaging as one coordinated commercial architecture pass rather than piecemeal feature drift.
 📐 **Denormalized Read** - Keep denormalized read patterns where Firestore query limits demand it.
 📐 **List refresh** - After a successful mutation, prefer **patching** the current list or **invalidating a targeted query** over reloading entire admin catalogs; use full reload only when list membership or ordering cannot be derived locally.
 📐 **Filtered population & stable ordering** - A filter defines the **full server-side universe** for that query (all matching cards or media), not “whatever rows were fetched first.” **Chunked** delivery—infinite scroll, Load more, or discrete pages—must walk **one deterministic ordered stream**: each chunk uses the **same filter parameters and the same declared sort** as the prior chunk, and ordering must be **stable** across chunks (include a **tie-break**, e.g. `docId`, wherever ties are possible). **Do not** re-sort only the client-held subset across fetches in a way that reorders relative to rows not yet loaded. **Seek-only** modes (e.g. some `GET /api/media` assignment/dimension paths) are **exceptions**: they may be **forward-biased** without stable random access; product copy and controls should reflect that, not imply a fixed numbered book over the whole corpus. **Reader vs admin:** the **reader** may use **infinite-style** loading for consumption UX; **admin** may use **pages** or **append** patterns as long as the **same** stability rules apply to the **active** query. Speed goals still favor **small payloads** and **targeted invalidation** (see 📐 **List refresh** and Frontend **List stability**).
@@ -167,8 +154,6 @@ Phone-native and scanned-photo imports are both first-class inputs. The product 
 📐 **Post Seed** - After seed, manage access in Admin > Users (`/admin/journal-users`): create viewer accounts, set/reset passwords, enable/disable access.
 📐 **One Admin** - One admin (author), all other accounts are viewers.
 📐 **Local source helpers** - OneDrive-backed helper routes under `/api/images/local/*` are admin-only operational/import surfaces tied to `ONEDRIVE_ROOT_FOLDER`; they are not part of the reader trust boundary and must not be exposed to anonymous or viewer sessions.
-
-📐 **Tenant path** - v1 is intentionally **single-tenant** and optimized for one author plus viewers. Near-term commercial follow-up should plan for **multi-tenant** isolation without weakening current integrity guarantees.
 
 ### **Frontend**
 
@@ -189,18 +174,21 @@ Phone-native and scanned-photo imports are both first-class inputs. The product 
 
 *Features*
 ✅ **Complete**
-  - **Theme** - CSS modules for styling, global `theme.css` and `fonts.css`.
-  - **Rich Text Editing** - `@tiptap/react`.
-  - **Media Selection** - PhotoPicker for admin modal picker and simple upload.
-  - **Galleries** - GalleryManager and Swiper.
-  - **Image Optimization** - `next/image` via `JournalImage`.
-  - **Drag and Drop** - `@dnd-kit/core` and `@dnd-kit/sortable`.
-  - **Data Fetching** - `SWR` for client-side fetching and caching.
+
+- **Theme** - CSS modules for styling, global `theme.css` and `fonts.css`.
+- **Rich Text Editing** - `@tiptap/react`.
+- **Media Selection** - PhotoPicker for admin modal picker and simple upload.
+- **Galleries** - GalleryManager and Swiper.
+- **Image Optimization** - `next/image` via `JournalImage`.
+- **Drag and Drop** - `@dnd-kit/core` and `@dnd-kit/sortable`.
+- **Data Fetching** - `SWR` for client-side fetching and caching.
+
 ⭕2 **Future**
-  - **Unused Dependencies** - Remove unused packages from `package.json`: `react-markdown`, `@uiw/react-md-editor`, `@minoru/react-dnd-treeview`. Evaluate `react-photo-album` and `framer-motion` before removing.
+
+- **Unused Dependencies** - Remove unused packages from `package.json`: `react-markdown`, `@uiw/react-md-editor`, `@minoru/react-dnd-treeview`. Evaluate `react-photo-album` and `framer-motion` before removing.
 
 📐 **Visual direction** - The product should feel **journal / archival** and **mobile-native**, while also reading as a **clear, professional** consumer app. Those aims can conflict (for example, a handwriting display face vs neutral UI typography). Prefer resolving tension through **theme presets** and distinct **type roles** (e.g. display vs body) wired to tokens, rather than scattered one-off styles. Iteration on the Theme Management model is expected as presets mature.
-📐 **Unified Studio (content admin)** - Long-term **content** administration (cards, media, tags, questions, and their relationships) targets one combined admin shell; **today** the shipped surface is **Studio** (embedded `CollectionsAdminClient`) at `/admin/studio`. Questions now live in Studio as the prompt-bank pane; Users and Themes remain separate admin routes. Canonical scope: `docs/02-Application.md` → **Administration** (`📐 **Studio unified shell contract**`); shipped vs remaining sequencing in `docs/03-Implementation.md` → `📐 **Studio program status (2026-04-22)**` and remaining **⭕1** items. Relationship editing **v1** and **PhotoPicker**-grade picking **converge** on **in-shell Card Edit** plus **Media admin** (`📐 **Studio media & body (2026-04-22)**` in `02-Application.md`).
+📐 **Unified Studio (content admin)** - Long-term content administration converges on **Studio** as the unified shell for cards, media, tags, questions, collections, and their relationships. Users and Themes remain separate admin routes. Relationship editing and library-first media picking should converge inside shell-owned card/media workflows rather than parallel standalone admin surfaces.
 
 ### **Scripts**
 
@@ -212,12 +200,15 @@ Phone-native and scanned-photo imports are both first-class inputs. The product 
 
 *Features*
 ✅ **Complete**
-  - **Syntax** - `npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json`.
-  - **Firebase Setup** - Credentials live in `.env`.
-  - **.env** - Scripts load `.env` **before** any static import of `admin.ts` (`-r dotenv/config` on the Node/tsx invocation, optionally `DOTENV_CONFIG_PATH=.env`). In-file `dotenv.config()` alone is **not** enough if the same file statically imports Firebase Admin—imports run first. See `docs/NPM-SCRIPTS.md` → **Firebase Admin CLI (dotenv)**.
-  - **Maintenance Scripts** - Active scripts: `reconcile:media-cards`, `regenerate:storage-urls`, `cleanup:media`, `backup:database`, `backfill:media-metadata`, `seed:journal-users`.
+
+- **Syntax** - `npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json`.
+- **Firebase Setup** - Credentials live in `.env`.
+- **.env** - Scripts load `.env` **before** any static import of `admin.ts` (`-r dotenv/config` on the Node/tsx invocation, optionally `DOTENV_CONFIG_PATH=.env`). In-file `dotenv.config()` alone is **not** enough if the same file statically imports Firebase Admin—imports run first. See `docs/NPM-SCRIPTS.md` → **Firebase Admin CLI (dotenv)**.
+- **Maintenance Scripts** - Active scripts: `reconcile:media-cards`, `regenerate:storage-urls`, `cleanup:media`, `backup:database`, `backfill:media-metadata`, `seed:journal-users`.
+
 ⭕2 **Future**
-  - **Script Cleanup** - Legacy migration/debug/demo utilities have been pruned aggressively; `src/lib/scripts/` is down to 66 files as of 2026-05-27. Continue reviewing anything not wired into `package.json`, canon, or live admin-maintenance flows so ad hoc helpers do not quietly become permanent product surface.
+
+- **Script Cleanup** - Legacy migration/debug/demo utilities have been pruned aggressively; `src/lib/scripts/` is down to 66 files as of 2026-05-27. Continue reviewing anything not wired into `package.json`, canon, or live admin-maintenance flows so ad hoc helpers do not quietly become permanent product surface.
 📘 **Script Index** - `docs/NPM-SCRIPTS.md`.
 📘 **Import Reference** - `docs/IMPORT-REFERENCE.md`.
 
@@ -233,15 +224,18 @@ Phone-native and scanned-photo imports are both first-class inputs. The product 
 
 *Features*
 ✅ **Complete**
-  - **Database** - `npm run backup:database` writes under `ONEDRIVE_PATH/Firebase Backups/run-<timestamp>/` (all Firestore root collections, index/rules copies, optional Typesense JSONL). Storage file bytes are not included. Optional Windows task: `src/lib/scripts/setup-database-backup-task.ps1` (uses `tsx -r dotenv/config` and `firebase/backup-firestore.ts`; requires `.env` visible to the task user).
-  - **Source tree (Git)** - **Off-device source of truth** is the **remote** (`origin`): commit to **`main`** and push. Do not use feature branches or PR merge flow unless explicitly requested for a specific task. No second full-tree copy is maintained locally or in CI.
-  - **Local secrets (not in Git)** - `npm run backup-codebase` (see `docs/NPM-SCRIPTS.md`) zips only **repo-root** files that stay out of version control: `.env*`, `service-account.json`, and `*-firebase-adminsdk-*.json`. Default output directory: `C:\Users\alanb\CodeBase Backups\` (override with `CODEBASE_SECRETS_BACKUP_DIR`); keeps 5 rolling zips plus `backup-*-metadata.json` and `backup-*-output.txt`. If no matching files exist, only a log is written. Optional Windows task registration: `src/lib/scripts/utils/setup-backup-task.ps1` (daily; run **PowerShell as Administrator**; task resolves repo root via `git`). **Paradigm:** Git = code; this zip = env/credentials; `backup:database` = app data.
-  - **Recovery playbook** - `docs/NPM-SCRIPTS.md` now carries the v1 operator restore drill, release-readiness checklist, account-recovery path, and incident-response baseline. Current contract: restore source from Git, restore repo-root secrets from `backup-codebase`, restore Firestore from one `backup:database` run as a single snapshot, rebuild Typesense from Firestore, and verify auth/integrity before reopening. The guarded `restore:database` helper is for disposable recovery targets first: dry-run by default, explicit project confirmation for writes, refusal on the production project id, and refusal on non-empty targets unless deliberately overridden. For local-source missing-media recovery, the helper path is now preflight-first and folder-complete before card mutation, with per-folder checkpoints and merge preservation of existing gallery items unless a future explicit replace mode is added. Current drill status: the earlier backup-serializer `id` corruption issue is fixed, the documented Firestore recovery drill has now been executed successfully on disposable target `my-journal-restore-drill`, and the 2026-05-28 approved local-source missing-media restore run completed `158/159` planned folder restores; the lone corrupt JPEG was intentionally removed from the source restore set after confirming the other four images in that folder were already imported and attached. Storage bytes remain outside the automated database backup boundary, and Typesense/runtime parity plus admin-account recovery still require separate follow-up if full recovered-environment behavior needs to be proven.
-⭕1 **Planned**
-  - **Operational** - Ensure both backups are operational and verified end-to-end.
-  - **Restore Drill** - Execute the documented restore procedure for database backup, local secrets backup, and deployment configuration against a realistic recovery target before commercial release.
-  - **Release Readiness** - Run the documented minimum production-release checklist for deployment, auth configuration, backup verification, and rollback/recovery against the intended launch revision.
-  - **Account Recovery** - Exercise the documented v1 password reset, viewer access repair, and admin lockout recovery path against live Firestore-backed users before treating the gate as closed.
-  - **Incident Response** - Dry-run the documented v1 operator response for broken deploy, failed import, missing media, access leak suspicion, and backup/restore failure so the playbook is proven, not just written.
-⭕2 **Future**
 
+- **Database** - `npm run backup:database` writes under `ONEDRIVE_PATH/Firebase Backups/run-<timestamp>/` (all Firestore root collections, index/rules copies, optional Typesense JSONL). Storage file bytes are not included. Optional Windows task: `src/lib/scripts/setup-database-backup-task.ps1` (uses `tsx -r dotenv/config` and `firebase/backup-firestore.ts`; requires `.env` visible to the task user).
+- **Source tree (Git)** - **Off-device source of truth** is the **remote** (`origin`): commit to **`main`** and push. Do not use feature branches or PR merge flow unless explicitly requested for a specific task. No second full-tree copy is maintained locally or in CI.
+- **Local secrets (not in Git)** - `npm run backup-codebase` (see `docs/NPM-SCRIPTS.md`) zips only **repo-root** files that stay out of version control: `.env*`, `service-account.json`, and `*-firebase-adminsdk-*.json`. Default output directory: `C:\Users\alanb\CodeBase Backups\` (override with `CODEBASE_SECRETS_BACKUP_DIR`); keeps 5 rolling zips plus `backup-*-metadata.json` and `backup-*-output.txt`. If no matching files exist, only a log is written. Optional Windows task registration: `src/lib/scripts/utils/setup-backup-task.ps1` (daily; run **PowerShell as Administrator**; task resolves repo root via `git`). **Paradigm:** Git = code; this zip = env/credentials; `backup:database` = app data.
+- **Recovery playbook** - `docs/NPM-SCRIPTS.md` carries the restore drill, release-readiness checklist, account-recovery path, and incident-response baseline. Current contract: restore source from Git, restore repo-root secrets from `backup-codebase`, restore Firestore from one `backup:database` snapshot, rebuild Typesense from Firestore, and verify auth/integrity before reopening. The guarded `restore:database` helper is for disposable recovery targets first, and local-source missing-media recovery follows a preflight-first, folder-complete workflow before card mutation. Storage bytes remain outside the automated database backup boundary.
+
+⭕1 **Planned**
+
+- **Operational** - Ensure both backups are operational and verified end-to-end.
+- **Restore Drill** - Execute the documented restore procedure for database backup, local secrets backup, and deployment configuration against a realistic recovery target before commercial release.
+- **Release Readiness** - Run the documented minimum production-release checklist for deployment, auth configuration, backup verification, and rollback/recovery against the intended launch revision.
+- **Account Recovery** - Exercise the documented v1 password reset, viewer access repair, and admin lockout recovery path against live Firestore-backed users before treating the gate as closed.
+- **Incident Response** - Dry-run the documented v1 operator response for broken deploy, failed import, missing media, access leak suspicion, and backup/restore failure so the playbook is proven, not just written.
+
+⭕2 **Future**

@@ -983,29 +983,29 @@ This is now a contract rule: if a role refactor changes one canary by accident w
 
 This section is the **single product contract** for how the signed-in reader chrome behaves across desktop, tablet, and phone. It complements §2–§7 (tokens and presets): layout and breakpoints are specified here so implementation does not drift session-to-session.
 
-### 9.1 Strategic intent
+### 10.1 Strategic intent
 
 - **Cross-device consistency** — The same tasks (open filters, read the feed, use top nav) must remain **obvious**; do not hide a primary control on one width without replacing it.
 - **Mobile-first consumption** — Narrow viewports are first-class; touch targets and readable type follow §2 and `02-Application.md` (Accessibility ⭕2).
 - **One control surface for filters** — The left tag/filter panel remains the discovery surface; narrow widths use a **slide-over drawer + backdrop**, not a second competing paradigm unless product explicitly changes.
 
-### 9.2 Breakpoints and CSS mechanics
+### 10.2 Breakpoints and CSS mechanics
 
 - **Canonical narrow breakpoint** — `**768px`** is the width at which the app switches to the **drawer** treatment for the filter sidebar (fixed overlay, backdrop). This aligns with the design-token intent `--breakpoint-md: 768px` in `theme1.css` / generated theme data.
 - **Literal values in `@media`** — Layout `@media` queries MUST use **literal pixel widths** (e.g. `max-width: 768px`), **not** `var(--breakpoint-md)`. Custom properties inside media queries are unreliable across browsers and have caused inconsistent layout behavior.
 - **Component alignment** — `AppShell`, `Navigation`, `CardFeedV2`, `V2ContentCard`, and related view CSS should use the **same** breakpoint for the same behavioral change unless a documented exception exists.
 
-### 9.3 Sidebar toggle (← / →)
+### 10.3 Sidebar toggle (← / →)
 
 - **Visibility** — The **sidebar toggle control stays visible at all viewport widths** so users can always open the filter panel, including on phones. (Narrow layouts continue to use overlay + backdrop; the toggle is not removed.)
 - **Z-index and chrome** — Stacking order must keep the toggle usable (see `--z-index-sidebar` / header tokens); do not regress without updating this contract.
 
-### 9.4 Main content feed grid (`/view`)
+### 10.4 Main content feed grid (`/view`)
 
 - **Narrow** — At `**max-width: 768px`**, the primary card feed uses a **single column** of cards (full-width tiles in the content area). This preserves a “story stream” feel and avoids two squeezed columns on phones and narrow tablets.
 - **Wider** — Above that breakpoint, a multi-column grid may use tokenized gaps and radii; minimum column width and column count should be chosen deliberately, not only `auto-fill` with a large `minmax` floor that forces two columns too early on narrow tablets.
 
-### 9.5 When to change this section
+### 10.5 When to change this section
 
 Changes to breakpoints, toggle visibility, or feed column rules are **product decisions**: update this § first, then `02-Application.md` (Navigation / Content) and `03-Implementation.md` if work is planned (`⭕1`).
 

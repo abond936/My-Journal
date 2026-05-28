@@ -14,6 +14,8 @@ On the **first assistant turn of every new chat in this repo**, before answering
 5. In the **first project-substantive reply of that chat**, output **one line**: **Doc anchors:** which files/sections you read (for example `AGENTS`, `01 TECHNICAL Backend Principles`, `02 Card Management`). If a required file is unreadable, say so and stop.
 6. **Startup output contract** - Treat the startup read as **preparation**, not as a default request for recap. If the user's startup request is only to **get up to speed**, **load context**, **ground yourself**, or equivalent, the reply after reading should be **only** the single `Doc anchors:` line unless the user explicitly asks for a summary, findings, recommendations, or status brief.
 
+**Canon read rule:** When reading canon docs/rules, treat UTF-8-safe file content as authoritative. Do not report encoding damage from terminal mojibake alone; verify suspected corruption with raw bytes or another UTF-8-safe read path first.
+
 **Readiness rule:** Do **not** say you are "up to speed," "ready to continue," aware of current project status, or equivalent until this startup read is complete and the `Doc anchors:` line has been emitted.
 
 **No startup summary by default:** Do **not** add a project summary, status recap, risk list, or next-step recommendation to a pure startup-grounding request unless the user explicitly asks for one.
