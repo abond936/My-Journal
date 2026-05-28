@@ -12,6 +12,7 @@ function pickRelationshipSnapshot(card: StudioCardContext): Partial<ShellRelatio
     coverImageFocalPoint: card.coverImageFocalPoint,
     galleryMedia: Array.isArray(card.galleryMedia) ? card.galleryMedia : [],
     childrenIds: Array.isArray(card.childrenIds) ? card.childrenIds : [],
+    content: typeof card.content === 'string' ? card.content : '',
     contentMedia: Array.isArray(card.contentMedia) ? card.contentMedia : [],
     type: card.type ?? 'story',
     status: card.status ?? 'draft',

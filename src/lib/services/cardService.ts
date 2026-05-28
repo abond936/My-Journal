@@ -508,6 +508,9 @@ async function _hydrateCards(cards: Card[]): Promise<Card[]> {
     if (card.coverImageId && typeof card.coverImageId === 'string') mediaIds.add(card.coverImageId);
     if (card.galleryMedia) card.galleryMedia.forEach(item => item.mediaId && typeof item.mediaId === 'string' && mediaIds.add(item.mediaId));
     if (card.contentMedia) card.contentMedia.forEach(id => id && typeof id === 'string' && mediaIds.add(id));
+    extractMediaFromContent(card.content ?? '').forEach((id) => {
+      if (id && typeof id === 'string') mediaIds.add(id);
+    });
   }
 
   if (mediaIds.size === 0) {
