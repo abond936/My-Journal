@@ -3,18 +3,13 @@ import { Card, cardSchema } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 import {
   updateTagCountsForCard,
-  updateTagCountsForMedia,
   mergeDerivedTagsForCardRecord,
   getAllTags,
   getTagAncestors,
   organizeTagsByDimension,
 } from '@/lib/firebase/tagService';
 import { getFirestore, FieldPath, FieldValue } from 'firebase-admin/firestore';
-import {
-  deleteFromStorageWithRetry,
-  deleteMediaAsset,
-  markStorageForLaterDeletion,
-} from './images/mediaStorage';
+import { deleteMediaAsset } from './images/mediaStorage';
 import { extractMediaFromContent, stripContentImageSrc, hydrateContentImageSrc, removeMediaFromContent, generateExcerpt } from '@/lib/utils/cardUtils';
 import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 import { buildTagMap, computeJournalWhenSortKeys } from '@/lib/utils/journalWhenSort';
@@ -23,10 +18,7 @@ import { Media } from '@/lib/types/photo';
 import { AppError, ErrorCode } from '@/lib/types/error';
 import { unlinkCardFromAllQuestions } from '@/lib/services/questionService';
 import { syncCardToTypesense, removeCardFromTypesense } from '@/lib/services/typesenseService';
-import {
-  removeMediaFromTypesense,
-  syncMediaToTypesenseById,
-} from '@/lib/services/typesenseMediaService';
+import { syncMediaToTypesenseById } from '@/lib/services/typesenseMediaService';
 import {
   compareCollectionRootCards,
   nextCollectionRootOrderForAppend,
@@ -508,9 +500,6 @@ async function _hydrateCards(cards: Card[]): Promise<Card[]> {
     if (card.coverImageId && typeof card.coverImageId === 'string') mediaIds.add(card.coverImageId);
     if (card.galleryMedia) card.galleryMedia.forEach(item => item.mediaId && typeof item.mediaId === 'string' && mediaIds.add(item.mediaId));
     if (card.contentMedia) card.contentMedia.forEach(id => id && typeof id === 'string' && mediaIds.add(id));
-    extractMediaFromContent(card.content ?? '').forEach((id) => {
-      if (id && typeof id === 'string') mediaIds.add(id);
-    });
   }
 
   if (mediaIds.size === 0) {
@@ -2716,8 +2705,7 @@ export async function deleteAllCards(): Promise<void> {
 }
 
 /**
- * Deletes a card and all its associated media assets (cover image, gallery images).
- * This function enforces the "no orphans" rule for media and updates parent cards.
+ * Deletes a card while preserving media library assets and updating parent cards.
  * @param cardId The ID of the card to delete.
  */
 export async function deleteCard(cardId: string): Promise<void> {
@@ -2740,22 +2728,16 @@ export async function deleteCard(cardId: string): Promise<void> {
       );
     }
 
-    // Collect media IDs for transaction cleanup work
-    const mediaToDelete: string[] = [];
-    if (cardToDelete.coverImageId) {
-        mediaToDelete.push(cardToDelete.coverImageId);
-    }
-    if (cardToDelete.galleryMedia) {
-        cardToDelete.galleryMedia.forEach(item => mediaToDelete.push(item.mediaId));
-    }
-    if (cardToDelete.contentMedia) {
-        cardToDelete.contentMedia.forEach(id => mediaToDelete.push(id));
-    }
+    const mediaToDetach = Array.from(
+      new Set([
+        ...getMediaIdsFromCard(cardToDelete),
+        ...extractMediaFromContent(cardToDelete.content ?? ''),
+      ])
+    );
 
     // Preload tag tree once so transaction-side tag count updates remain write-only.
     const allTags = await getAllTags();
     const tagPathLookup = new Map(allTags.filter((t) => t.docId).map((t) => [t.docId!, t]));
-    const storagePathsToDelete = new Set<string>();
 
     return withRetry(async () => {
       return firestore.runTransaction(async (transaction) => {
@@ -2770,7 +2752,7 @@ export async function deleteCard(cardId: string): Promise<void> {
         const parentCardsQuery = firestore.collection(CARDS_COLLECTION)
             .where('childrenIds', 'array-contains', cardId);
         const parentCardsSnapshot = await transaction.get(parentCardsQuery);
-        const mediaRefs = Array.from(new Set(mediaToDelete)).map((mediaId) =>
+        const mediaRefs = mediaToDetach.map((mediaId) =>
           firestore.collection(MEDIA_COLLECTION).doc(mediaId)
         );
         const mediaSnapshots = mediaRefs.length > 0 ? await transaction.getAll(...mediaRefs) : [];
@@ -2801,13 +2783,13 @@ export async function deleteCard(cardId: string): Promise<void> {
           });
         }
 
-        // Remove media docs + decrement media tag counts using pre-read snapshots.
+        // Preserve media library assets while removing this card from their back-reference lists.
         for (const mediaSnap of mediaSnapshots) {
           if (!mediaSnap.exists) continue;
-          const mediaData = mediaSnap.data() as Media;
-          if (mediaData.storagePath) storagePathsToDelete.add(mediaData.storagePath);
-          await updateTagCountsForMedia(mediaData.tags || [], [], transaction, tagPathLookup);
-          transaction.delete(mediaSnap.ref);
+          transaction.update(mediaSnap.ref, {
+            referencedByCardIds: FieldValue.arrayRemove(cardId),
+            updatedAt: Date.now(),
+          });
         }
 
         // Delete the card document
@@ -2816,21 +2798,8 @@ export async function deleteCard(cardId: string): Promise<void> {
     }).then(async () => {
         await unlinkCardFromAllQuestions(cardId);
         void removeCardFromTypesense(cardId);
-        for (const mediaId of mediaToDelete) {
-          void removeMediaFromTypesense(mediaId);
-        }
-
-        // Post-transaction: Try immediate storage cleanup for deleted media files.
-        // This runs outside Firestore transaction boundaries to keep DB integrity decoupled from storage availability.
-        for (const storagePath of storagePathsToDelete) {
-          try {
-            const success = await deleteFromStorageWithRetry(storagePath);
-            if (!success) {
-              await markStorageForLaterDeletion(storagePath);
-            }
-          } catch (error) {
-            console.error(`Error processing storage cleanup for ${storagePath}:`, error);
-          }
+        for (const mediaId of mediaToDetach) {
+          void syncMediaToTypesenseById(mediaId);
         }
     });
 }

@@ -309,6 +309,79 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
     expect(mediaAfter.exists).toBe(false);
   });
 
+  it('preserves media docs when deleting a card and only detaches the card reference', async () => {
+    const db = getFirestore(app);
+    const { deleteCard } = await getCardService();
+
+    await db.collection('media').doc('media-shared').set({
+      filename: 'shared.jpg',
+      storagePath: 'images/shared.jpg',
+      referencedByCardIds: ['card-a', 'card-b'],
+      updatedAt: Date.now(),
+    });
+
+    await db.collection('media').doc('media-inline-only').set({
+      filename: 'inline.jpg',
+      storagePath: 'images/inline.jpg',
+      referencedByCardIds: ['card-a'],
+      updatedAt: Date.now(),
+    });
+
+    await db.collection('cards').doc('card-a').set({
+      docId: 'card-a',
+      status: 'published',
+      coverImageId: 'media-shared',
+      galleryMedia: [],
+      contentMedia: [],
+      content: '<p>inline</p><figure data-media-id="media-inline-only"><img src="x" /></figure>',
+      tags: [],
+      filterTags: {},
+      who: [],
+      what: [],
+      when: [],
+      where: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    await db.collection('cards').doc('card-b').set({
+      docId: 'card-b',
+      status: 'published',
+      coverImageId: 'media-shared',
+      galleryMedia: [],
+      contentMedia: [],
+      content: '<p>shared cover</p>',
+      tags: [],
+      filterTags: {},
+      who: [],
+      what: [],
+      when: [],
+      where: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    await deleteCard('card-a');
+
+    const deletedCardAfter = await db.collection('cards').doc('card-a').get();
+    expect(deletedCardAfter.exists).toBe(false);
+
+    const survivingCardAfter = (await db.collection('cards').doc('card-b').get()).data() as IntegrityCard;
+    expect(survivingCardAfter.coverImageId).toBe('media-shared');
+
+    const sharedMediaAfter = (
+      await db.collection('media').doc('media-shared').get()
+    ).data() as IntegrityMedia & { referencedByCardIds?: string[] };
+    expect(sharedMediaAfter).toBeTruthy();
+    expect(sharedMediaAfter.referencedByCardIds?.sort()).toEqual(['card-b']);
+
+    const inlineMediaAfter = (
+      await db.collection('media').doc('media-inline-only').get()
+    ).data() as IntegrityMedia & { referencedByCardIds?: string[] };
+    expect(inlineMediaAfter).toBeTruthy();
+    expect(inlineMediaAfter.referencedByCardIds ?? []).toEqual([]);
+  });
+
   it('does not mutate cards when delete is requested for missing media docs', async () => {
     const db = getFirestore(app);
     const { deleteMediaWithCardCleanup } = await getCardService();

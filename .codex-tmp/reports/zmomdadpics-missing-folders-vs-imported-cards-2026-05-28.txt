@@ -1,0 +1,324 @@
+Missing zMomDadPics folders vs surviving imported cards
+Generated: 2026-05-28T05:20:23.108Z
+Unique folders: 159
+Folders with imported cards: 5
+Folders without imported cards: 154
+
+1	zMomDadPics/a1Bob/03 Other/zMisc
+  MGDQv37FoIniOeKilT8e	draft	gallery=12	Robert Bond - Miscellaneous
+1	zMomDadPics/a1Sandra/01 Parents Parents/Maternal
+  794fFXx32cWzHYOgodvW	draft	gallery=8	Maternal
+1	zMomDadPics/BobSandra/Portraits/3
+  yheTVI8z33sLhED4yLaY	draft	gallery=4	Family Portrait ~1976
+1	zMomDadPics/BobSandra/Wedding
+  hpM8WZlRj4NPI4fx4aaB	draft	gallery=14	Bob & Sandra's Wedding
+1	zMomDadPics/zKids/3Greg/Graduation - High School
+  ophkTttLphEuOQk37q6E	draft	gallery=5	Greg's High School Graduation 1979
+49	zMomDadPics/BobSandra/Travel/zGeneral/General1
+  NO importedFromFolder card found
+45	zMomDadPics/BobSandra/Travel/Itta Bena
+  NO importedFromFolder card found
+40	zMomDadPics/BobSandra/Travel/zGeneral
+  NO importedFromFolder card found
+33	zMomDadPics/BobSandra/Homes/Childress Dr/Interior
+  NO importedFromFolder card found
+29	zMomDadPics/BobSandra/Travel/Switzerland
+  NO importedFromFolder card found
+27	zMomDadPics/BobSandra/50th/Cruise
+  NO importedFromFolder card found
+27	zMomDadPics/BobSandra/Travel/France/Paris
+  NO importedFromFolder card found
+24	zMomDadPics/BobSandra/Travel/Japan
+  NO importedFromFolder card found
+23	zMomDadPics/BobSandra/Hartwell/Hartwell1
+  NO importedFromFolder card found
+20	zMomDadPics/BobSandra/Hartwell/Houseboat
+  NO importedFromFolder card found
+19	zMomDadPics/BobSandra/Business/Evergreen/Party
+  NO importedFromFolder card found
+19	zMomDadPics/BobSandra/Travel/Chicago
+  NO importedFromFolder card found
+18	zMomDadPics/BobSandra/Travel/Postcards
+  NO importedFromFolder card found
+16	zMomDadPics/a1Bob/02 Parents/The Hammonds/Nell/zMisc
+  NO importedFromFolder card found
+16	zMomDadPics/BobSandra/Travel/Amsterdam
+  NO importedFromFolder card found
+16	zMomDadPics/zKids/1Alan/0/atlanta
+  NO importedFromFolder card found
+15	zMomDadPics/BobSandra/Homes/Keller Blvd/Keller Blvd Construction
+  NO importedFromFolder card found
+15	zMomDadPics/BobSandra/Travel/Cruise
+  NO importedFromFolder card found
+14	zMomDadPics/BobSandra/Travel/Virgin Islands
+  NO importedFromFolder card found
+14	zMomDadPics/BobSandra/Travel/West
+  NO importedFromFolder card found
+13	zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Andrea
+  NO importedFromFolder card found
+13	zMomDadPics/BobSandra/Travel/Canada
+  NO importedFromFolder card found
+12	zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Portraits
+  NO importedFromFolder card found
+12	zMomDadPics/BobSandra/Travel/Disney World/Disney World 2
+  NO importedFromFolder card found
+11	zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim/Portraits
+  NO importedFromFolder card found
+11	zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha
+  NO importedFromFolder card found
+11	zMomDadPics/zKids/4Mark/Citadel/Summerall Guard
+  NO importedFromFolder card found
+10	zMomDadPics/BobSandra/Christmas/Christmas 1957
+  NO importedFromFolder card found
+10	zMomDadPics/BobSandra/Homes/Childress Dr/Dock
+  NO importedFromFolder card found
+10	zMomDadPics/BobSandra/Travel/Beech Mountain
+  NO importedFromFolder card found
+10	zMomDadPics/BobSandra/Travel/Egypt
+  NO importedFromFolder card found
+10	zMomDadPics/BobSandra/Travel/Italy/Venice
+  NO importedFromFolder card found
+10	zMomDadPics/BobSandra/Travel/Worlds Fair
+  NO importedFromFolder card found
+10	zMomDadPics/BobSandra/Travel/YMCA Camp
+  NO importedFromFolder card found
+9	zMomDadPics/BobSandra/Christmas/Christmas 1961
+  NO importedFromFolder card found
+9	zMomDadPics/BobSandra/Travel/Beech Mountain 2
+  NO importedFromFolder card found
+8	zMomDadPics/a1Bob/02 Parents/The Hammonds/Nell/Portraits
+  NO importedFromFolder card found
+8	zMomDadPics/BobSandra/Christmas/Childress
+  NO importedFromFolder card found
+8	zMomDadPics/BobSandra/Clemson Football/Peach Bowl
+  NO importedFromFolder card found
+8	zMomDadPics/BobSandra/Homes/Childress Dr/Pond
+  NO importedFromFolder card found
+8	zMomDadPics/BobSandra/Travel/Italy/Rome
+  NO importedFromFolder card found
+8	zMomDadPics/zKids/5ASGM/Creighton/Cammoflage
+  NO importedFromFolder card found
+7	zMomDadPics/a1Bob/02 Parents/The Hammonds/George and Margaret Visit
+  NO importedFromFolder card found
+7	zMomDadPics/BobSandra/Christmas/Christmas 1968
+  NO importedFromFolder card found
+7	zMomDadPics/BobSandra/Homes/Childress Dr/Basketball
+  NO importedFromFolder card found
+7	zMomDadPics/BobSandra/Travel/Acapulco
+  NO importedFromFolder card found
+7	zMomDadPics/BobSandra/Travel/Italy
+  NO importedFromFolder card found
+7	zMomDadPics/BobSandra/Travel/Washington DC
+  NO importedFromFolder card found
+6	zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim/Wedding - Candy
+  NO importedFromFolder card found
+6	zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Caroline
+  NO importedFromFolder card found
+6	zMomDadPics/a1Bob/02 Parents/The Hammonds/Toby
+  NO importedFromFolder card found
+6	zMomDadPics/BobSandra/Christmas/Cleveland/Christmas 1974
+  NO importedFromFolder card found
+6	zMomDadPics/BobSandra/Travel/Germany
+  NO importedFromFolder card found
+6	zMomDadPics/BobSandra/Travel/Hawaii
+  NO importedFromFolder card found
+6	zMomDadPics/BobSandra/Travel/Monte Carlo
+  NO importedFromFolder card found
+6	zMomDadPics/zKids/1Alan/0/a
+  NO importedFromFolder card found
+6	zMomDadPics/zKids/5ASGM/Creighton/Bicycle
+  NO importedFromFolder card found
+6	zMomDadPics/zKids/5ASGM/Woodbine Terrace/ShortsSuspenders
+  NO importedFromFolder card found
+5	zMomDadPics/a1Bob/02 Parents/The Hammonds/JimMarsha
+  NO importedFromFolder card found
+5	zMomDadPics/BobSandra/Christmas/Christmas 1958
+  NO importedFromFolder card found
+5	zMomDadPics/BobSandra/Christmas/Christmas 1962
+  NO importedFromFolder card found
+5	zMomDadPics/BobSandra/Country Club Dr/Hot Tub
+  NO importedFromFolder card found
+5	zMomDadPics/BobSandra/Travel/Cape Canaveral
+  NO importedFromFolder card found
+5	zMomDadPics/BobSandra/Travel/Falls
+  NO importedFromFolder card found
+5	zMomDadPics/BobSandra/Travel/Williamsburg
+  NO importedFromFolder card found
+5	zMomDadPics/zKids/1Alan/1/Overalls
+  NO importedFromFolder card found
+5	zMomDadPics/zKids/1Alan/2/Horse
+  NO importedFromFolder card found
+5	zMomDadPics/zKids/1Alan/Graduation/HS/Car
+  NO importedFromFolder card found
+4	zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/MarshaBill
+  NO importedFromFolder card found
+4	zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Wedding - F
+  NO importedFromFolder card found
+4	zMomDadPics/a1Sandra/03 Other/Military Reservation/Horse
+  NO importedFromFolder card found
+4	zMomDadPics/a1Sandra/03 Other/Military Reservation/Snow
+  NO importedFromFolder card found
+4	zMomDadPics/BobSandra/Business/India Partners
+  NO importedFromFolder card found
+4	zMomDadPics/BobSandra/Christmas/Christmas 1966
+  NO importedFromFolder card found
+4	zMomDadPics/BobSandra/Christmas/Christmas 1967
+  NO importedFromFolder card found
+4	zMomDadPics/BobSandra/Christmas/Parkins Mill/2
+  NO importedFromFolder card found
+4	zMomDadPics/BobSandra/Christmas/Parkins Mill/Christmas 1976
+  NO importedFromFolder card found
+4	zMomDadPics/BobSandra/Christmas/Parkins Mill/Christmas 1981
+  NO importedFromFolder card found
+4	zMomDadPics/BobSandra/Parkins Mill/Back to School
+  NO importedFromFolder card found
+4	zMomDadPics/BobSandra/Travel/Deep Sea Fishing
+  NO importedFromFolder card found
+4	zMomDadPics/BobSandra/Travel/Italy/North Italy
+  NO importedFromFolder card found
+4	zMomDadPics/BobSandra/Travel/Itta Bena/Texas and Mississippi Trip
+  NO importedFromFolder card found
+4	zMomDadPics/BobSandra/Travel/Okeefenokee
+  NO importedFromFolder card found
+3	zMomDadPics/a1Bob/02 Parents/BobMargaretNell/Family
+  NO importedFromFolder card found
+3	zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim
+  NO importedFromFolder card found
+3	zMomDadPics/a1Bob/02 Parents/The Hammonds/JimMarsha/Portraits
+  NO importedFromFolder card found
+3	zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/William
+  NO importedFromFolder card found
+3	zMomDadPics/a1Bob/02 Parents/The Hammonds/Nell/Portraits/3
+  NO importedFromFolder card found
+3	zMomDadPics/a1Bob/02 Parents/The Hammonds/Portrait
+  NO importedFromFolder card found
+3	zMomDadPics/a1Sandra/03 Other/Military Reservation/Chair
+  NO importedFromFolder card found
+3	zMomDadPics/BobSandra/Christmas/Christmas 1965
+  NO importedFromFolder card found
+3	zMomDadPics/BobSandra/Christmas/Cleveland
+  NO importedFromFolder card found
+3	zMomDadPics/BobSandra/Homes/Childress Dr/Aerial View
+  NO importedFromFolder card found
+3	zMomDadPics/BobSandra/Travel/Beach
+  NO importedFromFolder card found
+3	zMomDadPics/BobSandra/Travel/China
+  NO importedFromFolder card found
+3	zMomDadPics/BobSandra/Travel/Hilton Head
+  NO importedFromFolder card found
+3	zMomDadPics/BobSandra/Travel/New York/USS Intrepid
+  NO importedFromFolder card found
+3	zMomDadPics/zKids/1Alan/1/Crib
+  NO importedFromFolder card found
+3	zMomDadPics/zKids/1Alan/2/Bow Tie
+  NO importedFromFolder card found
+3	zMomDadPics/zKids/1Alan/Graduation/BS/Car
+  NO importedFromFolder card found
+3	zMomDadPics/zKids/5ASGM/Creighton/Davis Visit
+  NO importedFromFolder card found
+3	zMomDadPics/zKids/5ASGM/Woodbine Terrace/Couch1
+  NO importedFromFolder card found
+3	zMomDadPics/zKids/5ASGM/Woodbine Terrace/Couch2
+  NO importedFromFolder card found
+3	zMomDadPics/zKids/5ASGM/Woodbine Terrace/Couch3
+  NO importedFromFolder card found
+3	zMomDadPics/zKids/5ASGM/Woodbine Terrace/Pool
+  NO importedFromFolder card found
+3	zMomDadPics/zKids/5ASGM/Woodbine Terrace/Portraits
+  NO importedFromFolder card found
+2	zMomDadPics/a1Bob/02 Parents/BobMargaretNell/Family2
+  NO importedFromFolder card found
+2	zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim/Wedding Third
+  NO importedFromFolder card found
+2	zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/V Collar
+  NO importedFromFolder card found
+2	zMomDadPics/BobSandra/Christmas/Country Club
+  NO importedFromFolder card found
+2	zMomDadPics/BobSandra/Christmas/Parkins Mill/3
+  NO importedFromFolder card found
+2	zMomDadPics/BobSandra/Christmas/Parkins Mill/4
+  NO importedFromFolder card found
+2	zMomDadPics/BobSandra/Christmas/Parkins Mill/5
+  NO importedFromFolder card found
+2	zMomDadPics/BobSandra/Christmas/Parkins Mill/7
+  NO importedFromFolder card found
+2	zMomDadPics/BobSandra/Christmas/Parkins Mill/8
+  NO importedFromFolder card found
+2	zMomDadPics/BobSandra/Travel/Denmark
+  NO importedFromFolder card found
+2	zMomDadPics/BobSandra/Travel/France
+  NO importedFromFolder card found
+2	zMomDadPics/BobSandra/Travel/Nantahala
+  NO importedFromFolder card found
+2	zMomDadPics/BobSandra/Travel/New York/Central Park
+  NO importedFromFolder card found
+2	zMomDadPics/BobSandra/Travel/State Park
+  NO importedFromFolder card found
+2	zMomDadPics/zKids/4Mark/Birthday/b
+  NO importedFromFolder card found
+2	zMomDadPics/zKids/5ASGM/Creighton/Army
+  NO importedFromFolder card found
+2	zMomDadPics/zKids/5ASGM/Creighton/Bathtub
+  NO importedFromFolder card found
+2	zMomDadPics/zKids/5ASGM/Creighton/Bench
+  NO importedFromFolder card found
+2	zMomDadPics/zKids/5ASGM/Creighton/White Shirts
+  NO importedFromFolder card found
+2	zMomDadPics/zKids/5ASGM/Woodbine Terrace/Mailbox
+  NO importedFromFolder card found
+2	zMomDadPics/zKids/5ASGM/Woodbine Terrace/Porch
+  NO importedFromFolder card found
+1	zMomDadPics/a1Bob/02 Parents/BobMargaret
+  NO importedFromFolder card found
+1	zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim/Wedding Second
+  NO importedFromFolder card found
+1	zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Wedding - D
+  NO importedFromFolder card found
+1	zMomDadPics/BobSandra/Christmas/Childress/1
+  NO importedFromFolder card found
+1	zMomDadPics/BobSandra/Christmas/Childress/2
+  NO importedFromFolder card found
+1	zMomDadPics/BobSandra/Christmas/Childress/3
+  NO importedFromFolder card found
+1	zMomDadPics/BobSandra/Christmas/Christmas 1956
+  NO importedFromFolder card found
+1	zMomDadPics/BobSandra/Christmas/Christmas 1960
+  NO importedFromFolder card found
+1	zMomDadPics/BobSandra/Christmas/Christmas 1963
+  NO importedFromFolder card found
+1	zMomDadPics/BobSandra/Christmas/Christmas 1964
+  NO importedFromFolder card found
+1	zMomDadPics/BobSandra/Christmas/Cleveland/Christmas 1972
+  NO importedFromFolder card found
+1	zMomDadPics/BobSandra/Christmas/Cleveland/Christmas 1973
+  NO importedFromFolder card found
+1	zMomDadPics/BobSandra/Christmas/Parkins Mill/6
+  NO importedFromFolder card found
+1	zMomDadPics/BobSandra/Christmas/Parkins Mill/Christmas 1980
+  NO importedFromFolder card found
+1	zMomDadPics/BobSandra/Christmas/Parkins Mill/Christmas 1982
+  NO importedFromFolder card found
+1	zMomDadPics/BobSandra/Travel/Disney World
+  NO importedFromFolder card found
+1	zMomDadPics/BobSandra/Travel/England
+  NO importedFromFolder card found
+1	zMomDadPics/BobSandra/Travel/Gatlinburg
+  NO importedFromFolder card found
+1	zMomDadPics/BobSandra/Travel/Helen GA
+  NO importedFromFolder card found
+1	zMomDadPics/BobSandra/Travel/Itta Bena/School
+  NO importedFromFolder card found
+1	zMomDadPics/BobSandra/Travel/New York/Tall Ships
+  NO importedFromFolder card found
+1	zMomDadPics/BobSandra/Travel/Six Flags
+  NO importedFromFolder card found
+1	zMomDadPics/zKids/1Alan/Bday/1
+  NO importedFromFolder card found
+1	zMomDadPics/zKids/4Mark/Birthday/15
+  NO importedFromFolder card found
+1	zMomDadPics/zKids/4Mark/Birthday/8
+  NO importedFromFolder card found
+1	zMomDadPics/zKids/4Mark/Birthday/a
+  NO importedFromFolder card found
+1	zMomDadPics/zKids/4Mark/Birthday/c
+  NO importedFromFolder card found

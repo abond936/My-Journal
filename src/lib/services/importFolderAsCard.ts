@@ -11,7 +11,12 @@ import {
   updateCard,
   findCardByImportedFolder,
 } from '@/lib/services/cardService';
+import {
+  buildImportFolderRestorePlan,
+  type ImportFolderRestorePlan,
+} from '@/lib/services/importFolderRestore';
 import { isCardExportMarkedFilename } from '@/lib/services/images/inMemoryWebpNormalize';
+import { deleteMediaAsset } from '@/lib/services/images/mediaStorage';
 import type { GalleryMediaItem } from '@/lib/types/card';
 
 const ONEDRIVE_ROOT_FOLDER = process.env.ONEDRIVE_ROOT_FOLDER;
@@ -82,6 +87,8 @@ export interface ImportFolderOptions {
   overwriteCardId?: string;
   /** When set (e.g. batch import), avoids repeated Firestore reads for the full tag tree */
   tagNameMaps?: ImportTagNameMaps;
+  /** Roll back newly imported media and fail if the folder import is incomplete. */
+  requireCompleteSuccess?: boolean;
 }
 
 /**
@@ -165,6 +172,24 @@ export async function getImportFolderPreview(
   });
 }
 
+async function rollbackImportedMedia(mediaIds: string[]): Promise<void> {
+  const uniqueMediaIds = Array.from(
+    new Set(mediaIds.filter((id): id is string => typeof id === 'string' && id.trim().length > 0))
+  );
+  const results = await Promise.allSettled(uniqueMediaIds.map((mediaId) => deleteMediaAsset(mediaId)));
+  const failures = results
+    .map((result, index) => ({ result, mediaId: uniqueMediaIds[index]! }))
+    .filter((item) => item.result.status === 'rejected')
+    .map((item) => {
+      const reason = item.result.status === 'rejected' ? item.result.reason : 'unknown';
+      return `${item.mediaId}: ${reason instanceof Error ? reason.message : String(reason)}`;
+    });
+
+  if (failures.length > 0) {
+    throw new Error(`Rollback failed for imported media (${failures.join('; ')})`);
+  }
+}
+
 /**
  * Resolves which directory to read image files from.
  * WebP optimization runs in memory on import—no yEdited → xNormalized disk write.
@@ -217,6 +242,30 @@ async function resolveImportSource(
   throw new Error(
     `No images or yEdited/xNormalized structure found in folder: ${selectedFolderPath}`
   );
+}
+
+export async function getImportFolderRestorePlan(
+  selectedFolderPath: string,
+  options?: {
+    existingCardLookup?: Map<string, Pick<NonNullable<Awaited<ReturnType<typeof findCardByImportedFolder>>>, 'docId' | 'title'>>;
+  }
+): Promise<ImportFolderRestorePlan> {
+  const preview = await getImportFolderPreview(selectedFolderPath);
+  const { normalized } = await resolveImportSource(selectedFolderPath);
+  const existing =
+    options?.existingCardLookup?.get(preview.importSourcePath) ??
+    (await findCardByImportedFolder(preview.importSourcePath));
+
+  return buildImportFolderRestorePlan({
+    selectedFolderPath,
+    importSourcePath: preview.importSourcePath,
+    title: preview.title,
+    imageCount: preview.imageCount,
+    willNormalize: preview.willNormalize,
+    normalized,
+    existingCardId: existing?.docId ?? null,
+    existingTitle: existing?.title ?? null,
+  });
 }
 
 /**
@@ -288,6 +337,14 @@ export async function importFolderAsCard(
     throw new Error(`Could not import any images from folder: ${importSourcePath}`);
   }
 
+  if (options?.requireCompleteSuccess && galleryMedia.length !== imageFiles.length) {
+    await rollbackImportedMedia(galleryMedia.map((item) => item.mediaId));
+    throw new Error(
+      `Folder import incomplete for ${importSourcePath}: imported ${galleryMedia.length}/${imageFiles.length} images; ` +
+        `${failedPaths.length} failed.`
+    );
+  }
+
   const firstMediaId = galleryMedia[0].mediaId;
 
   // Overwrite existing card
@@ -349,12 +406,20 @@ export interface ImportFolderAsMediaResult {
   normalized?: boolean;
 }
 
+export interface ImportFolderAsMediaOnlyOptions {
+  /** When set, reuses one prebuilt keyword->tag map for a larger batch restore/import run. */
+  tagNameMaps?: ImportTagNameMaps;
+  /** Roll back newly imported media and fail if the folder import is incomplete. */
+  requireCompleteSuccess?: boolean;
+}
+
 /**
  * Imports images from a folder into Media collection only (no card).
  * Skips images that already exist (by sourcePath).
  */
 export async function importFolderAsMediaOnly(
-  folderPath: string
+  folderPath: string,
+  options?: ImportFolderAsMediaOnlyOptions
 ): Promise<ImportFolderAsMediaResult> {
   if (!ONEDRIVE_ROOT_FOLDER) {
     throw new Error('ONEDRIVE_ROOT_FOLDER environment variable not set');
@@ -393,11 +458,12 @@ export async function importFolderAsMediaOnly(
   }
 
   const mediaIds: string[] = [];
+  const createdMediaIds: string[] = [];
   const failedPaths: string[] = [];
   let skippedCount = 0;
 
   const items = imageFiles.map((filename) => toDbPath(path.join(importSourcePath, filename)));
-  const tagNameMaps = buildTagNameLookupMaps(await getAllTags());
+  const tagNameMaps = options?.tagNameMaps ?? buildTagNameLookupMaps(await getAllTags());
 
   for (let i = 0; i < items.length; i += CONCURRENT_IMPORTS) {
     const chunk = items.slice(i, i + CONCURRENT_IMPORTS);
@@ -415,12 +481,24 @@ export async function importFolderAsMediaOnly(
       const sourcePath = chunk[idx]!;
       if (r.status === 'fulfilled') {
         mediaIds.push(r.value.mediaId);
-        if (r.value.skipped) skippedCount++;
+        if (r.value.skipped) {
+          skippedCount++;
+        } else {
+          createdMediaIds.push(r.value.mediaId);
+        }
       } else {
         failedPaths.push(sourcePath);
         console.error('[importFolderAsMediaOnly] Failed:', sourcePath, r.reason);
       }
     });
+  }
+
+  if (options?.requireCompleteSuccess && mediaIds.length !== items.length) {
+    await rollbackImportedMedia(createdMediaIds);
+    throw new Error(
+      `Folder import incomplete for ${importSourcePath}: imported or reused ${mediaIds.length}/${items.length} images; ` +
+        `${failedPaths.length} failed.`
+    );
   }
 
   return {

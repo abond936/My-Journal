@@ -1,0 +1,3056 @@
+{
+  "summary": {
+    "generatedAt": "2026-05-28T07:18:16.424Z",
+    "mode": "apply",
+    "reportPath": "C:/Users/alanb/my-journal/.codex-tmp/reports/zmomdadpics-x-files-missing-from-media-2026-05-27.json",
+    "totalFolders": 159,
+    "createdCount": 153,
+    "mergedCount": 5,
+    "errorCount": 1
+  },
+  "planRows": [
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/BobMargaret",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/BobMargaret",
+      "title": "BobMargaret",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/BobMargaretNell/Family",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/BobMargaretNell/Family",
+      "title": "Family",
+      "expectedImageCount": 3,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/BobMargaretNell/Family2",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/BobMargaretNell/Family2",
+      "title": "Family2",
+      "expectedImageCount": 2,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/George and Margaret Visit",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/George and Margaret Visit",
+      "title": "George and Margaret Visit",
+      "expectedImageCount": 7,
+      "action": "merge-existing-card",
+      "existingCardId": "Wa2tQMAO0WWY7uahYjWF",
+      "existingTitle": "George and Margaret Visit"
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim",
+      "title": "Jim",
+      "expectedImageCount": 3,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim/Portraits",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim/Portraits",
+      "title": "Portraits",
+      "expectedImageCount": 11,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim/Wedding - Candy",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim/Wedding - Candy",
+      "title": "Wedding - Candy",
+      "expectedImageCount": 6,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim/Wedding Second",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim/Wedding Second",
+      "title": "Wedding Second",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim/Wedding Third",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim/Wedding Third",
+      "title": "Wedding Third",
+      "expectedImageCount": 2,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/JimMarsha",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/JimMarsha",
+      "title": "JimMarsha",
+      "expectedImageCount": 5,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/JimMarsha/Portraits",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/JimMarsha/Portraits",
+      "title": "Portraits",
+      "expectedImageCount": 3,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha",
+      "title": "Marsha",
+      "expectedImageCount": 11,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Andrea",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Andrea",
+      "title": "Andrea",
+      "expectedImageCount": 13,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Caroline",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Caroline",
+      "title": "Caroline",
+      "expectedImageCount": 6,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/MarshaBill",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/MarshaBill",
+      "title": "MarshaBill",
+      "expectedImageCount": 4,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Portraits",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Portraits",
+      "title": "Portraits",
+      "expectedImageCount": 12,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/V Collar",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/V Collar",
+      "title": "V Collar",
+      "expectedImageCount": 2,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Wedding - D",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Wedding - D",
+      "title": "Wedding - D",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Wedding - F",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Wedding - F",
+      "title": "Wedding - F",
+      "expectedImageCount": 4,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/William",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/William",
+      "title": "William",
+      "expectedImageCount": 3,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Nell/Portraits",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Nell/Portraits",
+      "title": "Portraits",
+      "expectedImageCount": 8,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Nell/Portraits/3",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Nell/Portraits/3",
+      "title": "3",
+      "expectedImageCount": 3,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Nell/zMisc",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Nell/zMisc",
+      "title": "zMisc",
+      "expectedImageCount": 16,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Portrait",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Portrait",
+      "title": "Portrait",
+      "expectedImageCount": 3,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Toby",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Toby",
+      "title": "Toby",
+      "expectedImageCount": 6,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/03 Other/zMisc",
+      "importSourcePath": "zMomDadPics/a1Bob/03 Other/zMisc",
+      "title": "zMisc",
+      "expectedImageCount": 13,
+      "action": "merge-existing-card",
+      "existingCardId": "MGDQv37FoIniOeKilT8e",
+      "existingTitle": "Robert Bond - Miscellaneous"
+    },
+    {
+      "folderPath": "zMomDadPics/a1Sandra/01 Parents Parents/Maternal",
+      "importSourcePath": "zMomDadPics/a1Sandra/01 Parents Parents/Maternal",
+      "title": "Maternal",
+      "expectedImageCount": 9,
+      "action": "merge-existing-card",
+      "existingCardId": "794fFXx32cWzHYOgodvW",
+      "existingTitle": "Maternal"
+    },
+    {
+      "folderPath": "zMomDadPics/a1Sandra/03 Other/Military Reservation/Chair",
+      "importSourcePath": "zMomDadPics/a1Sandra/03 Other/Military Reservation/Chair",
+      "title": "Chair",
+      "expectedImageCount": 3,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Sandra/03 Other/Military Reservation/Horse",
+      "importSourcePath": "zMomDadPics/a1Sandra/03 Other/Military Reservation/Horse",
+      "title": "Horse",
+      "expectedImageCount": 4,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/a1Sandra/03 Other/Military Reservation/Snow",
+      "importSourcePath": "zMomDadPics/a1Sandra/03 Other/Military Reservation/Snow",
+      "title": "Snow",
+      "expectedImageCount": 4,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/50th/Cruise",
+      "importSourcePath": "zMomDadPics/BobSandra/50th/Cruise",
+      "title": "Cruise",
+      "expectedImageCount": 27,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Business/Evergreen/Party",
+      "importSourcePath": "zMomDadPics/BobSandra/Business/Evergreen/Party",
+      "title": "Party",
+      "expectedImageCount": 19,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Business/India Partners",
+      "importSourcePath": "zMomDadPics/BobSandra/Business/India Partners",
+      "title": "India Partners",
+      "expectedImageCount": 4,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Childress",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Childress",
+      "title": "Childress",
+      "expectedImageCount": 8,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Childress/1",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Childress/1",
+      "title": "1",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Childress/2",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Childress/2",
+      "title": "2",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Childress/3",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Childress/3",
+      "title": "3",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Christmas 1956",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Christmas 1956",
+      "title": "Christmas 1956",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Christmas 1957",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Christmas 1957",
+      "title": "Christmas 1957",
+      "expectedImageCount": 10,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Christmas 1958",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Christmas 1958",
+      "title": "Christmas 1958",
+      "expectedImageCount": 5,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Christmas 1960",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Christmas 1960",
+      "title": "Christmas 1960",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Christmas 1961",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Christmas 1961",
+      "title": "Christmas 1961",
+      "expectedImageCount": 9,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Christmas 1962",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Christmas 1962",
+      "title": "Christmas 1962",
+      "expectedImageCount": 5,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Christmas 1963",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Christmas 1963",
+      "title": "Christmas 1963",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Christmas 1964",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Christmas 1964",
+      "title": "Christmas 1964",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Christmas 1965",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Christmas 1965",
+      "title": "Christmas 1965",
+      "expectedImageCount": 3,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Christmas 1966",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Christmas 1966",
+      "title": "Christmas 1966",
+      "expectedImageCount": 4,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Christmas 1967",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Christmas 1967",
+      "title": "Christmas 1967",
+      "expectedImageCount": 4,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Christmas 1968",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Christmas 1968",
+      "title": "Christmas 1968",
+      "expectedImageCount": 7,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Cleveland",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Cleveland",
+      "title": "Cleveland",
+      "expectedImageCount": 3,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Cleveland/Christmas 1972",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Cleveland/Christmas 1972",
+      "title": "Christmas 1972",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Cleveland/Christmas 1973",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Cleveland/Christmas 1973",
+      "title": "Christmas 1973",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Cleveland/Christmas 1974",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Cleveland/Christmas 1974",
+      "title": "Christmas 1974",
+      "expectedImageCount": 6,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Country Club",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Country Club",
+      "title": "Country Club",
+      "expectedImageCount": 2,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/2",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/2",
+      "title": "2",
+      "expectedImageCount": 4,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/3",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/3",
+      "title": "3",
+      "expectedImageCount": 2,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/4",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/4",
+      "title": "4",
+      "expectedImageCount": 2,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/5",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/5",
+      "title": "5",
+      "expectedImageCount": 2,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/6",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/6",
+      "title": "6",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/7",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/7",
+      "title": "7",
+      "expectedImageCount": 2,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/8",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/8",
+      "title": "8",
+      "expectedImageCount": 2,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/Christmas 1976",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/Christmas 1976",
+      "title": "Christmas 1976",
+      "expectedImageCount": 4,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/Christmas 1980",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/Christmas 1980",
+      "title": "Christmas 1980",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/Christmas 1981",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/Christmas 1981",
+      "title": "Christmas 1981",
+      "expectedImageCount": 4,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/Christmas 1982",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/Christmas 1982",
+      "title": "Christmas 1982",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Clemson Football/Peach Bowl",
+      "importSourcePath": "zMomDadPics/BobSandra/Clemson Football/Peach Bowl",
+      "title": "Peach Bowl",
+      "expectedImageCount": 8,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Country Club Dr/Hot Tub",
+      "importSourcePath": "zMomDadPics/BobSandra/Country Club Dr/Hot Tub",
+      "title": "Hot Tub",
+      "expectedImageCount": 5,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Hartwell/Hartwell1",
+      "importSourcePath": "zMomDadPics/BobSandra/Hartwell/Hartwell1",
+      "title": "Hartwell1",
+      "expectedImageCount": 23,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Hartwell/Houseboat",
+      "importSourcePath": "zMomDadPics/BobSandra/Hartwell/Houseboat",
+      "title": "Houseboat",
+      "expectedImageCount": 20,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Homes/Childress Dr/Aerial View",
+      "importSourcePath": "zMomDadPics/BobSandra/Homes/Childress Dr/Aerial View",
+      "title": "Aerial View",
+      "expectedImageCount": 3,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Homes/Childress Dr/Basketball",
+      "importSourcePath": "zMomDadPics/BobSandra/Homes/Childress Dr/Basketball",
+      "title": "Basketball",
+      "expectedImageCount": 7,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Homes/Childress Dr/Dock",
+      "importSourcePath": "zMomDadPics/BobSandra/Homes/Childress Dr/Dock",
+      "title": "Dock",
+      "expectedImageCount": 10,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Homes/Childress Dr/Interior",
+      "importSourcePath": "zMomDadPics/BobSandra/Homes/Childress Dr/Interior",
+      "title": "Interior",
+      "expectedImageCount": 33,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Homes/Childress Dr/Pond",
+      "importSourcePath": "zMomDadPics/BobSandra/Homes/Childress Dr/Pond",
+      "title": "Pond",
+      "expectedImageCount": 8,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Homes/Keller Blvd/Keller Blvd Construction",
+      "importSourcePath": "zMomDadPics/BobSandra/Homes/Keller Blvd/Keller Blvd Construction",
+      "title": "Keller Blvd Construction",
+      "expectedImageCount": 15,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Parkins Mill/Back to School",
+      "importSourcePath": "zMomDadPics/BobSandra/Parkins Mill/Back to School",
+      "title": "Back to School",
+      "expectedImageCount": 4,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Portraits/3",
+      "importSourcePath": "zMomDadPics/BobSandra/Portraits/3",
+      "title": "3",
+      "expectedImageCount": 5,
+      "action": "merge-existing-card",
+      "existingCardId": "yheTVI8z33sLhED4yLaY",
+      "existingTitle": "Family Portrait ~1976"
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Acapulco",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Acapulco",
+      "title": "Acapulco",
+      "expectedImageCount": 7,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Amsterdam",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Amsterdam",
+      "title": "Amsterdam",
+      "expectedImageCount": 16,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Beach",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Beach",
+      "title": "Beach",
+      "expectedImageCount": 3,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Beech Mountain",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Beech Mountain",
+      "title": "Beech Mountain",
+      "expectedImageCount": 10,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Beech Mountain 2",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Beech Mountain 2",
+      "title": "Beech Mountain 2",
+      "expectedImageCount": 9,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Canada",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Canada",
+      "title": "Canada",
+      "expectedImageCount": 13,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Cape Canaveral",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Cape Canaveral",
+      "title": "Cape Canaveral",
+      "expectedImageCount": 5,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Chicago",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Chicago",
+      "title": "Chicago",
+      "expectedImageCount": 19,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/China",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/China",
+      "title": "China",
+      "expectedImageCount": 3,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Cruise",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Cruise",
+      "title": "Cruise",
+      "expectedImageCount": 15,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Deep Sea Fishing",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Deep Sea Fishing",
+      "title": "Deep Sea Fishing",
+      "expectedImageCount": 4,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Denmark",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Denmark",
+      "title": "Denmark",
+      "expectedImageCount": 2,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Disney World",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Disney World",
+      "title": "Disney World",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Disney World/Disney World 2",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Disney World/Disney World 2",
+      "title": "Disney World 2",
+      "expectedImageCount": 12,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Egypt",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Egypt",
+      "title": "Egypt",
+      "expectedImageCount": 10,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/England",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/England",
+      "title": "England",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Falls",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Falls",
+      "title": "Falls",
+      "expectedImageCount": 5,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/France",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/France",
+      "title": "France",
+      "expectedImageCount": 2,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/France/Paris",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/France/Paris",
+      "title": "Paris",
+      "expectedImageCount": 27,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Gatlinburg",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Gatlinburg",
+      "title": "Gatlinburg",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Germany",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Germany",
+      "title": "Germany",
+      "expectedImageCount": 6,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Hawaii",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Hawaii",
+      "title": "Hawaii",
+      "expectedImageCount": 6,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Helen GA",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Helen GA",
+      "title": "Helen GA",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Hilton Head",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Hilton Head",
+      "title": "Hilton Head",
+      "expectedImageCount": 3,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Italy",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Italy",
+      "title": "Italy",
+      "expectedImageCount": 7,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Italy/North Italy",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Italy/North Italy",
+      "title": "North Italy",
+      "expectedImageCount": 4,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Italy/Rome",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Italy/Rome",
+      "title": "Rome",
+      "expectedImageCount": 8,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Italy/Venice",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Italy/Venice",
+      "title": "Venice",
+      "expectedImageCount": 10,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Itta Bena",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Itta Bena",
+      "title": "Itta Bena",
+      "expectedImageCount": 45,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Itta Bena/School",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Itta Bena/School",
+      "title": "School",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Itta Bena/Texas and Mississippi Trip",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Itta Bena/Texas and Mississippi Trip",
+      "title": "Texas and Mississippi Trip",
+      "expectedImageCount": 4,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Japan",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Japan",
+      "title": "Japan",
+      "expectedImageCount": 24,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Monte Carlo",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Monte Carlo",
+      "title": "Monte Carlo",
+      "expectedImageCount": 6,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Nantahala",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Nantahala",
+      "title": "Nantahala",
+      "expectedImageCount": 2,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/New York/Central Park",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/New York/Central Park",
+      "title": "Central Park",
+      "expectedImageCount": 2,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/New York/Tall Ships",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/New York/Tall Ships",
+      "title": "Tall Ships",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/New York/USS Intrepid",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/New York/USS Intrepid",
+      "title": "USS Intrepid",
+      "expectedImageCount": 3,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Okeefenokee",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Okeefenokee",
+      "title": "Okeefenokee",
+      "expectedImageCount": 4,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Postcards",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Postcards",
+      "title": "Postcards",
+      "expectedImageCount": 18,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Six Flags",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Six Flags",
+      "title": "Six Flags",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/State Park",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/State Park",
+      "title": "State Park",
+      "expectedImageCount": 2,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Switzerland",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Switzerland",
+      "title": "Switzerland",
+      "expectedImageCount": 29,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Virgin Islands",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Virgin Islands",
+      "title": "Virgin Islands",
+      "expectedImageCount": 14,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Washington DC",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Washington DC",
+      "title": "Washington DC",
+      "expectedImageCount": 7,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/West",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/West",
+      "title": "West",
+      "expectedImageCount": 14,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Williamsburg",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Williamsburg",
+      "title": "Williamsburg",
+      "expectedImageCount": 5,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Worlds Fair",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Worlds Fair",
+      "title": "Worlds Fair",
+      "expectedImageCount": 10,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/YMCA Camp",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/YMCA Camp",
+      "title": "YMCA Camp",
+      "expectedImageCount": 10,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/zGeneral",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/zGeneral",
+      "title": "zGeneral",
+      "expectedImageCount": 40,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/zGeneral/General1",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/zGeneral/General1",
+      "title": "General1",
+      "expectedImageCount": 49,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Wedding",
+      "importSourcePath": "zMomDadPics/BobSandra/Wedding",
+      "title": "Wedding",
+      "expectedImageCount": 14,
+      "action": "merge-existing-card",
+      "existingCardId": "hpM8WZlRj4NPI4fx4aaB",
+      "existingTitle": "Bob & Sandra's Wedding"
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/1Alan/0/a",
+      "importSourcePath": "zMomDadPics/zKids/1Alan/0/a",
+      "title": "a",
+      "expectedImageCount": 6,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/1Alan/0/atlanta",
+      "importSourcePath": "zMomDadPics/zKids/1Alan/0/atlanta",
+      "title": "atlanta",
+      "expectedImageCount": 16,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/1Alan/1/Crib",
+      "importSourcePath": "zMomDadPics/zKids/1Alan/1/Crib",
+      "title": "Crib",
+      "expectedImageCount": 3,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/1Alan/1/Overalls",
+      "importSourcePath": "zMomDadPics/zKids/1Alan/1/Overalls",
+      "title": "Overalls",
+      "expectedImageCount": 5,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/1Alan/2/Bow Tie",
+      "importSourcePath": "zMomDadPics/zKids/1Alan/2/Bow Tie",
+      "title": "Bow Tie",
+      "expectedImageCount": 3,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/1Alan/2/Horse",
+      "importSourcePath": "zMomDadPics/zKids/1Alan/2/Horse",
+      "title": "Horse",
+      "expectedImageCount": 5,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/1Alan/Bday/1",
+      "importSourcePath": "zMomDadPics/zKids/1Alan/Bday/1",
+      "title": "1",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/1Alan/Graduation/BS/Car",
+      "importSourcePath": "zMomDadPics/zKids/1Alan/Graduation/BS/Car",
+      "title": "Car",
+      "expectedImageCount": 3,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/1Alan/Graduation/HS/Car",
+      "importSourcePath": "zMomDadPics/zKids/1Alan/Graduation/HS/Car",
+      "title": "Car",
+      "expectedImageCount": 5,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/3Greg/Graduation - High School",
+      "importSourcePath": "zMomDadPics/zKids/3Greg/Graduation - High School",
+      "title": "Graduation - High School",
+      "expectedImageCount": 6,
+      "action": "merge-existing-card",
+      "existingCardId": "ophkTttLphEuOQk37q6E",
+      "existingTitle": "Greg's High School Graduation 1979"
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/4Mark/Birthday/15",
+      "importSourcePath": "zMomDadPics/zKids/4Mark/Birthday/15",
+      "title": "15",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/4Mark/Birthday/8",
+      "importSourcePath": "zMomDadPics/zKids/4Mark/Birthday/8",
+      "title": "8",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/4Mark/Birthday/a",
+      "importSourcePath": "zMomDadPics/zKids/4Mark/Birthday/a",
+      "title": "a",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/4Mark/Birthday/b",
+      "importSourcePath": "zMomDadPics/zKids/4Mark/Birthday/b",
+      "title": "b",
+      "expectedImageCount": 2,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/4Mark/Birthday/c",
+      "importSourcePath": "zMomDadPics/zKids/4Mark/Birthday/c",
+      "title": "c",
+      "expectedImageCount": 1,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/4Mark/Citadel/Summerall Guard",
+      "importSourcePath": "zMomDadPics/zKids/4Mark/Citadel/Summerall Guard",
+      "title": "Summerall Guard",
+      "expectedImageCount": 11,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Creighton/Army",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Creighton/Army",
+      "title": "Army",
+      "expectedImageCount": 2,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Creighton/Bathtub",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Creighton/Bathtub",
+      "title": "Bathtub",
+      "expectedImageCount": 2,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Creighton/Bench",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Creighton/Bench",
+      "title": "Bench",
+      "expectedImageCount": 2,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Creighton/Bicycle",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Creighton/Bicycle",
+      "title": "Bicycle",
+      "expectedImageCount": 6,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Creighton/Cammoflage",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Creighton/Cammoflage",
+      "title": "Cammoflage",
+      "expectedImageCount": 8,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Creighton/Davis Visit",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Creighton/Davis Visit",
+      "title": "Davis Visit",
+      "expectedImageCount": 3,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Creighton/White Shirts",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Creighton/White Shirts",
+      "title": "White Shirts",
+      "expectedImageCount": 2,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Couch1",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Couch1",
+      "title": "Couch1",
+      "expectedImageCount": 3,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Couch2",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Couch2",
+      "title": "Couch2",
+      "expectedImageCount": 3,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Couch3",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Couch3",
+      "title": "Couch3",
+      "expectedImageCount": 3,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Mailbox",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Mailbox",
+      "title": "Mailbox",
+      "expectedImageCount": 2,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Pool",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Pool",
+      "title": "Pool",
+      "expectedImageCount": 3,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Porch",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Porch",
+      "title": "Porch",
+      "expectedImageCount": 2,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Portraits",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Portraits",
+      "title": "Portraits",
+      "expectedImageCount": 3,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/ShortsSuspenders",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/ShortsSuspenders",
+      "title": "ShortsSuspenders",
+      "expectedImageCount": 6,
+      "action": "create-card",
+      "existingCardId": null,
+      "existingTitle": null
+    }
+  ],
+  "rows": [
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/BobMargaret",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/BobMargaret",
+      "cardId": "KXgGLfuC2F9gLEgbAbKd",
+      "title": "BobMargaret",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/BobMargaretNell/Family",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/BobMargaretNell/Family",
+      "cardId": "DPCdKkold81PewqSFIgm",
+      "title": "Family",
+      "expectedImageCount": 3,
+      "importedCount": 3,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/BobMargaretNell/Family2",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/BobMargaretNell/Family2",
+      "cardId": "nu4ogzPUVS4f3ZX8II7Z",
+      "title": "Family2",
+      "expectedImageCount": 2,
+      "importedCount": 2,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/George and Margaret Visit",
+      "mode": "merged-existing-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/George and Margaret Visit",
+      "cardId": "Wa2tQMAO0WWY7uahYjWF",
+      "title": "George and Margaret Visit",
+      "expectedImageCount": 7,
+      "importedCount": 5,
+      "skippedCount": 2,
+      "galleryCount": 7,
+      "addedMediaCount": 5,
+      "coverImageId": "nluce5FWNSzr4x8mTVWl",
+      "mutatedCard": true,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim",
+      "cardId": "8zW1pS6xyI8J0mkP4eQr",
+      "title": "Jim",
+      "expectedImageCount": 3,
+      "importedCount": 3,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim/Portraits",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim/Portraits",
+      "cardId": "BKzYLDNDS8oEzqseuZK1",
+      "title": "Portraits",
+      "expectedImageCount": 11,
+      "importedCount": 11,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim/Wedding - Candy",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim/Wedding - Candy",
+      "cardId": "e5ILn0Elerc1kIidDYCx",
+      "title": "Wedding - Candy",
+      "expectedImageCount": 6,
+      "importedCount": 6,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim/Wedding Second",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim/Wedding Second",
+      "cardId": "u1Rx0xble6djOVEVww6o",
+      "title": "Wedding Second",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim/Wedding Third",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Jim/Wedding Third",
+      "cardId": "RcrbPmwAVLYajeneBcGF",
+      "title": "Wedding Third",
+      "expectedImageCount": 2,
+      "importedCount": 2,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/JimMarsha",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/JimMarsha",
+      "cardId": "Aq5mxozXyikGknVmZ87e",
+      "title": "JimMarsha",
+      "expectedImageCount": 5,
+      "importedCount": 5,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/JimMarsha/Portraits",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/JimMarsha/Portraits",
+      "cardId": "iCJB8oIm4pbAj4Y1sL9b",
+      "title": "Portraits",
+      "expectedImageCount": 3,
+      "importedCount": 3,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha",
+      "cardId": "FL6dDMGx7wJ5GttgXn99",
+      "title": "Marsha",
+      "expectedImageCount": 11,
+      "importedCount": 11,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Andrea",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Andrea",
+      "cardId": "LaNFJ5tSbfIDHITw5e6k",
+      "title": "Andrea",
+      "expectedImageCount": 13,
+      "importedCount": 13,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Caroline",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Caroline",
+      "cardId": "gvi7Tk8exxtRoTtF84qD",
+      "title": "Caroline",
+      "expectedImageCount": 6,
+      "importedCount": 6,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/MarshaBill",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/MarshaBill",
+      "cardId": "9ouEL4WM28ZXr1WNxGEE",
+      "title": "MarshaBill",
+      "expectedImageCount": 4,
+      "importedCount": 4,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Portraits",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Portraits",
+      "cardId": "0PR5dKoYWOyupxpkPxf7",
+      "title": "Portraits",
+      "expectedImageCount": 12,
+      "importedCount": 12,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/V Collar",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/V Collar",
+      "cardId": "MTi7cRDgz07eoJ0knHcc",
+      "title": "V Collar",
+      "expectedImageCount": 2,
+      "importedCount": 2,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Wedding - D",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Wedding - D",
+      "cardId": "s1TxeroFJlBIty9Y3Gbc",
+      "title": "Wedding - D",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Wedding - F",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/Wedding - F",
+      "cardId": "Spqf6jngTM9o3vQStCxJ",
+      "title": "Wedding - F",
+      "expectedImageCount": 4,
+      "importedCount": 4,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/William",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Marsha/William",
+      "cardId": "9mAEJJT9cIOfNrddOm0I",
+      "title": "William",
+      "expectedImageCount": 3,
+      "importedCount": 3,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Nell/Portraits",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Nell/Portraits",
+      "cardId": "CMfduI4PEuUot8TqHdpn",
+      "title": "Portraits",
+      "expectedImageCount": 8,
+      "importedCount": 8,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Nell/Portraits/3",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Nell/Portraits/3",
+      "cardId": "Z79uRu0NGjaPCbcykMRa",
+      "title": "3",
+      "expectedImageCount": 3,
+      "importedCount": 3,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Nell/zMisc",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Nell/zMisc",
+      "cardId": "d0Wl4ifvKp3mjJ5mf0uY",
+      "title": "zMisc",
+      "expectedImageCount": 16,
+      "importedCount": 16,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Portrait",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Portrait",
+      "cardId": "qLcSnGqwJsLEB1i6bEwe",
+      "title": "Portrait",
+      "expectedImageCount": 3,
+      "importedCount": 3,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Toby",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Bob/02 Parents/The Hammonds/Toby",
+      "cardId": "vpCwFUAF7qfXixNFuhxM",
+      "title": "Toby",
+      "expectedImageCount": 6,
+      "importedCount": 6,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Bob/03 Other/zMisc",
+      "mode": "merged-existing-card",
+      "importSourcePath": "zMomDadPics/a1Bob/03 Other/zMisc",
+      "cardId": "MGDQv37FoIniOeKilT8e",
+      "title": "Robert Bond - Miscellaneous",
+      "expectedImageCount": 13,
+      "importedCount": 1,
+      "skippedCount": 12,
+      "galleryCount": 13,
+      "addedMediaCount": 1,
+      "coverImageId": "oJ2JGlt6dhHk5yTFdpM7",
+      "mutatedCard": true,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Sandra/01 Parents Parents/Maternal",
+      "mode": "merged-existing-card",
+      "importSourcePath": "zMomDadPics/a1Sandra/01 Parents Parents/Maternal",
+      "cardId": "794fFXx32cWzHYOgodvW",
+      "title": "Maternal",
+      "expectedImageCount": 9,
+      "importedCount": 1,
+      "skippedCount": 8,
+      "galleryCount": 9,
+      "addedMediaCount": 1,
+      "coverImageId": "NGCxtdBqeEB6SyJVKDa0",
+      "mutatedCard": true,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Sandra/03 Other/Military Reservation/Chair",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Sandra/03 Other/Military Reservation/Chair",
+      "cardId": "bmrqdkK3blVhtIYxKKvM",
+      "title": "Chair",
+      "expectedImageCount": 3,
+      "importedCount": 3,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Sandra/03 Other/Military Reservation/Horse",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Sandra/03 Other/Military Reservation/Horse",
+      "cardId": "59Jlro3AtK3RYzXS3DaR",
+      "title": "Horse",
+      "expectedImageCount": 4,
+      "importedCount": 4,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/a1Sandra/03 Other/Military Reservation/Snow",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/a1Sandra/03 Other/Military Reservation/Snow",
+      "cardId": "9WPFSlgsotwIflw30gzw",
+      "title": "Snow",
+      "expectedImageCount": 4,
+      "importedCount": 4,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/50th/Cruise",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/50th/Cruise",
+      "cardId": "NUCN0UfD9OR1NZQ1Js0p",
+      "title": "Cruise",
+      "expectedImageCount": 27,
+      "importedCount": 27,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Business/Evergreen/Party",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Business/Evergreen/Party",
+      "cardId": "jSwbnoRqZvJHZ0XvqesL",
+      "title": "Party",
+      "expectedImageCount": 19,
+      "importedCount": 19,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Business/India Partners",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Business/India Partners",
+      "cardId": "G5roHn0R7pX8hdDtE9Yt",
+      "title": "India Partners",
+      "expectedImageCount": 4,
+      "importedCount": 4,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Childress",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Childress",
+      "cardId": "apfGqxdWsTECC6DufDRb",
+      "title": "Childress",
+      "expectedImageCount": 8,
+      "importedCount": 8,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Childress/1",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Childress/1",
+      "cardId": "Qay6WWijn0iY5rAuhVdW",
+      "title": "1",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Childress/2",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Childress/2",
+      "cardId": "RZdF9H8OraBU7uWDzUEd",
+      "title": "2",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Childress/3",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Childress/3",
+      "cardId": "Q70fEgIQBZ1enblcfBNF",
+      "title": "3",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Christmas 1956",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Christmas 1956",
+      "cardId": "uIcDZ7vxa082Og0VmjJi",
+      "title": "Christmas 1956",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Christmas 1957",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Christmas 1957",
+      "cardId": "Gpj1m4pW22SrlXYYBCYE",
+      "title": "Christmas 1957",
+      "expectedImageCount": 10,
+      "importedCount": 10,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Christmas 1958",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Christmas 1958",
+      "cardId": "d5bzBZIvkqaIRrvZ5zip",
+      "title": "Christmas 1958",
+      "expectedImageCount": 5,
+      "importedCount": 5,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Christmas 1960",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Christmas 1960",
+      "cardId": "SSxFEQ7apVs9jtjg4HRe",
+      "title": "Christmas 1960",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Christmas 1961",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Christmas 1961",
+      "cardId": "8Vr1xbBdfWrjIupzcYn1",
+      "title": "Christmas 1961",
+      "expectedImageCount": 9,
+      "importedCount": 9,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Christmas 1962",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Christmas 1962",
+      "cardId": "gnYdtKILyr5hRFUzeKLl",
+      "title": "Christmas 1962",
+      "expectedImageCount": 5,
+      "importedCount": 5,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Christmas 1963",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Christmas 1963",
+      "cardId": "tqDsWrvaMYdJ5r9yICN0",
+      "title": "Christmas 1963",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Christmas 1964",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Christmas 1964",
+      "cardId": "EIymNe5B4UJfFNNhFRBw",
+      "title": "Christmas 1964",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Christmas 1965",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Christmas 1965",
+      "cardId": "be6S217TYjoTgIMhXnx6",
+      "title": "Christmas 1965",
+      "expectedImageCount": 3,
+      "importedCount": 3,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Christmas 1966",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Christmas 1966",
+      "cardId": "RHjafwpdG20T5aDooSY6",
+      "title": "Christmas 1966",
+      "expectedImageCount": 4,
+      "importedCount": 4,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Christmas 1967",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Christmas 1967",
+      "cardId": "Mt3WWGDCsoP1RtLFpd2n",
+      "title": "Christmas 1967",
+      "expectedImageCount": 4,
+      "importedCount": 4,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Christmas 1968",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Christmas 1968",
+      "cardId": "mf7tkzzPgCLMqrAaddeR",
+      "title": "Christmas 1968",
+      "expectedImageCount": 7,
+      "importedCount": 7,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Cleveland",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Cleveland",
+      "cardId": "wGWAuMDQiDnmf2QWI7Sj",
+      "title": "Cleveland",
+      "expectedImageCount": 3,
+      "importedCount": 3,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Cleveland/Christmas 1972",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Cleveland/Christmas 1972",
+      "cardId": "L6eHOw1SLbWshusCqn4P",
+      "title": "Christmas 1972",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Cleveland/Christmas 1973",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Cleveland/Christmas 1973",
+      "cardId": "ni0RMKTAjb3TsdeQkDfh",
+      "title": "Christmas 1973",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Cleveland/Christmas 1974",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Cleveland/Christmas 1974",
+      "cardId": "IQEOcHF4H96NRbD89IUE",
+      "title": "Christmas 1974",
+      "expectedImageCount": 6,
+      "importedCount": 6,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Country Club",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Country Club",
+      "cardId": "FlDd9YoZxRtfGbfZJ2r8",
+      "title": "Country Club",
+      "expectedImageCount": 2,
+      "importedCount": 2,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/2",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/2",
+      "cardId": "sl96yeWv2UldPPprzWKn",
+      "title": "2",
+      "expectedImageCount": 4,
+      "importedCount": 4,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/3",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/3",
+      "cardId": "Qp1zG3LmeIGFKPbXDDTP",
+      "title": "3",
+      "expectedImageCount": 2,
+      "importedCount": 2,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/4",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/4",
+      "cardId": "7Ranh4IZZVnPEFOnfWWQ",
+      "title": "4",
+      "expectedImageCount": 2,
+      "importedCount": 2,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/5",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/5",
+      "cardId": "vYtcEMbncxYVxLGGs0F3",
+      "title": "5",
+      "expectedImageCount": 2,
+      "importedCount": 2,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/6",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/6",
+      "cardId": "l6ARX2EhMfAsFeI9GIXo",
+      "title": "6",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/7",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/7",
+      "cardId": "XtMrIdsU11aXoAraecqI",
+      "title": "7",
+      "expectedImageCount": 2,
+      "importedCount": 2,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/8",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/8",
+      "cardId": "3AuiqgqB0Lnvb0I6kP1N",
+      "title": "8",
+      "expectedImageCount": 2,
+      "importedCount": 2,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/Christmas 1976",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/Christmas 1976",
+      "cardId": "1ww0RNdwTy9VvqPiPMm1",
+      "title": "Christmas 1976",
+      "expectedImageCount": 4,
+      "importedCount": 4,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/Christmas 1980",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/Christmas 1980",
+      "cardId": "lMVhuUQvPqDnlpH39VHZ",
+      "title": "Christmas 1980",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/Christmas 1981",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/Christmas 1981",
+      "cardId": "O81wgy8HjXKkQ8xiKTs6",
+      "title": "Christmas 1981",
+      "expectedImageCount": 4,
+      "importedCount": 4,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/Christmas 1982",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Christmas/Parkins Mill/Christmas 1982",
+      "cardId": "aoRe8XcE5Z6o8u1fz8Lt",
+      "title": "Christmas 1982",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Clemson Football/Peach Bowl",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Clemson Football/Peach Bowl",
+      "cardId": "c0nLN8kQciFPnYFDlO8U",
+      "title": "Peach Bowl",
+      "expectedImageCount": 8,
+      "importedCount": 8,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Country Club Dr/Hot Tub",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Country Club Dr/Hot Tub",
+      "cardId": "hrzQpv2zxrLCsUEJn8nj",
+      "title": "Hot Tub",
+      "expectedImageCount": 5,
+      "importedCount": 5,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Hartwell/Hartwell1",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Hartwell/Hartwell1",
+      "cardId": "pC21W5Vk0N7UMX2ggUBY",
+      "title": "Hartwell1",
+      "expectedImageCount": 23,
+      "importedCount": 23,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Hartwell/Houseboat",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Hartwell/Houseboat",
+      "cardId": "GXWf4cAPdRSXVXgesQA3",
+      "title": "Houseboat",
+      "expectedImageCount": 20,
+      "importedCount": 20,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Homes/Childress Dr/Aerial View",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Homes/Childress Dr/Aerial View",
+      "cardId": "TQ83uxuo0YodpfKy12a1",
+      "title": "Aerial View",
+      "expectedImageCount": 3,
+      "importedCount": 3,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Homes/Childress Dr/Basketball",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Homes/Childress Dr/Basketball",
+      "cardId": "41xkJhBVmX3W2Ic9IQk4",
+      "title": "Basketball",
+      "expectedImageCount": 7,
+      "importedCount": 7,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Homes/Childress Dr/Dock",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Homes/Childress Dr/Dock",
+      "cardId": "fVm6eu6Mg9X4NoZGrMDG",
+      "title": "Dock",
+      "expectedImageCount": 10,
+      "importedCount": 10,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Homes/Childress Dr/Interior",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Homes/Childress Dr/Interior",
+      "cardId": "SQgshmvCDcv2DNZUnaJ3",
+      "title": "Interior",
+      "expectedImageCount": 33,
+      "importedCount": 33,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Homes/Childress Dr/Pond",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Homes/Childress Dr/Pond",
+      "cardId": "sjianrwJ9rSPX5FZwo2W",
+      "title": "Pond",
+      "expectedImageCount": 8,
+      "importedCount": 8,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Homes/Keller Blvd/Keller Blvd Construction",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Homes/Keller Blvd/Keller Blvd Construction",
+      "cardId": "aXmo5TMhHpYPHiSvnTzx",
+      "title": "Keller Blvd Construction",
+      "expectedImageCount": 15,
+      "importedCount": 15,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Parkins Mill/Back to School",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Parkins Mill/Back to School",
+      "cardId": "14IPfPrhqDx1FCl8muqT",
+      "title": "Back to School",
+      "expectedImageCount": 4,
+      "importedCount": 4,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Portraits/3",
+      "mode": "error",
+      "error": "Folder import incomplete for zMomDadPics/BobSandra/Portraits/3: imported or reused 4/5 images; 1 failed."
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Acapulco",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Acapulco",
+      "cardId": "3R7t67Iuq3u9SeCrbcw1",
+      "title": "Acapulco",
+      "expectedImageCount": 7,
+      "importedCount": 7,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Amsterdam",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Amsterdam",
+      "cardId": "V9PxiYcSsjTVb6RcXtAN",
+      "title": "Amsterdam",
+      "expectedImageCount": 16,
+      "importedCount": 16,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Beach",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Beach",
+      "cardId": "PLfx80ap4BXtvyYUL4eC",
+      "title": "Beach",
+      "expectedImageCount": 3,
+      "importedCount": 3,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Beech Mountain",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Beech Mountain",
+      "cardId": "alSwnahYEkKUdCAoF2wE",
+      "title": "Beech Mountain",
+      "expectedImageCount": 10,
+      "importedCount": 10,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Beech Mountain 2",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Beech Mountain 2",
+      "cardId": "hCmLU5nv3GpNjTPCG0wo",
+      "title": "Beech Mountain 2",
+      "expectedImageCount": 9,
+      "importedCount": 9,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Canada",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Canada",
+      "cardId": "WEaxk1olk3ibi8y8k6ES",
+      "title": "Canada",
+      "expectedImageCount": 13,
+      "importedCount": 13,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Cape Canaveral",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Cape Canaveral",
+      "cardId": "ZwycPrzVfqPMaEdXDCpX",
+      "title": "Cape Canaveral",
+      "expectedImageCount": 5,
+      "importedCount": 5,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Chicago",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Chicago",
+      "cardId": "aTIf2tlE6ZEISeNaOESd",
+      "title": "Chicago",
+      "expectedImageCount": 19,
+      "importedCount": 19,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/China",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/China",
+      "cardId": "uLFd8r9FcpNDUOK7CTOk",
+      "title": "China",
+      "expectedImageCount": 3,
+      "importedCount": 3,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Cruise",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Cruise",
+      "cardId": "bXPzk9ZvmwPZovS7NMK0",
+      "title": "Cruise",
+      "expectedImageCount": 15,
+      "importedCount": 15,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Deep Sea Fishing",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Deep Sea Fishing",
+      "cardId": "6SV3t09H1K8drpJ4q5Ig",
+      "title": "Deep Sea Fishing",
+      "expectedImageCount": 4,
+      "importedCount": 4,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Denmark",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Denmark",
+      "cardId": "tqswYc8FuP7uUC211nvJ",
+      "title": "Denmark",
+      "expectedImageCount": 2,
+      "importedCount": 2,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Disney World",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Disney World",
+      "cardId": "yisSuo9PHZCztGn76tzr",
+      "title": "Disney World",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Disney World/Disney World 2",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Disney World/Disney World 2",
+      "cardId": "yrgKN8zciXgKS2TJdLyf",
+      "title": "Disney World 2",
+      "expectedImageCount": 12,
+      "importedCount": 12,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Egypt",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Egypt",
+      "cardId": "ViEC0ECLoXpKBJVvBLyD",
+      "title": "Egypt",
+      "expectedImageCount": 10,
+      "importedCount": 10,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/England",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/England",
+      "cardId": "TiWQ0Fbe5dz2IG9l7JzO",
+      "title": "England",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Falls",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Falls",
+      "cardId": "uHm5YMd5gAaG0MpFxAh8",
+      "title": "Falls",
+      "expectedImageCount": 5,
+      "importedCount": 5,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/France",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/France",
+      "cardId": "aShQwQJ5IoWLvSLDbRs9",
+      "title": "France",
+      "expectedImageCount": 2,
+      "importedCount": 2,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/France/Paris",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/France/Paris",
+      "cardId": "I3dojEArQ8USkHXKA4cR",
+      "title": "Paris",
+      "expectedImageCount": 27,
+      "importedCount": 27,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Gatlinburg",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Gatlinburg",
+      "cardId": "iWu4uLyTctTE5ch6M0fO",
+      "title": "Gatlinburg",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Germany",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Germany",
+      "cardId": "dOYo8s8aPrkvqK3oubcO",
+      "title": "Germany",
+      "expectedImageCount": 6,
+      "importedCount": 6,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Hawaii",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Hawaii",
+      "cardId": "T3BikMwpuX0z6GNF5YcZ",
+      "title": "Hawaii",
+      "expectedImageCount": 6,
+      "importedCount": 6,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Helen GA",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Helen GA",
+      "cardId": "DtBuIt8wlU15SP4w42ay",
+      "title": "Helen GA",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Hilton Head",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Hilton Head",
+      "cardId": "HLWyZlnAYxE0xQP7AFFA",
+      "title": "Hilton Head",
+      "expectedImageCount": 3,
+      "importedCount": 3,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Italy",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Italy",
+      "cardId": "6I3PzPnWDe0pIaYGN6bc",
+      "title": "Italy",
+      "expectedImageCount": 7,
+      "importedCount": 7,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Italy/North Italy",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Italy/North Italy",
+      "cardId": "MeQpHCOugk9YMjAW1yxq",
+      "title": "North Italy",
+      "expectedImageCount": 4,
+      "importedCount": 4,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Italy/Rome",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Italy/Rome",
+      "cardId": "oUyXbVwNrD5eQ0myWdP7",
+      "title": "Rome",
+      "expectedImageCount": 8,
+      "importedCount": 8,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Italy/Venice",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Italy/Venice",
+      "cardId": "V8TnwWxQmd43bF9ZGaYQ",
+      "title": "Venice",
+      "expectedImageCount": 10,
+      "importedCount": 10,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Itta Bena",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Itta Bena",
+      "cardId": "37lHhz7yIlLUwa6mVUfR",
+      "title": "Itta Bena",
+      "expectedImageCount": 45,
+      "importedCount": 45,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Itta Bena/School",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Itta Bena/School",
+      "cardId": "2KmV7xaEUU1c3f1FfmBv",
+      "title": "School",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Itta Bena/Texas and Mississippi Trip",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Itta Bena/Texas and Mississippi Trip",
+      "cardId": "aKABzs7sE45A4C7qaSjE",
+      "title": "Texas and Mississippi Trip",
+      "expectedImageCount": 4,
+      "importedCount": 4,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Japan",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Japan",
+      "cardId": "7cYHrizfmMtTMZXTWUJ9",
+      "title": "Japan",
+      "expectedImageCount": 24,
+      "importedCount": 24,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Monte Carlo",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Monte Carlo",
+      "cardId": "36O4KWwCT67HGkelivRN",
+      "title": "Monte Carlo",
+      "expectedImageCount": 6,
+      "importedCount": 6,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Nantahala",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Nantahala",
+      "cardId": "akH2y2ukq3RXBIa8uewk",
+      "title": "Nantahala",
+      "expectedImageCount": 2,
+      "importedCount": 2,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/New York/Central Park",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/New York/Central Park",
+      "cardId": "gaym47o5zK3vGMLealcj",
+      "title": "Central Park",
+      "expectedImageCount": 2,
+      "importedCount": 2,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/New York/Tall Ships",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/New York/Tall Ships",
+      "cardId": "38XXSlc4bpi9AeDiYsLR",
+      "title": "Tall Ships",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/New York/USS Intrepid",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/New York/USS Intrepid",
+      "cardId": "vgK5veFvdXPFFaMrCkMU",
+      "title": "USS Intrepid",
+      "expectedImageCount": 3,
+      "importedCount": 3,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Okeefenokee",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Okeefenokee",
+      "cardId": "JXMyP8RgYEdw7xZMeH7a",
+      "title": "Okeefenokee",
+      "expectedImageCount": 4,
+      "importedCount": 4,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Postcards",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Postcards",
+      "cardId": "VPm2tugO6SqfbvE7saQD",
+      "title": "Postcards",
+      "expectedImageCount": 18,
+      "importedCount": 18,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Six Flags",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Six Flags",
+      "cardId": "qVGbIKsNmOqLV4ZmCUPf",
+      "title": "Six Flags",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/State Park",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/State Park",
+      "cardId": "5Y5QpDtEyYkQqZckFKT3",
+      "title": "State Park",
+      "expectedImageCount": 2,
+      "importedCount": 2,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Switzerland",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Switzerland",
+      "cardId": "QKC8vwdgphN1Ts8AKqS4",
+      "title": "Switzerland",
+      "expectedImageCount": 29,
+      "importedCount": 29,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Virgin Islands",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Virgin Islands",
+      "cardId": "2wGb0aJs43N0ZLlmMuLj",
+      "title": "Virgin Islands",
+      "expectedImageCount": 14,
+      "importedCount": 14,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Washington DC",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Washington DC",
+      "cardId": "Vw0AinSLnyQd8FKY2y1P",
+      "title": "Washington DC",
+      "expectedImageCount": 7,
+      "importedCount": 7,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/West",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/West",
+      "cardId": "pKuqnspkqi4fc3ZGrKew",
+      "title": "West",
+      "expectedImageCount": 14,
+      "importedCount": 14,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Williamsburg",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Williamsburg",
+      "cardId": "MpgEt2iegPHx9jslDhIh",
+      "title": "Williamsburg",
+      "expectedImageCount": 5,
+      "importedCount": 5,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/Worlds Fair",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/Worlds Fair",
+      "cardId": "gHyvtU0kBiFzqHaaqn3C",
+      "title": "Worlds Fair",
+      "expectedImageCount": 10,
+      "importedCount": 10,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/YMCA Camp",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/YMCA Camp",
+      "cardId": "Ewp2Cne9bryiiyugFzmW",
+      "title": "YMCA Camp",
+      "expectedImageCount": 10,
+      "importedCount": 10,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/zGeneral",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/zGeneral",
+      "cardId": "d3eXVgcVVub6BmMRL6EX",
+      "title": "zGeneral",
+      "expectedImageCount": 40,
+      "importedCount": 40,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Travel/zGeneral/General1",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Travel/zGeneral/General1",
+      "cardId": "fPMRRk1x7DkKvQq1qrBV",
+      "title": "General1",
+      "expectedImageCount": 49,
+      "importedCount": 49,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/BobSandra/Wedding",
+      "mode": "merged-existing-card",
+      "importSourcePath": "zMomDadPics/BobSandra/Wedding",
+      "cardId": "hpM8WZlRj4NPI4fx4aaB",
+      "title": "Bob & Sandra's Wedding",
+      "expectedImageCount": 14,
+      "importedCount": 0,
+      "skippedCount": 14,
+      "galleryCount": 14,
+      "addedMediaCount": 0,
+      "coverImageId": "fGHIz9WpQH6vxLTdGgXC",
+      "mutatedCard": false,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/1Alan/0/a",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/1Alan/0/a",
+      "cardId": "NO0fZ9hurnE7O5UYXXje",
+      "title": "a",
+      "expectedImageCount": 6,
+      "importedCount": 6,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/1Alan/0/atlanta",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/1Alan/0/atlanta",
+      "cardId": "ESKuKt9xbp98l8rPKJxm",
+      "title": "atlanta",
+      "expectedImageCount": 16,
+      "importedCount": 16,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/1Alan/1/Crib",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/1Alan/1/Crib",
+      "cardId": "e5lLD34Bp2hOZuaR4T9w",
+      "title": "Crib",
+      "expectedImageCount": 3,
+      "importedCount": 3,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/1Alan/1/Overalls",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/1Alan/1/Overalls",
+      "cardId": "lJuLPAwfxwFacbmKI92Q",
+      "title": "Overalls",
+      "expectedImageCount": 5,
+      "importedCount": 5,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/1Alan/2/Bow Tie",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/1Alan/2/Bow Tie",
+      "cardId": "p3X0lWUuML2P379bDcon",
+      "title": "Bow Tie",
+      "expectedImageCount": 3,
+      "importedCount": 3,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/1Alan/2/Horse",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/1Alan/2/Horse",
+      "cardId": "a68Q8toqzKtgGEx7PvZ3",
+      "title": "Horse",
+      "expectedImageCount": 5,
+      "importedCount": 5,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/1Alan/Bday/1",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/1Alan/Bday/1",
+      "cardId": "VTnzbPmUqLODADszAffU",
+      "title": "1",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/1Alan/Graduation/BS/Car",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/1Alan/Graduation/BS/Car",
+      "cardId": "mxnq1ErXfmSkuqiMSXF8",
+      "title": "Car",
+      "expectedImageCount": 3,
+      "importedCount": 3,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/1Alan/Graduation/HS/Car",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/1Alan/Graduation/HS/Car",
+      "cardId": "Dv69qE3UEj2JHIXQ0aMX",
+      "title": "Car",
+      "expectedImageCount": 5,
+      "importedCount": 5,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/3Greg/Graduation - High School",
+      "mode": "merged-existing-card",
+      "importSourcePath": "zMomDadPics/zKids/3Greg/Graduation - High School",
+      "cardId": "ophkTttLphEuOQk37q6E",
+      "title": "Greg's High School Graduation 1979",
+      "expectedImageCount": 6,
+      "importedCount": 1,
+      "skippedCount": 5,
+      "galleryCount": 6,
+      "addedMediaCount": 1,
+      "coverImageId": "IjAy2Z0aB8UHI3Cb9CTt",
+      "mutatedCard": true,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/4Mark/Birthday/15",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/4Mark/Birthday/15",
+      "cardId": "IDKK13wYrFUxPOOLAnf6",
+      "title": "15",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/4Mark/Birthday/8",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/4Mark/Birthday/8",
+      "cardId": "Tf0Mxk435OqEH9v2b1HQ",
+      "title": "8",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/4Mark/Birthday/a",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/4Mark/Birthday/a",
+      "cardId": "TDPmdt0hP3gMBvuYpkHV",
+      "title": "a",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/4Mark/Birthday/b",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/4Mark/Birthday/b",
+      "cardId": "61XC1ia6k0rblPQnAqqE",
+      "title": "b",
+      "expectedImageCount": 2,
+      "importedCount": 2,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/4Mark/Birthday/c",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/4Mark/Birthday/c",
+      "cardId": "yZUtpwfLozY3xGWRE7QH",
+      "title": "c",
+      "expectedImageCount": 1,
+      "importedCount": 1,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/4Mark/Citadel/Summerall Guard",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/4Mark/Citadel/Summerall Guard",
+      "cardId": "6FiPYyDYqXVY61jZuvrI",
+      "title": "Summerall Guard",
+      "expectedImageCount": 11,
+      "importedCount": 11,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Creighton/Army",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Creighton/Army",
+      "cardId": "aEYCKb05f1wvhOBywwW8",
+      "title": "Army",
+      "expectedImageCount": 2,
+      "importedCount": 2,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Creighton/Bathtub",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Creighton/Bathtub",
+      "cardId": "CZGcdnihQZKIMoF1GlAv",
+      "title": "Bathtub",
+      "expectedImageCount": 2,
+      "importedCount": 2,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Creighton/Bench",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Creighton/Bench",
+      "cardId": "NSbzIt0BVwbd7tm7kd3h",
+      "title": "Bench",
+      "expectedImageCount": 2,
+      "importedCount": 2,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Creighton/Bicycle",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Creighton/Bicycle",
+      "cardId": "l1Bohz52JnWFkudJ6IDe",
+      "title": "Bicycle",
+      "expectedImageCount": 6,
+      "importedCount": 6,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Creighton/Cammoflage",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Creighton/Cammoflage",
+      "cardId": "opmYKGLGLI4S9F7DfPpp",
+      "title": "Cammoflage",
+      "expectedImageCount": 8,
+      "importedCount": 8,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Creighton/Davis Visit",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Creighton/Davis Visit",
+      "cardId": "S1Xu88r0oArcj5mCn7BI",
+      "title": "Davis Visit",
+      "expectedImageCount": 3,
+      "importedCount": 3,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Creighton/White Shirts",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Creighton/White Shirts",
+      "cardId": "c0joYvbq2ydvjFRFwcZg",
+      "title": "White Shirts",
+      "expectedImageCount": 2,
+      "importedCount": 2,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Couch1",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Couch1",
+      "cardId": "jgPGenHeIN2FpdeHC6bE",
+      "title": "Couch1",
+      "expectedImageCount": 3,
+      "importedCount": 3,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Couch2",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Couch2",
+      "cardId": "vrJKOpWQhsuZQb2WE7Z0",
+      "title": "Couch2",
+      "expectedImageCount": 3,
+      "importedCount": 3,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Couch3",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Couch3",
+      "cardId": "bPPAx1faq6QR9FCSfw6P",
+      "title": "Couch3",
+      "expectedImageCount": 3,
+      "importedCount": 3,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Mailbox",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Mailbox",
+      "cardId": "ZjPh5p5qYORjSmdoy591",
+      "title": "Mailbox",
+      "expectedImageCount": 2,
+      "importedCount": 2,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Pool",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Pool",
+      "cardId": "WdQqSnPfOOcZBriYxKHF",
+      "title": "Pool",
+      "expectedImageCount": 3,
+      "importedCount": 3,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Porch",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Porch",
+      "cardId": "gCeaf3Qqzbu81UouFIJP",
+      "title": "Porch",
+      "expectedImageCount": 2,
+      "importedCount": 2,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Portraits",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/Portraits",
+      "cardId": "cZ6qsKP8OgHXTLtGlcxx",
+      "title": "Portraits",
+      "expectedImageCount": 3,
+      "importedCount": 3,
+      "failedPaths": []
+    },
+    {
+      "folderPath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/ShortsSuspenders",
+      "mode": "created-card",
+      "importSourcePath": "zMomDadPics/zKids/5ASGM/Woodbine Terrace/ShortsSuspenders",
+      "cardId": "v2xbFJYfXNyResgQflzA",
+      "title": "ShortsSuspenders",
+      "expectedImageCount": 6,
+      "importedCount": 6,
+      "failedPaths": []
+    }
+  ]
+}

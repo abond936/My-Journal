@@ -175,8 +175,23 @@ async function createMediaAsset(
     const tagRefs = tagIdsResolved.map((id) => firestore.collection('tags').doc(id));
     const tagSnapshots = await firestore.getAll(...tagRefs);
     const tagPathLookup = new Map<string, Tag>();
+    const ancestorIds = new Set<string>();
     for (const snap of tagSnapshots) {
       if (snap.exists) {
+        const tag = snap.data() as Tag;
+        tagPathLookup.set(snap.id, tag);
+        if (Array.isArray(tag.path)) {
+          tag.path.forEach((ancestorId) => {
+            if (ancestorId && !tagPathLookup.has(ancestorId)) ancestorIds.add(ancestorId);
+          });
+        }
+      }
+    }
+    if (ancestorIds.size > 0) {
+      const ancestorRefs = Array.from(ancestorIds).map((id) => firestore.collection('tags').doc(id));
+      const ancestorSnapshots = await firestore.getAll(...ancestorRefs);
+      for (const snap of ancestorSnapshots) {
+        if (!snap.exists) continue;
         tagPathLookup.set(snap.id, snap.data() as Tag);
       }
     }

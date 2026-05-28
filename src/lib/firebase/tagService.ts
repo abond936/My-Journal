@@ -862,12 +862,17 @@ async function applyTagCountDeltas(
 
   if (finalTagIds.length === 0) return;
 
-  const finalRefs = finalTagIds.map((id) => firestore.collection('tags').doc(id));
-  const finalSnaps =
-    finalRefs.length > 0 ? await transaction.getAll(...finalRefs) : [];
-  const existingIds = new Set(
-    finalSnaps.filter((s) => s.exists).map((s) => s.id)
-  );
+  const existingIds = tagPathLookup
+    ? new Set(finalTagIds.filter((id) => tagPathLookup.has(id)))
+    : new Set(
+        (
+          finalTagIds.length > 0
+            ? await transaction.getAll(...finalTagIds.map((id) => firestore.collection('tags').doc(id)))
+            : []
+        )
+          .filter((s) => s.exists)
+          .map((s) => s.id)
+      );
 
   for (const tagId of finalTagIds) {
     const delta = deltaMap[tagId] || 0;

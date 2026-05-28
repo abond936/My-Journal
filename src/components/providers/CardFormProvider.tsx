@@ -9,7 +9,6 @@ import {
   extractMediaFromContent,
   dehydrateCardForSave,
   persistableSnapshotsEqual,
-  stripContentImageSrc,
 } from '@/lib/utils/cardUtils';
 import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 import { useOptionalCardContext } from '@/components/providers/CardProvider';
@@ -23,7 +22,6 @@ export type ShellRelationshipSnapshot = Pick<
   | 'coverImageFocalPoint'
   | 'galleryMedia'
   | 'childrenIds'
-  | 'content'
   | 'contentMedia'
   | 'type'
   | 'status'
@@ -303,7 +301,6 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       'coverImageFocalPoint',
       'galleryMedia',
       'childrenIds',
-      'content',
       'contentMedia',
       'type',
       'status',
@@ -314,12 +311,6 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       for (const k of keys) {
         if (!Object.prototype.hasOwnProperty.call(snap, k)) continue;
         const v = snap[k];
-        if (k === 'content' && typeof v === 'string') {
-          const currentContent = typeof nextCard.content === 'string' ? nextCard.content : '';
-          if (stripContentImageSrc(currentContent) !== stripContentImageSrc(v)) {
-            continue;
-          }
-        }
         nextCard = { ...nextCard, [k]: v } as CardUpdate;
       }
       if (Object.prototype.hasOwnProperty.call(snap, 'type')) {
