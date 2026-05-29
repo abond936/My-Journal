@@ -36,13 +36,20 @@ import { fetchAdminCardSnapshot } from '@/lib/utils/fetchAdminCardSnapshot';
 import { deriveCuratedMutationPlan, normalizeCuratedChildIds } from '@/lib/utils/curatedCollectionTree';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import { DND_POINTER_IGNORE_ATTR } from '@/lib/hooks/useDefaultDndSensors';
+import {
+  createStudioPaneWidthPreference,
+  DEFAULT_STUDIO_PANE_VISIBILITY,
+  DEFAULT_STUDIO_WORKSPACE_LAYOUT_PREFERENCES,
+  readStoredStudioWorkspaceLayoutPreferences,
+  resolveStudioPaneWidthPreference,
+  writeStoredStudioWorkspaceLayoutPreferences,
+  type StudioPaneVisibility,
+  type StudioWorkspaceLayoutPreferences,
+} from '@/lib/preferences/studioWorkspaceLayout';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import cardAdminPageStyles from '@/app/admin/card-admin/card-admin.module.css';
 import styles from './StudioWorkspace.module.css';
 
-const STUDIO_CARD_EDIT_WIDTH_KEY = 'studioCardEditPaneWidth';
-const STUDIO_QUESTIONS_WIDTH_KEY = 'studioQuestionsPaneWidth';
-const STUDIO_PANE_VISIBILITY_KEY = 'studioPaneVisibility';
 const CARD_EDIT_RESIZE_HANDLE = 8;
 const MIN_CARD_EDIT_PX = 220;
 const MIN_QUESTIONS_PX = 200;
@@ -108,18 +115,6 @@ function questionsWidthBounds(
   return { minQuestions, maxQuestions };
 }
 
-function readStoredCardEditWidth(): number | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem(STUDIO_CARD_EDIT_WIDTH_KEY);
-    if (!raw) return null;
-    const w = Number.parseInt(raw, 10);
-    return Number.isFinite(w) ? w : null;
-  } catch {
-    return null;
-  }
-}
-
 function clamp(n: number, lo: number, hi: number) {
   return Math.min(hi, Math.max(lo, n));
 }
@@ -140,49 +135,6 @@ function applyColumnWidth(el: HTMLDivElement | null, width: number, minWidthPx: 
   el.style.flex = `0 0 ${width}px`;
   el.style.width = `${width}px`;
   el.style.minWidth = `${minWidthPx}px`;
-}
-
-type StudioPaneVisibility = {
-  organizationCollapsed: boolean;
-  cardsCollapsed: boolean;
-  composeCollapsed: boolean;
-  questionsCollapsed: boolean;
-  mediaCollapsed: boolean;
-};
-
-const DEFAULT_STUDIO_PANE_VISIBILITY: StudioPaneVisibility = {
-  organizationCollapsed: true,
-  cardsCollapsed: false,
-  composeCollapsed: false,
-  questionsCollapsed: false,
-  mediaCollapsed: false,
-};
-
-function readStoredPaneVisibility(): StudioPaneVisibility | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem(STUDIO_PANE_VISIBILITY_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<StudioPaneVisibility>;
-    return {
-      ...DEFAULT_STUDIO_PANE_VISIBILITY,
-      ...parsed,
-    };
-  } catch {
-    return null;
-  }
-}
-
-function readStoredQuestionsWidth(): number | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem(STUDIO_QUESTIONS_WIDTH_KEY);
-    if (!raw) return null;
-    const w = Number.parseInt(raw, 10);
-    return Number.isFinite(w) ? w : null;
-  } catch {
-    return null;
-  }
 }
 
 function applyOptimisticSelectedCardPatch(
@@ -260,8 +212,12 @@ export default function StudioWorkspace() {
   const [cardEditWidth, setCardEditWidth] = useState(DEFAULT_CARD_EDIT_WIDTH);
   const [questionsWidth, setQuestionsWidth] = useState(DEFAULT_QUESTIONS_WIDTH);
   const [paneVisibility, setPaneVisibility] = useState<StudioPaneVisibility>(DEFAULT_STUDIO_PANE_VISIBILITY);
+  const [layoutPrefsHydrated, setLayoutPrefsHydrated] = useState(false);
   const cardEditWidthRef = useRef(cardEditWidth);
   const questionsWidthRef = useRef(questionsWidth);
+  const studioLayoutPrefsRef = useRef<StudioWorkspaceLayoutPreferences>(
+    DEFAULT_STUDIO_WORKSPACE_LAYOUT_PREFERENCES
+  );
   const studioMediaCardRowRef = useRef<HTMLDivElement | null>(null);
   const studioRightColumnRef = useRef<HTMLDivElement | null>(null);
   const cardEditColumnRef = useRef<HTMLDivElement | null>(null);
@@ -470,32 +426,47 @@ export default function StudioWorkspace() {
     applyColumnWidth(questionsColumnRef.current, next, MIN_QUESTIONS_PX);
   }, []);
 
+  const persistStudioLayoutPrefs = useCallback(
+    (apply: (current: StudioWorkspaceLayoutPreferences) => StudioWorkspaceLayoutPreferences) => {
+      const next = apply(studioLayoutPrefsRef.current);
+      studioLayoutPrefsRef.current = next;
+      writeStoredStudioWorkspaceLayoutPreferences(next);
+    },
+    []
+  );
+
+  const persistStudioPaneWidth = useCallback(
+    (pane: 'composeWidth' | 'questionsWidth', width: number) => {
+      const rowWidth = studioMediaCardRowRef.current ? rowWidthForCardEditResize(studioMediaCardRowRef.current) : 0;
+      const viewportWidth = typeof window === 'undefined' ? 0 : window.innerWidth;
+      persistStudioLayoutPrefs((current) => ({
+        ...current,
+        [pane]: createStudioPaneWidthPreference(width, { rowWidth, viewportWidth }),
+      }));
+    },
+    [persistStudioLayoutPrefs]
+  );
+
   useEffect(() => {
-    const stored = readStoredCardEditWidth();
-    if (stored != null) {
-      setCardEditWidth(clamp(stored, MIN_CARD_EDIT_PX, MAX_CARD_EDIT_WIDTH));
+    const stored = readStoredStudioWorkspaceLayoutPreferences();
+    studioLayoutPrefsRef.current = stored;
+    setPaneVisibility(stored.paneVisibility);
+    if (stored.composeWidth?.px != null) {
+      setCardEditWidth(clamp(stored.composeWidth.px, MIN_CARD_EDIT_PX, MAX_CARD_EDIT_WIDTH));
     }
+    if (stored.questionsWidth?.px != null) {
+      setQuestionsWidth(clamp(stored.questionsWidth.px, MIN_QUESTIONS_PX, MAX_QUESTIONS_WIDTH));
+    }
+    setLayoutPrefsHydrated(true);
   }, []);
 
   useEffect(() => {
-    const stored = readStoredQuestionsWidth();
-    if (stored != null) {
-      setQuestionsWidth(clamp(stored, MIN_QUESTIONS_PX, MAX_QUESTIONS_WIDTH));
-    }
-  }, []);
-
-  useEffect(() => {
-    const stored = readStoredPaneVisibility();
-    if (stored) setPaneVisibility(stored);
-  }, []);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STUDIO_PANE_VISIBILITY_KEY, JSON.stringify(paneVisibility));
-    } catch {
-      /* ignore */
-    }
-  }, [paneVisibility]);
+    if (!layoutPrefsHydrated) return;
+    persistStudioLayoutPrefs((current) => ({
+      ...current,
+      paneVisibility,
+    }));
+  }, [layoutPrefsHydrated, paneVisibility, persistStudioLayoutPrefs]);
 
   const togglePane = useCallback((pane: keyof StudioPaneVisibility) => {
     setPaneVisibility((current) => ({
@@ -533,23 +504,39 @@ export default function StudioWorkspace() {
     const row = studioMediaCardRowRef.current;
     if (!row) return;
     const rowW = rowWidthForCardEditResize(row);
+    const viewportWidth = typeof window === 'undefined' ? rowW : window.innerWidth;
+    const savedPrefs = studioLayoutPrefsRef.current;
     const showQuestions = !paneVisibility.questionsCollapsed;
     const showMedia = !paneVisibility.mediaCollapsed;
     const cardBounds = cardEditWidthBounds(rowW, { questions: showQuestions, media: showMedia });
+    const nextCardWidth = cardBounds
+      ? resolveStudioPaneWidthPreference(savedPrefs.composeWidth, {
+          rowWidth: rowW,
+          viewportWidth,
+          minPx: cardBounds.minEdit,
+          maxPx: cardBounds.maxEdit,
+          fallbackPx: cardEditWidthRef.current,
+        })
+      : cardEditWidthRef.current;
     if (cardBounds) {
-      setCardEditWidth((w) => clamp(w, cardBounds.minEdit, cardBounds.maxEdit));
+      setCardEditWidth(nextCardWidth);
     }
     if (showQuestions) {
-      const composeWidth = cardBounds
-        ? clamp(cardEditWidthRef.current, cardBounds.minEdit, cardBounds.maxEdit)
-        : cardEditWidthRef.current;
       const questionBounds = questionsWidthBounds(rowW, {
         compose: !paneVisibility.composeCollapsed,
         media: showMedia,
-        composeWidth,
+        composeWidth: nextCardWidth,
       });
       if (questionBounds) {
-        setQuestionsWidth((w) => clamp(w, questionBounds.minQuestions, questionBounds.maxQuestions));
+        setQuestionsWidth(
+          resolveStudioPaneWidthPreference(savedPrefs.questionsWidth, {
+            rowWidth: rowW,
+            viewportWidth,
+            minPx: questionBounds.minQuestions,
+            maxPx: questionBounds.maxQuestions,
+            fallbackPx: questionsWidthRef.current,
+          })
+        );
       }
     }
   }, [
@@ -598,6 +585,11 @@ export default function StudioWorkspace() {
     window.addEventListener('resize', clampCardEditToRow);
     return () => window.removeEventListener('resize', clampCardEditToRow);
   }, [clampCardEditToRow]);
+
+  useEffect(() => {
+    if (!layoutPrefsHydrated) return;
+    clampCardEditToRow();
+  }, [clampCardEditToRow, layoutPrefsHydrated]);
 
   const onCardEditResizePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -652,7 +644,7 @@ export default function StudioWorkspace() {
           cardEditDragRafRef.current = null;
         }
         try {
-          localStorage.setItem(STUDIO_CARD_EDIT_WIDTH_KEY, String(committedWidth));
+          persistStudioPaneWidth('composeWidth', committedWidth);
         } catch {
           /* ignore */
         }
@@ -665,6 +657,7 @@ export default function StudioWorkspace() {
     [
       paneVisibility.mediaCollapsed,
       paneVisibility.questionsCollapsed,
+      persistStudioPaneWidth,
       resizableWorkspaceLayout,
       scheduleLiveCardEditWidth,
     ]
@@ -686,13 +679,9 @@ export default function StudioWorkspace() {
       setCardEditWidth(next);
       pendingCardEditWidthRef.current = null;
       applyColumnWidth(cardEditColumnRef.current, next, MIN_CARD_EDIT_PX);
-      try {
-        localStorage.setItem(STUDIO_CARD_EDIT_WIDTH_KEY, String(next));
-      } catch {
-        /* ignore */
-      }
+      persistStudioPaneWidth('composeWidth', next);
     },
-    [paneVisibility.mediaCollapsed, paneVisibility.questionsCollapsed, resizableWorkspaceLayout]
+    [paneVisibility.mediaCollapsed, paneVisibility.questionsCollapsed, persistStudioPaneWidth, resizableWorkspaceLayout]
   );
 
   const onQuestionsResizePointerDown = useCallback(
@@ -748,7 +737,7 @@ export default function StudioWorkspace() {
           questionsDragRafRef.current = null;
         }
         try {
-          localStorage.setItem(STUDIO_QUESTIONS_WIDTH_KEY, String(committedWidth));
+          persistStudioPaneWidth('questionsWidth', committedWidth);
         } catch {
           /* ignore */
         }
@@ -761,6 +750,7 @@ export default function StudioWorkspace() {
     [
       paneVisibility.composeCollapsed,
       paneVisibility.mediaCollapsed,
+      persistStudioPaneWidth,
       resizableWorkspaceLayout,
       scheduleLiveQuestionsWidth,
     ]
@@ -783,13 +773,9 @@ export default function StudioWorkspace() {
       setQuestionsWidth(next);
       pendingQuestionsWidthRef.current = null;
       applyColumnWidth(questionsColumnRef.current, next, MIN_QUESTIONS_PX);
-      try {
-        localStorage.setItem(STUDIO_QUESTIONS_WIDTH_KEY, String(next));
-      } catch {
-        /* ignore */
-      }
+      persistStudioPaneWidth('questionsWidth', next);
     },
-    [paneVisibility.composeCollapsed, paneVisibility.mediaCollapsed, resizableWorkspaceLayout]
+    [paneVisibility.composeCollapsed, paneVisibility.mediaCollapsed, persistStudioPaneWidth, resizableWorkspaceLayout]
   );
 
   const loadSelectedCard = useCallback(async (cardId: string, opts?: { quiet?: boolean }) => {
