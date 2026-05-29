@@ -518,25 +518,33 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       if (!shouldUpdate) return;
       const ids = Array.from(bulkSelectedCardIds);
       try {
-        await Promise.all(
-          ids.map((id) =>
-            fetch(`/api/cards/${id}`, {
+        const updatedCards = await Promise.all(
+          ids.map(async (id) => {
+            const res = await fetch(`/api/cards/${id}`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ [field]: value }),
-            })
-          )
+            });
+            const data = await res.json().catch(() => ({}));
+            throwIfJsonApiFailed(res, data, `Failed to update card ${id}`);
+            return data as Card;
+          })
         );
-        patchCatalogCards(ids, (card) => ({ ...card, [field]: value, updatedAt: Date.now() }));
+        updatedCards.forEach((card) => upsertCatalogCard(card));
+        setCatalogRefreshTick((t) => t + 1);
+        await refreshCards();
         setBulkSelectedCardIds(new Set());
       } catch (err) {
         console.error(`Error updating ${String(field)}:`, err);
-        feedback.showError(`An error occurred while updating ${String(field)}.`, 'Could not update cards');
+        feedback.showError(
+          err instanceof Error ? err.message : `An error occurred while updating ${String(field)}.`,
+          'Could not update cards'
+        );
         setCatalogRefreshTick((t) => t + 1);
         await refreshCards();
       }
     },
-    [bulkSelectedCardIds, feedback, patchCatalogCards, refreshCards]
+    [bulkSelectedCardIds, feedback, refreshCards, upsertCatalogCard]
   );
 
   const handleBulkDelete = useCallback(async () => {
@@ -617,24 +625,8 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
         }
         const data = await res.json().catch(() => ({}));
         throwIfJsonApiFailed(res, data, 'Failed to save tags.');
-        patchCatalogCards(cardIds, (card) => {
-          const currentTags = new Set(card.tags ?? []);
-          let nextTags: string[];
-          if (bulkTagMode === 'replace') {
-            nextTags = [...newSelection];
-          } else if (bulkTagMode === 'add') {
-            newSelection.forEach((tagId) => currentTags.add(tagId));
-            nextTags = Array.from(currentTags);
-          } else {
-            newSelection.forEach((tagId) => currentTags.delete(tagId));
-            nextTags = Array.from(currentTags);
-          }
-          return {
-            ...card,
-            tags: nextTags,
-            updatedAt: Date.now(),
-          };
-        });
+        setCatalogRefreshTick((t) => t + 1);
+        await refreshCards();
         setBulkTagModalOpen(false);
         setBulkSelectedCardIds(new Set());
       } catch (err) {
@@ -644,7 +636,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
         setBulkTagApplying(false);
       }
     },
-    [bulkSelectedCardIds, bulkTagMode, feedback, patchCatalogCards]
+    [bulkSelectedCardIds, bulkTagMode, feedback, refreshCards]
   );
 
   const onUpdateCard = useCallback(

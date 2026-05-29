@@ -36,7 +36,12 @@ export interface MediaAdminGridCellProps {
     updates: Partial<Pick<Media, 'caption' | 'objectPosition'>>
   ) => Promise<void>;
   isSelected: boolean;
-  onSelectionCheckboxClick: (e: React.MouseEvent | React.KeyboardEvent, mediaId: string, mediaIndex: number) => void;
+  onSelectionInteraction: (
+    e: React.MouseEvent | React.KeyboardEvent,
+    mediaId: string,
+    mediaIndex: number,
+    source: 'cell' | 'checkbox'
+  ) => void;
   studioDragBind?: MediaAdminGridStudioDragBind;
   inlineCaptionEditing?: boolean;
   isAssignedToActiveCard?: boolean;
@@ -80,7 +85,7 @@ function MediaAdminGridCell({
   onSaveTags,
   onSaveMediaFields,
   isSelected,
-  onSelectionCheckboxClick,
+  onSelectionInteraction,
   studioDragBind,
   inlineCaptionEditing = false,
   isAssignedToActiveCard = false,
@@ -121,17 +126,17 @@ function MediaAdminGridCell({
   );
 
   const handleSelectionClick = useCallback(
-    (e: React.MouseEvent | React.KeyboardEvent) => {
-      onSelectionCheckboxClick(e, media.docId, mediaIndex);
+    (e: React.MouseEvent | React.KeyboardEvent, source: 'cell' | 'checkbox') => {
+      onSelectionInteraction(e, media.docId, mediaIndex, source);
     },
-    [media.docId, mediaIndex, onSelectionCheckboxClick]
+    [media.docId, mediaIndex, onSelectionInteraction]
   );
 
   const onCellClick = (e: React.MouseEvent) => {
     if (isMediaGridChromeInteractiveTarget(e.target)) return;
     const t = eventTargetToElement(e.target);
     if (t?.closest('button')) return;
-    handleSelectionClick(e);
+    handleSelectionClick(e, 'cell');
   };
 
   const onCellKeyDown = (e: React.KeyboardEvent) => {
@@ -139,7 +144,7 @@ function MediaAdminGridCell({
     if (t?.closest('input, textarea, button, [role="listbox"]')) return;
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      handleSelectionClick(e);
+      handleSelectionClick(e, 'cell');
     }
   };
 
@@ -215,12 +220,12 @@ function MediaAdminGridCell({
             type="checkbox"
             readOnly
             checked={isSelected}
-            onClick={(e) => handleSelectionClick(e)}
+            onClick={(e) => handleSelectionClick(e, 'checkbox')}
             onKeyDown={(e) => {
               if (e.key === ' ' || e.key === 'Enter') {
                 e.preventDefault();
                 e.stopPropagation();
-                handleSelectionClick(e);
+                handleSelectionClick(e, 'checkbox');
               }
             }}
             aria-label={`Select ${media.filename}`}
@@ -388,7 +393,7 @@ const MemoizedMediaAdminGridCell = React.memo(MediaAdminGridCell, (prev, next) =
     prev.onSaveTags === next.onSaveTags &&
     prev.onSaveMediaFields === next.onSaveMediaFields &&
     prev.isSelected === next.isSelected &&
-    prev.onSelectionCheckboxClick === next.onSelectionCheckboxClick &&
+    prev.onSelectionInteraction === next.onSelectionInteraction &&
     prev.studioDragBind === next.studioDragBind &&
     prev.inlineCaptionEditing === next.inlineCaptionEditing &&
     prev.isAssignedToActiveCard === next.isAssignedToActiveCard &&
@@ -436,7 +441,7 @@ const MemoizedMediaAdminGridCellStudioSource = React.memo(
     prev.onSaveTags === next.onSaveTags &&
     prev.onSaveMediaFields === next.onSaveMediaFields &&
     prev.isSelected === next.isSelected &&
-    prev.onSelectionCheckboxClick === next.onSelectionCheckboxClick &&
+    prev.onSelectionInteraction === next.onSelectionInteraction &&
     prev.inlineCaptionEditing === next.inlineCaptionEditing &&
     prev.isAssignedToActiveCard === next.isAssignedToActiveCard
 );
@@ -522,8 +527,15 @@ export default function MediaAdminGrid({
   }, [highlightedIdSet, onVisibleHighlightedCountChange, sortedIds]);
 
   const handleGridSelection = useCallback(
-    (e: React.MouseEvent | React.KeyboardEvent, id: string, index: number) => {
-      e.preventDefault();
+    (
+      e: React.MouseEvent | React.KeyboardEvent,
+      id: string,
+      index: number,
+      source: 'cell' | 'checkbox'
+    ) => {
+      if (source === 'cell' || e.type === 'keydown') {
+        e.preventDefault();
+      }
       e.stopPropagation();
       applyModifierSelection({
         orderedIds: sortedIds,
@@ -607,7 +619,7 @@ export default function MediaAdminGrid({
               onSaveTags={handleSaveTags}
               onSaveMediaFields={handleSaveMediaFields}
               isSelected={selectedMediaIds.includes(item.docId)}
-              onSelectionCheckboxClick={handleGridSelection}
+              onSelectionInteraction={handleGridSelection}
               inlineCaptionEditing={inlineCaptionEditing}
               isAssignedToActiveCard={isAssignedToActiveCard}
               authoritativeRelatedCardIds={referenceSummaries[item.docId] ?? null}
@@ -622,7 +634,7 @@ export default function MediaAdminGrid({
               onSaveTags={handleSaveTags}
               onSaveMediaFields={handleSaveMediaFields}
               isSelected={selectedMediaIds.includes(item.docId)}
-              onSelectionCheckboxClick={handleGridSelection}
+              onSelectionInteraction={handleGridSelection}
               inlineCaptionEditing={inlineCaptionEditing}
               isAssignedToActiveCard={isAssignedToActiveCard}
               authoritativeRelatedCardIds={referenceSummaries[item.docId] ?? null}

@@ -236,12 +236,14 @@ const CardForm: React.FC = () => {
       ...(newAuto ? { excerpt: null } : {}),
     });
   }, [isExcerptAuto, lastSavedState.cardData, persistFieldPatch, setField]);
-  const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    const nextStatus = e.target.value as Card['status'];
+  const persistStatusChange = useCallback((nextStatus: Card['status']) => {
     setField('status', nextStatus);
     if (lastSavedState.cardData.status === nextStatus) return;
     void persistFieldPatch({ status: nextStatus });
   }, [lastSavedState.cardData.status, persistFieldPatch, setField]);
+  const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    persistStatusChange(e.target.value as Card['status']);
+  }, [persistStatusChange]);
   const handleTypeChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       const nextType = e.target.value as Card['type'];
@@ -588,6 +590,46 @@ const CardForm: React.FC = () => {
     />
   );
 
+  const studioStatusToggle = (
+    <div className={styles.selectGroup}>
+      <span className={styles.selectLabel}>Status</span>
+      <div className={clsx(styles.statusToggleGroup, errors.status && styles.inputError)} role="radiogroup" aria-label="Status">
+        <label
+          className={clsx(
+            styles.statusToggleOption,
+            cardData.status === 'draft' && styles.statusToggleOptionActive
+          )}
+        >
+          <input
+            type="radio"
+            name="status-toggle"
+            value="draft"
+            checked={cardData.status === 'draft'}
+            onChange={() => persistStatusChange('draft')}
+            className={styles.statusToggleInput}
+          />
+          <span className={styles.statusToggleLabel}>Draft</span>
+        </label>
+        <label
+          className={clsx(
+            styles.statusToggleOption,
+            cardData.status === 'published' && styles.statusToggleOptionActive
+          )}
+        >
+          <input
+            type="radio"
+            name="status-toggle"
+            value="published"
+            checked={cardData.status === 'published'}
+            onChange={() => persistStatusChange('published')}
+            className={styles.statusToggleInput}
+          />
+          <span className={styles.statusToggleLabel}>Published</span>
+        </label>
+      </div>
+    </div>
+  );
+
   const storyAssistSection = (
     <div className={styles.aiAssistSection}>
       <div className={styles.aiAssistSectionHeader}>
@@ -811,18 +853,20 @@ const CardForm: React.FC = () => {
                   )}
                 </div>
                 <div className={styles.statusSection}>
-                  <div className={styles.selectGroup}>
-                    <label htmlFor="status-select" className={styles.selectLabel}>Status</label>
-                    <select
-                      id="status-select"
-                      value={cardData.status}
-                      onChange={handleStatusChange}
-                      className={clsx(styles.statusSelect, errors.status && styles.inputError)}
-                    >
-                      <option value="draft">Draft</option>
-                      <option value="published">Published</option>
-                    </select>
-                  </div>
+                  {studioShellForm ? studioStatusToggle : (
+                    <div className={styles.selectGroup}>
+                      <label htmlFor="status-select" className={styles.selectLabel}>Status</label>
+                      <select
+                        id="status-select"
+                        value={cardData.status}
+                        onChange={handleStatusChange}
+                        className={clsx(styles.statusSelect, errors.status && styles.inputError)}
+                      >
+                        <option value="draft">Draft</option>
+                        <option value="published">Published</option>
+                      </select>
+                    </div>
+                  )}
                   <div className={styles.selectGroup}>
                     <label htmlFor="type-select" className={styles.selectLabel}>Type</label>
                     <select
@@ -995,18 +1039,20 @@ const CardForm: React.FC = () => {
               )}
             </div>
             <div className={styles.statusSection}>
-              <div className={styles.selectGroup}>
-                <label htmlFor="status-select" className={styles.selectLabel}>Status</label>
-                <select
-                  id="status-select"
-                  value={cardData.status}
-                  onChange={handleStatusChange}
-                  className={clsx(styles.statusSelect, errors.status && styles.inputError)}
-                >
-                  <option value="draft">Draft</option>
-                  <option value="published">Published</option>
-                </select>
-              </div>
+              {studioShellForm ? studioStatusToggle : (
+                <div className={styles.selectGroup}>
+                  <label htmlFor="status-select" className={styles.selectLabel}>Status</label>
+                  <select
+                    id="status-select"
+                    value={cardData.status}
+                    onChange={handleStatusChange}
+                    className={clsx(styles.statusSelect, errors.status && styles.inputError)}
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="published">Published</option>
+                  </select>
+                </div>
+              )}
               <div className={styles.selectGroup}>
                 <label htmlFor="type-select" className={styles.selectLabel}>Type</label>
                 <select

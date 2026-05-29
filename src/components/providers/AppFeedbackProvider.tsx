@@ -204,6 +204,7 @@ export function AppFeedbackProvider({ children }: { children: React.ReactNode })
                     title={dialog.cancelLabel}
                   >
                     {buttonIcon(dialog.cancelLabel)}
+                    <span>{dialog.cancelLabel}</span>
                   </button>
                   <button
                     type="button"
@@ -218,6 +219,7 @@ export function AppFeedbackProvider({ children }: { children: React.ReactNode })
                     title={dialog.confirmLabel}
                   >
                     {buttonIcon(dialog.confirmLabel)}
+                    <span>{dialog.confirmLabel}</span>
                   </button>
                 </>
               ) : (
@@ -232,6 +234,7 @@ export function AppFeedbackProvider({ children }: { children: React.ReactNode })
                   title={dialog.acknowledgeLabel}
                 >
                   {buttonIcon(dialog.acknowledgeLabel)}
+                  <span>{dialog.acknowledgeLabel}</span>
                 </button>
               )}
             </div>

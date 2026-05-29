@@ -184,11 +184,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.45rem;
+  padding: 0 0.75rem;
   border-radius: var(--border-radius-md);
   border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   background: var(--admin-support-control-background-color);
   color: var(--admin-support-control-text-color);
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .dialogButton:hover:not(:disabled) {

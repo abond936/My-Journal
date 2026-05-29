@@ -112,6 +112,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const [bulkTagModalOpen, setBulkTagModalOpen] = useState(false);
   const [pendingBulkTags, setPendingBulkTags] = useState<string[]>([]);
   const [bulkTagApplying, setBulkTagApplying] = useState(false);
+  const [bulkTagInitializing, setBulkTagInitializing] = useState(false);
   const [bulkTagMode, setBulkTagMode] = useState<'add' | 'replace' | 'remove'>('add');
   const [tagFilterModalOpen, setTagFilterModalOpen] = useState(false);
   const [duplicateTriageMode, setDuplicateTriageMode] = useState(false);
@@ -143,6 +144,75 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     setBulkTagMode('add');
     setBulkTagModalOpen(true);
   };
+
+  useEffect(() => {
+    if (!bulkTagModalOpen) {
+      setBulkTagInitializing(false);
+      return;
+    }
+    if (selectedMediaIds.length === 0) {
+      setPendingBulkTags([]);
+      setBulkTagInitializing(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadSharedTags = async () => {
+      setBulkTagInitializing(true);
+      try {
+        const selectedMedia = await Promise.all(
+          selectedMediaIds.map(async (mediaId) => {
+            const cached = media.find((item) => item.docId === mediaId) ?? resolveMediaById(mediaId);
+            if (cached) return cached;
+            try {
+              const response = await fetch(`/api/images/${encodeURIComponent(mediaId)}`, {
+                cache: 'no-store',
+                credentials: 'same-origin',
+              });
+              if (!response.ok) return null;
+              const payload = (await response.json().catch(() => ({}))) as { media?: Media };
+              return payload.media ?? null;
+            } catch {
+              return null;
+            }
+          })
+        );
+
+        if (cancelled) return;
+
+        const resolved = selectedMedia.filter((item): item is Media => Boolean(item?.docId));
+        if (resolved.length === 0) {
+          setPendingBulkTags([]);
+          return;
+        }
+
+        const sharedTagIds = (() => {
+          const [first, ...rest] = resolved;
+          const intersection = new Set((first.tags ?? []).filter(Boolean));
+          for (const item of rest) {
+            const itemTags = new Set((item.tags ?? []).filter(Boolean));
+            for (const tagId of Array.from(intersection)) {
+              if (!itemTags.has(tagId)) {
+                intersection.delete(tagId);
+              }
+            }
+          }
+          return Array.from(intersection);
+        })();
+
+        setPendingBulkTags(sharedTagIds);
+      } finally {
+        if (!cancelled) setBulkTagInitializing(false);
+      }
+    };
+
+    void loadSharedTags();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [bulkTagModalOpen, media, resolveMediaById, selectedMediaIds]);
 
   const handleSaveBulkTagSelection = async (newSelection: string[]) => {
     if (selectedMediaIds.length === 0) return;
@@ -724,12 +794,15 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
         <p className={styles.bulkTagHint}>
           Choose how to apply tags, select tags, then click <strong>Save</strong>.
         </p>
+        {bulkTagInitializing ? (
+          <p className={styles.bulkTagHint}>Loading shared tags from the selected media...</p>
+        ) : null}
         <div className={styles.filterGroup}>
           <label>Bulk tag action:</label>
           <select
             value={bulkTagMode}
             onChange={(e) => setBulkTagMode(e.target.value as 'add' | 'replace' | 'remove')}
-            disabled={bulkTagApplying}
+            disabled={bulkTagApplying || bulkTagInitializing}
           >
             <option value="add">Add selected tags (keep existing)</option>
             <option value="replace">Replace all tags with selected</option>

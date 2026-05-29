@@ -488,6 +488,62 @@
   border-color: var(--state-error-border-color);
 }
 
+.statusToggleGroup {
+  display: inline-flex;
+  align-items: stretch;
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  border-radius: var(--input-border-radius);
+  background-color: var(--admin-support-control-background-color);
+  overflow: hidden;
+}
+
+.statusToggleOption {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 5.75rem;
+  min-height: 38px;
+  padding: 0 0.8rem;
+  cursor: pointer;
+  color: var(--admin-support-control-text-color);
+  background-color: transparent;
+  transition:
+    background-color var(--transition-short) ease,
+    color var(--transition-short) ease;
+}
+
+.statusToggleOption + .statusToggleOption {
+  border-left: var(--border-width-thin) solid var(--admin-support-control-border-color);
+}
+
+.statusToggleOptionActive {
+  background-color: var(--admin-support-control-strong-background-color);
+  color: var(--admin-support-control-strong-text-color);
+}
+
+.statusToggleInput {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.statusToggleInput:focus-visible + .statusToggleLabel {
+  outline: var(--border-width-medium) solid var(--admin-support-control-strong-border-color);
+  outline-offset: 2px;
+  border-radius: var(--border-radius-sm);
+}
+
+.statusToggleLabel {
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  pointer-events: none;
+}
+
 .tagsSection {
   width: var(--card-form-shell-width);
   max-width: none;
@@ -672,4 +728,20 @@
   min-width: 0;
   width: 100%;
   padding: 0.38rem 0.5rem;
+}
+
+.compactShellForm .statusToggleGroup {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.compactShellForm .statusToggleOption {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 32px;
+  padding: 0 0.6rem;
+}
+
+.compactShellForm .statusToggleLabel {
+  font-size: var(--font-size-xs);
 }
