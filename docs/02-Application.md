@@ -122,12 +122,11 @@ Legend:
 ⭕1 **Planned**
 
 - **Top-nav refinement**
-  - Tighten logo prominence, back-button clarity, hamburger contents, and chrome density so the header feels deliberate without reclaiming excess vertical space.
+  - Increase logo prominence
+  - Back-button clarity (in header or above viewed card)
+  - Hamburger contents (Content/Admin)
+  - Chrome density so the header feels deliberate without reclaiming excess vertical space.
   - In reader-only mode, the preferred direction is a minimal control surface unless another named reader theme becomes a real product option.
-
-❓ **Open**
-
-- **Top-nav refinement scope** - Confirm the long-term header contract for logo prominence, back-button emphasis, hamburger contents, and overall chrome density before another round of piecemeal changes.
 
 ---
 
@@ -185,8 +184,10 @@ Legend:
 ⭕1 **Planned**
 
 - **Left-nav refinement**
-  - Continue simplifying control order, browse-target clarity, and mobile ergonomics so Guided and Freeform remain easy to understand across widths.
-  - Current preferred direction: keep `Cards | Media` visibly above taxonomy browsing and make the Freeform header row feel more intuitive without adding competing controls.
+  - Continue simplifying control order. - Current preferred direction: keep `Cards | Media` visibly above taxonomy browsing and make the Freeform header row feel more intuitive without adding competing controls.
+  - Browse-target clarity
+  - Mobile ergonomics so Guided and Freeform remain easy to understand across widths.
+  
 
 ⭕2 **Future**
 
@@ -287,10 +288,9 @@ Legend:
 
 📐 **Product vs code** - v1 intent: omit story excerpt on feed/detail; `StoryCardContent` still renders `excerpt` when the field is set-clear data or add a guard when enforcing.
 📐 **Horizontal open** - Prefer horizontal open for long-form on mobile where the reader implements it.
+📐 **Reader priority (canonical)** - For demo and early product validation, Guided and Freeform should be treated as **equal-priority** consumption modes; neither is a secondary fallback.
 
 ⭕1 **Planned**
-
-📐 **Reader priority (canonical)** - For demo and early product validation, Guided and Freeform should be treated as **equal-priority** consumption modes; neither is a secondary fallback.
 
 - **Feed presentation refinement**
   - Define and enforce a single presentation contract across feed/detail/rail contexts for each `type` + `displayMode` pair, including interaction model (open vs expand), title/excerpt behavior, and media framing rules.
