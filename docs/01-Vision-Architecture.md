@@ -22,19 +22,21 @@ Legend:
 - **Decision hierarchy** - `01` is the canonical source for platform invariants, data authority, mutation rules, and integrity boundaries. Product or workflow simplification is encouraged, but it must preserve tagging truth, relationship truth, and reader truth.
 
 ### Document Structure
+
 - **Heading Lock** - All ATX headings are fixed. Do not add new headings.
 - **Subheading Lock** - Subheadings are *Intent*, *Principles*, and *Features*. Do not add new subheadings.
 - **Formatting**
-    - Headings are **bold**. Subheadings are *italic*.
-    - Intent/Principles bullets start with a **bold** 1–2 word subject, then short descriptive text.
-    - Under each *Features* block, organize status items into these buckets in order as plain status headings (no list bullet): `✅ Complete`, `⭕1 Planned`, `⭕2 Future`, `❓ Open`.
-    - Items under each status heading are plain bullets (`-`) beginning with a **bold** 1–2 word title + " - " + short descriptive text, using the same flush-left layout as `02-Application.md`.
-    - Keep `📐` and `📘` as standalone feature bullets outside status buckets.
+  - Headings are **bold**. Subheadings are *italic*.
+  - Intent/Principles bullets start with a **bold** 1–2 word subject, then short descriptive text.
+  - Under each *Features* block, organize status items into these buckets in order as plain status headings (no list bullet): `✅ Complete`, `⭕1 Planned`, `⭕2 Future`, `❓ Open`.
+  - Items under each status heading are plain bullets (`-`) beginning with a **bold** 1–2 word title + " - " + short descriptive text, using the same flush-left layout as `02-Application.md`.
+  - Keep `📐` and `📘` as standalone feature bullets outside status buckets.
 
 ### Content Placement
+
 - **Placement Discipline** - Record each subject in its owning section. Everything about Story cards belongs under Story card features, not mentioned in Tags or Navigation. Everything about tags belongs under Tag Management, not mentioned in Navigation. Centralizes subjects for clarity and prevents drift.
 - **One Fact, One Home** - Each fact lives in exactly one document. `02-Application.md` describes *what exists today* and *what's planned per area*. `03-Implementation.md` describes *when to do it* (sequencing). When a planned item ships, update its status in `02-Application.md` and remove it from `03-Implementation.md`.
-- **Implementation wording** - Do not paraphrase `⭕1` bullets when copying them into `03-Implementation.md`. Paste the **bold label** and the description after ` - ` exactly as in the source doc (`02-Application.md` or, for Backend planned work, `01-Vision-Architecture.md`). If the product text changes, change it in the source doc first, then mirror the update in `03-Implementation.md`.
+- **Implementation wording** - Do not paraphrase `⭕1` bullets when copying them into `03-Implementation.md`. Paste the **bold label** and the description after `-` exactly as in the source doc (`02-Application.md` or, for Backend planned work, `01-Vision-Architecture.md`). If the product text changes, change it in the source doc first, then mirror the update in `03-Implementation.md`.
 - **Execution scope** - `03-Implementation.md` is the active milestone plan, not a historical log. It should carry only the current milestone, the next milestones, their gating criteria, and the active `⭕1` items required to advance them. Dated closeout notes and shipped status narration belong in `02` only if they define current product behavior; otherwise they should be removed from canon.
 
 ---
@@ -42,46 +44,49 @@ Legend:
 ## **Product Vision**
 
 *Intent*
+
+The product combines media (photos and videos) and text into an interactive journal-album that supports both author-guided storytelling and freeform discovery. It is not a generic journal app and not just a photo manager with captions.
+
 - **Storytelling** - A private hosted storytelling journal built from personal and family archives.
 - **Comprehensive** - Media, authored narrative, and structured discovery in one coherent product.
 
+Phone-native and scanned-photo imports are both first-class inputs. The product should reduce image overload by helping the author organize, tag, and shape media into meaningful cards and collections for family consumption.
+
+What must make this product distinctly better is not feature breadth alone, but authoring simplicity. The core workflows, creating cards, tagging cards, importing images, tagging images, and assigning images to cards, must feel intuitive, fast, and fluid enough that working with a large archive is manageable rather than exhausting. Even if the product does more than consumer photo apps, it should still aspire to their clarity of navigation, selection, and search rather than tolerating admin friction as the cost of capability.
+
+- **Primary customer** - v1 is for one author first, then for others with similar archive/storytelling needs.
+- **Commercial shape** - The initial commercial shape is a **private hosted journal** for one author and family audience.
+- **Tenant path** - v1 is intentionally **single-tenant**; near-term commercial follow-up should support **multi-tenant** isolation without weakening current integrity guarantees.
+- **Primary roles** - v1 has one author/admin creating and maintaining the archive experience, with family members as the primary readers.
+
 *Principles*
+
 - **Creation + Consumption** - The product succeeds only if both administration and consumption workflows are strong enough to support each other.
-- **Curated & Freeform** - Support both guided narrative exploration and freeform discovery as first-class modes.
+- **Authoring Simplicity** - Core archive workflows should feel intuitive, fast, and fluid, with as little friction as possible between media intake, organization, and story-building.
+- **Curated & Freeform** - The product should support both guided narrative exploration and open-ended discovery as first-class modes.
 - **Import-Critical** - Importing and structuring large photo libraries is a core product capability, not a side utility.
-- **Relational** - Organic discovery should emerge from dimensional, hierarchical tags plus card relationships.
+- **Relational** - Large archives should become discoverable through dimensional, hierarchical tags and card relationships rather than feeling like undifferentiated media storage.
 - **Multi-Media** - Stories should combine text and media in one interactive reading experience.
-- **Unified Schema** - Use one flexible card model with multiple presentation behaviors rather than separate content silos.
 - **Trustworthy** - Private, author-owned, exportable, backed-up, and restorable content handling is part of the product promise.
 - **Mobile-first** - Reader experience must work naturally on mobile first, with coherent desktop behavior for administration and reading.
 - **Operationally Practical** - The product should support large personal archives without requiring expert-level maintenance.
-- **Narrative Control** - Curated collections and ordering provide directed storytelling when the author wants it.
-- **Organic Discovery** - Tag-based filtering, suggestions, and exploration should make large archives feel discoverable rather than chaotic.
-- **Commercial Path** - Build v1 as a credible private hosted journal for one author and family audience without blocking near-term multi-tenant evolution.
+- **Narrative Control** - The author should be able to shape directed story paths through curated collections, ordering, and card relationships when that structure matters.
+- **Commercial Direction** - Build v1 as a credible private hosted journal for one author and family audience without blocking near-term multi-tenant evolution.
 
-The product combines photos and stories into an interactive journal-album that supports both author-shaped storytelling and freeform discovery. It is not a generic journal app and not just a photo manager with captions layered on top.
 
-The first proving ground is the author's own archive and workflow. The broader market is people with large personal or family photo libraries who want a better way to turn those archives into structured stories worth reading and revisiting.
-
-Phone-native and scanned-photo imports are both first-class inputs. The product should reduce image overload by helping the author organize, aggregate, tag, and shape media into meaningful cards and collections for family consumption.
-
-📐 **Primary customer** - v1 is for one author first, then for others with similar archive/storytelling needs.
-📐 **Commercial shape** - The initial commercial shape is a **private hosted journal** for one author and family audience.
-📐 **Trust promise** - Photos and stories are private, owned by the author, exportable, and expected to be backed up/restorable.
-📐 **Tenant path** - v1 is intentionally **single-tenant**; near-term commercial follow-up should support **multi-tenant** isolation without weakening current integrity guarantees.
-
-📐 **Primary roles** - v1 has one author/admin creating and maintaining the archive experience, with family members as the primary readers.
 
 ## **TECHNICAL**
 
 ### **Backend**
 
 *Intent*
+
 - **Reliable** - Provide reliable core platform capability
 - **Efficient** - Operational and cost awareness.
 - **Practical** - Practical for solo-author throughput and family consumption.
 
 *Principles*
+
 - **Client/Server** - Clear separation of concerns; client/server boundaries and service-layer.
 - **Validation & Authorization** - Server-side validation and authorization for data integrity.
 - **Private-by-default** - Content, admin actions, and operational data should default to least-privilege access. Public exposure is never assumed.
@@ -94,9 +99,9 @@ Phone-native and scanned-photo imports are both first-class inputs. The product 
 - **Responsiveness** - Authoring responsiveness is a product requirement, not a polish pass. Tagging and relationship-editing actions should acknowledge quickly; architectural choices should prefer narrow writes, local patching, and deferred secondary sync where invariants remain intact.
 - **Catalog reads** - Do not load the **full tags collection** or **unbounded card lists** once per item inside a single API handler or transaction. Prefer a single read (or request-scoped cache), batched `get`/`in` chunks, or precomputed maps passed into helpers.
 - **Transactions** - Keep Firestore **transactions** minimal: only reads and writes that **must** be atomic together. Prefer computing derived payloads **outside** the transaction when ordering and integrity allow, then writing in one transaction.
-- **Card–media integrity** - **`coverImageId`**, **`galleryMedia[].mediaId`**, **`contentMedia`**, and media embedded in **`content`** are **foreign keys** to `media/{id}`. The system must not enter a state where a card names a missing media doc, or where a media doc names a **missing Storage object**, without a **classified** incident (logic bug vs drift) and a **repair path** at the service or remediation layer—not a UI-only workaround. Writes that update peer `media` documents (e.g. `referencedByCardIds`, focal metadata, tag counts) **must not assume** the peer still exists; treat absent peers as **integrity violations** to resolve (detach + log, or block with a **domain-level** error), not raw `NOT_FOUND` surfaced to the client.
+- **Card–media integrity** - `**coverImageId`**, `**galleryMedia[].mediaId**`, `**contentMedia**`, and media embedded in `**content**` are **foreign keys** to `media/{id}`. The system must not enter a state where a card names a missing media doc, or where a media doc names a **missing Storage object**, without a **classified** incident (logic bug vs drift) and a **repair path** at the service or remediation layer—not a UI-only workaround. Writes that update peer `media` documents (e.g. `referencedByCardIds`, focal metadata, tag counts) **must not assume** the peer still exists; treat absent peers as **integrity violations** to resolve (detach + log, or block with a **domain-level** error), not raw `NOT_FOUND` surfaced to the client.
 - **Delete graph** - Deleting or replacing media is a **graph** problem: enumerate every card edge, update **both** card and media sides (and denormalized fields / indices per rules above) in a **documented order**, or **refuse** with an explicit blocker list. If two cards can reference the same media id, that sharing must be **first-class** (reference counting or forbidden duplicates)—never “delete the blob because this card’s delete path listed it” while another card can still hold the id.
-- **Durability boundary** - Do not report client success for a new or replaced asset until **Storage** and the **`media`** row (and any card pointer update in the same operation) match: either all durable or none; partial success must be **detectable, retryable, or compensatable**—never a silent orphan pointer.
+- **Durability boundary** - Do not report client success for a new or replaced asset until **Storage** and the `**media`** row (and any card pointer update in the same operation) match: either all durable or none; partial success must be **detectable, retryable, or compensatable**—never a silent orphan pointer.
 - **Recoverability** - Backup, export, and restore capability are part of commercial readiness, not optional maintenance extras.
 - **Verification** - Code changes require verification by default. Changes affecting behavior, integrity, auth, import, or shared contracts should add or update tests when warranted rather than relying on explanation alone.
 - **Commercial readiness** - Commercial readiness requires explicit gates for access/privacy, data integrity, import trust, operational recovery, workflow quality, engineering quality, and security hardening. Treat these as release criteria, not polish.
@@ -107,7 +112,7 @@ Phone-native and scanned-photo imports are both first-class inputs. The product 
 - **Next.js 15** - App Router, all API routes secured at the edge.
 - **React 19**
 - **TypeScript**
-- **`firebase-admin`** - SDK for server-side operations.
+- `**firebase-admin`** - SDK for server-side operations.
 - **Zod** - Schema validation.
 - **Layered structure** - App Router routes live under `src/app`, reusable UI under `src/components`, and core logic/contracts under `src/lib` with service, type, hook, and utility layers.
 - **Data Models** - `src/lib/types/` (read directly; fully commented).
@@ -158,10 +163,12 @@ Phone-native and scanned-photo imports are both first-class inputs. The product 
 ### **Frontend**
 
 *Intent*
+
 - **Consumption** - Mobile-first, responsive content consumption experience.
 - **Administration** - Desktop-primary admin interface for content authoring and management.
 
 *Principles*
+
 - **UI Alignment** - Align UI behavior with **validated server contracts** (types/schemas); the client does not override server authority on writes. Clear **presentation and client-state** boundaries; business rules stay in services/API layer.
 - **State domains** - Complex admin shells (especially **Studio**) should separate **global structural truth** (tag taxonomy, collections structure) from **pane-local working sets** (filtered cards/media lists) and from the **active editing context** (selected card). One pane's visible subset must not silently redefine another pane's universe.
 - **Design surfaces** - The reader (`/view`) UI is the primary **designed** surface—typography, color rhythm, spacing, and tone. Admin may stay denser for workflows but should **reuse the same design tokens** (and previews where it matters) so what the author sees while authoring matches what the family sees when reading.
@@ -187,15 +194,17 @@ Phone-native and scanned-photo imports are both first-class inputs. The product 
 
 - **Unused Dependencies** - Remove unused packages from `package.json`: `react-markdown`, `@uiw/react-md-editor`, `@minoru/react-dnd-treeview`. Evaluate `react-photo-album` and `framer-motion` before removing.
 
-📐 **Visual direction** - The product should feel **journal / archival** and **mobile-native**, while also reading as a **clear, professional** consumer app. Those aims can conflict (for example, a handwriting display face vs neutral UI typography). Prefer resolving tension through **theme presets** and distinct **type roles** (e.g. display vs body) wired to tokens, rather than scattered one-off styles. Iteration on the Theme Management model is expected as presets mature.
-📐 **Unified Studio (content admin)** - Long-term content administration converges on **Studio** as the unified shell for cards, media, tags, questions, collections, and their relationships. Users and Themes remain separate admin routes. Relationship editing and library-first media picking should converge inside shell-owned card/media workflows rather than parallel standalone admin surfaces.
+**Visual direction** - The product should feel **journal / archival** and **mobile-native**, while also reading as a **clear, professional** consumer app. Those aims can conflict (for example, a handwriting display face vs neutral UI typography). Prefer resolving tension through **theme presets** and distinct **type roles** (e.g. display vs body) wired to tokens, rather than scattered one-off styles. Iteration on the Theme Management model is expected as presets mature.
+**Unified Studio (content admin)** - Long-term content administration converges on **Studio** as the unified shell for cards, media, tags, questions, collections, and their relationships. Users and Themes remain separate admin routes. Relationship editing and library-first media picking should converge inside shell-owned card/media workflows rather than parallel standalone admin surfaces.
 
 ### **Scripts**
 
 *Intent*
+
 - **Ex-App Manipulation** - Provide ex-app manipulation of data as needed.
 
 *Principles*
+
 - **Reuse** - Develop and organize for reuse.
 
 *Features*
@@ -215,9 +224,11 @@ Phone-native and scanned-photo imports are both first-class inputs. The product 
 ### **Backup**
 
 *Intent*
+
 - **Protection** - Back up is required for the code repo and the database.
 
 *Principles*
+
 - **Automated** - Backups run without manual intervention.
 - **Verified** - Backup integrity is confirmed after each run.
 - **Recoverable** - Backup is only meaningful if restore steps are known, tested, and realistic for hosted operation.
@@ -226,8 +237,8 @@ Phone-native and scanned-photo imports are both first-class inputs. The product 
 ✅ **Complete**
 
 - **Database** - `npm run backup:database` writes under `ONEDRIVE_PATH/Firebase Backups/run-<timestamp>/` (all Firestore root collections, index/rules copies, optional Typesense JSONL). Storage file bytes are not included. Optional Windows task: `src/lib/scripts/setup-database-backup-task.ps1` (uses `tsx -r dotenv/config` and `firebase/backup-firestore.ts`; requires `.env` visible to the task user).
-- **Source tree (Git)** - **Off-device source of truth** is the **remote** (`origin`): commit to **`main`** and push. Do not use feature branches or PR merge flow unless explicitly requested for a specific task. No second full-tree copy is maintained locally or in CI.
-- **Local secrets (not in Git)** - `npm run backup-codebase` (see `docs/NPM-SCRIPTS.md`) zips only **repo-root** files that stay out of version control: `.env*`, `service-account.json`, and `*-firebase-adminsdk-*.json`. Default output directory: `C:\Users\alanb\CodeBase Backups\` (override with `CODEBASE_SECRETS_BACKUP_DIR`); keeps 5 rolling zips plus `backup-*-metadata.json` and `backup-*-output.txt`. If no matching files exist, only a log is written. Optional Windows task registration: `src/lib/scripts/utils/setup-backup-task.ps1` (daily; run **PowerShell as Administrator**; task resolves repo root via `git`). **Paradigm:** Git = code; this zip = env/credentials; `backup:database` = app data.
+- **Source tree (Git)** - **Off-device source of truth** is the **remote** (`origin`): commit to `**main`** and push. Do not use feature branches or PR merge flow unless explicitly requested for a specific task. No second full-tree copy is maintained locally or in CI.
+- **Local secrets (not in Git)** - `npm run backup-codebase` (see `docs/NPM-SCRIPTS.md`) zips only **repo-root** files that stay out of version control: `.env`*, `service-account.json`, and `*-firebase-adminsdk-*.json`. Default output directory: `C:\Users\alanb\CodeBase Backups\` (override with `CODEBASE_SECRETS_BACKUP_DIR`); keeps 5 rolling zips plus `backup-*-metadata.json` and `backup-*-output.txt`. If no matching files exist, only a log is written. Optional Windows task registration: `src/lib/scripts/utils/setup-backup-task.ps1` (daily; run **PowerShell as Administrator**; task resolves repo root via `git`). **Paradigm:** Git = code; this zip = env/credentials; `backup:database` = app data.
 - **Recovery playbook** - `docs/NPM-SCRIPTS.md` carries the restore drill, release-readiness checklist, account-recovery path, and incident-response baseline. Current contract: restore source from Git, restore repo-root secrets from `backup-codebase`, restore Firestore from one `backup:database` snapshot, rebuild Typesense from Firestore, and verify auth/integrity before reopening. The guarded `restore:database` helper is for disposable recovery targets first, and local-source missing-media recovery follows a preflight-first, folder-complete workflow before card mutation. Storage bytes remain outside the automated database backup boundary.
 
 ⭕1 **Planned**

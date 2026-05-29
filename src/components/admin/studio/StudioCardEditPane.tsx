@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { mutate as globalMutate } from 'swr';
 import { useRouter } from 'next/navigation';
 import CardForm from '@/components/admin/card-admin/CardForm';
@@ -66,8 +66,6 @@ export default function StudioCardEditPane({
     upsertCollectionsCardList,
   } = useStudioShell();
   const { tags: allTags } = useTag();
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-
   const handleSave = useCallback(
     async (cardData: CardUpdate): Promise<Card | null> => {
       const isCreate = !selectedCardId;
@@ -106,17 +104,6 @@ export default function StudioCardEditPane({
   const isTransitioningToDifferentCard = Boolean(
     selectedCardId && activeCardViewModel.card?.docId && activeCardViewModel.card.docId !== selectedCardId
   );
-
-  const handleWheelCapture = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    if (el.scrollHeight <= el.clientHeight + 1) return;
-    const target = e.target as HTMLElement | null;
-    if (target?.closest('input[type="range"]')) return;
-    el.scrollTop += e.deltaY;
-    e.preventDefault();
-    e.stopPropagation();
-  }, []);
 
   /** Remount only when switching cards — not on `updatedAt` churn from relationship panel PATCHes (would wipe dirty form). */
   const providerKey =
@@ -181,11 +168,7 @@ export default function StudioCardEditPane({
           <h2 className={styles.studioComposeTitle}>Compose</h2>
           <StudioComposeFormActions />
         </div>
-        <div
-          ref={scrollRef}
-          className={styles.studioCardEditScroll}
-          onWheelCapture={handleWheelCapture}
-        >
+        <div className={styles.studioCardEditScroll}>
           <StudioCardFormStudioProvider value={{ studioShellCardForm: true, enableStudioShellDnd: true }}>
             <StudioCardFormShellSync />
             <CardForm />
