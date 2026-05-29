@@ -99,10 +99,6 @@ export default function StudioCardFormGallery({
           className={styles.studioGalleryDropZone}
           eligibleHint="Release here to add to the gallery"
         >
-          <div className={styles.studioAppendDropHeader}>
-            <span className={styles.studioAppendDropTitle}>Append media to Gallery</span>
-            <span className={styles.studioAppendDropHint}>Drop anywhere in this panel to add the image at the end.</span>
-          </div>
           <div className={styles.studioGalleryStrip}>
             {gallery.map((item) => (
               <StudioGallerySortableRow
@@ -203,8 +199,6 @@ export default function StudioCardFormGallery({
           eligibleHint="Release here to start the gallery"
         >
           <div className={styles.studioAppendDropEmptyState}>
-            <span className={styles.studioAppendDropTitle}>Append media to Gallery</span>
-            <span className={styles.studioAppendDropHint}>Drop here to start the gallery.</span>
             <p className={styles.metaMuted}>No gallery media assigned.</p>
           </div>
         </StudioDropZone>

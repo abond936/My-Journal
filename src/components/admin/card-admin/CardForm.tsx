@@ -1136,10 +1136,6 @@ const CardForm: React.FC = () => {
                 alwaysRegister
                 eligibleHint="Release here to insert into the story"
               >
-                <div className={styles.studioBodyDropHeader}>
-                  <span className={styles.studioBodyDropTitle}>Append media to Content</span>
-                  <span className={styles.studioBodyDropHint}>Drop anywhere in this panel to add the image at the end.</span>
-                </div>
                 {bodyRichTextEditor}
               </StudioDropZone>
             ) : (
