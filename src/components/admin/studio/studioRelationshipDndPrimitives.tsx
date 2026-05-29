@@ -30,6 +30,14 @@ function activeSourceMediaIds(activeId: string, activeData: unknown): string[] {
 
 export type { StudioSelectedDetail } from '@/components/admin/studio/studioCardTypes';
 
+function parseSortableOrder(id: string, prefix: 'gallery:' | 'studioChild:'): number | null {
+  if (!id.startsWith(prefix)) return null;
+  const match = id.match(/:(\d+)$/);
+  if (!match) return null;
+  const parsed = Number(match[1]);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export function StudioGallerySortableRow({
   id,
   galleryFocusMediaId,
@@ -39,9 +47,28 @@ export function StudioGallerySortableRow({
   galleryFocusMediaId: string;
   children: React.ReactNode;
 }) {
+  const { active, over } = useDndContext();
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
     id,
   });
+  const activeId = active?.id != null ? String(active.id) : '';
+  const overId = over?.id != null ? String(over.id) : '';
+  const activeOrder = parseSortableOrder(activeId, 'gallery:');
+  const overOrder = parseSortableOrder(overId, 'gallery:');
+  const showInsertBefore =
+    activeId.startsWith('gallery:') &&
+    overId === id &&
+    activeId !== id &&
+    activeOrder !== null &&
+    overOrder !== null &&
+    activeOrder > overOrder;
+  const showInsertAfter =
+    activeId.startsWith('gallery:') &&
+    overId === id &&
+    activeId !== id &&
+    activeOrder !== null &&
+    overOrder !== null &&
+    activeOrder < overOrder;
   const rowStyle: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -51,7 +78,14 @@ export function StudioGallerySortableRow({
     <div
       ref={setNodeRef}
       style={rowStyle}
-      className={[styles.gallerySortableRow, isDragging ? styles.sortableRowDragging : ''].join(' ').trim()}
+      className={[
+        styles.gallerySortableRow,
+        isDragging ? styles.sortableRowDragging : '',
+        showInsertBefore ? styles.gallerySortableRowInsertBefore : '',
+        showInsertAfter ? styles.gallerySortableRowInsertAfter : '',
+      ]
+        .join(' ')
+        .trim()}
     >
       <button
         ref={setActivatorNodeRef}

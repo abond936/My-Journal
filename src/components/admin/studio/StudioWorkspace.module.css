@@ -1355,10 +1355,35 @@
   flex: 0 0 auto;
   gap: var(--spacing-xs);
   align-items: flex-start;
+  position: relative;
   transition:
     box-shadow var(--transition-short) ease,
     background var(--transition-short) ease,
     border-color var(--transition-short) ease;
+}
+
+.gallerySortableRowInsertBefore::before,
+.gallerySortableRowInsertAfter::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  border-radius: 999px;
+  background: var(--admin-chrome-active-control-background-color);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--admin-window-background-color) 92%, var(--admin-chrome-active-control-background-color)),
+    0 1px 4px color-mix(in srgb, var(--admin-chrome-active-control-background-color) 24%, transparent);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.gallerySortableRowInsertBefore::before {
+  left: calc(var(--spacing-md) * -0.5);
+}
+
+.gallerySortableRowInsertAfter::after {
+  right: calc(var(--spacing-md) * -0.5);
 }
 
 .gallerySortableContent {
