@@ -22,6 +22,11 @@ import {
   mergeDimensionalTagMaps,
   type DimensionalTagIdMap,
 } from '@/lib/utils/tagUtils';
+import {
+  DEFAULT_MEDIA_ADMIN_STORED_FILTERS,
+  readStoredMediaAdminStoredFilterPreferences,
+  writeStoredMediaAdminStoredFilterPreferences,
+} from '@/lib/preferences/adminFilters';
 
 interface MediaListResponse {
   media: Media[];
@@ -181,19 +186,14 @@ interface MediaContextType {
 
 const MediaContext = createContext<MediaContextType | undefined>(undefined);
 
-const defaultFilters: MediaFilters = {
-  source: 'all',
-  dimensions: 'all',
-  hasCaption: 'all',
-  search: '',
-  assignment: 'all',
-};
+const defaultFilters: MediaFilters = DEFAULT_MEDIA_ADMIN_STORED_FILTERS;
 
 const MEDIA_QUERY_CACHE_TTL_MS = 15_000;
 const MEDIA_QUERY_CACHE_LIMIT = 24;
 const MEDIA_RECORD_CACHE_LIMIT = 400;
 
 export function MediaProvider({ children }: { children: React.ReactNode }) {
+  const initialMediaAdminPrefsRef = useRef(readStoredMediaAdminStoredFilterPreferences());
   const pathname = usePathname();
   const isMediaListRoute = Boolean(pathname?.startsWith('/admin/studio'));
 
@@ -216,10 +216,14 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [prevCursor, setPrevCursor] = useState<string | null>(null);
   const [cursorStack, setCursorStack] = useState<(string | null)[]>([]);
-  const [filters, setFilters] = useState<MediaFilters>(defaultFilters);
+  const [filters, setFilters] = useState<MediaFilters>(initialMediaAdminPrefsRef.current.filters);
   const [selectedMediaIds, setSelectedMediaIds] = useState<string[]>([]);
-  const [dimensionalQueryOverlay, setDimensionalQueryOverlayState] = useState<DimensionalTagIdMap>({});
-  const dimensionalQueryOverlayRef = useRef<DimensionalTagIdMap>({});
+  const [dimensionalQueryOverlay, setDimensionalQueryOverlayState] = useState<DimensionalTagIdMap>(
+    initialMediaAdminPrefsRef.current.dimensionalQueryOverlay
+  );
+  const dimensionalQueryOverlayRef = useRef<DimensionalTagIdMap>(
+    initialMediaAdminPrefsRef.current.dimensionalQueryOverlay
+  );
   const lastMediaEngineRef = useRef<'typesense' | 'firestore' | null>(null);
   const mediaRequestSeqRef = useRef(0);
   const activeMediaRequestControllerRef = useRef<AbortController | null>(null);
@@ -368,6 +372,13 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     filtersRef.current = filters;
   }, [filters]);
+
+  useEffect(() => {
+    writeStoredMediaAdminStoredFilterPreferences({
+      filters,
+      dimensionalQueryOverlay,
+    });
+  }, [dimensionalQueryOverlay, filters]);
 
   useEffect(() => {
     mediaRef.current = media;

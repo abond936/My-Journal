@@ -176,6 +176,40 @@ Required handling before implementation:
 3. **Remove superseded paths** - If a new shared mechanism replaces a local one (for example shared toasts replacing inline notices), the same approved edit set must identify and remove, disable, or explicitly preserve the old path. Do **not** leave parallel systems active by accident.
 4. **Shared-surface threshold** - When a requested fix crosses more than one owning layer, the agent must treat it as a **design task first** and an **implementation task second**. Trace the full event/state path before editing.
 
+# Impact map and regression gate (mandatory before shared/admin edits)
+
+For any change that touches a **shared**, **stateful**, or **regression-sensitive** surface-especially **Studio**, **Media admin**, **Card admin**, **bulk actions**, **inline editing**, **filters**, **derived views**, or **provider-backed UI**-the agent must complete an explicit impact-and-regression pass **before** implementation.
+
+Required pre-edit output in chat:
+1. **Impact map**
+   - **Owning layer** - which component/provider/API/service is the source of truth.
+   - **Read paths** - which surfaces render that truth.
+   - **Write paths** - which interactions mutate it.
+   - **Derived views** - any filtered, cached, embedded, override, or projection-based surfaces that can drift after writes.
+   - **Adjacent behaviors at risk** - the concrete nearby interactions most likely to regress.
+2. **Regression checklist**
+   - **Broken now** - exact failing behavior.
+   - **Will change** - exact behavior being changed.
+   - **Must stay unchanged** - adjacent behavior that must remain true.
+   - **Verification plan** - the exact adjacent paths that will be checked after the change.
+3. **Top regression risks**
+   - Name the top 1-3 ways the proposed design could break existing behavior.
+   - Explain why the chosen approach avoids them, or stop and redesign if that cannot be stated clearly.
+
+This is not optional framing. If the agent cannot produce this map and checklist concretely, it is **not ready to edit**.
+
+# Derived-view and shadow-state rule
+
+When a surface shows a **derived subset**, **embedded override**, **local cache projection**, or any view that is not itself the authoritative owner, the agent must treat that as a first-class regression risk.
+
+Required handling:
+- **Do not introduce detached shadow state casually** - If a new local array/object copy can drift from provider or API truth after edits, saves, deletes, or refreshes, stop and redesign.
+- **Name reconciliation explicitly** - If a derived/local view is necessary, explain how it stays truthful after all relevant write paths (save, delete, tag edit, reorder, refresh, selection change).
+- **Assume write-path implications** - Before editing, check whether the affected surface also supports adjacent writes such as caption edit, tag edit, inline save, drag reorder, or selection mutation.
+- **No “fix one path, break another” approval assumption** - The author's approval to fix one symptom does **not** imply approval to regress adjacent behavior on the same surface.
+
+If a proposed design creates a second owner, a stale override path, or an unreconciled projection, return to **ASSESS / RECOMMEND** instead of implementing it.
+
 # No contradiction checklist
 
 Before implementation-and again before reporting completion-the agent must check for contradictions against existing contracts and shared systems.
@@ -207,6 +241,8 @@ After implementation and before presenting the work as done, the agent must expl
 - **Is any superseded path still active?**
 - **Did I introduce any duplicate feedback, state, or interaction model?**
 - **Did the final behavior remain consistent with the documented contract?**
+- **Did any derived or embedded view fall out of sync after nearby edits?**
+- **Did I verify the adjacent write paths named in the pre-edit regression checklist?**
 
 If the answer reveals a contradiction, the agent must say so plainly and return to **ASSESS / RECOMMEND** instead of chaining another knee-jerk patch.
 

@@ -178,6 +178,12 @@ What must make this product distinctly better is not feature breadth alone, but 
 - **Preview then hydrate** - In authoring shells with an active object (for example, the selected card in **Studio**), selection should populate local context from the best available preview immediately, then enrich from background hydration. Hydration failure should degrade detail, not blank the active editing surface.
 - **Progressive first paint** - In dense admin shells, prefer a **truthful first batch** and then background catch-up over blocking the whole pane on totals or full hydration. Use cancellable requests, short-lived query caches, and chunked stable streams where they preserve the same authoritative query contract.
 - **Surface simplification** - Prefer fewer, stronger interaction models for authoring when capability is preserved. Simplification should remove parallel UI patterns, not remove the tagging and relationship power the product depends on.
+- **Admin performance strategy** - Treat slow admin work as an **architecture** problem before a polish problem. Converge on **Studio** as the only day-to-day content-admin runtime, and remove duplicated loaders, modes, and compatibility branches before spending time on isolated UI tuning. Prioritize: 
+  -  **thumbnail-tier media delivery** for admin grids, pickers, and previews instead of original-image URLs; 
+  - **server-shaped card/media workspaces** so filtering, sorting, and pagination define the active universe on the server rather than in large client-held catalogs; 
+  - **windowed/virtualized rendering** for large banks and grids; 
+  - **payload tiers** (`tile`, `preview`, `edit`) so only the active object is fully hydrated; and 
+  - **local post-mutation reconciliation** over broad reloads wherever integrity allows. When old card/media admin code still powers Studio, retire runtime duplication first and postpone naming-only cleanup until behavior is simpler.
 
 *Features*
 ✅ **Complete**
@@ -194,8 +200,8 @@ What must make this product distinctly better is not feature breadth alone, but 
 
 - **Unused Dependencies** - Remove unused packages from `package.json`: `react-markdown`, `@uiw/react-md-editor`, `@minoru/react-dnd-treeview`. Evaluate `react-photo-album` and `framer-motion` before removing.
 
-**Visual direction** - The product should feel **journal / archival** and **mobile-native**, while also reading as a **clear, professional** consumer app. Those aims can conflict (for example, a handwriting display face vs neutral UI typography). Prefer resolving tension through **theme presets** and distinct **type roles** (e.g. display vs body) wired to tokens, rather than scattered one-off styles. Iteration on the Theme Management model is expected as presets mature.
-**Unified Studio (content admin)** - Long-term content administration converges on **Studio** as the unified shell for cards, media, tags, questions, collections, and their relationships. Users and Themes remain separate admin routes. Relationship editing and library-first media picking should converge inside shell-owned card/media workflows rather than parallel standalone admin surfaces.
+- **Visual direction** - The product should feel **journal / archival** and **mobile-native**, while also reading as a **clear, professional** consumer app. Those aims can conflict (for example, a handwriting display face vs neutral UI typography). Prefer resolving tension through **theme presets** and distinct **type roles** (e.g. display vs body) wired to tokens, rather than scattered one-off styles. Iteration on the Theme Management model is expected as presets mature.
+- **Unified Studio (content admin)** - Long-term content administration converges on **Studio** as the unified shell for cards, media, tags, questions, collections, and their relationships. Users and Themes remain separate admin routes. Relationship editing and library-first media picking should converge inside shell-owned card/media workflows rather than parallel standalone admin surfaces.
 
 ### **Scripts**
 

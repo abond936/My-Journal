@@ -1,65 +1,91 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { Card } from '@/lib/types/card';
-import { useTag } from '@/components/providers/TagProvider';
+import React, { useEffect, useMemo, useState } from 'react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import styles from './BulkEditTagsModal.module.css';
-import { createUITreeFromDimensions, filterTreesBySearch } from '@/lib/utils/tagUtils';
-import { TagWithChildren } from '@/components/providers/TagProvider';
 import TagPickerDimensionColumn from '@/components/admin/card-admin/TagPickerDimensionColumn';
+import { useTag } from '@/components/providers/TagProvider';
+import { useMedia } from '@/components/providers/MediaProvider';
+import type { Media } from '@/lib/types/photo';
+import { createUITreeFromDimensions, filterTreesBySearch } from '@/lib/utils/tagUtils';
+import type { TagWithChildren } from '@/components/providers/TagProvider';
+import styles from '@/components/admin/card-admin/BulkEditTagsModal.module.css';
 
-// --- Main Component ---
-interface BulkEditTagsModalProps {
-  cardIds: string[];
+interface BulkEditMediaTagsModalProps {
+  mediaIds: string[];
   isOpen: boolean;
   onClose: () => void;
-  onSave: (payload: { cardIds: string[]; addTagIds: string[]; removeTagIds: string[] }) => Promise<void>;
+  onSave: (payload: { mediaIds: string[]; addTagIds: string[]; removeTagIds: string[] }) => Promise<void>;
 }
 
-export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: BulkEditTagsModalProps) {
+export default function BulkEditMediaTagsModal({
+  mediaIds,
+  isOpen,
+  onClose,
+  onSave,
+}: BulkEditMediaTagsModalProps) {
   const { tags: allTags, loading: tagsLoading } = useTag();
+  const { media, resolveMediaById, bulkApplyTags } = useMedia();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [cards, setCards] = useState<Card[]>([]);
+  const [selectedMedia, setSelectedMedia] = useState<Media[]>([]);
   const [tagDecisions, setTagDecisions] = useState<Map<string, boolean>>(new Map());
   const [searchTerm, setSearchTerm] = useState('');
 
-  /** Stable key so we do not refetch / reset when the parent passes a new `cardIds` array each render. */
-  const cardIdsKey = useMemo(() => [...new Set(cardIds)].sort().join('\u001e'), [cardIds]);
+  const mediaIdsKey = useMemo(() => [...new Set(mediaIds)].sort().join('\u001e'), [mediaIds]);
 
-  // Fetch full card data when the modal opens or the selected id set changes
   useEffect(() => {
     if (!isOpen) {
       setError(null);
-      setCards([]);
+      setSelectedMedia([]);
       setTagDecisions(new Map());
       setSearchTerm('');
       return;
     }
-    const ids = cardIdsKey ? cardIdsKey.split('\u001e') : [];
+
+    const ids = mediaIdsKey ? mediaIdsKey.split('\u001e') : [];
     if (ids.length === 0) return;
 
-    const fetchCards = async () => {
+    let cancelled = false;
+
+    const fetchSelectedMedia = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const params = new URLSearchParams();
-        ids.forEach(id => params.append('id', id));
-        const response = await fetch(`/api/cards/by-ids?${params.toString()}`);
+        const fetched = await Promise.all(
+          ids.map(async (mediaId) => {
+            const cached = media.find((item) => item.docId === mediaId) ?? resolveMediaById(mediaId);
+            if (cached) return cached;
+            try {
+              const response = await fetch(`/api/images/${encodeURIComponent(mediaId)}`, {
+                cache: 'no-store',
+                credentials: 'same-origin',
+              });
+              if (!response.ok) return null;
+              const payload = (await response.json().catch(() => ({}))) as { media?: Media };
+              return payload.media ?? null;
+            } catch {
+              return null;
+            }
+          })
+        );
 
-        if (!response.ok) throw new Error('Failed to fetch selected cards.');
-        const fetchedCards: Card[] = await response.json();
-        setCards(fetchedCards);
+        if (cancelled) return;
+        setSelectedMedia(fetched.filter((item): item is Media => Boolean(item?.docId)));
         setTagDecisions(new Map());
       } catch (err) {
+        if (cancelled) return;
         setError(err instanceof Error ? err.message : 'An unknown error occurred.');
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
-    void fetchCards();
-  }, [isOpen, cardIdsKey]);
+
+    void fetchSelectedMedia();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, media, mediaIdsKey, resolveMediaById]);
 
   const dimensionalTree = useMemo(() => {
     if (!allTags) return [];
@@ -69,7 +95,7 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
   const filteredDimensionalTree = useMemo(() => {
     const search = searchTerm.trim();
     if (!search) return dimensionalTree;
-    return dimensionalTree.map(dim => ({
+    return dimensionalTree.map((dim) => ({
       ...dim,
       children: filterTreesBySearch(dim.children, search),
     }));
@@ -77,13 +103,13 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
 
   const tagPresenceCounts = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const card of cards) {
-      for (const tagId of card.tags || []) {
+    for (const item of selectedMedia) {
+      for (const tagId of item.tags || []) {
         counts.set(tagId, (counts.get(tagId) || 0) + 1);
       }
     }
     return counts;
-  }, [cards]);
+  }, [selectedMedia]);
 
   const getSelectionState = React.useCallback(
     (tagId: string): 'checked' | 'unchecked' | 'mixed' => {
@@ -91,10 +117,10 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
       if (explicit !== undefined) return explicit ? 'checked' : 'unchecked';
       const count = tagPresenceCounts.get(tagId) || 0;
       if (count === 0) return 'unchecked';
-      if (count === cards.length) return 'checked';
+      if (count === selectedMedia.length) return 'checked';
       return 'mixed';
     },
-    [cards.length, tagDecisions, tagPresenceCounts]
+    [selectedMedia.length, tagDecisions, tagPresenceCounts]
   );
 
   const checkedSelection = useMemo(() => {
@@ -136,13 +162,14 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
         .filter(([, value]) => !value)
         .map(([tagId]) => tagId);
 
-      const response = await fetch('/api/cards/bulk-update-tags', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cardIds, addTagIds, removeTagIds }),
-      });
-      if (!response.ok) throw new Error('Failed to save tags.');
-      await onSave({ cardIds, addTagIds, removeTagIds });
+      if (removeTagIds.length > 0) {
+        await bulkApplyTags(mediaIds, removeTagIds, 'remove');
+      }
+      if (addTagIds.length > 0) {
+        await bulkApplyTags(mediaIds, addTagIds, 'add');
+      }
+
+      await onSave({ mediaIds, addTagIds, removeTagIds });
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred.');
@@ -176,35 +203,35 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
   return (
     <div className={styles.overlay}>
       <div className={styles.modalContainer}>
-        <h2 className={styles.modalHeader}>Edit Tags for {cardIds.length} Cards</h2>
+        <h2 className={styles.modalHeader}>Edit Tags for {mediaIds.length} Media Items</h2>
         <p className={styles.helpText}>
-          Tag states reflect the selected cards: <strong>checked = all</strong>, <strong>dash = some</strong>, <strong>empty = none</strong>.
+          Tag states reflect the selected media: <strong>checked = all</strong>, <strong>dash = some</strong>, <strong>empty = none</strong>.
           Click once to set for all, click again to remove from all.
         </p>
         <div className={styles.stateLegend} aria-hidden>
-          <span>✓ all</span>
-          <span>— some</span>
-          <span>☐ none</span>
+          <span>checked all</span>
+          <span>dash some</span>
+          <span>empty none</span>
         </div>
 
         <div className={styles.searchBar}>
           <input
             type="text"
-            placeholder="Search tags…"
+            placeholder="Search tags..."
             value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className={styles.searchInput}
           />
-          {searchTerm && (
+          {searchTerm ? (
             <button
               type="button"
               onClick={() => setSearchTerm('')}
               className={styles.searchClear}
               aria-label="Clear search"
             >
-              ✕
+              x
             </button>
-          )}
+          ) : null}
         </div>
 
         {isLoading || tagsLoading ? (
@@ -213,7 +240,7 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
           <div className={styles.error}>{error}</div>
         ) : (
           <div className={styles.interactiveColumns}>
-            {filteredDimensionalTree.map(dimension => (
+            {filteredDimensionalTree.map((dimension) => (
               <TagPickerDimensionColumn
                 key={dimension.docId}
                 dimension={dimension}
@@ -222,8 +249,7 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
                 getSelectionState={getSelectionState}
                 onToggleTag={handleToggleTag}
                 expandedNodeIds={expandedNodeIds}
-                checkboxIdPrefix="bulk-tag"
-                /* Always expand: default tree depth is 0 (everything starts collapsed), which hides deep tags unless the user expands every level. */
+                checkboxIdPrefix="bulk-media-tag"
                 forceExpandAll
                 showManagementControls={false}
               />
@@ -232,7 +258,9 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
         )}
 
         <div className={styles.actions}>
-          <button onClick={onClose} className={styles.cancelButton} disabled={isLoading}>Cancel</button>
+          <button onClick={onClose} className={styles.cancelButton} disabled={isLoading}>
+            Cancel
+          </button>
           <button onClick={handleSaveChanges} className={styles.saveButton} disabled={isLoading || tagsLoading}>
             {isLoading ? 'Saving...' : 'Save Changes'}
           </button>

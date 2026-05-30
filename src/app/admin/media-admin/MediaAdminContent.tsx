@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { FilterX, Pencil } from 'lucide-react';
 import { getMediaErrorSeverity, useMedia, type MediaFilters } from '@/components/providers/MediaProvider';
 import { useTag } from '@/components/providers/TagProvider';
+import BulkEditMediaTagsModal from '@/components/admin/media-admin/BulkEditMediaTagsModal';
 import MediaAdminGrid from '@/components/admin/media-admin/MediaAdminGrid';
 import MediaLocalImportDialog from '@/components/admin/media-admin/MediaLocalImportDialog';
 import EditModal from '@/components/admin/card-admin/EditModal';
@@ -16,6 +17,13 @@ import {
   flattenDimensionalTagMapToTagIds,
   groupSelectedTagIdsByDimension,
 } from '@/lib/utils/tagUtils';
+import {
+  DEFAULT_ADMIN_DIMENSION_FILTERS,
+  readStoredMediaAdminLocalFilterPreferences,
+  writeStoredMediaAdminLocalFilterPreferences,
+  type AdminDimensionFilterMode,
+  type AdminDimensionFilterState,
+} from '@/lib/preferences/adminFilters';
 import type { Media } from '@/lib/types/photo';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import { useStudioShellOptional } from '@/components/admin/studio/StudioShellContext';
@@ -28,26 +36,10 @@ export type MediaAdminContentProps = {
 };
 
 type DimensionKey = 'who' | 'what' | 'when' | 'where';
-type DimensionFilterMode = 'any' | 'hasAny' | 'isEmpty' | 'matches';
 type ApiErrorResponse = {
   message?: string;
   code?: string;
   details?: string[];
-};
-
-type DimensionFilterState = Record<
-  DimensionKey,
-  {
-    mode: DimensionFilterMode;
-    tagId: string;
-  }
->;
-
-const DEFAULT_DIMENSION_FILTERS: DimensionFilterState = {
-  who: { mode: 'any', tagId: '' },
-  what: { mode: 'any', tagId: '' },
-  when: { mode: 'any', tagId: '' },
-  where: { mode: 'any', tagId: '' },
 };
 
 function collectAssignedMediaIdsForCard(
@@ -74,6 +66,7 @@ function collectAssignedMediaIdsForCard(
 
 export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const { embedded = false, studioSourceDraggable = false } = props;
+  const initialLocalFilterPrefsRef = useRef(readStoredMediaAdminLocalFilterPreferences());
   const router = useRouter();
   const feedback = useAppFeedback();
   const studioShell = useStudioShellOptional();
@@ -93,7 +86,6 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     selectNone,
     deleteMultipleMedia,
     setSelectedMediaIds,
-    bulkApplyTags,
     dimensionalQueryOverlay,
     setDimensionalQueryOverlay,
     resolveMediaById,
@@ -110,13 +102,13 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   };
 
   const [bulkTagModalOpen, setBulkTagModalOpen] = useState(false);
-  const [pendingBulkTags, setPendingBulkTags] = useState<string[]>([]);
-  const [bulkTagApplying, setBulkTagApplying] = useState(false);
-  const [bulkTagInitializing, setBulkTagInitializing] = useState(false);
-  const [bulkTagMode, setBulkTagMode] = useState<'add' | 'replace' | 'remove'>('add');
   const [tagFilterModalOpen, setTagFilterModalOpen] = useState(false);
-  const [duplicateTriageMode, setDuplicateTriageMode] = useState(false);
-  const [dimensionFilters, setDimensionFilters] = useState<DimensionFilterState>(DEFAULT_DIMENSION_FILTERS);
+  const [duplicateTriageMode, setDuplicateTriageMode] = useState(
+    initialLocalFilterPrefsRef.current.duplicateTriageMode
+  );
+  const [dimensionFilters, setDimensionFilters] = useState<AdminDimensionFilterState>(
+    initialLocalFilterPrefsRef.current.dimensionFilters
+  );
   const [clientSort, setClientSort] = useState<'none' | 'filenameAsc' | 'filenameDesc'>('none');
   const [searchDraft, setSearchDraft] = useState(filters.search);
   const [highlightAssigned, setHighlightAssigned] = useState(true);
@@ -131,6 +123,13 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   }, [filters.search]);
 
   useEffect(() => {
+    writeStoredMediaAdminLocalFilterPreferences({
+      duplicateTriageMode,
+      dimensionFilters,
+    });
+  }, [dimensionFilters, duplicateTriageMode]);
+
+  useEffect(() => {
     if (searchDraft === filters.search) return;
     const timeoutId = window.setTimeout(() => {
       setFilter('search', searchDraft);
@@ -140,92 +139,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   }, [fetchMedia, filters.search, searchDraft, setFilter]);
 
   const handleOpenBulkTags = () => {
-    setPendingBulkTags([]);
-    setBulkTagMode('add');
     setBulkTagModalOpen(true);
-  };
-
-  useEffect(() => {
-    if (!bulkTagModalOpen) {
-      setBulkTagInitializing(false);
-      return;
-    }
-    if (selectedMediaIds.length === 0) {
-      setPendingBulkTags([]);
-      setBulkTagInitializing(false);
-      return;
-    }
-
-    let cancelled = false;
-
-    const loadSharedTags = async () => {
-      setBulkTagInitializing(true);
-      try {
-        const selectedMedia = await Promise.all(
-          selectedMediaIds.map(async (mediaId) => {
-            const cached = media.find((item) => item.docId === mediaId) ?? resolveMediaById(mediaId);
-            if (cached) return cached;
-            try {
-              const response = await fetch(`/api/images/${encodeURIComponent(mediaId)}`, {
-                cache: 'no-store',
-                credentials: 'same-origin',
-              });
-              if (!response.ok) return null;
-              const payload = (await response.json().catch(() => ({}))) as { media?: Media };
-              return payload.media ?? null;
-            } catch {
-              return null;
-            }
-          })
-        );
-
-        if (cancelled) return;
-
-        const resolved = selectedMedia.filter((item): item is Media => Boolean(item?.docId));
-        if (resolved.length === 0) {
-          setPendingBulkTags([]);
-          return;
-        }
-
-        const sharedTagIds = (() => {
-          const [first, ...rest] = resolved;
-          const intersection = new Set((first.tags ?? []).filter(Boolean));
-          for (const item of rest) {
-            const itemTags = new Set((item.tags ?? []).filter(Boolean));
-            for (const tagId of Array.from(intersection)) {
-              if (!itemTags.has(tagId)) {
-                intersection.delete(tagId);
-              }
-            }
-          }
-          return Array.from(intersection);
-        })();
-
-        setPendingBulkTags(sharedTagIds);
-      } finally {
-        if (!cancelled) setBulkTagInitializing(false);
-      }
-    };
-
-    void loadSharedTags();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [bulkTagModalOpen, media, resolveMediaById, selectedMediaIds]);
-
-  const handleSaveBulkTagSelection = async (newSelection: string[]) => {
-    if (selectedMediaIds.length === 0) return;
-    setBulkTagApplying(true);
-    try {
-      await bulkApplyTags(selectedMediaIds, newSelection, bulkTagMode);
-      setBulkTagModalOpen(false);
-    } catch (err) {
-      console.error(err);
-      feedback.showError(err instanceof Error ? err.message : 'Failed to apply tags.', 'Could not apply tags');
-    } finally {
-      setBulkTagApplying(false);
-    }
   };
 
   const [isCreatingCard, setIsCreatingCard] = useState(false);
@@ -285,7 +199,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const handleClearFilters = () => {
     clearFilters();
     setDuplicateTriageMode(false);
-    setDimensionFilters(DEFAULT_DIMENSION_FILTERS);
+    setDimensionFilters(DEFAULT_ADMIN_DIMENSION_FILTERS);
     setClientSort('none');
     setSearchDraft('');
   };
@@ -323,6 +237,19 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     () => collectAssignedMediaIdsForCard(activeStudioCard),
     [activeStudioCard]
   );
+  const activeStudioCardAssignedMediaIdsKey = useMemo(
+    () => activeStudioCardAssignedMediaIds.join('\u001e'),
+    [activeStudioCardAssignedMediaIds]
+  );
+  const assignedOnlyResolvedMedia = useMemo(() => {
+    if (activeStudioCardAssignedMediaIds.length === 0) return [];
+    const fallbackById = new Map(
+      assignedOnlyMedia.filter((item) => item?.docId).map((item) => [item.docId, item] as const)
+    );
+    return activeStudioCardAssignedMediaIds
+      .map((mediaId) => resolveMediaById(mediaId) ?? fallbackById.get(mediaId) ?? null)
+      .filter((item): item is (typeof media)[number] => Boolean(item?.docId));
+  }, [activeStudioCardAssignedMediaIds, assignedOnlyMedia, resolveMediaById]);
   const hiddenAssignedCount = Math.max(
     0,
     activeStudioCardAssignedMediaIds.length - visibleAssignedCount
@@ -339,14 +266,25 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
 
   useEffect(() => {
     if (!showOnlyAssigned) return;
+    if (activeStudioCardAssignedMediaIds.length === 0) {
+      setAssignedOnlyMedia([]);
+      setAssignedOnlyLoading(false);
+      return;
+    }
     let cancelled = false;
     const loadAssignedOnlyMedia = async () => {
       setAssignedOnlyLoading(true);
       try {
-        const loaded = await Promise.all(
-          activeStudioCardAssignedMediaIds.map(async (mediaId) => {
-            const cached = media.find((item) => item.docId === mediaId) ?? resolveMediaById(mediaId);
-            if (cached) return cached;
+        const cachedById = new Map<string, (typeof media)[number]>();
+        const missingIds: string[] = [];
+        for (const mediaId of activeStudioCardAssignedMediaIds) {
+          const cached = resolveMediaById(mediaId);
+          if (cached) cachedById.set(mediaId, cached);
+          else missingIds.push(mediaId);
+        }
+
+        const fetchedMissing = await Promise.all(
+          missingIds.map(async (mediaId) => {
             try {
               const response = await fetch(`/api/images/${encodeURIComponent(mediaId)}`, {
                 cache: 'no-store',
@@ -360,8 +298,16 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
             }
           })
         );
+        fetchedMissing.forEach((item) => {
+          if (item?.docId) cachedById.set(item.docId, item);
+        });
+
+        const loaded = activeStudioCardAssignedMediaIds
+          .map((mediaId) => cachedById.get(mediaId) ?? null)
+          .filter((item): item is (typeof media)[number] => Boolean(item?.docId));
+
         if (cancelled) return;
-        setAssignedOnlyMedia(loaded.filter((item): item is (typeof media)[number] => Boolean(item?.docId)));
+        setAssignedOnlyMedia(loaded);
       } finally {
         if (!cancelled) setAssignedOnlyLoading(false);
       }
@@ -370,11 +316,11 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     return () => {
       cancelled = true;
     };
-  }, [activeStudioCardAssignedMediaIds, media, resolveMediaById, showOnlyAssigned]);
+  }, [activeStudioCardAssignedMediaIds, activeStudioCardAssignedMediaIdsKey, resolveMediaById, showOnlyAssigned]);
 
   const updateDimensionFilter = (
     dimension: DimensionKey,
-    patch: Partial<{ mode: DimensionFilterMode; tagId: string }>
+    patch: Partial<{ mode: AdminDimensionFilterMode; tagId: string }>
   ) => {
     setDimensionFilters((prev) => ({
       ...prev,
@@ -449,10 +395,10 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
       )}
       {!error && showOnlyAssigned && !assignedOnlyLoading ? (
         <MediaAdminGrid
-          mediaOverride={assignedOnlyMedia}
+          mediaOverride={assignedOnlyResolvedMedia}
           emptyMessage="No media are assigned to the current card."
           sourcePathFirst={false}
-          dimensionFilters={DEFAULT_DIMENSION_FILTERS}
+          dimensionFilters={DEFAULT_ADMIN_DIMENSION_FILTERS}
           studioSourceDraggable={embedded && studioSourceDraggable}
           inlineCaptionEditing={embedded}
           clientSort={clientSort}
@@ -660,7 +606,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                           value={state.mode}
                           onChange={(e) =>
                             updateDimensionFilter(dimension, {
-                              mode: e.target.value as DimensionFilterMode,
+                              mode: e.target.value as AdminDimensionFilterMode,
                             })
                           }
                         >
@@ -786,38 +732,14 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
           </div>
         </div>
       </EditModal>
-      <EditModal
+      <BulkEditMediaTagsModal
+        mediaIds={selectedMediaIds}
         isOpen={bulkTagModalOpen}
         onClose={() => setBulkTagModalOpen(false)}
-        title="Tags for selected media"
-      >
-        <p className={styles.bulkTagHint}>
-          Choose how to apply tags, select tags, then click <strong>Save</strong>.
-        </p>
-        {bulkTagInitializing ? (
-          <p className={styles.bulkTagHint}>Loading shared tags from the selected media...</p>
-        ) : null}
-        <div className={styles.filterGroup}>
-          <label>Bulk tag action:</label>
-          <select
-            value={bulkTagMode}
-            onChange={(e) => setBulkTagMode(e.target.value as 'add' | 'replace' | 'remove')}
-            disabled={bulkTagApplying || bulkTagInitializing}
-          >
-            <option value="add">Add selected tags (keep existing)</option>
-            <option value="replace">Replace all tags with selected</option>
-            <option value="remove">Remove selected tags</option>
-          </select>
-        </div>
-        <MacroTagSelector
-          startExpanded
-          onSaveSelection={handleSaveBulkTagSelection}
-          onRequestClose={() => setBulkTagModalOpen(false)}
-          selectedTags={allTags.filter((t) => t.docId && pendingBulkTags.includes(t.docId))}
-          allTags={allTags}
-          onChange={setPendingBulkTags}
-        />
-      </EditModal>
+        onSave={async () => {
+          setBulkTagModalOpen(false);
+        }}
+      />
       <EditModal
         isOpen={tagFilterModalOpen}
         onClose={() => setTagFilterModalOpen(false)}

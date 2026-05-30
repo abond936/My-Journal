@@ -2,6 +2,10 @@ export type BrowserPreferenceStorage = Pick<Storage, 'getItem' | 'setItem'>;
 
 export const BROWSER_PREFERENCE_KEYS = {
   studioWorkspaceLayout: 'myjournal:studio:workspace-layout:v1',
+  studioCardBankSharedFilters: 'myjournal:studio:card-bank-shared-filters:v1',
+  studioCardBankLocalFilters: 'myjournal:studio:card-bank-local-filters:v1',
+  mediaAdminStoredFilters: 'myjournal:media-admin:stored-filters:v1',
+  mediaAdminLocalFilters: 'myjournal:media-admin:local-filters:v1',
 } as const;
 
 export function getBrowserPreferenceStorage(): BrowserPreferenceStorage | null {

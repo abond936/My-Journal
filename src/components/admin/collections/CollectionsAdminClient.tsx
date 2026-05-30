@@ -47,6 +47,10 @@ import CollectionsMediaPanel from '@/components/admin/collections/CollectionsMed
 import type { EmbeddedUnparentedBankContext } from '@/components/admin/collections/embeddedUnparentedBankContext';
 import { isCuratedTreeDndEnabled } from '@/lib/config/curatedTreeDnd';
 import { DND_POINTER_IGNORE_ATTR, useDefaultDndSensors } from '@/lib/hooks/useDefaultDndSensors';
+import {
+  readStoredStudioCardBankSharedFilterPreferences,
+  writeStoredStudioCardBankSharedFilterPreferences,
+} from '@/lib/preferences/adminFilters';
 import TagAdminStudioPane from '@/components/admin/studio/TagAdminStudioPane';
 import {
   buildCollectionsCardDragData,
@@ -355,12 +359,15 @@ export default function CollectionsAdminClient({
   embeddedOrganizationCollapsed?: boolean;
   embeddedCardsCollapsed?: boolean;
 }) {
+  const initialStudioCardBankSharedPrefsRef = useRef(readStoredStudioCardBankSharedFilterPreferences());
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published'>('all');
+  const [search, setSearch] = useState(initialStudioCardBankSharedPrefsRef.current.search);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published'>(
+    initialStudioCardBankSharedPrefsRef.current.statusFilter
+  );
   const [draggingCardId, setDraggingCardId] = useState<string | null>(null);
   const [curatedDragKind, setCuratedDragKind] = useState<CuratedTreeDragKind>(null);
   const [dragOverlayCard, setDragOverlayCard] = useState<Card | null>(null);
@@ -466,6 +473,10 @@ export default function CollectionsAdminClient({
       /* ignore */
     }
   }, [studioLeftTab]);
+
+  useEffect(() => {
+    writeStoredStudioCardBankSharedFilterPreferences({ search, statusFilter });
+  }, [search, statusFilter]);
 
   useEffect(() => {
     setTreeExpandedIds(new Set(readStoredTreeExpandedIds(COLLECTIONS_TREE_EXPANSION_KEY)));

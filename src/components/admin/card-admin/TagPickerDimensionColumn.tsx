@@ -17,6 +17,7 @@ interface TagPickerDimensionColumnProps {
   expandedNodeIds?: Set<string>;
   checkboxIdPrefix: string;
   forceExpandAll?: boolean;
+  showManagementControls?: boolean;
 }
 
 export default function TagPickerDimensionColumn({
@@ -28,6 +29,7 @@ export default function TagPickerDimensionColumn({
   expandedNodeIds,
   checkboxIdPrefix,
   forceExpandAll = false,
+  showManagementControls = true,
 }: TagPickerDimensionColumnProps) {
   const { createTag } = useTag();
   const dimensionKey = dimension.dimension as TagDimension;
@@ -95,34 +97,36 @@ export default function TagPickerDimensionColumn({
     <div className={styles.dimensionColumn}>
       <h4>{dimension.name}</h4>
 
-      <div className={styles.addTagBlock}>
-        <div className={styles.addTagRow}>
-          <input
-            type="text"
-            className={styles.addTagInput}
-            value={rootDraft}
-            onChange={e => setRootDraft(e.target.value)}
-            placeholder="New tag"
-            disabled={creating}
-            onKeyDown={e => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                void handleCreate(rootDraft, undefined);
-              }
-            }}
-          />
-          <button
-            type="button"
-            className={styles.addTagButton}
-            disabled={creating || !rootDraft.trim()}
-            onClick={() => void handleCreate(rootDraft, undefined)}
-          >
-            Add
-          </button>
+      {showManagementControls ? (
+        <div className={styles.addTagBlock}>
+          <div className={styles.addTagRow}>
+            <input
+              type="text"
+              className={styles.addTagInput}
+              value={rootDraft}
+              onChange={e => setRootDraft(e.target.value)}
+              placeholder="New tag"
+              disabled={creating}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void handleCreate(rootDraft, undefined);
+                }
+              }}
+            />
+            <button
+              type="button"
+              className={styles.addTagButton}
+              disabled={creating || !rootDraft.trim()}
+              onClick={() => void handleCreate(rootDraft, undefined)}
+            >
+              Add
+            </button>
+          </div>
         </div>
-      </div>
+      ) : null}
 
-      {pendingChild && (
+      {showManagementControls && pendingChild ? (
         <div ref={addChildPanelRef} className={styles.addTagChildPanel}>
           <div className={styles.addTagChildHeading}>
             New tag under <strong>{pendingChild.name}</strong>
@@ -160,7 +164,7 @@ export default function TagPickerDimensionColumn({
             </button>
           </div>
         </div>
-      )}
+      ) : null}
 
       {addError && <p className={styles.addTagError}>{addError}</p>}
 
@@ -179,6 +183,7 @@ export default function TagPickerDimensionColumn({
             checkboxIdPrefix={checkboxIdPrefix}
             onRequestAddChild={requestAddChild}
             forceExpandAll={forceExpandAll}
+            showManagementControls={showManagementControls}
           />
         ))}
       </div>
@@ -198,6 +203,7 @@ interface TagPickerInteractiveTagNodeProps {
   checkboxIdPrefix: string;
   onRequestAddChild: (id: string, name: string) => void;
   forceExpandAll?: boolean;
+  showManagementControls?: boolean;
 }
 
 function TagPickerInteractiveTagNode({
@@ -212,6 +218,7 @@ function TagPickerInteractiveTagNode({
   checkboxIdPrefix,
   onRequestAddChild,
   forceExpandAll = false,
+  showManagementControls = true,
 }: TagPickerInteractiveTagNodeProps) {
   const expandLevels = getTagTreeExpandLevelsForDimension(dimensionKey);
   const [isCollapsed, setIsCollapsed] = useState(() => depth >= expandLevels);
@@ -234,6 +241,7 @@ function TagPickerInteractiveTagNode({
   return (
     <div className={styles.interactiveNode}>
       <div className={styles.nodeControl}>
+        {showManagementControls ? (
         <span className={styles.nodeGutter}>
           {hasChildren ? (
             <button
@@ -256,6 +264,7 @@ function TagPickerInteractiveTagNode({
             +
           </button>
         </span>
+        ) : null}
         <input
           type="checkbox"
           id={checkboxId}
@@ -286,6 +295,7 @@ function TagPickerInteractiveTagNode({
               checkboxIdPrefix={checkboxIdPrefix}
               onRequestAddChild={onRequestAddChild}
               forceExpandAll={forceExpandAll}
+              showManagementControls={showManagementControls}
             />
           ))}
         </div>

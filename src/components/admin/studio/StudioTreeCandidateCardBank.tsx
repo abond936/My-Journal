@@ -5,6 +5,7 @@ import { useDndContext } from '@dnd-kit/core';
 import { FilterX, Pencil } from 'lucide-react';
 import { useStudioShell } from '@/components/admin/studio/StudioShellContext';
 import { useTag } from '@/components/providers/TagProvider';
+import BulkEditTagsModal from '@/components/admin/card-admin/BulkEditTagsModal';
 import CardAdminGrid from '@/components/admin/card-admin/CardAdminGrid';
 import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
 import EditModal from '@/components/admin/card-admin/EditModal';
@@ -31,21 +32,19 @@ import {
 } from '@/lib/utils/tagUtils';
 import { applyModifierSelection } from '@/lib/utils/adminListSelection';
 import cardAdminStyles from '@/app/admin/card-admin/card-admin.module.css';
-import mediaAdminStyles from '@/app/admin/media-admin/media-admin.module.css';
 import { mergeStudioCatalogCard, toStudioCatalogCard } from '@/components/admin/studio/studioCardProjection';
 import type { StudioSelectedPreview } from '@/components/admin/studio/studioCardTypes';
+import {
+  DEFAULT_ADMIN_DIMENSION_FILTERS,
+  readStoredStudioCardBankLocalFilterPreferences,
+  writeStoredStudioCardBankLocalFilterPreferences,
+  type AdminDimensionFilterMode,
+  type AdminDimensionFilterState,
+} from '@/lib/preferences/adminFilters';
 import styles from './StudioTreeCandidateCardBank.module.css';
 
 type CandidateSort = 'titleAsc' | 'titleDesc' | 'createdDesc' | 'createdAsc';
 type DimensionKey = 'who' | 'what' | 'when' | 'where';
-type DimensionFilterMode = 'any' | 'hasAny' | 'isEmpty' | 'matches';
-type DimensionFilterState = Record<
-  DimensionKey,
-  {
-    mode: DimensionFilterMode;
-    tagId: string;
-  }
->;
 
 type CardTypeFilter = 'all' | NonNullable<Card['type']>;
 type DisplayModeFilter = 'all' | NonNullable<Card['displayMode']>;
@@ -54,13 +53,6 @@ type CatalogOverrideMap = Record<string, Card | null>;
 function cardDisplayMode(card: Card): NonNullable<Card['displayMode']> {
   return card.displayMode ?? 'navigate';
 }
-
-const DEFAULT_DIMENSION_FILTERS: DimensionFilterState = {
-  who: { mode: 'any', tagId: '' },
-  what: { mode: 'any', tagId: '' },
-  when: { mode: 'any', tagId: '' },
-  where: { mode: 'any', tagId: '' },
-};
 
 function cardMatchesOnCardDimensionalMap(card: Card, dt: DimensionalTagIdMap): boolean {
   if (!dimensionalTagMapHasFilters(dt)) return true;
@@ -125,6 +117,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   const { active } = useDndContext();
   const feedback = useAppFeedback();
   const { tags: allTags } = useTag();
+  const initialLocalFilterPrefsRef = useRef(readStoredStudioCardBankLocalFilterPreferences());
   const [fullCatalog, setFullCatalog] = useState<Card[]>([]);
   const [catalogOverrides, setCatalogOverrides] = useState<CatalogOverrideMap>({});
   const [catalogRefreshTick, setCatalogRefreshTick] = useState(0);
@@ -132,15 +125,16 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   const [bulkSelectedCardIds, setBulkSelectedCardIds] = useState<Set<string>>(() => new Set());
   const selectionAnchorIndexRef = useRef<number | null>(null);
   const [bulkTagModalOpen, setBulkTagModalOpen] = useState(false);
-  const [pendingBulkTags, setPendingBulkTags] = useState<string[]>([]);
-  const [bulkTagMode, setBulkTagMode] = useState<'add' | 'replace' | 'remove'>('add');
-  const [bulkTagApplying, setBulkTagApplying] = useState(false);
   const [sortMode, setSortMode] = useState<CandidateSort>('titleAsc');
-  const [filterTagIds, setFilterTagIds] = useState<string[]>([]);
-  const [typeFilter, setTypeFilter] = useState<CardTypeFilter>('all');
-  const [displayModeFilter, setDisplayModeFilter] = useState<DisplayModeFilter>('all');
+  const [filterTagIds, setFilterTagIds] = useState<string[]>(initialLocalFilterPrefsRef.current.filterTagIds);
+  const [typeFilter, setTypeFilter] = useState<CardTypeFilter>(initialLocalFilterPrefsRef.current.typeFilter);
+  const [displayModeFilter, setDisplayModeFilter] = useState<DisplayModeFilter>(
+    initialLocalFilterPrefsRef.current.displayModeFilter
+  );
   const [tagFilterModalOpen, setTagFilterModalOpen] = useState(false);
-  const [dimensionFilters, setDimensionFilters] = useState<DimensionFilterState>(DEFAULT_DIMENSION_FILTERS);
+  const [dimensionFilters, setDimensionFilters] = useState<AdminDimensionFilterState>(
+    initialLocalFilterPrefsRef.current.dimensionFilters
+  );
   const [isStreamingMore, setIsStreamingMore] = useState(false);
   const [pendingFocusCardId, setPendingFocusCardId] = useState<string | null>(null);
   const [deleteConfirmCard, setDeleteConfirmCard] = useState<Card | null>(null);
@@ -158,6 +152,15 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   useEffect(() => {
     dragActiveRef.current = Boolean(active);
   }, [active]);
+
+  useEffect(() => {
+    writeStoredStudioCardBankLocalFilterPreferences({
+      typeFilter,
+      displayModeFilter,
+      filterTagIds,
+      dimensionFilters,
+    });
+  }, [dimensionFilters, displayModeFilter, filterTagIds, typeFilter]);
 
   // Catalog load: first chunk paints fast (250 cards), remaining pages stream in
   // background under the server's stable `created desc` order. Filters operate
@@ -295,12 +298,12 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     setTypeFilter('all');
     setDisplayModeFilter('all');
     setFilterTagIds([]);
-    setDimensionFilters(DEFAULT_DIMENSION_FILTERS);
+    setDimensionFilters(DEFAULT_ADMIN_DIMENSION_FILTERS);
     setBulkSelectedCardIds(new Set());
   }, [setSearch, setStatusFilter]);
 
   const updateDimensionFilter = useCallback(
-    (dimension: DimensionKey, patch: Partial<{ mode: DimensionFilterMode; tagId: string }>) => {
+    (dimension: DimensionKey, patch: Partial<{ mode: AdminDimensionFilterMode; tagId: string }>) => {
       setDimensionFilters((prev) => ({
         ...prev,
         [dimension]: {
@@ -345,29 +348,6 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     registerCatalogRemove?.(removeCatalogCard);
     return () => registerCatalogRemove?.(null);
   }, [registerCatalogRemove, removeCatalogCard]);
-
-  const patchCatalogCards = useCallback(
-    (cardIds: string[], patcher: (card: Card) => Card) => {
-      if (cardIds.length === 0) return;
-      const idSet = new Set(cardIds);
-      const mergedById = new Map(
-        deferredMergedCatalog.filter((card) => card.docId).map((card) => [card.docId!, card] as const)
-      );
-      setFullCatalog((current) =>
-        current.map((card) => (card.docId && idSet.has(card.docId) ? patcher(card) : card))
-      );
-      setCatalogOverrides((current) => {
-        const next = { ...current };
-        for (const cardId of cardIds) {
-          const base = mergedById.get(cardId);
-          if (!base) continue;
-          next[cardId] = patcher(base);
-        }
-        return next;
-      });
-    },
-    [deferredMergedCatalog]
-  );
 
   const candidateCards = useMemo(() => {
     const raw = listCuratedTreeAttachCandidates(deferredMergedCatalog, {
@@ -596,48 +576,8 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   }, [bulkSelectedCardIds, feedback, mergedCatalog, parentIdsByChild, refreshCards, titleById]);
 
   const handleOpenBulkTags = useCallback(() => {
-    setPendingBulkTags([]);
-    setBulkTagMode('add');
     setBulkTagModalOpen(true);
   }, []);
-
-  const handleSaveBulkTagSelection = useCallback(
-    async (newSelection: string[]) => {
-      if (bulkSelectedCardIds.size === 0) return;
-      setBulkTagApplying(true);
-      try {
-        const cardIds = Array.from(bulkSelectedCardIds);
-        let res: Response;
-        if (bulkTagMode === 'replace') {
-          res = await fetch('/api/cards/bulk-update-tags', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ cardIds, tags: newSelection }),
-          });
-        } else {
-          const addTagIds = bulkTagMode === 'add' ? newSelection : [];
-          const removeTagIds = bulkTagMode === 'remove' ? newSelection : [];
-          res = await fetch('/api/cards/bulk-update-tags', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ cardIds, addTagIds, removeTagIds }),
-          });
-        }
-        const data = await res.json().catch(() => ({}));
-        throwIfJsonApiFailed(res, data, 'Failed to save tags.');
-        setCatalogRefreshTick((t) => t + 1);
-        await refreshCards();
-        setBulkTagModalOpen(false);
-        setBulkSelectedCardIds(new Set());
-      } catch (err) {
-        console.error(err);
-        feedback.showError(err instanceof Error ? err.message : 'Failed to apply tags.', 'Could not apply tags');
-      } finally {
-        setBulkTagApplying(false);
-      }
-    },
-    [bulkSelectedCardIds, bulkTagMode, feedback, refreshCards]
-  );
 
   const onUpdateCard = useCallback(
     async (cardId: string, updateData: Partial<Card>) => {
@@ -822,7 +762,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
                       value={state.mode}
                       onChange={(e) =>
                         updateDimensionFilter(dimension, {
-                          mode: e.target.value as DimensionFilterMode,
+                          mode: e.target.value as AdminDimensionFilterMode,
                         })
                       }
                     >
@@ -1006,36 +946,16 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
         </div>
       </EditModal>
 
-      <EditModal
+      <BulkEditTagsModal
+        cardIds={Array.from(bulkSelectedCardIds)}
         isOpen={bulkTagModalOpen}
         onClose={() => setBulkTagModalOpen(false)}
-        title="Tags for selected cards"
-      >
-        <p className={mediaAdminStyles.bulkTagHint}>
-          Choose how to apply tags, select tags, then click <strong>Save</strong>.
-        </p>
-        <div className={mediaAdminStyles.filterGroup}>
-          <label htmlFor="studio-bulk-card-tag-mode">Bulk tag action:</label>
-          <select
-            id="studio-bulk-card-tag-mode"
-            value={bulkTagMode}
-            onChange={(e) => setBulkTagMode(e.target.value as 'add' | 'replace' | 'remove')}
-            disabled={bulkTagApplying}
-          >
-            <option value="add">Add selected tags (keep existing)</option>
-            <option value="replace">Replace all tags with selected</option>
-            <option value="remove">Remove selected tags</option>
-          </select>
-        </div>
-        <MacroTagSelector
-          startExpanded
-          onSaveSelection={handleSaveBulkTagSelection}
-          onRequestClose={() => setBulkTagModalOpen(false)}
-          selectedTags={(allTags || []).filter((t) => t.docId && pendingBulkTags.includes(t.docId!))}
-          allTags={allTags || []}
-          onChange={setPendingBulkTags}
-        />
-      </EditModal>
+        onSave={async () => {
+          setCatalogRefreshTick((t) => t + 1);
+          await refreshCards();
+          setBulkSelectedCardIds(new Set());
+        }}
+      />
       <EditModal
         isOpen={tagFilterModalOpen}
         onClose={() => setTagFilterModalOpen(false)}

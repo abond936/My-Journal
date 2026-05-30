@@ -96,7 +96,9 @@ It exists so the author does not have to act like an engineer, project manager, 
 
 ### Execution output
 - Root cause
+- Impact map: owning layer, read paths, write paths, derived views, adjacent behaviors at risk
 - Recommended fix
+- Regression checklist: what is broken now, what will change, what must stay unchanged, and what exact adjacent paths will be re-verified
 - Exact approved scope
 - Verification results
 - Test additions or explicit reason no test was added
@@ -140,6 +142,26 @@ It exists so the author does not have to act like an engineer, project manager, 
 - Each slice must include the documentation reconciliation needed for the behavior or architecture it changes, unless the author explicitly excludes docs for that pass.
 - Chat should explain the **essence** of proposed work; detailed diffs live in the IDE.
 - A slice that changed durable behavior, status truth, or priority is not canonically closed until the required doc reconciliation has happened, unless the AI clearly says the slice remains non-canonical pending that reconciliation.
+- For shared, stateful, or regression-sensitive admin surfaces, a slice is not ready for implementation until the AI has named the owning state, the derived views that can drift, the adjacent behaviors at risk, and the exact regression checks that will be run after the change.
+
+---
+
+## Shared-Surface Safety Standard
+
+- Treat shared or regression-sensitive surfaces as design tasks first and implementation tasks second.
+- Before editing, the AI must produce an **impact map** covering:
+  - owning layer/source of truth
+  - read paths
+  - write paths
+  - derived views or override paths
+  - adjacent behaviors likely to regress
+- Before editing, the AI must produce a **regression checklist** covering:
+  - exact broken behavior
+  - exact intended behavior change
+  - exact adjacent behavior that must remain unchanged
+  - exact verification plan for those adjacent paths
+- The AI must not introduce detached shadow state or a second owner casually. If a local or derived view is necessary, the AI must explain how it reconciles after nearby writes such as save, delete, tag edit, inline edit, reorder, or refresh.
+- If the AI cannot explain why the proposed design will not cause the top likely regressions, it is not ready to implement and must return to diagnosis/design.
 
 ---
 
