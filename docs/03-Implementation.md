@@ -167,6 +167,8 @@ Legend:
 
 - **Infinite-scroll hardening** - Continue the append-style media working set toward a fully smooth infinite-scroll feel, with no obvious paging seams during normal admin use and no need for repetitive manual paging rituals in the normal browsing contract.
 
+- **Dimension filter picker evolution** - Revisit admin card/media `Matches tag` interaction later with a lighter single-dimension picker: keep fast text entry for known tags, use a searchable tree popover for the common one-dimension case, and reserve full `MacroTagSelector` expansion for multi-select and deeper taxonomy work.
+
 
 **§ User Management (`02-Application.md`)**
 
@@ -254,10 +256,18 @@ Legend:
 
 
 - **Feed Presentation Matrix** - Define and enforce a single presentation contract across feed/detail/rail contexts for each `type` + `displayMode` pair, including interaction model (open vs expand), title/excerpt behavior, and media framing rules.
+- **Feed matrix target (agreed 2026-05-31)** - Implement the now-agreed contract before broader reader polish: closed cards drop tag/context badges entirely; only `Story` and `Gallery` keep type badges on closed feed cards; excerpts are excluded from reader card presentation for now; `Gallery` should differentiate from `Story` through stronger image-sequence cues rather than more text; `Question` should use a type-native background with overlaid title in closed state and carry that visual identity more clearly into open state; `Quote` remains quote-first; `Callout` is de-emphasized until its role is clearer.
+- **Closed-card matrix alignment (2026-05-31)** - The first Reader implementation slice is now in `V2ContentCard`: closed feed cards no longer render tag/context badges or content/gallery icon badges; only `Story` and `Gallery` retain a closed-card type badge; closed `Story` and `Gallery` supporting text is now subtitle-only by default instead of excerpt-first; and closed `Question` cards no longer render teaser/excerpt copy in the feed. This closes the first closed-card cleanup slice, but it does **not** close the broader matrix: open-card header placement, `Question` closed-to-open continuity, and the desktop height/orientation decision remain separate Reader follow-up work.
+- **Open-card header alignment (2026-05-31)** - The next Reader slice is now partially implemented in `CardDetailPage`: `Question` detail pages no longer drop straight into the generic detail header. Their metadata, title, and subtitle now sit inside a dedicated question-header panel that reuses the question-card background/watermark language, so the open card carries stronger continuity with the closed feed card. `Story` and `Gallery` still use the existing open-header structure with metadata above the title. Remaining matrix work is still open: final header-placement polish for all open card families and the broader desktop height/orientation decision.
+- **Desktop feed rhythm normalization (2026-05-31)** - The closed-card sizing rule is explicit but not yet behaviorally closed: desktop feed cards should resolve to one standard landscape height and one restrained portrait variant at the same width, with square covers folded into the landscape family. `Story` is now canonically cover-led in reader presentation, so story cards without a real cover should use a standard story placeholder instead of a separate no-cover story layout. Excerpts are out of reader presentation for now so they stop acting as another height driver. Current status: the latest work in `V2ContentCard` is a **first repair pass**, not a closed fix.
+- **Desktop feed rhythm diagnosis / handoff (2026-05-31)** - The first desktop-rhythm implementation failed because multiple competing height owners were still active at once: shell aspect ratio, older no-cover aspect-ratio rules, image-frame aspect ratio, content natural height, and the extra closed `Story`/`Gallery` text-row reservation. The concrete failure shape was: no-cover cards still obeyed the older `6:5` no-cover rule while covered story/gallery cards stayed `aspect-ratio: auto`; desktop overrides disabled content growth so some no-cover titles floated to the top; portrait and square routing existed in code but the shell ratio did not actually win because `.card.story/.gallery/.qa { aspect-ratio: auto; }` still overrode it; and the reserved second text row kept story/gallery structurally taller than question/quote/callout. The latest repair pass addresses some of this by raising desktop shell-ratio specificity, removing the closed story/gallery second text row, and making `Story` use a placeholder cover when real cover is missing, but the slice still needs manual desktop-feed verification before it can be considered landed.
+- **Desktop feed rhythm verification checklist (2026-05-31)** - Before any new Reader slice, manually verify: story cards without real covers now behave like cover cards with a placeholder; no-cover titles no longer jump to the top unexpectedly; covered story cards do not remain taller than other landscape-family cards; question/quote/callout align with the same landscape family; square covers do not create a third size; portrait cards resolve to one restrained taller size rather than drifting freely. If any of these fail, continue the closed-card sizing repair instead of widening scope.
 
 - **Desktop feed card sizing consistency** - Reconcile closed-card sizing on wider desktop feeds so cover-mode changes do not leave mixed tile heights and awkward rhythm across adjacent cards; preserve the better mobile behavior while making desktop grids look intentionally aligned.
 
 - **Compact rail simplification** - On smaller rail tiles, omit excerpts, tags, and content/gallery type icons so compact discovery cards stay clean and readable.
+- **Type-native card placeholders** - Add reader/admin preview parity for non-media-led card types (`Question`, `Quote`, `Callout`) by using type-native placeholder treatments when no real cover exists, instead of presenting them as empty missing-cover tiles. Preferred direction: reuse the existing reader-family background treatment, keep this purely presentational (`type` + no cover), and avoid backend-generated preview assets.
+- **Inline-title editing boundary for placeholder cards** - If type-native placeholders are added to admin/Studio cards, preserve inline title editing for media-led card presentations first and keep `Question` / `Quote` / `Callout` title edits in Compose until a cleaner overlay-edit affordance is justified.
 
 - **Cover framing contract** - Define one authoritative cover-framing target for authoring and reconcile Compose, reader feed, reader detail, and admin/Studio preview surfaces so focal adjustments do not look correct in one surface and wrong in another. Current diagnosed mismatch: Compose uses a fixed `6:5` crop preview, reader detail/rails use orientation-aware frames, and admin preview tiles use additional thumbnail ratios.
 
@@ -282,6 +292,7 @@ Legend:
 📐 **Matrix rollout checklist** - Sequence implementation of the matrix contract in this order:
 
 - **Baseline contract** - Implement `Feed Presentation Matrix` logic in code paths used by `V2ContentCard` and `CardDetailPage`, and verify all existing `type` + `displayMode` combinations map to one explicit behavior.
+- **Closed-card closeout status** - Closed feed-card cleanup is now partially implemented in `V2ContentCard`; remaining matrix work should treat open-card/header behavior and desktop sizing/orientation as the next explicit Reader slices rather than reopening closed-card metadata cleanup.
 
 - **Grid-first parity** - Apply `Orientation-aware Framing` in default feed grid and open card surfaces first, using bounded ratio buckets to avoid layout drift.
 
@@ -311,6 +322,8 @@ Legend:
 
   **Priority bands**
     - **P1 (reader polish)** - **Kicker strategy**; **Related / Explore More refinement**; **Drop cap treatment**.
+
+- **Chronological filter aggregation** - Evolve `When` browsing beyond flat tag-tree selection toward expandable time buckets (for example decade -> year -> month -> day where data quality supports it), while allowing `Who` to diverge later into a more visual reader filter model if face/person-oriented browsing becomes first-class.
 
 
 

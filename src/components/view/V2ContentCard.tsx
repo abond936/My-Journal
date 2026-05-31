@@ -3,9 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { FileText, Images } from 'lucide-react';
 import JournalImage from '@/components/common/JournalImage';
-import ReaderCardContextMeta from '@/components/view/ReaderCardContextMeta';
 import { Card } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils'; // Corrected import path
 import {
@@ -15,13 +13,11 @@ import {
 } from '@/lib/utils/objectPositionUtils';
 import { getEffectiveGalleryCaption, getEffectiveGalleryObjectPosition } from '@/lib/utils/galleryObjectPosition';
 import TipTapRenderer from '@/components/common/TipTapRenderer';
-import { extractMediaFromContent, formatQuoteAttribution } from '@/lib/utils/cardUtils';
+import { formatQuoteAttribution } from '@/lib/utils/cardUtils';
 import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
-import { buildReaderCardPresentation } from '@/lib/utils/readerCardContext';
 import styles from './V2ContentCard.module.css';
 import ReaderCardEditModal from '@/components/view/ReaderCardEditModal';
 import { useCardContext } from '@/components/providers/CardProvider';
-import { useTag } from '@/components/providers/TagProvider';
 
 // Simple horizontal slider
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -32,6 +28,15 @@ const CLOSED_FEED_MEDIA_ASPECT_RATIO = '6/5';
 function getFeedCoverFrame(media?: Card['coverImage'] | null) {
   const bucket = getAspectRatioBucket(media);
   return getAspectRatioValue(bucket);
+}
+
+function getClosedFeedFrame(card: Card): 'landscape' | 'portrait' {
+  const primaryMedia =
+    card.coverImage ??
+    (card.type === 'gallery'
+      ? (card.galleryMedia ?? []).find((item) => item.media)?.media ?? null
+      : null);
+  return getAspectRatioBucket(primaryMedia) === 'portrait' ? 'portrait' : 'landscape';
 }
 
 function getCoverObjectFitMode(card: Pick<Card, 'coverImageMode'>): 'cover' | 'contain' {
@@ -48,17 +53,8 @@ function getCoverMediaId(card: Card): string | undefined {
   return undefined;
 }
 
-function hasBodyText(card: Card): boolean {
-  const content = typeof card.content === 'string' ? card.content.trim() : '';
-  return content.length > 0;
-}
-
-function getSupportingLine(...values: Array<string | null | undefined>): string {
-  for (const value of values) {
-    const trimmed = typeof value === 'string' ? value.trim() : '';
-    if (trimmed) return trimmed;
-  }
-  return '';
+function getClosedFeedTypeBadgeLabel(cardType: Card['type']): 'Story' | 'Gallery' | null {
+  return cardType === 'story' ? 'Story' : cardType === 'gallery' ? 'Gallery' : null;
 }
 
 // --- Card Type Renderers ---
@@ -66,9 +62,7 @@ function getSupportingLine(...values: Array<string | null | undefined>): string 
 const StoryCardContent: React.FC<{
   card: Card;
   displayMode: string;
-  imageMeta?: React.ReactNode;
-  contentMeta?: React.ReactNode;
-}> = ({ card, displayMode, imageMeta, contentMeta }) => {
+}> = ({ card, displayMode }) => {
   const coverRatio = getFeedCoverFrame(card.coverImage);
   const coverObjectFit = getCoverObjectFitMode(card);
   const objectPosition =
@@ -84,31 +78,36 @@ const StoryCardContent: React.FC<{
         )
       : 'center';
 
-  const supportingLine = getSupportingLine(card.subtitle, card.excerpt);
+  const typeBadgeLabel = getClosedFeedTypeBadgeLabel(card.type);
+  const useStoryPlaceholder = !card.coverImage && displayMode !== 'inline';
+  const showVisualFrame = Boolean(card.coverImage) || useStoryPlaceholder;
 
   return (
     <>
-      {card.coverImage && (
+      {showVisualFrame && (
         <div className={styles.imageContainer} style={{ aspectRatio: coverRatio }}>
-          <JournalImage 
-            src={getDisplayUrl(card.coverImage)} 
-            alt={card.title} 
-            className={styles.image}
-            width={400}
-            height={300}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            style={{ objectFit: coverObjectFit, objectPosition }}
-            priority={false}
-          />
-          {imageMeta}
+          {card.coverImage ? (
+            <JournalImage 
+              src={getDisplayUrl(card.coverImage)} 
+              alt={card.title} 
+              className={styles.image}
+              width={400}
+              height={300}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              style={{ objectFit: coverObjectFit, objectPosition }}
+              priority={false}
+            />
+          ) : (
+            <div className={styles.storyPlaceholder} aria-hidden="true" />
+          )}
+          {typeBadgeLabel ? <span className={styles.cardTypeBadgeOverlay}>{typeBadgeLabel}</span> : null}
         </div>
       )}
       <div className={styles.content}>
-        {contentMeta}
+        {!showVisualFrame && typeBadgeLabel ? (
+          <span className={styles.cardTypeBadgeInline}>{typeBadgeLabel}</span>
+        ) : null}
         <h3 className={styles.title}>{card.title}</h3>
-        <p className={`${styles.description} ${supportingLine ? '' : styles.descriptionPlaceholder}`}>
-          {supportingLine || '\u00A0'}
-        </p>
         {/* Add inline content for inline display mode */}
         {displayMode === 'inline' && card.content && (
           <div className={styles.inlineContent}>
@@ -123,12 +122,11 @@ const StoryCardContent: React.FC<{
 // Gallery feed: Swiper with cover as first slide when set; gallery items omit any row whose mediaId matches cover (dedupe).
 const GalleryCardContent: React.FC<{
   card: Card;
-  imageMeta?: React.ReactNode;
-  contentMeta?: React.ReactNode;
-}> = ({ card, imageMeta, contentMeta }) => {
+}> = ({ card }) => {
   const coverId = useMemo(() => getCoverMediaId(card), [card]);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const coverObjectFit = getCoverObjectFitMode(card);
+  const typeBadgeLabel = getClosedFeedTypeBadgeLabel(card.type);
 
   const gallerySlides = useMemo(() => {
     const items = (card.galleryMedia ?? []).filter((item) => item.media);
@@ -162,8 +160,6 @@ const GalleryCardContent: React.FC<{
   const activeCaption = activeGalleryItem?.media
     ? getEffectiveGalleryCaption(activeGalleryItem, activeGalleryItem.media).trim()
     : '';
-
-  const supportingLine = getSupportingLine(card.subtitle, card.excerpt);
 
   return (
     <>
@@ -204,7 +200,7 @@ const GalleryCardContent: React.FC<{
               </SwiperSlide>
             ))}
           </Swiper>
-          {imageMeta}
+          {typeBadgeLabel ? <span className={styles.cardTypeBadgeOverlay}>{typeBadgeLabel}</span> : null}
           {totalSlides > 1 ? (
             <div className={styles.galleryAffordance} aria-hidden="true">
               <span className={styles.galleryAffordanceCount}>
@@ -220,11 +216,10 @@ const GalleryCardContent: React.FC<{
         </div>
       ) : null}
       <div className={styles.content}>
-        {contentMeta}
+        {!showSwiper && typeBadgeLabel ? (
+          <span className={styles.cardTypeBadgeInline}>{typeBadgeLabel}</span>
+        ) : null}
         <h3 className={styles.title}>{card.title}</h3>
-        <p className={`${styles.description} ${supportingLine ? '' : styles.descriptionPlaceholder}`}>
-          {supportingLine || '\u00A0'}
-        </p>
       </div>
     </>
   );
@@ -251,9 +246,7 @@ const QuoteCardContent: React.FC<{ card: Card }> = ({ card }) => {
 const QACardContent: React.FC<{
   card: Card;
   displayMode: string;
-  imageMeta?: React.ReactNode;
-  contentMeta?: React.ReactNode;
-}> = ({ card, displayMode, imageMeta, contentMeta }) => {
+}> = ({ card, displayMode }) => {
   const coverRatio = getFeedCoverFrame(card.coverImage);
   const coverObjectFit = getCoverObjectFitMode(card);
   const objectPosition =
@@ -269,16 +262,9 @@ const QACardContent: React.FC<{
         )
       : 'center';
 
-  const supportingLine = getSupportingLine(card.subtitle, card.excerpt);
-  const questionMeta = !card.coverImage && contentMeta ? (
-    <div className={styles.qaMetaAfter}>{contentMeta}</div>
-  ) : null;
   const questionText = (
     <div className={styles.qaTextBlock}>
       <h3 className={styles.qaQuestion}>{card.title}</h3>
-      <p className={`${styles.qaTeaser} ${supportingLine ? '' : styles.descriptionPlaceholder}`}>
-        {supportingLine || '\u00A0'}
-      </p>
     </div>
   );
 
@@ -293,36 +279,33 @@ const QACardContent: React.FC<{
               className={styles.image}
               width={400}
               height={300}
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              style={{ objectFit: coverObjectFit, objectPosition }}
-              priority={false}
-            />
-            {imageMeta}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            style={{ objectFit: coverObjectFit, objectPosition }}
+            priority={false}
+          />
+        </div>
+      )}
+      <div className={styles.content}>
+        {questionText}
+        {card.content && (
+            <div className={styles.inlineContent}>
+            <TipTapRenderer content={card.content} surface="transparent" headingVariant="question" />
           </div>
         )}
-        <div className={styles.content}>
-          {questionText}
-          {card.content && (
-            <div className={styles.inlineContent}>
-              <TipTapRenderer content={card.content} surface="transparent" headingVariant="question" />
-            </div>
-          )}
-          {questionMeta}
-        </div>
-      </>
-    );
+      </div>
+    </>
+  );
   }
 
   if (displayMode === 'static') {
     return (
       <div className={styles.content}>
         {questionText}
-        {questionMeta}
       </div>
     );
   }
 
-  // navigate — question + optional excerpt teaser; optional cover hero like story
+  // navigate — question-first card; optional cover hero like story
   return (
     <>
       {card.coverImage && (
@@ -337,12 +320,10 @@ const QACardContent: React.FC<{
             style={{ objectFit: coverObjectFit, objectPosition }}
             priority={false}
           />
-          {imageMeta}
         </div>
       )}
       <div className={styles.content}>
         {questionText}
-        {questionMeta}
       </div>
     </>
   );
@@ -390,13 +371,8 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
 }) => {
   const { data: session } = useSession();
   const { readerMode } = useCardContext();
-  const { tags: allTags } = useTag();
   const isAdmin = session?.user?.role === 'admin';
   const displayMode = normalizeDisplayModeForType(card.type, card.displayMode);
-  const readerCardPresentation = useMemo(
-    () => buildReaderCardPresentation(card, allTags),
-    [card, allTags]
-  );
   
   // Determine if card should be interactive based on display mode
   const isInteractive =
@@ -412,37 +388,13 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
     (displayMode === 'navigate' || displayMode === 'inline')
       ? styles.qaWithCover
       : '';
-  const className = `${styles.card} ${cardTypeClass} ${sizeClass} ${displayModeClass} ${qaWithCoverClass} ${fullWidth ? styles.fullWidth : ''}`.trim();
-  const cardSupportsMediaBadge =
-    card.type === 'story' || card.type === 'gallery' || card.type === 'qa';
-  const cardSupportsTextBadge = card.type === 'story' || card.type === 'gallery';
-  const coverId = getCoverMediaId(card);
-  const galleryNonCoverCount = (card.galleryMedia ?? []).filter((item) => item.mediaId !== coverId).length;
-  const contentMediaFromFieldCount = Array.isArray(card.contentMedia) ? card.contentMedia.length : 0;
-  const contentMediaFromHtmlCount = extractMediaFromContent(card.content ?? '').length;
-  const contentMediaCount = Math.max(contentMediaFromFieldCount, contentMediaFromHtmlCount);
-  const showMediaBadge = cardSupportsMediaBadge && (galleryNonCoverCount > 0 || contentMediaCount > 0);
-  const showTextBadge = cardSupportsTextBadge && !card.excerpt?.trim() && hasBodyText(card);
-  const shouldShowCardContextMeta = card.type !== 'callout' && card.type !== 'quote';
-  const hasReaderCardContextMeta =
-    shouldShowCardContextMeta &&
-    (Boolean(readerCardPresentation.badgeLabel) || readerCardPresentation.chips.length > 0);
-  const imageMeta =
-    hasReaderCardContextMeta && card.coverImage ? (
-      <ReaderCardContextMeta
-        badgeLabel={readerCardPresentation.badgeLabel}
-        chips={readerCardPresentation.chips}
-        variant="overlay"
-      />
-    ) : null;
-  const contentMeta =
-    hasReaderCardContextMeta && !card.coverImage ? (
-      <ReaderCardContextMeta
-        badgeLabel={readerCardPresentation.badgeLabel}
-        chips={readerCardPresentation.chips}
-        variant="inline"
-      />
-    ) : null;
+  const closedFeedFrameClass =
+    displayMode === 'inline'
+      ? ''
+      : getClosedFeedFrame(card) === 'portrait'
+        ? styles.closedFeedPortrait
+        : styles.closedFeedLandscape;
+  const className = `${styles.card} ${cardTypeClass} ${sizeClass} ${displayModeClass} ${qaWithCoverClass} ${closedFeedFrameClass} ${fullWidth ? styles.fullWidth : ''}`.trim();
 
   const addFocusCardToReturnTo = (returnTo: string, focusCardId: string): string => {
     const [pathAndQuery, hashFragment] = returnTo.split('#');
@@ -464,17 +416,11 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
   const renderContent = () => {
     switch (card.type) {
       case 'gallery':
-        return (
-          <GalleryCardContent
-            card={card}
-            imageMeta={imageMeta}
-            contentMeta={contentMeta}
-          />
-        );
+        return <GalleryCardContent card={card} />;
       case 'quote':
         return <QuoteCardContent card={card} />;
       case 'qa':
-        return <QACardContent card={card} displayMode={displayMode} imageMeta={imageMeta} contentMeta={contentMeta} />;
+        return <QACardContent card={card} displayMode={displayMode} />;
       case 'callout':
         return (
           <>
@@ -493,7 +439,7 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
         );
       case 'story':
       default:
-        return <StoryCardContent card={card} displayMode={displayMode} imageMeta={imageMeta} contentMeta={contentMeta} />;
+        return <StoryCardContent card={card} displayMode={displayMode} />;
     }
   };
 
@@ -505,38 +451,10 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
         onClick={onClick}
         data-card-id={card.docId}
       >
-        {(showMediaBadge || showTextBadge) && (
-          <div className={styles.metaBadges} aria-hidden="true">
-            {showMediaBadge ? (
-              <span className={styles.metaBadge} title="More media inside">
-                <Images size={14} />
-              </span>
-            ) : null}
-            {showTextBadge ? (
-              <span className={styles.metaBadge} title="More text inside">
-                <FileText size={14} />
-              </span>
-            ) : null}
-          </div>
-        )}
         {renderContent()}
       </Link>
     ) : (
       <div className={className} data-card-id={card.docId}>
-        {(showMediaBadge || showTextBadge) && (
-          <div className={styles.metaBadges} aria-hidden="true">
-            {showMediaBadge ? (
-              <span className={styles.metaBadge} title="More media inside">
-                <Images size={14} />
-              </span>
-            ) : null}
-            {showTextBadge ? (
-              <span className={styles.metaBadge} title="More text inside">
-                <FileText size={14} />
-              </span>
-            ) : null}
-          </div>
-        )}
         {renderContent()}
       </div>
     );

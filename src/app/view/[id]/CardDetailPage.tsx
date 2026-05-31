@@ -74,6 +74,37 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
   const showReaderCardMeta =
     card.type !== 'callout' &&
     (Boolean(readerCardPresentation.badgeLabel) || readerCardPresentation.chips.length > 0);
+  const detailMeta = showReaderCardMeta ? (
+    <ReaderCardContextMeta
+      badgeLabel={readerCardPresentation.badgeLabel}
+      chips={readerCardPresentation.chips}
+      variant="detail"
+    />
+  ) : null;
+  const headerIntro = (
+    <>
+      {detailMeta}
+      <h1
+        className={`${styles.title} ${card.subtitle && !isQuote ? styles.titleWithSubtitle : ''}`}
+      >
+        {card.title}
+      </h1>
+      {card.subtitle && !isQuote ? <p className={styles.subtitle}>{card.subtitle}</p> : null}
+    </>
+  );
+
+  const questionHeaderIntro = (
+    <div className={styles.questionHeaderPanel}>
+      <div className={styles.questionHeaderText}>
+        <h1
+          className={`${styles.title} ${card.subtitle && !isQuote ? styles.titleWithSubtitle : ''}`}
+        >
+          {card.title}
+        </h1>
+        {card.subtitle && !isQuote ? <p className={styles.subtitle}>{card.subtitle}</p> : null}
+      </div>
+    </div>
+  );
 
   return (
     <article
@@ -117,19 +148,14 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
             />
           </div>
         )}
-        {showReaderCardMeta ? (
-          <ReaderCardContextMeta
-            badgeLabel={readerCardPresentation.badgeLabel}
-            chips={readerCardPresentation.chips}
-            variant="detail"
-          />
-        ) : null}
-        <h1
-          className={`${styles.title} ${card.subtitle && !isQuote ? styles.titleWithSubtitle : ''}`}
-        >
-          {card.title}
-        </h1>
-        {card.subtitle && !isQuote ? <p className={styles.subtitle}>{card.subtitle}</p> : null}
+        {isQa ? (
+          <>
+            {questionHeaderIntro}
+            {detailMeta ? <div className={styles.questionDetailMeta}>{detailMeta}</div> : null}
+          </>
+        ) : (
+          headerIntro
+        )}
       </header>
 
       {card.content && (
@@ -158,7 +184,8 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
       {hydratedGalleryItems.length > 0 && (
         <InlineGallery 
           media={hydratedGalleryItems}
-          title="Gallery"
+          title={card.type === 'gallery' ? null : 'Gallery'}
+          variant={card.type === 'gallery' ? 'galleryDetail' : 'default'}
         />
       )}
 

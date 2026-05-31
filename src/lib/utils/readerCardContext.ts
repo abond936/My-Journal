@@ -9,7 +9,7 @@ export interface ReaderCardContextChip {
 }
 
 export interface ReaderCardPresentation {
-  badgeLabel: 'Story' | 'Gallery' | null;
+  badgeLabel: 'Story' | 'Gallery' | 'Question' | null;
   chips: ReaderCardContextChip[];
 }
 
@@ -171,7 +171,13 @@ function getDisplayTagForDimension(
 
 export function buildReaderCardPresentation(card: Pick<Card, 'type' | 'tags'>, allTags: Tag[]): ReaderCardPresentation {
   const badgeLabel =
-    card.type === 'story' ? 'Story' : card.type === 'gallery' ? 'Gallery' : null;
+    card.type === 'story'
+      ? 'Story'
+      : card.type === 'gallery'
+        ? 'Gallery'
+        : card.type === 'qa'
+          ? 'Question'
+          : null;
 
   if (!card.tags?.length || allTags.length === 0) {
     return { badgeLabel, chips: [] };

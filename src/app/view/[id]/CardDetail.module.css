@@ -133,6 +133,20 @@
   color: var(--reader-gallery-detail-title-color);
 }
 
+.container[data-card-type='gallery'] .header {
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.container[data-card-type='gallery'] .title,
+.container[data-card-type='gallery'] .titleWithSubtitle {
+  margin-bottom: 0;
+}
+
+.container[data-card-type='gallery'] .subtitle {
+  margin: 0;
+}
+
 .titleWithSubtitle {
   margin-bottom: var(--spacing-sm);
 }
@@ -153,6 +167,85 @@
 .container[data-card-type='story'] .subtitle {
   font-size: var(--font-size-lg);
   line-height: 1.45;
+  margin: 0;
+}
+
+.questionHeaderPanel {
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  width: min(100%, 30rem);
+  margin: 0 auto;
+  aspect-ratio: 6 / 5;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  padding: var(--spacing-xl) var(--spacing-lg);
+  border-radius: var(--reader-question-card-border-radius);
+  background-color: var(--reader-question-card-background-color);
+  border: var(--border-width-thin) solid var(--reader-question-card-border-color);
+  box-shadow: var(--reader-question-card-shadow);
+}
+
+.questionHeaderPanel::before {
+  content: '?';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: clamp(7rem, 34vw, 15rem);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  color: var(--reader-title-color);
+  opacity: var(--reader-question-watermark-opacity);
+  pointer-events: none;
+  transform: translateY(-0.04em);
+}
+
+.questionHeaderPanel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.questionHeaderText {
+  grid-row: 2;
+  align-self: center;
+  justify-self: center;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.questionDetailMeta {
+  margin-top: var(--spacing-sm);
+}
+
+.container[data-card-type='qa'] .header {
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-sm);
+}
+
+.container[data-card-type='qa'] .coverImageContainer {
+  margin-bottom: var(--spacing-md);
+}
+
+.container[data-card-type='qa'] .title {
+  color: var(--reader-question-color);
+  font-family: var(--reader-question-font-family);
+  font-size: clamp(2.35rem, 4.8vw, 2.9rem);
+  font-weight: var(--reader-question-font-weight);
+  line-height: var(--reader-question-line-height);
+  margin-bottom: var(--spacing-sm);
+}
+
+.container[data-card-type='qa'] .titleWithSubtitle {
+  margin-bottom: var(--spacing-xs);
+}
+
+.container[data-card-type='qa'] .subtitle {
   margin: 0;
 }
 

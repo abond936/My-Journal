@@ -17,10 +17,15 @@ import styles from './InlineGallery.module.css';
 
 interface InlineGalleryProps {
   media: HydratedGalleryMediaItem[];
-  title?: string;
+  title?: string | null;
+  variant?: 'default' | 'galleryDetail';
 }
 
-export default function InlineGallery({ media, title = "Gallery" }: InlineGalleryProps) {
+export default function InlineGallery({
+  media,
+  title = 'Gallery',
+  variant = 'default',
+}: InlineGalleryProps) {
   const [showNavButtons, setShowNavButtons] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -86,13 +91,17 @@ export default function InlineGallery({ media, title = "Gallery" }: InlineGaller
   if (validMedia.length === 0) return null;
 
   return (
-    <section className={styles.gallerySection}>
-      <div className={styles.galleryHeader}>
-        <h2 className={styles.galleryTitle}>{title}</h2>
-        <span className={styles.imageCount}>
-          {validMedia.length} {validMedia.length === 1 ? 'image' : 'images'}
-        </span>
-      </div>
+    <section
+      className={`${styles.gallerySection} ${variant === 'galleryDetail' ? styles.galleryDetailSection : ''}`.trim()}
+    >
+      {title ? (
+        <div className={styles.galleryHeader}>
+          <h2 className={styles.galleryTitle}>{title}</h2>
+          <span className={styles.imageCount}>
+            {validMedia.length} {validMedia.length === 1 ? 'image' : 'images'}
+          </span>
+        </div>
+      ) : null}
       
       <div 
         className={styles.galleryContainer}
@@ -148,6 +157,11 @@ export default function InlineGallery({ media, title = "Gallery" }: InlineGaller
                   aria-label={`Open image ${index + 1} fullscreen`}
                 >
                   <div className={`${styles.imageWrapper} ${wrapperClass}`}>
+                    {variant === 'galleryDetail' ? (
+                      <span className={styles.imageSequencePill}>
+                        {index + 1}/{validMedia.length}
+                      </span>
+                    ) : null}
                     <JournalImage
                       src={getDisplayUrl(item.media)}
                       alt={displayCaption.trim() ? displayCaption : `Image ${index + 1}`}

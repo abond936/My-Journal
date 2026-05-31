@@ -6,6 +6,12 @@
   border-top: var(--border-width-thin) solid var(--reader-discovery-border-color);
 }
 
+.galleryDetailSection {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
 .galleryHeader {
   display: flex;
   justify-content: space-between;
@@ -94,6 +100,10 @@
   -ms-overflow-style: none; /* IE and Edge */
 }
 
+.galleryDetailSection .scrollContainer {
+  padding-top: 0;
+}
+
 .scrollContainer::-webkit-scrollbar {
   display: none; /* Chrome, Safari and Opera */
 }
@@ -138,6 +148,28 @@
   background: var(--reader-media-frame-background-color);
   border: var(--border-width-thin) solid var(--reader-media-frame-border-color);
   aspect-ratio: 3/2;
+}
+
+.imageSequencePill {
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  padding: 1px 7px;
+  border-radius: var(--border-radius-full);
+  background: color-mix(in srgb, var(--reader-overlay-scrim-color) 82%, transparent);
+  color: var(--reader-overlay-contrast-text-color);
+  border: var(--border-width-thin) solid var(--reader-overlay-border-color);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(6px);
+  font-family: var(--reader-chrome-meta-font-family);
+  font-size: var(--reader-chrome-meta-font-size);
+  font-weight: var(--reader-chrome-meta-font-weight);
+  line-height: var(--reader-chrome-meta-line-height);
 }
 
 .imageWrapper.imagePortrait {
