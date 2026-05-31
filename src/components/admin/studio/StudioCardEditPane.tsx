@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback, useMemo } from 'react';
-import { mutate as globalMutate } from 'swr';
 import { useRouter } from 'next/navigation';
 import CardForm from '@/components/admin/card-admin/CardForm';
 import { CardFormProvider } from '@/components/providers/CardFormProvider';
@@ -48,6 +47,20 @@ function StudioComposeActivityOverlay({
   );
 }
 
+function StudioComposeLeaveGuardBridge() {
+  const { confirmLeaveIfDirtyAsync } = useCardForm();
+  const studioShell = useStudioShell();
+
+  React.useEffect(() => {
+    studioShell.registerComposeLeaveGuard(confirmLeaveIfDirtyAsync);
+    return () => {
+      studioShell.registerComposeLeaveGuard(null);
+    };
+  }, [confirmLeaveIfDirtyAsync, studioShell]);
+
+  return null;
+}
+
 export default function StudioCardEditPane({
   newCardRequested = false,
   onCardCreated,
@@ -62,7 +75,6 @@ export default function StudioCardEditPane({
     cardLoading,
     cardError,
     setSelectedDetail,
-    refreshCollectionsCardList,
     upsertCollectionsCardList,
   } = useStudioShell();
   const { tags: allTags } = useTag();
@@ -86,15 +98,9 @@ export default function StudioCardEditPane({
         setSelectedDetail(data as StudioCardContext);
         upsertCollectionsCardList(data as StudioCardContext);
       }
-      refreshCollectionsCardList();
-      void globalMutate(
-        (key) => typeof key === 'string' && key.startsWith('/api/cards?'),
-        undefined,
-        { revalidate: true }
-      );
       return data;
     },
-    [onCardCreated, refreshCollectionsCardList, router, selectedCardId, setSelectedDetail, upsertCollectionsCardList]
+    [onCardCreated, router, selectedCardId, setSelectedDetail, upsertCollectionsCardList]
   );
 
   const initialCard = useMemo(() => {
@@ -161,6 +167,7 @@ export default function StudioCardEditPane({
         allTags={allTags}
         onSave={handleSave}
       >
+        <StudioComposeLeaveGuardBridge />
         <StudioComposeActivityOverlay
           cardIsTransitioning={activeCardViewModel.status === 'preview' || isTransitioningToDifferentCard}
         />

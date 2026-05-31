@@ -333,8 +333,9 @@ function TreeRootDropZone({ className, children, readOnly }: TreeRootDropZonePro
 }
 
 export type EmbeddedStudioSlotContext = {
-  refreshCards: () => void;
+  refreshStructure: () => void;
   upsertCard: (card: Card) => void;
+  removeCard: (cardId: string) => void;
 };
 
 export default function CollectionsAdminClient({
@@ -349,7 +350,7 @@ export default function CollectionsAdminClient({
   embeddedCardsCollapsed = false,
 }: {
   embedded?: boolean;
-  onSelectCard?: (cardId: string, previewCard?: Card | null) => void;
+  onSelectCard?: (cardId: string, previewCard?: Card | null) => void | Promise<boolean>;
   embeddedExternalDragEnd?: (event: DragEndEvent, resolvedOverId?: string | null) => Promise<boolean> | boolean;
   embeddedOnStudioParentAttachComplete?: (parentId: string) => void;
   embeddedRightSlot?: React.ReactNode | ((ctx: EmbeddedStudioSlotContext) => React.ReactNode);
@@ -859,6 +860,23 @@ export default function CollectionsAdminClient({
     });
   }, []);
 
+  const removeEmbeddedCard = useCallback((cardId: string) => {
+    if (!cardId) return;
+    setCards((prev) => {
+      const remaining = prev
+        .filter((card) => card.docId !== cardId)
+        .map((card) => {
+          const childrenIds = normalizeCuratedChildIds(card.childrenIds);
+          if (!childrenIds.includes(cardId)) return card;
+          return {
+            ...card,
+            childrenIds: childrenIds.filter((id) => id !== cardId),
+          };
+        });
+      return remaining;
+    });
+  }, []);
+
   useEffect(() => {
     const expandableIds = new Set<string>();
     for (const c of cards) {
@@ -1001,30 +1019,39 @@ export default function CollectionsAdminClient({
   const handleDetachChild = useCallback(
     async (childId: string, parentId: string) => {
       if (!parentId) return;
-      await runCollectionsMutation(async () => {
+      const previousCards = cards;
+      setCards((prev) => optimisticDetachChildFromParent(prev, childId, parentId) ?? prev);
+      const success = await runCollectionsMutation(async () => {
         await detachFromParentPersist(parentId, childId);
-      }, 'Failed to detach child');
+      }, 'Failed to detach child', { reloadAfter: false });
+      if (!success) {
+        setCards(previousCards);
+      }
     },
-    [detachFromParentPersist, runCollectionsMutation]
+    [cards, detachFromParentPersist, runCollectionsMutation]
   );
 
   const handleClearRoot = useCallback(
     async (cardId: string) => {
       const remainingRootIds = rootedCollections.map((card) => card.docId!).filter((id) => id && id !== cardId);
-      await runCollectionsMutation(async () => {
+      const previousCards = cards;
+      setCards((prev) => {
+        const cleared = optimisticSetCollectionRoot(prev, cardId, { isCollectionRoot: false });
+        const next = cleared ?? prev;
+        const reordered = optimisticReorderCollectionRoots(next, remainingRootIds);
+        return reordered ?? next;
+      });
+      const success = await runCollectionsMutation(async () => {
         await clearRootPersist(cardId);
         if (remainingRootIds.length > 0) {
           await persistRootOrderList(remainingRootIds);
         }
-        setCards((prev) => {
-          const cleared = optimisticSetCollectionRoot(prev, cardId, { isCollectionRoot: false });
-          const next = cleared ?? prev;
-          const reordered = optimisticReorderCollectionRoots(next, remainingRootIds);
-          return reordered ?? next;
-        });
-      }, 'Failed to remove root');
+      }, 'Failed to remove root', { reloadAfter: false });
+      if (!success) {
+        setCards(previousCards);
+      }
     },
-    [clearRootPersist, persistRootOrderList, rootedCollections, runCollectionsMutation]
+    [cards, clearRootPersist, persistRootOrderList, rootedCollections, runCollectionsMutation]
   );
 
   const executeCuratedMutationPlan = useCallback(
@@ -1096,16 +1123,12 @@ export default function CollectionsAdminClient({
         return;
       }
 
-      window.setTimeout(() => {
-        void load({ soft: true });
-      }, 750);
     },
     [
       appendToParentPersist,
       clearRootPersist,
       detachFromParentPersist,
       insertBeforePersist,
-      load,
       cards,
       persistRootOrderList,
       runCollectionsMutation,
@@ -1386,6 +1409,7 @@ export default function CollectionsAdminClient({
     setSaving(true);
     setError(null);
     setBulkSummary(null);
+    const previousCards = cards;
     try {
       const parentFresh = await fetchAdminCardSnapshot(bulkParentCard.docId);
       const existingChildren = normalizeCuratedChildIds(parentFresh.childrenIds);
@@ -1396,16 +1420,27 @@ export default function CollectionsAdminClient({
         return;
       }
       const nextChildren = Array.from(new Set([...existingChildren, ...selectedIds]));
+      setCards((prev) => {
+        const next = prev.map((card) =>
+          card.docId === bulkParentCard.docId
+            ? {
+                ...card,
+                childrenIds: nextChildren,
+              }
+            : card
+        );
+        return next;
+      });
       await patchCard(bulkParentCard.docId, { childrenIds: nextChildren });
-      await load({ soft: true });
       setBulkSelectedIds(new Set());
       setBulkSummary(`Added ${added.length} card${added.length === 1 ? '' : 's'} to "${cardLabel(bulkParentCard)}".`);
     } catch (e) {
+      setCards(previousCards);
       setError(e instanceof Error ? e.message : 'Failed to bulk add cards');
     } finally {
       setSaving(false);
     }
-  }, [bulkParentCard, bulkSelectedIds, bulkSelectableIds, load]);
+  }, [bulkParentCard, bulkSelectedIds, bulkSelectableIds, cards]);
 
   const collectionsCenterGridStyle = useMemo((): React.CSSProperties | undefined => {
     if (!wideCenterLayout) return undefined;
@@ -1608,7 +1643,8 @@ export default function CollectionsAdminClient({
               >
                 {studioAttachBank ? (
                   embeddedUnparentedReplacement!({
-                    refreshCards: () => void load({ soft: true }),
+                    refreshStructure: () => void load({ soft: true }),
+                    upsertCard: upsertEmbeddedCard,
                     collectionCards: cards,
                     search,
                     setSearch,
@@ -1676,8 +1712,9 @@ export default function CollectionsAdminClient({
             {embeddedRightSlot ? (
               typeof embeddedRightSlot === 'function' ? (
                 embeddedRightSlot({
-                  refreshCards: () => void load({ soft: true }),
+                  refreshStructure: () => void load({ soft: true }),
                   upsertCard: upsertEmbeddedCard,
+                  removeCard: removeEmbeddedCard,
                 })
               ) : (
                 embeddedRightSlot

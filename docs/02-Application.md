@@ -35,6 +35,7 @@ Legend:
 
 - **Ease of Use** - Core reader and admin flows should feel obvious and low-friction.
 - **Responsiveness** - Reader and admin surfaces should respond quickly enough to preserve trust and flow.
+- **Media-native Feel** - Browsing and lightweight editing should feel closer to a modern media app than to a slow CRUD console, especially on reader/mobile surfaces and dense card/media workspaces.
 - **Bulk Authoring** - Administration should support efficient high-volume organization and editing.
 - **Low-friction Editing** - Small corrective edits should be possible without forcing a full workflow transition.
 - **Few Primitives** - The product centers on cards, media, tags, and relationships rather than multiplying surface types.
@@ -403,6 +404,7 @@ Legend:
 - **Integrity-owned Mutations** - Data-integrity and mutation rules should be enforced at the service/API layer rather than entrusted to UI behavior alone.
 - **Studio-first Workflow** - Day-to-day content administration should converge on Studio as the primary shell rather than parallel legacy routes.
 - **Interaction Economy** - Prefer one strong interaction model per job over parallel table/grid/modal variants when capability can be preserved.
+- **Interaction Contract** - Each major admin surface should have a plain-language behavior contract: what feels instant, what may load progressively, and what must never block routine authoring.
 - **Single-author First** - v1 administration is optimized for one primary author/operator rather than collaborative authoring.
 - **No Operator Traps** - Routine admin actions should preserve data integrity and make destructive or irreversible actions explicit.
 
@@ -436,6 +438,8 @@ Legend:
 - **Shared action button contract (2026-05-24)** - The surviving Studio/grid-first admin surfaces, Organize support flows, tag-library rows, and media editor now use one much more consistent compact button language for primary, secondary, destructive, and icon-first actions. This is no longer treated as a broad active project; future button changes should be opportunistic and tied to specific surviving surfaces rather than a separate normalization pass.
 - **DnD hardening pass (status 2026-05-27)** - The narrowed Studio/admin DnD contract is still the right target, but this area is not closed shipped truth yet. Structural and relationship paths were re-audited after a top-to-bottom ownership review found that the live shell/runtime split and the root-card PATCH contract were not fully aligned with the documented model. Treat the current state as actively repaired/reopened until browser verification reconfirms the exact author-facing behaviors.
 - **Hosted Admin Responsiveness Pass** - Diagnose and remove the interaction stalls that make hosted admin feel broken in real use, starting with search-field focus latency, delayed typing feedback, and other visible input/pane delays on Studio and the surviving admin surfaces. Treat this as measured browser-verified performance work, not cleanup-by-assumption.
+- **Studio runtime redesign program** - Define and execute the end-state Studio runtime so Organize, Cards, Compose, Questions, and Media behave as one media-native workspace with narrow payload tiers, local-first transitions, and no broad refreshes for routine work. The resulting day-to-day contract should make card switching feel preview-first and near-instant, keep Compose visible through handoff, and let routine saves acknowledge without freezing the rest of Studio.
+- **Interaction contract alignment** - Pair each major Studio architecture change with a plain-language user-visible contract covering what should feel instant, what may hydrate progressively, and what must never block normal authoring use. Apply that contract explicitly to card/media browsing, selection continuity, drag/drop feedback, and filter persistence so architectural work is reviewed against real operator experience rather than technical cleanliness alone.
 - **Code Path Simplification Pass** - Audit Studio and the surviving admin/card/media paths for deprecated surfaces, duplicated interaction models, stale providers/loaders, and dead compatibility code, then retire what no longer supports the current workflow without weakening shipped behavior or canon contracts.
 - **Studio naming cleanup** - Rename the remaining `Content Management` surface/chrome language to `Content Studio` so the product vocabulary matches the shipped `Studio` IA.
 - **Bulk bar idle collapse + selection semantics** - Hide the bulk-actions bar entirely when nothing is selected, and reconcile selection copy/behavior with the current growing-list model so surfaces do not imply a paged `Select all on page` contract where the UI now behaves as `Select visible`.
@@ -468,6 +472,7 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 
 - **Ease of Use** - Ease of bulk and individual admin.
 - **Tagging first** - Card management should optimize for easy tag assignment and quick relationship editing; those two actions create the structure everything else depends on.
+- **Continuous browsing** - Large card populations should remain fluid to browse, resize, sort, and filter without forcing the operator through repetitive paging rituals or broad list resets.
 
 📐 **List filtering & pagination (cards + media)** - Filters apply to the **entire** population the active server query represents; list UI (infinite-style, Load more, or paged Prev/Next) must only show **contiguous slices** of **one** stable-sorted result for that query. **Typesense** `per_page` is capped at **250 hits per request** (see `docs/01-Vision-Architecture.md` -> **Typesense list limits**); larger filtered sets use **multiple chunks** along the same order, not a widened single page. **Seek-style** media lists (assignment / dimension seek) are **documented exceptions**-forward chain semantics, not arbitrary page jumps over a fixed total. Canonical framing: `docs/01-Vision-Architecture.md` -> 📐 **Filtered population & stable ordering**.
 
@@ -527,6 +532,7 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 - **Selection continuity** - Keep the active card context visible and understandable through card changes, deletes, and cross-pane handoffs.
 - **Relationship-ready editing** - Compose should be the working destination for cover, gallery, children, and body-media relationship edits without forcing the author into disconnected routes.
 - **Focused authoring** - Compose should preserve working space and control clarity while still exposing the editing power needed for real story development.
+- **Save continuity** - Routine Compose saves should acknowledge quickly, preserve visible editing context, and avoid freezing unrelated panes while secondary work catches up.
 
 *Features*
 ✅ **Complete**
@@ -741,6 +747,8 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 - **Processed** - Image processed and metadata extracted. 
 - **Referenced** - Referenced in cards by id, hydrated on demand
 - **Replacement** - Facilitate simple edit and replacement of media.
+- **Derivative-aware** - The media workspace should browse and edit against fit-for-surface renditions by default while preserving access to the canonical original for recovery, export, and later higher-fidelity workflows.
+- **Phone and video ready** - Phone-origin assets, video, and richer capture metadata should be normal planning assumptions for the bank rather than later exceptions.
 - **Relationship readiness** - Media management should make it easy to move from random banked assets to structured card relationships (cover, inline, gallery, children) without unnecessary mode switching.
 - **Import trust** - Import must preserve source meaning and metadata carefully enough that the author can trust the resulting bank rather than fear hidden corruption, silent duplication, or broken references.
 - **Recoverable workflows** - Replace, delete, and assignment operations should be safe enough for a hosted product handling irreplaceable family media.
@@ -788,10 +796,12 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 - **PhotoPicker convergence in Media admin** - Add operator flows in `**/admin/media-admin`** (and Studio-embedded **Media admin**) to **import local images into the bank** and to pick library media with **PhotoPicker-grade** filtering (dimensions, search), so **PhotoPicker** in card edit becomes **optional** then **eliminable** for Studio and long-term for full-page card edit (see 📐 **Studio media & body (2026-04-22)**).
 - **Manual phone aggregation** - Support the simple phone-origin authoring path: select a group of imported images, assign them to a card, then flesh out the story and tags. Phone-origin metadata can reduce `When` / `Where` and sometimes `Who` labor, leaving `What` plus aggregation as the main author step.
 - **Media-management gap (import + duplicate triage)** - Media management remains a meaningful product hole relative to Cards/Studio authoring. The missing area is broader than filename collision checks: the app still needs a real import-facing bank workflow plus a trustworthy duplicate-triage path grounded in source-aware identity signals (starting with `sourcePath` and exact-file/source overlap rather than naive filename matching). Keep duplicate review scoped as one part of the larger import/media-management problem rather than treating it like a normal tag/filter feature.
+- **Media derivative architecture** - Preserve originals for archive/export while generating and serving surface-specific derivatives for tiles, previews, reader display, and future print/export or video playback workflows; treat video and phone media as first-class inputs rather than image-only edge cases. This should support fast grid browsing, later density changes, and lightweight editing without forcing the workspace to depend on original-asset delivery.
+- **Media readiness pipeline** - Introduce explicit ingest/processing/readiness states for imported media so metadata extraction, thumbnail or poster generation, transcoding, and future identity/index work happen in background pipelines instead of interactive authoring paths. New imports should become visible quickly with truthful processing state rather than feeling absent or frozen until every derivative is finished.
 - **Media editor control stacking** - In the Studio media editor, stack the horizontal/vertical adjustment controls vertically so the edit surface stays readable and predictable at the current modal width.
 - **Grid admin ergonomics** - Filename is removed from the grid tile body, identity strings live on image hover, and the current bulk-select checkbox target sizes are accepted as sufficient for now. Further checkbox-size work is not active unless real usage shows a need.
 - **Grid tagging UX + empty-dimension filter** - **Pane-level** per-dimension modes (`Any` / `Has any` / `Is empty` / `Matches tag`) ship in Media admin and Studio-embedded media. **Done:** per-tile inline add/search parity is now in place across Cards and Media, using the shared compact suggestion treatment. No further list/table alignment work is planned while those surfaces remain on the retirement path.
-- **Infinite-scroll hardening** - Continue the append-style media working set toward a fully smooth infinite-scroll feel, with no obvious paging seams during normal admin use.
+- **Infinite-scroll hardening** - Continue the append-style media working set toward a fully smooth infinite-scroll feel, with no obvious paging seams during normal admin use and no need for repetitive manual paging rituals in the normal browsing contract.
 - **Cards/media workspace parity** - Bring Media and Cards closer to one shared operator contract for layout, overlays, selection, drag affordances, and edit entry points.
 - **Media caption clamp** - Clamp media captions to two lines unless the item is in focus or explicitly opened.
 - **Inline caption editing** - Allow media captions to be edited directly from the admin working surfaces with a clear blank-vs-filled state instead of forcing the operator through the full media editor for routine caption entry.
@@ -806,6 +816,7 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 - **Search without Typesense** - Today non-empty text search returns 503 when Typesense is unset; consider degraded search (capped Firestore scan / clearer admin affordance) for small corpora or dev machines.
 - **Rename types module** - `src/lib/types/photo.ts` -> `media.ts` (throughout)
 - **Append to Gallery** - Bulk add selected banked media to another **existing** card's gallery from Media admin (parked). **Today** images still reach cards after import via **Create card from selection** (draft gallery + edit), **PhotoPicker** / gallery in card edit, **inline images** in rich text, and **replace-in-place** on media rows-no need to block on this bulk-append flow.
+- **Similar-shot stacking** - Add a future bank-browsing mode that can collapse near-identical phone or burst photos into one visible representative with an expand-for-variants stack. Keep this distinct from exact-duplicate cleanup: stacks should be non-destructive, allow the author to promote a different top image, and help dense same-moment image runs take less visual space before any keep/delete decision.
 - **Video** - Support on **cover**, **inline (body)**, and **gallery** like stills-as far as product parity allows. **Size / "normalization"** (typical approach): **server-side transcoding** (e.g. FFmpeg) to a max resolution/bitrate and web-friendly format-same *class* of work as image normalization; not automatic in-app today.
 - **Browser Upload** - Replace or supplement server-side folder read (`ONEDRIVE_ROOT_FOLDER`) with browser-based upload flow. Required for hosted deployment where the server has no local filesystem access.
 - **Google Photos Adapter** - Import from Google Photos API. Most accessible cloud photo API. Requires OAuth consent, album/media listing, download-and-process flow.
@@ -949,4 +960,3 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 
 - **Gallery Styles Management** - Devise preconfigured card styles for selection - masonry, mosaic, etc.
 📐 **Improvement intake** - Capture new improvement needs as concise, structured feature bullets in the owning section (`⭕1`, `⭕2`, or `❓`) with clear title + one-line description, instead of long prose blocks.
-

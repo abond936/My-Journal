@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ImageIcon, ImageUp, Pencil, Save, Trash2 } from 'lucide-react';
+import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import JournalImage from '@/components/common/JournalImage';
 import EditModal from '@/components/admin/card-admin/EditModal';
 import { useCardForm } from '@/components/providers/CardFormProvider';
@@ -9,6 +10,7 @@ import type { HydratedGalleryMediaItem } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import {
   StudioDropZone,
+  StudioGalleryEndDropZone,
   StudioGallerySortableRow,
 } from '@/components/admin/studio/studioRelationshipDndPrimitives';
 import { gallerySlotHasCaptionOverride } from '@/lib/utils/galleryObjectPosition';
@@ -49,6 +51,10 @@ export default function StudioCardFormGallery({
   const gallery = useMemo(
     () => ((formState.cardData.galleryMedia || []) as HydratedGalleryMediaItem[]),
     [formState.cardData.galleryMedia]
+  );
+  const gallerySortableIds = useMemo(
+    () => gallery.map((item) => `gallery:${item.mediaId}:${item.order}`),
+    [gallery]
   );
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const editingItem = useMemo(
@@ -99,96 +105,99 @@ export default function StudioCardFormGallery({
           className={styles.studioGalleryDropZone}
           eligibleHint="Release here to add to the gallery"
         >
-          <div className={styles.studioGalleryStrip}>
-            {gallery.map((item) => (
-              <StudioGallerySortableRow
-                key={`${item.mediaId}-${item.order}`}
-                id={`gallery:${item.mediaId}:${item.order}`}
-                galleryFocusMediaId={item.mediaId}
-              >
-                <div className={styles.studioGalleryCard}>
-                  <div className={styles.studioGalleryThumbWrap}>
-                    {item.media ? (
-                      <JournalImage
-                        src={getDisplayUrl(item.media)}
-                        alt={item.caption || item.media.filename || 'Gallery image'}
-                        width={180}
-                        height={132}
-                        className={styles.studioGalleryThumb}
-                        sizes="180px"
-                        style={{ objectPosition: item.objectPosition || item.media.objectPosition || '50% 50%' }}
-                      />
-                    ) : (
-                      <div className={styles.mediaThumbFallback}>No thumb</div>
-                    )}
-                  </div>
-                  <div className={styles.studioGalleryCaptionBlock}>
-                    {item.media?.caption?.trim() ? (
-                      <p className={styles.studioGalleryMediaCaption}>{item.media.caption}</p>
-                    ) : null}
-                    {shouldShowInlineCardCaptionInput(item) ? (
-                      <textarea
-                        className={styles.studioGalleryCaptionInput}
-                        rows={2}
-                        value={cardCaptionFieldValue(item)}
-                        onChange={(e) =>
-                          updateGalleryItem(item.mediaId, (current) =>
-                            applySlotCaptionEdit(current, e.target.value)
-                          )
-                        }
-                        placeholder="Card caption..."
-                        disabled={disabled}
-                      />
-                    ) : null}
-                  </div>
-                  <div className={styles.studioGalleryActions}>
-                    {onOpenMediaEditor ? (
+          <SortableContext items={gallerySortableIds} strategy={rectSortingStrategy}>
+            <div className={styles.studioGalleryStrip}>
+              {gallery.map((item) => (
+                <StudioGallerySortableRow
+                  key={`${item.mediaId}-${item.order}`}
+                  id={`gallery:${item.mediaId}:${item.order}`}
+                  galleryFocusMediaId={item.mediaId}
+                >
+                  <div className={styles.studioGalleryCard}>
+                    <div className={styles.studioGalleryThumbWrap}>
+                      {item.media ? (
+                        <JournalImage
+                          src={getDisplayUrl(item.media)}
+                          alt={item.caption || item.media.filename || 'Gallery image'}
+                          width={180}
+                          height={132}
+                          className={styles.studioGalleryThumb}
+                          sizes="(max-width: 900px) 50vw, (max-width: 1400px) 25vw, 180px"
+                          style={{ objectPosition: item.objectPosition || item.media.objectPosition || '50% 50%' }}
+                        />
+                      ) : (
+                        <div className={styles.mediaThumbFallback}>No thumb</div>
+                      )}
+                    </div>
+                    <div className={styles.studioGalleryCaptionBlock}>
+                      {item.media?.caption?.trim() ? (
+                        <p className={styles.studioGalleryMediaCaption}>{item.media.caption}</p>
+                      ) : null}
+                      {shouldShowInlineCardCaptionInput(item) ? (
+                        <textarea
+                          className={styles.studioGalleryCaptionInput}
+                          rows={2}
+                          value={cardCaptionFieldValue(item)}
+                          onChange={(e) =>
+                            updateGalleryItem(item.mediaId, (current) =>
+                              applySlotCaptionEdit(current, e.target.value)
+                            )
+                          }
+                          placeholder="Card caption..."
+                          disabled={disabled}
+                        />
+                      ) : null}
+                    </div>
+                    <div className={styles.studioGalleryActions}>
+                      {onOpenMediaEditor ? (
+                        <button
+                          type="button"
+                          className={`${styles.inlineActionButton} ${styles.inlineActionIconButton}`}
+                          disabled={disabled}
+                          onClick={() => onOpenMediaEditor(item.mediaId)}
+                          aria-label="Open gallery image in media editor"
+                          title="Open gallery image in media editor"
+                        >
+                          <ImageIcon size={16} aria-hidden="true" />
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        className={`${styles.inlineActionButton} ${styles.inlineActionIconButton}`}
+                        disabled={disabled || item.mediaId === currentCoverMediaId}
+                        onClick={() => onSetAsCover(item)}
+                        aria-label={item.mediaId === currentCoverMediaId ? 'Current cover image' : 'Set as cover image'}
+                        title={item.mediaId === currentCoverMediaId ? 'Current cover image' : 'Set as cover image'}
+                      >
+                        <ImageUp size={16} aria-hidden="true" />
+                      </button>
                       <button
                         type="button"
                         className={`${styles.inlineActionButton} ${styles.inlineActionIconButton}`}
                         disabled={disabled}
-                        onClick={() => onOpenMediaEditor(item.mediaId)}
-                        aria-label="Open gallery image in media editor"
-                        title="Open gallery image in media editor"
+                        onClick={() => setEditingItemId(item.mediaId)}
+                        aria-label="Edit gallery item"
+                        title="Edit gallery item"
                       >
-                        <ImageIcon size={16} aria-hidden="true" />
+                        <Pencil size={16} aria-hidden="true" />
                       </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      className={`${styles.inlineActionButton} ${styles.inlineActionIconButton}`}
-                      disabled={disabled || item.mediaId === currentCoverMediaId}
-                      onClick={() => onSetAsCover(item)}
-                      aria-label={item.mediaId === currentCoverMediaId ? 'Current cover image' : 'Set as cover image'}
-                      title={item.mediaId === currentCoverMediaId ? 'Current cover image' : 'Set as cover image'}
-                    >
-                      <ImageUp size={16} aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.inlineActionButton} ${styles.inlineActionIconButton}`}
-                      disabled={disabled}
-                      onClick={() => setEditingItemId(item.mediaId)}
-                      aria-label="Edit gallery item"
-                      title="Edit gallery item"
-                    >
-                      <Pencil size={16} aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.inlineActionButton} ${styles.inlineActionIconButton}`}
-                      disabled={disabled}
-                      onClick={() => removeFromGallery(item)}
-                      aria-label="Remove from gallery"
-                      title="Remove from gallery"
-                    >
-                      <Trash2 size={16} aria-hidden="true" />
-                    </button>
+                      <button
+                        type="button"
+                        className={`${styles.inlineActionButton} ${styles.inlineActionIconButton}`}
+                        disabled={disabled}
+                        onClick={() => removeFromGallery(item)}
+                        aria-label="Remove from gallery"
+                        title="Remove from gallery"
+                      >
+                        <Trash2 size={16} aria-hidden="true" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </StudioGallerySortableRow>
-            ))}
-          </div>
+                </StudioGallerySortableRow>
+              ))}
+              <StudioGalleryEndDropZone />
+            </div>
+          </SortableContext>
         </StudioDropZone>
       ) : (
         <StudioDropZone

@@ -39,6 +39,7 @@ When editing canonical docs or always-applied rules, preserve clean UTF-8 text a
 If terminal output makes a symbol look suspicious or ambiguous, verify the underlying characters before saving.
 Do not treat terminal mojibake by itself as file corruption. First distinguish display/rendering issues from actual on-disk text by checking the underlying file bytes or another raw file read path.
 If symbol fidelity is uncertain during an edit, prefer ASCII-safe fallbacks such as `->`, `-`, `...`, `[Decision]`, and `[Resource]` over risking corrupted text.
+For symbol-heavy canon sections, verify the exact on-disk UTF-8 text before the first patch attempt and prefer anchors built from nearby ASCII-safe lines instead of mojibake-looking glyph sequences.
 If a canon or rule file already shows encoding drift, normalize only the affected text and then continue with small in-place edits; do not push through ambiguous patching against corrupted characters.
 Do not rewrite an entire existing canon or rule file to work around patching difficulty unless the author explicitly approves a full-file rewrite.
 When editing canon or rule files, prefer small anchored patches or tightly scoped section replacements over broad search/replace or multi-file script rewrites.
@@ -49,6 +50,7 @@ When editing canon docs or always-applied rules, follow this stop-first protocol
 
 - **Default method** - Use `apply_patch` with a small anchored block.
 - **Pre-edit grounding statement** - Before editing canon, state which section is being changed and that the patch source is authoritative UTF-8 file content.
+- **First-patch anchor rule** - For symbol-heavy or previously brittle canon text, build the first patch from exact nearby ASCII-safe anchors or a raw-text-verified snippet, not from terminal-rendered mojibake.
 - **First-failure stop rule** - If the first `apply_patch` attempt fails on a canon section, stop immediately. Do not try a second patch shape, smaller anchor, section replacement, or alternate edit path until the mismatch is explained from authoritative file content.
 - **Failure report requirement** - After a failed canon patch attempt, report what failed, whether any partial change landed, and the safe next options. Do not continue editing in the same flow as though the failure were routine.
 - **No shell rewrites by default** - Do not use shell-driven search/replace, scripted whole-block rewrites, or nested shell editing tricks on canon docs/rules unless the author explicitly approves that recovery move.
@@ -113,6 +115,16 @@ Do not leave the status implicit.
 If chat materially changes the project understanding but the owning docs have **not** been updated yet, stop and say so before continuing. Do **not** proceed as though chat has already become canon.
 
 A completed implementation slice is **not canonically closed** until required doc reconciliation has happened, unless the author explicitly deferred docs for that pass and the agent says the slice remains non-canonically closed.
+
+# No silent drift from process
+
+The agent is responsible for protecting the agreed working model, not only following user prompts literally when they would steer the work off course.
+
+- If the thread starts drifting away from the current milestone path, approved architectural direction, reviewable-slice discipline, or required verification/canon steps, stop and say so plainly.
+- Name the drift in practical terms (for example: wrong level of detail, premature implementation, architecture bypass, non-reviewable bundle, or unresolved product-vs-runtime conflict).
+- Recommend the correct next process step and continue only from that corrected frame.
+- When the process already determines the correct next step, state it directly as the required next step. Do not weaken process guidance by framing it as optional with language such as "if you want" or equivalent hedging.
+- Do not let urgency, frustration, or conversational momentum silently collapse the process into ad hoc execution.
 
 # Process: DIAGNOSE -> DESIGN -> APPROVAL -> IMPLEMENT -> VERIFY
 

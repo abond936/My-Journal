@@ -28,6 +28,23 @@ function activeSourceMediaIds(activeId: string, activeData: unknown): string[] {
   return Array.from(new Set(normalized));
 }
 
+function promoteMediaToGalleryFront<
+  T extends {
+    mediaId?: string | null;
+    order?: number | null;
+  },
+>(items: T[], mediaId: string): Array<T | { mediaId: string; order: number }> {
+  const existingIndex = items.findIndex((item) => item.mediaId === mediaId);
+  const next =
+    existingIndex < 0
+      ? [{ mediaId, order: 0 }, ...items]
+      : arrayMove(items, existingIndex, 0);
+  return next.map((item, index) => ({
+    ...item,
+    order: index,
+  }));
+}
+
 export type { StudioSelectedDetail } from '@/components/admin/studio/studioCardTypes';
 
 function parseSortableOrder(id: string, prefix: 'gallery:' | 'studioChild:'): number | null {
@@ -174,6 +191,23 @@ export function StudioDropZone({
     >
       {children}
     </div>
+  );
+}
+
+/** Drop target after the last gallery item so reorder can move an item to the end of the grid. */
+export function StudioGalleryEndDropZone() {
+  const { active } = useDndContext();
+  const activeStr = active?.id != null ? String(active.id) : '';
+  const enabled = activeStr.startsWith('gallery:');
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'gallery:end',
+  });
+  return (
+    <div
+      ref={setNodeRef}
+      className={[styles.galleryEndDropZone, enabled && isOver ? styles.galleryEndDropZoneActive : ''].join(' ').trim()}
+      aria-hidden={!enabled}
+    />
   );
 }
 
@@ -326,10 +360,42 @@ export async function handleStudioRelationshipDragEnd(
     return true;
   }
 
+  if (activeId.startsWith('gallery:') && overId === 'gallery:end') {
+    const items = ctx.selectedCardDetail.galleryMedia || [];
+    const itemIds = items.map((item) => `gallery:${item.mediaId}:${item.order}`);
+    const oldIndex = itemIds.indexOf(activeId);
+    if (oldIndex < 0) return true;
+    if (oldIndex === items.length - 1) return true;
+    const reordered = arrayMove(items, oldIndex, items.length - 1).map((item, index) => ({
+      ...item,
+      order: index,
+    }));
+    await ctx.patchSelectedCard({ galleryMedia: reordered }, 'Gallery order updated.');
+    return true;
+  }
+
+  if (activeId.startsWith('gallery:') && overId === 'drop:gallery') {
+    const items = ctx.selectedCardDetail.galleryMedia || [];
+    const itemIds = items.map((item) => `gallery:${item.mediaId}:${item.order}`);
+    const oldIndex = itemIds.indexOf(activeId);
+    if (oldIndex < 0) return true;
+    if (oldIndex === items.length - 1) return true;
+    const reordered = arrayMove(items, oldIndex, items.length - 1).map((item, index) => ({
+      ...item,
+      order: index,
+    }));
+    await ctx.patchSelectedCard({ galleryMedia: reordered }, 'Gallery order updated.');
+    return true;
+  }
+
   if (activeId.startsWith('gallery:') && overId === 'drop:cover') {
     const mediaId = activeId.split(':')[1];
     if (!mediaId) return true;
-    await ctx.patchSelectedCard({ coverImageId: mediaId });
+    const gallery = ctx.selectedCardDetail.galleryMedia || [];
+    await ctx.patchSelectedCard({
+      coverImageId: mediaId,
+      galleryMedia: promoteMediaToGalleryFront(gallery, mediaId),
+    });
     return true;
   }
 
@@ -339,7 +405,11 @@ export async function handleStudioRelationshipDragEnd(
     if (!mediaId) return true;
 
     if (overId === 'drop:cover') {
-      await ctx.patchSelectedCard({ coverImageId: mediaId });
+      const gallery = ctx.selectedCardDetail.galleryMedia || [];
+      await ctx.patchSelectedCard({
+        coverImageId: mediaId,
+        galleryMedia: promoteMediaToGalleryFront(gallery, mediaId),
+      });
       ctx.showSuccess('Cover image updated.', 'Cover updated');
       return true;
     }

@@ -10,10 +10,10 @@ import CardAdminGrid from '@/components/admin/card-admin/CardAdminGrid';
 import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
 import EditModal from '@/components/admin/card-admin/EditModal';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
+import DebouncedSearchInput from '@/components/admin/common/DebouncedSearchInput';
 import type { EmbeddedUnparentedBankContext } from '@/components/admin/collections/embeddedUnparentedBankContext';
 import {
   listCuratedTreeAttachCandidates,
-  mergeCardCatalogs,
 } from '@/lib/utils/curatedTreeAttachCandidates';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import { buildParentIdsByChild } from '@/lib/utils/curatedCollectionTree';
@@ -82,9 +82,25 @@ function applyCatalogOverrides(catalog: Card[], overrides: CatalogOverrideMap): 
   return Array.from(byId.values());
 }
 
-function shouldRefreshCollectionsAfterCardUpdate(updateData: Partial<Card>): boolean {
+function shouldRefreshWorkspaceQueryAfterCardUpdate(updateData: Partial<Card>): boolean {
   return (
     Object.prototype.hasOwnProperty.call(updateData, 'title') ||
+    Object.prototype.hasOwnProperty.call(updateData, 'status') ||
+    Object.prototype.hasOwnProperty.call(updateData, 'type') ||
+    Object.prototype.hasOwnProperty.call(updateData, 'displayMode') ||
+    Object.prototype.hasOwnProperty.call(updateData, 'tags') ||
+    Object.prototype.hasOwnProperty.call(updateData, 'who') ||
+    Object.prototype.hasOwnProperty.call(updateData, 'what') ||
+    Object.prototype.hasOwnProperty.call(updateData, 'when') ||
+    Object.prototype.hasOwnProperty.call(updateData, 'where') ||
+    Object.prototype.hasOwnProperty.call(updateData, 'childrenIds') ||
+    Object.prototype.hasOwnProperty.call(updateData, 'isCollectionRoot') ||
+    Object.prototype.hasOwnProperty.call(updateData, 'collectionRootOrder')
+  );
+}
+
+function shouldRefreshCollectionsStructureAfterCardUpdate(updateData: Partial<Card>): boolean {
+  return (
     Object.prototype.hasOwnProperty.call(updateData, 'childrenIds') ||
     Object.prototype.hasOwnProperty.call(updateData, 'isCollectionRoot') ||
     Object.prototype.hasOwnProperty.call(updateData, 'collectionRootOrder')
@@ -100,7 +116,8 @@ type StudioTreeCandidateCardBankProps = EmbeddedUnparentedBankContext & {
 
 export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCardBankProps) {
   const {
-    refreshCards,
+    refreshStructure,
+    upsertCard,
     collectionCards,
     search,
     setSearch,
@@ -113,15 +130,15 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     registerDeleteFallbackResolver,
   } = props;
 
-  const { selectedLoadState } = useStudioShell();
+  const { selectedLoadState, notifyQuestionCardDeleted, removeCollectionsCardStructure } = useStudioShell();
   const { active } = useDndContext();
   const feedback = useAppFeedback();
   const { tags: allTags } = useTag();
   const initialLocalFilterPrefsRef = useRef(readStoredStudioCardBankLocalFilterPreferences());
-  const [fullCatalog, setFullCatalog] = useState<Card[]>([]);
+  const [workspaceCards, setWorkspaceCards] = useState<Card[]>([]);
   const [catalogOverrides, setCatalogOverrides] = useState<CatalogOverrideMap>({});
-  const [catalogRefreshTick, setCatalogRefreshTick] = useState(0);
-  const [loadingCatalog, setLoadingCatalog] = useState(true);
+  const [workspaceQueryRefreshTick, setWorkspaceQueryRefreshTick] = useState(0);
+  const [loadingWorkspaceCards, setLoadingWorkspaceCards] = useState(true);
   const [bulkSelectedCardIds, setBulkSelectedCardIds] = useState<Set<string>>(() => new Set());
   const selectionAnchorIndexRef = useRef<number | null>(null);
   const [bulkTagModalOpen, setBulkTagModalOpen] = useState(false);
@@ -148,6 +165,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   const deferredStatusFilter = useDeferredValue(statusFilter);
   const deferredSortMode = useDeferredValue(sortMode);
   const dragActiveRef = useRef(false);
+  const workspaceRequestIdRef = useRef(0);
 
   useEffect(() => {
     dragActiveRef.current = Boolean(active);
@@ -162,15 +180,15 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     });
   }, [dimensionFilters, displayModeFilter, filterTagIds, typeFilter]);
 
-  // Catalog load: first chunk paints fast (250 cards), remaining pages stream in
-  // background under the server's stable `created desc` order. Filters operate
-  // on whatever is loaded; the streaming indicator next to the Clear button
-  // tells the operator a request like search may be working against a partial
-  // set. See docs/01-Vision-Architecture.md → Frontend Principles (chunked list
-  // delivery + stable ordering).
+  // Workspace query owner: the Studio card bank owns a server-shaped card query
+  // rather than filtering a large local mega-catalog. Results still append in
+  // stable chunks so the pane keeps its growing-list behavior, but the server
+  // now shapes the active card universe by the current workspace filters/sort.
   useEffect(() => {
     let cancelled = false;
-    setLoadingCatalog(true);
+    const requestId = ++workspaceRequestIdRef.current;
+    const isCurrent = () => workspaceRequestIdRef.current === requestId;
+    setLoadingWorkspaceCards(true);
     setIsStreamingMore(false);
 
     const PAGE_SIZE = 250;
@@ -186,17 +204,42 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       let firstChunkPainted = false;
       const accumulated: Card[] = [];
       const seen = new Set<string>();
-      let page = 0;
 
       while (true) {
         const params = new URLSearchParams({
           limit: String(PAGE_SIZE),
-          page: String(page),
-          status: 'all',
+          status: deferredStatusFilter,
           hydration: 'cover-only',
-          sortBy: 'created',
-          sortDir: 'desc',
+          searchScope: 'admin-title',
         });
+        const trimmedSearch = deferredSearch.trim();
+        if (trimmedSearch) params.set('q', trimmedSearch);
+        if (deferredTypeFilter !== 'all') params.set('type', deferredTypeFilter);
+        if (deferredDisplayModeFilter !== 'all') params.set('displayMode', deferredDisplayModeFilter);
+        const sortMap: Record<CandidateSort, { sortBy: string; sortDir: 'asc' | 'desc' }> = {
+          titleAsc: { sortBy: 'title', sortDir: 'asc' },
+          titleDesc: { sortBy: 'title', sortDir: 'desc' },
+          createdDesc: { sortBy: 'created', sortDir: 'desc' },
+          createdAsc: { sortBy: 'created', sortDir: 'asc' },
+        };
+        const sort = sortMap[deferredSortMode];
+        params.set('sortBy', sort.sortBy);
+        params.set('sortDir', sort.sortDir);
+        for (const dimension of DIMENSION_KEYS) {
+          const state = deferredDimensionFilters[dimension];
+          if (state.mode === 'matches' && state.tagId) {
+            params.set(`exact${dimension.charAt(0).toUpperCase()}${dimension.slice(1)}`, state.tagId);
+          } else if (state.mode === 'isEmpty') {
+            params.set(`${dimension}Missing`, 'true');
+          }
+        }
+        const groupedFilterTagIds = groupSelectedTagIdsByDimension(deferredFilterTagIds, allTags ?? []);
+        for (const dimension of DIMENSION_KEYS) {
+          const selected = groupedFilterTagIds[dimension];
+          if (selected?.length) {
+            params.set(dimension, selected.join(','));
+          }
+        }
         if (lastDocId) params.set('lastDocId', lastDocId);
 
         let pageData: { items?: Card[]; hasMore?: boolean; lastDocId?: string } = {};
@@ -208,7 +251,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
         } catch {
           ok = false;
         }
-        if (cancelled) return;
+        if (cancelled || !isCurrent()) return;
         if (!ok) break;
 
         const items = Array.isArray(pageData.items) ? pageData.items : [];
@@ -221,14 +264,14 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
 
         if (firstChunkPainted) {
           await waitForStableDragSurface();
-          if (cancelled) return;
+          if (cancelled || !isCurrent()) return;
         }
 
-        setFullCatalog([...accumulated]);
+        setWorkspaceCards([...accumulated]);
 
         if (!firstChunkPainted) {
           setCatalogOverrides({});
-          setLoadingCatalog(false);
+          setLoadingWorkspaceCards(false);
           firstChunkPainted = true;
           if (pageData.hasMore && items.length > 0) {
             setIsStreamingMore(true);
@@ -237,18 +280,27 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
 
         if (!pageData.hasMore || items.length === 0) break;
         lastDocId = pageData.lastDocId;
-        page += 1;
       }
 
-      if (cancelled) return;
-      if (!firstChunkPainted) setLoadingCatalog(false);
+      if (cancelled || !isCurrent()) return;
+      if (!firstChunkPainted) setLoadingWorkspaceCards(false);
       setIsStreamingMore(false);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [catalogRefreshTick]);
+  }, [
+    allTags,
+    deferredDimensionFilters,
+    deferredDisplayModeFilter,
+    deferredFilterTagIds,
+    deferredSearch,
+    deferredSortMode,
+    deferredStatusFilter,
+    deferredTypeFilter,
+    workspaceQueryRefreshTick,
+  ]);
 
   useEffect(() => {
     if (selectedLoadState === 'loading') return;
@@ -315,15 +367,23 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     []
   );
 
-  const mergedCatalog = useMemo(
-    () => applyCatalogOverrides(mergeCardCatalogs(fullCatalog, collectionCards), catalogOverrides),
-    [catalogOverrides, fullCatalog, collectionCards]
+  const collectionCardsById = useMemo(
+    () => new Map(collectionCards.filter((card) => card.docId).map((card) => [card.docId!, card])),
+    [collectionCards]
   );
-  const deferredMergedCatalog = useDeferredValue(mergedCatalog);
+
+  const mergedWorkspaceCards = useMemo(() => {
+    const cardsWithPropMerges = workspaceCards.map((card) => {
+      const fromCollections = card.docId ? collectionCardsById.get(card.docId) : null;
+      return fromCollections ? mergeStudioCatalogCard(card, fromCollections) : card;
+    });
+    return applyCatalogOverrides(cardsWithPropMerges, catalogOverrides);
+  }, [catalogOverrides, collectionCardsById, workspaceCards]);
+  const deferredMergedWorkspaceCards = useDeferredValue(mergedWorkspaceCards);
 
   const upsertCatalogCard = useCallback((card: Card) => {
     if (!card.docId) return;
-    setFullCatalog((current) => {
+    setWorkspaceCards((current) => {
       const index = current.findIndex((entry) => entry.docId === card.docId);
       if (index === -1) return [toStudioCatalogCard(card), ...current];
       const next = [...current];
@@ -337,7 +397,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   }, []);
 
   const removeCatalogCard = useCallback((cardId: string) => {
-    setFullCatalog((current) => current.filter((entry) => entry.docId !== cardId));
+    setWorkspaceCards((current) => current.filter((entry) => entry.docId !== cardId));
     setCatalogOverrides((current) => ({
       ...current,
       [cardId]: null,
@@ -350,7 +410,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   }, [registerCatalogRemove, removeCatalogCard]);
 
   const candidateCards = useMemo(() => {
-    const raw = listCuratedTreeAttachCandidates(deferredMergedCatalog, {
+    const raw = listCuratedTreeAttachCandidates(deferredMergedWorkspaceCards, {
       matchesFilters,
       statusFilter: deferredStatusFilter,
     });
@@ -369,14 +429,14 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     });
     const selectedCard =
       props.selectedCardId
-        ? deferredMergedCatalog.find((card) => card.docId === props.selectedCardId) ?? null
+        ? collectionCardsById.get(props.selectedCardId) ?? null
         : null;
     if (!selectedCard?.docId) return base;
     if (deferredStatusFilter !== 'all' && (selectedCard.status ?? 'draft') !== deferredStatusFilter) return base;
     if (!matchesFilters(selectedCard)) return base;
     if (base.some((card) => card.docId === selectedCard.docId)) return base;
     return [selectedCard, ...base];
-  }, [deferredMergedCatalog, matchesFilters, deferredStatusFilter, deferredSortMode, props.selectedCardId]);
+  }, [collectionCardsById, deferredMergedWorkspaceCards, matchesFilters, deferredStatusFilter, deferredSortMode, props.selectedCardId]);
 
   const resolveDeleteFallback = useCallback(
     (deletedCardId: string): StudioSelectedPreview | null => {
@@ -408,24 +468,24 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   }, [registerDeleteFallbackResolver, resolveDeleteFallback]);
 
   const parentIdsByChild = useMemo(
-    () => buildParentIdsByChild(deferredMergedCatalog),
-    [deferredMergedCatalog]
+    () => buildParentIdsByChild(collectionCards),
+    [collectionCards]
   );
 
   const titleById = useMemo(
     () =>
       new Map(
-        deferredMergedCatalog
+        collectionCards
           .filter((card) => card.docId)
           .map((card) => [card.docId!, card.title?.trim() || 'Untitled'] as const)
       ),
-    [deferredMergedCatalog]
+    [collectionCards]
   );
 
   const collectionStateMetaById = useMemo(() => {
 
     return new Map(
-      deferredMergedCatalog
+      collectionCards
         .filter((card) => card.docId)
         .map((card) => {
           const parentIds = parentIdsByChild.get(card.docId!) ?? [];
@@ -449,7 +509,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
           return [card.docId!, labelParts.length > 0 ? { label: labelParts.join(' · '), title } : null] as const;
         })
     );
-  }, [deferredMergedCatalog, parentIdsByChild, titleById]);
+  }, [collectionCards, parentIdsByChild, titleById]);
 
   const orderedCandidateIds = useMemo(
     () => candidateCards.map((c) => c.docId).filter(Boolean) as string[],
@@ -510,9 +570,11 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
             return data as Card;
           })
         );
-        updatedCards.forEach((card) => upsertCatalogCard(card));
-        setCatalogRefreshTick((t) => t + 1);
-        await refreshCards();
+        updatedCards.forEach((card) => {
+          upsertCatalogCard(card);
+          upsertCard(card);
+        });
+        setWorkspaceQueryRefreshTick((t) => t + 1);
         setBulkSelectedCardIds(new Set());
       } catch (err) {
         console.error(`Error updating ${String(field)}:`, err);
@@ -520,16 +582,15 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
           err instanceof Error ? err.message : `An error occurred while updating ${String(field)}.`,
           'Could not update cards'
         );
-        setCatalogRefreshTick((t) => t + 1);
-        await refreshCards();
+        setWorkspaceQueryRefreshTick((t) => t + 1);
       }
     },
-    [bulkSelectedCardIds, feedback, refreshCards, upsertCatalogCard]
+    [bulkSelectedCardIds, feedback, upsertCard, upsertCatalogCard]
   );
 
   const handleBulkDelete = useCallback(async () => {
     if (bulkSelectedCardIds.size === 0) return;
-    const selectedCards = mergedCatalog.filter(
+    const selectedCards = mergedWorkspaceCards.filter(
       (card) => card.docId && bulkSelectedCardIds.has(card.docId)
     );
     const prompt = buildBulkCardDeletePrompt({
@@ -562,18 +623,23 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
           throwIfJsonApiFailed(res, data, `Failed to delete card ${id}`);
         })
       );
-      setCatalogRefreshTick((t) => t + 1);
-      await refreshCards();
+      selectedCards.forEach((card) => {
+        if (card.docId) {
+          removeCollectionsCardStructure(card.docId);
+          notifyQuestionCardDeleted(card.docId, card.questionId ?? null);
+        }
+      });
+      setWorkspaceQueryRefreshTick((t) => t + 1);
     } catch (err) {
       console.error('Error deleting cards:', err);
       feedback.showError(
         err instanceof Error ? err.message : 'An error occurred while deleting cards.',
         'Could not delete cards'
       );
-      setCatalogRefreshTick((t) => t + 1);
-      await refreshCards();
+      setWorkspaceQueryRefreshTick((t) => t + 1);
+      await refreshStructure();
     }
-  }, [bulkSelectedCardIds, feedback, mergedCatalog, parentIdsByChild, refreshCards, titleById]);
+  }, [bulkSelectedCardIds, feedback, mergedWorkspaceCards, notifyQuestionCardDeleted, parentIdsByChild, refreshStructure, removeCollectionsCardStructure, titleById]);
 
   const handleOpenBulkTags = useCallback(() => {
     setBulkTagModalOpen(true);
@@ -589,23 +655,29 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       const data = await res.json().catch(() => ({}));
       throwIfJsonApiFailed(res, data, 'Failed to update card');
       upsertCatalogCard(data as Card);
-      if (shouldRefreshCollectionsAfterCardUpdate(updateData)) {
-        await refreshCards();
+      upsertCard(data as Card);
+      if (shouldRefreshWorkspaceQueryAfterCardUpdate(updateData)) {
+        setWorkspaceQueryRefreshTick((t) => t + 1);
+      }
+      if (shouldRefreshCollectionsStructureAfterCardUpdate(updateData)) {
+        await refreshStructure();
       }
     },
-    [refreshCards, upsertCatalogCard]
+    [refreshStructure, upsertCard, upsertCatalogCard]
   );
 
   const onDeleteCard = useCallback(
-    async (cardId: string) => {
+    async (cardId: string, questionId?: string | null) => {
       const res = await fetch(`/api/cards/${cardId}`, { method: 'DELETE' });
       const data =
         res.status === 204 ? {} : ((await res.json().catch(() => ({}))) as unknown);
       throwIfJsonApiFailed(res, data, 'Failed to delete card');
       removeCatalogCard(cardId);
-      await refreshCards();
+      removeCollectionsCardStructure(cardId);
+      notifyQuestionCardDeleted(cardId, questionId ?? null);
+      setWorkspaceQueryRefreshTick((t) => t + 1);
     },
-    [refreshCards, removeCatalogCard]
+    [notifyQuestionCardDeleted, removeCatalogCard, removeCollectionsCardStructure]
   );
 
   const requestDeleteCard = useCallback(async (card: Card) => {
@@ -642,10 +714,9 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       <div className={styles.studioCardFilters} role="search">
         <label className={`${styles.studioCardField} ${styles.studioPaneSearchField}`}>
           <span className={styles.studioCardPanelTitle}>Cards</span>
-          <input
-            type="search"
+          <DebouncedSearchInput
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onCommit={setSearch}
             className={styles.studioCardSearchInput}
             placeholder="Search"
             aria-label="Search cards"
@@ -724,7 +795,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
               whiteSpace: 'nowrap',
             }}
           >
-            Loading more cards… ({fullCatalog.length} loaded)
+            Loading more cards… ({workspaceCards.length} loaded)
           </span>
         ) : null}
       </div>
@@ -792,9 +863,9 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
           }
         />
       </div>
-      {loadingCatalog ? (
+      {loadingWorkspaceCards ? (
         <div className={styles.toolbar}>
-        {loadingCatalog ? <span className={styles.catalogHint}>Loading catalog merge…</span> : null}
+        {loadingWorkspaceCards ? <span className={styles.catalogHint}>Loading card workspace…</span> : null}
         </div>
       ) : null}
 
@@ -919,7 +990,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
                     setDeleteConfirmCard(null);
                     setDeleteConfirmMessage('');
                     try {
-                      await onDeleteCard(card.docId);
+                      await onDeleteCard(card.docId, card.questionId ?? null);
                     } catch (err) {
                       feedback.showError(
                         err instanceof Error ? err.message : 'An unknown error occurred.',
@@ -951,8 +1022,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
         isOpen={bulkTagModalOpen}
         onClose={() => setBulkTagModalOpen(false)}
         onSave={async () => {
-          setCatalogRefreshTick((t) => t + 1);
-          await refreshCards();
+          setWorkspaceQueryRefreshTick((t) => t + 1);
           setBulkSelectedCardIds(new Set());
         }}
       />

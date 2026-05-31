@@ -1,5 +1,6 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { Card, cardSchema } from '@/lib/types/card';
+import type { Question } from '@/lib/types/question';
 import { Tag } from '@/lib/types/tag';
 import {
   updateTagCountsForCard,
@@ -819,6 +820,89 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
   }
 
   return finalCard;
+}
+
+export async function createQuestionCardFromQuestion(question: Question): Promise<{ card: Card; question: Question }> {
+  const collectionRef = firestore.collection(CARDS_COLLECTION);
+  const docRef = collectionRef.doc();
+  const now = Date.now();
+  const selectedTags = question.tagIds || [];
+  const normalizedChildren: string[] = [];
+
+  const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord({ tags: selectedTags });
+  const allTagsForJournal = await getAllTags();
+  const journalWhenSort = computeJournalWhenSortKeys(
+    dimensionalTags.when || [],
+    buildTagMap(allTagsForJournal)
+  );
+  const dimensionSortKeys = computeDimensionSortKeys(selectedTags, allTagsForJournal);
+
+  const newCard: Card = {
+    docId: docRef.id,
+    type: 'qa',
+    questionId: question.docId,
+    title: question.prompt,
+    title_lowercase: question.prompt.toLowerCase(),
+    content: '',
+    status: 'draft',
+    displayMode: 'navigate',
+    tags: selectedTags,
+    childrenIds: normalizedChildren,
+    contentMedia: [],
+    galleryMedia: [],
+    filterTags,
+    who: dimensionalTags.who || [],
+    what: dimensionalTags.what || [],
+    when: dimensionalTags.when || [],
+    where: dimensionalTags.where || [],
+    mediaWho: [],
+    mediaWhat: [],
+    mediaWhen: [],
+    mediaWhere: [],
+    whoSortKey: dimensionSortKeys.whoSortKey,
+    whatSortKey: dimensionSortKeys.whatSortKey,
+    whereSortKey: dimensionSortKeys.whereSortKey,
+    journalWhenSortAsc: journalWhenSort.journalWhenSortAsc,
+    journalWhenSortDesc: journalWhenSort.journalWhenSortDesc,
+    curatedNavEligible: computeCuratedNavEligible({
+      childrenIds: normalizedChildren,
+      isCollectionRoot: false,
+    }),
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const questionRef = firestore.collection(QUESTIONS_COLLECTION).doc(question.docId);
+  await withRetry(async () => {
+    return firestore.runTransaction(async (transaction) => {
+      const questionSnap = await transaction.get(questionRef);
+      if (!questionSnap.exists) {
+        throw new Error('Question not found');
+      }
+
+      await updateTagCountsForCard(null, newCard, transaction, buildTagMap(allTagsForJournal));
+      transaction.set(docRef, newCard);
+      transaction.update(questionRef, {
+        usedByCardIds: FieldValue.arrayUnion(docRef.id),
+        usageCount: FieldValue.increment(1),
+        updatedAt: now,
+      });
+    });
+  });
+
+  void syncCardToTypesense(newCard);
+
+  return {
+    card: newCard,
+    question: {
+      ...question,
+      usedByCardIds: question.usedByCardIds.includes(docRef.id)
+        ? question.usedByCardIds
+        : [...question.usedByCardIds, docRef.id],
+      usageCount: (question.usedByCardIds.includes(docRef.id) ? question.usedByCardIds.length : question.usedByCardIds.length + 1),
+      updatedAt: now,
+    },
+  };
 }
 
 /**
@@ -2887,6 +2971,7 @@ export async function getCards(options: {
   q?: string;
   status?: Card['status'] | 'all';
   type?: Card['type'] | 'all';
+  displayMode?: Card['displayMode'] | 'all';
   /** When 2+ values, Firestore `in` filter (OR). Omit when using single `type`. */
   types?: Card['type'][];
   tags?: string[];
@@ -2922,6 +3007,7 @@ export async function getCards(options: {
     q,
     status = 'published',
     type = 'all',
+    displayMode = 'all',
     types: typesIn,
     tags,
     dimensionalTags,
@@ -2995,6 +3081,10 @@ export async function getCards(options: {
     query = query.where('type', 'in', multiTypes);
   } else if (singleTypeFilter) {
     query = query.where('type', '==', singleTypeFilter);
+  }
+
+  if (displayMode && displayMode !== 'all') {
+    query = query.where('displayMode', '==', displayMode);
   }
 
   // Filter by dimensional tags

@@ -34,6 +34,7 @@ function errorResponse(payload: ApiErrorPayload, status: number) {
 }
 
 const CARD_TYPES_QUERY = new Set<string>(['story', 'qa', 'quote', 'callout', 'gallery']);
+const CARD_DISPLAY_MODES_QUERY = new Set<string>(['inline', 'navigate', 'static']);
 
 function parseCardTypesList(raw: string | null): Card['type'][] | undefined {
   if (!raw?.trim()) return undefined;
@@ -207,6 +208,9 @@ export async function GET(request: Request) {
     const typesListParsed = parseCardTypesList(searchParams.get('types'));
     let type: Card['type'] | 'all' = (searchParams.get('type') as Card['type'] | 'all') || 'all';
     if (type !== 'all' && !CARD_TYPES_QUERY.has(type)) type = 'all';
+    let displayMode: Card['displayMode'] | 'all' =
+      (searchParams.get('displayMode') as Card['displayMode'] | 'all') || 'all';
+    if (displayMode !== 'all' && !CARD_DISPLAY_MODES_QUERY.has(displayMode)) displayMode = 'all';
 
     let typesForService: Card['type'][] | undefined;
     if (typesListParsed?.length) {
@@ -319,6 +323,7 @@ export async function GET(request: Request) {
       const cardDimEmpty = (arr: string[] | undefined) => !arr || arr.length === 0;
       const applyPostFilters = (items: Card[]): Card[] => {
         return items.filter((card) => {
+          if (displayMode !== 'all' && (card.displayMode ?? 'navigate') !== displayMode) return false;
           if (childrenIds_contains && !(card.childrenIds || []).includes(childrenIds_contains)) return false;
           if (tags && tags.length > 0) {
             const filterTags = card.filterTags || {};
@@ -411,6 +416,7 @@ export async function GET(request: Request) {
         q,
         status,
         type,
+        displayMode,
         types: typesForService,
         tags,
         dimensionalTags: Object.keys(dimensionalTags).length > 0 ? dimensionalTags : undefined,

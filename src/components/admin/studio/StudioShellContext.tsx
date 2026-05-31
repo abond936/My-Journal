@@ -18,6 +18,11 @@ export type StudioShellContextValue = {
   selectedCardId: string | null;
   setSelectedCardId: (id: string | null) => void;
   selectCard: (cardId: string, previewCard?: Card | StudioSelectedPreview | StudioSelectedDetail | null) => void;
+  requestSelectCard: (
+    cardId: string,
+    previewCard?: Card | StudioSelectedPreview | StudioSelectedDetail | null
+  ) => Promise<boolean>;
+  registerComposeLeaveGuard: (fn: (() => Promise<boolean>) | null) => void;
   getKnownCardPreview: (cardId: string | null) => StudioSelectedPreview | null;
   selectedPreview: StudioSelectedPreview | null;
   setSelectedPreview: (card: StudioSelectedPreview | null) => void;
@@ -30,10 +35,18 @@ export type StudioShellContextValue = {
   loadSelectedCard: (cardId: string, opts?: { quiet?: boolean }) => Promise<StudioSelectedDetail>;
   patchSelectedCard: (payload: Partial<Card>, successMessage?: string) => Promise<void>;
   deleteSelectedCard: (cardId: string) => Promise<boolean>;
-  /** Refresh embedded Collections card list/tree after card body save or equivalent (no-op if not wired). */
-  refreshCollectionsCardList: () => void;
+  /** Refresh embedded Collections structural truth after membership/root changes or delete (no-op if not wired). */
+  refreshCollectionsStructure: () => void;
   /** Immediately replace/upsert a saved card into the shared Studio card universe before background refresh catches up. */
   upsertCollectionsCardList: (card: Card | StudioSelectedPreview | StudioSelectedDetail | null) => void;
+  /** Immediately remove a deleted card from the local structural Collections model before any fallback repair. */
+  removeCollectionsCardStructure: (cardId: string) => void;
+  /** Notify the Questions pane that a card linked to a question was deleted so local question state can reconcile. */
+  notifyQuestionCardDeleted: (cardId: string, questionId?: string | null) => void;
+  /** Questions pane registers a local reconciliation handler for linked-card deletes. */
+  registerQuestionCardDeleteSync: (
+    fn: ((cardId: string, questionId?: string | null) => void) | null
+  ) => void;
   /** Media bank multi-select (same backing store as `MediaProvider`). */
   selectedMediaIds: string[];
   setSelectedMediaIds: (ids: string[]) => void;

@@ -22,6 +22,7 @@ import {
   mergeDimensionalTagMaps,
   type DimensionalTagIdMap,
 } from '@/lib/utils/tagUtils';
+import { isMediaAssigned, mediaMatchesDimensions, mediaMatchesSearch } from '@/lib/utils/mediaAssignmentSeek';
 import {
   DEFAULT_MEDIA_ADMIN_STORED_FILTERS,
   readStoredMediaAdminStoredFilterPreferences,
@@ -116,6 +117,42 @@ function dedupeMediaByDocId(items: Media[]): Media[] {
   return out;
 }
 
+function getDimensionIds(item: Media, dimension: keyof DimensionalTagIdMap): string[] {
+  switch (dimension) {
+    case 'who':
+      return item.who ?? [];
+    case 'what':
+      return item.what ?? [];
+    case 'when':
+      return item.when ?? [];
+    case 'where':
+      return item.where ?? [];
+    default:
+      return [];
+  }
+}
+
+function mediaMatchesCaptionFilter(item: Media, hasCaption: string): boolean {
+  if (!hasCaption || hasCaption === 'all') return true;
+  const hasValue = Boolean(item.caption && item.caption.trim());
+  if (hasCaption === 'with') return hasValue;
+  if (hasCaption === 'without') return !hasValue;
+  return true;
+}
+
+function mediaMatchesDimensionalTags(item: Media, dt: DimensionalTagIdMap): boolean {
+  if (!dimensionalTagMapHasFilters(dt)) return true;
+  const dims: (keyof DimensionalTagIdMap)[] = ['who', 'what', 'when', 'where'];
+  for (const dim of dims) {
+    const selected = dt[dim];
+    if (!selected?.length) continue;
+    const idsOnMedia = getDimensionIds(item, dim);
+    const ok = selected.some((tid) => idsOnMedia.includes(tid) || Boolean(item.filterTags?.[tid]));
+    if (!ok) return false;
+  }
+  return true;
+}
+
 export function getMediaErrorSeverity(error: Error | null): MediaErrorSeverity {
   if (!error) return 'error';
   const maybeMediaError = error as MediaUiError;
@@ -147,6 +184,7 @@ interface MediaContextType {
   loading: boolean;
   loadingMore: boolean;
   error: Error | null;
+  loadMoreError: Error | null;
   
   // Pagination
   pagination: MediaListResponse['pagination'] | null;
@@ -165,6 +203,12 @@ interface MediaContextType {
   deleteMultipleMedia: (ids: string[]) => Promise<void>;
   /** Bulk edit media tags using add|replace|remove semantics. */
   bulkApplyTags: (mediaIds: string[], tags: string[], mode?: 'add' | 'replace' | 'remove') => Promise<void>;
+  registerCreatedMedia: (item: Media) => void;
+  reconcileCardMediaAssignments: (
+    cardId: string,
+    addedMediaIds: string[],
+    removedMediaIds: string[]
+  ) => void;
   
   // Filter actions
   setFilter: (key: keyof MediaFilters, value: string) => void;
@@ -211,6 +255,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [loadMoreError, setLoadMoreError] = useState<Error | null>(null);
   const [pagination, setPagination] = useState<MediaListResponse['pagination'] | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -423,7 +468,12 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     const appendMode = !newFilters && page > currentPageValue;
     setLoading(!appendMode);
     setLoadingMore(appendMode && mediaRef.current.length > 0);
-    setError(null);
+    if (appendMode) {
+      setLoadMoreError(null);
+    } else {
+      setError(null);
+      setLoadMoreError(null);
+    }
 
     try {
       const updatedFilters = { ...filtersRef.current, ...newFilters };
@@ -580,7 +630,11 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       const error = err instanceof Error ? err : new Error('An unknown error occurred');
-      setError(error);
+      if (appendMode) {
+        setLoadMoreError(error);
+      } else {
+        setError(error);
+      }
       console.error('Error fetching media:', error);
     } finally {
       if (requestSeq === mediaRequestSeqRef.current) {
@@ -647,6 +701,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
 
   const deleteMedia = useCallback(async (id: string) => {
     try {
+      setError(null);
       const response = await fetch(`/api/images/${id}`, {
         method: 'DELETE',
       });
@@ -668,6 +723,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       const error = err instanceof Error ? err : new Error('An unknown error occurred');
       setError(error);
       console.error('Error deleting media:', error);
+      throw error;
     }
   }, [adjustPaginationAfterDelete, clearMediaQueryCache]);
 
@@ -752,6 +808,99 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     [cacheMediaRecord, clearMediaQueryCache]
   );
 
+  const registerCreatedMedia = useCallback(
+    (item: Media) => {
+      if (!item?.docId) return;
+      cacheMediaRecord(item);
+      clearMediaQueryCache();
+
+      const currentFilters = filtersRef.current;
+      const currentDimensional = mergeDimensionalTagMaps(
+        pathname?.startsWith('/admin/studio') ? ({} as DimensionalTagIdMap) : dimensionalTagMap,
+        dimensionalQueryOverlayRef.current
+      );
+      const assignmentMatches =
+        currentFilters.assignment === 'all' ||
+        (currentFilters.assignment === 'assigned' && isMediaAssigned(item)) ||
+        (currentFilters.assignment === 'unassigned' && !isMediaAssigned(item));
+      const matchesCurrentView =
+        currentPageRef.current === 1 &&
+        (currentFilters.source === 'all' || currentFilters.source === item.source) &&
+        mediaMatchesDimensions(item, currentFilters.dimensions) &&
+        mediaMatchesCaptionFilter(item, currentFilters.hasCaption) &&
+        mediaMatchesSearch(item, currentFilters.search) &&
+        assignmentMatches &&
+        mediaMatchesDimensionalTags(item, currentDimensional);
+
+      if (!matchesCurrentView) return;
+
+      setMedia((prev) => {
+        const next = [item, ...prev.filter((existing) => existing.docId !== item.docId)];
+        mediaRef.current = next;
+        return next;
+      });
+      setPagination((prev) => {
+        if (!prev) return prev;
+        const nextTotal = typeof prev.total === 'number' ? prev.total + 1 : prev.total;
+        const nextTotalPages =
+          typeof nextTotal === 'number' ? Math.max(1, Math.ceil(nextTotal / prev.limit)) : prev.totalPages;
+        return {
+          ...prev,
+          total: nextTotal,
+          totalPages: nextTotalPages,
+        };
+      });
+    },
+    [cacheMediaRecord, clearMediaQueryCache, dimensionalTagMap, pathname]
+  );
+
+  const reconcileCardMediaAssignments = useCallback(
+    (cardId: string, addedMediaIds: string[], removedMediaIds: string[]) => {
+      const added = new Set(addedMediaIds.filter((id) => typeof id === 'string' && id.trim().length > 0));
+      const removed = new Set(removedMediaIds.filter((id) => typeof id === 'string' && id.trim().length > 0));
+      if (!cardId || (added.size === 0 && removed.size === 0)) return;
+
+      const patchRefs = (item: Media): Media => {
+        let nextRefs = Array.isArray(item.referencedByCardIds) ? [...item.referencedByCardIds] : [];
+        if (added.has(item.docId) && !nextRefs.includes(cardId)) {
+          nextRefs = [cardId, ...nextRefs];
+        }
+        if (removed.has(item.docId)) {
+          nextRefs = nextRefs.filter((id) => id !== cardId);
+        }
+        return { ...item, referencedByCardIds: nextRefs };
+      };
+
+      for (const mediaId of new Set([...added, ...removed])) {
+        const cached = mediaByIdCacheRef.current.get(mediaId);
+        if (!cached?.docId) continue;
+        mediaByIdCacheRef.current.set(mediaId, patchRefs(cached));
+      }
+
+      clearMediaQueryCache();
+      setMedia((prev) => {
+        const assignmentFilter = filtersRef.current.assignment;
+        const next = prev
+          .map((item) => {
+            if (!item.docId || (!added.has(item.docId) && !removed.has(item.docId))) return item;
+            return patchRefs(item);
+          })
+          .filter((item) => {
+            if (assignmentFilter === 'unassigned') {
+              return !Array.isArray(item.referencedByCardIds) || item.referencedByCardIds.length === 0;
+            }
+            if (assignmentFilter === 'assigned') {
+              return Array.isArray(item.referencedByCardIds) && item.referencedByCardIds.length > 0;
+            }
+            return true;
+          });
+        mediaRef.current = next;
+        return next;
+      });
+    },
+    [clearMediaQueryCache]
+  );
+
   const setFilter = useCallback((key: keyof MediaFilters, value: string) => {
     setFilters((prev) => {
       const next = { ...prev, [key]: value };
@@ -810,6 +959,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     loading,
     loadingMore,
     error,
+    loadMoreError,
     pagination,
     currentPage,
     hasMore: Boolean(pagination?.hasNext),
@@ -821,6 +971,8 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     deleteMedia,
     deleteMultipleMedia,
     bulkApplyTags,
+    registerCreatedMedia,
+    reconcileCardMediaAssignments,
     setFilter,
     clearFilters,
     dimensionalQueryOverlay,

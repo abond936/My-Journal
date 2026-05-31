@@ -227,7 +227,7 @@ export interface CuratedTreeNodeProps {
   saving: boolean;
   onDetachChild: (id: string, parentId: string) => void;
   onClearRoot: (id: string) => void;
-  onSelectCard: (id: string) => void;
+  onSelectCard: (id: string) => void | Promise<boolean>;
   selectedCardId: string | null;
   disableCuratedDrag?: boolean;
 }

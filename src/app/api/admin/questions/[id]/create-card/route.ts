@@ -1,8 +1,8 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
-import { createCard } from '@/lib/services/cardService';
-import { getQuestionById, linkCardToQuestion } from '@/lib/services/questionService';
+import { createQuestionCardFromQuestion } from '@/lib/services/cardService';
+import { getQuestionById } from '@/lib/services/questionService';
 
 type RouteParams = Promise<{ id: string }>;
 
@@ -52,20 +52,8 @@ export async function POST(request: NextRequest, { params }: { params: RoutePara
   await request.json().catch(() => ({}));
 
   try {
-    const newCard = await createCard({
-      type: 'qa',
-      questionId: question.docId,
-      title: question.prompt,
-      content: '',
-      status: 'draft',
-      displayMode: 'navigate',
-      tags: question.tagIds,
-      galleryMedia: [],
-    });
-
-    const linked = await linkCardToQuestion(question.docId, newCard.docId);
-
-    return NextResponse.json({ card: newCard, question: linked }, { status: 201 });
+    const created = await createQuestionCardFromQuestion(question);
+    return NextResponse.json(created, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     return errorResponse(

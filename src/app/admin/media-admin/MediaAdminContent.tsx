@@ -11,6 +11,7 @@ import MediaLocalImportDialog from '@/components/admin/media-admin/MediaLocalImp
 import EditModal from '@/components/admin/card-admin/EditModal';
 import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
+import DebouncedSearchInput from '@/components/admin/common/DebouncedSearchInput';
 import cardAdminStyles from '@/app/admin/card-admin/card-admin.module.css';
 import styles from './media-admin.module.css';
 import {
@@ -75,6 +76,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     loading,
     loadingMore,
     error,
+    loadMoreError,
     pagination,
     filters,
     setFilter,
@@ -93,6 +95,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
 
   const { tags: allTags } = useTag();
   const errorSeverity = getMediaErrorSeverity(error);
+  const loadMoreErrorSeverity = getMediaErrorSeverity(loadMoreError);
   const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
 
   const handleBulkDelete = async () => {
@@ -110,7 +113,6 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     initialLocalFilterPrefsRef.current.dimensionFilters
   );
   const [clientSort, setClientSort] = useState<'none' | 'filenameAsc' | 'filenameDesc'>('none');
-  const [searchDraft, setSearchDraft] = useState(filters.search);
   const [highlightAssigned, setHighlightAssigned] = useState(true);
   const [showOnlyAssigned, setShowOnlyAssigned] = useState(false);
   const [visibleAssignedCount, setVisibleAssignedCount] = useState(0);
@@ -119,24 +121,11 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const [importPickerOpen, setImportPickerOpen] = useState(false);
 
   useEffect(() => {
-    setSearchDraft(filters.search);
-  }, [filters.search]);
-
-  useEffect(() => {
     writeStoredMediaAdminLocalFilterPreferences({
       duplicateTriageMode,
       dimensionFilters,
     });
   }, [dimensionFilters, duplicateTriageMode]);
-
-  useEffect(() => {
-    if (searchDraft === filters.search) return;
-    const timeoutId = window.setTimeout(() => {
-      setFilter('search', searchDraft);
-      void fetchMedia(1, { search: searchDraft });
-    }, 200);
-    return () => window.clearTimeout(timeoutId);
-  }, [fetchMedia, filters.search, searchDraft, setFilter]);
 
   const handleOpenBulkTags = () => {
     setBulkTagModalOpen(true);
@@ -196,12 +185,17 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     }
   };
 
+  const handleSearchCommit = (nextSearch: string) => {
+    if (nextSearch === filters.search) return;
+    setFilter('search', nextSearch);
+    void fetchMedia(1, { search: nextSearch });
+  };
+
   const handleClearFilters = () => {
     clearFilters();
     setDuplicateTriageMode(false);
     setDimensionFilters(DEFAULT_ADMIN_DIMENSION_FILTERS);
     setClientSort('none');
-    setSearchDraft('');
   };
 
   const handleImportedMedia = async (importedMedia: Media[]) => {
@@ -241,7 +235,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     () => activeStudioCardAssignedMediaIds.join('\u001e'),
     [activeStudioCardAssignedMediaIds]
   );
-  const assignedOnlyResolvedMedia = useMemo(() => {
+  const assignedOnlyResolvedMedia = (() => {
     if (activeStudioCardAssignedMediaIds.length === 0) return [];
     const fallbackById = new Map(
       assignedOnlyMedia.filter((item) => item?.docId).map((item) => [item.docId, item] as const)
@@ -249,7 +243,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     return activeStudioCardAssignedMediaIds
       .map((mediaId) => resolveMediaById(mediaId) ?? fallbackById.get(mediaId) ?? null)
       .filter((item): item is (typeof media)[number] => Boolean(item?.docId));
-  }, [activeStudioCardAssignedMediaIds, assignedOnlyMedia, resolveMediaById]);
+  })();
   const hiddenAssignedCount = Math.max(
     0,
     activeStudioCardAssignedMediaIds.length - visibleAssignedCount
@@ -359,7 +353,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
 
   useEffect(() => {
     const node = loadMoreRef.current;
-    if (!node || !hasMore || importPickerOpen) return;
+    if (!node || !hasMore || importPickerOpen || loadMoreError) return;
     if (typeof IntersectionObserver === 'undefined') return;
     const observer = new IntersectionObserver(
       (entries) => {
@@ -372,7 +366,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }, [hasMore, importPickerOpen, loadMore, loading, loadingMore]);
+  }, [hasMore, importPickerOpen, loadMore, loadMoreError, loading, loadingMore]);
 
   const mainBody = (
     <>
@@ -416,7 +410,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                 disabled={loading || loadingMore}
                 className={styles.pageButton}
               >
-                {loadingMore ? 'Loading more...' : 'Load more'}
+                {loadingMore ? 'Loading more...' : loadMoreError ? 'Retry loading more' : 'Load more'}
               </button>
             ) : null}
             <span className={styles.pageInfo}>
@@ -436,6 +430,11 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
             </span>
             {!hasMore ? (
               <span className={styles.paginationHint}>End of loaded results</span>
+            ) : null}
+            {loadMoreError ? (
+              <span className={loadMoreErrorSeverity === 'warning' ? styles.warning : styles.error}>
+                {loadMoreError.message}
+              </span>
             ) : null}
           </div>
         )}
@@ -475,12 +474,11 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
               htmlFor="media-admin-search-studio"
               aria-label="Search media"
             >
-              <input
+              <DebouncedSearchInput
                 id="media-admin-search-studio"
-                type="search"
                 placeholder="Search"
-                value={searchDraft}
-                onChange={(e) => setSearchDraft(e.target.value)}
+                value={filters.search}
+                onCommit={handleSearchCommit}
                 className={styles.studioMediaSearchInput}
                 autoComplete="off"
                 aria-label="Search media (filename, caption, path, tag names)"

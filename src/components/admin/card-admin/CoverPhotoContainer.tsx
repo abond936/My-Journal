@@ -11,6 +11,7 @@ import { getImageFileFromDataTransfer } from '@/lib/utils/clipboardImage';
 import { getAspectRatioBucket, getAspectRatioValue } from '@/lib/utils/objectPositionUtils';
 import PhotoPicker from '@/components/admin/card-admin/PhotoPicker';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { useMedia } from '@/components/providers/MediaProvider';
 
 interface CoverPhotoContainerProps {
   coverImage: Media | null;
@@ -47,6 +48,7 @@ export default function CoverPhotoContainer({
   filterTagIds,
   onOpenMediaEditor,
 }: CoverPhotoContainerProps) {
+  const { registerCreatedMedia } = useMedia();
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [horizontalPosition, setHorizontalPosition] = useState(50);
   const [verticalPosition, setVerticalPosition] = useState(50);
@@ -69,6 +71,7 @@ export default function CoverPhotoContainer({
         const data = await response.json();
         const media: Media = data.media ?? data;
         if (!media?.docId) throw new Error('Invalid response');
+        registerCreatedMedia(media);
         onChange(media, '50% 50%');
         void onCommit?.(media, '50% 50%');
       } catch (err) {
@@ -77,7 +80,7 @@ export default function CoverPhotoContainer({
         setIsUploading(false);
       }
     },
-    [onChange, onCommit]
+    [onChange, onCommit, registerCreatedMedia]
   );
 
   const onDrop = useCallback(

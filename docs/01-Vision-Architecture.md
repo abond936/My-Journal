@@ -63,12 +63,17 @@ What must make this product distinctly better is not feature breadth alone, but 
 
 - **Creation + Consumption** - The product succeeds only if both administration and consumption workflows are strong enough to support each other.
 - **Authoring Simplicity** - Core archive workflows should feel intuitive, fast, and fluid, with as little friction as possible between media intake, organization, and story-building.
+- **Media-native Performance** - Core browsing and authoring interactions should feel closer to a modern media app than to a conventional admin screen, especially for tile browsing, card switching, and lightweight edits.
+- **Progressive Honesty** - When work cannot be truly instant, the product should still respond immediately, preserve context, and communicate truthful background progress rather than blanking, stalling, or forcing ritual refresh behavior.
 - **Curated & Freeform** - The product should support both guided narrative exploration and open-ended discovery as first-class modes.
 - **Import-Critical** - Importing and structuring large photo libraries is a core product capability, not a side utility.
 - **Relational** - Large archives should become discoverable through dimensional, hierarchical tags and card relationships rather than feeling like undifferentiated media storage.
 - **Multi-Media** - Stories should combine text and media in one interactive reading experience.
+- **Archive + Renditions** - Preserve original assets for archive, recovery, and eventual print/export while serving fit-for-surface derivatives for browsing, authoring, and reader delivery.
+- **Future-aware Media Model** - The media model should be mature enough for video, phone-native formats, metadata-rich ingest, system-derived organization aids, and eventual print/export workflows without treating those as afterthoughts.
 - **Trustworthy** - Private, author-owned, exportable, backed-up, and restorable content handling is part of the product promise.
 - **Mobile-first** - Reader experience must work naturally on mobile first, with coherent desktop behavior for administration and reading.
+- **Phone-Ready** - Phone-origin media, including video and modern capture formats, should be treated as normal product inputs rather than edge cases bolted on later.
 - **Operationally Practical** - The product should support large personal archives without requiring expert-level maintenance.
 - **Narrative Control** - The author should be able to shape directed story paths through curated collections, ordering, and card relationships when that structure matters.
 - **Commercial Direction** - Build v1 as a credible private hosted journal for one author and family audience without blocking near-term multi-tenant evolution.
@@ -94,6 +99,9 @@ What must make this product distinctly better is not feature breadth alone, but 
 - **Services** - Use managed services pragmatically (Firebase/Auth.js/Next.js).
 - **Secrets & Configuration** - Secrets must stay out of source control and operational flows must preserve safe secret handling across local, hosted, and recovery scenarios.
 - **Data planes** - **Firestore** (and Storage for binaries) is the **authoritative** store for cards, media, and tags. **Derived fields** on cards (`filterTags`, dimensional tag arrays, sort keys, denormalized flags) are computed from authoritative inputs by explicit service rules—not re-derived ad hoc in UI or duplicated with conflicting logic. **Typesense** (and any other search index) is a **projection** for search and list efficiency; treat it as **eventually consistent** with Firestore. It must not force **synchronous** full-document pipelines (full hydration, unrelated media index churn, repeated full-tag-catalog reads) on **narrow** mutations unless the product explicitly requires immediate search parity for that path.
+- **Asset model** - Treat every media item as a canonical **original asset** plus optional **derived renditions** for tiles, previews, reader display, and future export/print or video playback needs. Reader/admin surfaces should request the smallest sufficient rendition by contract rather than assuming original-asset delivery.
+- **Processing lifecycle** - Expensive media work (metadata extraction, thumbnail/poster generation, transcoding, indexing, identity/duplicate analysis) should move through explicit ingest/readiness states and background processing where possible, not through interactive authoring saves or view switches.
+- **Metadata enrichment** - Preserve and expose enough capture metadata and processing outputs to support future organization modes such as face clustering, location views, transcript/search enrichment, duplicate detection, and export-safe media decisions without forcing those capabilities into today's UI prematurely.
 - **Mutation scope** - Classify every write as **narrow** (e.g. tag-only, status-only, single-field metadata) or **wide** (body HTML, gallery structure, cover changes, structural `childrenIds` / collection edits). **Narrow** paths must use **bounded** Firestore reads/writes: avoid N× full `updateCard`-style pipelines for N rows, avoid reloading entire admin catalogs as the default success path, and skip redundant Typesense/media sync when indexed fields did not change. **Wide** paths may use heavier recomputation and index sync; keep that work explicit and documented at the call site. **Never** skip or weaken **denormalized count and derived-field maintenance** (tag `cardCount` / `mediaCount`, card `filterTags` and dimensional arrays, etc.) solely to look “narrow”—those are **product invariants** for filters, admin truth, and reader consistency; narrow work must still apply the **same accounting rules**, batched or once-per-request, not omitted.
 - **Denormalized counts** - Card, media, and tag documents carry **denormalized counts and derived tag projections** so queries and UI stay fast and honest. Any mutation that changes assignments must keep those fields **correct** in Firestore (and indices when the product requires search parity). Refactors that replace “full `updateCard`” for speed must **re-home** the same `updateTagCountsFor*` / `mergeDerivedTags*` (or equivalent) logic into the new path—not drop it. Historical use of the wide pipeline is often **because counts and derived fields were already wired there**; slimmer paths are desirable, but **accuracy is non-negotiable**.
 - **Responsiveness** - Authoring responsiveness is a product requirement, not a polish pass. Tagging and relationship-editing actions should acknowledge quickly; architectural choices should prefer narrow writes, local patching, and deferred secondary sync where invariants remain intact.
@@ -177,6 +185,10 @@ What must make this product distinctly better is not feature breadth alone, but 
 - **Authoritative confirmation** - Separate **optimistic** display from **confirmed** server state where it improves perceived speed; do not block the UI on secondary work (search index sync, full media hydration) when the user action can be acknowledged from Firestore alone.
 - **Preview then hydrate** - In authoring shells with an active object (for example, the selected card in **Studio**), selection should populate local context from the best available preview immediately, then enrich from background hydration. Hydration failure should degrade detail, not blank the active editing surface.
 - **Progressive first paint** - In dense admin shells, prefer a **truthful first batch** and then background catch-up over blocking the whole pane on totals or full hydration. Use cancellable requests, short-lived query caches, and chunked stable streams where they preserve the same authoritative query contract.
+- **Media-native browsing** - Browsing interactions such as tile-density changes, album or workspace switches, and open-detail transitions should behave like local presentation changes over already-available data whenever possible, not as full reload rituals.
+- **Continuous browsing** - Large card/media libraries should normally browse through stable append or virtualized streams rather than page-by-page rituals. Density changes, filter refinements, and sort/view switches should preserve flow instead of feeling like a reset to a different tool.
+- **Lightweight mobile edits** - Reader/mobile-safe edits such as caption changes, story touchups, and future lightweight card creation should use narrow mutation paths with immediate local reconciliation rather than form-like round trips that freeze the browsing surface.
+- **Runtime split** - Desktop Studio authoring, reader consumption, and future lightweight mobile editing should share data truth and media contracts, but they should not share one blunt runtime model. Each surface should load and hydrate to the level its job requires.
 - **Surface simplification** - Prefer fewer, stronger interaction models for authoring when capability is preserved. Simplification should remove parallel UI patterns, not remove the tagging and relationship power the product depends on.
 - **Admin performance strategy** - Treat slow admin work as an **architecture** problem before a polish problem. Converge on **Studio** as the only day-to-day content-admin runtime, and remove duplicated loaders, modes, and compatibility branches before spending time on isolated UI tuning. Prioritize: 
   -  **thumbnail-tier media delivery** for admin grids, pickers, and previews instead of original-image URLs; 
@@ -231,13 +243,13 @@ What must make this product distinctly better is not feature breadth alone, but 
 
 *Intent*
 
-- **Protection** - Back up is required for the code repo and the database.
+- **Protection** - Provide protection against irrecoverabel damage to the code repo and the database.
 
 *Principles*
 
 - **Automated** - Backups run without manual intervention.
 - **Verified** - Backup integrity is confirmed after each run.
-- **Recoverable** - Backup is only meaningful if restore steps are known, tested, and realistic for hosted operation.
+- **Recoverable** - Restore steps are known, tested, and realistic for hosted operation.
 
 *Features*
 ✅ **Complete**

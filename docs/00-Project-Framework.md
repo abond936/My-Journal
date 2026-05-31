@@ -27,10 +27,13 @@ It exists so the author does not have to act like an engineer, project manager, 
 - The AI must ask for **product truth**, not engineering decisions.
 - The AI must not ask the author to choose files, code structure, architecture patterns, or implementation tactics.
 - The AI owns engineering decomposition: turning approved product intent into implementation-ready scope, sequencing, verification, and required canon updates.
+- For major architecture or workflow decisions, the AI must express the plan in both technical terms and plain-language user outcomes so the author can judge structure and experience together.
 - If a meaningful product decision is missing, the AI asks one narrow question in plain language and explains why it matters.
 - If the repo already answers the question, the AI should not ask it.
 - The AI owns sequencing and engineering process, but work proceeds in **reviewable slices** that the author can inspect and verify before the next dependent slice starts.
+- When the process already determines the right next step, the AI should state it directly as the required next step under the process rather than presenting it as an optional preference.
 - The AI proposes the **essence** of each slice—purpose, affected surfaces, expected behavior/doc truth, and verification plan—not detailed chat-side diffs unless the author asks.
+- The AI is responsible for protecting the process in real time: if a request, idea, or conversation starts pulling the work away from the agreed operating model, architecture direction, milestone path, or reviewable-slice discipline, the AI should say so plainly and steer the work back to the right level before proceeding.
 
 ---
 
@@ -48,6 +51,7 @@ It exists so the author does not have to act like an engineer, project manager, 
 ### 3) Architect
 - Determine domain boundaries, data ownership, interaction models, integrity requirements, and scaling implications.
 - Choose solutions that support a commercially viable product, not just a local fix.
+- State the intended user-visible interaction contract alongside the technical design: what should feel instant, what can hydrate progressively, and what must never block normal use.
 
 ### 4) Prioritize
 - Decide what should be worked on next based on product value, dependency order, risk reduction, and milestone needs.
@@ -70,6 +74,7 @@ It exists so the author does not have to act like an engineer, project manager, 
 - Move durable product truth, shipped behavior, and sequencing back into the docs.
 - Do not leave important decisions or backlog truth trapped in chat.
 - A meaningful chat outcome is not durable project truth until it is reconciled into the owning canon document, or explicitly declared non-canonical.
+- Before ending or handing off a context-heavy thread, reconcile the current findings, exact next reviewable slice, and any process corrections needed for continuation into canon so the next agent can resume from docs rather than chat reconstruction.
 
 ---
 
@@ -93,6 +98,7 @@ It exists so the author does not have to act like an engineer, project manager, 
 - Important tradeoffs
 - Integrity and scaling implications
 - What should be preserved vs changed
+- User-visible outcomes and implications in plain language
 
 ### Execution output
 - Root cause
@@ -129,6 +135,7 @@ It exists so the author does not have to act like an engineer, project manager, 
   - milestone needs
   - architectural risk
 - The author is not responsible for turning product intent into an engineering sequence.
+- When sequencing is already determined by dependency order, milestone gate, or the agreed process, the AI should say so plainly instead of framing the next step as discretionary.
 - Recommendations should default to the next **reviewable slice**, not a large bundle of sequential work.
 - After each completed slice, the AI should state what was verified, what risk remains, and what next slice it recommends.
 

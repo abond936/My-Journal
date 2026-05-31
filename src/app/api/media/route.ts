@@ -207,6 +207,7 @@ export async function GET(request: NextRequest) {
 
     const shouldUseLegacyTagSeek = !!tagMode && tagMode !== 'all';
     const hasCaptionSeek = !!hasCaption && hasCaption !== 'all';
+    const hasSourceSeek = !!source && source !== 'all';
 
     const searchTrimmed = search?.trim() ?? '';
     if (searchTrimmed.length > 0 && !isTypesenseConfigured()) {
@@ -268,8 +269,9 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    if (hasDimensionalTagSeek || shouldUseLegacyTagSeek || hasCaptionSeek) {
+    if (hasDimensionalTagSeek || shouldUseLegacyTagSeek || hasCaptionSeek || hasSourceSeek) {
       const predicate = (row: Media) => {
+        if (hasSourceSeek && row.source !== source) return false;
         if (assignment === 'assigned' && !isMediaAssigned(row)) return false;
         if (assignment === 'unassigned' && isMediaAssigned(row)) return false;
         if (!mediaMatchesCaptionFilter(row, hasCaption)) return false;
@@ -284,7 +286,7 @@ export async function GET(request: NextRequest) {
         return true;
       };
       const { media, nextScanCursor, hasNext } = await seekMediaWithPredicates(
-        baseQuery,
+        mediaRef,
         firestore,
         limit,
         cursor,

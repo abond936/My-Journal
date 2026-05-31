@@ -6,8 +6,8 @@ import { FilterX, FolderOpen, Link2Off, Pencil, Plus, Save, Trash2, X } from 'lu
 import EditModal from '@/components/admin/card-admin/EditModal';
 import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
+import DebouncedSearchInput from '@/components/admin/common/DebouncedSearchInput';
 import DimensionalTagVerticalChips from '@/components/admin/common/DimensionalTagVerticalChips';
-import PanelActivityOverlay from '@/components/admin/studio/PanelActivityOverlay';
 import { useStudioShell } from '@/components/admin/studio/StudioShellContext';
 import type { StudioSelectedDetail, StudioSelectedPreview } from '@/components/admin/studio/studioCardTypes';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
@@ -84,6 +84,24 @@ function toUnlinkedStoryCard<T extends StudioSelectedPreview | StudioSelectedDet
   } as T;
 }
 
+function buildQuestionCardPreview(question: Question, cardId: string): StudioSelectedPreview {
+  return {
+    docId: cardId,
+    title: question.prompt,
+    title_lowercase: question.prompt.toLowerCase(),
+    content: '',
+    type: 'qa',
+    status: 'draft',
+    displayMode: 'navigate',
+    tags: question.tagIds,
+    galleryMedia: [],
+    contentMedia: [],
+    childrenIds: [],
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  } as StudioSelectedPreview;
+}
+
 function QuestionTagTree({
   nodes,
   questions,
@@ -137,6 +155,7 @@ export default function StudioQuestionsPane() {
   const feedback = useAppFeedback();
   const {
     selectCard,
+    requestSelectCard,
     getKnownCardPreview,
     selectedCardId,
     selectedPreview,
@@ -144,7 +163,7 @@ export default function StudioQuestionsPane() {
     setSelectedPreview,
     setSelectedDetail,
     upsertCollectionsCardList,
-    refreshCollectionsCardList,
+    registerQuestionCardDeleteSync,
     selectedLoadState,
   } = useStudioShell();
   const { tags: allTags, dimensionTree } = useTag();
@@ -153,6 +172,7 @@ export default function StudioQuestionsPane() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [busyLabel, setBusyLabel] = useState<string | null>(null);
   const [pendingQuestionId, setPendingQuestionId] = useState<string | null>(null);
+  const [pendingQuestionCardId, setPendingQuestionCardId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [includedFilter, setIncludedFilter] = useState<IncludedFilter>('all');
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
@@ -215,9 +235,44 @@ export default function StudioQuestionsPane() {
   }, [loadQuestions]);
 
   useEffect(() => {
+    if (!pendingQuestionId || !pendingQuestionCardId) return;
     if (selectedLoadState === 'loading') return;
+    const selectedMatchesPendingCard =
+      selectedCardId === pendingQuestionCardId &&
+      (selectedDetail?.docId === pendingQuestionCardId || selectedPreview?.docId === pendingQuestionCardId);
+    if (!selectedMatchesPendingCard) return;
     setPendingQuestionId(null);
-  }, [selectedLoadState]);
+    setPendingQuestionCardId(null);
+  }, [
+    pendingQuestionCardId,
+    pendingQuestionId,
+    selectedCardId,
+    selectedDetail?.docId,
+    selectedLoadState,
+    selectedPreview?.docId,
+  ]);
+
+  useEffect(() => {
+    registerQuestionCardDeleteSync((deletedCardId, questionId) => {
+      setQuestions(prev =>
+        prev.map((question) => {
+          if (questionId) {
+            if (question.docId !== questionId) return question;
+          } else if (!question.usedByCardIds.includes(deletedCardId)) {
+            return question;
+          }
+          const nextUsedByCardIds = question.usedByCardIds.filter((id) => id !== deletedCardId);
+          return {
+            ...question,
+            usedByCardIds: nextUsedByCardIds,
+            usageCount: nextUsedByCardIds.length,
+            updatedAt: Date.now(),
+          };
+        })
+      );
+    });
+    return () => registerQuestionCardDeleteSync(null);
+  }, [registerQuestionCardDeleteSync]);
 
   const groupedTagFilters = useMemo(
     () => groupSelectedTagIdsByDimension(filterTagIds, allTags),
@@ -227,6 +282,7 @@ export default function StudioQuestionsPane() {
   const filteredQuestions = useMemo(() => {
     const q = search.trim().toLowerCase();
     return questions.filter(question => {
+      if (pendingQuestionId === question.docId) return true;
       const included = isIncluded(question);
       if (includedFilter === 'included' && !included) return false;
       if (includedFilter === 'notIncluded' && included) return false;
@@ -237,7 +293,16 @@ export default function StudioQuestionsPane() {
       }
       return true;
     });
-  }, [groupedTagFilters, includeChildren, includedFilter, questions, search, selectedDescendantIds, selectedTagId]);
+  }, [
+    groupedTagFilters,
+    includeChildren,
+    includedFilter,
+    pendingQuestionId,
+    questions,
+    search,
+    selectedDescendantIds,
+    selectedTagId,
+  ]);
 
   const saveQuestion = useCallback(async (questionId: string, body: { prompt?: string; tagIds?: string[] }) => {
     setBusyId(questionId);
@@ -272,8 +337,14 @@ export default function StudioQuestionsPane() {
     try {
       const existingCardId = question.usedByCardIds[0];
       if (existingCardId) {
-        const previewCard = getKnownCardPreview(existingCardId);
-        selectCard(existingCardId, previewCard);
+        setPendingQuestionCardId(existingCardId);
+        const previewCard = getKnownCardPreview(existingCardId) ?? buildQuestionCardPreview(question, existingCardId);
+        const switched = await requestSelectCard(existingCardId, previewCard);
+        if (!switched) {
+          setPendingQuestionId(null);
+          setPendingQuestionCardId(null);
+          return;
+        }
         router.replace(`/admin/studio?card=${encodeURIComponent(existingCardId)}`);
         return;
       }
@@ -287,24 +358,45 @@ export default function StudioQuestionsPane() {
       });
       const data = (await res.json().catch(() => ({}))) as QuestionResponse;
       throwIfJsonApiFailed(res, data, 'Failed to create Question card');
+      const cardId = data.card?.docId;
       if (data.question) {
         setQuestions(prev => prev.map(q => q.docId === question.docId ? data.question! : q));
+      } else if (cardId) {
+        setQuestions(prev =>
+          prev.map(q =>
+            q.docId === question.docId
+              ? {
+                  ...q,
+                  usedByCardIds: q.usedByCardIds.includes(cardId) ? q.usedByCardIds : [...q.usedByCardIds, cardId],
+                  usageCount: Math.max(q.usageCount ?? 0, q.usedByCardIds.includes(cardId) ? q.usedByCardIds.length : q.usedByCardIds.length + 1),
+                  updatedAt: Date.now(),
+                }
+              : q
+          )
+        );
       }
-      const cardId = data.card?.docId;
       if (cardId) {
-        refreshCollectionsCardList();
-        selectCard(cardId, data.card ?? null);
+        setPendingQuestionCardId(cardId);
+        const nextPreview = (data.card as StudioSelectedPreview | undefined) ?? buildQuestionCardPreview(question, cardId);
+        upsertCollectionsCardList(nextPreview);
+        const switched = await requestSelectCard(cardId, nextPreview);
+        if (!switched) {
+          setPendingQuestionId(null);
+          setPendingQuestionCardId(null);
+          return;
+        }
         router.replace(`/admin/studio?card=${encodeURIComponent(cardId)}`);
         feedback.showSuccess('Created draft Question card.', 'Question ready');
       }
     } catch (e) {
       setPendingQuestionId(null);
+      setPendingQuestionCardId(null);
       feedback.showError(e instanceof Error ? e.message : 'Failed to open question', 'Could not open question');
     } finally {
       setBusyId(null);
       setBusyLabel(null);
     }
-  }, [feedback, getKnownCardPreview, refreshCollectionsCardList, router, selectCard]);
+  }, [feedback, getKnownCardPreview, requestSelectCard, router, upsertCollectionsCardList]);
 
   const unlinkQuestionCard = useCallback(async (question: Question) => {
     const cardId = question.usedByCardIds[0];
@@ -342,7 +434,6 @@ export default function StudioQuestionsPane() {
           upsertCollectionsCardList(toUnlinkedStoryCard(knownPreview));
         }
       }
-      refreshCollectionsCardList();
       feedback.showSuccess('Unlinked question and converted card to draft Story.', 'Question updated');
     } catch (e) {
       feedback.showError(e instanceof Error ? e.message : 'Failed to unlink question', 'Could not unlink question');
@@ -353,7 +444,6 @@ export default function StudioQuestionsPane() {
   }, [
     feedback,
     getKnownCardPreview,
-    refreshCollectionsCardList,
     selectCard,
     selectedCardId,
     selectedDetail,
@@ -437,11 +527,6 @@ export default function StudioQuestionsPane() {
 
   return (
     <aside className={styles.studioQuestionsPane} aria-label="Questions">
-      <PanelActivityOverlay
-        active={Boolean(busyId)}
-        blocking
-        title={busyLabel ?? 'Updating questions...'}
-      />
       <div className={styles.studioQuestionsHeader}>
         <h2 className={styles.studioComposeTitle}>Questions</h2>
         <button
@@ -492,6 +577,11 @@ export default function StudioQuestionsPane() {
               collapsedSummary="none"
             />
           ) : null}
+          {busyId === 'new' ? (
+            <p className={styles.studioQuestionInlineStatus} role="status" aria-live="polite">
+              {busyLabel ?? 'Adding question...'}
+            </p>
+          ) : null}
           <div className={styles.studioQuestionActions}>
             <button
               type="submit"
@@ -518,11 +608,12 @@ export default function StudioQuestionsPane() {
 
       <div className={styles.studioQuestionFilters}>
         <div className={styles.studioQuestionFilterRow}>
-          <input
+          <DebouncedSearchInput
             className={styles.studioQuestionInput}
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onCommit={setSearch}
             placeholder="Search"
+            ariaLabel="Search questions"
           />
           <select
             className={styles.studioQuestionSelect}
@@ -633,16 +724,23 @@ export default function StudioQuestionsPane() {
           const busy = busyId === question.docId;
           const editing = editingId === question.docId;
           const pendingOpen = pendingQuestionId === question.docId;
+          const pendingRow = pendingOpen || (busy && !editing);
+          const pendingLabel =
+            pendingOpen
+              ? busyLabel ?? 'Opening Compose...'
+              : busy
+                ? busyLabel ?? 'Updating question...'
+                : null;
           const activeTagIds = editing ? editTagIds : question.tagIds;
           return (
             <article
               key={question.docId}
-              className={`${styles.studioQuestionRow} ${pendingOpen ? styles.studioQuestionRowPending : ''}`}
+              className={`${styles.studioQuestionRow} ${pendingRow ? styles.studioQuestionRowPending : ''}`}
             >
-              {pendingOpen ? (
+              {pendingRow ? (
                 <div className={styles.studioQuestionRowPendingOverlay} aria-hidden="true">
                   <div className={styles.studioQuestionRowPendingSpinner} />
-                  <span className={styles.studioQuestionRowPendingLabel}>Opening Compose...</span>
+                  <span className={styles.studioQuestionRowPendingLabel}>{pendingLabel}</span>
                 </div>
               ) : null}
               {editing ? (

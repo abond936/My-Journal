@@ -93,6 +93,7 @@ function MediaAdminGridCell({
 }: MediaAdminGridCellProps) {
   const router = useRouter();
   const feedback = useAppFeedback();
+  const studioShell = useStudioShellOptional();
   const core = useMemo(() => getCoreTagsByDimension(media), [media]);
   const { deleteMedia } = useMedia();
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
@@ -168,10 +169,17 @@ function MediaAdminGridCell({
     }
   }, [captionDraft, inlineCaptionEditing, media.caption, media.docId, onSaveMediaFields]);
 
-  const relatedCardIds = useMemo(
-    () => authoritativeRelatedCardIds ?? media.referencedByCardIds ?? [],
-    [authoritativeRelatedCardIds, media.referencedByCardIds]
-  );
+  const relatedCardIds = useMemo(() => {
+    const base = authoritativeRelatedCardIds ?? media.referencedByCardIds ?? [];
+    if (!isAssignedToActiveCard || !studioShell?.selectedCardId) return base;
+    if (base.includes(studioShell.selectedCardId)) return base;
+    return [studioShell.selectedCardId, ...base];
+  }, [
+    authoritativeRelatedCardIds,
+    isAssignedToActiveCard,
+    media.referencedByCardIds,
+    studioShell?.selectedCardId,
+  ]);
   const assigned = relatedCardIds.length > 0;
   const linkedCardCount = relatedCardIds.length;
   const handleOpenLinkedCards = useCallback(() => {
@@ -191,8 +199,18 @@ function MediaAdminGridCell({
       tone: 'danger',
     });
     if (!shouldDelete) return;
-    await deleteMedia(media.docId);
-  }, [deleteMedia, feedback, media.docId, media.filename]);
+    try {
+      await deleteMedia(media.docId);
+      if (studioShell?.selectedCardId) {
+        void studioShell.loadSelectedCard(studioShell.selectedCardId, { quiet: true });
+      }
+    } catch (error) {
+      feedback.showError(
+        error instanceof Error ? error.message : 'Failed to delete media.',
+        'Could not delete media'
+      );
+    }
+  }, [deleteMedia, feedback, media.docId, media.filename, studioShell]);
   const studioRootExtras = studioDragBind
     ? {
         ref: studioDragBind.setNodeRef,

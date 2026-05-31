@@ -14,8 +14,8 @@ import ImageToolbar from './ImageToolbar';
 import styles from './RichTextEditor.module.css';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import { dataTransferHasMeaningfulText, getImageFileFromDataTransfer } from '@/lib/utils/clipboardImage';
+import { useMedia } from '@/components/providers/MediaProvider';
 import clsx from 'clsx';
-import { useCardForm } from '@/components/providers/CardFormProvider';
 
 type FigureImageAlignment = 'left' | 'center' | 'right';
 type FigureImageWrap = 'on' | 'off';
@@ -74,11 +74,11 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
   currentCardId,
   chainWheelToScrollParent = false,
 }, ref) => {
-  const { updateContentMedia } = useCardForm();
   const [content, setContent] = useState(initialContent);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [activeImageMediaId, setActiveImageMediaId] = useState<string | null>(null);
   const [draggingFigureMediaId, setDraggingFigureMediaId] = useState<string | null>(null);
+  const { registerCreatedMedia } = useMedia();
 
   const extractMediaIds = useCallback((htmlContent: string) => {
     const mediaIds = new Set<string>();
@@ -175,8 +175,8 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
 
       const currentMediaIds = extractMediaIds(editor.getHTML());
       const updatedMediaIds = currentMediaIds.filter(id => id !== activeImageMediaId);
-      updateContentMedia(updatedMediaIds);
       onImageDelete?.(activeImageMediaId);
+      onContentMediaChange?.(updatedMediaIds);
       setActiveImageMediaId(null);
       return;
       }
@@ -210,11 +210,10 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
         mediaIds.some(id => !currentMediaIds.includes(id));
       
       if (mediaIdsChanged) {
-        updateContentMedia(mediaIds);
         onContentMediaChange?.(mediaIds);
       }
     }
-  }, [content, onChange, updateContentMedia, onContentMediaChange, extractMediaIds]);
+  }, [content, onChange, onContentMediaChange, extractMediaIds]);
 
   const editor = useEditor({
     extensions: [StarterKit, FigureWithImage, Link, CardMention, RichTextDropCursor],
@@ -332,6 +331,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
       const data = await response.json();
       const newMedia: Media = data.media ?? data;
       if (!newMedia?.docId) throw new Error('Invalid upload response');
+      registerCreatedMedia(newMedia);
       insertImage(newMedia);
     } catch (e) {
       console.error('Image upload failed:', e);

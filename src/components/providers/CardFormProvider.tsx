@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef, useDeferredValue } from 'react';
 import { mutate as globalMutate } from 'swr';
 import { Card, CardUpdate, cardSchema, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
@@ -170,6 +170,7 @@ function mergeInitialCard(card: Card | null): CardUpdate {
  */
 export function CardFormProvider({ children, initialCard, allTags, onSave }: FormProviderProps) {
   const feedback = useAppFeedback();
+  const [dirtyHint, setDirtyHint] = useState(false);
   const cardContext = useOptionalCardContext();
   const [formState, setFormState] = useState<FormState>(() => {
     const card = mergeInitialCard(initialCard);
@@ -190,6 +191,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       setFormState(prevState => {
         if (!prevState.cardData.docId || prevState.cardData.docId !== initialCard.docId) {
           const mergedCard = mergeInitialCard(initialCard);
+          setDirtyHint(false);
           return {
             ...prevState,
             cardData: mergedCard,
@@ -238,10 +240,13 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     }
   }, []);
 
-  const isDirty = useMemo(() => {
-    const current = mergeEditorContentInto(formState.cardData);
+  const deferredCardData = useDeferredValue(formState.cardData);
+  const deferredPersistableDirty = useMemo(() => {
+    if (!dirtyHint) return false;
+    const current = mergeEditorContentInto(deferredCardData);
     return !persistableSnapshotsEqual(current, formState.lastSavedState.cardData);
-  }, [formState.cardData, formState.lastSavedState.cardData, mergeEditorContentInto]);
+  }, [deferredCardData, dirtyHint, formState.lastSavedState.cardData, mergeEditorContentInto]);
+  const isDirty = dirtyHint && deferredPersistableDirty;
 
   const confirmLeaveIfDirty = useCallback(() => {
     const current = mergeEditorContentInto(cardDataRef.current);
@@ -266,6 +271,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
   }, [feedback, formState.lastSavedState.cardData, mergeEditorContentInto]);
 
   const syncPersistableBaseline = useCallback(() => {
+    setDirtyHint(false);
     setFormState((prev) => ({
       ...prev,
       lastSavedState: {
@@ -276,6 +282,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
 
   const commitGalleryMediaPersisted = useCallback(
     (nextGallery: HydratedGalleryMediaItem[]) => {
+      setDirtyHint(false);
       setFormState((prev) => {
         const cardWithGallery: CardUpdate = {
           ...prev.cardData,
@@ -321,6 +328,9 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       }
       const mergedCard = mergeEditorContentInto(nextCard);
       const wasPristine = persistableSnapshotsEqual(prev.cardData, prev.lastSavedState.cardData);
+      if (wasPristine) {
+        setDirtyHint(false);
+      }
       return {
         ...prev,
         cardData: mergedCard,
@@ -347,6 +357,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     setFormState((prev) => {
       if (!prev.cardData) return prev;
       if (value === prev.cardData[field]) return prev;
+      setDirtyHint(true);
       return {
         ...prev,
         cardData: {
@@ -358,6 +369,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
   }, []);
 
   const updateCoverImage = useCallback((media: Media | null, focalPoint?: { x: number; y: number }) => {
+    setDirtyHint(true);
     setFormState(prev => ({
       ...prev,
       cardData: {
@@ -371,12 +383,14 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
 
   const updateTags = useCallback((newTags: Tag[]) => {
     const tagIds = newTags.map(t => t.docId);
+    setDirtyHint(true);
     batchStateUpdate({
       cardData: { ...formState.cardData, tags: tagIds },
     });
   }, [batchStateUpdate, formState.cardData]);
 
   const updateChildIds = useCallback((newChildIds: string[]) => {
+    setDirtyHint(true);
     batchStateUpdate({
       cardData: { ...formState.cardData, childrenIds: newChildIds },
     });
@@ -389,6 +403,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       mediaIds.some(id => !currentMediaIds.includes(id));
 
     if (hasChanged) {
+      setDirtyHint(true);
       console.log('[CardFormProvider] Updating content media', {
         currentContentLength: formState.cardData.content?.length,
         from: currentMediaIds,
@@ -480,6 +495,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
             cardData: { ...baseline },
           },
         });
+        setDirtyHint(false);
         return true;
       } catch (error) {
         console.error('[handleSave] Error during save:', error);
@@ -591,6 +607,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
 
   const resetForm = useCallback(() => {
     const card = mergeInitialCard(initialCard);
+    setDirtyHint(false);
     setFormState((prev) => ({
       cardData: card,
       isSaving: false,

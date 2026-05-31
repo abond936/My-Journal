@@ -252,6 +252,7 @@ export default function StudioWorkspace() {
     resolveMediaById,
     updateMedia,
     deleteMedia,
+    reconcileCardMediaAssignments,
     selectedMediaIds,
     setSelectedMediaIds,
     toggleMediaSelection,
@@ -264,6 +265,8 @@ export default function StudioWorkspace() {
 
   const bodyMediaInsertRef = useRef<((m: Media) => void) | null>(null);
   const collectionsUpsertCardRef = useRef<((card: Card) => void) | null>(null);
+  const collectionsRemoveCardRef = useRef<((cardId: string) => void) | null>(null);
+  const questionCardDeleteSyncRef = useRef<((cardId: string, questionId?: string | null) => void) | null>(null);
   const resolveBankMediaById = useCallback(
     (id: string) => bankMediaPage.find((m) => m.docId === id) ?? resolveMediaById(id),
     [bankMediaPage, resolveMediaById]
@@ -336,6 +339,7 @@ export default function StudioWorkspace() {
     },
     [getCachedSelectedCard]
   );
+  const composeLeaveGuardRef = useRef<(() => Promise<boolean>) | null>(null);
   const selectCard = useCallback(
     (cardId: string, previewCard?: Card | StudioSelectedPreview | StudioSelectedDetail | null) => {
       const trimmedId = cardId.trim();
@@ -354,6 +358,25 @@ export default function StudioWorkspace() {
       }
     },
     [cacheSelectedCard, getKnownCardPreview]
+  );
+  const registerComposeLeaveGuard = useCallback((fn: (() => Promise<boolean>) | null) => {
+    composeLeaveGuardRef.current = fn;
+  }, []);
+  const requestSelectCard = useCallback(
+    async (
+      cardId: string,
+      previewCard?: Card | StudioSelectedPreview | StudioSelectedDetail | null
+    ) => {
+      const trimmedId = cardId.trim();
+      if (!trimmedId) return false;
+      if (trimmedId !== selectedCardId && composeLeaveGuardRef.current) {
+        const canLeave = await composeLeaveGuardRef.current();
+        if (!canLeave) return false;
+      }
+      selectCard(trimmedId, previewCard);
+      return true;
+    },
+    [selectCard, selectedCardId]
   );
 
   useEffect(() => {
@@ -889,6 +912,13 @@ export default function StudioWorkspace() {
         const data = await res.json().catch(() => ({}));
         throwIfJsonApiFailed(res, data, 'Update failed.');
         const nextCard = toStudioSelectedDetail(data as StudioCardContext);
+        const previousAssigned = previousDetail ? collectAssignedMediaIds(previousDetail) : [];
+        const nextAssigned = collectAssignedMediaIds(nextCard);
+        const addedAssigned = nextAssigned.filter((id) => !previousAssigned.includes(id));
+        const removedAssigned = previousAssigned.filter((id) => !nextAssigned.includes(id));
+        if (addedAssigned.length > 0 || removedAssigned.length > 0) {
+          reconcileCardMediaAssignments(selectedCardId, addedAssigned, removedAssigned);
+        }
         cacheSelectedCard(nextCard);
         setSelectedDetail(nextCard);
         setSelectedPreview((current) =>
@@ -897,7 +927,7 @@ export default function StudioWorkspace() {
             : toStudioSelectedPreview(nextCard)
         );
         setSelectedLoadState('ready');
-        collectionsRefreshRef.current?.();
+        collectionsUpsertCardRef.current?.(nextCard);
         // Always refresh strip: omitting a message must clear stale text (e.g. old cover-drag copy).
         setActionInfo(successMessage ?? null);
       } catch (e) {
@@ -912,7 +942,7 @@ export default function StudioWorkspace() {
         setActionBusy(false);
       }
     },
-    [cacheSelectedCard, selectedDetail, selectedPreview, selectedCardId]
+    [cacheSelectedCard, reconcileCardMediaAssignments, selectedDetail, selectedPreview, selectedCardId]
   );
 
   const activeCardViewModel = useMemo<StudioActiveCardViewModel>(() => {
@@ -1055,13 +1085,25 @@ export default function StudioWorkspace() {
     [actionBusy, bridgeCollectionsCardToSelectedParent, feedback, selectedCardId, selectedDetail, patchSelectedCard, resolveBankMediaById]
   );
 
-  const refreshCollectionsCardList = useCallback(() => {
+  const refreshCollectionsStructure = useCallback(() => {
     collectionsRefreshRef.current?.();
   }, []);
   const upsertCollectionsCardList = useCallback((card: Card | StudioCardContext | null) => {
     if (!card?.docId) return;
     collectionsUpsertCardRef.current?.(card as Card);
   }, []);
+  const removeCollectionsCardStructure = useCallback((cardId: string) => {
+    collectionsRemoveCardRef.current?.(cardId);
+  }, []);
+  const notifyQuestionCardDeleted = useCallback((cardId: string, questionId?: string | null) => {
+    questionCardDeleteSyncRef.current?.(cardId, questionId);
+  }, []);
+  const registerQuestionCardDeleteSync = useCallback(
+    (fn: ((cardId: string, questionId?: string | null) => void) | null) => {
+      questionCardDeleteSyncRef.current = fn;
+    },
+    []
+  );
   const deleteSelectedCard = useCallback(
     async (cardId: string) => {
       const id = cardId.trim();
@@ -1070,6 +1112,10 @@ export default function StudioWorkspace() {
       setActionError(null);
       setActionInfo(null);
       try {
+        const deletedQuestionId =
+          (selectedDetailRef.current?.docId === id ? selectedDetailRef.current.questionId : null) ??
+          (selectedPreviewRef.current?.docId === id ? selectedPreviewRef.current.questionId : null) ??
+          null;
         const fallbackCard =
           selectedCardId === id ? cardsBankDeleteFallbackResolverRef.current?.(id) ?? null : null;
         const res = await fetch(`/api/cards/${encodeURIComponent(id)}`, {
@@ -1083,6 +1129,7 @@ export default function StudioWorkspace() {
         selectedCardCacheRef.current.delete(id);
         selectedCardCacheOrderRef.current = selectedCardCacheOrderRef.current.filter((entryId) => entryId !== id);
         cardsBankRemoveRef.current?.(id);
+        removeCollectionsCardStructure(id);
         if (selectedCardId === id) {
           if (fallbackCard?.docId && fallbackCard.docId !== id) {
             selectCard(fallbackCard.docId, fallbackCard);
@@ -1100,12 +1147,12 @@ export default function StudioWorkspace() {
         setCardError(null);
         setCardLoading(false);
         selectNoneMedia();
+        notifyQuestionCardDeleted(id, deletedQuestionId);
         void globalMutate(
           (key) => typeof key === 'string' && key.startsWith('/api/cards?'),
           (current) => removeCardFromCardsCache(current, id),
           { revalidate: true }
         );
-        collectionsRefreshRef.current?.();
         router.replace('/admin/studio');
         setActionInfo('Card deleted.');
         return true;
@@ -1116,7 +1163,7 @@ export default function StudioWorkspace() {
         setActionBusy(false);
       }
     },
-    [router, selectCard, selectNoneMedia, selectedCardId]
+    [notifyQuestionCardDeleted, removeCollectionsCardStructure, router, selectCard, selectNoneMedia, selectedCardId]
   );
   const hasSelectedCardMedia = useMemo(
     () => collectAssignedMediaIds(selectedDetail ?? selectedPreview).length > 0,
@@ -1128,6 +1175,8 @@ export default function StudioWorkspace() {
       selectedCardId,
       setSelectedCardId,
       selectCard,
+      requestSelectCard,
+      registerComposeLeaveGuard,
       getKnownCardPreview,
       selectedPreview,
       setSelectedPreview,
@@ -1140,8 +1189,11 @@ export default function StudioWorkspace() {
       loadSelectedCard,
       patchSelectedCard,
       deleteSelectedCard,
-      refreshCollectionsCardList,
+      refreshCollectionsStructure,
       upsertCollectionsCardList,
+      removeCollectionsCardStructure,
+      notifyQuestionCardDeleted,
+      registerQuestionCardDeleteSync,
       selectedMediaIds,
       setSelectedMediaIds,
       toggleMediaSelection,
@@ -1155,6 +1207,8 @@ export default function StudioWorkspace() {
       selectedCardId,
       setSelectedCardId,
       selectCard,
+      requestSelectCard,
+      registerComposeLeaveGuard,
       getKnownCardPreview,
       selectedPreview,
       setSelectedPreview,
@@ -1167,8 +1221,11 @@ export default function StudioWorkspace() {
       loadSelectedCard,
       patchSelectedCard,
       deleteSelectedCard,
-      refreshCollectionsCardList,
+      refreshCollectionsStructure,
       upsertCollectionsCardList,
+      removeCollectionsCardStructure,
+      notifyQuestionCardDeleted,
+      registerQuestionCardDeleteSync,
       selectedMediaIds,
       setSelectedMediaIds,
       toggleMediaSelection,
@@ -1231,16 +1288,16 @@ export default function StudioWorkspace() {
         </div>
         <div className={wideLayout ? styles.grid : styles.gridStacked}>
           <div className={styles.collectionsHost}>
-            <CollectionsAdminClient
+              <CollectionsAdminClient
               embedded
-              onSelectCard={selectCard}
+              onSelectCard={requestSelectCard}
               embeddedExternalDragEnd={onStudioRelationshipDragEnd}
               embeddedOnStudioParentAttachComplete={(parentId) => {
                 if (selectedCardId === parentId) {
                   void loadSelectedCard(parentId, { quiet: true });
                   return;
                 }
-                selectCard(parentId);
+                void requestSelectCard(parentId);
               }}
               embeddedOrganizationCollapsed={paneVisibility.organizationCollapsed}
               embeddedCardsCollapsed={paneVisibility.cardsCollapsed}
@@ -1256,9 +1313,10 @@ export default function StudioWorkspace() {
                     }}
                   />
                 )}
-              embeddedRightSlot={({ refreshCards, upsertCard }) => {
-                collectionsRefreshRef.current = refreshCards;
+              embeddedRightSlot={({ refreshStructure, upsertCard, removeCard }) => {
+                collectionsRefreshRef.current = refreshStructure;
                 collectionsUpsertCardRef.current = upsertCard;
+                collectionsRemoveCardRef.current = removeCard;
                 const showComposePane = !paneVisibility.composeCollapsed;
                 const showQuestionsPane = !paneVisibility.questionsCollapsed;
                 const showMediaPane = !paneVisibility.mediaCollapsed;

@@ -183,10 +183,25 @@ const CardForm: React.FC = () => {
   const [draftSuggestionError, setDraftSuggestionError] = useState<string | null>(null);
   const [storyAssistOpen, setStoryAssistOpen] = useState(false);
   const [tagMacroExpanded, setTagMacroExpanded] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(cardData.title || '');
+  const [subtitleDraft, setSubtitleDraft] = useState(cardData.subtitle || '');
+  const [excerptDraft, setExcerptDraft] = useState(cardData.excerpt || '');
 
   useEffect(() => {
     setTagMacroExpanded(false);
   }, [cardData.docId]);
+
+  useEffect(() => {
+    setTitleDraft(cardData.title || '');
+  }, [cardData.docId, cardData.title]);
+
+  useEffect(() => {
+    setSubtitleDraft(cardData.subtitle || '');
+  }, [cardData.docId, cardData.subtitle]);
+
+  useEffect(() => {
+    setExcerptDraft(cardData.excerpt || '');
+  }, [cardData.docId, cardData.excerpt]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -215,9 +230,9 @@ const CardForm: React.FC = () => {
     }
   }, [draftOptions.length, draftSuggestionError, isSuggestingDrafts, storyAssistSummary, storyCoachSuggestions.length]);
 
-  const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setField('title', e.target.value), [setField]);
-  const handleSubtitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setField('subtitle', e.target.value), [setField]);
-  const handleExcerptChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setField('excerpt', e.target.value), [setField]);
+  const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setTitleDraft(e.target.value), []);
+  const handleSubtitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setSubtitleDraft(e.target.value), []);
+  const handleExcerptChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setExcerptDraft(e.target.value), []);
   const isExcerptAuto = cardData.excerptAuto !== false;
   const autoExcerptPreview = useMemo(() => generateExcerpt(cardData.content), [cardData.content]);
   const autoExcerptDisplay = autoExcerptPreview || cardData.excerpt || 'Excerpt will be generated from content when saved.';
@@ -268,8 +283,7 @@ const CardForm: React.FC = () => {
   }, [lastSavedState.cardData.displayMode, persistFieldPatch, setField]);
   const handleContentChange = useCallback((content: string) => {
     setField('content', content);
-    updateContentMedia(extractMediaFromContent(content));
-  }, [setField, updateContentMedia]);
+  }, [setField]);
   
   const handleTagsChange = useCallback((newTagIds: string[]) => {
     setField('tags', newTagIds);
@@ -436,25 +450,28 @@ const CardForm: React.FC = () => {
   }, [cardData.tags, allTags]);
 
   const persistTitleOnBlur = useCallback(() => {
-    const nextTitle = (cardData.title || '').trim();
+    setField('title', titleDraft);
+    const nextTitle = titleDraft.trim();
     if (!cardData.docId || !nextTitle) return;
     if ((lastSavedState.cardData.title || '') === nextTitle) return;
     void persistFieldPatch({ title: nextTitle });
-  }, [cardData.docId, cardData.title, lastSavedState.cardData.title, persistFieldPatch]);
+  }, [cardData.docId, lastSavedState.cardData.title, persistFieldPatch, setField, titleDraft]);
 
   const persistSubtitleOnBlur = useCallback(() => {
+    setField('subtitle', subtitleDraft || null);
     if (!cardData.docId) return;
-    const nextSubtitle = cardData.subtitle || null;
+    const nextSubtitle = subtitleDraft || null;
     if ((lastSavedState.cardData.subtitle || null) === nextSubtitle) return;
     void persistFieldPatch({ subtitle: nextSubtitle });
-  }, [cardData.docId, cardData.subtitle, lastSavedState.cardData.subtitle, persistFieldPatch]);
+  }, [cardData.docId, lastSavedState.cardData.subtitle, persistFieldPatch, setField, subtitleDraft]);
 
   const persistExcerptOnBlur = useCallback(() => {
+    setField('excerpt', excerptDraft || null);
     if (!cardData.docId || isExcerptAuto) return;
-    const nextExcerpt = cardData.excerpt || null;
+    const nextExcerpt = excerptDraft || null;
     if ((lastSavedState.cardData.excerpt || null) === nextExcerpt) return;
     void persistFieldPatch({ excerpt: nextExcerpt });
-  }, [cardData.docId, cardData.excerpt, isExcerptAuto, lastSavedState.cardData.excerpt, persistFieldPatch]);
+  }, [cardData.docId, excerptDraft, isExcerptAuto, lastSavedState.cardData.excerpt, persistFieldPatch, setField]);
 
   const handleSingleLineFieldEnter = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') return;
@@ -473,14 +490,19 @@ const CardForm: React.FC = () => {
   const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const editorContent = editorRef.current?.getContent();
-    const overrides = editorContent !== undefined ? { content: editorContent } : undefined;
+    const overrides = {
+      ...(editorContent !== undefined ? { content: editorContent } : {}),
+      title: titleDraft,
+      subtitle: subtitleDraft || null,
+      excerpt: isExcerptAuto ? null : excerptDraft || null,
+    };
     const saved = await handleSave(overrides);
     if (saved) {
       feedback.showSuccess('Card saved.', 'Saved');
       return;
     }
     feedback.showError('Could not save card. Please review any errors and try again.', 'Could not save');
-  }, [feedback, handleSave]);
+  }, [excerptDraft, feedback, handleSave, isExcerptAuto, subtitleDraft, titleDraft]);
 
   const handleAddImageToContent = useCallback(() => {
     setIsPhotoPickerOpen(true);
@@ -583,6 +605,7 @@ const CardForm: React.FC = () => {
       ref={editorRef}
       initialContent={cardData.content}
       onChange={handleContentChange}
+      onContentMediaChange={updateContentMedia}
       onAddImage={handleAddImageToContent}
       error={errors.content}
       className={clsx(errors.content && styles.inputError)}
@@ -781,7 +804,7 @@ const CardForm: React.FC = () => {
               <div className={styles.header}>
                 <input
                   type="text"
-                  value={cardData.title}
+                  value={titleDraft}
                   onChange={handleTitleChange}
                   onBlur={persistTitleOnBlur}
                   onKeyDown={handleSingleLineFieldEnter}
@@ -790,7 +813,7 @@ const CardForm: React.FC = () => {
                 />
                 <input
                   type="text"
-                  value={cardData.subtitle || ''}
+                  value={subtitleDraft}
                   onChange={handleSubtitleChange}
                   onBlur={persistSubtitleOnBlur}
                   onKeyDown={handleSingleLineFieldEnter}
@@ -816,7 +839,7 @@ const CardForm: React.FC = () => {
                         </div>
                       ) : (
                         <textarea
-                          value={cardData.excerpt || ''}
+                          value={excerptDraft}
                           onChange={handleExcerptChange}
                           onBlur={persistExcerptOnBlur}
                           placeholder="Write a custom excerpt…"
@@ -833,7 +856,7 @@ const CardForm: React.FC = () => {
                         </div>
                       ) : (
                         <textarea
-                          value={cardData.excerpt || ''}
+                          value={excerptDraft}
                           onChange={handleExcerptChange}
                           onBlur={persistExcerptOnBlur}
                           placeholder="Write a custom excerpt…"
@@ -967,7 +990,7 @@ const CardForm: React.FC = () => {
           <div className={styles.header}>
             <input
               type="text"
-              value={cardData.title}
+              value={titleDraft}
               onChange={handleTitleChange}
               onBlur={persistTitleOnBlur}
               onKeyDown={handleSingleLineFieldEnter}
@@ -976,7 +999,7 @@ const CardForm: React.FC = () => {
             />
             <input
               type="text"
-              value={cardData.subtitle || ''}
+              value={subtitleDraft}
               onChange={handleSubtitleChange}
               onBlur={persistSubtitleOnBlur}
               onKeyDown={handleSingleLineFieldEnter}
@@ -1002,7 +1025,7 @@ const CardForm: React.FC = () => {
                     </div>
                   ) : (
                     <textarea
-                      value={cardData.excerpt || ''}
+                      value={excerptDraft}
                       onChange={handleExcerptChange}
                       onBlur={persistExcerptOnBlur}
                       placeholder="Write a custom excerpt…"
@@ -1019,7 +1042,7 @@ const CardForm: React.FC = () => {
                     </div>
                   ) : (
                     <textarea
-                      value={cardData.excerpt || ''}
+                      value={excerptDraft}
                       onChange={handleExcerptChange}
                       onBlur={persistExcerptOnBlur}
                       placeholder="Write a custom excerpt…"
