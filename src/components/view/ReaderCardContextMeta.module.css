@@ -17,10 +17,13 @@
 }
 
 .badge {
-  padding: 1px 5px;
-  font-family: var(--reader-chrome-meta-font-family);
-  font-size: calc(var(--reader-chrome-meta-font-size) * 0.94);
-  font-weight: 700;
+  min-height: var(--reader-card-badge-min-height);
+  padding: var(--reader-card-badge-padding-block) var(--reader-card-badge-padding-inline);
+  border-radius: var(--reader-card-badge-radius);
+  font-family: var(--reader-card-badge-font-family);
+  font-size: var(--reader-card-badge-font-size);
+  font-weight: var(--reader-card-badge-font-weight);
+  line-height: var(--reader-card-badge-line-height);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -56,7 +59,7 @@
 }
 
 .overlay .badge {
-  background: color-mix(in srgb, var(--reader-card-badge-background-color) 88%, transparent);
+  background: var(--reader-card-badge-background-color);
   color: var(--reader-card-badge-text-color);
   border-color: var(--reader-card-badge-border-color);
   box-shadow: var(--shadow-sm);
@@ -76,7 +79,7 @@
 }
 
 .inline .badge {
-  background: color-mix(in srgb, var(--reader-card-badge-background-color) 94%, white 6%);
+  background: var(--reader-card-badge-background-color);
   color: var(--reader-card-badge-text-color);
   border-color: var(--reader-card-badge-border-color);
 }
@@ -92,7 +95,7 @@
 }
 
 .detail .badge {
-  background: color-mix(in srgb, var(--reader-card-badge-background-color) 94%, white 6%);
+  background: var(--reader-card-badge-background-color);
   color: var(--reader-card-badge-text-color);
   border-color: var(--reader-card-badge-border-color);
 }

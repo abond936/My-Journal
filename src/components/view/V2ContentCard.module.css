@@ -1,5 +1,10 @@
 /* --- Base Card Styles --- */
 .card {
+  --reader-card-badge-active-font-size: var(--reader-card-badge-font-size);
+  --reader-card-badge-active-line-height: var(--reader-card-badge-line-height);
+  --reader-card-badge-active-padding-block: var(--reader-card-badge-padding-block);
+  --reader-card-badge-active-padding-inline: var(--reader-card-badge-padding-inline);
+  --reader-card-badge-active-min-height: var(--reader-card-badge-min-height);
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -117,6 +122,11 @@
 
 /* --- Size Variations --- */
 .small { /* For mobile: 50% width to fit two side-by-side */
+  --reader-card-badge-active-font-size: var(--reader-card-badge-compact-font-size);
+  --reader-card-badge-active-line-height: var(--reader-card-badge-compact-line-height);
+  --reader-card-badge-active-padding-block: var(--reader-card-badge-compact-padding-block);
+  --reader-card-badge-active-padding-inline: var(--reader-card-badge-compact-padding-inline);
+  --reader-card-badge-active-min-height: var(--reader-card-badge-compact-min-height);
   width: calc(50% - var(--spacing-md));
 }
 .medium, .large { /* For mobile: full width */
@@ -201,16 +211,17 @@
   justify-content: center;
   width: fit-content;
   max-width: 100%;
-  padding: 1px 7px;
-  border-radius: var(--border-radius-full);
+  min-height: var(--reader-card-badge-active-min-height);
+  padding: var(--reader-card-badge-active-padding-block) var(--reader-card-badge-active-padding-inline);
+  border-radius: var(--reader-card-badge-radius);
   background-color: var(--reader-card-badge-background-color);
   color: var(--reader-card-badge-text-color);
   border: var(--border-width-thin) solid var(--reader-card-badge-border-color);
   box-shadow: var(--shadow-sm);
-  font-family: var(--reader-chrome-meta-font-family);
-  font-size: var(--reader-chrome-meta-font-size);
-  font-weight: var(--reader-chrome-meta-font-weight);
-  line-height: var(--reader-chrome-meta-line-height);
+  font-family: var(--reader-card-badge-font-family);
+  font-size: var(--reader-card-badge-active-font-size);
+  font-weight: var(--reader-card-badge-font-weight);
+  line-height: var(--reader-card-badge-active-line-height);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -251,7 +262,7 @@
 .story .title {
   color: var(--reader-story-title-color);
   font-family: var(--reader-story-title-font-family);
-  font-size: var(--reader-story-title-font-size);
+  font-size: var(--reader-story-feed-title-font-size);
   font-weight: var(--reader-story-title-font-weight);
   line-height: var(--reader-story-title-line-height);
 }
@@ -279,7 +290,7 @@
 .gallery .title {
   color: var(--reader-gallery-title-color);
   font-family: var(--reader-gallery-title-font-family);
-  font-size: var(--reader-gallery-title-font-size);
+  font-size: var(--reader-gallery-feed-title-font-size);
   font-weight: var(--reader-gallery-title-font-weight);
   line-height: var(--reader-gallery-title-line-height);
 }
@@ -313,21 +324,23 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 2.5rem;
-  padding: 1px 5px;
-  border-radius: var(--border-radius-sm);
-  background: color-mix(in srgb, var(--reader-overlay-scrim-color) 82%, transparent);
-  color: var(--reader-overlay-contrast-text-color);
-  border: var(--border-width-thin) solid var(--reader-overlay-border-color);
+  width: fit-content;
+  min-width: 0;
+  min-height: var(--reader-card-badge-active-min-height);
+  padding: var(--reader-card-badge-active-padding-block) calc(var(--reader-card-badge-active-padding-inline) - 0.125rem);
+  border-radius: var(--reader-card-badge-radius);
+  background: var(--reader-card-badge-background-color);
+  color: var(--reader-card-badge-text-color);
+  border: var(--border-width-thin) solid var(--reader-card-badge-border-color);
   box-shadow: var(--shadow-sm);
   backdrop-filter: blur(6px);
 }
 
 .galleryAffordanceCount {
-  font-family: var(--reader-chrome-meta-font-family);
-  font-size: var(--reader-chrome-meta-font-size);
-  font-weight: var(--reader-chrome-meta-font-weight);
-  line-height: var(--reader-chrome-meta-line-height);
+  font-family: var(--reader-card-badge-font-family);
+  font-size: var(--reader-card-badge-active-font-size);
+  font-weight: var(--reader-card-badge-font-weight);
+  line-height: var(--reader-card-badge-active-line-height);
 }
 
 .galleryCaptionOverlay {

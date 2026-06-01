@@ -126,10 +126,10 @@
 }
 
 .container[data-card-type='gallery'] .title {
-  font-size: var(--reader-gallery-detail-title-font-size);
+  font-size: clamp(1.85rem, 5.4vw, 2.05rem);
   font-family: var(--reader-gallery-detail-title-font-family);
   font-weight: var(--reader-gallery-detail-title-font-weight);
-  line-height: var(--reader-gallery-detail-title-line-height);
+  line-height: 1.12;
   color: var(--reader-gallery-detail-title-color);
 }
 

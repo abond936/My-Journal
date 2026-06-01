@@ -143,7 +143,9 @@ describe('theme compiler canaries', () => {
     expect(css).toContain('--reader-covered-fade-background: linear-gradient(transparent, rgba(0,0,0,0.9));');
     expect(css).toContain('--reader-gallery-overlay-background: var(--reader-overlay-strong-scrim-color);');
     expect(css).toContain('--reader-lightbox-overlay-background-color: var(--reader-overlay-scrim-color);');
-    expect(css).toContain('--reader-card-badge-background-color: var(--reader-overlay-strong-scrim-color);');
+    expect(css).toContain('--reader-card-badge-background-color: var(--reader-support-control-background-color);');
+    expect(css).toContain('--reader-story-feed-title-font-size: calc(');
+    expect(css).toContain('--reader-gallery-feed-title-font-size: calc(');
   });
 
   it('uses adaptive covered fades by default and overrides their strength in dark mode', () => {

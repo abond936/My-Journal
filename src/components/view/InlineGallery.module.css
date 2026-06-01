@@ -158,18 +158,20 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 2.75rem;
-  padding: 1px 7px;
-  border-radius: var(--border-radius-full);
-  background: color-mix(in srgb, var(--reader-overlay-scrim-color) 82%, transparent);
-  color: var(--reader-overlay-contrast-text-color);
-  border: var(--border-width-thin) solid var(--reader-overlay-border-color);
+  width: fit-content;
+  min-width: 0;
+  min-height: var(--reader-card-badge-min-height);
+  padding: var(--reader-card-badge-padding-block) calc(var(--reader-card-badge-padding-inline) - 0.125rem);
+  border-radius: var(--reader-card-badge-radius);
+  background: var(--reader-card-badge-background-color);
+  color: var(--reader-card-badge-text-color);
+  border: var(--border-width-thin) solid var(--reader-card-badge-border-color);
   box-shadow: var(--shadow-sm);
   backdrop-filter: blur(6px);
-  font-family: var(--reader-chrome-meta-font-family);
-  font-size: var(--reader-chrome-meta-font-size);
-  font-weight: var(--reader-chrome-meta-font-weight);
-  line-height: var(--reader-chrome-meta-line-height);
+  font-family: var(--reader-card-badge-font-family);
+  font-size: var(--reader-card-badge-font-size);
+  font-weight: var(--reader-card-badge-font-weight);
+  line-height: var(--reader-card-badge-line-height);
 }
 
 .imageWrapper.imagePortrait {
