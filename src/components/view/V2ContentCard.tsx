@@ -63,7 +63,11 @@ const StoryCardContent: React.FC<{
   card: Card;
   displayMode: string;
 }> = ({ card, displayMode }) => {
-  const coverRatio = getFeedCoverFrame(card.coverImage);
+  const coverBucket = getAspectRatioBucket(card.coverImage);
+  const coverRatio =
+    displayMode !== 'inline' && (!card.coverImage || coverBucket === 'portrait')
+      ? '3/2'
+      : getAspectRatioValue(coverBucket);
   const coverObjectFit = getCoverObjectFitMode(card);
   const objectPosition =
     coverObjectFit === 'cover' && card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height

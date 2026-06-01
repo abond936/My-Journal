@@ -102,7 +102,7 @@ describe('V2ContentCard cover framing', () => {
     expect(image).toHaveStyle({ objectPosition: '50% 50%' });
   });
 
-  it('uses a portrait-oriented frame for portrait covers in the reader feed', () => {
+  it('collapses closed-story portrait covers into the shorter landscape-style frame', () => {
     render(
       <V2ContentCard
         card={{
@@ -120,7 +120,24 @@ describe('V2ContentCard cover framing', () => {
     );
 
     const image = screen.getByAltText('Portrait story');
-    expect(image.parentElement).toHaveStyle({ aspectRatio: '4/5' });
+    expect(image.parentElement).toHaveStyle({ aspectRatio: '3/2' });
+  });
+
+  it('uses the same shorter frame for closed-story placeholder covers', () => {
+    render(
+      <V2ContentCard
+        card={{
+          ...baseCard,
+          title: 'Placeholder story',
+          coverImage: undefined,
+          coverImageFocalPoint: undefined,
+        }}
+      />
+    );
+
+    const title = screen.getByText('Placeholder story');
+    const imageContainer = title.closest('a')?.querySelector('.imageContainer');
+    expect(imageContainer).toHaveStyle({ aspectRatio: '3/2' });
   });
 
   it('uses contain rendering when the card cover mode is fit', () => {
