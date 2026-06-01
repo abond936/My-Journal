@@ -1,0 +1,130 @@
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.previewFrame {
+  display: flex;
+  justify-content: center;
+}
+
+.previewImage {
+  width: 100%;
+  max-width: 520px;
+  height: auto;
+  object-fit: cover;
+  border-radius: var(--border-radius-md);
+}
+
+.intentCard,
+.sliderCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  background: color-mix(in srgb, var(--admin-window-background-color) 96%, var(--admin-support-meta-color) 4%);
+}
+
+.intentTitle {
+  color: var(--admin-support-label-color);
+  font-family: var(--admin-support-label-font-family);
+  font-size: var(--admin-support-label-font-size);
+  font-weight: var(--admin-support-label-font-weight);
+  line-height: var(--admin-support-label-line-height);
+}
+
+.intentBody {
+  margin: 0;
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
+}
+
+.sliderRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.sliderHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
+.sliderHeader label {
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
+}
+
+.sliderValue {
+  color: var(--admin-support-meta-color);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.2;
+}
+
+.slider {
+  width: 100%;
+  accent-color: var(--admin-chrome-active-control-background-color);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.secondaryButton,
+.primaryButton {
+  min-height: 2rem;
+  border-radius: var(--border-radius-sm);
+  padding: 0 12px;
+  cursor: pointer;
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--admin-support-control-font-size);
+  font-weight: var(--admin-support-control-font-weight);
+  line-height: var(--admin-support-control-line-height);
+  transition:
+    border-color var(--transition-short) ease,
+    background-color var(--transition-short) ease,
+    color var(--transition-short) ease,
+    box-shadow var(--transition-short) ease;
+}
+
+.secondaryButton {
+  border: 1px solid var(--admin-support-control-border-color);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
+}
+
+.primaryButton {
+  border: 1px solid var(--admin-support-control-strong-border-color);
+  background: var(--admin-support-control-strong-background-color);
+  color: var(--admin-support-control-strong-text-color);
+}
+
+.secondaryButton:hover:not(:disabled) {
+  border-color: var(--admin-support-control-strong-border-color);
+  background: var(--admin-support-control-hover-background-color);
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: var(--admin-support-control-strong-hover-background-color);
+}
+
+.secondaryButton:disabled,
+.primaryButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

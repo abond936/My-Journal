@@ -270,7 +270,8 @@ Legend:
   - Gallery-card **inline** vs **navigate** behavior and **caption** options are governed by the **V1 Matrix** below and the implemented reader/card components.
   - Closed gallery cards expose a visible swipe affordance plus slide count in the feed when multiple inline images are present.
   - Closed gallery cards render the active inline image caption as a bottom overlay while swiping through feed-card images.
-  - Compose cover focal editing currently previews against the fixed closed-feed `6:5` media frame used by closed reader feed cards; other reader/admin surfaces still use different image-frame contracts.
+  - Compose cover editing is the authoring source of truth for the card's primary cover presentation. The open Reader cover should match the authored Compose crop for the same card and cover mode.
+  - Stored focal-point data remains available as secondary framing guidance for alternate-shape surfaces such as closed feed cards, rails, and `Explore More`, where bounded adaptive crops may still be appropriate.
 - **Discovery and Suggestions**
   - Detail pages render structural children from the server plus discovery suggestions through `DiscoverySection`.
   - Similar / Explore suggestions come from `/api/cards/random` (`count=3`, tag dimensions from the current card).
@@ -813,6 +814,7 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 - **Cards/media workspace parity** - Bring Media and Cards closer to one shared operator contract for layout, overlays, selection, drag affordances, and edit entry points.
 - **Media caption clamp** - Clamp media captions to two lines unless the item is in focus or explicitly opened.
 - **Inline caption editing** - Allow media captions to be edited directly from the admin working surfaces with a clear blank-vs-filled state instead of forcing the operator through the full media editor for routine caption entry.
+- **Gallery override posture** - Treat Studio Media focal/caption values as the primary defaults for gallery items. Compose Gallery may still store per-card focal/caption overrides, but those controls should read as explicit exceptions rather than equal competing sources; gallery modal editing should focus on crop override intent while caption override stays lightweight in the strip UI. Any Reader surface that crops gallery images should honor that same chosen focal source (gallery override first, then Studio Media default), while fullscreen/lightbox presentation should continue to show the whole image.
 - **External-editor replace loop** - Smooth the replace-in-place workflow for assets edited outside the app (for example GIMP) so the operator can round-trip an image back into the same media record with minimal friction.
 - **Spike** - End-to-end on a fixed folder: ingest -> embeddings -> candidate clusters -> simple review UI -> export JSON of confirmed groups and proposed tags (no production auth required) (`docs/05-Guided-Archive-Assistance.md`).
 - **Evaluation set** - Curated subset with human-labeled "true events" to score precision/recall of clustering variants (`docs/05-Guided-Archive-Assistance.md`).

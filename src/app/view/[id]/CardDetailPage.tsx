@@ -9,7 +9,7 @@ import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import {
   getAspectRatioBucket,
   getAspectRatioValue,
-  getObjectPositionForAspectRatio,
+  getObjectPositionFromFocalPoint,
 } from '@/lib/utils/objectPositionUtils';
 import styles from './CardDetail.module.css';
 import TipTapRenderer from '@/components/common/TipTapRenderer';
@@ -133,14 +133,12 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
               style={{ 
                 objectFit: coverObjectFit,
                 objectPosition: coverObjectFit === 'cover' && card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
-                  ? getObjectPositionForAspectRatio(
+                  ? getObjectPositionFromFocalPoint(
                       {
                         x: card.coverImageFocalPoint.x ?? 0,
                         y: card.coverImageFocalPoint.y ?? 0,
                       },
-                      { width: card.coverImage.width, height: card.coverImage.height },
-                      coverRatio,
-                      800
+                      { width: card.coverImage.width, height: card.coverImage.height }
                     )
                   : 'center'
               }}

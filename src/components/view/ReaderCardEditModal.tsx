@@ -7,6 +7,7 @@ import { Copy, Save, Trash2, Undo2, X } from 'lucide-react';
 import CardForm from '@/components/admin/card-admin/CardForm';
 import { CardFormProvider, useCardForm } from '@/components/providers/CardFormProvider';
 import { useOptionalCardContext } from '@/components/providers/CardProvider';
+import { MediaProvider } from '@/components/providers/MediaProvider';
 import { StudioCardFormStudioProvider } from '@/components/admin/studio/studioCardFormStudioContext';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import type { Card, CardUpdate } from '@/lib/types/card';
@@ -469,26 +470,28 @@ export default function ReaderCardEditModal({
     }
     return (
       <CardFormProvider key={activeCardId} initialCard={card} allTags={tags} onSave={handleSave}>
-        <ReaderModalBaselineSync syncKey={activeCardId} />
-        <div className={styles.modalShell}>
-          <div className={styles.modalHeader}>
-            <ModalTitleBar title="Compose" onDragStart={handleDragStart} onClose={closeModal} />
-            <div className={styles.modalActions}>
-              <ModalActions
-                onClose={closeModal}
-                onDelete={handleDelete}
-                onDuplicate={handleDuplicate}
-                isDeleting={isDeleting}
-                isDuplicating={isDuplicating}
-              />
+        <MediaProvider>
+          <ReaderModalBaselineSync syncKey={activeCardId} />
+          <div className={styles.modalShell}>
+            <div className={styles.modalHeader}>
+              <ModalTitleBar title="Compose" onDragStart={handleDragStart} onClose={closeModal} />
+              <div className={styles.modalActions}>
+                <ModalActions
+                  onClose={closeModal}
+                  onDelete={handleDelete}
+                  onDuplicate={handleDuplicate}
+                  isDeleting={isDeleting}
+                  isDuplicating={isDuplicating}
+                />
+              </div>
+            </div>
+            <div className={styles.modalScroll}>
+              <StudioCardFormStudioProvider value={{ studioShellCardForm: true }}>
+                <CardForm />
+              </StudioCardFormStudioProvider>
             </div>
           </div>
-          <div className={styles.modalScroll}>
-            <StudioCardFormStudioProvider value={{ studioShellCardForm: true }}>
-              <CardForm />
-            </StudioCardFormStudioProvider>
-          </div>
-        </div>
+        </MediaProvider>
       </CardFormProvider>
     );
   }, [

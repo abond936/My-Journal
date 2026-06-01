@@ -131,4 +131,29 @@ describe('CardDetailPage guided discovery contract', () => {
     const image = screen.getByAltText('Welcome wordmark');
     expect(image).toHaveStyle({ objectFit: 'contain', objectPosition: 'center' });
   });
+
+  it('matches the authored Compose crop for fill-mode detail covers', () => {
+    mockedUseSearchParams.mockReturnValue(new URLSearchParams('mode=freeform') as ReturnType<typeof useSearchParams>);
+
+    render(
+      <CardDetailPage
+        card={{
+          ...parentCard,
+          title: 'Portrait memory',
+          coverImageMode: 'fill',
+          coverImageFocalPoint: { x: 225, y: 800 },
+          coverImage: {
+            docId: 'media-2',
+            storageUrl: 'https://example.com/portrait.jpg',
+            width: 900,
+            height: 1600,
+          },
+        } as Card}
+        childrenCards={childCards}
+      />
+    );
+
+    const image = screen.getByAltText('Portrait memory');
+    expect(image).toHaveStyle({ objectFit: 'cover', objectPosition: '25% 50%' });
+  });
 });

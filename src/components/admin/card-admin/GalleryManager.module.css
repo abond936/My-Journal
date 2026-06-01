@@ -354,8 +354,39 @@
 .focalSliders {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-md);
     width: 100%;
+    border: var(--border-width-thin) solid var(--admin-window-border-color);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    background: color-mix(in srgb, var(--admin-window-background-color) 96%, var(--admin-support-meta-color) 4%);
+}
+
+.focalIntentCard {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    border: var(--border-width-thin) solid var(--admin-window-border-color);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    background: color-mix(in srgb, var(--admin-window-background-color) 96%, var(--admin-support-meta-color) 4%);
+}
+
+.focalIntentTitle {
+    color: var(--admin-support-label-color);
+    font-family: var(--admin-support-label-font-family);
+    font-size: var(--admin-support-label-font-size);
+    font-weight: var(--admin-support-label-font-weight);
+    line-height: var(--admin-support-label-line-height);
+}
+
+.focalIntentBody {
+    margin: 0;
+    color: var(--admin-support-meta-color);
+    font-family: var(--admin-support-meta-font-family);
+    font-size: var(--admin-support-meta-font-size);
+    font-weight: var(--admin-support-meta-font-weight);
+    line-height: var(--admin-support-meta-line-height);
 }
 
 .textarea {
@@ -383,7 +414,13 @@
     display: flex;
     flex-direction: column;
     gap: var(--spacing-xs);
-    margin-bottom: var(--spacing-sm);
+}
+
+.sliderHeader {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
 }
 
 .sliderRow label {
@@ -392,6 +429,13 @@
     font-size: var(--admin-support-meta-font-size);
     font-weight: var(--admin-support-meta-font-weight);
     line-height: var(--admin-support-meta-line-height);
+}
+
+.sliderValue {
+    color: var(--admin-support-meta-color);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.2;
 }
 
 .slider {

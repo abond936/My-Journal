@@ -6,6 +6,7 @@ import { HydratedGalleryMediaItem } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import {
   getEffectiveGalleryCaption,
+  getEffectiveGalleryObjectPosition,
 } from '@/lib/utils/galleryObjectPosition';
 import { getAspectRatioBucket } from '@/lib/utils/objectPositionUtils';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -171,7 +172,7 @@ export default function InlineGallery({
                       sizes="(max-width: 768px) 100vw, (max-width: 1024px) 96vw, 94vw"
                       style={{
                         objectFit: 'cover',
-                        objectPosition: 'center',
+                        objectPosition: getEffectiveGalleryObjectPosition(item, item.media),
                       }}
                       priority={index < 2} // Prioritize first 2 images
                     />

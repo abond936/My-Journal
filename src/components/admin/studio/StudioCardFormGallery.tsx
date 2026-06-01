@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ImageIcon, ImageUp, Pencil, Save, Trash2 } from 'lucide-react';
+import React, { useCallback, useMemo, useState } from 'react';
+import { ImageIcon, ImageUp, Pencil, Trash2 } from 'lucide-react';
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import JournalImage from '@/components/common/JournalImage';
 import EditModal from '@/components/admin/card-admin/EditModal';
+import GalleryItemEditor from '@/components/admin/card-admin/GalleryItemEditor';
 import { useCardForm } from '@/components/providers/CardFormProvider';
 import type { HydratedGalleryMediaItem } from '@/lib/types/card';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
@@ -14,7 +15,6 @@ import {
   StudioGallerySortableRow,
 } from '@/components/admin/studio/studioRelationshipDndPrimitives';
 import { gallerySlotHasCaptionOverride } from '@/lib/utils/galleryObjectPosition';
-import { parseObjectPositionToPercents } from '@/lib/utils/parseObjectPositionPercent';
 import styles from './StudioWorkspace.module.css';
 
 function applySlotCaptionEdit(item: HydratedGalleryMediaItem, newText: string): HydratedGalleryMediaItem {
@@ -234,128 +234,5 @@ function StudioGalleryItemEditor({
   item: HydratedGalleryMediaItem;
   onSave: (item: HydratedGalleryMediaItem) => void;
 }) {
-  const [caption, setCaption] = useState('');
-  const [horizontalPosition, setHorizontalPosition] = useState(50);
-  const [verticalPosition, setVerticalPosition] = useState(50);
-  const [hasFocalOverride, setHasFocalOverride] = useState(false);
-  const [hasCaptionOverride, setHasCaptionOverride] = useState(false);
-
-  useEffect(() => {
-    const capOverride = gallerySlotHasCaptionOverride(item);
-    setHasCaptionOverride(capOverride);
-    setCaption(capOverride ? (item.caption ?? '') : (item.media?.caption ?? ''));
-
-    const inherited = parseObjectPositionToPercents(item.media?.objectPosition);
-    const stored = item.objectPosition?.trim();
-    if (stored) {
-      setHasFocalOverride(true);
-      const { horizontal, vertical } = parseObjectPositionToPercents(item.objectPosition);
-      setHorizontalPosition(horizontal);
-      setVerticalPosition(vertical);
-    } else {
-      setHasFocalOverride(false);
-      setHorizontalPosition(inherited.horizontal);
-      setVerticalPosition(inherited.vertical);
-    }
-  }, [item]);
-
-  const objectPosition = `${horizontalPosition}% ${verticalPosition}%`;
-
-  const handleResetFocalToMediaDefault = () => {
-    setHasFocalOverride(false);
-    const { horizontal, vertical } = parseObjectPositionToPercents(item.media?.objectPosition);
-    setHorizontalPosition(horizontal);
-    setVerticalPosition(vertical);
-  };
-
-  const handleResetCaptionToMediaDefault = () => {
-    setHasCaptionOverride(false);
-    setCaption(item.media?.caption ?? '');
-  };
-
-  return (
-    <div className={styles.studioGalleryEditor}>
-      {item.media ? (
-        <div className={styles.studioGalleryEditorPreview}>
-          <JournalImage
-            src={getDisplayUrl(item.media)}
-            alt=""
-            width={520}
-            height={380}
-            className={styles.studioGalleryEditorPreviewImage}
-            sizes="(max-width: 900px) 90vw, 520px"
-            style={{ objectFit: 'cover', objectPosition }}
-          />
-        </div>
-      ) : null}
-      <div className={styles.editFieldGroup}>
-        <label htmlFor="studio-gallery-caption">Caption</label>
-        <textarea
-          id="studio-gallery-caption"
-          value={caption}
-          onChange={(e) => {
-            setHasCaptionOverride(true);
-            setCaption(e.target.value);
-          }}
-          className={styles.editTextarea}
-          rows={3}
-          placeholder="Optional caption for this slot on the card"
-        />
-      </div>
-      <div className={styles.editFieldGroup}>
-        <label htmlFor="studio-gallery-focal-h">Horizontal</label>
-        <input
-          id="studio-gallery-focal-h"
-          type="range"
-          min={0}
-          max={100}
-          value={horizontalPosition}
-          onChange={(e) => {
-            setHasFocalOverride(true);
-            setHorizontalPosition(Number(e.target.value));
-          }}
-        />
-      </div>
-      <div className={styles.editFieldGroup}>
-        <label htmlFor="studio-gallery-focal-v">Vertical</label>
-        <input
-          id="studio-gallery-focal-v"
-          type="range"
-          min={0}
-          max={100}
-          value={verticalPosition}
-          onChange={(e) => {
-            setHasFocalOverride(true);
-            setVerticalPosition(Number(e.target.value));
-          }}
-        />
-      </div>
-      <div className={styles.studioGalleryEditorActions}>
-        <button type="button" className={styles.inlineActionButton} onClick={handleResetCaptionToMediaDefault}>
-          Use media caption
-        </button>
-        <button type="button" className={styles.inlineActionButton} onClick={handleResetFocalToMediaDefault}>
-          Use media focal
-        </button>
-        <button
-          type="button"
-          className={styles.inlineActionButton}
-          onClick={() => {
-            const rest = { ...item };
-            delete rest.objectPosition;
-            delete rest.caption;
-            onSave({
-              ...rest,
-              ...(hasCaptionOverride ? { caption } : {}),
-              ...(hasFocalOverride ? { objectPosition } : {}),
-            });
-          }}
-          aria-label="Save gallery item changes"
-          title="Save gallery item changes"
-        >
-          <Save size={16} aria-hidden="true" />
-        </button>
-      </div>
-    </div>
-  );
+  return <GalleryItemEditor item={item} onSave={onSave} saveLabel="Save changes" />;
 }

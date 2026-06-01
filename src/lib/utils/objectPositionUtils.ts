@@ -93,6 +93,21 @@ export function getObjectPositionForAspectRatio(
 } 
 
 /**
+ * Converts a stored focal point back into the raw CSS object-position percentages
+ * used by Compose preview surfaces.
+ */
+export function getObjectPositionFromFocalPoint(
+  focalPoint: FocalPoint,
+  originalImage: ImageDimensions
+): string {
+  const percentX = originalImage.width > 0 ? (focalPoint.x / originalImage.width) * 100 : 50;
+  const percentY = originalImage.height > 0 ? (focalPoint.y / originalImage.height) * 100 : 50;
+  const clampedX = Math.max(0, Math.min(100, percentX));
+  const clampedY = Math.max(0, Math.min(100, percentY));
+  return `${clampedX}% ${clampedY}%`;
+}
+
+/**
  * Buckets media orientation into a bounded set used by reader/admin framing.
  */
 export function getAspectRatioBucket(
