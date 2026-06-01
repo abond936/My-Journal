@@ -102,6 +102,8 @@
   --reader-header-icon-color: var(--header-icon-color);
   --reader-sidebar-background-color: var(--layout-background1-color);
   --reader-sidebar-border-color: var(--border1-color);
+  --reader-sidebar-surface-color: color-mix(in srgb, var(--reader-sidebar-background-color) 84%, var(--reader-page-text-color) 16%);
+  --reader-sidebar-surface-border-color: color-mix(in srgb, var(--reader-sidebar-border-color) 76%, var(--reader-page-text-color) 24%);
   --reader-chrome-background-color: var(--layout-background1-color);
   --reader-chrome-panel-color: var(--layout-background1-color);
   --reader-chrome-border-color: var(--border1-color);
@@ -266,6 +268,14 @@
   --reader-card-shadow: var(--shadow-sm);
   --reader-card-shadow-hover: var(--shadow-md);
   --reader-card-padding: var(--card-padding);
+  --reader-story-card-background-color: var(--reader-card-background-color);
+  --reader-story-card-border-color: var(--reader-card-border-color);
+  --reader-story-card-surface-color: color-mix(in srgb, var(--reader-story-card-background-color) 86%, var(--reader-page-text-color) 14%);
+  --reader-story-card-surface-border-color: color-mix(in srgb, var(--reader-story-card-border-color) 80%, var(--reader-page-text-color) 20%);
+  --reader-gallery-card-background-color: var(--reader-card-background-color);
+  --reader-gallery-card-border-color: var(--reader-card-border-color);
+  --reader-gallery-card-surface-color: color-mix(in srgb, var(--reader-gallery-card-background-color) 86%, var(--reader-page-text-color) 14%);
+  --reader-gallery-card-surface-border-color: color-mix(in srgb, var(--reader-gallery-card-border-color) 80%, var(--reader-page-text-color) 20%);
   --reader-detail-background-color: var(--layout-background1-color);
   --reader-detail-cover-background-color: var(--card-background-color);
   --reader-detail-border-color: var(--border1-color);
@@ -285,14 +295,18 @@
   --reader-question-overlay-line-height: var(--reader-question-line-height);
   --reader-question-watermark-color: var(--reader-title-color);
   --reader-question-watermark-opacity: 0.3;
-  --reader-callout-watermark-opacity: 0.3;
+  --reader-utility-card-headline-font-size: var(--font-size-xl);
+  --reader-utility-card-watermark-color: var(--reader-question-watermark-color);
+  --reader-utility-card-watermark-opacity: var(--reader-question-watermark-opacity);
+  --reader-callout-watermark-opacity: var(--reader-utility-card-watermark-opacity);
   --reader-quote-color: var(--text1-color);
   --reader-quote-font-family: var(--body-font-family);
-  --reader-quote-font-size: var(--font-size-lg);
+  --reader-quote-font-size: var(--reader-utility-card-headline-font-size);
   --reader-quote-font-weight: var(--font-weight-normal);
   --reader-quote-line-height: var(--line-height-relaxed);
   --reader-quote-font-style: italic;
-  --reader-quote-watermark-opacity: 0.22;
+  --reader-quote-watermark-color: color-mix(in srgb, var(--reader-utility-card-watermark-color) 84%, var(--reader-question-card-background-color) 16%);
+  --reader-quote-watermark-opacity: var(--reader-utility-card-watermark-opacity);
   --reader-caption-font-family: var(--body-font-family);
   --reader-caption-color: var(--text2-color);
   --reader-caption-font-size: var(--font-size-sm);
@@ -300,7 +314,7 @@
   --reader-caption-line-height: var(--line-height-base);
   --reader-callout-title-color: var(--reader-title-color);
   --reader-callout-title-font-family: var(--reader-title-font-family);
-  --reader-callout-title-font-size: var(--font-size-lg);
+  --reader-callout-title-font-size: var(--reader-utility-card-headline-font-size);
   --reader-callout-title-font-weight: var(--reader-title-font-weight);
   --reader-callout-title-line-height: var(--reader-title-line-height);
   --reader-callout-body-color: var(--reader-body-color);
@@ -495,6 +509,12 @@
   --reader-covered-fade-strong-bottom-opacity: 0.72;
   --reader-covered-fade-strong-mid-opacity: 0.42;
   --reader-covered-fade-strong-top-opacity: 0.12;
+  --reader-sidebar-surface-color: var(--reader-sidebar-background-color);
+  --reader-sidebar-surface-border-color: var(--reader-sidebar-border-color);
+  --reader-story-card-surface-color: var(--reader-story-card-background-color);
+  --reader-story-card-surface-border-color: var(--reader-story-card-border-color);
+  --reader-gallery-card-surface-color: var(--reader-gallery-card-background-color);
+  --reader-gallery-card-surface-border-color: var(--reader-gallery-card-border-color);
 
   --card-watermark-raster-filter: invert(1);
 }

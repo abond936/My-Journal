@@ -47,7 +47,9 @@
   top: calc(var(--header-height) * 2); /* Start below navigation */
   bottom: 0;
   width: var(--sidebar-width-mobile);
-  background: var(--reader-sidebar-background-color);
+  background: var(--reader-sidebar-surface-color);
+  border-right: var(--border-width-thin) solid var(--reader-sidebar-surface-border-color);
+  box-shadow: var(--shadow-sm);
   transition: transform var(--transition-short) ease;
   z-index: 90;
   overflow-y: auto;

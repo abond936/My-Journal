@@ -68,8 +68,8 @@
 }
 
 .card.story {
-  background-color: var(--reader-story-card-background-color);
-  border-color: var(--reader-story-card-border-color);
+  background-color: var(--reader-story-card-surface-color);
+  border-color: var(--reader-story-card-surface-border-color);
   border-radius: var(--reader-story-card-border-radius);
   box-shadow: var(--reader-story-card-shadow);
 }
@@ -79,8 +79,8 @@
 }
 
 .card.gallery {
-  background-color: var(--reader-gallery-card-background-color);
-  border-color: var(--reader-gallery-card-border-color);
+  background-color: var(--reader-gallery-card-surface-color);
+  border-color: var(--reader-gallery-card-surface-border-color);
   border-radius: var(--reader-gallery-card-border-radius);
   box-shadow: var(--reader-gallery-card-shadow);
 }
@@ -103,10 +103,10 @@
 }
 
 .card.callout {
-  background-color: var(--reader-callout-card-background-color);
-  border-color: var(--reader-callout-card-border-color);
+  background-color: var(--reader-question-card-background-color);
+  border-color: var(--reader-question-card-border-color);
   border-radius: var(--reader-callout-card-border-radius);
-  box-shadow: var(--reader-callout-card-shadow);
+  box-shadow: var(--reader-question-card-shadow);
 }
 
 .card.quote:hover,
@@ -257,6 +257,7 @@
   padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
   justify-content: flex-start;
   color: var(--reader-body-color);
+  background: var(--reader-question-card-background-color);
 }
 
 .story .title {
@@ -272,7 +273,7 @@
   width: auto;
   justify-content: flex-start;
   padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
-  background: var(--reader-gallery-card-background-color);
+  background: var(--reader-question-card-background-color);
 }
 
 .story:not(:has(.imageContainer)) .content,
@@ -385,10 +386,10 @@
   z-index: 1;
   pointer-events: none;
   line-height: 1;
-  font-size: clamp(7.5rem, 48vw, 13rem);
+  font-size: clamp(7.5rem, 48vw, 14rem);
   font-weight: var(--font-weight-bold);
   font-family: Georgia, 'Times New Roman', serif;
-  color: var(--reader-quote-color);
+  color: var(--reader-quote-watermark-color);
   opacity: var(--reader-quote-watermark-opacity);
   /* Opening-quote glyph sits high in the em box; nudge down to sit behind vertically centered body text */
   transform: translateY(clamp(0.75rem, 7%, 2.75rem));
@@ -405,7 +406,7 @@
   gap: var(--spacing-sm);
   justify-content: center;
   text-align: center;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-xl) var(--spacing-lg);
   box-sizing: border-box;
   overflow-wrap: break-word;
 }
@@ -417,7 +418,7 @@
   font-family: var(--reader-quote-font-family);
   font-size: var(--reader-quote-font-size);
   font-style: var(--reader-quote-font-style);
-  line-height: var(--reader-quote-line-height);
+  line-height: var(--reader-title-line-height);
   color: var(--reader-quote-color);
   width: 100%;
   max-width: 100%;
@@ -436,7 +437,7 @@
   font-family: var(--reader-quote-font-family);
   font-size: var(--reader-quote-font-size);
   font-weight: var(--reader-quote-font-weight);
-  line-height: var(--reader-quote-line-height);
+  line-height: var(--reader-title-line-height);
   overflow-wrap: break-word;
   word-break: break-word;
 }
@@ -618,9 +619,9 @@
 .calloutPinWatermark {
   display: block;
   flex-shrink: 0;
-  width: clamp(4.26rem, 26.8vw, 7.31rem);
+  width: clamp(5.5rem, 31vw, 8.75rem);
   height: auto;
-  max-height: clamp(4.26rem, 26.8vw, 7.31rem);
+  max-height: clamp(5.5rem, 31vw, 8.75rem);
   object-fit: contain;
   object-position: center;
   opacity: var(--reader-callout-watermark-opacity);
@@ -628,7 +629,7 @@
   /* Mirror then tilt (opposite of prior rotate direction). */
   transform: scaleX(-1) rotate(-30deg);
   transform-origin: center center;
-  margin-top: -0.25in;
+  margin-top: 0;
 }
 
 .callout .content {
@@ -639,10 +640,10 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
-  justify-content: flex-start;
+  gap: var(--spacing-sm);
+  justify-content: center;
   text-align: left;
-  padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-lg) var(--spacing-md);
+  padding: var(--spacing-xl) var(--spacing-lg);
   background: transparent;
 }
 .calloutTitle {
@@ -661,6 +662,7 @@
   line-height: var(--reader-callout-body-line-height);
   font-style: var(--reader-callout-body-font-style);
   color: var(--reader-callout-body-color);
+  text-align: left;
 }
 .calloutBody :global(ul),
 .calloutBody :global(ol) {
