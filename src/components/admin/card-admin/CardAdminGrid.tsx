@@ -32,6 +32,7 @@ import {
   isCollectionsCardDragData,
 } from '@/lib/dnd/collectionsDragContract';
 import type { StudioCatalogCard } from '@/components/admin/studio/studioCardTypes';
+import UtilityCardPreview from '@/components/admin/card-admin/UtilityCardPreview';
 
 interface CardAdminGridProps {
   cards: Card[];
@@ -91,6 +92,16 @@ function pickCaption(card: Card): string {
     if (v != null && String(v).trim()) return String(v).trim();
   }
   return '';
+}
+
+function shouldRenderStudioUtilityPreview(
+  card: Card,
+  preview: Card['coverImage'],
+  compactStudioGrid: boolean
+): boolean {
+  if (!compactStudioGrid) return false;
+  if (card.type === 'quote' || card.type === 'callout') return true;
+  return card.type === 'qa' && !preview;
 }
 
 /** Cover hover: title, caption, then full Who/What/When/Where tag lines. */
@@ -180,6 +191,14 @@ function CardAdminGridPlainCell({
     [card.docId, onUpdateCard]
   );
 
+  const handleSubjectUpdate = useCallback(
+    async (nextSubjectTagId: string | null) => {
+      await onUpdateCard(card.docId, { subjectTagId: nextSubjectTagId });
+      setSaveNotice('Subject saved');
+    },
+    [card.docId, onUpdateCard]
+  );
+
   const activatePrimary = (e: React.MouseEvent | React.KeyboardEvent) => {
     if (studioEmbedCellClickSelects) {
       if (e.shiftKey || e.ctrlKey || e.metaKey) {
@@ -193,6 +212,7 @@ function CardAdminGridPlainCell({
 
   const captionLine = pickCaption(card);
   const preview = previewImage(card);
+  const renderUtilityPreview = shouldRenderStudioUtilityPreview(card, preview, compactStudioGrid);
   const thumbnailTooltip = useMemo(
     () => buildCardThumbnailTooltip(card, allTags),
     [card, allTags]
@@ -299,7 +319,9 @@ function CardAdminGridPlainCell({
           title={thumbnailTooltip}
           onClick={onImageColumnClick}
         >
-          {preview ? (
+          {renderUtilityPreview ? (
+            <UtilityCardPreview card={card} />
+          ) : preview ? (
             <JournalImage
               src={getDisplayUrl(preview)}
               alt={card.title || 'Cover'}
@@ -331,10 +353,12 @@ function CardAdminGridPlainCell({
             <DimensionalTagVerticalChips
               className={styles.tagChipsInline}
               tagIds={card.tags ?? []}
+              subjectTagId={card.subjectTagId ?? null}
               allTags={allTags}
               disabled={interactionDisabled}
               variant="inline"
               onUpdateTags={handleTagUpdate}
+              onUpdateSubjectTagId={handleSubjectUpdate}
             />
           </div>
           {!compactStudioGrid && captionLine ? (
@@ -354,6 +378,7 @@ function CardAdminGridPlainCell({
               suggestionsDensity="dense"
               disabled={interactionDisabled}
               onUpdateTags={handleTagUpdate}
+              onUpdateSubjectTagId={handleSubjectUpdate}
             />
           </div>
           {saveNotice ? <div className={styles.saveNotice}>{saveNotice}</div> : null}
@@ -437,6 +462,14 @@ function CardAdminGridStudioCell({
     [card.docId, onUpdateCard]
   );
 
+  const handleSubjectUpdate = useCallback(
+    async (nextSubjectTagId: string | null) => {
+      await onUpdateCard(card.docId, { subjectTagId: nextSubjectTagId });
+      setSaveNotice('Subject saved');
+    },
+    [card.docId, onUpdateCard]
+  );
+
   const { active } = useDndContext();
   const reparentFromCard = isCollectionsCardDragData(active?.data.current);
 
@@ -489,6 +522,7 @@ function CardAdminGridStudioCell({
 
   const captionLine = pickCaption(card);
   const preview = previewImage(card);
+  const renderUtilityPreview = shouldRenderStudioUtilityPreview(card, preview, compactStudioGrid);
   const thumbnailTooltip = useMemo(
     () => buildCardThumbnailTooltip(card, allTags),
     [card, allTags]
@@ -612,7 +646,9 @@ function CardAdminGridStudioCell({
           title={thumbnailTooltip}
           onClick={onImageColumnClick}
         >
-          {preview ? (
+          {renderUtilityPreview ? (
+            <UtilityCardPreview card={card} />
+          ) : preview ? (
             <JournalImage
               src={getDisplayUrl(preview)}
               alt={card.title || 'Cover'}
@@ -644,10 +680,12 @@ function CardAdminGridStudioCell({
             <DimensionalTagVerticalChips
               className={styles.tagChipsInline}
               tagIds={card.tags ?? []}
+              subjectTagId={card.subjectTagId ?? null}
               allTags={allTags}
               disabled={interactionDisabled}
               variant="inline"
               onUpdateTags={handleTagUpdate}
+              onUpdateSubjectTagId={handleSubjectUpdate}
             />
           </div>
           {!compactStudioGrid && captionLine ? (
@@ -667,6 +705,7 @@ function CardAdminGridStudioCell({
               suggestionsDensity="dense"
               disabled={interactionDisabled}
               onUpdateTags={handleTagUpdate}
+              onUpdateSubjectTagId={handleSubjectUpdate}
             />
           </div>
           {saveNotice ? <div className={styles.saveNotice}>{saveNotice}</div> : null}

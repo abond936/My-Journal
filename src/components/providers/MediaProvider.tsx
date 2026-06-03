@@ -140,14 +140,22 @@ function mediaMatchesCaptionFilter(item: Media, hasCaption: string): boolean {
   return true;
 }
 
-function mediaMatchesDimensionalTags(item: Media, dt: DimensionalTagIdMap): boolean {
+function mediaMatchesDimensionalTags(
+  item: Media,
+  dt: DimensionalTagIdMap,
+  tagScope: MediaFilters['tagScope']
+): boolean {
   if (!dimensionalTagMapHasFilters(dt)) return true;
   const dims: (keyof DimensionalTagIdMap)[] = ['who', 'what', 'when', 'where'];
   for (const dim of dims) {
     const selected = dt[dim];
     if (!selected?.length) continue;
     const idsOnMedia = getDimensionIds(item, dim);
-    const ok = selected.some((tid) => idsOnMedia.includes(tid) || Boolean(item.filterTags?.[tid]));
+    const ok = selected.some((tid) =>
+      tagScope === 'subject'
+        ? Boolean(item.subjectFilterTags?.[tid])
+        : idsOnMedia.includes(tid) || Boolean(item.filterTags?.[tid])
+    );
     if (!ok) return false;
   }
   return true;
@@ -166,6 +174,7 @@ export interface MediaFilters {
   search: string;
   /** all | unassigned | assigned — unassigned/assigned use seek pagination (forward-only). */
   assignment: string;
+  tagScope: 'all' | 'subject';
 }
 
 type CachedMediaQueryResult = {
@@ -240,6 +249,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const initialMediaAdminPrefsRef = useRef(readStoredMediaAdminStoredFilterPreferences());
   const pathname = usePathname();
   const isMediaListRoute = Boolean(pathname?.startsWith('/admin/studio'));
+  const mediaPageLimit = pathname?.startsWith('/admin/studio') ? '100' : '50';
 
   const { selectedTags } = useCardContext();
   const { tags: allTags } = useTag();
@@ -435,7 +445,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     opts?: { cursor?: string; prevCursor?: string; listPage?: number; includeTotal?: boolean }
   ) => {
     const params = new URLSearchParams();
-    params.append('limit', '50');
+    params.append('limit', mediaPageLimit);
     if (opts?.cursor) params.append('cursor', opts.cursor);
     if (opts?.prevCursor) params.append('prevCursor', opts.prevCursor);
     if (opts?.listPage !== undefined && opts.listPage > 1) {
@@ -450,6 +460,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     if (mediaFilters.hasCaption !== 'all') params.append('hasCaption', mediaFilters.hasCaption);
     if (mediaFilters.search) params.append('search', mediaFilters.search);
     if (mediaFilters.assignment !== 'all') params.append('assignment', mediaFilters.assignment);
+    if (mediaFilters.tagScope === 'subject') params.append('tagScope', 'subject');
     appendDimensionalTagQueryParams(dimMap, params);
 
     return params.toString();
@@ -667,6 +678,29 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     }
   }, [fetchMedia]);
 
+  const mediaMatchesCurrentView = useCallback(
+    (item: Media, currentFilters: MediaFilters = filtersRef.current) => {
+      const currentDimensional = mergeDimensionalTagMaps(
+        pathname?.startsWith('/admin/studio') ? ({} as DimensionalTagIdMap) : dimensionalTagMap,
+        dimensionalQueryOverlayRef.current
+      );
+      const assignmentMatches =
+        currentFilters.assignment === 'all' ||
+        (currentFilters.assignment === 'assigned' && isMediaAssigned(item)) ||
+        (currentFilters.assignment === 'unassigned' && !isMediaAssigned(item));
+
+      return (
+        (currentFilters.source === 'all' || currentFilters.source === item.source) &&
+        mediaMatchesDimensions(item, currentFilters.dimensions) &&
+        mediaMatchesCaptionFilter(item, currentFilters.hasCaption) &&
+        mediaMatchesSearch(item, currentFilters.search) &&
+        assignmentMatches &&
+        mediaMatchesDimensionalTags(item, currentDimensional, currentFilters.tagScope)
+      );
+    },
+    [dimensionalTagMap, pathname]
+  );
+
   const updateMedia = useCallback(async (id: string, updates: Partial<Media>): Promise<Media | undefined> => {
     try {
       const response = await fetch(`/api/images/${id}`, {
@@ -685,7 +719,19 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       if (updated?.docId) {
         cacheMediaRecord(updated);
         clearMediaQueryCache();
-        setMedia((prev) => prev.map((m) => (m.docId === id ? { ...updated, docId: updated.docId } : m)));
+        const matchesCurrentView = mediaMatchesCurrentView(updated);
+        if (!matchesCurrentView) {
+          setSelectedMediaIds((prev) => prev.filter((selectedId) => selectedId !== id));
+          adjustPaginationAfterDelete(1);
+        }
+        setMedia((prev) => {
+          const next = prev.flatMap((item) => {
+            if (item.docId !== id) return [item];
+            return matchesCurrentView ? [{ ...updated, docId: updated.docId }] : [];
+          });
+          mediaRef.current = next;
+          return next;
+        });
         return updated;
       }
 
@@ -697,7 +743,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       console.error('Error updating media:', error);
       return undefined;
     }
-  }, [cacheMediaRecord, clearMediaQueryCache, refreshMedia]);
+  }, [adjustPaginationAfterDelete, cacheMediaRecord, clearMediaQueryCache, mediaMatchesCurrentView, refreshMedia]);
 
   const deleteMedia = useCallback(async (id: string) => {
     try {
@@ -815,22 +861,8 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       clearMediaQueryCache();
 
       const currentFilters = filtersRef.current;
-      const currentDimensional = mergeDimensionalTagMaps(
-        pathname?.startsWith('/admin/studio') ? ({} as DimensionalTagIdMap) : dimensionalTagMap,
-        dimensionalQueryOverlayRef.current
-      );
-      const assignmentMatches =
-        currentFilters.assignment === 'all' ||
-        (currentFilters.assignment === 'assigned' && isMediaAssigned(item)) ||
-        (currentFilters.assignment === 'unassigned' && !isMediaAssigned(item));
       const matchesCurrentView =
-        currentPageRef.current === 1 &&
-        (currentFilters.source === 'all' || currentFilters.source === item.source) &&
-        mediaMatchesDimensions(item, currentFilters.dimensions) &&
-        mediaMatchesCaptionFilter(item, currentFilters.hasCaption) &&
-        mediaMatchesSearch(item, currentFilters.search) &&
-        assignmentMatches &&
-        mediaMatchesDimensionalTags(item, currentDimensional);
+        currentPageRef.current === 1 && mediaMatchesCurrentView(item, currentFilters);
 
       if (!matchesCurrentView) return;
 
@@ -851,7 +883,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         };
       });
     },
-    [cacheMediaRecord, clearMediaQueryCache, dimensionalTagMap, pathname]
+    [cacheMediaRecord, clearMediaQueryCache, mediaMatchesCurrentView]
   );
 
   const reconcileCardMediaAssignments = useCallback(
@@ -907,7 +939,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       filtersRef.current = next;
       return next;
     });
-  }, []);
+  }, [mediaPageLimit]);
 
   const clearFilters = useCallback(() => {
     lastMediaEngineRef.current = null;

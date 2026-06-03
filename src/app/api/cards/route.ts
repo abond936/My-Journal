@@ -33,6 +33,38 @@ function errorResponse(payload: ApiErrorPayload, status: number) {
   return NextResponse.json(payload, { status });
 }
 
+function cardHasSubjectInDimension(
+  card: Pick<Card, 'subjectTagId' | 'who' | 'what' | 'when' | 'where'>,
+  dimension: 'who' | 'what' | 'when' | 'where'
+): boolean {
+  return Boolean(card.subjectTagId && (card[dimension] ?? []).includes(card.subjectTagId));
+}
+
+function cardMatchesTagScope(
+  card: Pick<Card, 'filterTags' | 'subjectFilterTags'>,
+  tagId: string,
+  tagScope: 'all' | 'subject'
+): boolean {
+  if (!tagId) return true;
+  return tagScope === 'subject'
+    ? Boolean(card.subjectFilterTags?.[tagId])
+    : Boolean(card.filterTags?.[tagId]);
+}
+
+function cardMatchesDimensionTagScope(
+  card: Pick<Card, 'filterTags' | 'subjectFilterTags' | 'who' | 'what' | 'when' | 'where' | 'subjectTagId'>,
+  dimension: 'who' | 'what' | 'when' | 'where',
+  required: string[] | undefined,
+  tagScope: 'all' | 'subject'
+): boolean {
+  if (!required || required.length === 0) return true;
+  if (tagScope === 'subject') {
+    return required.some((tagId) => Boolean(card.subjectFilterTags?.[tagId]));
+  }
+  const idsOnCard = (card[dimension] as string[] | undefined) ?? [];
+  return required.some((tagId) => idsOnCard.includes(tagId));
+}
+
 const CARD_TYPES_QUERY = new Set<string>(['story', 'qa', 'quote', 'callout', 'gallery']);
 const CARD_DISPLAY_MODES_QUERY = new Set<string>(['inline', 'navigate', 'static']);
 
@@ -118,6 +150,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
 
     const tags = searchParams.get('tags')?.split(',');
+    const tagScope = searchParams.get('tagScope') === 'subject' ? 'subject' : 'all';
 
     // Parse dimensional tags from query parameters
     const dimensionalTags: {
@@ -314,35 +347,28 @@ export async function GET(request: Request) {
         } as PaginatedResult<Card>);
       }
 
-      const matchesAny = (candidate: string[] | undefined, required: string[] | undefined) => {
-        if (!required || required.length === 0) return true;
-        if (!candidate || candidate.length === 0) return false;
-        const set = new Set(candidate);
-        return required.some((id) => set.has(id));
-      };
       const cardDimEmpty = (arr: string[] | undefined) => !arr || arr.length === 0;
       const applyPostFilters = (items: Card[]): Card[] => {
         return items.filter((card) => {
           if (displayMode !== 'all' && (card.displayMode ?? 'navigate') !== displayMode) return false;
           if (childrenIds_contains && !(card.childrenIds || []).includes(childrenIds_contains)) return false;
           if (tags && tags.length > 0) {
-            const filterTags = card.filterTags || {};
             for (const tag of tags) {
-              if (!filterTags[tag]) return false;
+              if (!cardMatchesTagScope(card, tag, tagScope)) return false;
             }
           }
-          if (dimensionalTags.who && dimensionalTags.who.length > 0 && !matchesAny(card.who, dimensionalTags.who)) return false;
-          if (dimensionalTags.what && dimensionalTags.what.length > 0 && !matchesAny(card.what, dimensionalTags.what)) return false;
-          if (dimensionalTags.when && dimensionalTags.when.length > 0 && !matchesAny(card.when, dimensionalTags.when)) return false;
-          if (dimensionalTags.where && dimensionalTags.where.length > 0 && !matchesAny(card.where, dimensionalTags.where)) return false;
-          if (exactDimensionalTags.who && exactDimensionalTags.who.length > 0 && !matchesAny(card.tags, exactDimensionalTags.who)) return false;
-          if (exactDimensionalTags.what && exactDimensionalTags.what.length > 0 && !matchesAny(card.tags, exactDimensionalTags.what)) return false;
-          if (exactDimensionalTags.when && exactDimensionalTags.when.length > 0 && !matchesAny(card.tags, exactDimensionalTags.when)) return false;
-          if (exactDimensionalTags.where && exactDimensionalTags.where.length > 0 && !matchesAny(card.tags, exactDimensionalTags.where)) return false;
-          if (dimensionMissing.who && !cardDimEmpty(card.who)) return false;
-          if (dimensionMissing.what && !cardDimEmpty(card.what)) return false;
-          if (dimensionMissing.when && !cardDimEmpty(card.when)) return false;
-          if (dimensionMissing.where && !cardDimEmpty(card.where)) return false;
+          if (!cardMatchesDimensionTagScope(card, 'who', dimensionalTags.who, tagScope)) return false;
+          if (!cardMatchesDimensionTagScope(card, 'what', dimensionalTags.what, tagScope)) return false;
+          if (!cardMatchesDimensionTagScope(card, 'when', dimensionalTags.when, tagScope)) return false;
+          if (!cardMatchesDimensionTagScope(card, 'where', dimensionalTags.where, tagScope)) return false;
+          if (!cardMatchesDimensionTagScope(card, 'who', exactDimensionalTags.who, tagScope)) return false;
+          if (!cardMatchesDimensionTagScope(card, 'what', exactDimensionalTags.what, tagScope)) return false;
+          if (!cardMatchesDimensionTagScope(card, 'when', exactDimensionalTags.when, tagScope)) return false;
+          if (!cardMatchesDimensionTagScope(card, 'where', exactDimensionalTags.where, tagScope)) return false;
+          if (dimensionMissing.who && (tagScope === 'subject' ? cardHasSubjectInDimension(card, 'who') : !cardDimEmpty(card.who))) return false;
+          if (dimensionMissing.what && (tagScope === 'subject' ? cardHasSubjectInDimension(card, 'what') : !cardDimEmpty(card.what))) return false;
+          if (dimensionMissing.when && (tagScope === 'subject' ? cardHasSubjectInDimension(card, 'when') : !cardDimEmpty(card.when))) return false;
+          if (dimensionMissing.where && (tagScope === 'subject' ? cardHasSubjectInDimension(card, 'where') : !cardDimEmpty(card.where))) return false;
           return true;
         });
       };
@@ -355,6 +381,11 @@ export async function GET(request: Request) {
       // Typesense list limits + 📐 Filtered population & stable ordering.
       const wantTypesense =
         isTypesenseConfigured() &&
+        !(tagScope === 'subject' &&
+          (Object.keys(dimensionalTags).length > 0 ||
+            hasExactDimensionalFilters ||
+            hasDimensionMissingFilters ||
+            Boolean(tags?.length))) &&
         (Boolean(q?.trim()) ||
           Object.keys(dimensionalTags).length > 0 ||
           hasExactDimensionalFilters ||

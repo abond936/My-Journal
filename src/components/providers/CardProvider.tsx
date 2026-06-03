@@ -209,6 +209,10 @@ function readStoredFeedCardTypes(): Set<Card['type']> {
   }
 }
 
+function createDefaultFeedCardTypes(): Set<Card['type']> {
+  return new Set(FEED_CARD_TYPES_ORDER);
+}
+
 function createRandomSeed(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID();
@@ -252,7 +256,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   const { selectedFilterTagIds, setFilterTags, tags: allTags } = useTag();
 
   // --- Local Filter State ---
-  const [feedCardTypes, setFeedCardTypes] = useState<Set<Card['type']>>(() => readStoredFeedCardTypes());
+  const [feedCardTypes, setFeedCardTypes] = useState<Set<Card['type']>>(() => createDefaultFeedCardTypes());
 
   const cardType = useMemo((): CardFilterType => {
     if (feedCardTypes.size >= FEED_CARD_TYPES_ORDER.length) return 'all';
@@ -286,35 +290,47 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   // Default published so pre-session and non-admin requests never send status=all (403 on API).
   const [status, setStatus] = useState<CardStatus>('published');
-  const [readerMode, setReaderModeState] = useState<ReaderMode>(() => readStoredReaderMode());
-  const [browseTarget, setBrowseTargetState] = useState<BrowseTarget>(() => readStoredBrowseTarget());
+  const [readerMode, setReaderModeState] = useState<ReaderMode>('guided');
+  const [browseTarget, setBrowseTargetState] = useState<BrowseTarget>('cards');
   const [pageLimit, setPageLimit] = useState(20);
-  const [activeDimension, setActiveDimensionState] = useState<ActiveDimension>(() => {
-    if (typeof window === 'undefined') return 'collections';
-    return normalizeStoredActiveDimension(readStoredValue(DIMENSION_STORAGE_KEY));
-  });
-  const [collectionId, setCollectionIdState] = useState<string | null>(() => {
-    if (typeof window === 'undefined') return null;
-    return readStoredValue(COLLECTION_STORAGE_KEY) || null;
-  });
+  const [activeDimension, setActiveDimensionState] = useState<ActiveDimension>('collections');
+  const [collectionId, setCollectionIdState] = useState<string | null>(null);
   const [guidedTransitionCollectionId, setGuidedTransitionCollectionId] = useState<string | null>(null);
-  const [feedSort, setFeedSortState] = useState<FeedSortOrder>(() => readStoredFeedSort());
-  const [feedGroupBy, setFeedGroupByState] = useState<FeedGroupBy>(() => readStoredFeedGroup());
-  const [includeSubTagsInFeed, setIncludeSubTagsInFeedState] = useState<boolean>(() =>
-    readStoredIncludeSubTagsInFeed()
-  );
+  const [feedSort, setFeedSortState] = useState<FeedSortOrder>('random');
+  const [feedGroupBy, setFeedGroupByState] = useState<FeedGroupBy>('none');
+  const [includeSubTagsInFeed, setIncludeSubTagsInFeedState] = useState<boolean>(false);
   const [cardDimensionMissing, setCardDimensionMissingState] = useState<CardDimensionMissing>({
     who: false,
     what: false,
     when: false,
     where: false,
   });
+  const [hasHydratedPersistedReaderState, setHasHydratedPersistedReaderState] = useState(false);
 
   const [randomSeed, setRandomSeed] = useState<string>(() => createRandomSeed());
   const lastVisibleReaderSnapshotRef = useRef<{
     cards: Card[];
     feedSections: FeedSections;
   }>({ cards: [], feedSections: null });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const storedReaderMode = readStoredReaderMode();
+    const storedActiveDimension = normalizeStoredActiveDimension(readStoredValue(DIMENSION_STORAGE_KEY));
+
+    setFeedCardTypes(readStoredFeedCardTypes());
+    setReaderModeState(storedReaderMode);
+    setBrowseTargetState(storedReaderMode === 'guided' ? 'cards' : readStoredBrowseTarget());
+    setActiveDimensionState(storedActiveDimension);
+    setCollectionIdState(
+      storedActiveDimension === 'collections' ? readStoredValue(COLLECTION_STORAGE_KEY) || null : null
+    );
+    setFeedSortState(readStoredFeedSort());
+    setFeedGroupByState(readStoredFeedGroup());
+    setIncludeSubTagsInFeedState(readStoredIncludeSubTagsInFeed());
+    setHasHydratedPersistedReaderState(true);
+  }, []);
 
   const setFeedSort = useCallback((order: FeedSortOrder) => {
     setFeedSortState(order);
@@ -381,14 +397,14 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   }, [activeDimension, collectionId, readerMode]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !hasHydratedPersistedReaderState) return;
     const values = FEED_CARD_TYPES_ORDER.filter((type) => feedCardTypes.has(type));
     if (values.length === FEED_CARD_TYPES_ORDER.length) {
       window.localStorage.removeItem(FEED_CARD_TYPES_KEY);
       return;
     }
     window.localStorage.setItem(FEED_CARD_TYPES_KEY, JSON.stringify(values));
-  }, [feedCardTypes]);
+  }, [feedCardTypes, hasHydratedPersistedReaderState]);
 
   const hasAppliedSessionStatusDefault = useRef(false);
   useEffect(() => {

@@ -141,6 +141,22 @@
   align-items: center;
 }
 
+.studioTagScopeRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-width: 0;
+}
+
+.studioTagScopeLabel {
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
+  white-space: nowrap;
+}
+
 .studioRuleMatrix {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -231,9 +247,9 @@
 }
 
 .studioDeleteConfirmPrimary {
-  border: var(--border-width-thin) solid color-mix(in srgb, #b42318 55%, transparent);
-  background: color-mix(in srgb, #b42318 16%, transparent);
-  color: #7a271a;
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--state-error-border-color) 70%, var(--admin-window-border-color) 30%);
+  background: color-mix(in srgb, var(--state-error-border-color) 58%, var(--admin-window-background-color) 42%);
+  color: var(--admin-support-control-strong-text-color);
 }
 
 .studioDeleteConfirmSecondary {

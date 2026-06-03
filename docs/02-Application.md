@@ -309,6 +309,7 @@ Legend:
   - Add optional `Read more` progressive disclosure for story excerpts in feed cards, with deterministic truncation and explicit collapse/expand behavior that does not break feed scroll continuity.
 - **Question-card visual cue** - Evaluate a question-card cover treatment (for example a question-mark overlay/cover treatment) so Question cards keep more visual interest in card views without pretending to be a different type.
 - **Feed matrix direction (agreed 2026-05-31)** - Closed-card target direction is now: `Story` = cover-led baseline with title visible, type badge retained, no tag/context badges, and no excerpt in reader presentation; `Gallery` = cover-led sibling to `Story` with a stronger multi-image cue, no tag/context badges, and no excerpt; `Question` = type-native background with overlaid question/title and no excerpt or tag/context badges; `Quote` = quote-first visual treatment with no excerpt or feed metadata; `Callout` = de-emphasized until its role is clearer. Open-card target direction is now: keep type + tag/context badges in open headers, keep `Story` and `Gallery` structurally aligned, and give `Question` stronger closed-to-open visual continuity by carrying the background/header treatment forward into the open card.
+- **Closed utility-card content contract (2026-06-01)** - Closed feed `Question` and `Quote` tiles are now title-driven utility cards: `Question` reads from the question/title field and closed `Quote` follows that same title-driven tile contract rather than rendering rich-text body content in the feed. Closed `Callout` remains rich-text-driven, but it must stay bounded to the same fixed utility-tile shell as `Question` and `Quote`; overflow is clipped inside the tile rather than expanding the card height. In the closed Reader feed, `Quote` and `Callout` also ignore hidden cover metadata for shell selection and stay on the same utility portrait frame as the current no-cover `Question` tile so mixed rows keep one height. Within that shared utility family, closed `Quote` uses the same headline size band as closed `Question` while keeping a distinct quote face, and its watermark now follows the darker question-mark family treatment with a larger optically centered glyph. Quote detail/open presentation still owns the full quote body plus attribution path.
 - **Desktop feed rhythm direction (agreed 2026-05-31)** - Desktop closed cards should normalize to one standard landscape size and one restrained portrait variant at the same width. Square covers fold into the landscape family, no-cover cards do not create a separate landscape size, and cover presence must not create a second landscape height. `Story` should now be treated as always cover-led in reader presentation: if a story lacks a real cover, it should use a standard story placeholder rather than falling into a separate no-cover story layout. The landscape family is the dominant rhythm; portrait is the single controlled exception.
 - **Trivia card flip treatment** - Evaluate a `Trivia` card family for short prompt/answer content with a tap/click flip interaction (front = prompt, back = answer) so lightweight Q&A can feel distinct from full Question cards without forcing a detail-page open.
 - **Questions / Quotes** - Source material (Word, books, Notion).
@@ -325,8 +326,8 @@ Legend:
 | gallery | inline       | Non-interactive tile; inline gallery preview allowed                              | Optional curated rail for quick browse                            | N/A (not used as open behavior)                       | Not excerpt-driven                                        | Orientation-aware ratio bucket per variant                             |
 | qa      | navigate     | Interactive question tile opens detail answer page                                | Optional themed rail (for grouped Question runs)                  | Question + answer detail structure                    | Teaser optional; no `Read more` requirement in v1         | Orientation-aware ratio bucket per variant when cover exists           |
 | qa      | inline       | Non-interactive tile with question + answer preview                               | Optional curated rail                                             | N/A (not used as open behavior)                       | Preview-first; no `Read more` requirement in v1           | Orientation-aware ratio bucket per variant when cover exists           |
-| quote   | static       | Non-interactive quote tile                                                        | Optional quote rail for themed runs                               | Render quote body + attribution when opened directly  | Not excerpt-driven                                        | No cover required; if cover exists, use orientation-aware ratio bucket |
-| callout | static       | Non-interactive callout tile                                                      | Optional callout rail                                             | Render callout content when opened directly           | Not excerpt-driven                                        | No cover required; if cover exists, use orientation-aware ratio bucket |
+| quote   | static       | Non-interactive quote tile                                                        | Optional quote rail for themed runs                               | Render quote body + attribution when opened directly  | Not excerpt-driven                                        | Closed feed stays on the utility portrait frame; hidden cover metadata must not change the tile shell |
+| callout | static       | Non-interactive callout tile                                                      | Optional callout rail                                             | Render callout content when opened directly           | Not excerpt-driven                                        | Closed feed stays on the utility portrait frame; hidden cover metadata must not change the tile shell |
 
 
 📐 **Matrix Rules** - Keep the matrix as the source of truth for feed/detail behavior; new variants (for example `short`) must be added to this matrix before implementation.
@@ -450,6 +451,7 @@ Legend:
 - **Studio naming cleanup** - Rename the remaining `Content Management` surface/chrome language to `Content Studio` so the product vocabulary matches the shipped `Studio` IA.
 - **Bulk bar idle collapse + selection semantics** - Hide the bulk-actions bar entirely when nothing is selected, and reconcile selection copy/behavior with the current growing-list model so surfaces do not imply a paged `Select all on page` contract where the UI now behaves as `Select visible`.
 - **Operator message pruning** - Remove low-value shell messages such as `working in...` where they add noise without helping the author make a decision.
+- **Studio light-mode shell hierarchy** - Rework the current light-mode Studio shell so the top `Content Studio` header block, the pane workspace block, and the outer gutters read as one intentional hierarchy. The gap between the Studio menu block and the main Studio block should collapse to a near-hairline seam, and the current stacked gray/pale planes should be reduced without changing drag/drop, pane ownership, or shell interaction structure.
 
 ⭕2 **Future**
 
@@ -519,6 +521,7 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 
 ⭕2 **Future**
 
+- **Studio cards subject-tag filtering** - Let card admin and Studio Cards mark one assigned tag as subject, render that subject in priority position on compact tiles/rails instead of hiding it behind the current per-dimension `+` summary, and support `All tags` vs `Subject only` filtering without weakening ordinary dimensional tag filters.
 - **Studio cards bulk row actions** - Parity with full-page card admin bulk select/actions when the Studio card list needs the same at-scale operations (deferred; does not block Studio tag filter simplification).
 - **Card Edit Mosaic** - Mosaic layout for gallery manager in card edit (align with Apple/Google Photos-style browsing).
 - **Card Linkage** - Non-hierarchical "See Also" cross-references via `linkedCardIds: string[]` (many-to-many, unordered). Surfaces in reader view alongside tag-affinity related cards. Distinct from parent-child (`childrenIds`) and question->card linkage. Deferred until after import.
@@ -584,6 +587,7 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 
 ⭕2 **Future**
 
+- **Compose subject-tag authoring** - Add a lightweight subject action to the existing tag-edit flow so Compose can mark one already-assigned tag as the card subject without introducing a second free-text subject field or a separate subject-only taxonomy.
 - **Compose relationship hardening** - Keep the `Compose + Media` relationship drag boundary narrow and browser-verified until right-side target activation and post-drop behavior are fully reconfirmed in live use.
 
 ---
@@ -655,12 +659,15 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 📐 **Authoring Vocabulary** - Mirror the same dimensional paths in digiKam keywords and the app tag tree so import/mapping stays predictable. Four scene dimensions on media (Who, What, When, Where); card-level arc/theme tags for narrative framing. **N/A sentinel:** use root tag `**zNA`** in each dimension in the app (and align digiKam keywords to the same label per dimension path). Key conventions:
   - **When** - `when/date/...` chronological, sortable (`yyyymmdd`, `00` for unknown). No `when/stage` (stage is who-dependent; infer from who + date). Season out of scope.
   - **What** - Includes `what/Reflections/...` for reflective / journal-style themes (card-centric; not used for media scene tags). Other buckets: `what/event/...` (occasions/milestones), `what/activity/...` (what people are doing), plus long-running domains under What as needed. Overlap: milestones -> event; school defaults to theme; add event for specific ceremonies.
-  - **Who** - People as stable tag identities (display names). Groups optional (`who/group/...`). Subject vs also-present encoding TBD. Kinship graph is **Relationship Tagging** (future).
+  - **Who** - People as stable tag identities (display names). Groups optional (`who/group/...`). Subject vs also-present is not a separate `Who` path: use the normal tag library plus the optional subject marker on one assigned tag. Kinship graph is **Relationship Tagging** (future).
   - **Where** - Administrative nesting (country -> state -> county -> city), skip levels when irrelevant. Venues, domestic labels, natural settings as children. GPS/EXIF may seed on import; author refines in Tag admin.
 
-❓ **Open**
+📐 **Subject tag contract (2026-06-02)** - `Subject` is an optional assignment-level marker on the existing tag library, not a fifth dimension, a free-text field, or a tag-library-wide flag. Each **card** and each **media item** may have **zero or one** subject tag. The subject tag must already be assigned to that object through the normal `Who | What | When | Where` taxonomy. Broad tag assignment still means general association; the subject marker means the object is **mainly about** that tag. Removing the assigned tag clears the subject marker automatically.
+📐 **Subject-tag behavior notes (2026-06-02)** - Subject does **not** create a second counting system or extra hidden assignments. Tag counts stay **unique per card/media item under a subtree**, not "one count per matching direct tag on the same object," so directly tagging both `Siblings` and the four brothers still counts as one item under the `Siblings` subtree. Ordinary tag filters continue to mean broad association through assigned tags plus hierarchy; future `Subject only` filters mean the object's single subject marker points at the selected tag. Compact admin card/media metadata should give the subject tag **priority rendering** when present rather than leaving it hidden behind the current first-tag-plus-`+` summary.
 
-- **Subject tag model** - Decide whether `Subject` should become an explicit tagging concept or continue to be expressed through existing `Who` and relationship patterns.
+⭕2 **Future**
+
+- **Subject-tag authoring and filtering** - Add optional subject selection to card/media tag editing, keep it limited to one already-assigned tag per object, support `Subject only` filtering alongside ordinary association filters, and make compact card/media metadata render the subject tag in priority position rather than hiding it behind the current first-tag-plus-`+` summary.
 
 ---
 
@@ -823,6 +830,7 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 
 ⭕2 **Future**
 
+- **Studio media subject-tag workflow** - Let media mark one already-assigned tag as subject, render that subject in priority position in compact grid metadata so cases like `Siblings` can override a generic first-visible person tag, and support `All tags` vs `Subject only` filtering in Media admin and embedded Studio Media.
 - **Search without Typesense** - Today non-empty text search returns 503 when Typesense is unset; consider degraded search (capped Firestore scan / clearer admin affordance) for small corpora or dev machines.
 - **Rename types module** - `src/lib/types/photo.ts` -> `media.ts` (throughout)
 - **Append to Gallery** - Bulk add selected banked media to another **existing** card's gallery from Media admin (parked). **Today** images still reach cards after import via **Create card from selection** (draft gallery + edit), **PhotoPicker** / gallery in card edit, **inline images** in rich text, and **replace-in-place** on media rows-no need to block on this bulk-append flow.

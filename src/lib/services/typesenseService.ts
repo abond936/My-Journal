@@ -25,6 +25,8 @@ const cardsSchema: BaseCollectionCreateSchema & { fields: CollectionFieldSchema[
     { name: 'where_names', type: 'string[]', optional: true, facet: true },
     /** Direct + inherited tag ids (matches `filterTags` keys) for AND filtering. */
     { name: 'filter_tag_ids', type: 'string[]', optional: true, facet: true },
+    { name: 'subject_tag_id', type: 'string', optional: true, facet: true },
+    { name: 'subject_filter_tag_ids', type: 'string[]', optional: true, facet: true },
     { name: 'tag_ids', type: 'string[]', optional: true, facet: true },
     { name: 'who_ids', type: 'string[]', optional: true, facet: true },
     { name: 'what_ids', type: 'string[]', optional: true, facet: true },
@@ -70,6 +72,8 @@ export interface TypesenseCardDocument {
   when_names?: string[];
   where_names?: string[];
   filter_tag_ids?: string[];
+  subject_tag_id?: string;
+  subject_filter_tag_ids?: string[];
   tag_ids?: string[];
   who_ids?: string[];
   what_ids?: string[];
@@ -140,6 +144,27 @@ async function patchCardsCollectionSortableStringFields(
   console.warn('[Typesense] Re-upsert cards (e.g. npm run sync:typesense) so sort fields are repopulated.');
 }
 
+async function patchCardsCollectionSubjectFields(
+  client: Client,
+  existing: CollectionSchema
+): Promise<void> {
+  const fields = existing.fields ?? [];
+  const patchFields: CollectionFieldSchema[] = [];
+
+  if (!fields.find((field) => field.name === 'subject_tag_id')) {
+    patchFields.push({ name: 'subject_tag_id', type: 'string', optional: true, facet: true });
+  }
+  if (!fields.find((field) => field.name === 'subject_filter_tag_ids')) {
+    patchFields.push({ name: 'subject_filter_tag_ids', type: 'string[]', optional: true, facet: true });
+  }
+
+  if (patchFields.length === 0) return;
+
+  console.warn('[Typesense] Updating cards schema: adding subject-tag fields.');
+  await client.collections(CARDS_COLLECTION).update({ fields: patchFields });
+  console.warn('[Typesense] Re-upsert cards (e.g. npm run sync:typesense) so subject fields are populated.');
+}
+
 export async function ensureCardsCollection(): Promise<void> {
   const client = getTypesenseClient();
   if (!client) throw new Error('Typesense not configured');
@@ -147,6 +172,7 @@ export async function ensureCardsCollection(): Promise<void> {
   try {
     const existing = await client.collections(CARDS_COLLECTION).retrieve();
     await patchCardsCollectionSortableStringFields(client, existing);
+    await patchCardsCollectionSubjectFields(client, existing);
   } catch {
     await client.collections().create(cardsSchema);
   }
@@ -451,7 +477,10 @@ export function buildTypesenseCardDocumentFromData(
   const when = (data.when as string[] | undefined) ?? [];
   const where = (data.where as string[] | undefined) ?? [];
   const filterTags = (data.filterTags as Record<string, boolean> | undefined) ?? {};
+  const subjectTagId = (data.subjectTagId as string | null | undefined) ?? undefined;
+  const subjectFilterTags = (data.subjectFilterTags as Record<string, boolean> | undefined) ?? {};
   const filterTagIds = Object.keys(filterTags).filter((k) => filterTags[k]);
+  const subjectFilterTagIds = Object.keys(subjectFilterTags).filter((k) => subjectFilterTags[k]);
 
   const contentRaw = data.content as string | undefined;
   const contentText = contentRaw ? stripHtml(contentRaw) : '';
@@ -476,6 +505,8 @@ export function buildTypesenseCardDocumentFromData(
     when_names: lookupNames(when, tagMap),
     where_names: lookupNames(where, tagMap),
     filter_tag_ids: filterTagIds.length > 0 ? filterTagIds : undefined,
+    subject_tag_id: subjectTagId || undefined,
+    subject_filter_tag_ids: subjectFilterTagIds.length > 0 ? subjectFilterTagIds : undefined,
     tag_ids: tags.length > 0 ? tags : undefined,
     who_ids: who.length > 0 ? who : undefined,
     what_ids: what.length > 0 ? what : undefined,

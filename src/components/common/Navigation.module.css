@@ -112,6 +112,7 @@
   height: auto;
   max-height: var(--app-shell-header-height, var(--header-height));
   z-index: calc(var(--z-index-header) + 1);
+  overflow: visible;
 }
 
 .logoImage {
@@ -119,6 +120,16 @@
   max-height: min(calc(var(--logo-max-height) * 0.34), calc(var(--app-shell-header-height, var(--header-height)) - var(--spacing-md)));
   height: auto;
   object-fit: contain;
+}
+
+.logoImageDark {
+  transform: scale(1.35);
+  transform-origin: center;
+}
+
+.logoImageLight {
+  transform: scale(1.35);
+  transform-origin: center;
 }
 
 .navLinks {
@@ -250,6 +261,14 @@
 
   .logoImage {
     max-height: min(calc(var(--logo-max-height) * 0.3), calc(var(--app-shell-header-height, var(--header-height)) - var(--spacing-sm)));
+  }
+
+  .logoImageDark {
+    transform: scale(1.22);
+  }
+
+  .logoImageLight {
+    transform: scale(1.22);
   }
 
   .backLink {

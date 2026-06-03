@@ -128,13 +128,14 @@
 }
 
 .dangerButton {
-  color: var(--state-error-border-color);
-  border-color: var(--state-error-border-color);
+  background-color: color-mix(in srgb, var(--reader-support-control-background-color) 88%, var(--state-error-border-color) 12%);
+  color: color-mix(in srgb, var(--reader-support-control-text-color) 78%, var(--state-error-text-color) 22%);
+  border-color: color-mix(in srgb, var(--reader-support-control-border-color) 60%, var(--state-error-border-color) 40%);
 }
 
 .dangerButton:hover {
-  background-color: var(--state-error-background-color);
-  color: var(--reader-chrome-text-color);
+  background-color: color-mix(in srgb, var(--reader-support-control-background-color) 78%, var(--state-error-border-color) 22%);
+  color: var(--reader-support-control-text-color);
 }
 
 .toolbarButton:disabled {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link2, Pencil, Trash2 } from 'lucide-react';
 import { applyModifierSelection } from '@/lib/utils/adminListSelection';
 import { useDraggable } from '@dnd-kit/core';
@@ -11,6 +11,7 @@ import DimensionalTagVerticalChips from '@/components/admin/common/DimensionalTa
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
 import { useMedia } from '@/components/providers/MediaProvider';
 import { useTag } from '@/components/providers/TagProvider';
+import type { AdminTagFilterScope } from '@/lib/preferences/adminFilters';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import { formatCoreTagsTooltipLines, getCoreTagsByDimension } from '@/lib/utils/tagDisplay';
 import MediaEditModal from '@/components/admin/media-admin/MediaEditModal';
@@ -31,6 +32,7 @@ export interface MediaAdminGridCellProps {
   tagNameMap: Map<string, string>;
   allTags: ReturnType<typeof useTag>['tags'];
   onSaveTags: (mediaId: string, nextTags: string[]) => Promise<void>;
+  onSaveSubjectTag: (mediaId: string, nextSubjectTagId: string | null) => Promise<void>;
   onSaveMediaFields: (
     mediaId: string,
     updates: Partial<Pick<Media, 'caption' | 'objectPosition'>>
@@ -90,6 +92,7 @@ function MediaAdminGridCell({
   inlineCaptionEditing = false,
   isAssignedToActiveCard = false,
   authoritativeRelatedCardIds = null,
+  onSaveSubjectTag,
 }: MediaAdminGridCellProps) {
   const router = useRouter();
   const feedback = useAppFeedback();
@@ -101,6 +104,19 @@ function MediaAdminGridCell({
   const [linkedCardsModalOpen, setLinkedCardsModalOpen] = useState(false);
   const [captionDraft, setCaptionDraft] = useState(media.caption || '');
   const [captionSaving, setCaptionSaving] = useState(false);
+  const captionInputRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const syncInlineCaptionHeight = useCallback(() => {
+    const node = captionInputRef.current;
+    if (!node || !inlineCaptionEditing) return;
+    node.style.height = 'auto';
+    const nextHeight = Math.max(node.scrollHeight, node.clientHeight, node.offsetHeight);
+    if (nextHeight > 0) {
+      node.style.height = `${nextHeight}px`;
+    } else {
+      node.style.height = '';
+    }
+  }, [inlineCaptionEditing]);
 
   useEffect(() => {
     if (!saveNotice) return;
@@ -118,12 +134,24 @@ function MediaAdminGridCell({
     setCaptionDraft(media.caption || '');
   }, [captionSaving, editModalOpen, media.caption, media.docId]);
 
+  useLayoutEffect(() => {
+    syncInlineCaptionHeight();
+  }, [captionDraft, syncInlineCaptionHeight]);
+
   const handleTagUpdate = useCallback(
     async (nextTagIds: string[]) => {
       await onSaveTags(media.docId!, nextTagIds);
       setSaveNotice('Tags saved');
     },
     [media.docId, onSaveTags]
+  );
+
+  const handleSubjectUpdate = useCallback(
+    async (nextSubjectTagId: string | null) => {
+      await onSaveSubjectTag(media.docId!, nextSubjectTagId);
+      setSaveNotice('Subject saved');
+    },
+    [media.docId, onSaveSubjectTag]
   );
 
   const handleSelectionClick = useCallback(
@@ -334,11 +362,15 @@ function MediaAdminGridCell({
             <div className={styles.mediaTitle}>
               <textarea
                 id={`media-inline-caption-${media.docId}`}
-                rows={2}
+                ref={captionInputRef}
+                rows={1}
                 className={styles.inlineCaptionInput}
                 value={captionDraft}
                 placeholder=" "
-                onChange={(e) => setCaptionDraft(e.target.value)}
+                onChange={(e) => {
+                  setCaptionDraft(e.target.value);
+                  syncInlineCaptionHeight();
+                }}
                 onBlur={() => void handleInlineCaptionSave()}
                 onClick={(e) => e.stopPropagation()}
                 onKeyDown={(e) => {
@@ -350,6 +382,7 @@ function MediaAdminGridCell({
                   }
                 }}
                 aria-label={`Caption for ${media.filename}`}
+                data-testid={`media-inline-caption-${media.docId}`}
               />
             </div>
           ) : displayTitle ? (
@@ -357,20 +390,23 @@ function MediaAdminGridCell({
               {displayTitle}
             </div>
           ) : null}
-          <DimensionalTagVerticalChips
-            className={styles.tagChipsInline}
-            tagIds={media.tags ?? []}
-            allTags={allTags}
-            variant="inline"
-            onUpdateTags={(next) => onSaveTags(media.docId, next)}
-          />
+            <DimensionalTagVerticalChips
+              className={styles.tagChipsInline}
+              tagIds={media.tags ?? []}
+              subjectTagId={media.subjectTagId ?? null}
+              allTags={allTags}
+              variant="inline"
+              onUpdateTags={handleTagUpdate}
+              onUpdateSubjectTagId={handleSubjectUpdate}
+            />
           <div className={styles.tagSearchFoot} data-admin-chrome={ADMIN_GRID_CHROME.tagSearchFoot}>
             <CardDimensionalTagCommandBar
-              card={{ tags: media.tags ?? [] }}
+              card={{ tags: media.tags ?? [], subjectTagId: media.subjectTagId ?? null }}
               allTags={allTags ?? []}
               variant="searchOnly"
               suggestionsDensity="dense"
               onUpdateTags={handleTagUpdate}
+              onUpdateSubjectTagId={handleSubjectUpdate}
             />
           </div>
           {saveNotice ? <div className={styles.saveNotice}>{saveNotice}</div> : null}
@@ -409,6 +445,7 @@ const MemoizedMediaAdminGridCell = React.memo(MediaAdminGridCell, (prev, next) =
     prev.tagNameMap === next.tagNameMap &&
     prev.allTags === next.allTags &&
     prev.onSaveTags === next.onSaveTags &&
+    prev.onSaveSubjectTag === next.onSaveSubjectTag &&
     prev.onSaveMediaFields === next.onSaveMediaFields &&
     prev.isSelected === next.isSelected &&
     prev.onSelectionInteraction === next.onSelectionInteraction &&
@@ -457,6 +494,7 @@ const MemoizedMediaAdminGridCellStudioSource = React.memo(
     prev.tagNameMap === next.tagNameMap &&
     prev.allTags === next.allTags &&
     prev.onSaveTags === next.onSaveTags &&
+    prev.onSaveSubjectTag === next.onSaveSubjectTag &&
     prev.onSaveMediaFields === next.onSaveMediaFields &&
     prev.isSelected === next.isSelected &&
     prev.onSelectionInteraction === next.onSelectionInteraction &&
@@ -467,6 +505,7 @@ const MemoizedMediaAdminGridCellStudioSource = React.memo(
 export default function MediaAdminGrid({
   sourcePathFirst = false,
   dimensionFilters,
+  tagFilterScope = 'all',
   studioSourceDraggable = false,
   inlineCaptionEditing = false,
   clientSort = 'none',
@@ -477,6 +516,7 @@ export default function MediaAdminGrid({
 }: {
   sourcePathFirst?: boolean;
   dimensionFilters: DimensionFilters;
+  tagFilterScope?: AdminTagFilterScope;
   studioSourceDraggable?: boolean;
   inlineCaptionEditing?: boolean;
   clientSort?: 'none' | 'filenameAsc' | 'filenameDesc';
@@ -501,7 +541,18 @@ export default function MediaAdminGrid({
       return (['who', 'what', 'when', 'where'] as DimensionKey[]).every((dimension) => {
         const state = dimensionFilters[dimension];
         const ids = Array.isArray(item[dimension]) ? (item[dimension] as string[]) : [];
+        const hasSubjectInDimension = Boolean(
+          item.subjectTagId && ids.includes(item.subjectTagId)
+        );
         if (state.mode === 'any') return true;
+        if (tagFilterScope === 'subject') {
+          if (state.mode === 'hasAny') return hasSubjectInDimension;
+          if (state.mode === 'isEmpty') return !hasSubjectInDimension;
+          if (state.mode === 'matches') {
+            return state.tagId ? Boolean(item.subjectFilterTags?.[state.tagId]) : true;
+          }
+          return true;
+        }
         if (state.mode === 'hasAny') return ids.length > 0;
         if (state.mode === 'isEmpty') return ids.length === 0;
         if (state.mode === 'matches') return state.tagId ? ids.includes(state.tagId) : true;
@@ -529,7 +580,7 @@ export default function MediaAdminGrid({
       if (fileCompare !== 0) return fileCompare;
       return normalize(a.docId).localeCompare(normalize(b.docId));
     });
-  }, [sourceMedia, sourcePathFirst, dimensionFilters, clientSort]);
+  }, [sourceMedia, sourcePathFirst, dimensionFilters, clientSort, tagFilterScope]);
 
   const sortedIds = useMemo(() => sortedMedia.map((m) => m.docId), [sortedMedia]);
   const highlightedIdSet = useMemo(() => new Set(highlightedMediaIds), [highlightedMediaIds]);
@@ -588,6 +639,16 @@ export default function MediaAdminGrid({
     [updateMedia]
   );
 
+  const handleSaveSubjectTag = useCallback(
+    async (mediaId: string, nextSubjectTagId: string | null) => {
+      const updated = await updateMedia(mediaId, { subjectTagId: nextSubjectTagId });
+      if (!updated) {
+        throw new Error('Subject update failed. Please retry.');
+      }
+    },
+    [updateMedia]
+  );
+
   const handleSelectAllOnPage = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.checked) {
@@ -635,6 +696,7 @@ export default function MediaAdminGrid({
               tagNameMap={tagNameMap}
               allTags={tags}
               onSaveTags={handleSaveTags}
+              onSaveSubjectTag={handleSaveSubjectTag}
               onSaveMediaFields={handleSaveMediaFields}
               isSelected={selectedMediaIds.includes(item.docId)}
               onSelectionInteraction={handleGridSelection}
@@ -650,6 +712,7 @@ export default function MediaAdminGrid({
               tagNameMap={tagNameMap}
               allTags={tags}
               onSaveTags={handleSaveTags}
+              onSaveSubjectTag={handleSaveSubjectTag}
               onSaveMediaFields={handleSaveMediaFields}
               isSelected={selectedMediaIds.includes(item.docId)}
               onSelectionInteraction={handleGridSelection}

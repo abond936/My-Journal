@@ -90,7 +90,11 @@ function mediaMatchesCaptionFilter(item: Media, hasCaption: string | null): bool
 }
 
 /** Aligns with getCards dimensional filtering: intra-dimension OR, inter-dimension AND. */
-function mediaMatchesDimensionalTags(item: Media, dt: DimensionalTagIdMap): boolean {
+function mediaMatchesDimensionalTags(
+  item: Media,
+  dt: DimensionalTagIdMap,
+  tagScope: 'all' | 'subject'
+): boolean {
   if (!dimensionalTagMapHasFilters(dt)) return true;
 
   const dims: (keyof DimensionalTagIdMap)[] = ['who', 'what', 'when', 'where'];
@@ -99,7 +103,10 @@ function mediaMatchesDimensionalTags(item: Media, dt: DimensionalTagIdMap): bool
     if (!selected?.length) continue;
     const idsOnMedia = getDimensionIds(item, dim);
     const ok = selected.some(
-      (tid) => idsOnMedia.includes(tid) || Boolean(item.filterTags?.[tid])
+      (tid) =>
+        tagScope === 'subject'
+          ? Boolean(item.subjectFilterTags?.[tid])
+          : idsOnMedia.includes(tid) || Boolean(item.filterTags?.[tid])
     );
     if (!ok) return false;
   }
@@ -193,6 +200,7 @@ export async function GET(request: NextRequest) {
     const hasCaption = searchParams.get('hasCaption');
     const search = searchParams.get('search');
     const assignment = searchParams.get('assignment') || 'all';
+    const tagScope = searchParams.get('tagScope') === 'subject' ? 'subject' : 'all';
     const includeTotal = searchParams.get('includeTotal') !== 'false';
     const tagDimension = searchParams.get('tagDimension');
     const tagMode = searchParams.get('tagMode');
@@ -227,6 +235,7 @@ export async function GET(request: NextRequest) {
     const wantTypesense =
       isTypesenseConfigured() &&
       !shouldUseLegacyTagSeek &&
+      !(tagScope === 'subject' && hasDimensionalTagSeek) &&
       (searchTrimmed.length > 0 ||
         hasCaptionSeek ||
         hasDimensionalTagSeek ||
@@ -248,7 +257,10 @@ export async function GET(request: NextRequest) {
       });
 
       const media = await fetchMediaByIdsInOrder(firestore, tsResult.docIds);
-      const mediaWithUrls = applyPublicStorageUrls(media);
+      const filteredMedia = media.filter((item) =>
+        mediaMatchesDimensionalTags(item, dimensionalTags, tagScope)
+      );
+      const mediaWithUrls = applyPublicStorageUrls(filteredMedia);
 
       return NextResponse.json({
         media: mediaWithUrls,
@@ -278,7 +290,7 @@ export async function GET(request: NextRequest) {
         if (!mediaMatchesDimensions(row, dimensions)) return false;
         if (!mediaMatchesSearch(row, search)) return false;
         if (hasDimensionalTagSeek) {
-          if (!mediaMatchesDimensionalTags(row, dimensionalTags)) return false;
+          if (!mediaMatchesDimensionalTags(row, dimensionalTags, tagScope)) return false;
         }
         if (shouldUseLegacyTagSeek) {
           if (!mediaMatchesTagFilter(row, tagDimension, tagMode, tagValue)) return false;

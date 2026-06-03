@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
+import { getTitleLogoSrc } from '@/lib/utils/titleLogo';
 import styles from './page.module.css';
 
 export const metadata: Metadata = {
@@ -40,7 +41,7 @@ export default function LandingPageThree() {
         <div className={styles.heroOverlay}>
           <div className={styles.logoWrap}>
             <Image
-              src="/images/uploads/Title-light2.png"
+              src={getTitleLogoSrc('light')}
               alt="My Stories"
               className={styles.logo}
               width={600}

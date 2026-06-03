@@ -362,11 +362,11 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
         if (loading || loadingMore) return;
         void loadMore();
       },
-      { rootMargin: '280px 0px' }
+      { rootMargin: embedded ? '1200px 0px' : '480px 0px' }
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }, [hasMore, importPickerOpen, loadMore, loadMoreError, loading, loadingMore]);
+  }, [embedded, hasMore, importPickerOpen, loadMore, loadMoreError, loading, loadingMore]);
 
   const mainBody = (
     <>
@@ -380,6 +380,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
         <MediaAdminGrid
           sourcePathFirst={duplicateTriageMode}
           dimensionFilters={dimensionFilters}
+          tagFilterScope={filters.tagScope}
           studioSourceDraggable={embedded && studioSourceDraggable}
           inlineCaptionEditing={embedded}
           clientSort={embedded ? clientSort : 'none'}
@@ -393,6 +394,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
           emptyMessage="No media are assigned to the current card."
           sourcePathFirst={false}
           dimensionFilters={DEFAULT_ADMIN_DIMENSION_FILTERS}
+          tagFilterScope={filters.tagScope}
           studioSourceDraggable={embedded && studioSourceDraggable}
           inlineCaptionEditing={embedded}
           clientSort={clientSort}
@@ -401,9 +403,9 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
         />
       ) : null}
 
-      {!showOnlyAssigned && (pagination || hasMore || loadingMore) && (
+      {!showOnlyAssigned && ((!embedded && (pagination || hasMore || loadingMore)) || loadMoreError) && (
           <div className={styles.pagination}>
-            {hasMore ? (
+            {!embedded && hasMore ? (
               <button
                 type="button"
                 onClick={() => void loadMore()}
@@ -413,22 +415,16 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                 {loadingMore ? 'Loading more...' : loadMoreError ? 'Retry loading more' : 'Load more'}
               </button>
             ) : null}
-            <span className={styles.pageInfo}>
-              {pagination?.seekMode ? (
-                <>
-                  Scrolling newest first
-                  <span className={styles.paginationHint}>
-                    {' '}
-                    - filtered results continue as you scroll
-                  </span>
-                </>
-              ) : (
-                <>
-                  {pagination.total != null ? `${pagination.total} total items` : 'Scrolling newest first'}
-                </>
-              )}
-            </span>
-            {!hasMore ? (
+            {!embedded ? (
+              <span className={styles.pageInfo}>
+                {pagination?.seekMode ? (
+                  <>Scrolling newest first</>
+                ) : (
+                  <>{pagination.total != null ? `${pagination.total} total items` : 'Scrolling newest first'}</>
+                )}
+              </span>
+            ) : null}
+            {!embedded && !hasMore ? (
               <span className={styles.paginationHint}>End of loaded results</span>
             ) : null}
             {loadMoreError ? (
@@ -593,44 +589,57 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                 </div>
               }
               footerContent={
-                <div className={styles.studioMediaRuleMatrix}>
-                  {(['who', 'what', 'when', 'where'] as DimensionKey[]).map((dimension) => {
-                    const state = dimensionFilters[dimension];
-                    const options = allTags.filter((t) => t.dimension === dimension && t.docId);
-                    return (
-                      <div key={dimension} className={styles.studioMediaRuleColumn}>
-                        <select
-                          className={styles.studioFilterSelectFull}
-                          value={state.mode}
-                          onChange={(e) =>
-                            updateDimensionFilter(dimension, {
-                              mode: e.target.value as AdminDimensionFilterMode,
-                            })
-                          }
-                        >
-                          <option value="any">Any</option>
-                          <option value="hasAny">Has any</option>
-                          <option value="isEmpty">Is empty</option>
-                          <option value="matches">Matches tag</option>
-                        </select>
-                        {state.mode === 'matches' ? (
+                <>
+                  <div className={styles.studioTagScopeRow}>
+                    <span className={styles.studioTagScopeLabel}>Tag scope</span>
+                    <select
+                      className={styles.studioFilterSelectFull}
+                      value={filters.tagScope}
+                      onChange={(e) => handleFilterChange('tagScope', e.target.value as MediaFilters['tagScope'])}
+                    >
+                      <option value="all">All tags</option>
+                      <option value="subject">Subject only</option>
+                    </select>
+                  </div>
+                  <div className={styles.studioMediaRuleMatrix}>
+                    {(['who', 'what', 'when', 'where'] as DimensionKey[]).map((dimension) => {
+                      const state = dimensionFilters[dimension];
+                      const options = allTags.filter((t) => t.dimension === dimension && t.docId);
+                      return (
+                        <div key={dimension} className={styles.studioMediaRuleColumn}>
                           <select
                             className={styles.studioFilterSelectFull}
-                            value={state.tagId}
-                            onChange={(e) => updateDimensionFilter(dimension, { tagId: e.target.value })}
+                            value={state.mode}
+                            onChange={(e) =>
+                              updateDimensionFilter(dimension, {
+                                mode: e.target.value as AdminDimensionFilterMode,
+                              })
+                            }
                           >
-                            <option value="">Select tag...</option>
-                            {options.map((tag) => (
-                              <option key={tag.docId} value={tag.docId}>
-                                {tag.name}
-                              </option>
-                            ))}
+                            <option value="any">Any</option>
+                            <option value="hasAny">Has any</option>
+                            <option value="isEmpty">Is empty</option>
+                            <option value="matches">Matches tag</option>
                           </select>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </div>
+                          {state.mode === 'matches' ? (
+                            <select
+                              className={styles.studioFilterSelectFull}
+                              value={state.tagId}
+                              onChange={(e) => updateDimensionFilter(dimension, { tagId: e.target.value })}
+                            >
+                              <option value="">Select tag...</option>
+                              {options.map((tag) => (
+                                <option key={tag.docId} value={tag.docId}>
+                                  {tag.name}
+                                </option>
+                              ))}
+                            </select>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               }
             />
           </div>
@@ -664,40 +673,36 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
             </div>
           ) : null}
         </div>
-        {!loading && !error && (
+        {!loading && !error && selectedMediaIds.length > 0 ? (
           <div className={cardAdminStyles.bulkActions}>
             <span>
-              {selectedMediaIds.length === 0
-                ? 'No media selected'
-                : `${selectedMediaIds.length} media selected`}
+              {selectedMediaIds.length} media selected
             </span>
-            {selectedMediaIds.length > 0 ? (
-              <div className={cardAdminStyles.actions}>
-                <button
-                  type="button"
-                  onClick={handleCreateCardFromSelection}
-                  disabled={isCreatingCard}
-                  className={cardAdminStyles.actionButton}
-                >
-                  {isCreatingCard ? 'Creating...' : 'Create card'}
-                </button>
-                <button type="button" onClick={handleOpenBulkTags} className={cardAdminStyles.actionButton}>
-                  Edit tags...
-                </button>
-                <button type="button" onClick={selectNone} className={cardAdminStyles.actionButton}>
-                  Clear Selection
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBulkDeleteModalOpen(true)}
-                  className={`${cardAdminStyles.actionButton} ${cardAdminStyles.deleteButton}`}
-                >
-                  Delete
-                </button>
-              </div>
-            ) : null}
+            <div className={cardAdminStyles.actions}>
+              <button
+                type="button"
+                onClick={handleCreateCardFromSelection}
+                disabled={isCreatingCard}
+                className={cardAdminStyles.actionButton}
+              >
+                {isCreatingCard ? 'Creating...' : 'Create card'}
+              </button>
+              <button type="button" onClick={handleOpenBulkTags} className={cardAdminStyles.actionButton}>
+                Edit tags...
+              </button>
+              <button type="button" onClick={selectNone} className={cardAdminStyles.actionButton}>
+                Clear Selection
+              </button>
+              <button
+                type="button"
+                onClick={() => setBulkDeleteModalOpen(true)}
+                className={`${cardAdminStyles.actionButton} ${cardAdminStyles.deleteButton}`}
+              >
+                Delete
+              </button>
+            </div>
           </div>
-        )}
+        ) : null}
       </div>
 
       <EditModal

@@ -329,4 +329,26 @@ describe('PATCH /api/cards/[id] cover fast path', () => {
     expect(mockedUpdateCardStatus).not.toHaveBeenCalled();
     expect(payload.title).toBe('Renamed');
   });
+
+  it('routes subject-only payloads through the narrow tag-assignment path', async () => {
+    mockedIsTagsOnlyPayload.mockReturnValue(true);
+    mockedUpdateCardTags.mockResolvedValue({
+      docId: 'card-1',
+      tags: ['siblings'],
+      subjectTagId: 'siblings',
+    } as never);
+
+    const res = await PATCH(makeRequest({ subjectTagId: 'siblings' }), {
+      params: Promise.resolve({ id: 'card-1' }),
+    });
+    const payload = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(mockedUpdateCardTags).toHaveBeenCalledWith('card-1', {
+      tags: undefined,
+      subjectTagId: 'siblings',
+    });
+    expect(mockedUpdateCard).not.toHaveBeenCalled();
+    expect(payload.subjectTagId).toBe('siblings');
+  });
 });

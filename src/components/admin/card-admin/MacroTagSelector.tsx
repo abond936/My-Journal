@@ -20,11 +20,35 @@ function isAuthorFacingTag(tag: Tag): boolean {
   return !tag.name.trim().toLowerCase().startsWith('z-');
 }
 
+function subjectChipDimensionClass(dimension: Tag['dimension']): string {
+  switch (dimension) {
+    case 'who':
+      return styles.subjectChipWho;
+    case 'what':
+      return styles.subjectChipWhat;
+    case 'when':
+      return styles.subjectChipWhen;
+    case 'where':
+      return styles.subjectChipWhere;
+    default:
+      return '';
+  }
+}
+
+const SUBJECT_DIMENSION_ORDER: Record<string, number> = {
+  who: 0,
+  what: 1,
+  when: 2,
+  where: 3,
+};
+
 interface MacroTagSelectorProps {
   selectedTags: Tag[];
   allTags: Tag[];
   onChange: (newIds: string[]) => void;
   onSaveSelection?: (newIds: string[]) => void | Promise<void>;
+  subjectTagId?: string | null;
+  onSubjectTagIdChange?: (nextSubjectTagId: string | null) => void | Promise<void>;
   error?: string;
   className?: string;
   startExpanded?: boolean;
@@ -41,6 +65,8 @@ export default function MacroTagSelector({
   allTags,
   onChange,
   onSaveSelection,
+  subjectTagId,
+  onSubjectTagIdChange,
   error,
   className,
   startExpanded = false,
@@ -115,8 +141,10 @@ export default function MacroTagSelector({
     return (
       <ExpandedView
         initialSelection={selectedTagIds}
+        initialSubjectTagId={subjectTagId ?? null}
         allTags={effectiveAllTags}
         onSave={handleSave}
+        onSaveSubjectTagId={onSubjectTagIdChange}
         onCancel={handleCancel}
         saving={saving}
       />
@@ -185,9 +213,11 @@ function TagNode({ node }: { node: TagWithChildren }) {
 
 interface ExpandedViewProps {
   initialSelection: string[];
+  initialSubjectTagId?: string | null;
   /** Fallback when TagProvider list is still empty; merged so trees show every tag. */
   allTags: Tag[];
   onSave: (newSelection: string[]) => void | Promise<void>;
+  onSaveSubjectTagId?: (nextSubjectTagId: string | null) => void | Promise<void>;
   onCancel: () => void;
   saving?: boolean;
   className?: string;
@@ -195,8 +225,10 @@ interface ExpandedViewProps {
 
 function ExpandedView({
   initialSelection,
+  initialSubjectTagId = null,
   allTags,
   onSave,
+  onSaveSubjectTagId,
   onCancel,
   saving = false,
   className,
@@ -218,11 +250,16 @@ function ExpandedView({
   }, [tags, allTags]);
 
   const [currentSelection, setCurrentSelection] = useState<Set<string>>(new Set(initialSelection));
+  const [currentSubjectTagId, setCurrentSubjectTagId] = useState<string | null>(initialSubjectTagId);
   const [searchTerm, setSearchTerm] = useState('');
 
   React.useEffect(() => {
     setCurrentSelection(new Set(initialSelection));
   }, [initialSelection]);
+
+  React.useEffect(() => {
+    setCurrentSubjectTagId(initialSubjectTagId);
+  }, [initialSubjectTagId]);
 
   const dimensionalTree = useMemo(() => {
     if (!tagSource.length) return [];
@@ -265,13 +302,36 @@ function ExpandedView({
       } else {
         newSelection.delete(tagId);
       }
+      if (!isSelected && currentSubjectTagId === tagId) {
+        setCurrentSubjectTagId(null);
+      }
       return newSelection;
     });
   };
 
   const handleSaveClick = async () => {
     await onSave(Array.from(currentSelection));
+    if (onSaveSubjectTagId) {
+      const resolvedSubjectTagId =
+        currentSubjectTagId && currentSelection.has(currentSubjectTagId) ? currentSubjectTagId : null;
+      await onSaveSubjectTagId(resolvedSubjectTagId);
+    }
   };
+
+  const selectedTagsById = useMemo(() => {
+    const map = new Map<string, Tag>();
+    for (const tag of tagSource) {
+      if (tag.docId && currentSelection.has(tag.docId)) {
+        map.set(tag.docId, tag);
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => {
+      const dimensionRankA = SUBJECT_DIMENSION_ORDER[a.dimension ?? ''] ?? 99;
+      const dimensionRankB = SUBJECT_DIMENSION_ORDER[b.dimension ?? ''] ?? 99;
+      if (dimensionRankA !== dimensionRankB) return dimensionRankA - dimensionRankB;
+      return a.name.localeCompare(b.name);
+    });
+  }, [currentSelection, tagSource]);
 
   React.useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -306,6 +366,35 @@ function ExpandedView({
             </button>
           )}
         </div>
+        {onSaveSubjectTagId ? (
+          <div className={styles.subjectPanel}>
+            <div className={styles.subjectPanelHeader}>Subject</div>
+            <div className={styles.subjectPanelHint}>Click a selected tag to toggle subject.</div>
+            <div className={styles.subjectChipRow}>
+              {selectedTagsById.length > 0 ? (
+                selectedTagsById.map((tag) => {
+                  const isSubject = currentSubjectTagId === tag.docId;
+                  return (
+                    <button
+                      key={tag.docId}
+                      type="button"
+                      className={clsx(
+                        styles.subjectChip,
+                        subjectChipDimensionClass(tag.dimension),
+                        isSubject && styles.subjectChipActive
+                      )}
+                      onClick={() => setCurrentSubjectTagId(isSubject ? null : tag.docId)}
+                    >
+                      <span className={styles.subjectChipText}>{tag.name}</span>
+                    </button>
+                  );
+                })
+              ) : (
+                <span className={styles.subjectPanelEmpty}>Select one or more tags to choose a subject.</span>
+              )}
+            </div>
+          </div>
+        ) : null}
         <div className={styles.interactiveColumns}>
           {filteredDimensionalTree.map(dimension => (
             <TagPickerDimensionColumn

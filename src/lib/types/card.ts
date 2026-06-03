@@ -73,6 +73,8 @@ export const cardSchema = z.object({
 
   // Direct tag assignments and optimized query structure
   tags: z.array(z.string()).optional(),
+  subjectTagId: z.string().min(1).nullable().optional(),
+  subjectFilterTags: z.record(z.boolean()).optional(),
   filterTags: z.record(z.boolean()).optional(),
   
   // Ordered child card doc ids. Any card type may have children; order defines narrative/TOC sequence.
@@ -131,6 +133,7 @@ export const cardUpdateValidationSchema = cardSchema.partial().omit({
   createdAt: true,
   updatedAt: true,
   filterTags: true,
+  subjectFilterTags: true,
   who: true,
   what: true,
   when: true,

@@ -25,6 +25,7 @@ import {
   nextCollectionRootOrderForAppend,
 } from '@/lib/utils/curatedCollectionTree';
 import { orderIdsBySeed } from '@/lib/utils/seededRandomOrder';
+import { resolveSubjectTagState } from '@/lib/utils/subjectTag';
 
 /**
  * Retry utility with exponential backoff for critical operations.
@@ -686,7 +687,9 @@ async function _hydrateFirstGallerySlideWhereNoCover(cards: Card[]): Promise<Car
  * @param cardData The data for the new card, excluding 'id'.
  * @returns The newly created card with its ID.
  */
-export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'createdAt' | 'updatedAt' | 'filterTags'>>): Promise<Card> {
+export async function createCard(
+  cardData: Partial<Omit<Card, 'docId' | 'createdAt' | 'updatedAt' | 'filterTags' | 'subjectFilterTags'>>
+): Promise<Card> {
   const collectionRef = firestore.collection(CARDS_COLLECTION);
   const docRef = collectionRef.doc();
 
@@ -717,8 +720,19 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
     return firestore.runTransaction(async (transaction) => {
       const normalizedChildren = normalizeChildrenIds(validatedData.childrenIds);
 
-      const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord({ tags: selectedTags });
       const allTagsForJournal = await getAllTags();
+      const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(
+        { tags: selectedTags },
+        undefined,
+        allTagsForJournal
+      );
+      const subjectState = await resolveSubjectTagState({
+        assignedTagIds: selectedTags,
+        existingSubjectTagId: null,
+        requestedSubjectTagId: validatedData.subjectTagId,
+        subjectTagIdProvided: Object.prototype.hasOwnProperty.call(validatedData, 'subjectTagId'),
+        allTags: allTagsForJournal,
+      });
       const journalWhenSort = computeJournalWhenSortKeys(
         dimensionalTags.when || [],
         buildTagMap(allTagsForJournal)
@@ -745,6 +759,12 @@ export async function createCard(cardData: Partial<Omit<Card, 'docId' | 'created
         content: cleanedContent,
         ...(validatedData.excerptAuto ? { excerpt: autoExcerpt || null } : {}),
         tags: selectedTags,
+        ...(subjectState.subjectTagId
+          ? {
+              subjectTagId: subjectState.subjectTagId,
+              subjectFilterTags: subjectState.subjectFilterTags,
+            }
+          : {}),
         childrenIds: normalizedChildren,
         ...(requestedRoot ? { isCollectionRoot: true, collectionRootOrder: resolvedRootOrder ?? 10 } : {}),
         contentMedia: contentMediaIds,
@@ -829,8 +849,12 @@ export async function createQuestionCardFromQuestion(question: Question): Promis
   const selectedTags = question.tagIds || [];
   const normalizedChildren: string[] = [];
 
-  const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord({ tags: selectedTags });
   const allTagsForJournal = await getAllTags();
+  const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(
+    { tags: selectedTags },
+    undefined,
+    allTagsForJournal
+  );
   const journalWhenSort = computeJournalWhenSortKeys(
     dimensionalTags.when || [],
     buildTagMap(allTagsForJournal)
@@ -1064,15 +1088,28 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       newGalleryMedia?.forEach(g => g.mediaId && newMediaIds.add(g.mediaId));
       newContentMedia.forEach(id => newMediaIds.add(id));
 
-      const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord({ tags: finalTags || [] });
+      const allTagsForJournal = await getAllTags();
+      const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(
+        { tags: finalTags || [] },
+        undefined,
+        allTagsForJournal
+      );
+      const subjectState = await resolveSubjectTagState({
+        assignedTagIds: finalTags || [],
+        existingSubjectTagId: existingData.subjectTagId,
+        requestedSubjectTagId: cleanedUpdate.subjectTagId,
+        subjectTagIdProvided: Object.prototype.hasOwnProperty.call(cleanedUpdate, 'subjectTagId'),
+        allTags: allTagsForJournal,
+      });
 
       cleanedUpdate.filterTags = filterTags;
+      cleanedUpdate.subjectTagId = subjectState.subjectTagId;
+      cleanedUpdate.subjectFilterTags = subjectState.subjectFilterTags;
       cleanedUpdate.who = dimensionalTags.who || [];
       cleanedUpdate.what = dimensionalTags.what || [];
       cleanedUpdate.when = dimensionalTags.when || [];
       cleanedUpdate.where = dimensionalTags.where || [];
 
-      const allTagsForJournal = await getAllTags();
       const tagPathLookup = buildTagMap(allTagsForJournal);
       const journalWhenSort = computeJournalWhenSortKeys(
         cleanedUpdate.when || [],
@@ -1404,11 +1441,24 @@ export function isGalleryOnlyPayload(
   return keys.length === 1 && keys[0] === 'galleryMedia' && Array.isArray(updates.galleryMedia);
 }
 
+type CardTagAssignmentUpdates = Partial<Pick<Card, 'tags' | 'subjectTagId'>>;
+
 export function isTagsOnlyPayload(
-  updates: Partial<Pick<Card, 'tags'>>
-): updates is Pick<Card, 'tags'> {
+  updates: CardTagAssignmentUpdates
+): updates is CardTagAssignmentUpdates {
   const keys = Object.keys(updates as Record<string, unknown>);
-  return keys.length === 1 && keys[0] === 'tags' && Array.isArray(updates.tags);
+  if (keys.length === 0) return false;
+  if (!keys.every((key) => key === 'tags' || key === 'subjectTagId')) return false;
+  if ('tags' in updates && updates.tags !== undefined && !Array.isArray(updates.tags)) return false;
+  if (
+    'subjectTagId' in updates &&
+    updates.subjectTagId !== undefined &&
+    updates.subjectTagId !== null &&
+    typeof updates.subjectTagId !== 'string'
+  ) {
+    return false;
+  }
+  return true;
 }
 
 export function isStatusOnlyPayload(
@@ -1936,7 +1986,7 @@ export async function updateCardContent(
 }
 
 /**
- * Narrow tag-only mutation path.
+ * Narrow tag-assignment mutation path.
  *
  * Preserves all product invariants (`docs/01-Vision-Architecture.md` →
  * Backend Principles **Denormalized counts**, **Mutation scope**):
@@ -1957,26 +2007,17 @@ export async function updateCardContent(
  * - Cover focal-point updates, content sanitization, child-cycle / Q&A
  *   validation, `curatedNavEligible`.
  */
-export async function updateCardTags(cardId: string, tags: string[]): Promise<Card> {
+export async function updateCardTags(
+  cardId: string,
+  updates: CardTagAssignmentUpdates
+): Promise<Card> {
   const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
-
-  const cleanedTags = (tags || []).filter((t): t is string => typeof t === 'string' && t.length > 0);
 
   // Pre-read the tag catalog once outside the transaction; helpers below are
   // pure on this snapshot and do not need to be inside the tx (transaction
   // reads are reserved for the parent card + tag-count updates).
   const allTagsForJournal = await getAllTags();
   const tagPathLookup = buildTagMap(allTagsForJournal);
-  const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(
-    { tags: cleanedTags },
-    undefined,
-    allTagsForJournal
-  );
-  const journalWhenSort = computeJournalWhenSortKeys(
-    dimensionalTags.when || [],
-    tagPathLookup
-  );
-  const dimensionSortKeys = computeDimensionSortKeys(cleanedTags, allTagsForJournal);
 
   return withRetry(async () => {
     await firestore.runTransaction(async (transaction) => {
@@ -1985,10 +2026,32 @@ export async function updateCardTags(cardId: string, tags: string[]): Promise<Ca
         throw new Error(`Card with ID ${cardId} not found.`);
       }
       const existingData = docSnap.data() as Card;
+      const cleanedTags = (updates.tags ?? existingData.tags ?? []).filter(
+        (t): t is string => typeof t === 'string' && t.length > 0
+      );
+      const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(
+        { tags: cleanedTags },
+        undefined,
+        allTagsForJournal
+      );
+      const subjectState = await resolveSubjectTagState({
+        assignedTagIds: cleanedTags,
+        existingSubjectTagId: existingData.subjectTagId,
+        requestedSubjectTagId: updates.subjectTagId,
+        subjectTagIdProvided: Object.prototype.hasOwnProperty.call(updates, 'subjectTagId'),
+        allTags: allTagsForJournal,
+      });
+      const journalWhenSort = computeJournalWhenSortKeys(
+        dimensionalTags.when || [],
+        tagPathLookup
+      );
+      const dimensionSortKeys = computeDimensionSortKeys(cleanedTags, allTagsForJournal);
 
       const updatePayload: Partial<Card> = {
         tags: cleanedTags,
         filterTags,
+        subjectTagId: subjectState.subjectTagId,
+        subjectFilterTags: subjectState.subjectFilterTags,
         who: dimensionalTags.who || [],
         what: dimensionalTags.what || [],
         when: dimensionalTags.when || [],
@@ -2614,9 +2677,18 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
         const cardId = cardDoc.id;
 
         const cardRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
+        const subjectState = await resolveSubjectTagState({
+          assignedTagIds: tags,
+          existingSubjectTagId: (cardDoc.data() as Card).subjectTagId,
+          requestedSubjectTagId: undefined,
+          subjectTagIdProvided: false,
+          allTags,
+        });
         const updatePayload = {
           tags,
           filterTags: derived.filterTags,
+          subjectTagId: subjectState.subjectTagId,
+          subjectFilterTags: subjectState.subjectFilterTags,
           who: derived.who,
           what: derived.what,
           when: derived.when,
@@ -2702,6 +2774,13 @@ export async function bulkApplyTagDelta(
           derived = await deriveBulkTagFieldsForTags(nextTags, allTags);
           derivedCache.set(cacheKey, derived);
         }
+        const subjectState = await resolveSubjectTagState({
+          assignedTagIds: nextTags,
+          existingSubjectTagId: cardData.subjectTagId,
+          requestedSubjectTagId: undefined,
+          subjectTagIdProvided: false,
+          allTags,
+        });
 
         await updateTagCountsForCard(
           cardData,
@@ -2713,6 +2792,8 @@ export async function bulkApplyTagDelta(
         const updatePayload = {
           tags: nextTags,
           filterTags: derived.filterTags,
+          subjectTagId: subjectState.subjectTagId,
+          subjectFilterTags: subjectState.subjectFilterTags,
           who: derived.who,
           what: derived.what,
           when: derived.when,
@@ -2750,7 +2831,9 @@ export async function duplicateCard(sourceCardId: string): Promise<Card> {
     throw new Error(`Card with ID ${sourceCardId} not found.`);
   }
 
-  const newCardData: Partial<Omit<Card, 'docId' | 'createdAt' | 'updatedAt' | 'filterTags'>> = {
+  const newCardData: Partial<
+    Omit<Card, 'docId' | 'createdAt' | 'updatedAt' | 'filterTags' | 'subjectFilterTags'>
+  > = {
     title: `Copy of ${source.title}`,
     subtitle: source.subtitle,
     excerpt: source.excerpt,
@@ -2763,6 +2846,7 @@ export async function duplicateCard(sourceCardId: string): Promise<Card> {
     galleryMedia: source.galleryMedia?.map((item) => stripHydratedGalleryItem(item)) ?? [],
     contentMedia: source.contentMedia,
     tags: source.tags ?? [],
+    ...(source.subjectTagId ? { subjectTagId: source.subjectTagId } : {}),
   };
 
   return createCard(newCardData);

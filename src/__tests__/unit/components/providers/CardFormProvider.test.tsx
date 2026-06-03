@@ -5,6 +5,17 @@ import { CardFormProvider, useCardForm } from '@/components/providers/CardFormPr
 import { Card } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 
+const confirmMock = jest.fn();
+
+jest.mock('@/components/providers/AppFeedbackProvider', () => ({
+  useAppFeedback: () => ({
+    confirm: confirmMock,
+    alert: jest.fn(async () => undefined),
+    showSuccess: jest.fn(),
+    showError: jest.fn(),
+  }),
+}));
+
 const mockCard: Card = {
   docId: 'test-card-1',
   title: 'Test Card',
@@ -37,7 +48,7 @@ const mockTags: Tag[] = [
 ];
 
 function TestComponent() {
-  const { formState, setField, updateTags, handleSave, persistFieldPatch, isDirty } = useCardForm();
+  const { formState, setField, updateTags, handleSave, persistFieldPatch, isDirty, confirmLeaveIfDirtyAsync } = useCardForm();
   return (
     <div>
       <input
@@ -54,6 +65,9 @@ function TestComponent() {
       <button type="button" data-testid="save-button" onClick={() => void handleSave()}>
         Save
       </button>
+      <button type="button" data-testid="leave-button" onClick={() => void confirmLeaveIfDirtyAsync()}>
+        Leave
+      </button>
       <span data-testid="dirty-flag">{isDirty ? 'dirty' : 'clean'}</span>
       {formState.errors.title ? <span data-testid="title-error">{formState.errors.title}</span> : null}
       {formState.isSaving ? <span data-testid="saving-indicator">Saving...</span> : null}
@@ -66,6 +80,7 @@ describe('CardFormProvider', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    confirmMock.mockResolvedValue(true);
   });
 
   it('initializes with the provided card data', () => {
@@ -194,5 +209,17 @@ describe('CardFormProvider', () => {
       expect(mockOnSave).toHaveBeenCalledWith({ title: 'Patched Title' });
     });
     expect(screen.getByTestId('title-input')).toHaveValue('Patched Title');
+  });
+
+  it('does not prompt on leave when nothing has marked the form dirty', async () => {
+    render(
+      <CardFormProvider initialCard={mockCard} allTags={mockTags} onSave={mockOnSave}>
+        <TestComponent />
+      </CardFormProvider>
+    );
+
+    await userEvent.click(screen.getByTestId('leave-button'));
+
+    expect(confirmMock).not.toHaveBeenCalled();
   });
 });

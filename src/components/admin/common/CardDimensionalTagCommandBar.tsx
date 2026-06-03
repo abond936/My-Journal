@@ -14,6 +14,8 @@ import styles from './CardDimensionalTagCommandBar.module.css';
 import clsx from 'clsx';
 
 const MAX_SUGGESTIONS = 25;
+const LONG_PRESS_MS = 450;
+const ACTION_MENU_WIDTH = 132;
 
 function norm(s: string): string {
   return s.trim().toLowerCase();
@@ -37,11 +39,40 @@ function scoreTagSuggestion(query: string, tagName: string, pathLabel: string): 
   return null;
 }
 
+type ActiveTagMenu = {
+  tagId: string;
+  left: number;
+  top: number;
+};
+
+function dimensionChipClassName(dimension: TagDimension): string {
+  switch (dimension) {
+    case 'who':
+      return styles.chipDimWho;
+    case 'what':
+      return styles.chipDimWhat;
+    case 'when':
+      return styles.chipDimWhen;
+    case 'where':
+      return styles.chipDimWhere;
+    default:
+      return '';
+  }
+}
+
+function orderDimensionTagIds(tagIds: string[], subjectTagId: string | null): string[] {
+  if (!subjectTagId || !tagIds.includes(subjectTagId)) {
+    return tagIds;
+  }
+  return [subjectTagId, ...tagIds.filter((tagId) => tagId !== subjectTagId)];
+}
+
 export interface CardDimensionalTagCommandBarProps {
   /** Tag assignment only; full `Card` is accepted at call sites. */
-  card: Pick<Card, 'tags'>;
+  card: Pick<Card, 'tags' | 'subjectTagId'>;
   allTags: Tag[];
   onUpdateTags: (nextTagIds: string[]) => void | Promise<void>;
+  onUpdateSubjectTagId?: (nextSubjectTagId: string | null) => void | Promise<void>;
   disabled?: boolean;
   className?: string;
   variant?: 'default' | 'compact' | 'searchOnly';
@@ -49,9 +80,9 @@ export interface CardDimensionalTagCommandBarProps {
   trailingSlot?: React.ReactNode;
   /** Form-level tag validation message / outline (e.g. when full selector is hidden on card edit). */
   tagError?: string;
-  /** Search field placeholder (default matches Media toolbar “Edit tags…"). */
+  /** Search field placeholder (default matches Media toolbar "Edit tags..."). */
   searchPlaceholder?: string;
-  /** When true, do not render per-dimension “Who/What/…” row labels (header-only layout, e.g. card admin table). */
+  /** When true, do not render per-dimension "Who/What/..." row labels (header-only layout, e.g. card admin table). */
   hideDimensionRowLabels?: boolean;
   /** Card admin table: larger chips, tighter toolbar; use with `variant="compact"`. */
   tableEmbed?: boolean;
@@ -59,34 +90,51 @@ export interface CardDimensionalTagCommandBarProps {
   suggestionsDensity?: 'default' | 'dense';
   /** Optional unified secondary block, such as advanced tag rules. */
   footerContent?: React.ReactNode;
+  /** Compose/card-edit surfaces: render one tag per line within each dimension. */
+  stackTagsWithinDimension?: boolean;
 }
 
 export default function CardDimensionalTagCommandBar({
   card,
   allTags,
   onUpdateTags,
+  onUpdateSubjectTagId,
   disabled = false,
   className,
   variant = 'default',
   trailingSlot,
   tagError,
-  searchPlaceholder = 'Edit tags…',
+  searchPlaceholder = 'Edit tags...',
   hideDimensionRowLabels = false,
   tableEmbed = false,
   suggestionsDensity = 'default',
   footerContent,
+  stackTagsWithinDimension = false,
 }: CardDimensionalTagCommandBarProps) {
   const [query, setQuery] = useState('');
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [activeTagMenu, setActiveTagMenu] = useState<ActiveTagMenu | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const longPressTimerRef = useRef<number | null>(null);
+  const longPressHandledRef = useRef(false);
 
   const focusSearch = useCallback(() => {
     requestAnimationFrame(() => {
       searchInputRef.current?.focus();
     });
   }, []);
+
+  const clearLongPress = useCallback(() => {
+    if (longPressTimerRef.current !== null) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => clearLongPress, [clearLongPress]);
 
   const tagById = useMemo(() => buildTagByIdMap(allTags), [allTags]);
   const resolvedDimension = useMemo(() => buildResolvedTagDimensionMap(allTags), [allTags]);
@@ -97,6 +145,17 @@ export default function CardDimensionalTagCommandBar({
   const core = useMemo(
     () => getCoreTagsByDimensionFromTagIds(card.tags, resolvedDimension),
     [card.tags, resolvedDimension]
+  );
+  const subjectTagId = card.subjectTagId ?? null;
+  const orderedCore = useMemo(
+    () =>
+      Object.fromEntries(
+        DIMENSION_ORDER.map((dimension) => [
+          dimension,
+          orderDimensionTagIds(core[dimension], subjectTagId),
+        ])
+      ) as Record<TagDimension, string[]>,
+    [core, subjectTagId]
   );
 
   const suggestions = useMemo(() => {
@@ -123,6 +182,29 @@ export default function CardDimensionalTagCommandBar({
   useEffect(() => {
     setHighlightIndex(-1);
   }, [query]);
+
+  useEffect(() => {
+    if (!activeTagMenu) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (target && rootRef.current?.contains(target)) return;
+      setActiveTagMenu(null);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setActiveTagMenu(null);
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeTagMenu]);
 
   const persist = useCallback(
     async (next: string[]) => {
@@ -159,6 +241,65 @@ export default function CardDimensionalTagCommandBar({
     [currentTags, persist]
   );
 
+  const persistSubjectTag = useCallback(
+    async (nextSubjectTagId: string | null) => {
+      if (!onUpdateSubjectTagId) return;
+      setSaving(true);
+      setSaveError(null);
+      try {
+        await onUpdateSubjectTagId(nextSubjectTagId);
+      } catch (e) {
+        setSaveError(e instanceof Error ? e.message : 'Failed to update subject');
+      } finally {
+        setSaving(false);
+      }
+    },
+    [onUpdateSubjectTagId]
+  );
+
+  const toggleSubject = useCallback(
+    async (tagId: string) => {
+      if (!onUpdateSubjectTagId) return;
+      await persistSubjectTag(subjectTagId === tagId ? null : tagId);
+    },
+    [onUpdateSubjectTagId, persistSubjectTag, subjectTagId]
+  );
+
+  const openTagMenu = useCallback((tagId: string, anchor: HTMLElement) => {
+    const rect = anchor.getBoundingClientRect();
+    const left = Math.max(8, Math.min(rect.left, window.innerWidth - ACTION_MENU_WIDTH - 8));
+    const top = Math.min(rect.bottom + 6, window.innerHeight - 72);
+    setActiveTagMenu({ tagId, left, top });
+  }, []);
+
+  const runSubjectAction = useCallback(
+    async (tagId: string) => {
+      await toggleSubject(tagId);
+      setActiveTagMenu(null);
+    },
+    [toggleSubject]
+  );
+
+  const runRemoveAction = useCallback(
+    async (tagId: string) => {
+      await removeTag(tagId);
+      setActiveTagMenu(null);
+    },
+    [removeTag]
+  );
+
+  const beginLongPress = useCallback(
+    (tagId: string, anchor: HTMLElement) => {
+      clearLongPress();
+      longPressHandledRef.current = false;
+      longPressTimerRef.current = window.setTimeout(() => {
+        longPressHandledRef.current = true;
+        openTagMenu(tagId, anchor);
+      }, LONG_PRESS_MS);
+    },
+    [clearLongPress, openTagMenu]
+  );
+
   const onSearchKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -184,16 +325,77 @@ export default function CardDimensionalTagCommandBar({
       e.preventDefault();
       setQuery('');
       setHighlightIndex(-1);
+      setActiveTagMenu(null);
     }
   };
 
+  const renderChip = useCallback(
+    (dimension: TagDimension, id: string) => {
+      const tagName = tagById.get(id)?.name ?? id;
+      const isSubject = subjectTagId === id;
+      return (
+        <button
+          key={id}
+          type="button"
+          className={clsx(
+            styles.chip,
+            dimensionChipClassName(dimension),
+            isSubject && styles.chipSubject
+          )}
+          disabled={disabled || saving}
+          title={`${tagName}${isSubject ? ' (subject)' : ''}`}
+          aria-haspopup="menu"
+          aria-expanded={activeTagMenu?.tagId === id}
+          aria-label={`${tagName}${isSubject ? ', subject' : ''}`}
+          onClick={(event) => {
+            event.stopPropagation();
+            if (longPressHandledRef.current) {
+              longPressHandledRef.current = false;
+              return;
+            }
+            openTagMenu(id, event.currentTarget);
+          }}
+          onContextMenu={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            openTagMenu(id, event.currentTarget);
+          }}
+          onPointerDown={(event) => {
+            if (event.pointerType === 'touch' || event.pointerType === 'pen') {
+              beginLongPress(id, event.currentTarget);
+            }
+          }}
+          onPointerUp={clearLongPress}
+          onPointerCancel={clearLongPress}
+          onPointerLeave={clearLongPress}
+        >
+          <span className={styles.chipName}>
+            <span className={styles.chipNameText}>{tagName}</span>
+          </span>
+        </button>
+      );
+    },
+    [
+      activeTagMenu?.tagId,
+      beginLongPress,
+      clearLongPress,
+      disabled,
+      openTagMenu,
+      saving,
+      subjectTagId,
+      tagById,
+    ]
+  );
+
   return (
     <div
+      ref={rootRef}
       className={clsx(
         styles.wrap,
         variant === 'compact' && styles.wrapCompact,
         variant === 'searchOnly' && styles.wrapSearchOnly,
         tableEmbed && styles.wrapTable,
+        stackTagsWithinDimension && styles.wrapStackWithinDimension,
         suggestionsDensity === 'dense' && styles.wrapDenseSuggestions,
         tagError && styles.wrapError,
         className
@@ -210,23 +412,9 @@ export default function CardDimensionalTagCommandBar({
                 {hideDimensionRowLabels ? null : <div className={styles.dimLabel}>{DIMENSION_LABEL[dim]}</div>}
                 <div className={styles.chipStrip}>
                   {core[dim].length === 0 ? (
-                    <span className={styles.chipEmpty}>—</span>
+                    <span className={styles.chipEmpty}>-</span>
                   ) : (
-                    core[dim].map((id) => (
-                      <button
-                        key={id}
-                        type="button"
-                        className={styles.chip}
-                        disabled={disabled || saving}
-                        title={`Remove ${tagById.get(id)?.name ?? id}`}
-                        onClick={() => void removeTag(id)}
-                      >
-                        {tagById.get(id)?.name ?? id}
-                        <span className={styles.chipX} aria-hidden>
-                          ×
-                        </span>
-                      </button>
-                    ))
+                    orderedCore[dim].map((id) => renderChip(dim, id))
                   )}
                 </div>
               </div>
@@ -272,6 +460,40 @@ export default function CardDimensionalTagCommandBar({
         </div>
       ) : query.trim() && suggestions.length === 0 ? (
         <div className={styles.error}>No matching tags.</div>
+      ) : null}
+
+      {activeTagMenu ? (
+        <div
+          className={styles.actionMenu}
+          role="menu"
+          aria-label={`${tagById.get(activeTagMenu.tagId)?.name ?? activeTagMenu.tagId} actions`}
+          style={{ left: activeTagMenu.left, top: activeTagMenu.top }}
+        >
+          {onUpdateSubjectTagId ? (
+            <button
+              type="button"
+              role="menuitemcheckbox"
+              aria-checked={subjectTagId === activeTagMenu.tagId}
+              className={clsx(
+                styles.actionMenuItem,
+                subjectTagId === activeTagMenu.tagId && styles.actionMenuItemActive
+              )}
+              disabled={disabled || saving}
+              onClick={() => void runSubjectAction(activeTagMenu.tagId)}
+            >
+              Subject
+            </button>
+          ) : null}
+          <button
+            type="button"
+            role="menuitem"
+            className={styles.actionMenuItem}
+            disabled={disabled || saving}
+            onClick={() => void runRemoveAction(activeTagMenu.tagId)}
+          >
+            Remove
+          </button>
+        </div>
       ) : null}
 
       {saveError ? <div className={styles.errorMessage}>{saveError}</div> : null}

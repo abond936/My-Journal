@@ -35,6 +35,7 @@
   max-width: var(--layout-container-max-width);
   margin-bottom: var(--spacing-xl);
   text-align: center;
+  overflow: visible;
 }
 
 .titleImage {
@@ -43,6 +44,16 @@
   height: auto;
   display: block;
   margin: 0 auto;
+}
+
+.titleImageDark {
+  transform: scale(1.35);
+  transform-origin: center;
+}
+
+.titleImageLight {
+  transform: scale(1.35);
+  transform-origin: center;
 }
 
 /* Welcome section */
@@ -100,11 +111,27 @@
   .titleImage {
     max-width: 90%;
   }
+
+  .titleImageDark {
+    transform: scale(1.2);
+  }
+
+  .titleImageLight {
+    transform: scale(1.2);
+  }
 }
 
 @media (max-width: 640px) {
   .titleImage {
     max-width: 95%;
+  }
+
+  .titleImageDark {
+    transform: scale(1.14);
+  }
+
+  .titleImageLight {
+    transform: scale(1.14);
   }
 }
 

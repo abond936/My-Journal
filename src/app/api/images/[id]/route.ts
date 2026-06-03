@@ -87,7 +87,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
  * /api/images/{id}:
  *   patch:
  *     summary: Update media metadata (admin)
- *     description: Partial update for caption, objectPosition, and/or tags.
+ *     description: Partial update for caption, objectPosition, tags, and/or subjectTagId.
  *     parameters:
  *       - in: path
  *         name: id
@@ -110,6 +110,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
  *                 type: array
  *                 items:
  *                   type: string
+ *               subjectTagId:
+ *                 type: string
+ *                 nullable: true
  *     responses:
  *       200:
  *         description: Media updated successfully.
@@ -157,13 +160,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const hasCaption = 'caption' in body;
     const hasObjectPosition = 'objectPosition' in body && body.objectPosition !== undefined;
     const hasTags = 'tags' in body && body.tags !== undefined;
+    const hasSubjectTagId = 'subjectTagId' in body;
 
-    if (!hasCaption && !hasObjectPosition && !hasTags) {
+    if (!hasCaption && !hasObjectPosition && !hasTags && !hasSubjectTagId) {
       return errorResponse(
         {
           ok: false,
           code: 'MEDIA_PATCH_FIELDS_REQUIRED',
-          message: 'Provide at least one of: caption, objectPosition, tags.',
+          message: 'Provide at least one of: caption, objectPosition, tags, subjectTagId.',
           severity: 'error',
           retryable: false,
         },
@@ -175,6 +179,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       caption?: string;
       objectPosition?: string;
       tags?: string[];
+      subjectTagId?: string | null;
     } = {};
 
     if (hasCaption) {
@@ -211,6 +216,22 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         );
       }
       patch.tags = body.tags.filter((id): id is string => typeof id === 'string');
+    }
+
+    if (hasSubjectTagId) {
+      if (body.subjectTagId !== null && typeof body.subjectTagId !== 'string') {
+        return errorResponse(
+          {
+            ok: false,
+            code: 'MEDIA_SUBJECT_TAG_INVALID',
+            message: 'subjectTagId must be a string or null.',
+            severity: 'error',
+            retryable: false,
+          },
+          400
+        );
+      }
+      patch.subjectTagId = typeof body.subjectTagId === 'string' ? body.subjectTagId.trim() : null;
     }
 
     await patchMediaDocument(mediaId, patch);

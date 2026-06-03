@@ -13,6 +13,7 @@ import {
   syncMediaToTypesenseById,
 } from '@/lib/services/typesenseMediaService';
 import { getPublicStorageUrl } from '@/lib/utils/storageUrl';
+import { resolveSubjectTagState } from '@/lib/utils/subjectTag';
 import { normalizeBufferToWebp, isCardExportMarkedFilename } from '@/lib/services/images/inMemoryWebpNormalize';
 import {
   readEmbeddedCaptionAndKeywords,
@@ -395,7 +396,7 @@ export async function importFromBuffer(
   }
 }
 
-type MediaPatchFields = Partial<Pick<Media, 'caption' | 'objectPosition' | 'tags'>>;
+type MediaPatchFields = Partial<Pick<Media, 'caption' | 'objectPosition' | 'tags' | 'subjectTagId'>>;
 
 const BULK_MEDIA_TAGS_CHUNK_SIZE = 400;
 
@@ -465,11 +466,15 @@ async function deriveMediaTagFields(
 
 async function applyTagFieldsToPayload(
   payload: Record<string, unknown>,
-  tagIds: string[]
+  tagIds: string[],
+  subjectState: Pick<Media, 'subjectTagId' | 'subjectFilterTags'>,
+  allTags?: Tag[]
 ): Promise<void> {
   const raw = tagIds.filter((id): id is string => typeof id === 'string');
-  const { filterTags, dimensionalTags } = await calculateDerivedTagData(raw);
+  const { filterTags, dimensionalTags } = await calculateDerivedTagData(raw, allTags);
   payload.tags = raw;
+  payload.subjectTagId = subjectState.subjectTagId;
+  payload.subjectFilterTags = subjectState.subjectFilterTags;
   payload.filterTags = filterTags;
   payload.who = dimensionalTags.who ?? [];
   payload.what = dimensionalTags.what ?? [];
@@ -498,24 +503,38 @@ export async function patchMediaDocument(mediaId: string, updates: MediaPatchFie
   const hasField =
     updates.caption !== undefined ||
     updates.objectPosition !== undefined ||
-    updates.tags !== undefined;
+    updates.tags !== undefined ||
+    updates.subjectTagId !== undefined;
   if (!hasField) {
     throw new Error('No valid fields to update.');
   }
 
-  if (updates.tags !== undefined) {
-    if (!Array.isArray(updates.tags)) {
+  if (updates.tags !== undefined || updates.subjectTagId !== undefined) {
+    if (updates.tags !== undefined && !Array.isArray(updates.tags)) {
       throw new Error('tags must be an array of tag IDs.');
     }
-    const newTags = updates.tags.filter((id): id is string => typeof id === 'string');
+    const allTags = await getAllTags();
+    const tagPathLookup = new Map(allTags.filter((t) => t.docId).map((t) => [t.docId!, t]));
 
     await firestore.runTransaction(async (tx) => {
       const snap = await tx.get(mediaRef);
       if (!snap.exists) {
         throw new Error(`Media document with ID ${mediaId} not found.`);
       }
-      const oldTags = (snap.data() as Media).tags || [];
-      await updateTagCountsForMedia(oldTags, newTags, tx);
+      const existingMedia = snap.data() as Media;
+      const oldTags = existingMedia.tags || [];
+      const newTags =
+        updates.tags !== undefined
+          ? updates.tags.filter((id): id is string => typeof id === 'string')
+          : oldTags;
+      const subjectState = await resolveSubjectTagState({
+        assignedTagIds: newTags,
+        existingSubjectTagId: existingMedia.subjectTagId,
+        requestedSubjectTagId: updates.subjectTagId,
+        subjectTagIdProvided: Object.prototype.hasOwnProperty.call(updates, 'subjectTagId'),
+        allTags,
+      });
+      await updateTagCountsForMedia(oldTags, newTags, tx, tagPathLookup);
 
       const payload: Record<string, unknown> = { updatedAt: Date.now() };
       if (updates.caption !== undefined) {
@@ -528,7 +547,7 @@ export async function patchMediaDocument(mediaId: string, updates: MediaPatchFie
         }
         payload.objectPosition = trimmed;
       }
-      await applyTagFieldsToPayload(payload, newTags);
+      await applyTagFieldsToPayload(payload, newTags, subjectState, allTags);
       tx.update(mediaRef, payload);
     });
     void syncMediaToTypesenseById(mediaId);
@@ -609,10 +628,19 @@ export async function bulkApplyMediaTags(
           derived = await deriveMediaTagFields(nextTags, allTags);
           derivedCache.set(cacheKey, derived);
         }
+        const subjectState = await resolveSubjectTagState({
+          assignedTagIds: nextTags,
+          existingSubjectTagId: media.subjectTagId,
+          requestedSubjectTagId: undefined,
+          subjectTagIdProvided: false,
+          allTags,
+        });
 
         await updateTagCountsForMedia(existingTags, derived.tags, tx, tagPathLookup);
         tx.update(mediaDoc.ref, {
           tags: derived.tags,
+          subjectTagId: subjectState.subjectTagId,
+          subjectFilterTags: subjectState.subjectFilterTags,
           filterTags: derived.filterTags,
           who: derived.who,
           what: derived.what,

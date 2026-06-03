@@ -58,7 +58,9 @@ jest.mock('@/components/common/JournalImage', () => ({
 
 jest.mock('@/components/common/TipTapRenderer', () => ({
   __esModule: true,
-  default: () => null,
+  default: ({ content }: { content?: unknown }) => (
+    <div data-testid="tiptap-content">{typeof content === 'string' ? content : JSON.stringify(content ?? null)}</div>
+  ),
 }));
 
 jest.mock('@/components/view/ReaderCardContextMeta', () => ({
@@ -160,5 +162,86 @@ describe('V2ContentCard cover framing', () => {
     const image = screen.getByAltText('Welcome wordmark');
     expect(image.parentElement).toHaveStyle({ aspectRatio: '3/2' });
     expect(image).toHaveStyle({ objectFit: 'contain', objectPosition: 'center' });
+  });
+
+  it('renders closed quote tiles from the title instead of rich-text body content', () => {
+    render(
+      <V2ContentCard
+        card={{
+          ...baseCard,
+          title: 'Quoted title',
+          type: 'quote',
+          displayMode: 'static',
+          content: 'Quote body from rich text',
+        }}
+      />
+    );
+
+    expect(screen.getByText('Quoted title')).toBeInTheDocument();
+    expect(screen.queryByText('Quote body from rich text')).not.toBeInTheDocument();
+  });
+
+  it('keeps closed callout tiles on rich-text body content', () => {
+    render(
+      <V2ContentCard
+        card={{
+          ...baseCard,
+          title: 'Callout title',
+          type: 'callout',
+          displayMode: 'static',
+          content: 'Callout body from rich text',
+        }}
+      />
+    );
+
+    expect(screen.getByText('Callout title')).toBeInTheDocument();
+    expect(screen.getByText('Callout body from rich text')).toBeInTheDocument();
+  });
+
+  it('forces closed quote and callout tiles onto the utility portrait frame even when cover metadata exists', () => {
+    const { container } = render(
+      <>
+        <V2ContentCard
+          card={{
+            ...baseCard,
+            docId: 'quote-with-cover',
+            title: 'Covered quote',
+            type: 'quote',
+            displayMode: 'static',
+            content: 'Ignored quote body',
+            coverImage: {
+              docId: 'media-quote-cover',
+              storageUrl: 'https://example.com/quote-cover.jpg',
+              width: 1600,
+              height: 900,
+            },
+          }}
+        />
+        <V2ContentCard
+          card={{
+            ...baseCard,
+            docId: 'callout-with-cover',
+            title: 'Covered callout',
+            type: 'callout',
+            displayMode: 'static',
+            content: 'Visible callout body',
+            coverImage: {
+              docId: 'media-callout-cover',
+              storageUrl: 'https://example.com/callout-cover.jpg',
+              width: 1600,
+              height: 900,
+            },
+          }}
+        />
+      </>
+    );
+
+    const quoteCard = container.querySelector('[data-card-id="quote-with-cover"]');
+    const calloutCard = container.querySelector('[data-card-id="callout-with-cover"]');
+
+    expect(quoteCard?.className).toContain('closedFeedPortrait');
+    expect(quoteCard?.className).not.toContain('closedFeedLandscape');
+    expect(calloutCard?.className).toContain('closedFeedPortrait');
+    expect(calloutCard?.className).not.toContain('closedFeedLandscape');
   });
 });

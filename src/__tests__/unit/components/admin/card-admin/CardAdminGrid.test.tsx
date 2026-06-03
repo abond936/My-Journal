@@ -53,6 +53,13 @@ jest.mock('@/components/common/JournalImage', () => ({
   default: () => <div data-testid="journal-image" />,
 }));
 
+jest.mock('@/components/common/TipTapRenderer', () => ({
+  __esModule: true,
+  default: ({ content }: { content?: unknown }) => (
+    <div data-testid="tiptap-content">{typeof content === 'string' ? content : JSON.stringify(content ?? null)}</div>
+  ),
+}));
+
 jest.mock('@/components/admin/common/CardDimensionalTagCommandBar', () => ({
   __esModule: true,
   default: () => null,
@@ -90,6 +97,10 @@ jest.mock('@/components/admin/common/AdminGridCellChrome', () => ({
     mockChrome(props);
     return (
       <div data-testid="grid-root">
+        <div {...(props.rootProps as Record<string, unknown> | undefined)}>
+          {props.thumbnail as React.ReactNode}
+          {props.belowThumbnail as React.ReactNode}
+        </div>
         {props.overlayTopEnd as React.ReactNode}
       </div>
     );
@@ -143,5 +154,85 @@ describe('CardAdminGrid', () => {
 
     expect(chromeProps.rootProps).toBeDefined();
     expect(chromeProps.rootProps).toHaveProperty('onPointerDown');
+  });
+
+  it('renders a reader-style question utility preview in the Studio compact grid', () => {
+    render(
+      <CardAdminGrid
+        cards={[{ ...baseCard, type: 'qa', title: 'Question prompt', coverImage: null }]}
+        selectedCardIds={new Set()}
+        allTags={[]}
+        onSelectCard={jest.fn()}
+        onSelectAll={jest.fn()}
+        onSaveScrollPosition={jest.fn()}
+        onUpdateCard={jest.fn(async () => {})}
+        onDeleteCard={jest.fn(async () => {})}
+        studioEmbedCellClickSelects
+        compactStudioGrid
+      />
+    );
+
+    expect(screen.queryByText('No cover')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Question prompt')).toHaveLength(2);
+  });
+
+  it('renders a reader-style quote utility preview even when cover metadata exists', () => {
+    render(
+      <CardAdminGrid
+        cards={[
+          {
+            ...baseCard,
+            type: 'quote',
+            title: 'Quoted title',
+            coverImage: {
+              docId: 'media-1',
+              storageUrl: 'https://example.com/quote-cover.jpg',
+              width: 1600,
+              height: 900,
+            },
+          },
+        ]}
+        selectedCardIds={new Set()}
+        allTags={[]}
+        onSelectCard={jest.fn()}
+        onSelectAll={jest.fn()}
+        onSaveScrollPosition={jest.fn()}
+        onUpdateCard={jest.fn(async () => {})}
+        onDeleteCard={jest.fn(async () => {})}
+        studioEmbedCellClickSelects
+        compactStudioGrid
+      />
+    );
+
+    expect(screen.queryByText('No cover')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('journal-image')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Quoted title')).toHaveLength(2);
+  });
+
+  it('renders a reader-style callout utility preview with visible body content', () => {
+    render(
+      <CardAdminGrid
+        cards={[
+          {
+            ...baseCard,
+            type: 'callout',
+            title: 'Callout title',
+            content: 'Callout body from rich text',
+          } as Card,
+        ]}
+        selectedCardIds={new Set()}
+        allTags={[]}
+        onSelectCard={jest.fn()}
+        onSelectAll={jest.fn()}
+        onSaveScrollPosition={jest.fn()}
+        onUpdateCard={jest.fn(async () => {})}
+        onDeleteCard={jest.fn(async () => {})}
+        studioEmbedCellClickSelects
+        compactStudioGrid
+      />
+    );
+
+    expect(screen.queryByText('No cover')).not.toBeInTheDocument();
+    expect(screen.getByText('Callout body from rich text')).toBeInTheDocument();
   });
 });

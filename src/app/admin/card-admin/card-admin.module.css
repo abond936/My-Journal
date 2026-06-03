@@ -662,19 +662,20 @@
 }
 
 .actionButton.deleteButton {
-  border-color: var(--state-error-border-color);
-  color: var(--text1-color);
+  border-color: var(--border1-color);
+  color: color-mix(in srgb, var(--text1-color) 78%, var(--state-error-text-color) 22%);
 }
 
 .actionButton.deleteButton:hover:not(:disabled) {
-  background: var(--state-error-background-color);
-  color: var(--state-error-text-color);
+  background: color-mix(in srgb, var(--layout-background1-color) 84%, var(--state-error-border-color) 16%);
+  border-color: color-mix(in srgb, var(--border1-color) 54%, var(--state-error-border-color) 46%);
+  color: color-mix(in srgb, var(--text1-color) 54%, var(--state-error-text-color) 46%);
 }
 
 .actionButton.deleteButton:disabled {
   opacity: 0.5;
-  border-color: var(--state-error-border-color);
-  color: var(--text1-color);
+  border-color: var(--border1-color);
+  color: color-mix(in srgb, var(--text1-color) 78%, var(--state-error-text-color) 22%);
   background: transparent;
 }
 
@@ -826,14 +827,14 @@
 
 /* Aligned with media admin bulk delete (filled danger control). */
 .bulkActions .actionButton.deleteButton {
-  background: var(--state-error-background-color);
-  color: var(--state-error-text-color);
-  border-color: var(--state-error-border-color);
+  background: color-mix(in srgb, var(--layout-background1-color) 82%, var(--state-error-border-color) 18%);
+  color: color-mix(in srgb, var(--text1-color) 54%, var(--state-error-text-color) 46%);
+  border-color: color-mix(in srgb, var(--border1-color) 48%, var(--state-error-border-color) 52%);
 }
 
 .bulkActions .actionButton.deleteButton:hover:not(:disabled) {
-  background: var(--state-error-background-color);
-  color: var(--state-error-text-color);
+  background: color-mix(in srgb, var(--layout-background1-color) 74%, var(--state-error-border-color) 26%);
+  color: color-mix(in srgb, var(--text1-color) 42%, var(--state-error-text-color) 58%);
 }
 
 /* Loading States */

@@ -47,7 +47,6 @@ function relationshipSignature(card: StudioCardContext): string {
     })
     .join('|');
   return [
-    card.updatedAt ?? '',
     card.coverImageId ?? '',
     coverSignature,
     card.coverImageFocalPoint?.x ?? '',

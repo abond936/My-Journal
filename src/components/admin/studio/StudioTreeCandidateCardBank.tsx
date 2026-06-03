@@ -38,6 +38,7 @@ import {
   DEFAULT_ADMIN_DIMENSION_FILTERS,
   readStoredStudioCardBankLocalFilterPreferences,
   writeStoredStudioCardBankLocalFilterPreferences,
+  type AdminTagFilterScope,
   type AdminDimensionFilterMode,
   type AdminDimensionFilterState,
 } from '@/lib/preferences/adminFilters';
@@ -54,16 +55,28 @@ function cardDisplayMode(card: Card): NonNullable<Card['displayMode']> {
   return card.displayMode ?? 'navigate';
 }
 
-function cardMatchesOnCardDimensionalMap(card: Card, dt: DimensionalTagIdMap): boolean {
+function cardMatchesOnCardDimensionalMap(
+  card: Card,
+  dt: DimensionalTagIdMap,
+  tagFilterScope: AdminTagFilterScope
+): boolean {
   if (!dimensionalTagMapHasFilters(dt)) return true;
   for (const dim of DIMENSION_KEYS) {
     const selected = dt[dim];
     if (!selected?.length) continue;
     const idsOnCard = (card[dim] as string[] | undefined) ?? [];
-    const ok = selected.some((tid) => idsOnCard.includes(tid));
+    const ok = selected.some((tid) =>
+      tagFilterScope === 'subject'
+        ? Boolean(card.subjectFilterTags?.[tid])
+        : idsOnCard.includes(tid)
+    );
     if (!ok) return false;
   }
   return true;
+}
+
+function cardHasSubjectInDimension(card: Card, dimension: DimensionKey): boolean {
+  return Boolean(card.subjectTagId && ((card[dimension] as string[] | undefined) ?? []).includes(card.subjectTagId));
 }
 
 function applyCatalogOverrides(catalog: Card[], overrides: CatalogOverrideMap): Card[] {
@@ -89,6 +102,7 @@ function shouldRefreshWorkspaceQueryAfterCardUpdate(updateData: Partial<Card>): 
     Object.prototype.hasOwnProperty.call(updateData, 'type') ||
     Object.prototype.hasOwnProperty.call(updateData, 'displayMode') ||
     Object.prototype.hasOwnProperty.call(updateData, 'tags') ||
+    Object.prototype.hasOwnProperty.call(updateData, 'subjectTagId') ||
     Object.prototype.hasOwnProperty.call(updateData, 'who') ||
     Object.prototype.hasOwnProperty.call(updateData, 'what') ||
     Object.prototype.hasOwnProperty.call(updateData, 'when') ||
@@ -144,6 +158,9 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   const [bulkTagModalOpen, setBulkTagModalOpen] = useState(false);
   const [sortMode, setSortMode] = useState<CandidateSort>('titleAsc');
   const [filterTagIds, setFilterTagIds] = useState<string[]>(initialLocalFilterPrefsRef.current.filterTagIds);
+  const [tagFilterScope, setTagFilterScope] = useState<AdminTagFilterScope>(
+    initialLocalFilterPrefsRef.current.tagFilterScope
+  );
   const [typeFilter, setTypeFilter] = useState<CardTypeFilter>(initialLocalFilterPrefsRef.current.typeFilter);
   const [displayModeFilter, setDisplayModeFilter] = useState<DisplayModeFilter>(
     initialLocalFilterPrefsRef.current.displayModeFilter
@@ -176,9 +193,10 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       typeFilter,
       displayModeFilter,
       filterTagIds,
+      tagFilterScope,
       dimensionFilters,
     });
-  }, [dimensionFilters, displayModeFilter, filterTagIds, typeFilter]);
+  }, [dimensionFilters, displayModeFilter, filterTagIds, tagFilterScope, typeFilter]);
 
   // Workspace query owner: the Studio card bank owns a server-shaped card query
   // rather than filtering a large local mega-catalog. Results still append in
@@ -240,6 +258,15 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
             params.set(dimension, selected.join(','));
           }
         }
+        const hasScopedDimensionRules = Array.from(DIMENSION_KEYS).some(
+          (dimension) => deferredDimensionFilters[dimension].mode !== 'any'
+        );
+        if (
+          tagFilterScope === 'subject' &&
+          (dimensionalTagMapHasFilters(groupedFilterTagIds) || hasScopedDimensionRules)
+        ) {
+          params.set('tagScope', 'subject');
+        }
         if (lastDocId) params.set('lastDocId', lastDocId);
 
         let pageData: { items?: Card[]; hasMore?: boolean; lastDocId?: string } = {};
@@ -299,6 +326,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     deferredSortMode,
     deferredStatusFilter,
     deferredTypeFilter,
+    tagFilterScope,
     workspaceQueryRefreshTick,
   ]);
 
@@ -323,11 +351,18 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       if (q && !(card.title || '').toLowerCase().includes(q)) return false;
       if (deferredTypeFilter !== 'all' && card.type !== deferredTypeFilter) return false;
       if (deferredDisplayModeFilter !== 'all' && cardDisplayMode(card) !== deferredDisplayModeFilter) return false;
-      if (!cardMatchesOnCardDimensionalMap(card, onCardTagDimensionalMap)) return false;
+      if (!cardMatchesOnCardDimensionalMap(card, onCardTagDimensionalMap, tagFilterScope)) return false;
       for (const dimension of DIMENSION_KEYS) {
         const state = deferredDimensionFilters[dimension];
         const ids = Array.isArray(card[dimension]) ? (card[dimension] as string[]) : [];
         if (state.mode === 'any') continue;
+        if (tagFilterScope === 'subject') {
+          const hasSubjectInDimension = cardHasSubjectInDimension(card, dimension);
+          if (state.mode === 'hasAny' && !hasSubjectInDimension) return false;
+          if (state.mode === 'isEmpty' && hasSubjectInDimension) return false;
+          if (state.mode === 'matches' && state.tagId && !card.subjectFilterTags?.[state.tagId]) return false;
+          continue;
+        }
         if (state.mode === 'hasAny' && ids.length === 0) return false;
         if (state.mode === 'isEmpty' && ids.length > 0) return false;
         if (state.mode === 'matches' && state.tagId && !ids.includes(state.tagId)) return false;
@@ -340,6 +375,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       deferredDisplayModeFilter,
       onCardTagDimensionalMap,
       deferredDimensionFilters,
+      tagFilterScope,
     ]
   );
 
@@ -350,6 +386,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     setTypeFilter('all');
     setDisplayModeFilter('all');
     setFilterTagIds([]);
+    setTagFilterScope('all');
     setDimensionFilters(DEFAULT_ADMIN_DIMENSION_FILTERS);
     setBulkSelectedCardIds(new Set());
   }, [setSearch, setStatusFilter]);
@@ -822,44 +859,57 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
             </div>
           }
           footerContent={
-            <div className={styles.studioRuleMatrix}>
-              {Array.from(DIMENSION_KEYS).map((dimension) => {
-                const state = dimensionFilters[dimension];
-                const options = (allTags || []).filter((t) => t.dimension === dimension && t.docId);
-                return (
-                  <div key={dimension} className={styles.studioRuleColumn}>
-                    <select
-                      className={styles.studioCardSelect}
-                      value={state.mode}
-                      onChange={(e) =>
-                        updateDimensionFilter(dimension, {
-                          mode: e.target.value as AdminDimensionFilterMode,
-                        })
-                      }
-                    >
-                      <option value="any">Any</option>
-                      <option value="hasAny">Has any</option>
-                      <option value="isEmpty">Is empty</option>
-                      <option value="matches">Matches tag</option>
-                    </select>
-                    {state.mode === 'matches' ? (
+            <>
+              <div className={styles.studioTagScopeRow}>
+                <span className={styles.studioTagScopeLabel}>Tag scope</span>
+                <select
+                  className={styles.studioCardSelect}
+                  value={tagFilterScope}
+                  onChange={(e) => setTagFilterScope(e.target.value as AdminTagFilterScope)}
+                >
+                  <option value="all">All tags</option>
+                  <option value="subject">Subject only</option>
+                </select>
+              </div>
+              <div className={styles.studioRuleMatrix}>
+                {Array.from(DIMENSION_KEYS).map((dimension) => {
+                  const state = dimensionFilters[dimension];
+                  const options = (allTags || []).filter((t) => t.dimension === dimension && t.docId);
+                  return (
+                    <div key={dimension} className={styles.studioRuleColumn}>
                       <select
                         className={styles.studioCardSelect}
-                        value={state.tagId}
-                        onChange={(e) => updateDimensionFilter(dimension, { tagId: e.target.value })}
+                        value={state.mode}
+                        onChange={(e) =>
+                          updateDimensionFilter(dimension, {
+                            mode: e.target.value as AdminDimensionFilterMode,
+                          })
+                        }
                       >
-                        <option value="">Select tag...</option>
-                        {options.map((tag) => (
-                          <option key={tag.docId} value={tag.docId}>
-                            {tag.name}
-                          </option>
-                        ))}
+                        <option value="any">Any</option>
+                        <option value="hasAny">Has any</option>
+                        <option value="isEmpty">Is empty</option>
+                        <option value="matches">Matches tag</option>
                       </select>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
+                      {state.mode === 'matches' ? (
+                        <select
+                          className={styles.studioCardSelect}
+                          value={state.tagId}
+                          onChange={(e) => updateDimensionFilter(dimension, { tagId: e.target.value })}
+                        >
+                          <option value="">Select tag...</option>
+                          {options.map((tag) => (
+                            <option key={tag.docId} value={tag.docId}>
+                              {tag.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           }
         />
       </div>

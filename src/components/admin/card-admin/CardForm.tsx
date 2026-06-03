@@ -297,6 +297,15 @@ const CardForm: React.FC = () => {
     void persistFieldPatch({ tags: newTagIds });
   }, [lastSavedState.cardData.tags, persistFieldPatch, setField]);
 
+  const handleSubjectTagChange = useCallback((nextSubjectTagId: string | null) => {
+    setField('subjectTagId', nextSubjectTagId);
+    const savedSubjectTagId = lastSavedState.cardData.subjectTagId ?? null;
+    if (savedSubjectTagId === nextSubjectTagId) {
+      return;
+    }
+    void persistFieldPatch({ subjectTagId: nextSubjectTagId });
+  }, [lastSavedState.cardData.subjectTagId, persistFieldPatch, setField]);
+
   const handleCoverImageChange = useCallback((newCoverImage: Media | null, newPosition?: string) => {
     if (newCoverImage && newPosition !== undefined) {
       const parts = newPosition.trim().split(/\s+/);
@@ -316,7 +325,6 @@ const CardForm: React.FC = () => {
     if (!newCoverImage) {
       await persistFieldPatch({
         coverImageId: null,
-        coverImageFocalPoint: null,
       });
       return;
     }
@@ -951,7 +959,9 @@ const CardForm: React.FC = () => {
                   allTags={allTags}
                   disabled={isSaving}
                   variant={studioShellForm ? 'compact' : 'default'}
+                  stackTagsWithinDimension
                   onUpdateTags={handleTagsChange}
+                  onUpdateSubjectTagId={handleSubjectTagChange}
                   tagError={errors.tags}
                   className={styles.tagCommandBar}
                   trailingSlot={null}
@@ -1167,7 +1177,9 @@ const CardForm: React.FC = () => {
               allTags={allTags}
               disabled={isSaving}
               variant={studioShellForm ? 'compact' : 'default'}
+              stackTagsWithinDimension
               onUpdateTags={handleTagsChange}
+              onUpdateSubjectTagId={handleSubjectTagChange}
               tagError={errors.tags}
               className={styles.tagCommandBar}
               trailingSlot={
@@ -1187,6 +1199,8 @@ const CardForm: React.FC = () => {
               selectedTags={selectedTagObjects}
               allTags={allTags}
               onChange={handleTagsChange}
+              subjectTagId={cardData.subjectTagId ?? null}
+              onSubjectTagIdChange={handleSubjectTagChange}
               expanded={tagMacroExpanded}
               onExpandedChange={setTagMacroExpanded}
               collapsedSummary="none"

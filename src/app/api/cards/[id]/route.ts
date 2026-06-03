@@ -239,8 +239,8 @@ export async function PATCH(
     } else if (isCollectionRootOnlyPayload(validatedData)) {
       updatedCard = await updateCardCollectionRoot(id, validatedData);
     } else if (isTagsOnlyPayload(validatedData)) {
-      const { tags } = validatedData as Pick<Card, 'tags'>;
-      updatedCard = await updateCardTags(id, tags);
+      const { tags, subjectTagId } = validatedData as Pick<Card, 'tags' | 'subjectTagId'>;
+      updatedCard = await updateCardTags(id, { tags, subjectTagId });
     } else if (isStatusOnlyPayload(validatedData)) {
       const { status } = validatedData as Pick<Card, 'status'>;
       updatedCard = await updateCardStatus(id, status);

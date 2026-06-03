@@ -1,0 +1,87 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  max-width: 56rem;
+}
+
+.title {
+  margin: 0;
+  color: var(--admin-text-color);
+  font-family: var(--font-family-display);
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  line-height: 1.1;
+}
+
+.description {
+  margin: 0;
+  color: var(--admin-text-muted);
+  font-size: var(--font-size-md);
+  line-height: 1.5;
+}
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-md);
+}
+
+.summary p {
+  margin: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--admin-border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--admin-surface-raised);
+  color: var(--admin-text-color);
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+}
+
+.reproGrid {
+  align-items: start;
+}
+
+.reproCell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  min-width: 0;
+}
+
+.cardMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cardType,
+.cardId,
+.cardMeasure {
+  margin: 0;
+}
+
+.cardType {
+  color: var(--admin-text-color);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cardId,
+.cardMeasure {
+  color: var(--admin-text-muted);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.cardMount {
+  min-width: 0;
+}

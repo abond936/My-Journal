@@ -54,6 +54,7 @@ describe('adminFilters preferences', () => {
       typeFilter: 'gallery',
       displayModeFilter: 'all',
       filterTagIds: ['tag-1'],
+      tagFilterScope: 'all',
       dimensionFilters: {
         who: { mode: 'matches', tagId: 'tag-who' },
         what: { mode: 'any', tagId: 'tag-what' },
@@ -87,6 +88,7 @@ describe('adminFilters preferences', () => {
         hasCaption: 'with',
         search: 'portraits',
         assignment: 'assigned',
+        tagScope: 'all',
       },
       dimensionalQueryOverlay: {
         who: ['tag-1'],

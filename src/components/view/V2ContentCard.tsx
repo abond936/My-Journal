@@ -13,7 +13,6 @@ import {
 } from '@/lib/utils/objectPositionUtils';
 import { getEffectiveGalleryCaption, getEffectiveGalleryObjectPosition } from '@/lib/utils/galleryObjectPosition';
 import TipTapRenderer from '@/components/common/TipTapRenderer';
-import { formatQuoteAttribution } from '@/lib/utils/cardUtils';
 import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 import styles from './V2ContentCard.module.css';
 import ReaderCardEditModal from '@/components/view/ReaderCardEditModal';
@@ -31,6 +30,10 @@ function getFeedCoverFrame(media?: Card['coverImage'] | null) {
 }
 
 function getClosedFeedFrame(card: Card): 'landscape' | 'portrait' {
+  if (card.type === 'quote' || card.type === 'callout') {
+    return 'portrait';
+  }
+
   const primaryMedia =
     card.coverImage ??
     (card.type === 'gallery'
@@ -230,19 +233,18 @@ const GalleryCardContent: React.FC<{
 };
 
 /**
- * Quote feed tile: **Content** = quote (TipTap). Title is omitted here (see `/view/[id]` detail header).
- * **Attribution** = `subtitle` preferred, else `excerpt` (em dash added by `formatQuoteAttribution` when missing).
+ * Quote feed tile: closed reader quote cards follow the same title-driven utility-tile contract as Question cards.
+ * Detail/open quote rendering still owns the rich-text body plus attribution path.
  */
 const QuoteCardContent: React.FC<{ card: Card }> = ({ card }) => {
-  const attribution = formatQuoteAttribution(card.subtitle, card.excerpt);
+  const titleText = card.title?.trim() ?? '';
   return (
     <div className={styles.content}>
-      {card.content ? (
-        <blockquote className={styles.quoteBody}>
-          <TipTapRenderer content={card.content} surface="transparent" />
-        </blockquote>
+      {titleText ? (
+        <div className={`${styles.qaTextBlock} ${styles.quoteTextBlock}`}>
+          <h3 className={`${styles.qaQuestion} ${styles.quoteHeadline}`}>{titleText}</h3>
+        </div>
       ) : null}
-      {attribution ? <cite className={styles.quoteCite}>{attribution}</cite> : null}
     </div>
   );
 };

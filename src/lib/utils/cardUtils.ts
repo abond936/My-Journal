@@ -235,10 +235,36 @@ function sortKeysDeep(value: unknown): unknown {
 export function normalizeHtmlForDirtyCompare(html: string | null | undefined): string {
   if (!html || typeof html !== 'string') return '';
   const stripped = stripContentImageSrc(html);
-  return stripped
+  const canonicalFigures = canonicalizeContentFiguresForDirtyCompare(stripped);
+  return canonicalFigures
     .replace(/\u00a0/g, ' ')
     .replace(/>\s+</g, '><')
     .trim();
+}
+
+function canonicalizeContentFiguresForDirtyCompare(html: string): string {
+  return html.replace(
+    /<figure\b([^>]*)data-media-id=["']([^"']+)["']([^>]*)>([\s\S]*?)<\/figure>/gi,
+    (_match, beforeMediaId: string, mediaId: string, afterMediaId: string, innerHtml: string) => {
+      const figureAttrs = `${beforeMediaId ?? ''} ${afterMediaId ?? ''}`;
+      const attrValue = (name: string): string | null => {
+        const attrRegex = new RegExp(`${name}=["']([^"']*)["']`, 'i');
+        const hit = figureAttrs.match(attrRegex);
+        return hit?.[1] ?? null;
+      };
+
+      const size = attrValue('data-size') || 'medium';
+      const alignment = attrValue('data-alignment') || 'left';
+      const wrap = attrValue('data-wrap') || 'off';
+      const mediaType = attrValue('data-media-type') || 'content';
+
+      const captionMatch = innerHtml.match(/<figcaption\b[^>]*>([\s\S]*?)<\/figcaption>/i);
+      const legacyCaptionHtml = innerHtml.replace(/<img\b[^>]*>/gi, '').trim();
+      const captionHtml = (captionMatch?.[1] ?? legacyCaptionHtml ?? '').replace(/>\s+</g, '><').trim();
+
+      return `<figure data-media-id="${mediaId}" data-size="${size}" data-alignment="${alignment}" data-wrap="${wrap}" data-media-type="${mediaType}"><figcaption>${captionHtml}</figcaption></figure>`;
+    }
+  );
 }
 
 function prepareCardUpdateForDirtyCompare(c: CardUpdate): CardUpdate {

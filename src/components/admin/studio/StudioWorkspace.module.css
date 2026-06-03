@@ -7,7 +7,23 @@
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  padding: 0 var(--spacing-md) var(--spacing-sm);
+  padding: 0 2px 1px;
+  --studio-pane-background: var(--admin-window-background-color);
+  --studio-pane-background-muted: color-mix(in srgb, var(--admin-window-background-color) 92%, transparent);
+  --studio-pane-border-color: var(--admin-window-border-color);
+  --studio-pane-inner-border-color: var(--admin-window-border-color);
+  --studio-pane-shadow: none;
+  --studio-tag-chip-text-color: var(--admin-chrome-text-color);
+  --studio-tag-chip-font-size: calc(var(--font-size-admin-grid-overlay) + 0.125rem + 0.25px);
+}
+
+:global(html[data-theme='light']) .page {
+  --studio-pane-background: color-mix(in srgb, var(--layout-background1-color) 78%, var(--layout-background2-color) 22%);
+  --studio-pane-background-muted: color-mix(in srgb, var(--layout-background1-color) 62%, var(--layout-background2-color) 38%);
+  --studio-pane-border-color: color-mix(in srgb, var(--border1-color) 62%, var(--layout-background1-color) 38%);
+  --studio-pane-inner-border-color: color-mix(in srgb, var(--border1-color) 52%, var(--layout-background1-color) 48%);
+  --studio-pane-shadow: none;
+  --studio-tag-chip-text-color: var(--text1-color);
 }
 
 .grid {
@@ -88,17 +104,34 @@
   cursor: col-resize;
   touch-action: none;
   user-select: none;
-  background: color-mix(in srgb, var(--admin-window-border-color) 55%, transparent);
+  background: transparent;
   border-radius: var(--border-radius-sm);
   flex-shrink: 0;
   position: relative;
   z-index: 3;
 }
 
+.resizeHandle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: var(--studio-pane-border-color);
+  border-radius: 999px;
+}
+
 .resizeHandle:hover,
 .resizeHandle:focus-visible {
-  background: color-mix(in srgb, var(--admin-chrome-active-control-background-color) 35%, var(--admin-window-border-color));
+  background: transparent;
   outline: none;
+}
+
+.resizeHandle:hover::before,
+.resizeHandle:focus-visible::before {
+  background: color-mix(in srgb, var(--admin-chrome-active-control-background-color) 24%, var(--studio-pane-border-color));
 }
 
 .tagPane {
@@ -106,9 +139,10 @@
   flex-direction: column;
   min-height: 0;
   max-height: calc(100dvh - var(--admin-tabs-height, 48px) - 8rem);
-  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border: var(--border-width-thin) solid var(--studio-pane-border-color);
   border-radius: var(--border-radius-md);
-  background: var(--admin-window-background-color);
+  background: var(--studio-pane-background);
+  box-shadow: var(--studio-pane-shadow);
   overflow: hidden;
 }
 
@@ -162,9 +196,10 @@
   min-width: 0;
   height: 100%;
   max-height: 100%;
-  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border: var(--border-width-thin) solid var(--studio-pane-border-color);
   border-radius: var(--border-radius-md);
-  background: var(--admin-window-background-color);
+  background: var(--studio-pane-background);
+  box-shadow: var(--studio-pane-shadow);
   overflow: hidden;
 }
 
@@ -188,9 +223,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
-  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border: var(--border-width-thin) solid var(--studio-pane-border-color);
   border-radius: var(--border-radius-md);
-  background: var(--admin-window-background-color);
+  background: var(--studio-pane-background);
+  box-shadow: var(--studio-pane-shadow);
   padding: var(--spacing-md);
   font-size: var(--font-size-sm);
   color: var(--admin-support-meta-color);
@@ -206,15 +242,15 @@
   font-size: var(--font-size-xs);
   padding: 1px 4px;
   border-radius: var(--border-radius-sm);
-  background: var(--admin-window-background-color);
-  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  background: var(--studio-pane-background-muted);
+  border: var(--border-width-thin) solid var(--studio-pane-inner-border-color);
 }
 
 .cardEditPlaceholderMeta {
   margin: 0;
   margin-top: auto;
   padding-top: var(--spacing-sm);
-  border-top: var(--border-width-thin) solid var(--admin-window-border-color);
+  border-top: var(--border-width-thin) solid var(--studio-pane-inner-border-color);
   color: var(--admin-support-meta-color);
 }
 
@@ -241,9 +277,10 @@
   flex-direction: column;
   gap: 6px;
   padding: calc(var(--spacing-sm) + 2px) var(--spacing-sm) 0;
-  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border: var(--border-width-thin) solid var(--studio-pane-border-color);
   border-radius: var(--border-radius-md);
-  background: var(--admin-window-background-color);
+  background: var(--studio-pane-background);
+  box-shadow: var(--studio-pane-shadow);
   overflow: visible;
 }
 
@@ -496,21 +533,23 @@
 }
 
 .cardEditColumnResizeHandle {
-  width: 8px;
+  width: 3px;
   min-height: 120px;
   align-self: stretch;
   flex-shrink: 0;
   z-index: 40;
   position: relative;
+  margin-inline: -1px;
 }
 
 .questionsColumnResizeHandle {
-  width: 8px;
+  width: 3px;
   min-height: 120px;
   align-self: stretch;
   flex-shrink: 0;
   z-index: 40;
   position: relative;
+  margin-inline: -1px;
 }
 
 .studioCardEditInBankColumn {
@@ -552,9 +591,10 @@
   flex-direction: column;
   gap: var(--spacing-xs);
   padding: calc(var(--spacing-sm) + 2px) var(--spacing-sm) var(--spacing-sm);
-  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border: var(--border-width-thin) solid var(--studio-pane-border-color);
   border-radius: var(--border-radius-md);
-  background: var(--admin-window-background-color);
+  background: var(--studio-pane-background);
+  box-shadow: var(--studio-pane-shadow);
   overflow: visible;
 }
 
@@ -635,9 +675,9 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-xs);
-  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border: var(--border-width-thin) solid var(--studio-pane-inner-border-color);
   border-radius: var(--border-radius-sm);
-  background: var(--admin-window-background-color);
+  background: var(--studio-pane-background-muted);
   color: var(--admin-support-label-color);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
@@ -661,9 +701,9 @@
   flex: 0 0 auto;
   max-height: min(220px, 30vh);
   overflow: auto;
-  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border: var(--border-width-thin) solid var(--studio-pane-inner-border-color);
   border-radius: var(--border-radius-sm);
-  background: var(--admin-window-background-color);
+  background: var(--studio-pane-background-muted);
   padding: var(--spacing-xs);
 }
 
@@ -763,9 +803,9 @@
   flex-direction: column;
   gap: 6px;
   padding: 0.45rem 0.5rem;
-  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border: var(--border-width-thin) solid var(--studio-pane-inner-border-color);
   border-radius: var(--border-radius-sm);
-  background: var(--admin-window-background-color);
+  background: var(--studio-pane-background-muted);
 }
 
 .studioQuestionRowPending {
@@ -836,29 +876,29 @@
 .studioQuestionTagChip,
 .studioQuestionEditTagsChip,
 .studioQuestionNoTags {
-  min-height: 24px;
+  min-height: 20px;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border: var(--border-width-thin) solid var(--studio-pane-inner-border-color);
   border-radius: var(--border-radius-sm);
-  background: var(--admin-window-background-color);
-  color: var(--admin-support-label-color);
-  font-size: var(--font-size-xs);
+  background: var(--studio-pane-background-muted);
+  color: var(--studio-tag-chip-text-color);
+  font-size: var(--studio-tag-chip-font-size);
   line-height: 1;
 }
 
 .studioQuestionTagChip {
-  padding: 0 4px 0 var(--spacing-xs);
+  padding: 0 3px 0 5px;
 }
 
 .studioQuestionEditTagsChip {
-  padding: 0 var(--spacing-xs);
+  padding: 0 5px;
   cursor: pointer;
 }
 
 .studioQuestionNoTags {
-  padding: 0 var(--spacing-xs);
+  padding: 0 5px;
   color: var(--admin-support-meta-color);
   font-style: italic;
 }
@@ -871,8 +911,8 @@
 }
 
 .studioQuestionTagRemove {
-  width: 18px;
-  height: 18px;
+  width: 15px;
+  height: 15px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -940,9 +980,9 @@
 
 .studioQuestionConfirmPrompt {
   padding: var(--spacing-sm);
-  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border: var(--border-width-thin) solid var(--studio-pane-inner-border-color);
   border-radius: var(--border-radius-sm);
-  background: color-mix(in srgb, var(--admin-window-background-color) 92%, transparent);
+  background: var(--studio-pane-background-muted);
   color: var(--admin-support-meta-color);
   font-size: var(--font-size-sm);
   line-height: 1.45;
@@ -991,9 +1031,7 @@
   padding: 0 0.55rem;
 }
 
-.studioQuestionPrimaryButton:hover:not(:disabled),
-.studioQuestionTagActionButton:hover:not(:disabled),
-.studioQuestionClearButton:hover:not(:disabled) {
+.studioQuestionPrimaryButton:hover:not(:disabled) {
   background: var(--admin-support-control-strong-hover-background-color);
 }
 
@@ -1003,10 +1041,16 @@
 
 .studioQuestionTagActionButton,
 .studioQuestionClearButton {
-  border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
-  background: var(--admin-support-control-strong-background-color);
-  color: var(--admin-support-control-strong-text-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
   padding: 0 0.55rem;
+}
+
+.studioQuestionTagActionButton:hover:not(:disabled),
+.studioQuestionClearButton:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--admin-support-control-background-color) 86%, var(--admin-chrome-active-control-background-color) 14%);
+  border-color: color-mix(in srgb, var(--admin-support-control-border-color) 68%, var(--admin-chrome-active-control-border-color) 32%);
 }
 
 .studioQuestionTagActionButton {
@@ -1040,14 +1084,16 @@
 }
 
 .studioQuestionDeleteButton {
-  border: var(--border-width-thin) solid var(--admin-danger-border-color, #b84747);
-  background: transparent;
-  color: var(--admin-danger-text-color, #8a1f1f);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  background: var(--admin-support-control-background-color);
+  color: color-mix(in srgb, var(--admin-support-control-text-color) 76%, var(--state-error-text-color) 24%);
   padding: 0 0.55rem;
 }
 
 .studioQuestionDeleteButton:hover:not(:disabled) {
-  background-color: color-mix(in srgb, var(--admin-danger-border-color, #b84747) 12%, transparent);
+  background-color: color-mix(in srgb, var(--admin-support-control-background-color) 84%, var(--state-error-border-color) 16%);
+  border-color: color-mix(in srgb, var(--admin-support-control-border-color) 54%, var(--state-error-border-color) 46%);
+  color: color-mix(in srgb, var(--admin-support-control-text-color) 54%, var(--state-error-text-color) 46%);
 }
 
 .studioQuestionPrimaryButton:disabled,
@@ -1069,14 +1115,23 @@
   flex-direction: column;
 }
 
+.studioMediaBankColumn > :global(section) {
+  border: var(--border-width-thin) solid var(--studio-pane-border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--studio-pane-background);
+  box-shadow: var(--studio-pane-shadow);
+  overflow: hidden;
+}
+
 .studioMediaBankFill {
   overflow: hidden;
 }
 
 .metaPane {
-  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border: var(--border-width-thin) solid var(--studio-pane-border-color);
   border-radius: var(--border-radius-md);
-  background: var(--admin-window-background-color);
+  background: var(--studio-pane-background);
+  box-shadow: var(--studio-pane-shadow);
   padding: var(--spacing-md);
   color: var(--admin-support-meta-color);
   font-family: var(--admin-support-meta-font-family);
@@ -1147,12 +1202,13 @@
 }
 
 .tagChip {
-  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border: var(--border-width-thin) solid var(--studio-pane-inner-border-color);
   border-radius: var(--border-radius-sm);
-  padding: 2px var(--spacing-xs);
-  background: var(--admin-window-background-color);
-  color: var(--admin-support-label-color);
-  font-size: var(--font-size-xs);
+  padding: 1px 5px;
+  background: var(--studio-pane-background-muted);
+  color: var(--studio-tag-chip-text-color);
+  font-size: var(--studio-tag-chip-font-size);
+  line-height: 1;
 }
 
 @keyframes studioQuestionPendingSpin {
@@ -1162,9 +1218,9 @@
 }
 
 .panelBlock {
-  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border: var(--border-width-thin) solid var(--studio-pane-inner-border-color);
   border-radius: var(--border-radius-sm);
-  background: var(--admin-window-background-color);
+  background: var(--studio-pane-background-muted);
   padding: var(--spacing-xs) var(--spacing-sm);
   display: flex;
   flex-direction: column;
@@ -1285,9 +1341,9 @@
   flex-direction: column;
   gap: var(--spacing-xs);
   padding: var(--spacing-xs);
-  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border: var(--border-width-thin) solid var(--studio-pane-inner-border-color);
   border-radius: var(--border-radius-md);
-  background: var(--admin-window-background-color);
+  background: var(--studio-pane-background-muted);
 }
 
 .studioGalleryThumbWrap {
@@ -1491,10 +1547,10 @@
   display: flex;
   gap: var(--spacing-sm);
   align-items: center;
-  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border: var(--border-width-thin) solid var(--studio-pane-inner-border-color);
   border-radius: var(--border-radius-sm);
   padding: var(--spacing-xs);
-  background: var(--admin-window-background-color);
+  background: var(--studio-pane-background-muted);
 }
 
 .sourceMediaMain {
@@ -1546,9 +1602,10 @@
   display: flex;
   justify-content: space-between;
   gap: var(--spacing-sm);
-  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border: var(--border-width-thin) solid var(--studio-pane-inner-border-color);
   border-radius: var(--border-radius-sm);
   padding: var(--spacing-xs);
+  background: var(--studio-pane-background-muted);
 }
 
 .studioRelationshipSection {

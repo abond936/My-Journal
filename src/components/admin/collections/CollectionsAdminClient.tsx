@@ -341,6 +341,7 @@ export type EmbeddedStudioSlotContext = {
 export default function CollectionsAdminClient({
   embedded = false,
   onSelectCard,
+  selectedCardIdExternal,
   embeddedExternalDragEnd,
   embeddedOnStudioParentAttachComplete,
   embeddedRightSlot,
@@ -351,6 +352,7 @@ export default function CollectionsAdminClient({
 }: {
   embedded?: boolean;
   onSelectCard?: (cardId: string, previewCard?: Card | null) => void | Promise<boolean>;
+  selectedCardIdExternal?: string | null;
   embeddedExternalDragEnd?: (event: DragEndEvent, resolvedOverId?: string | null) => Promise<boolean> | boolean;
   embeddedOnStudioParentAttachComplete?: (parentId: string) => void;
   embeddedRightSlot?: React.ReactNode | ((ctx: EmbeddedStudioSlotContext) => React.ReactNode);
@@ -836,11 +838,18 @@ export default function CollectionsAdminClient({
   );
 
   useEffect(() => {
-    if (!cards.length || selectedCardId) return;
+    if (!embedded) return;
+    setSelectedCardId(selectedCardIdExternal ?? null);
+  }, [embedded, selectedCardIdExternal]);
+
+  useEffect(() => {
+    if (!cards.length) return;
+    if (selectedCardId) return;
+    if (embedded && selectedCardIdExternal) return;
     const fallback = rootedCollections[0]?.docId ?? cards[0]?.docId ?? null;
     setSelectedCardId(fallback);
     if (fallback) onSelectCard?.(fallback, cardById.get(fallback) ?? null);
-  }, [cards, selectedCardId, rootedCollections, onSelectCard, cardById]);
+  }, [cards, selectedCardId, rootedCollections, onSelectCard, cardById, embedded, selectedCardIdExternal]);
 
   const handleSelectCard = useCallback(
     (cardId: string) => {

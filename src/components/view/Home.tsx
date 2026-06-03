@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession, signIn } from 'next-auth/react';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
+import { getTitleLogoSrc } from '@/lib/utils/titleLogo';
 import styles from '@/components/view/Home.module.css';
 
 function safeCallbackPath(raw: string | null): string {
@@ -87,9 +88,9 @@ const Home: React.FC = () => {
         {/* Title section */}
         <div className={styles.titleSection}>
           <Image 
-            src={`/images/uploads/Title-${theme === 'dark' ? 'dark2' : 'light2'}.png`}
+            src={getTitleLogoSrc(theme === 'dark' ? 'dark' : 'light')}
             alt="My Stories"
-            className={styles.titleImage}
+            className={`${styles.titleImage} ${theme === 'dark' ? styles.titleImageDark : styles.titleImageLight}`}
             width={600}
             height={300}
             sizes="(max-width: 768px) 100vw, 600px"

@@ -249,14 +249,20 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
   const isDirty = dirtyHint && deferredPersistableDirty;
 
   const confirmLeaveIfDirty = useCallback(() => {
+    if (!dirtyHint) {
+      return true;
+    }
     const current = mergeEditorContentInto(cardDataRef.current);
     if (persistableSnapshotsEqual(current, formState.lastSavedState.cardData)) {
       return true;
     }
     return window.confirm('You have unsaved changes. Leave without saving?');
-  }, [formState.lastSavedState.cardData, mergeEditorContentInto]);
+  }, [dirtyHint, formState.lastSavedState.cardData, mergeEditorContentInto]);
 
   const confirmLeaveIfDirtyAsync = useCallback(async () => {
+    if (!dirtyHint) {
+      return true;
+    }
     const current = mergeEditorContentInto(cardDataRef.current);
     if (persistableSnapshotsEqual(current, formState.lastSavedState.cardData)) {
       return true;
@@ -268,7 +274,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       cancelLabel: 'Keep editing',
       tone: 'danger',
     });
-  }, [feedback, formState.lastSavedState.cardData, mergeEditorContentInto]);
+  }, [dirtyHint, feedback, formState.lastSavedState.cardData, mergeEditorContentInto]);
 
   const syncPersistableBaseline = useCallback(() => {
     setDirtyHint(false);

@@ -64,6 +64,10 @@
   box-sizing: border-box;
 }
 
+.studioEmbeddedRoot .layout {
+  gap: 0;
+}
+
 .layout > *:not(.colResizeHandle) {
   min-width: 0;
 }
@@ -86,17 +90,35 @@
   cursor: col-resize;
   touch-action: none;
   user-select: none;
-  background: color-mix(in srgb, var(--border1-color) 55%, transparent);
+  background: transparent;
   border-radius: var(--border-radius-sm);
   flex-shrink: 0;
   position: relative;
   z-index: 4;
+  margin-inline: -1px;
+}
+
+.colResizeHandle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: var(--studio-pane-border-color, color-mix(in srgb, var(--border1-color) 70%, transparent));
+  border-radius: 999px;
 }
 
 .colResizeHandle:hover,
 .colResizeHandle:focus-visible {
-  background: color-mix(in srgb, var(--color3) 35%, var(--border1-color));
+  background: transparent;
   outline: none;
+}
+
+.colResizeHandle:hover::before,
+.colResizeHandle:focus-visible::before {
+  background: color-mix(in srgb, var(--color3) 24%, var(--studio-pane-border-color, var(--border1-color)));
 }
 
 .panel {
@@ -937,6 +959,27 @@
   flex-direction: column;
   overflow: hidden;
   box-sizing: border-box;
+}
+
+.studioEmbeddedRoot .stickyTop {
+  background: var(--studio-pane-background-muted, var(--layout-background2-color));
+  border: var(--border-width-thin) solid var(--studio-pane-border-color, var(--border1-color));
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-sm) var(--spacing-sm) 2px;
+  margin-bottom: 0;
+  border-bottom-color: var(--studio-pane-inner-border-color, var(--border1-color));
+}
+
+.studioEmbeddedRoot .panel {
+  border-color: var(--studio-pane-border-color, var(--border1-color));
+  background: var(--studio-pane-background, var(--layout-background1-color));
+  box-shadow: var(--studio-pane-shadow, none);
+}
+
+.studioEmbeddedRoot .panel > h2,
+.studioEmbeddedRoot .panel > .hint,
+.studioEmbeddedRoot .panel > .controlsRow {
+  background: var(--studio-pane-background, var(--layout-background1-color));
 }
 
 .studioEmbeddedChrome {

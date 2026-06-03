@@ -9,6 +9,10 @@ function firstGalleryMedia(card: Partial<Card>) {
   return Array.isArray(card.galleryMedia) ? card.galleryMedia[0]?.media ?? null : null;
 }
 
+function hasOwn<T extends object>(value: T, key: PropertyKey): boolean {
+  return Object.prototype.hasOwnProperty.call(value, key);
+}
+
 export function toStudioCatalogCard(card: Card | StudioSelectedPreview | StudioSelectedDetail): StudioCatalogCard {
   const directDisplayThumbnail = 'displayThumbnail' in card ? (card.displayThumbnail ?? null) : null;
   const coverImage = card.coverImage ?? null;
@@ -45,37 +49,64 @@ export function mergeStudioCatalogCard(
   existing: StudioCatalogCard,
   incoming: Partial<Card> | StudioCatalogCard | StudioSelectedPreview | StudioSelectedDetail
 ): StudioCatalogCard {
+  const hasIncomingCoverId = hasOwn(incoming, 'coverImageId');
+  const hasIncomingCoverImage = hasOwn(incoming, 'coverImage');
+  const hasIncomingCoverFocalPoint = hasOwn(incoming, 'coverImageFocalPoint');
+  const hasIncomingGallery = hasOwn(incoming, 'galleryMedia');
+  const hasIncomingDisplayThumbnail = hasOwn(incoming, 'displayThumbnail');
+  const hasIncomingDisplayThumbnailSource = hasOwn(incoming, 'displayThumbnailSource');
   const next: StudioCatalogCard = {
     ...existing,
     ...incoming,
   };
 
-  if (!Object.prototype.hasOwnProperty.call(incoming, 'childrenIds')) {
+  if (!hasOwn(incoming, 'childrenIds')) {
     next.childrenIds = existing.childrenIds;
   }
-  if (!Object.prototype.hasOwnProperty.call(incoming, 'isCollectionRoot')) {
+  if (!hasOwn(incoming, 'isCollectionRoot')) {
     next.isCollectionRoot = existing.isCollectionRoot;
   }
-  if (!Object.prototype.hasOwnProperty.call(incoming, 'collectionRootOrder')) {
+  if (!hasOwn(incoming, 'collectionRootOrder')) {
     next.collectionRootOrder = existing.collectionRootOrder;
   }
-  if (!Object.prototype.hasOwnProperty.call(incoming, 'coverImageId')) {
+  if (!hasIncomingCoverId) {
     next.coverImageId = existing.coverImageId;
     next.coverImage = existing.coverImage ?? null;
     next.coverImageFocalPoint = existing.coverImageFocalPoint;
+  } else if (hasIncomingCoverImage) {
+    next.coverImage = incoming.coverImage ?? null;
+  } else if (!incoming.coverImageId || existing.coverImageId !== incoming.coverImageId) {
+    next.coverImage = null;
   }
-  if (!Object.prototype.hasOwnProperty.call(incoming, 'galleryMedia')) {
+  if (hasIncomingCoverId && !hasIncomingCoverFocalPoint && (!incoming.coverImageId || existing.coverImageId !== incoming.coverImageId)) {
+    next.coverImageFocalPoint = undefined;
+  }
+  if (!hasIncomingGallery) {
     next.galleryMedia = existing.galleryMedia;
   }
-  if (!Object.prototype.hasOwnProperty.call(incoming, 'contentMedia')) {
+  if (!hasOwn(incoming, 'contentMedia')) {
     next.contentMedia = existing.contentMedia;
   }
 
   const coverImage = next.coverImage ?? null;
   const galleryMedia = firstGalleryMedia(next);
-  const directDisplayThumbnail = next.displayThumbnail ?? null;
+  const previewDriversChanged = hasIncomingCoverId || hasIncomingCoverImage || hasIncomingGallery;
+  const directDisplayThumbnail = coverImage
+    ? null
+    : hasIncomingDisplayThumbnail
+      ? incoming.displayThumbnail ?? null
+      : previewDriversChanged
+        ? null
+        : existing.displayThumbnail ?? null;
+  const directDisplayThumbnailSource = coverImage
+    ? null
+    : hasIncomingDisplayThumbnailSource
+      ? incoming.displayThumbnailSource ?? null
+      : previewDriversChanged
+        ? null
+        : existing.displayThumbnailSource ?? null;
   next.displayThumbnail = coverImage ?? directDisplayThumbnail ?? galleryMedia;
   next.displayThumbnailSource =
-    coverImage ? 'cover' : next.displayThumbnailSource ?? (directDisplayThumbnail || galleryMedia ? 'gallery' : null);
+    coverImage ? 'cover' : directDisplayThumbnailSource ?? (directDisplayThumbnail || galleryMedia ? 'gallery' : null);
   return next;
 }

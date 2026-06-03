@@ -16,6 +16,8 @@ const mediaSchema: BaseCollectionCreateSchema & { fields: CollectionFieldSchema[
     { name: 'shape', type: 'string', facet: true },
     { name: 'has_caption', type: 'bool', facet: true },
     { name: 'assigned', type: 'bool', facet: true },
+    { name: 'subject_tag_id', type: 'string', facet: true, optional: true },
+    { name: 'subject_filter_tag_ids', type: 'string[]', facet: true, optional: true },
     { name: 'who_ids', type: 'string[]', facet: true, optional: true },
     { name: 'what_ids', type: 'string[]', facet: true, optional: true },
     { name: 'when_ids', type: 'string[]', facet: true, optional: true },
@@ -36,6 +38,8 @@ export interface TypesenseMediaDocument {
   shape: 'portrait' | 'landscape' | 'square';
   has_caption: boolean;
   assigned: boolean;
+  subject_tag_id?: string;
+  subject_filter_tag_ids?: string[];
   who_ids?: string[];
   what_ids?: string[];
   when_ids?: string[];
@@ -94,6 +98,8 @@ function collectAllTagIds(media: Media): string[] {
 export function mediaToTypesenseDocument(media: Media, nameMap: Map<string, string>): TypesenseMediaDocument {
   const allIds = collectAllTagIds(media);
   const namesForSearch = lookupNames(allIds, nameMap);
+  const subjectFilterTags = media.subjectFilterTags ?? {};
+  const subjectFilterTagIds = Object.keys(subjectFilterTags).filter((tagId) => subjectFilterTags[tagId]);
   const parts = [
     media.filename || '',
     media.caption || '',
@@ -109,6 +115,8 @@ export function mediaToTypesenseDocument(media: Media, nameMap: Map<string, stri
     shape: mediaShapeFromDimensions(media.width, media.height),
     has_caption: Boolean(media.caption && media.caption.trim()),
     assigned: isAssigned(media),
+    subject_tag_id: media.subjectTagId || undefined,
+    subject_filter_tag_ids: subjectFilterTagIds.length ? subjectFilterTagIds : undefined,
     who_ids: media.who?.length ? [...media.who] : undefined,
     what_ids: media.what?.length ? [...media.what] : undefined,
     when_ids: media.when?.length ? [...media.when] : undefined,
@@ -122,7 +130,18 @@ export async function ensureMediaCollection(): Promise<void> {
   if (!client) throw new Error('Typesense not configured');
 
   try {
-    await client.collections(MEDIA_COLLECTION).retrieve();
+    const existing = await client.collections(MEDIA_COLLECTION).retrieve();
+    const fields = existing.fields ?? [];
+    const patchFields: CollectionFieldSchema[] = [];
+    if (!fields.find((field) => field.name === 'subject_tag_id')) {
+      patchFields.push({ name: 'subject_tag_id', type: 'string', optional: true, facet: true });
+    }
+    if (!fields.find((field) => field.name === 'subject_filter_tag_ids')) {
+      patchFields.push({ name: 'subject_filter_tag_ids', type: 'string[]', optional: true, facet: true });
+    }
+    if (patchFields.length > 0) {
+      await client.collections(MEDIA_COLLECTION).update({ fields: patchFields });
+    }
   } catch {
     await client.collections().create(mediaSchema);
   }

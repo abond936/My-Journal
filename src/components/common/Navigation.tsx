@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
 import { useTheme } from '@/components/providers/ThemeProvider';
+import { getTitleLogoSrc } from '@/lib/utils/titleLogo';
 import styles from './Navigation.module.css';
 
 interface NavigationProps {
@@ -95,9 +96,9 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
         <div className={styles.centerSlot}>
           <Link href="/view" className={styles.logo}>
             <Image
-              src={`/images/uploads/Title-${theme === 'dark' ? 'dark2' : 'light2'}.png`}
+              src={getTitleLogoSrc(theme === 'dark' ? 'dark' : 'light')}
               alt="My Stories"
-              className={styles.logoImage}
+              className={`${styles.logoImage} ${theme === 'dark' ? styles.logoImageDark : styles.logoImageLight}`}
               width={225}
               height={113}
               sizes="(max-width: 768px) 160px, 225px"

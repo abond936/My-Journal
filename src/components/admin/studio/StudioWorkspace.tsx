@@ -1291,6 +1291,7 @@ export default function StudioWorkspace() {
               <CollectionsAdminClient
               embedded
               onSelectCard={requestSelectCard}
+              selectedCardIdExternal={selectedCardId}
               embeddedExternalDragEnd={onStudioRelationshipDragEnd}
               embeddedOnStudioParentAttachComplete={(parentId) => {
                 if (selectedCardId === parentId) {

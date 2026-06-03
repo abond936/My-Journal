@@ -1,4 +1,5 @@
 .wrap {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
@@ -36,7 +37,6 @@
   min-width: 0;
 }
 
-/* Match MacroTagSelector `.dimensionLabel` */
 .dimLabel {
   color: var(--admin-support-meta-color);
   font-style: italic;
@@ -59,22 +59,30 @@
   align-items: flex-start;
 }
 
-/* Match MacroTagSelector `.tagNode` / `.tagName` */
 .chip {
-  border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-window-border-color) 50%, transparent);
-  background: color-mix(in srgb, var(--admin-window-background-color) 50%, transparent);
-  color: var(--admin-chrome-text-color);
+  -webkit-appearance: none;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: var(--border-width-thin) solid var(--studio-pane-inner-border-color, color-mix(in srgb, var(--admin-window-border-color) 58%, transparent));
   border-radius: var(--border-radius-sm);
+  background-color: var(--studio-pane-background-muted, color-mix(in srgb, var(--admin-window-background-color) 86%, var(--admin-window-border-color) 14%));
+  color: var(--studio-tag-chip-text-color, var(--admin-chrome-text-color));
   font: var(--admin-grid-overlay-font);
+  font-size: var(--studio-tag-chip-font-size, 0.6875rem);
   letter-spacing: 0.02em;
   line-height: 1;
-  padding: 2px 5px;
-  cursor: pointer;
+  min-height: 0.9375rem;
+  padding: 0 6px;
   max-width: 100%;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   backdrop-filter: blur(4px);
+  cursor: pointer;
+}
+
+.chip:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--admin-window-border-color) 74%, var(--admin-chrome-active-control-background-color) 26%);
 }
 
 .chip:disabled {
@@ -82,20 +90,95 @@
   cursor: not-allowed;
 }
 
+.chipSubject .chipName {
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.chipName {
+  display: inline-flex;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chipSubject .chipNameText {
+  display: inline-block;
+  max-width: 100%;
+  padding-bottom: 1px;
+  border-bottom: 1px solid currentColor;
+}
+
+.chipDimWho {
+  background-color: color-mix(in srgb, var(--tag-who-bg-color) 18%, var(--studio-pane-background-muted, var(--admin-window-background-color)) 82%);
+}
+
+.chipDimWhat {
+  background-color: color-mix(in srgb, var(--tag-what-bg-color) 18%, var(--studio-pane-background-muted, var(--admin-window-background-color)) 82%);
+}
+
+.chipDimWhen {
+  background-color: color-mix(in srgb, var(--tag-when-bg-color) 18%, var(--studio-pane-background-muted, var(--admin-window-background-color)) 82%);
+}
+
+.chipDimWhere {
+  background-color: color-mix(in srgb, var(--tag-where-bg-color) 18%, var(--studio-pane-background-muted, var(--admin-window-background-color)) 82%);
+}
+
 .chipEmpty {
   color: var(--admin-support-meta-color);
-  border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-window-border-color) 50%, transparent);
+  border: var(--border-width-thin) solid var(--studio-pane-inner-border-color, color-mix(in srgb, var(--admin-window-border-color) 54%, transparent));
   border-radius: var(--border-radius-sm);
-  background: color-mix(in srgb, var(--admin-window-background-color) 50%, transparent);
+  background: var(--studio-pane-background-muted, color-mix(in srgb, var(--admin-window-background-color) 88%, var(--admin-window-border-color) 12%));
   font: var(--admin-grid-overlay-font);
+  font-size: var(--studio-tag-chip-font-size, 0.6875rem);
   line-height: 1;
-  padding: 2px 5px;
+  min-height: 0.9375rem;
+  padding: 0 6px;
   backdrop-filter: blur(4px);
 }
 
-.chipX {
-  margin-left: var(--spacing-xs);
-  opacity: 0.8;
+.actionMenu {
+  position: fixed;
+  z-index: 1500;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 8rem;
+  padding: 4px;
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--admin-window-background-color);
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--admin-window-shadow-color, black) 18%, transparent);
+}
+
+.actionMenuItem {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--admin-support-control-text-color);
+  font: var(--admin-grid-overlay-font);
+  padding: 6px 8px;
+  cursor: pointer;
+}
+
+.actionMenuItem:hover:not(:disabled) {
+  background: var(--admin-chrome-control-hover-background-color);
+}
+
+.actionMenuItem:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.actionMenuItemActive {
+  color: var(--admin-support-control-strong-text-color);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.16em;
 }
 
 .searchRow {
@@ -106,7 +189,6 @@
   order: 1;
 }
 
-/* Match MacroTagSelector expanded `.searchInput` */
 .searchInput {
   flex: 1 1 0;
   min-width: 0;
@@ -203,15 +285,21 @@
 
 .wrapCompact .chip {
   font: var(--admin-grid-overlay-font);
-  padding: 2px 5px;
   line-height: 1;
 }
 
-/*
- * Table-embedded command bar (card admin `entriesTable`, etc.): toolbar inset + row rhythm only.
- * Chip type stays the same scale as `.wrapCompact .chip` (`--font-size-xs`) — do not override with
- * a larger px/calc block here; that regressed card-table chips when `tableEmbed` was wired to this class.
- */
+.wrapStackWithinDimension .chipStrip {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+}
+
+.wrapStackWithinDimension .chip {
+  width: 100%;
+  justify-content: flex-start;
+  border: none;
+}
+
 .wrapTable .chipsToolbar {
   padding-left: 2ch;
   box-sizing: border-box;
@@ -228,14 +316,12 @@
 .wrapTable .chip,
 .wrapTable .chipEmpty {
   font: var(--admin-grid-overlay-font);
+  font-size: var(--studio-tag-chip-font-size, 0.6875rem);
   line-height: 1;
-  padding: 2px 5px;
+  min-height: 0.9375rem;
+  padding: 0 6px;
   border-radius: var(--border-radius-sm);
   min-width: 0;
-}
-
-.wrapTable .chipEmpty {
-  font-style: normal;
 }
 
 .wrapTable .chipStrip {
@@ -271,27 +357,4 @@
   padding: 3px 7px;
   font-size: 11px;
   border-radius: var(--border-radius-sm);
-}
-
-.wrapSearchOnly .suggestions {
-  max-height: 140px;
-}
-
-.wrapSearchOnly .suggestion {
-  font-size: 0.625rem;
-  padding: 5px 7px;
-}
-
-.wrapDenseSuggestions .suggestion {
-  font-size: 0.625rem;
-  padding: 4px 6px;
-  line-height: var(--line-height-tight);
-}
-
-.wrapDenseSuggestions .pathLine {
-  font-size: 0.625rem;
-}
-
-.wrapDenseSuggestions .error {
-  font-size: var(--font-size-xs);
 }

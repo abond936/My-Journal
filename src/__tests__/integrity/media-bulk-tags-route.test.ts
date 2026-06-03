@@ -1,7 +1,12 @@
 import type { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { bulkApplyMediaTags } from '@/lib/services/images/imageImportService';
-import { deleteMediaWithCardCleanup, recomputeCardsMediaSignalsForMediaIds } from '@/lib/services/cardService';
+import {
+  deleteMediaWithCardCleanup,
+  recomputeCardsMediaSignalsForMedia,
+  recomputeCardsMediaSignalsForMediaIds,
+} from '@/lib/services/cardService';
+import { patchMediaDocument } from '@/lib/services/images/imageImportService';
 
 jest.mock('next/server', () => {
   const NextResponse = function NextResponse(_body?: unknown, init?: { status?: number }) {
@@ -47,15 +52,19 @@ jest.mock('@/lib/services/images/imageImportService', () => ({
 }));
 
 jest.mock('@/lib/services/cardService', () => ({
+  recomputeCardsMediaSignalsForMedia: jest.fn(),
   recomputeCardsMediaSignalsForMediaIds: jest.fn(),
   deleteMediaWithCardCleanup: jest.fn(),
 }));
 
 import { POST } from '@/app/api/admin/media/tags/route';
-import { DELETE } from '@/app/api/images/[id]/route';
+import { DELETE, PATCH } from '@/app/api/images/[id]/route';
 
 const mockedGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>;
 const mockedBulkApplyMediaTags = bulkApplyMediaTags as jest.MockedFunction<typeof bulkApplyMediaTags>;
+const mockedPatchMediaDocument = patchMediaDocument as jest.MockedFunction<typeof patchMediaDocument>;
+const mockedRecomputeCardsMediaSignalsForMedia =
+  recomputeCardsMediaSignalsForMedia as jest.MockedFunction<typeof recomputeCardsMediaSignalsForMedia>;
 const mockedRecomputeCardsMediaSignalsForMediaIds =
   recomputeCardsMediaSignalsForMediaIds as jest.MockedFunction<typeof recomputeCardsMediaSignalsForMediaIds>;
 const mockedDeleteMediaWithCardCleanup =
@@ -130,5 +139,29 @@ describe('DELETE /api/images/[id]', () => {
       message: 'Cannot delete media asset because references still exist.',
       code: 'MEDIA_DELETE_BLOCKED_REFERENCES',
     });
+  });
+});
+
+describe('PATCH /api/images/[id]', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('accepts subject-only media patches without recomputing card media signals', async () => {
+    mockedGetServerSession.mockResolvedValueOnce(adminSession);
+    mockedPatchMediaDocument.mockResolvedValueOnce();
+
+    const req = {
+      json: async () => ({ subjectTagId: 'siblings' }),
+    } as NextRequest;
+
+    const res = await PATCH(req, { params: Promise.resolve({ id: 'media-1' }) });
+    const payload = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(mockedPatchMediaDocument).toHaveBeenCalledWith('media-1', { subjectTagId: 'siblings' });
+    expect(mockedRecomputeCardsMediaSignalsForMedia).not.toHaveBeenCalled();
+    expect(mockedRecomputeCardsMediaSignalsForMediaIds).not.toHaveBeenCalled();
+    expect(payload).toMatchObject({ ok: true });
   });
 });

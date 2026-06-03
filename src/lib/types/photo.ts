@@ -49,6 +49,8 @@ export const mediaSchema = z.object({
    * are computed on write; they do not merge onto parent cards.
    */
   tags: z.array(z.string()).optional(),
+  subjectTagId: z.string().min(1).nullable().optional(),
+  subjectFilterTags: z.record(z.boolean()).optional(),
   filterTags: z.record(z.boolean()).optional(),
   who: z.array(z.string()).optional(),
   what: z.array(z.string()).optional(),

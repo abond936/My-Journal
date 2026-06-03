@@ -10,6 +10,7 @@ import { DIMENSION_KEYS, type DimensionalTagIdMap } from '@/lib/utils/tagUtils';
 
 export type AdminDimensionKey = 'who' | 'what' | 'when' | 'where';
 export type AdminDimensionFilterMode = 'any' | 'hasAny' | 'isEmpty' | 'matches';
+export type AdminTagFilterScope = 'all' | 'subject';
 export type AdminDimensionFilterState = Record<
   AdminDimensionKey,
   {
@@ -31,6 +32,7 @@ export type StudioCardBankLocalFilterPreferences = {
   typeFilter: StudioCardBankCardTypeFilter;
   displayModeFilter: StudioCardBankDisplayModeFilter;
   filterTagIds: string[];
+  tagFilterScope: AdminTagFilterScope;
   dimensionFilters: AdminDimensionFilterState;
 };
 
@@ -40,6 +42,7 @@ export type MediaAdminStoredFilters = {
   hasCaption: string;
   search: string;
   assignment: string;
+  tagScope: AdminTagFilterScope;
 };
 
 export type MediaAdminStoredFilterPreferences = {
@@ -71,6 +74,7 @@ const MEDIA_ADMIN_SOURCE_VALUES = new Set(['all', 'local', 'paste']);
 const MEDIA_ADMIN_DIMENSION_VALUES = new Set(['all', 'portrait', 'landscape', 'square']);
 const MEDIA_ADMIN_CAPTION_VALUES = new Set(['all', 'with', 'without']);
 const MEDIA_ADMIN_ASSIGNMENT_VALUES = new Set(['all', 'unassigned', 'assigned']);
+const ADMIN_TAG_FILTER_SCOPE_VALUES = new Set<AdminTagFilterScope>(['all', 'subject']);
 const ADMIN_DIMENSION_FILTER_MODE_VALUES = new Set<AdminDimensionFilterMode>(['any', 'hasAny', 'isEmpty', 'matches']);
 
 export const DEFAULT_ADMIN_DIMENSION_FILTERS: AdminDimensionFilterState = {
@@ -89,6 +93,7 @@ export const DEFAULT_STUDIO_CARD_BANK_LOCAL_FILTER_PREFERENCES: StudioCardBankLo
   typeFilter: 'all',
   displayModeFilter: 'all',
   filterTagIds: [],
+  tagFilterScope: 'all',
   dimensionFilters: DEFAULT_ADMIN_DIMENSION_FILTERS,
 };
 
@@ -98,6 +103,7 @@ export const DEFAULT_MEDIA_ADMIN_STORED_FILTERS: MediaAdminStoredFilters = {
   hasCaption: 'all',
   search: '',
   assignment: 'all',
+  tagScope: 'all',
 };
 
 export const DEFAULT_MEDIA_ADMIN_STORED_FILTER_PREFERENCES: MediaAdminStoredFilterPreferences = {
@@ -175,6 +181,7 @@ function parseStudioCardBankLocalFilterPreferences(value: unknown): StudioCardBa
     typeFilter: normalizeEnumValue(candidate.typeFilter, STUDIO_CARD_BANK_TYPE_VALUES, 'all'),
     displayModeFilter: normalizeEnumValue(candidate.displayModeFilter, STUDIO_CARD_BANK_DISPLAY_MODE_VALUES, 'all'),
     filterTagIds: normalizeStringArray(candidate.filterTagIds),
+    tagFilterScope: normalizeEnumValue(candidate.tagFilterScope, ADMIN_TAG_FILTER_SCOPE_VALUES, 'all'),
     dimensionFilters: normalizeAdminDimensionFilters(candidate.dimensionFilters),
   };
 }
@@ -194,6 +201,7 @@ function parseMediaAdminStoredFilterPreferences(value: unknown): MediaAdminStore
       hasCaption: normalizeEnumValue(rawFilters.hasCaption, MEDIA_ADMIN_CAPTION_VALUES, 'all'),
       search: normalizeString(rawFilters.search),
       assignment: normalizeEnumValue(rawFilters.assignment, MEDIA_ADMIN_ASSIGNMENT_VALUES, 'all'),
+      tagScope: normalizeEnumValue(rawFilters.tagScope, ADMIN_TAG_FILTER_SCOPE_VALUES, 'all'),
     },
     dimensionalQueryOverlay: normalizeDimensionalTagIdMap(candidate.dimensionalQueryOverlay),
   };

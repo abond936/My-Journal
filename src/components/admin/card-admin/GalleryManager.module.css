@@ -170,17 +170,29 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: var(--state-error-background-color);
-    color: var(--state-error-text-color);
-    border: none;
+    background-color: var(--admin-support-control-background-color);
+    color: var(--admin-support-control-text-color);
+    border: var(--border-width-thin) solid var(--admin-support-control-border-color);
     border-radius: var(--border-radius-md);
     cursor: pointer;
-    transition: background-color var(--transition-short);
+    transition:
+        background-color var(--transition-short),
+        border-color var(--transition-short),
+        color var(--transition-short);
 }
 
-.moveButton:hover,
+.moveButton:hover {
+    background-color: var(--admin-support-control-hover-background-color);
+}
+
+.removeButton {
+    color: color-mix(in srgb, var(--admin-support-control-text-color) 78%, var(--state-error-text-color) 22%);
+}
+
 .removeButton:hover {
-    background-color: var(--state-error-border-color);
+    background-color: color-mix(in srgb, var(--admin-support-control-background-color) 84%, var(--state-error-border-color) 16%);
+    border-color: color-mix(in srgb, var(--admin-support-control-border-color) 54%, var(--state-error-border-color) 46%);
+    color: color-mix(in srgb, var(--admin-support-control-text-color) 54%, var(--state-error-text-color) 46%);
 }
 
 .manageButton {

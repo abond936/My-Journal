@@ -15,8 +15,21 @@ jest.mock('react-dnd-html5-backend', () => ({
 }));
 
 jest.mock('@/components/admin/card-admin/CoverPhotoContainer', () => {
-  return function MockCoverPhotoContainer() {
-    return <div data-testid="mock-cover-photo">Mock Cover Photo</div>;
+  return function MockCoverPhotoContainer(props: {
+    onCommit?: (media: null, position?: string) => void;
+  }) {
+    return (
+      <div>
+        <div data-testid="mock-cover-photo">Mock Cover Photo</div>
+        <button
+          type="button"
+          data-testid="mock-cover-clear"
+          onClick={() => void props.onCommit?.(null)}
+        >
+          Clear Cover
+        </button>
+      </div>
+    );
   };
 });
 
@@ -91,6 +104,13 @@ jest.mock('@/components/admin/studio/studioCardFormStudioContext', () => ({
 
 jest.mock('@/components/admin/studio/StudioShellContext', () => ({
   useStudioShellOptional: () => null,
+}));
+
+jest.mock('@/components/providers/AppFeedbackProvider', () => ({
+  useAppFeedback: () => ({
+    alert: jest.fn(async () => undefined),
+    showError: jest.fn(),
+  }),
 }));
 
 jest.mock('@/components/admin/studio/studioRelationshipDndPrimitives', () => ({
@@ -239,5 +259,21 @@ describe('CardForm', () => {
     await userEvent.type(editor, 'Updated body');
 
     expect(mockOnSave).not.toHaveBeenCalled();
+  });
+
+  it('clears cover through the narrow cover patch without sending a null focal point', async () => {
+    mockOnSave.mockResolvedValue({
+      ...mockCard,
+      coverImageId: null,
+      coverImage: null,
+    });
+
+    renderCardForm();
+
+    await userEvent.click(screen.getByTestId('mock-cover-clear'));
+
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalledWith({ coverImageId: null });
+    });
   });
 });

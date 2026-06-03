@@ -202,6 +202,22 @@
   align-items: center;
 }
 
+.studioTagScopeRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-width: 0;
+}
+
+.studioTagScopeLabel {
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
+  white-space: nowrap;
+}
+
 .studioInlineLabel {
   display: flex;
   flex-direction: column;
@@ -562,13 +578,13 @@
 }
 
 .bulkButton.deleteButton {
-  background: var(--state-error-background-color);
-  color: var(--state-error-text-color);
-  border-color: var(--state-error-border-color);
+  background: color-mix(in srgb, var(--layout-background1-color) 82%, var(--state-error-border-color) 18%);
+  color: color-mix(in srgb, var(--text1-color) 54%, var(--state-error-text-color) 46%);
+  border-color: color-mix(in srgb, var(--border1-color) 48%, var(--state-error-border-color) 52%);
 }
 
 .bulkButton.deleteButton:hover {
-  background: var(--state-error-background-color);
+  background: color-mix(in srgb, var(--layout-background1-color) 74%, var(--state-error-border-color) 26%);
 }
 
 .mediaList {

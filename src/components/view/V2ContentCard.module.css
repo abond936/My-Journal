@@ -32,13 +32,17 @@
 @media (min-width: 769px) {
   .card.closedFeedLandscape.story,
   .card.closedFeedLandscape.gallery,
-  .card.closedFeedLandscape.qa {
+  .card.closedFeedLandscape.qa,
+  .card.closedFeedLandscape.quote,
+  .card.closedFeedLandscape.callout {
     aspect-ratio: 6 / 5;
   }
 
   .card.closedFeedPortrait.story,
   .card.closedFeedPortrait.gallery,
-  .card.closedFeedPortrait.qa {
+  .card.closedFeedPortrait.qa,
+  .card.closedFeedPortrait.quote,
+  .card.closedFeedPortrait.callout {
     aspect-ratio: 1 / 1;
   }
 
@@ -100,6 +104,7 @@
   border-color: var(--reader-quote-card-border-color);
   border-radius: var(--reader-quote-card-border-radius);
   box-shadow: var(--reader-quote-card-shadow);
+  aspect-ratio: 6 / 5;
 }
 
 .card.callout {
@@ -107,6 +112,7 @@
   border-color: var(--reader-question-card-border-color);
   border-radius: var(--reader-callout-card-border-radius);
   box-shadow: var(--reader-question-card-shadow);
+  aspect-ratio: 6 / 5;
 }
 
 .card.quote:hover,
@@ -150,6 +156,11 @@
   .story:not(:has(.imageContainer)) .content,
   .gallery:not(:has(.imageContainer)) .content,
   .qa:not(.qaWithCover) .content {
+    justify-content: flex-start;
+    padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm);
+  }
+
+  .quote .content {
     justify-content: flex-start;
     padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm);
   }
@@ -386,13 +397,13 @@
   z-index: 1;
   pointer-events: none;
   line-height: 1;
-  font-size: clamp(7.5rem, 48vw, 14rem);
+  font-size: clamp(8.4rem, 58.8vw, 19.6rem);
   font-weight: var(--font-weight-bold);
   font-family: Georgia, 'Times New Roman', serif;
-  color: var(--reader-quote-watermark-color);
-  opacity: var(--reader-quote-watermark-opacity);
-  /* Opening-quote glyph sits high in the em box; nudge down to sit behind vertically centered body text */
-  transform: translateY(clamp(0.75rem, 7%, 2.75rem));
+  color: var(--reader-title-color);
+  opacity: var(--reader-question-watermark-opacity);
+  /* Opening-quote glyph sits high in its own em box, so optical centering needs a proportional downward shift. */
+  transform: translateY(0.18em);
 }
 .quote .content {
   position: relative;
@@ -400,6 +411,7 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  min-height: 0;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -408,25 +420,34 @@
   text-align: center;
   padding: var(--spacing-xl) var(--spacing-lg);
   box-sizing: border-box;
+  overflow: hidden;
   overflow-wrap: break-word;
 }
-.quoteBody {
-  margin: 0;
-  padding: 0;
-  border: none;
-  background: transparent;
-  font-family: var(--reader-quote-font-family);
-  font-size: var(--reader-quote-font-size);
+.quoteTextBlock {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+.quote .qaQuestion,
+.quoteHeadline {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: var(--font-size-xl);
+  font-weight: var(--reader-quote-font-weight);
+  line-height: var(--reader-question-line-height);
   font-style: var(--reader-quote-font-style);
-  line-height: var(--reader-title-line-height);
   color: var(--reader-quote-color);
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  text-align: center;
-  box-sizing: border-box;
-  overflow-wrap: break-word;
-  word-break: break-word;
+}
+
+.quoteHeadline,
+.qa:not(.qaWithCover) .qaQuestion {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 /* TipTap root defaults to content-box width; constrain so long words / @-mentions don’t spill past the tile */
 .quoteBody :global(.ProseMirror) {
@@ -637,6 +658,7 @@
   z-index: 2;
   width: 100%;
   min-width: 0;
+  min-height: 0;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -645,6 +667,7 @@
   text-align: left;
   padding: var(--spacing-xl) var(--spacing-lg);
   background: transparent;
+  overflow: hidden;
 }
 .calloutTitle {
   margin: 0;
@@ -653,9 +676,17 @@
   font-weight: var(--reader-callout-title-font-weight);
   line-height: var(--reader-callout-title-line-height);
   color: var(--reader-callout-title-color);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .calloutBody {
   margin: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: calc(var(--reader-callout-body-line-height) * 1em * 5);
   font-family: var(--reader-callout-body-font-family);
   font-size: var(--reader-callout-body-font-size);
   font-weight: var(--reader-callout-body-font-weight);
@@ -663,6 +694,19 @@
   font-style: var(--reader-callout-body-font-style);
   color: var(--reader-callout-body-color);
   text-align: left;
+  overflow: hidden;
+}
+.calloutBody :global(.ProseMirror) {
+  max-width: 100%;
+  min-width: 0;
+  max-height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.calloutBody :global(p),
+.calloutBody :global(ul),
+.calloutBody :global(ol) {
+  margin-top: 0;
 }
 .calloutBody :global(ul),
 .calloutBody :global(ol) {
@@ -680,6 +724,7 @@
 
 .small .title,
 .small.qa .qaQuestion,
+.small .quoteHeadline,
 .small .calloutTitle {
   color: var(--reader-title-small-color);
   font-family: var(--reader-title-small-font-family);
@@ -800,7 +845,8 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  height: 100%;
+  height: auto;
+  align-self: start;
 }
 
 .adminEditLink {

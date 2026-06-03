@@ -100,18 +100,18 @@
 
 .inlineCaptionInput {
   width: 100%;
-  min-height: 3.5rem;
   padding: 6px 8px;
   box-sizing: border-box;
   border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-radius: var(--border-radius-sm);
   background: var(--admin-support-control-background-color);
-  color: var(--admin-support-control-text-color);
-  font-family: var(--admin-support-meta-font-family);
-  font-size: 0.625rem;
-  font-weight: var(--font-weight-medium);
-  line-height: 1.35;
-  resize: vertical;
+  color: var(--admin-support-label-color);
+  font-family: inherit;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.25;
+  resize: none;
+  overflow: hidden;
 }
 
 .inlineCaptionInput:focus {
@@ -179,10 +179,10 @@
   min-height: 20px;
   padding: 0 6px;
   border-radius: var(--border-radius-full);
-  background: color-mix(in srgb, var(--admin-chrome-active-control-background-color) 88%, white 10%);
-  color: var(--admin-chrome-active-control-text-color);
-  font-size: 0.625rem;
-  font-weight: var(--font-weight-semibold);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-window-border-color) 56%, var(--state-success-border-color) 44%);
+  background: color-mix(in srgb, var(--admin-window-background-color) 82%, var(--state-success-border-color) 18%);
+  color: color-mix(in srgb, var(--admin-chrome-text-color) 74%, var(--state-success-text-color) 26%);
+  font: var(--admin-grid-overlay-font);
   line-height: 1;
 }
 
@@ -240,7 +240,7 @@
 }
 
 .overlayLinkedCardsButton:hover {
-  background: color-mix(in srgb, var(--admin-window-background-color) 82%, var(--admin-chrome-active-control-background-color) 18%);
+  background: color-mix(in srgb, var(--admin-window-background-color) 88%, var(--admin-chrome-active-control-background-color) 12%);
 }
 
 .overlayLinkedCardsCount {
@@ -248,7 +248,7 @@
 }
 
 .overlayEditButton:hover {
-  background: color-mix(in srgb, var(--admin-window-background-color) 82%, var(--admin-chrome-active-control-background-color) 18%);
+  background: color-mix(in srgb, var(--admin-window-background-color) 88%, var(--admin-chrome-active-control-background-color) 12%);
 }
 
 .overlayBottomLinkButton {
@@ -274,7 +274,7 @@
 }
 
 .overlayBottomLinkButton:hover {
-  background: color-mix(in srgb, var(--admin-window-background-color) 82%, var(--admin-chrome-active-control-background-color) 18%);
+  background: color-mix(in srgb, var(--admin-window-background-color) 88%, var(--admin-chrome-active-control-background-color) 12%);
 }
 
 .inlineActions {

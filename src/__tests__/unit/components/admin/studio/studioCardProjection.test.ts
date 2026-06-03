@@ -116,6 +116,27 @@ describe('studioCardProjection', () => {
     expect(merged.displayThumbnailSource).toBe('cover');
   });
 
+  it('clears stale projected preview fields when an incoming payload removes the cover', () => {
+    const existingCover = baseMedia({ docId: 'cover-1' });
+    const existing = toStudioCatalogCard(
+      baseCard({
+        coverImageId: existingCover.docId,
+        coverImage: existingCover,
+      })
+    );
+
+    const merged = mergeStudioCatalogCard(existing, {
+      docId: existing.docId,
+      coverImageId: null,
+      coverImage: null,
+    });
+
+    expect(merged.coverImageId).toBeNull();
+    expect(merged.coverImage).toBeNull();
+    expect(merged.displayThumbnail).toBeNull();
+    expect(merged.displayThumbnailSource).toBeNull();
+  });
+
   it('selected previews inherit the projected display thumbnail semantics', () => {
     const galleryMedia = baseMedia({ docId: 'gallery-1' });
     const preview = toStudioSelectedPreview(

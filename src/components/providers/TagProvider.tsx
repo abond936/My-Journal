@@ -77,16 +77,22 @@ export function TagProvider({ children }: { children: ReactNode }) {
   );
 
   // State for the global tag filter
-  const [selectedFilterTagIds, setFilterTags] = useState<string[]>(() => readStoredFilterTagIds());
+  const [selectedFilterTagIds, setFilterTags] = useState<string[]>([]);
+  const [hasHydratedStoredFilterTags, setHasHydratedStoredFilterTags] = useState(false);
 
   React.useEffect(() => {
-    if (typeof window === 'undefined') return;
+    setFilterTags(readStoredFilterTagIds());
+    setHasHydratedStoredFilterTags(true);
+  }, []);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined' || !hasHydratedStoredFilterTags) return;
     if (selectedFilterTagIds.length === 0) {
       window.localStorage.removeItem(READER_FILTER_TAGS_KEY);
       return;
     }
     window.localStorage.setItem(READER_FILTER_TAGS_KEY, JSON.stringify(selectedFilterTagIds));
-  }, [selectedFilterTagIds]);
+  }, [hasHydratedStoredFilterTags, selectedFilterTagIds]);
 
   const createTag = useCallback(async (tagData: Omit<Tag, 'docId'>): Promise<Tag | undefined> => {
     try {
