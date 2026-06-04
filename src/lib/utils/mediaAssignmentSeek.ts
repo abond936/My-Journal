@@ -22,13 +22,36 @@ export function mediaMatchesDimensions(item: Media, dimensions: string | null | 
   }
 }
 
-export function mediaMatchesSearch(item: Media, search: string | null | undefined): boolean {
+function collectSearchTagIds(item: Media): string[] {
+  const raw = [
+    ...(item.tags ?? []),
+    ...(item.who ?? []),
+    ...(item.what ?? []),
+    ...(item.when ?? []),
+    ...(item.where ?? []),
+  ];
+  if (item.filterTags) {
+    raw.push(...Object.keys(item.filterTags));
+  }
+  return [...new Set(raw.filter(Boolean))];
+}
+
+export function mediaMatchesSearch(
+  item: Media,
+  search: string | null | undefined,
+  tagNameLookup?: Map<string, string>
+): boolean {
   if (!search?.trim()) return true;
   const searchLower = search.toLowerCase();
   return (
     item.filename.toLowerCase().includes(searchLower) ||
     !!(item.caption && item.caption.toLowerCase().includes(searchLower)) ||
-    !!(item.sourcePath && item.sourcePath.toLowerCase().includes(searchLower))
+    !!(item.sourcePath && item.sourcePath.toLowerCase().includes(searchLower)) ||
+    (tagNameLookup
+      ? collectSearchTagIds(item).some((tagId) =>
+          (tagNameLookup.get(tagId) || '').toLowerCase().includes(searchLower)
+        )
+      : false)
   );
 }
 

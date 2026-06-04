@@ -101,9 +101,31 @@ describe('POST /api/admin/media/tags', () => {
     const payload = await res.json();
 
     expect(res.status).toBe(200);
-    expect(mockedBulkApplyMediaTags).toHaveBeenCalledWith(['m1', 'm2'], ['t1'], 'add');
+    expect(mockedBulkApplyMediaTags).toHaveBeenCalledWith(['m1', 'm2'], {
+      tagIds: ['t1'],
+      mode: 'add',
+    });
     expect(mockedRecomputeCardsMediaSignalsForMediaIds).toHaveBeenCalledWith(['m1', 'm2']);
     expect(payload.updated).toBe(2);
+  });
+
+  it('accepts subject-only bulk media updates', async () => {
+    mockedGetServerSession.mockResolvedValueOnce(adminSession);
+    mockedBulkApplyMediaTags.mockResolvedValueOnce({ updatedIds: ['m1'] });
+    const req = {
+      json: async () => ({ mediaIds: ['m1'], subjectTagId: 'siblings' }),
+    } as NextRequest;
+
+    const res = await POST(req);
+    const payload = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(mockedBulkApplyMediaTags).toHaveBeenCalledWith(['m1'], {
+      subjectTagId: 'siblings',
+      subjectTagIdProvided: true,
+    });
+    expect(mockedRecomputeCardsMediaSignalsForMediaIds).toHaveBeenCalledWith(['m1']);
+    expect(payload).toMatchObject({ ok: true, updated: 1 });
   });
 });
 

@@ -13,7 +13,7 @@ import {
   syncMediaToTypesenseById,
 } from '@/lib/services/typesenseMediaService';
 import { getPublicStorageUrl } from '@/lib/utils/storageUrl';
-import { resolveSubjectTagState } from '@/lib/utils/subjectTag';
+import { normalizeSubjectTagId, resolveSubjectTagState } from '@/lib/utils/subjectTag';
 import { normalizeBufferToWebp, isCardExportMarkedFilename } from '@/lib/services/images/inMemoryWebpNormalize';
 import {
   readEmbeddedCaptionAndKeywords,
@@ -653,18 +653,28 @@ export async function patchMediaDocument(mediaId: string, updates: MediaPatchFie
 
 export async function bulkApplyMediaTags(
   mediaIds: string[],
-  tagIds: string[],
-  mode: 'add' | 'replace' | 'remove' = 'add'
-): Promise<{ updatedIds: string[] }> {
+  updates: {
+    tagIds?: string[];
+    mode?: 'add' | 'replace' | 'remove';
+    subjectTagId?: string | null;
+    subjectTagIdProvided?: boolean;
+  }
+): Promise<{ updatedIds: string[]; updatedMedia: Media[] }> {
   const ids = Array.from(
     new Set(mediaIds.filter((id): id is string => typeof id === 'string' && id.trim().length > 0))
   );
-  if (!ids.length) return { updatedIds: [] };
+  if (!ids.length) return { updatedIds: [], updatedMedia: [] };
+
+  const hasTagMutation = Object.prototype.hasOwnProperty.call(updates, 'tagIds');
+  const hasSubjectMutation = updates.subjectTagIdProvided === true;
+  if (!hasTagMutation && !hasSubjectMutation) {
+    return { updatedIds: [], updatedMedia: [] };
+  }
 
   const normalizedMode: 'add' | 'replace' | 'remove' =
-    mode === 'replace' || mode === 'remove' ? mode : 'add';
+    updates.mode === 'replace' || updates.mode === 'remove' ? updates.mode : 'add';
   const incomingTags = Array.from(
-    new Set(tagIds.filter((id): id is string => typeof id === 'string' && id.trim().length > 0))
+    new Set((updates.tagIds ?? []).filter((id): id is string => typeof id === 'string' && id.trim().length > 0))
   );
 
   const app = getAdminApp();
@@ -673,6 +683,7 @@ export async function bulkApplyMediaTags(
   const tagPathLookup = new Map(allTags.filter((t) => t.docId).map((t) => [t.docId!, t]));
   const derivedCache = new Map<string, MediaTagDerived>();
   const updatedIds: string[] = [];
+  const updatedMedia = new Map<string, Media>();
 
   for (let i = 0; i < ids.length; i += BULK_MEDIA_TAGS_CHUNK_SIZE) {
     const chunk = ids.slice(i, i + BULK_MEDIA_TAGS_CHUNK_SIZE);
@@ -687,60 +698,79 @@ export async function bulkApplyMediaTags(
           (id): id is string => typeof id === 'string' && id.trim().length > 0
         );
 
-        let nextTags: string[];
-        if (normalizedMode === 'replace') {
-          nextTags = incomingTags;
-        } else if (normalizedMode === 'remove') {
-          const removeSet = new Set(incomingTags);
-          nextTags = existingTags.filter((id) => !removeSet.has(id));
-        } else {
-          nextTags = Array.from(new Set([...existingTags, ...incomingTags]));
+        let nextTags = existingTags;
+        if (hasTagMutation) {
+          if (normalizedMode === 'replace') {
+            nextTags = incomingTags;
+          } else if (normalizedMode === 'remove') {
+            const removeSet = new Set(incomingTags);
+            nextTags = existingTags.filter((id) => !removeSet.has(id));
+          } else {
+            nextTags = Array.from(new Set([...existingTags, ...incomingTags]));
+          }
         }
 
-        const unchanged =
+        const tagsUnchanged =
           nextTags.length === existingTags.length &&
           nextTags.every((id) => existingTags.includes(id));
-        if (unchanged) continue;
 
-        const cacheKey = [...nextTags].sort((a, b) => a.localeCompare(b)).join('\u001f');
-        let derived = derivedCache.get(cacheKey);
-        if (!derived) {
-          derived = await deriveMediaTagFields(nextTags, allTags);
-          derivedCache.set(cacheKey, derived);
-        }
         const subjectState = await resolveSubjectTagState({
           assignedTagIds: nextTags,
           existingSubjectTagId: media.subjectTagId,
-          requestedSubjectTagId: undefined,
-          subjectTagIdProvided: false,
+          requestedSubjectTagId: updates.subjectTagId,
+          subjectTagIdProvided: hasSubjectMutation,
           allTags,
         });
+        const subjectUnchanged =
+          normalizeSubjectTagId(media.subjectTagId) === subjectState.subjectTagId;
+        if (tagsUnchanged && subjectUnchanged) continue;
 
-        await updateTagCountsForMedia(existingTags, derived.tags, tx, tagPathLookup);
-        tx.update(mediaDoc.ref, {
-          tags: derived.tags,
-          subjectTagId: subjectState.subjectTagId,
-          subjectFilterTags: subjectState.subjectFilterTags,
-          filterTags: derived.filterTags,
-          who: derived.who,
-          what: derived.what,
-          when: derived.when,
-          where: derived.where,
-          hasTags: derived.hasTags,
-          hasWho: derived.hasWho,
-          hasWhat: derived.hasWhat,
-          hasWhen: derived.hasWhen,
-          hasWhere: derived.hasWhere,
-          updatedAt: Date.now(),
-        });
+        const payload: Record<string, unknown> = { updatedAt: Date.now() };
+        if (hasTagMutation) {
+          const cacheKey = [...nextTags].sort((a, b) => a.localeCompare(b)).join('\u001f');
+          let derived = derivedCache.get(cacheKey);
+          if (!derived) {
+            derived = await deriveMediaTagFields(nextTags, allTags);
+            derivedCache.set(cacheKey, derived);
+          }
+
+          await updateTagCountsForMedia(existingTags, derived.tags, tx, tagPathLookup);
+          payload.tags = derived.tags;
+          payload.filterTags = derived.filterTags;
+          payload.who = derived.who;
+          payload.what = derived.what;
+          payload.when = derived.when;
+          payload.where = derived.where;
+          payload.hasTags = derived.hasTags;
+          payload.hasWho = derived.hasWho;
+          payload.hasWhat = derived.hasWhat;
+          payload.hasWhen = derived.hasWhen;
+          payload.hasWhere = derived.hasWhere;
+        }
+        if (hasTagMutation || hasSubjectMutation) {
+          payload.subjectTagId = subjectState.subjectTagId;
+          payload.subjectFilterTags = subjectState.subjectFilterTags;
+        }
+
+        tx.update(mediaDoc.ref, payload);
         updatedIds.push(mediaDoc.id);
+        updatedMedia.set(mediaDoc.id, {
+          ...media,
+          ...payload,
+          docId: media.docId ?? mediaDoc.id,
+        } as Media);
       }
     });
   }
 
   const uniqueUpdatedIds = Array.from(new Set(updatedIds));
   uniqueUpdatedIds.forEach((id) => void syncMediaToTypesenseById(id));
-  return { updatedIds: uniqueUpdatedIds };
+  return {
+    updatedIds: uniqueUpdatedIds,
+    updatedMedia: uniqueUpdatedIds
+      .map((id) => updatedMedia.get(id))
+      .filter((item): item is Media => Boolean(item?.docId)),
+  };
 }
 
 /**

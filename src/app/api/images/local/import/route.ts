@@ -18,6 +18,7 @@ export type LocalImportBatchResultItem = {
   sourcePath: string;
   mediaId: string;
   media: Media;
+  skipped?: boolean;
 };
 
 export type LocalImportBatchErrorItem = {
@@ -140,6 +141,7 @@ export async function POST(request: NextRequest) {
             const fileT0 = Date.now();
             const r = await importFromLocalDrive(sourcePath, {
               readMetadata: readEmbeddedMetadata,
+              skipIfExists: true,
               normalizeInMemory: true,
               collectMetadataReadIssue: (sp, message) => {
                 metadataReadIssues.push({ sourcePath: sp, message });
@@ -154,7 +156,12 @@ export async function POST(request: NextRequest) {
           sourcePathForLog = sourcePath;
           if (result.status === 'fulfilled') {
             const { r, ms } = result.value;
-            results.push({ sourcePath, mediaId: r.mediaId, media: r.media });
+            results.push({
+              sourcePath,
+              mediaId: r.mediaId,
+              media: r.media,
+              ...(r.skipped ? { skipped: true } : {}),
+            });
             if (importRouteDebug) {
               console.info(
                 '[/api/images/local/import] file ok',
@@ -163,6 +170,7 @@ export async function POST(request: NextRequest) {
                   total: batchPaths.length,
                   ms,
                   sourcePath,
+                  skipped: r.skipped === true,
                 })
               );
             }
@@ -215,8 +223,9 @@ export async function POST(request: NextRequest) {
 
     const metadataReadIssues: { sourcePath: string; message: string }[] = [];
     const singleT0 = Date.now();
-    const { mediaId, media } = await importFromLocalDrive(singlePath, {
+    const { mediaId, media, skipped } = await importFromLocalDrive(singlePath, {
       readMetadata: readEmbeddedMetadata,
+      skipIfExists: true,
       normalizeInMemory: true,
       collectMetadataReadIssue: (sp, message) => {
         metadataReadIssues.push({ sourcePath: sp, message });
@@ -232,6 +241,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       mediaId,
       media,
+      ...(skipped ? { skipped: true } : {}),
       ...(metadataReadIssues.length > 0 ? { metadataReadIssues } : {}),
     });
   } catch (error) {

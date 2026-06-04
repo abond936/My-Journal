@@ -113,6 +113,16 @@ function mediaMatchesDimensionalTags(
   return true;
 }
 
+async function loadTagNameLookup(firestore: Firestore): Promise<Map<string, string>> {
+  const snapshot = await firestore.collection('tags').select('name').get();
+  const lookup = new Map<string, string>();
+  snapshot.docs.forEach((doc) => {
+    const data = doc.data() as { name?: string };
+    lookup.set(doc.id, typeof data.name === 'string' && data.name.trim() ? data.name : doc.id);
+  });
+  return lookup;
+}
+
 async function seekMediaWithPredicates(
   baseQuery: Query,
   firestore: FirebaseFirestore.Firestore,
@@ -218,29 +228,20 @@ export async function GET(request: NextRequest) {
     const hasSourceSeek = !!source && source !== 'all';
 
     const searchTrimmed = search?.trim() ?? '';
-    if (searchTrimmed.length > 0 && !isTypesenseConfigured()) {
-      return errorResponse(
-        {
-          ok: false,
-          message:
-            'Text search for media requires Typesense (TYPESENSE_HOST and TYPESENSE_API_KEY). Configure Typesense or clear the search box.',
-          code: 'SEARCH_UNAVAILABLE',
-          severity: 'warning',
-          retryable: false,
-        },
-        503
-      );
-    }
+    const hasSearchSeek = searchTrimmed.length > 0;
 
     const wantTypesense =
       isTypesenseConfigured() &&
       !shouldUseLegacyTagSeek &&
       !(tagScope === 'subject' && hasDimensionalTagSeek) &&
-      (searchTrimmed.length > 0 ||
+      (hasSearchSeek ||
         hasCaptionSeek ||
         hasDimensionalTagSeek ||
         assignment === 'unassigned' ||
         assignment === 'assigned');
+
+    const tagNameLookup =
+      hasSearchSeek && !wantTypesense ? await loadTagNameLookup(firestore) : undefined;
 
     if (wantTypesense) {
       const listPage = Math.max(1, parseInt(searchParams.get('listPage') || '1', 10) || 1);
@@ -281,14 +282,14 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    if (hasDimensionalTagSeek || shouldUseLegacyTagSeek || hasCaptionSeek || hasSourceSeek) {
+    if (hasSearchSeek || hasDimensionalTagSeek || shouldUseLegacyTagSeek || hasCaptionSeek || hasSourceSeek) {
       const predicate = (row: Media) => {
         if (hasSourceSeek && row.source !== source) return false;
         if (assignment === 'assigned' && !isMediaAssigned(row)) return false;
         if (assignment === 'unassigned' && isMediaAssigned(row)) return false;
         if (!mediaMatchesCaptionFilter(row, hasCaption)) return false;
         if (!mediaMatchesDimensions(row, dimensions)) return false;
-        if (!mediaMatchesSearch(row, search)) return false;
+        if (!mediaMatchesSearch(row, searchTrimmed, tagNameLookup)) return false;
         if (hasDimensionalTagSeek) {
           if (!mediaMatchesDimensionalTags(row, dimensionalTags, tagScope)) return false;
         }
@@ -406,13 +407,8 @@ export async function GET(request: NextRequest) {
       filteredMedia = filteredMedia.filter((item) => mediaMatchesCaptionFilter(item, hasCaption));
     }
 
-    if (search) {
-      const searchLower = search.toLowerCase();
-      filteredMedia = filteredMedia.filter(item =>
-        item.filename.toLowerCase().includes(searchLower) ||
-        (item.caption && item.caption.toLowerCase().includes(searchLower)) ||
-        (item.sourcePath && item.sourcePath.toLowerCase().includes(searchLower))
-      );
+    if (searchTrimmed) {
+      filteredMedia = filteredMedia.filter((item) => mediaMatchesSearch(item, searchTrimmed, tagNameLookup));
     }
 
     const firstDocId = docs.length > 0 ? docs[0].id : null;

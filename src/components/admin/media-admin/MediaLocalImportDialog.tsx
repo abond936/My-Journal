@@ -4,6 +4,7 @@ import JournalImage from '@/components/common/JournalImage';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import type { Media, PickerMedia, TreeNode } from '@/lib/types/photo';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import styles from '@/components/admin/card-admin/PhotoPicker.module.css';
 
 type MediaLocalImportDialogProps = {
@@ -14,7 +15,7 @@ type MediaLocalImportDialogProps = {
 };
 
 type BatchImportResponse = {
-  results: { sourcePath: string; mediaId: string; media: Media }[];
+  results: { sourcePath: string; mediaId: string; media: Media; skipped?: boolean }[];
   errors: { sourcePath: string; message: string }[];
   metadataReadIssues?: { sourcePath: string; message: string }[];
 };
@@ -160,6 +161,7 @@ export default function MediaLocalImportDialog({
   onImportComplete,
   title = 'Import Media',
 }: MediaLocalImportDialogProps) {
+  const feedback = useAppFeedback();
   const [folderTree, setFolderTree] = useState<TreeNode[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [photos, setPhotos] = useState<PickerMedia[]>([]);
@@ -302,6 +304,7 @@ export default function MediaLocalImportDialog({
 
       const importedResults: Media[] = [];
       const importFailures: { sourcePath: string; message: string }[] = [];
+      let skippedCount = 0;
       let anyMetadataReadIssue = false;
 
       for (let i = 0; i < selectedPhotos.length; i += maxSourcePathsPerRequest) {
@@ -326,6 +329,7 @@ export default function MediaLocalImportDialog({
 
         const data = (await response.json()) as BatchImportResponse;
         importedResults.push(...(data.results ?? []).map((result) => result.media));
+        skippedCount += (data.results ?? []).filter((result) => result.skipped === true).length;
         importFailures.push(...(data.errors ?? []));
 
         const metadataIssues = data.metadataReadIssues ?? [];
@@ -341,6 +345,17 @@ export default function MediaLocalImportDialog({
 
       if (importedResults.length > 0) {
         await onImportComplete?.(importedResults);
+      }
+
+      if (skippedCount > 0) {
+        feedback.showToast({
+          title: 'Already in library',
+          tone: 'info',
+          message:
+            skippedCount === 1
+              ? 'That image source path already exists, so the existing media record was reused.'
+              : `${skippedCount} image source paths already existed, so the existing media records were reused.`,
+        });
       }
 
       if (importFailures.length > 0) {
@@ -369,7 +384,7 @@ export default function MediaLocalImportDialog({
       setIsImporting(false);
       setImportElapsedSec(0);
     }
-  }, [onClose, onImportComplete, readEmbeddedMetadata, selectedPhotos]);
+  }, [feedback, onClose, onImportComplete, readEmbeddedMetadata, selectedPhotos]);
 
   const retryLocal = useCallback(() => {
     setError(null);

@@ -41,11 +41,15 @@ export default function StudioCardFormGallery({
   onSetAsCover,
   currentCoverMediaId,
   onOpenMediaEditor,
+  onPersistGalleryAfterSlotSave,
 }: {
   disabled: boolean;
   onSetAsCover: (item: HydratedGalleryMediaItem) => void;
   currentCoverMediaId: string | null;
   onOpenMediaEditor?: (mediaId: string) => void;
+  onPersistGalleryAfterSlotSave?: (
+    nextGallery: HydratedGalleryMediaItem[]
+  ) => boolean | Promise<boolean>;
 }) {
   const { formState, setField } = useCardForm();
   const gallery = useMemo(
@@ -57,6 +61,7 @@ export default function StudioCardFormGallery({
     [gallery]
   );
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [persistingGallery, setPersistingGallery] = useState(false);
   const editingItem = useMemo(
     () => gallery.find((item) => item.mediaId === editingItemId) ?? null,
     [editingItemId, gallery]
@@ -73,25 +78,47 @@ export default function StudioCardFormGallery({
   );
 
   const removeFromGallery = useCallback(
-    (item: HydratedGalleryMediaItem) => {
-      setField(
-        'galleryMedia',
-        gallery.filter((g) => !(g.mediaId === item.mediaId && g.order === item.order))
+    async (item: HydratedGalleryMediaItem) => {
+      const previousGallery = gallery;
+      const nextGallery = previousGallery.filter(
+        (g) => !(g.mediaId === item.mediaId && g.order === item.order)
       );
+      setField('galleryMedia', nextGallery);
       if (editingItemId === item.mediaId) setEditingItemId(null);
+      if (!onPersistGalleryAfterSlotSave) return;
+      let ok = false;
+      setPersistingGallery(true);
+      try {
+        ok = await onPersistGalleryAfterSlotSave(nextGallery);
+      } finally {
+        setPersistingGallery(false);
+      }
+      if (!ok) {
+        setField('galleryMedia', previousGallery);
+      }
     },
-    [editingItemId, gallery, setField]
+    [editingItemId, gallery, onPersistGalleryAfterSlotSave, setField]
   );
 
   const saveGalleryItemOverrides = useCallback(
-    (updatedItem: HydratedGalleryMediaItem) => {
-      setField(
-        'galleryMedia',
-        gallery.map((item) => (item.mediaId === updatedItem.mediaId ? updatedItem : item))
+    async (updatedItem: HydratedGalleryMediaItem) => {
+      const nextGallery = gallery.map((item) =>
+        item.mediaId === updatedItem.mediaId ? updatedItem : item
       );
+      setField('galleryMedia', nextGallery);
+      if (onPersistGalleryAfterSlotSave) {
+        let ok = false;
+        setPersistingGallery(true);
+        try {
+          ok = await onPersistGalleryAfterSlotSave(nextGallery);
+        } finally {
+          setPersistingGallery(false);
+        }
+        if (!ok) return;
+      }
       setEditingItemId(null);
     },
-    [gallery, setField]
+    [gallery, onPersistGalleryAfterSlotSave, setField]
   );
 
   return (
@@ -144,7 +171,7 @@ export default function StudioCardFormGallery({
                             )
                           }
                           placeholder="Card caption..."
-                          disabled={disabled}
+                          disabled={disabled || persistingGallery}
                         />
                       ) : null}
                     </div>
@@ -153,7 +180,7 @@ export default function StudioCardFormGallery({
                         <button
                           type="button"
                           className={`${styles.inlineActionButton} ${styles.inlineActionIconButton}`}
-                          disabled={disabled}
+                          disabled={disabled || persistingGallery}
                           onClick={() => onOpenMediaEditor(item.mediaId)}
                           aria-label="Open gallery image in media editor"
                           title="Open gallery image in media editor"
@@ -164,7 +191,7 @@ export default function StudioCardFormGallery({
                       <button
                         type="button"
                         className={`${styles.inlineActionButton} ${styles.inlineActionIconButton}`}
-                        disabled={disabled || item.mediaId === currentCoverMediaId}
+                        disabled={disabled || persistingGallery || item.mediaId === currentCoverMediaId}
                         onClick={() => onSetAsCover(item)}
                         aria-label={item.mediaId === currentCoverMediaId ? 'Current cover image' : 'Set as cover image'}
                         title={item.mediaId === currentCoverMediaId ? 'Current cover image' : 'Set as cover image'}
@@ -174,7 +201,7 @@ export default function StudioCardFormGallery({
                       <button
                         type="button"
                         className={`${styles.inlineActionButton} ${styles.inlineActionIconButton}`}
-                        disabled={disabled}
+                        disabled={disabled || persistingGallery}
                         onClick={() => setEditingItemId(item.mediaId)}
                         aria-label="Edit gallery item"
                         title="Edit gallery item"
@@ -184,8 +211,8 @@ export default function StudioCardFormGallery({
                       <button
                         type="button"
                         className={`${styles.inlineActionButton} ${styles.inlineActionIconButton}`}
-                        disabled={disabled}
-                        onClick={() => removeFromGallery(item)}
+                        disabled={disabled || persistingGallery}
+                        onClick={() => void removeFromGallery(item)}
                         aria-label="Remove from gallery"
                         title="Remove from gallery"
                       >

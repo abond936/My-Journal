@@ -8,6 +8,7 @@ const dragListeners = {
 };
 
 const mockChrome = jest.fn();
+const mockJournalImage = jest.fn();
 
 jest.mock('@dnd-kit/core', () => ({
   useDraggable: () => ({
@@ -50,7 +51,10 @@ jest.mock('next/navigation', () => ({
 
 jest.mock('@/components/common/JournalImage', () => ({
   __esModule: true,
-  default: () => <div data-testid="journal-image" />,
+  default: (props: Record<string, unknown>) => {
+    mockJournalImage(props);
+    return <div data-testid="journal-image" />;
+  },
 }));
 
 jest.mock('@/components/common/TipTapRenderer', () => ({
@@ -128,6 +132,7 @@ describe('CardAdminGrid', () => {
 
   beforeEach(() => {
     mockChrome.mockClear();
+    mockJournalImage.mockClear();
     dragListeners.onPointerDown.mockClear();
   });
 
@@ -235,5 +240,43 @@ describe('CardAdminGrid', () => {
 
     expect(screen.queryByText('No cover')).not.toBeInTheDocument();
     expect(screen.getByText('Callout body from rich text')).toBeInTheDocument();
+  });
+
+  it('applies cover focal-point positioning to Studio compact-grid thumbnails', () => {
+    render(
+      <CardAdminGrid
+        cards={[
+          {
+            ...baseCard,
+            title: 'Focused cover',
+            coverImageMode: 'fill',
+            coverImageFocalPoint: { x: 1600, y: 200 },
+            coverImage: {
+              docId: 'media-1',
+              storageUrl: 'https://example.com/focused-cover.jpg',
+              width: 2000,
+              height: 1000,
+              objectPosition: '50% 50%',
+            },
+          } as Card,
+        ]}
+        selectedCardIds={new Set()}
+        allTags={[]}
+        onSelectCard={jest.fn()}
+        onSelectAll={jest.fn()}
+        onSaveScrollPosition={jest.fn()}
+        onUpdateCard={jest.fn(async () => {})}
+        onDeleteCard={jest.fn(async () => {})}
+        studioEmbedCellClickSelects
+        compactStudioGrid
+      />
+    );
+
+    const imageProps = mockJournalImage.mock.calls.at(-1)?.[0] as {
+      style?: { objectFit?: string; objectPosition?: string };
+    };
+
+    expect(imageProps.style?.objectFit).toBe('cover');
+    expect(imageProps.style?.objectPosition).not.toBe('50% 50%');
   });
 });

@@ -65,6 +65,13 @@ export type MediaUiError = Error & {
   retryable?: boolean;
 };
 
+export type MediaBulkTagUpdateRequest = {
+  tagIds?: string[];
+  mode?: 'add' | 'replace' | 'remove';
+  subjectTagId?: string | null;
+  subjectTagIdProvided?: boolean;
+};
+
 function toUserFacingError(prefix: string, payload: ApiErrorResponse, fallback: string): MediaUiError {
   const parts: string[] = [];
   if (typeof payload.message === 'string' && payload.message.trim()) {
@@ -89,21 +96,6 @@ function toUserFacingError(prefix: string, payload: ApiErrorResponse, fallback: 
     error.retryable = payload.retryable;
   }
   return error;
-}
-
-function applyMediaTagMutation(
-  existingTags: string[] | undefined,
-  nextTags: string[],
-  mode: 'add' | 'replace' | 'remove'
-): string[] {
-  if (mode === 'replace') return [...nextTags];
-  const tagSet = new Set(existingTags ?? []);
-  if (mode === 'add') {
-    nextTags.forEach((tagId) => tagSet.add(tagId));
-    return Array.from(tagSet);
-  }
-  nextTags.forEach((tagId) => tagSet.delete(tagId));
-  return Array.from(tagSet);
 }
 
 function dedupeMediaByDocId(items: Media[]): Media[] {
@@ -210,8 +202,9 @@ interface MediaContextType {
   updateMedia: (id: string, updates: Partial<Media>) => Promise<Media | undefined>;
   deleteMedia: (id: string) => Promise<void>;
   deleteMultipleMedia: (ids: string[]) => Promise<void>;
-  /** Bulk edit media tags using add|replace|remove semantics. */
-  bulkApplyTags: (mediaIds: string[], tags: string[], mode?: 'add' | 'replace' | 'remove') => Promise<void>;
+  clearError: () => void;
+  /** Bulk edit media tags and/or subject using authoritative server-side derived updates. */
+  bulkApplyTags: (mediaIds: string[], updates: MediaBulkTagUpdateRequest) => Promise<void>;
   registerCreatedMedia: (item: Media) => void;
   reconcileCardMediaAssignments: (
     cardId: string,
@@ -804,27 +797,24 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const deleteMultipleMedia = useCallback(async (ids: string[]) => {
     if (ids.length === 0) return;
 
-    const CONCURRENT_DELETES = 5;
     const deletedIds: string[] = [];
+    let failedCount = 0;
+    let lastError: Error | null = null;
 
     try {
-      for (let i = 0; i < ids.length; i += CONCURRENT_DELETES) {
-        const chunk = ids.slice(i, i + CONCURRENT_DELETES);
-        const results = await Promise.allSettled(
-          chunk.map(async (id) => {
-            const response = await fetch(`/api/images/${id}`, { method: 'DELETE' });
-            if (!response.ok) {
-              const payload = (await response.json().catch(() => ({}))) as ApiErrorResponse;
-              throw toUserFacingError(`Failed to delete ${id}`, payload, response.statusText);
-            }
-            return id;
-          })
-        );
-        results.forEach((r) => {
-          if (r.status === 'fulfilled' && r.value) deletedIds.push(r.value);
-          else if (r.status === 'rejected')
-            setError(r.reason instanceof Error ? r.reason : new Error(String(r.reason)));
-        });
+      setError(null);
+      for (const id of ids) {
+        try {
+          const response = await fetch(`/api/images/${id}`, { method: 'DELETE' });
+          if (!response.ok) {
+            const payload = (await response.json().catch(() => ({}))) as ApiErrorResponse;
+            throw toUserFacingError(`Failed to delete ${id}`, payload, response.statusText);
+          }
+          deletedIds.push(id);
+        } catch (err) {
+          failedCount += 1;
+          lastError = err instanceof Error ? err : new Error(String(err));
+        }
       }
 
       if (deletedIds.length > 0) {
@@ -836,6 +826,24 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         adjustPaginationAfterDelete(deletedIds.length);
 
       }
+      if (failedCount > 0) {
+        if (failedCount === 1 && lastError) {
+          setError(lastError);
+        } else {
+          const aggregate = new Error(
+            `Failed to delete ${failedCount} media item${failedCount === 1 ? '' : 's'}.${
+              lastError ? ` ${lastError.message}` : ''
+            }`
+          ) as MediaUiError;
+          const lastMediaError = lastError as MediaUiError | null;
+          if (lastMediaError?.code) aggregate.code = lastMediaError.code;
+          if (lastMediaError?.severity) aggregate.severity = lastMediaError.severity;
+          if (typeof lastMediaError?.retryable === 'boolean') {
+            aggregate.retryable = lastMediaError.retryable;
+          }
+          setError(aggregate);
+        }
+      }
     } catch (err) {
       const error = err instanceof Error ? err : new Error('An unknown error occurred');
       setError(error);
@@ -843,43 +851,69 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     }
   }, [adjustPaginationAfterDelete, clearMediaQueryCache]);
 
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
   const bulkApplyTags = useCallback(
-    async (mediaIds: string[], tags: string[], mode: 'add' | 'replace' | 'remove' = 'add') => {
+    async (mediaIds: string[], updates: MediaBulkTagUpdateRequest) => {
       if (mediaIds.length === 0) return;
       setError(null);
       try {
+        const payload: {
+          mediaIds: string[];
+          tags?: string[];
+          mode?: 'add' | 'replace' | 'remove';
+          subjectTagId?: string | null;
+        } = { mediaIds };
+
+        if (Object.prototype.hasOwnProperty.call(updates, 'tagIds')) {
+          payload.tags = updates.tagIds ?? [];
+          payload.mode = updates.mode ?? 'add';
+        }
+        if (updates.subjectTagIdProvided) {
+          payload.subjectTagId = updates.subjectTagId ?? null;
+        }
+
         const response = await fetch('/api/admin/media/tags', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mediaIds, tags, mode }),
+          body: JSON.stringify(payload),
         });
         if (!response.ok) {
           const data = (await response.json().catch(() => ({}))) as ApiErrorResponse;
           throw toUserFacingError('Bulk tag update failed', data, response.statusText);
         }
-        const idSet = new Set(mediaIds);
+        const body = (await response.json().catch(() => ({}))) as { media?: Media[] };
+        const updatedItems = Array.isArray(body.media)
+          ? body.media.filter((item): item is Media => Boolean(item?.docId))
+          : [];
         clearMediaQueryCache();
-        setMedia((prev) =>
-          prev.map((item) =>
-            item.docId && idSet.has(item.docId)
-              ? (() => {
-                  const nextItem = {
-                    ...item,
-                    tags: applyMediaTagMutation(item.tags, tags, mode),
-                  };
-                  cacheMediaRecord(nextItem);
-                  return nextItem;
-                })()
-              : item
-          )
-        );
+        if (updatedItems.length > 0) {
+          updatedItems.forEach((item) => cacheMediaRecord(item));
+          const updatedById = new Map(updatedItems.map((item) => [item.docId, item] as const));
+          setMedia((prev) => {
+            const next = prev
+              .map((item) => {
+                if (!item.docId) return item;
+                const updated = updatedById.get(item.docId);
+                if (!updated) return item;
+                return mediaMatchesCurrentView(updated) ? updated : null;
+              })
+              .filter((item): item is Media => Boolean(item?.docId));
+            mediaRef.current = next;
+            return next;
+          });
+        } else {
+          await refreshMedia();
+        }
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
         setError(error);
         throw error;
       }
     },
-    [cacheMediaRecord, clearMediaQueryCache]
+    [cacheMediaRecord, clearMediaQueryCache, mediaMatchesCurrentView, refreshMedia]
   );
 
   const registerCreatedMedia = useCallback(
@@ -1023,6 +1057,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     updateMedia,
     deleteMedia,
     deleteMultipleMedia,
+    clearError,
     bulkApplyTags,
     registerCreatedMedia,
     reconcileCardMediaAssignments,

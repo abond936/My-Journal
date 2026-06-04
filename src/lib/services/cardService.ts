@@ -298,6 +298,82 @@ async function computeCardMediaSignalsFromMediaIds(
   return computeMediaSignalBuckets(Array.from(tagIds), allTags);
 }
 
+async function loadMediaMapByIds(mediaIds: Iterable<string>): Promise<Map<string, Media>> {
+  const uniqueIds = Array.from(
+    new Set(
+      Array.from(mediaIds).filter(
+        (id): id is string => typeof id === 'string' && id.trim().length > 0
+      )
+    )
+  );
+
+  const mediaMap = new Map<string, Media>();
+  if (uniqueIds.length === 0) {
+    return mediaMap;
+  }
+
+  const docs = await Promise.all(
+    uniqueIds.map((id) => firestore.collection(MEDIA_COLLECTION).doc(id).get())
+  );
+
+  docs.forEach((doc) => {
+    if (doc.exists) {
+      mediaMap.set(doc.id, doc.data() as Media);
+    }
+  });
+
+  _applyPublicStorageUrls(mediaMap);
+  return mediaMap;
+}
+
+function computeCardMediaSignalsFromMediaMap(
+  mediaMap: Map<string, Media>,
+  allTags: Tag[]
+): Pick<Card, 'mediaWho' | 'mediaWhat' | 'mediaWhen' | 'mediaWhere'> {
+  const tagIds = new Set<string>();
+  mediaMap.forEach((media) => {
+    for (const tagId of media.tags || []) {
+      if (typeof tagId === 'string' && tagId.trim()) {
+        tagIds.add(tagId);
+      }
+    }
+  });
+  return computeMediaSignalBuckets(Array.from(tagIds), allTags);
+}
+
+function hydrateCardFromMediaMap(card: Card, mediaMap: Map<string, Media>): Card {
+  const hydratedCard = { ...card };
+  if (hydratedCard.coverImageId) {
+    hydratedCard.coverImage = mediaMap.get(hydratedCard.coverImageId) || null;
+    if (hydratedCard.coverImage && !hydratedCard.coverImageFocalPoint) {
+      hydratedCard.coverImageFocalPoint = deriveFocalPointFromObjectPosition(
+        hydratedCard.coverImage.objectPosition || '50% 50%',
+        hydratedCard.coverImage.width,
+        hydratedCard.coverImage.height
+      );
+    }
+  } else {
+    hydratedCard.coverImage = null;
+  }
+  if (hydratedCard.galleryMedia) {
+    hydratedCard.galleryMedia = hydratedCard.galleryMedia.map((item) => ({
+      ...item,
+      media: mediaMap.get(item.mediaId),
+    }));
+  }
+  hydratedCard.displayThumbnail =
+    hydratedCard.coverImage ?? hydratedCard.galleryMedia?.[0]?.media ?? null;
+  hydratedCard.displayThumbnailSource = hydratedCard.coverImage
+    ? 'cover'
+    : hydratedCard.galleryMedia?.[0]?.media
+      ? 'gallery'
+      : null;
+  if (hydratedCard.content) {
+    hydratedCard.content = hydrateContentImageSrc(hydratedCard.content, mediaMap);
+  }
+  return hydratedCard;
+}
+
 async function getExistingMediaDocIdsInTransaction(
   transaction: FirebaseFirestore.Transaction,
   mediaIds: Iterable<string>
@@ -506,62 +582,8 @@ async function _hydrateCards(cards: Card[]): Promise<Card[]> {
     return cards; // No media to hydrate
   }
 
-  // 2. Fetch all media objects using direct doc() lookups
-  const mediaMap = new Map<string, Media>();
-  const mediaIdArray = Array.from(mediaIds).filter(id => id && id.trim() !== '');
-  
-  if (mediaIdArray.length > 0) {
-    // Use Promise.all for concurrent lookups
-    const mediaDocs = await Promise.all(
-      mediaIdArray.map(id => firestore.collection(MEDIA_COLLECTION).doc(id).get())
-    );
-    
-    // Build the media map
-    mediaDocs.forEach(doc => {
-      if (doc.exists) {
-        mediaMap.set(doc.id, doc.data() as Media);
-      }
-    });
-  }
-
-  // 2b. Set storageUrl to permanent public URL (derived from storagePath)
-  _applyPublicStorageUrls(mediaMap);
-  
-  // 3. Inject the full media objects back into each card.
-  return cards.map(card => {
-    const hydratedCard = { ...card };
-    if (hydratedCard.coverImageId) {
-      hydratedCard.coverImage = mediaMap.get(hydratedCard.coverImageId) || null;
-      // Derive coverImageFocalPoint from media when card lacks it (legacy cards or never-set)
-      if (hydratedCard.coverImage && !hydratedCard.coverImageFocalPoint) {
-        hydratedCard.coverImageFocalPoint = deriveFocalPointFromObjectPosition(
-          hydratedCard.coverImage.objectPosition || '50% 50%',
-          hydratedCard.coverImage.width,
-          hydratedCard.coverImage.height
-        );
-      }
-    } else {
-      hydratedCard.coverImage = null;
-    }
-    if (hydratedCard.galleryMedia) {
-      hydratedCard.galleryMedia = hydratedCard.galleryMedia.map(item => ({
-        ...item,
-        media: mediaMap.get(item.mediaId),
-      }));
-    }
-    hydratedCard.displayThumbnail =
-      hydratedCard.coverImage ?? hydratedCard.galleryMedia?.[0]?.media ?? null;
-    hydratedCard.displayThumbnailSource = hydratedCard.coverImage
-      ? 'cover'
-      : hydratedCard.galleryMedia?.[0]?.media
-        ? 'gallery'
-        : null;
-    // Hydrate content for rendering (server-side only)
-    if (hydratedCard.content) {
-      hydratedCard.content = hydrateContentImageSrc(hydratedCard.content, mediaMap);
-    }
-    return hydratedCard;
-  });
+  const mediaMap = await loadMediaMapByIds(mediaIds);
+  return cards.map((card) => hydrateCardFromMediaMap(card, mediaMap));
 }
 
 /**
@@ -944,6 +966,9 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
     const preMediaIds = getMediaIdsFromCard({ ...preSnap.data(), docId: preSnap.id } as Card);
     
     let isClearingCover = false;
+    let responseMediaMap = new Map<string, Media>();
+    let responseCoverImageId: string | null = null;
+    let responseCoverImageFocalPoint: { x: number; y: number } | undefined;
     return withRetry(async () => {
       await firestore.runTransaction(async (transaction) => {
       const docSnap = await transaction.get(docRef);
@@ -1114,7 +1139,8 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         tagPathLookup
       );
       const dimensionSortKeys = computeDimensionSortKeys(finalTags || [], allTagsForJournal);
-      const mediaSignals = await computeCardMediaSignalsFromMediaIds(newMediaIds, allTagsForJournal);
+      responseMediaMap = await loadMediaMapByIds(newMediaIds);
+      const mediaSignals = computeCardMediaSignalsFromMediaMap(responseMediaMap, allTagsForJournal);
       cleanedUpdate.journalWhenSortAsc = journalWhenSort.journalWhenSortAsc;
       cleanedUpdate.journalWhenSortDesc = journalWhenSort.journalWhenSortDesc;
       cleanedUpdate.whoSortKey = dimensionSortKeys.whoSortKey;
@@ -1213,6 +1239,11 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       if (!isClearingCover) {
         if (coverImageId && typeof coverImageId === 'string' && coverImageFocalPoint && 'x' in coverImageFocalPoint && 'y' in coverImageFocalPoint) {
           if (existingReferencedMediaIds.has(coverImageId)) {
+            responseCoverImageId = coverImageId;
+            responseCoverImageFocalPoint = {
+              x: coverImageFocalPoint.x,
+              y: coverImageFocalPoint.y,
+            };
             const coverRef = firestore.collection(MEDIA_COLLECTION).doc(coverImageId);
             transaction.update(coverRef, {
               objectPosition: `${coverImageFocalPoint.x} ${coverImageFocalPoint.y}`,
@@ -1234,10 +1265,22 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         });
       }
 
-      const updatedCard = await getCardById(cardId);
-      if (!updatedCard) {
+      if (responseCoverImageId && responseCoverImageFocalPoint && responseMediaMap.has(responseCoverImageId)) {
+        const cover = responseMediaMap.get(responseCoverImageId)!;
+        responseMediaMap.set(responseCoverImageId, {
+          ...cover,
+          objectPosition: `${responseCoverImageFocalPoint.x} ${responseCoverImageFocalPoint.y}`,
+        });
+      }
+
+      const postSnap = await docRef.get();
+      if (!postSnap.exists) {
         throw new Error(`Failed to fetch updated card with ID ${cardId}`);
       }
+      const updatedCard = hydrateCardFromMediaMap(
+        { ...(postSnap.data() as Card), docId: postSnap.id },
+        responseMediaMap
+      );
 
       void syncCardToTypesense(updatedCard);
 
@@ -1909,6 +1952,7 @@ export async function updateCardContent(
   const allTags = await getAllTags();
 
   return withRetry(async () => {
+    let responseMediaMap = new Map<string, Media>();
     await firestore.runTransaction(async (transaction) => {
       const docSnap = await transaction.get(docRef);
       if (!docSnap.exists) {
@@ -1934,7 +1978,8 @@ export async function updateCardContent(
         transaction,
         [...mediaRemoved, ...mediaAdded]
       );
-      const mediaSignals = await computeCardMediaSignalsFromMediaIds(nextMediaIds, allTags);
+      responseMediaMap = await loadMediaMapByIds(nextMediaIds);
+      const mediaSignals = computeCardMediaSignalsFromMediaMap(responseMediaMap, allTags);
 
       for (const mediaId of mediaRemoved) {
         if (!existingReferencedMediaIds.has(mediaId)) continue;
@@ -1970,10 +2015,14 @@ export async function updateCardContent(
       });
     });
 
-    const updatedCard = await getCardById(cardId);
-    if (!updatedCard) {
+    const postSnap = await docRef.get();
+    if (!postSnap.exists) {
       throw new Error(`Failed to fetch updated card with ID ${cardId}`);
     }
+    const updatedCard = hydrateCardFromMediaMap(
+      { ...(postSnap.data() as Card), docId: postSnap.id },
+      responseMediaMap
+    );
 
     void syncCardToTypesense(updatedCard);
     const postMediaIds = getMediaIdsFromCard(updatedCard);

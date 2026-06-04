@@ -390,6 +390,9 @@ const CardForm: React.FC = () => {
           return false;
         }
         commitGalleryMediaPersisted(normalized);
+        if (studioShell?.selectedCardId === docId) {
+          void studioShell.loadSelectedCard(docId, { quiet: true });
+        }
         return true;
       } catch (e) {
         console.error('[persistGalleryAfterSlotSave]', e);
@@ -400,7 +403,7 @@ const CardForm: React.FC = () => {
         return false;
       }
     },
-    [cardData, commitGalleryMediaPersisted, feedback]
+    [cardData, commitGalleryMediaPersisted, feedback, studioShell]
   );
 
   const handleSetGalleryItemAsCover = useCallback(
@@ -1235,6 +1238,7 @@ const CardForm: React.FC = () => {
                 onSetAsCover={handleSetGalleryItemAsCover}
                 currentCoverMediaId={cardData.coverImageId || null}
                 onOpenMediaEditor={studioShell?.openSelectedCardMediaEditor}
+                onPersistGalleryAfterSlotSave={persistGalleryAfterSlotSave}
               />
             ) : (
               <GalleryManager

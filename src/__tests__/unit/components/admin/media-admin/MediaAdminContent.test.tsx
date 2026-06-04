@@ -1,5 +1,6 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import MediaAdminContent from '@/app/admin/media-admin/MediaAdminContent';
 
 const useMediaMock = jest.fn();
@@ -48,7 +49,13 @@ jest.mock('@/components/admin/media-admin/MediaLocalImportDialog', () => ({
 
 jest.mock('@/components/admin/card-admin/EditModal', () => ({
   __esModule: true,
-  default: () => null,
+  default: ({
+    isOpen,
+    children,
+  }: {
+    isOpen?: boolean;
+    children?: React.ReactNode;
+  }) => (isOpen ? <div>{children}</div> : null),
 }));
 
 jest.mock('@/components/admin/card-admin/MacroTagSelector', () => ({
@@ -99,6 +106,7 @@ const baseMediaContext = {
   selectedMediaIds: [],
   selectNone: jest.fn(),
   deleteMultipleMedia: jest.fn(async () => undefined),
+  clearError: jest.fn(),
   setSelectedMediaIds: jest.fn(),
   dimensionalQueryOverlay: {},
   setDimensionalQueryOverlay: jest.fn(),
@@ -145,9 +153,9 @@ describe('MediaAdminContent', () => {
     render(<MediaAdminContent embedded />);
 
     expect(screen.getByTestId('media-grid')).toBeInTheDocument();
-    expect(screen.queryByText('Load more')).not.toBeInTheDocument();
     expect(screen.queryByText('Scrolling newest first')).not.toBeInTheDocument();
     expect(screen.queryByText(/filtered results continue as you scroll/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Load more' })).toBeInTheDocument();
   });
 
   it('collapses the bulk media action bar when nothing is selected', () => {
@@ -167,6 +175,49 @@ describe('MediaAdminContent', () => {
 
     expect(screen.getByText('2 media selected')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Create card' })).toBeInTheDocument();
+  });
+
+  it('keeps the grid visible for operation errors and lets the user dismiss the banner', async () => {
+    const clearError = jest.fn();
+    useMediaMock.mockReturnValue({
+      ...baseMediaContext,
+      error: new Error('Failed to delete media'),
+      clearError,
+    });
+
+    render(<MediaAdminContent embedded />);
+
+    expect(screen.getByText('Failed to delete media')).toBeInTheDocument();
+    expect(screen.getByTestId('media-grid')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    expect(clearError).toHaveBeenCalled();
+  });
+
+  it('refreshes the selected Studio card after bulk delete so Compose reflects the cleaned assignments', async () => {
+    const deleteMultipleMedia = jest.fn(async () => undefined);
+    const loadSelectedCard = jest.fn(async () => undefined);
+    useMediaMock.mockReturnValue({
+      ...baseMediaContext,
+      selectedMediaIds: ['media-1', 'media-2'],
+      deleteMultipleMedia,
+    });
+    useStudioShellOptionalMock.mockReturnValue({
+      selectedCardId: 'card-1',
+      loadSelectedCard,
+      selectedPreview: { docId: 'card-1', title: 'Card One', type: 'story', status: 'draft' },
+      selectedDetail: null,
+    });
+
+    render(<MediaAdminContent embedded />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    await userEvent.click(screen.getAllByRole('button', { name: 'Delete' })[1]!);
+
+    await waitFor(() => expect(deleteMultipleMedia).toHaveBeenCalledWith(['media-1', 'media-2']));
+    await waitFor(() =>
+      expect(loadSelectedCard).toHaveBeenCalledWith('card-1', { quiet: true })
+    );
   });
 
   it('does not refetch the same assigned-only media records after they have already been hydrated once', async () => {
@@ -214,7 +265,7 @@ describe('MediaAdminContent', () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
   });
 
-  it('disconnects the embedded load-more observer when Show only assigned takes over the pane', async () => {
+  it('does not arm the embedded load-more observer at all in Studio mode', async () => {
     const observe = jest.fn();
     const disconnect = jest.fn();
     const previousIntersectionObserver = global.IntersectionObserver;
@@ -243,11 +294,9 @@ describe('MediaAdminContent', () => {
     try {
       render(<MediaAdminContent embedded />);
 
-      await waitFor(() => expect(observe).toHaveBeenCalled());
-
-      fireEvent.click(screen.getByLabelText('Show only assigned'));
-
-      await waitFor(() => expect(disconnect).toHaveBeenCalled());
+      await waitFor(() => expect(screen.getByTestId('media-grid')).toBeInTheDocument());
+      expect(observe).not.toHaveBeenCalled();
+      expect(disconnect).not.toHaveBeenCalled();
     } finally {
       global.IntersectionObserver = previousIntersectionObserver;
     }

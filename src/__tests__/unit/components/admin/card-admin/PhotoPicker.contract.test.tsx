@@ -5,6 +5,8 @@ import userEvent from '@testing-library/user-event';
 import PhotoPicker from '@/components/admin/card-admin/PhotoPicker';
 import MediaLocalImportDialog from '@/components/admin/media-admin/MediaLocalImportDialog';
 
+const showToastMock = jest.fn();
+
 jest.mock('next/image', () => {
   return function MockImage({
     src,
@@ -23,6 +25,16 @@ jest.mock('@/components/providers/TagProvider', () => ({
   useTag: () => ({ tags: [] }),
 }));
 
+jest.mock('@/components/providers/AppFeedbackProvider', () => ({
+  useAppFeedback: () => ({
+    showToast: showToastMock,
+    showSuccess: jest.fn(),
+    showError: jest.fn(),
+    confirm: jest.fn(),
+    alert: jest.fn(),
+  }),
+}));
+
 describe('media picker ownership boundaries', () => {
   const folderTree = [
     {
@@ -31,10 +43,40 @@ describe('media picker ownership boundaries', () => {
       children: [{ id: 'folder-1/child-a', name: 'Child A', children: [] }],
     },
   ];
+  let localImportPayload: {
+    results: Array<{ sourcePath: string; mediaId: string; media: Record<string, unknown>; skipped?: boolean }>;
+    errors: Array<{ sourcePath: string; message: string }>;
+    metadataReadIssues?: Array<{ sourcePath: string; message: string }>;
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
     window.localStorage.clear();
+    localImportPayload = {
+      results: [
+        {
+          sourcePath: 'folder-1/photo-1.jpg',
+          mediaId: 'media-existing-1',
+          skipped: true,
+          media: {
+            docId: 'media-existing-1',
+            filename: 'photo-1.jpg',
+            width: 100,
+            height: 100,
+            size: 1000,
+            contentType: 'image/jpeg',
+            storageUrl: 'https://example.com/photo-1.jpg',
+            storagePath: 'images/photo-1.jpg',
+            source: 'local',
+            sourcePath: 'folder-1/photo-1.jpg',
+            objectPosition: '50% 50%',
+            createdAt: 1,
+            updatedAt: 1,
+          },
+        },
+      ],
+      errors: [],
+    };
     global.fetch = jest.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url === '/api/images/local/folder-tree') {
@@ -89,6 +131,13 @@ describe('media picker ownership boundaries', () => {
             }),
         } as Response);
       }
+      if (url === '/api/images/local/import') {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(localImportPayload),
+          text: () => Promise.resolve(''),
+        } as Response);
+      }
       throw new Error(`Unexpected fetch: ${url}`);
     }) as jest.Mock;
   });
@@ -129,6 +178,7 @@ describe('media picker ownership boundaries', () => {
         (global.fetch as jest.Mock).mock.calls.some((call) => String(call[0]).startsWith('/api/media?'))
       ).toBe(true);
     });
+    expect(screen.getByPlaceholderText('Search filename, caption, tags, path...')).toBeInTheDocument();
   });
 
   it('keeps the Media local import dialog source-only and never touches library fetches', async () => {
@@ -215,5 +265,67 @@ describe('media picker ownership boundaries', () => {
       expect(global.fetch).toHaveBeenCalledWith('/api/images/local/folder-tree');
     });
     expect(screen.queryByText('Child A')).not.toBeInTheDocument();
+  });
+
+  it('reuses an existing local-source media record in the shared picker and shows a duplicate notice', async () => {
+    const onSelect = jest.fn();
+    render(
+      <PhotoPicker
+        isOpen
+        onClose={jest.fn()}
+        onSelect={onSelect}
+        initialMode="single"
+      />
+    );
+
+    expect(await screen.findByAltText('photo-1.jpg')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByAltText('photo-1.jpg'));
+
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/images/local/import',
+        expect.objectContaining({ method: 'POST' })
+      )
+    );
+    await waitFor(() =>
+      expect(onSelect).toHaveBeenCalledWith(
+        expect.objectContaining({ docId: 'media-existing-1', sourcePath: 'folder-1/photo-1.jpg' })
+      )
+    );
+    expect(showToastMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Already in library',
+        tone: 'info',
+      })
+    );
+  });
+
+  it('reuses existing local-source media in the Media import dialog and shows a duplicate notice', async () => {
+    const onImportComplete = jest.fn();
+    render(
+      <MediaLocalImportDialog
+        isOpen
+        onClose={jest.fn()}
+        onImportComplete={onImportComplete}
+      />
+    );
+
+    expect(await screen.findByAltText('photo-1.jpg')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByAltText('photo-1.jpg'));
+    await userEvent.click(screen.getByRole('button', { name: 'Import 1 photo' }));
+
+    await waitFor(() =>
+      expect(onImportComplete).toHaveBeenCalledWith([
+        expect.objectContaining({ docId: 'media-existing-1', sourcePath: 'folder-1/photo-1.jpg' }),
+      ])
+    );
+    expect(showToastMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Already in library',
+        tone: 'info',
+      })
+    );
   });
 });

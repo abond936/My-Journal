@@ -8,6 +8,8 @@ import { useMedia } from '@/components/providers/MediaProvider';
 import type { Media } from '@/lib/types/photo';
 import { createUITreeFromDimensions, filterTreesBySearch } from '@/lib/utils/tagUtils';
 import type { TagWithChildren } from '@/components/providers/TagProvider';
+import { buildResolvedTagDimensionMap, buildTagByIdMap, getTagPathDisplay } from '@/lib/utils/tagDimensionResolve';
+import { DIMENSION_LABEL, DIMENSION_ORDER, type TagDimension } from '@/lib/utils/tagDisplay';
 import styles from '@/components/admin/card-admin/BulkEditTagsModal.module.css';
 
 interface BulkEditMediaTagsModalProps {
@@ -30,6 +32,10 @@ export default function BulkEditMediaTagsModal({
   const [selectedMedia, setSelectedMedia] = useState<Media[]>([]);
   const [tagDecisions, setTagDecisions] = useState<Map<string, boolean>>(new Map());
   const [searchTerm, setSearchTerm] = useState('');
+  const [subjectDecision, setSubjectDecision] = useState<{ touched: boolean; value: string | null }>({
+    touched: false,
+    value: null,
+  });
 
   const mediaIdsKey = useMemo(() => [...new Set(mediaIds)].sort().join('\u001e'), [mediaIds]);
 
@@ -39,6 +45,7 @@ export default function BulkEditMediaTagsModal({
       setSelectedMedia([]);
       setTagDecisions(new Map());
       setSearchTerm('');
+      setSubjectDecision({ touched: false, value: null });
       return;
     }
 
@@ -72,6 +79,7 @@ export default function BulkEditMediaTagsModal({
         if (cancelled) return;
         setSelectedMedia(fetched.filter((item): item is Media => Boolean(item?.docId)));
         setTagDecisions(new Map());
+        setSubjectDecision({ touched: false, value: null });
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : 'An unknown error occurred.');
@@ -111,6 +119,21 @@ export default function BulkEditMediaTagsModal({
     return counts;
   }, [selectedMedia]);
 
+  const subjectConsensus = useMemo(() => {
+    const normalized = selectedMedia.map((item) => {
+      const raw = item.subjectTagId;
+      if (typeof raw !== 'string') return null;
+      const trimmed = raw.trim();
+      return trimmed.length > 0 ? trimmed : null;
+    });
+    if (normalized.length === 0) {
+      return { mixed: false, value: null as string | null };
+    }
+    const first = normalized[0] ?? null;
+    const mixed = normalized.some((value) => value !== first);
+    return { mixed, value: mixed ? null : first };
+  }, [selectedMedia]);
+
   const getSelectionState = React.useCallback(
     (tagId: string): 'checked' | 'unchecked' | 'mixed' => {
       const explicit = tagDecisions.get(tagId);
@@ -130,6 +153,49 @@ export default function BulkEditMediaTagsModal({
     }
     return selected;
   }, [allTags, getSelectionState]);
+
+  const tagById = useMemo(() => buildTagByIdMap(allTags || []), [allTags]);
+  const resolvedDimension = useMemo(
+    () => buildResolvedTagDimensionMap(allTags || []),
+    [allTags]
+  );
+  const subjectOptions = useMemo(() => {
+    const rows = Array.from(checkedSelection)
+      .map((tagId) => {
+        const tag = tagById.get(tagId);
+        if (!tag) return null;
+        const dimension = resolvedDimension.get(tagId);
+        if (!dimension) return null;
+        return {
+          tagId,
+          dimension,
+          label: getTagPathDisplay(tag, tagById),
+        };
+      })
+      .filter(
+        (row): row is { tagId: string; dimension: TagDimension; label: string } => Boolean(row)
+      );
+
+    rows.sort((a, b) => {
+      const dimensionOrder = DIMENSION_ORDER.indexOf(a.dimension) - DIMENSION_ORDER.indexOf(b.dimension);
+      if (dimensionOrder !== 0) return dimensionOrder;
+      return a.label.localeCompare(b.label);
+    });
+    return rows;
+  }, [checkedSelection, resolvedDimension, tagById]);
+
+  useEffect(() => {
+    if (!subjectDecision.touched) return;
+    if (!subjectDecision.value) return;
+    if (checkedSelection.has(subjectDecision.value)) return;
+    setSubjectDecision({ touched: true, value: null });
+  }, [checkedSelection, subjectDecision]);
+
+  const subjectSelectValue = subjectDecision.touched
+    ? subjectDecision.value ?? ''
+    : subjectConsensus.mixed
+      ? '__mixed__'
+      : (subjectConsensus.value ?? '');
 
   const expandedNodeIds = useMemo(() => {
     const expanded = new Set<string>();
@@ -163,10 +229,16 @@ export default function BulkEditMediaTagsModal({
         .map(([tagId]) => tagId);
 
       if (removeTagIds.length > 0) {
-        await bulkApplyTags(mediaIds, removeTagIds, 'remove');
+        await bulkApplyTags(mediaIds, { tagIds: removeTagIds, mode: 'remove' });
       }
       if (addTagIds.length > 0) {
-        await bulkApplyTags(mediaIds, addTagIds, 'add');
+        await bulkApplyTags(mediaIds, { tagIds: addTagIds, mode: 'add' });
+      }
+      if (subjectDecision.touched) {
+        await bulkApplyTags(mediaIds, {
+          subjectTagId: subjectDecision.value,
+          subjectTagIdProvided: true,
+        });
       }
 
       await onSave({ mediaIds, addTagIds, removeTagIds });
@@ -232,6 +304,39 @@ export default function BulkEditMediaTagsModal({
               x
             </button>
           ) : null}
+        </div>
+
+        <div className={styles.subjectSection}>
+          <label htmlFor="bulk-media-subject" className={styles.subjectLabel}>
+            Subject tag
+          </label>
+          <select
+            id="bulk-media-subject"
+            className={styles.subjectSelect}
+            value={subjectSelectValue}
+            onChange={(event) => {
+              const nextValue = event.target.value;
+              if (nextValue === '__mixed__') return;
+              setSubjectDecision({
+                touched: true,
+                value: nextValue ? nextValue : null,
+              });
+            }}
+            disabled={isLoading || tagsLoading}
+          >
+            {!subjectDecision.touched && subjectConsensus.mixed ? (
+              <option value="__mixed__">Keep mixed existing subjects</option>
+            ) : null}
+            <option value="">No subject</option>
+            {subjectOptions.map((option) => (
+              <option key={option.tagId} value={option.tagId}>
+                {DIMENSION_LABEL[option.dimension]}: {option.label}
+              </option>
+            ))}
+          </select>
+          <p className={styles.subjectHelp}>
+            Subject must be one of the tags assigned to every selected media item after this edit.
+          </p>
         </div>
 
         {isLoading || tagsLoading ? (

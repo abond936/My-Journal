@@ -88,6 +88,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     selectedMediaIds,
     selectNone,
     deleteMultipleMedia,
+    clearError,
     setSelectedMediaIds,
     dimensionalQueryOverlay,
     setDimensionalQueryOverlay,
@@ -102,6 +103,9 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const handleBulkDelete = async () => {
     if (selectedMediaIds.length === 0) return;
     await deleteMultipleMedia(selectedMediaIds);
+    if (studioShell?.selectedCardId) {
+      void studioShell.loadSelectedCard(studioShell.selectedCardId, { quiet: true });
+    }
     setBulkDeleteModalOpen(false);
   };
 
@@ -384,6 +388,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   }, []);
 
   useEffect(() => {
+    if (embedded) return;
     const node = loadMoreRef.current;
     if (!node || !hasMore || importPickerOpen || loadMoreError || showOnlyAssigned) return;
     if (typeof IntersectionObserver === 'undefined') return;
@@ -394,7 +399,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
         if (loading || loadingMore) return;
         void loadMore();
       },
-      { rootMargin: embedded ? '1200px 0px' : '480px 0px' }
+      { rootMargin: '480px 0px' }
     );
     observer.observe(node);
     return () => observer.disconnect();
@@ -404,11 +409,22 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     <>
       {loading && media.length === 0 && <p>Loading media...</p>}
       {showOnlyAssigned && assignedOnlyLoading ? <p>Loading assigned media...</p> : null}
-      {error && (
-        <p className={errorSeverity === 'warning' ? styles.warning : styles.error}>{error.message}</p>
-      )}
+      {error ? (
+        <div className={errorSeverity === 'warning' ? styles.warning : styles.error}>
+          <div className={styles.errorBanner}>
+            <span>{error.message}</span>
+            <button
+              type="button"
+              onClick={clearError}
+              className={styles.errorDismissButton}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      ) : null}
 
-      {!error && !showOnlyAssigned && (
+      {!showOnlyAssigned && (
         <MediaAdminGrid
           sourcePathFirst={duplicateTriageMode}
           dimensionFilters={dimensionFilters}
@@ -420,7 +436,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
           onVisibleHighlightedCountChange={setVisibleAssignedCount}
         />
       )}
-      {!error && showOnlyAssigned && !assignedOnlyLoading ? (
+      {showOnlyAssigned && !assignedOnlyLoading ? (
         <MediaAdminGrid
           mediaOverride={assignedOnlyResolvedMedia}
           emptyMessage="No media are assigned to the current card."
@@ -435,9 +451,9 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
         />
       ) : null}
 
-      {!showOnlyAssigned && ((!embedded && (pagination || hasMore || loadingMore)) || loadMoreError) && (
+      {!showOnlyAssigned && ((pagination || hasMore || loadingMore) || loadMoreError) && (
           <div className={styles.pagination}>
-            {!embedded && hasMore ? (
+            {hasMore ? (
               <button
                 type="button"
                 onClick={() => void loadMore()}
@@ -456,7 +472,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                 )}
               </span>
             ) : null}
-            {!embedded && !hasMore ? (
+            {!hasMore && !embedded ? (
               <span className={styles.paginationHint}>End of loaded results</span>
             ) : null}
             {loadMoreError ? (
@@ -466,7 +482,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
             ) : null}
           </div>
         )}
-      {!showOnlyAssigned ? <div ref={loadMoreRef} aria-hidden="true" /> : null}
+      {!showOnlyAssigned && !embedded ? <div ref={loadMoreRef} aria-hidden="true" /> : null}
     </>
   );
 

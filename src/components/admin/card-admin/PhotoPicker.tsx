@@ -8,6 +8,7 @@ import { HydratedGalleryMediaItem } from '@/lib/types/card';
 import { getStudioDisplayUrl } from '@/lib/utils/photoUtils';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { useTag } from '@/components/providers/TagProvider';
+import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import {
   appendDimensionalTagQueryParams,
   groupSelectedTagIdsByDimension,
@@ -140,6 +141,7 @@ export default function PhotoPicker({
   filterTagIds,
 }: PhotoPickerProps) {
   const { tags: allTags } = useTag();
+  const feedback = useAppFeedback();
 
   const [sourceTab, setSourceTab] = useState<SourceTab>('local');
 
@@ -342,7 +344,7 @@ export default function PhotoPicker({
         let anyMetadataReadIssue = false;
 
         type BatchImportResponse = {
-          results: { sourcePath: string; mediaId: string; media: Media }[];
+          results: { sourcePath: string; mediaId: string; media: Media; skipped?: boolean }[];
           errors: { sourcePath: string; message: string }[];
           metadataReadIssues?: { sourcePath: string; message: string }[];
         };
@@ -370,6 +372,17 @@ export default function PhotoPicker({
           const data = (await response.json()) as BatchImportResponse;
           for (const e of data.errors ?? []) {
             importFailures.push({ sourcePath: e.sourcePath, message: e.message });
+          }
+          const skippedCount = (data.results ?? []).filter((result) => result.skipped === true).length;
+          if (skippedCount > 0) {
+            feedback.showToast({
+              title: 'Already in library',
+              tone: 'info',
+              message:
+                skippedCount === 1
+                  ? 'That image source path already exists, so the existing media record was reused.'
+                  : `${skippedCount} image source paths already existed, so the existing media records were reused.`,
+            });
           }
 
           const metaIssues = data.metadataReadIssues ?? [];
@@ -436,7 +449,7 @@ export default function PhotoPicker({
         setImportElapsedSec(0);
       }
     },
-    [mode, onSelect, onMultiSelect, onClose, readEmbeddedMetadata]
+    [feedback, mode, onSelect, onMultiSelect, onClose, readEmbeddedMetadata]
   );
 
   const completeLibrarySelection = useCallback(() => {
@@ -959,7 +972,7 @@ export default function PhotoPicker({
               <input
                 type="search"
                 className={styles.librarySearchInput}
-                placeholder="Search filename, caption, path…"
+                placeholder="Search filename, caption, tags, path..."
                 value={librarySearchDraft}
                 onChange={e => handleLibrarySearchInputChange(e.target.value)}
                 onKeyDown={e => {
@@ -975,8 +988,8 @@ export default function PhotoPicker({
               </button>
             </div>
             <p className={styles.libraryHint}>
-              Search updates as you type (short delay). Same non-tag filters as Media admin. Tag filter and
-              optional &quot;Match card tags&quot; are in the section above.
+              Search updates as you type (short delay). Text search matches filename, caption, tags, and path.
+              Dimensional tag filter and optional &quot;Match card tags&quot; are in the section above.
             </p>
             </div>
 

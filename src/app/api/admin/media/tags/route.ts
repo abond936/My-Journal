@@ -40,10 +40,17 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json() as { mediaIds?: unknown; tags?: unknown; mode?: unknown };
+    const body = await request.json() as {
+      mediaIds?: unknown;
+      tags?: unknown;
+      mode?: unknown;
+      subjectTagId?: unknown;
+    };
     const mediaIds = body.mediaIds;
+    const tagsProvided = Object.prototype.hasOwnProperty.call(body, 'tags');
     const tags = body.tags;
     const mode = body.mode;
+    const subjectTagIdProvided = Object.prototype.hasOwnProperty.call(body, 'subjectTagId');
     if (!Array.isArray(mediaIds) || mediaIds.length === 0) {
       return errorResponse(
         {
@@ -56,7 +63,19 @@ export async function POST(request: NextRequest) {
         400
       );
     }
-    if (!Array.isArray(tags)) {
+    if (!tagsProvided && !subjectTagIdProvided) {
+      return errorResponse(
+        {
+          ok: false,
+          code: 'MEDIA_TAGS_UPDATES_REQUIRED',
+          message: 'Provide tags and/or subjectTagId.',
+          severity: 'error',
+          retryable: false,
+        },
+        400
+      );
+    }
+    if (tagsProvided && !Array.isArray(tags)) {
       return errorResponse(
         {
           ok: false,
@@ -80,8 +99,24 @@ export async function POST(request: NextRequest) {
         400
       );
     }
+    if (
+      subjectTagIdProvided &&
+      body.subjectTagId !== null &&
+      typeof body.subjectTagId !== 'string'
+    ) {
+      return errorResponse(
+        {
+          ok: false,
+          code: 'MEDIA_TAGS_SUBJECT_INVALID',
+          message: 'subjectTagId must be a string or null.',
+          severity: 'error',
+          retryable: false,
+        },
+        400
+      );
+    }
     const ids = mediaIds.filter((id): id is string => typeof id === 'string' && id.length > 0);
-    const tagList = tags.filter((id): id is string => typeof id === 'string');
+    const tagList = Array.isArray(tags) ? tags.filter((id): id is string => typeof id === 'string') : undefined;
     const effectiveMode = (mode === 'replace' || mode === 'remove' || mode === 'add') ? mode : 'add';
     if (ids.length === 0) {
       return errorResponse(
@@ -96,12 +131,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { updatedIds } = await bulkApplyMediaTags(ids, tagList, effectiveMode);
+    const { updatedIds, updatedMedia } = await bulkApplyMediaTags(ids, {
+      ...(tagsProvided ? { tagIds: tagList ?? [], mode: effectiveMode } : {}),
+      ...(subjectTagIdProvided
+        ? { subjectTagId: typeof body.subjectTagId === 'string' ? body.subjectTagId.trim() : null, subjectTagIdProvided: true }
+        : {}),
+    });
     if (updatedIds.length) {
       await recomputeCardsMediaSignalsForMediaIds(updatedIds);
     }
 
-    return NextResponse.json({ ok: true, updated: updatedIds.length, mode: effectiveMode });
+    return NextResponse.json({
+      ok: true,
+      updated: updatedIds.length,
+      mode: effectiveMode,
+      media: updatedMedia,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[POST /api/admin/media/tags]', message);

@@ -47,7 +47,15 @@ const baseMedia = (overrides: Partial<Media> = {}): Media => ({
 });
 
 function MediaHarness() {
-  const { media, fetchMedia, loadMore, updateMedia, setDimensionalQueryOverlay } = useMedia();
+  const {
+    media,
+    fetchMedia,
+    loadMore,
+    updateMedia,
+    setDimensionalQueryOverlay,
+    bulkApplyTags,
+    deleteMultipleMedia,
+  } = useMedia();
 
   const siblingsOverlay: DimensionalTagIdMap = {
     who: ['siblings'],
@@ -88,6 +96,20 @@ function MediaHarness() {
       </button>
       <button type="button" onClick={() => void updateMedia('media-1', { subjectTagId: null })}>
         Clear Subject
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          void bulkApplyTags(['media-1'], {
+            subjectTagId: 'siblings',
+            subjectTagIdProvided: true,
+          })
+        }
+      >
+        Bulk Subject
+      </button>
+      <button type="button" onClick={() => void deleteMultipleMedia(['media-1', 'media-2'])}>
+        Delete Multiple
       </button>
     </div>
   );
@@ -181,6 +203,75 @@ describe('MediaProvider', () => {
 
     await waitFor(() => expect(screen.getByTestId('media-ids').textContent).toBe('media-1'));
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('deletes bulk-selected media sequentially so shared card cleanup cannot race across requests', async () => {
+    let resolveFirstDelete: ((value: Response | PromiseLike<Response>) => void) | null = null;
+    fetchMock.mockImplementation((input, init) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url === '/api/media?limit=50') {
+        return okJson({
+          media: [baseMedia({ docId: 'media-1' }), baseMedia({ docId: 'media-2', filename: 'second.jpg' })],
+          pagination: {
+            page: 1,
+            limit: 50,
+            total: 2,
+            totalPages: 1,
+            hasNext: false,
+            hasPrev: false,
+            nextCursor: null,
+            prevCursor: null,
+          },
+        });
+      }
+      if (url === '/api/images/media-1' && init?.method === 'DELETE') {
+        return new Promise((resolve) => {
+          resolveFirstDelete = resolve;
+        });
+      }
+      if (url === '/api/images/media-2' && init?.method === 'DELETE') {
+        return okJson({ ok: true });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    render(
+      <MediaProvider>
+        <MediaHarness />
+      </MediaProvider>
+    );
+
+    fireEvent.click(screen.getByText('Load Default'));
+    await waitFor(() => expect(screen.getByTestId('media-ids').textContent).toBe('media-1,media-2'));
+
+    fireEvent.click(screen.getByText('Delete Multiple'));
+
+    await waitFor(() => {
+      const firstDeleteCalls = fetchMock.mock.calls.filter(
+        ([url, init]) => url === '/api/images/media-1' && init?.method === 'DELETE'
+      );
+      expect(firstDeleteCalls).toHaveLength(1);
+    });
+    expect(
+      fetchMock.mock.calls.filter(
+        ([url, init]) => url === '/api/images/media-2' && init?.method === 'DELETE'
+      )
+    ).toHaveLength(0);
+
+    resolveFirstDelete?.({
+      ok: true,
+      statusText: 'OK',
+      json: async () => ({ ok: true }),
+    } as Response);
+
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(
+          ([url, init]) => url === '/api/images/media-2' && init?.method === 'DELETE'
+        )
+      ).toHaveLength(1)
+    );
+    await waitFor(() => expect(screen.getByTestId('media-ids').textContent).toBe(''));
   });
 
   it('reuses an in-flight prefetched next page instead of issuing the same cursor request twice', async () => {
@@ -284,6 +375,60 @@ describe('MediaProvider', () => {
         expect.objectContaining({ signal: expect.any(AbortSignal) })
       );
     });
+  });
+
+  it('reconciles subject-only bulk media edits into the local working set immediately', async () => {
+    fetchMock.mockImplementation((input) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url === '/api/admin/media/tags') {
+        return okJson({
+          ok: true,
+          updated: 1,
+          mode: 'add',
+          media: [baseMedia({ docId: 'media-1', subjectTagId: 'siblings', subjectFilterTags: { siblings: true } })],
+        });
+      }
+      if (url.startsWith('/api/media?')) {
+        return okJson({
+          media: [baseMedia({ docId: 'media-1' })],
+          pagination: {
+            page: 1,
+            limit: 50,
+            total: 1,
+            totalPages: 1,
+            hasNext: false,
+            hasPrev: false,
+            nextCursor: null,
+            prevCursor: null,
+          },
+        });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    render(
+      <MediaProvider>
+        <MediaHarness />
+      </MediaProvider>
+    );
+
+    fireEvent.click(screen.getByText('Load Default'));
+    await waitFor(() => expect(screen.getByTestId('media-ids').textContent).toBe('media-1'));
+
+    fireEvent.click(screen.getByText('Bulk Subject'));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/admin/media/tags', expect.objectContaining({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mediaIds: ['media-1'],
+          subjectTagId: 'siblings',
+        }),
+      }));
+    });
+    await waitFor(() => expect(screen.getByTestId('media-ids').textContent).toBe('media-1'));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it('removes captioned media from a delivered "without caption" working set after edit', async () => {

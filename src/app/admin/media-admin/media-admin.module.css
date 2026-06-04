@@ -725,6 +725,25 @@
   margin: var(--spacing-md) 0;
 }
 
+.errorBanner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
+.errorDismissButton {
+  flex: 0 0 auto;
+  border: var(--border-width-thin) solid currentColor;
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: inherit;
+  padding: 0.2rem 0.55rem;
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  line-height: 1.2;
+}
+
 @media (max-width: 768px) {
   .container {
     padding: var(--spacing-md);

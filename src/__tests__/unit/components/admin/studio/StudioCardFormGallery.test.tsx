@@ -82,4 +82,22 @@ describe('StudioCardFormGallery modal contract', () => {
     expect(screen.getByRole('button', { name: 'Use media default crop' })).toBeInTheDocument();
     expect(screen.queryByPlaceholderText('Optional caption for this slot on the card')).not.toBeInTheDocument();
   });
+
+  it('persists gallery removal immediately through the shared gallery save path', async () => {
+    const onPersistGalleryAfterSlotSave = jest.fn(async () => true);
+
+    render(
+      <StudioCardFormGallery
+        disabled={false}
+        onSetAsCover={jest.fn()}
+        currentCoverMediaId={null}
+        onPersistGalleryAfterSlotSave={onPersistGalleryAfterSlotSave}
+      />
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Remove from gallery' }));
+
+    expect(mockSetField).toHaveBeenCalledWith('galleryMedia', []);
+    expect(onPersistGalleryAfterSlotSave).toHaveBeenCalledWith([]);
+  });
 });

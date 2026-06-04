@@ -33,6 +33,10 @@ import {
 } from '@/lib/dnd/collectionsDragContract';
 import type { StudioCatalogCard } from '@/components/admin/studio/studioCardTypes';
 import UtilityCardPreview from '@/components/admin/card-admin/UtilityCardPreview';
+import {
+  getObjectPositionForAspectRatio,
+  getObjectPositionFromFocalPoint,
+} from '@/lib/utils/objectPositionUtils';
 
 interface CardAdminGridProps {
   cards: Card[];
@@ -85,6 +89,38 @@ function coverAspectStyle(cover: Card['coverImage'], uniform = false): React.CSS
 function previewImage(card: Card): Card['coverImage'] {
   const studioCard = card as Card & Partial<StudioCatalogCard>;
   return card.coverImage ?? studioCard.displayThumbnail ?? null;
+}
+
+function getPreviewObjectFit(card: Card, preview: Card['coverImage']): 'cover' | 'contain' {
+  if (!preview) return 'cover';
+  if (card.coverImage?.docId && preview.docId === card.coverImage.docId && card.coverImageMode === 'fit') {
+    return 'contain';
+  }
+  return 'cover';
+}
+
+function getPreviewObjectPosition(
+  card: Card,
+  preview: Card['coverImage'],
+  compactStudioGrid: boolean
+): string {
+  if (!preview) return 'center';
+  const isCoverPreview = Boolean(card.coverImage?.docId && preview.docId === card.coverImage?.docId);
+  if (!isCoverPreview || !card.coverImageFocalPoint || !preview.width || !preview.height) {
+    return preview.objectPosition || 'center';
+  }
+  if (getPreviewObjectFit(card, preview) === 'contain') {
+    return getObjectPositionFromFocalPoint(
+      { x: card.coverImageFocalPoint.x ?? 0, y: card.coverImageFocalPoint.y ?? 0 },
+      { width: preview.width, height: preview.height }
+    );
+  }
+  return getObjectPositionForAspectRatio(
+    { x: card.coverImageFocalPoint.x ?? 0, y: card.coverImageFocalPoint.y ?? 0 },
+    { width: preview.width, height: preview.height },
+    compactStudioGrid ? '4/3' : `${preview.width}/${preview.height}`,
+    400
+  );
 }
 
 function pickCaption(card: Card): string {
@@ -212,6 +248,8 @@ function CardAdminGridPlainCell({
 
   const captionLine = pickCaption(card);
   const preview = previewImage(card);
+  const previewObjectFit = getPreviewObjectFit(card, preview);
+  const previewObjectPosition = getPreviewObjectPosition(card, preview, compactStudioGrid);
   const renderUtilityPreview = shouldRenderStudioUtilityPreview(card, preview, compactStudioGrid);
   const thumbnailTooltip = useMemo(
     () => buildCardThumbnailTooltip(card, allTags),
@@ -327,6 +365,7 @@ function CardAdminGridPlainCell({
               alt={card.title || 'Cover'}
               fill
               className={styles.thumbnailNatural}
+              style={{ objectFit: previewObjectFit, objectPosition: previewObjectPosition }}
               sizes={
                 compactStudioGrid
                   ? '(max-width: 768px) 95vw, min(360px, 40vw)'
@@ -522,6 +561,8 @@ function CardAdminGridStudioCell({
 
   const captionLine = pickCaption(card);
   const preview = previewImage(card);
+  const previewObjectFit = getPreviewObjectFit(card, preview);
+  const previewObjectPosition = getPreviewObjectPosition(card, preview, compactStudioGrid);
   const renderUtilityPreview = shouldRenderStudioUtilityPreview(card, preview, compactStudioGrid);
   const thumbnailTooltip = useMemo(
     () => buildCardThumbnailTooltip(card, allTags),
@@ -654,6 +695,7 @@ function CardAdminGridStudioCell({
               alt={card.title || 'Cover'}
               fill
               className={styles.thumbnailNatural}
+              style={{ objectFit: previewObjectFit, objectPosition: previewObjectPosition }}
               sizes={
                 compactStudioGrid
                   ? '(max-width: 768px) 95vw, min(360px, 40vw)'

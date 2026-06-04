@@ -52,9 +52,8 @@ interface GalleryManagerProps {
   /** Narrow Library tab in photo picker to media matching these card tags. */
   filterTagIds?: string[];
   /**
-   * After a gallery slot is saved in the modal (tags PATCH + local slot state), persist
-   * `galleryMedia` on the card so caption/focal overrides match Firestore and dirty/leave guards clear.
-   * Return false if the card PATCH failed so the modal can stay open.
+   * Persist gallery membership or slot edits immediately so Firestore stays aligned with the visible gallery.
+   * Return false if the card PATCH failed so the local UI can revert or the modal can stay open.
    */
   onPersistGalleryAfterSlotSave?: (
     nextGallery: HydratedGalleryMediaItem[]
@@ -72,6 +71,7 @@ export default function GalleryManager({
 }: GalleryManagerProps) {
   const [editingItem, setEditingItem] = useState<HydratedGalleryMediaItem | null>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [persistingGallery, setPersistingGallery] = useState(false);
 
   const galleryRef = useRef(galleryMedia);
   useEffect(() => {
@@ -91,9 +91,22 @@ export default function GalleryManager({
     onUpdate(merged);
   }, [onUpdate]);
 
-  const handleRemovePhoto = (mediaId: string) => {
-    onUpdate(galleryMedia.filter(item => item.mediaId !== mediaId));
-  };
+  const handleRemovePhoto = useCallback(async (mediaId: string) => {
+    const previousGallery = galleryMedia;
+    const nextGallery = previousGallery.filter((item) => item.mediaId !== mediaId);
+    onUpdate(nextGallery);
+    if (!onPersistGalleryAfterSlotSave) return;
+    let ok = false;
+    setPersistingGallery(true);
+    try {
+      ok = await onPersistGalleryAfterSlotSave(nextGallery);
+    } finally {
+      setPersistingGallery(false);
+    }
+    if (!ok) {
+      onUpdate(previousGallery);
+    }
+  }, [galleryMedia, onPersistGalleryAfterSlotSave, onUpdate]);
 
   const handleInlineCaptionChange = (mediaId: string, newText: string) => {
     onUpdate(
@@ -109,7 +122,13 @@ export default function GalleryManager({
     );
     onUpdate(nextGallery);
     if (onPersistGalleryAfterSlotSave) {
-      const ok = await onPersistGalleryAfterSlotSave(nextGallery);
+      let ok = false;
+      setPersistingGallery(true);
+      try {
+        ok = await onPersistGalleryAfterSlotSave(nextGallery);
+      } finally {
+        setPersistingGallery(false);
+      }
       if (!ok) return;
     }
     setEditingItem(null);
@@ -138,6 +157,7 @@ export default function GalleryManager({
           onClick={() => setIsPickerOpen(true)}
           className={styles.addButton}
           type="button"
+          disabled={persistingGallery}
         >
           Add
         </button>
@@ -191,7 +211,7 @@ export default function GalleryManager({
                           className={styles.editButton}
                           aria-label="Set as cover image"
                           type="button"
-                          disabled={item.mediaId === currentCoverMediaId}
+                          disabled={persistingGallery || item.mediaId === currentCoverMediaId}
                         >
                           {item.mediaId === currentCoverMediaId ? 'Cover' : 'Set Cover'}
                         </button>
@@ -201,14 +221,16 @@ export default function GalleryManager({
                         className={styles.editButton}
                         aria-label="Edit image metadata"
                         type="button"
+                        disabled={persistingGallery}
                       >
                         Edit
                       </button>
                       <button
-                        onClick={() => handleRemovePhoto(item.mediaId)}
+                        onClick={() => void handleRemovePhoto(item.mediaId)}
                         className={styles.removeButton}
                         aria-label="Remove image"
                         type="button"
+                        disabled={persistingGallery}
                       >
                         x
                       </button>

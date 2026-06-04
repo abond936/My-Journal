@@ -81,4 +81,22 @@ describe('GalleryManager modal contract', () => {
     expect(screen.getByRole('button', { name: 'Use media default crop' })).toBeInTheDocument();
     expect(screen.queryByPlaceholderText('Optional caption for this slot on the card')).not.toBeInTheDocument();
   });
+
+  it('persists gallery removal immediately when the shared gallery patch hook is provided', async () => {
+    const onUpdate = jest.fn();
+    const onPersistGalleryAfterSlotSave = jest.fn(async () => true);
+
+    render(
+      <GalleryManager
+        galleryMedia={[galleryItem]}
+        onUpdate={onUpdate}
+        onPersistGalleryAfterSlotSave={onPersistGalleryAfterSlotSave}
+      />
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Remove image' }));
+
+    expect(onUpdate).toHaveBeenCalledWith([]);
+    expect(onPersistGalleryAfterSlotSave).toHaveBeenCalledWith([]);
+  });
 });
