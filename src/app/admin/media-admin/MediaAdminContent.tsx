@@ -68,6 +68,7 @@ function collectAssignedMediaIdsForCard(
 export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const { embedded = false, studioSourceDraggable = false } = props;
   const initialLocalFilterPrefsRef = useRef(readStoredMediaAdminLocalFilterPreferences());
+  const initialFetchRequestedRef = useRef(false);
   const router = useRouter();
   const feedback = useAppFeedback();
   const studioShell = useStudioShellOptional();
@@ -118,6 +119,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const [visibleAssignedCount, setVisibleAssignedCount] = useState(0);
   const [assignedOnlyMedia, setAssignedOnlyMedia] = useState<typeof media>([]);
   const [assignedOnlyLoading, setAssignedOnlyLoading] = useState(false);
+  const assignedOnlyMediaRef = useRef<typeof media>([]);
   const [importPickerOpen, setImportPickerOpen] = useState(false);
 
   useEffect(() => {
@@ -227,6 +229,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   }, [allTags, dimensionalQueryOverlay]);
 
   const activeStudioCard = studioShell?.selectedDetail ?? studioShell?.selectedPreview ?? null;
+  const activeStudioCardId = activeStudioCard?.docId ?? null;
   const activeStudioCardAssignedMediaIds = useMemo(
     () => collectAssignedMediaIdsForCard(activeStudioCard),
     [activeStudioCard]
@@ -235,6 +238,10 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     () => activeStudioCardAssignedMediaIds.join('\u001e'),
     [activeStudioCardAssignedMediaIds]
   );
+
+  useEffect(() => {
+    assignedOnlyMediaRef.current = assignedOnlyMedia;
+  }, [assignedOnlyMedia]);
   const assignedOnlyResolvedMedia = (() => {
     if (activeStudioCardAssignedMediaIds.length === 0) return [];
     const fallbackById = new Map(
@@ -259,6 +266,18 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   }, [showAssignedHighlightControls, showOnlyAssigned]);
 
   useEffect(() => {
+    if (initialFetchRequestedRef.current) return;
+    if (loading || error || showOnlyAssigned) return;
+    if (media.length > 0 || pagination) {
+      initialFetchRequestedRef.current = true;
+      return;
+    }
+    if (embedded && !activeStudioCardId) return;
+    initialFetchRequestedRef.current = true;
+    void fetchMedia(1);
+  }, [activeStudioCardId, embedded, error, fetchMedia, loading, media.length, pagination, showOnlyAssigned]);
+
+  useEffect(() => {
     if (!showOnlyAssigned) return;
     if (activeStudioCardAssignedMediaIds.length === 0) {
       setAssignedOnlyMedia([]);
@@ -270,9 +289,14 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
       setAssignedOnlyLoading(true);
       try {
         const cachedById = new Map<string, (typeof media)[number]>();
+        const localAssignedById = new Map(
+          assignedOnlyMediaRef.current
+            .filter((item) => item?.docId)
+            .map((item) => [item.docId, item] as const)
+        );
         const missingIds: string[] = [];
         for (const mediaId of activeStudioCardAssignedMediaIds) {
-          const cached = resolveMediaById(mediaId);
+          const cached = resolveMediaById(mediaId) ?? localAssignedById.get(mediaId);
           if (cached) cachedById.set(mediaId, cached);
           else missingIds.push(mediaId);
         }
@@ -301,7 +325,15 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
           .filter((item): item is (typeof media)[number] => Boolean(item?.docId));
 
         if (cancelled) return;
-        setAssignedOnlyMedia(loaded);
+        setAssignedOnlyMedia((current) => {
+          if (
+            current.length === loaded.length &&
+            current.every((item, index) => item?.docId === loaded[index]?.docId)
+          ) {
+            return current;
+          }
+          return loaded;
+        });
       } finally {
         if (!cancelled) setAssignedOnlyLoading(false);
       }
@@ -310,7 +342,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     return () => {
       cancelled = true;
     };
-  }, [activeStudioCardAssignedMediaIds, activeStudioCardAssignedMediaIdsKey, resolveMediaById, showOnlyAssigned]);
+  }, [activeStudioCardAssignedMediaIdsKey, resolveMediaById, showOnlyAssigned]);
 
   const updateDimensionFilter = (
     dimension: DimensionKey,
@@ -353,7 +385,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
 
   useEffect(() => {
     const node = loadMoreRef.current;
-    if (!node || !hasMore || importPickerOpen || loadMoreError) return;
+    if (!node || !hasMore || importPickerOpen || loadMoreError || showOnlyAssigned) return;
     if (typeof IntersectionObserver === 'undefined') return;
     const observer = new IntersectionObserver(
       (entries) => {
@@ -366,7 +398,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }, [embedded, hasMore, importPickerOpen, loadMore, loadMoreError, loading, loadingMore]);
+  }, [embedded, hasMore, importPickerOpen, loadMore, loadMoreError, loading, loadingMore, showOnlyAssigned]);
 
   const mainBody = (
     <>
@@ -434,7 +466,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
             ) : null}
           </div>
         )}
-      <div ref={loadMoreRef} aria-hidden="true" />
+      {!showOnlyAssigned ? <div ref={loadMoreRef} aria-hidden="true" /> : null}
     </>
   );
 

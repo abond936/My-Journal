@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth/next';
 import { getToken } from 'next-auth/jwt';
 import { redirect } from 'next/navigation';
-import { getCardById, getPaginatedCardsByIds } from '@/lib/services/cardService';
+import { getCardById, getCards, getPaginatedCardsByIds } from '@/lib/services/cardService';
 import { GET as listCards } from '@/app/api/cards/route';
 import { GET as getCard } from '@/app/api/cards/[id]/route';
 import { GET as searchCards } from '@/app/api/cards/search/route';
@@ -107,6 +107,7 @@ const mockedGetServerSession = getServerSession as jest.MockedFunction<typeof ge
 const mockedGetToken = getToken as jest.MockedFunction<typeof getToken>;
 const mockedRedirect = redirect as jest.MockedFunction<typeof redirect>;
 const mockedGetCardById = getCardById as jest.MockedFunction<typeof getCardById>;
+const mockedGetCards = getCards as jest.MockedFunction<typeof getCards>;
 const mockedGetPaginatedCardsByIds = getPaginatedCardsByIds as jest.MockedFunction<typeof getPaginatedCardsByIds>;
 
 function makeRequest(url: string) {
@@ -166,6 +167,51 @@ describe('reader access boundary', () => {
     expect(searchRes.status).toBe(401);
     expect(randomRes.status).toBe(401);
     expect(mediaRes.status).toBe(401);
+  });
+
+  it('scans additional ordered card batches before paginating subject-scoped results', async () => {
+    mockedGetServerSession.mockResolvedValue({ user: { role: 'admin' } } as never);
+    mockedGetCards
+      .mockResolvedValueOnce({
+        items: [
+          {
+            docId: 'card-1',
+            title: 'Non-subject match',
+            status: 'draft',
+            who: ['who-other'],
+            subjectTagId: 'who-other',
+            subjectFilterTags: { 'who-other': true },
+          } as never,
+        ],
+        lastDocId: 'card-1',
+        hasMore: true,
+      })
+      .mockResolvedValueOnce({
+        items: [
+          {
+            docId: 'card-2',
+            title: 'Subject match',
+            status: 'draft',
+            who: ['who-target'],
+            subjectTagId: 'who-target',
+            subjectFilterTags: { 'who-target': true },
+          } as never,
+        ],
+        lastDocId: 'card-2',
+        hasMore: false,
+      });
+
+    const res = await listCards(
+      makeRequest('https://example.test/api/cards?status=all&who=who-target&tagScope=subject&limit=1')
+    );
+    const payload = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(mockedGetCards).toHaveBeenCalledTimes(2);
+    expect(payload.items).toHaveLength(1);
+    expect(payload.items[0].docId).toBe('card-2');
+    expect(payload.lastDocId).toBe('card-2');
+    expect(payload.hasMore).toBe(false);
   });
 
   it('redirects anonymous root reader pages server-side with callbackUrl intact', async () => {

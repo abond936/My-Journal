@@ -5,7 +5,7 @@ import JournalImage from '@/components/common/JournalImage';
 import { getFolderTree, getFolderContents } from '@/lib/services/images/local/photoService';
 import { Media, PickerMedia, TreeNode } from '@/lib/types/photo';
 import { HydratedGalleryMediaItem } from '@/lib/types/card';
-import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import { getStudioDisplayUrl } from '@/lib/utils/photoUtils';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { useTag } from '@/components/providers/TagProvider';
 import {
@@ -840,7 +840,7 @@ export default function PhotoPicker({
                         }}
                       >
                         <JournalImage
-                          src={getDisplayUrl(photo)}
+                          src={getStudioDisplayUrl(photo)}
                           alt={photo.filename}
                           className={styles.photoImage}
                           width={150}
@@ -1008,7 +1008,7 @@ export default function PhotoPicker({
                         }}
                       >
                         <JournalImage
-                          src={getDisplayUrl(media)}
+                          src={getStudioDisplayUrl(media)}
                           alt={media.filename || media.docId}
                           className={styles.photoImage}
                           width={150}

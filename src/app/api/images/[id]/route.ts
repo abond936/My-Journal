@@ -5,6 +5,7 @@ import { getAdminApp } from '@/lib/config/firebase/admin';
 import { patchMediaDocument } from '@/lib/services/images/imageImportService';
 import { deleteMediaWithCardCleanup, recomputeCardsMediaSignalsForMedia } from '@/lib/services/cardService';
 import type { Media } from '@/lib/types/photo';
+import { applyPublicStorageUrlsToMedia } from '@/lib/utils/storageUrl';
 
 type ApiErrorPayload = {
   ok: false;
@@ -63,7 +64,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       );
     }
 
-    const media: Media = { ...(snap.data() as Media), docId: snap.id };
+    const media: Media = applyPublicStorageUrlsToMedia({ ...(snap.data() as Media), docId: snap.id });
     return NextResponse.json({ ok: true, media });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -252,7 +253,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         500
       );
     }
-    const updatedMedia: Media = { ...(snap.data() as Media), docId: snap.id };
+    const updatedMedia: Media = applyPublicStorageUrlsToMedia({ ...(snap.data() as Media), docId: snap.id });
     return NextResponse.json({
       ok: true,
       message: `Media asset ${mediaId} updated.`,

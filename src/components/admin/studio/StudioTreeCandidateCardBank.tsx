@@ -122,6 +122,7 @@ function shouldRefreshCollectionsStructureAfterCardUpdate(updateData: Partial<Ca
 }
 
 type StudioTreeCandidateCardBankProps = EmbeddedUnparentedBankContext & {
+  autoSelectFirstCard?: boolean;
   registerCatalogRemove?: ((fn: ((cardId: string) => void) | null) => void) | undefined;
   registerDeleteFallbackResolver?:
     | ((fn: ((deletedCardId: string) => StudioSelectedPreview | null) | null) => void)
@@ -140,6 +141,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     onSelectCard: onStudioSelectCard,
     saving,
     curatedTreeDnd,
+    autoSelectFirstCard = false,
     registerCatalogRemove,
     registerDeleteFallbackResolver,
   } = props;
@@ -170,6 +172,9 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     initialLocalFilterPrefsRef.current.dimensionFilters
   );
   const [isStreamingMore, setIsStreamingMore] = useState(false);
+  const [workspaceHasMore, setWorkspaceHasMore] = useState(false);
+  const [workspaceLastDocId, setWorkspaceLastDocId] = useState<string | undefined>(undefined);
+  const [workspaceLoadMoreError, setWorkspaceLoadMoreError] = useState<string | null>(null);
   const [pendingFocusCardId, setPendingFocusCardId] = useState<string | null>(null);
   const [deleteConfirmCard, setDeleteConfirmCard] = useState<Card | null>(null);
   const [deleteConfirmMessage, setDeleteConfirmMessage] = useState('');
@@ -183,6 +188,11 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   const deferredSortMode = useDeferredValue(sortMode);
   const dragActiveRef = useRef(false);
   const workspaceRequestIdRef = useRef(0);
+  const resultsScrollRef = useRef<HTMLDivElement | null>(null);
+  const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
+  const autoSelectedCardIdRef = useRef<string | null>(null);
+
+  const WORKSPACE_INITIAL_PAGE_SIZE = 100;
 
   useEffect(() => {
     dragActiveRef.current = Boolean(active);
@@ -208,110 +218,86 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     const isCurrent = () => workspaceRequestIdRef.current === requestId;
     setLoadingWorkspaceCards(true);
     setIsStreamingMore(false);
-
-    const PAGE_SIZE = 250;
+    setWorkspaceHasMore(false);
+    setWorkspaceLastDocId(undefined);
+    setWorkspaceLoadMoreError(null);
 
     (async () => {
-      const waitForStableDragSurface = async () => {
-        while (!cancelled && dragActiveRef.current) {
-          await new Promise((resolve) => setTimeout(resolve, 100));
-        }
+      const params = new URLSearchParams({
+        limit: String(WORKSPACE_INITIAL_PAGE_SIZE),
+        status: deferredStatusFilter,
+        hydration: 'cover-only',
+        searchScope: 'admin-title',
+      });
+      const trimmedSearch = deferredSearch.trim();
+      if (trimmedSearch) params.set('q', trimmedSearch);
+      if (deferredTypeFilter !== 'all') params.set('type', deferredTypeFilter);
+      if (deferredDisplayModeFilter !== 'all') params.set('displayMode', deferredDisplayModeFilter);
+      const sortMap: Record<CandidateSort, { sortBy: string; sortDir: 'asc' | 'desc' }> = {
+        titleAsc: { sortBy: 'title', sortDir: 'asc' },
+        titleDesc: { sortBy: 'title', sortDir: 'desc' },
+        createdDesc: { sortBy: 'created', sortDir: 'desc' },
+        createdAsc: { sortBy: 'created', sortDir: 'asc' },
       };
-
-      let lastDocId: string | undefined;
-      let firstChunkPainted = false;
-      const accumulated: Card[] = [];
-      const seen = new Set<string>();
-
-      while (true) {
-        const params = new URLSearchParams({
-          limit: String(PAGE_SIZE),
-          status: deferredStatusFilter,
-          hydration: 'cover-only',
-          searchScope: 'admin-title',
-        });
-        const trimmedSearch = deferredSearch.trim();
-        if (trimmedSearch) params.set('q', trimmedSearch);
-        if (deferredTypeFilter !== 'all') params.set('type', deferredTypeFilter);
-        if (deferredDisplayModeFilter !== 'all') params.set('displayMode', deferredDisplayModeFilter);
-        const sortMap: Record<CandidateSort, { sortBy: string; sortDir: 'asc' | 'desc' }> = {
-          titleAsc: { sortBy: 'title', sortDir: 'asc' },
-          titleDesc: { sortBy: 'title', sortDir: 'desc' },
-          createdDesc: { sortBy: 'created', sortDir: 'desc' },
-          createdAsc: { sortBy: 'created', sortDir: 'asc' },
-        };
-        const sort = sortMap[deferredSortMode];
-        params.set('sortBy', sort.sortBy);
-        params.set('sortDir', sort.sortDir);
-        for (const dimension of DIMENSION_KEYS) {
-          const state = deferredDimensionFilters[dimension];
-          if (state.mode === 'matches' && state.tagId) {
-            params.set(`exact${dimension.charAt(0).toUpperCase()}${dimension.slice(1)}`, state.tagId);
-          } else if (state.mode === 'isEmpty') {
-            params.set(`${dimension}Missing`, 'true');
-          }
+      const sort = sortMap[deferredSortMode];
+      params.set('sortBy', sort.sortBy);
+      params.set('sortDir', sort.sortDir);
+      for (const dimension of DIMENSION_KEYS) {
+        const state = deferredDimensionFilters[dimension];
+        if (state.mode === 'matches' && state.tagId) {
+          params.set(`exact${dimension.charAt(0).toUpperCase()}${dimension.slice(1)}`, state.tagId);
+        } else if (state.mode === 'isEmpty') {
+          params.set(`${dimension}Missing`, 'true');
         }
-        const groupedFilterTagIds = groupSelectedTagIdsByDimension(deferredFilterTagIds, allTags ?? []);
-        for (const dimension of DIMENSION_KEYS) {
-          const selected = groupedFilterTagIds[dimension];
-          if (selected?.length) {
-            params.set(dimension, selected.join(','));
-          }
+      }
+      const groupedFilterTagIds = groupSelectedTagIdsByDimension(deferredFilterTagIds, allTags ?? []);
+      for (const dimension of DIMENSION_KEYS) {
+        const selected = groupedFilterTagIds[dimension];
+        if (selected?.length) {
+          params.set(dimension, selected.join(','));
         }
-        const hasScopedDimensionRules = Array.from(DIMENSION_KEYS).some(
-          (dimension) => deferredDimensionFilters[dimension].mode !== 'any'
-        );
-        if (
-          tagFilterScope === 'subject' &&
-          (dimensionalTagMapHasFilters(groupedFilterTagIds) || hasScopedDimensionRules)
-        ) {
-          params.set('tagScope', 'subject');
-        }
-        if (lastDocId) params.set('lastDocId', lastDocId);
-
-        let pageData: { items?: Card[]; hasMore?: boolean; lastDocId?: string } = {};
-        let ok = false;
-        try {
-          const res = await fetch(`/api/cards?${params.toString()}`);
-          ok = res.ok;
-          if (ok) pageData = (await res.json().catch(() => ({}))) as typeof pageData;
-        } catch {
-          ok = false;
-        }
-        if (cancelled || !isCurrent()) return;
-        if (!ok) break;
-
-        const items = Array.isArray(pageData.items) ? pageData.items : [];
-        for (const item of items) {
-          if (item.docId && !seen.has(item.docId)) {
-            accumulated.push(toStudioCatalogCard(item));
-            seen.add(item.docId);
-          }
-        }
-
-        if (firstChunkPainted) {
-          await waitForStableDragSurface();
-          if (cancelled || !isCurrent()) return;
-        }
-
-        setWorkspaceCards([...accumulated]);
-
-        if (!firstChunkPainted) {
-          setCatalogOverrides({});
-          setLoadingWorkspaceCards(false);
-          firstChunkPainted = true;
-          if (pageData.hasMore && items.length > 0) {
-            setIsStreamingMore(true);
-          }
-        }
-
-        if (!pageData.hasMore || items.length === 0) break;
-        lastDocId = pageData.lastDocId;
+      }
+      const hasScopedDimensionRules = Array.from(DIMENSION_KEYS).some(
+        (dimension) => deferredDimensionFilters[dimension].mode !== 'any'
+      );
+      if (
+        tagFilterScope === 'subject' &&
+        (dimensionalTagMapHasFilters(groupedFilterTagIds) || hasScopedDimensionRules)
+      ) {
+        params.set('tagScope', 'subject');
       }
 
+      let pageData: { items?: Card[]; hasMore?: boolean; lastDocId?: string } = {};
+      let ok = false;
+      try {
+        const res = await fetch(`/api/cards?${params.toString()}`);
+        ok = res.ok;
+        if (ok) pageData = (await res.json().catch(() => ({}))) as typeof pageData;
+      } catch {
+        ok = false;
+      }
       if (cancelled || !isCurrent()) return;
-      if (!firstChunkPainted) setLoadingWorkspaceCards(false);
-      setIsStreamingMore(false);
+      if (!ok) {
+        setLoadingWorkspaceCards(false);
+        setWorkspaceHasMore(false);
+        return;
+      }
+
+      const items = Array.isArray(pageData.items) ? pageData.items : [];
+      const nextCards: Card[] = [];
+      const seen = new Set<string>();
+      for (const item of items) {
+        if (item.docId && !seen.has(item.docId)) {
+          nextCards.push(toStudioCatalogCard(item));
+          seen.add(item.docId);
+        }
+      }
+
+      setCatalogOverrides({});
+      setWorkspaceCards(nextCards);
+      setWorkspaceHasMore(Boolean(pageData.hasMore && items.length > 0));
+      setWorkspaceLastDocId(pageData.lastDocId);
+      setLoadingWorkspaceCards(false);
     })();
 
     return () => {
@@ -328,6 +314,144 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     deferredTypeFilter,
     tagFilterScope,
     workspaceQueryRefreshTick,
+  ]);
+
+  const loadMoreWorkspaceCards = useCallback(async () => {
+    if (loadingWorkspaceCards || isStreamingMore || !workspaceHasMore || !workspaceLastDocId) return;
+    const requestId = workspaceRequestIdRef.current;
+    const isCurrent = () => workspaceRequestIdRef.current === requestId;
+
+    const waitForStableDragSurface = async () => {
+      while (dragActiveRef.current) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        if (!isCurrent()) return false;
+      }
+      return true;
+    };
+
+    setIsStreamingMore(true);
+    setWorkspaceLoadMoreError(null);
+
+    const params = new URLSearchParams({
+      limit: String(WORKSPACE_INITIAL_PAGE_SIZE),
+      status: deferredStatusFilter,
+      hydration: 'cover-only',
+      searchScope: 'admin-title',
+      lastDocId: workspaceLastDocId,
+    });
+    const trimmedSearch = deferredSearch.trim();
+    if (trimmedSearch) params.set('q', trimmedSearch);
+    if (deferredTypeFilter !== 'all') params.set('type', deferredTypeFilter);
+    if (deferredDisplayModeFilter !== 'all') params.set('displayMode', deferredDisplayModeFilter);
+    const sortMap: Record<CandidateSort, { sortBy: string; sortDir: 'asc' | 'desc' }> = {
+      titleAsc: { sortBy: 'title', sortDir: 'asc' },
+      titleDesc: { sortBy: 'title', sortDir: 'desc' },
+      createdDesc: { sortBy: 'created', sortDir: 'desc' },
+      createdAsc: { sortBy: 'created', sortDir: 'asc' },
+    };
+    const sort = sortMap[deferredSortMode];
+    params.set('sortBy', sort.sortBy);
+    params.set('sortDir', sort.sortDir);
+    for (const dimension of DIMENSION_KEYS) {
+      const state = deferredDimensionFilters[dimension];
+      if (state.mode === 'matches' && state.tagId) {
+        params.set(`exact${dimension.charAt(0).toUpperCase()}${dimension.slice(1)}`, state.tagId);
+      } else if (state.mode === 'isEmpty') {
+        params.set(`${dimension}Missing`, 'true');
+      }
+    }
+    const groupedFilterTagIds = groupSelectedTagIdsByDimension(deferredFilterTagIds, allTags ?? []);
+    for (const dimension of DIMENSION_KEYS) {
+      const selected = groupedFilterTagIds[dimension];
+      if (selected?.length) {
+        params.set(dimension, selected.join(','));
+      }
+    }
+    const hasScopedDimensionRules = Array.from(DIMENSION_KEYS).some(
+      (dimension) => deferredDimensionFilters[dimension].mode !== 'any'
+    );
+    if (
+      tagFilterScope === 'subject' &&
+      (dimensionalTagMapHasFilters(groupedFilterTagIds) || hasScopedDimensionRules)
+    ) {
+      params.set('tagScope', 'subject');
+    }
+
+    try {
+      const res = await fetch(`/api/cards?${params.toString()}`);
+      if (!isCurrent()) return;
+      if (!res.ok) {
+        setWorkspaceLoadMoreError('Failed to load more cards.');
+        return;
+      }
+      const pageData = (await res.json().catch(() => ({}))) as {
+        items?: Card[];
+        hasMore?: boolean;
+        lastDocId?: string;
+      };
+      if (!isCurrent()) return;
+      const canApply = await waitForStableDragSurface();
+      if (!canApply || !isCurrent()) return;
+
+      const items = Array.isArray(pageData.items) ? pageData.items : [];
+      setWorkspaceCards((current) => {
+        if (items.length === 0) return current;
+        const seen = new Set(current.map((entry) => entry.docId).filter(Boolean));
+        const appended = items
+          .filter((item) => item.docId && !seen.has(item.docId))
+          .map((item) => toStudioCatalogCard(item));
+        if (appended.length === 0) return current;
+        return [...current, ...appended];
+      });
+      setWorkspaceHasMore(Boolean(pageData.hasMore && items.length > 0));
+      setWorkspaceLastDocId(pageData.lastDocId);
+    } catch {
+      if (!isCurrent()) return;
+      setWorkspaceLoadMoreError('Failed to load more cards.');
+    } finally {
+      if (isCurrent()) {
+        setIsStreamingMore(false);
+      }
+    }
+  }, [
+    allTags,
+    deferredDimensionFilters,
+    deferredDisplayModeFilter,
+    deferredFilterTagIds,
+    deferredSearch,
+    deferredSortMode,
+    deferredStatusFilter,
+    deferredTypeFilter,
+    isStreamingMore,
+    loadingWorkspaceCards,
+    tagFilterScope,
+    workspaceHasMore,
+    workspaceLastDocId,
+  ]);
+
+  useEffect(() => {
+    const root = resultsScrollRef.current;
+    const node = loadMoreSentinelRef.current;
+    if (!root || !node || !workspaceHasMore || loadingWorkspaceCards || isStreamingMore || workspaceLoadMoreError) {
+      return;
+    }
+    if (typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) return;
+        void loadMoreWorkspaceCards();
+      },
+      { root, rootMargin: '1200px 0px' }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [
+    isStreamingMore,
+    loadMoreWorkspaceCards,
+    loadingWorkspaceCards,
+    workspaceHasMore,
+    workspaceLoadMoreError,
   ]);
 
   useEffect(() => {
@@ -474,6 +598,23 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     if (base.some((card) => card.docId === selectedCard.docId)) return base;
     return [selectedCard, ...base];
   }, [collectionCardsById, deferredMergedWorkspaceCards, matchesFilters, deferredStatusFilter, deferredSortMode, props.selectedCardId]);
+
+  useEffect(() => {
+    if (props.selectedCardId) {
+      autoSelectedCardIdRef.current = props.selectedCardId;
+    }
+  }, [props.selectedCardId]);
+
+  useEffect(() => {
+    if (!autoSelectFirstCard) return;
+    if (props.selectedCardId) return;
+    if (loadingWorkspaceCards) return;
+    const firstCandidate = candidateCards.find((card) => card.docId);
+    if (!firstCandidate?.docId) return;
+    if (autoSelectedCardIdRef.current === firstCandidate.docId) return;
+    autoSelectedCardIdRef.current = firstCandidate.docId;
+    onStudioSelectCard(firstCandidate.docId, firstCandidate);
+  }, [autoSelectFirstCard, candidateCards, loadingWorkspaceCards, onStudioSelectCard, props.selectedCardId]);
 
   const resolveDeleteFallback = useCallback(
     (deletedCardId: string): StudioSelectedPreview | null => {
@@ -739,10 +880,22 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   const handleStudioFocusCard = useCallback(
     (card: Card) => {
       if (!card.docId) return;
+      if (props.selectedCardId === card.docId) {
+        void Promise.resolve(onStudioSelectCard(card.docId, card)).catch(() => undefined);
+        return;
+      }
       setPendingFocusCardId(card.docId);
-      onStudioSelectCard(card.docId, card);
+      void Promise.resolve(onStudioSelectCard(card.docId, card))
+        .then((switched) => {
+          if (switched === false) {
+            setPendingFocusCardId(null);
+          }
+        })
+        .catch(() => {
+          setPendingFocusCardId(null);
+        });
     },
-    [onStudioSelectCard]
+    [onStudioSelectCard, props.selectedCardId]
   );
 
   return (
@@ -821,20 +974,6 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
         >
           <FilterX size={16} aria-hidden="true" />
         </button>
-        {isStreamingMore ? (
-          <span
-            aria-live="polite"
-            style={{
-              fontSize: '0.75rem',
-              color: 'var(--color-muted, #888)',
-              alignSelf: 'center',
-              marginLeft: '0.5rem',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            Loading more cards… ({workspaceCards.length} loaded)
-          </span>
-        ) : null}
       </div>
 
       <div className={styles.studioCardMacroBlock}>
@@ -987,7 +1126,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       ) : null}
       </div>
 
-      <div className={styles.resultsScroll}>
+      <div ref={resultsScrollRef} className={styles.resultsScroll}>
         <CardAdminGrid
           cards={candidateCards}
           selectedCardIds={bulkSelectedCardIds}
@@ -1006,6 +1145,33 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
           interactionDisabled={saving}
           compactStudioGrid
         />
+        {(workspaceHasMore || isStreamingMore || workspaceLoadMoreError) ? (
+          <div className={styles.loadMoreFooter}>
+            {workspaceHasMore ? (
+              <button
+                type="button"
+                onClick={() => void loadMoreWorkspaceCards()}
+                disabled={isStreamingMore || loadingWorkspaceCards}
+                className={styles.loadMoreButton}
+              >
+                {isStreamingMore ? 'Loading more cards...' : 'Load more cards'}
+              </button>
+            ) : null}
+            {isStreamingMore ? (
+              <span className={styles.catalogHint} aria-live="polite">
+                Loading more cards... ({workspaceCards.length} loaded)
+              </span>
+            ) : null}
+            {workspaceLoadMoreError ? (
+              <span className={styles.catalogHint} role="alert">
+                {workspaceLoadMoreError}
+              </span>
+            ) : null}
+            {workspaceHasMore ? (
+              <div ref={loadMoreSentinelRef} className={styles.loadMoreSentinel} aria-hidden="true" />
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       <EditModal

@@ -47,7 +47,7 @@ const baseMedia = (overrides: Partial<Media> = {}): Media => ({
 });
 
 function MediaHarness() {
-  const { media, fetchMedia, updateMedia, setDimensionalQueryOverlay } = useMedia();
+  const { media, fetchMedia, loadMore, updateMedia, setDimensionalQueryOverlay } = useMedia();
 
   const siblingsOverlay: DimensionalTagIdMap = {
     who: ['siblings'],
@@ -61,6 +61,9 @@ function MediaHarness() {
       <div data-testid="media-ids">{media.map((item) => item.docId).join(',')}</div>
       <button type="button" onClick={() => void fetchMedia(1)}>
         Load Default
+      </button>
+      <button type="button" onClick={() => void loadMore()}>
+        Load More
       </button>
       <button type="button" onClick={() => void fetchMedia(1, { hasCaption: 'without' })}>
         Load Without Caption
@@ -144,6 +147,106 @@ describe('MediaProvider', () => {
         expect.objectContaining({ signal: expect.any(AbortSignal) })
       );
     });
+  });
+
+  it('does not prefetch a second Studio media page in the background after the initial load', async () => {
+    usePathnameMock.mockReturnValue('/admin/studio');
+    fetchMock.mockImplementation((input) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url === '/api/media?limit=100&includeTotal=false') {
+        return okJson({
+          media: [baseMedia({ docId: 'media-1' })],
+          pagination: {
+            page: 1,
+            limit: 100,
+            total: null,
+            totalPages: null,
+            hasNext: true,
+            hasPrev: false,
+            nextCursor: 'next-cursor',
+            prevCursor: null,
+          },
+        });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    render(
+      <MediaProvider>
+        <MediaHarness />
+      </MediaProvider>
+    );
+
+    fireEvent.click(screen.getByText('Load Default'));
+
+    await waitFor(() => expect(screen.getByTestId('media-ids').textContent).toBe('media-1'));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('reuses an in-flight prefetched next page instead of issuing the same cursor request twice', async () => {
+    let resolveSecondPage: ((value: Response | PromiseLike<Response>) => void) | null = null;
+    fetchMock.mockImplementation((input) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url === '/api/media?limit=50') {
+        return okJson({
+          media: [baseMedia({ docId: 'media-1' })],
+          pagination: {
+            page: 1,
+            limit: 50,
+            total: 2,
+            totalPages: 2,
+            hasNext: true,
+            hasPrev: false,
+            nextCursor: 'next-cursor',
+            prevCursor: null,
+          },
+        });
+      }
+      if (url === '/api/media?limit=50&cursor=next-cursor') {
+        return new Promise((resolve) => {
+          resolveSecondPage = resolve;
+        });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    render(
+      <MediaProvider>
+        <MediaHarness />
+      </MediaProvider>
+    );
+
+    fireEvent.click(screen.getByText('Load Default'));
+    await waitFor(() => expect(screen.getByTestId('media-ids').textContent).toBe('media-1'));
+
+    fireEvent.click(screen.getByText('Load More'));
+
+    await waitFor(() => {
+      const duplicateCalls = fetchMock.mock.calls.filter(
+        ([url]) => url === '/api/media?limit=50&cursor=next-cursor'
+      );
+      expect(duplicateCalls).toHaveLength(1);
+    });
+
+    resolveSecondPage?.({
+      ok: true,
+      statusText: 'OK',
+      json: async () => ({
+        media: [baseMedia({ docId: 'media-2' })],
+        pagination: {
+          page: 2,
+          limit: 50,
+          total: 2,
+          totalPages: 2,
+          hasNext: false,
+          hasPrev: true,
+          nextCursor: null,
+          prevCursor: 'prev-cursor',
+        },
+      }),
+    } as Response);
+
+    await waitFor(() => expect(screen.getByTestId('media-ids').textContent).toBe('media-1,media-2'));
   });
 
   it('threads subject-only scope into media list queries', async () => {

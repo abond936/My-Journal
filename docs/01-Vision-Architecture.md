@@ -197,7 +197,7 @@ What must make this product distinctly better is not feature breadth alone, but 
   - **server-shaped card/media workspaces** so filtering, sorting, and pagination define the active universe on the server rather than in large client-held catalogs; 
   - **windowed/virtualized rendering** for large banks and grids; 
   - **payload tiers** (`tile`, `preview`, `edit`) so only the active object is fully hydrated; and 
-  - **local post-mutation reconciliation** over broad reloads wherever integrity allows. When old card/media admin code still powers Studio, retire runtime duplication first and postpone naming-only cleanup until behavior is simpler.
+  - **local post-mutation reconciliation** over broad reloads wherever integrity allows. Current first landed slice for media delivery: admin/Studio preview surfaces may prefer one optional smaller Studio/admin rendition on each media doc, with safe fallback to the canonical original until backfill catches up. When old card/media admin code still powers Studio, retire runtime duplication first and postpone naming-only cleanup until behavior is simpler.
 
 *Features*
 ✅ **Complete**

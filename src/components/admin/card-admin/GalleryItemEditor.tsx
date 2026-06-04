@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import JournalImage from '@/components/common/JournalImage';
 import type { HydratedGalleryMediaItem } from '@/lib/types/card';
-import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import { getStudioDisplayUrl } from '@/lib/utils/photoUtils';
 import { parseObjectPositionToPercents } from '@/lib/utils/parseObjectPositionPercent';
 import styles from './GalleryItemEditor.module.css';
 
@@ -67,7 +67,7 @@ export default function GalleryItemEditor({
       {item.media ? (
         <div className={styles.previewFrame}>
           <JournalImage
-            src={getDisplayUrl(item.media)}
+            src={getStudioDisplayUrl(item.media)}
             alt={item.media.caption || item.media.filename || ''}
             width={520}
             height={380}

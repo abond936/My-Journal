@@ -2,6 +2,18 @@
 
 import { z } from 'zod';
 
+const mediaRenditionSchema = z.object({
+  storagePath: z.string(),
+  storageUrl: z.string().optional(),
+  width: z.number(),
+  height: z.number(),
+  contentType: z.string(),
+});
+
+const mediaRenditionsSchema = z.object({
+  studio: mediaRenditionSchema.optional(),
+});
+
 // Defines the canonical metadata for a single media asset in the system.
 // This is the single source of truth, stored in the top-level 'media' collection.
 export const mediaSchema = z.object({
@@ -22,6 +34,7 @@ export const mediaSchema = z.object({
   // Firebase Storage details. The URL is the primary way to access the image.
   storageUrl: z.string(), // Public, permanent URL from Firebase Storage.
   storagePath: z.string(), // The path to the file within the Storage bucket (e.g., 'images/uuid-filename.jpg').
+  renditions: mediaRenditionsSchema.optional(),
   
   // Details about the original source of the file.
   source: z.enum(['local', 'paste']),

@@ -7,7 +7,7 @@ import JournalImage from '@/components/common/JournalImage';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
-import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import { getStudioDisplayUrl } from '@/lib/utils/photoUtils';
 import { formatCoreTagsTooltipLines } from '@/lib/utils/tagDisplay';
 import {
   buildResolvedTagDimensionMap,
@@ -323,7 +323,7 @@ function CardAdminGridPlainCell({
             <UtilityCardPreview card={card} />
           ) : preview ? (
             <JournalImage
-              src={getDisplayUrl(preview)}
+              src={getStudioDisplayUrl(preview)}
               alt={card.title || 'Cover'}
               fill
               className={styles.thumbnailNatural}
@@ -650,7 +650,7 @@ function CardAdminGridStudioCell({
             <UtilityCardPreview card={card} />
           ) : preview ? (
             <JournalImage
-              src={getDisplayUrl(preview)}
+              src={getStudioDisplayUrl(preview)}
               alt={card.title || 'Cover'}
               fill
               className={styles.thumbnailNatural}

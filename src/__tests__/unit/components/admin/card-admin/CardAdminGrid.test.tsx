@@ -85,6 +85,7 @@ jest.mock('@/lib/utils/cardDeleteWarnings', () => ({
 
 jest.mock('@/lib/utils/photoUtils', () => ({
   getDisplayUrl: () => '/test.jpg',
+  getStudioDisplayUrl: () => '/test-studio.jpg',
 }));
 
 jest.mock('@/lib/hooks/useDefaultDndSensors', () => ({

@@ -8,6 +8,17 @@
 
 import { getAdminApp } from '@/lib/config/firebase/admin';
 
+type StorageUrlLike = {
+  storagePath?: string;
+  storageUrl?: string;
+};
+
+type MediaWithStudioRendition = StorageUrlLike & {
+  renditions?: {
+    studio?: StorageUrlLike & Record<string, unknown>;
+  };
+};
+
 /**
  * Builds the permanent public URL for a file in Firebase Storage.
  * Format: https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{encodedPath}?alt=media
@@ -24,6 +35,27 @@ export function getPublicStorageUrl(storagePath: string, bucketName?: string): s
   return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodedPath}?alt=media`;
 }
 
+export function applyPublicStorageUrl<T extends StorageUrlLike>(item: T): T {
+  if (!item.storagePath) return item;
+  return {
+    ...item,
+    storageUrl: getPublicStorageUrl(item.storagePath),
+  };
+}
+
+export function applyPublicStorageUrlsToMedia<T extends MediaWithStudioRendition>(item: T): T {
+  const withOriginal = applyPublicStorageUrl(item);
+  const studio = withOriginal.renditions?.studio;
+  if (!studio) return withOriginal;
+  return {
+    ...withOriginal,
+    renditions: {
+      ...withOriginal.renditions,
+      studio: applyPublicStorageUrl(studio),
+    },
+  };
+}
+
 /**
  * Sets storageUrl on each media object using the public URL format (derived from storagePath).
  * Use instead of signed URL refresh when the bucket is configured for public read.
@@ -31,11 +63,5 @@ export function getPublicStorageUrl(storagePath: string, bucketName?: string): s
 export function applyPublicStorageUrls<T extends { storagePath?: string; storageUrl?: string }>(
   items: T[]
 ): T[] {
-  return items.map((item) => {
-    if (!item.storagePath) return item;
-    return {
-      ...item,
-      storageUrl: getPublicStorageUrl(item.storagePath),
-    };
-  });
+  return items.map((item) => applyPublicStorageUrlsToMedia(item as T & MediaWithStudioRendition) as T);
 }

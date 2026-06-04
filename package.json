@@ -35,6 +35,7 @@
     "reconcile:media-cards": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/reconcile-media-cards.ts",
     "remove:legacy-cover": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/remove-legacy-cover-image.ts",
     "backfill:media-metadata": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/backfill-media-metadata.ts",
+    "backfill:media-studio-renditions": "tsx -r dotenv/config src/lib/scripts/firebase/backfill-media-studio-renditions.ts",
     "regenerate:storage-urls": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/regenerate-storage-urls.ts",
     "seed:journal-users": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/seed-journal-users.ts",
     "seed:theme-firestore": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/seed-theme-firestore.ts",

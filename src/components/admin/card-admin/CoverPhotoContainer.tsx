@@ -6,7 +6,7 @@ import { useDropzone } from 'react-dropzone';
 import JournalImage from '@/components/common/JournalImage';
 import styles from './CoverPhotoContainer.module.css';
 import { Media } from '@/lib/types/photo';
-import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import { getStudioDisplayUrl } from '@/lib/utils/photoUtils';
 import { getImageFileFromDataTransfer } from '@/lib/utils/clipboardImage';
 import { getAspectRatioBucket, getAspectRatioValue } from '@/lib/utils/objectPositionUtils';
 import PhotoPicker from '@/components/admin/card-admin/PhotoPicker';
@@ -218,7 +218,7 @@ export default function CoverPhotoContainer({
               </div>
             )}
             <JournalImage
-              src={getDisplayUrl(coverImage)}
+              src={getStudioDisplayUrl(coverImage)}
               alt={coverImage.filename || 'Cover image'}
               className={styles.coverImage}
               width={600}

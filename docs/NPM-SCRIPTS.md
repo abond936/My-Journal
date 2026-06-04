@@ -131,6 +131,7 @@ This is the current **commercial-readiness restore contract**. The Firestore res
 | `npm run reconcile:media-cards` | Diagnose/reconcile media ↔ card references |
 | `npm run remove:legacy-cover` | Remove legacy cover fields |
 | `npm run backfill:media-metadata` | Backfill media metadata |
+| `npm run backfill:media-studio-renditions` | Create the optional smaller `renditions.studio` preview on existing media docs. Default = dry run; append `-- --apply` to write, `-- --force` to refresh existing rendition records too. |
 | `npm run regenerate:storage-urls` | Regenerate Storage URLs on media docs |
 | `npm run seed:journal-users` | Seed `journal_users` for auth |
 | `npm run seed:theme-firestore` | Copy `theme-data.json` → Firestore `app_settings/theme` (aligns hosted SSR tokens with repo) |

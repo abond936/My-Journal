@@ -8,11 +8,14 @@ type MediaReferenceSummaryResponse = {
   summaries?: Record<string, string[]>;
 };
 
+const mediaReferenceSummaryCache = new Map<string, string[]>();
+
 export default function useMediaReferenceSummaries(mediaItems: Media[]) {
   const mediaIds = useMemo(
     () => mediaItems.map((item) => item.docId).filter((id): id is string => typeof id === 'string' && id.length > 0),
     [mediaItems]
   );
+  const mediaIdsKey = useMemo(() => mediaIds.join('\u001e'), [mediaIds]);
   const [summaries, setSummaries] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
@@ -20,8 +23,11 @@ export default function useMediaReferenceSummaries(mediaItems: Media[]) {
       const next = { ...current };
       for (const item of mediaItems) {
         if (!item.docId) continue;
-        if (!next[item.docId]) {
-          next[item.docId] = Array.isArray(item.referencedByCardIds) ? item.referencedByCardIds : [];
+        if (!mediaReferenceSummaryCache.has(item.docId) && Array.isArray(item.referencedByCardIds)) {
+          mediaReferenceSummaryCache.set(item.docId, item.referencedByCardIds);
+        }
+        if (!next[item.docId] && mediaReferenceSummaryCache.has(item.docId)) {
+          next[item.docId] = mediaReferenceSummaryCache.get(item.docId) ?? [];
         }
       }
       return next;
@@ -30,9 +36,11 @@ export default function useMediaReferenceSummaries(mediaItems: Media[]) {
 
   useEffect(() => {
     if (mediaIds.length === 0) return;
+    const missingIds = mediaIds.filter((id) => !mediaReferenceSummaryCache.has(id));
+    if (missingIds.length === 0) return;
     const controller = new AbortController();
     const params = new URLSearchParams();
-    mediaIds.forEach((id) => params.append('id', id));
+    missingIds.forEach((id) => params.append('id', id));
 
     void (async () => {
       try {
@@ -44,6 +52,9 @@ export default function useMediaReferenceSummaries(mediaItems: Media[]) {
         if (!response.ok) return;
         const data = (await response.json().catch(() => ({}))) as MediaReferenceSummaryResponse;
         if (!data.summaries) return;
+        Object.entries(data.summaries).forEach(([id, summary]) => {
+          mediaReferenceSummaryCache.set(id, summary);
+        });
         setSummaries((current) => ({ ...current, ...data.summaries }));
       } catch (error) {
         if ((error as Error).name === 'AbortError') return;
@@ -51,7 +62,7 @@ export default function useMediaReferenceSummaries(mediaItems: Media[]) {
     })();
 
     return () => controller.abort();
-  }, [mediaIds]);
+  }, [mediaIds, mediaIdsKey]);
 
   return summaries;
 }

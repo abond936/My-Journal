@@ -11,7 +11,7 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { GalleryMediaItem, HydratedGalleryMediaItem } from '@/lib/types/card';
-import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import { getStudioDisplayUrl } from '@/lib/utils/photoUtils';
 import PhotoPicker from '@/components/admin/card-admin/PhotoPicker';
 import styles from './GalleryManager.module.css';
 import { SortableItem } from './SortableItem';
@@ -164,7 +164,7 @@ export default function GalleryManager({
                   >
                     {item.media ? (
                       <JournalImage
-                        src={getDisplayUrl(item.media)}
+                        src={getStudioDisplayUrl(item.media)}
                         alt={
                           getEffectiveGalleryCaption(item, item.media) ||
                           item.media.filename ||

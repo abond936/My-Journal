@@ -373,6 +373,13 @@ export async function GET(request: Request) {
         });
       };
 
+      const needsSubjectScopedScan =
+        tagScope === 'subject' &&
+        (Boolean(tags?.length) ||
+          Object.keys(dimensionalTags).length > 0 ||
+          hasExactDimensionalFilters ||
+          hasDimensionMissingFilters);
+
       // Only dispatch to Typesense for queries that actually need it: text search,
       // multi-dimensional tag filters, or missing-dimension filters. Plain catalog
       // listings (no `q`, no dim filter) skip Typesense and go directly to the
@@ -441,6 +448,65 @@ export async function GET(request: Request) {
         } catch (tsError) {
           console.warn('Typesense list/search failed, falling back to Firestore:', tsError);
         }
+      }
+
+      if (needsSubjectScopedScan) {
+        const scanBatchLimit = Math.max(limit * 5, 100);
+        const collected: Card[] = [];
+        let scanCursor = lastDocId;
+        let hasMoreScan = true;
+        let lastReturnedDocId: string | undefined;
+
+        while (collected.length < limit && hasMoreScan) {
+          const batch: PaginatedResult<Card> = await getCards({
+            q,
+            status,
+            type,
+            displayMode,
+            types: typesForService,
+            childrenIds_contains,
+            limit: scanBatchLimit,
+            lastDocId: scanCursor,
+            hydrationMode,
+            ...(listSortBy ? { sortBy: listSortBy } : {}),
+            ...(sortDir ? { sortDir } : {}),
+          });
+
+          if (batch.items.length === 0) {
+            hasMoreScan = false;
+            break;
+          }
+
+          const filteredBatch = applyPostFilters(batch.items);
+          for (const card of filteredBatch) {
+            collected.push(card);
+            lastReturnedDocId = card.docId;
+            if (collected.length >= limit) break;
+          }
+
+          if (collected.length >= limit) {
+            const lastReturnedIndex = lastReturnedDocId
+              ? batch.items.findIndex((card) => card.docId === lastReturnedDocId)
+              : -1;
+            const hasMoreWithinCurrentBatch =
+              lastReturnedIndex >= 0 && lastReturnedIndex < batch.items.length - 1;
+            return NextResponse.json({
+              items: collected,
+              lastDocId: lastReturnedDocId,
+              hasMore: hasMoreWithinCurrentBatch || batch.hasMore,
+            } as PaginatedResult<Card>);
+          }
+
+          hasMoreScan = batch.hasMore;
+          scanCursor = batch.lastDocId;
+          if (!scanCursor) break;
+        }
+
+        return NextResponse.json({
+          items: collected,
+          lastDocId: lastReturnedDocId,
+          hasMore: false,
+        } as PaginatedResult<Card>);
       }
 
       const result: PaginatedResult<Card> = await getCards({

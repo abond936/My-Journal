@@ -1,9 +1,10 @@
 import React from 'react';
-import { render, waitFor } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 import StudioTreeCandidateCardBank from '@/components/admin/studio/StudioTreeCandidateCardBank';
 import type { Card } from '@/lib/types/card';
 
 const mockCardAdminGrid = jest.fn(() => <div data-testid="mock-card-grid" />);
+const mockTagContext = { tags: [] };
 
 jest.mock('@dnd-kit/core', () => ({
   useDndContext: () => ({ active: null }),
@@ -38,7 +39,7 @@ jest.mock('@/components/providers/AppFeedbackProvider', () => ({
 }));
 
 jest.mock('@/components/providers/TagProvider', () => ({
-  useTag: () => ({ tags: [] }),
+  useTag: () => mockTagContext,
 }));
 
 jest.mock('@/components/admin/studio/StudioShellContext', () => ({
@@ -69,7 +70,7 @@ describe('StudioTreeCandidateCardBank', () => {
         return {
           ok: true,
           status: 200,
-          json: async () => ({ cards: [], nextCursor: null }),
+          json: async () => ({ items: [], hasMore: false, lastDocId: null }),
         } as Response;
       }
       throw new Error(`Unhandled fetch in test: ${url}`);
@@ -98,5 +99,209 @@ describe('StudioTreeCandidateCardBank', () => {
 
     expect(props.studioCuratedTreeDrag).toBe(true);
     expect(props.studioCuratedTreeUnparentedRowTarget).toBeUndefined();
+  });
+
+  it('stops after the first workspace page instead of draining the full query immediately', async () => {
+    const previousIntersectionObserver = global.IntersectionObserver;
+    // Disable auto-append in this contract test so we only assert the initial load behavior.
+    // The runtime observer path is browser-verified, not unit-proven here.
+    // @ts-expect-error test override
+    delete global.IntersectionObserver;
+
+    (global.fetch as jest.Mock).mockImplementationOnce(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        items: [baseCard],
+        hasMore: true,
+        lastDocId: 'card-1',
+      }),
+    }));
+
+    render(
+      <StudioTreeCandidateCardBank
+        refreshCards={jest.fn()}
+        collectionCards={[baseCard]}
+        search=""
+        setSearch={jest.fn()}
+        statusFilter="all"
+        setStatusFilter={jest.fn()}
+        selectedCardId={null}
+        onSelectCard={jest.fn()}
+        saving={false}
+        curatedTreeDnd
+        treeDropZonesReadOnly={false}
+      />
+    );
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
+    // @ts-expect-error test restore
+    global.IntersectionObserver = previousIntersectionObserver;
+  });
+
+  it('owns the first Studio selection when no card is already selected', async () => {
+    const onSelectCard = jest.fn();
+    (global.fetch as jest.Mock).mockImplementationOnce(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        items: [baseCard],
+        hasMore: false,
+        lastDocId: 'card-1',
+      }),
+    }));
+
+    render(
+      <StudioTreeCandidateCardBank
+        refreshCards={jest.fn()}
+        collectionCards={[baseCard]}
+        search=""
+        setSearch={jest.fn()}
+        statusFilter="all"
+        setStatusFilter={jest.fn()}
+        selectedCardId={null}
+        onSelectCard={onSelectCard}
+        saving={false}
+        curatedTreeDnd
+        treeDropZonesReadOnly={false}
+        autoSelectFirstCard
+      />
+    );
+
+    await waitFor(() => {
+      expect(onSelectCard).toHaveBeenCalledWith(
+        'card-1',
+        expect.objectContaining({ docId: 'card-1' })
+      );
+    });
+  });
+
+  it('does not auto-select the first card during explicit new-card flow', async () => {
+    const onSelectCard = jest.fn();
+    (global.fetch as jest.Mock).mockImplementationOnce(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        items: [baseCard],
+        hasMore: false,
+        lastDocId: 'card-1',
+      }),
+    }));
+
+    render(
+      <StudioTreeCandidateCardBank
+        refreshCards={jest.fn()}
+        collectionCards={[baseCard]}
+        search=""
+        setSearch={jest.fn()}
+        statusFilter="all"
+        setStatusFilter={jest.fn()}
+        selectedCardId={null}
+        onSelectCard={onSelectCard}
+        saving={false}
+        curatedTreeDnd
+        treeDropZonesReadOnly={false}
+        autoSelectFirstCard={false}
+      />
+    );
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
+    expect(onSelectCard).not.toHaveBeenCalled();
+  });
+
+  it('clears the pending Opening state when Compose keeps editing after the dirty warning', async () => {
+    const onSelectCard = jest.fn().mockResolvedValue(false);
+    (global.fetch as jest.Mock).mockImplementationOnce(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        items: [baseCard],
+        hasMore: false,
+        lastDocId: 'card-1',
+      }),
+    }));
+
+    render(
+      <StudioTreeCandidateCardBank
+        refreshCards={jest.fn()}
+        collectionCards={[baseCard]}
+        search=""
+        setSearch={jest.fn()}
+        statusFilter="all"
+        setStatusFilter={jest.fn()}
+        selectedCardId={null}
+        onSelectCard={onSelectCard}
+        saving={false}
+        curatedTreeDnd
+        treeDropZonesReadOnly={false}
+      />
+    );
+
+    await waitFor(() => expect(mockCardAdminGrid).toHaveBeenCalled());
+
+    const latestPropsBeforeClick = mockCardAdminGrid.mock.calls.at(-1)?.[0] as {
+      onStudioFocusCard: (card: Card) => void;
+      pendingFocusCardId: string | null;
+    };
+
+    expect(latestPropsBeforeClick.pendingFocusCardId).toBeNull();
+
+    await act(async () => {
+      latestPropsBeforeClick.onStudioFocusCard(baseCard);
+    });
+
+    await waitFor(() => expect(onSelectCard).toHaveBeenCalledWith('card-1', expect.objectContaining({ docId: 'card-1' })));
+    await waitFor(() => {
+      const latestPropsAfterKeepEditing = mockCardAdminGrid.mock.calls.at(-1)?.[0] as {
+        pendingFocusCardId: string | null;
+      };
+      expect(latestPropsAfterKeepEditing.pendingFocusCardId).toBeNull();
+    });
+  });
+
+  it('does not show a pending Opening state when the already-selected card tile is clicked again', async () => {
+    const onSelectCard = jest.fn().mockResolvedValue(true);
+    (global.fetch as jest.Mock).mockImplementationOnce(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        items: [baseCard],
+        hasMore: false,
+        lastDocId: 'card-1',
+      }),
+    }));
+
+    render(
+      <StudioTreeCandidateCardBank
+        refreshCards={jest.fn()}
+        collectionCards={[baseCard]}
+        search=""
+        setSearch={jest.fn()}
+        statusFilter="all"
+        setStatusFilter={jest.fn()}
+        selectedCardId="card-1"
+        onSelectCard={onSelectCard}
+        saving={false}
+        curatedTreeDnd
+        treeDropZonesReadOnly={false}
+      />
+    );
+
+    await waitFor(() => expect(mockCardAdminGrid).toHaveBeenCalled());
+
+    const latestPropsBeforeClick = mockCardAdminGrid.mock.calls.at(-1)?.[0] as {
+      onStudioFocusCard: (card: Card) => void;
+      pendingFocusCardId: string | null;
+    };
+
+    await act(async () => {
+      latestPropsBeforeClick.onStudioFocusCard(baseCard);
+    });
+
+    await waitFor(() => expect(onSelectCard).toHaveBeenCalledWith('card-1', expect.objectContaining({ docId: 'card-1' })));
+    const latestPropsAfterClick = mockCardAdminGrid.mock.calls.at(-1)?.[0] as {
+      pendingFocusCardId: string | null;
+    };
+    expect(latestPropsAfterClick.pendingFocusCardId).toBeNull();
   });
 });

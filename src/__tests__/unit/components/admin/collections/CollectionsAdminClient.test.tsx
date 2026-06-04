@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, render, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import CollectionsAdminClient from '@/components/admin/collections/CollectionsAdminClient';
 import { fetchAdminCardSnapshot } from '@/lib/utils/fetchAdminCardSnapshot';
 
@@ -65,6 +65,91 @@ describe('CollectionsAdminClient', () => {
     jest.mocked(fetchAdminCardSnapshot).mockReset();
   });
 
+  async function waitForEmbeddedCollectionsReady() {
+    await waitFor(() => {
+      expect(screen.queryByText('Loading cards...')).not.toBeInTheDocument();
+    });
+  }
+
+  it('renders the embedded Studio workspace before tree data finishes loading', async () => {
+    let resolveFetch: ((value: Response) => void) | null = null;
+    global.fetch = jest.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveFetch = resolve;
+        })
+    ) as typeof fetch;
+
+    render(
+      <CollectionsAdminClient
+        embedded
+        embeddedUnparentedReplacement={() => <div data-testid="cards-bank" />}
+        embeddedRightSlot={<div data-testid="right-slot" />}
+      />
+    );
+
+    expect(screen.getByTestId('cards-bank')).toBeInTheDocument();
+    expect(screen.getByTestId('right-slot')).toBeInTheDocument();
+    expect(screen.getByText('Loading cards...')).toBeInTheDocument();
+
+    await act(async () => {
+      resolveFetch?.({
+        ok: true,
+        status: 200,
+        json: async () => ({ items: [] }),
+      } as Response);
+    });
+  });
+
+  it('keeps embedded Collections on a roots-first path until the Collections tab is opened', async () => {
+    const fetchMock = jest.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          items: [
+            {
+              docId: 'root-1',
+              title: 'Root One',
+              status: 'published',
+              type: 'story',
+              childrenIds: [],
+              isCollectionRoot: true,
+            },
+          ],
+        }),
+      } as Response;
+    });
+
+    global.fetch = fetchMock as typeof fetch;
+
+    render(
+      <CollectionsAdminClient
+        embedded
+        embeddedUnparentedReplacement={() => <div data-testid="cards-bank" />}
+        embeddedRightSlot={<div data-testid="right-slot" />}
+      />
+    );
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/cards?collectionsOnly=true&status=all&hydration=cover-only');
+    });
+
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      '/api/cards?collectionsOnly=true&includeDescendants=true&status=all&hydration=cover-only'
+    );
+    expect(fetchMock).not.toHaveBeenCalledWith(expect.stringContaining('sortBy=created'));
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Collections' }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/cards?collectionsOnly=true&includeDescendants=true&status=all&hydration=cover-only'
+      );
+    });
+  });
+
   it('promotes a Studio card-bank drag to a new top-level collection when dropped on tree-root', async () => {
     const fetchMock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
@@ -116,6 +201,7 @@ describe('CollectionsAdminClient', () => {
       />
     );
 
+    await waitForEmbeddedCollectionsReady();
     await waitFor(() => expect(mockDndContextProps.current).not.toBeNull());
 
     const onDragEnd = mockDndContextProps.current?.onDragEnd as ((event: Record<string, unknown>) => Promise<void>) | undefined;
@@ -210,6 +296,7 @@ describe('CollectionsAdminClient', () => {
       />
     );
 
+    await waitForEmbeddedCollectionsReady();
     await waitFor(() => expect(mockDndContextProps.current).not.toBeNull());
 
     const onDragOver = mockDndContextProps.current?.onDragOver as ((event: Record<string, unknown>) => void) | undefined;
@@ -331,6 +418,7 @@ describe('CollectionsAdminClient', () => {
       />
     );
 
+    await waitForEmbeddedCollectionsReady();
     await waitFor(() => expect(mockDndContextProps.current).not.toBeNull());
 
     const onDragEnd = mockDndContextProps.current?.onDragEnd as ((event: Record<string, unknown>) => Promise<void>) | undefined;
@@ -446,6 +534,7 @@ describe('CollectionsAdminClient', () => {
       />
     );
 
+    await waitForEmbeddedCollectionsReady();
     await waitFor(() => expect(mockDndContextProps.current).not.toBeNull());
 
     const onDragEnd = mockDndContextProps.current?.onDragEnd as ((event: Record<string, unknown>) => Promise<void>) | undefined;
@@ -551,6 +640,7 @@ describe('CollectionsAdminClient', () => {
       />
     );
 
+    await waitForEmbeddedCollectionsReady();
     await waitFor(() => expect(mockDndContextProps.current).not.toBeNull());
 
     const onDragEnd = mockDndContextProps.current?.onDragEnd as ((event: Record<string, unknown>) => Promise<void>) | undefined;
@@ -655,6 +745,7 @@ describe('CollectionsAdminClient', () => {
       />
     );
 
+    await waitForEmbeddedCollectionsReady();
     await waitFor(() => expect(mockDndContextProps.current).not.toBeNull());
 
     const onDragEnd = mockDndContextProps.current?.onDragEnd as ((event: Record<string, unknown>) => Promise<void>) | undefined;

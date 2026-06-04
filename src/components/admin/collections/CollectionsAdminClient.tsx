@@ -155,6 +155,26 @@ interface CardsResponse {
 
 type BulkCardTypeFilter = 'all' | Card['type'];
 
+function mergeCardsByIdPreservingStudioProjection(prev: Card[], items: Card[]): Card[] {
+  if (items.length === 0) return prev;
+  if (prev.length === 0) return items.map((card) => toStudioCatalogCard(card));
+
+  const out = new Map<string, Card>();
+  for (const card of prev) {
+    if (card.docId) out.set(card.docId, card);
+  }
+  for (const card of items) {
+    if (!card.docId) continue;
+    const existing = out.get(card.docId);
+    if (!existing) {
+      out.set(card.docId, toStudioCatalogCard(card));
+      continue;
+    }
+    out.set(card.docId, mergeStudioCatalogCard(toStudioCatalogCard(existing), card));
+  }
+  return Array.from(out.values());
+}
+
 function cardLabel(card: Card): string {
   return card.title || card.subtitle || 'Untitled';
 }
@@ -390,6 +410,8 @@ export default function CollectionsAdminClient({
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [treeExpandedIds, setTreeExpandedIds] = useState<Set<string>>(new Set());
   const [treeExpansionHydrated, setTreeExpansionHydrated] = useState(false);
+  const [embeddedTreeDescendantsLoaded, setEmbeddedTreeDescendantsLoaded] = useState(false);
+  const [embeddedTreeDescendantsLoading, setEmbeddedTreeDescendantsLoading] = useState(false);
   const [studioLeftTab, setStudioLeftTab] = useState<'tags' | 'tree'>(() => {
     if (typeof window === 'undefined') return 'tags';
     return window.localStorage.getItem('studioLeftTab') === 'tree' ? 'tree' : 'tags';
@@ -692,6 +714,10 @@ export default function CollectionsAdminClient({
   // with page 0. The Studio bank's "Loading more cards…" indicator covers the streaming
   // window — no separate indicator here. See docs/01-Vision-Architecture.md → Frontend
   // Principles (chunked list delivery + stable ordering).
+  // Standalone Collections still owns its broader local card catalog because it
+  // renders both tree structure and orphaned cards. Embedded Studio is different:
+  // the Cards pane owns discovery, so Collections should load tree truth first
+  // and never gate the rest of Studio on a broad all-cards pass.
   const load = useCallback(async (opts?: { soft?: boolean }) => {
     const soft = opts?.soft === true;
     const requestId = ++loadRequestIdRef.current;
@@ -706,6 +732,46 @@ export default function CollectionsAdminClient({
     let firstChunkPainted = false;
 
     try {
+      if (embedded && studioAttachBank) {
+        const rootsRes = await fetch('/api/cards?collectionsOnly=true&status=all&hydration=cover-only');
+        if (!isCurrent()) return;
+        const rootsData = (await rootsRes.json().catch(() => ({}))) as CardsResponse & {
+          error?: string;
+        };
+        if (!rootsRes.ok) throw new Error(rootsData.error || 'Failed to load collection roots');
+        if (!isCurrent()) return;
+
+        const rootItems = Array.isArray(rootsData.items) ? rootsData.items : [];
+        setCards((prev) => mergeCardsByIdPreservingStudioProjection(soft ? prev : [], rootItems));
+        setEmbeddedTreeDescendantsLoaded(false);
+        firstChunkPainted = true;
+        if (!soft) setLoading(false);
+
+        if (studioLeftTab !== 'tree') {
+          setEmbeddedTreeDescendantsLoading(false);
+          return;
+        }
+
+        setEmbeddedTreeDescendantsLoading(true);
+        const descendantsRes = await fetch(
+          '/api/cards?collectionsOnly=true&includeDescendants=true&status=all&hydration=cover-only'
+        );
+        if (!isCurrent()) return;
+        const descendantsData = (await descendantsRes.json().catch(() => ({}))) as CardsResponse & {
+          error?: string;
+        };
+        if (!descendantsRes.ok) {
+          throw new Error(descendantsData.error || 'Failed to load collection descendants');
+        }
+        if (!isCurrent()) return;
+
+        const descendantItems = Array.isArray(descendantsData.items) ? descendantsData.items : [];
+        setCards((prev) => mergeCardsByIdPreservingStudioProjection(prev, descendantItems));
+        setEmbeddedTreeDescendantsLoaded(true);
+        setEmbeddedTreeDescendantsLoading(false);
+        return;
+      }
+
       const rootsPromise = fetch('/api/cards?collectionsOnly=true&status=all&hydration=cover-only');
       const accumulated = new Map<string, Card>();
       const rootsById = new Map<string, Card>();
@@ -769,23 +835,7 @@ export default function CollectionsAdminClient({
           // After first chunk in non-soft mode, also use merge semantics — preserves
           // any tree state (e.g. childrenIds) that earlier passes set when later
           // cover-only payloads omit those fields.
-          setCards((prev) => {
-            if (prev.length === 0) return items;
-            const out = new Map<string, Card>();
-            for (const c of prev) {
-              if (c.docId) out.set(c.docId, c);
-            }
-            for (const c of items) {
-              if (!c.docId) continue;
-              const old = out.get(c.docId);
-              if (!old) {
-                out.set(c.docId, toStudioCatalogCard(c));
-                continue;
-              }
-              out.set(c.docId, mergeStudioCatalogCard(toStudioCatalogCard(old), c));
-            }
-            return Array.from(out.values());
-          });
+          setCards((prev) => mergeCardsByIdPreservingStudioProjection(prev, items));
         } else {
           setCards(items.map((card) => toStudioCatalogCard(card)));
         }
@@ -817,6 +867,9 @@ export default function CollectionsAdminClient({
       }
     } catch (e) {
       if (isCurrent()) {
+        if (embedded && studioAttachBank) {
+          setEmbeddedTreeDescendantsLoading(false);
+        }
         setError(e instanceof Error ? e.message : 'Failed to load cards');
       }
     } finally {
@@ -824,11 +877,26 @@ export default function CollectionsAdminClient({
         setLoading(false);
       }
     }
-  }, []);
+  }, [embedded, studioAttachBank, studioLeftTab]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!embedded || !studioAttachBank) return;
+    if (studioLeftTab !== 'tree') return;
+    if (embeddedTreeDescendantsLoaded || embeddedTreeDescendantsLoading || loading) return;
+    void load({ soft: true });
+  }, [
+    embedded,
+    embeddedTreeDescendantsLoaded,
+    embeddedTreeDescendantsLoading,
+    loading,
+    load,
+    studioAttachBank,
+    studioLeftTab,
+  ]);
 
   const cardById = useMemo(() => new Map(cards.map(c => [c.docId, c])), [cards]);
   const parentIdsByChild = useMemo(() => buildParentIdsByChild(cards), [cards]);
@@ -846,10 +914,11 @@ export default function CollectionsAdminClient({
     if (!cards.length) return;
     if (selectedCardId) return;
     if (embedded && selectedCardIdExternal) return;
+    if (studioAttachBank) return;
     const fallback = rootedCollections[0]?.docId ?? cards[0]?.docId ?? null;
     setSelectedCardId(fallback);
     if (fallback) onSelectCard?.(fallback, cardById.get(fallback) ?? null);
-  }, [cards, selectedCardId, rootedCollections, onSelectCard, cardById, embedded, selectedCardIdExternal]);
+  }, [cards, selectedCardId, rootedCollections, onSelectCard, cardById, embedded, selectedCardIdExternal, studioAttachBank]);
 
   const handleSelectCard = useCallback(
     (cardId: string) => {
@@ -1504,7 +1573,9 @@ export default function CollectionsAdminClient({
                 ) : (
                   <div className={styles.studioLeftTabPanel} role="tabpanel">
                     <div className={styles.panelScroll}>
-                      {rootedCollections.length === 0 ? (
+                      {embeddedTreeDescendantsLoading || !embeddedTreeDescendantsLoaded ? (
+                        <p className={styles.hint}>Loading collections...</p>
+                      ) : rootedCollections.length === 0 ? (
                         <TreeRootDropZone readOnly={treeDropZonesReadOnly} className={styles.treeRootDropZone}>
                           <p className={styles.emptyTreeHint}>
                             {curatedTreeDnd
@@ -1749,7 +1820,7 @@ export default function CollectionsAdminClient({
       {error ? <p className={styles.error}>{error}</p> : null}
       {loading ? <p>Loading cards...</p> : null}
 
-      {!loading ? (
+      {embedded || !loading ? (
         <div className={styles.mainShell}>
         {!curatedTreeDnd ? (
           <p className={styles.hint} role="note" style={{ marginBottom: 'var(--spacing-sm)' }}>

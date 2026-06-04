@@ -8,7 +8,7 @@ import EditModal from '@/components/admin/card-admin/EditModal';
 import GalleryItemEditor from '@/components/admin/card-admin/GalleryItemEditor';
 import { useCardForm } from '@/components/providers/CardFormProvider';
 import type { HydratedGalleryMediaItem } from '@/lib/types/card';
-import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import { getStudioDisplayUrl } from '@/lib/utils/photoUtils';
 import {
   StudioDropZone,
   StudioGalleryEndDropZone,
@@ -117,7 +117,7 @@ export default function StudioCardFormGallery({
                     <div className={styles.studioGalleryThumbWrap}>
                       {item.media ? (
                         <JournalImage
-                          src={getDisplayUrl(item.media)}
+                          src={getStudioDisplayUrl(item.media)}
                           alt={item.caption || item.media.filename || 'Gallery image'}
                           width={180}
                           height={132}

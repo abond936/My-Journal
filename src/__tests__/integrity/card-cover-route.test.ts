@@ -22,6 +22,7 @@ import {
   isTagsOnlyPayload,
   isStatusOnlyPayload,
 } from '@/lib/services/cardService';
+import { getAdminApp } from '@/lib/config/firebase/admin';
 
 jest.mock('next/server', () => ({
   NextResponse: {
@@ -69,6 +70,10 @@ jest.mock('@/lib/services/cardService', () => ({
   getPaginatedCardsByIds: jest.fn(),
 }));
 
+jest.mock('@/lib/config/firebase/admin', () => ({
+  getAdminApp: jest.fn(),
+}));
+
 import { PATCH } from '@/app/api/cards/[id]/route';
 
 const mockedGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>;
@@ -93,6 +98,8 @@ const mockedIsCollectionRootOnlyPayload = isCollectionRootOnlyPayload as jest.Mo
 const mockedIsContentOnlyPayload = isContentOnlyPayload as jest.MockedFunction<typeof isContentOnlyPayload>;
 const mockedIsTagsOnlyPayload = isTagsOnlyPayload as jest.MockedFunction<typeof isTagsOnlyPayload>;
 const mockedIsStatusOnlyPayload = isStatusOnlyPayload as jest.MockedFunction<typeof isStatusOnlyPayload>;
+const mockedGetAdminApp = getAdminApp as jest.MockedFunction<typeof getAdminApp>;
+const cardDocGetMock = jest.fn();
 
 function makeRequest(body: unknown) {
   return {
@@ -116,6 +123,20 @@ describe('PATCH /api/cards/[id] cover fast path', () => {
     jest.clearAllMocks();
     mockedGetServerSession.mockResolvedValue({ user: { role: 'admin' } } as never);
     mockedGetCardById.mockResolvedValue({ docId: 'card-1', title: 'Test', createdAt: 1, updatedAt: 1, content: '' } as never);
+    cardDocGetMock.mockResolvedValue({
+      exists: true,
+      id: 'card-1',
+      data: () => ({ title: 'Test', createdAt: 1, updatedAt: 1, content: '', galleryMedia: [], childrenIds: [] }),
+    });
+    mockedGetAdminApp.mockReturnValue({
+      firestore: () => ({
+        collection: () => ({
+          doc: () => ({
+            get: cardDocGetMock,
+          }),
+        }),
+      }),
+    } as never);
     mockedIsGalleryOnlyPayload.mockReturnValue(false);
     mockedIsGalleryReorderOnlyPayload.mockReturnValue(false);
     mockedIsCardMetadataOnlyPayload.mockReturnValue(false);
@@ -140,6 +161,7 @@ describe('PATCH /api/cards/[id] cover fast path', () => {
       coverImageId: 'media-1',
       coverImageFocalPoint: undefined,
     });
+    expect(mockedGetCardById).not.toHaveBeenCalled();
     expect(mockedUpdateCard).not.toHaveBeenCalled();
     expect(payload.coverImageId).toBe('media-1');
   });

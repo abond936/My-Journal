@@ -12,7 +12,7 @@ import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensio
 import { useMedia } from '@/components/providers/MediaProvider';
 import { useTag } from '@/components/providers/TagProvider';
 import type { AdminTagFilterScope } from '@/lib/preferences/adminFilters';
-import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import { getStudioDisplayUrl } from '@/lib/utils/photoUtils';
 import { formatCoreTagsTooltipLines, getCoreTagsByDimension } from '@/lib/utils/tagDisplay';
 import MediaEditModal from '@/components/admin/media-admin/MediaEditModal';
 import MediaLinkedCardsModal from '@/components/admin/media-admin/MediaLinkedCardsModal';
@@ -347,7 +347,7 @@ function MediaAdminGridCell({
           {...(studioDragBind ? studioDragBind.listeners : {})}
         >
           <JournalImage
-            src={getDisplayUrl(media)}
+            src={getStudioDisplayUrl(media)}
             alt={media.caption || media.filename}
             fill
             className={styles.thumbnailNatural}

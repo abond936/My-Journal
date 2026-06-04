@@ -22,6 +22,12 @@ jest.mock('next/image', () => {
   };
 });
 
+jest.mock('@/components/providers/MediaProvider', () => ({
+  useMedia: () => ({
+    registerCreatedMedia: jest.fn(),
+  }),
+}));
+
 describe('CoverPhotoContainer', () => {
   const mockOnChange = jest.fn();
   const mockMedia: Media = {

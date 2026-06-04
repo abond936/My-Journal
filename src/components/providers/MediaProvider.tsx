@@ -248,7 +248,6 @@ const MEDIA_RECORD_CACHE_LIMIT = 400;
 export function MediaProvider({ children }: { children: React.ReactNode }) {
   const initialMediaAdminPrefsRef = useRef(readStoredMediaAdminStoredFilterPreferences());
   const pathname = usePathname();
-  const isMediaListRoute = Boolean(pathname?.startsWith('/admin/studio'));
   const mediaPageLimit = pathname?.startsWith('/admin/studio') ? '100' : '50';
 
   const { selectedTags } = useCardContext();
@@ -258,8 +257,6 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     () => groupSelectedTagIdsByDimension(selectedTags, allTags),
     [selectedTags, allTags]
   );
-
-  const dimensionalTagKey = useMemo(() => JSON.stringify(dimensionalTagMap), [dimensionalTagMap]);
 
   const [media, setMedia] = useState<Media[]>([]);
   const [loading, setLoading] = useState(false);
@@ -293,6 +290,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const mediaByIdCacheRef = useRef(new Map<string, Media>());
   const mediaByIdCacheOrderRef = useRef<string[]>([]);
   const mediaPrefetchInFlightRef = useRef(new Set<string>());
+  const mediaPrefetchPromiseRef = useRef(new Map<string, Promise<void>>());
 
   const cacheMediaRecord = useCallback((item: Media | null | undefined) => {
     if (!item?.docId) return;
@@ -349,6 +347,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       mediaPrefetchInFlightRef.current.add(queryString);
+      const prefetchPromise = (async () => {
       try {
         const response = await fetch(`/api/media?${queryString}`);
         if (!response.ok) return;
@@ -371,7 +370,11 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         // Ignore background prefetch failures; foreground fetch keeps correctness.
       } finally {
         mediaPrefetchInFlightRef.current.delete(queryString);
+        mediaPrefetchPromiseRef.current.delete(queryString);
       }
+      })();
+      mediaPrefetchPromiseRef.current.set(queryString, prefetchPromise);
+      await prefetchPromise;
     },
     [cacheMediaQueryEntryIfFresh, cacheMediaRecords, rememberMediaQueryCacheEntry]
   );
@@ -489,6 +492,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     try {
       const updatedFilters = { ...filtersRef.current, ...newFilters };
       const isStudioPath = pathname?.startsWith('/admin/studio');
+      const allowBackgroundPrefetch = !isStudioPath;
       /** Embedded Studio: media list uses only the overlay; full-page and PhotoPicker merge card context + overlay. */
       const cardDimensionalForFetch = isStudioPath ? ({} as DimensionalTagIdMap) : dimensionalTagMap;
       const mergedDimensional = mergeDimensionalTagMaps(
@@ -549,6 +553,30 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         }
         cacheMediaRecords(cached.media);
         return;
+      }
+      const inFlightPrefetch = mediaPrefetchPromiseRef.current.get(cacheKey);
+      if (inFlightPrefetch) {
+        await inFlightPrefetch.catch(() => undefined);
+        const cachedAfterPrefetch = cacheMediaQueryEntryIfFresh(cacheKey);
+        if (cachedAfterPrefetch) {
+          setMedia((prev) => (appendMode ? dedupeMediaByDocId([...prev, ...cachedAfterPrefetch.media]) : cachedAfterPrefetch.media));
+          mediaRef.current = appendMode ? dedupeMediaByDocId([...mediaRef.current, ...cachedAfterPrefetch.media]) : cachedAfterPrefetch.media;
+          setPagination(cachedAfterPrefetch.pagination);
+          setCurrentPage(cachedAfterPrefetch.currentPage);
+          currentPageRef.current = cachedAfterPrefetch.currentPage;
+          setNextCursor(cachedAfterPrefetch.nextCursor);
+          nextCursorRef.current = cachedAfterPrefetch.nextCursor;
+          setPrevCursor(cachedAfterPrefetch.prevCursor);
+          prevCursorRef.current = cachedAfterPrefetch.prevCursor;
+          setCursorStack(cachedAfterPrefetch.cursorStack);
+          cursorStackRef.current = cachedAfterPrefetch.cursorStack;
+          if (newFilters) {
+            setFilters(updatedFilters);
+            filtersRef.current = updatedFilters;
+          }
+          cacheMediaRecords(cachedAfterPrefetch.media);
+          return;
+        }
       }
       const response = await fetch(`/api/media?${queryString}`, {
         signal: controller.signal,
@@ -619,7 +647,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       const canPrefetchNext =
         Boolean(data.pagination.hasNext) &&
         (Boolean(data.pagination.nextCursor) || lastMediaEngineRef.current === 'typesense');
-      if (canPrefetchNext) {
+      if (allowBackgroundPrefetch && canPrefetchNext) {
         const prefetchOpts =
           lastMediaEngineRef.current === 'typesense'
             ? { listPage: nextListPage, includeTotal }
@@ -971,13 +999,6 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const selectNone = useCallback(() => {
     setSelectedMediaIds([]);
   }, []);
-
-  // Load / refresh list only on media list surfaces (avoid fetching on Card admin, etc.).
-  useEffect(() => {
-    if (!isMediaListRoute) return;
-    void fetchMedia(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchMedia identity changes with cursors/stack; dimensionalTagKey is the intended trigger
-  }, [dimensionalTagKey, isMediaListRoute]);
 
   useEffect(() => {
     return () => {

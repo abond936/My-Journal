@@ -32,6 +32,7 @@ import { withErrorHandler } from '@/lib/middleware/errorHandler';
 import { AppError, ErrorCode } from '@/lib/types/error';
 import { z } from 'zod';
 import { canReadCard, filterReadableCards } from '@/lib/auth/readerAccess';
+import { getAdminApp } from '@/lib/config/firebase/admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -205,13 +206,14 @@ export async function PATCH(
     const body = await request.json();
     const validatedData = cardUpdateSchema.parse(body);
 
-    const existingCard = await getCardById(id);
-    if (!existingCard) {
+    const existingCardSnap = await getAdminApp().firestore().collection('cards').doc(id).get();
+    if (!existingCardSnap.exists) {
       throw new AppError(
         ErrorCode.NOT_FOUND,
         `Cannot update: Card with ID ${id} not found`
       );
     }
+    const existingCard = { ...(existingCardSnap.data() as Card), docId: existingCardSnap.id } as Card;
 
     let updatedCard: Card;
     if (isCoverOnlyPatch(validatedData)) {

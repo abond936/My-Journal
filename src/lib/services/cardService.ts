@@ -14,7 +14,7 @@ import { deleteMediaAsset } from './images/mediaStorage';
 import { extractMediaFromContent, stripContentImageSrc, hydrateContentImageSrc, removeMediaFromContent, generateExcerpt } from '@/lib/utils/cardUtils';
 import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 import { buildTagMap, computeJournalWhenSortKeys } from '@/lib/utils/journalWhenSort';
-import { getPublicStorageUrl } from '@/lib/utils/storageUrl';
+import { applyPublicStorageUrlsToMedia } from '@/lib/utils/storageUrl';
 import { Media } from '@/lib/types/photo';
 import { AppError, ErrorCode } from '@/lib/types/error';
 import { unlinkCardFromAllQuestions } from '@/lib/services/questionService';
@@ -139,10 +139,8 @@ function deriveFocalPointFromObjectPosition(
  * Requires Firebase Storage rules to allow public read for the images path.
  */
 function _applyPublicStorageUrls(mediaMap: Map<string, Media>): void {
-  mediaMap.forEach((media) => {
-    if (media?.storagePath) {
-      media.storageUrl = getPublicStorageUrl(media.storagePath);
-    }
+  mediaMap.forEach((media, id) => {
+    mediaMap.set(id, applyPublicStorageUrlsToMedia(media));
   });
 }
 

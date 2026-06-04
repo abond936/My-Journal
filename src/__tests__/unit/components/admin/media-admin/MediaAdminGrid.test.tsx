@@ -91,6 +91,7 @@ jest.mock('@/components/admin/studio/StudioShellContext', () => ({
 
 jest.mock('@/lib/utils/photoUtils', () => ({
   getDisplayUrl: () => '/test.jpg',
+  getStudioDisplayUrl: () => '/test-studio.jpg',
 }));
 
 jest.mock('@/components/admin/common/AdminGridCellChrome', () => ({

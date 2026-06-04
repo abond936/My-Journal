@@ -72,6 +72,7 @@ This repo runs in a Windows + PowerShell environment with known quoting, executi
 - **Literal-path discipline** - On Windows, treat bracketed route paths and special characters carefully; use literal-path reads where needed rather than assuming shell glob behavior.
 - **Small verification before broad edits** - When a tool path or encoding assumption is uncertain, run a narrow proof first and then proceed; do not combine discovery, remediation, and broad document rewrites in one move.
 - **Name the failure class early** - Explicitly distinguish shell/display issue, sandbox/tooling issue, and actual file/code issue before proposing a fix.
+- **Browser runtime stop rule** - In this repo's current Codex Windows environment, Browser / `@chrome` live control should be treated as unavailable by default. Do not keep retrying browser startup or tab-claim flows after the same runner-level failure repeats (for example `node_repl kernel exited unexpectedly` or `windows sandbox failed: spawn setup refresh`). At most, do one narrow smoke test if live verification is essential and not already ruled out by canon; if that fails with the same bridge/runtime signature, stop, say the blocker is below the app layer, and fall back to code/test assessment or a manual verification script instead of further browser bootstrap attempts.
 
 # Canonical document topology
 

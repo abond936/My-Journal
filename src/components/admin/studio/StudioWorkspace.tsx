@@ -235,6 +235,7 @@ export default function StudioWorkspace() {
   const cardsBankRemoveRef = useRef<((cardId: string) => void) | null>(null);
   const cardsBankDeleteFallbackResolverRef = useRef<((deletedCardId: string) => StudioSelectedPreview | null) | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(() => requestedCardId);
+  const selectedCardIdRef = useRef<string | null>(requestedCardId);
   const [selectedPreview, setSelectedPreview] = useState<StudioSelectedPreview | null>(null);
   const [selectedDetail, setSelectedDetail] = useState<StudioSelectedDetail | null>(null);
   const selectedPreviewRef = useRef<StudioSelectedPreview | null>(null);
@@ -344,18 +345,24 @@ export default function StudioWorkspace() {
     (cardId: string, previewCard?: Card | StudioSelectedPreview | StudioSelectedDetail | null) => {
       const trimmedId = cardId.trim();
       if (!trimmedId) return;
-      setSelectedCardId(trimmedId);
-      setSelectedDetail((current) => (current?.docId === trimmedId ? current : null));
-      setSelectedLoadState('loading');
       const knownPreview = getKnownCardPreview(trimmedId);
       const nextPreview =
         previewCard?.docId === trimmedId
           ? toStudioSelectedPreview(previewCard)
           : knownPreview;
+      const sameSelectedCard =
+        selectedCardIdRef.current === trimmedId &&
+        (selectedDetailRef.current?.docId === trimmedId || selectedPreviewRef.current?.docId === trimmedId);
       if (nextPreview) {
         cacheSelectedCard(nextPreview);
         setSelectedPreview(nextPreview);
       }
+      if (sameSelectedCard) {
+        return;
+      }
+      setSelectedCardId(trimmedId);
+      setSelectedDetail((current) => (current?.docId === trimmedId ? current : null));
+      setSelectedLoadState('loading');
     },
     [cacheSelectedCard, getKnownCardPreview]
   );
@@ -378,6 +385,10 @@ export default function StudioWorkspace() {
     },
     [selectCard, selectedCardId]
   );
+
+  useEffect(() => {
+    selectedCardIdRef.current = selectedCardId;
+  }, [selectedCardId]);
 
   useEffect(() => {
     selectNoneMedia();
@@ -1306,6 +1317,7 @@ export default function StudioWorkspace() {
               embeddedUnparentedReplacement={(ctx) => (
                   <StudioTreeCandidateCardBank
                     {...ctx}
+                    autoSelectFirstCard={!newCardRequested}
                     registerCatalogRemove={(fn) => {
                       cardsBankRemoveRef.current = fn;
                     }}
