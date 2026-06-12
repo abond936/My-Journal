@@ -1300,7 +1300,6 @@ export default function StudioWorkspace() {
         <div className={wideLayout ? styles.grid : styles.gridStacked}>
           <div className={styles.collectionsHost}>
               <CollectionsAdminClient
-              embedded
               onSelectCard={requestSelectCard}
               selectedCardIdExternal={selectedCardId}
               embeddedExternalDragEnd={onStudioRelationshipDragEnd}

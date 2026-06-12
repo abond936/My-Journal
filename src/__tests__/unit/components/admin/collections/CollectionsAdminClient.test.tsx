@@ -40,11 +40,6 @@ jest.mock('@/components/admin/card-admin/CuratedTreeNode', () => ({
   CuratedTreeNode: () => <li data-testid="tree-node" />,
 }));
 
-jest.mock('@/components/admin/collections/CollectionsMediaPanel', () => ({
-  __esModule: true,
-  default: () => <div data-testid="media-panel" />,
-}));
-
 jest.mock('@/components/common/JournalImage', () => ({
   __esModule: true,
   default: () => null,
@@ -82,7 +77,6 @@ describe('CollectionsAdminClient', () => {
 
     render(
       <CollectionsAdminClient
-        embedded
         embeddedUnparentedReplacement={() => <div data-testid="cards-bank" />}
         embeddedRightSlot={<div data-testid="right-slot" />}
       />
@@ -126,7 +120,6 @@ describe('CollectionsAdminClient', () => {
 
     render(
       <CollectionsAdminClient
-        embedded
         embeddedUnparentedReplacement={() => <div data-testid="cards-bank" />}
         embeddedRightSlot={<div data-testid="right-slot" />}
       />
@@ -195,7 +188,6 @@ describe('CollectionsAdminClient', () => {
 
     render(
       <CollectionsAdminClient
-        embedded
         embeddedUnparentedReplacement={() => <div data-testid="cards-bank" />}
         embeddedRightSlot={<div data-testid="right-slot" />}
       />
@@ -290,7 +282,6 @@ describe('CollectionsAdminClient', () => {
 
     render(
       <CollectionsAdminClient
-        embedded
         embeddedUnparentedReplacement={() => <div data-testid="cards-bank" />}
         embeddedRightSlot={<div data-testid="right-slot" />}
       />
@@ -412,7 +403,6 @@ describe('CollectionsAdminClient', () => {
 
     render(
       <CollectionsAdminClient
-        embedded
         embeddedUnparentedReplacement={() => <div data-testid="cards-bank" />}
         embeddedRightSlot={<div data-testid="right-slot" />}
       />
@@ -528,7 +518,6 @@ describe('CollectionsAdminClient', () => {
 
     render(
       <CollectionsAdminClient
-        embedded
         embeddedUnparentedReplacement={() => <div data-testid="cards-bank" />}
         embeddedRightSlot={<div data-testid="right-slot" />}
       />
@@ -633,7 +622,6 @@ describe('CollectionsAdminClient', () => {
 
     render(
       <CollectionsAdminClient
-        embedded
         onSelectCard={onSelectCard}
         embeddedUnparentedReplacement={() => <div data-testid="cards-bank" />}
         embeddedRightSlot={<div data-testid="right-slot" />}
@@ -739,7 +727,6 @@ describe('CollectionsAdminClient', () => {
 
     render(
       <CollectionsAdminClient
-        embedded
         embeddedUnparentedReplacement={() => <div data-testid="cards-bank" />}
         embeddedRightSlot={<div data-testid="right-slot" />}
       />

@@ -30,7 +30,7 @@ jest.mock('@/components/admin/card-admin/curatedTreeDropHighlightContext', () =>
   useCuratedTreeDropHighlight: () => null,
 }));
 
-jest.mock('@/components/admin/collections/CollectionsMediaPanel', () => () => null);
+
 jest.mock('@/components/admin/studio/TagAdminStudioPane', () => () => null);
 jest.mock('@/lib/hooks/useDefaultDndSensors', () => ({
   DND_POINTER_IGNORE_ATTR: 'data-dnd-ignore',
@@ -129,7 +129,6 @@ describe('CollectionsAdminClient selection sync', () => {
 
     render(
       <CollectionsAdminClient
-        embedded
         selectedCardIdExternal="card-2"
         onSelectCard={onSelectCard}
         embeddedRightSlot={<div />}
