@@ -3,12 +3,8 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { FirestoreAdapter } from '@auth/firebase-adapter';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { getFirestore } from 'firebase-admin/firestore';
-import {
-  authorizeJournalUserCredentials,
-  getJournalUserByDocId,
-  hasJournalUserWithUsername,
-  normalizeJournalUsername,
-} from '@/lib/auth/journalUsersFirestore';
+import { getJournalUserByDocId } from '@/lib/auth/journalUsersFirestore';
+import { authorizeCredentials } from '@/lib/auth/authorizeCredentials';
 
 const app = getAdminApp();
 const db = getFirestore(app);
@@ -22,47 +18,7 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        const username = credentials?.username?.trim() ?? '';
-        const password = credentials?.password ?? '';
-
-        if (!username || !password) {
-          return null;
-        }
-
-        const fromDb = await authorizeJournalUserCredentials(username, password);
-        if (fromDb) {
-          const emailLocal = `${fromDb.username}@journal.local`;
-          return {
-            id: fromDb.docId,
-            name: fromDb.displayName,
-            email: emailLocal,
-            role: fromDb.role,
-          };
-        }
-
-        const legacyEmail = process.env.ADMIN_EMAIL?.trim() ?? '';
-        const legacyPassword = process.env.ADMIN_PASSWORD ?? '';
-        const legacyMatch =
-          !!legacyEmail &&
-          !!legacyPassword &&
-          normalizeJournalUsername(username) === normalizeJournalUsername(legacyEmail) &&
-          password === legacyPassword;
-
-        if (!legacyMatch) {
-          return null;
-        }
-
-        const journalRowExists = await hasJournalUserWithUsername(legacyEmail);
-        if (journalRowExists) {
-          return null;
-        }
-
-        return {
-          id: 'admin',
-          name: legacyEmail,
-          email: legacyEmail,
-          role: 'admin',
-        };
+        return authorizeCredentials(credentials?.username ?? '', credentials?.password ?? '');
       },
     }),
   ],

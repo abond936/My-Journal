@@ -48,11 +48,6 @@ async function getDocByUsername(
   return { docId: doc.id, data: doc.data() as JournalUserDoc };
 }
 
-export async function hasJournalUserWithUsername(usernameRaw: string): Promise<boolean> {
-  const row = await getDocByUsername(normalizeJournalUsername(usernameRaw));
-  return row !== null;
-}
-
 function toPublic(docId: string, data: JournalUserDoc): JournalUserPublic {
   return {
     docId,
@@ -66,7 +61,7 @@ function toPublic(docId: string, data: JournalUserDoc): JournalUserPublic {
 }
 
 /**
- * Used by NextAuth authorize: DB user wins; legacy env is only if no matching journal user doc.
+ * Used by NextAuth authorize: validates username/password against `journal_users` only.
  */
 export async function authorizeJournalUserCredentials(
   usernameRaw: string,

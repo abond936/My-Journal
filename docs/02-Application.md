@@ -922,7 +922,8 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 ✅ **Complete**
 
 - **Data Model** - Firestore `journal_users` collection. Schema: `src/lib/auth/journalUsersFirestore.ts`.
-- **Authentication** - `authorize` in `authOptions.ts` (DB first, legacy env fallback when no row for that username). Bcrypt passwords.
+- **Authentication** - `authorize` in `authOptions.ts` validates against Firestore `journal_users` only (bcrypt). **Shipped 2026-06-12 (slice 3d):** runtime env-password fallback removed; use `npm run seed:journal-users` when the collection is empty, then manage users at `/admin/journal-users`.
+- **Env-password fallback retirement** - **Shipped 2026-06-12 (slice 3d):** NextAuth no longer accepts plain `ADMIN_EMAIL` / `ADMIN_PASSWORD` at sign-in; those env vars are bootstrap-only for `seed:journal-users`.
 - **Admin View** - Users tab at `/admin/journal-users`. APIs: `/api/admin/journal-users`, `/api/admin/journal-users/[id]`.
 - **Roles** - Viewers only from UI/API; single admin rule. Seed script: `npm run seed:journal-users`.
 - **Login Redirect** - `/?callbackUrl=/admin` supported in `Home.tsx` (wrapped in `Suspense`).
