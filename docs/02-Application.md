@@ -61,7 +61,7 @@ Legend:
 
 ⭕1 **Planned**
 
-- **Error monitoring** - Baseline production error visibility. **Post-review step 8d** (`03`).
+- **Error monitoring** - **8d shipped 2026-06-12:** Sentry SDK wired for hosted production when DSN env vars are set; local dev/test stays off unless `NODE_ENV=production`. Configure on Vercel/host: `NEXT_PUBLIC_SENTRY_DSN` (+ optional `SENTRY_DSN`, `SENTRY_ENVIRONMENT`). See `.env.example`.
 
 ⭕2 **Future**
 
