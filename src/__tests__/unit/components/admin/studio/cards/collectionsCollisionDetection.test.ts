@@ -1,5 +1,5 @@
 import { closestCenter, pointerWithin, rectIntersection, type Collision } from '@dnd-kit/core';
-import { collectionsCollisionDetection } from '@/components/admin/card-admin/collectionsCollisionDetection';
+import { collectionsCollisionDetection } from '@/components/admin/studio/cards/collectionsCollisionDetection';
 
 jest.mock('@dnd-kit/core', () => {
   const actual = jest.requireActual('@dnd-kit/core');

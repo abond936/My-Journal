@@ -2,7 +2,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import GalleryManager from '@/components/admin/card-admin/GalleryManager';
+import GalleryManager from '@/components/admin/studio/cards/GalleryManager';
 import type { HydratedGalleryMediaItem } from '@/lib/types/card';
 
 jest.mock('@dnd-kit/core', () => ({
@@ -16,11 +16,11 @@ jest.mock('@dnd-kit/sortable', () => ({
   arrayMove: (items: unknown[]) => items,
 }));
 
-jest.mock('@/components/admin/card-admin/SortableItem', () => ({
+jest.mock('@/components/admin/studio/cards/SortableItem', () => ({
   SortableItem: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-jest.mock('@/components/admin/card-admin/PhotoPicker', () => ({
+jest.mock('@/components/admin/studio/cards/PhotoPicker', () => ({
   __esModule: true,
   default: () => null,
 }));

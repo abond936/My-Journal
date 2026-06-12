@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, waitFor } from '@testing-library/react';
 import type { Media } from '@/lib/types/photo';
-import useMediaReferenceSummaries from '@/components/admin/media-admin/useMediaReferenceSummaries';
+import useMediaReferenceSummaries from '@/components/admin/studio/media/useMediaReferenceSummaries';
 
 function Harness({ mediaItems }: { mediaItems: Media[] }) {
   useMediaReferenceSummaries(mediaItems);

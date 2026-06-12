@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useLayoutEffect, useRef } from 'react';
-import { TagAdminList } from '@/components/admin/tag-admin/TagAdminList';
-import { useTagManagement } from '@/components/admin/tag-admin/useTagManagement';
-import tagAdminStyles from '@/app/admin/tag-admin/tag-admin.module.css';
+import { TagAdminList } from '@/components/admin/studio/tags/TagAdminList';
+import { useTagManagement } from '@/components/admin/studio/tags/useTagManagement';
+import tagAdminStyles from '@/components/admin/studio/tags/tagAdminShell.module.css';
 import studioStyles from './StudioWorkspace.module.css';
 
 /**

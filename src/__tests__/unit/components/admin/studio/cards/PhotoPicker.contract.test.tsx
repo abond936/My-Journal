@@ -2,8 +2,8 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import PhotoPicker from '@/components/admin/card-admin/PhotoPicker';
-import MediaLocalImportDialog from '@/components/admin/media-admin/MediaLocalImportDialog';
+import PhotoPicker from '@/components/admin/studio/cards/PhotoPicker';
+import MediaLocalImportDialog from '@/components/admin/studio/media/MediaLocalImportDialog';
 
 const showToastMock = jest.fn();
 

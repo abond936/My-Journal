@@ -32,7 +32,7 @@ import {
   isCollectionsCardDragData,
 } from '@/lib/dnd/collectionsDragContract';
 import type { StudioCatalogCard } from '@/components/admin/studio/studioCardTypes';
-import UtilityCardPreview from '@/components/admin/card-admin/UtilityCardPreview';
+import UtilityCardPreview from '@/components/admin/studio/cards/UtilityCardPreview';
 import {
   getObjectPositionForAspectRatio,
   getObjectPositionFromFocalPoint,

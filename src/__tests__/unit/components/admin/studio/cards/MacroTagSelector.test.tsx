@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
+import MacroTagSelector from '@/components/admin/studio/cards/MacroTagSelector';
 import type { Tag } from '@/lib/types/tag';
 
 jest.mock('@/components/providers/TagProvider', () => ({
@@ -11,7 +11,7 @@ jest.mock('@/components/providers/TagProvider', () => ({
   }),
 }));
 
-jest.mock('@/components/admin/card-admin/TagPickerDimensionColumn', () => ({
+jest.mock('@/components/admin/studio/cards/TagPickerDimensionColumn', () => ({
   __esModule: true,
   default: () => <div data-testid="mock-dimension-column" />,
 }));

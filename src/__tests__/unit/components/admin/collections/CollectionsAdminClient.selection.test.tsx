@@ -17,15 +17,15 @@ jest.mock('@dnd-kit/core', () => ({
   }),
 }));
 
-jest.mock('@/components/admin/card-admin/CuratedTreeNode', () => ({
+jest.mock('@/components/admin/studio/cards/CuratedTreeNode', () => ({
   CuratedTreeNode: () => null,
 }));
 
-jest.mock('@/components/admin/card-admin/curatedTreeDragContext', () => ({
+jest.mock('@/components/admin/studio/cards/curatedTreeDragContext', () => ({
   CuratedTreeDragProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-jest.mock('@/components/admin/card-admin/curatedTreeDropHighlightContext', () => ({
+jest.mock('@/components/admin/studio/cards/curatedTreeDropHighlightContext', () => ({
   CuratedTreeDropHighlightSync: () => null,
   useCuratedTreeDropHighlight: () => null,
 }));

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import TagPickerDimensionColumn from '@/components/admin/card-admin/TagPickerDimensionColumn';
+import TagPickerDimensionColumn from '@/components/admin/studio/cards/TagPickerDimensionColumn';
 import { useTag } from '@/components/providers/TagProvider';
 import { useMedia } from '@/components/providers/MediaProvider';
 import type { Media } from '@/lib/types/photo';
@@ -10,7 +10,7 @@ import { createUITreeFromDimensions, filterTreesBySearch } from '@/lib/utils/tag
 import type { TagWithChildren } from '@/components/providers/TagProvider';
 import { buildResolvedTagDimensionMap, buildTagByIdMap, getTagPathDisplay } from '@/lib/utils/tagDimensionResolve';
 import { DIMENSION_LABEL, DIMENSION_ORDER, type TagDimension } from '@/lib/utils/tagDisplay';
-import styles from '@/components/admin/card-admin/BulkEditTagsModal.module.css';
+import styles from '@/components/admin/studio/cards/BulkEditTagsModal.module.css';
 
 interface BulkEditMediaTagsModalProps {
   mediaIds: string[];

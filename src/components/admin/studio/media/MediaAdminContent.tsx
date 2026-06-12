@@ -5,15 +5,15 @@ import { useRouter } from 'next/navigation';
 import { FilterX, Pencil } from 'lucide-react';
 import { getMediaErrorSeverity, useMedia, type MediaFilters } from '@/components/providers/MediaProvider';
 import { useTag } from '@/components/providers/TagProvider';
-import BulkEditMediaTagsModal from '@/components/admin/media-admin/BulkEditMediaTagsModal';
-import MediaAdminGrid from '@/components/admin/media-admin/MediaAdminGrid';
-import MediaLocalImportDialog from '@/components/admin/media-admin/MediaLocalImportDialog';
-import EditModal from '@/components/admin/card-admin/EditModal';
-import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
+import BulkEditMediaTagsModal from '@/components/admin/studio/media/BulkEditMediaTagsModal';
+import MediaAdminGrid from '@/components/admin/studio/media/MediaAdminGrid';
+import MediaLocalImportDialog from '@/components/admin/studio/media/MediaLocalImportDialog';
+import EditModal from '@/components/admin/studio/cards/EditModal';
+import MacroTagSelector from '@/components/admin/studio/cards/MacroTagSelector';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
 import DebouncedSearchInput from '@/components/admin/common/DebouncedSearchInput';
-import cardAdminStyles from '@/app/admin/card-admin/card-admin.module.css';
-import styles from './media-admin.module.css';
+import cardAdminStyles from '@/components/admin/studio/cards/studioCardsShell.module.css';
+import styles from './mediaAdminShell.module.css';
 import {
   flattenDimensionalTagMapToTagIds,
   groupSelectedTagIdsByDimension,

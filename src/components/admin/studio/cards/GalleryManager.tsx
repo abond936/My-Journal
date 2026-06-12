@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import JournalImage from '@/components/common/JournalImage';
 import { useTag } from '@/components/providers/TagProvider';
-import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
+import MacroTagSelector from '@/components/admin/studio/cards/MacroTagSelector';
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -12,7 +12,7 @@ import {
 } from '@dnd-kit/sortable';
 import { GalleryMediaItem, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { getStudioDisplayUrl } from '@/lib/utils/photoUtils';
-import PhotoPicker from '@/components/admin/card-admin/PhotoPicker';
+import PhotoPicker from '@/components/admin/studio/cards/PhotoPicker';
 import styles from './GalleryManager.module.css';
 import { SortableItem } from './SortableItem';
 import EditModal from './EditModal';

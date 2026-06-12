@@ -5,7 +5,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import type { Media, PickerMedia, TreeNode } from '@/lib/types/photo';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
-import styles from '@/components/admin/card-admin/PhotoPicker.module.css';
+import styles from '@/components/admin/studio/cards/PhotoPicker.module.css';
 
 type MediaLocalImportDialogProps = {
   isOpen: boolean;

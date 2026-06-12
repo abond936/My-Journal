@@ -1,6 +1,6 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
-import MediaAdminGrid from '@/components/admin/media-admin/MediaAdminGrid';
+import MediaAdminGrid from '@/components/admin/studio/media/MediaAdminGrid';
 import type { Media } from '@/lib/types/photo';
 
 const updateMedia = jest.fn(async () => true);
@@ -70,17 +70,17 @@ jest.mock('@/components/admin/common/CardDimensionalTagCommandBar', () => ({
   default: () => null,
 }));
 
-jest.mock('@/components/admin/media-admin/MediaEditModal', () => ({
+jest.mock('@/components/admin/studio/media/MediaEditModal', () => ({
   __esModule: true,
   default: () => null,
 }));
 
-jest.mock('@/components/admin/media-admin/MediaLinkedCardsModal', () => ({
+jest.mock('@/components/admin/studio/media/MediaLinkedCardsModal', () => ({
   __esModule: true,
   default: () => null,
 }));
 
-jest.mock('@/components/admin/media-admin/useMediaReferenceSummaries', () => ({
+jest.mock('@/components/admin/studio/media/useMediaReferenceSummaries', () => ({
   __esModule: true,
   default: () => ({}),
 }));

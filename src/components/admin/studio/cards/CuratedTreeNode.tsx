@@ -7,7 +7,7 @@ import {
   buildCuratedInsertBeforeDropId,
   normalizeCuratedChildIds,
 } from '@/lib/utils/curatedCollectionTree';
-import { useCuratedTreeDropHighlight } from '@/components/admin/card-admin/curatedTreeDropHighlightContext';
+import { useCuratedTreeDropHighlight } from '@/components/admin/studio/cards/curatedTreeDropHighlightContext';
 import styles from '@/app/admin/collections/page.module.css';
 import {
   buildCollectionsCardDragData,

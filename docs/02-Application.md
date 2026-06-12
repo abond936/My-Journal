@@ -468,7 +468,7 @@ Legend:
 - **Code Path Simplification Pass** - Audit Studio and the surviving admin/card/media paths for deprecated surfaces, duplicated interaction models, stale providers/loaders, and dead compatibility code, then retire what no longer supports the current workflow without weakening shipped behavior or canon contracts.
 - **Retire question-admin** - **Shipped 2026-06-12 (slice 4a):** `/admin/question-admin` redirects to `/admin/studio`; admin nav no longer links a standalone Questions route. Studio **Questions** pane is the sole question-admin surface.
 - **Remove Collections standalone branch** - **Shipped 2026-06-12 (slice 4b):** unreachable `CollectionsAdminClient` standalone path and `CollectionsMediaPanel` removed; Studio Organize pane is the sole Collections surface.
-- **Legacy admin redirect routes** - **Shipped 2026-06-12 (slice 4c):** `/admin/card-admin`, `/admin/media-admin`, `/admin/tag-admin`, and `/admin/question-admin` (plus card deep links) are `next.config.ts` redirects only; redirect `page.tsx` shells removed. Shared modules (`MediaAdminContent`, `card-admin.module.css`, etc.) remain for Studio.
+- **Legacy admin redirect routes** - **Shipped 2026-06-12 (slice 4c):** `/admin/card-admin`, `/admin/media-admin`, `/admin/tag-admin`, and `/admin/question-admin` (plus card deep links) are `next.config.ts` redirects only. **Shipped 2026-06-12 (slice 4d):** shared implementation lives under `src/components/admin/studio/cards`, `studio/media`, and `studio/tags` (no legacy `*-admin` component folder names).
 - **Studio naming cleanup** - Rename the remaining `Content Management` surface/chrome language to `Content Studio` so the product vocabulary matches the shipped `Studio` IA.
 - **Bulk bar idle collapse + selection semantics** - Hide the bulk-actions bar entirely when nothing is selected, and reconcile selection copy/behavior with the current growing-list model so surfaces do not imply a paged `Select all on page` contract where the UI now behaves as `Select visible`.
 - **Operator message pruning** - Remove low-value shell messages such as `working in...` where they add noise without helping the author make a decision.
@@ -509,7 +509,7 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 ✅ **Complete**
 
 - **Service & schema** - Firestore `cards`; `src/lib/services/cardService.ts`; `src/lib/types/card.ts` (`cardSchema`). Denormalized fields for filtering; business rules server-side.
-- **Admin surfaces** - `src/app/admin/card-admin/` (grid/table, `CardForm` + `CardFormProvider`, `AdminFAB`, search/filter via `CardProvider`, `BulkEditTagsModal`).
+- **Admin surfaces** - `src/components/admin/studio/cards/` (grid/table, `CardForm` + `CardFormProvider`, `AdminFAB`, search/filter via `CardProvider`, `BulkEditTagsModal`); legacy `/admin/card-admin` URLs redirect to Studio.
 - **Fields** - Types `story|gallery|qa|quote|callout`; status; `displayMode`; cover + `PhotoPicker` / `CoverPhotoContainer`; `galleryMedia`; TipTap `content` + embedded media + `@` mentions (see Content Page); `MacroTagSelector`; excerpt + auto (`excerptAuto`); `childrenIds` + picker UI; dirty leave/duplicate flows (`persistableSnapshotsEqual`, `confirmLeaveIfDirty`, `POST /api/cards/[id]/duplicate`).
 - **Import** - Folder-as-card (`ImportFolderModal`, `__X` files, caps) - details in `docs/IMPORT-REFERENCE.md`.
 - **Discovery in edit** - PhotoPicker Library tab mirrors Media list filters + in-modal tag dimensions (`filterTagIds` from `CardForm`).

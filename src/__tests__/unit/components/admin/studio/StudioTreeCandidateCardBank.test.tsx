@@ -10,17 +10,17 @@ jest.mock('@dnd-kit/core', () => ({
   useDndContext: () => ({ active: null }),
 }));
 
-jest.mock('@/components/admin/card-admin/CardAdminGrid', () => ({
+jest.mock('@/components/admin/studio/cards/CardAdminGrid', () => ({
   __esModule: true,
   default: (props: unknown) => mockCardAdminGrid(props),
 }));
 
-jest.mock('@/components/admin/card-admin/MacroTagSelector', () => ({
+jest.mock('@/components/admin/studio/cards/MacroTagSelector', () => ({
   __esModule: true,
   default: () => null,
 }));
 
-jest.mock('@/components/admin/card-admin/EditModal', () => ({
+jest.mock('@/components/admin/studio/cards/EditModal', () => ({
   __esModule: true,
   default: () => null,
 }));

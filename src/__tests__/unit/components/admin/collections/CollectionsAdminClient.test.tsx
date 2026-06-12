@@ -36,7 +36,7 @@ jest.mock('@/components/admin/studio/TagAdminStudioPane', () => ({
   default: () => <div data-testid="tag-pane" />,
 }));
 
-jest.mock('@/components/admin/card-admin/CuratedTreeNode', () => ({
+jest.mock('@/components/admin/studio/cards/CuratedTreeNode', () => ({
   CuratedTreeNode: () => <li data-testid="tree-node" />,
 }));
 

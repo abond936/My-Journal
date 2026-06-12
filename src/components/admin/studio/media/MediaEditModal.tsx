@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import EditModal from '@/components/admin/card-admin/EditModal';
+import EditModal from '@/components/admin/studio/cards/EditModal';
 import JournalImage from '@/components/common/JournalImage';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import type { Media } from '@/lib/types/photo';

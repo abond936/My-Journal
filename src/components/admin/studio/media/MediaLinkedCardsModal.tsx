@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import EditModal from '@/components/admin/card-admin/EditModal';
+import EditModal from '@/components/admin/studio/cards/EditModal';
 import styles from './MediaEditModal.module.css';
 
 type CardSummary = {

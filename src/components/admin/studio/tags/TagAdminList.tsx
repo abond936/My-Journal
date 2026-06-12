@@ -19,7 +19,7 @@ import {
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useDefaultDndSensors } from '@/lib/hooks/useDefaultDndSensors';
-import styles from '@/app/admin/tag-admin/tag-admin.module.css';
+import styles from '@/components/admin/studio/tags/tagAdminShell.module.css';
 
 type TagRow = TagWithChildren & { depth: number };
 

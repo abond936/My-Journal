@@ -6,10 +6,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { mutate as globalMutate } from 'swr';
 import CollectionsAdminClient from '@/components/admin/collections/CollectionsAdminClient';
 import StudioTreeCandidateCardBank from '@/components/admin/studio/StudioTreeCandidateCardBank';
-import MediaAdminContent from '@/app/admin/media-admin/MediaAdminContent';
+import MediaAdminContent from '@/components/admin/studio/media/MediaAdminContent';
 import StudioCardEditPane from '@/components/admin/studio/StudioCardEditPane';
 import StudioQuestionsPane from '@/components/admin/studio/StudioQuestionsPane';
-import MediaEditModal from '@/components/admin/media-admin/MediaEditModal';
+import MediaEditModal from '@/components/admin/studio/media/MediaEditModal';
 import { handleStudioRelationshipDragEnd } from '@/components/admin/studio/studioRelationshipDndPrimitives';
 import type {
   StudioActiveCardViewModel,
@@ -47,7 +47,7 @@ import {
   type StudioWorkspaceLayoutPreferences,
 } from '@/lib/preferences/studioWorkspaceLayout';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
-import cardAdminPageStyles from '@/app/admin/card-admin/card-admin.module.css';
+import cardAdminPageStyles from '@/components/admin/studio/cards/studioCardsShell.module.css';
 import styles from './StudioWorkspace.module.css';
 
 const CARD_EDIT_RESIZE_HANDLE = 8;

@@ -12,16 +12,16 @@ import {
   useDroppable,
 } from '@dnd-kit/core';
 import { Card } from '@/lib/types/card';
-import { CuratedTreeNode } from '@/components/admin/card-admin/CuratedTreeNode';
+import { CuratedTreeNode } from '@/components/admin/studio/cards/CuratedTreeNode';
 import {
   CuratedTreeDragProvider,
   type CuratedTreeDragKind,
-} from '@/components/admin/card-admin/curatedTreeDragContext';
+} from '@/components/admin/studio/cards/curatedTreeDragContext';
 import {
   CuratedTreeDropHighlightSync,
   useCuratedTreeDropHighlight,
-} from '@/components/admin/card-admin/curatedTreeDropHighlightContext';
-import { collectionsCollisionDetection } from '@/components/admin/card-admin/collectionsCollisionDetection';
+} from '@/components/admin/studio/cards/curatedTreeDropHighlightContext';
+import { collectionsCollisionDetection } from '@/components/admin/studio/cards/collectionsCollisionDetection';
 import {
   buildRootDocIdListWithInsertBefore,
   buildParentIdsByChild,

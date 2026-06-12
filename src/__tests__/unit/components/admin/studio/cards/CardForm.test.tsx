@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import CardForm from '@/components/admin/card-admin/CardForm';
+import CardForm from '@/components/admin/studio/cards/CardForm';
 import { CardFormProvider } from '@/components/providers/CardFormProvider';
 import { Card } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
@@ -14,7 +14,7 @@ jest.mock('react-dnd-html5-backend', () => ({
   HTML5Backend: {},
 }));
 
-jest.mock('@/components/admin/card-admin/CoverPhotoContainer', () => {
+jest.mock('@/components/admin/studio/cards/CoverPhotoContainer', () => {
   return function MockCoverPhotoContainer(props: {
     onCommit?: (media: null, position?: string) => void;
   }) {
@@ -33,13 +33,13 @@ jest.mock('@/components/admin/card-admin/CoverPhotoContainer', () => {
   };
 });
 
-jest.mock('@/components/admin/card-admin/GalleryManager', () => {
+jest.mock('@/components/admin/studio/cards/GalleryManager', () => {
   return function MockGalleryManager() {
     return <div data-testid="mock-gallery">Mock Gallery</div>;
   };
 });
 
-jest.mock('@/components/admin/card-admin/MacroTagSelector', () => {
+jest.mock('@/components/admin/studio/cards/MacroTagSelector', () => {
   return function MockMacroTagSelector() {
     return <div data-testid="mock-tag-selector">Mock Tag Selector</div>;
   };
@@ -63,7 +63,7 @@ jest.mock('@/components/admin/common/CardDimensionalTagCommandBar', () => {
   };
 });
 
-jest.mock('@/components/admin/card-admin/ChildCardManager', () => {
+jest.mock('@/components/admin/studio/cards/ChildCardManager', () => {
   return function MockChildCardManager() {
     return <div data-testid="mock-child-manager">Mock Child Manager</div>;
   };

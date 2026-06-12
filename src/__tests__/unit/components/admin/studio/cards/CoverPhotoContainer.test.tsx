@@ -2,7 +2,7 @@
 import React from 'react';
 import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import CoverPhotoContainer from '@/components/admin/card-admin/CoverPhotoContainer';
+import CoverPhotoContainer from '@/components/admin/studio/cards/CoverPhotoContainer';
 import { Media } from '@/lib/types/photo';
 
 // Mock next/image

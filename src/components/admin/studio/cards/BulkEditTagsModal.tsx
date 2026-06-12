@@ -7,7 +7,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import styles from './BulkEditTagsModal.module.css';
 import { createUITreeFromDimensions, filterTreesBySearch } from '@/lib/utils/tagUtils';
 import { TagWithChildren } from '@/components/providers/TagProvider';
-import TagPickerDimensionColumn from '@/components/admin/card-admin/TagPickerDimensionColumn';
+import TagPickerDimensionColumn from '@/components/admin/studio/cards/TagPickerDimensionColumn';
 
 // --- Main Component ---
 interface BulkEditTagsModalProps {

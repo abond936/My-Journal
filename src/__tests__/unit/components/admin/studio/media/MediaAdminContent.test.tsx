@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import MediaAdminContent from '@/app/admin/media-admin/MediaAdminContent';
+import MediaAdminContent from '@/components/admin/studio/media/MediaAdminContent';
 
 const useMediaMock = jest.fn();
 const useStudioShellOptionalMock = jest.fn();
@@ -32,22 +32,22 @@ jest.mock('@/components/admin/studio/StudioShellContext', () => ({
   useStudioShellOptional: () => useStudioShellOptionalMock(),
 }));
 
-jest.mock('@/components/admin/media-admin/MediaAdminGrid', () => ({
+jest.mock('@/components/admin/studio/media/MediaAdminGrid', () => ({
   __esModule: true,
   default: () => <div data-testid="media-grid">grid</div>,
 }));
 
-jest.mock('@/components/admin/media-admin/BulkEditMediaTagsModal', () => ({
+jest.mock('@/components/admin/studio/media/BulkEditMediaTagsModal', () => ({
   __esModule: true,
   default: () => null,
 }));
 
-jest.mock('@/components/admin/media-admin/MediaLocalImportDialog', () => ({
+jest.mock('@/components/admin/studio/media/MediaLocalImportDialog', () => ({
   __esModule: true,
   default: () => null,
 }));
 
-jest.mock('@/components/admin/card-admin/EditModal', () => ({
+jest.mock('@/components/admin/studio/cards/EditModal', () => ({
   __esModule: true,
   default: ({
     isOpen,
@@ -58,7 +58,7 @@ jest.mock('@/components/admin/card-admin/EditModal', () => ({
   }) => (isOpen ? <div>{children}</div> : null),
 }));
 
-jest.mock('@/components/admin/card-admin/MacroTagSelector', () => ({
+jest.mock('@/components/admin/studio/cards/MacroTagSelector', () => ({
   __esModule: true,
   default: () => null,
 }));

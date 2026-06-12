@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import CardAdminGrid from '@/components/admin/card-admin/CardAdminGrid';
+import CardAdminGrid from '@/components/admin/studio/cards/CardAdminGrid';
 import type { Card } from '@/lib/types/card';
 
 const dragListeners = {

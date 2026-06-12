@@ -15,7 +15,7 @@ import {
   mergeDimensionalTagMaps,
 } from '@/lib/utils/tagUtils';
 import type { Tag } from '@/lib/types/tag';
-import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
+import MacroTagSelector from '@/components/admin/studio/cards/MacroTagSelector';
 import styles from './PhotoPicker.module.css';
 
 type SourceTab = 'local' | 'library';

@@ -12,7 +12,7 @@ import {
 } from '@/lib/utils/tagUtils';
 import { DIMENSION_ORDER } from '@/lib/utils/tagDisplay';
 import clsx from 'clsx';
-import TagPickerDimensionColumn from '@/components/admin/card-admin/TagPickerDimensionColumn';
+import TagPickerDimensionColumn from '@/components/admin/studio/cards/TagPickerDimensionColumn';
 
 export type MacroTagCollapsedSummary = 'sparseTrees' | 'none';
 

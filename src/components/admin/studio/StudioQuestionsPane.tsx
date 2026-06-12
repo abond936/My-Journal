@@ -3,8 +3,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FilterX, FolderOpen, Link2Off, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
-import EditModal from '@/components/admin/card-admin/EditModal';
-import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
+import EditModal from '@/components/admin/studio/cards/EditModal';
+import MacroTagSelector from '@/components/admin/studio/cards/MacroTagSelector';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
 import DebouncedSearchInput from '@/components/admin/common/DebouncedSearchInput';
 import DimensionalTagVerticalChips from '@/components/admin/common/DimensionalTagVerticalChips';

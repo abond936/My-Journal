@@ -4,7 +4,7 @@ import React from 'react';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import styles from './AdminLayout.module.css';
-import AdminFAB from './card-admin/AdminFAB';
+import AdminFAB from './studio/cards/AdminFAB';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface AdminPageWrapperProps {

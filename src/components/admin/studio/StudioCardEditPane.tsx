@@ -2,7 +2,7 @@
 
 import React, { useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import CardForm from '@/components/admin/card-admin/CardForm';
+import CardForm from '@/components/admin/studio/cards/CardForm';
 import { CardFormProvider } from '@/components/providers/CardFormProvider';
 import { useCardForm } from '@/components/providers/CardFormProvider';
 import StudioCardFormShellSync from '@/components/admin/studio/StudioCardFormShellSync';

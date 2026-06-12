@@ -2,7 +2,7 @@
 
 import React, { useCallback, useMemo, useState } from 'react';
 import { ImageIcon, Plus, Save, Trash2, X } from 'lucide-react';
-import EditModal from '@/components/admin/card-admin/EditModal';
+import EditModal from '@/components/admin/studio/cards/EditModal';
 import { useRouter } from 'next/navigation';
 import { useCardForm } from '@/components/providers/CardFormProvider';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';

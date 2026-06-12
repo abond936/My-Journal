@@ -4,7 +4,7 @@ import React, { Suspense, useRef, useCallback, useLayoutEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useCardContext } from '@/components/providers/CardProvider';
 import styles from './ViewPage.module.css';
-import AdminFAB from '@/components/admin/card-admin/AdminFAB';
+import AdminFAB from '@/components/admin/studio/cards/AdminFAB';
 import CardFeedV2 from '@/components/view/CardFeedV2';
 import ViewMediaFeed from '@/components/view/ViewMediaFeed';
 

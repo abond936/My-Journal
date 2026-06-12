@@ -4,7 +4,7 @@ import React, { useEffect, type MutableRefObject } from 'react';
 import { arrayMove, useSortable } from '@dnd-kit/sortable';
 import { useDndContext, useDroppable, type DragEndEvent } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { useCuratedTreeDropHighlight } from '@/components/admin/card-admin/curatedTreeDropHighlightContext';
+import { useCuratedTreeDropHighlight } from '@/components/admin/studio/cards/curatedTreeDropHighlightContext';
 import type { Card } from '@/lib/types/card';
 import type { CollectionsCardDragData } from '@/lib/dnd/collectionsDragContract';
 import { isCollectionsCardDragData, parseCollectionsCardDragId } from '@/lib/dnd/collectionsDragContract';

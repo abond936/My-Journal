@@ -52,7 +52,7 @@ jest.mock('@/components/admin/studio/studioCardFormStudioContext', () => ({
   StudioCardFormStudioProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-jest.mock('@/components/admin/card-admin/CardForm', () => ({
+jest.mock('@/components/admin/studio/cards/CardForm', () => ({
   __esModule: true,
   default: function MockCardForm() {
     useMedia();

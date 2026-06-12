@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { Copy, Save, Trash2, Undo2, X } from 'lucide-react';
-import CardForm from '@/components/admin/card-admin/CardForm';
+import CardForm from '@/components/admin/studio/cards/CardForm';
 import { CardFormProvider, useCardForm } from '@/components/providers/CardFormProvider';
 import { useOptionalCardContext } from '@/components/providers/CardProvider';
 import { MediaProvider } from '@/components/providers/MediaProvider';

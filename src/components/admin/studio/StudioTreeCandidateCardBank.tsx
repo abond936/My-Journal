@@ -5,10 +5,10 @@ import { useDndContext } from '@dnd-kit/core';
 import { FilterX, Pencil } from 'lucide-react';
 import { useStudioShell } from '@/components/admin/studio/StudioShellContext';
 import { useTag } from '@/components/providers/TagProvider';
-import BulkEditTagsModal from '@/components/admin/card-admin/BulkEditTagsModal';
-import CardAdminGrid from '@/components/admin/card-admin/CardAdminGrid';
-import MacroTagSelector from '@/components/admin/card-admin/MacroTagSelector';
-import EditModal from '@/components/admin/card-admin/EditModal';
+import BulkEditTagsModal from '@/components/admin/studio/cards/BulkEditTagsModal';
+import CardAdminGrid from '@/components/admin/studio/cards/CardAdminGrid';
+import MacroTagSelector from '@/components/admin/studio/cards/MacroTagSelector';
+import EditModal from '@/components/admin/studio/cards/EditModal';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
 import DebouncedSearchInput from '@/components/admin/common/DebouncedSearchInput';
 import type { EmbeddedUnparentedBankContext } from '@/components/admin/collections/embeddedUnparentedBankContext';
@@ -31,7 +31,7 @@ import {
   groupSelectedTagIdsByDimension,
 } from '@/lib/utils/tagUtils';
 import { applyModifierSelection } from '@/lib/utils/adminListSelection';
-import cardAdminStyles from '@/app/admin/card-admin/card-admin.module.css';
+import cardAdminStyles from '@/components/admin/studio/cards/studioCardsShell.module.css';
 import { mergeStudioCatalogCard, toStudioCatalogCard } from '@/components/admin/studio/studioCardProjection';
 import type { StudioSelectedPreview } from '@/components/admin/studio/studioCardTypes';
 import {

@@ -9,7 +9,7 @@ import { Media } from '@/lib/types/photo';
 import { getStudioDisplayUrl } from '@/lib/utils/photoUtils';
 import { getImageFileFromDataTransfer } from '@/lib/utils/clipboardImage';
 import { getAspectRatioBucket, getAspectRatioValue } from '@/lib/utils/objectPositionUtils';
-import PhotoPicker from '@/components/admin/card-admin/PhotoPicker';
+import PhotoPicker from '@/components/admin/studio/cards/PhotoPicker';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { useMedia } from '@/components/providers/MediaProvider';
 
