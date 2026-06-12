@@ -1,3 +1,4 @@
+import type { GalleryMediaItem, HydratedGalleryMediaItem } from '@/lib/types/card';
 import type { Media } from '@/lib/types/photo';
 
 /**
@@ -30,4 +31,29 @@ export function getEffectiveGalleryCaption(
     return galleryItem.caption ?? '';
   }
   return media?.caption ?? '';
+}
+
+/**
+ * Apply a card-only gallery caption edit. Matching the media default clears the slot override.
+ */
+export function applyGallerySlotCaptionEdit<
+  T extends { caption?: string | null; media?: Pick<Media, 'caption'> | null | undefined },
+>(item: T, newText: string): T {
+  const mediaDefault = item.media?.caption ?? '';
+  if (newText === mediaDefault) {
+    if (!gallerySlotHasCaptionOverride(item)) return item;
+    const rest = { ...item };
+    delete rest.caption;
+    return rest;
+  }
+  return { ...item, caption: newText };
+}
+
+export function dehydrateGalleryMediaForPatch(
+  gallery: HydratedGalleryMediaItem[]
+): GalleryMediaItem[] {
+  return gallery.map((item, index) => {
+    const { media: _media, ...rest } = item;
+    return { ...rest, order: index };
+  });
 }

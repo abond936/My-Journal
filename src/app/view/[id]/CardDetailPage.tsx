@@ -213,6 +213,9 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
           media={hydratedGalleryItems}
           title={displayCard.type === 'gallery' ? null : 'Gallery'}
           variant={displayCard.type === 'gallery' ? 'galleryDetail' : 'default'}
+          editableCaptions={isAdmin}
+          cardId={displayCard.docId}
+          onGallerySaved={handleCardSaved}
         />
       )}
 

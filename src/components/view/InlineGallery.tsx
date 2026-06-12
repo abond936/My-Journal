@@ -2,12 +2,14 @@
 
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import JournalImage from '@/components/common/JournalImage';
-import { HydratedGalleryMediaItem } from '@/lib/types/card';
+import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
+import type { Card, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { getDisplayUrl, getReaderDisplayUrl } from '@/lib/utils/photoUtils';
 import {
   getEffectiveGalleryCaption,
   getEffectiveGalleryObjectPosition,
 } from '@/lib/utils/galleryObjectPosition';
+import { patchReaderGalleryCaption } from '@/lib/utils/readerCardPatchReconcile';
 import { getAspectRatioBucket } from '@/lib/utils/objectPositionUtils';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Zoom, Keyboard } from 'swiper/modules';
@@ -20,18 +22,29 @@ interface InlineGalleryProps {
   media: HydratedGalleryMediaItem[];
   title?: string | null;
   variant?: 'default' | 'galleryDetail';
+  editableCaptions?: boolean;
+  cardId?: string;
+  onGallerySaved?: (savedCard: Card) => void;
 }
 
 export default function InlineGallery({
   media,
   title = 'Gallery',
   variant = 'default',
+  editableCaptions = false,
+  cardId,
+  onGallerySaved,
 }: InlineGalleryProps) {
+  const feedback = useAppFeedback();
   const [showNavButtons, setShowNavButtons] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [captionDraft, setCaptionDraft] = useState('');
+  const [captionSaving, setCaptionSaving] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const validMedia = useMemo(() => media.filter((item) => item.media), [media]);
+  const canEditCaptions = editableCaptions && Boolean(cardId) && Boolean(onGallerySaved);
+  const activeItem = validMedia[activeIndex];
 
   const scrollToImage = useCallback((direction: 'left' | 'right') => {
     if (!scrollContainerRef.current) return;
@@ -56,6 +69,51 @@ export default function InlineGallery({
     }
   }, [scrollToImage]);
 
+  const openLightbox = useCallback((index: number) => {
+    setActiveIndex(index);
+    setLightboxOpen(true);
+  }, []);
+
+  const saveCaptionForItem = useCallback(
+    async (item: HydratedGalleryMediaItem, draft: string) => {
+      if (!canEditCaptions || !cardId || !onGallerySaved) return;
+      const trimmedDraft = draft.trim();
+      const currentEffective = getEffectiveGalleryCaption(item, item.media).trim();
+      if (trimmedDraft === currentEffective) return;
+
+      setCaptionSaving(true);
+      try {
+        const saved = await patchReaderGalleryCaption(cardId, media, item.mediaId, trimmedDraft);
+        if (saved) {
+          onGallerySaved(saved);
+          feedback.showSuccess('Caption updated.');
+        }
+      } catch (err) {
+        feedback.showError(err instanceof Error ? err.message : 'Failed to save caption.', 'Could not save');
+      } finally {
+        setCaptionSaving(false);
+      }
+    },
+    [canEditCaptions, cardId, feedback, media, onGallerySaved]
+  );
+
+  const closeLightbox = useCallback(() => {
+    if (canEditCaptions && activeItem) {
+      void saveCaptionForItem(activeItem, captionDraft);
+    }
+    setLightboxOpen(false);
+  }, [activeItem, canEditCaptions, captionDraft, saveCaptionForItem]);
+
+  useEffect(() => {
+    if (!lightboxOpen || !activeItem) return;
+    setCaptionDraft(getEffectiveGalleryCaption(activeItem, activeItem.media));
+  }, [activeItem, lightboxOpen]);
+
+  const handleCaptionSave = useCallback(async () => {
+    if (!activeItem) return;
+    await saveCaptionForItem(activeItem, captionDraft);
+  }, [activeItem, captionDraft, saveCaptionForItem]);
+
   useEffect(() => {
     if (!lightboxOpen) return;
     const previousOverflow = document.body.style.overflow;
@@ -63,7 +121,7 @@ export default function InlineGallery({
     const onWindowKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        setLightboxOpen(false);
+        closeLightbox();
       }
     };
     window.addEventListener('keydown', onWindowKeyDown);
@@ -71,16 +129,7 @@ export default function InlineGallery({
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', onWindowKeyDown);
     };
-  }, [lightboxOpen]);
-
-  const openLightbox = useCallback((index: number) => {
-    setActiveIndex(index);
-    setLightboxOpen(true);
-  }, []);
-
-  const closeLightbox = useCallback(() => {
-    setLightboxOpen(false);
-  }, []);
+  }, [closeLightbox, lightboxOpen]);
 
   const handleLightboxKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Escape') {
@@ -216,7 +265,12 @@ export default function InlineGallery({
               zoom={{ maxRatio: 4, minRatio: 1 }}
               keyboard={{ enabled: true }}
               spaceBetween={0}
-              onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
+              onSlideChange={(swiper) => {
+                if (canEditCaptions && activeItem) {
+                  void saveCaptionForItem(activeItem, captionDraft);
+                }
+                setActiveIndex(swiper.activeIndex);
+              }}
               className={styles.lightboxSwiper}
             >
               {validMedia.map((item, index) => {
@@ -239,10 +293,30 @@ export default function InlineGallery({
                 );
               })}
             </Swiper>
-            {validMedia[activeIndex] ? (
-              <p className={styles.lightboxCaption}>
-                {getEffectiveGalleryCaption(validMedia[activeIndex], validMedia[activeIndex].media).trim()}
-              </p>
+            {activeItem ? (
+              canEditCaptions ? (
+                <textarea
+                  className={styles.lightboxCaptionInput}
+                  rows={2}
+                  value={captionDraft}
+                  placeholder="Add caption"
+                  onChange={(event) => setCaptionDraft(event.target.value)}
+                  onBlur={() => void handleCaptionSave()}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' && !event.shiftKey) {
+                      event.preventDefault();
+                      void handleCaptionSave();
+                      event.currentTarget.blur();
+                    }
+                  }}
+                  disabled={captionSaving}
+                  aria-label="Gallery image caption"
+                />
+              ) : (
+                <p className={styles.lightboxCaption}>
+                  {getEffectiveGalleryCaption(activeItem, activeItem.media).trim()}
+                </p>
+              )
             ) : null}
           </div>
         </div>

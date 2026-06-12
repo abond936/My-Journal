@@ -328,3 +328,30 @@
   font-weight: var(--reader-caption-font-weight);
   line-height: var(--reader-caption-line-height);
 }
+
+.lightboxCaptionInput {
+  width: 100%;
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  border: var(--border-width-thin) solid var(--reader-lightbox-control-border-color);
+  background: var(--reader-lightbox-control-background-color);
+  color: var(--reader-lightbox-caption-text-color);
+  font-family: var(--reader-caption-font-family);
+  font-size: var(--reader-caption-font-size);
+  font-weight: var(--reader-caption-font-weight);
+  line-height: var(--reader-caption-line-height);
+  resize: vertical;
+  min-height: 3rem;
+}
+
+.lightboxCaptionInput::placeholder {
+  color: var(--reader-caption-color);
+  opacity: 0.75;
+}
+
+.lightboxCaptionInput:focus-visible {
+  outline: 2px solid var(--reader-solid-control-focus-ring-color, var(--reader-lightbox-control-border-color));
+  outline-offset: 2px;
+}

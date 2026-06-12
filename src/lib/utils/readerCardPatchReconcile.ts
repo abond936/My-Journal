@@ -1,5 +1,10 @@
 import { mutate as globalMutate, type Key } from 'swr';
-import type { Card, CardUpdate } from '@/lib/types/card';
+import type { Card, CardUpdate, HydratedGalleryMediaItem } from '@/lib/types/card';
+import {
+  applyGallerySlotCaptionEdit,
+  dehydrateGalleryMediaForPatch,
+  getEffectiveGalleryCaption,
+} from '@/lib/utils/galleryObjectPosition';
 
 export function reconcileReaderCardListCaches(savedCard: Card): void {
   void globalMutate(
@@ -93,4 +98,34 @@ export function buildReaderMetadataQuickEditPatch(
   }
 
   return patch;
+}
+
+export function buildGalleryCaptionPatch(
+  gallery: HydratedGalleryMediaItem[],
+  mediaId: string,
+  newCaption: string
+): CardUpdate | null {
+  const target = gallery.find((item) => item.mediaId === mediaId);
+  if (!target) return null;
+
+  const trimmed = newCaption.trim();
+  const currentEffective = getEffectiveGalleryCaption(target, target.media).trim();
+  if (trimmed === currentEffective) return null;
+
+  const nextGallery = gallery.map((item) =>
+    item.mediaId === mediaId ? applyGallerySlotCaptionEdit(item, trimmed) : item
+  );
+
+  return { galleryMedia: dehydrateGalleryMediaForPatch(nextGallery) };
+}
+
+export async function patchReaderGalleryCaption(
+  cardId: string,
+  gallery: HydratedGalleryMediaItem[],
+  mediaId: string,
+  newCaption: string
+): Promise<Card | null> {
+  const patch = buildGalleryCaptionPatch(gallery, mediaId, newCaption);
+  if (!patch) return null;
+  return patchReaderCard(cardId, patch);
 }

@@ -18,6 +18,7 @@ import { SortableItem } from './SortableItem';
 import EditModal from './EditModal';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import {
+  applyGallerySlotCaptionEdit,
   getEffectiveGalleryCaption,
   getEffectiveGalleryObjectPosition,
   gallerySlotHasCaptionOverride,
@@ -25,17 +26,6 @@ import {
 import { getAspectRatioBucket } from '@/lib/utils/objectPositionUtils';
 import { useDefaultDndSensors } from '@/lib/hooks/useDefaultDndSensors';
 import GalleryItemEditor from './GalleryItemEditor';
-
-function applySlotCaptionEdit(item: GalleryMediaItem, newText: string): GalleryMediaItem {
-  const mediaDefault = item.media?.caption ?? '';
-  if (newText === mediaDefault) {
-    if (!gallerySlotHasCaptionOverride(item)) return item;
-    const rest = { ...item };
-    delete rest.caption;
-    return rest;
-  }
-  return { ...item, caption: newText };
-}
 
 /** Value for the card-only override field (not merged with file caption). */
 function cardCaptionFieldValue(item: GalleryMediaItem): string {
@@ -111,7 +101,7 @@ export default function GalleryManager({
   const handleInlineCaptionChange = (mediaId: string, newText: string) => {
     onUpdate(
       galleryMedia.map((g) =>
-        g.mediaId === mediaId ? (applySlotCaptionEdit(g, newText) as HydratedGalleryMediaItem) : g
+        g.mediaId === mediaId ? applyGallerySlotCaptionEdit(g, newText) : g
       )
     );
   };

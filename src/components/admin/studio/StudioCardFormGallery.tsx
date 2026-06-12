@@ -14,19 +14,11 @@ import {
   StudioGalleryEndDropZone,
   StudioGallerySortableRow,
 } from '@/components/admin/studio/studioRelationshipDndPrimitives';
-import { gallerySlotHasCaptionOverride } from '@/lib/utils/galleryObjectPosition';
+import {
+  applyGallerySlotCaptionEdit,
+  gallerySlotHasCaptionOverride,
+} from '@/lib/utils/galleryObjectPosition';
 import styles from './StudioWorkspace.module.css';
-
-function applySlotCaptionEdit(item: HydratedGalleryMediaItem, newText: string): HydratedGalleryMediaItem {
-  const mediaDefault = item.media?.caption ?? '';
-  if (newText === mediaDefault) {
-    if (!gallerySlotHasCaptionOverride(item)) return item;
-    const rest = { ...item };
-    delete rest.caption;
-    return rest;
-  }
-  return { ...item, caption: newText };
-}
 
 function cardCaptionFieldValue(item: HydratedGalleryMediaItem): string {
   return gallerySlotHasCaptionOverride(item) ? (item.caption ?? '') : '';
@@ -167,7 +159,7 @@ export default function StudioCardFormGallery({
                           value={cardCaptionFieldValue(item)}
                           onChange={(e) =>
                             updateGalleryItem(item.mediaId, (current) =>
-                              applySlotCaptionEdit(current, e.target.value)
+                              applyGallerySlotCaptionEdit(current, e.target.value)
                             )
                           }
                           placeholder="Card caption..."
