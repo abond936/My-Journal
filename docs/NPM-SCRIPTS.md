@@ -10,7 +10,7 @@ Run from the repo root. Most maintenance scripts need Firebase Admin env vars (s
 |--------|------|--------|
 | **Code** | Committed source | Git remote (`origin`); do not rely on a second full local tree copy. |
 | **Data** | Firestore (+ index/rules, optional Typesense export) | `npm run backup:database` → OneDrive `Firebase Backups/run-<timestamp>/` (see table row below; needs `ONEDRIVE_PATH`). |
-| **Storage (planned)** | Firebase Storage object bytes (originals + renditions) | **Not yet automated in repo**; `backup:database` excludes blobs. See `01` → **Backup** → **Storage byte backup** for the planned operator path. Until then, use Firebase Console / gcloud export or accept re-import from external source libraries after Firestore-only restore. |
+| **Storage** | Firebase Storage object bytes (originals + renditions) | `npm run backup:storage` → OneDrive `Firebase Backups/run-<timestamp>/storage/` + `storage-manifest.json` (needs `ONEDRIVE_PATH` + Firebase Admin). Dry-run by default; `--apply` downloads or incrementally copies unchanged blobs from prior runs. |
 | **Repo-root secrets** | `.env*`, `service-account.json`, `*-firebase-adminsdk-*.json` | `npm run backup-codebase` → `CODEBASE_SECRETS_BACKUP_DIR` or default `C:\Users\alanb\CodeBase Backups\` (5 rolling zips + logs). Optional: register a daily Windows task with **`src/lib/scripts/utils/setup-backup-task.ps1`** (run **PowerShell as Administrator**; script resolves repo root via `git`). |
 
 ## Restore drill (v1 operator)
@@ -21,7 +21,7 @@ This is the current **commercial-readiness restore contract**. The Firestore res
 
 - **Git remote restores source code**. Do not expect `backup-codebase` to restore the repo tree.
 - **`backup:database` restores Firestore data, Firestore indexes/rules snapshots, and optional Typesense document exports.**
-- **Storage bytes are not included** in `backup:database`; missing Firebase Storage objects require separate recovery, a future automated Storage backup (see `01` → **Backup** → **Storage byte backup**), or re-import from external source libraries.
+- **Storage bytes are not included** in `backup:database`; run `npm run backup:storage` separately (or restore from an existing `run-<timestamp>/storage/` tree per the operator restore notes below).
 - **Hosted deployment secrets are not pushed automatically** from the local secrets zip; re-enter them in the host if the platform loses them.
 - **The first restore drill target should be a disposable Firebase project, not the live app project.** The guarded restore helper refuses the production project id and defaults to dry-run.
 
@@ -50,6 +50,14 @@ This is the current **commercial-readiness restore contract**. The Firestore res
 - After the import, deploy Firestore indexes from the restored `firestore.indexes.json` baseline if the target project is missing them.
 - If rules drift or a new project is being recovered, restore the matching `firestore.rules` before reopening access.
 
+**3b. Restore Storage bytes (operator, disposable target first)**
+
+- Choose a backup run under `ONEDRIVE_PATH\\Firebase Backups\\run-<timestamp>\\` that contains `storage/` and `storage-manifest.json`.
+- On a **disposable Firebase project** (never production first), upload objects from `storage/` back to the same bucket paths listed in `storage-manifest.json` (for example with `gsutil -m cp -r` or Firebase Console bulk upload).
+- Verify a sample of manifest entries: local file size matches `size`, object exists at `storagePath` in the target bucket.
+- After Firestore + Storage are both restored, spot-check cards that reference restored media ids before reopening access.
+- **Not yet:** an automated `restore:storage` helper; this step is manual until a guarded restore script is approved.
+
 **4. Rebuild search projection**
 
 - After Firestore is restored, rebuild Typesense from Firestore instead of treating the JSONL export as the primary recovery path.
@@ -76,6 +84,7 @@ This is the current **commercial-readiness restore contract**. The Firestore res
 - Confirm Git `main` is pushed and is the intended rollback point.
 - Confirm the latest local secrets backup zip exists and is readable.
 - Confirm the latest database backup run exists with `firestore.json`, `metadata.json`, and `summary.txt`.
+- Confirm the latest storage backup run exists with `storage-manifest.json` and a populated `storage/` tree (or run `npm run backup:storage -- --apply` before release).
 - Confirm the hosted environment has the required auth, Firebase, and Typesense env values.
 - Confirm `npm run build`, `npm run lint`, and `npm test -- --ci --runInBand` pass on the intended release revision.
 - Confirm GitHub PR CI (`.github/workflows/integrity-gate.yml`) passes the same lint, build, and test gate on the intended release revision.
@@ -135,6 +144,7 @@ Use **dedicated test accounts** (rotatable), not personal logins. After adding s
 **Not yet:** PR-gate blocking; promote only after a stable green nightly history.
 | `npm run backup-codebase` | **Local secrets only** — zips **repo root** files Git does not track: `.env*`, `service-account.json`, `*-firebase-adminsdk-*.json`. Output dir: `CODEBASE_SECRETS_BACKUP_DIR` or `C:\Users\alanb\CodeBase Backups\`; keeps 5 zips. **Not** a second copy of the source tree (use Git remote). If none of those files exist, writes a log only. |
 | `npm run backup:database` | Full Firestore (all root collections) + copy `firestore.indexes.json` / `firestore.rules` + optional Typesense `cards`/`media` JSONL → OneDrive `Firebase Backups/run-<timestamp>/` (needs `ONEDRIVE_PATH` + service account; `tsx -r dotenv/config`). Does not download Storage bytes. |
+| `npm run backup:storage` | Firebase Storage object bytes (originals + renditions) → OneDrive `Firebase Backups/run-<timestamp>/storage/` + `storage-manifest.json` + `storage-summary.txt`. **Dry-run by default** (lists objects and planned download/copy actions). **`--apply`** downloads from the bucket or incrementally **copies** unchanged blobs from the newest prior run with matching md5. Optional: `--limit=N` (smoke test), `--progress-every=N` (default 25). Keeps 5 rolling `run-*` dirs when `--apply`. Post-run verifies local file sizes. Does not upload/restore by itself. |
 | `npm run restore:database -- --backup="<path>"` | Guarded Firestore restore helper for **disposable recovery targets**. Dry-run by default; `--apply` requires `--confirm-project=<targetProjectId>`. Refuses the production project id and refuses non-empty targets unless `--allow-non-empty`. Restores documents from `firestore.json`; does not delete extras already present in the target. |
 | `npm run deploy:firestore:indexes` | Deploy **only** Firestore composite indexes from `src/lib/config/firebase/firestore.indexes.json` (paths set in root `firebase.json`). Runs `npx firebase-tools@13 deploy --only firestore:indexes` from the repo root (no global CLI required). Project: `.firebaserc` default (`my-journal-936`). Requires Firebase CLI auth (`npx firebase-tools@13 login` once, or use a CI token). Not the same as Admin service-account scripts. New indexes can take several minutes to finish building in the Firebase console. |
 | `npm run export:csv` | Export data to CSV |

@@ -42,6 +42,7 @@
     "seed:journal-users": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/seed-journal-users.ts",
     "seed:theme-firestore": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/seed-theme-firestore.ts",
     "backup:database": "tsx -r dotenv/config src/lib/scripts/firebase/backup-firestore.ts",
+    "backup:storage": "tsx -r dotenv/config src/lib/scripts/firebase/backup-storage.ts",
     "restore:database": "tsx -r dotenv/config src/lib/scripts/firebase/restore-firestore.ts",
     "verify:curated-master": "tsx -r dotenv/config src/lib/scripts/firebase/inspect-curated-two-cards.ts",
     "migrate:curated-master-children": "tsx -r dotenv/config src/lib/scripts/firebase/assign-legacy-roots-to-master.ts",

@@ -2,7 +2,7 @@
  * Full data backup: Firestore (all root collections), repo Firestore config files,
  * and optional Typesense document exports (JSONL).
  *
- * Does NOT include: Firebase Storage file bytes (use Firebase Console / gcloud export).
+ * Does NOT include: Firebase Storage file bytes (use `npm run backup:storage`).
  *
  * Required env: Firebase Admin (`FIREBASE_SERVICE_ACCOUNT_*`), `ONEDRIVE_PATH`.
  * Optional: `TYPESENSE_*` to export `cards` and `media` indexes.
@@ -171,7 +171,7 @@ export async function runFullBackup(): Promise<void> {
     configFiles: configMeta,
     typesense: typesenseResults,
     notes: [
-      'Firebase Storage object bytes are not in this backup; use Google Cloud / Firebase export for blobs if needed.',
+      'Firebase Storage object bytes are not in this backup; run `npm run backup:storage` for Storage bytes.',
       'Typesense schema lives in code (typesenseService / typesenseMediaService); documents exported as JSONL when configured.',
     ],
   };
