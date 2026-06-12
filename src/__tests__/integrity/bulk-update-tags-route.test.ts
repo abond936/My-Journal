@@ -1,4 +1,4 @@
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { bulkApplyTagDelta, bulkUpdateTags } from '@/lib/services/cardService';
 
 jest.mock('next/server', () => ({
@@ -10,7 +10,7 @@ jest.mock('next/server', () => ({
   },
 }));
 
-jest.mock('next-auth', () => ({
+jest.mock('next-auth/next', () => ({
   getServerSession: jest.fn(),
 }));
 

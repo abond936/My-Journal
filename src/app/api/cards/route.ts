@@ -9,8 +9,6 @@ import {
   getSeededRandomCards,
 } from '@/lib/services/cardService';
 import { Card } from '@/lib/types/card';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth/authOptions';
 import { PaginatedResult } from '@/lib/types/services';
 import { cardSchema } from '@/lib/types/card';
 import { isTypesenseConfigured } from '@/lib/config/typesense';
@@ -19,20 +17,11 @@ import {
   type TypesenseCardSortField,
 } from '@/lib/services/typesenseService';
 import { parseListPageLimit, isInputCapFailure } from '@/lib/api/inputCaps';
-
-type ApiErrorPayload = {
-  ok: false;
-  code: string;
-  message: string;
-  severity: 'error' | 'warning';
-  retryable: boolean;
-  error?: string;
-  details?: string[];
-};
-
-function errorResponse(payload: ApiErrorPayload, status: number) {
-  return NextResponse.json(payload, { status });
-}
+import {
+  apiRouteError,
+  apiRouteListLimitError,
+  requireApiSession,
+} from '@/lib/api/routeEnvelope';
 
 function cardHasSubjectInDimension(
   card: Pick<Card, 'subjectTagId' | 'who' | 'what' | 'when' | 'where'>,
@@ -132,20 +121,12 @@ export const dynamic = 'force-dynamic';
  *         description: Internal server error.
  */
 export async function GET(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return errorResponse(
-      {
-        ok: false,
-        code: 'AUTH_UNAUTHORIZED',
-        message: 'Authentication required.',
-        severity: 'error',
-        retryable: false,
-      },
-      401
-    );
+  const auth = await requireApiSession('authenticated');
+  if ('error' in auth) {
+    return auth.error;
   }
-  const isAdmin = session?.user?.role === 'admin';
+  const session = auth.session;
+  const isAdmin = session.user?.role === 'admin';
 
   try {
     const { searchParams } = new URL(request.url);
@@ -227,16 +208,12 @@ export async function GET(request: Request) {
     
     // Security check: Only admins can request 'draft' or 'all' cards
     if ((status === 'draft' || status === 'all') && !isAdmin) {
-      return errorResponse(
-        {
-          ok: false,
-          code: 'AUTH_FORBIDDEN',
-          message: 'Forbidden.',
-          severity: 'error',
-          retryable: false,
-        },
-        403
-      );
+      return apiRouteError({
+        code: 'AUTH_FORBIDDEN',
+        message: 'Forbidden.',
+        status: 403,
+        retryable: false,
+      });
     }
 
     const typesListParsed = parseCardTypesList(searchParams.get('types'));
@@ -261,16 +238,7 @@ export async function GET(request: Request) {
       searchScopeParam === 'admin-title' ? 'admin-title' : 'default';
     const limitResult = parseListPageLimit(searchParams.get('limit'));
     if (isInputCapFailure(limitResult)) {
-      return errorResponse(
-        {
-          ok: false,
-          code: limitResult.error.code,
-          message: limitResult.error.message,
-          severity: 'error',
-          retryable: false,
-        },
-        400
-      );
+      return apiRouteListLimitError(limitResult.error);
     }
     const limit = limitResult.value;
     const lastDocId = searchParams.get('lastDocId') || undefined;
@@ -548,44 +516,33 @@ export async function GET(request: Request) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       const lowerMessage = errorMessage.toLowerCase();
       if (lowerMessage.includes('index') && lowerMessage.includes('query')) {
-        return errorResponse(
-          {
-            ok: false,
-            code: 'CARD_LIST_FILTER_UNAVAILABLE',
-            message: 'This filter combination is not ready yet on the hosted app.',
-            severity: 'warning',
-            retryable: false,
-            error: errorMessage,
-          },
-          503
-        );
-      }
-      return errorResponse(
-        {
-          ok: false,
-          code: 'CARD_LIST_FAILED',
-          message: 'Internal server error.',
-          severity: 'error',
-          retryable: true,
+        return apiRouteError({
+          code: 'CARD_LIST_FILTER_UNAVAILABLE',
+          message: 'This filter combination is not ready yet on the hosted app.',
+          status: 503,
+          severity: 'warning',
+          retryable: false,
           error: errorMessage,
-        },
-        500
-      );
+        });
+      }
+      return apiRouteError({
+        code: 'CARD_LIST_FAILED',
+        message: 'Internal server error.',
+        status: 500,
+        retryable: true,
+        error: errorMessage,
+      });
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error('Error in GET /api/cards:', errorMessage);
-    return errorResponse(
-      {
-        ok: false,
-        code: 'CARD_LIST_FAILED',
-        message: 'Internal server error.',
-        severity: 'error',
-        retryable: true,
-        error: errorMessage,
-      },
-      500
-    );
+    return apiRouteError({
+      code: 'CARD_LIST_FAILED',
+      message: 'Internal server error.',
+      status: 500,
+      retryable: true,
+      error: errorMessage,
+    });
   }
 }
 
@@ -614,18 +571,9 @@ export async function GET(request: Request) {
  *         description: Internal server error.
  */
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
-    return errorResponse(
-      {
-        ok: false,
-        code: 'AUTH_FORBIDDEN',
-        message: 'Forbidden.',
-        severity: 'error',
-        retryable: false,
-      },
-      403
-    );
+  const auth = await requireApiSession('admin');
+  if ('error' in auth) {
+    return auth.error;
   }
 
   try {
@@ -649,30 +597,22 @@ export async function POST(request: Request) {
       
       console.log('[POST /api/cards] Error messages:', errorMessages);
 
-      return errorResponse(
-        {
-          ok: false,
-          code: 'CARD_CREATE_VALIDATION_FAILED',
-          message: 'Validation failed.',
-          severity: 'error',
-          retryable: false,
-          details: errorMessages,
-        },
-        400
-      );
+      return apiRouteError({
+        code: 'CARD_CREATE_VALIDATION_FAILED',
+        message: 'Validation failed.',
+        status: 400,
+        retryable: false,
+        details: errorMessages,
+      });
     }
 
     if (validationResult.data.type === 'qa') {
-      return errorResponse(
-        {
-          ok: false,
-          code: 'CARD_CREATE_QA_REQUIRES_QUESTION',
-          message: 'Q&A cards must be created from a question-bank prompt.',
-          severity: 'error',
-          retryable: false,
-        },
-        400
-      );
+      return apiRouteError({
+        code: 'CARD_CREATE_QA_REQUIRES_QUESTION',
+        message: 'Q&A cards must be created from a question-bank prompt.',
+        status: 400,
+        retryable: false,
+      });
     }
     
     // The createCard service function will handle defaults and timestamps
@@ -682,28 +622,20 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error creating card:', error);
     if (error instanceof SyntaxError) {
-      return errorResponse(
-        {
-          ok: false,
-          code: 'CARD_CREATE_INVALID_JSON',
-          message: 'Invalid JSON format.',
-          severity: 'error',
-          retryable: false,
-        },
-        400
-      );
+      return apiRouteError({
+        code: 'CARD_CREATE_INVALID_JSON',
+        message: 'Invalid JSON format.',
+        status: 400,
+        retryable: false,
+      });
     }
     const message = error instanceof Error ? error.message : 'An unknown error occurred';
-    return errorResponse(
-      {
-        ok: false,
-        code: 'CARD_CREATE_FAILED',
-        message: 'Internal server error.',
-        severity: 'error',
-        retryable: true,
-        error: message,
-      },
-      500
-    );
+    return apiRouteError({
+      code: 'CARD_CREATE_FAILED',
+      message: 'Internal server error.',
+      status: 500,
+      retryable: true,
+      error: message,
+    });
   }
 } 

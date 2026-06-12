@@ -142,7 +142,7 @@ What must make this product distinctly better is not feature breadth alone, but 
 - **CI gate expansion** - Shipped 2026-06-12: PR workflow runs lint, build, and the full Jest suite (`npm test -- --ci --runInBand`); nightly emulator-backed integrity remains separate.
 - **Playwright smoke tests** - Shipped v1 suite (`npm run test:e2e`); **6a** admin reader quick-edit PATCH smoke with restore; **6b** PR gate via `integrity-gate.yml`. Nightly/manual hosted CI also in `e2e-smoke.yml`.
 - **Typesense reconciliation** - Retry on sync failures plus operator-visible reconciliation check. **Post-review step 7c.**
-- **API input caps and shared auth envelope** - **7a shipped 2026-06-12:** shared list/bulk caps on high-traffic card/media routes. **7b** shared `/api` auth + error envelope still planned.
+- **API input caps and shared auth envelope** - **7a + 7b shipped 2026-06-12:** `inputCaps.ts` + `routeEnvelope.ts` on the high-traffic card/media route set; broader `/api` migration remains incremental.
 - **Mutation rate limiting** - Basic write-route limits. **Post-review step 8a.**
 - **Error monitoring** - Baseline production error visibility. **Post-review step 8d.**
 - **Access & privacy gate** - Re-verify hosted reader/admin boundaries in deployed use: direct URL behavior, hosted auth/session configuration, and absence of admin affordance leakage. Current boundary: hosted reader routes and APIs are authenticated, viewer sessions stay reader-only, admin sessions can access both reader/admin surfaces, and local import helpers remain admin-only operational routes.

@@ -1,40 +1,22 @@
-import { NextResponse } from 'next/server';
 import { bulkApplyTagDelta, bulkUpdateTags } from '@/lib/services/cardService';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/authOptions';
-import { API_INPUT_CAPS, validateStringIdArray, isInputCapFailure } from '@/lib/api/inputCaps';
-
-type ApiErrorPayload = {
-  ok: false;
-  code: string;
-  message: string;
-  severity: 'error' | 'warning';
-  retryable: boolean;
-  error?: string;
-};
-
-function errorResponse(payload: ApiErrorPayload, status: number) {
-  return NextResponse.json(payload, { status });
-}
+import { API_INPUT_CAPS, isInputCapFailure, validateStringIdArray } from '@/lib/api/inputCaps';
+import {
+  apiRouteError,
+  apiRouteInputCapError,
+  apiRouteSuccess,
+  withApiRouteHandler,
+} from '@/lib/api/routeEnvelope';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.role !== 'admin') {
-    return errorResponse(
-      {
-        ok: false,
-        code: 'AUTH_FORBIDDEN',
-        message: 'Unauthorized.',
-        severity: 'error',
-        retryable: false,
-      },
-      403
-    );
-  }
-
-  try {
+  return withApiRouteHandler(
+    request,
+    {
+      auth: 'admin',
+      internalError: { code: 'CARD_BULK_TAGS_FAILED', message: 'Internal server error.' },
+    },
+    async ({ request }) => {
     const startMs = Date.now();
     const { cardIds, tags, addTagIds, removeTagIds } = await request.json();
 
@@ -45,23 +27,15 @@ export async function POST(request: Request) {
     });
     if (isInputCapFailure(cardIdsResult)) {
       const capError = cardIdsResult.error;
-      return errorResponse(
-        {
-          ok: false,
-          code:
-            capError.code === 'INPUT_ARRAY_EXCEEDED'
-              ? 'CARD_BULK_TAGS_TOO_MANY'
-              : 'CARD_BULK_TAGS_INVALID_BODY',
-          message: capError.message,
-          severity: 'error',
-          retryable: false,
-        },
-        400
-      );
+      return apiRouteInputCapError(capError, {
+        code:
+          capError.code === 'INPUT_ARRAY_EXCEEDED'
+            ? 'CARD_BULK_TAGS_TOO_MANY'
+            : 'CARD_BULK_TAGS_INVALID_BODY',
+      });
     }
     const boundedCardIds = cardIdsResult.ids;
 
-    // Backward compatibility: full replacement mode.
     if (Array.isArray(tags)) {
       const tagsResult = validateStringIdArray(tags, {
         field: 'tags',
@@ -69,19 +43,12 @@ export async function POST(request: Request) {
       });
       if (isInputCapFailure(tagsResult)) {
         const capError = tagsResult.error;
-        return errorResponse(
-          {
-            ok: false,
-            code:
-              capError.code === 'INPUT_ARRAY_EXCEEDED'
-                ? 'CARD_BULK_TAGS_TAG_LIST_TOO_MANY'
-                : 'CARD_BULK_TAGS_INVALID_BODY',
-            message: capError.message,
-            severity: 'error',
-            retryable: false,
-          },
-          400
-        );
+        return apiRouteInputCapError(capError, {
+          code:
+            capError.code === 'INPUT_ARRAY_EXCEEDED'
+              ? 'CARD_BULK_TAGS_TAG_LIST_TOO_MANY'
+              : 'CARD_BULK_TAGS_INVALID_BODY',
+        });
       }
 
       await bulkUpdateTags(boundedCardIds, tagsResult.ids);
@@ -90,7 +57,7 @@ export async function POST(request: Request) {
         cardCount: boundedCardIds.length,
         elapsedMs,
       });
-      return NextResponse.json({
+      return apiRouteSuccess({
         message: 'Tags updated successfully',
         updatedCount: boundedCardIds.length,
         elapsedMs,
@@ -99,16 +66,12 @@ export async function POST(request: Request) {
     }
 
     if (!Array.isArray(addTagIds) || !Array.isArray(removeTagIds)) {
-      return errorResponse(
-        {
-          ok: false,
-          code: 'CARD_BULK_TAGS_INVALID_BODY',
-          message: 'Invalid request body.',
-          severity: 'error',
-          retryable: false,
-        },
-        400
-      );
+      return apiRouteError({
+        code: 'CARD_BULK_TAGS_INVALID_BODY',
+        message: 'Invalid request body.',
+        status: 400,
+        retryable: false,
+      });
     }
 
     const addTagsResult = validateStringIdArray(addTagIds, {
@@ -117,19 +80,12 @@ export async function POST(request: Request) {
     });
     if (isInputCapFailure(addTagsResult)) {
       const capError = addTagsResult.error;
-      return errorResponse(
-        {
-          ok: false,
-          code:
-            capError.code === 'INPUT_ARRAY_EXCEEDED'
-              ? 'CARD_BULK_TAGS_TAG_LIST_TOO_MANY'
-              : 'CARD_BULK_TAGS_INVALID_BODY',
-          message: capError.message,
-          severity: 'error',
-          retryable: false,
-        },
-        400
-      );
+      return apiRouteInputCapError(capError, {
+        code:
+          capError.code === 'INPUT_ARRAY_EXCEEDED'
+            ? 'CARD_BULK_TAGS_TAG_LIST_TOO_MANY'
+            : 'CARD_BULK_TAGS_INVALID_BODY',
+      });
     }
 
     const removeTagsResult = validateStringIdArray(removeTagIds, {
@@ -138,19 +94,12 @@ export async function POST(request: Request) {
     });
     if (isInputCapFailure(removeTagsResult)) {
       const capError = removeTagsResult.error;
-      return errorResponse(
-        {
-          ok: false,
-          code:
-            capError.code === 'INPUT_ARRAY_EXCEEDED'
-              ? 'CARD_BULK_TAGS_TAG_LIST_TOO_MANY'
-              : 'CARD_BULK_TAGS_INVALID_BODY',
-          message: capError.message,
-          severity: 'error',
-          retryable: false,
-        },
-        400
-      );
+      return apiRouteInputCapError(capError, {
+        code:
+          capError.code === 'INPUT_ARRAY_EXCEEDED'
+            ? 'CARD_BULK_TAGS_TAG_LIST_TOO_MANY'
+            : 'CARD_BULK_TAGS_INVALID_BODY',
+      });
     }
 
     await bulkApplyTagDelta(boundedCardIds, addTagsResult.ids, removeTagsResult.ids);
@@ -162,25 +111,12 @@ export async function POST(request: Request) {
       removeCount: removeTagsResult.ids.length,
       elapsedMs,
     });
-    return NextResponse.json({
+    return apiRouteSuccess({
       message: 'Tags updated successfully',
       updatedCount: boundedCardIds.length,
       elapsedMs,
       mode: 'add-remove',
     });
-  } catch (error) {
-    console.error('Error in bulk-update-tags:', error);
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return errorResponse(
-      {
-        ok: false,
-        code: 'CARD_BULK_TAGS_FAILED',
-        message: 'Internal server error.',
-        severity: 'error',
-        retryable: true,
-        error: message,
-      },
-      500
-    );
-  }
-} 
+    }
+  );
+}
