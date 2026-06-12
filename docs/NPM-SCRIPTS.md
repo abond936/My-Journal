@@ -87,7 +87,7 @@ This is the current **commercial-readiness restore contract**. The Firestore res
 - Confirm the latest storage backup run exists with `storage-manifest.json` and a populated `storage/` tree (or run `npm run backup:storage -- --apply` before release).
 - Confirm the hosted environment has the required auth, Firebase, and Typesense env values.
 - Confirm `npm run build`, `npm run lint`, and `npm test -- --ci --runInBand` pass on the intended release revision.
-- Confirm GitHub PR CI (`.github/workflows/integrity-gate.yml`) passes the same lint, build, and test gate on the intended release revision.
+- Confirm GitHub PR CI (`.github/workflows/integrity-gate.yml`) passes lint, build, unit/integrity tests, and hosted Playwright smoke on the intended release revision.
 - Confirm there is at least one working admin account and one working viewer account.
 
 ## Account recovery (v1 operator)
@@ -127,7 +127,9 @@ This is the current **commercial-readiness restore contract**. The Firestore res
 
 ### Playwright CI (GitHub Actions)
 
-Workflow: `.github/workflows/e2e-smoke.yml` — **nightly** (03:00 UTC) and **manual** (`workflow_dispatch`). Tests the **hosted app** at `E2E_BASE_URL`; does **not** boot the Next.js app in CI (avoids production Firebase Admin secrets in GitHub).
+**PR gate:** `.github/workflows/integrity-gate.yml` — on pull requests to `main` (and manual dispatch), runs lint, build, unit/integrity tests, and **hosted** `npm run test:e2e` in parallel (`e2e-smoke` job). Fork PRs skip the E2E job when repository secrets are unavailable.
+
+**Scheduled / manual:** `.github/workflows/e2e-smoke.yml` — **nightly** (03:00 UTC) and **manual** (`workflow_dispatch`). Same hosted target and secrets as the PR gate E2E job. Does **not** boot the Next.js app in CI (avoids production Firebase Admin secrets in GitHub).
 
 **Required repository secrets** (Settings → Secrets and variables → Actions):
 
@@ -139,9 +141,7 @@ Workflow: `.github/workflows/e2e-smoke.yml` — **nightly** (03:00 UTC) and **ma
 | `E2E_ADMIN_USERNAME` | Dedicated admin test account |
 | `E2E_ADMIN_PASSWORD` | Admin password |
 
-Use **dedicated test accounts** (rotatable), not personal logins. After adding secrets, run **Actions → E2E Smoke → Run workflow** once to confirm green. Failed runs upload `playwright-report` and `test-results` artifacts (14-day retention).
-
-**Not yet:** PR-gate blocking; promote only after a stable green nightly history.
+Use **dedicated test accounts** (rotatable), not personal logins. After adding secrets, run **Actions → E2E Smoke → Run workflow** once to confirm green, then open a PR to confirm the PR gate E2E job. Failed runs upload `playwright-report` and `test-results` artifacts (14-day retention).
 | `npm run backup-codebase` | **Local secrets only** — zips **repo root** files Git does not track: `.env*`, `service-account.json`, `*-firebase-adminsdk-*.json`. Output dir: `CODEBASE_SECRETS_BACKUP_DIR` or `C:\Users\alanb\CodeBase Backups\`; keeps 5 zips. **Not** a second copy of the source tree (use Git remote). If none of those files exist, writes a log only. |
 | `npm run backup:database` | Full Firestore (all root collections) + copy `firestore.indexes.json` / `firestore.rules` + optional Typesense `cards`/`media` JSONL → OneDrive `Firebase Backups/run-<timestamp>/` (needs `ONEDRIVE_PATH` + service account; `tsx -r dotenv/config`). Does not download Storage bytes. |
 | `npm run backup:storage` | Firebase Storage object bytes (originals + renditions) → OneDrive `Firebase Backups/run-<timestamp>/storage/` + `storage-manifest.json` + `storage-summary.txt`. **Dry-run by default** (lists objects and planned download/copy actions). **`--apply`** downloads from the bucket or incrementally **copies** unchanged blobs from the newest prior run with matching md5. Optional: `--limit=N` (smoke test), `--progress-every=N` (default 25). Keeps 5 rolling `run-*` dirs when `--apply`. Post-run verifies local file sizes. Does not upload/restore by itself. |

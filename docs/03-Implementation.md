@@ -48,9 +48,9 @@ Legend:
 
 📐 **Review program order** - **Complete 2026-06-12:** **(1)** engineering safety net, **(2)** reader performance, **(3)** backend hardening, **(4)** Studio legacy retirement, **(5)** reader mobile text edit (5a-5d). **Active:** post-review program steps **6-12** (same slice-by-slice approval cadence).
 
-📐 **Post-review program order (2026-06-12)** - Continue one approved slice at a time. **Storage restore proof is explicitly last (step 12)** per author direction.
+📐 **Post-review program order (2026-06-12)** - Continue one approved slice at a time. **Storage restore proof is explicitly last (step 12)** per author direction. **Next:** step **7** API and service hardening.
 
-- **(6) E2E hardening** - **6a** admin-save mutation Playwright smoke shipped 2026-06-12 (`e2e/smoke/admin-save.spec.ts`: reader mobile quick-edit subtitle PATCH with restore). **Next:** **6b** promote `npm run test:e2e` to PR gate after stable hosted green history.
+- **(6) E2E hardening** - **Complete 2026-06-12:** **6a** admin-save mutation smoke; **6b** `npm run test:e2e` on PR gate (`integrity-gate.yml` `e2e-smoke` job, parallel with lint/build/unit; skips fork PRs without hosted secrets).
 - **(7) API and service hardening** - **7a** cap list/bulk inputs on high-traffic routes. **7b** shared `/api` auth + error envelope (reduce per-route drift). **7c** Typesense sync retry + operator-visible reconciliation check. **7d** narrow transaction fixes (catalog reads outside hot transactions). **7e** atomic media-reference removal paths where still non-transactional.
 - **(8) Pre-commercial security and ops** - **8a** mutation-route rate limiting. **8b** scrub key-fragment logging from maintenance scripts. **8c** scope viewer-facing tag-count exposure on `GET /api/tags` if needed. **8d** baseline production error monitoring (for example Sentry free tier).
 - **(9) Reader follow-ups (defer until profiling or demo need)** - **9a** dedicated `renditions.reader` + backfill. **9b** true DOM feed windowing (only if CSS containment is insufficient). **9c** navigation/sidebar hydration flash if still visible on real devices.
@@ -90,7 +90,7 @@ Legend:
 📐 **Post-review step 6 — E2E hardening sequencing (2026-06-12)**
 
 - **6a Admin-save mutation smoke** - Playwright scenario that performs a representative admin PATCH and restores state. **Shipped 2026-06-12:** `e2e/smoke/admin-save.spec.ts` (mobile reader quick edit → subtitle PATCH on first feed card; `finally` restores original subtitle).
-- **6b PR gate promotion** - Add `npm run test:e2e` to PR CI after stable hosted green history. **Planned.**
+- **6b PR gate promotion** - Add `npm run test:e2e` to PR CI after stable hosted green history. **Shipped 2026-06-12:** `.github/workflows/integrity-gate.yml` runs hosted Playwright smoke in parallel with lint/build/unit; fork PRs skip the E2E job when secrets are unavailable.
 
 
 
@@ -420,8 +420,8 @@ Legend:
 - **Quality** - QA app.
 - **Security Hardening** - Threat-model review, authorization review, secret-handling review, and hosted deployment hardening for commercial readiness. Current boundary: `storage.rules` and `.env.example` are present in repo (shipped 2026-06-12); **API route access audit + automated admin-boundary tests shipped 2026-06-12 (slice 3b)** — see `src/lib/auth/apiRouteAccessAudit.ts` and `docs/02-Application.md` **API route access audit**; **env-password auth fallback retired 2026-06-12 (slice 3d)** — sign-in is `journal_users` only; `ADMIN_EMAIL` / `ADMIN_PASSWORD` are seed-bootstrap only.
 - **Testing** - Expand automated coverage on workflow-critical, integrity-critical, and commercially sensitive paths, including contract-level browser smoke tests for reader and admin workflows where API/unit tests alone are insufficient.
-- **CI gate expansion** - Shipped 2026-06-12: `.github/workflows/integrity-gate.yml` PR gate runs `npm run lint`, `npm run build`, and `npm test -- --ci --runInBand` on pull requests; nightly emulator-backed integrity remains in `integrity-emulator.yml`.
-- **Playwright smoke tests** - Shipped 2026-06-12 (v1 read-only): `npm run test:e2e` covers login, anonymous redirect, reader feed + card detail, and viewer/admin route boundary via `e2e/smoke/*`. **6a shipped 2026-06-12:** `@admin` reader quick-edit metadata PATCH smoke with post-test restore (`admin-save.spec.ts`). CI: `.github/workflows/e2e-smoke.yml` runs nightly + manual against hosted `E2E_BASE_URL` (not a PR gate yet). **Next (6b):** PR-gate promotion after stable green history.
+- **CI gate expansion** - Shipped 2026-06-12: `.github/workflows/integrity-gate.yml` PR gate runs `npm run lint`, `npm run build`, `npm test -- --ci --runInBand`, and hosted `npm run test:e2e` (slice **6b**, parallel job against `E2E_BASE_URL` secrets); nightly emulator-backed integrity remains in `integrity-emulator.yml`; nightly E2E also runs in `e2e-smoke.yml`.
+- **Playwright smoke tests** - Shipped 2026-06-12: `npm run test:e2e` covers login, anonymous redirect, reader feed + card detail, viewer/admin route boundary, and **6a** admin reader quick-edit PATCH with restore (`admin-save.spec.ts`). **6b shipped 2026-06-12:** PR gate runs the same suite via `integrity-gate.yml`; `.github/workflows/e2e-smoke.yml` remains nightly + manual.
 - **Typesense reconciliation** - Add retry on sync failures plus an operator-visible reconciliation check so search/admin lists do not silently drift from Firestore. **Post-review step 7c.**
 - **API input caps and shared auth envelope** - Cap client `limit`/bulk array sizes on list and mutation routes; reduce per-handler auth/error drift with a shared `/api` helper. **Post-review steps 7a-7b.**
 - **Mutation rate limiting** - Basic rate limits on write routes before broader family or commercial exposure. **Post-review step 8a.**

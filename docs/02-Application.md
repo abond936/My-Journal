@@ -51,12 +51,12 @@ Legend:
 - **Reader Shell Stability** - Protected reader routes keep their shell chrome and navigation context stable during client session hydration.
 - **Reader mobile text edit** - Shipped 2026-06-12 (review program step 5, slices 5a-5d): card detail + feed tiles use `ReaderCardEditEntry` with mobile quick-edit (metadata, eligible plain-prose body, gallery captions) via narrow PATCH branches; desktop keeps lazy full Compose modal.
 - **Reader bundle separation** - Shipped 2026-06-12 (2a, 5d): Theme Management and feed-tile edit paths lazy-load admin chunks; Studio remains admin-route scoped.
+- **Playwright E2E hardening** - Shipped 2026-06-12 (post-review step **6**): admin-save mutation smoke (`admin-save.spec.ts`, **6a**) and PR-gate hosted smoke (**6b** via `integrity-gate.yml`).
 
 ⭕1 **Planned**
 
 - **Typesense reconciliation** - Retry on sync failures plus operator-visible reconciliation so search/admin lists do not silently drift from Firestore. **Post-review step 7c** (`03`).
 - **API input caps and shared auth envelope** - Cap list/bulk inputs; shared `/api` auth + error envelope. **Post-review steps 7a-7b** (`03`).
-- **Playwright E2E hardening** - Admin-save mutation smoke shipped (`admin-save.spec.ts`, step **6a**); PR-gate promotion pending (**6b**). See `03`.
 - **Mutation rate limiting** - Basic write-route limits before broader exposure. **Post-review step 8a** (`03`).
 - **Error monitoring** - Baseline production error visibility. **Post-review step 8d** (`03`).
 

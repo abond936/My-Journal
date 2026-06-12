@@ -30,3 +30,45 @@ jobs:
 
       - name: Run unit and integrity tests
         run: npm test -- --ci --runInBand
+
+  e2e-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Hosted E2E secrets are unavailable on fork PRs; lint/build/unit still gate those PRs.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright smoke tests against hosted app
+        env:
+          CI: true
+          PLAYWRIGHT_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+          E2E_VIEWER_USERNAME: ${{ secrets.E2E_VIEWER_USERNAME }}
+          E2E_VIEWER_PASSWORD: ${{ secrets.E2E_VIEWER_PASSWORD }}
+          E2E_ADMIN_USERNAME: ${{ secrets.E2E_ADMIN_USERNAME }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-pr-${{ github.run_id }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
