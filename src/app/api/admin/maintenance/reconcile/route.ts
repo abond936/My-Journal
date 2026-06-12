@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
 import { runDiagnostics, runReconciliation } from '@/lib/scripts/firebase/reconcile-media-cards';
+import { safeMaintenanceErrorMessage } from '@/lib/scripts/utils/safeMaintenanceLog';
 
 type ApiErrorPayload = {
   ok: false;
@@ -61,8 +62,7 @@ export async function POST(request: NextRequest) {
     const after = await runReconciliation(report, dryRun);
     return NextResponse.json({ report, after });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'An unknown error occurred';
-    console.error('[/api/admin/maintenance/reconcile] Error:', error);
+    console.error('[/api/admin/maintenance/reconcile] Error:', safeMaintenanceErrorMessage(error));
     return errorResponse(
       {
         ok: false,
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
         message: 'Reconcile failed.',
         severity: 'error',
         retryable: true,
-        error: message,
+        error: safeMaintenanceErrorMessage(error),
       },
       500
     );

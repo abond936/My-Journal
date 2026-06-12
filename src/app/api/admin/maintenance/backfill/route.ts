@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
 import { backfillMediaMetadata } from '@/lib/scripts/firebase/backfill-media-metadata';
+import { safeMaintenanceErrorMessage } from '@/lib/scripts/utils/safeMaintenanceLog';
 
 type ApiErrorPayload = {
   ok: false;
@@ -38,8 +39,7 @@ export async function POST(request: NextRequest) {
     const report = await backfillMediaMetadata(dryRun);
     return NextResponse.json({ report });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'An unknown error occurred';
-    console.error('[/api/admin/maintenance/backfill] Error:', error);
+    console.error('[/api/admin/maintenance/backfill] Error:', safeMaintenanceErrorMessage(error));
     return errorResponse(
       {
         ok: false,
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
         message: 'Backfill failed.',
         severity: 'error',
         retryable: true,
-        error: message,
+        error: safeMaintenanceErrorMessage(error),
       },
       500
     );

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
 import { diagnoseCoverImage } from '@/lib/scripts/dev/diagnose-cover-image';
+import { safeMaintenanceErrorMessage } from '@/lib/scripts/utils/safeMaintenanceLog';
 
 type ApiErrorPayload = {
   ok: false;
@@ -51,8 +52,7 @@ export async function POST(request: NextRequest) {
     const result = await diagnoseCoverImage(cardTitle);
     return NextResponse.json({ result });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'An unknown error occurred';
-    console.error('[/api/admin/maintenance/diagnose-cover] Error:', error);
+    console.error('[/api/admin/maintenance/diagnose-cover] Error:', safeMaintenanceErrorMessage(error));
     return errorResponse(
       {
         ok: false,
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
         message: 'Diagnose cover failed.',
         severity: 'error',
         retryable: true,
-        error: message,
+        error: safeMaintenanceErrorMessage(error),
       },
       500
     );

@@ -1,11 +1,6 @@
 import * as dotenv from 'dotenv';
-import { resolve } from 'path';
 
-// Debug dotenv loading
-const result = dotenv.config();
-console.log('\nDotenv config result:', result);
-console.log('Current working directory:', process.cwd());
-console.log('Looking for .env file in:', resolve(process.cwd(), '.env'));
+dotenv.config();
 
 import { getAdminApp } from '@/lib/config/firebase/admin';
 
@@ -23,8 +18,10 @@ async function main() {
 
     console.log('Media document:', doc.data());
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error:', error instanceof Error ? error.message : error);
   }
 }
 
-main().catch(console.error); 
+main().catch((error) => {
+  console.error(error instanceof Error ? error.message : error);
+});

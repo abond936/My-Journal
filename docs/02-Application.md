@@ -57,6 +57,7 @@ Legend:
 - **Transaction catalog reads** - Shipped 2026-06-12 (post-review step **7d**): tag catalog pre-read outside hot card mutations; `deleteTag` passes preloaded catalog to derived-field helpers per affected card/media.
 - **Atomic media-reference removal** - Shipped 2026-06-12 (post-review step **7e**): `removeMediaReferenceFromCard` runs card detach, `referencedByCardIds`, and media-signal refresh in one Firestore transaction.
 - **Mutation rate limiting** - Shipped 2026-06-12 (post-review step **8a**): write-route buckets enforced in `middleware.ts` via `mutationRateLimit.ts`.
+- **Maintenance script logging hygiene** - Shipped 2026-06-12 (post-review step **8b**): `safeMaintenanceLog.ts`; no key-fragment env logging in operator scripts.
 
 ⭕1 **Planned**
 

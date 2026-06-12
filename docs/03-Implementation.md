@@ -48,11 +48,11 @@ Legend:
 
 📐 **Review program order** - **Complete 2026-06-12:** **(1)** engineering safety net, **(2)** reader performance, **(3)** backend hardening, **(4)** Studio legacy retirement, **(5)** reader mobile text edit (5a-5d). **Active:** post-review program steps **6-12** (same slice-by-slice approval cadence).
 
-📐 **Post-review program order (2026-06-12)** - Continue one approved slice at a time. **Storage restore proof is explicitly last (step 12)** per author direction. **Next:** step **8b** scrub key-fragment logging from maintenance scripts.
+📐 **Post-review program order (2026-06-12)** - Continue one approved slice at a time. **Storage restore proof is explicitly last (step 12)** per author direction. **Next:** step **8c** scope viewer-facing tag-count exposure on `GET /api/tags` if needed.
 
 - **(6) E2E hardening** - **Complete 2026-06-12:** **6a** admin-save mutation smoke; **6b** `npm run test:e2e` on PR gate (`integrity-gate.yml` `e2e-smoke` job, parallel with lint/build/unit; skips fork PRs without hosted secrets).
 - **(7) API and service hardening** - **Complete 2026-06-12:** **7a-7e** shipped (input caps, route envelope, Typesense reconciliation, transaction catalog reads, atomic media-reference removal).
-- **(8) Pre-commercial security and ops** - **8a shipped 2026-06-12.** **Next:** **8b** scrub key-fragment logging from maintenance scripts. **Then:** **8c** scope viewer-facing tag-count exposure on `GET /api/tags` if needed. **8d** baseline production error monitoring (for example Sentry free tier).
+- **(8) Pre-commercial security and ops** - **8a-8b shipped 2026-06-12.** **Next:** **8c** scope viewer-facing tag-count exposure on `GET /api/tags` if needed. **Then:** **8d** baseline production error monitoring (for example Sentry free tier).
 - **(9) Reader follow-ups (defer until profiling or demo need)** - **9a** dedicated `renditions.reader` + backfill. **9b** true DOM feed windowing (only if CSS containment is insufficient). **9c** navigation/sidebar hydration flash if still visible on real devices.
 - **(10) Studio depth (defer)** - ref-registry to typed context; `CardForm` / `PhotoPicker` decomposition only when a feature demands it. Tie to existing Studio runtime browser verification in `03` **Current Studio runtime audit handoff**.
 - **(11) Engineering quality (incremental)** - TypeScript `strict` per-directory rollout; `cardService` facade split; unused-deps cleanup; uniform `withErrorHandler` adoption on remaining routes.
@@ -103,7 +103,7 @@ Legend:
 📐 **Post-review step 8 — Pre-commercial security and ops sequencing (2026-06-12)**
 
 - **8a Mutation rate limiting** - Per-actor write limits on `/api` mutation methods (except `/api/auth`). **Shipped 2026-06-12:** `src/lib/api/mutationRateLimit.ts` + enforcement in `middleware.ts`; buckets for standard/bulk/import/maintenance/ai; `429` + `Retry-After` + shared `{ ok: false, code: RATE_LIMIT_EXCEEDED }` envelope.
-- **8b Maintenance script logging** - Planned.
+- **8b Maintenance script logging** - Scrub key-fragment and raw secret logging from operator scripts. **Shipped 2026-06-12:** `safeMaintenanceLog.ts` (presence-only env logs + error redaction); cleaned `cleanup-tags.ts`, `test-firebase-config.ts`, `check-media.ts`; maintenance HTTP routes redact operator-visible errors.
 - **8c Tag count exposure** - Planned.
 - **8d Error monitoring** - Planned.
 
@@ -438,6 +438,7 @@ Legend:
 - **Atomic media-reference removal** - **Shipped 2026-06-12 (7e):** `removeMediaReferenceFromCard` single-transaction detach path; regression in `atomicMediaReferenceRemoval.test.ts`.
 - **API input caps and shared auth envelope** - **7a + 7b shipped 2026-06-12:** `src/lib/api/inputCaps.ts` and `src/lib/api/routeEnvelope.ts` on the high-traffic card/media route set (`03` step 7). Broader route migration remains incremental.
 - **Mutation rate limiting** - **Shipped 2026-06-12 (8a):** per-actor buckets in `mutationRateLimit.ts`, enforced on `/api` POST/PUT/PATCH/DELETE in `middleware.ts` (excludes `/api/auth`); in-process v1 baseline.
+- **Maintenance script logging hygiene** - **Shipped 2026-06-12 (8b):** `safeMaintenanceLog.ts`; operator scripts log env presence only; maintenance HTTP errors redacted.
 - **Error monitoring** - Baseline production error visibility (for example Sentry). **Post-review step 8d.**
 - **Access & privacy gate** - Re-verify hosted reader/admin boundaries in deployed use: direct URL behavior, hosted auth/session configuration, and absence of admin affordance leakage. Current closeout: hosted anonymous requests to `/view`, `/search`, and `/admin` now redirect to login while the corresponding reader APIs reject anonymous access with `401`; `viewer` sessions can use reader routes/APIs but are redirected away from representative admin routes, do not see admin navigation affordances on reader surfaces, and receive `403` from `/api/admin/journal-users`; `admin` sessions can access both reader/admin routes and the admin users API. The root reader page-route mismatch observed on 2026-05-23 is resolved, and this verification pass found no concrete hosted access/privacy leak. Local import helpers are expected to remain admin-only operational routes; audience-based reader sharing is future scope, not part of current v1 verification.
 - **Integrity gate expansion** - Expand integrity verification for card-media references, tag counts, derived card fields, delete/replace graph behavior, and import drift detection. **Shipped 2026-06-12 (slice 3c):** tag-count invariants (`findTagCountViolations`), expanded unit gate tests, and emulator-backed `createCard` / `updateCardTags` / `deleteCard` / `updateCardCover` scenarios alongside existing delete/replace graph coverage in `emulator.integrity.test.ts`.
