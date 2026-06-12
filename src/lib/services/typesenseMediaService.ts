@@ -4,6 +4,7 @@ import { getTypesenseClient, isTypesenseConfigured } from '@/lib/config/typesens
 import { Media } from '@/lib/types/photo';
 import type { DimensionalTagIdMap } from '@/lib/utils/tagUtils';
 import { dimensionalTagMapHasFilters } from '@/lib/utils/tagUtils';
+import { withTypesenseRetry } from '@/lib/services/typesenseSync';
 
 const MEDIA_COLLECTION = 'media';
 
@@ -182,13 +183,20 @@ export async function dropMediaCollection(): Promise<void> {
 /**
  * Fire-and-forget — logs errors.
  */
+async function upsertMediaRecordToTypesense(media: Media): Promise<void> {
+  const ids = collectAllTagIds(media);
+  const nameMap = await resolveTagNames(ids);
+  const doc = mediaToTypesenseDocument(media, nameMap);
+  await upsertMediaDoc(doc);
+}
+
 export async function syncMediaToTypesense(media: Media): Promise<void> {
   if (!isTypesenseConfigured()) return;
   try {
-    const ids = collectAllTagIds(media);
-    const nameMap = await resolveTagNames(ids);
-    const doc = mediaToTypesenseDocument(media, nameMap);
-    await upsertMediaDoc(doc);
+    await withTypesenseRetry(
+      () => upsertMediaRecordToTypesense(media),
+      { entity: 'media', id: media.docId, operation: 'upsert' }
+    );
   } catch (err) {
     console.error(`[Typesense media] Failed to sync ${media.docId}:`, err);
   }
@@ -197,11 +205,16 @@ export async function syncMediaToTypesense(media: Media): Promise<void> {
 export async function syncMediaToTypesenseById(mediaId: string): Promise<void> {
   if (!isTypesenseConfigured()) return;
   try {
-    const { getAdminApp } = await import('@/lib/config/firebase/admin');
-    const snap = await getAdminApp().firestore().collection('media').doc(mediaId).get();
-    if (!snap.exists) return;
-    const data = snap.data() as Media;
-    await syncMediaToTypesense({ ...data, docId: snap.id });
+    await withTypesenseRetry(
+      async () => {
+        const { getAdminApp } = await import('@/lib/config/firebase/admin');
+        const snap = await getAdminApp().firestore().collection('media').doc(mediaId).get();
+        if (!snap.exists) return;
+        const data = snap.data() as Media;
+        await upsertMediaRecordToTypesense({ ...data, docId: snap.id });
+      },
+      { entity: 'media', id: mediaId, operation: 'upsert' }
+    );
   } catch (err) {
     console.error(`[Typesense media] Failed to sync by id ${mediaId}:`, err);
   }
@@ -210,7 +223,12 @@ export async function syncMediaToTypesenseById(mediaId: string): Promise<void> {
 export async function removeMediaFromTypesense(mediaId: string): Promise<void> {
   if (!isTypesenseConfigured()) return;
   try {
-    await deleteMediaDoc(mediaId);
+    await withTypesenseRetry(
+      async () => {
+        await deleteMediaDoc(mediaId);
+      },
+      { entity: 'media', id: mediaId, operation: 'delete' }
+    );
   } catch (err) {
     console.error(`[Typesense media] Failed to remove ${mediaId}:`, err);
   }

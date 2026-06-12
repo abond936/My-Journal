@@ -6,6 +6,7 @@ import type {
 } from 'typesense';
 import { getTypesenseClient, isTypesenseConfigured } from '@/lib/config/typesense';
 import { Card } from '@/lib/types/card';
+import { withTypesenseRetry } from '@/lib/services/typesenseSync';
 
 const CARDS_COLLECTION = 'cards';
 
@@ -552,20 +553,25 @@ export async function syncCardToTypesense(card: Card): Promise<void> {
   if (!isTypesenseConfigured()) return;
 
   try {
-    const allTagIds = [
-      ...(card.tags || []),
-      ...(card.who || []),
-      ...(card.what || []),
-      ...(card.when || []),
-      ...(card.where || []),
-    ];
-    const unique = [...new Set(allTagIds)];
-    const nameMap = await resolveTagNames(unique);
+    await withTypesenseRetry(
+      async () => {
+        const allTagIds = [
+          ...(card.tags || []),
+          ...(card.who || []),
+          ...(card.what || []),
+          ...(card.when || []),
+          ...(card.where || []),
+        ];
+        const unique = [...new Set(allTagIds)];
+        const nameMap = await resolveTagNames(unique);
 
-    const data = { ...card } as unknown as Record<string, unknown>;
-    const doc = buildTypesenseCardDocumentFromData(card.docId, data, nameMap);
+        const data = { ...card } as unknown as Record<string, unknown>;
+        const doc = buildTypesenseCardDocumentFromData(card.docId, data, nameMap);
 
-    await upsertCard(doc);
+        await upsertCard(doc);
+      },
+      { entity: 'card', id: card.docId, operation: 'upsert' }
+    );
   } catch (err) {
     console.error(`[Typesense] Failed to sync card ${card.docId}:`, err);
   }
@@ -579,7 +585,12 @@ export async function removeCardFromTypesense(cardId: string): Promise<void> {
   if (!isTypesenseConfigured()) return;
 
   try {
-    await deleteCard(cardId);
+    await withTypesenseRetry(
+      async () => {
+        await deleteCard(cardId);
+      },
+      { entity: 'card', id: cardId, operation: 'delete' }
+    );
   } catch (err) {
     console.error(`[Typesense] Failed to remove card ${cardId}:`, err);
   }

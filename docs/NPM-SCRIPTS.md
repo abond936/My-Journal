@@ -172,7 +172,9 @@ Use **dedicated test accounts** (rotatable), not personal logins. After adding s
 | `npm run sync:typesense:media` | Firestore media → Typesense `media` collection (search/facets for `/api/media`) |
 | `npm run sync:typesense:media:fresh` | Same, drop media index first (`--fresh`) |
 
-**HTTP maintenance API** (admin-auth only): `POST` routes under `/api/admin/maintenance/` (`reconcile`, `cleanup`, `backfill`, `diagnose-cover`) for tooling or manual calls while there is no Maintenance admin UI. Same operations are often easier via `npm run …` from a machine with Firebase Admin env.
+**HTTP maintenance API** (admin-auth only): `POST` routes under `/api/admin/maintenance/` (`reconcile`, `cleanup`, `backfill`, `diagnose-cover`) plus **`GET /api/admin/maintenance/typesense-status`** (Typesense projection health: counts, sample drift, recent sync failures). Same repair operations are often easier via `npm run …` from a machine with Firebase Admin env.
+
+Example — **Typesense status** (`src/app/api/admin/maintenance/typesense-status/route.ts`): `GET` returns `{ ok: true, report }` with Firestore vs Typesense card/media counts, sample missing/orphan ids, recent runtime sync failures, and repair hints. Read-only; use `npm run sync:typesense` / `sync:typesense:media` to repair drift.
 
 Example — **reconcile** (`src/app/api/admin/maintenance/reconcile/route.ts`): JSON body `{ "action": "diagnose" | "fix", "dryRun"?: true, "cardTitleFilter"?: string, "checkStorage"?: true }`. Diagnose-only returns `{ report }`; fix returns `{ report, after }`. Implementation: `src/lib/scripts/firebase/reconcile-media-cards.ts`.
 

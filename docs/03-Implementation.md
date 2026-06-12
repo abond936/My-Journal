@@ -48,10 +48,10 @@ Legend:
 
 📐 **Review program order** - **Complete 2026-06-12:** **(1)** engineering safety net, **(2)** reader performance, **(3)** backend hardening, **(4)** Studio legacy retirement, **(5)** reader mobile text edit (5a-5d). **Active:** post-review program steps **6-12** (same slice-by-slice approval cadence).
 
-📐 **Post-review program order (2026-06-12)** - Continue one approved slice at a time. **Storage restore proof is explicitly last (step 12)** per author direction. **Next:** step **7c** Typesense reconciliation.
+📐 **Post-review program order (2026-06-12)** - Continue one approved slice at a time. **Storage restore proof is explicitly last (step 12)** per author direction. **Next:** step **7d** narrow transaction fixes.
 
 - **(6) E2E hardening** - **Complete 2026-06-12:** **6a** admin-save mutation smoke; **6b** `npm run test:e2e` on PR gate (`integrity-gate.yml` `e2e-smoke` job, parallel with lint/build/unit; skips fork PRs without hosted secrets).
-- **(7) API and service hardening** - **7a** cap list/bulk inputs shipped 2026-06-12 (`src/lib/api/inputCaps.ts`). **7b** shared `/api` auth + error envelope shipped 2026-06-12 (`src/lib/api/routeEnvelope.ts` on the step-7a route set). **Next:** **7c** Typesense sync retry + operator-visible reconciliation check. **Then:** **7d** narrow transaction fixes. **7e** atomic media-reference removal paths where still non-transactional.
+- **(7) API and service hardening** - **7a-7c shipped 2026-06-12.** **Next:** **7d** narrow transaction fixes (catalog reads outside hot transactions). **Then:** **7e** atomic media-reference removal paths where still non-transactional.
 - **(8) Pre-commercial security and ops** - **8a** mutation-route rate limiting. **8b** scrub key-fragment logging from maintenance scripts. **8c** scope viewer-facing tag-count exposure on `GET /api/tags` if needed. **8d** baseline production error monitoring (for example Sentry free tier).
 - **(9) Reader follow-ups (defer until profiling or demo need)** - **9a** dedicated `renditions.reader` + backfill. **9b** true DOM feed windowing (only if CSS containment is insufficient). **9c** navigation/sidebar hydration flash if still visible on real devices.
 - **(10) Studio depth (defer)** - ref-registry to typed context; `CardForm` / `PhotoPicker` decomposition only when a feature demands it. Tie to existing Studio runtime browser verification in `03` **Current Studio runtime audit handoff**.
@@ -96,7 +96,7 @@ Legend:
 
 - **7a Input caps** - Shared bounds for list `limit` and bulk id arrays on high-traffic routes. **Shipped 2026-06-12:** `src/lib/api/inputCaps.ts` + route enforcement on card list/search, card by-ids, bulk card tag mutation, bulk media tag mutation, and media reference summary.
 - **7b Shared `/api` auth + error envelope** - `requireApiSession`, `apiRouteError`, and `withApiRouteHandler` in `src/lib/api/routeEnvelope.ts`; migrated the step-7a route set off duplicated local auth/error helpers. **Shipped 2026-06-12.**
-- **7c Typesense reconciliation** - Planned.
+- **7c Typesense reconciliation** - Runtime sync retry + operator-visible projection check. **Shipped 2026-06-12:** `withTypesenseRetry` on card/media sync paths; in-process failure ring buffer; `GET /api/admin/maintenance/typesense-status` returns Firestore vs Typesense counts/samples + recent failures.
 - **7d Transaction catalog reads** - Planned.
 - **7e Atomic media-reference removal** - Planned.
 
@@ -430,7 +430,7 @@ Legend:
 - **Testing** - Expand automated coverage on workflow-critical, integrity-critical, and commercially sensitive paths, including contract-level browser smoke tests for reader and admin workflows where API/unit tests alone are insufficient.
 - **CI gate expansion** - Shipped 2026-06-12: `.github/workflows/integrity-gate.yml` PR gate runs `npm run lint`, `npm run build`, `npm test -- --ci --runInBand`, and hosted `npm run test:e2e` (slice **6b**, parallel job against `E2E_BASE_URL` secrets); nightly emulator-backed integrity remains in `integrity-emulator.yml`; nightly E2E also runs in `e2e-smoke.yml`.
 - **Playwright smoke tests** - Shipped 2026-06-12: `npm run test:e2e` covers login, anonymous redirect, reader feed + card detail, viewer/admin route boundary, and **6a** admin reader quick-edit PATCH with restore (`admin-save.spec.ts`). **6b shipped 2026-06-12:** PR gate runs the same suite via `integrity-gate.yml`; `.github/workflows/e2e-smoke.yml` remains nightly + manual.
-- **Typesense reconciliation** - Add retry on sync failures plus an operator-visible reconciliation check so search/admin lists do not silently drift from Firestore. **Post-review step 7c.**
+- **Typesense reconciliation** - **Shipped 2026-06-12 (7c):** runtime sync retry (`typesenseSync.ts`), operator status at `GET /api/admin/maintenance/typesense-status`; repair via existing `npm run sync:typesense*` scripts.
 - **API input caps and shared auth envelope** - **7a + 7b shipped 2026-06-12:** `src/lib/api/inputCaps.ts` and `src/lib/api/routeEnvelope.ts` on the high-traffic card/media route set (`03` step 7). Broader route migration remains incremental.
 - **Mutation rate limiting** - Basic rate limits on write routes before broader family or commercial exposure. **Post-review step 8a.**
 - **Error monitoring** - Baseline production error visibility (for example Sentry). **Post-review step 8d.**

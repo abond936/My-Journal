@@ -94,6 +94,7 @@ export const API_ROUTE_ACCESS_AUDIT: readonly ApiRouteAuditEntry[] = [
   { method: 'POST', path: '/api/admin/maintenance/cleanup', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/admin/maintenance/diagnose-cover', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/admin/maintenance/reconcile', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'GET', path: '/api/admin/maintenance/typesense-status', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
 ] as const;
 
 /** Handlers exercised by automated admin-boundary tests (`admin-api-access-route.test.ts`). */
@@ -154,4 +155,5 @@ export const ADMIN_ROUTE_BOUNDARY_CASES: readonly AdminRouteBoundaryCase[] = [
   { id: 'admin-maintenance-cleanup', method: 'POST', path: '/api/admin/maintenance/cleanup', modulePath: '@/app/api/admin/maintenance/cleanup/route', requestUrl: 'https://example.test/api/admin/maintenance/cleanup', body: { dryRun: true } },
   { id: 'admin-maintenance-diagnose-cover', method: 'POST', path: '/api/admin/maintenance/diagnose-cover', modulePath: '@/app/api/admin/maintenance/diagnose-cover/route', requestUrl: 'https://example.test/api/admin/maintenance/diagnose-cover', body: {} },
   { id: 'admin-maintenance-reconcile', method: 'POST', path: '/api/admin/maintenance/reconcile', modulePath: '@/app/api/admin/maintenance/reconcile/route', requestUrl: 'https://example.test/api/admin/maintenance/reconcile', body: { dryRun: true } },
+  { id: 'admin-maintenance-typesense-status', method: 'GET', path: '/api/admin/maintenance/typesense-status', modulePath: '@/app/api/admin/maintenance/typesense-status/route', requestUrl: 'https://example.test/api/admin/maintenance/typesense-status' },
 ] as const;
