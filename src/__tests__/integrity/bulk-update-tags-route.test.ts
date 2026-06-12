@@ -24,6 +24,7 @@ jest.mock('@/lib/services/cardService', () => ({
 }));
 
 import { POST } from '@/app/api/cards/bulk-update-tags/route';
+import { API_INPUT_CAPS } from '@/lib/api/inputCaps';
 
 const mockedGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>;
 const mockedBulkApplyTagDelta = bulkApplyTagDelta as jest.MockedFunction<typeof bulkApplyTagDelta>;
@@ -86,5 +87,21 @@ describe('POST /api/cards/bulk-update-tags', () => {
     );
     expect(mockedBulkUpdateTags).not.toHaveBeenCalled();
     expect(payload.mode).toBe('add-remove');
+  });
+
+  it('returns 400 when cardIds exceeds the bulk cap', async () => {
+    mockedGetServerSession.mockResolvedValueOnce(adminSession);
+
+    const cardIds = Array.from({ length: API_INPUT_CAPS.bulkCardIdsMax + 1 }, (_, i) => `c-${i}`);
+    const req = {
+      json: async () => ({ cardIds, addTagIds: ['t-add'], removeTagIds: [] }),
+    } as Request;
+
+    const res = await POST(req);
+    const payload = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(payload.code).toBe('CARD_BULK_TAGS_TOO_MANY');
+    expect(mockedBulkApplyTagDelta).not.toHaveBeenCalled();
   });
 });

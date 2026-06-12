@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server';
 import { getCardsByIds } from '@/lib/services/cardService';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
+import {
+  API_INPUT_CAPS,
+  validateRepeatedIdQueryParams,
+  isInputCapFailure,
+} from '@/lib/api/inputCaps';
 
 type ApiErrorPayload = {
   ok: false;
@@ -39,23 +44,26 @@ export async function GET(request: Request) {
 
   try {
     const { searchParams } = new URL(request.url);
-    const ids = searchParams.getAll('id');
+    const idsResult = validateRepeatedIdQueryParams(searchParams.getAll('id'), {
+      max: API_INPUT_CAPS.cardByIdsMax,
+      emptyMessage: 'Missing "id" query parameters. Use repeated ?id=123&id=456 style.',
+    });
 
-    // Enforce the repeated ?id=A&id=B pattern
-    if (ids.length === 0) {
+    if (isInputCapFailure(idsResult)) {
+      const capError = idsResult.error;
       return errorResponse(
         {
           ok: false,
-          code: 'CARD_IDS_REQUIRED',
-          message: 'Missing "id" query parameters. Use repeated ?id=123&id=456 style.',
+          code: capError.code === 'INPUT_ARRAY_INVALID' ? 'CARD_IDS_REQUIRED' : 'CARD_IDS_TOO_MANY',
+          message: capError.message,
           severity: 'error',
           retryable: false,
         },
         400
       );
     }
-    
-    const cards = await getCardsByIds(ids);
+
+    const cards = await getCardsByIds(idsResult.ids);
 
     return NextResponse.json(cards);
   } catch (error) {

@@ -6,6 +6,7 @@ import { Card } from '@/lib/types/card';
 import { PaginatedResult } from '@/lib/types/services';
 import { isTypesenseConfigured } from '@/lib/config/typesense';
 import { searchCardsFiltered } from '@/lib/services/typesenseService';
+import { parseListPageLimit, isInputCapFailure } from '@/lib/api/inputCaps';
 
 type ApiErrorPayload = {
   ok: false;
@@ -91,7 +92,20 @@ export async function GET(request: Request) {
       );
     }
 
-    const limit = searchParams.has('limit') ? parseInt(searchParams.get('limit')!, 10) : 10;
+    const limitResult = parseListPageLimit(searchParams.get('limit'));
+    if (isInputCapFailure(limitResult)) {
+      return errorResponse(
+        {
+          ok: false,
+          code: limitResult.error.code,
+          message: limitResult.error.message,
+          severity: 'error',
+          retryable: false,
+        },
+        400
+      );
+    }
+    const limit = limitResult.value;
     const lastDocId = searchParams.get('lastDocId') || undefined;
     const status = session?.user?.role === 'admin' ? 'all' : 'published';
 

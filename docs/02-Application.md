@@ -56,7 +56,7 @@ Legend:
 ⭕1 **Planned**
 
 - **Typesense reconciliation** - Retry on sync failures plus operator-visible reconciliation so search/admin lists do not silently drift from Firestore. **Post-review step 7c** (`03`).
-- **API input caps and shared auth envelope** - Cap list/bulk inputs; shared `/api` auth + error envelope. **Post-review steps 7a-7b** (`03`).
+- **API input caps and shared auth envelope** - **7a shipped 2026-06-12:** list/bulk input caps on high-traffic routes. **7b** shared `/api` auth + error envelope still planned. See `03`.
 - **Mutation rate limiting** - Basic write-route limits before broader exposure. **Post-review step 8a** (`03`).
 - **Error monitoring** - Baseline production error visibility. **Post-review step 8d** (`03`).
 

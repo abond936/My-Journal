@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
 import { getCardsReferencingMedia } from '@/lib/services/cardService';
+import { API_INPUT_CAPS, validateRepeatedIdQueryParams, isInputCapFailure } from '@/lib/api/inputCaps';
 
 type ApiErrorPayload = {
   ok: false;
@@ -44,26 +45,22 @@ export async function GET(request: Request) {
       )
     );
 
-    if (ids.length === 0) {
-      return errorResponse(
-        {
-          ok: false,
-          code: 'MEDIA_IDS_REQUIRED',
-          message: 'Missing "id" query parameters. Use repeated ?id=123&id=456 style.',
-          severity: 'error',
-          retryable: false,
-        },
-        400
-      );
-    }
+    const idsResult = validateRepeatedIdQueryParams(ids, {
+      max: API_INPUT_CAPS.mediaReferenceSummaryMax,
+      emptyMessage: 'Missing "id" query parameters. Use repeated ?id=123&id=456 style.',
+    });
 
-    if (ids.length > 100) {
+    if (isInputCapFailure(idsResult)) {
+      const capError = idsResult.error;
       return errorResponse(
         {
           ok: false,
-          code: 'MEDIA_IDS_TOO_MANY',
-          message: 'Request at most 100 media IDs at a time.',
-          severity: 'warning',
+          code:
+            capError.code === 'INPUT_ARRAY_EXCEEDED'
+              ? 'MEDIA_IDS_TOO_MANY'
+              : 'MEDIA_IDS_REQUIRED',
+          message: capError.message,
+          severity: capError.code === 'INPUT_ARRAY_EXCEEDED' ? 'warning' : 'error',
           retryable: false,
         },
         400
@@ -72,7 +69,7 @@ export async function GET(request: Request) {
 
     const summaries = Object.fromEntries(
       await Promise.all(
-        ids.map(async (id) => [id, await getCardsReferencingMedia(id)] as const)
+        idsResult.ids.map(async (id) => [id, await getCardsReferencingMedia(id)] as const)
       )
     );
 

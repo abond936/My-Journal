@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
 import { bulkApplyMediaTags } from '@/lib/services/images/imageImportService';
 import { recomputeCardsMediaSignalsForMediaIds } from '@/lib/services/cardService';
+import { API_INPUT_CAPS, validateStringIdArray, isInputCapFailure } from '@/lib/api/inputCaps';
 
 type ApiErrorPayload = {
   ok: false;
@@ -51,18 +52,29 @@ export async function POST(request: NextRequest) {
     const tags = body.tags;
     const mode = body.mode;
     const subjectTagIdProvided = Object.prototype.hasOwnProperty.call(body, 'subjectTagId');
-    if (!Array.isArray(mediaIds) || mediaIds.length === 0) {
+
+    const mediaIdsResult = validateStringIdArray(mediaIds, {
+      field: 'mediaIds',
+      max: API_INPUT_CAPS.bulkMediaIdsMax,
+      requireNonEmpty: true,
+    });
+    if (isInputCapFailure(mediaIdsResult)) {
+      const capError = mediaIdsResult.error;
       return errorResponse(
         {
           ok: false,
-          code: 'MEDIA_TAGS_MEDIA_IDS_REQUIRED',
-          message: 'mediaIds must be a non-empty array.',
+          code:
+            capError.code === 'INPUT_ARRAY_EXCEEDED'
+              ? 'MEDIA_TAGS_MEDIA_IDS_TOO_MANY'
+              : 'MEDIA_TAGS_MEDIA_IDS_REQUIRED',
+          message: capError.message,
           severity: 'error',
           retryable: false,
         },
         400
       );
     }
+
     if (!tagsProvided && !subjectTagIdProvided) {
       return errorResponse(
         {
@@ -75,18 +87,32 @@ export async function POST(request: NextRequest) {
         400
       );
     }
-    if (tagsProvided && !Array.isArray(tags)) {
-      return errorResponse(
-        {
-          ok: false,
-          code: 'MEDIA_TAGS_TAG_IDS_INVALID',
-          message: 'tags must be an array of string IDs.',
-          severity: 'error',
-          retryable: false,
-        },
-        400
-      );
+
+    let validatedTagList: string[] | undefined;
+    if (tagsProvided) {
+      const tagsResult = validateStringIdArray(tags, {
+        field: 'tags',
+        max: API_INPUT_CAPS.bulkTagIdsMax,
+      });
+      if (isInputCapFailure(tagsResult)) {
+        const capError = tagsResult.error;
+        return errorResponse(
+          {
+            ok: false,
+            code:
+              capError.code === 'INPUT_ARRAY_EXCEEDED'
+                ? 'MEDIA_TAGS_TAG_LIST_TOO_MANY'
+                : 'MEDIA_TAGS_TAG_IDS_INVALID',
+            message: capError.message,
+            severity: 'error',
+            retryable: false,
+          },
+          400
+        );
+      }
+      validatedTagList = tagsResult.ids;
     }
+
     if (mode !== undefined && mode !== 'add' && mode !== 'replace' && mode !== 'remove') {
       return errorResponse(
         {
@@ -115,8 +141,7 @@ export async function POST(request: NextRequest) {
         400
       );
     }
-    const ids = mediaIds.filter((id): id is string => typeof id === 'string' && id.length > 0);
-    const tagList = Array.isArray(tags) ? tags.filter((id): id is string => typeof id === 'string') : undefined;
+    const ids = mediaIdsResult.ids;
     const effectiveMode = (mode === 'replace' || mode === 'remove' || mode === 'add') ? mode : 'add';
     if (ids.length === 0) {
       return errorResponse(
@@ -132,7 +157,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { updatedIds, updatedMedia } = await bulkApplyMediaTags(ids, {
-      ...(tagsProvided ? { tagIds: tagList ?? [], mode: effectiveMode } : {}),
+      ...(tagsProvided ? { tagIds: validatedTagList ?? [], mode: effectiveMode } : {}),
       ...(subjectTagIdProvided
         ? { subjectTagId: typeof body.subjectTagId === 'string' ? body.subjectTagId.trim() : null, subjectTagIdProvided: true }
         : {}),

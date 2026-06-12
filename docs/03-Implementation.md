@@ -48,10 +48,10 @@ Legend:
 
 📐 **Review program order** - **Complete 2026-06-12:** **(1)** engineering safety net, **(2)** reader performance, **(3)** backend hardening, **(4)** Studio legacy retirement, **(5)** reader mobile text edit (5a-5d). **Active:** post-review program steps **6-12** (same slice-by-slice approval cadence).
 
-📐 **Post-review program order (2026-06-12)** - Continue one approved slice at a time. **Storage restore proof is explicitly last (step 12)** per author direction. **Next:** step **7** API and service hardening.
+📐 **Post-review program order (2026-06-12)** - Continue one approved slice at a time. **Storage restore proof is explicitly last (step 12)** per author direction. **Next:** step **7b** shared `/api` auth + error envelope.
 
 - **(6) E2E hardening** - **Complete 2026-06-12:** **6a** admin-save mutation smoke; **6b** `npm run test:e2e` on PR gate (`integrity-gate.yml` `e2e-smoke` job, parallel with lint/build/unit; skips fork PRs without hosted secrets).
-- **(7) API and service hardening** - **7a** cap list/bulk inputs on high-traffic routes. **7b** shared `/api` auth + error envelope (reduce per-route drift). **7c** Typesense sync retry + operator-visible reconciliation check. **7d** narrow transaction fixes (catalog reads outside hot transactions). **7e** atomic media-reference removal paths where still non-transactional.
+- **(7) API and service hardening** - **7a** cap list/bulk inputs shipped 2026-06-12 (`src/lib/api/inputCaps.ts` on `/api/cards`, `/api/cards/search`, `/api/cards/by-ids`, `/api/cards/bulk-update-tags`, `/api/admin/media/tags`, `/api/media/reference-summary`). **Next:** **7b** shared `/api` auth + error envelope (reduce per-route drift). **Then:** **7c** Typesense sync retry + operator-visible reconciliation check. **7d** narrow transaction fixes (catalog reads outside hot transactions). **7e** atomic media-reference removal paths where still non-transactional.
 - **(8) Pre-commercial security and ops** - **8a** mutation-route rate limiting. **8b** scrub key-fragment logging from maintenance scripts. **8c** scope viewer-facing tag-count exposure on `GET /api/tags` if needed. **8d** baseline production error monitoring (for example Sentry free tier).
 - **(9) Reader follow-ups (defer until profiling or demo need)** - **9a** dedicated `renditions.reader` + backfill. **9b** true DOM feed windowing (only if CSS containment is insufficient). **9c** navigation/sidebar hydration flash if still visible on real devices.
 - **(10) Studio depth (defer)** - ref-registry to typed context; `CardForm` / `PhotoPicker` decomposition only when a feature demands it. Tie to existing Studio runtime browser verification in `03` **Current Studio runtime audit handoff**.
@@ -87,10 +87,18 @@ Legend:
 - **5c Plain-prose body quick edit** - Eligible paragraph-only body via `updateCardContent`; rich body deferred to full editor/Studio. **Shipped 2026-06-12.**
 - **5d Feed edit entry + bundle split** - Feed tiles use lazy `ReaderCardEditEntry`; Compose loads on demand. **Shipped 2026-06-12.**
 
-📐 **Post-review step 6 — E2E hardening sequencing (2026-06-12)**
+📐 **Post-review step 6 — E2E hardening sequencing (2026-06-12)** - **Complete 2026-06-12:**
 
 - **6a Admin-save mutation smoke** - Playwright scenario that performs a representative admin PATCH and restores state. **Shipped 2026-06-12:** `e2e/smoke/admin-save.spec.ts` (mobile reader quick edit → subtitle PATCH on first feed card; `finally` restores original subtitle).
 - **6b PR gate promotion** - Add `npm run test:e2e` to PR CI after stable hosted green history. **Shipped 2026-06-12:** `.github/workflows/integrity-gate.yml` runs hosted Playwright smoke in parallel with lint/build/unit; fork PRs skip the E2E job when secrets are unavailable.
+
+📐 **Post-review step 7 — API and service hardening sequencing (2026-06-12)**
+
+- **7a Input caps** - Shared bounds for list `limit` and bulk id arrays on high-traffic routes. **Shipped 2026-06-12:** `src/lib/api/inputCaps.ts` + route enforcement on card list/search, card by-ids, bulk card tag mutation, bulk media tag mutation, and media reference summary.
+- **7b Shared `/api` auth + error envelope** - Planned.
+- **7c Typesense reconciliation** - Planned.
+- **7d Transaction catalog reads** - Planned.
+- **7e Atomic media-reference removal** - Planned.
 
 
 
@@ -423,7 +431,7 @@ Legend:
 - **CI gate expansion** - Shipped 2026-06-12: `.github/workflows/integrity-gate.yml` PR gate runs `npm run lint`, `npm run build`, `npm test -- --ci --runInBand`, and hosted `npm run test:e2e` (slice **6b**, parallel job against `E2E_BASE_URL` secrets); nightly emulator-backed integrity remains in `integrity-emulator.yml`; nightly E2E also runs in `e2e-smoke.yml`.
 - **Playwright smoke tests** - Shipped 2026-06-12: `npm run test:e2e` covers login, anonymous redirect, reader feed + card detail, viewer/admin route boundary, and **6a** admin reader quick-edit PATCH with restore (`admin-save.spec.ts`). **6b shipped 2026-06-12:** PR gate runs the same suite via `integrity-gate.yml`; `.github/workflows/e2e-smoke.yml` remains nightly + manual.
 - **Typesense reconciliation** - Add retry on sync failures plus an operator-visible reconciliation check so search/admin lists do not silently drift from Firestore. **Post-review step 7c.**
-- **API input caps and shared auth envelope** - Cap client `limit`/bulk array sizes on list and mutation routes; reduce per-handler auth/error drift with a shared `/api` helper. **Post-review steps 7a-7b.**
+- **API input caps and shared auth envelope** - **7a shipped 2026-06-12:** shared list/bulk input caps (`src/lib/api/inputCaps.ts`) on high-traffic card/media routes. **7b** shared `/api` auth + error envelope still planned (`03`).
 - **Mutation rate limiting** - Basic rate limits on write routes before broader family or commercial exposure. **Post-review step 8a.**
 - **Error monitoring** - Baseline production error visibility (for example Sentry). **Post-review step 8d.**
 - **Access & privacy gate** - Re-verify hosted reader/admin boundaries in deployed use: direct URL behavior, hosted auth/session configuration, and absence of admin affordance leakage. Current closeout: hosted anonymous requests to `/view`, `/search`, and `/admin` now redirect to login while the corresponding reader APIs reject anonymous access with `401`; `viewer` sessions can use reader routes/APIs but are redirected away from representative admin routes, do not see admin navigation affordances on reader surfaces, and receive `403` from `/api/admin/journal-users`; `admin` sessions can access both reader/admin routes and the admin users API. The root reader page-route mismatch observed on 2026-05-23 is resolved, and this verification pass found no concrete hosted access/privacy leak. Local import helpers are expected to remain admin-only operational routes; audience-based reader sharing is future scope, not part of current v1 verification.
