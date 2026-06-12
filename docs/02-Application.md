@@ -387,6 +387,12 @@ Legend:
   - Hosted verification matches that contract for anonymous access: `/view`, `/search`, and `/admin` redirect to login, while reader APIs reject anonymous access.
   - Root `/view` and `/search` enforce the boundary server-side rather than relying on middleware alone.
   - Admin-only local import helpers and other admin operational APIs stay outside the reader surface.
+- **API route access audit (2026-06-12, slice 3b)**
+  - Canonical inventory: `src/lib/auth/apiRouteAccessAudit.ts` (`API_ROUTE_ACCESS_AUDIT`).
+  - **public-auth** — `/api/auth/[...nextauth]` (NextAuth).
+  - **authenticated-reader** — reader/catalog reads that require a session but not admin: `GET /api/cards`, `/api/cards/search`, `/api/cards/random`, `/api/cards/[id]`, `/api/view/media`, `/api/tags`, `/api/tags/[id]`. Anonymous callers receive **401**; viewers may read published content (draft detail returns **404**).
+  - **admin-only** — all mutations and admin/catalog/operational routes (card/media/tag writes, import/local helpers, theme admin, AI assist, `/api/admin/*`, maintenance). Anonymous or viewer callers receive **403** (some anonymous card mutations also return **403** rather than **401**).
+  - Automated boundary tests: `src/__tests__/integrity/admin-api-access-route.test.ts` (every admin-only handler); reader anonymous/draft rules remain in `reader-access-route.test.ts` and related integrity tests.
 - **Embedded Media Presentation**
   - Read-only embedded figures collapse empty caption chrome while preserving real captions and editable caption affordances.
 

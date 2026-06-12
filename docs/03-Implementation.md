@@ -59,7 +59,7 @@ Legend:
 📐 **Review program step 3 — backend hardening sequencing (2026-06-12)** - Implement in this order:
 
 - **3a Storage byte backup** - Automated off-site backup of Firebase Storage object bytes (originals + renditions) with manifest + verification, complementing `backup:database`. **Shipped 2026-06-12** (`npm run backup:storage`; dry-run default, `--apply` to download; incremental copy from prior runs when md5 matches).
-- **3b API authorization review** - Route-protection audit table + automated tests that anonymous/viewer sessions cannot reach admin-only handlers.
+- **3b API authorization review** - Route-protection audit table + automated tests that anonymous/viewer sessions cannot reach admin-only handlers. **Shipped 2026-06-12** (`src/lib/auth/apiRouteAccessAudit.ts`, `src/__tests__/integrity/admin-api-access-route.test.ts`; reader boundary remains in `reader-access-route.test.ts`).
 - **3c Integrity gate expansion** - Extend emulator integrity suite for delete/replace graph, tag counts, derived card fields.
 - **3d Env-password auth fallback retirement** - Decision-gated at rollout (`journal_users` is the production path today); execute only when author declares rollout posture.
 
@@ -389,7 +389,7 @@ Legend:
 - **Directory** - Cleanup directory.
 
 - **Quality** - QA app.
-- **Security Hardening** - Threat-model review, authorization review, secret-handling review, and hosted deployment hardening for commercial readiness. Current boundary: `storage.rules` and `.env.example` are present in repo; retire the env-password auth fallback at rollout.
+- **Security Hardening** - Threat-model review, authorization review, secret-handling review, and hosted deployment hardening for commercial readiness. Current boundary: `storage.rules` and `.env.example` are present in repo (shipped 2026-06-12); **API route access audit + automated admin-boundary tests shipped 2026-06-12 (slice 3b)** — see `src/lib/auth/apiRouteAccessAudit.ts` and `docs/02-Application.md` **API route access audit**; retire the env-password auth fallback at rollout.
 - **Testing** - Expand automated coverage on workflow-critical, integrity-critical, and commercially sensitive paths, including contract-level browser smoke tests for reader and admin workflows where API/unit tests alone are insufficient.
 - **CI gate expansion** - Shipped 2026-06-12: `.github/workflows/integrity-gate.yml` PR gate runs `npm run lint`, `npm run build`, and `npm test -- --ci --runInBand` on pull requests; nightly emulator-backed integrity remains in `integrity-emulator.yml`.
 - **Playwright smoke tests** - Shipped 2026-06-12 (v1 read-only): `npm run test:e2e` covers login, anonymous redirect, reader feed + card detail, and viewer/admin route boundary via `e2e/smoke/*`. CI: `.github/workflows/e2e-smoke.yml` runs nightly + manual against hosted `E2E_BASE_URL` (not a PR gate yet). Remaining: PR-gate promotion after stable green history, admin-save mutation scenario.

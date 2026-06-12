@@ -137,7 +137,7 @@ What must make this product distinctly better is not feature breadth alone, but 
 - **Code** - Comment code.
 - **Directory** - Cleanup directory.
 - **Quality** - QA app.
-- **Security Hardening** - Threat-model review, authorization review, secret-handling review, and hosted deployment hardening for commercial readiness. Current boundary: `storage.rules` and `.env.example` are present in repo (shipped 2026-06-12); retire the env-password auth fallback at rollout.
+- **Security Hardening** - Threat-model review, authorization review, secret-handling review, and hosted deployment hardening for commercial readiness. Current boundary: `storage.rules` and `.env.example` are present in repo (shipped 2026-06-12); **API route access audit + automated admin-boundary tests shipped 2026-06-12 (slice 3b)** — inventory in `src/lib/auth/apiRouteAccessAudit.ts`, behavior in `docs/02-Application.md` **API route access audit**; retire the env-password auth fallback at rollout.
 - **Testing** - Expand automated coverage on workflow-critical, integrity-critical, and commercially sensitive paths, including contract-level browser smoke tests for reader and admin workflows where API/unit tests alone are insufficient.
 - **CI gate expansion** - Shipped 2026-06-12: PR workflow runs lint, build, and the full Jest suite (`npm test -- --ci --runInBand`); nightly emulator-backed integrity remains separate.
 - **Playwright smoke tests** - Shipped v1 read-only suite (`npm run test:e2e`); nightly/manual hosted CI via `e2e-smoke.yml`; PR-gate promotion and admin-save mutation remain follow-up.
