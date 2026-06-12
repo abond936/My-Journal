@@ -2,6 +2,8 @@ import { NextResponse, NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { authOptions } from '@/lib/auth/authOptions';
+import { projectTagsForApiResponse } from '@/lib/api/tagApiProjection';
+import { isAdminSession } from '@/lib/auth/readerAccess';
 import { getAllTags, createTag } from '@/lib/firebase/tagService';
 import { Tag } from '@/lib/types/tag';
 import { safeToDate } from '@/lib/utils/dateUtils';
@@ -57,12 +59,15 @@ export async function GET() {
 
     try {
         const tags = await getAllTags();
-        // Convert timestamps to dates for API response
-        const tagsWithDates = tags.map(tag => ({
-            ...tag,
-            createdAt: safeToDate(tag.createdAt),
-            updatedAt: safeToDate(tag.updatedAt),
-        }));
+        const includeAdminOperationalFields = isAdminSession(session);
+        const tagsWithDates = projectTagsForApiResponse(
+            tags.map((tag) => ({
+                ...tag,
+                createdAt: safeToDate(tag.createdAt),
+                updatedAt: safeToDate(tag.updatedAt),
+            })),
+            includeAdminOperationalFields
+        );
         return NextResponse.json(tagsWithDates);
     } catch (error) {
         console.error('API Error fetching all tags:', error);

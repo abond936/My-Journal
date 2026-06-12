@@ -62,6 +62,8 @@ export default function TagTree({
     const hasChildren = tag.children && tag.children.length > 0;
     const isDefaultExpanded = tag.defaultExpanded !== false;
     const showDefaultExpandButton = Boolean(showDefaultExpandControl && hasChildren && onSetDefaultExpanded);
+    const showOperationalCounts =
+      tag.cardCount !== undefined || tag.mediaCount !== undefined;
 
     return (
       <div key={tag.docId} className={styles.tagItem}>
@@ -106,9 +108,11 @@ export default function TagTree({
           />
           <label htmlFor={`tag-${tag.docId}`} className={styles.tagName}>
             {tag.name}
-            <span className={styles.cardCount}>
-              ({tag.cardCount ?? 0}/{tag.mediaCount ?? 0})
-            </span>
+            {showOperationalCounts ? (
+              <span className={styles.cardCount}>
+                ({tag.cardCount ?? 0}/{tag.mediaCount ?? 0})
+              </span>
+            ) : null}
           </label>
         </div>
 

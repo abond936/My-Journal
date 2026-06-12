@@ -2,6 +2,8 @@ import { NextResponse, NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { authOptions } from '@/lib/auth/authOptions';
+import { projectTagForApiResponse } from '@/lib/api/tagApiProjection';
+import { isAdminSession } from '@/lib/auth/readerAccess';
 import { getTagById, updateTag, deleteTag } from '@/lib/firebase/tagService';
 import { Tag } from '@/lib/types/tag';
 import { safeToDate } from '@/lib/utils/dateUtils';
@@ -81,12 +83,15 @@ export async function GET(request: NextRequest, { params }: { params: RouteParam
             );
         }
         
-        // Convert timestamps to dates for API response
-        const tagWithDates = {
-            ...tag,
-            createdAt: safeToDate(tag.createdAt),
-            updatedAt: safeToDate(tag.updatedAt),
-        };
+        const includeAdminOperationalFields = isAdminSession(session);
+        const tagWithDates = projectTagForApiResponse(
+            {
+                ...tag,
+                createdAt: safeToDate(tag.createdAt),
+                updatedAt: safeToDate(tag.updatedAt),
+            },
+            includeAdminOperationalFields
+        );
 
         return NextResponse.json(tagWithDates);
     } catch (error) {
