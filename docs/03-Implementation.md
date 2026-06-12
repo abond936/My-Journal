@@ -46,7 +46,7 @@ Legend:
 
 📐 **External codebase review handoff (2026-06-12)** - A full-repo review found strong integrity engineering, a coherent reader V2 + theme token foundation, and a credible Studio convergence direction, with remaining gaps in CI breadth (integrity-only today), Firebase Storage byte backup, reader performance ceiling (full feed hydration, originals in reader paths, per-tile TipTap on inline display), legacy admin duplication (`question-admin`, unreachable Collections standalone branch), and admin-only bundle loading for viewer sessions. Treat these as sequenced platform work, not a rewrite mandate.
 
-📐 **Review program order** - After current Studio slice verification, prefer: **(1)** engineering safety net — shipped 2026-06-12, **(2)** reader performance — shipped 2026-06-12, **(3)** backend hardening — shipped 2026-06-12, **(4)** Studio legacy retirement — shipped 2026-06-12, **(5)** reader mobile text edit — **in progress** (5a–5b shipped 2026-06-12; 5c–5d remain).
+📐 **Review program order** - After current Studio slice verification, prefer: **(1)** engineering safety net — shipped 2026-06-12, **(2)** reader performance — shipped 2026-06-12, **(3)** backend hardening — shipped 2026-06-12, **(4)** Studio legacy retirement — shipped 2026-06-12, **(5)** reader mobile text edit — **in progress** (5a–5c shipped 2026-06-12; 5d remains).
 
 📐 **Review program step 2 — reader performance sequencing (2026-06-12)** - Implement in this order; each slice is independently verifiable:
 
@@ -368,7 +368,7 @@ Legend:
 
 *Application (`02-Application.md`)*
 
-- **Reader mobile text edit** - Allow admin users on `/view` to make narrow text edits (title, body, caption) through lightweight reader-path UI and narrow PATCH routes, without requiring full Studio or the current desktop-oriented edit modal for routine touch-ups. **Shipped 2026-06-12 (slice 5a):** card detail mobile quick-edit sheet for title/subtitle/excerpt (`ReaderMobileQuickEdit`, `ReaderCardEditEntry`); desktop detail keeps full compose modal. **Shipped 2026-06-12 (slice 5b):** card detail gallery lightbox caption edit for admins (`InlineGallery` + `updateCardGallery` slot overrides). **Next:** body strategy (5c), feed-tile entry + bundle split (5d).
+- **Reader mobile text edit** - Allow admin users on `/view` to make narrow text edits (title, body, caption) through lightweight reader-path UI and narrow PATCH routes, without requiring full Studio or the current desktop-oriented edit modal for routine touch-ups. **Shipped 2026-06-12 (slice 5a):** card detail mobile quick-edit sheet for title/subtitle/excerpt (`ReaderMobileQuickEdit`, `ReaderCardEditEntry`); desktop detail keeps full compose modal. **Shipped 2026-06-12 (slice 5b):** card detail gallery lightbox caption edit for admins (`InlineGallery` + `updateCardGallery` slot overrides). **Shipped 2026-06-12 (slice 5c):** mobile quick-edit adds plain-prose body editing for eligible paragraph-only content via `updateCardContent`; rich body structures defer to full editor/Studio. **Next:** feed-tile entry + bundle split (5d).
 
 - **Reader bundle separation** - Keep viewer sessions on a minimal reader bundle; load admin-only surfaces (Theme Management, Studio, full Compose) through admin routes or explicit lazy admin chunks on `/view`, not in every authenticated session bundle. **Status (2026-06-12):** Theme Management overlay is lazy-loaded (slice 2a); Studio and full Compose on `/view` remain follow-up.
 

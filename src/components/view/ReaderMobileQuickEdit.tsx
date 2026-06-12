@@ -5,9 +5,12 @@ import { X } from 'lucide-react';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import type { Card } from '@/lib/types/card';
 import {
-  buildReaderMetadataQuickEditPatch,
-  patchReaderCard,
-  type ReaderMetadataQuickEditInitial,
+  contentHtmlToPlainBodyDraft,
+  isReaderBodyQuickEditEligible,
+} from '@/lib/utils/readerBodyQuickEdit';
+import {
+  patchReaderQuickEdit,
+  type ReaderQuickEditInitial,
 } from '@/lib/utils/readerCardPatchReconcile';
 import styles from './ReaderMobileQuickEdit.module.css';
 
@@ -21,34 +24,46 @@ export default function ReaderMobileQuickEdit({
   open: boolean;
   onClose: () => void;
   cardId: string;
-  initial: ReaderMetadataQuickEditInitial;
+  initial: ReaderQuickEditInitial;
   onSaved: (savedCard: Card) => void;
 }) {
   const feedback = useAppFeedback();
   const [title, setTitle] = useState(initial.title);
   const [subtitle, setSubtitle] = useState(initial.subtitle);
   const [excerpt, setExcerpt] = useState(initial.excerpt);
+  const [body, setBody] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const bodyEligible = useMemo(
+    () => isReaderBodyQuickEditEligible(initial.content),
+    [initial.content]
+  );
+  const initialBodyDraft = useMemo(
+    () => contentHtmlToPlainBodyDraft(initial.content),
+    [initial.content]
+  );
 
   useEffect(() => {
     if (!open) return;
     setTitle(initial.title);
     setSubtitle(initial.subtitle);
     setExcerpt(initial.excerpt);
-  }, [open, initial.title, initial.subtitle, initial.excerpt]);
+    setBody(initialBodyDraft);
+  }, [initial.excerpt, initial.subtitle, initial.title, initialBodyDraft, open]);
 
   const isDirty = useMemo(() => {
     const draft = {
       title: title.trim(),
       subtitle: subtitle.trim(),
       excerpt: excerpt.trim(),
+      body: body.trim(),
     };
     return (
       draft.title !== initial.title.trim() ||
       draft.subtitle !== (initial.subtitle ?? '').trim() ||
-      draft.excerpt !== (initial.excerpt ?? '').trim()
+      draft.excerpt !== (initial.excerpt ?? '').trim() ||
+      (bodyEligible && draft.body !== initialBodyDraft.trim())
     );
-  }, [excerpt, initial.excerpt, initial.subtitle, initial.title, subtitle, title]);
+  }, [body, bodyEligible, excerpt, initial.excerpt, initial.subtitle, initial.title, initialBodyDraft, subtitle, title]);
 
   const requestClose = useCallback(async () => {
     if (isSaving) return;
@@ -70,6 +85,7 @@ export default function ReaderMobileQuickEdit({
       title: title.trim(),
       subtitle: subtitle.trim(),
       excerpt: excerpt.trim(),
+      body: body.trim(),
     };
 
     if (!draft.title) {
@@ -77,15 +93,18 @@ export default function ReaderMobileQuickEdit({
       return;
     }
 
-    const patch = buildReaderMetadataQuickEditPatch(draft, initial);
-    if (Object.keys(patch).length === 0) {
+    if (!isDirty) {
       onClose();
       return;
     }
 
     setIsSaving(true);
     try {
-      const saved = await patchReaderCard(cardId, patch);
+      const saved = await patchReaderQuickEdit(cardId, draft, initial);
+      if (!saved) {
+        onClose();
+        return;
+      }
       onSaved(saved);
       feedback.showSuccess('Card updated.');
       onClose();
@@ -94,7 +113,7 @@ export default function ReaderMobileQuickEdit({
     } finally {
       setIsSaving(false);
     }
-  }, [cardId, excerpt, feedback, initial, onClose, onSaved, subtitle, title]);
+  }, [body, cardId, excerpt, feedback, initial, isDirty, onClose, onSaved, subtitle, title]);
 
   useEffect(() => {
     if (!open) return;
@@ -169,6 +188,25 @@ export default function ReaderMobileQuickEdit({
             placeholder="Custom excerpt"
           />
         </label>
+
+        {bodyEligible ? (
+          <label className={styles.field} htmlFor="reader-quick-edit-body">
+            <span className={styles.label}>Body</span>
+            <textarea
+              id="reader-quick-edit-body"
+              className={`${styles.textarea} ${styles.bodyTextarea}`}
+              value={body}
+              onChange={(event) => setBody(event.target.value)}
+              disabled={isSaving}
+              placeholder="Story body"
+            />
+          </label>
+        ) : (
+          <p className={styles.bodyHint}>
+            This card&apos;s body includes images or rich formatting. Use the full editor on a wider screen or
+            Studio for body edits.
+          </p>
+        )}
 
         <div className={styles.actions}>
           <button

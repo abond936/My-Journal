@@ -5,6 +5,9 @@ import {
   dehydrateGalleryMediaForPatch,
   getEffectiveGalleryCaption,
 } from '@/lib/utils/galleryObjectPosition';
+import {
+  buildReaderBodyQuickEditPatch,
+} from '@/lib/utils/readerBodyQuickEdit';
 
 export function reconcileReaderCardListCaches(savedCard: Card): void {
   void globalMutate(
@@ -74,6 +77,14 @@ export type ReaderMetadataQuickEditInitial = ReaderMetadataQuickEditDraft & {
   excerptAuto?: boolean;
 };
 
+export type ReaderQuickEditInitial = ReaderMetadataQuickEditInitial & {
+  content?: string;
+};
+
+export type ReaderQuickEditDraft = ReaderMetadataQuickEditDraft & {
+  body: string;
+};
+
 export function buildReaderMetadataQuickEditPatch(
   draft: ReaderMetadataQuickEditDraft,
   initial: ReaderMetadataQuickEditInitial
@@ -128,4 +139,26 @@ export async function patchReaderGalleryCaption(
   const patch = buildGalleryCaptionPatch(gallery, mediaId, newCaption);
   if (!patch) return null;
   return patchReaderCard(cardId, patch);
+}
+
+export async function patchReaderQuickEdit(
+  cardId: string,
+  draft: ReaderQuickEditDraft,
+  initial: ReaderQuickEditInitial
+): Promise<Card | null> {
+  const metadataPatch = buildReaderMetadataQuickEditPatch(draft, initial);
+  const bodyPatch = buildReaderBodyQuickEditPatch(draft.body, initial.content ?? '');
+
+  if (Object.keys(metadataPatch).length === 0 && !bodyPatch) {
+    return null;
+  }
+
+  let saved: Card | undefined;
+  if (Object.keys(metadataPatch).length > 0) {
+    saved = await patchReaderCard(cardId, metadataPatch);
+  }
+  if (bodyPatch) {
+    saved = await patchReaderCard(cardId, bodyPatch);
+  }
+  return saved ?? null;
 }

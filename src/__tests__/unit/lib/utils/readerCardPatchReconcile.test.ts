@@ -1,4 +1,8 @@
-import { buildReaderMetadataQuickEditPatch, buildGalleryCaptionPatch } from '@/lib/utils/readerCardPatchReconcile';
+import {
+  buildGalleryCaptionPatch,
+  buildReaderMetadataQuickEditPatch,
+  patchReaderQuickEdit,
+} from '@/lib/utils/readerCardPatchReconcile';
 import type { HydratedGalleryMediaItem } from '@/lib/types/card';
 
 describe('buildReaderMetadataQuickEditPatch', () => {
@@ -72,5 +76,60 @@ describe('buildGalleryCaptionPatch', () => {
         { mediaId: 'media-2', order: 1 },
       ],
     });
+  });
+});
+
+describe('patchReaderQuickEdit', () => {
+  beforeEach(() => {
+    global.fetch = jest.fn();
+  });
+
+  afterEach(() => {
+    jest.resetAllMocks();
+  });
+
+  it('sends sequential metadata and content patches', async () => {
+    const savedCard = {
+      docId: 'card-1',
+      title: 'New title',
+      content: '<p>Updated body</p>',
+      status: 'published',
+      type: 'story',
+    };
+
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ ...savedCard, content: '<p>Original body</p>' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => savedCard,
+      });
+
+    const result = await patchReaderQuickEdit(
+      'card-1',
+      { title: 'New title', subtitle: '', excerpt: '', body: 'Updated body' },
+      { title: 'Old title', subtitle: '', excerpt: '', content: '<p>Original body</p>' }
+    );
+
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      1,
+      '/api/cards/card-1',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({ title: 'New title' }),
+      })
+    );
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      2,
+      '/api/cards/card-1',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({ content: '<p>Updated body</p>' }),
+      })
+    );
+    expect(result).toEqual(savedCard);
   });
 });

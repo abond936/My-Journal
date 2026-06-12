@@ -78,6 +78,18 @@
   resize: vertical;
 }
 
+.bodyTextarea {
+  min-height: 10rem;
+}
+
+.bodyHint {
+  margin: 0 0 var(--spacing-md);
+  font-family: var(--reader-meta-font-family);
+  font-size: var(--reader-meta-font-size);
+  line-height: var(--reader-meta-line-height);
+  color: var(--reader-meta-color);
+}
+
 .actions {
   display: flex;
   justify-content: flex-end;

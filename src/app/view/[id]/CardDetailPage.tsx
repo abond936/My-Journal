@@ -93,8 +93,15 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
       subtitle: displayCard.subtitle ?? '',
       excerpt: displayCard.excerpt ?? '',
       excerptAuto: displayCard.excerptAuto,
+      content: displayCard.content ?? '',
     }),
-    [displayCard.excerpt, displayCard.excerptAuto, displayCard.subtitle, displayCard.title]
+    [
+      displayCard.content,
+      displayCard.excerpt,
+      displayCard.excerptAuto,
+      displayCard.subtitle,
+      displayCard.title,
+    ]
   );
 
   const detailMeta = showReaderCardMeta ? (

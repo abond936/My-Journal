@@ -3,7 +3,7 @@
 import React, { useCallback, useState } from 'react';
 import dynamic from 'next/dynamic';
 import type { Card } from '@/lib/types/card';
-import type { ReaderMetadataQuickEditInitial } from '@/lib/utils/readerCardPatchReconcile';
+import type { ReaderQuickEditInitial } from '@/lib/utils/readerCardPatchReconcile';
 
 const ReaderMobileQuickEdit = dynamic(() => import('./ReaderMobileQuickEdit'), { ssr: false });
 const ReaderCardEditModal = dynamic(() => import('./ReaderCardEditModal'), { ssr: false });
@@ -21,7 +21,7 @@ export default function ReaderCardEditEntry({
   cardId: string;
   returnTo: string;
   className?: string;
-  metadata: ReaderMetadataQuickEditInitial;
+  metadata: ReaderQuickEditInitial;
   onCardSaved?: (savedCard: Card) => void;
   children: React.ReactNode;
 }) {

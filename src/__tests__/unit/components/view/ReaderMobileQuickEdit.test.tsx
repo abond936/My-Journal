@@ -1,11 +1,11 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import ReaderMobileQuickEdit from '@/components/view/ReaderMobileQuickEdit';
-import { patchReaderCard } from '@/lib/utils/readerCardPatchReconcile';
+import { patchReaderQuickEdit } from '@/lib/utils/readerCardPatchReconcile';
 
 jest.mock('@/lib/utils/readerCardPatchReconcile', () => ({
   ...jest.requireActual('@/lib/utils/readerCardPatchReconcile'),
-  patchReaderCard: jest.fn(),
+  patchReaderQuickEdit: jest.fn(),
 }));
 
 jest.mock('@/components/providers/AppFeedbackProvider', () => ({
@@ -16,22 +16,23 @@ jest.mock('@/components/providers/AppFeedbackProvider', () => ({
   }),
 }));
 
-const patchReaderCardMock = jest.mocked(patchReaderCard);
+const patchReaderQuickEditMock = jest.mocked(patchReaderQuickEdit);
 
 describe('ReaderMobileQuickEdit', () => {
   beforeEach(() => {
-    patchReaderCardMock.mockReset();
-    patchReaderCardMock.mockResolvedValue({
+    patchReaderQuickEditMock.mockReset();
+    patchReaderQuickEditMock.mockResolvedValue({
       docId: 'card-1',
       title: 'Updated title',
       subtitle: 'Sub',
       excerpt: 'Excerpt',
+      content: '<p>Updated body</p>',
       status: 'published',
       type: 'story',
     } as never);
   });
 
-  it('saves changed metadata through patchReaderCard', async () => {
+  it('saves changed metadata through patchReaderQuickEdit', async () => {
     const onSaved = jest.fn();
     const onClose = jest.fn();
 
@@ -40,7 +41,7 @@ describe('ReaderMobileQuickEdit', () => {
         open
         onClose={onClose}
         cardId="card-1"
-        initial={{ title: 'Old title', subtitle: '', excerpt: '' }}
+        initial={{ title: 'Old title', subtitle: '', excerpt: '', content: '<p>Body</p>' }}
         onSaved={onSaved}
       />
     );
@@ -49,10 +50,58 @@ describe('ReaderMobileQuickEdit', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => {
-      expect(patchReaderCardMock).toHaveBeenCalledWith('card-1', { title: 'Updated title' });
+      expect(patchReaderQuickEditMock).toHaveBeenCalledWith(
+        'card-1',
+        expect.objectContaining({ title: 'Updated title' }),
+        expect.objectContaining({ title: 'Old title', content: '<p>Body</p>' })
+      );
     });
 
     expect(onSaved).toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('shows body field for eligible prose content', async () => {
+    render(
+      <ReaderMobileQuickEdit
+        open
+        onClose={jest.fn()}
+        cardId="card-1"
+        initial={{ title: 'Title', subtitle: '', excerpt: '', content: '<p>Original body</p>' }}
+        onSaved={jest.fn()}
+      />
+    );
+
+    expect(screen.getByLabelText('Body')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Body'), { target: { value: 'Updated body' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(patchReaderQuickEditMock).toHaveBeenCalledWith(
+        'card-1',
+        expect.objectContaining({ body: 'Updated body' }),
+        expect.any(Object)
+      );
+    });
+  });
+
+  it('shows guidance instead of body field for rich content', () => {
+    render(
+      <ReaderMobileQuickEdit
+        open
+        onClose={jest.fn()}
+        cardId="card-1"
+        initial={{
+          title: 'Title',
+          subtitle: '',
+          excerpt: '',
+          content: '<p>Hi</p><figure data-media-id="media-1"></figure>',
+        }}
+        onSaved={jest.fn()}
+      />
+    );
+
+    expect(screen.queryByLabelText('Body')).not.toBeInTheDocument();
+    expect(screen.getByText(/rich formatting/i)).toBeInTheDocument();
   });
 });
