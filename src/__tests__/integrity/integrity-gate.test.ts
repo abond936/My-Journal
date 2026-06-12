@@ -3,9 +3,11 @@ import {
   IntegrityMedia,
   IntegrityTag,
   computeExpectedDerivedFromTags,
+  computeExpectedCardCounts,
   findBrokenMediaBackReferences,
   findDanglingCardMediaReferences,
   findDerivedFieldViolations,
+  findTagCountViolations,
 } from '@/lib/integrity/invariantChecks';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -106,6 +108,41 @@ describe('Integrity gate invariants', () => {
         actual: [],
       },
     ]);
+  });
+
+  it('computes expected published tag counts including ancestors', () => {
+    const tags: IntegrityTag[] = [
+      { docId: 'who-root', dimension: 'who', path: [] },
+      { docId: 'who-child', dimension: 'who', parentId: 'who-root', path: ['who-root'] },
+    ];
+    const tagLookup = makeTagLookup(tags);
+    const cards: IntegrityCard[] = [
+      { docId: 'card-a', status: 'published', tags: ['who-child'] },
+      { docId: 'card-b', status: 'published', tags: ['who-child'] },
+      { docId: 'card-draft', status: 'draft', tags: ['who-child'] },
+    ];
+
+    const expected = computeExpectedCardCounts(cards, tagLookup);
+    expect(expected.get('who-child')).toBe(2);
+    expect(expected.get('who-root')).toBe(2);
+
+    const tagsWithCounts: IntegrityTag[] = tags.map((tag) => ({
+      ...tag,
+      cardCount: tag.docId === 'who-child' ? 2 : tag.docId === 'who-root' ? 2 : 0,
+    }));
+    expect(findTagCountViolations(cards, tagsWithCounts, tagLookup)).toEqual([]);
+
+    const staleTags: IntegrityTag[] = tags.map((tag) => ({
+      ...tag,
+      cardCount: tag.docId === 'who-child' ? 1 : 0,
+    }));
+    expect(findTagCountViolations(cards, staleTags, tagLookup)).toEqual(
+      expect.arrayContaining([
+        { tagId: 'who-child', field: 'cardCount', expected: 2, actual: 1 },
+        { tagId: 'who-root', field: 'cardCount', expected: 2, actual: 0 },
+      ])
+    );
+    expect(findTagCountViolations(cards, staleTags, tagLookup)).toHaveLength(2);
   });
 
   it('keeps local import implementation embedded-only (no sidecar reads)', async () => {

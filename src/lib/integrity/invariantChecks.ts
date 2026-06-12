@@ -5,6 +5,8 @@ export type IntegrityTag = {
   dimension?: Dimension;
   parentId?: string;
   path?: string[];
+  cardCount?: number;
+  mediaCount?: number;
 };
 
 export type IntegrityCard = {
@@ -43,6 +45,13 @@ export type DerivedFieldViolation = {
   field: 'filterTags' | 'who' | 'what' | 'when' | 'where';
   expected: string[];
   actual: string[];
+};
+
+export type TagCountViolation = {
+  tagId: string;
+  field: 'cardCount';
+  expected: number;
+  actual: number;
 };
 
 function normalizeDimension(dim: Dimension | undefined): 'who' | 'what' | 'when' | 'where' | undefined {
@@ -182,6 +191,57 @@ export function findDerivedFieldViolations(card: IntegrityCard, tagLookup: Map<s
   pushIfDifferent('what', expected.what, card.what || []);
   pushIfDifferent('when', expected.when, card.when || []);
   pushIfDifferent('where', expected.where, card.where || []);
+
+  return violations;
+}
+
+function incrementPublishedCardCount(
+  counts: Map<string, number>,
+  tagId: string,
+  tagLookup: Map<string, IntegrityTag>
+): void {
+  counts.set(tagId, (counts.get(tagId) ?? 0) + 1);
+  const tag = tagLookup.get(tagId);
+  if (Array.isArray(tag?.path)) {
+    for (const ancestorId of tag.path) {
+      counts.set(ancestorId, (counts.get(ancestorId) ?? 0) + 1);
+    }
+  }
+}
+
+/** Expected published-card counts per tag doc (direct tags + ancestors). */
+export function computeExpectedCardCounts(
+  cards: IntegrityCard[],
+  tagLookup: Map<string, IntegrityTag>
+): Map<string, number> {
+  const counts = new Map<string, number>();
+
+  for (const card of cards) {
+    if (card.status !== 'published') continue;
+    for (const tagId of card.tags || []) {
+      if (!tagId) continue;
+      incrementPublishedCardCount(counts, tagId, tagLookup);
+    }
+  }
+
+  return counts;
+}
+
+export function findTagCountViolations(
+  cards: IntegrityCard[],
+  tags: IntegrityTag[],
+  tagLookup: Map<string, IntegrityTag>
+): TagCountViolation[] {
+  const expected = computeExpectedCardCounts(cards, tagLookup);
+  const violations: TagCountViolation[] = [];
+
+  for (const tag of tags) {
+    const actual = tag.cardCount ?? 0;
+    const exp = expected.get(tag.docId) ?? 0;
+    if (actual !== exp) {
+      violations.push({ tagId: tag.docId, field: 'cardCount', expected: exp, actual });
+    }
+  }
 
   return violations;
 }

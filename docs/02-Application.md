@@ -393,6 +393,10 @@ Legend:
   - **authenticated-reader** — reader/catalog reads that require a session but not admin: `GET /api/cards`, `/api/cards/search`, `/api/cards/random`, `/api/cards/[id]`, `/api/view/media`, `/api/tags`, `/api/tags/[id]`. Anonymous callers receive **401**; viewers may read published content (draft detail returns **404**).
   - **admin-only** — all mutations and admin/catalog/operational routes (card/media/tag writes, import/local helpers, theme admin, AI assist, `/api/admin/*`, maintenance). Anonymous or viewer callers receive **403** (some anonymous card mutations also return **403** rather than **401**).
   - Automated boundary tests: `src/__tests__/integrity/admin-api-access-route.test.ts` (every admin-only handler); reader anonymous/draft rules remain in `reader-access-route.test.ts` and related integrity tests.
+- **Integrity gate invariants (2026-06-12, slice 3c)**
+  - Shared checks in `src/lib/integrity/invariantChecks.ts`: dangling card-media refs, media backref reciprocity, derived tag fields (`filterTags`, dimensional arrays), and published **tag `cardCount`** reconciliation.
+  - Unit gate: `src/__tests__/integrity/integrity-gate.test.ts`.
+  - Emulator gate (when `FIRESTORE_EMULATOR_HOST` is set): `src/__tests__/integrity/emulator.integrity.test.ts` exercises service-layer create/update/delete tag counts, cover backref rewiring, media delete/replace graph cleanup, and card delete reference detachment.
 - **Embedded Media Presentation**
   - Read-only embedded figures collapse empty caption chrome while preserving real captions and editable caption affordances.
 

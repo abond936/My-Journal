@@ -7,6 +7,7 @@ import {
   findBrokenMediaBackReferences,
   findDanglingCardMediaReferences,
   findDerivedFieldViolations,
+  findTagCountViolations,
 } from '@/lib/integrity/invariantChecks';
 
 const mockStorageFileSave = jest.fn(async () => undefined);
@@ -29,6 +30,11 @@ jest.mock('image-size', () => ({
 jest.mock('@/lib/services/typesenseMediaService', () => ({
   syncMediaToTypesense: jest.fn(),
   syncMediaToTypesenseById: jest.fn(),
+}));
+
+jest.mock('@/lib/services/typesenseService', () => ({
+  syncCardToTypesense: jest.fn(),
+  removeCardFromTypesense: jest.fn(),
 }));
 
 jest.mock('@/lib/config/firebase/admin', () => ({
@@ -495,6 +501,108 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
     expect(findDanglingCardMediaReferences(cards, [mediaAfter])).toEqual([]);
     expect(findBrokenMediaBackReferences(cards, [mediaAfter])).toEqual([]);
   });
+
+  it('createCard maintains published tag counts and derived fields', async () => {
+    const db = getFirestore(app);
+    await seedWhoTags(db);
+    const { createCard } = await getCardService();
+
+    const created = await createCard({
+      title: 'Integrity create',
+      type: 'story',
+      status: 'published',
+      tags: ['who-child'],
+      content: '',
+    });
+
+    const cards = await readCards(db);
+    const tags = await readTagsWithCounts(db);
+    const tagLookup = new Map(tags.map((t) => [t.docId, t]));
+
+    expect(findDerivedFieldViolations(created, tagLookup)).toEqual([]);
+    expect(findTagCountViolations(cards, tags, tagLookup)).toEqual([]);
+    expect(tags.find((t) => t.docId === 'who-child')?.cardCount).toBe(1);
+    expect(tags.find((t) => t.docId === 'who-root')?.cardCount).toBe(1);
+  });
+
+  it('updateCardTags shifts tag counts and refreshes derived fields', async () => {
+    const db = getFirestore(app);
+    await seedWhoAndWhatTags(db);
+    const { createCard, updateCardTags } = await getCardService();
+
+    const created = await createCard({
+      title: 'Tag swap',
+      type: 'story',
+      status: 'published',
+      tags: ['who-child'],
+      content: '',
+    });
+
+    await updateCardTags(created.docId, { tags: ['what-leaf'] });
+
+    const cards = await readCards(db);
+    const tags = await readTagsWithCounts(db);
+    const tagLookup = new Map(tags.map((t) => [t.docId, t]));
+    const updated = cards.find((card) => card.docId === created.docId)!;
+
+    expect(findDerivedFieldViolations(updated, tagLookup)).toEqual([]);
+    expect(findTagCountViolations(cards, tags, tagLookup)).toEqual([]);
+    expect(tags.find((t) => t.docId === 'who-child')?.cardCount).toBe(0);
+    expect(tags.find((t) => t.docId === 'who-root')?.cardCount).toBe(0);
+    expect(tags.find((t) => t.docId === 'what-leaf')?.cardCount).toBe(1);
+    expect(tags.find((t) => t.docId === 'what-root')?.cardCount).toBe(1);
+  });
+
+  it('deleteCard decrements published tag counts', async () => {
+    const db = getFirestore(app);
+    await seedWhoTags(db);
+    const { createCard, deleteCard } = await getCardService();
+
+    const created = await createCard({
+      title: 'Delete me',
+      type: 'story',
+      status: 'published',
+      tags: ['who-child'],
+      content: '',
+    });
+
+    await deleteCard(created.docId);
+
+    const cards = await readCards(db);
+    const tags = await readTagsWithCounts(db);
+    const tagLookup = new Map(tags.map((t) => [t.docId, t]));
+
+    expect(cards).toEqual([]);
+    expect(findTagCountViolations(cards, tags, tagLookup)).toEqual([]);
+    expect(tags.find((t) => t.docId === 'who-child')?.cardCount).toBe(0);
+    expect(tags.find((t) => t.docId === 'who-root')?.cardCount).toBe(0);
+  });
+
+  it('updateCardCover rewires media backrefs without dangling card references', async () => {
+    const db = getFirestore(app);
+    const { createCard, updateCardCover } = await getCardService();
+
+    await db.collection('media').doc('media-a').set({ referencedByCardIds: [] });
+    await db.collection('media').doc('media-b').set({ referencedByCardIds: [] });
+
+    const created = await createCard({
+      title: 'Cover swap',
+      type: 'story',
+      status: 'published',
+      coverImageId: 'media-a',
+      content: '',
+    });
+
+    await updateCardCover(created.docId, { coverImageId: 'media-b' });
+
+    const cards = await readCards(db);
+    const media = await readMedia(db);
+
+    expect(findDanglingCardMediaReferences(cards, media)).toEqual([]);
+    expect(findBrokenMediaBackReferences(cards, media)).toEqual([]);
+    expect(media.find((m) => m.docId === 'media-a')?.referencedByCardIds ?? []).toEqual([]);
+    expect(media.find((m) => m.docId === 'media-b')?.referencedByCardIds).toEqual([created.docId]);
+  });
 });
 
 async function clearCollection(db: FirebaseFirestore.Firestore, name: string): Promise<void> {
@@ -518,4 +626,45 @@ async function readMedia(db: FirebaseFirestore.Firestore): Promise<IntegrityMedi
 async function readTags(db: FirebaseFirestore.Firestore): Promise<IntegrityTag[]> {
   const snap = await db.collection('tags').get();
   return snap.docs.map((d) => ({ docId: d.id, ...(d.data() as Record<string, unknown>) })) as IntegrityTag[];
+}
+
+async function readTagsWithCounts(db: FirebaseFirestore.Firestore): Promise<IntegrityTag[]> {
+  return readTags(db);
+}
+
+async function seedWhoTags(db: FirebaseFirestore.Firestore): Promise<void> {
+  await db.collection('tags').doc('who-root').set({
+    name: 'Who',
+    dimension: 'who',
+    path: [],
+    cardCount: 0,
+    mediaCount: 0,
+  });
+  await db.collection('tags').doc('who-child').set({
+    name: 'Alice',
+    dimension: 'who',
+    parentId: 'who-root',
+    path: ['who-root'],
+    cardCount: 0,
+    mediaCount: 0,
+  });
+}
+
+async function seedWhoAndWhatTags(db: FirebaseFirestore.Firestore): Promise<void> {
+  await seedWhoTags(db);
+  await db.collection('tags').doc('what-root').set({
+    name: 'What',
+    dimension: 'what',
+    path: [],
+    cardCount: 0,
+    mediaCount: 0,
+  });
+  await db.collection('tags').doc('what-leaf').set({
+    name: 'Memory',
+    dimension: 'what',
+    parentId: 'what-root',
+    path: ['what-root'],
+    cardCount: 0,
+    mediaCount: 0,
+  });
 }
