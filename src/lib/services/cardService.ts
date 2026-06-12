@@ -498,46 +498,121 @@ export async function recomputeCardsMediaSignalsForMediaIds(mediaIds: string[]):
   await Promise.all(Array.from(allCardIds).map((id) => recomputeCardMediaSignals(id)));
 }
 
+function cardReferencesMediaId(card: Card, mediaId: string): boolean {
+  return (
+    getMediaIdsFromCard(card).has(mediaId) ||
+    extractMediaFromContent(card.content ?? '').includes(mediaId)
+  );
+}
+
+/**
+ * Builds card-field updates for detaching one media id from every card surface.
+ * Returns null when the card does not reference the media id.
+ */
+export function buildMediaReferenceRemovalUpdate(
+  card: Card,
+  mediaId: string
+): { cardUpdate: Record<string, unknown>; remainingMediaIds: Set<string> } | null {
+  if (!cardReferencesMediaId(card, mediaId)) {
+    return null;
+  }
+
+  const cardUpdate: Record<string, unknown> = {};
+  const inBodyHtml = extractMediaFromContent(card.content ?? '').includes(mediaId);
+
+  let nextCoverId = card.coverImageId ?? null;
+  if (card.coverImageId === mediaId) {
+    cardUpdate.coverImageId = FieldValue.delete();
+    cardUpdate.coverImageFocalPoint = FieldValue.delete();
+    cardUpdate.coverImage = FieldValue.delete();
+    nextCoverId = null;
+  }
+
+  let nextGalleryMedia = card.galleryMedia;
+  if (card.galleryMedia?.some((g) => g.mediaId === mediaId)) {
+    nextGalleryMedia = card.galleryMedia.filter((g) => g.mediaId !== mediaId);
+    cardUpdate.galleryMedia = nextGalleryMedia;
+  }
+
+  let nextContent = card.content;
+  let nextContentMedia = card.contentMedia ?? [];
+  if ((card.contentMedia ?? []).includes(mediaId) || inBodyHtml) {
+    nextContent = removeMediaFromContent(card.content, mediaId);
+    nextContentMedia = (card.contentMedia ?? []).filter((id) => id !== mediaId);
+    cardUpdate.content = nextContent;
+    cardUpdate.contentMedia = nextContentMedia;
+  }
+
+  const remainingMediaIds = new Set<string>();
+  if (nextCoverId) remainingMediaIds.add(nextCoverId);
+  nextGalleryMedia?.forEach((item) => {
+    if (item.mediaId) remainingMediaIds.add(item.mediaId);
+  });
+  nextContentMedia.forEach((id) => {
+    if (id) remainingMediaIds.add(id);
+  });
+  extractMediaFromContent(nextContent ?? '').forEach((id) => {
+    if (id) remainingMediaIds.add(id);
+  });
+
+  return { cardUpdate, remainingMediaIds };
+}
+
 /** Removes all occurrences of a media reference from a card (cover, gallery, and content/inline). */
 export async function removeMediaReferenceFromCard(cardId: string, mediaId: string): Promise<void> {
   const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
-  const snap = await docRef.get();
-  if (!snap.exists) return;
-  const card = snap.data() as Card;
-
-  const structuredRefs = getMediaIdsFromCard(card).has(mediaId);
-  const inBodyHtml = extractMediaFromContent(card.content ?? '').includes(mediaId);
-  if (!structuredRefs && !inBodyHtml) {
-    return;
-  }
-
-  const payload: Record<string, unknown> = { updatedAt: Date.now() };
-  if (card.coverImageId === mediaId) {
-    payload.coverImageId = FieldValue.delete();
-    payload.coverImageFocalPoint = FieldValue.delete();
-    payload.coverImage = FieldValue.delete();
-  }
-  if (card.galleryMedia?.some((g) => g.mediaId === mediaId)) {
-    payload.galleryMedia = card.galleryMedia.filter((g) => g.mediaId !== mediaId);
-  }
-  if ((card.contentMedia ?? []).includes(mediaId) || inBodyHtml) {
-    payload.content = removeMediaFromContent(card.content, mediaId);
-    payload.contentMedia = (card.contentMedia ?? []).filter((id) => id !== mediaId);
-  }
-  await docRef.update(payload);
-
   const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
-  const mediaSnap = await mediaRef.get();
-  if (mediaSnap.exists) {
-    await mediaRef.update({
-      referencedByCardIds: FieldValue.arrayRemove(cardId),
-      updatedAt: Date.now(),
+  const allTags = await getAllTags();
+
+  await withRetry(async () => {
+    await firestore.runTransaction(async (transaction) => {
+      const cardSnap = await transaction.get(docRef);
+      if (!cardSnap.exists) return;
+
+      const removal = buildMediaReferenceRemovalUpdate(cardSnap.data() as Card, mediaId);
+      if (!removal) return;
+
+      const { cardUpdate, remainingMediaIds } = removal;
+      const mediaIdsToRead = new Set(remainingMediaIds);
+      mediaIdsToRead.add(mediaId);
+
+      const mediaMap = new Map<string, Media>();
+      let mediaDocExists = false;
+      if (mediaIdsToRead.size > 0) {
+        const refs = [...mediaIdsToRead].map((id) => firestore.collection(MEDIA_COLLECTION).doc(id));
+        const docs = await transaction.getAll(...refs);
+        for (const doc of docs) {
+          if (!doc.exists) continue;
+          if (doc.id === mediaId) {
+            mediaDocExists = true;
+          }
+          if (remainingMediaIds.has(doc.id)) {
+            mediaMap.set(doc.id, doc.data() as Media);
+          }
+        }
+      }
+
+      const mediaSignals = computeCardMediaSignalsFromMediaMap(mediaMap, allTags);
+
+      transaction.update(docRef, {
+        ...cardUpdate,
+        mediaWho: mediaSignals.mediaWho,
+        mediaWhat: mediaSignals.mediaWhat,
+        mediaWhen: mediaSignals.mediaWhen,
+        mediaWhere: mediaSignals.mediaWhere,
+        updatedAt: Date.now(),
+      });
+
+      if (mediaDocExists) {
+        transaction.update(mediaRef, {
+          referencedByCardIds: FieldValue.arrayRemove(cardId),
+          updatedAt: Date.now(),
+        });
+      }
     });
-    void syncMediaToTypesenseById(mediaId);
-  }
+  });
 
-  await recomputeCardMediaSignals(cardId);
-
+  void syncMediaToTypesenseById(mediaId);
   const updatedCard = await getCardById(cardId);
   if (updatedCard) {
     void syncCardToTypesense(updatedCard);

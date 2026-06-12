@@ -55,6 +55,7 @@ Legend:
 - **API input caps and shared auth envelope** - Shipped 2026-06-12 (post-review step **7a-7b**): `inputCaps.ts` + `routeEnvelope.ts` on the high-traffic card/media route set.
 - **Typesense reconciliation** - Shipped 2026-06-12 (post-review step **7c**): sync retry + `GET /api/admin/maintenance/typesense-status`.
 - **Transaction catalog reads** - Shipped 2026-06-12 (post-review step **7d**): tag catalog pre-read outside hot card mutations; `deleteTag` passes preloaded catalog to derived-field helpers per affected card/media.
+- **Atomic media-reference removal** - Shipped 2026-06-12 (post-review step **7e**): `removeMediaReferenceFromCard` runs card detach, `referencedByCardIds`, and media-signal refresh in one Firestore transaction.
 
 ⭕1 **Planned**
 
@@ -896,7 +897,7 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 
 | Relationship                           | Primary maintenance                                                                                                                                                                                                                                                  |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Card ↔ media `referencedByCardIds`     | `createCard` / `updateCard` (transaction `arrayUnion` / `arrayRemove`); `removeMediaReferenceFromCard` + `deleteMediaWithCardCleanup`                                                                                                                                |
+| Card ↔ media `referencedByCardIds`     | `createCard` / `updateCard` (transaction `arrayUnion` / `arrayRemove`); **`removeMediaReferenceFromCard`** (single transaction: card surfaces + backref + media signals) + `deleteMediaWithCardCleanup`                                                                 |
 | Card ↔ Typesense                       | `syncCardToTypesense` after create/update paths; `removeCardFromTypesense` on card delete                                                                                                                                                                            |
 | Media ↔ Typesense                      | `syncMediaToTypesenseById` / `syncMediaToTypesense` on media writes; `removeMediaFromTypesense` on media delete                                                                                                                                                      |
 | Card ↔ tag `cardCount` (and ancestors) | `updateTagCountsForCard` inside card transactions (tag changes, publish state, `deleteCard`)                                                                                                                                                                         |

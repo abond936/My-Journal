@@ -48,10 +48,10 @@ Legend:
 
 📐 **Review program order** - **Complete 2026-06-12:** **(1)** engineering safety net, **(2)** reader performance, **(3)** backend hardening, **(4)** Studio legacy retirement, **(5)** reader mobile text edit (5a-5d). **Active:** post-review program steps **6-12** (same slice-by-slice approval cadence).
 
-📐 **Post-review program order (2026-06-12)** - Continue one approved slice at a time. **Storage restore proof is explicitly last (step 12)** per author direction. **Next:** step **7e** atomic media-reference removal paths.
+📐 **Post-review program order (2026-06-12)** - Continue one approved slice at a time. **Storage restore proof is explicitly last (step 12)** per author direction. **Next:** step **8a** mutation-route rate limiting.
 
 - **(6) E2E hardening** - **Complete 2026-06-12:** **6a** admin-save mutation smoke; **6b** `npm run test:e2e` on PR gate (`integrity-gate.yml` `e2e-smoke` job, parallel with lint/build/unit; skips fork PRs without hosted secrets).
-- **(7) API and service hardening** - **7a-7d shipped 2026-06-12.** **Next:** **7e** atomic media-reference removal paths where still non-transactional.
+- **(7) API and service hardening** - **Complete 2026-06-12:** **7a-7e** shipped (input caps, route envelope, Typesense reconciliation, transaction catalog reads, atomic media-reference removal).
 - **(8) Pre-commercial security and ops** - **8a** mutation-route rate limiting. **8b** scrub key-fragment logging from maintenance scripts. **8c** scope viewer-facing tag-count exposure on `GET /api/tags` if needed. **8d** baseline production error monitoring (for example Sentry free tier).
 - **(9) Reader follow-ups (defer until profiling or demo need)** - **9a** dedicated `renditions.reader` + backfill. **9b** true DOM feed windowing (only if CSS containment is insufficient). **9c** navigation/sidebar hydration flash if still visible on real devices.
 - **(10) Studio depth (defer)** - ref-registry to typed context; `CardForm` / `PhotoPicker` decomposition only when a feature demands it. Tie to existing Studio runtime browser verification in `03` **Current Studio runtime audit handoff**.
@@ -98,7 +98,7 @@ Legend:
 - **7b Shared `/api` auth + error envelope** - `requireApiSession`, `apiRouteError`, and `withApiRouteHandler` in `src/lib/api/routeEnvelope.ts`; migrated the step-7a route set off duplicated local auth/error helpers. **Shipped 2026-06-12.**
 - **7c Typesense reconciliation** - Runtime sync retry + operator-visible projection check. **Shipped 2026-06-12:** `withTypesenseRetry` on card/media sync paths; in-process failure ring buffer; `GET /api/admin/maintenance/typesense-status` returns Firestore vs Typesense counts/samples + recent failures.
 - **7d Transaction catalog reads** - Move full tag-catalog reads outside hot Firestore transactions. **Shipped 2026-06-12:** `createCard`, `updateCard`, and `updateCardContent` pre-read tag/media catalogs; `deleteTag` passes preloaded catalog into per-item derived-field helpers inside its transaction.
-- **7e Atomic media-reference removal** - Planned.
+- **7e Atomic media-reference removal** - Single-transaction card detach + media backref + media signals. **Shipped 2026-06-12:** `removeMediaReferenceFromCard` (used by `deleteMediaWithCardCleanup`); regression in `atomicMediaReferenceRemoval.test.ts`.
 
 
 
@@ -432,6 +432,7 @@ Legend:
 - **Playwright smoke tests** - Shipped 2026-06-12: `npm run test:e2e` covers login, anonymous redirect, reader feed + card detail, viewer/admin route boundary, and **6a** admin reader quick-edit PATCH with restore (`admin-save.spec.ts`). **6b shipped 2026-06-12:** PR gate runs the same suite via `integrity-gate.yml`; `.github/workflows/e2e-smoke.yml` remains nightly + manual.
 - **Typesense reconciliation** - **Shipped 2026-06-12 (7c):** runtime sync retry (`typesenseSync.ts`), operator status at `GET /api/admin/maintenance/typesense-status`; repair via existing `npm run sync:typesense*` scripts.
 - **Transaction catalog reads** - **Shipped 2026-06-12 (7d):** tag catalog pre-read outside hot card mutations; `deleteTag` passes preloaded catalog to derived-field helpers; regression in `transactionCatalogReads.test.ts`.
+- **Atomic media-reference removal** - **Shipped 2026-06-12 (7e):** `removeMediaReferenceFromCard` single-transaction detach path; regression in `atomicMediaReferenceRemoval.test.ts`.
 - **API input caps and shared auth envelope** - **7a + 7b shipped 2026-06-12:** `src/lib/api/inputCaps.ts` and `src/lib/api/routeEnvelope.ts` on the high-traffic card/media route set (`03` step 7). Broader route migration remains incremental.
 - **Mutation rate limiting** - Basic rate limits on write routes before broader family or commercial exposure. **Post-review step 8a.**
 - **Error monitoring** - Baseline production error visibility (for example Sentry). **Post-review step 8d.**
