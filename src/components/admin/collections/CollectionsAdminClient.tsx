@@ -39,11 +39,9 @@ import {
   optimisticReorderCollectionRoots,
   optimisticSetCollectionRoot,
 } from '@/lib/utils/optimisticCuratedCollections';
-import { EMBEDDED_ADMIN_WIDE_MIN_WIDTH_PX } from '@/lib/admin/embeddedWideMinWidthPx';
 import { fetchAdminCardSnapshot } from '@/lib/utils/fetchAdminCardSnapshot';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import styles from '@/app/admin/collections/page.module.css';
-import CollectionsMediaPanel from '@/components/admin/collections/CollectionsMediaPanel';
 import type { EmbeddedUnparentedBankContext } from '@/components/admin/collections/embeddedUnparentedBankContext';
 import { isCuratedTreeDndEnabled } from '@/lib/config/curatedTreeDnd';
 import { DND_POINTER_IGNORE_ATTR, useDefaultDndSensors } from '@/lib/hooks/useDefaultDndSensors';
@@ -67,21 +65,6 @@ const MIN_TREE_COL = 180;
 const MIN_UNPARENT_COL = 180;
 /** Minimum width for the Media / Studio right column (grid area); user-resizable. Kept below old 280px to reduce default horizontal sprawl. */
 const MIN_MEDIA_COL = 200;
-
-function centerWideLayoutMinWidth(opts: {
-  organization: boolean;
-  cards: boolean;
-  rightSlotMinWidth: number;
-}): number {
-  const visibleColumns = [opts.organization, opts.cards, true].filter(Boolean).length;
-  const handleCount = Math.max(0, visibleColumns - 1);
-  return (
-    (opts.organization ? MIN_TREE_COL : 0) +
-    (opts.cards ? MIN_UNPARENT_COL : 0) +
-    opts.rightSlotMinWidth +
-    handleCount * COL_HANDLE
-  );
-}
 
 function clamp(n: number, lo: number, hi: number) {
   return Math.min(hi, Math.max(lo, n));
@@ -359,7 +342,6 @@ export type EmbeddedStudioSlotContext = {
 };
 
 export default function CollectionsAdminClient({
-  embedded = false,
   onSelectCard,
   selectedCardIdExternal,
   embeddedExternalDragEnd,
@@ -370,14 +352,13 @@ export default function CollectionsAdminClient({
   embeddedOrganizationCollapsed = false,
   embeddedCardsCollapsed = false,
 }: {
-  embedded?: boolean;
   onSelectCard?: (cardId: string, previewCard?: Card | null) => void | Promise<boolean>;
   selectedCardIdExternal?: string | null;
   embeddedExternalDragEnd?: (event: DragEndEvent, resolvedOverId?: string | null) => Promise<boolean> | boolean;
   embeddedOnStudioParentAttachComplete?: (parentId: string) => void;
-  embeddedRightSlot?: React.ReactNode | ((ctx: EmbeddedStudioSlotContext) => React.ReactNode);
+  embeddedRightSlot: React.ReactNode | ((ctx: EmbeddedStudioSlotContext) => React.ReactNode);
   embeddedRightSlotMinWidth?: number;
-  /** When set with `embedded`, replaces the title-only unparented list with this UI (e.g. card admin table/grid). */
+  /** Replaces the title-only unparented list with the Studio card bank (or similar). */
   embeddedUnparentedReplacement?: (ctx: EmbeddedUnparentedBankContext) => React.ReactNode;
   embeddedOrganizationCollapsed?: boolean;
   embeddedCardsCollapsed?: boolean;
@@ -418,17 +399,16 @@ export default function CollectionsAdminClient({
   });
   const sensors = useDefaultDndSensors({ pointerActivationDistance: 4 });
   const curatedTreeDnd = isCuratedTreeDndEnabled();
-  /** Admin Studio: middle column uses `embeddedUnparentedReplacement` (card bank) instead of the title-only list. */
-  const studioAttachBank = embedded && Boolean(embeddedUnparentedReplacement);
+  /** Studio: middle column uses `embeddedUnparentedReplacement` (card bank) instead of the title-only list. */
+  const studioAttachBank = Boolean(embeddedUnparentedReplacement);
   const showOrganizationPane = !(studioAttachBank && embeddedOrganizationCollapsed);
   const showCardsPane = !(studioAttachBank && embeddedCardsCollapsed);
   const rightSlotMinWidth = Math.max(MIN_MEDIA_COL, embeddedRightSlotMinWidth ?? MIN_MEDIA_COL);
   const treeDropZonesReadOnly = !curatedTreeDnd;
   /** Embedded Studio shares one drag runtime so cross-pane card and media drags can cross columns. */
   const needsDndContext = curatedTreeDnd;
-  const stickyTopRef = useRef<HTMLDivElement | null>(null);
   const layoutRef = useRef<HTMLDivElement | null>(null);
-  const [wideCenterLayout, setWideCenterLayout] = useState(true);
+  const [wideCenterLayout] = useState(true);
   const [wTree, setWTree] = useState(312);
   const [wUnparent, setWUnparent] = useState(296);
   const wTreeRef = useRef(wTree);
@@ -451,45 +431,6 @@ export default function CollectionsAdminClient({
       setWUnparent(stored.unparent);
     }
   }, []);
-
-  useEffect(() => {
-    if (embedded) {
-      setWideCenterLayout(true);
-      return;
-    }
-    const mq = window.matchMedia(`(min-width: ${EMBEDDED_ADMIN_WIDE_MIN_WIDTH_PX}px)`);
-    const apply = () => {
-      const layoutWidth = layoutRef.current?.getBoundingClientRect().width ?? 0;
-      const minRequiredWidth = centerWideLayoutMinWidth({
-        organization: showOrganizationPane,
-        cards: showCardsPane,
-        rightSlotMinWidth,
-      });
-      setWideCenterLayout(mq.matches && layoutWidth >= minRequiredWidth);
-    };
-    apply();
-    mq.addEventListener('change', apply);
-    return () => mq.removeEventListener('change', apply);
-  }, [embedded, rightSlotMinWidth, showCardsPane, showOrganizationPane]);
-
-  useLayoutEffect(() => {
-    if (embedded) {
-      setWideCenterLayout(true);
-      return;
-    }
-    const el = layoutRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => {
-      const minRequiredWidth = centerWideLayoutMinWidth({
-        organization: showOrganizationPane,
-        cards: showCardsPane,
-        rightSlotMinWidth,
-      });
-      setWideCenterLayout(el.getBoundingClientRect().width >= minRequiredWidth);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [embedded, rightSlotMinWidth, showCardsPane, showOrganizationPane]);
 
   useEffect(() => {
     try {
@@ -714,10 +655,8 @@ export default function CollectionsAdminClient({
   // with page 0. The Studio bank's "Loading more cards…" indicator covers the streaming
   // window — no separate indicator here. See docs/01-Vision-Architecture.md → Frontend
   // Principles (chunked list delivery + stable ordering).
-  // Standalone Collections still owns its broader local card catalog because it
-  // renders both tree structure and orphaned cards. Embedded Studio is different:
-  // the Cards pane owns discovery, so Collections should load tree truth first
-  // and never gate the rest of Studio on a broad all-cards pass.
+  // Studio Collections loads tree roots first, then optional descendants when the card
+  // bank is mounted — never a broad all-cards catalog pass.
   const load = useCallback(async (opts?: { soft?: boolean }) => {
     const soft = opts?.soft === true;
     const requestId = ++loadRequestIdRef.current;
@@ -728,146 +667,48 @@ export default function CollectionsAdminClient({
     }
     setError(null);
 
-    const PAGE_SIZE = 250;
     let firstChunkPainted = false;
 
     try {
-      if (embedded && studioAttachBank) {
-        const rootsRes = await fetch('/api/cards?collectionsOnly=true&status=all&hydration=cover-only');
-        if (!isCurrent()) return;
-        const rootsData = (await rootsRes.json().catch(() => ({}))) as CardsResponse & {
-          error?: string;
-        };
-        if (!rootsRes.ok) throw new Error(rootsData.error || 'Failed to load collection roots');
-        if (!isCurrent()) return;
+      const rootsRes = await fetch('/api/cards?collectionsOnly=true&status=all&hydration=cover-only');
+      if (!isCurrent()) return;
+      const rootsData = (await rootsRes.json().catch(() => ({}))) as CardsResponse & {
+        error?: string;
+      };
+      if (!rootsRes.ok) throw new Error(rootsData.error || 'Failed to load collection roots');
+      if (!isCurrent()) return;
 
-        const rootItems = Array.isArray(rootsData.items) ? rootsData.items : [];
-        setCards((prev) => mergeCardsByIdPreservingStudioProjection(soft ? prev : [], rootItems));
-        setEmbeddedTreeDescendantsLoaded(false);
-        firstChunkPainted = true;
-        if (!soft) setLoading(false);
+      const rootItems = Array.isArray(rootsData.items) ? rootsData.items : [];
+      setCards((prev) => mergeCardsByIdPreservingStudioProjection(soft ? prev : [], rootItems));
+      setEmbeddedTreeDescendantsLoaded(false);
+      firstChunkPainted = true;
+      if (!soft) setLoading(false);
 
-        if (studioLeftTab !== 'tree') {
-          setEmbeddedTreeDescendantsLoading(false);
-          return;
-        }
-
-        setEmbeddedTreeDescendantsLoading(true);
-        const descendantsRes = await fetch(
-          '/api/cards?collectionsOnly=true&includeDescendants=true&status=all&hydration=cover-only'
-        );
-        if (!isCurrent()) return;
-        const descendantsData = (await descendantsRes.json().catch(() => ({}))) as CardsResponse & {
-          error?: string;
-        };
-        if (!descendantsRes.ok) {
-          throw new Error(descendantsData.error || 'Failed to load collection descendants');
-        }
-        if (!isCurrent()) return;
-
-        const descendantItems = Array.isArray(descendantsData.items) ? descendantsData.items : [];
-        setCards((prev) => mergeCardsByIdPreservingStudioProjection(prev, descendantItems));
-        setEmbeddedTreeDescendantsLoaded(true);
+      if (!studioAttachBank || studioLeftTab !== 'tree') {
         setEmbeddedTreeDescendantsLoading(false);
         return;
       }
 
-      const rootsPromise = fetch('/api/cards?collectionsOnly=true&status=all&hydration=cover-only');
-      const accumulated = new Map<string, Card>();
-      const rootsById = new Map<string, Card>();
-      let rootsApplied = false;
-      let lastDocId: string | undefined;
-      let page = 0;
-      let finalItems: Card[] = [];
-
-      while (true) {
-        const params = new URLSearchParams({
-          limit: String(PAGE_SIZE),
-          page: String(page),
-          status: 'all',
-          hydration: 'cover-only',
-          sortBy: 'created',
-          sortDir: 'desc',
-        });
-        if (lastDocId) params.set('lastDocId', lastDocId);
-
-        const res = await fetch(`/api/cards?${params.toString()}`);
-        if (!isCurrent()) return;
-        const data = (await res.json().catch(() => ({}))) as CardsResponse & {
-          error?: string;
-          hasMore?: boolean;
-          lastDocId?: string;
-        };
-        if (!res.ok) throw new Error(data.error || 'Failed to load cards');
-        if (!isCurrent()) return;
-
-        for (const c of data.items || []) {
-          if (c.docId) accumulated.set(c.docId, c);
-        }
-
-        if (!rootsApplied) {
-          const rootsRes = await rootsPromise;
-          if (!isCurrent()) return;
-          const rootsData = (await rootsRes.json().catch(() => ({}))) as CardsResponse & {
-            error?: string;
-          };
-          if (!rootsRes.ok) {
-            throw new Error(rootsData.error || 'Failed to load collection roots');
-          }
-          for (const c of rootsData.items || []) {
-            if (c.docId) rootsById.set(c.docId, c);
-          }
-          rootsApplied = true;
-        }
-        if (!isCurrent()) return;
-
-        // Merge accumulated cards with roots (roots overlay the standard payload).
-        const merged = new Map<string, Card>();
-        for (const [id, c] of accumulated) merged.set(id, c);
-        for (const [id, c] of rootsById) {
-          const prev = merged.get(id);
-          merged.set(id, prev ? { ...prev, ...c } : c);
-        }
-        const items = Array.from(merged.values());
-        finalItems = items;
-
-        if (soft || firstChunkPainted) {
-          // After first chunk in non-soft mode, also use merge semantics — preserves
-          // any tree state (e.g. childrenIds) that earlier passes set when later
-          // cover-only payloads omit those fields.
-          setCards((prev) => mergeCardsByIdPreservingStudioProjection(prev, items));
-        } else {
-          setCards(items.map((card) => toStudioCatalogCard(card)));
-        }
-
-        if (!firstChunkPainted) {
-          firstChunkPainted = true;
-          if (!soft) setLoading(false);
-        }
-
-        if (!data.hasMore || (data.items || []).length === 0) break;
-        lastDocId = data.lastDocId;
-        page += 1;
+      setEmbeddedTreeDescendantsLoading(true);
+      const descendantsRes = await fetch(
+        '/api/cards?collectionsOnly=true&includeDescendants=true&status=all&hydration=cover-only'
+      );
+      if (!isCurrent()) return;
+      const descendantsData = (await descendantsRes.json().catch(() => ({}))) as CardsResponse & {
+        error?: string;
+      };
+      if (!descendantsRes.ok) {
+        throw new Error(descendantsData.error || 'Failed to load collection descendants');
       }
+      if (!isCurrent()) return;
 
-      if (isCurrent()) {
-        setCards((prev) => {
-          if (finalItems.length === 0) return [];
-          const prevById = new Map<string, Card>();
-          for (const card of prev) {
-            if (card.docId) prevById.set(card.docId, card);
-          }
-          return finalItems.map((card) => {
-            const existing = card.docId ? prevById.get(card.docId) : null;
-            return existing
-              ? mergeStudioCatalogCard(toStudioCatalogCard(existing), card)
-              : toStudioCatalogCard(card);
-          });
-        });
-      }
+      const descendantItems = Array.isArray(descendantsData.items) ? descendantsData.items : [];
+      setCards((prev) => mergeCardsByIdPreservingStudioProjection(prev, descendantItems));
+      setEmbeddedTreeDescendantsLoaded(true);
+      setEmbeddedTreeDescendantsLoading(false);
     } catch (e) {
       if (isCurrent()) {
-        if (embedded && studioAttachBank) {
+        if (studioAttachBank) {
           setEmbeddedTreeDescendantsLoading(false);
         }
         setError(e instanceof Error ? e.message : 'Failed to load cards');
@@ -877,19 +718,18 @@ export default function CollectionsAdminClient({
         setLoading(false);
       }
     }
-  }, [embedded, studioAttachBank, studioLeftTab]);
+  }, [studioAttachBank, studioLeftTab]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
   useEffect(() => {
-    if (!embedded || !studioAttachBank) return;
+    if (!studioAttachBank) return;
     if (studioLeftTab !== 'tree') return;
     if (embeddedTreeDescendantsLoaded || embeddedTreeDescendantsLoading || loading) return;
     void load({ soft: true });
   }, [
-    embedded,
     embeddedTreeDescendantsLoaded,
     embeddedTreeDescendantsLoading,
     loading,
@@ -906,19 +746,18 @@ export default function CollectionsAdminClient({
   );
 
   useEffect(() => {
-    if (!embedded) return;
     setSelectedCardId(selectedCardIdExternal ?? null);
-  }, [embedded, selectedCardIdExternal]);
+  }, [selectedCardIdExternal]);
 
   useEffect(() => {
     if (!cards.length) return;
     if (selectedCardId) return;
-    if (embedded && selectedCardIdExternal) return;
+    if (selectedCardIdExternal) return;
     if (studioAttachBank) return;
     const fallback = rootedCollections[0]?.docId ?? cards[0]?.docId ?? null;
     setSelectedCardId(fallback);
     if (fallback) onSelectCard?.(fallback, cardById.get(fallback) ?? null);
-  }, [cards, selectedCardId, rootedCollections, onSelectCard, cardById, embedded, selectedCardIdExternal, studioAttachBank]);
+  }, [cards, selectedCardId, rootedCollections, onSelectCard, cardById, selectedCardIdExternal, studioAttachBank]);
 
   const handleSelectCard = useCallback(
     (cardId: string) => {
@@ -1789,39 +1628,24 @@ export default function CollectionsAdminClient({
               />
             ) : null}
 
-            {embeddedRightSlot ? (
-              typeof embeddedRightSlot === 'function' ? (
-                embeddedRightSlot({
-                  refreshStructure: () => void load({ soft: true }),
-                  upsertCard: upsertEmbeddedCard,
-                  removeCard: removeEmbeddedCard,
-                })
-              ) : (
-                embeddedRightSlot
-              )
+            {typeof embeddedRightSlot === 'function' ? (
+              embeddedRightSlot({
+                refreshStructure: () => void load({ soft: true }),
+                upsertCard: upsertEmbeddedCard,
+                removeCard: removeEmbeddedCard,
+              })
             ) : (
-              <CollectionsMediaPanel />
+              embeddedRightSlot
             )}
           </div>
   );
 
   return (
-    <div className={embedded ? styles.studioEmbeddedRoot : styles.container}>
-      {!embedded ? (
-        <div className={styles.stickyTop} ref={stickyTopRef}>
-          <h1>Collections Management</h1>
-          <p className={styles.collectionsResizeHint}>
-            Drag the narrow bars between columns to resize the tree, orphaned list, and media pane. Widths are saved
-            in this browser.
-          </p>
-        </div>
-      ) : null}
-
+    <div className={styles.studioEmbeddedRoot}>
       {error ? <p className={styles.error}>{error}</p> : null}
       {loading ? <p>Loading cards...</p> : null}
 
-      {embedded || !loading ? (
-        <div className={styles.mainShell}>
+      <div className={styles.mainShell}>
         {!curatedTreeDnd ? (
           <p className={styles.hint} role="note" style={{ marginBottom: 'var(--spacing-sm)' }}>
             Curated tree drag-and-drop is off (kill switch). Remove or set{' '}
@@ -1993,7 +1817,6 @@ export default function CollectionsAdminClient({
           </div>
         ) : null}
         </div>
-      ) : null}
     </div>
   );
 }
