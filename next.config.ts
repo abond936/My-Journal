@@ -37,6 +37,36 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: '/admin/card-admin/:id/edit',
+        destination: '/admin/studio?card=:id',
+        permanent: true,
+      },
+      {
+        source: '/admin/card-admin/new',
+        destination: '/admin/studio?new=1',
+        permanent: true,
+      },
+      {
+        source: '/admin/card-admin/:id',
+        destination: '/admin/studio?card=:id',
+        permanent: true,
+      },
+      {
+        source: '/admin/card-admin',
+        destination: '/admin/studio',
+        permanent: true,
+      },
+      {
+        source: '/admin/media-admin',
+        destination: '/admin/studio',
+        permanent: true,
+      },
+      {
+        source: '/admin/tag-admin',
+        destination: '/admin/studio',
+        permanent: true,
+      },
+      {
         source: '/admin/question-admin',
         destination: '/admin/studio',
         permanent: true,
