@@ -34,7 +34,7 @@ jest.mock('next/link', () => {
 });
 
 jest.mock('@/components/providers/CardProvider', () => ({
-  useCardContext: () => ({ readerMode: 'freeform' }),
+  useCardContext: () => ({ readerMode: 'freeform', patchVisibleCard: jest.fn() }),
 }));
 
 jest.mock('@/components/providers/TagProvider', () => ({
@@ -75,7 +75,7 @@ jest.mock('@/components/view/ReaderCardContextMeta', () => ({
   default: () => null,
 }));
 
-jest.mock('@/components/view/ReaderCardEditModal', () => ({
+jest.mock('@/components/view/ReaderCardEditEntry', () => ({
   __esModule: true,
   default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));

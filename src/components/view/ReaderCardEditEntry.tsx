@@ -15,6 +15,7 @@ export default function ReaderCardEditEntry({
   returnTo,
   className,
   metadata,
+  onBeforeOpen,
   onCardSaved,
   children,
 }: {
@@ -22,6 +23,7 @@ export default function ReaderCardEditEntry({
   returnTo: string;
   className?: string;
   metadata: ReaderQuickEditInitial;
+  onBeforeOpen?: () => void;
   onCardSaved?: (savedCard: Card) => void;
   children: React.ReactNode;
 }) {
@@ -29,12 +31,13 @@ export default function ReaderCardEditEntry({
   const [desktopOpen, setDesktopOpen] = useState(false);
 
   const openEditor = useCallback(() => {
+    onBeforeOpen?.();
     if (typeof window !== 'undefined' && window.matchMedia(MOBILE_EDIT_MEDIA).matches) {
       setMobileOpen(true);
       return;
     }
     setDesktopOpen(true);
-  }, []);
+  }, [onBeforeOpen]);
 
   return (
     <>

@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useSession } from 'next-auth/react';
 import JournalImage from '@/components/common/JournalImage';
 import { Card } from '@/lib/types/card';
@@ -16,8 +17,11 @@ import TipTapStaticContent from '@/components/common/TipTapStaticContent';
 import TipTapRenderer from '@/components/common/TipTapRenderer';
 import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 import styles from './V2ContentCard.module.css';
-import ReaderCardEditModal from '@/components/view/ReaderCardEditModal';
 import { useCardContext } from '@/components/providers/CardProvider';
+
+const ReaderCardEditEntry = dynamic(() => import('@/components/view/ReaderCardEditEntry'), {
+  ssr: false,
+});
 
 // Simple horizontal slider
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -377,7 +381,7 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
   adminEditReturnTo = '/view',
 }) => {
   const { data: session } = useSession();
-  const { readerMode } = useCardContext();
+  const { readerMode, patchVisibleCard } = useCardContext();
   const isAdmin = session?.user?.role === 'admin';
   const displayMode = normalizeDisplayModeForType(card.type, card.displayMode);
   
@@ -419,6 +423,23 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
 
   const canEdit = Boolean(card.docId && isAdmin);
   const detailHref = card.docId ? `/view/${card.docId}?mode=${readerMode}` : '#';
+  const quickEditMetadata = useMemo(
+    () => ({
+      title: card.title ?? '',
+      subtitle: card.subtitle ?? '',
+      excerpt: card.excerpt ?? '',
+      excerptAuto: card.excerptAuto,
+      content: card.content ?? '',
+    }),
+    [card.content, card.excerpt, card.excerptAuto, card.subtitle, card.title]
+  );
+
+  const handleCardSaved = useCallback(
+    (savedCard: Card) => {
+      patchVisibleCard(savedCard);
+    },
+    [patchVisibleCard]
+  );
 
   const renderContent = () => {
     switch (card.type) {
@@ -473,14 +494,16 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
   return (
     <div className={styles.cardShell}>
       {body}
-      <ReaderCardEditModal
+      <ReaderCardEditEntry
         cardId={card.docId!}
         returnTo={returnToWithFocus}
         className={styles.adminEditLink}
+        metadata={quickEditMetadata}
         onBeforeOpen={onBeforeNavigateToAdminEdit}
+        onCardSaved={handleCardSaved}
       >
         Edit
-      </ReaderCardEditModal>
+      </ReaderCardEditEntry>
     </div>
   );
 };
