@@ -42,7 +42,8 @@
 }
 
 .adminEditBar a,
-.adminEditTrigger {
+.adminEditTrigger,
+.adminEditTriggerButton {
   font-family: var(--reader-meta-font-family);
   font-size: var(--reader-meta-font-size);
   font-weight: var(--reader-meta-font-weight);
@@ -51,8 +52,16 @@
   text-decoration: none;
 }
 
+.adminEditTriggerButton {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
 .adminEditBar a:hover,
-.adminEditTrigger:hover {
+.adminEditTrigger:hover,
+.adminEditTriggerButton:hover {
   text-decoration: underline;
 }
 

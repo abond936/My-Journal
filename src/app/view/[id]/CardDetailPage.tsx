@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 import JournalImage from '@/components/common/JournalImage';
@@ -19,7 +19,7 @@ import DiscoverySection from '@/components/view/DiscoverySection';
 import ReaderCardContextMeta from '@/components/view/ReaderCardContextMeta';
 import { formatQuoteAttribution } from '@/lib/utils/cardUtils';
 import { buildReaderCardPresentation } from '@/lib/utils/readerCardContext';
-import ReaderCardEditModal from '@/components/view/ReaderCardEditModal';
+import ReaderCardEditEntry from '@/components/view/ReaderCardEditEntry';
 import { useCardContext } from '@/components/providers/CardProvider';
 import { useTag } from '@/components/providers/TagProvider';
 
@@ -31,49 +31,72 @@ interface CardDetailPageProps {
 }
 
 const CardDetailPage: React.FC<CardDetailPageProps> = ({
-  card,
+  card: initialCard,
   childrenCards,
   suppressDiscovery = false,
   previewFullWidth = false,
 }) => {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
-  const { readerMode } = useCardContext();
+  const { readerMode, patchVisibleCard } = useCardContext();
   const { tags: allTags } = useTag();
+  const [displayCard, setDisplayCard] = useState(initialCard);
   const isAdmin = session?.user?.role === 'admin';
   const explicitMode = searchParams.get('mode');
   const effectiveReaderMode =
     explicitMode === 'guided' || explicitMode === 'freeform' ? explicitMode : readerMode;
   const shouldSuppressDiscovery = suppressDiscovery || effectiveReaderMode === 'guided';
-  const detailReturnTo = card.docId ? `/view/${card.docId}` : null;
-  const isQa = card.type === 'qa';
-  const isQuote = card.type === 'quote';
+  const detailReturnTo = displayCard.docId ? `/view/${displayCard.docId}` : null;
+  const isQa = displayCard.type === 'qa';
+  const isQuote = displayCard.type === 'quote';
   const detailHeadingVariant =
-    card.type === 'story'
+    displayCard.type === 'story'
       ? 'storyDetail'
-      : card.type === 'gallery'
+      : displayCard.type === 'gallery'
         ? 'galleryDetail'
         : 'detail';
-  const quoteAttribution = isQuote ? formatQuoteAttribution(card.subtitle, card.excerpt) : '';
-  const coverBucket = getAspectRatioBucket(card.coverImage);
+  const quoteAttribution = isQuote ? formatQuoteAttribution(displayCard.subtitle, displayCard.excerpt) : '';
+  const coverBucket = getAspectRatioBucket(displayCard.coverImage);
   const coverRatio = getAspectRatioValue(coverBucket);
-  const coverObjectFit = card.coverImageMode === 'fit' ? 'contain' : 'cover';
+  const coverObjectFit = displayCard.coverImageMode === 'fit' ? 'contain' : 'cover';
   const coverFrameClass =
     coverBucket === 'landscape'
       ? styles.coverLandscape
       : coverBucket === 'square'
         ? styles.coverSquare
         : styles.coverPortrait;
-  const hydratedGalleryItems = (card.galleryMedia ?? []).filter(
+  const hydratedGalleryItems = (displayCard.galleryMedia ?? []).filter(
     (item): item is HydratedGalleryMediaItem => Boolean(item.media)
   );
   const readerCardPresentation = useMemo(
-    () => buildReaderCardPresentation(card, allTags),
-    [card, allTags]
+    () => buildReaderCardPresentation(displayCard, allTags),
+    [displayCard, allTags]
   );
   const showReaderCardMeta =
-    card.type !== 'callout' &&
+    displayCard.type !== 'callout' &&
     (Boolean(readerCardPresentation.badgeLabel) || readerCardPresentation.chips.length > 0);
+  useEffect(() => {
+    setDisplayCard(initialCard);
+  }, [initialCard]);
+
+  const handleCardSaved = useCallback(
+    (savedCard: Card) => {
+      setDisplayCard(savedCard);
+      patchVisibleCard(savedCard);
+    },
+    [patchVisibleCard]
+  );
+
+  const quickEditMetadata = useMemo(
+    () => ({
+      title: displayCard.title ?? '',
+      subtitle: displayCard.subtitle ?? '',
+      excerpt: displayCard.excerpt ?? '',
+      excerptAuto: displayCard.excerptAuto,
+    }),
+    [displayCard.excerpt, displayCard.excerptAuto, displayCard.subtitle, displayCard.title]
+  );
+
   const detailMeta = showReaderCardMeta ? (
     <ReaderCardContextMeta
       badgeLabel={readerCardPresentation.badgeLabel}
@@ -85,11 +108,11 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
     <>
       {detailMeta}
       <h1
-        className={`${styles.title} ${card.subtitle && !isQuote ? styles.titleWithSubtitle : ''}`}
+        className={`${styles.title} ${displayCard.subtitle && !isQuote ? styles.titleWithSubtitle : ''}`}
       >
-        {card.title}
+        {displayCard.title}
       </h1>
-      {card.subtitle && !isQuote ? <p className={styles.subtitle}>{card.subtitle}</p> : null}
+      {displayCard.subtitle && !isQuote ? <p className={styles.subtitle}>{displayCard.subtitle}</p> : null}
     </>
   );
 
@@ -97,11 +120,11 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
     <div className={styles.questionHeaderPanel}>
       <div className={styles.questionHeaderText}>
         <h1
-          className={`${styles.title} ${card.subtitle && !isQuote ? styles.titleWithSubtitle : ''}`}
+          className={`${styles.title} ${displayCard.subtitle && !isQuote ? styles.titleWithSubtitle : ''}`}
         >
-          {card.title}
+          {displayCard.title}
         </h1>
-        {card.subtitle && !isQuote ? <p className={styles.subtitle}>{card.subtitle}</p> : null}
+        {displayCard.subtitle && !isQuote ? <p className={styles.subtitle}>{displayCard.subtitle}</p> : null}
       </div>
     </div>
   );
@@ -109,36 +132,42 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
   return (
     <article
       className={`${styles.container} ${previewFullWidth ? styles.previewFullWidth : ''}`}
-      data-card-type={card.type}
+      data-card-type={displayCard.type}
     >
-      {isAdmin && detailReturnTo && card.docId ? (
+      {isAdmin && detailReturnTo && displayCard.docId ? (
         <div className={styles.adminEditBar}>
-          <ReaderCardEditModal cardId={card.docId} returnTo={detailReturnTo} className={styles.adminEditTrigger}>
+          <ReaderCardEditEntry
+            cardId={displayCard.docId}
+            returnTo={detailReturnTo}
+            className={styles.adminEditTriggerButton}
+            metadata={quickEditMetadata}
+            onCardSaved={handleCardSaved}
+          >
             Edit card
-          </ReaderCardEditModal>
+          </ReaderCardEditEntry>
         </div>
       ) : null}
       <header
-        className={`${styles.header} ${!card.subtitle || isQuote ? styles.noSubtitle : ''}`}
+        className={`${styles.header} ${!displayCard.subtitle || isQuote ? styles.noSubtitle : ''}`}
       >
-        {card.coverImage && card.type !== 'gallery' && (
+        {displayCard.coverImage && displayCard.type !== 'gallery' && (
           <div className={`${styles.coverImageContainer} ${coverFrameClass}`}>
             <JournalImage
-              src={getReaderDisplayUrl(card.coverImage)}
-              alt={card.title}
+              src={getReaderDisplayUrl(displayCard.coverImage)}
+              alt={displayCard.title}
               className={styles.coverImage}
               width={800}
               height={600}
               sizes="(max-width: 768px) 100vw, 800px"
               style={{ 
                 objectFit: coverObjectFit,
-                objectPosition: coverObjectFit === 'cover' && card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
+                objectPosition: coverObjectFit === 'cover' && displayCard.coverImageFocalPoint && displayCard.coverImage?.width && displayCard.coverImage?.height
                   ? getObjectPositionFromFocalPoint(
                       {
-                        x: card.coverImageFocalPoint.x ?? 0,
-                        y: card.coverImageFocalPoint.y ?? 0,
+                        x: displayCard.coverImageFocalPoint.x ?? 0,
+                        y: displayCard.coverImageFocalPoint.y ?? 0,
                       },
-                      { width: card.coverImage.width, height: card.coverImage.height }
+                      { width: displayCard.coverImage.width, height: displayCard.coverImage.height }
                     )
                   : 'center'
               }}
@@ -156,14 +185,14 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
         )}
       </header>
 
-      {card.content && (
+      {displayCard.content && (
         <section className={styles.content} aria-label={isQa ? 'Answer' : undefined}>
           {isQuote ? (
             <blockquote className={styles.quoteDetailQuote}>
-              <TipTapRenderer content={card.content} headingVariant={detailHeadingVariant} />
+              <TipTapRenderer content={displayCard.content} headingVariant={detailHeadingVariant} />
             </blockquote>
           ) : (
-            <TipTapRenderer content={card.content} headingVariant={detailHeadingVariant} />
+            <TipTapRenderer content={displayCard.content} headingVariant={detailHeadingVariant} />
           )}
         </section>
       )}
@@ -174,7 +203,7 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
         </footer>
       ) : null}
 
-      {card.type === 'story' && childrenCards.length > 0 ? (
+      {displayCard.type === 'story' && childrenCards.length > 0 ? (
         <ChildCardsRail cards={childrenCards} />
       ) : null}
 
@@ -182,17 +211,17 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
       {hydratedGalleryItems.length > 0 && (
         <InlineGallery 
           media={hydratedGalleryItems}
-          title={card.type === 'gallery' ? null : 'Gallery'}
-          variant={card.type === 'gallery' ? 'galleryDetail' : 'default'}
+          title={displayCard.type === 'gallery' ? null : 'Gallery'}
+          variant={displayCard.type === 'gallery' ? 'galleryDetail' : 'default'}
         />
       )}
 
       {/* Discovery Section */}
       {!shouldSuppressDiscovery ? (
         <DiscoverySection
-          currentCard={card}
+          currentCard={displayCard}
           childrenCards={childrenCards}
-          suppressChildCardsGroup={card.type === 'story' && childrenCards.length > 0}
+          suppressChildCardsGroup={displayCard.type === 'story' && childrenCards.length > 0}
         />
       ) : null}
     </article>

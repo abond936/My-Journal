@@ -52,7 +52,7 @@ Legend:
 
 ⭕1 **Planned**
 
-- **Reader mobile text edit** - Allow admin users on `/view` to make narrow text edits (title, body, caption) through lightweight reader-path UI and narrow PATCH routes, without requiring full Studio or the current desktop-oriented edit modal for routine touch-ups.
+- **Reader mobile text edit** - Allow admin users on `/view` to make narrow text edits (title, body, caption) through lightweight reader-path UI and narrow PATCH routes, without requiring full Studio or the current desktop-oriented edit modal for routine touch-ups. **Shipped 2026-06-12 (slice 5a):** card detail (`/view/[id]`) opens a mobile quick-edit sheet (≤768px) for title/subtitle/excerpt via `updateCardMetadata`; desktop keeps full `ReaderCardEditModal`. Feed-tile quick edit, captions, and body remain follow-up (5b–5c).
 - **Reader bundle separation** - Keep viewer sessions on a minimal reader bundle; load admin-only surfaces (Theme Management, Studio, full Compose) through admin routes or explicit lazy admin chunks on `/view`, not in every authenticated session bundle. **Status (2026-06-12):** Theme Management overlay is lazy-loaded (slice 2a); Studio and full Compose on `/view` remain follow-up.
 
 ⭕2 **Future**

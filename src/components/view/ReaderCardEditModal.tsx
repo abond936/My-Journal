@@ -12,6 +12,7 @@ import { StudioCardFormStudioProvider } from '@/components/admin/studio/studioCa
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import type { Card, CardUpdate } from '@/lib/types/card';
 import type { Tag } from '@/lib/types/tag';
+import { patchReaderCard } from '@/lib/utils/readerCardPatchReconcile';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import {
   buildSingleCardDeletePrompt,
@@ -190,17 +191,36 @@ export default function ReaderCardEditModal({
   className,
   onBeforeOpen,
   children,
+  open: openControlled,
+  onOpenChange,
+  renderTrigger = true,
+  onCardSaved,
 }: {
   cardId: string;
   returnTo: string;
   className?: string;
   onBeforeOpen?: () => void;
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  renderTrigger?: boolean;
+  onCardSaved?: (savedCard: Card) => void;
 }) {
   const router = useRouter();
   const feedback = useAppFeedback();
   const cardContext = useOptionalCardContext();
-  const [isOpen, setIsOpen] = useState(false);
+  const isControlled = openControlled !== undefined;
+  const [isOpenInternal, setIsOpenInternal] = useState(false);
+  const isOpen = isControlled ? Boolean(openControlled) : isOpenInternal;
+  const setIsOpen = useCallback(
+    (next: boolean) => {
+      if (!isControlled) {
+        setIsOpenInternal(next);
+      }
+      onOpenChange?.(next);
+    },
+    [isControlled, onOpenChange]
+  );
   const [activeCardId, setActiveCardId] = useState(cardId);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
@@ -255,9 +275,15 @@ export default function ReaderCardEditModal({
     setIsOpen(true);
   };
 
+  useEffect(() => {
+    if (!isControlled || !openControlled) return;
+    setActiveCardId(cardId);
+    setModalFrame((current) => current ?? buildDefaultFrame());
+  }, [buildDefaultFrame, cardId, isControlled, openControlled]);
+
   const closeModal = useCallback(() => {
     setIsOpen(false);
-  }, []);
+  }, [setIsOpen]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -341,58 +367,14 @@ export default function ReaderCardEditModal({
 
   const handleSave = useCallback(
     async (cardData: CardUpdate): Promise<Card | null> => {
-      const response = await fetch(`/api/cards/${activeCardId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cardData),
-        cache: 'no-store',
-        credentials: 'same-origin',
+      const savedData = await patchReaderCard(activeCardId, cardData, {
+        onFeedPatch: (saved) => cardContext?.patchVisibleCard(saved),
       });
-      const savedData = (await response.json()) as Card & { error?: string };
-      if (!response.ok) {
-        throw new Error(savedData.error || 'Failed to save card.');
-      }
       await mutateCard(savedData, false);
-      cardContext?.patchVisibleCard(savedData);
-      void globalMutate(
-        (key) => typeof key === 'string' && key.startsWith('/api/cards?'),
-        (current) => {
-          if (!current) return current;
-
-          const patchItems = (items: unknown) => {
-            if (!Array.isArray(items)) return items;
-            return items.map((item) => {
-              if (!item || typeof item !== 'object') return item;
-              return (item as Card).docId === savedData.docId ? savedData : item;
-            });
-          };
-
-          if (Array.isArray(current)) {
-            return current.map((page) => {
-              if (!page || typeof page !== 'object' || !('items' in page)) return page;
-              return {
-                ...page,
-                items: patchItems((page as { items?: unknown }).items),
-              };
-            });
-          }
-
-          if (typeof current === 'object' && 'items' in current) {
-            return {
-              ...current,
-              items: patchItems((current as { items?: unknown }).items),
-            };
-          }
-
-          return current;
-        },
-        {
-          revalidate: false,
-        }
-      );
+      onCardSaved?.(savedData);
       return savedData;
     },
-    [activeCardId, mutateCard, cardContext]
+    [activeCardId, mutateCard, cardContext, onCardSaved]
   );
 
   const handleDelete = useCallback(async () => {
@@ -510,9 +492,11 @@ export default function ReaderCardEditModal({
 
   return (
     <>
-      <button type="button" className={[styles.triggerButton, className ?? ''].join(' ').trim()} onClick={openModal}>
-        {children}
-      </button>
+      {renderTrigger && children ? (
+        <button type="button" className={[styles.triggerButton, className ?? ''].join(' ').trim()} onClick={openModal}>
+          {children}
+        </button>
+      ) : null}
       {isOpen && modalFrame ? (
         <div className={styles.readerOverlay}>
           <div

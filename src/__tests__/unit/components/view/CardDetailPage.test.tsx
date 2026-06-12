@@ -49,7 +49,7 @@ jest.mock('@/components/view/ReaderCardContextMeta', () => ({
   default: () => null,
 }));
 
-jest.mock('@/components/view/ReaderCardEditModal', () => ({
+jest.mock('@/components/view/ReaderCardEditEntry', () => ({
   __esModule: true,
   default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
@@ -86,6 +86,7 @@ describe('CardDetailPage guided discovery contract', () => {
     jest.clearAllMocks();
     mockedUseCardContext.mockReturnValue({
       readerMode: 'freeform',
+      patchVisibleCard: jest.fn(),
     } as ReturnType<typeof useCardContext>);
   });
 
