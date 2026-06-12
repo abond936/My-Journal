@@ -61,7 +61,7 @@ export default defineConfig({
     },
     {
       name: 'smoke-admin',
-      testMatch: /smoke\/admin-access\.spec\.ts/,
+      testMatch: /smoke\/admin-(access|save)\.spec\.ts/,
       grep: /@admin/,
       dependencies: ['setup'],
       use: {

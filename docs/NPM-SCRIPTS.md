@@ -122,7 +122,7 @@ This is the current **commercial-readiness restore contract**. The Firestore res
 | `npm run dev` / `build` / `start` | Next.js app |
 | `npm run lint` | ESLint CLI (`eslint .`) |
 | `npm test` | Jest |
-| `npm run test:e2e` | Playwright read-only smoke tests (`e2e/smoke/*`). **Local:** set `E2E_VIEWER_*` and `E2E_ADMIN_*` in `.env.local`; starts or reuses `npm run dev` when `PLAYWRIGHT_BASE_URL` is unset (default `http://localhost:3000`). **Hosted target:** set `PLAYWRIGHT_BASE_URL` to the Vercel URL (no local dev server). First run: `npx playwright install chromium`. |
+| `npm run test:e2e` | Playwright smoke tests (`e2e/smoke/*`), including read-only flows and **6a** admin reader quick-edit PATCH (`admin-save.spec.ts`, restores subtitle after save). **Local:** set `E2E_VIEWER_*` and `E2E_ADMIN_*` in `.env.local`; starts or reuses `npm run dev` when `PLAYWRIGHT_BASE_URL` is unset (default `http://localhost:3000`). **Hosted target:** set `PLAYWRIGHT_BASE_URL` to the Vercel URL (no local dev server). First run: `npx playwright install chromium`. |
 | `npm run test:e2e:ui` | Playwright UI mode (local debugging) |
 
 ### Playwright CI (GitHub Actions)

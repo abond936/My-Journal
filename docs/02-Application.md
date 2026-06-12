@@ -49,11 +49,16 @@ Legend:
 - **Surface Split** - The application has distinct reader and admin surfaces with separate routes and explicit editing context.
 - **Role Boundary** - Reader use and admin authoring stay separated by session and route boundaries; admin-only operational routes remain restricted to administrators.
 - **Reader Shell Stability** - Protected reader routes keep their shell chrome and navigation context stable during client session hydration.
+- **Reader mobile text edit** - Shipped 2026-06-12 (review program step 5, slices 5a-5d): card detail + feed tiles use `ReaderCardEditEntry` with mobile quick-edit (metadata, eligible plain-prose body, gallery captions) via narrow PATCH branches; desktop keeps lazy full Compose modal.
+- **Reader bundle separation** - Shipped 2026-06-12 (2a, 5d): Theme Management and feed-tile edit paths lazy-load admin chunks; Studio remains admin-route scoped.
 
 ⭕1 **Planned**
 
-- **Reader mobile text edit** - Allow admin users on `/view` to make narrow text edits (title, body, caption) through lightweight reader-path UI and narrow PATCH routes, without requiring full Studio or the current desktop-oriented edit modal for routine touch-ups. **Shipped 2026-06-12 (slice 5a):** card detail (`/view/[id]`) opens a mobile quick-edit sheet (≤768px) for title/subtitle/excerpt via `updateCardMetadata`; desktop keeps full `ReaderCardEditModal`. **Shipped 2026-06-12 (slice 5b):** card detail gallery lightbox caption edit for admins via `updateCardGallery` slot overrides (Studio Media default preserved when unchanged). **Shipped 2026-06-12 (slice 5c):** mobile quick-edit adds plain-prose body editing for eligible paragraph-only content via `updateCardContent`; cards with figures, mentions, or other rich body structures show guidance to use the full editor or Studio. **Shipped 2026-06-12 (slice 5d):** feed tiles use lazy `ReaderCardEditEntry` (mobile quick edit + desktop compose modal on demand) and reconcile saves through `patchVisibleCard`; viewer feed bundles no longer statically import full Compose.
-- **Reader bundle separation** - Keep viewer sessions on a minimal reader bundle; load admin-only surfaces (Theme Management, Studio, full Compose) through admin routes or explicit lazy admin chunks on `/view`, not in every authenticated session bundle. **Shipped 2026-06-12 (slice 5d):** feed-tile edit paths lazy-load `ReaderCardEditEntry`; full `ReaderCardEditModal` / Compose loads only when an admin opens edit. **Status:** Theme Management overlay lazy-loaded (slice 2a); Studio remains admin-route scoped.
+- **Typesense reconciliation** - Retry on sync failures plus operator-visible reconciliation so search/admin lists do not silently drift from Firestore. **Post-review step 7c** (`03`).
+- **API input caps and shared auth envelope** - Cap list/bulk inputs; shared `/api` auth + error envelope. **Post-review steps 7a-7b** (`03`).
+- **Playwright E2E hardening** - Admin-save mutation smoke shipped (`admin-save.spec.ts`, step **6a**); PR-gate promotion pending (**6b**). See `03`.
+- **Mutation rate limiting** - Basic write-route limits before broader exposure. **Post-review step 8a** (`03`).
+- **Error monitoring** - Baseline production error visibility. **Post-review step 8d** (`03`).
 
 ⭕2 **Future**
 
