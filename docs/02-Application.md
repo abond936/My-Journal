@@ -56,10 +56,10 @@ Legend:
 - **Typesense reconciliation** - Shipped 2026-06-12 (post-review step **7c**): sync retry + `GET /api/admin/maintenance/typesense-status`.
 - **Transaction catalog reads** - Shipped 2026-06-12 (post-review step **7d**): tag catalog pre-read outside hot card mutations; `deleteTag` passes preloaded catalog to derived-field helpers per affected card/media.
 - **Atomic media-reference removal** - Shipped 2026-06-12 (post-review step **7e**): `removeMediaReferenceFromCard` runs card detach, `referencedByCardIds`, and media-signal refresh in one Firestore transaction.
+- **Mutation rate limiting** - Shipped 2026-06-12 (post-review step **8a**): write-route buckets enforced in `middleware.ts` via `mutationRateLimit.ts`.
 
 ⭕1 **Planned**
 
-- **Mutation rate limiting** - Basic write-route limits before broader exposure. **Post-review step 8a** (`03`).
 - **Error monitoring** - Baseline production error visibility. **Post-review step 8d** (`03`).
 
 ⭕2 **Future**

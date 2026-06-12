@@ -94,8 +94,12 @@ export const API_ROUTE_ACCESS_AUDIT: readonly ApiRouteAuditEntry[] = [
   { method: 'POST', path: '/api/admin/maintenance/cleanup', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/admin/maintenance/diagnose-cover', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/admin/maintenance/reconcile', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
-  { method: 'GET', path: '/api/admin/maintenance/typesense-status', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'POST', path: '/api/admin/maintenance/typesense-status', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
 ] as const;
+
+/** Mutation write routes receive per-actor rate limits in middleware (post-review step 8a). */
+export const MUTATION_ROUTE_RATE_LIMIT_NOTE =
+  'POST/PUT/PATCH/DELETE /api/* (except /api/auth) — see mutationRateLimit.ts buckets enforced in middleware.ts';
 
 /** Handlers exercised by automated admin-boundary tests (`admin-api-access-route.test.ts`). */
 export const ADMIN_ROUTE_BOUNDARY_CASES: readonly AdminRouteBoundaryCase[] = [

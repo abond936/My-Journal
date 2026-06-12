@@ -120,6 +120,20 @@ export function apiRouteInternalError(
   });
 }
 
+export function apiRouteRateLimitError(retryAfterSeconds: number): NextResponse {
+  const payload: ApiRouteErrorPayload = {
+    ok: false,
+    code: 'RATE_LIMIT_EXCEEDED',
+    message: 'Too many write requests. Try again shortly.',
+    severity: 'warning',
+    retryable: true,
+  };
+  return NextResponse.json(payload, {
+    status: 429,
+    headers: { 'Retry-After': String(Math.max(1, retryAfterSeconds)) },
+  });
+}
+
 export async function withApiRouteHandler<TRequest extends Request>(
   request: TRequest,
   options: {
