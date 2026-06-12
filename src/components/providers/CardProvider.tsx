@@ -31,6 +31,10 @@ function dedupeCardsByDocId(cards: Card[]): Card[] {
 import { PaginatedResult } from '@/lib/types/services';
 import { useTag } from './TagProvider';
 import { groupCardsForFeed, type FeedGroupBy } from '@/lib/utils/feedGrouping';
+import {
+  appendCoverOnlyFeedHydration,
+  withCoverOnlyFeedHydrationQuery,
+} from '@/lib/utils/feedHydration';
 
 export type CardFilterType = 'all' | 'story' | 'qa' | 'quote' | 'callout' | 'gallery';
 export type CardStatus = 'all' | 'draft' | 'published';
@@ -486,14 +490,10 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     setRandomSeed(nextSeed);
   }, [feedSort, randomFeedSignature]);
 
-  // Hydration: admin list needs only covers (saves reads); content feed needs full (galleries, content images)
-  const needsFullHydration = pathname?.startsWith('/view') || pathname?.startsWith('/search');
+  // Reader feed/search lists use cover-only hydration; detail pages fetch full card data separately.
   const adminFetcher = useCallback(async (url: string) => {
-    const urlObj = new URL(url, window.location.origin);
-    if (isAdmin && !needsFullHydration) {
-      urlObj.searchParams.set('hydration', 'cover-only');
-    }
-    const response = await fetch(urlObj.toString());
+    const fetchUrl = withCoverOnlyFeedHydrationQuery(url, pathname);
+    const response = await fetch(fetchUrl);
     if (!response.ok) {
       let message = `Request failed (${response.status}).`;
       try {
@@ -507,33 +507,39 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       throw new Error(message);
     }
     return response.json();
-  }, [isAdmin, needsFullHydration]);
+  }, [pathname]);
 
   // Keep the collections tree loaded for curated mode, even when a collection is selected.
   const shouldFetchCollections =
     isFetchActive && activeDimension === 'collections';
   const collectionsUrl = shouldFetchCollections
-    ? `/api/cards?collectionsOnly=true&status=${isAdmin ? 'all' : 'published'}${isAdmin && !needsFullHydration ? '&hydration=cover-only' : ''}`
+    ? withCoverOnlyFeedHydrationQuery(
+        `/api/cards?collectionsOnly=true&status=${isAdmin ? 'all' : 'published'}`,
+        pathname
+      )
     : null;
   const { data: collectionListData, isLoading: collectionsLoading } = useSWR<{ items: Card[] }>(
     collectionsUrl,
     (url) => {
-      const urlObj = new URL(url, window.location.origin);
-      if (isAdmin && !needsFullHydration) urlObj.searchParams.set('hydration', 'cover-only');
-      return fetch(urlObj.toString()).then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.statusText))));
+      return fetch(withCoverOnlyFeedHydrationQuery(url, pathname)).then((r) =>
+        r.ok ? r.json() : Promise.reject(new Error(r.statusText))
+      );
     },
     { revalidateOnFocus: false }
   );
   const collectionCards = useMemo(() => collectionListData?.items ?? [], [collectionListData]);
   const collectionTreeUrl = shouldFetchCollections
-    ? `/api/cards?collectionsOnly=true&includeDescendants=true&status=${isAdmin ? 'all' : 'published'}${isAdmin && !needsFullHydration ? '&hydration=cover-only' : ''}`
+    ? withCoverOnlyFeedHydrationQuery(
+        `/api/cards?collectionsOnly=true&includeDescendants=true&status=${isAdmin ? 'all' : 'published'}`,
+        pathname
+      )
     : null;
   const { data: collectionTreeData } = useSWR<{ items: Card[] }>(
     collectionTreeUrl,
     (url) => {
-      const urlObj = new URL(url, window.location.origin);
-      if (isAdmin && !needsFullHydration) urlObj.searchParams.set('hydration', 'cover-only');
-      return fetch(urlObj.toString()).then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.statusText))));
+      return fetch(withCoverOnlyFeedHydrationQuery(url, pathname)).then((r) =>
+        r.ok ? r.json() : Promise.reject(new Error(r.statusText))
+      );
     },
     { revalidateOnFocus: false }
   );
@@ -569,7 +575,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
         if (pageIndex > 0 && previousPageData?.lastDocId) {
           params.set('lastDocId', previousPageData.lastDocId);
         }
-        if (isAdmin && !needsFullHydration) params.set('hydration', 'cover-only');
+        appendCoverOnlyFeedHydration(params, pathname);
         return `${endpoint}?${params.toString()}`;
       }
 
@@ -598,7 +604,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
         params.set('types', typesList.join(','));
       }
       if (pageIndex > 0 && previousPageData?.lastDocId) params.set('lastDocId', previousPageData.lastDocId);
-      if (isAdmin && !needsFullHydration) params.set('hydration', 'cover-only');
+      appendCoverOnlyFeedHydration(params, pathname);
       if (!searchTerm?.trim()) {
         if (feedSort === 'random') {
           params.set('sortBy', 'random');

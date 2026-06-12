@@ -2,6 +2,7 @@
 process.env.FIREBASE_SERVICE_ACCOUNT_PROJECT_ID = 'test-project-id';
 process.env.FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY = 'test-private-key';
 process.env.FIREBASE_SERVICE_ACCOUNT_CLIENT_EMAIL = 'test@example.com';
+process.env.FIREBASE_STORAGE_BUCKET_URL = 'test-bucket.appspot.com';
 
 // Mock Firebase Admin before any imports
 jest.mock('firebase-admin', () => {
@@ -9,12 +10,16 @@ jest.mock('firebase-admin', () => {
     collection: jest.fn(),
     doc: jest.fn(),
   };
-  
+  const mockApp = {
+    firestore: jest.fn(() => mockFirestore),
+  };
+
   return {
     apps: [],
     initializeApp: jest.fn(),
+    app: jest.fn(() => mockApp),
     credential: {
-      cert: jest.fn(),
+      cert: jest.fn(() => ({ projectId: 'test-project-id' })),
     },
     firestore: jest.fn(() => mockFirestore),
   };
@@ -24,10 +29,6 @@ import { adminDb } from '@/lib/config/firebase/admin';
 import admin from 'firebase-admin';
 
 describe('Firebase Admin Configuration', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   test('adminDb should be defined', () => {
     expect(adminDb).toBeDefined();
   });
@@ -41,9 +42,12 @@ describe('Firebase Admin Configuration', () => {
   });
 
   test('Firebase Admin should be initialized with correct config', () => {
-    expect(admin.initializeApp).toHaveBeenCalledWith({
-      credential: expect.any(Object),
-    });
+    expect(admin.initializeApp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        credential: expect.any(Object),
+        storageBucket: 'test-storage-bucket.appspot.com',
+      })
+    );
   });
 
   test('Firebase Admin credential should be created with environment variables', () => {

@@ -26,7 +26,7 @@ jest.mock('@/components/common/GlobalSidebar', () => ({
   ),
 }));
 
-jest.mock('@/components/common/ThemeAdminOverlay', () => ({
+jest.mock('@/components/common/LazyThemeAdminOverlay', () => ({
   __esModule: true,
   default: () => <div data-testid="theme-admin-overlay" />,
 }));

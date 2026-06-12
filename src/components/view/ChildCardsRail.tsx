@@ -4,7 +4,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import JournalImage from '@/components/common/JournalImage';
 import type { Card } from '@/lib/types/card';
-import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import { getReaderDisplayUrl } from '@/lib/utils/photoUtils';
 import {
   getAspectRatioBucket,
   getAspectRatioValue,
@@ -131,7 +131,7 @@ export default function ChildCardsRail({ cards, title = 'More...' }: ChildCardsR
                   <div className={`${styles.thumb} ${frameClass}`}>
                     {cover ? (
                       <JournalImage
-                        src={getDisplayUrl(cover)}
+                        src={getReaderDisplayUrl(cover)}
                         alt={child.title?.trim() || 'Cover'}
                         className={styles.thumbImage}
                         width={320}

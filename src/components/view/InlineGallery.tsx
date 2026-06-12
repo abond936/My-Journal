@@ -3,7 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import JournalImage from '@/components/common/JournalImage';
 import { HydratedGalleryMediaItem } from '@/lib/types/card';
-import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import { getDisplayUrl, getReaderDisplayUrl } from '@/lib/utils/photoUtils';
 import {
   getEffectiveGalleryCaption,
   getEffectiveGalleryObjectPosition,
@@ -164,7 +164,7 @@ export default function InlineGallery({
                       </span>
                     ) : null}
                     <JournalImage
-                      src={getDisplayUrl(item.media)}
+                      src={getReaderDisplayUrl(item.media)}
                       alt={displayCaption.trim() ? displayCaption : `Image ${index + 1}`}
                       className={styles.galleryImage}
                       width={300}

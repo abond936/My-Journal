@@ -12,7 +12,7 @@ import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 import type { Media } from '@/lib/types/photo';
-import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import { getReaderDisplayUrl } from '@/lib/utils/photoUtils';
 
 interface BaseCardProps {
   id: string;
@@ -178,7 +178,7 @@ const ContentCard: React.FC<ContentCardProps> = (props) => {
             <SwiperSlide key={image.docId}>
               <div className={styles.imageContainer}>
                 <JournalImage 
-                  src={getDisplayUrl(image)} 
+                  src={getReaderDisplayUrl(image)} 
                   alt={image.filename || title} 
                   className={styles.image}
                   width={400}
@@ -200,7 +200,7 @@ const ContentCard: React.FC<ContentCardProps> = (props) => {
           className={styles.swiperContainer}
         >
           {props.images.map((image) => {
-            const imageUrl = getDisplayUrl(image);
+            const imageUrl = getReaderDisplayUrl(image);
             return (
               <SwiperSlide key={image.docId}>
                 <div className={styles.imageContainer}>

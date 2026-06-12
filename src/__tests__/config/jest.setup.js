@@ -15,6 +15,7 @@ process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID = 'test-measurement-id';
 process.env.FIREBASE_SERVICE_ACCOUNT_PROJECT_ID = 'test-project-id';
 process.env.FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY = 'test-private-key';
 process.env.FIREBASE_SERVICE_ACCOUNT_CLIENT_EMAIL = 'test@example.com';
+process.env.FIREBASE_STORAGE_BUCKET_URL = 'test-storage-bucket.appspot.com';
 
 // Other environment variables
 process.env.ONEDRIVE_PATH = 'C:\\Users\\test\\OneDrive';
@@ -25,14 +26,25 @@ const mockFirestore = {
   doc: jest.fn(),
 };
 
-jest.mock('firebase-admin', () => ({
-  apps: [],
-  initializeApp: jest.fn(),
-  credential: {
-    cert: jest.fn(),
-  },
-  firestore: jest.fn(() => mockFirestore),
-}));
+jest.mock('firebase-admin', () => {
+  const mockFirestore = {
+    collection: jest.fn(),
+    doc: jest.fn(),
+  };
+  const mockApp = {
+    firestore: jest.fn(() => mockFirestore),
+  };
+
+  return {
+    apps: [],
+    initializeApp: jest.fn(),
+    app: jest.fn(() => mockApp),
+    credential: {
+      cert: jest.fn(() => ({ projectId: 'test-project-id' })),
+    },
+    firestore: jest.fn(() => mockFirestore),
+  };
+});
 
 // Mock Firebase Client
 jest.mock('firebase/app', () => ({

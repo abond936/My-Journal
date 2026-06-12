@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   reactStrictMode: true,
+  transpilePackages: ['@tiptap/html', 'zeed-dom'],
   // Keep ExifTool packages as runtime Node externals (not bundled by webpack).
   // Card/media read routes no longer import this graph; the import-side routes
   // (`/api/import/*`, `/api/images/local/import`, `/api/images/browser`) load it

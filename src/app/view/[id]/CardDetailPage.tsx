@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 import JournalImage from '@/components/common/JournalImage';
 import { Card, HydratedGalleryMediaItem } from '@/lib/types/card';
-import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import { getReaderDisplayUrl } from '@/lib/utils/photoUtils';
 import {
   getAspectRatioBucket,
   getAspectRatioValue,
@@ -124,7 +124,7 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
         {card.coverImage && card.type !== 'gallery' && (
           <div className={`${styles.coverImageContainer} ${coverFrameClass}`}>
             <JournalImage
-              src={getDisplayUrl(card.coverImage)}
+              src={getReaderDisplayUrl(card.coverImage)}
               alt={card.title}
               className={styles.coverImage}
               width={800}

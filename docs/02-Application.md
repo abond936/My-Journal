@@ -50,6 +50,11 @@ Legend:
 - **Role Boundary** - Reader use and admin authoring stay separated by session and route boundaries; admin-only operational routes remain restricted to administrators.
 - **Reader Shell Stability** - Protected reader routes keep their shell chrome and navigation context stable during client session hydration.
 
+⭕1 **Planned**
+
+- **Reader mobile text edit** - Allow admin users on `/view` to make narrow text edits (title, body, caption) through lightweight reader-path UI and narrow PATCH routes, without requiring full Studio or the current desktop-oriented edit modal for routine touch-ups.
+- **Reader bundle separation** - Keep viewer sessions on a minimal reader bundle; load admin-only surfaces (Theme Management, Studio, full Compose) through admin routes or explicit lazy admin chunks on `/view`, not in every authenticated session bundle. **Status (2026-06-12):** Theme Management overlay is lazy-loaded (slice 2a); Studio and full Compose on `/view` remain follow-up.
+
 ⭕2 **Future**
 
 - **Reader-to-Admin Entry Points** - Add admin-only quick-edit or deep-link affordances from reader surfaces.
@@ -314,6 +319,10 @@ Legend:
 - **Trivia card flip treatment** - Evaluate a `Trivia` card family for short prompt/answer content with a tap/click flip interaction (front = prompt, back = answer) so lightweight Q&A can feel distinct from full Question cards without forcing a detail-page open.
 - **Questions / Quotes** - Source material (Word, books, Notion).
 - **Quote Card** - Attribution modeling (e.g. Content vs subtitle/excerpt).
+- **Inline feed display rendering** - Shipped 2026-06-12 (slice 2b): closed feed tiles with `displayMode === 'inline'` render via `TipTapStaticContent` (`generateHTML`) instead of mounting full TipTap per tile. Display-only; admin edit paths (`ReaderCardEditModal`, Compose) and detail/callout TipTap surfaces unchanged.
+- **Feed hydration tiers** - Shipped 2026-06-12 (slice 2c): reader feed/search CardProvider queries pass `hydration=cover-only` (covers + first gallery slide when no cover); card detail still loads full hydration via `getCardById`. Full gallery swiper hydration remains on detail open.
+- **Reader rendition delivery** - Shipped 2026-06-12 (slice 2d): reader feed/detail tiles use `getReaderDisplayUrl` (`renditions.studio` WebP when present, else original). InlineGallery/ViewMediaFeed lightbox+zoom keep originals. Run `backfill-media-studio-renditions` for legacy media without studio derivatives.
+- **Feed virtualization** - Shipped 2026-06-12 (slice 2e-1, CSS containment): feed grid tiles use `content-visibility: auto` + `contain-intrinsic-size` so offscreen tiles skip layout/paint while staying in the DOM (scroll restore, focus lookup, grouped sections, guided mode unchanged). True DOM windowing deferred unless profiling shows DOM node count itself is the bottleneck.
 
 📐 **V1 Matrix** - Initial presentation contract for `type` + `displayMode` behavior by context:
 
@@ -391,7 +400,6 @@ Legend:
 ⭕2 **Future**
 
 - **Audience-based reader access** - Potential future feature for adult/child or collection-specific sharing. Likely requires viewer audience/group membership, audience rules on collection roots or cards, direct URL/search/discovery enforcement, and an explicit media visibility rule.
-- **Feed hydration tiers:** Optional **cover-only** first paint on `/view` (defer full gallery/content hydration until card open or below fold) to reduce payload and server work vs today's full hydration for feed cards.
 - **View Mosaic** - Implement view-page gallery mosaic (replace swiper-only if needed).
 - **Social Features** - Like, comment, sharelink - out of scope until revisited.
 
@@ -448,6 +456,8 @@ Legend:
 - **Studio runtime redesign program** - Define and execute the end-state Studio runtime so Organize, Cards, Compose, Questions, and Media behave as one media-native workspace with narrow payload tiers, local-first transitions, and no broad refreshes for routine work. The resulting day-to-day contract should make card switching feel preview-first and near-instant, keep Compose visible through handoff, and let routine saves acknowledge without freezing the rest of Studio.
 - **Interaction contract alignment** - Pair each major Studio architecture change with a plain-language user-visible contract covering what should feel instant, what may hydrate progressively, and what must never block normal authoring use. Apply that contract explicitly to card/media browsing, selection continuity, drag/drop feedback, and filter persistence so architectural work is reviewed against real operator experience rather than technical cleanliness alone.
 - **Code Path Simplification Pass** - Audit Studio and the surviving admin/card/media paths for deprecated surfaces, duplicated interaction models, stale providers/loaders, and dead compatibility code, then retire what no longer supports the current workflow without weakening shipped behavior or canon contracts.
+- **Retire question-admin** - Remove `/admin/question-admin` route and admin nav link after Studio Questions parity is browser-verified; Studio Questions is the sole question-admin surface.
+- **Remove Collections standalone branch** - Delete unreachable `CollectionsAdminClient` standalone path (`embedded={false}`, `CollectionsMediaPanel`) after grep/test confirmation; the Studio embedded path remains.
 - **Studio naming cleanup** - Rename the remaining `Content Management` surface/chrome language to `Content Studio` so the product vocabulary matches the shipped `Studio` IA.
 - **Bulk bar idle collapse + selection semantics** - Hide the bulk-actions bar entirely when nothing is selected, and reconcile selection copy/behavior with the current growing-list model so surfaces do not imply a paged `Select all on page` contract where the UI now behaves as `Select visible`.
 - **Operator message pruning** - Remove low-value shell messages such as `working in...` where they add noise without helping the author make a decision.
@@ -741,6 +751,10 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 - **Bootstrap** - `npm run bootstrap:questions-from-qa` dry-runs creation of question-bank prompts from existing unlinked Question cards; `-- --apply` writes linked question records and card `questionId` values. **Run 2026-04-25:** after backup `C:\Users\alanb\OneDrive\Firebase Backups\run-2026-04-25T01-36-00-057Z`, applied 158 untagged question records; final dry run reported 202/202 Question cards linked.
 - **Story-question migration script** - `npm run bootstrap:questions-from-story-titles` converts tagged Story cards whose titles are questions into linked Question records/cards without deduping against existing prompts: creates Question-bank entries, copies direct `what` tags to the Question, links the card, changes card type to `qa`, and forces status to `draft`. **Run 2026-05-05:** after backup `C:\Users\alanb\OneDrive\Firebase Backups\run-2026-05-05T20-04-32-102Z`, applied 63 conversions; verification after the run reported `remainingStoryQuestions = 0`.
 
+⭕1 **Planned**
+
+- **Retire question-admin** - Remove `/admin/question-admin` route and admin nav link after Studio Questions parity is browser-verified; Studio Questions is the sole question-admin surface.
+
 ⭕2 **Future**
 
 - **Grouping Level** - Designate which dimensional tag levels are eligible for question grouping so prompts use the shared tree without collapsing to one-off events.
@@ -812,7 +826,7 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 - **PhotoPicker convergence in Media admin** - Add operator flows in `**/admin/media-admin`** (and Studio-embedded **Media admin**) to **import local images into the bank** and to pick library media with **PhotoPicker-grade** filtering (dimensions, search), so **PhotoPicker** in card edit becomes **optional** then **eliminable** for Studio and long-term for full-page card edit (see 📐 **Studio media & body (2026-04-22)**).
 - **Manual phone aggregation** - Support the simple phone-origin authoring path: select a group of imported images, assign them to a card, then flesh out the story and tags. Phone-origin metadata can reduce `When` / `Where` and sometimes `Who` labor, leaving `What` plus aggregation as the main author step.
 - **Media-management gap (import + duplicate triage)** - Media management remains a meaningful product hole relative to Cards/Studio authoring. The missing area is broader than filename collision checks: the app still needs a real import-facing bank workflow plus a trustworthy duplicate-triage path grounded in source-aware identity signals (starting with `sourcePath` and exact-file/source overlap rather than naive filename matching). Keep duplicate review scoped as one part of the larger import/media-management problem rather than treating it like a normal tag/filter feature.
-- **Media derivative architecture** - Preserve originals for archive/export while generating and serving surface-specific derivatives for tiles, previews, reader display, and future print/export or video playback workflows; treat video and phone media as first-class inputs rather than image-only edge cases. This should support fast grid browsing, later density changes, and lightweight editing without forcing the workspace to depend on original-asset delivery.
+- **Media derivative architecture** - Preserve originals for archive/export while generating and serving surface-specific derivatives for tiles, previews, reader display, and future print/export or video playback workflows; treat video and phone media as first-class inputs rather than image-only edge cases. This should support fast grid browsing, later density changes, and lightweight editing without forcing the workspace to depend on original-asset delivery. **Status (2026-06-12):** reader feed/detail tiles now prefer `renditions.studio` via `getReaderDisplayUrl` (slice 2d); dedicated reader renditions, video, and full backfill coverage remain follow-up.
 - **Media readiness pipeline** - Introduce explicit ingest/processing/readiness states for imported media so metadata extraction, thumbnail or poster generation, transcoding, and future identity/index work happen in background pipelines instead of interactive authoring paths. New imports should become visible quickly with truthful processing state rather than feeling absent or frozen until every derivative is finished.
 - **Media editor control stacking** - In the Studio media editor, stack the horizontal/vertical adjustment controls vertically so the edit surface stays readable and predictable at the current modal width.
 - **Grid admin ergonomics** - Filename is removed from the grid tile body, identity strings live on image hover, and the current bulk-select checkbox target sizes are accepted as sufficient for now. Further checkbox-size work is not active unless real usage shows a need.
@@ -957,6 +971,7 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 - **Preset completion** - Expand Journal / Editorial from partial preset bundles into coherent light/dark design packages only after the semantic surface inventory and schema are defined.
 - **Theme workspace chrome simplification** - Remove unnecessary background shading from the floating Theme workspace so the editor feels lighter and keeps more attention on the actual reader/workbench surface beneath it.
 - **Theme workspace fit and height** - Fit the active editor controls within common desktop windows more cleanly and increase the effective workspace height by roughly 20% so the floating editor shows more useful content before inner scrolling.
+- **Admin-only bundle loading** - Shipped 2026-06-12 (slice 2a): Theme Management overlay loads via admin-gated lazy chunk when the workbench opens; viewer sessions no longer pull the ThemeAdmin workbench in the shared AppShell bundle. Remaining bundle separation: Studio, full Compose on `/view`.
 ❓ **Italic** - Is there a way to right lean the ink font?
 
 📘 **Design contract** - Semantic roles, preset intent (Journal vs Editorial), and reconciliation order: `docs/04-Theme-Design-Contract.md`.

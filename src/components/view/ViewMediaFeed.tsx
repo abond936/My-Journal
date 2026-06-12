@@ -7,7 +7,7 @@ import { Media } from '@/lib/types/photo';
 import { PaginatedResult } from '@/lib/types/services';
 import { useCardContext } from '@/components/providers/CardProvider';
 import { useTag } from '@/components/providers/TagProvider';
-import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import { getDisplayUrl, getReaderDisplayUrl } from '@/lib/utils/photoUtils';
 import styles from './ViewMediaFeed.module.css';
 
 function useIntersectionObserver(callback: () => void, options?: IntersectionObserverInit) {
@@ -222,7 +222,7 @@ export default function ViewMediaFeed() {
               onClick={() => setLightboxMedia(item)}
             >
               <JournalImage
-                src={getDisplayUrl(item)}
+                src={getReaderDisplayUrl(item)}
                 alt={item.caption || item.filename}
                 width={Math.max(item.width || 800, 1)}
                 height={Math.max(item.height || 600, 1)}

@@ -29,8 +29,20 @@ export function getDisplayUrl(photo: PhotoLike | null | undefined): string {
   return transparentPixel();
 }
 
-export function getStudioDisplayUrl(photo: PhotoLike | null | undefined): string {
+function getStudioRenditionUrl(photo: PhotoLike | null | undefined): string | null {
   const studioUrl = photo?.renditions?.studio?.storageUrl;
-  if (studioUrl) return studioUrl;
-  return getDisplayUrl(photo);
+  return studioUrl?.trim() ? studioUrl : null;
+}
+
+/** Admin/Studio surfaces: prefer the optional studio WebP rendition, else original. */
+export function getStudioDisplayUrl(photo: PhotoLike | null | undefined): string {
+  return getStudioRenditionUrl(photo) ?? getDisplayUrl(photo);
+}
+
+/**
+ * Reader feed/detail tiles: reuse the studio WebP rendition when present (960px max, import/backfill),
+ * else fall back to the original. Lightbox/zoom surfaces should keep using `getDisplayUrl`.
+ */
+export function getReaderDisplayUrl(photo: PhotoLike | null | undefined): string {
+  return getStudioRenditionUrl(photo) ?? getDisplayUrl(photo);
 }

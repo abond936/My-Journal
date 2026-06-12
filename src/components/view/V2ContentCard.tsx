@@ -5,13 +5,14 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import JournalImage from '@/components/common/JournalImage';
 import { Card } from '@/lib/types/card';
-import { getDisplayUrl } from '@/lib/utils/photoUtils'; // Corrected import path
+import { getReaderDisplayUrl } from '@/lib/utils/photoUtils'; // Corrected import path
 import {
   getAspectRatioBucket,
   getAspectRatioValue,
   getObjectPositionForAspectRatio,
 } from '@/lib/utils/objectPositionUtils';
 import { getEffectiveGalleryCaption, getEffectiveGalleryObjectPosition } from '@/lib/utils/galleryObjectPosition';
+import TipTapStaticContent from '@/components/common/TipTapStaticContent';
 import TipTapRenderer from '@/components/common/TipTapRenderer';
 import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 import styles from './V2ContentCard.module.css';
@@ -95,7 +96,7 @@ const StoryCardContent: React.FC<{
         <div className={styles.imageContainer} style={{ aspectRatio: coverRatio }}>
           {card.coverImage ? (
             <JournalImage 
-              src={getDisplayUrl(card.coverImage)} 
+              src={getReaderDisplayUrl(card.coverImage)} 
               alt={card.title} 
               className={styles.image}
               width={400}
@@ -118,7 +119,7 @@ const StoryCardContent: React.FC<{
         {/* Add inline content for inline display mode */}
         {displayMode === 'inline' && card.content && (
           <div className={styles.inlineContent}>
-            <TipTapRenderer content={card.content} headingVariant="story" />
+            <TipTapStaticContent content={card.content} headingVariant="story" />
           </div>
         )}
       </div>
@@ -181,7 +182,7 @@ const GalleryCardContent: React.FC<{
             {hasCoverSlide && card.coverImage ? (
               <SwiperSlide key={`cover-${card.docId}`}>
                 <JournalImage
-                  src={getDisplayUrl(card.coverImage)}
+                  src={getReaderDisplayUrl(card.coverImage)}
                   alt={card.title}
                   className={styles.image}
                   width={400}
@@ -195,7 +196,7 @@ const GalleryCardContent: React.FC<{
             {gallerySlides.map((item) => (
               <SwiperSlide key={item.mediaId}>
                 <JournalImage
-                  src={getDisplayUrl(item.media!)}
+                  src={getReaderDisplayUrl(item.media!)}
                   alt={item.media!.filename || card.title}
                   className={styles.image}
                   width={400}
@@ -280,7 +281,7 @@ const QACardContent: React.FC<{
         {card.coverImage && (
           <div className={styles.imageContainer} style={{ aspectRatio: coverRatio }}>
             <JournalImage
-              src={getDisplayUrl(card.coverImage)}
+              src={getReaderDisplayUrl(card.coverImage)}
               alt={card.title}
               className={styles.image}
               width={400}
@@ -295,7 +296,7 @@ const QACardContent: React.FC<{
         {questionText}
         {card.content && (
             <div className={styles.inlineContent}>
-            <TipTapRenderer content={card.content} surface="transparent" headingVariant="question" />
+            <TipTapStaticContent content={card.content} surface="transparent" headingVariant="question" />
           </div>
         )}
       </div>
@@ -317,7 +318,7 @@ const QACardContent: React.FC<{
       {card.coverImage && (
         <div className={styles.imageContainer} style={{ aspectRatio: coverRatio }}>
           <JournalImage
-            src={getDisplayUrl(card.coverImage)}
+            src={getReaderDisplayUrl(card.coverImage)}
             alt={card.title}
             className={styles.image}
             width={400}

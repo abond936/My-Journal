@@ -1,10 +1,9 @@
 'use client';
 
 import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Blockquote from '@tiptap/extension-blockquote';
 import { FigureWithImage } from '@/lib/tiptap/extensions/FigureWithImage';
 import { CardMention } from '@/lib/tiptap/extensions/CardMention';
+import { getReadOnlyTipTapExtensions } from '@/lib/tiptap/readOnlyRenderExtensions';
 import styles from './TipTapRenderer.module.css';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -36,16 +35,7 @@ const TipTapRenderer: React.FC<TipTapRendererProps> = ({
 
   const editor = useEditor({
     editable: false,
-    extensions: [
-      StarterKit,
-      Blockquote,
-      FigureWithImage.configure({
-        HTMLAttributes: {
-          class: 'figure',
-        },
-      }),
-      CardMention,
-    ],
+    extensions: getReadOnlyTipTapExtensions(),
     content,
     immediatelyRender: false,
   });

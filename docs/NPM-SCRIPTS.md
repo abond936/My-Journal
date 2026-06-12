@@ -10,6 +10,7 @@ Run from the repo root. Most maintenance scripts need Firebase Admin env vars (s
 |--------|------|--------|
 | **Code** | Committed source | Git remote (`origin`); do not rely on a second full local tree copy. |
 | **Data** | Firestore (+ index/rules, optional Typesense export) | `npm run backup:database` → OneDrive `Firebase Backups/run-<timestamp>/` (see table row below; needs `ONEDRIVE_PATH`). |
+| **Storage (planned)** | Firebase Storage object bytes (originals + renditions) | **Not yet automated in repo**; `backup:database` excludes blobs. See `01` → **Backup** → **Storage byte backup** for the planned operator path. Until then, use Firebase Console / gcloud export or accept re-import from external source libraries after Firestore-only restore. |
 | **Repo-root secrets** | `.env*`, `service-account.json`, `*-firebase-adminsdk-*.json` | `npm run backup-codebase` → `CODEBASE_SECRETS_BACKUP_DIR` or default `C:\Users\alanb\CodeBase Backups\` (5 rolling zips + logs). Optional: register a daily Windows task with **`src/lib/scripts/utils/setup-backup-task.ps1`** (run **PowerShell as Administrator**; script resolves repo root via `git`). |
 
 ## Restore drill (v1 operator)
@@ -20,7 +21,7 @@ This is the current **commercial-readiness restore contract**. The Firestore res
 
 - **Git remote restores source code**. Do not expect `backup-codebase` to restore the repo tree.
 - **`backup:database` restores Firestore data, Firestore indexes/rules snapshots, and optional Typesense document exports.**
-- **Storage bytes are not included** in `backup:database`; missing Firebase Storage objects require separate recovery or re-import.
+- **Storage bytes are not included** in `backup:database`; missing Firebase Storage objects require separate recovery, a future automated Storage backup (see `01` → **Backup** → **Storage byte backup**), or re-import from external source libraries.
 - **Hosted deployment secrets are not pushed automatically** from the local secrets zip; re-enter them in the host if the platform loses them.
 - **The first restore drill target should be a disposable Firebase project, not the live app project.** The guarded restore helper refuses the production project id and defaults to dry-run.
 
@@ -76,7 +77,8 @@ This is the current **commercial-readiness restore contract**. The Firestore res
 - Confirm the latest local secrets backup zip exists and is readable.
 - Confirm the latest database backup run exists with `firestore.json`, `metadata.json`, and `summary.txt`.
 - Confirm the hosted environment has the required auth, Firebase, and Typesense env values.
-- Confirm `npm run build`, `npm run lint`, and `npm run test:integrity -- --runInBand` pass on the intended release revision.
+- Confirm `npm run build`, `npm run lint`, and `npm test -- --ci --runInBand` pass on the intended release revision.
+- Confirm GitHub PR CI (`.github/workflows/integrity-gate.yml`) passes the same lint, build, and test gate on the intended release revision.
 - Confirm there is at least one working admin account and one working viewer account.
 
 ## Account recovery (v1 operator)
@@ -111,6 +113,26 @@ This is the current **commercial-readiness restore contract**. The Firestore res
 | `npm run dev` / `build` / `start` | Next.js app |
 | `npm run lint` | ESLint CLI (`eslint .`) |
 | `npm test` | Jest |
+| `npm run test:e2e` | Playwright read-only smoke tests (`e2e/smoke/*`). **Local:** set `E2E_VIEWER_*` and `E2E_ADMIN_*` in `.env.local`; starts or reuses `npm run dev` when `PLAYWRIGHT_BASE_URL` is unset (default `http://localhost:3000`). **Hosted target:** set `PLAYWRIGHT_BASE_URL` to the Vercel URL (no local dev server). First run: `npx playwright install chromium`. |
+| `npm run test:e2e:ui` | Playwright UI mode (local debugging) |
+
+### Playwright CI (GitHub Actions)
+
+Workflow: `.github/workflows/e2e-smoke.yml` — **nightly** (03:00 UTC) and **manual** (`workflow_dispatch`). Tests the **hosted app** at `E2E_BASE_URL`; does **not** boot the Next.js app in CI (avoids production Firebase Admin secrets in GitHub).
+
+**Required repository secrets** (Settings → Secrets and variables → Actions):
+
+| Secret | Purpose |
+|--------|---------|
+| `E2E_BASE_URL` | Hosted app origin, e.g. `https://your-app.vercel.app` (no trailing slash) |
+| `E2E_VIEWER_USERNAME` | Dedicated viewer test account |
+| `E2E_VIEWER_PASSWORD` | Viewer password |
+| `E2E_ADMIN_USERNAME` | Dedicated admin test account |
+| `E2E_ADMIN_PASSWORD` | Admin password |
+
+Use **dedicated test accounts** (rotatable), not personal logins. After adding secrets, run **Actions → E2E Smoke → Run workflow** once to confirm green. Failed runs upload `playwright-report` and `test-results` artifacts (14-day retention).
+
+**Not yet:** PR-gate blocking; promote only after a stable green nightly history.
 | `npm run backup-codebase` | **Local secrets only** — zips **repo root** files Git does not track: `.env*`, `service-account.json`, `*-firebase-adminsdk-*.json`. Output dir: `CODEBASE_SECRETS_BACKUP_DIR` or `C:\Users\alanb\CodeBase Backups\`; keeps 5 zips. **Not** a second copy of the source tree (use Git remote). If none of those files exist, writes a log only. |
 | `npm run backup:database` | Full Firestore (all root collections) + copy `firestore.indexes.json` / `firestore.rules` + optional Typesense `cards`/`media` JSONL → OneDrive `Firebase Backups/run-<timestamp>/` (needs `ONEDRIVE_PATH` + service account; `tsx -r dotenv/config`). Does not download Storage bytes. |
 | `npm run restore:database -- --backup="<path>"` | Guarded Firestore restore helper for **disposable recovery targets**. Dry-run by default; `--apply` requires `--confirm-project=<targetProjectId>`. Refuses the production project id and refuses non-empty targets unless `--allow-non-empty`. Restores documents from `firestore.json`; does not delete extras already present in the target. |

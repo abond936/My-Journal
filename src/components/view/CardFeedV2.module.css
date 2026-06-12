@@ -172,6 +172,15 @@
   min-width: 0;
 }
 
+/* Feed virtualization (slice 2e-1): skip layout/paint for offscreen tiles while keeping
+   them in the DOM, so scroll restore and [data-card-id] focus lookup keep working.
+   `auto` retains each tile's measured size after first render; 480px is the pre-render
+   estimate for a closed feed tile. */
+.grid > * {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 480px;
+}
+
 .guidedGrid {
   grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), min(20rem, 100%)));
   align-items: start;

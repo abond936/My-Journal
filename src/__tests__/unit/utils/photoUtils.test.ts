@@ -1,4 +1,4 @@
-import { getDisplayUrl, getStudioDisplayUrl } from '@/lib/utils/photoUtils';
+import { getDisplayUrl, getReaderDisplayUrl, getStudioDisplayUrl } from '@/lib/utils/photoUtils';
 
 describe('photoUtils', () => {
   it('prefers the studio rendition for Studio/admin surfaces when present', () => {
@@ -31,6 +31,27 @@ describe('photoUtils', () => {
             storageUrl: 'https://example.com/studio.webp',
           },
         },
+      })
+    ).toBe('https://example.com/original.webp');
+  });
+
+  it('prefers the studio rendition for reader tiles when present', () => {
+    expect(
+      getReaderDisplayUrl({
+        storageUrl: 'https://example.com/original.webp',
+        renditions: {
+          studio: {
+            storageUrl: 'https://example.com/studio.webp',
+          },
+        },
+      })
+    ).toBe('https://example.com/studio.webp');
+  });
+
+  it('falls back to the original display URL for reader tiles when studio is missing', () => {
+    expect(
+      getReaderDisplayUrl({
+        storageUrl: 'https://example.com/original.webp',
       })
     ).toBe('https://example.com/original.webp');
   });

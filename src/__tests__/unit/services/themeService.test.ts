@@ -148,13 +148,13 @@ describe('theme compiler canaries', () => {
     expect(css).toContain('--reader-gallery-feed-title-font-size: calc(');
   });
 
-  it('uses adaptive covered fades by default and overrides their strength in dark mode', () => {
-    const reader = getReaderTheme();
+  it('uses adaptive covered fades for journal presets and overrides their strength in dark mode', () => {
+    const journal = getReaderPresetSettings('journal');
 
     const css = buildThemeTokensCss({
-      ...reader.data,
-      activePresetId: reader.activePresetId,
-      recipes: reader.recipes,
+      ...journal.data,
+      activePresetId: journal.activePresetId,
+      recipes: journal.recipes,
     });
 
     expect(css).toContain('--reader-covered-fade-background: var(--reader-covered-fade-adaptive-background);');
@@ -351,8 +351,8 @@ describe('theme compiler canaries', () => {
     expect(scopedCss.adminCss).toContain('.themeDraftAdminScope {');
     expect(scopedCss.adminCss).toContain('--reader-window-background-color: var(--color4);');
     expect(scopedCss.adminCss).toContain('--reader-window-border-color: var(--color6);');
-    expect(scopedCss.adminCss).toContain('--reader-support-control-background-color: var(--component-input-backgroundColor);');
-    expect(scopedCss.adminCss).toContain('--reader-support-control-border-color: var(--component-input-borderColor);');
+    expect(scopedCss.adminCss).toContain('--reader-support-control-background-color: var(--color7);');
+    expect(scopedCss.adminCss).toContain('--reader-support-control-border-color: var(--color8);');
     expect(scopedCss.adminCss).toContain('--reader-chrome-active-control-background-color: var(--color9);');
     expect(scopedCss.adminCss).toContain('--reader-chrome-active-control-border-color: var(--color10);');
     expect(scopedCss.adminCss).toContain('--admin-window-background-color: var(--reader-window-background-color);');
@@ -361,7 +361,7 @@ describe('theme compiler canaries', () => {
     expect(scopedCss.adminCss).toContain('--button-solid-text-color: var(--color11);');
   });
 
-  it('keeps draft and saved scoped compilation aligned for adaptive covered fades', () => {
+  it('keeps draft and saved scoped compilation aligned for shipped covered fade gradients', () => {
     const document = normalizeThemeDocument(baseTheme);
     const scopedCss = buildScopedDraftThemeCss(document, {
       reader: '.themeDraftReaderScope',
@@ -369,7 +369,7 @@ describe('theme compiler canaries', () => {
     });
 
     expect(scopedCss.readerCss).toContain('.themeDraftReaderScope {');
-    expect(scopedCss.readerCss).toContain('--reader-covered-fade-background: var(--reader-covered-fade-adaptive-background);');
+    expect(scopedCss.readerCss).toContain('--reader-covered-fade-background: linear-gradient(transparent, rgba(0,0,0,0.7));');
     expect(scopedCss.readerCss).toContain('--reader-covered-fade-adaptive-background: linear-gradient(to top, rgb(0 0 0 / var(--reader-covered-fade-bottom-opacity)) 0%, rgb(0 0 0 / var(--reader-covered-fade-mid-opacity)) 38%, rgb(0 0 0 / var(--reader-covered-fade-top-opacity)) 68%, transparent 100%);');
     expect(scopedCss.adminCss).toContain('.themeDraftAdminScope {');
     expect(scopedCss.adminCss).toContain('--admin-window-background-color: var(--reader-window-background-color);');
@@ -439,28 +439,21 @@ describe('theme compiler canaries', () => {
       recipes: editorial.recipes,
     });
 
-    expect(css).toContain('--reader-overlay-contrast-text-color: var(--color1-100);');
+    expect(css).toContain('--reader-overlay-contrast-text-color: var(--theme-color-2-dark);');
     expect(css).toContain('--reader-story-overlay-title-color: var(--reader-overlay-contrast-text-color);');
     expect(css).not.toContain('--reader-overlay-contrast-text-color: component/button/solid/textColor;');
   });
 
-  it('keeps the shipped fallback document on the current role map instead of legacy alias fields', () => {
-    const readerRecipes = (baseTheme as { reader?: { recipes?: Record<string, Record<string, unknown>> } }).reader?.recipes;
+  it('keeps normalized reader recipes on the current role map while shipped fallback JSON still carries legacy aliases', () => {
+    const normalized = normalizeThemeDocument(baseTheme);
+    const readerRecipes = normalized.reader.recipes;
 
-    expect(readerRecipes?.typography).not.toHaveProperty('chromeTitle');
-    expect(readerRecipes?.typography).not.toHaveProperty('chromeLabel');
-    expect(readerRecipes?.typography).not.toHaveProperty('chromeHint');
-    expect(readerRecipes?.typography).not.toHaveProperty('fieldControl');
-
-    expect(readerRecipes?.surfaces).not.toHaveProperty('windowPanel');
-
-    expect(readerRecipes?.controls).not.toHaveProperty('fieldControl');
-    expect(readerRecipes?.controls).not.toHaveProperty('fieldControlStrong');
-    expect(readerRecipes?.controls).not.toHaveProperty('chromeFilterChip');
-
-    expect(readerRecipes?.overlays).not.toHaveProperty('card');
-    expect(readerRecipes?.overlays).not.toHaveProperty('cardStrong');
-    expect(readerRecipes?.overlays).not.toHaveProperty('lightbox');
+    expect(readerRecipes?.typography?.supportTitle).toBeDefined();
+    expect(readerRecipes?.typography?.chromeText).toBeDefined();
+    expect(readerRecipes?.controls?.supportControl).toBeDefined();
+    expect(readerRecipes?.overlays?.coveredFade?.background).toBe('gradient/bottomOverlay');
+    expect(readerRecipes?.overlays?.galleryOverlay).toBeDefined();
+    expect(readerRecipes?.overlays?.lightboxBackdrop).toBeDefined();
   });
 
   it('normalizes legacy flat theme data into scoped reader/admin settings with admin fallback intact', () => {
@@ -530,7 +523,7 @@ describe('theme compiler canaries', () => {
     expect(persisted.version).toBe(2);
     expect(persisted.reader.activePresetId).toBe(normalized.reader.activePresetId);
     expect(persisted.admin.activePresetId).toBe(normalized.admin.activePresetId);
-    expect(persisted.reader.recipes?.overlays.coveredFade.background).toBe('semantic/reader/covered-fade');
+    expect(persisted.reader.recipes?.overlays.coveredFade.background).toBe('gradient/bottomOverlay');
     expect(persisted.admin.data.layout.background1Color).toBe(normalized.admin.data.layout.background1Color);
   });
 });

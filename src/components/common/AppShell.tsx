@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import Navigation from '@/components/common/Navigation';
 import GlobalSidebar from '@/components/common/GlobalSidebar';
-import ThemeAdminOverlay from '@/components/common/ThemeAdminOverlay';
+import LazyThemeAdminOverlay from '@/components/common/LazyThemeAdminOverlay';
 import styles from './AppShell.module.css';
 
 interface AppShellProps {
@@ -204,7 +204,7 @@ export default function AppShell({ children }: AppShellProps) {
         )}
         <main className={styles.mainContent}>{children}</main>
       </div>
-      <ThemeAdminOverlay />
+      <LazyThemeAdminOverlay />
     </div>
   );
 }

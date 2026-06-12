@@ -15,9 +15,9 @@ const customJestConfig = {
     '^.+\\.(ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
   },
   transformIgnorePatterns: [
-    '/node_modules/(?!(react-dnd|@react-dnd|dnd-core|react-dnd-html5-backend)/)',
+    '/node_modules/(?!(react-dnd|@react-dnd|dnd-core|react-dnd-html5-backend|@tiptap/html|zeed-dom)/)',
   ],
-  testPathIgnorePatterns: ['/node_modules/', '/.next/'],
+  testPathIgnorePatterns: ['/node_modules/', '/.next/', '/e2e/', 'jest.setup.js'],
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     '!src/**/*.d.ts',

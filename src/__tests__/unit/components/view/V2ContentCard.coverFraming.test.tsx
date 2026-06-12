@@ -56,6 +56,13 @@ jest.mock('@/components/common/JournalImage', () => ({
   },
 }));
 
+jest.mock('@/components/common/TipTapStaticContent', () => ({
+  __esModule: true,
+  default: ({ content }: { content?: unknown }) => (
+    <div data-testid="tiptap-static-content">{typeof content === 'string' ? content : JSON.stringify(content ?? null)}</div>
+  ),
+}));
+
 jest.mock('@/components/common/TipTapRenderer', () => ({
   __esModule: true,
   default: ({ content }: { content?: unknown }) => (
@@ -162,6 +169,22 @@ describe('V2ContentCard cover framing', () => {
     const image = screen.getByAltText('Welcome wordmark');
     expect(image.parentElement).toHaveStyle({ aspectRatio: '3/2' });
     expect(image).toHaveStyle({ objectFit: 'contain', objectPosition: 'center' });
+  });
+
+  it('uses static inline content rendering for closed QA tiles in inline display mode', () => {
+    render(
+      <V2ContentCard
+        card={{
+          ...baseCard,
+          type: 'qa',
+          displayMode: 'inline',
+          content: '<p>Inline QA body</p>',
+        }}
+      />
+    );
+
+    expect(screen.getByTestId('tiptap-static-content')).toHaveTextContent('<p>Inline QA body</p>');
+    expect(screen.queryByTestId('tiptap-content')).not.toBeInTheDocument();
   });
 
   it('renders closed quote tiles from the title instead of rich-text body content', () => {

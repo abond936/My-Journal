@@ -694,10 +694,12 @@ async function _hydrateFirstGallerySlideWhereNoCover(cards: Card[]): Promise<Car
         displayThumbnailSource: null,
       };
     }
+    const hydratedFirstSlide = { ...card.galleryMedia[0], media };
     return {
       ...card,
       displayThumbnail: media,
       displayThumbnailSource: 'gallery',
+      galleryMedia: [hydratedFirstSlide, ...card.galleryMedia.slice(1)],
     };
   });
 }

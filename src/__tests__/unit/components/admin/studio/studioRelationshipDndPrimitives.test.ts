@@ -112,7 +112,10 @@ describe('handleStudioRelationshipDragEnd', () => {
     );
 
     expect(handled).toBe(true);
-    expect(patchSelectedCard).toHaveBeenCalledWith({ coverImageId: 'media-cover' });
+    expect(patchSelectedCard).toHaveBeenCalledWith({
+      coverImageId: 'media-cover',
+      galleryMedia: [{ mediaId: 'media-cover', order: 0 }],
+    });
   });
 
   it('appends bank media to gallery when dropped on the gallery target', async () => {
@@ -281,7 +284,13 @@ describe('handleStudioRelationshipDragEnd', () => {
     );
 
     expect(handled).toBe(true);
-    expect(patchSelectedCard).toHaveBeenCalledWith({ coverImageId: 'media-2' });
+    expect(patchSelectedCard).toHaveBeenCalledWith({
+      coverImageId: 'media-2',
+      galleryMedia: [
+        { mediaId: 'media-2', order: 0 },
+        { mediaId: 'media-1', order: 1 },
+      ],
+    });
   });
 
   it('routes card-bank drops on compose children through the collections bridge handler', async () => {

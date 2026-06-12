@@ -1,4 +1,4 @@
-name: Integrity Gate
+name: PR Gate
 
 on:
   pull_request:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  integrity-gate:
+  pr-gate:
     runs-on: ubuntu-latest
 
     steps:
@@ -22,5 +22,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run integrity gate tests
-        run: npm run test:integrity
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Run unit and integrity tests
+        run: npm test -- --ci --runInBand
