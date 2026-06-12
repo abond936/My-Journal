@@ -37,6 +37,11 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: '/admin/question-admin',
+        destination: '/admin/studio',
+        permanent: true,
+      },
+      {
         source: '/admin/collections',
         destination: '/admin/studio',
         permanent: true,

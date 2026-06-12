@@ -46,7 +46,7 @@ Legend:
 
 📐 **External codebase review handoff (2026-06-12)** - A full-repo review found strong integrity engineering, a coherent reader V2 + theme token foundation, and a credible Studio convergence direction, with remaining gaps in CI breadth (integrity-only today), Firebase Storage byte backup, reader performance ceiling (full feed hydration, originals in reader paths, per-tile TipTap on inline display), legacy admin duplication (`question-admin`, unreachable Collections standalone branch), and admin-only bundle loading for viewer sessions. Treat these as sequenced platform work, not a rewrite mandate.
 
-📐 **Review program order** - After current Studio slice verification, prefer: **(1)** engineering safety net — shipped 2026-06-12 (CI gate expansion, Playwright smoke tests, `storage.rules`, `.env.example`), **(2)** reader performance — shipped 2026-06-12 (see step 2 sequencing below), **(3)** backend hardening — in progress (see step 3 sequencing below), **(4)** Studio legacy retirement, **(5)** reader mobile text edit on top of the stabilized substrate per `01` **Program structure**.
+📐 **Review program order** - After current Studio slice verification, prefer: **(1)** engineering safety net — shipped 2026-06-12 (CI gate expansion, Playwright smoke tests, `storage.rules`, `.env.example`), **(2)** reader performance — shipped 2026-06-12 (see step 2 sequencing below), **(3)** backend hardening — shipped 2026-06-12 except **3d** env-password retirement (decision-gated; see step 3 sequencing below), **(4)** Studio legacy retirement — in progress (see step 4 sequencing below), **(5)** reader mobile text edit on top of the stabilized substrate per `01` **Program structure**.
 
 📐 **Review program step 2 — reader performance sequencing (2026-06-12)** - Implement in this order; each slice is independently verifiable:
 
@@ -62,6 +62,13 @@ Legend:
 - **3b API authorization review** - Route-protection audit table + automated tests that anonymous/viewer sessions cannot reach admin-only handlers. **Shipped 2026-06-12** (`src/lib/auth/apiRouteAccessAudit.ts`, `src/__tests__/integrity/admin-api-access-route.test.ts`; reader boundary remains in `reader-access-route.test.ts`).
 - **3c Integrity gate expansion** - Extend emulator integrity suite for delete/replace graph, tag counts, derived card fields. **Shipped 2026-06-12** (`findTagCountViolations` / `computeExpectedCardCounts` in `src/lib/integrity/invariantChecks.ts`; unit coverage in `integrity-gate.test.ts`; service-layer emulator scenarios in `emulator.integrity.test.ts` for create/update/delete tag counts, cover backrefs, plus existing delete/replace graph tests).
 - **3d Env-password auth fallback retirement** - Decision-gated at rollout (`journal_users` is the production path today); execute only when author declares rollout posture.
+
+📐 **Review program step 4 — Studio legacy retirement sequencing (2026-06-12)** - Retire duplicate admin routes/surfaces without renaming shared Studio implementation modules (`card-admin/*`, `MediaAdminContent`, tag-admin components). Implement in this order:
+
+- **4a Retire question-admin** - Remove standalone `/admin/question-admin` workflow; Questions administration lives in Studio **Questions** pane only. **Shipped 2026-06-12:** route redirects to `/admin/studio`, admin nav **Questions** tab removed, `next.config.ts` permanent redirect added.
+- **4b Remove Collections standalone branch** - Delete unreachable `CollectionsAdminClient` `embedded={false}` path and `CollectionsMediaPanel` after grep/test confirmation; Studio embedded path remains.
+- **4c Redirect route cleanup (optional)** - Collapse redirect-only legacy route folders (`card-admin`, `media-admin`, `tag-admin` pages) into config redirects where safe.
+- **4d Shared module rename (deferred)** - Do not broad-rename `card-admin` / `media-admin` / `tag-admin` folders until 4a–4b are stable.
 
 
 
@@ -128,9 +135,9 @@ Legend:
   First-useful-paint contract handoff (2026-06-03): treat Studio as five distinct panes in product terms - **Organize**, **Cards**, **Compose**, **Questions**, and **Media** - even where older embedded code still groups some of them under one host. For startup and progressive hydration, optimize for pane usefulness rather than host ownership. Current preferred first-pass priority is: **(1) Cards**, **(2) Compose**, **(3) Media**, **(4) Collections/Organize tree population**, with Questions not allowed to delay the earlier panes. The structural tree may remain the authoritative owner for hierarchy and drag/drop truth, but it must stop acting like the startup gate for the rest of Studio. On initial open, use the smallest truthful working sets that let the pane become usable; stream or hydrate additional results afterward. Also separate **loading**, **empty filter result**, and **real error/integrity problem** states in both copy and styling: startup or zero-match states should use neutral messaging, while red/error treatment is reserved for actual failures or broken structure (for example true missing-child conditions).
 
 - **Code Path Simplification Pass** - Audit Studio and the surviving admin/card/media paths for deprecated surfaces, duplicated interaction models, stale providers/loaders, and dead compatibility code, then retire what no longer supports the current workflow without weakening shipped behavior or canon contracts.
-  Deferred execution note (2026-06-02): this remains a future exercise, not an active cleanup slice. Current assessment is that the repo contains a mix of true deprecated standalone admin routes, redirect-only remnants, and still-live shared implementation owners under older `card-admin` / `media-admin` / `tag-admin` naming. Do not start a broad rename/move/delete sweep while Studio editing stability is the priority. When this work is revisited, begin with a keep / migrate / retire map and preserve working Studio behavior over structural cleanliness. First concrete retirement targets after parity verification: **Retire question-admin** and **Remove Collections standalone branch** (see `02` → **Administration**).
+  Deferred execution note (2026-06-02): this remains a bounded cleanup program, not a broad rename sweep. **Shipped 2026-06-12 (slice 4a):** standalone **question-admin** retired. **Next:** **Remove Collections standalone branch** (review program step 4b; see `02` → **Administration**).
 
-- **Retire question-admin** - Remove `/admin/question-admin` route and admin nav link after Studio Questions parity is browser-verified; Studio Questions is the sole question-admin surface.
+- **Retire question-admin** - **Shipped 2026-06-12 (slice 4a)** — see `02` **Administration** and review program step 4a in `03`.
 
 - **Remove Collections standalone branch** - Delete unreachable `CollectionsAdminClient` standalone path (`embedded={false}`, `CollectionsMediaPanel`) after grep/test confirmation; the Studio embedded path remains.
 

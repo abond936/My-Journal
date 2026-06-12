@@ -466,7 +466,7 @@ Legend:
 - **Studio runtime redesign program** - Define and execute the end-state Studio runtime so Organize, Cards, Compose, Questions, and Media behave as one media-native workspace with narrow payload tiers, local-first transitions, and no broad refreshes for routine work. The resulting day-to-day contract should make card switching feel preview-first and near-instant, keep Compose visible through handoff, and let routine saves acknowledge without freezing the rest of Studio.
 - **Interaction contract alignment** - Pair each major Studio architecture change with a plain-language user-visible contract covering what should feel instant, what may hydrate progressively, and what must never block normal authoring use. Apply that contract explicitly to card/media browsing, selection continuity, drag/drop feedback, and filter persistence so architectural work is reviewed against real operator experience rather than technical cleanliness alone.
 - **Code Path Simplification Pass** - Audit Studio and the surviving admin/card/media paths for deprecated surfaces, duplicated interaction models, stale providers/loaders, and dead compatibility code, then retire what no longer supports the current workflow without weakening shipped behavior or canon contracts.
-- **Retire question-admin** - Remove `/admin/question-admin` route and admin nav link after Studio Questions parity is browser-verified; Studio Questions is the sole question-admin surface.
+- **Retire question-admin** - **Shipped 2026-06-12 (slice 4a):** `/admin/question-admin` redirects to `/admin/studio`; admin nav no longer links a standalone Questions route. Studio **Questions** pane is the sole question-admin surface.
 - **Remove Collections standalone branch** - Delete unreachable `CollectionsAdminClient` standalone path (`embedded={false}`, `CollectionsMediaPanel`) after grep/test confirmation; the Studio embedded path remains.
 - **Studio naming cleanup** - Rename the remaining `Content Management` surface/chrome language to `Content Studio` so the product vocabulary matches the shipped `Studio` IA.
 - **Bulk bar idle collapse + selection semantics** - Hide the bulk-actions bar entirely when nothing is selected, and reconcile selection copy/behavior with the current growing-list model so surfaces do not imply a paged `Select all on page` contract where the UI now behaves as `Select visible`.
@@ -747,7 +747,7 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 ✅ **Complete**
 
 - **Data Model** - Firestore `questions` collection. Schema: `src/lib/types/question.ts`. Service: `questionService.ts`. Questions carry optional dimensional `tagIds` and `usedByCardIds`; Question cards carry `questionId`.
-- **UI** - Studio **Questions** pane is the intended question-admin surface. Any surviving standalone `/admin/question-admin` page is legacy technical residue until removed and should not be treated as product truth.
+- **UI** - Studio **Questions** pane is the sole question-admin surface (**Shipped 2026-06-12, slice 4a:** standalone `/admin/question-admin` retired; redirects to Studio).
 - **Studio Pane** - Studio includes a collapsible Questions pane between Compose and Media for dimensional tree browsing, **Untagged** cleanup filtering, included/not-included filtering, add/edit, and opening or creating the linked Question card in Compose.
 - **Studio authoring parity** - Studio Questions is now the practical day-to-day question-admin surface: quick-entry tag editing first, rectangular chips, explicit Save/Cancel on add/edit, in-pane Delete, and app-native confirmation/loading treatment on the migrated destructive flows.
 - **Studio Questions compact filter row** - Questions now uses the same compact filter-row vocabulary as Cards and Media: Search + inclusion mode + inline `Clear`, icon-first row actions, and the same compact tag action/button sizing used elsewhere in Studio.
@@ -763,7 +763,7 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 
 ⭕1 **Planned**
 
-- **Retire question-admin** - Remove `/admin/question-admin` route and admin nav link after Studio Questions parity is browser-verified; Studio Questions is the sole question-admin surface.
+- **Retire question-admin** - **Shipped 2026-06-12 (slice 4a):** `/admin/question-admin` redirects to `/admin/studio`; admin nav no longer links a standalone Questions route. Studio **Questions** pane is the sole question-admin surface.
 
 ⭕2 **Future**
 

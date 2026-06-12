@@ -9,7 +9,6 @@ import styles from './AdminNavTabs.module.css';
 /** Primary admin IA: Studio plus remaining dedicated admin pages. */
 const primaryTabs = [
   { name: 'Studio', href: '/admin/studio' },
-  { name: 'Questions', href: '/admin/question-admin' },
   { name: 'Theme', href: '/admin/theme-admin' },
   { name: 'Users', href: '/admin/journal-users' },
 ];
