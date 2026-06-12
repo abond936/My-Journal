@@ -531,7 +531,11 @@ export async function deleteTag(docId: string): Promise<void> {
         }
 
         const mergedCardPayload = { ...cardData, tags: updatedTags };
-        const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(mergedCardPayload, transaction);
+        const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(
+          mergedCardPayload,
+          transaction,
+          allTags
+        );
         const journal = computeJournalWhenSortKeys(dimensionalTags.when || [], tagMap);
 
         cardWrites.push({
@@ -560,7 +564,7 @@ export async function deleteTag(docId: string): Promise<void> {
         if (updatedTags.length === currentTags.length) continue;
 
         mergeAssignmentDelta(currentTags, updatedTags, mediaCountDeltaMap);
-        const { filterTags, dimensionalTags } = await calculateDerivedTagData(updatedTags);
+        const { filterTags, dimensionalTags } = await calculateDerivedTagData(updatedTags, allTags);
         mediaWrites.push({
           ref: mediaRef,
           payload: {

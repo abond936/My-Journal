@@ -142,6 +142,7 @@ What must make this product distinctly better is not feature breadth alone, but 
 - **CI gate expansion** - Shipped 2026-06-12: PR workflow runs lint, build, and the full Jest suite (`npm test -- --ci --runInBand`); nightly emulator-backed integrity remains separate.
 - **API input caps** - **7a shipped 2026-06-12:** shared bounds in `src/lib/api/inputCaps.ts` on high-traffic list/search/bulk routes.
 - **API route envelope** - **7b shipped 2026-06-12:** shared auth + `{ ok, error }` helpers in `src/lib/api/routeEnvelope.ts` on migrated routes.
+- **Transaction catalog reads** - **7d shipped 2026-06-12:** full tag-catalog reads moved outside hot card/tag delete transactions (`cardService`, `tagService.deleteTag`).
 - **Playwright smoke tests** - Shipped v1 suite (`npm run test:e2e`); **6a** admin reader quick-edit PATCH smoke with restore; **6b** PR gate via `integrity-gate.yml`. Nightly/manual hosted CI also in `e2e-smoke.yml`.
 - **Typesense reconciliation** - **7c shipped 2026-06-12:** runtime sync retry (`typesenseSync.ts`) + `GET /api/admin/maintenance/typesense-status`; repair via `npm run sync:typesense*`.
 - **Mutation rate limiting** - Basic write-route limits. **Post-review step 8a.**

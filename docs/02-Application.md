@@ -54,6 +54,7 @@ Legend:
 - **Playwright E2E hardening** - Shipped 2026-06-12 (post-review step **6**): admin-save mutation smoke (`admin-save.spec.ts`, **6a**) and PR-gate hosted smoke (**6b** via `integrity-gate.yml`).
 - **API input caps and shared auth envelope** - Shipped 2026-06-12 (post-review step **7a-7b**): `inputCaps.ts` + `routeEnvelope.ts` on the high-traffic card/media route set.
 - **Typesense reconciliation** - Shipped 2026-06-12 (post-review step **7c**): sync retry + `GET /api/admin/maintenance/typesense-status`.
+- **Transaction catalog reads** - Shipped 2026-06-12 (post-review step **7d**): tag catalog pre-read outside hot card mutations; `deleteTag` passes preloaded catalog to derived-field helpers per affected card/media.
 
 ⭕1 **Planned**
 

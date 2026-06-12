@@ -737,84 +737,85 @@ export async function createCard(
   const cleanedContent = stripContentImageSrc(rawContent);
   const contentMediaIds = extractMediaFromContent(cleanedContent);
 
+  // Pre-read tag catalog + derived fields outside the transaction (docs/01 → Catalog reads).
+  const normalizedChildren = normalizeChildrenIds(validatedData.childrenIds);
+  const allTagsForJournal = await getAllTags();
+  const tagPathLookup = buildTagMap(allTagsForJournal);
+  const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(
+    { tags: selectedTags },
+    undefined,
+    allTagsForJournal
+  );
+  const subjectState = await resolveSubjectTagState({
+    assignedTagIds: selectedTags,
+    existingSubjectTagId: null,
+    requestedSubjectTagId: validatedData.subjectTagId,
+    subjectTagIdProvided: Object.prototype.hasOwnProperty.call(validatedData, 'subjectTagId'),
+    allTags: allTagsForJournal,
+  });
+  const journalWhenSort = computeJournalWhenSortKeys(
+    dimensionalTags.when || [],
+    tagPathLookup
+  );
+  const dimensionSortKeys = computeDimensionSortKeys(selectedTags, allTagsForJournal);
+  const mediaIdsForSignals = new Set<string>();
+  if (validatedData.coverImageId) mediaIdsForSignals.add(validatedData.coverImageId);
+  (validatedData.galleryMedia || []).forEach((item) => {
+    if (item.mediaId) mediaIdsForSignals.add(item.mediaId);
+  });
+  contentMediaIds.forEach((id) => mediaIdsForSignals.add(id));
+  const mediaSignals = await computeCardMediaSignalsFromMediaIds(mediaIdsForSignals, allTagsForJournal);
+
+  const autoExcerpt = validatedData.excerptAuto ? generateExcerpt(cleanedContent) : undefined;
+
+  const cardType = validatedData.type ?? 'story';
+  const newCard: Card = {
+    ...validatedData,
+    docId: docRef.id,
+    type: cardType,
+    displayMode: normalizeDisplayModeForType(cardType, validatedData.displayMode),
+    status: validatedData.status ?? 'draft',
+    title_lowercase: validatedData.title?.toLowerCase() || '',
+    content: cleanedContent,
+    ...(validatedData.excerptAuto ? { excerpt: autoExcerpt || null } : {}),
+    tags: selectedTags,
+    ...(subjectState.subjectTagId
+      ? {
+          subjectTagId: subjectState.subjectTagId,
+          subjectFilterTags: subjectState.subjectFilterTags,
+        }
+      : {}),
+    childrenIds: normalizedChildren,
+    ...(requestedRoot ? { isCollectionRoot: true, collectionRootOrder: resolvedRootOrder ?? 10 } : {}),
+    contentMedia: contentMediaIds,
+    galleryMedia: validatedData.galleryMedia || [],
+    filterTags,
+    who: dimensionalTags.who || [],
+    what: dimensionalTags.what || [],
+    when: dimensionalTags.when || [],
+    where: dimensionalTags.where || [],
+    mediaWho: mediaSignals.mediaWho,
+    mediaWhat: mediaSignals.mediaWhat,
+    mediaWhen: mediaSignals.mediaWhen,
+    mediaWhere: mediaSignals.mediaWhere,
+    whoSortKey: dimensionSortKeys.whoSortKey,
+    whatSortKey: dimensionSortKeys.whatSortKey,
+    whereSortKey: dimensionSortKeys.whereSortKey,
+    journalWhenSortAsc: journalWhenSort.journalWhenSortAsc,
+    journalWhenSortDesc: journalWhenSort.journalWhenSortDesc,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    curatedNavEligible: computeCuratedNavEligible({
+      childrenIds: normalizedChildren,
+      isCollectionRoot: requestedRoot,
+    }),
+  };
+
   // Use a transaction to ensure atomicity with retry logic
   await withRetry(async () => {
     return firestore.runTransaction(async (transaction) => {
-      const normalizedChildren = normalizeChildrenIds(validatedData.childrenIds);
-
-      const allTagsForJournal = await getAllTags();
-      const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(
-        { tags: selectedTags },
-        undefined,
-        allTagsForJournal
-      );
-      const subjectState = await resolveSubjectTagState({
-        assignedTagIds: selectedTags,
-        existingSubjectTagId: null,
-        requestedSubjectTagId: validatedData.subjectTagId,
-        subjectTagIdProvided: Object.prototype.hasOwnProperty.call(validatedData, 'subjectTagId'),
-        allTags: allTagsForJournal,
-      });
-      const journalWhenSort = computeJournalWhenSortKeys(
-        dimensionalTags.when || [],
-        buildTagMap(allTagsForJournal)
-      );
-      const dimensionSortKeys = computeDimensionSortKeys(selectedTags, allTagsForJournal);
-      const mediaIdsForSignals = new Set<string>();
-      if (validatedData.coverImageId) mediaIdsForSignals.add(validatedData.coverImageId);
-      (validatedData.galleryMedia || []).forEach((item) => {
-        if (item.mediaId) mediaIdsForSignals.add(item.mediaId);
-      });
-      contentMediaIds.forEach((id) => mediaIdsForSignals.add(id));
-      const mediaSignals = await computeCardMediaSignalsFromMediaIds(mediaIdsForSignals, allTagsForJournal);
-
-      const autoExcerpt = validatedData.excerptAuto ? generateExcerpt(cleanedContent) : undefined;
-
-      const cardType = validatedData.type ?? 'story';
-      const newCard: Card = {
-        ...validatedData,
-        docId: docRef.id,
-        type: cardType,
-        displayMode: normalizeDisplayModeForType(cardType, validatedData.displayMode),
-        status: validatedData.status ?? 'draft',
-        title_lowercase: validatedData.title?.toLowerCase() || '',
-        content: cleanedContent,
-        ...(validatedData.excerptAuto ? { excerpt: autoExcerpt || null } : {}),
-        tags: selectedTags,
-        ...(subjectState.subjectTagId
-          ? {
-              subjectTagId: subjectState.subjectTagId,
-              subjectFilterTags: subjectState.subjectFilterTags,
-            }
-          : {}),
-        childrenIds: normalizedChildren,
-        ...(requestedRoot ? { isCollectionRoot: true, collectionRootOrder: resolvedRootOrder ?? 10 } : {}),
-        contentMedia: contentMediaIds,
-        galleryMedia: validatedData.galleryMedia || [],
-        filterTags,
-        who: dimensionalTags.who || [],
-        what: dimensionalTags.what || [],
-        when: dimensionalTags.when || [],
-        where: dimensionalTags.where || [],
-        mediaWho: mediaSignals.mediaWho,
-        mediaWhat: mediaSignals.mediaWhat,
-        mediaWhen: mediaSignals.mediaWhen,
-        mediaWhere: mediaSignals.mediaWhere,
-        whoSortKey: dimensionSortKeys.whoSortKey,
-        whatSortKey: dimensionSortKeys.whatSortKey,
-        whereSortKey: dimensionSortKeys.whereSortKey,
-        journalWhenSortAsc: journalWhenSort.journalWhenSortAsc,
-        journalWhenSortDesc: journalWhenSort.journalWhenSortDesc,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        curatedNavEligible: computeCuratedNavEligible({
-          childrenIds: normalizedChildren,
-          isCollectionRoot: requestedRoot,
-        }),
-      };
-
       // 1. Update tag counts before transaction writes begin.
-      await updateTagCountsForCard(null, newCard, transaction, buildTagMap(allTagsForJournal));
+      await updateTagCountsForCard(null, newCard, transaction, tagPathLookup);
 
       // 2. Create the new card document
       transaction.set(docRef, newCard);
@@ -966,9 +967,38 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       throw new Error(`Card with ID ${cardId} not found.`);
     }
     const preMediaIds = getMediaIdsFromCard({ ...preSnap.data(), docId: preSnap.id } as Card);
+
+    // Pre-read tag catalog once outside the transaction; derived-field helpers are
+    // pure on this snapshot (docs/01 → Catalog reads).
+    const allTagsForJournal = await getAllTags();
+    const tagPathLookup = buildTagMap(allTagsForJournal);
+
+    const preExisting = preSnap.data() as Card;
+    const preSanitizedContent = cardData.content ? stripContentImageSrc(cardData.content) : cardData.content;
+    const preContentMediaIds = preSanitizedContent ? extractMediaFromContent(preSanitizedContent) : [];
+    const preClearingCover =
+      'coverImageId' in cardData &&
+      (cardData.coverImageId === null || cardData.coverImageId === undefined);
+    const preNewCover = preClearingCover
+      ? null
+      : (('coverImageId' in cardData ? cardData.coverImageId : preExisting.coverImageId) ?? null);
+    const preNewGalleryMedia =
+      cardData.galleryMedia?.map((item) => stripHydratedGalleryItem(item)) ?? preExisting.galleryMedia;
+    const preNewContentMedia =
+      'content' in cardData
+        ? preContentMediaIds
+        : preExisting.contentMedia ?? extractMediaFromContent(preExisting.content ?? '');
+    const preNewMediaIds = new Set<string>();
+    if (preNewCover) preNewMediaIds.add(preNewCover);
+    preNewGalleryMedia?.forEach((g) => g.mediaId && preNewMediaIds.add(g.mediaId));
+    preNewContentMedia.forEach((id) => preNewMediaIds.add(id));
     
     let isClearingCover = false;
-    let responseMediaMap = new Map<string, Media>();
+    let responseMediaMap = await loadMediaMapByIds(preNewMediaIds);
+    const precomputedMediaSignals = computeCardMediaSignalsFromMediaMap(
+      responseMediaMap,
+      allTagsForJournal
+    );
     let responseCoverImageId: string | null = null;
     let responseCoverImageFocalPoint: { x: number; y: number } | undefined;
     return withRetry(async () => {
@@ -1113,7 +1143,6 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       newGalleryMedia?.forEach(g => g.mediaId && newMediaIds.add(g.mediaId));
       newContentMedia.forEach(id => newMediaIds.add(id));
 
-      const allTagsForJournal = await getAllTags();
       const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(
         { tags: finalTags || [] },
         undefined,
@@ -1135,14 +1164,12 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       cleanedUpdate.when = dimensionalTags.when || [];
       cleanedUpdate.where = dimensionalTags.where || [];
 
-      const tagPathLookup = buildTagMap(allTagsForJournal);
       const journalWhenSort = computeJournalWhenSortKeys(
         cleanedUpdate.when || [],
         tagPathLookup
       );
       const dimensionSortKeys = computeDimensionSortKeys(finalTags || [], allTagsForJournal);
-      responseMediaMap = await loadMediaMapByIds(newMediaIds);
-      const mediaSignals = computeCardMediaSignalsFromMediaMap(responseMediaMap, allTagsForJournal);
+      const mediaSignals = precomputedMediaSignals;
       cleanedUpdate.journalWhenSortAsc = journalWhenSort.journalWhenSortAsc;
       cleanedUpdate.journalWhenSortDesc = journalWhenSort.journalWhenSortDesc;
       cleanedUpdate.whoSortKey = dimensionSortKeys.whoSortKey;
@@ -1953,8 +1980,20 @@ export async function updateCardContent(
   const contentMediaIds = sanitizedContent ? extractMediaFromContent(sanitizedContent) : [];
   const allTags = await getAllTags();
 
+  const nextMediaIds = new Set<string>();
+  if (preCard.coverImageId) {
+    nextMediaIds.add(preCard.coverImageId);
+  }
+  preCard.galleryMedia?.forEach((item) => {
+    if (item.mediaId) nextMediaIds.add(item.mediaId);
+  });
+  contentMediaIds.forEach((mediaId) => {
+    if (mediaId) nextMediaIds.add(mediaId);
+  });
+  const responseMediaMap = await loadMediaMapByIds(nextMediaIds);
+  const mediaSignals = computeCardMediaSignalsFromMediaMap(responseMediaMap, allTags);
+
   return withRetry(async () => {
-    let responseMediaMap = new Map<string, Media>();
     await firestore.runTransaction(async (transaction) => {
       const docSnap = await transaction.get(docRef);
       if (!docSnap.exists) {
@@ -1980,8 +2019,6 @@ export async function updateCardContent(
         transaction,
         [...mediaRemoved, ...mediaAdded]
       );
-      responseMediaMap = await loadMediaMapByIds(nextMediaIds);
-      const mediaSignals = computeCardMediaSignalsFromMediaMap(responseMediaMap, allTags);
 
       for (const mediaId of mediaRemoved) {
         if (!existingReferencedMediaIds.has(mediaId)) continue;
