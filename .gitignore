@@ -64,3 +64,6 @@ service-account.json
 *.bak
 *.backup
 *_backup
+
+# Sentry Config File
+.env.sentry-build-plugin
