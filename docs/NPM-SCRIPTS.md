@@ -86,6 +86,7 @@ This is the current **commercial-readiness restore contract**. The Firestore res
 - Confirm the latest database backup run exists with `firestore.json`, `metadata.json`, and `summary.txt`.
 - Confirm the latest storage backup run exists with `storage-manifest.json` and a populated `storage/` tree (or run `npm run backup:storage -- --apply` before release).
 - Confirm the hosted environment has the required auth, Firebase, and Typesense env values.
+- Confirm hosted Sentry env when error monitoring is desired: `NEXT_PUBLIC_SENTRY_DSN` on Production (and optional `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT` for source maps). After deploy, send a test event from the Sentry project **Issues** UI or wait for the first real error.
 - Confirm `npm run build`, `npm run lint`, and `npm test -- --ci --runInBand` pass on the intended release revision.
 - Confirm GitHub PR CI (`.github/workflows/integrity-gate.yml`) passes lint, build, unit/integrity tests, and hosted Playwright smoke on the intended release revision.
 - Confirm there is at least one working admin account and one working viewer account.

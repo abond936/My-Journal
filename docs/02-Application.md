@@ -58,10 +58,8 @@ Legend:
 - **Atomic media-reference removal** - Shipped 2026-06-12 (post-review step **7e**): `removeMediaReferenceFromCard` runs card detach, `referencedByCardIds`, and media-signal refresh in one Firestore transaction.
 - **Mutation rate limiting** - Shipped 2026-06-12 (post-review step **8a**): write-route buckets enforced in `middleware.ts` via `mutationRateLimit.ts`.
 - **Maintenance script logging hygiene** - Shipped 2026-06-12 (post-review step **8b**): `safeMaintenanceLog.ts`; no key-fragment env logging in operator scripts.
-
-⭕1 **Planned**
-
-- **Error monitoring** - **8d shipped 2026-06-12:** Sentry SDK wired for hosted production when DSN env vars are set; local dev/test stays off unless `NODE_ENV=production`. Configure on Vercel/host: `NEXT_PUBLIC_SENTRY_DSN` (+ optional `SENTRY_DSN`, `SENTRY_ENVIRONMENT`). See `.env.example`.
+- **Tag count exposure on reads** - Shipped 2026-06-12 (post-review step **8c**): viewer `GET /api/tags` and `GET /api/tags/[id]` omit operational count/id-set fields; reader Explore `TagTree` shows tag names only.
+- **Error monitoring (Sentry)** - Shipped 2026-06-12 (post-review step **8d**): opt-in hosted production monitoring when DSN env vars are set; errors-only; ad-blocker tunnel at `/monitoring`; secret scrubbing in `beforeSend`. **Hosted operator setup (Vercel):** `NEXT_PUBLIC_SENTRY_DSN` (required for client errors); optional `SENTRY_ENVIRONMENT=production` (label you choose — not copied from Sentry); optional build-time `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` for readable stack traces. Verify: Sentry project **Issues** -> Send test event after deploy. See `.env.example`. Local dev stays off unless `NODE_ENV=production` with DSN set.
 
 ⭕2 **Future**
 
